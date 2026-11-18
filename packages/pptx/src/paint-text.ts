@@ -268,7 +268,7 @@ const runStyle = (
     ...capitalization(all),
     color: color === undefined ? defaultColor(scope) : color,
     ...(picture === undefined || link !== undefined ? {} : { picture }),
-    ...(fill !== undefined && link === undefined ? { fill } : {}),
+    ...(fill !== undefined && ("gradient" in fill || "scheme" in fill.solid) && link === undefined ? { fill } : {}),
     highlight: first(all, (layer) => highlightOf(layer, scope)) ?? null,
   }
 }

@@ -59,7 +59,7 @@ test("a margin the text box inherits is quiet until set, and Reset fill shows th
   await expect(left).toHaveValue("36")
   await expect.poll(() => inherited(left)).toBe(false)
   await unfold(panel, fillCopy.box)
-  const box = panel.locator("section").filter({ has: panel.getByRole("button", { name: fillCopy.box, exact: true }) })
+  const box = panel.locator("section").filter({ has: page.getByRole("button", { name: fillCopy.box, exact: true }) })
   const fill = box.locator('[data-control="union"]')
   await expect(fill).not.toHaveAttribute("data-inherited")
   await box.getByRole("button", { name: fillCopy.reset, exact: true }).click()

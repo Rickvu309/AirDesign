@@ -105,6 +105,43 @@ describe("selection colors", () => {
       JSON.stringify([{ from: 0, runs: [{ from: 0, text: "White", color: { rgb: "FF0000" } }, value[0]?.runs[1]] }]),
     )
   })
+  it("changes matching text gradient stops and preserves the other runs", () => {
+    const gradient = {
+      stops: [
+        { pos: 0, color: { rgb: "000000" } },
+        { pos: 100000, color: { rgb: "FFFFFF" } },
+      ],
+      shade: { linear: { angle: 0, scaled: false } },
+      rotateWithShape: false,
+    }
+    const untouched = { from: 1, text: "Green", color: { rgb: "00FF00" } }
+    const painted = { from: 0, text: "Gradient", fill: { gradient } }
+    const [change] = replaceSelectionColor(
+      [
+        {
+          node,
+          textColor: { rgb: "FFFFFF" },
+          fields: { "text.value": { value: [{ from: 0, runs: [painted, untouched] }], own: true } },
+        },
+      ],
+      "000000",
+      { rgb: "FF0000" },
+      palette,
+    )
+    expect(JSON.parse(change?.text?.value ?? "null")).toEqual([
+      {
+        from: 0,
+        runs: [
+          {
+            ...painted,
+            fill: { gradient: { ...gradient, stops: [{ pos: 0, color: { rgb: "FF0000" } }, gradient.stops[1]] } },
+          },
+          untouched,
+        ],
+      },
+    ])
+  })
+
   it("deduplicates theme and rgb colors that paint alike and replaces only the chosen scope", () => {
     const themed = {
       theme: [{ scheme: "accent1" as const, css: `#${"000000"}`, name: formatCopy.colors.accent1 }],

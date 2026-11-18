@@ -69,8 +69,12 @@ function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonl
             : { rgb: color.hex.toUpperCase() }
         return fadedColor(nominal, Math.round(color.alpha * 100000))
       }
-      const { "text.color": _ignored, ...rest } = fields
-      return { node, textColor, textColors, fields: { ...rest, "text.value": { value: text, own: true } } }
+      const textFills = (paragraph: number, run: number) => {
+        const fill = painted?.paragraphs[paragraph]?.runs[run]?.fill
+        return fill !== undefined && "gradient" in fill ? fill : undefined
+      }
+      const { "text.color": _color, "text.fill": _fill, ...rest } = fields
+      return { node, textColor, textColors, textFills, fields: { ...rest, "text.value": { value: text, own: true } } }
     })
   if (nodes.length === 0) {
     const part = readSlides(parts)[shown.current]?.part
