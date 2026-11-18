@@ -29,7 +29,7 @@ test("a deck is ready and its text is painted while a font is still arriving", a
     await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toHaveCount(0)
     await expect(text).toBeVisible()
     await expect(ready).toHaveAttribute("data-deck-ready", deck ?? "")
-    await expect(page.getByText("The slide uses a fallback font.").first()).toBeVisible()
+    await expect(page.getByText(/fallback font/)).toHaveCount(0)
   } finally {
     release()
   }
