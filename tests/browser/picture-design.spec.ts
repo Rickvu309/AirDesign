@@ -28,7 +28,7 @@ function look(
   element: Locator,
 ): Promise<{ readonly image: string; readonly size: string; readonly filter: string; readonly opacity: string }> {
   return element.evaluate((node) => {
-    const style = getComputedStyle(node)
+    const style = getComputedStyle(node.querySelector("[data-fill-image]") ?? node)
     return { image: style.backgroundImage, size: style.backgroundSize, filter: style.filter, opacity: style.opacity }
   })
 }

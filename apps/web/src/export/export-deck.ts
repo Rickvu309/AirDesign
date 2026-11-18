@@ -2,7 +2,7 @@ import { connect, getParts, memoryRemote } from "@airdesign/live"
 import { exportPackage } from "@airdesign/pptx"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
-import { bakeTouchedPictures } from "@/export/picture-bake"
+import { bakeFills } from "@/export/fill-bake"
 import { exportablePictures, type PictureStore } from "@/picture-tool"
 
 export type ExportRequest = {
@@ -27,7 +27,7 @@ export async function exportDeck(
   if (!opened.ok) throw new Error("register")
   const held = await exportablePictures(pictures, id, opened.register)
   const chosen = chosenParts(stored.parts, opened.register, slides, held)
-  const bytes = await exportPackage(stored.file, await bakeTouchedPictures(chosen, opened.register))
+  const bytes = await exportPackage(stored.file, await bakeFills(chosen, opened.register))
   if (request?.signal?.aborted === true) return null
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)

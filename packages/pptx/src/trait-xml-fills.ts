@@ -2,6 +2,7 @@ import { namesAlpha, paintSlots, type Alpha, type TraitPatch } from "@airdesign/
 import { alphaKept, colorsOf, fadedBytes, shownAlpha, type Faded } from "./alpha-codec.js"
 import { embedded } from "./blip-edit.js"
 import { fillMarkup, imageMarkup, type Drawn, type FillTag } from "./fill-markup.js"
+import { shownStack, writtenStack } from "./fill-stack.js"
 import { changedPart, hostOf, ownFill, pictureAsShape, writtenFill, type FillHost } from "./fill-host.js"
 import { inheritedFill, ownBackground, shownFill, type Fill } from "./fill-read.js"
 import { decodeUtf8 } from "./package-bytes.js"
@@ -28,6 +29,8 @@ function shownBehind(parts: Parts, at: ElementAt): Fill | null {
 }
 
 export function shownSlots(parts: Parts, at: ElementAt): readonly (Fill | null)[] {
+  const stack = shownStack(parts, at)
+  if (stack !== null) return [stack[0] ?? none, stack[1] ?? none, stack[2] ?? none, stack[3] ?? none]
   const host = hostOf(parts, at)
   if (host === "bg") return [ownBackground(parts, at.part), none, none, none]
   if (host === "sp") return [shownFill(parts, at)?.value ?? null, none, none, none]
@@ -106,7 +109,7 @@ const colourCodec = alphaKept(
   (value) => namesAlpha(colorsOf(value)),
 )
 
-type Painted = { readonly parts: Parts; readonly sourced: boolean }
+type Painted = { readonly parts: Parts; readonly sourced: boolean; readonly stacked?: true }
 
 function onShape(parts: Parts, at: ElementAt, host: FillHost): Parts {
   return host === "pic" ? pictureAsShape(parts, at) : parts
@@ -116,6 +119,26 @@ function newImage(parts: Parts, at: ElementAt, source: string | undefined): Pain
   if (source === undefined) throw new Error("fills-image")
   const next = new Map(parts)
   return { parts: writtenFill(next, at, imageMarkup(next, at, source)), sourced: true }
+}
+
+function stackedPaints(
+  parts: Parts,
+  at: ElementAt,
+  host: FillHost,
+  paints: readonly Fill[],
+  shown: readonly (Fill | null)[],
+  source: string | undefined,
+): Painted {
+  if (host === "bg") throw new Error("fills-stack")
+  const imaged = paints.some(pictured)
+  if (host === "pic" && imaged) return { parts: writtenStack(parts, at, paints), sourced: false, stacked: true }
+  const next = onShape(parts, at, host)
+  const [bottom] = paints
+  const painted =
+    imaged && !shown.some(pictured)
+      ? newImage(next, at, source)
+      : { parts: imaged || bottom === undefined ? next : colourCodec.write(next, at, bottom), sourced: false }
+  return { parts: writtenStack(painted.parts, at, paints), sourced: painted.sourced, stacked: true }
 }
 
 function writtenPaints(
@@ -144,7 +167,7 @@ function writtenPaints(
     return shown.some(pictured) && source === undefined ? { parts, sourced: false } : newImage(parts, at, source)
   if (rest.length === 0 && host === "pic" && pictured(second) && !pictured(first))
     return { parts: writtenFill(parts, at, fillMarkup(first as Drawn, shownBytes(parts, at))), sourced: false }
-  throw new Error("fills-stack")
+  return stackedPaints(parts, at, host, paints, shown, source)
 }
 
 const settingsXml = {
@@ -180,7 +203,11 @@ export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fil
   const source = typeof patch.source === "object" ? patch.source.set : undefined
   const moved = wanted.some((paint, slot) => !same(paint, shown[slot] ?? null))
   const background = hostOf(parts, at) === "bg" && source !== undefined && source !== shownSource(parts, at)
-  const painted = moved || background ? writtenPaints(parts, at, wanted, shown, source) : { parts, sourced: false }
+  const written = moved || background ? writtenPaints(parts, at, wanted, shown, source) : null
+  const painted =
+    written === null
+      ? { parts, sourced: false }
+      : { ...written, parts: written.stacked === true ? written.parts : writtenStack(written.parts, at, null) }
   const { p0: _p0, p1: _p1, p2: _p2, p3: _p3, source: _source, ...rest } = patch
   const imaged = wanted.some(pictured)
   const kept = imaged ? rest : { ...(rest.alpha === undefined ? {} : { alpha: rest.alpha }) }

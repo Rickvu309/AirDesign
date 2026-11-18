@@ -19,7 +19,7 @@ export function cssColor(color: PaintColor): string {
     .padStart(2, "0")}`
 }
 
-function cssGradient(fill: Extract<PaintFill, { type: "gradient" }>): string {
+export function cssGradient(fill: Extract<PaintFill, { type: "gradient" }>): string {
   const stops = fill.stops.map((stop) => `${cssColor(stop.color)} ${stop.position * 100}%`).join(", ")
   return fill.angle === null ? `radial-gradient(${stops})` : `linear-gradient(${fill.angle + quarterTurn}deg, ${stops})`
 }

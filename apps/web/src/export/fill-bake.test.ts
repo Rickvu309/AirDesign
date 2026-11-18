@@ -1,6 +1,8 @@
 import { openRegister } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { bakePixels, bakeTouchedPictures, type BakeBox } from "./picture-bake"
+import type { PaintElement } from "@airdesign/pptx"
+import { bakeFills, bakePlan, type BakeBox } from "./fill-bake"
+import { fillPlan } from "@/fill-plan"
 import type { PictureImage } from "@/picture-fill"
 
 const box: BakeBox = { width: 4_572_000, height: 3_048_000 }
@@ -14,6 +16,31 @@ function image(extra: Partial<PictureImage> = {}): PictureImage {
     tile: false,
     ...extra,
   }
+}
+
+function photo(picture: PictureImage, stack?: PaintElement["stack"]): PaintElement {
+  return {
+    part: "ppt/slides/slide1.xml",
+    shape: "4",
+    from: "slide",
+    kind: "p:pic",
+    box: { x: 0, y: 0, ...box, rotation: 0, flipH: false, flipV: false },
+    group: null,
+    placeholder: null,
+    text: null,
+    fill: null,
+    line: null,
+    geometry: null,
+    image: picture,
+    ...(stack === undefined ? {} : { stack }),
+  }
+}
+
+function bakePixels(picture: PictureImage, size: BakeBox, natural: BakeBox) {
+  const plan = bakePlan(fillPlan(photo(picture)), size, natural)
+  const [layer] = plan.layers
+  if (layer?.kind !== "image") throw new Error("image")
+  return { ...layer, width: plan.width, height: plan.height }
 }
 
 it("sizes a baked picture from the frame, then the source, and caps the long side", () => {
@@ -41,7 +68,18 @@ it("sizes a baked picture from the frame, then the source, and caps the long sid
   expect(capped.height).toBe(4096)
 })
 
-it("leaves a deck alone when nobody set a blur or a colour overlay", async () => {
+it("plans a stack's layers bottom first, from the same plan the canvas paints", () => {
+  const blue = { hex: "1F4E79", alpha: 1 }
+  const gradient = { type: "gradient", stops: [{ position: 0, color: blue }], angle: 90, path: null } as const
+  const plan = bakePlan(fillPlan(photo(image(), [{ type: "solid", color: blue }, { type: "image" }, gradient])), box, {
+    width: 1,
+    height: 1,
+  })
+  expect(plan.layers.map((layer) => layer.kind)).toEqual(["color", "image", "gradient"])
+  expect(plan.layers[0]).toEqual({ kind: "color", color: `#${blue.hex}` })
+})
+
+it("leaves a deck alone when nobody set a blur, a colour overlay or a stack", async () => {
   const parts = new Map([["ppt/slides/slide1.xml", new Uint8Array([1])]])
-  expect(await bakeTouchedPictures(parts, openRegister("", "clean"))).toBe(parts)
+  expect(await bakeFills(parts, openRegister("", "clean"))).toBe(parts)
 })
