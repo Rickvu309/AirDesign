@@ -18,7 +18,7 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
   await openDeck(page, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
-  const theme = page.locator("[data-template-style]")
+  const theme = page.locator("[data-template-style-dialog]")
   const accent = theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true })
   for (const name of [
     templateStyleCopy.dk1,
@@ -49,7 +49,7 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
   await page.getByRole("button", { name: undoCopy.undoNamed["template-color"], exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(before)
   await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
-  const restored = page.locator("[data-template-style]")
+  const restored = page.locator("[data-template-style-dialog]")
   await expect(restored.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
     "title",
     new RegExp(`#${grey}`, "i"),

@@ -23,7 +23,7 @@ test("applies a template to one slide, keeps the other slides and placeholders, 
   const popup = page.locator('[data-slot="popover-content"]')
   await expect(popup.locator("[data-template-style]")).toHaveCount(2)
   await popup.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).nth(1).click()
-  const dialog = page.locator("[data-template-style]")
+  const dialog = page.locator("[data-template-style-dialog]")
   await dialog.getByRole("button", { name: designCopy.templateMore, exact: true }).click()
   await dialog.getByRole("textbox", { name: designCopy.renameTemplate, exact: true }).fill("Dark slides")
   await dialog.getByRole("textbox", { name: designCopy.renameTemplate, exact: true }).press("Enter")

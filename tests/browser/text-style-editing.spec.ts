@@ -46,7 +46,7 @@ test("edits the Title style, keeps explicit sizes, and undoes once @export", asy
   expect(inheriting.length).toBeGreaterThan(0)
 
   await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
-  const dialog = page.locator("[data-template-style]")
+  const dialog = page.locator("[data-template-style-dialog]")
   await dialog.getByRole("button", { name: /^Title [^·]/ }).click()
   const editor = page.locator("[data-text-style]")
   const size = editor.getByRole("textbox", { name: textCopy.size, exact: true })

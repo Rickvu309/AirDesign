@@ -16,7 +16,7 @@ test("template colors stay named and reachable at narrow editor widths", async (
     await resize.press("Home")
     for (let at = 220; at < width; at += 10) await resize.press("ArrowLeft")
     await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
-    const dialog = page.locator("[data-template-style]")
+    const dialog = page.locator("[data-template-style-dialog]")
     for (const slot of ["dk1", "accent1", "accent6"] as const) {
       const swatch = dialog.getByRole("button", { name: templateStyleCopy[slot], exact: true })
       await expect(swatch).toBeVisible()
