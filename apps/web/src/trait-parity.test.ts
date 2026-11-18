@@ -146,7 +146,7 @@ async function inputProblems(
   const key = `${trait}.${input}`
   const example = wire.fields?.[input]?.example
   if (example === undefined) return [{ field: key, missing: "wire" }]
-  const parts = await deckParts(probe.deck)
+  const parts = await deckParts(key === "text.style" ? "doe-heat-pumps.pptx" : probe.deck)
   const at = placed(parts, probe.kind, probe.node)
   const agent = agentRegister(indexed(parts), at, example as object)
   if (agent === null) return [{ field: key, missing: "wire" }]

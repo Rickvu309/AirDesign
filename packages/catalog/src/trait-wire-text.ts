@@ -38,8 +38,8 @@ export const textWire: TraitWire<"text"> = {
     lineSpacing: { description: "Line spacing in percent; 100 is single.", example: { text: { lineSpacing: 150 } } },
     spaceBefore: { description: "Space above each paragraph, in points.", example: { text: { spaceBefore: 12 } } },
     style: {
-      description: "Apply a template textStyles id from read_deck; explicit fields override it.",
-      example: { text: { style: "master/title" } },
+      description: "Apply a textStyles id from read_deck with the slide selected. Explicit fields override it.",
+      example: { text: { style: "ppt/slideMasters/slideMaster1.xml/titleStyle/0" } },
     },
     spaceAfter: { description: "Space below each paragraph, in points.", example: { text: { spaceAfter: 6 } } },
   },

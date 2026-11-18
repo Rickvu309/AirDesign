@@ -166,9 +166,13 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
 function panelControl(register: Register, at: At, trait: TraitName, field: string) {
   const view = registerScope(register).view(at.node)
   const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
-  return sections
-    ?.flatMap((section) => section.strips.flat())
-    .find((each) => each.trait === trait && each.field === field)
+  const controls = sections?.flatMap((section) => section.strips.flat())
+  if (trait === "text" && (field === "fill" || field === "color"))
+    return controls?.find(
+      (each) =>
+        (each.trait === "textFill" && each.field === "value") || (each.trait === "text" && each.field === "fill"),
+    )
+  return controls?.find((each) => each.trait === trait && each.field === field)
 }
 
 export function panelRegister(
@@ -180,7 +184,8 @@ export function panelRegister(
 ): Register | null {
   const scope = registerScope(register)
   const control = panelControl(register, at, trait, field)
-  const planned = control === undefined ? null : planChange(control.change(value), scope)
+  const input = trait === "text" && field === "color" ? { solid: value } : value
+  const planned = control === undefined ? null : planChange(control.change(input), scope)
   if (planned === null || !planned.ok) return null
   const holder = valueHolder(register, at.node, "person")
   const commands = planned.rows.flatMap(({ node, row: planned }): Command[] =>
