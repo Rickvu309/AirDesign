@@ -4,23 +4,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { exportCopy } from "@/export/export-options"
 
-const downloadedPlace = "!transform-none ![left:540.56px] ![top:12px]"
 const failedPlace = "!transform-none ![left:488.11px] ![top:12px]"
-
-function CheckMark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <path
-        d="M3.63 8.31 L6.44 11.13 L12.38 5.19"
-        fill="none"
-        stroke="var(--background)"
-        strokeWidth="1.09"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 function ErrorMark() {
   return (
@@ -46,28 +30,6 @@ function showToast(id: string, node: ReactElement, width: string) {
       transition: "none",
     },
   })
-}
-
-export function DownloadedToast() {
-  useEffect(() => {
-    showToast(
-      "export-downloaded",
-      <StatusPill className="w-[276.89px] gap-2.5 pr-4 pl-3.5 leading-[17px]">
-        <CheckMark />
-        <span className="whitespace-nowrap">{exportCopy.downloaded}</span>
-      </StatusPill>,
-      "276.89px",
-    )
-  }, [])
-  return (
-    <Toaster
-      position="top-center"
-      offset={12}
-      visibleToasts={1}
-      style={{ "--width": "276.89px" } as CSSProperties}
-      className={downloadedPlace}
-    />
-  )
 }
 
 export function FailedToast() {

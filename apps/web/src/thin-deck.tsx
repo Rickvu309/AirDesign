@@ -7,7 +7,7 @@ import { useFontReady } from "@/editor/use-font-ready"
 import { storeNewer, watchNewer } from "@airdesign/live"
 import { useState, useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
-import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
+import { ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { editableSlide } from "@/editor/editable-slide"
@@ -65,9 +65,6 @@ export function ThinDeck({ id }: { id: string }) {
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
-      {exported.downloaded !== null && notice === null && (
-        <DownloadedNotice name={exported.downloaded} onDone={() => exported.setDownloaded(null)} />
-      )}
       <EditorFrame fills>
         <EditorShell
           deck={{

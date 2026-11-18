@@ -45,9 +45,9 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
   await page.keyboard.press("Enter")
   expect((await saving).suggestedFilename()).toBe("Board pack.pptx")
-  await expect(page.getByText("Board pack.pptx downloaded", { exact: true })).toBeVisible()
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
   await capture("downloaded")
-  note("Design is on beside Agent; Export saved Board pack.pptx and said Board pack.pptx downloaded")
+  note("Design is on beside Agent; Export saved Board pack.pptx and showed no notice")
 
   await page.goBack()
   await page.getByRole("link", { name: "All decks" }).click()

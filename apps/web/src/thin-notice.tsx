@@ -3,7 +3,7 @@ import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { cn } from "@/lib/class-names"
-import { downloadedOf, productCopy } from "@/copy/product-copy"
+import { productCopy } from "@/copy/product-copy"
 import { EditorToast, EditorToaster } from "@/editor/agent-panel"
 import { pictureCopy } from "@/copy/picture-copy"
 import { undoCopy } from "@/copy/undo-copy"
@@ -28,7 +28,6 @@ export type ThinNotice =
 
 const noticeId = "thin-notice"
 const noticeWidth = "24rem"
-const downloadedFor = 4000
 
 export function signInAddress(page: { readonly pathname: string; readonly search: string }): string {
   const base = import.meta.env.VITE_SIGN_IN_URL ?? "/sign-in"
@@ -114,18 +113,6 @@ function StatusNotice({
   still?: boolean
 }) {
   return <EditorToast kind={kind} text={text} place="canvas" still={still} host={false} />
-}
-
-export function DownloadedNotice({ name, onDone }: { name: string; onDone: () => void }) {
-  const done = useRef(onDone)
-  useEffect(() => {
-    done.current = onDone
-  })
-  useEffect(() => {
-    const timer = window.setTimeout(() => done.current(), downloadedFor)
-    return () => window.clearTimeout(timer)
-  }, [name])
-  return <StatusNotice kind="success" text={downloadedOf(name)} />
 }
 
 export function ThinNoticeView({

@@ -1,4 +1,3 @@
-import { useState } from "react"
 import type { DeckFailure } from "@/editor/use-deck-status"
 import { exportDeck, type ExportRequest } from "@/export/export-deck"
 import { PicturesUploading, type PictureStore } from "@/picture-tool"
@@ -14,11 +13,9 @@ export type ExportingDeck = {
 
 export function useExport(deck: ExportingDeck) {
   const { id, records, pictureTool, setFailure } = deck
-  const [downloaded, setDownloaded] = useState<string | null>(null)
-
   async function onExport(request?: ExportRequest) {
     try {
-      setDownloaded(await exportDeck(id, records.current.landed(), pictureTool.store, request))
+      await exportDeck(id, records.current.landed(), pictureTool.store, request)
       setFailure(null)
     } catch (error) {
       setFailure(error instanceof PicturesUploading ? "picture-uploading" : "export-failed")
@@ -31,5 +28,5 @@ export function useExport(deck: ExportingDeck) {
     if (notice === "export-failed" || notice === "picture-uploading" || notice === "too-large") void onExport()
   }
 
-  return { downloaded, setDownloaded, onExport, tryAgain }
+  return { onExport, tryAgain }
 }

@@ -1,4 +1,3 @@
-import { downloadedOf } from "@/copy/product-copy"
 import type { SlideChoice } from "@/export/export-choice"
 
 export type ExportFormat = "powerpoint" | "pdf"
@@ -21,7 +20,6 @@ export const exportCopy = {
   action: "Export",
   exporting: "Exporting…",
   cancel: "Cancel",
-  downloaded: downloadedOf("Q3 Investor Update.pptx"),
   failed: "Unable to export. Your deck is unchanged.",
   tryAgain: "Try again",
 } as const
