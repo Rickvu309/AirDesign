@@ -5,7 +5,6 @@ import {
   readElementId,
   readTableValue,
   shapeOf,
-  siteKinds,
   takes,
   traits,
   type Paint,
@@ -49,7 +48,6 @@ import { ColorField, fieldLook } from "@/design/controls/color"
 import {
   panelOf,
   panelOfMany,
-  type NodeChoice,
   type PanelModel,
   type PanelReads,
   type PanelControl,
@@ -57,14 +55,14 @@ import {
 } from "@/design/panel"
 import { panelPlaces, type PanelMode } from "@/design/panel-order"
 import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
-import { plainNames } from "@/design/node-names"
 import { rebasedChange } from "@/design/rebase"
-import { siteNames } from "@/design/site-names"
 import { fillSlotFields } from "@/design/fill-slots"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
 import { SlideSurface } from "@/editor/slide-design-tabs"
 import { colorsIn } from "./deck-colors"
+import { nodeChoices } from "./node-choices"
+import { placeholderRole } from "./placeholder-role"
 import { ElementTitleActions } from "./element-title-actions"
 import { PicturePreview } from "@/editor/picture-preview"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -176,48 +174,6 @@ export function templateColorsAt(parts: Parts, index: number): readonly Swatch[]
   return part === undefined ? [] : templateColorsOf(parts, part)
 }
 
-function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly NodeChoice[] {
-  const { shown } = deck
-  const scope = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", ""))
-  const nodes = shown.store.current.slides()[shown.current]?.elements ?? []
-  const found = nodes.flatMap((node) => {
-    const view = node === connector.node ? undefined : scope.view(node)
-    if (
-      view === undefined ||
-      !siteKinds.includes(view.facts.kind) ||
-      view.outline === undefined ||
-      view.outline === null
-    )
-      return []
-    if ((view.parent ?? null) !== (connector.parent ?? null)) return []
-    const name = fieldsOf(shown.displayParts.current, node)?.["identity.name"]?.value
-    const frame = view.box ?? { cx: 0, cy: 0 }
-    return [
-      {
-        node,
-        name: typeof name === "string" ? name : "",
-        kind: view.facts.kind,
-        sites: siteNames(view.outline, frame),
-      },
-    ]
-  })
-  const names = plainNames(found)
-  return found.map(({ node, sites }, at) => ({ node, name: names[at] ?? node, sites }))
-}
-
-function placeholderRole(parts: Parameters<typeof paintReader>[0], node: ElementId): string | undefined {
-  try {
-    const at = shapeOf(node)
-    const part = readSlides(parts).find((slide) => slide.slide === at.slide)?.part
-    if (part === undefined) return undefined
-    return paintReader(parts)
-      .slide(part)
-      .elements.find((element) => element.shape === at.shape)?.placeholder?.type
-  } catch {
-    return undefined
-  }
-}
-
 function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement; model: PanelModel } | null {
   const { shown } = deck
   const store = shown.store.current
@@ -237,7 +193,15 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
     slides: readSlides(shown.displayParts.current).map((each) => each.slide),
     fields: fieldsOf(shown.displayParts.current, node),
     ...(role === undefined ? {} : { role }),
-    ...(view.facts.kind === "connector" ? { nodes: nodeChoices(deck, view) } : {}),
+    ...(view.facts.kind === "connector"
+      ? {
+          nodes: nodeChoices(
+            deck,
+            view,
+            (choice) => fieldsOf(shown.displayParts.current, choice)?.["identity.name"]?.value,
+          ),
+        }
+      : {}),
   })
   return { view, model }
 }
