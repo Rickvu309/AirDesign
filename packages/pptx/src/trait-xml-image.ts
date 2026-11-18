@@ -98,8 +98,16 @@ export const imageFieldsXml = {
     },
     write: writtenBlur,
   }),
-  overlay: whole({ read: (parts, at) => shownImage(parts, at)?.overlay ?? null, write: writtenOverlay }),
-} satisfies { readonly [F in "source" | "mode" | "recolor" | "blur" | "overlay"]: FieldXml<FieldValue<"fills", F>> }
+} satisfies { readonly [F in "source" | "mode" | "recolor" | "blur"]: FieldXml<FieldValue<"fills", F>> }
+
+export function blipOverlay(parts: Parts, at: ElementAt): Overlay | null {
+  const overlay = shownImage(parts, at)?.overlay ?? null
+  return overlay === null || "none" in overlay ? null : overlay
+}
+
+export function withoutOverlay(parts: Parts, at: ElementAt): Parts {
+  return blipOverlay(parts, at) === null ? parts : writtenOverlay(parts, at, { none: true })
+}
 
 export function imageAlpha(parts: Parts, at: ElementAt): Alpha | null {
   return (shownImage(parts, at)?.alpha ?? null) as Alpha | null

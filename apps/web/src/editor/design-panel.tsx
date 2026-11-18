@@ -210,6 +210,19 @@ function stripColumns(strip: readonly PanelControl[]): string {
   return `repeat(${strip.length}, minmax(0, 1fr))`
 }
 
+function imageRow(section: PanelSection): number {
+  const at = section.strips.findIndex((strip) =>
+    strip.some(
+      (control) =>
+        control.field === "paint" &&
+        typeof control.value === "object" &&
+        control.value !== null &&
+        "image" in control.value,
+    ),
+  )
+  return Math.max(at, 0)
+}
+
 export function SectionStrips({
   strips,
   palette,
@@ -292,7 +305,7 @@ export function ElementDesign({
           const placed = sectionInMode(modelSection, mode)
           return [placed.trait === "effects" ? visibleEffects(placed) : placed]
         })
-  const fillDetails = mode === "design" && fill !== undefined
+  const fillDetails = mode === "design" && fill !== undefined && kind !== "picture"
   const last = sections.length - 1
   return (
     <LinkFormatting.Provider value={formatting}>
@@ -393,9 +406,17 @@ export function ElementDesign({
               {(section.trait === "fills" || section.trait === "boxFill") &&
               section.strips.some((row) => row.some((control) => control.trait === "image")) ? (
                 <>
-                  <SectionStrips strips={section.strips.slice(0, 1)} palette={palette} onChange={onChange} />
+                  <SectionStrips
+                    strips={section.strips.slice(0, imageRow(section) + 1)}
+                    palette={palette}
+                    onChange={onChange}
+                  />
                   {picture}
-                  <SectionStrips strips={section.strips.slice(1)} palette={palette} onChange={onChange} />
+                  <SectionStrips
+                    strips={section.strips.slice(imageRow(section) + 1)}
+                    palette={palette}
+                    onChange={onChange}
+                  />
                 </>
               ) : (
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />

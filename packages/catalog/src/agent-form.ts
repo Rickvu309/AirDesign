@@ -124,6 +124,7 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
 type Fill = FieldValue<"fills", "p0">
 
 function agentFillValue(fill: Fill | FieldValue<"border", "fill">): string {
+  if ("hidden" in fill) return `hidden ${agentFillValue(fill.hidden)}`
   if ("none" in fill) return "none"
   if ("group" in fill) return "group"
   if ("image" in fill) return "image"

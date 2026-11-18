@@ -26,7 +26,7 @@ import { floorNodes, openingElement } from "./slide-floor.js"
 import { presentSlides, slideGone } from "./slide-order.js"
 import { restyled } from "./text-restyle.js"
 import { readTextValue } from "./text-value.js"
-import { changeFills, type Paint } from "./trait-fills.js"
+import { inputFills } from "./trait-fills.js"
 import {
   inheritable,
   keptRefuses,
@@ -113,6 +113,7 @@ function inputOf(trait: TraitName, key: string): boolean {
 export function writtenField(trait: TraitName, key: string): FieldKey {
   if (!inputOf(trait, key)) return `${trait}.${key}` as FieldKey
   if (trait === "box") return "box.x"
+  if (trait === "fills" && key === "overlay") return "fills.p3"
   const [slot] = traits[trait].slots as readonly string[]
   return `${trait}.${slot ?? "value"}` as FieldKey
 }
@@ -156,8 +157,7 @@ function traitPatch(
   const edits: Record<string, FieldEdit<unknown>> = {}
   for (const [key, value] of Object.entries(fields))
     if (!inputOf(trait, key)) edits[key] = value === null ? "inherit" : { set: value }
-  if (trait === "fills" && Object.hasOwn(input, "paint"))
-    return { ...edits, ...changeFills({ paint: input.paint as Paint | null }) }
+  if (trait === "fills") return { ...edits, ...inputFills(input) }
   if (trait !== "text" || !Object.keys(input).some((key) => inputOf(trait, key))) return edits
   const base = typeof input.value === "string" ? input.value : (view.value ?? "")
   return { ...edits, value: { set: restyled(base, input) } }

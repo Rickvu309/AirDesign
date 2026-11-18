@@ -4,12 +4,12 @@ import { embedded } from "./blip-edit.js"
 import { fillMarkup, imageMarkup, type Drawn, type FillTag } from "./fill-markup.js"
 import { shownStack, writtenStack } from "./fill-stack.js"
 import { changedPart, hostOf, ownFill, pictureAsShape, writtenFill, type FillHost } from "./fill-host.js"
-import { inheritedFill, ownBackground, shownFill, type Fill } from "./fill-read.js"
+import { inheritedFill, ownBackground, shownFill, type Fill, type SlotFill } from "./fill-read.js"
 import { decodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { iconOf } from "./picture-read.js"
 import { cropFieldXml } from "./trait-xml-crop.js"
-import { imageAlpha, imageFieldsXml, writtenImageAlpha } from "./trait-xml-image.js"
+import { blipOverlay, imageAlpha, imageFieldsXml, withoutOverlay, writtenImageAlpha } from "./trait-xml-image.js"
 import { markupChildren } from "./text-value-route.js"
 import { whole, writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
@@ -17,7 +17,9 @@ const none: Fill = { none: true }
 const image: Fill = { image: true }
 const fadedKinds: readonly string[] = ["a:solidFill", "a:gradFill", "a:pattFill"]
 
-type Wanted = Fill | "inherit" | null
+type Wanted = SlotFill | "inherit" | null
+
+type Shown = Fill | "inherit" | null
 
 function pictured(paint: Wanted): boolean {
   return typeof paint === "object" && paint !== null && "image" in paint
@@ -28,14 +30,30 @@ function shownBehind(parts: Parts, at: ElementAt): Fill | null {
   return behind === null || "none" in behind ? null : behind
 }
 
-export function shownSlots(parts: Parts, at: ElementAt): readonly (Fill | null)[] {
-  const stack = shownStack(parts, at)
-  if (stack !== null) return [stack[0] ?? none, stack[1] ?? none, stack[2] ?? none, stack[3] ?? none]
+function nativeSlots(parts: Parts, at: ElementAt): readonly (Fill | null)[] {
   const host = hostOf(parts, at)
   if (host === "bg") return [ownBackground(parts, at.part), none, none, none]
-  if (host === "sp") return [shownFill(parts, at)?.value ?? null, none, none, none]
+  const overlay = blipOverlay(parts, at) ?? none
+  if (host === "sp") {
+    const fill = shownFill(parts, at)?.value ?? null
+    return [fill, none, none, fill !== null && pictured(fill) ? overlay : none]
+  }
   const behind = shownBehind(parts, at)
-  return behind === null ? [image, none, none, none] : [behind, image, none, none]
+  return behind === null ? [image, none, none, overlay] : [behind, image, none, overlay]
+}
+
+export function shownSlots(parts: Parts, at: ElementAt): readonly (SlotFill | null)[] {
+  const stack = shownStack(parts, at)
+  if (stack === null) return nativeSlots(parts, at)
+  return [stack[0] ?? none, stack[1] ?? none, stack[2] ?? none, stack[3] ?? none]
+}
+
+function hiddenPaint(paint: Wanted): boolean {
+  return typeof paint === "object" && paint !== null && "hidden" in paint
+}
+
+function entriesOf(wanted: readonly Wanted[]): readonly SlotFill[] {
+  return wanted.map((paint) => (paint === null || paint === "inherit" ? none : paint))
 }
 
 function backgroundIcon(parts: Parts, part: string): string | null {
@@ -131,20 +149,20 @@ function stackedPaints(
 ): Painted {
   if (host === "bg") throw new Error("fills-stack")
   const imaged = paints.some(pictured)
-  if (host === "pic" && imaged) return { parts: writtenStack(parts, at, paints), sourced: false, stacked: true }
+  if (host === "pic" && imaged) return { parts, sourced: false, stacked: true }
   const next = onShape(parts, at, host)
   const [bottom] = paints
   const painted =
     imaged && !shown.some(pictured)
       ? newImage(next, at, source)
       : { parts: imaged || bottom === undefined ? next : colourCodec.write(next, at, bottom), sourced: false }
-  return { parts: writtenStack(painted.parts, at, paints), sourced: painted.sourced, stacked: true }
+  return { ...painted, stacked: true }
 }
 
 function writtenPaints(
   parts: Parts,
   at: ElementAt,
-  wanted: readonly Wanted[],
+  wanted: readonly Shown[],
   shown: readonly (Fill | null)[],
   source: string | undefined,
 ): Painted {
@@ -185,7 +203,6 @@ const settingsXml = {
     }),
     recolor: imageFieldsXml.recolor,
     blur: imageFieldsXml.blur,
-    overlay: imageFieldsXml.overlay,
   },
 }
 
@@ -203,11 +220,23 @@ export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fil
   const source = typeof patch.source === "object" ? patch.source.set : undefined
   const moved = wanted.some((paint, slot) => !same(paint, shown[slot] ?? null))
   const background = hostOf(parts, at) === "bg" && source !== undefined && source !== shownSource(parts, at)
-  const written = moved || background ? writtenPaints(parts, at, wanted, shown, source) : null
+  const base = moved ? withoutOverlay(parts, at) : parts
+  const native = nativeSlots(base, at)
+  const visible = wanted.map((paint): Shown =>
+    paint === null || paint === "inherit" || !("hidden" in paint) ? paint : none,
+  )
+  const repainted = visible.some((paint, slot) => !same(paint, native[slot] ?? null))
+  const written =
+    repainted || background
+      ? writtenPaints(base, at, visible, native, source)
+      : moved
+        ? { parts: base, sourced: false }
+        : null
+  const listed = written?.stacked === true || wanted.some(hiddenPaint) ? entriesOf(wanted) : null
   const painted =
     written === null
       ? { parts, sourced: false }
-      : { ...written, parts: written.stacked === true ? written.parts : writtenStack(written.parts, at, null) }
+      : { ...written, parts: writtenStack(written.parts, at, listed, written.stacked === true) }
   const { p0: _p0, p1: _p1, p2: _p2, p3: _p3, source: _source, ...rest } = patch
   const imaged = wanted.some(pictured)
   const kept = imaged ? rest : { ...(rest.alpha === undefined ? {} : { alpha: rest.alpha }) }
@@ -216,7 +245,7 @@ export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fil
 }
 
 function slotXml(slot: (typeof paintSlots)[number]) {
-  return whole<Fill>(
+  return whole<SlotFill>(
     {
       read: (parts, at) => shownSlots(parts, at)[paintSlots.indexOf(slot)] ?? null,
       write: (parts, at, value) => writtenFills(parts, at, { [slot]: { set: value } }),
@@ -240,7 +269,6 @@ export const fillsXml: TraitXml<"fills"> = {
     crop: settingsXml.fields.crop,
     recolor: settingsXml.fields.recolor,
     blur: settingsXml.fields.blur,
-    overlay: settingsXml.fields.overlay,
     alpha: settingsXml.fields.alpha,
   },
 }

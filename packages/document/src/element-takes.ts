@@ -22,7 +22,6 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
     "fills.crop",
     "fills.recolor",
     "fills.blur",
-    "fills.overlay",
     "fills.alpha",
     ...fieldKeys("templateStyle").filter((field) => field !== chosenStyle),
   ],

@@ -57,7 +57,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
           {control.label}
         </span>
       )}
-      {control.look.form === "list" ? (
+      {names.length <= 1 ? null : control.look.form === "list" ? (
         <UnionList
           label={label}
           names={names}

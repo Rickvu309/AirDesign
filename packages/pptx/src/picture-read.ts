@@ -1,4 +1,4 @@
-import type { CropRead, FieldValue, RecolorRead } from "@airdesign/document"
+import type { Color, CropRead, FieldValue, RecolorRead } from "@airdesign/document"
 import { blurPercent } from "./picture-adjust.js"
 import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./blip-edit.js"
 import { colorsIn } from "./color-read.js"
@@ -11,7 +11,7 @@ import type { MarkupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
 export type Recolor = FieldValue<"fills", "recolor">
-export type Overlay = FieldValue<"fills", "overlay">
+export type Overlay = { readonly none: true } | { readonly solid: Color }
 export type CropRect = FieldValue<"fills", "crop">
 
 export type ShownImage = {

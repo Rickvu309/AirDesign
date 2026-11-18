@@ -1,5 +1,5 @@
 import { format, type Kind } from "@airdesign/document"
-import { shownPictureMode, shownCrop, shownIdentity, shownImage } from "@airdesign/pptx"
+import { shownPictureMode, shownCrop, shownIdentity, shownImage, shownSlots } from "@airdesign/pptx"
 import type { At, Parts, Probe } from "./parity-probe"
 
 const on = { deck: "doe-heat-pumps.pptx", kind: "shape" as Kind, node: "2883.13" }
@@ -27,5 +27,5 @@ export const imageProbes = {
   crop: imageProbe((parts, at) => shownCrop(parts, at)),
   recolor: imageProbe((parts, at) => shownImage(parts, at)?.recolor),
   blur: imageProbe((parts, at) => shownImage(parts, at)?.blur),
-  overlay: imageProbe((parts, at) => shownImage(parts, at)?.overlay),
+  overlay: imageProbe((parts, at) => shownSlots(parts, at)[3]),
 }

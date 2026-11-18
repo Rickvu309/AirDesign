@@ -5,6 +5,7 @@ import {
   installedPicture,
   paintReader,
   readSlides,
+  strippedStacks,
   type PaintBox,
   type PaintElement,
 } from "@airdesign/pptx"
@@ -296,8 +297,7 @@ async function raster(row: PaintElement, box: PaintBox, parts: ReadonlyMap<strin
 
 function touched(patch: ElementPatch): boolean {
   const blur = patch.fills?.blur
-  const overlay = patch.fills?.overlay
-  return (typeof blur === "object" && blur.set > 0) || (typeof overlay === "object" && "solid" in overlay.set)
+  return typeof blur === "object" && blur.set > 0
 }
 
 function touchedShapes(register: Register): ReadonlySet<string> {
@@ -335,5 +335,5 @@ export async function bakeFills(
       next = stacked ? bakedFill(next, at, png, await sha256(png)) : installedPicture(next, at, png)
     }
   }
-  return next
+  return strippedStacks(next)
 }

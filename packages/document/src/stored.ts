@@ -12,6 +12,7 @@ import {
 } from "./element-id.js"
 import { format, formatOf, newerFormat, converted, type Conversion, type StoredRead } from "./format.js"
 import { borderFormat, borderRegister, borderRow } from "./border-conversion.js"
+import { overlayFormat, overlayRegister, overlayRow } from "./overlay-conversion.js"
 import { fillsFormat, fillsRegister, fillsRow, imageFormat, imageRow } from "./fills-conversion.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { templateStyleFormat, templateStyleRegister, templateStyleRow } from "./template-style-conversion.js"
@@ -108,6 +109,7 @@ export const conversions: {
     { introduced: imageFormat, convert: imageRow },
     { introduced: borderFormat, convert: borderRow },
     { introduced: templateStyleFormat, convert: templateStyleRow },
+    { introduced: overlayFormat, convert: overlayRow },
   ],
   edit: [{ introduced: fillRowFormat, convert: slideBackground }],
   register: [
@@ -116,6 +118,7 @@ export const conversions: {
     { introduced: fillsFormat, convert: fillsRegister },
     { introduced: borderFormat, convert: borderRegister },
     { introduced: templateStyleFormat, convert: templateStyleRegister },
+    { introduced: overlayFormat, convert: overlayRegister },
   ],
   page: pageConversions,
 }

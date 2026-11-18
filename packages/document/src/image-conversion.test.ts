@@ -8,6 +8,7 @@ import { readSlideState } from "./slide-order.js"
 import { readRegister, readRow } from "./stored.js"
 
 const imageFormat = 63
+const overlayFormat = 71
 const borderFormat = 64
 
 function readDeck(): Register {
@@ -30,11 +31,11 @@ describe("a deck the first fills build saved, with a photo, an icon and an icon 
       { v: imageFormat, patch: { fills: { crop: { set: { l: 10_000, t: 0, r: 10_000, b: 0 } } } } },
       { v: imageFormat, patch: { fills: { recolor: { set: { grayscale: true } } } } },
       {
-        v: imageFormat,
+        v: overlayFormat,
         patch: {
           fills: {
             blur: { set: 20_000 },
-            overlay: { set: { solid: { rgb: "000000", transforms: [{ op: "alpha", val: 50_000 }] } } },
+            p3: { set: { solid: { rgb: "000000", transforms: [{ op: "alpha", val: 50_000 }] } } },
           },
         },
       },

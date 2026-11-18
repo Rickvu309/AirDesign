@@ -8,6 +8,8 @@ export const fillCopy = {
   text: "Text fill",
   value: "Fill",
   reset: "Reset fill",
+  add: "Add",
+  paint: (at: number, count: number) => (count === 1 ? "Fill" : `Fill ${String(count - at)} of ${String(count)}`),
 } as const
 
 const presets: Readonly<Record<Preset, string>> = {
@@ -68,6 +70,10 @@ const presets: Readonly<Record<Preset, string>> = {
 }
 
 export const fillWords: Readonly<Record<string, string>> = {
+  hide: "Hide",
+  show: "Show",
+  up: "Move up",
+  down: "Move down",
   none: "None",
   solid: "Solid",
   "paint.solid": "Color",

@@ -57,7 +57,12 @@ function phaseOf(spec: Spec): Phase {
   throw new Error(`bad phase ${phase}`)
 }
 
-function agentPatch(field: string): ElementPatch {
+export type OtherField = "recolor" | "overlay"
+
+const shade = { solid: { rgb: "000000", transforms: [{ op: "alpha" as const, val: 50_000 }] } }
+
+function agentPatch(field: string, other: OtherField): ElementPatch {
+  if (field === "box" && other === "overlay") return { fills: { p3: { set: shade } } }
   if (field === "box") return { fills: { recolor: { set: { grayscale: true } } } }
   return { fills: { crop: { set: crops.aira } } }
 }
@@ -72,20 +77,20 @@ function personRows(people: number, agent: Landed | null, agentAt: number): Land
   return landed
 }
 
-function agentRowOf(spec: Spec): Landed | null {
+function agentRowOf(spec: Spec, other: OtherField): Landed | null {
   const agentRow = word(spec, "agentRow")
   if (agentRow === "none") return null
-  const patch = agentPatch(word(spec, "agentField"))
+  const patch = agentPatch(word(spec, "agentField"), other)
   return { actor: "agent", v: format, patch, visible: agentRow === "shown", runId: run }
 }
 
-function registerOf(spec: Spec): Register {
+function registerOf(spec: Spec, other: OtherField): Register {
   const opened = openRegister("", "slide")
   const body = opened.elements[rootElement]
   if (body === undefined) throw new Error("missing node")
   const phase = phaseOf(spec)
   const readAt = num(spec, "readAt")
-  const agent = agentRowOf(spec)
+  const agent = agentRowOf(spec, other)
   const a: NodeRegister = {
     ...body,
     landed: personRows(num(spec, "rowsA"), agent, num(spec, "agentAt")),
@@ -113,9 +118,12 @@ function cropShown(body: NodeRegister): string {
   return JSON.stringify(crop.set) === JSON.stringify(crops.aira) ? "aira" : "other"
 }
 
-function recolorShown(body: NodeRegister): string {
-  const recolor = landedPatch(body, "text").fills?.recolor
-  return typeof recolor === "object" && "grayscale" in recolor.set ? "aira" : "file"
+function otherShown(body: NodeRegister): string {
+  const fills = landedPatch(body, "text").fills
+  const recolor = fills?.recolor
+  const overlay = fills?.p3
+  if (typeof recolor === "object" && "grayscale" in recolor.set) return "aira"
+  return typeof overlay === "object" && "solid" in overlay.set ? "aira" : "file"
 }
 
 function picture(register: Register) {
@@ -123,15 +131,16 @@ function picture(register: Register) {
   const b = bodyOf(register, nodeB)
   const agentAt = a.landed.findIndex((row) => row.actor === "agent")
   const agent = a.landed[agentAt]
-  const recolors = agent !== undefined && "patch" in agent && agent.patch.fills?.recolor !== undefined
+  const others =
+    agent !== undefined && "patch" in agent && (agent.patch.fills?.recolor ?? agent.patch.fills?.p3) !== undefined
   return {
     shownA: cropShown(a),
     shownB: cropShown(b),
-    boxA: recolorShown(a),
+    boxA: otherShown(a),
     rowsA: a.landed.filter((row) => row.actor === "person").length,
     rowsB: b.landed.filter((row) => row.actor === "person").length,
     agentRow: agent === undefined ? "none" : agent.visible ? "shown" : "hidden",
-    agentField: agent === undefined ? "none" : recolors ? "box" : "text",
+    agentField: agent === undefined ? "none" : others ? "box" : "text",
     agentAt,
     phase: a.phase,
     guarded: a.guarded,
@@ -169,13 +178,18 @@ function aloneAgrees(action: string, register: Register, commands: readonly Comm
   return single.ok === (commands !== "told")
 }
 
-function commandsOf(action: string, source: Spec, register: Register): readonly Command[] | "told" | null {
+function commandsOf(
+  action: string,
+  source: Spec,
+  register: Register,
+  other: OtherField,
+): readonly Command[] | "told" | null {
   const readAt = num(source, "readAt")
   if (action === "PersonEdit")
     return [nodeA, nodeB].map((node) => ({ command: "person", v: format, patch: cropped, node }) as const)
   if (action === "AgentStart") return [{ command: "start", runId: run, node: nodeA }]
   if (action === "AgentWrite" || action === "AgentMove") {
-    const patch = agentPatch(action === "AgentMove" ? "box" : "text")
+    const patch = agentPatch(action === "AgentMove" ? "box" : "text", other)
     return [{ command: "agent", runId: run, readAt, v: format, patch, node: nodeA }]
   }
   if (action === "AgentStop") return [{ command: "stop", runId: run, node: nodeA }]
@@ -198,6 +212,7 @@ export function replayPhotoUndo(
   graph: Graph,
   where: (source: Spec, target: Spec, action: string) => string,
   failures: string[],
+  other: OtherField = "recolor",
 ) {
   let replayed = 0
   let told = 0
@@ -205,9 +220,9 @@ export function replayPhotoUndo(
     const source = graph.states.get(edge.from)
     const target = graph.states.get(edge.to)
     if (!source || !target) throw new Error(`missing person-undo state for ${edge.action}`)
-    const said = `person-undo on photos ${where(source, target, edge.action)}`
-    const register = registerOf(source)
-    const commands = commandsOf(edge.action, source, register)
+    const said = `person-undo on photos, Aira's other field ${other}, ${where(source, target, edge.action)}`
+    const register = registerOf(source, other)
+    const commands = commandsOf(edge.action, source, register, other)
     if (commands === null) {
       failures.push(`${said} is not connected`)
       continue

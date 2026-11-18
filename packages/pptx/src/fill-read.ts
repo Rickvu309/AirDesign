@@ -9,7 +9,9 @@ import type { Sheet } from "./paint-sheet.js"
 import { requireMarkup } from "./part-markup.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf, type Chain } from "./trait-read.js"
 
-export type Fill = FieldValue<"fills", "p0">
+export type SlotFill = FieldValue<"fills", "p0">
+
+export type Fill = Exclude<SlotFill, { readonly hidden: unknown }>
 
 export type ShownFill = { readonly value: Fill | null; readonly own: boolean }
 

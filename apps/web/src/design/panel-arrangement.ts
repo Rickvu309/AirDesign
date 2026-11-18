@@ -49,7 +49,7 @@ export type NameLook =
 export type ControlLook = {
   readonly name: NameLook
   readonly options: Readonly<Record<string, LucideIcon | undefined>>
-  readonly form: "segments" | "list"
+  readonly form: "segments" | "list" | "header"
   readonly glyph?: LucideIcon
   readonly steps?: readonly number[]
   readonly slider?: boolean
@@ -132,7 +132,11 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       }),
     ],
   ],
-  fills: [[placed("paint", hidden, { options: fills })], [placed("paint.solid", hidden)]],
+  fills: [
+    [placed("paint", hidden, { options: fills })],
+    [placed("paint.solid", hidden)],
+    [placed("add", hidden, { kind: "action" })],
+  ],
   alignment: [[placed("align", hidden), placed("distribute", hidden)]],
   pictureFill: [],
   textFill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],

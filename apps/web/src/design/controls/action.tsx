@@ -52,6 +52,35 @@ export function ActionControl({ control, onChange }: ControlProps) {
         </DropdownMenuContent>
       </DropdownMenu>
     )
+  if (control.look.form === "header")
+    return (
+      <div className="flex min-h-6 items-center justify-between gap-2" data-control="action">
+        <span className={control.look.name.show === "hidden" ? "sr-only" : controlLabel}>{control.label}</span>
+        <div className="ml-auto flex items-center gap-0.5">
+          {options.map((option) => {
+            const Icon = control.look.options[option]
+            const name = `${control.label} ${optionWord(control.field, option).toLowerCase()}`
+            return (
+              <Button
+                key={option}
+                type="button"
+                variant="ghost"
+                aria-label={name}
+                title={name}
+                onClick={() => onChange(option)}
+                className="h-6 w-6 shrink-0 p-0 text-[var(--panel-icon)] hover:text-foreground active:translate-y-0"
+              >
+                {Icon === undefined ? (
+                  optionWord(control.field, option)
+                ) : (
+                  <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
+                )}
+              </Button>
+            )
+          })}
+        </div>
+      </div>
+    )
   return (
     <div className="flex flex-col gap-1" data-control="action">
       <span id={label} className={control.look.name.show === "hidden" ? "sr-only" : controlLabel}>
