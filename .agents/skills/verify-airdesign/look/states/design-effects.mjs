@@ -1,8 +1,11 @@
-import { effectsCopy } from "../../../../../apps/web/src/copy/effects-copy.ts"
+import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
 import { unfold } from "../unfold.mjs"
+
+const require = createRequire(import.meta.url)
+const { effectsCopy } = require("../../../../../apps/web/src/copy/effects-copy.ts")
 
 async function drive(kit) {
   await kit.signIn()
