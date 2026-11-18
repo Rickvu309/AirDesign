@@ -1,3 +1,4 @@
+import { portableFace } from "./portable-face.js"
 import catalog from "./catalog.json" with { type: "json" }
 import twins from "./twins.json" with { type: "json" }
 
@@ -22,6 +23,9 @@ export const fontCatalog: readonly FontFamily[] = [
 ]
 
 export function resolveFont(name: string): FontFamily | undefined {
-  const family = twins.find((font) => font.family.toLowerCase() === name.toLowerCase())?.prefer ?? name
+  const family =
+    twins.find((font) => font.family.toLowerCase() === name.toLowerCase())?.prefer ?? portableFace(name)?.family ?? name
   return fontCatalog.find((font) => font.family.toLowerCase() === family.toLowerCase())
 }
+
+export const fontNames = fontCatalog.map((font) => font.family)

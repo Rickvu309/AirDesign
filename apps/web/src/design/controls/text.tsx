@@ -1,3 +1,6 @@
+import { textCopy } from "@/copy/text-copy"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { fontNames } from "@airdesign/fonts"
 import {
   bytesOf,
   cellText,
@@ -9,7 +12,6 @@ import {
 } from "@airdesign/document"
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
-import { ChevronDown } from "lucide-react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
@@ -59,6 +61,7 @@ function useTextProblem(words: string, max: number, message = designCopy.tooLong
 }
 
 function WordsField({ control, onChange, max }: ControlProps & { readonly max: number }) {
+  const font = control.trait === "text" && control.field === "font"
   const shown = typeof control.value === "string" ? control.value : ""
   const [draft, setDraft] = useState<string | null>(null)
   const { problemId, problem, correction } = useTextProblem((draft ?? shown).trim(), max)
@@ -88,6 +91,7 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
           {control.label}
         </span>
         <input
+          placeholder={control.mixed ? designCopy.mixed : undefined}
           className={cn(
             "min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none",
             control.look.name.show === "hidden" ? "text-left" : "text-right",
@@ -111,8 +115,22 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
             if (event.key === "Escape") setDraft(null)
           }}
         />
-        {control.trait === "text" && control.field === "font" ? (
-          <ChevronDown size={12} className="shrink-0 text-quiet" aria-hidden />
+        {font ? (
+          <Select
+            value={shown}
+            onValueChange={(value) => {
+              if (value !== null) commit(value)
+            }}
+          >
+            <SelectTrigger aria-label={textCopy.fonts} className="h-6 w-5 border-0 p-0 data-[size=default]:h-6" />
+            <SelectContent className="max-h-80">
+              {[...new Set([shown, ...fontNames])].filter(Boolean).map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : null}
       </label>
       {correction}

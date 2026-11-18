@@ -5,6 +5,7 @@ import type { TraitControls } from "./trait-controls"
 export const textControls: TraitControls<"text"> = {
   section: textCopy.section,
   fields: {
+    style: { label: textCopy.style },
     value: { label: textCopy.value },
     color: { label: formatCopy.color },
     size: { label: formatCopy.sizeGroup },

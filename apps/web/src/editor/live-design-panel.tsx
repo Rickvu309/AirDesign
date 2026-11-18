@@ -89,6 +89,12 @@ export function readsOf(parts: Parts, node: ElementId): TraitReads {
   return deckTraits.get(parts)?.elements.get(node)?.reads ?? {}
 }
 
+function fontsOf(parts: Parts, node: ElementId) {
+  readsOf(parts, node)
+  const traits = deckTraits.get(parts)
+  return traits?.palettes[traits.slides.get(shapeOf(node).slide) ?? 0]?.fonts ?? {}
+}
+
 const shownFields = new WeakMap<Parts, Map<ElementId, PanelReads["fields"]>>()
 
 export function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
@@ -220,6 +226,7 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
   const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
   const model = panelOf(view, {
+    fonts: fontsOf(shown.displayParts.current, node),
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
     slides: readSlides(shown.displayParts.current).map((each) => each.slide),

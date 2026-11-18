@@ -223,3 +223,23 @@ for (const text of [{ strike: true }, { letterSpacing: -0.64 }, { list: "numbers
     ])
   })
 }
+
+it("lets agents apply the indexed template typography using the same text path and undo it", () => {
+  const fields = { size: 4400, font: "+mj-lt", bold: true, align: "center" as const, lineSpacing: 120000 }
+  const original = indexed({
+    slides: [
+      { id: "258", position: 0, textStyles: [{ id: "master/title", name: "Title", fields }] },
+      { id: "259", position: 1 },
+    ],
+  })
+  const deck = landed(edit(started(original, "258.2"), { op: "set", target: "258.2", text: { style: "master/title" } }))
+  const body = nodeBody(deck.register, elementId("258.2"))
+  expect(body.landed).toHaveLength(1)
+  expect(readTextValue(currentValue(body))?.[0]).toMatchObject({
+    align: "center",
+    lineSpacing: 120000,
+    runs: [{ text: "Quarterly", size: 4400, font: "+mj-lt", bold: true }],
+  })
+  const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
+  expect(currentValue(nodeBody(undone.register, elementId("258.2")))).toBe(titled)
+})

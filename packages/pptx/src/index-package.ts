@@ -1,3 +1,4 @@
+import { slideTextStyles } from "./slide-text-styles.js"
 import {
   bytesOf,
   elementId,
@@ -48,12 +49,18 @@ export function indexPackage(
   parts: ReadonlyMap<string, Uint8Array>,
 ): Pick<DeckIndex, "slides" | "elements" | "templates"> {
   const size = slideSize(parts)
+  const styleSources = new Map<string, string>()
   const slides = readSlides(parts).map(({ slide, part }, position) => {
     const bytes = parts.get(part)
     const template = slideTheme(parts, part)
+    const styles = slideTextStyles(parts, part)
+    const key = JSON.stringify(styles)
+    const source = styleSources.get(key)
+    styleSources.set(key, source ?? slide)
     return {
       id: slide,
       ...(template === null ? {} : { template }),
+      ...(styles.length === 0 ? {} : { textStyles: source ?? styles }),
       position,
       ...(size === null ? {} : { size }),
       free: freeShapeId(parts, part),

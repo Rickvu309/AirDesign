@@ -13,6 +13,7 @@
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
     "@airdesign/document": "workspace:*",
+    "@airdesign/fonts": "workspace:*",
     "@airdesign/engine": "workspace:*",
     "@airdesign/live": "workspace:*",
     "@airdesign/pptx": "workspace:*",

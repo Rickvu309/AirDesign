@@ -47,6 +47,7 @@ export type PaintParagraph = {
 }
 
 export type PaintText = {
+  readonly fonts?: Readonly<Record<string, string>>
   paragraphs: readonly PaintParagraph[]
   anchor: "top" | "middle" | "bottom"
   insets: { left: number; top: number; right: number; bottom: number }
@@ -494,6 +495,7 @@ const resolvedText = (shape: PaintTextShape, source: readonly SourceParagraph[],
   const count = counter()
   const reference = { ...referenceOf(shape, scope), ...shape.style }
   return {
+    fonts: Object.fromEntries(scope.fonts),
     paragraphs: source.map((paragraph, from) =>
       textParagraph(shape, paragraph, from, levelsAt, count, reference, scope),
     ),

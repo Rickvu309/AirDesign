@@ -309,8 +309,9 @@ it("arranges a text box into strips with resolved names and choices", () => {
   const panel = panelOf(shape, { reads: {}, moves: true })
   const text = panel.sections.find((section) => section.trait === "text")
   expect(text?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
+    ["style"],
     ["font"],
-    ["size"],
+    ["weight", "size"],
     ["lineSpacing", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
@@ -318,9 +319,9 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["spaceBefore", "spaceAfter"],
   ])
   expect(text?.strips[0]?.[0]?.look.name).toEqual({ show: "hidden" })
-  expect(text?.strips[1]?.[0]?.look.name.show).toBe("icon")
-  expect(text?.strips[4]?.[0]?.look.form).toBe("segments")
-  expect(text?.strips[4]?.[0]?.look.options.left).toBeDefined()
+  expect(text?.strips[2]?.[0]?.look.name.show).toBe("above")
+  expect(text?.strips[5]?.[0]?.look.form).toBe("segments")
+  expect(text?.strips[5]?.[0]?.look.options.left).toBeDefined()
 })
 
 it("resolves box actions and letter names in the shape's strips", () => {
@@ -433,4 +434,45 @@ it("shows corners when every selected shape supports it", () => {
     value: 0,
     mixed: false,
   })
+})
+
+it("keeps Weight and Bold in agreement, supports Mixed, and writes named static faces", () => {
+  const controls = (value: string) =>
+    panelOf({ ...shape, value }, { reads: {}, moves: true })
+      .sections.find((section) => section.trait === "text")
+      ?.strips.flat() ?? []
+  const regular = controls(writeTextValue([{ from: 0, runs: [{ from: 0, text: "A", font: "Lato", bold: false }] }]))
+  const weight = regular.find((control) => control.field === "weight")
+  expect(weight?.value).toBe("regular")
+  expect(weight?.change("bold").text).toEqual({ bold: true })
+  expect(weight?.change("Lato Light").text).toEqual({ font: "Lato Light" })
+  const mixed = controls(
+    writeTextValue([
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "A", bold: true },
+          { from: 1, text: "B", bold: false },
+        ],
+      },
+    ]),
+  )
+  expect(mixed.find((control) => control.field === "weight")?.mixed).toBe(true)
+})
+
+it("shows a template font's family while retaining its native token and matching style", () => {
+  const panel = panelOf(
+    {
+      ...shape,
+      value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Title", font: "+mj-lt" }] }]),
+      textStyles: [{ id: "title", name: "Title", fields: { font: "+mj-lt" } }],
+    },
+    { fonts: { major: "Lato" }, reads: {}, moves: true },
+  )
+  const controls = panel.sections.find((section) => section.trait === "text")?.strips.flat() ?? []
+  expect(controls.find((control) => control.field === "font")?.value).toBe("Lato")
+  expect(controls.find((control) => control.field === "style")?.value).toBe("title")
+  expect(
+    controls.find((control) => control.field === "weight")?.choices?.some((choice) => choice.value === "Lato Light"),
+  ).toBe(true)
 })

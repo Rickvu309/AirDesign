@@ -1,5 +1,13 @@
 import { readFile } from "node:fs/promises"
-import { fontFaces, fontRevision, fontRoutes, resolveFont, type FontFamily, type FontFile } from "@airdesign/fonts"
+import {
+  portableFace,
+  fontFaces,
+  fontRevision,
+  fontRoutes,
+  resolveFont,
+  type FontFamily,
+  type FontFile,
+} from "@airdesign/fonts"
 import type { OriginalStore } from "./original-store.js"
 
 const upstream = `https://raw.githubusercontent.com/google/fonts/${fontRevision}`
@@ -81,12 +89,19 @@ export class FontSource {
     const faces = await this.ready(family)
     const url = (file: string) =>
       `${fontRoutes.file.path}?family=${encodeURIComponent(family.family)}&file=${encodeURIComponent(file)}&v=${fontRevision}`
+    const portable = portableFace(name)
+    const chosen =
+      portable === undefined
+        ? faces
+        : faces
+            .filter((face) => face.file === portable.file || face.file === portable.italic)
+            .map((face) => ({ ...face, weight: "400" }))
     return {
       ok: true,
-      family: family.family,
+      family: portable?.typeface ?? family.family,
       license: family.license,
       notice: url(family.notice),
-      faces: faces.map((face) => ({ ...face, url: url(face.file) })),
+      faces: chosen.map((face) => ({ ...face, url: url(face.file) })),
     } as const
   }
 

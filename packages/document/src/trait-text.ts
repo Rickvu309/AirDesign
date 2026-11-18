@@ -25,6 +25,7 @@ export const text = trait(
   { version: 4, shape: "aaea7ede" },
   { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
+    style: words(200),
     color,
     size: typeSize,
     font: words(typefaceBytes),

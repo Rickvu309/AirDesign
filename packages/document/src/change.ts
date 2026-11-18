@@ -1,3 +1,4 @@
+import type { TextStyle } from "./text-style.js"
 import type { Box } from "./box.js"
 import { outlineOf, siteKinds, type Outline } from "./connector.js"
 import { currentBox, currentValue, elementFacts, landedPatch, type Register } from "./decide.js"
@@ -64,6 +65,7 @@ export type AddChange =
 export type ScopedElement = {
   readonly node: ElementId
   readonly facts: ElementFacts
+  readonly textStyles?: readonly TextStyle[]
   readonly kept: readonly DesignKey[]
   readonly value: string | null
   readonly box: Box | null
@@ -286,9 +288,15 @@ function planNode(
   spot: Spot | undefined,
   scope: Scope,
 ): NodeRow | readonly ChangeRefusal[] {
-  const named = namedTraits(change)
   if (change.template?.id !== undefined && !scope.templates?.includes(change.template.id))
     return [{ node: view.node, trait: "template", code: "kind" }]
+  const style = change.text?.style
+  const definition = style === undefined ? undefined : view.textStyles?.find((each) => each.id === style)
+  if (style !== undefined && definition === undefined) return [{ node: view.node, trait: "text", code: "kind" }]
+  const { style: _style, ...overrides } = change.text ?? {}
+  const named = namedTraits(
+    definition === undefined ? change : { ...change, text: { ...definition.fields, ...overrides } },
+  )
   const refusals: ChangeRefusal[] = named.flatMap(([trait, input]) => {
     const unplaced = trait === "box" && moves(input) && spot === undefined && refusalOf(view, trait, input) === null
     const code = unplaced ? "kind" : refusalOf(view, trait, input)
@@ -421,6 +429,25 @@ function outlineNow(
   return outlineOf(typeof named === "string" ? named : null, {})
 }
 
+function textStylesOf(register: Register, slide: string): readonly TextStyle[] {
+  const slides = register.index?.slides ?? []
+  let source = slide
+  for (let count = 0; count <= register.order.length; count += 1) {
+    const styles = slides.find((each) => each.id === source)?.textStyles
+    if (styles !== undefined) {
+      const resolved = typeof styles === "string" ? slides.find((each) => each.id === styles)?.textStyles : styles
+      return typeof resolved === "string" ? [] : (resolved ?? [])
+    }
+    const birth = register.order.find(
+      (command) => (command.slide === "add" || command.slide === "clone") && command.id === source,
+    )
+    if (birth?.slide === "add") source = birth.layout
+    else if (birth?.slide === "clone") source = birth.source
+    else return []
+  }
+  return []
+}
+
 export function registerScope(register: Register): Scope {
   return {
     expand: (target) => expanded(register, target),
@@ -435,6 +462,7 @@ export function registerScope(register: Register): Scope {
       return {
         node,
         facts,
+        textStyles: textStylesOf(register, shapeOf(node).slide),
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
         box: (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,

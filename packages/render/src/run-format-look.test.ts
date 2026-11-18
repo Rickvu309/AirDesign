@@ -205,3 +205,11 @@ it("continues imported numbering and keeps its levels separate", () => {
   expect(numberedLabels([1, 1, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"1."', '"2."'])
   expect(numberedLabels([1, null, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"•"', '"2."'])
 })
+
+it("paints a native theme-font token with the current template face", () => {
+  const themed = { ...text, fonts: { "+mj-lt": "Georgia", "+mn-lt": "Lato" } }
+  const look = textLook(themed, scaled)
+  expect(look.run(0, 0, { font: "+mj-lt" }).fontFamily).toContain('"Georgia"')
+  expect(look.run(0, 0, { font: "+mn-lt" }).fontFamily).toContain('"Lato"')
+  expect(look.run(0, 0, { font: "Lato Light" }).fontFamily).toContain('"Lato Light"')
+})

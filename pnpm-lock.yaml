@@ -326,6 +326,9 @@ importers:
       '@airdesign/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@airdesign/fonts':
+        specifier: workspace:*
+        version: link:../../packages/fonts
       '@airdesign/live':
         specifier: workspace:*
         version: link:../../packages/live

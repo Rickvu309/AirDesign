@@ -274,6 +274,7 @@ function formatted(
   format: RunPaint,
   colors: readonly CanvasThemeColor[],
   scale: number,
+  fonts: Readonly<Record<string, string>>,
 ): CanvasRunStyle {
   return {
     ...style,
@@ -284,7 +285,7 @@ function formatted(
     underline: format.underline ?? style.underline === true,
     ...(format.size === undefined ? {} : { size: format.size * emuPerHundredth * scale, points: format.size }),
     ...(format.color === undefined ? {} : { color: paintedColor(format.color, colors, style.color) }),
-    ...(format.font === undefined ? {} : { font: format.font }),
+    ...(format.font === undefined ? {} : { font: fonts[format.font] ?? format.font }),
   }
 }
 
@@ -408,6 +409,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
         first ?? {},
         colors,
         scale,
+        text.fonts ?? {},
       )
       const style = edged(
         paragraphOverlay(
@@ -428,7 +430,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const found = paragraphs.get(from)
       if (found === undefined) return { lineHeight: singleLine }
       const paragraph = spaced(found, overlay)
-      const style = formatted(fileStyle(paragraph, run), format, colors, scale)
+      const style = formatted(fileStyle(paragraph, run), format, colors, scale, text.fonts ?? {})
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
       const drawn = marks(style, scaled)
       const plain =
