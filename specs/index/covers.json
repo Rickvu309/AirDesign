@@ -11,19 +11,19 @@
       "file": "packages/document/src/deck-index.ts",
       "names": ["appendIndex", "indexDue"],
       "digest": "36de3786c719",
-      "blob": "9a8cb4ba18fad08f65edfb7a8f78c664d810ef24"
+      "blob": "f6c9faa73e055a9b2da8233662bbc27675fdebd3"
     },
     {
       "file": "packages/document/src/answered-register.ts",
       "names": ["answeredRegister"],
-      "digest": "fe74d448c517",
-      "blob": "0cf4162987820daa93c9b50e8000686e0186d37d"
+      "digest": "353a43cc50c3",
+      "blob": "fd47c8a747f06ef4116fee46fc7dee6431446c7b"
     },
     {
       "file": "packages/live/src/deck-index.ts",
       "names": ["keepIndex", "sendIndex"],
       "digest": "5ec1b6877551",
-      "blob": "204fafa6dfa3bf50204b18087024658ca9d4e74b"
+      "blob": "037c96255dd14ca559137e45a7ccf6631af64d6a"
     },
     {
       "file": "packages/live/src/store.ts",
