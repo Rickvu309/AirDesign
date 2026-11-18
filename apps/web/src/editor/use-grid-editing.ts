@@ -154,16 +154,17 @@ export function useGridEditing({
     placeCaret(text, event.clientX, event.clientY)
   }
 
-  function key(event: KeyboardEvent<HTMLDivElement>) {
+  function key(event: KeyboardEvent<HTMLDivElement>, chrome = false) {
     if (event.key !== "Escape" || event.nativeEvent.isComposing || event.defaultPrevented) return
-    if (!(event.target instanceof Element) || event.target.closest("[data-grid-viewport]") === null) return
-    if (state.kind === "none" || state.kind === "text") return
+    if (!chrome && (!(event.target instanceof Element) || event.target.closest("[data-grid-viewport]") === null)) return
+    if (state.kind === "none" || (state.kind === "text" && !chrome)) return
     event.preventDefault()
     event.stopPropagation()
-    if (state.kind === "slides") {
+    if (chrome || state.kind === "slides") {
       step({ kind: "escape" })
       world.current?.focus({ preventScroll: true })
-      announce(slideListCopy.nothingSelected)
+      if (state.kind === "slides") announce(slideListCopy.nothingSelected)
+      else if (state.kind === "elements") announce(slideListCopy.selected(1))
       return
     }
     flushSync(() => step({ kind: "escape" }))

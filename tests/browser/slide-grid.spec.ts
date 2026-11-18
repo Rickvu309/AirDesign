@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 import {
@@ -134,7 +135,16 @@ test("a right click or the menu key on a slide offers the slide commands, and ea
   await entry(page, 1).click({ button: "right" })
   await expect(menu).toBeVisible()
   await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
-  await expect(menu.getByRole("menuitem")).toHaveText([/^Open/, /^Duplicate/, /^Delete/, /^Move up/, /^Move down/])
+  await expect(menu.getByRole("menuitem")).toHaveText([
+    /^Open/,
+    /^Duplicate/,
+    /^Delete/,
+    /^Move up/,
+    /^Move down/,
+    slideListCopy.addAfterMenu,
+    slideListCopy.addBelowMenu,
+    slideListCopy.moveBelowMenu,
+  ])
   await expect(menu.getByRole("menuitem", { name: /^Move up/ })).toHaveAttribute("aria-disabled", "true")
   await menu.getByRole("menuitem", { name: /^Duplicate/ }).click()
   await expect(menu).toBeHidden()
@@ -175,7 +185,13 @@ test("Escape closes the slide menu while focus is still on its slide", async ({ 
   await expect(entry(page, 2)).toBeFocused()
 })
 
-async function dragOnto(page: Page, from: number, to: number, side: "left" | "right", place: number): Promise<void> {
+async function dragOnto(
+  page: Page,
+  from: number,
+  to: number,
+  side: "left" | "right",
+  place: number | null,
+): Promise<void> {
   const source = await entry(page, from).boundingBox()
   const target = await entry(page, to).boundingBox()
   if (source === null || target === null) throw new Error("no slide to drag")
@@ -184,6 +200,11 @@ async function dragOnto(page: Page, from: number, to: number, side: "left" | "ri
   const x = side === "left" ? target.x + target.width * 0.2 : target.x + target.width * 0.8
   await page.mouse.move(x, target.y + target.height / 2, { steps: 8 })
   const bar = page.locator("[data-drop-bar]")
+  if (place === null) {
+    await expect(bar).toBeHidden()
+    await page.mouse.up()
+    return
+  }
   await expect(bar).toBeVisible()
   await expect(bar).toHaveAttribute("data-drop-place", String(place))
   const mark = await bar.boundingBox()
@@ -209,7 +230,9 @@ test("a slide dragged onto half of another lands on that side of it, where the d
   await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
   await dragOnto(page, 3, 1, "left", 1)
   await expect(said).toHaveText("Moved slide 3 to position 1")
-  await dragOnto(page, 2, 3, "left", 3)
+  await expect(entry(page, 1)).toBeFocused()
+  await expect(entry(page, 1)).toContainText("Hello")
+  await dragOnto(page, 2, 3, "left", null)
   await expect(said).toHaveText("Moved slide 3 to position 1")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(4)
 })
@@ -219,7 +242,7 @@ test("a slide dropped at the start of a section shows and lands at the end of th
 }) => {
   await openFile(page, join(fixtures, "sections-after.pptx"))
   await openGrid(page)
-  const opening = page.locator("section", { has: page.getByRole("heading", { name: "Opening" }) })
+  const opening = page.locator("[data-grid-row-member]", { has: page.getByRole("heading", { name: "Opening" }) })
   await expect(opening.getByText("1 slide", { exact: true })).toBeVisible()
   const source = await entry(page, 3).boundingBox()
   const target = await entry(page, 2).boundingBox()

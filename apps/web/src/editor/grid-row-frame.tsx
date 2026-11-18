@@ -1,7 +1,8 @@
 import type { SlideId } from "@airdesign/document"
-import { useLayoutEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from "react"
+import { useLayoutEffect, useRef, type CSSProperties, type PointerEvent, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridRowHandle } from "@/editor/grid-viewport"
+import { gridIndices, type GridMoveSide } from "@/editor/grid-drop"
 import { gridCommand } from "@/editor/editor-grid-keys"
 
 export function GridRowFrame({
@@ -11,7 +12,9 @@ export function GridRowFrame({
   blocked,
   onGrab,
   onMove,
-  children,
+  hover,
+  style,
+  start,
 }: {
   number: number
   scale: number
@@ -19,35 +22,19 @@ export function GridRowFrame({
   blocked: boolean
   onGrab: (event: PointerEvent<HTMLButtonElement>) => void
   onMove: (direction: "earlier" | "later") => void
-  children: ReactNode
+  hover: "band" | "slide" | "add" | null
+  style: CSSProperties
+  start: number
 }) {
-  const [hover, setHover] = useState<"band" | "slide" | null>(null)
   const small = height * scale < gridRowHandle.minimumHeight
   return (
     <div
       data-grid-row-frame
+      data-grid-row={start}
       data-row-hover={blocked || small ? undefined : (hover ?? undefined)}
       data-row-blocked={blocked || small ? "" : undefined}
-      className="relative w-fit"
-      onPointerMove={(event) => {
-        if (event.pointerType !== "mouse" || blocked) return
-        const target = event.target
-        if (target instanceof Element && target.closest("[data-row-insert]") !== null) {
-          setHover(null)
-          return
-        }
-        setHover(
-          target instanceof Element &&
-            target.closest("[data-grid-card]") !== null &&
-            target.closest("[data-gap-insert]") === null
-            ? "slide"
-            : "band",
-        )
-      }}
-      onPointerDown={(event) => {
-        if (event.pointerType === "touch") setHover(null)
-      }}
-      onPointerLeave={() => setHover(null)}
+      className="relative"
+      style={style}
     >
       <span aria-hidden="true" className="absolute inset-y-0" style={{ left: -52 / scale, width: 52 / scale }} />
       <button
@@ -75,7 +62,6 @@ export function GridRowFrame({
           if (command !== "earlier" && command !== "later") return
           event.preventDefault()
           event.stopPropagation()
-          setHover(null)
           onMove(command)
         }}
       >
@@ -92,7 +78,6 @@ export function GridRowFrame({
           <path d="M3 3h6M3 8h6M3 13h6" />
         </svg>
       </button>
-      {children}
     </div>
   )
 }
@@ -101,15 +86,14 @@ export function moveGridRow(
   rows: readonly { readonly start: number; readonly end: number }[],
   number: number,
   direction: "earlier" | "later",
-  move: (held: readonly number[], at: number, row: boolean) => void,
+  move: (held: readonly number[], at: number, side: GridMoveSide) => void,
 ) {
   const row = rows[number]
   const target = number + (direction === "earlier" ? -1 : 1)
   const next = rows[target]
   if (row === undefined || next === undefined) return
   const at = direction === "earlier" ? next.start : next.end
-  const held = Array.from({ length: row.end - row.start }, (_, offset) => row.start + offset)
-  move(held, at, true)
+  move(gridIndices(row), at, "keep")
 }
 
 export function useGridRowFocus(

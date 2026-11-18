@@ -1,9 +1,10 @@
+import { limits, type GridSide } from "@airdesign/document"
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridMoveAt, type GridCommand } from "@/editor/editor-grid-keys"
-import { EditorMenuContent } from "@/editor/editor-menu"
+import { EditorMenuContent, EditorMenuRule } from "@/editor/editor-menu"
 import type { SlideKey } from "@/editor/slide-keys"
-import { slideMenuItem, SlideMenuRows } from "@/editor/slide-menu"
+import { slideChangeAllowed, slideMenuItem, SlideMenuRows } from "@/editor/slide-menu"
 
 export type MenuAnchor = { readonly getBoundingClientRect: () => DOMRect }
 
@@ -21,6 +22,9 @@ export function GridSlideMenu({
   held,
   canMoveSet,
   canChangeSet,
+  canAdd,
+  onAdd,
+  onMoveBelow,
   onAct,
   onClose,
 }: {
@@ -29,14 +33,19 @@ export function GridSlideMenu({
   held: readonly number[]
   canMoveSet: boolean
   canChangeSet: boolean
+  canAdd: boolean
+  onAdd: (side: GridSide) => void
+  onMoveBelow: () => void
   onAct: (command: GridCommand, index: number) => void
   onClose: () => void
 }) {
   const multiple = held.length > 1
   const allowed = (change: SlideKey) => {
+    if (!multiple) return change === "remove" || slideChangeAllowed(change, menu.index, count)
     if (change === "clone" || change === "remove") return canChangeSet
     return canMoveSet && gridMoveAt(held, count, change === "up" ? "earlier" : "later") !== null
   }
+  const full = count >= limits.slides
   return (
     <DropdownMenu
       open
@@ -45,7 +54,7 @@ export function GridSlideMenu({
       }}
     >
       <EditorMenuContent
-        {...(multiple ? { className: "w-56" } : {})}
+        className="w-60"
         anchor={menu.anchor}
         side={menu.pointer ? "bottom" : "right"}
         align="start"
@@ -64,8 +73,29 @@ export function GridSlideMenu({
           index={menu.index}
           count={count}
           onChoose={(change) => onAct(gridChange[change], menu.index)}
-          {...(!multiple ? {} : { allowed, labels: slideListCopy.setActions(held.length) })}
+          allowed={allowed}
+          {...(!multiple ? {} : { labels: slideListCopy.setActions(held.length) })}
         />
+        {canAdd || canMoveSet ? <EditorMenuRule /> : null}
+        {canAdd
+          ? (["same", "new"] as const).map((side) => (
+              <DropdownMenuItem
+                key={side}
+                disabled={full}
+                title={full ? slideListCopy.addLimit(limits.slides) : undefined}
+                aria-description={full ? slideListCopy.addLimit(limits.slides) : undefined}
+                className={slideMenuItem}
+                onClick={() => onAdd(side)}
+              >
+                {side === "same" ? slideListCopy.addAfterMenu : slideListCopy.addBelowMenu}
+              </DropdownMenuItem>
+            ))
+          : null}
+        {canMoveSet ? (
+          <DropdownMenuItem className={slideMenuItem} onClick={onMoveBelow}>
+            {slideListCopy.moveBelowMenu}
+          </DropdownMenuItem>
+        ) : null}
       </EditorMenuContent>
     </DropdownMenu>
   )

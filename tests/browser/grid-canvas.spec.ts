@@ -164,13 +164,10 @@ async function resizedGrid(page: Page, resize: () => Promise<void>) {
         const { x, y, width, height } = entry.getBoundingClientRect()
         return { x, y, width, height }
       })
-    const dot = host.querySelector('[data-grid-row-frame]:last-child [data-gap-insert="end"] [data-add-mark]')
-    const end = dot?.getBoundingClientRect().right ?? 0
     const width = host.clientWidth
     const height = host.clientHeight
     return {
       before: positions(),
-      end,
       resized: new Promise<ReturnType<typeof positions>[]>((resolve) => {
         const observer = new ResizeObserver(() => {
           if (host.clientWidth === width && host.clientHeight === height) return
@@ -188,7 +185,7 @@ async function resizedGrid(page: Page, resize: () => Promise<void>) {
     }
   })
   await resize()
-  const result = await recording.evaluate(async ({ before, end, resized }) => ({ before, end, frames: await resized }))
+  const result = await recording.evaluate(async ({ before, resized }) => ({ before, frames: await resized }))
   await recording.dispose()
   const afterRoom = (await page.locator("[data-grid-viewport]").boundingBox())!
   return { ...result, beforeRoom, afterRoom }
@@ -224,9 +221,9 @@ test("keeps a chosen zoom and pans only when resize newly clips the working slid
     () => page.getByRole("button", { name: "Design", exact: true }).click(),
     () => page.getByRole("button", { name: "Design", exact: true }).click(),
   ]) {
-    const { before, end, frames, beforeRoom, afterRoom } = await resizedGrid(page, resize)
+    const { before, frames, beforeRoom, afterRoom } = await resizedGrid(page, resize)
     const working = before[6]!
-    const right = Math.max(working.x + working.width, end)
+    const right = working.x + working.width
     const visible =
       working.x >= beforeRoom.x &&
       working.y >= beforeRoom.y &&

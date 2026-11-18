@@ -1,16 +1,8 @@
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { expect, test, type Page } from "@playwright/test"
-import { entry, fixtures, manySlides, openFile, openGrid, settled } from "./slide-grid-deck"
+import { entry, fixtures, manySlides, openFile, openGrid, rowNumbers, settled } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
-const rows = (page: Page) =>
-  page
-    .locator("[data-grid-row]")
-    .evaluateAll((rows) =>
-      rows.map((row) =>
-        [...row.querySelectorAll("[data-slide-entry]")].map((slide) => Number(slide.getAttribute("data-slide-entry"))),
-      ),
-    )
 async function openTen(page: Page) {
   await openFile(page, {
     name: "ten.pptx",
@@ -21,7 +13,7 @@ async function openTen(page: Page) {
 }
 test("the eleventh slide keeps stored rows across zoom resize and reload", async ({ page }) => {
   await openTen(page)
-  expect(await rows(page)).toEqual([
+  expect(await rowNumbers(page)).toEqual([
     [1, 2, 3, 4],
     [5, 6, 7, 8],
     [9, 10],
@@ -34,25 +26,25 @@ test("the eleventh slide keeps stored rows across zoom resize and reload", async
     [5, 6, 7, 8],
     [9, 10, 11],
   ]
-  expect(await rows(page)).toEqual(after)
+  expect(await rowNumbers(page)).toEqual(after)
   await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rows(page)).toEqual([
+  expect(await rowNumbers(page)).toEqual([
     [1, 2, 3, 4],
     [5, 6, 7, 8],
     [9, 10],
   ])
   await page.getByRole("button", { name: undoCopy.redoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
-  expect(await rows(page)).toEqual(after)
+  expect(await rowNumbers(page)).toEqual(after)
   await page.keyboard.press("ControlOrMeta+Equal")
-  expect(await rows(page)).toEqual(after)
+  expect(await rowNumbers(page)).toEqual(after)
   await page.setViewportSize({ width: 1000, height: 800 })
-  expect(await rows(page)).toEqual(after)
+  expect(await rowNumbers(page)).toEqual(after)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  expect(await rows(page)).toEqual(after)
+  expect(await rowNumbers(page)).toEqual(after)
 })
 test("Grid adds duplicates deletes moves and undoes with its row boundaries", async ({ page }) => {
   await openTen(page)
@@ -64,36 +56,36 @@ test("Grid adds duplicates deletes moves and undoes with its row boundaries", as
   await entry(page, 4).focus()
   await page.keyboard.press("ControlOrMeta+d")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
-  expect(await rows(page)).toEqual([
+  expect(await rowNumbers(page)).toEqual([
     [1, 2, 3, 4, 5],
     [6, 7, 8, 9],
     [10, 11],
   ])
   await page.getByRole("button", { name: undoCopy.undoNamed.duplicate, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rows(page)).toEqual(original)
+  expect(await rowNumbers(page)).toEqual(original)
   await entry(page, 5).focus()
   await page.keyboard.press("Alt+ArrowUp")
   await expect
-    .poll(() => rows(page))
+    .poll(() => rowNumbers(page))
     .toEqual([
       [1, 2, 3, 4, 5],
       [6, 7, 8],
       [9, 10],
     ])
   await page.getByRole("button", { name: undoCopy.undoNamed.order, exact: true }).click()
-  await expect.poll(() => rows(page)).toEqual(original)
+  await expect.poll(() => rowNumbers(page)).toEqual(original)
   await entry(page, 5).focus()
   await page.keyboard.press("Delete")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(9)
-  expect(await rows(page)).toEqual([
+  expect(await rowNumbers(page)).toEqual([
     [1, 2, 3, 4],
     [5, 6, 7],
     [8, 9],
   ])
   await page.getByRole("button", { name: undoCopy.undoNamed.delete, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rows(page)).toEqual(original)
+  expect(await rowNumbers(page)).toEqual(original)
 })
 
 test("collapsing a whole first row keeps later rows in their cells", async ({ page }) => {

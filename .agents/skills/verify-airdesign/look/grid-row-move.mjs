@@ -14,7 +14,7 @@ export async function prepareRows(kit) {
   await page.mouse.down()
   await page.mouse.move(target.x + target.width * 0.9, target.y + target.height * 0.8, { steps: 8 })
   await page.mouse.up()
-  await expect(page.locator('[data-grid-row="0"] [data-slide-entry]')).toHaveCount(3)
+  await expect(page.locator('[data-grid-row-member="0"] [data-slide-entry]')).toHaveCount(3)
   return account
 }
 export async function rowMoveState(kit, state) {
@@ -39,6 +39,6 @@ export async function rowMoveState(kit, state) {
   await expect(page.locator("[data-drop-bar][data-row-drop]")).toBeVisible()
   if (state === "drag") return account
   await page.mouse.up()
-  await expect(page.locator('[data-grid-row="0"] [data-slide-entry]')).toHaveCount(4)
+  await expect(page.locator('[data-grid-row-member="0"] [data-slide-entry]')).toHaveCount(4)
   return account
 }

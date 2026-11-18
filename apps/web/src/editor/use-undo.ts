@@ -89,6 +89,7 @@ export type TurningDeck = {
 
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   const { id, undo, shown, notesBar, settle, setPending } = deck
+  const [gridTurn, setGridTurn] = useState(0)
   const { undoList, undoShown, show, told, typed, sessions, focused, records, turnAfter } = undo
   const { store, shownParts, structure, bound, repaint, setCurrent, showRegister } = shown
 
@@ -122,7 +123,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     return undoable.slide
   }
 
-  async function showTurned(entry: UndoEntry, direction: UndoDirection) {
+  async function showTurned(entry: UndoEntry, direction: UndoDirection, grid: Element | null | undefined) {
     const { undoable } = entry
     const held = shown.current
     const slideId = slideOf(undoable)
@@ -143,10 +144,13 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
         ? slides.findIndex((slide) => slide.id === slideId)
         : slides.findIndex((slide) => nodes.some((node) => node.startsWith(`${slide.id}.`)))
     setCurrent((index) => (shownSlide >= 0 ? shownSlide : Math.max(0, Math.min(index, slides.length - 1))))
+    if (grid?.isConnected && (grid.contains(document.activeElement) || document.activeElement === document.body))
+      setGridTurn((turn) => turn + 1)
     setPending(true)
   }
 
   function turn(direction: UndoDirection) {
+    const grid = document.activeElement?.closest("[data-editor-grid]")
     turnAfter(async () => {
       await records.current.landed()
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction, (register) =>
@@ -155,7 +159,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
       if (turned.outcome === "empty") return
       show(turned.list, turned.outcome === "changed" ? direction : null)
       if (turned.outcome === "changed") return
-      await showTurned(turned.entry, direction)
+      await showTurned(turned.entry, direction, grid)
       void flushPending(connect, id).then(settle)
     })
   }
@@ -165,6 +169,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   return {
     undoLabel: undoLabel("undo", undoShown),
     redoLabel: undoLabel("redo", undoShown),
+    gridTurn,
     canUndo: undoShown.undo !== null,
     canRedo: undoShown.redo !== null,
     onUndo: () => turn("undo"),

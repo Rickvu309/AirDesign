@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { dragMoves, dropPlace, dropTarget, edgePan, landing, previewSlot, slotUnder } from "@/editor/grid-drop"
+import { dropPlace, dropTarget, edgePan, gridDrop, previewSlot, slotUnder } from "@/editor/grid-drop"
 
 const card = { left: 100, width: 300 }
 
@@ -66,38 +66,31 @@ describe("edge pan", () => {
   })
 })
 
-describe("dropping several slides", () => {
-  function moved(count: number, held: readonly number[], at: number): number[] {
-    const deck = Array.from({ length: count }, (_, index) => index)
-    for (const { from, to } of dragMoves(held, at, count)) {
-      const [slide] = deck.splice(from, 1)
-      if (slide !== undefined) deck.splice(to, 0, slide)
-    }
-    return deck
-  }
+describe("moving slides between rows", () => {
+  const rows = [
+    { start: 0, end: 4 },
+    { start: 4, end: 5 },
+    { start: 5, end: 8 },
+  ]
 
-  it("lands the held slides together, in deck order, at the place they were dropped", () => {
-    expect(moved(6, [4, 1], 0)).toEqual([1, 4, 0, 2, 3, 5])
-    expect(moved(6, [1, 4], 3)).toEqual([0, 2, 1, 4, 3, 5])
-    expect(moved(6, [1, 4], 6)).toEqual([0, 2, 3, 5, 1, 4])
-    expect(moved(8, [1, 3], 6)).toEqual([0, 2, 4, 5, 1, 3, 6, 7])
+  it("accepts a drop that changes rows without changing slide order", () => {
+    expect(gridDrop(rows, [5], 5, "same")).toBe(5)
+    expect(gridDrop(rows, [5, 6], 5, "same")).toBe(5)
+    expect(gridDrop(rows, [5, 6, 7], 5, "same")).toBe(5)
+    expect(gridDrop(rows, [3], 4, "new")).toBe(3)
   })
 
-  it("moves one slide the way a single drop always has", () => {
-    expect(dragMoves([0], 3, 4)).toEqual([{ from: 0, to: 2 }])
-    expect(dragMoves([3], 0, 4)).toEqual([{ from: 3, to: 0 }])
-    expect(dragMoves([2], 2, 4)).toEqual([])
-    expect(dragMoves([2], 3, 4)).toEqual([])
+  it("ignores a drop where the slides remain in the same row and place", () => {
+    expect(gridDrop(rows, [1], 1, "same")).toBeNull()
+    expect(gridDrop(rows, [1, 2], 3, "same")).toBeNull()
+    expect(gridDrop(rows, [5, 6, 7], 5, "keep")).toBeNull()
+    expect(gridDrop(rows, [5, 6, 7], 8, "keep")).toBeNull()
+    expect(gridDrop(rows, [4], 5, "new")).toBeNull()
   })
 
-  it("sends nothing when the held slides already sit at the drop place", () => {
-    expect(dragMoves([1, 2], 2, 5)).toEqual([])
-    expect(dragMoves([3, 4], 5, 5)).toEqual([])
-  })
-
-  it("names the position the first held slide lands at", () => {
-    expect(landing([1, 4], 3)).toBe(2)
-    expect(landing([1, 4], 6)).toBe(4)
-    expect(landing([4, 1], 0)).toBe(0)
+  it("lands a group together at its position in the new rows", () => {
+    expect(gridDrop(rows, [5, 6, 7], 4, "keep")).toBe(4)
+    expect(gridDrop(rows, [2, 0], 7, "same")).toBe(5)
+    expect(gridDrop(rows, [5, 0], 7, "new")).toBe(6)
   })
 })

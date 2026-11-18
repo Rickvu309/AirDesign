@@ -169,15 +169,13 @@ test("row tint clears in the first frame with slide hover", async ({ page }) => 
   if (!first || !second) throw new Error("slide boxes")
   const y = first.y + first.height / 2
   await page.mouse.move((first.x + first.width + second.x) / 2, y)
-  const frame = page.locator("[data-grid-row-frame]").first()
-  const halo = frame.locator("[data-grid-halo]")
+  const halo = page.locator('[data-grid-row-member="0"] [data-grid-halo]')
   await expect(halo.first()).toHaveCSS("opacity", "1")
   for (let x = Math.ceil(second.x) - 4; x <= second.x + 12; x += 2) {
     await page.mouse.move(x, y)
-    const overlap = await frame.evaluate(
-      (row) =>
+    const overlap = await halo.evaluateAll(
+      ([other, slide]) =>
         new Promise<boolean>((resolve) => {
-          const [other, slide] = row.querySelectorAll("[data-grid-halo]")
           if (!other || !slide) throw new Error("row halos")
           requestAnimationFrame(() => {
             const entered =

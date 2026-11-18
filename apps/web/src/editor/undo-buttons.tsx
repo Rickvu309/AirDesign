@@ -5,6 +5,7 @@ import { EditorIcon } from "@/editor/editor-icons"
 export type UndoButtonsState = {
   readonly undoLabel: string
   readonly redoLabel: string
+  readonly gridTurn?: number
   readonly canUndo: boolean
   readonly canRedo: boolean
   readonly onUndo: () => void

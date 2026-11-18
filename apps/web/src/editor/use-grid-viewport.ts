@@ -27,6 +27,8 @@ import {
   gridScaleMoved,
   gridHeadingEdge,
   gridCardBounds,
+  gridElementBounds,
+  exposedGrid,
   type GridViewport,
 } from "@/editor/grid-viewport"
 import { keptGridViewport, keepGridViewport } from "@/editor/grid-zoom"
@@ -70,6 +72,8 @@ export function useGridViewport({
   onFit,
   selected,
   geometry,
+  elementsOf,
+  slideWidth = geometry.width,
 }: {
   deck: string | null
   world: RefObject<HTMLDivElement | null>
@@ -83,11 +87,16 @@ export function useGridViewport({
   initialFit: boolean
   selected: number
   geometry: GridGeometry
+  elementsOf?: () => readonly PaintBox[] | undefined
+  slideWidth?: number
 }) {
   const focused = useRef(selected)
   const previous = useRef(selected)
   if (previous.current !== selected) focused.current = selected
   previous.current = selected
+  const workingBounds = useRef({ elementsOf, slideWidth, selected })
+  workingBounds.current = { elementsOf, slideWidth, selected }
+  const focusing = useRef(false)
   const geometryRef = useRef(geometry)
   geometryRef.current = geometry
   const frame = useRef<number | null>(null)
@@ -246,15 +255,15 @@ export function useGridViewport({
       roomWidth.current = after.width
       if (fits.current) flushSync(() => fit())
       else {
-        const card = world.current?.querySelector(`[data-slide-entry="${focused.current + 1}"]`)
+        const working = workingBounds.current
+        const elements = working.elementsOf?.() ?? []
+        const index = elements.length > 0 ? working.selected : focused.current
+        const card = world.current?.querySelector(`[data-slide-entry="${index + 1}"]`)
         if (card) {
-          const box = gridCardBounds(
-            geometryRef.current,
-            focused.current,
-            view.current.scale,
-            card.getBoundingClientRect(),
-          )
-          const next = resizedGrid(view.current, box, before, after)
+          const face = card.getBoundingClientRect()
+          const boxes = gridElementBounds(elements, face.width / working.slideWidth)
+          const target = boxes === null ? face : { ...boxes, left: face.left + boxes.left, top: face.top + boxes.top }
+          const next = resizedGrid(view.current, target, before, after)
           if (next !== view.current) {
             paint(next)
             settle()
@@ -354,8 +363,24 @@ export function useGridViewport({
     zoom.current(next.scale * 100, false)
   }
 
+  function focus(card: HTMLElement) {
+    const host = viewport.current
+    if (host === null) return
+    focusing.current = true
+    card.focus({ preventScroll: true })
+    focusing.current = false
+    focused.current = Number(card.getAttribute("data-slide-entry")) - 1
+    const next = exposedGrid(view.current, card.getBoundingClientRect(), host.getBoundingClientRect())
+    if (next !== view.current) {
+      paint(next)
+      settle()
+    }
+  }
+
   return {
     reset: () => fit(),
+    focus,
+    reveal,
     elements,
     selection: (indices: readonly number[]) => fit(indices),
     space,
@@ -383,6 +408,7 @@ export function useGridViewport({
       onPointerCancel: release,
       onLostPointerCapture: release,
       onFocusCapture: (event: FocusEvent<HTMLDivElement>) => {
+        if (focusing.current) return
         if (event.target.matches("[data-slide-entry]")) {
           focused.current = Number(event.target.getAttribute("data-slide-entry")) - 1
           reveal(event.target)

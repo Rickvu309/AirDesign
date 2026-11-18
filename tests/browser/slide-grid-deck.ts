@@ -127,3 +127,15 @@ export async function openGrid(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Grid" }).click()
   await expect(page.locator("[data-editor-grid]")).toBeVisible()
 }
+
+export function rowNumbers(page: Page): Promise<number[][]> {
+  return page
+    .locator("[data-grid-viewport]")
+    .evaluate((canvas) =>
+      [...canvas.querySelectorAll<HTMLElement>("[data-grid-row]")].map((row) =>
+        [
+          ...canvas.querySelectorAll<HTMLElement>(`[data-grid-row-member="${row.dataset.gridRow}"] [data-slide-entry]`),
+        ].map((slide) => Number(slide.dataset.slideEntry)),
+      ),
+    )
+}
