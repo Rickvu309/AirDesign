@@ -107,7 +107,7 @@ The distance from one line of text to the next, in percent of PowerPoint's singl
 _Avoid_: line spacing
 
 **template style**:
-The look a slide takes: its template colors, heading and body fonts and text styles. Anything that names a template color or font follows its changes, including shapes, lines, text, backgrounds and tables. Design mode shows every field in Template style details. In a PowerPoint file it is a master with its theme, and the code still says theme (`theme`, `deck.theme`) until its rename lands.
+The look a slide takes: its template colors, heading and body fonts and text styles. Anything that names a template color or font follows its changes, including shapes, lines, text, backgrounds and tables. In a PowerPoint file it is a master with its theme, and the code still says theme (`theme`, `deck.theme`) until its rename lands.
 _Avoid_: theme, palette, color scheme
 
 **template colors**:
