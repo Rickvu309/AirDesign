@@ -51,12 +51,12 @@ export default async function drive({ repo, page, context, signIn, post, capture
 
   await page.goto(`/deck/${deck}`)
   const picture = page.locator(`[data-slide-paint] [data-canvas-element="${pictureKey}"]`)
-  await expect(picture).toContainText("Picture is still uploading from another device")
+  await expect(picture).toContainText(readPictureToolCopy().uploading)
   await capture("picture-uploading")
   await page.getByRole("button", { name: "Export", exact: true }).click()
   await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
   await page.keyboard.press("Enter")
-  await expect(page.getByText("Unable to export. A picture is uploading.")).toBeVisible()
+  await expect(page.getByText(readPictureToolCopy().exportWaiting)).toBeVisible()
   await capture("export-waiting")
 
   await first.unroute("**/verify-original/**")
