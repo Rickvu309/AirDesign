@@ -20,3 +20,20 @@ it.each([
   expect(html).toContain(fonts)
   expect(html).toContain('aria-expanded="false"')
 })
+
+it("draws the template name heavier and larger than its font line", () => {
+  const html = renderToStaticMarkup(
+    createElement(TemplateStyleCard, {
+      style: { name: "Light slides", major: "Inter", minor: "Inter", swatches: [] },
+      open: false,
+      onOpen: () => {},
+    }),
+  )
+  const name = html.match(/<span class="([^"]*)" title="Light slides">/)
+  const fonts = html.match(/<span class="([^"]*)" title="Inter">/)
+  expect(name?.[1]).toContain("font-semibold")
+  expect(html).toContain("text-[length:var(--panel-control-size)]")
+  expect(fonts?.[1]).toContain("text-[length:var(--panel-card-meta)]")
+  expect(fonts?.[1]).not.toContain("font-semibold")
+  expect(fonts?.[1]).not.toContain("text-quiet")
+})

@@ -1,6 +1,11 @@
 [data-design-panel] {
   --field-edge: var(--panel-edge);
   --line: var(--panel-edge);
+  --type-caption: var(--panel-control-size);
+}
+
+[data-design-panel] [data-segments] button {
+  font-size: var(--panel-control-size);
 }
 
 [data-design-panel] [data-design-head] {

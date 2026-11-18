@@ -45,11 +45,11 @@ export function TemplateStyleCard({
           />
         ))}
       </span>
-      <span className="flex min-w-0 flex-col text-[length:var(--type-caption)]">
-        <span className="truncate font-medium" title={name ?? designCopy.currentTheme}>
+      <span className="flex min-w-0 flex-col text-[length:var(--panel-control-size)]">
+        <span className="truncate font-semibold" title={name ?? designCopy.currentTheme}>
           {name ?? designCopy.currentTheme}
         </span>
-        <span className="truncate" title={fonts}>
+        <span className="truncate font-normal text-[length:var(--panel-card-meta)]" title={fonts}>
           {fonts}
         </span>
       </span>

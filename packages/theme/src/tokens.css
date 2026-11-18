@@ -34,7 +34,9 @@
   --panel-edge: #e6e6e6;
   --panel-icon: #808080;
   --panel-title-size: 13px;
-  --panel-label-size: 11px;
+  --panel-control-size: 11px;
+  --panel-label-size: 9px;
+  --panel-card-meta: 8px;
   --panel-title-leading: 20px;
   --panel-label-leading: 16px;
   --panel-head-height: 49px;
