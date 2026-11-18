@@ -3,6 +3,7 @@ export const editorRoutes = {
   gridAddHover: "/screens/s41-02-editor-grid-add-slide-hover",
   gridAddHold: "/screens/s41-03-editor-grid-add-slide-hold",
   gridPasted: "/screens/s41-04-editor-grid-slides-pasted",
+  gridWrapped: "/screens/s41-05-editor-grid-wrapped",
   agentWorking: "/screens/s42-01-editor-agent-working",
   agentComplete: "/screens/s42-02-editor-agent-run-complete",
   agentOwn: "/screens/s42-03-editor-agent-own-agent-editing",

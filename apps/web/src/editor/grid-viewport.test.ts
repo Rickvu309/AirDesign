@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { gridLineGap } from "@/editor/grid-lines"
 import {
   fittedGridRows,
   fittedGridElements,
@@ -8,6 +9,9 @@ import {
   pannedGrid,
   boundedGridScale,
   fittedGrid,
+  gridLayoutLines,
+  gridTrackGap,
+  gridTrackSize,
   revealedGrid,
   gridSpacing,
   gridCardBounds,
@@ -355,6 +359,40 @@ it("fits collapsed heading tracks without reserving space for hidden rows", () =
   const fit = fittedGridRows(geometry, room)
   expect(fit.scale).toBeGreaterThan(0.3)
   expect(fittedGridCards(geometry, [5], room)).toBeNull()
+})
+
+it("places later lines of one group closer together than the next group", () => {
+  const rows = [
+    { start: 0, end: 1 },
+    { start: 1, end: 29 },
+    { start: 29, end: 39 },
+    { start: 39, end: 41 },
+  ]
+  const geometry = { rows, sections: [], width: 960, height: 540 }
+  const lines = gridLayoutLines(geometry)
+  expect(lines.map((line) => line.end - line.start)).toEqual([1, 10, 10, 8, 10, 2])
+  const gaps = lines.map((_, index) => gridTrackGap(geometry, lines, index))
+  expect(gaps[1]).toBeLessThan(gaps[3] ?? 0)
+  expect(gaps[1]).toBe(gridLineGap(gridSpacing(960, 540).row, gridSpacing(960, 540).column))
+  const tops: number[] = []
+  let top = 0
+  for (const [index, line] of lines.entries()) {
+    tops.push(top)
+    top += gridTrackSize(line, geometry, gaps[index] ?? 0).world
+  }
+  expect(tops[2]! - tops[1]!).toBeLessThan(tops[4]! - tops[3]!)
+  const plain = {
+    rows: [
+      { start: 0, end: 4 },
+      { start: 4, end: 8 },
+    ],
+    sections: [],
+    width: 960,
+    height: 540,
+  }
+  const fitting = gridLayoutLines(plain)
+  expect(fitting).toHaveLength(2)
+  expect(gridTrackGap(plain, fitting, 0)).toBe(gridSpacing(960, 540).row)
 })
 
 it("leaves at least six screen pixels between a heading and the hover halo of its first row at every zoom", () => {

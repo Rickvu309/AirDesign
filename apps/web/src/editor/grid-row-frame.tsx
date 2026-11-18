@@ -15,6 +15,10 @@ export function GridRowFrame({
   hover,
   style,
   start,
+  tint = false,
+  center,
+  rule,
+  band,
 }: {
   number: number
   scale: number
@@ -25,6 +29,10 @@ export function GridRowFrame({
   hover: "band" | "slide" | "handle" | "add" | null
   style: CSSProperties
   start: number
+  tint?: boolean
+  center?: number
+  rule?: CSSProperties
+  band?: CSSProperties
 }) {
   const small = height * scale < gridRowHandle.minimumHeight
   return (
@@ -33,10 +41,17 @@ export function GridRowFrame({
       data-grid-row={start}
       data-row-hover={blocked || small ? undefined : (hover ?? undefined)}
       data-row-blocked={blocked || small ? "" : undefined}
+      data-row-tint={tint ? "" : undefined}
       className="relative"
       style={style}
     >
       <span aria-hidden="true" className="absolute inset-y-0" style={{ left: -52 / scale, width: 52 / scale }} />
+      {rule === undefined ? null : (
+        <span data-group-rule aria-hidden="true" className="absolute bg-line" style={rule} />
+      )}
+      {band === undefined ? null : (
+        <span data-group-band aria-hidden="true" className="pointer-events-none absolute" style={band} />
+      )}
       <button
         type="button"
         data-row-handle
@@ -46,7 +61,7 @@ export function GridRowFrame({
         style={{
           left: -gridRowHandle.offset / scale,
           width: gridRowHandle.width,
-          top: `calc(100% - ${height / 2}px)`,
+          top: center === undefined ? `calc(100% - ${height / 2}px)` : center,
           transform: `scale(${1 / scale}) translate(-50%, -50%)`,
           transformOrigin: "0 0",
         }}

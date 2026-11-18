@@ -1,15 +1,17 @@
 import type { SlideId } from "@airdesign/document"
-import { useState, type PointerEvent, type ReactNode } from "react"
+import { useState, type CSSProperties, type PointerEvent, type ReactNode } from "react"
 import { GridRowAdd } from "@/editor/grid-row-add"
 import { GridRowFrame } from "@/editor/grid-row-frame"
 import { GridSectionCell } from "@/editor/grid-section"
+import { gridFrameHeight, gridGroupCenter, gridSlideCenters } from "@/editor/grid-lines"
 import {
   gridHeadingHeight,
+  gridLayoutLines,
   gridRowHandle,
   gridSectionHeight,
   gridSpacing,
   gridTrackColumns,
-  gridTracks,
+  gridTrackGap,
   gridTrackSize,
   type GridGeometry,
 } from "@/editor/grid-viewport"
@@ -17,7 +19,6 @@ import type { StripSection } from "@/editor/slide-sidebar"
 
 export function GridRows({
   geometry,
-  tracks,
   sections,
   ids,
   columns,
@@ -31,7 +32,6 @@ export function GridRows({
   onAdd,
 }: {
   geometry: GridGeometry
-  tracks: ReturnType<typeof gridTracks>
   sections: readonly StripSection[]
   ids: readonly SlideId[] | undefined
   columns: number
@@ -49,16 +49,23 @@ export function GridRows({
   const { rows, width, height } = geometry
   const spacing = gridSpacing(width, height)
   const count = rows.at(-1)?.end ?? 0
+  const lines = gridLayoutLines(geometry)
   const columnsOf = (length: number) => `repeat(${length}, ${width}px)`
+  const groupAt = new Map<number, { first: number; last: number }>()
+  for (const [index, line] of lines.entries()) {
+    const known = groupAt.get(line.number)
+    if (known === undefined) groupAt.set(line.number, { first: index, last: index })
+    else known.last = index
+  }
   return (
     <div
       className="grid"
       style={{
         gridTemplateColumns: columnsOf(columns),
         columnGap: spacing.column,
-        gridTemplateRows: tracks
-          .map((track, index) => {
-            const { world, fixed } = gridTrackSize(track, geometry, index === tracks.length - 1)
+        gridTemplateRows: lines
+          .map((line, index) => {
+            const { world, fixed } = gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index))
             return `${world + fixed / scale}px`
           })
           .join(" "),
@@ -97,15 +104,18 @@ export function GridRows({
         if (focus !== null) setFocus(null)
       }}
     >
-      {tracks.flatMap((track, index) => {
-        const { start, end, heads, cards, number } = track
-        const row = rows[number]
-        if (row === undefined) return []
-        const key = ids?.[start] ?? start
-        const length = gridTrackColumns(track)
-        const full = cards.length === end - start
+      {lines.flatMap((line, index) => {
+        const row = rows[line.number]
+        const placeInGroup = groupAt.get(line.number)
+        if (row === undefined || placeInGroup === undefined) return []
+        const { first, last } = placeInGroup
+        const group = lines.slice(first, last + 1)
+        const wrapped = group.length > 1
+        const groupFull = group.reduce((total, item) => total + item.cards.length, 0) === row.end - row.start
+        const key = ids?.[line.start] ?? line.start
+        const length = gridTrackColumns(line)
         const place = { gridRow: index + 1, gridColumn: `1 / span ${length}` }
-        const size = gridTrackSize(track, geometry, true)
+        const size = gridTrackSize(line, geometry, 0)
         const rowHeight = size.world + size.fixed / scale
         const rowHover = hover?.row === row.start ? hover.part : null
         const rowFocus = focus?.row === row.start ? focus.part : null
@@ -113,63 +123,81 @@ export function GridRows({
           !rowBlocked &&
           height * scale >= gridRowHandle.minimumHeight &&
           (rowHover === "handle" || (rowFocus === "handle" && rowHover !== "add"))
+        const measured = group.map((item) => ({
+          cards: item.cards,
+          heading: gridTrackSize(item, geometry, 0).fixed / scale,
+        }))
+        const gaps = group.map((_, offset) => gridTrackGap(geometry, lines, first + offset))
+        const centers = gridSlideCenters(measured, height, gaps)
+        const span = Math.max(...group.map(gridTrackColumns))
+        const band = wrapped ? groupBand(centers, height, span, width, spacing.column, scale) : undefined
         return [
-          ...(full
+          ...(groupFull && index === first
             ? [
                 <GridRowFrame
                   key={`row:${key}`}
-                  number={number + 1}
+                  number={line.number + 1}
                   start={row.start}
                   height={height}
                   scale={scale}
                   blocked={rowBlocked}
                   hover={rowFocus === "add" ? "add" : rowHover}
-                  style={{ ...place, height: rowHeight }}
+                  tint={wrapped && tinted}
+                  center={wrapped ? gridGroupCenter(centers) : undefined}
+                  rule={band?.rule}
+                  band={band?.band}
+                  style={{
+                    gridRow: wrapped ? `${first + 1} / span ${group.length}` : index + 1,
+                    gridColumn: `1 / span ${wrapped ? span : length}`,
+                    alignSelf: wrapped ? "start" : undefined,
+                    height: wrapped ? gridFrameHeight(measured, height, gaps) : rowHeight,
+                  }}
                   onGrab={(event) => onGrab(row.start, event)}
                   onMove={(direction) => {
                     setHover(null)
-                    onMove(number, direction)
+                    onMove(line.number, direction)
                   }}
                 />,
               ]
             : []),
-          ...[...new Set([...heads, ...cards])]
+          ...[...new Set([...line.heads, ...line.cards])]
             .sort((a, b) => a - b)
-            .map((index) => (
+            .map((slide) => (
               <div
-                key={ids?.[index] ?? index}
-                data-grid-row-member={cards.length > 0 ? row.start : undefined}
+                key={ids?.[slide] ?? slide}
+                data-grid-row-member={line.cards.length > 0 ? row.start : undefined}
                 data-row-tint={tinted ? "" : undefined}
+                data-wrapped={wrapped && line.cards.length > 0 ? "" : undefined}
                 className="pointer-events-none relative grid [&>div>div]:pointer-events-auto"
                 style={{
                   ...place,
                   height: rowHeight,
                   gridTemplateColumns: columnsOf(length),
                   gridTemplateRows:
-                    heads.length === 0
+                    line.heads.length === 0
                       ? undefined
-                      : cards.length === 0
+                      : line.cards.length === 0
                         ? `${gridHeadingHeight / scale}px`
                         : `${gridSectionHeight / scale}px 1fr`,
                   columnGap: spacing.column,
                 }}
               >
                 <GridSectionCell
-                  row={row}
-                  index={index}
+                  row={line}
+                  index={slide}
                   sections={sections}
                   count={count}
                   scale={scale}
                   pitch={width + spacing.column}
                   held={collapsed.held}
                   onToggle={collapsed.toggle}
-                  shown={cards.includes(index)}
+                  shown={line.cards.includes(slide)}
                 >
-                  {cards.includes(index) ? renderCard(index) : null}
+                  {line.cards.includes(slide) ? renderCard(slide) : null}
                 </GridSectionCell>
               </div>
             )),
-          ...(addBlocked || !full
+          ...(addBlocked || !groupFull || index !== last
             ? []
             : [
                 <div
@@ -179,12 +207,12 @@ export function GridRows({
                   style={{ ...place, height: rowHeight }}
                 >
                   <GridRowAdd
-                    row={number + 1}
+                    row={line.number + 1}
                     width={width}
                     height={height}
                     gap={spacing.row}
                     scale={scale}
-                    last={index === tracks.length - 1}
+                    last={index === lines.length - 1}
                     onAdd={() => onAdd(row.start)}
                   />
                 </div>,
@@ -193,4 +221,35 @@ export function GridRows({
       })}
     </div>
   )
+}
+
+function groupBand(
+  centers: readonly number[],
+  slide: number,
+  span: number,
+  width: number,
+  columnGap: number,
+  scale: number,
+): { rule: CSSProperties; band: CSSProperties } | undefined {
+  const first = centers[0]
+  const last = centers.at(-1)
+  if (first === undefined || last === undefined) return undefined
+  const top = first - slide / 2
+  const bottom = last + slide / 2
+  const inner = span * width + Math.max(0, span - 1) * columnGap
+  return {
+    rule: {
+      top,
+      height: bottom - top,
+      left: `calc(-1 * var(--grid-number-halo-width) / ${scale})`,
+      width: `calc(var(--grid-number-halo-width) / ${scale})`,
+    },
+    band: {
+      top: `calc(${top}px - var(--grid-halo-band) / ${scale})`,
+      height: `calc(${bottom - top}px + (var(--grid-halo-band) + var(--grid-halo-band-outset)) / ${scale})`,
+      left: `calc(-1 * var(--grid-halo-band-outset) / ${scale})`,
+      width: `calc(${inner}px + 2 * var(--grid-halo-band-outset) / ${scale})`,
+      background: "var(--grid-hover)",
+    },
+  }
 }

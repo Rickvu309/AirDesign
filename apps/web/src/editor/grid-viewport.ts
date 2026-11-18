@@ -1,6 +1,7 @@
 import type { PaintBox } from "@airdesign/render"
 import { gridElementPresses } from "./grid-number"
 import { zoomRanges } from "./canvas-zoom"
+import { gridCardInset, gridLineGap, gridVisualLines, gridWrapColumns } from "./grid-lines"
 
 export type GridViewport = { readonly x: number; readonly y: number; readonly scale: number }
 
@@ -123,7 +124,6 @@ export type GridGeometry = {
 export const gridHeadingHeight = 20
 export const gridSectionHeight = 56
 const gridHeadingGap = 24
-const gridCardInset = 24
 
 export function gridTracks({ rows, sections, shown }: GridGeometry) {
   return rows.flatMap(({ start, end }, number) => {
@@ -137,15 +137,40 @@ export function gridTracks({ rows, sections, shown }: GridGeometry) {
 
 type GridTrack = ReturnType<typeof gridTracks>[number]
 
+export function gridLayoutLines(geometry: GridGeometry): GridTrack[] {
+  const count = geometry.rows.at(-1)?.end ?? 0
+  return gridVisualLines(gridTracks(geometry), gridWrapColumns(count, geometry.rows))
+}
+
+export function gridColumnCount(geometry: GridGeometry): number {
+  return Math.max(1, ...gridLayoutLines(geometry).map(gridTrackColumns))
+}
+
+export function gridTrackGap(
+  geometry: GridGeometry,
+  lines: readonly { readonly number: number }[],
+  index: number,
+): number {
+  const next = lines[index + 1]
+  const line = lines[index]
+  if (next === undefined || line === undefined) return 0
+  const spacing = gridSpacing(geometry.width, geometry.height)
+  return next.number === line.number ? gridLineGap(spacing.row, spacing.column) : spacing.row
+}
+
 export function gridTrackColumns(track: GridTrack): number {
   return Math.max(...track.heads, ...track.cards) - track.start + 1
 }
 
-export function gridTrackSize(track: GridTrack, geometry: GridGeometry, last: boolean) {
+export function gridTrackSize(track: GridTrack, geometry: GridGeometry, gap: number) {
   const cards = track.cards.length > 0
   return {
-    world: cards ? geometry.height + gridCardInset + (last ? 0 : gridSpacing(geometry.width, geometry.height).row) : 0,
-    fixed: cards ? (track.heads.length === 0 ? 0 : gridSectionHeight) : gridHeadingHeight + (last ? 0 : gridHeadingGap),
+    world: cards ? geometry.height + gridCardInset + gap : 0,
+    fixed: cards
+      ? track.heads.length === 0
+        ? 0
+        : gridSectionHeight
+      : gridHeadingHeight + (gap === 0 ? 0 : gridHeadingGap),
   }
 }
 
@@ -154,18 +179,20 @@ export function gridScreenFixed(geometry: GridGeometry, index: number): number {
 }
 
 function gridCard(geometry: GridGeometry, index: number) {
-  const tracks = gridTracks(geometry)
-  const number = tracks.findIndex((track) => track.cards.includes(index))
-  const track = tracks[number]
-  if (track === undefined) return null
+  const lines = gridLayoutLines(geometry)
+  const number = lines.findIndex((line) => line.cards.includes(index))
+  const line = lines[number]
+  if (line === undefined) return null
   const { width, height } = geometry
-  const preceding = tracks.slice(0, number).map((each) => gridTrackSize(each, geometry, false))
+  const preceding = lines
+    .slice(0, number)
+    .map((each, offset) => gridTrackSize(each, geometry, gridTrackGap(geometry, lines, offset)))
   return {
-    left: (index - track.start) * (width + gridSpacing(width, height).column),
-    leading: index === track.cards[0] && track.cards.length === track.end - track.start,
-    trailing: index === track.cards.at(-1),
+    left: (index - line.start) * (width + gridSpacing(width, height).column),
+    leading: index === line.cards[0] && line.cards.length === line.end - line.start,
+    trailing: index === line.cards.at(-1),
     top: preceding.reduce((total, row) => total + row.world, 0),
-    fixed: preceding.reduce((total, row) => total + row.fixed, gridTrackSize(track, geometry, true).fixed),
+    fixed: preceding.reduce((total, row) => total + row.fixed, gridTrackSize(line, geometry, 0).fixed),
   }
 }
 
@@ -235,16 +262,16 @@ export function fittedGridElements(
 
 export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridViewport {
   const { width, height } = geometry
-  const tracks = gridTracks(geometry)
-  const columns = Math.max(1, ...tracks.map(gridTrackColumns))
-  const sizes = tracks.map((track, index) => gridTrackSize(track, geometry, index === tracks.length - 1))
+  const lines = gridLayoutLines(geometry)
+  const columns = Math.max(1, ...lines.map(gridTrackColumns))
+  const sizes = lines.map((line, index) => gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index)))
   const bounds = {
     width: columns * width + (columns - 1) * gridSpacing(width, height).column,
     height: sizes.reduce((total, size) => total + size.world, 0),
   }
   const heads = sizes.reduce((total, size) => total + size.fixed, 0)
-  const handles = tracks.some((track) => track.cards.length === track.end - track.start)
-  const trailing = tracks.some((track) => track.cards.at(-1) === track.start + columns - 1)
+  const handles = lines.some((line) => line.cards.length === line.end - line.start)
+  const trailing = lines.some((line) => line.cards.at(-1) === line.start + columns - 1)
   return fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, handles, trailing))
 }
 
