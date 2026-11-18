@@ -16,14 +16,14 @@
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "40b3f13547a2",
-      "blob": "68ba555ac52f7f6615f45a8a218b77b7290af521"
+      "digest": "35730e43280c",
+      "blob": "2e6795aea53f3c221200a261bca0646ea41a229c"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "4e0fd4a0c00c",
-      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
+      "blob": "5a8dd4ac0b053489b6528d8f55ca48cb9b00d28a"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "eb8f27efcc5e",
-      "blob": "668de6952e0b30fcc596d92d14ec9d39d2a410b8"
+      "blob": "8454750f11cafcb6d9a0c3d975c4a087da21051b"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -76,8 +76,8 @@
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "a994a1f1d52a",
-      "blob": "a2c6ace5e4eecce9b40c8f11c382fdc02545b7b2"
+      "digest": "5ce06955aaa2",
+      "blob": "6a021b4befff0f9248c49c82c30c9158359bc070"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
@@ -101,7 +101,7 @@
       "file": "packages/engine/src/apply-change.ts",
       "names": ["applySet", "landRow"],
       "digest": "b3d2b91658cb",
-      "blob": "77c27dfe95f81ad3cba8d6b5a6bc222339b39a24"
+      "blob": "1585efaf74933f2e555e7bd5c911d16984c0602b"
     }
   ]
 }
