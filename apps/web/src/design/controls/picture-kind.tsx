@@ -4,7 +4,7 @@ import { fillCopy, fillWords } from "@/copy/fill-copy"
 import { fillIcons } from "@/design/preset-icons"
 import { cn } from "@/lib/class-names"
 
-const heldBack = "A picture cannot become a shape fill and come back as the same picture."
+const heldBack = "This image can't change to another fill yet."
 
 const kinds: readonly (readonly [string, LucideIcon])[] = [
   ["none", fillIcons.none],

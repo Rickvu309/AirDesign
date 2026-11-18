@@ -16,7 +16,7 @@ const adjustNames: Readonly<Record<string, string>> = {
 const presets: Readonly<Record<Preset, string>> = {
   rect: "Rectangle",
   roundRect: "Rounded rectangle",
-  ellipse: "Oval",
+  ellipse: "Ellipse",
   triangle: "Triangle",
   rtTriangle: "Right triangle",
   diamond: "Diamond",
@@ -31,7 +31,7 @@ const presets: Readonly<Record<Preset, string>> = {
   frame: "Frame",
   corner: "L-shape",
   star4: "Four-point star",
-  star5: "Five-point star",
+  star5: "Star",
   line: "Line",
   straightConnector1: "Straight arrow line",
   rightArrow: "Right arrow",

@@ -4,6 +4,7 @@ import { themeCopy } from "../../apps/web/src/copy/theme-copy"
 import { expect, test } from "@playwright/test"
 import { openDeck, settled, typeColor } from "./design-panel"
 import { filled, shapeAt } from "./shape-fills"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -45,7 +46,7 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
     new RegExp(`#${red}`, "i"),
   )
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
-  await page.getByRole("button", { name: "Undo theme color", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["theme-color"], exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(before)
   await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
   const restored = page.locator("[data-design-theme]")
@@ -54,7 +55,7 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
     new RegExp(`#${grey}`, "i"),
   )
   await restored.getByRole("button", { name: productCopy.close, exact: true }).click()
-  await page.getByRole("button", { name: "Redo theme color", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["theme-color"], exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(painted)
   await page.reload()
   await settled(page)

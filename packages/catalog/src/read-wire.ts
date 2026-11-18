@@ -9,7 +9,7 @@ const slideInput = z.string().regex(slidePattern).describe("Only this slide. Inc
 const elementCursor = z
   .string()
   .regex(elementPattern)
-  .describe("Element id from the previous answer. The next answer starts after it.")
+  .describe("Layer id from the previous answer. The next answer starts after it.")
 const deckCursor = z
   .string()
   .regex(deckPattern)

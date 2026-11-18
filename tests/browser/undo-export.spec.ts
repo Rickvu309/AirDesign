@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect } from "@playwright/test"
 import { cleanFixture, forward, openClean, settled, signInBrowser, test } from "./api-stack"
 import { exportFromDialog } from "./export-dialog"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 type ZipEntry = {
   readonly filename: string
@@ -52,8 +53,8 @@ test("an export after every edit is undone changes no part of the original", asy
   await page.mouse.move(slide.x + 330, slide.y + 210, { steps: 8 })
   await page.mouse.up()
   await expect(page.getByRole("button", { name: "Undo move" })).toBeEnabled()
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
-  await expect(page.getByRole("button", { name: "Undo add text box" })).toBeEnabled()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Add slide" }).first().click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)

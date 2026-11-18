@@ -33,6 +33,6 @@ it("tells the presenter the deck ends after the last slide and when a slide has 
     <PresenterView {...shown} at={11} next={null} notes="  " elapsed={0} running={false} />,
   )
   expect(html).toContain("End of the deck")
-  expect(html).toContain("No speaker notes on this slide")
+  expect(html).toContain("No presenter notes on this slide")
   expect(html).toContain('aria-label="Resume timer"')
 })

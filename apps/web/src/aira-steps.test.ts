@@ -150,7 +150,7 @@ describe("replyPieces", () => {
       reasons: [airaRefusalWords["person-protected"], airaRefusalWords.stale],
     })
     expect(airaRefusalWords["person-protected"]).toBe(
-      "You edited that element while Aira was working, so Aira left it as you made it.",
+      "You edited that layer while Aira was working, so Aira left it as you made it.",
     )
   })
 

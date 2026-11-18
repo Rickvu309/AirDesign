@@ -4,7 +4,7 @@ const navy = "1F4E79"
 
 export const lineWire: TraitWire<"line"> = {
   description:
-    "The outline of a shape or picture, or a connector's line: its width, color, dash, ends, compound strokes, corners and arrowheads. Each field stands alone.",
+    "The border of a shape or image, or a connector's line: its width, color, dash, ends, compound strokes, corners and arrowheads. Each field stands alone.",
   fields: {
     fill: {
       description: `A color such as "accent1", "#${navy}" or "accent1 lumMod 75"; "none" for no line; or a gradient or pattern, written as for fill.`,

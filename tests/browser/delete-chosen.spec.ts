@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 type ZipEntry = {
   readonly filename: string
@@ -66,12 +67,12 @@ test("Delete takes every chosen shape away as one step, one undo brings them all
   await shapes[1]!.click({ modifiers: ["Shift"] })
   await page.keyboard.press("Delete")
   await counted(shapes, 0)
-  await expect(page.getByRole("button", { name: "Undo delete element", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true })).toBeEnabled()
 
   await page.keyboard.press("ControlOrMeta+z")
   await counted(shapes, 1)
   await expect(page.getByRole("button", { name: "Undo add shape", exact: true })).toBeEnabled()
-  await expect(page.getByRole("button", { name: "Redo delete element", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.redoNamed["delete-element"], exact: true })).toBeEnabled()
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await counted(shapes, 0)
   await page.keyboard.press("ControlOrMeta+z")

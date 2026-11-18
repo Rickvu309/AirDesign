@@ -4,7 +4,7 @@ const black = "000000"
 const white = "FFFFFF"
 
 export const imageWire: TraitWire<"image"> = {
-  description: "A picture's source and colors. Its opacity is the change's opacity.",
+  description: "An image's source and colors. Its opacity is the change's opacity.",
   fields: {
     mode: {
       description: "Fill covers, Fit contains, Crop uses crop.rect, Tile repeats; Stretch keeps legacy distortion.",
@@ -19,11 +19,11 @@ export const imageWire: TraitWire<"image"> = {
       example: { image: { recolor: { duotone: { dark: "accent1", light: `#${white}` } } } },
     },
     overlay: {
-      description: "A colour laid over the picture. The colour's own opacity is how strongly it covers the picture.",
+      description: "A color laid over the image. The color's own opacity is how strongly it covers the image.",
       example: { image: { overlay: { solid: `#${black} alpha 50` } } },
     },
     blur: {
-      description: "How soft the picture looks, in percent.",
+      description: "How soft the image looks, in percent.",
       example: { image: { blur: 40 } },
     },
   },

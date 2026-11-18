@@ -72,7 +72,7 @@ function rendered(text: string, keys: UndoKey[] = []) {
 }
 
 function expand(host: HTMLElement): HTMLButtonElement[] {
-  return [...host.querySelectorAll("button")].filter((button) => button.ariaLabel === "Expand speaker notes")
+  return [...host.querySelectorAll("button")].filter((button) => button.ariaLabel === "Expand presenter notes")
 }
 
 function field(host: HTMLElement): HTMLTextAreaElement {
@@ -81,7 +81,7 @@ function field(host: HTMLElement): HTMLTextAreaElement {
   return found
 }
 
-it("offers one Expand speaker notes stop while closed", () => {
+it("offers one Expand presenter notes stop while closed", () => {
   const host = rendered("Talk about savings")
   expect(expand(host)).toHaveLength(1)
   expect(host.querySelectorAll("button")).toHaveLength(1)
@@ -98,7 +98,7 @@ it("puts the cursor at the end of the notes when they open", () => {
 it("gives the focus back to the closed bar when the notes collapse", () => {
   const host = rendered("")
   act(() => expand(host)[0]?.click())
-  const collapse = host.querySelector<HTMLButtonElement>("button[aria-label='Collapse speaker notes']")
+  const collapse = host.querySelector<HTMLButtonElement>("button[aria-label='Collapse presenter notes']")
   act(() => collapse?.click())
   expect(window.document.activeElement).toBe(expand(host)[0])
 })

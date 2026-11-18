@@ -1,7 +1,7 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const bodyWire: TraitWire<"body"> = {
-  description: "How a text box lays out its text. Each field stands alone.",
+  description: "How a text layer or shape lays out its text. Each field stands alone.",
   fields: {
     insets: {
       description: "Space between each edge and the text, in points.",

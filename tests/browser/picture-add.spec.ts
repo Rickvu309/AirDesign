@@ -4,6 +4,9 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { importTitleDeck } from "./new-deck"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+
+const pictureWords = async () => (await import("../../apps/web/src/copy/picture-copy.ts")).pictureCopy
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -54,7 +57,7 @@ test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps i
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const choosing = page.waitForEvent("filechooser")
-  await page.getByRole("button", { name: "Add picture", exact: true }).click()
+  await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (await choosing).setFiles(pictureFile)
   const picture = page.locator(`[data-canvas-element="${pictureKey}"]`)
   await painted(picture)
@@ -104,7 +107,7 @@ test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", as
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const choosing = page.waitForEvent("filechooser")
-  await page.getByRole("button", { name: "Add picture", exact: true }).click()
+  await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (
     await choosing
   ).setFiles({
@@ -112,7 +115,7 @@ test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", as
     mimeType: "image/svg+xml",
     buffer: Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"),
   })
-  await expect(page.getByText("Unable to add picture. Choose a PNG, JPEG or GIF file.")).toBeVisible()
+  await expect(page.getByText((await pictureWords())["picture-type"])).toBeVisible()
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)
 })
 
@@ -122,11 +125,11 @@ test("Undo takes back an added picture and Redo paints it again, through a reloa
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const choosing = page.waitForEvent("filechooser")
-  await page.getByRole("button", { name: "Add picture", exact: true }).click()
+  await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (await choosing).setFiles(pictureFile)
   const picture = page.locator(`[data-canvas-element="${pictureKey}"]`)
   await painted(picture)
-  await page.getByRole("button", { name: "Undo add picture", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["add-picture"], exact: true }).click()
   await expect(picture).toHaveCount(0)
   await page.getByRole("button", { name: "Redo add picture", exact: true }).click()
   await painted(picture)
@@ -149,7 +152,7 @@ test("a picture added to a new title slide lands clear of the empty title and su
     }),
   )
   const choosing = page.waitForEvent("filechooser")
-  await page.getByRole("button", { name: "Add picture", exact: true }).click()
+  await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (await choosing).setFiles(pictureFile)
   const picture = page.locator(`[data-canvas-element="${pictureKey}"]`)
   await painted(picture)

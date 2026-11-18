@@ -160,10 +160,10 @@ describe("delete_element through MCP", () => {
       expect(removed.structuredContent).toEqual({ ok: true, revision: 1, runId: "run", elements: [] })
       expect(elementGone(held.deck.register, elementId("256.2"))).toBe(true)
       for (const [node, refusal, words] of [
-        ["256.3", "group-box", "Element 256.3 is inside a group"],
-        ["256.4", "locked", "Element 256.4 has an animation"],
-        ["256.2", "dead", "Element 256.2 was already deleted"],
-        ["256.9", "dead", "Element 256.9: the deck has no such element"],
+        ["256.3", "group-box", "Layer 256.3 is inside a group"],
+        ["256.4", "locked", "Layer 256.4 has an animation"],
+        ["256.2", "dead", "Layer 256.2 was already deleted"],
+        ["256.9", "dead", "Layer 256.9: the deck has no such layer"],
       ] as const) {
         const refused = await client.callTool({
           name: "airdesign_edit_deck",

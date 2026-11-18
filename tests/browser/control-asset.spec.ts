@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { boxFillPanel } from "./shape-fills"
 import { openDeck, unfold } from "./design-panel"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -48,7 +49,7 @@ test("an asset control finds an icon by a word, swaps the picture's icon, and Un
   await section.getByRole("searchbox", { name: "Search icons" }).fill("zzzz")
   await expect(section.getByRole("status")).toHaveText("No icon matches. Try another word.")
 
-  await page.getByRole("button", { name: "Undo picture", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
   await expect(section.getByText("Shows the rocket icon")).toBeVisible()
   await page.getByRole("button", { name: "Redo picture", exact: true }).click()
   await expect(section.getByText("Shows the star icon")).toBeVisible()

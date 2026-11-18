@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
+import { colorCopy } from "@/copy/color-copy"
 import { FillDetails } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
 import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
@@ -27,7 +28,7 @@ export function DesignPanel() {
       <DesignSection title="Background">
         <Swatch color={swatchWhite} name="White" edged />
       </DesignSection>
-      <DesignSection title="Theme" last>
+      <DesignSection title={colorCopy.template} last>
         <div className="grid grid-cols-2 gap-2">
           <Swatch color={swatchNavy} name="Navy" />
           <Swatch color={swatchTeal} name="Teal" />

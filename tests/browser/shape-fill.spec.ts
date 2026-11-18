@@ -5,6 +5,7 @@ import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { exportFromDialog } from "./export-dialog"
 import { boxFillPanel, fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 import { openDeck, openFillDetails, pickColor, settled, setPanelMode, shownColor } from "./design-panel"
+import { fillWords } from "../../apps/web/src/copy/fill-copy.ts"
 
 const exportName = "exported-shape-fill.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -31,8 +32,11 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const panel = await fillPanel(page, rectangle)
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
   await setPanelMode(page, "slides")
-  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Icon"])
-  await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(kinds.getByRole("button")).toHaveText(["None", fillWords.solid, "Gradient", "Icon"])
+  await expect(kinds.getByRole("button", { name: fillWords.solid, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
   await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
   await expect(shownColor(colors)).toHaveText("Accent 1")

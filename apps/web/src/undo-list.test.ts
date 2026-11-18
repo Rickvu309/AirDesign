@@ -223,12 +223,12 @@ describe("undo list", () => {
     const addBox = { name: "add-box", undoable: undoableOf(edited(), add) } as const
     const deleted = { name: "delete-element", undoable: undoableOf(added, remove) } as const
     const list = recorded(recorded(emptyUndo, addBox), deleted)
-    expect(undoLabel("undo", shownOf(list, null))).toBe("Undo delete element")
+    expect(undoLabel("undo", shownOf(list, null))).toBe("Undo delete layer")
     const first = await turnBack(deck.link, "deck", list, "undo")
-    expect(undoLabel("undo", shownOf(first.list, null))).toBe("Undo add text box")
-    expect(undoLabel("redo", shownOf(first.list, null))).toBe("Redo delete element")
+    expect(undoLabel("undo", shownOf(first.list, null))).toBe("Undo add text")
+    expect(undoLabel("redo", shownOf(first.list, null))).toBe("Redo delete layer")
     const second = await turnBack(deck.link, "deck", first.list, "undo")
-    expect(undoLabel("redo", shownOf(second.list, null))).toBe("Redo add text box")
+    expect(undoLabel("redo", shownOf(second.list, null))).toBe("Redo add text")
     const third = await turnBack(deck.link, "deck", second.list, "redo")
     expect(third.outcome).toBe("turned")
     expect(deck.sent).toEqual(["slide element-restore", "slide element-remove", "slide element-restore"])
@@ -259,7 +259,7 @@ describe("undo list", () => {
 
   it("names the edit each button undoes or redoes", () => {
     expect(undoLabel("undo", shownOf(recorded(emptyUndo, { ...textEdit, name: "notes" }), null))).toBe(
-      "Undo speaker notes edit",
+      "Undo presenter notes edit",
     )
     expect(undoLabel("undo", shownOf(emptyUndo, null))).toBe("Undo")
     expect(undoLabel("redo", shownOf(emptyUndo, null))).toBe("Redo")

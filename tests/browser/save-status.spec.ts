@@ -201,7 +201,7 @@ test("going offline and back while a resend is on the wire reads Saved once it l
 
 for (const [step, button] of [
   ["an added slide", "Add slide"],
-  ["an added text box", "Add text box"],
+  ["an added text box", "Add text"],
 ] as const) {
   test(`${step} reads Saving while its commit waits and Saved once the server takes it`, async ({
     page,

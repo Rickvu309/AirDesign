@@ -96,6 +96,7 @@
       "CHECKS.md",
       "COMMANDS.md",
       "GLOSSARY.md",
+      "check-words.md",
       "metrics.json",
       "package.json",
       "pnpm-",

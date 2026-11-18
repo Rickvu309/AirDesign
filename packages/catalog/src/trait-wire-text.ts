@@ -16,7 +16,7 @@ export const textWire: TraitWire<"text"> = {
       example: { text: { fill: { solid: "accent1" } } },
     },
     color: {
-      description: `Theme color, such as accent1 or tx1, or #${navy}; optional transforms: accent1 lumMod 75.`,
+      description: `Template color, such as accent1 or tx1, or #${navy}; optional transforms: accent1 lumMod 75.`,
       example: { text: { color: "accent1" } },
     },
     size: { description: "Size in points, 1 to 4000.", example: { text: { size: 28 } } },
@@ -35,7 +35,7 @@ export const textWire: TraitWire<"text"> = {
       description: "Letter spacing in points; negative tightens.",
       example: { text: { letterSpacing: 1.5 } },
     },
-    lineSpacing: { description: "Line spacing in percent; 100 is single.", example: { text: { lineSpacing: 150 } } },
+    lineSpacing: { description: "Line height in percent; 100 is single.", example: { text: { lineSpacing: 150 } } },
     spaceBefore: { description: "Space above each paragraph, in points.", example: { text: { spaceBefore: 12 } } },
     style: {
       description: "Apply a textStyles id from read_deck with the slide selected. Explicit fields override it.",

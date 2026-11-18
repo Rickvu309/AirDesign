@@ -238,7 +238,7 @@ async function typingDeck() {
   const found = host.querySelector("[contenteditable]")
   if (!(found instanceof window.HTMLElement)) throw new Error("no box")
   const editor: HTMLElement = found
-  await settled(() => host.querySelector<HTMLButtonElement>("button[aria-label='Expand speaker notes']")?.click())
+  await settled(() => host.querySelector<HTMLButtonElement>("button[aria-label='Expand presenter notes']")?.click())
   const opened = host.querySelector("textarea")
   if (opened === null) throw new Error("no notes field")
   const field: HTMLTextAreaElement = opened

@@ -7,6 +7,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, settled, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
+import { fillWords } from "../../apps/web/src/copy/fill-copy.ts"
 
 const exportName = "exported-line-style.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -87,7 +88,7 @@ test("a person widens and dashes a line that comes from its style and puts an ar
       .getByRole("group", { name: lineCopy.section, exact: true })
       .getByRole("button")
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("title"))),
-  ).toEqual(["None", "Color", "Gradient", "Pattern"])
+  ).toEqual(["None", fillWords.solid, "Gradient", "Pattern"])
   await expect(line.getByRole("combobox", { name: "Dash", exact: true })).toHaveText(/^Solid/)
   await line.getByRole("combobox", { name: "Cap", exact: true }).click()
   await expect(page.getByRole("option", { name: "Flat", exact: true })).toBeVisible()

@@ -107,7 +107,7 @@ export function slideChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op"],
     description:
-      "add_slide takes after and layout, with optional row placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and row (same, new or keep). It moves the group in presentation order in one edit; keep requires one complete current row. duplicate_slides and delete_slides take slides and land one edit. Copies follow the last source slide in presentation order. New ids come back in slides. The last slide cannot be deleted.",
+      "add_slide takes after and layout, with optional slide group placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and row (same, new or keep). It moves them in presentation order in one edit; keep requires one complete current slide group. duplicate_slides and delete_slides take slides and land one edit. Copies follow the last source slide in presentation order. New ids come back in slides. The last slide cannot be deleted.",
     properties: {
       op: { type: "string", enum: slideOps },
       slide: slideSchema,
@@ -121,7 +121,7 @@ export function slideChangeSchema(): JsonSchema {
         type: "string",
         enum: ["same", "new", "keep"],
         description:
-          "add_slide: same (default) or new. move_slides: same joins a row, new starts a row, keep moves a complete row. new/keep follow the anchor's remaining row; null moves to the front.",
+          "Slide group. add_slide: same (default) or new. move_slides: same joins one, new starts one, keep moves a complete one. new/keep follow the anchor's remaining slide group; null moves to the front.",
       },
     },
   }
@@ -132,14 +132,13 @@ export function deleteChangeSchema(): JsonSchema {
     type: "object",
     additionalProperties: false,
     required: ["op", "node"],
-    description:
-      "Delete one element. A group, an element inside a group, and an element with an animation cannot be deleted.",
+    description: "Delete one layer. A group, a layer inside a group, and a layer with an animation cannot be deleted.",
     properties: {
       op: { type: "string", const: "delete" },
       node: {
         type: "string",
         pattern: "^(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12})$",
-        description: "Element id such as 258.7.",
+        description: "Layer id such as 258.7.",
       },
     },
   }

@@ -1,6 +1,7 @@
 import { expect, test, type Locator } from "@playwright/test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { designing, openDeck, unfold } from "./design-panel"
+import { textCopy } from "../../apps/web/src/copy/text-copy.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -25,7 +26,7 @@ test("a title shows the size, font and spacing it paints with as inherited, and 
   const panel = await designing(page, title)
   const size = field(panel, "Font size")
   const font = field(panel, "Font")
-  const spacing = field(panel, "Line spacing")
+  const spacing = field(panel, textCopy.lineSpacing)
   await expect(size).toHaveValue("44")
   await expect(font).toHaveValue("Calibri Light")
   await expect(spacing).toHaveValue("90")

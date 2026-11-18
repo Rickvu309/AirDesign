@@ -411,7 +411,7 @@ describe("SlideCanvas boxes", () => {
       true,
     )
     expect(frameOf(host).getAttribute("role")).toBe("group")
-    expect(frameOf(host).getAttribute("aria-label")).toBe("Text box")
+    expect(frameOf(host).getAttribute("aria-label")).toBe("Text")
     expect(frameOf(host).tabIndex).toBe(-1)
     expect(frameOf(host, other).getAttribute("aria-label")).toBe("Image")
     expect(frameOf(host, other).tabIndex).toBe(0)

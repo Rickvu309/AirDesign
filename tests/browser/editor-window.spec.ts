@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { designing, openDeck } from "./design-panel"
 import { first, second, store } from "./home-store.ts"
+import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
 
@@ -139,15 +140,15 @@ test("in a 1280x720 window the controls that do not fit sit in More, reached and
   await text.press("ControlOrMeta+a")
   const toolbar = page.locator("[data-editor-toolbar]")
   await expect(toolbar.getByRole("button", { name: "Bold" })).toBeVisible()
-  await expect(toolbar.getByRole("button", { name: "Bullets" })).toHaveCount(0)
+  await expect(toolbar.getByRole("button", { name: formatCopy.bullets })).toHaveCount(0)
   await toolbar.getByRole("button", { name: "More", exact: true }).focus()
   await page.keyboard.press("Enter")
   const more = page.locator("[data-toolbar-more]")
   await expect(more).toBeVisible()
   await page.screenshot({ path: test.info().outputPath("more-open.png") })
   const order = await more.getByRole("button").evaluateAll((all) => all.map((each) => each.getAttribute("aria-label")))
-  expect(order.at(-1)).toBe("Bullets")
-  const bullets = more.getByRole("button", { name: "Bullets" })
+  expect(order.at(-1)).toBe(formatCopy.bullets)
+  const bullets = more.getByRole("button", { name: formatCopy.bullets })
   for (const _ of order) {
     if (await bullets.evaluate((each) => each === document.activeElement)) break
     await page.keyboard.press("Tab")

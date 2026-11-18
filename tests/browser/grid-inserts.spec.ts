@@ -20,7 +20,7 @@ async function threeSlides(page: Page) {
 
 const tools: Record<string, (page: Page) => Promise<void>> = {
   text: async (page) => {
-    await page.getByRole("button", { name: "Add text box", exact: true }).click()
+    await page.getByRole("button", { name: "Add text", exact: true }).click()
   },
   shape: async (page) => {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()

@@ -1,7 +1,7 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const identityWire: TraitWire<"identity"> = {
-  description: "What the element is called and whether it shows.",
+  description: "What the layer is called and whether it shows.",
   fields: {
     name: { description: "Its name in PowerPoint's Selection Pane.", example: { identity: { name: "Launch icon" } } },
     alt: {

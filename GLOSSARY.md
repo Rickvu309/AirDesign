@@ -2,133 +2,7 @@
 
 Use one word per idea: the bold term, never its Avoid terms.
 
-## Language
-
-### What runs
-
-**check**:
-A mechanical rule that passes or fails without a person or paid model.
-_Avoid_: guard, validation
-
-**gate**:
-The run `pnpm gate` stamps for a push. It runs cheap checks, builds, and unit and script tests selected by the diff.
-_Avoid_: pre-push check, quick check, fast check
-
-**step**:
-One thing `pnpm check` or ci runs, with a name and a command. Every step has one kind.
-_Avoid_: task, job, stage
-
-**rule**:
-A check on what the files say. It needs nothing built and nothing running.
-
-**tests**:
-A suite of tests that runs code.
-
-**build**:
-Work whose output other steps need.
-
-**report**:
-Work that prints or lists something and judges nothing.
-
-**part**:
-The steps ci runs on one machine, such as `source` or `scripts`.
-_Avoid_: shard, job, matrix
-
-**ci**:
-The result a pull request needs to merge. Every part must pass.
-_Avoid_: pipeline
-
-**owner**:
-The repository owner, who reads what the checks list.
-_Avoid_: the organization's name, admin, maintainer
-
-**journey**:
-A script that walks through the real app as a user does.
-_Avoid_: end-to-end test, scenario, flow
-
-### What a check says
-
-**block**:
-To fail the run when the step fails.
-_Avoid_: hard fail, enforce
-
-**warn**:
-To print a step failure and let the run pass.
-_Avoid_: soft fail, advisory, non-blocking
-
-**false stop**:
-A failed run on a pull request that merged with the same content.
-_Avoid_: flake, spurious failure
-
-**red main**:
-The state of `main` when ci fails on a commit already there.
-_Avoid_: broken build, broken main
-
-### What we measure
-
-**metric**:
-A number `pnpm check` prints to track progress.
-_Avoid_: stick, score, KPI
-
-**goal**:
-The value a counted metric should reach.
-_Avoid_: target, threshold
-
-**limit**:
-The most seconds a timed step may take.
-_Avoid_: budget, ceiling, threshold
-
-**known failure**:
-A test that is skipped, marked to do, expected to fail, or asserts nothing.
-_Avoid_: known fault, known bug, disabled test
-
-**the bar**:
-Every goal, every limit, and every PowerPoint case and deck that is already judged.
-_Avoid_: quality bar, standard, baseline
-
-**lowers the bar**:
-A pull request lowers the bar when it moves a metric away from its goal, raises a limit, or changes a judged case or deck.
-_Avoid_: regresses, weakens, loosens
-
-**changes ci**:
-An edit to a file that decides what ci checks.
-_Avoid_: touches infra, tooling change
-
-### How a change is shown to work
-
-**proof**:
-The commands a builder ran for a change and what they printed.
-_Avoid_: evidence, verification, validation
-
-**judge**:
-To compare an exported PowerPoint file with its original and report every difference no edit asked for.
-_Avoid_: validate, verify
-
-**diff**:
-The parts an exported PowerPoint file changed, added or removed against its original, with each changed XML line and its shape path. It gives no verdict; `--allow` names the parts an edit may change.
-_Avoid_: delta, comparison
-
-**slide-diff**:
-The score of a painted slide against its reference image: the mean similarity, the lowest similarity of any 32 by 32 pixel tile, and the share of pixels that changed. The lowest tile catches one missing element on a mostly white slide.
-_Avoid_: image diff, visual diff, screenshot comparison
-
-**fidelity reference**:
-A picture PowerPoint itself drew of a slide: a page of the PDF PowerPoint saved of a deck, or the thumbnail of slide 1 PowerPoint keeps in a deck. paint-fidelity scores our painted slides against them.
-_Avoid_: golden image, ground truth
-
-**planted fault**:
-A break put into code on purpose, to see whether a check catches it.
-_Avoid_: mutant, planted break, injected bug
-
-### How a pull request is named
-
-**title**:
-A pull request or commit's first line. Use an imperative verb and one outcome in at most 72 characters, with no full stop.
-_Avoid_: subject, headline, summary line
-
-**area**:
-The part of AirDesign a pull request touches, named by a label the `bar` check adds from the changed paths in `scripts/areas.json`: `editor`, `aira`, `deck-home`, `sign-in`, `pptx`, `document`, `verify`, `specs` and `tooling`. A pull request may have several.
-_Avoid_: component, scope, module
+The words for how a change is checked, measured, proven and named are in [check-words.md](check-words.md).
 
 ## Product words
 
@@ -142,8 +16,29 @@ _Avoid_: presentation, project, file (a file is what a deck is imported from or 
 One page of a deck.
 _Avoid_: page, frame
 
-**grid row**:
-Slides kept together in Grid. Separate from sections; not exported.
+**layer**:
+One thing on a slide: a shape, text, an image, a line, a group, a table or a chart. The code and the agent wire still say element (`element`, `elements`, `ElementId`) until its rename lands.
+_Avoid_: element, object, item
+
+**text**:
+A layer that holds only text, as a person adds it with Add text. The design panel's Text box section is PowerPoint's: how text sits in its shape.
+_Avoid_: text box (as a layer's name)
+
+**image**:
+A photo or graphic file shown on a slide. The design panel titles a layer Image when an image is what it shows. The code and the agent wire still say picture (`picture`) until its rename lands.
+_Avoid_: picture
+
+**solid**:
+A fill of one color, the fill kind beside None, Gradient and Image. Its Color row picks the color.
+_Avoid_: color (as a fill kind)
+
+**ellipse**, **star**:
+The shape names Figma's shape tool uses. A PowerPoint shape Figma does not have keeps its PowerPoint name, such as Chevron or Cloud. The code still says `ellipse` and `star5`.
+_Avoid_: oval, five-point star
+
+**slide group**:
+Slides kept together, shown as one row in grid view. In a PowerPoint file it is a section. The code and the agent wire still say grid row (`GridRow`, `grid.starts`, `row`) and section (`section`) until their renames land, and a grid row is not exported yet.
+_Avoid_: grid row, row, section
 
 **import**:
 To make a deck from a PowerPoint file.
@@ -158,12 +53,12 @@ To show a deck full screen, one slide at a time, to an audience. Stop presenting
 _Avoid_: slideshow, play, run
 
 **presenter view**:
-What the person presenting sees: the current slide, the next one, the speaker notes, a timer and the slide count.
+What the person presenting sees: the current slide, the next one, the presenter notes, a timer and the slide count.
 _Avoid_: speaker view, notes view
 
-**speaker notes**:
-The words a person keeps under a slide for themselves. They are shown in the presenter view and never to the audience.
-_Avoid_: notes page, comments
+**presenter notes**:
+The words a person keeps under a slide for themselves. They are shown in the presenter view and never to the audience, and they export as the slide's PowerPoint notes. The code still says notes (`notes`, `<slide>.notes`) until its rename lands.
+_Avoid_: speaker notes, notes page, comments
 
 **Trash**:
 Where a deck goes when a person moves it out of their decks. It can be restored for 30 days. Its actions are Move to Trash, Restore and Delete for good.
@@ -178,19 +73,19 @@ Software that works on a person's decks over MCP, such as Claude or Codex. A per
 _Avoid_: bot, integration, app
 
 **Aira**:
-The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes, icons and diagrams, groups and ungroups elements, attaches connectors and deletes elements.
+The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text, icons and diagrams, groups and ungroups layers, attaches connectors and deletes layers.
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and deck theme. Shared fields set every selected element in one undo step. The title shows how many are selected. Multi-edit text replaces the words of several selected text elements in one undo step.
+The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and template style. Shared fields set every selected layer in one undo step. The title shows how many are selected. Multi-edit text replaces the words of several selected text layers in one undo step.
 _Avoid_: inspector, properties, format pane
 
 **Mixed**:
-What a design panel control shows when selected elements hold different values. Changing it gives them all one value.
+What a design panel control shows when selected layers hold different values. Changing it gives them all one value.
 _Avoid_: multiple, varies
 
 **inherited**:
-A value painted from an element's layout, master, theme or PowerPoint's default. It uses quiet ink in the design panel; a value set by a person or agent uses full ink. Reset returns the inherited value.
+A value painted from a layer's layout, master, template style or PowerPoint's default. It uses quiet ink in the design panel; a value set by a person or agent uses full ink. Reset returns the inherited value.
 _Avoid_: default, placeholder value, unset
 
 **scrub**:
@@ -204,18 +99,27 @@ A line through text. The code calls its run flag `strike`; PowerPoint writes sin
 Space between letters. The panel shows percent of the first run’s size; `letterSpacing` stores native `spc`, hundredths of a point.
 
 **list**:
-A paragraph’s one choice of No list, Bullets or Numbered list. The code stores `none`, `bullets` or `numbers`.
+A paragraph’s one choice of No list, Bulleted list or Numbered list. The code stores `none`, `bullets` or `numbers`.
+_Avoid_: bullets (as the name of the choice)
 
-**theme**:
-The deck's twelve colors and heading and body fonts. Anything that names a theme color or font follows its changes, including shapes, lines, text, backgrounds and tables.
-_Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
+**line height**:
+The distance from one line of text to the next, in percent of PowerPoint's single line. The code still says line spacing (`text.lineSpacing`) until its rename lands; PowerPoint writes it as `lnSpc`.
+_Avoid_: line spacing
+
+**template style**:
+The look a slide takes: its template colors, heading and body fonts and text styles. Anything that names a template color or font follows its changes, including shapes, lines, text, backgrounds and tables. Design mode shows every field in Template style details. In a PowerPoint file it is a master with its theme, and the code still says theme (`theme`, `deck.theme`) until its rename lands.
+_Avoid_: theme, palette, color scheme
+
+**template colors**:
+The twelve colors of a template style, each named by its PowerPoint slot, such as Dark 1 or Accent 1. The code still calls them theme colors until the rename lands.
+_Avoid_: theme colors, palette
 
 **color picker**:
-Where a person picks any color a field takes: a fill, line, effect, text, gradient stop, background or theme color. The menu is titled with that property. Template colors are the theme colours the panel already lists, shown without names; the closed row names a theme color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker theme tints are in that picker, stored as the theme color with `lumMod` and `lumOff`, so a tint follows a theme change. The menu keeps twelve theme colours. A shape stores an added colour as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
+Where a person picks any color a field takes: a fill, line, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
 _Avoid_: palette, swatches, color menu
 
 **table style**:
-The look an imported or previously saved table takes from its deck: a header row, banded rows, borders and the text color on each, all in theme colors. The table keeps its style through import and export.
+The look an imported or previously saved table takes from its deck: a header row, banded rows, borders and the text color on each, all in template colors. The table keeps its style through import and export.
 _Avoid_: table theme, table format, table preset
 
 **icon**:
@@ -223,35 +127,35 @@ A Lucide drawing a person or an agent adds by its name, such as rocket. It paint
 _Avoid_: symbol, glyph, clip art, sticker
 
 **recolor**:
-Repainting a picture in gray tones, or in two colors that replace its dark and light tones (Grayscale and Duotone in the design panel).
+Repainting an image in gray tones, or in two colors that replace its dark and light tones (Grayscale and Duotone in the design panel).
 _Avoid_: tint, filter, colorize
 
 **crop**:
-How much of a picture is cut from each side, in percent. The frame keeps its size.
+How much of an image is cut from each side, in percent. The frame keeps its size.
 _Avoid_: trim, clip, mask
 
 **alt text**:
-The words a screen reader reads for an element, shown beside its name in the design panel's Name and alt text section. An element can also be hidden on its slide there.
+The words a screen reader reads for a layer, shown beside its name in the design panel's Name and alt text section. A layer can also be hidden on its slide there.
 _Avoid_: description, caption, alternative text
 
 **opacity**:
-How solid an element is, in percent: one value that fades its fill, line, text and picture together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
+How solid a layer is, in percent: one value that fades its fill, border, text and image together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
-Two or more elements of one slide that move and resize as one. A person selects them with Shift+click or Ctrl+click (Cmd+click on a Mac) and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit: `group` takes two or more element ids of one slide, `ungroup` takes one or more group ids, and nothing moves. The first click on an element of a group selects the group, the next selects that element.
+Two or more layers of one slide that move and resize as one. A person selects them with Shift+click or Ctrl+click (Cmd+click on a Mac) and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit: `group` takes two or more layer ids of one slide, `ungroup` takes one or more group ids, and nothing moves. The first click on a layer of a group selects the group, the next selects that layer.
 _Avoid_: bundle, combine, merge, set
 
 **selection**:
-The elements a person selects on the slide or inside one group. Click selects one. Shift+click or Ctrl+click (Cmd+click on a Mac) adds or removes one. One has handles. Several have a ring each and one frame. Drag, arrows and Delete act on all as one undo step. An agent's delete drops that element from the selection.
+The layers a person selects on the slide or inside one group. Click selects one. Shift+click or Ctrl+click (Cmd+click on a Mac) adds or removes one. One has handles. Several have a ring each and one frame. Drag, arrows and Delete act on all as one undo step. An agent's delete drops that layer from the selection.
 _Avoid_: chosen, picked, active element
 
 **connector**:
-A line whose ends can attach to sites on the shapes and pictures of its slide, so it follows them while they move, resize or turn. A person drags an end onto a site, or to any other point on the slide to free it, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and an elbow bends where PowerPoint would bend it. None frees an end. An attached connector moves only by its ends. The code calls a connector's ends its `connection`.
+A line whose ends can attach to sites on the shapes and images of its slide, so it follows them while they move, resize or turn. A person drags an end onto a site, or to any other point on the slide to free it, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and an elbow bends where PowerPoint would bend it. None frees an end. An attached connector moves only by its ends. The code calls a connector's ends its `connection`.
 _Avoid_: link, edge, arrow (an arrow is a line's end)
 
 **site**:
-A numbered point on a shape or picture where a connector's end attaches, numbered as PowerPoint numbers them: a rectangle has 0 at the top, 1 left, 2 bottom and 3 right. The design panel names a site by the side it sits on, Top, Left, Bottom or Right, or Top left and the like at a corner, and Point and its number when two sites would share a name. A shape's sites show as dots while a person drags a connector's end over it. PowerPoint calls them connection points.
+A numbered point on a shape or image where a connector's end attaches, numbered as PowerPoint numbers them: a rectangle has 0 at the top, 1 left, 2 bottom and 3 right. The design panel names a site by the side it sits on, Top, Left, Bottom or Right, or Top left and the like at a corner, and Point and its number when two sites would share a name. A shape's sites show as dots while a person drags a connector's end over it. PowerPoint calls them connection points.
 _Avoid_: anchor, port, handle
 
 **diagram**:
@@ -259,7 +163,7 @@ Shapes joined by connectors and grouped, which an agent adds in one change with 
 _Avoid_: flowchart, SmartArt
 
 **effects**:
-An element’s shadow, glow and soft edge. Shadow has three strengths and Shadow opacity. Effects keeps exact settings. A group’s effects paint around its contents.
+A layer’s shadow, glow and soft edge. Shadow has three strengths and Shadow opacity. Effects keeps exact settings. A group’s effects paint around its contents.
 _Avoid_: filters, shadow styles
 
 **request**:
@@ -287,11 +191,11 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 The words the code and the agent tools use for how a deck is stored and edited. A person never reads them. The code, the test and the tool use the same word, so one search finds all of it.
 
 **element**:
-One thing on a slide: a shape, picture, connector, group, table, chart, or a kept part of the file. The code names which one in its `kind`.
+One thing on a slide: a shape, picture, connector, group, table, chart, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
 _Avoid_: object, item, widget
 
 **node**:
-Anything an edit can address that holds its own rows: an element, a slide's own node `<slide>.slide`, a slide's notes `<slide>.notes`, or the theme, `deck.theme`. An element's id, such as `258.7`, is its node. The code says `node`; the tool texts say "element id" for the same string.
+Anything an edit can address that holds its own rows: an element, a slide's own node `<slide>.slide`, a slide's notes `<slide>.notes`, or the theme, `deck.theme`. An element's id, such as `258.7`, is its node. The code says `node`; the tool texts say "layer id" for the same string.
 _Avoid_: entity, object, item
 
 **trait**:
@@ -358,7 +262,7 @@ The change that sets fields on every node its `target` names: an element id, a s
 _Avoid_: update, modify, write
 
 **add**:
-The change that puts a new element on one slide: a text box, or with kind `picture` an icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
+The change that puts a new element on one slide: a text layer, or with kind `picture` an icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
 _Avoid_: insert, create, new
 
 **gesture**:

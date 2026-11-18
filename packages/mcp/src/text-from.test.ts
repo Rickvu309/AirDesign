@@ -24,7 +24,7 @@ const missingRun = "Paragraph 0 of the file has runs 0 and 1. Use one of them, o
 const missingParagraph = "The file has paragraphs 0 and 1."
 const missingSecondParagraph = "Paragraph 1 of the file has runs 0. Use one of them, or -1 for a new run."
 const notText =
-  "Send a JSON text value for this element. Each from must be one the file has, and -1 is a new run. The file has paragraphs 0 and 1."
+  "Send a JSON text value for this layer. Each from must be one the file has, and -1 is a new run. The file has paragraphs 0 and 1."
 
 function opened(): Deck {
   const id = readDeckId("deck")

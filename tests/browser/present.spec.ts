@@ -82,7 +82,7 @@ test("the presenter view shows the speaker notes, the next slide and the time", 
   await opened(page)
   await page.locator('[data-slide-entry="3"]').click()
   if ((await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).count()) === 0)
-    await page.getByRole("button", { name: "Expand speaker notes" }).click()
+    await page.getByRole("button", { name: "Expand presenter notes" }).click()
   await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill(notes)
   await page.locator('[data-slide-entry="2"]').click()
   await page.keyboard.press("ControlOrMeta+Enter")

@@ -136,7 +136,7 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
       style={{ height: open ? height : notesClosed }}
     >
       <span id={description} hidden>
-        Drag to resize speaker notes. Arrow Up and Arrow Down resize by 24 pixels. Home sets the minimum. End sets the
+        Drag to resize presenter notes. Arrow Up and Arrow Down resize by 24 pixels. Home sets the minimum. End sets the
         maximum.
         {open ? ` Height ${Math.round(height)} pixels.` : " Collapsed."}
       </span>
@@ -144,7 +144,7 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
         ref={expand}
         type="button"
         className="notes-handle relative mx-auto flex h-6 w-24 shrink-0 touch-none cursor-ns-resize items-center justify-center"
-        aria-label={open ? "Collapse speaker notes" : "Expand speaker notes"}
+        aria-label={open ? "Collapse presenter notes" : "Expand presenter notes"}
         aria-expanded={open}
         aria-describedby={description}
         onClick={(event) => {
@@ -225,11 +225,11 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
           <textarea
             ref={field}
             id="speaker-notes"
-            aria-label="Speaker notes"
+            aria-label="Presenter notes"
             className="block min-h-0 w-full flex-1 resize-none overflow-auto bg-transparent text-[length:var(--type-dense)] text-ink outline-none placeholder:text-quiet"
             value={text}
             readOnly={onEdit === undefined}
-            placeholder="Add speaker notes"
+            placeholder="Add presenter notes"
             data-person-undo
             data-focus-edge
             onChange={(event) => onEdit?.(event.target.value)}

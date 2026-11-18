@@ -3,6 +3,8 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { covers } from "./gesture"
 
+const pictureWords = async () => (await import("../../apps/web/src/copy/picture-copy.ts")).pictureCopy
+
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 
@@ -60,9 +62,9 @@ test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 test("Grid and Shapes are enabled, table insertion is absent, and every shape in the tray is on", async ({ page }) => {
   await openClean(page)
   await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeEnabled()
-  await expect(page.getByRole("button", { name: "Add text box", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: "Add text", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Shapes", exact: true })).toBeEnabled()
-  await expect(page.getByRole("button", { name: "Add picture", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: (await pictureWords()).add, exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Insert table", exact: true })).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Actions", exact: true })).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Move", exact: true })).toBeEnabled()

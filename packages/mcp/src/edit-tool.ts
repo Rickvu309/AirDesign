@@ -106,7 +106,7 @@ function addedNodes(before: Register, after: Register): readonly ElementId[] {
 
 function groupDetail(changes: readonly AgentChange[], refusal: string): string | undefined {
   if (refusal !== "kind" || !changes.some((change) => "elements" in change)) return undefined
-  return "Only shapes, pictures, lines, tables, charts and groups that are not placeholders can be grouped, and only a group can be ungrouped."
+  return "Only shapes, images, lines, tables, charts and groups that are not placeholders can be grouped, and only a group can be ungrouped."
 }
 
 export function editDeck(raw: unknown, session: Session): ToolResult {

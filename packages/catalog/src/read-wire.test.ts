@@ -32,6 +32,6 @@ describe("read deck wire", () => {
     expect(schema).not.toContain("your last read")
     const read = JSON.stringify(z.toJSONSchema(readDeckQuery.input, { io: "input" }))
     expect(read).toContain("Only this slide.")
-    expect(read).toContain("Element id from the previous answer.")
+    expect(read).toContain("Layer id from the previous answer.")
   })
 })
