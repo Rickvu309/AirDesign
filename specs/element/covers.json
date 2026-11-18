@@ -51,19 +51,19 @@
       "file": "packages/document/src/decide.ts",
       "names": ["decide"],
       "digest": "3f5fe5d94e9d",
-      "blob": "24dcc7b57cc99e1e29237174c6817421d05acf11"
+      "blob": "0825150679cd602dbbab24193c9ce422efc11eef"
     },
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "218eda05c05a",
-      "blob": "f2cba9aeb37ecc5dc4b03460ecb3fefe7df1b21a"
+      "digest": "784eb7d2f03d",
+      "blob": "107b9d51bdf7dbde9b9d4994ae0b638f1fc5c178"
     },
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
       "digest": "e6de0b2cd8e7",
-      "blob": "98412ca18a9a6cd51bbf2afdd3a3751fc558598d"
+      "blob": "79255e0a6f60005f4282e3a5abbe391f18da50af"
     }
   ]
 }
