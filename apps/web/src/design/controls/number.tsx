@@ -1,3 +1,6 @@
+import { ChevronDown } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { textCopy } from "@/copy/text-copy"
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
@@ -43,6 +46,7 @@ export function NumberField({
   step = 1,
   scale,
 }: ControlProps & { unit: string; kind: string; step?: number; scale?: number }) {
+  const size = control.trait === "text" && control.field === "size"
   const look = control.look
   const Icon = look.name.show === "icon" ? look.name.icon : undefined
   const [draft, setDraft] = useState<string | null>(null)
@@ -100,7 +104,10 @@ export function NumberField({
 
   const view = (
     <label
-      className="flex h-[var(--control-dense)] min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2"
+      className={cn(
+        "flex h-[var(--control-dense)] min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted pl-2",
+        size ? "pr-0" : "pr-2",
+      )}
       title={control.label}
       data-control={kind}
       data-inherited={control.inherited ? "" : undefined}
@@ -108,8 +115,11 @@ export function NumberField({
     >
       <span
         className={cn(
-          "mr-2 min-w-0 shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
-          shown !== "" && "cursor-ew-resize touch-none select-none",
+          "min-w-0 shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
+          !size && "mr-2",
+          (Icon !== undefined || look.name.show === "letter" || look.name.show === "inside") &&
+            shown !== "" &&
+            "cursor-ew-resize touch-none select-none",
         )}
         onPointerDown={startScrub}
         onPointerMove={moveScrub}
@@ -128,7 +138,7 @@ export function NumberField({
         ref={field}
         className={cn(
           "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
-          kind === "corners" && "text-left",
+          (kind === "corners" || size) && "text-left",
           control.inherited && draft === null ? "text-quiet" : "text-foreground",
         )}
         inputMode="decimal"
@@ -142,15 +152,43 @@ export function NumberField({
         }}
         onKeyDown={onKeyDown}
       />
-      <span className="shrink-0 text-[length:var(--type-caption)] text-quiet" aria-hidden>
-        {unit}
-      </span>
+      {size ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label={textCopy.sizes}
+            className="flex h-6 w-6 shrink-0 items-center justify-center border-l border-white"
+          >
+            <ChevronDown size={12} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="max-h-80 overflow-y-auto">
+            {fontSizes.map((value) => (
+              <DropdownMenuItem key={value} onClick={() => commit(String(value))}>
+                {value}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <span className="shrink-0 text-[length:var(--type-caption)] text-quiet" aria-hidden>
+          {unit}
+        </span>
+      )}
     </label>
   )
   return look.name.show === "above" ? (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <span aria-hidden className="text-[length:var(--type-caption)] text-quiet">
-        {control.label}
+      <span
+        aria-hidden
+        className={cn(
+          "text-[length:var(--type-caption)] text-quiet",
+          size && shown !== "" && "cursor-ew-resize touch-none select-none",
+        )}
+        onPointerDown={size ? startScrub : undefined}
+        onPointerMove={size ? moveScrub : undefined}
+        onPointerUp={size ? endScrub : undefined}
+        onPointerCancel={size ? endScrub : undefined}
+      >
+        {size ? textCopy.size : control.label}
       </span>
       {view}
     </div>
@@ -158,3 +196,5 @@ export function NumberField({
     view
   )
 }
+
+export const fontSizes = [8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 36, 40, 48, 64, 96, 128] as const

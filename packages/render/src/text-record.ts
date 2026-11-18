@@ -46,6 +46,7 @@ export type CanvasParagraph = {
 }
 
 export type CanvasText = {
+  readonly fonts?: Readonly<Record<string, string>>
   readonly colors?: readonly CanvasThemeColor[]
   readonly paragraphs: readonly CanvasParagraph[]
   readonly anchor: "top" | "middle" | "bottom"

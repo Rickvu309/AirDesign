@@ -11,7 +11,6 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
-  Type,
   ArrowUpToLine,
   ArrowDownToLine,
   Image,
@@ -76,8 +75,9 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   link: [[placed("target", hidden)]],
   text: [
     [placed("value", hidden, { control: "canvas" })],
+    [placed("style", hidden)],
     [placed("font", hidden)],
-    [icon("size", Type)],
+    [placed("weight", above, { form: "list" }), placed("size", above)],
     [icon("lineSpacing", LineSpacingIcon), icon("letterSpacing", LetterSpacingIcon)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
@@ -257,6 +257,7 @@ export function choiceLayout(field: string, options: readonly string[]): "segmen
 
 export const controlKinds = [
   "corners",
+  "typography",
   "length",
   "angle",
   "percent",

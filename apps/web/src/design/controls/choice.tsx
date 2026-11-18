@@ -1,3 +1,4 @@
+import { designCopy } from "@/copy/design-copy"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -23,19 +24,25 @@ function ChoiceList({
         aria-labelledby={label}
         className={cn(
           "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]",
+          control.field === "weight" ? "data-[size=default]:h-[var(--control-dense)]" : null,
           control.inherited ? "text-quiet" : null,
         )}
       >
         <SelectValue>
-          {(selected: string | null) =>
-            (selected ?? value) === null ? "" : optionWord(control.field, selected ?? value ?? "")
-          }
+          {(selected: string | null) => {
+            const shown = selected ?? value
+            return shown === null
+              ? control.mixed
+                ? designCopy.mixed
+                : ""
+              : (control.choices?.find((choice) => choice.value === shown)?.label ?? optionWord(control.field, shown))
+          }}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {optionWord(control.field, option)}
+            {control.choices?.find((choice) => choice.value === option)?.label ?? optionWord(control.field, option)}
           </SelectItem>
         ))}
       </SelectContent>

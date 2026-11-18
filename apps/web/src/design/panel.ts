@@ -1,3 +1,4 @@
+import { typographyControls } from "./typography-controls"
 import { authorableTrait } from "@airdesign/catalog"
 import {
   inheritable,
@@ -15,7 +16,7 @@ import {
   type TraitName,
   type TraitReads,
 } from "@airdesign/document"
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
@@ -41,6 +42,14 @@ export type PanelControl = {
   readonly mixed: boolean
   readonly inherited: boolean
   readonly reset: string | null
+  readonly choices?: readonly {
+    readonly value: string
+    readonly label: string
+    readonly font?: string | undefined
+    readonly detail?: string | undefined
+    readonly appearance?: CSSProperties
+  }[]
+  readonly placeholder?: string
   readonly numberScale?: number
   readonly parent?: unknown
   readonly slides?: readonly string[]
@@ -170,6 +179,7 @@ function wireFields(trait: TraitName): readonly (readonly [string, Desc])[] {
 }
 
 export type PanelReads = {
+  readonly fonts?: { readonly major?: string; readonly minor?: string }
   readonly reads: TraitReads
   readonly moves: boolean
   readonly fields?: Readonly<Record<string, ShownField | undefined>>
@@ -250,7 +260,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         }),
       ]
     })
-    const visible = controls
+    const visible = trait === "text" ? typographyControls(controls, view.textStyles ?? [], shown) : controls
     return visible.length === 0
       ? []
       : [{ trait, label: labels.section ?? "", open: true, strips: arrange(trait, visible) }]
@@ -330,6 +340,13 @@ function manyControl(controls: readonly PanelControl[], lead: PanelControl, node
   return {
     ...lead,
     desc: choices,
+    ...(lead.choices === undefined
+      ? {}
+      : {
+          choices: lead.choices.filter((choice) =>
+            controls.every((control) => control.choices?.some((each) => each.value === choice.value)),
+          ),
+        }),
     value: mixed && !shared ? undefined : lead.value,
     mixed,
     inherited: !mixed && controls.every((control) => control.inherited),

@@ -27,3 +27,23 @@ it("fetches each licensed family once, stores it and serves it after a restart",
   expect(await restarted.file("Montserrat", "../../private")).toBeUndefined()
   expect(fetched).toHaveLength(3)
 })
+
+it("serves a verified portable face under its native family with independent italic", async () => {
+  const network: typeof fetch = async (input) => {
+    if (String(input).endsWith("METADATA.pb"))
+      return new Response(
+        'name: "Lato"\nlicense: "OFL"\nfonts {\n style: "normal"\n weight: 300\n filename: "Lato-Light.ttf"\n}\nfonts {\n style: "italic"\n weight: 300\n filename: "Lato-LightItalic.ttf"\n}\nfonts {\n style: "normal"\n weight: 400\n filename: "Lato-Regular.ttf"\n}',
+      )
+    return new Response(new Uint8Array([0, 1, 0, 0]))
+  }
+  const source = new FontSource(new LocalOriginalStore(), network)
+  const manifest = await source.family("Lato Light")
+  expect(manifest).toMatchObject({
+    ok: true,
+    family: "Lato Light",
+    faces: [
+      { file: "Lato-Light.ttf", weight: "400", style: "normal" },
+      { file: "Lato-LightItalic.ttf", weight: "400", style: "italic" },
+    ],
+  })
+})

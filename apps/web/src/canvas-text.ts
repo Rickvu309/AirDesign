@@ -71,6 +71,7 @@ export function canvasText(text: PaintText | null): CanvasText | null {
   if (text === null) return null
   return {
     ...fitOf(text),
+    ...(text.fonts === undefined ? {} : { fonts: text.fonts }),
     paragraphs: text.paragraphs.map((paragraph) => canvasParagraph(paragraph, text.fontScale, text.spacingReduction)),
     anchor: text.anchor,
     insets: text.insets,

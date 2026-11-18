@@ -60,7 +60,7 @@ export type ReadDeckAnswer = {
   readonly revision: number
   readonly grid: { readonly starts: readonly string[] }
   readonly elements: readonly ReadElement[]
-  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template">[]
+  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template" | "textStyles">[]
   readonly templates?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly theme?: Readonly<Record<string, string>>
@@ -300,6 +300,8 @@ export function readDeckPage(
     (index?.slides ?? []).flatMap(({ id, palette }) => (palette === undefined ? [] : [[id, palette]])),
   )
   const slideOf = (id: string, position: number) => {
+    const textStyles = index?.slides.find((slide) => slide.id === id)?.textStyles
+    const styles = textStyles === undefined ? {} : { textStyles }
     const palette = palettes.get(id)
     const slide = readSlideId(id)
     const node = slide === undefined ? undefined : slideNode(slide, "slide")
@@ -323,6 +325,7 @@ export function readDeckPage(
     return {
       id,
       position,
+      ...styles,
       ...(palette === undefined || palette === 0 ? {} : { palette }),
       ...(template === undefined ? {} : { template }),
     }

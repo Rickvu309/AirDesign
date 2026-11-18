@@ -1,5 +1,5 @@
 import { formatNames, type TextFormat, type TextRun } from "@airdesign/document"
-import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { paintRunColor, withRunChild } from "./run-color.js"
 import { xmlAttribute } from "./shape-write.js"
@@ -40,6 +40,20 @@ function shifted(edits: readonly ByteEdit[], by: number): readonly ByteEdit[] {
 function colored(slice: Uint8Array, run: TextRun): Uint8Array {
   const painted = run.color === undefined ? slice : paintRunColor(slice, run.color)
   if (run.font === undefined) return painted
+  const latin = markupDocument(painted).elements.find((element) => element.kind === "a:latin")
+  const typeface = latin?.attributes.find((attribute) => attribute.name === "typeface")
+  if (typeface !== undefined)
+    return spliceBytes(painted, [
+      { start: typeface.valueStart, end: typeface.valueEnd, next: encodeUtf8(xmlAttribute(run.font)) },
+    ])
+  if (latin !== undefined)
+    return spliceBytes(painted, [
+      {
+        start: latin.start + "<a:latin".length,
+        end: latin.start + "<a:latin".length,
+        next: encodeUtf8(` typeface="${xmlAttribute(run.font)}"`),
+      },
+    ])
   return withRunChild(painted, latinKinds, "a:latin", encodeUtf8(`<a:latin typeface="${xmlAttribute(run.font)}"/>`))
 }
 

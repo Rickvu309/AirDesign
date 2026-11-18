@@ -179,3 +179,40 @@ it("writes decimal numbering as the paragraph's one list choice", () => {
   const value = original.map((paragraph) => ({ ...paragraph, list: "numbers" as const }))
   expect(written(value)).toContain('<a:buAutoNum type="arabicPeriod"/>')
 })
+
+it("exports a portable face by its native typeface name and changes no other run bytes", () => {
+  for (const face of [
+    "Lato Thin",
+    "Lato ExtraLight",
+    "Lato Light",
+    "Lato Medium",
+    "Lato SemiBold",
+    "Lato ExtraBold",
+    "Lato Black",
+  ]) {
+    const value = withRuns(0, [
+      { from: 0, text: "Hello world", font: face },
+      { from: 1, text: "bold" },
+    ])
+    expect(written(value)).toBe(slide(first.replace('typeface="Arial"', `typeface="${face}"`) + second))
+  }
+})
+
+it("keeps native font metadata while changing only the typeface", () => {
+  const native = first
+    .replace('typeface="Arial"', 'typeface="Arial" panose="020B0604020202020204" pitchFamily="34" charset="0"')
+    .replace("</a:rPr>", '<a:hlinkClick r:id="rId8" tooltip="Read more"/></a:rPr>')
+  const parts = new Map([[part, encodeUtf8(slide(native + second))]])
+  const after = applyRoute(parts, {
+    name: "text",
+    part,
+    shape: "2",
+    value: withRuns(0, [
+      { from: 0, text: "Hello world", font: "Lato Light" },
+      { from: 1, text: "bold" },
+    ]),
+  }).get(part)
+  expect(after === undefined ? "" : decodeUtf8(after)).toBe(
+    slide(native.replace('typeface="Arial"', 'typeface="Lato Light"') + second),
+  )
+})

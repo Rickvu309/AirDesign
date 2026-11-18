@@ -41,7 +41,9 @@ export function useElementFonts(element: CanvasElement, store: PaintStore): bool
       : textValue(record.text).flatMap((paragraph) =>
           paragraph.runs.flatMap((run) => (run.font === undefined ? [] : [run.font])),
         )
-  const names = [...new Set([...namesOf(element), ...written])].sort()
+  const names = [
+    ...new Set([...namesOf(element), ...written.map((font) => element.text?.fonts?.[font] ?? font)]),
+  ].sort()
   const key = JSON.stringify(names)
   const [loaded, setLoaded] = useState("")
   const ready = loader === undefined || names.every((name) => loader.ready(name))

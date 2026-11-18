@@ -16,7 +16,11 @@ export const textWire: TraitWire<"text"> = {
       example: { text: { color: "accent1" } },
     },
     size: { description: "Size in points, 1 to 4000.", example: { text: { size: 28 } } },
-    font: { description: "Font face, such as Georgia.", example: { text: { font: "Georgia" } } },
+    font: {
+      description:
+        "Typeface, such as Georgia or portable Lato Light, Thin, ExtraLight, Medium, SemiBold, ExtraBold or Black.",
+      example: { text: { font: "Georgia" } },
+    },
     bold: { description: "Bold on or off.", example: { text: { bold: true } } },
     italic: { description: "Italic on or off.", example: { text: { italic: true } } },
     underline: { description: "Underline on or off.", example: { text: { underline: true } } },
@@ -29,6 +33,10 @@ export const textWire: TraitWire<"text"> = {
     },
     lineSpacing: { description: "Line spacing in percent; 100 is single.", example: { text: { lineSpacing: 150 } } },
     spaceBefore: { description: "Space above each paragraph, in points.", example: { text: { spaceBefore: 12 } } },
+    style: {
+      description: "Apply a template textStyles id from read_deck; explicit fields override it.",
+      example: { text: { style: "master/title" } },
+    },
     spaceAfter: { description: "Space below each paragraph, in points.", example: { text: { spaceAfter: 6 } } },
   },
 }

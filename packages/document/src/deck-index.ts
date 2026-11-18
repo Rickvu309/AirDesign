@@ -1,4 +1,5 @@
 import { readElementLink, type ElementLink } from "./link-target.js"
+import { readTextStyles, type TextStyle } from "./text-style.js"
 import { readBox, type Box } from "./box.js"
 import {
   designKeys,
@@ -30,6 +31,7 @@ export type IndexSlide = {
   readonly animated?: readonly string[]
   readonly layout?: readonly IndexElement[]
   readonly template?: string
+  readonly textStyles?: readonly TextStyle[] | string
   readonly palette?: number
 }
 export type IndexElement = {
@@ -71,7 +73,7 @@ export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "templates", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
-  slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template"],
+  slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template", "textStyles"],
   element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
   design: designKeys,
   roles,
@@ -141,9 +143,17 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
   const read = readMeasures(row)
   if (read === null) return null
   if (row.palette !== undefined && (!whole(row.palette) || row.palette >= palettes)) return null
+  const textStyles =
+    row.textStyles === undefined
+      ? undefined
+      : typeof row.textStyles === "string" && slidePattern.test(row.textStyles)
+        ? row.textStyles
+        : readTextStyles(row.textStyles)
+  if (textStyles === null) return null
   if (row.template !== undefined && (typeof row.template !== "string" || bytesOf(row.template) > 256)) return null
   const measures = {
     ...read,
+    ...(textStyles === undefined ? {} : { textStyles }),
     ...(row.palette === undefined ? {} : { palette: row.palette }),
     ...(row.template === undefined ? {} : { template: row.template }),
   }
@@ -245,9 +255,11 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     const slide = readSlide(raw, position, palettes?.length ?? 0)
     if (slide === null || slides.some((kept) => kept.id === slide.id)) return null
     if (
-      slide.template !== undefined &&
+      (slide.template !== undefined &&
       templates !== undefined &&
-      !templates.some((style) => style.id === slide.template)
+      !templates.some((style) => style.id === slide.template)) ||
+      (typeof slide.textStyles === "string" &&
+      !slides.some((source) => source.id === slide.textStyles && Array.isArray(source.textStyles)))
     )
       return null
     slides.push(slide)
