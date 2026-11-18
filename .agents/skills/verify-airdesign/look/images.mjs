@@ -68,7 +68,9 @@ export function label(image, text, x, y, color, size) {
 }
 
 export function copy(image) {
-  return PNG.sync.read(PNG.sync.write(image))
+  const output = new PNG({ width: image.width, height: image.height })
+  image.data.copy(output.data)
+  return output
 }
 
 export function crop(image, box, scale, padding = 16) {
