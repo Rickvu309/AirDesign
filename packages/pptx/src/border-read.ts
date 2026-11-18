@@ -115,9 +115,9 @@ export function shownBorder(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt
     width: first(levels, width, null),
     fill: first(levels, fill, { none: true }),
     dash: first(levels, dash, "solid"),
-    cap: first(levels, attribute("cap", borderCaps), null),
+    cap: first(levels, attribute("cap", borderCaps), "flat"),
     compound: first(levels, attribute("cmpd", borderCompounds), "sng"),
-    join: first(levels, join, null),
+    join: first(levels, join, "round"),
     head: arrowOf(levels, "a:headEnd"),
     tail: arrowOf(levels, "a:tailEnd"),
   }

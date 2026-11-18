@@ -42,6 +42,15 @@ export function presetOutline(
   }
 }
 
+const nativeOpen = new Set(["line", "straightConnector1"])
+
+export function openPreset(name: string): boolean {
+  if (nativeOpen.has(name)) return true
+  const rule = Object.hasOwn(presets, name) ? presets[name] : undefined
+  if (rule === undefined) return false
+  return rule.paths.some((path) => path.stroke && !path.data.trimEnd().endsWith("Z"))
+}
+
 export function adjustDefaults(name: string): Readonly<Record<string, number>> {
   const rule = Object.hasOwn(presets, name) ? presets[name] : undefined
   return Object.fromEntries(

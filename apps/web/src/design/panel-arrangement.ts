@@ -144,7 +144,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
         options: { none: fillIcons.none, solid: Square, dash: SquareDashed, dot: DottedBorder },
       }),
     ],
-    [placed("fill", above, { options: fills })],
+    [placed("fill", above, { options: fills, form: "list" })],
     [placed("fill.solid", hidden)],
     [placed("color", above), placed("width", above)],
     [placed("dash", above, { form: "list" })],

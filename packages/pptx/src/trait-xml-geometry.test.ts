@@ -39,9 +39,22 @@ describe("a shape's geometry", () => {
   it("replaces a custom geometry whole with the preset a person picks", () => {
     const custom = `<a:custGeom><a:avLst/><a:pathLst><a:path w="1" h="1"><a:moveTo><a:pt x="0" y="0"/></a:moveTo></a:path></a:pathLst></a:custGeom>`
     const parts = slideOnly(`<p:spPr>${transform}${custom}${fill}</p:spPr>`)
-    expect(shownGeometry(parts, at)).toEqual({ value: null, own: true })
+    expect(shownGeometry(parts, at)).toEqual({ value: null, own: true, open: true })
     const next = writeTrait(parts, at, "geometry", { shape: { set: { preset: "triangle", adjust: {} } } })
     expect(written(next)).toBe(written(parts).replace(custom, `<a:prstGeom prst="triangle"><a:avLst/></a:prstGeom>`))
+  })
+
+  it("leaves a closed custom geometry closed, and an unstroked open path closed", () => {
+    const closed = `<a:custGeom><a:avLst/><a:pathLst><a:path w="1" h="1"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="1" y="1"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>`
+    expect(shownGeometry(slideOnly(`<p:spPr>${transform}${closed}</p:spPr>`), at)).toEqual({ value: null, own: true })
+    const quiet = `<a:custGeom><a:avLst/><a:pathLst><a:path w="1" h="1" stroke="0"><a:moveTo><a:pt x="0" y="0"/></a:moveTo></a:path></a:pathLst></a:custGeom>`
+    expect(shownGeometry(slideOnly(`<p:spPr>${transform}${quiet}</p:spPr>`), at)).toEqual({ value: null, own: true })
+    const later = `<a:custGeom><a:avLst/><a:pathLst><a:path w="1" h="1"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:close/><a:moveTo><a:pt x="1" y="1"/></a:moveTo></a:path></a:pathLst></a:custGeom>`
+    expect(shownGeometry(slideOnly(`<p:spPr>${transform}${later}</p:spPr>`), at)).toEqual({
+      value: null,
+      own: true,
+      open: true,
+    })
   })
 
   it("writes the adjusts in the preset's own order and only the ones it names", () => {
