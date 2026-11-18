@@ -132,9 +132,7 @@ export function shownTheme(parts: Parts, slide: string): ShownTheme {
   return part === null ? {} : themePartValues(parts, part)
 }
 
-export function themePartValues(parts: Parts, part: string): ShownTheme {
-  const bytes = parts.get(part)
-  if (bytes === undefined) return {}
+export function themeByteValues(bytes: Uint8Array): ShownTheme {
   const shown: Record<string, string> = {}
   for (const slot of themeSlots) {
     const hex = colorOf(bytes, slot)
@@ -145,4 +143,9 @@ export function themePartValues(parts: Parts, part: string): ShownTheme {
     if (typeface !== null) shown[font] = typeface
   }
   return shown
+}
+
+export function themePartValues(parts: Parts, part: string): ShownTheme {
+  const bytes = parts.get(part)
+  return bytes === undefined ? {} : themeByteValues(bytes)
 }

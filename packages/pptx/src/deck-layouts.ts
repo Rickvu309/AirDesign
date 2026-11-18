@@ -51,9 +51,13 @@ function described(parts: Parts, part: string): DeckLayout | null {
   return { part, name: (name === undefined ? null : attr(name, "name")) ?? "", type: attr(root, "type") }
 }
 
+export function deckMasters(parts: Parts): readonly string[] {
+  return referenced(parts, presentationPart, "p:sldMasterId", "/slideMaster")
+}
+
 export function deckLayouts(parts: Parts): readonly DeckLayout[] {
   const layouts: DeckLayout[] = []
-  for (const master of referenced(parts, presentationPart, "p:sldMasterId", "/slideMaster")) {
+  for (const master of deckMasters(parts)) {
     for (const part of referenced(parts, master, "p:sldLayoutId", "/slideLayout")) {
       const layout = described(parts, part)
       if (layout !== null && !layouts.some((held) => held.part === part)) layouts.push(layout)

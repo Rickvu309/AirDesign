@@ -366,6 +366,7 @@ export function LiveDesignPanel({ deck, selectedSlides = 0 }: { deck: DesigningD
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
         <DesignHead>{slideListCopy.selected(selectedSlides)}</DesignHead>
+        <LiveTemplateStyle deck={deck} />
         <p className="px-4 py-3 text-[length:var(--type-caption)] text-muted-foreground">{designCopy.selectOneSlide}</p>
       </div>
     )

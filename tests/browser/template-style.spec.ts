@@ -2,6 +2,7 @@ import { exportCopy } from "../../apps/web/src/export/export-options"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
@@ -71,7 +72,6 @@ test("one Undo restores the template assignment of two selected grid slides", as
   await page.getByRole("button", { name: "Grid", exact: true }).click()
   await page.locator('[data-slide-entry="1"]').click({ position: { x: 1, y: 1 } })
   await page.locator('[data-slide-entry="2"]').click({ position: { x: 1, y: 1 }, modifiers: ["Shift"] })
-  const { slideListCopy } = await import("../../apps/web/src/copy/slide-list-copy")
   await expect(page.locator("[data-grid-selected]")).toHaveText(slideListCopy.selected(2))
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page.locator("[data-design-panel] [data-template-style]").click()

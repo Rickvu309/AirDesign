@@ -1,5 +1,6 @@
 import { schemeNames, type SchemeName } from "@airdesign/document"
 import { markupDocument } from "./element-span.js"
+import { relationshipTarget } from "./markup-slice.js"
 import { paintAttribute, paintColor, type PaintPalette } from "./paint-color.js"
 import { paintChild } from "./paint-fill.js"
 import { partOf, relsOf } from "./package-address.js"
@@ -9,18 +10,23 @@ const themeFile = /^ppt\/theme\/theme\d+\.xml$/
 
 export type ThemeSwatch = { readonly scheme: SchemeName; readonly css: string }
 
+const slidePart = /^ppt\/slides\/slide\d+\.xml$/
+
 function related(parts: ReadonlyMap<string, Uint8Array>, part: string, type: string): string | null {
   const bytes = parts.get(relsOf(part))
   if (bytes === undefined) return null
-  for (const item of markupDocument(bytes).elements) {
-    if (item.kind !== "Relationship") continue
-    const kind = paintAttribute(item, "Type")
-    const target = paintAttribute(item, "Target")
-    if (kind === null || target === null || paintAttribute(item, "TargetMode") === "External") continue
-    if (!kind.endsWith(`/${type}`)) continue
-    return partOf(part, target)
+  if (slidePart.test(part)) {
+    for (const item of markupDocument(bytes).elements) {
+      if (item.kind !== "Relationship") continue
+      const kind = paintAttribute(item, "Type")
+      const target = paintAttribute(item, "Target")
+      if (kind === null || target === null || paintAttribute(item, "TargetMode") === "External") continue
+      if (!kind.endsWith(`/${type}`)) continue
+      return partOf(part, target)
+    }
+    return null
   }
-  return null
+  return relationshipTarget(bytes, part, type)
 }
 
 export function slideTheme(parts: ReadonlyMap<string, Uint8Array>, slide: string): string | null {
