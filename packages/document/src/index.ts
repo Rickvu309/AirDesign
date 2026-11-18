@@ -134,7 +134,7 @@ export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } f
 export { widestEffect } from "./trait-effects.js"
 export { patternPresets } from "./trait-fill.js"
 export { nameBytes } from "./trait-identity.js"
-export { assetIcon, iconNamePattern } from "./asset-ref.js"
+export { assetIcon, assetMedia, iconNamePattern, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
@@ -159,14 +159,11 @@ export {
   addedPictures,
   elementCommand,
   elementGone,
-  mediaTypes,
   nextElementId,
   openingIcon,
   type ElementCommand,
   type Geometry,
   lineGeometries,
-  type Media,
-  type MediaType,
 } from "./element-order.js"
 export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
 export { groupCommand, groupedNow, groupFormed, groupNode, madeGroup, type Member } from "./element-group.js"

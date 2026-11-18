@@ -385,12 +385,12 @@ describe("box inputs align and distribute the elements a target names on each sl
     ])
   })
 
-  it("refuses a nodes target that names elements on two slides as dead", () => {
+  it("aligns elements on different slides within their own slides", () => {
     const target = { nodes: [elementId("260.2"), elementId("258.3")] }
-    expect(plan({ target, box: { align: "left" } }, sized(bodies))).toEqual({
-      ok: false,
-      refusals: [{ node: null, trait: null, code: "dead" }],
-    })
+    expect(placed(plan({ target, box: { align: "left" } }, sized(bodies)))).toEqual([
+      ["260.2", 0, 10],
+      ["258.3", 0, 20],
+    ])
   })
 
   it("spaces several elements with equal gaps between the outer two, and centres a lone one on its slide", () => {

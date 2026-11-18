@@ -16,14 +16,14 @@
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "9bf63e76336f",
-      "blob": "78531a04401a611988ffa2c30e1bf9c493bdf390"
+      "digest": "40b3f13547a2",
+      "blob": "68ba555ac52f7f6615f45a8a218b77b7290af521"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "4e0fd4a0c00c",
-      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
+      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "86a0bcd5740a",
-      "blob": "a86eacc2735fe60ab8b36f5e6a254852530b5c87"
+      "digest": "0c6ed6d60a84",
+      "blob": "ac332b009a4cee73af484f16fdf2203e7ffd0f65"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,8 +52,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
-      "digest": "8f2efb7a9caf",
-      "blob": "dea427a40808f6097a5ec5cbcbe8680435248f3e"
+      "digest": "78a77ad5cf97",
+      "blob": "91d808c98ee7034dc8388e407173eb10ee99ef63"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -64,8 +64,8 @@
     {
       "file": "apps/web/src/exported-parts.ts",
       "names": ["editedParts", "exportedParts"],
-      "digest": "03f4d26d2765",
-      "blob": "d3233d4503f22e2cdfb68de595c98987a042d959"
+      "digest": "c5701d939b9c",
+      "blob": "4ee11045612ce6c0b08f34c5e9296ba68deb59a3"
     },
     {
       "file": "apps/web/src/deck-paint.ts",
@@ -76,14 +76,14 @@
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "c02b4a4c209a",
-      "blob": "23daee38ee2d9788a93f3161848a06018c54b7e7"
+      "digest": "a994a1f1d52a",
+      "blob": "a2c6ace5e4eecce9b40c8f11c382fdc02545b7b2"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
       "names": ["writeFields"],
       "digest": "20d2d3dc702d",
-      "blob": "3562a56bcf076c18e854c77b265a70b4be6a9d16"
+      "blob": "c2453e4c33fc6d5844e30229fa19060847035ce7"
     },
     {
       "file": "packages/pptx/src/trait-xml-fill.ts",

@@ -26,6 +26,9 @@ function dismiss(id?: string | number) {
 
 export const toast = {
   dismiss,
+  message(message: Parameters<typeof sonner.message>[0], options?: ExternalToast) {
+    return sonner.message(message, identified(options))
+  },
   success(message: Parameters<typeof sonner.success>[0], options?: ExternalToast) {
     return sonner.success(message, {
       ...identified(options),

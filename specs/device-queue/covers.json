@@ -4,8 +4,8 @@
     {
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
-      "digest": "69eedb6e3192",
-      "blob": "aeb35a744546662ac30d3e9401f57336e7ff878d"
+      "digest": "08d83f37f5cd",
+      "blob": "24a27ec5bad5ec19e541f3ec762fc9e4ad40bcef"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
@@ -41,7 +41,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf"],
       "digest": "7e4cd4c8fc38",
-      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
+      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
     },
     {
       "file": "packages/live/src/cache.ts",

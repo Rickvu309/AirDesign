@@ -1,5 +1,12 @@
 import { noSelection, type Selection } from "@airdesign/render"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { landedPatch, type ElementId } from "@airdesign/document"
+import { flushMedia, keepMedia } from "@airdesign/live"
+import { toast } from "@/components/ui/toast"
+import { designCopy } from "@/copy/design-copy"
+import { changeDesign } from "@/design/design-change"
+import { matchingInDeck } from "@/editor/matching-layers"
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deckInserts } from "@/editor/inserts"
 import { useDeckPaint } from "@/editor/use-deck-paint"
 import { saveStatus, useDeckStatus } from "@/editor/use-deck-status"
@@ -17,15 +24,66 @@ export function useEditorDeck(id: string) {
   const save = useShownSave(saveStatus(status))
   const { settle, setPending } = status
   const [title, setTitle] = useState("")
-  const [selection, select] = useState<Selection>(noSelection)
+  const [selection, setSelection] = useState<Selection>(noSelection)
+  const [matched, setMatched] = useState<readonly ElementId[]>([])
   const rename = useDeckTitle(id, title, setTitle)
   const undo = useUndoList()
   const { typed, sessions, records, record } = undo
   const pictures = { store: usePictureStore() }
   const notesBar = useNotes({ id, typed, sessions, records, record, settle, sending: () => setPending(true) })
   const shown = useDeckPaint(id, pictures, notesBar)
+  const slides = shown.store.current.slides()
+  const local = slides[shown.current]?.elements
+  const matching =
+    local !== undefined && selection.ids.some((node) => local.includes(node))
+      ? matched.filter((node) => shown.shapes.current.has(node))
+      : []
+
+  function select(next: Selection) {
+    setMatched([])
+    setSelection(next)
+  }
+
+  function selectMatching() {
+    if (local === undefined) return
+    const sources = selection.ids.filter((node) => local.includes(node))
+    if (sources.length === 0) return
+    const visible = new Set(slides.flatMap((slide) => slide.elements))
+    try {
+      const register = shown.shownRegister.current
+      const renamed = new Set(
+        (register?.nodes ?? []).filter((node) => {
+          const body = register?.elements[node]
+          return body !== undefined && typeof landedPatch(body, "text").identity?.name === "object"
+        }),
+      )
+      const found = matchingInDeck(shown.displayParts.current, visible, sources, renamed)
+      setMatched(found)
+      if (found.length === 0) toast.message(designCopy.noMatching)
+    } catch {
+      toast.error(designCopy.refused)
+    }
+  }
+
+  useMatchingShortcut(selection.ids.length > 0 ? selectMatching : undefined)
+
   const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, setPending })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
+  function replacePicture(node: ElementId, file: File) {
+    pictureTool.pick(file, async (picture) => {
+      try {
+        const sha256 = await keepMedia(id, picture.bytes)
+        pictures.store.keep(sha256, picture.bytes)
+        changeDesign(
+          { id, shown, undo, record, settle, setPending },
+          () => ({ target: { node }, image: { source: `${picture.type}:${sha256}` } }),
+          () => void flushMedia(id),
+        )
+      } catch {
+        toast.error(designCopy.refused)
+      }
+    })
+  }
   const { changeElement } = inserts
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
   return {
@@ -36,6 +94,9 @@ export function useEditorDeck(id: string) {
     setTitle,
     selection,
     select,
+    matching,
+    selectMatching,
+    replacePicture,
     rename,
     undo,
     record,
@@ -46,4 +107,23 @@ export function useEditorDeck(id: string) {
     changeElement,
     exported,
   }
+}
+
+function useMatchingShortcut(selectMatching: (() => void) | undefined) {
+  useEffect(() => {
+    if (selectMatching === undefined) return
+    function match(event: KeyboardEvent) {
+      if (event.code !== "KeyA" || !event.altKey || event.ctrlKey === event.metaKey || event.shiftKey || event.repeat)
+        return
+      if (event.isComposing || event.defaultPrevented) return
+      const target = event.target
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select")))
+        return
+      if (!editorOwnsKey(event)) return
+      event.preventDefault()
+      selectMatching?.()
+    }
+    window.addEventListener("keydown", match)
+    return () => window.removeEventListener("keydown", match)
+  }, [selectMatching])
 }

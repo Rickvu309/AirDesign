@@ -8,7 +8,12 @@ import { markupChildren } from "./text-value-route.js"
 
 export type Parts = ReadonlyMap<string, Uint8Array>
 
-export type ElementAt = { readonly slide: string; readonly part: string; readonly shape: string }
+export type ElementAt = {
+  readonly slide: string
+  readonly part: string
+  readonly shape: string
+  readonly media?: (sha256: string) => Uint8Array | undefined
+}
 
 export type AttributeCodec<V> = {
   readonly read: (text: string) => V | null

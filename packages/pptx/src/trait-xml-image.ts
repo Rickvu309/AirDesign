@@ -1,4 +1,4 @@
-import { assetIcon, type Alpha } from "@airdesign/document"
+import { assetIcon, assetMedia, type Alpha } from "@airdesign/document"
 import { blipPieces, blipWritten, blipXml, partDeclares, withEmbed, type BlipPieces } from "./blip-edit.js"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { blurRadius } from "./picture-adjust.js"
@@ -33,11 +33,14 @@ function withEffect(pieces: BlipPieces, drop: readonly string[], kind: string, x
 }
 
 function writtenSource(parts: Parts, at: ElementAt, ref: string): Parts {
-  const icon = assetIcon(ref)
-  if (icon === null) throw new Error("image-source")
+  const media = assetMedia(ref)
+  const bytes = media === null ? undefined : at.media?.(media.sha256)
+  if (media === null && assetIcon(ref) === null) throw new Error("image-source")
+  if (media !== null && bytes === undefined) return parts
+  const mode = media === null ? null : shownPictureMode(parts, at)
   const next = new Map(parts)
-  const linked = linkedSource(next, at.part, { icon })
-  return blipWritten(next, at, (found, blip) => {
+  const linked = linkedSource(next, at.part, media === null ? { icon: ref } : { media, bytes })
+  const written = blipWritten(next, at, (found, blip) => {
     const pieces = blipPieces(found, blip)
     const exts = pieces.exts.filter((each) => each.uri !== svgExtension)
     const open = withEmbed(found, blip, linked.embed, partDeclares(found.bytes))
@@ -47,6 +50,7 @@ function writtenSource(parts: Parts, at: ElementAt, ref: string): Parts {
       exts: linked.svg === null ? exts : [...exts, { uri: svgExtension, xml: svgExt(linked.svg) }],
     })
   })
+  return mode === "fill" || mode === "fit" ? writtenPictureMode(written, at, mode) : written
 }
 
 function writtenAlpha(parts: Parts, at: ElementAt, alpha: Alpha): Parts {

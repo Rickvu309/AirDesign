@@ -31,10 +31,11 @@ export function DesignPanel() {
   )
 }
 
-export function DesignHead({ children }: { children: ReactNode }) {
+export function DesignHead({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="flex h-9 shrink-0 items-center border-b border-line px-4">
+    <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
       <span className="text-[length:var(--type-caption)] font-medium text-foreground">{children}</span>
+      {actions}
     </div>
   )
 }
@@ -222,11 +223,13 @@ export function ElementDesign({
   palette,
   onChange,
   picture = null,
+  titleActions,
   afterTitle = null,
   children = null,
 }: {
   model: PanelModel
   picture?: ReactNode
+  titleActions?: ReactNode
   afterTitle?: ReactNode
   children?: ReactNode
   palette: Palette
@@ -245,7 +248,7 @@ export function ElementDesign({
     >
       {model.sections.every((section) => section.label !== null) ? (
         <>
-          <DesignHead>{panelTitle(model)}</DesignHead>
+          <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
           {afterTitle}
         </>
       ) : null}
@@ -267,7 +270,7 @@ export function ElementDesign({
               <DesignSection title={null}>
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               </DesignSection>
-              <DesignHead>{panelTitle(model)}</DesignHead>
+              <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
               {afterTitle}
             </div>
           )

@@ -82,10 +82,10 @@ export function usePictureTool(
     const clear = window.setTimeout(() => setRefused(null), 6000)
     return () => window.clearTimeout(clear)
   }, [refused])
-  const pick = useRef(async (file: Blob) => {
+  const pick = useRef(async (file: Blob, handle?: typeof onPicture) => {
     const picture = await readPicture(file)
     setRefused(typeof picture === "string" ? picture : null)
-    if (typeof picture !== "string") await latest.current(picture)
+    if (typeof picture !== "string") await (handle ?? latest.current)(picture)
   })
   useEffect(() => {
     if (!enabled) return
@@ -115,5 +115,5 @@ export function usePictureTool(
     }
   }, [enabled])
   const notice: ThinNotice | null = refused === null ? null : `picture-${refused}`
-  return { notice, store, pick: (file: File) => void pick.current(file) }
+  return { notice, store, pick: (file: File, handle?: typeof onPicture) => void pick.current(file, handle) }
 }
