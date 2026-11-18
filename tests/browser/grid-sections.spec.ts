@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
-import { entry, fixtures, openFile, openGrid, settled } from "./slide-grid-deck"
+import { entry, fixtures, openFile, openGrid, rowNumbers, settled } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -50,6 +50,10 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
     await openGrid(page)
+    expect((await rowNumbers(page)).map((row) => row.length)).toEqual([1, 10, 10, 8, 10, 2])
+    if (viewport.width === 1470) {
+      expect(Number.parseInt(await page.locator("[data-zoom-readout]").innerText(), 10)).toBeGreaterThanOrEqual(7)
+    }
     for (const name of ["Introduction", "Appendices"]) {
       const head = page.locator("[data-section-head]").filter({ hasText: name })
       const label = head.getByText(name, { exact: true })
@@ -67,10 +71,11 @@ for (const viewport of [
   { width: 1280, height: 720 },
   { width: 1470, height: 923 },
 ]) {
-  test(`section markers share one row without overlap at ${viewport.width}px`, async ({ page }) => {
+  test(`whole sections share a row without truncating their headings at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await openFile(page, join(fixtures, "sections-after.pptx"))
     await openGrid(page)
+    await expect(page.locator("[data-grid-row]")).toHaveCount(1)
     const heads = page.locator('[data-grid-row-member="0"] [data-section-head]')
     await expect(heads).toHaveCount(2)
     for (const name of ["Opening", "Numbers"]) {
@@ -81,7 +86,7 @@ for (const viewport of [
     const first = await heads.first().boundingBox()
     const next = await heads.last().boundingBox()
     if (first === null || next === null) throw new Error("section headings")
-    expect(first.y).toBeCloseTo(next.y)
     expect(first.x + first.width).toBeLessThan(next.x)
+    expect(first.y).toBeCloseTo(next.y)
   })
 }

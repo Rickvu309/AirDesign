@@ -11,7 +11,7 @@
       "file": "packages/document/src/decide.ts",
       "names": ["landedPatch", "shownPatch"],
       "digest": "ef74e6ff3820",
-      "blob": "820998fb0e2ac7a1f33e39133bfa73319f7659ba"
+      "blob": "2afa6ffbfbea8b86b5f269082e669df193f85d9b"
     },
     {
       "file": "packages/document/src/change.ts",
@@ -23,7 +23,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "4e0fd4a0c00c",
-      "blob": "5a8dd4ac0b053489b6528d8f55ca48cb9b00d28a"
+      "blob": "601b32ef32b908ed33a8376338349fa586c2ba9b"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",

@@ -1,12 +1,8 @@
-import path from "node:path"
-import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { fillCopy, fillWords } from "../../bin/product-copy.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
 async function drive(kit) {
-  const { fillCopy, fillWords } = await import(
-    pathToFileURL(path.join(kit.repo, "apps/web/src/copy/fill-copy.ts")).href
-  )
   await fixtureDeck(kit)
   const { page } = kit
   await page.getByRole("button", { name: "Design", exact: true }).click()

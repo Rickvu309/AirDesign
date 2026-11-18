@@ -21,7 +21,7 @@ function registerOf(order: readonly SlideCommand[]): Register {
 }
 
 function added(parts: Parts, layoutPart: string | undefined): SlideCommand {
-  const built = slideCommand(file, [], "add", 0, 0, layoutPart)
+  const built = slideCommand({ file, order: [] }, "add", 0, 0, layoutPart)
   if (built === null || built.edit.slide !== "add") throw new Error("add")
   return flooredEdit(parts, registerOf([]), file, built.edit)
 }
@@ -56,6 +56,6 @@ it("keeps today's behavior when the deck has no content layout or its layouts ca
   const parts = new Map(await fixture("blank.pptx"))
   parts.delete("ppt/slideMasters/slideMaster1.xml")
   expect(newSlideLayout(parts, registerOf([]), slideId("256"))).toBeUndefined()
-  const bare = slideCommand(file, [], "add", 0)
+  const bare = slideCommand({ file, order: [] }, "add", 0)
   expect(bare?.edit).not.toHaveProperty("layoutPart")
 })

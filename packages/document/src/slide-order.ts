@@ -1,7 +1,14 @@
 import { slideBirths } from "./slide-births.js"
 import { setRefusal } from "./grid-set.js"
 import { groupRefusal as moveRefusal } from "./grid-move.js"
-import { foldGrid, orderedSpots, turnRefusal, readGridCommand, type V1Command } from "./grid-order.js"
+import {
+  foldGrid,
+  orderedSpots,
+  turnRefusal,
+  gridCommandVersion,
+  readGridCommand,
+  type GridCommand,
+} from "./grid-order.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
 import { groupCommand, groupRefusal, readGroupCommand, type GroupCommand } from "./element-group.js"
@@ -58,7 +65,7 @@ export type LegacySlideCommand = (
   readonly runId?: string
 }
 
-export type SlideCommand = (LegacySlideCommand & { readonly grid?: never }) | V1Command
+export type SlideCommand = (LegacySlideCommand & { readonly grid?: never }) | GridCommand
 
 export type SlideBirth =
   | { readonly from: "file" }
@@ -75,6 +82,8 @@ export type FoldedSlide = {
 export type SlideState = {
   readonly file: readonly SlideId[]
   readonly order: readonly SlideCommand[]
+  readonly index?: DeckIndex
+  readonly sectionStarts?: readonly SlideId[]
 }
 
 export type SlideRefusal = "stale" | "dead" | "present" | "limit" | "group-box" | "locked" | "kind"
@@ -131,7 +140,8 @@ export function applySlide(
 ): { readonly ok: true; readonly state: SlideState } | { readonly ok: false; readonly code: SlideRefusal } {
   if (file.length === 0 || new Set(file).size !== file.length) return { ok: false, code: "dead" }
   if (state.file.length > 0 && !sameIds(state.file, file)) return { ok: false, code: "stale" }
-  const withFile = state.file.length === 0 ? { file, order: state.order } : state
+  if (command.grid === 2 && gridCommandVersion(state) === 1) return { ok: false, code: "stale" }
+  const withFile = state.file.length === 0 ? { ...state, file } : state
   const present = presentSlides(withFile)
   const ids = new Set(present.map((spot) => spot.id))
   if (elementCommand(command)) {
@@ -158,7 +168,7 @@ export function applySlide(
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
   if (command.slide === "grid-turn") {
-    const refusal = turnRefusal(withFile, command.turn)
+    const refusal = turnRefusal(withFile, command.turn, command.grid)
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
@@ -168,7 +178,11 @@ export function applySlide(
   }
   if (command.slide === "move") {
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
-    if (command.grid === 1 && command.after !== null && (command.after === command.id || !ids.has(command.after)))
+    if (
+      command.grid !== undefined &&
+      command.after !== null &&
+      (command.after === command.id || !ids.has(command.after))
+    )
       return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
@@ -258,7 +272,7 @@ export function readSlideState(raw: unknown): SlideState | undefined {
 
 export function newerSlideCommand(raw: unknown): boolean {
   if (typeof raw !== "object" || raw === null || !("slide" in raw)) return false
-  if ("grid" in raw && raw.grid !== undefined && raw.grid !== 1) return true
+  if ("grid" in raw && raw.grid !== undefined && raw.grid !== 1 && raw.grid !== 2) return true
   return (
     typeof raw.slide === "string" &&
     ![

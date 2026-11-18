@@ -266,9 +266,9 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 10,
+      stamp: 11,
       keys: {
-        page: ["format", "once", "offset", "total", "palettes", "templates", "slides", "elements"],
+        page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
         palette: ["slots", "map", "fonts"],
         slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template", "textStyles"],
         element: [

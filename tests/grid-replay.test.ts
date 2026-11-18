@@ -1,5 +1,7 @@
 import { expect, it } from "vitest"
 import {
+  appendIndex,
+  format,
   decide,
   openRegister,
   slideId,
@@ -193,14 +195,48 @@ const expected = [
     [1, 2, 3, 4],
     [5, 7, 8, 6],
   ],
+  [
+    [1, 2, 3],
+    [4, 5, 6],
+  ],
+  [
+    [1, 3],
+    [4, 5, 6],
+  ],
+  [
+    [1, 3],
+    [4, 6],
+  ],
+  [
+    [1, 3, 4],
+    [5, 6],
+  ],
+  [
+    [1, 4],
+    [5, 6],
+  ],
 ]
 
 type World = { register: Register; cache: Register; undo: readonly Undoable[]; redo: Undoable | null }
 function step(world: World, action: string): World {
+  if (action === "IndexSections") {
+    const indexed = appendIndex(world.register.index, {
+      format,
+      once: "sections",
+      offset: 0,
+      total: 0,
+      slides: file.map((id, position) => ({ id, position })),
+      elements: [],
+      sectionStarts: [id(1), id(2), id(3), id(4)],
+    })
+    if (!indexed.ok) throw new Error(indexed.refusal)
+    return { ...world, register: { ...world.register, index: indexed.index } }
+  }
   if (action === "Adopt") {
     const parsed = readSlideState(JSON.parse(JSON.stringify(world.register)))
     if (parsed === undefined) throw new Error("decode")
-    return { ...world, cache: { ...openRegister("", ""), ...parsed } }
+    const { index } = world.register
+    return { ...world, cache: { ...openRegister("", ""), ...parsed, ...(index === undefined ? {} : { index }) } }
   }
   if (action === "RefuseHead" || action === "RefuseFilledUndo" || action === "RefuseRowUndo") {
     const undoable = world.undo.at(-1)
@@ -271,6 +307,10 @@ function step(world: World, action: string): World {
       : { ...world, register, undo: world.undo.slice(0, -1), redo: undoable }
   }
   const edits: Readonly<Record<string, SlideCommand>> = {
+    FirstVersionOne: { slide: "remove", grid: 1, id: id(2) },
+    FirstVersionTwo: { slide: "remove", grid: 2, id: id(2) },
+    LaterVersionOne: { slide: "remove", grid: 1, id: id(5) },
+    LaterVersionTwo: { slide: "remove", grid: 2, id: id(3) },
     GroupSame: { slide: "move-many", grid: 1, ids: [id(3), id(1)], after: id(5), row: "same" },
     GroupNew: { slide: "move-many", grid: 1, ids: [id(3), id(1)], after: id(5), row: "new" },
     RowKeep: { slide: "move-many", grid: 1, ids: [id(6), id(5)], after: null, row: "keep" },
@@ -381,6 +421,11 @@ it("replays every bounded Grid edge through the joint fold and guarded inverses"
         "UndoCloneSet",
         "RefuseWholeDeck",
         "RefuseSetCollision",
+        "IndexSections",
+        "FirstVersionTwo",
+        "LaterVersionOne",
+        "FirstVersionOne",
+        "LaterVersionTwo",
       ]
       const next = step(world, edge.action === "Land" ? actions[state.stage]! : edge.action)
       expect(gridRows(next.register).map((row) => row.map(Number))).toEqual(expected[state.stage])

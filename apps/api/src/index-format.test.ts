@@ -1,5 +1,5 @@
 import { deckRoutes, signInRoutes } from "@airdesign/catalog"
-import { elementId, format, type IndexElement } from "@airdesign/document"
+import { elementId, format, slideId, type IndexElement } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
@@ -72,6 +72,7 @@ it("keeps a stored format 1 index whole while a newer device sends it again besi
     offset,
     total: 2,
     palettes,
+    sectionStarts: [slideId("258")],
     slides,
     elements: [designed[offset]],
   })
@@ -85,6 +86,7 @@ it("keeps a stored format 1 index whole while a newer device sends it again besi
   expect(half.index).toMatchObject({ total: 2, elements })
   expect(half.index).not.toHaveProperty("next")
   expect(half.index).not.toHaveProperty("format")
+  expect(half.index).not.toHaveProperty("sectionStarts")
   const edited = await ask(
     base,
     "POST",
@@ -96,11 +98,11 @@ it("keeps a stored format 1 index whole while a newer device sends it again besi
   expect((await ask(base, "POST", deckRoutes.index.path, page(1), cookie)).json).toEqual({
     ok: true,
     deck,
-    revision: 1,
+    revision: 2,
   })
   const whole = await opened()
   expect(whole.format).toBe(format)
-  expect(whole.index).toMatchObject({ format, palettes, elements: designed })
+  expect(whole.index).toMatchObject({ format, palettes, elements: designed, sectionStarts: ["258"] })
   expect((await ask(base, "POST", deckRoutes.index.path, older, cookie)).json).toEqual({
     ok: false,
     refusal: "present",

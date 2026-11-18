@@ -1,3 +1,4 @@
+import { gridCommandVersion } from "./grid-order.js"
 import { gridUndoable } from "./grid-undo.js"
 import type { GridUndoable, GridTurn } from "./grid-order.js"
 import { decide, landedPatch, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
@@ -221,7 +222,11 @@ function turnCommands(
       heads: undoable.heads.map((step) => ({ id: step.id, ...inverse(step) })),
       rows: from === "before" ? undoable.rowsBefore : undoable.rowsAfter,
     }
-    return landing(register, { command: "slide", file, edit: { slide: "grid-turn", grid: 1, turn } })
+    return landing(register, {
+      command: "slide",
+      file,
+      edit: { slide: "grid-turn", grid: gridCommandVersion(register), turn },
+    })
   }
   if ("stack" in undoable) {
     const chain = elementStacks(register).find(
@@ -247,7 +252,7 @@ function turnCommands(
     }
     return ungroupTurn(register, file, undoable.slide, undoable.group)
   }
-  const spot = foldSlides({ file, order: register.order }).find((spot) => spot.id === undoable.slide)
+  const spot = foldSlides({ ...register, file }).find((spot) => spot.id === undoable.slide)
   if (
     (spot?.present ?? false) !== undoable[from].present ||
     (undoable[from].present && spot?.key !== undoable[from].key)
@@ -272,7 +277,7 @@ function turnCommands(
     file,
     edit: {
       slide: "grid-turn",
-      grid: 1,
+      grid: gridCommandVersion(register),
       turn: { spots: planned.spots, heads: planned.heads, rows: planned.rowsBefore },
     },
   })
@@ -319,8 +324,8 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
       elements: [{ node, shown: shownWith(register, node, {}) }],
       slide: edit.id,
       file: register.file,
-      before: edit.slide !== "element-add" && !elementGone({ file: register.file, order: before }, node),
-      after: !elementGone({ file: register.file, order: upTo }, node),
+      before: edit.slide !== "element-add" && !elementGone({ ...register, order: before }, node),
+      after: !elementGone({ ...register, order: upTo }, node),
     }
   }
   if (edit.slide === "grid-turn") return null

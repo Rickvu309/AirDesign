@@ -55,6 +55,7 @@ export type NodeRegister = {
 
 export type Register = {
   readonly index?: DeckIndex
+  readonly sectionStarts?: readonly SlideId[]
   readonly route: string
   readonly floor: string
   readonly slides: number

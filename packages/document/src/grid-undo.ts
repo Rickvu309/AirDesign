@@ -9,8 +9,8 @@ export function gridUndoable(
   file: readonly SlideId[],
   edit: SlideCommand,
 ): GridUndoable {
-  const left = foldGrid({ file, order: before.order })
-  const right = foldGrid({ file, order: after.order })
+  const left = foldGrid({ ...before, file }, edit.grid)
+  const right = foldGrid({ ...after, file })
   const leftSpots = new Map(left.spots.map((spot) => [spot.id, spot]))
   const rightSpots = new Map(right.spots.map((spot) => [spot.id, spot]))
   const leftHeads = new Set(left.grid.starts)
@@ -51,7 +51,7 @@ export function gridUndoable(
   })
   const heads = [...guards].map((id) => ({ id, before: leftHeads.has(id), after: rightHeads.has(id) }))
   const rows = (register: Register) =>
-    gridRows({ file, order: register.order })
+    gridRows({ ...register, file }, edit.grid)
       .filter((row) => edit.slide === "move-many" && edit.row === "keep" && row.some((id) => edit.ids.includes(id)))
       .map((row) => ({ head: row[0], slides: row }))
   return { file, spots, heads, rowsBefore: rows(before), rowsAfter: rows(after) }

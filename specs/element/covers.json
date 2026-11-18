@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "7d9c267d6a48",
-      "blob": "99140b7ed180e15bbf899daf35e8f40b022d0986"
+      "digest": "9f825c5c4fa1",
+      "blob": "739e09437991a2d24d1ca1018b2640df1b3f2172"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "4a22ca05fae9",
-      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
+      "digest": "a76a1cb764ab",
+      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -33,37 +33,37 @@
       "file": "packages/document/src/slide-measure.ts",
       "names": ["slideMeasure"],
       "digest": "173356989bda",
-      "blob": "60dbbfdd214c20ed917a2182b1e9549c75aa88c8"
+      "blob": "6434232ff447532bd5986b59a680a06e27bd88a5"
     },
     {
       "file": "packages/engine/src/agent-elements.ts",
       "names": ["deleteElement"],
       "digest": "9b56b13446a8",
-      "blob": "5503bf2b5da3b0979f97ec10bcad5a52c600eafa"
+      "blob": "49168fce8830987ab46e5d92576dc3cd88585546"
     },
     {
       "file": "packages/document/src/slide-order.ts",
       "names": ["applySlide"],
-      "digest": "e2681262d992",
-      "blob": "edc548cdd88a0ea034de06d3adf182903a80e1f8"
+      "digest": "cb218272b36b",
+      "blob": "d9c65275479a92a9b11b5b0eec6250a49945ce01"
     },
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide"],
       "digest": "afd76d36671a",
-      "blob": "90cdf9ca572b8b1ade104decd785c82027b56fec"
+      "blob": "2afa6ffbfbea8b86b5f269082e669df193f85d9b"
     },
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "3ba284b8549e",
-      "blob": "6dc85da4137681c622be1d2396c4fdbdb95c00f3"
+      "digest": "fed9f3888a17",
+      "blob": "d07fae10d81581d4660ef8397fb0c3af575b8c7f"
     },
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
-      "digest": "e6de0b2cd8e7",
-      "blob": "ef1168fc780c032d200f317b784c5a718f9d5c69"
+      "digest": "6cdac03c877e",
+      "blob": "0aad07f0690dcc1e8cf07652b15fb349b034c2b8"
     }
   ]
 }

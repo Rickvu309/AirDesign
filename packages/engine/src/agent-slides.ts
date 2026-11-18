@@ -9,6 +9,7 @@ import {
   floorNodes,
   openingElement,
   foldSlides,
+  gridCommandVersion,
   nextSlideId,
   presentSlides,
   readSlideId,
@@ -91,7 +92,8 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
     const id = readSlideId(row.id)
     return id === undefined ? [] : [id]
   })
-  const state = { file, order: register.order }
+  const state = { ...register, file }
+  const grid = gridCommandVersion(state)
   const spots = presentSlides(state)
   const id = nextSlideId(foldSlides(state).map((row) => row.id))
   let edit: SlideCommand
@@ -117,19 +119,19 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       slide: "add",
       id,
       after: parsed.after,
-      grid: 1,
+      grid,
       row: parsed.row ?? "same",
       layout: parsed.layout,
       floor: floorFor(floor, id),
     }
   } else if (parsed.op === "move_slides") {
-    edit = { slide: "move-many", ids: parsed.slides, after: parsed.after, grid: 1, row: parsed.row }
+    edit = { slide: "move-many", ids: parsed.slides, after: parsed.after, grid, row: parsed.row }
   } else if (parsed.op === "move_slide") {
-    edit = { slide: "move", id: parsed.slide, after: parsed.after, grid: 1, row: "same" }
+    edit = { slide: "move", id: parsed.slide, after: parsed.after, grid, row: "same" }
   } else if (parsed.op === "delete_slide") {
-    edit = { slide: "remove", id: parsed.slide, grid: 1 }
+    edit = { slide: "remove", id: parsed.slide, grid }
   } else if (parsed.op === "delete_slides") {
-    edit = { slide: "remove-many", ids: parsed.slides, grid: 1 }
+    edit = { slide: "remove-many", ids: parsed.slides, grid }
   } else if (parsed.op === "duplicate_slides") {
     const copied = cloneMany(state, parsed.slides, (source, id) => cloneFloor(register, index, source, id))
     if (copied === null) return { ok: false, refusal: "dead" }
@@ -140,7 +142,7 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       slide: "clone",
       id,
       source: parsed.slide,
-      grid: 1,
+      grid,
       floor: cloneFloor(register, index, parsed.slide, id),
     }
   } else return { ok: false, refusal: "field" }

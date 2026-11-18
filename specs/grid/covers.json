@@ -3,27 +3,27 @@
   "covers": [
     {
       "file": "packages/document/src/grid-order.ts",
-      "names": ["foldGrid", "turnRefusal", "defaultGrid1", "gridRows"],
-      "digest": "23d15a721a8f",
-      "blob": "17b85a5b5004ef8cadcc200c66112fad9b434502"
+      "names": ["foldGrid", "turnRefusal", "defaultGrid1", "defaultGrid2", "packSections", "gridRows"],
+      "digest": "6c9b6cad1184",
+      "blob": "93187d913d1811937790c7402c19184112bc58b5"
     },
     {
       "file": "packages/document/src/grid-undo.ts",
       "names": ["gridUndoable"],
-      "digest": "e748839200b5",
-      "blob": "95abb7cbde4fe793988d5419307f7672ceda376e"
+      "digest": "4d09cf533fd8",
+      "blob": "dc153daf9d8156c89500ae6eb97aedbf53ff5bc7"
     },
     {
       "file": "packages/document/src/grid-move.ts",
       "names": ["groupRefusal", "moveGroup"],
-      "digest": "de7fe59eb997",
-      "blob": "fff67c32742511f13b7dde2073675a14947cdd68"
+      "digest": "b6c92ad56e3a",
+      "blob": "bc069d943854158625d66116a72301fe2b431b2e"
     },
     {
       "file": "packages/document/src/grid-set.ts",
       "names": ["setRefusal", "changeSet"],
       "digest": "8250311d8bd8",
-      "blob": "00780b299c2968a006752d2026846aee605ee366"
+      "blob": "a899b1ba1bee162e16c987dfcbe79751206efc49"
     }
   ]
 }

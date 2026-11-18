@@ -23,6 +23,7 @@ export {
   answeredRegister,
   appendIndex,
   indexDue,
+  indexedSectionStarts,
   indexKeys,
   readIndexPage,
   type DeckIndex,
@@ -280,7 +281,7 @@ export { contrast, readableText } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
 export { slideFindings, type SlideFindings } from "./slide-findings.js"
 
-export { defaultGrid1, gridRows, foldGrid, type GridSide } from "./grid-order.js"
+export { defaultGrid1, gridCommandVersion, gridSectionStarts, gridRows, foldGrid, type GridSide } from "./grid-order.js"
 export { gridMovePlacement } from "./grid-move.js"
 export { readElementLink, readLinkTarget, type ElementLink, type LinkTarget, type LinkEdit } from "./link-target.js"
 

@@ -28,8 +28,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["serial", "connect"],
-      "digest": "46bd62e82924",
-      "blob": "4ad27345e95d272aa945dbb8a9e9cad98489f1bf"
+      "digest": "9853f6e73b0a",
+      "blob": "9ba356657d793758accea9bbaea08a4fe5cc0dca"
     }
   ]
 }

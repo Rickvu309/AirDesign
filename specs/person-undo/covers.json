@@ -4,14 +4,14 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf", "turn", "turnCommands", "stepCommands", "applying", "holderOf"],
-      "digest": "1158a7207eca",
-      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
+      "digest": "b0c02601f1db",
+      "blob": "601b32ef32b908ed33a8376338349fa586c2ba9b"
     },
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide", "shownPatch"],
       "digest": "0805a9f7b304",
-      "blob": "90cdf9ca572b8b1ade104decd785c82027b56fec"
+      "blob": "820998fb0e2ac7a1f33e39133bfa73319f7659ba"
     },
     {
       "file": "packages/document/src/row.ts",

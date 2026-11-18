@@ -1,4 +1,4 @@
-import { indexDue, type Register } from "@airdesign/document"
+import { gridSectionStarts, indexDue, type Register } from "@airdesign/document"
 import { connect, flushOriginal, memoryRemote } from "@airdesign/live"
 import { useEffect } from "react"
 import { flushPending, server, type CommitOutcome } from "@/commit-edit"
@@ -37,7 +37,11 @@ export function useDeckOpen(deck: OpeningDeck) {
 
   function reconcile(register: Register) {
     const before = store.current.slides().map((slide) => slide.id)
-    if (structure.current !== structureOf(register, bound.current)) {
+    if (
+      (gridSectionStarts(shown.shownRegister.current ?? {}) === undefined) !==
+        (gridSectionStarts(register) === undefined) ||
+      structure.current !== structureOf(register, bound.current)
+    ) {
       showRegister(register)
       const after = store.current.slides().map((slide) => slide.id)
       setCurrent((index) => {
@@ -106,6 +110,10 @@ export function useDeckOpen(deck: OpeningDeck) {
       else if (register !== null) reconcile(register)
       if (answered?.ok !== true || indexDue(answered.index)) await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
+      if (live && gridSectionStarts(shown.shownRegister.current ?? {}) === undefined) {
+        const indexed = await connect(memoryRemote()).openDeck(id)
+        if (live && indexed.ok && gridSectionStarts(indexed.register) !== undefined) reconcile(indexed.register)
+      }
       await flushOriginal(id)
       const ended = await followDeck(
         connect(server),

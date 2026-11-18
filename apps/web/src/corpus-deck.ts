@@ -67,16 +67,16 @@ export function slideWire(parts: Parts, register: Register, edit: SlideCommand |
 }
 
 export function slideCount(parts: Parts, deck: Deck): number {
-  return presentSlides({ file: fileSlides(parts, deck.register), order: deck.register.order }).length
+  return presentSlides({ ...deck.register, file: fileSlides(parts, deck.register) }).length
 }
 
 export function slideEdit(parts: Parts, deck: Deck, change: SlideChange, index: number, to = index): Deck {
   const register = deck.register
   const file = fileSlides(parts, register)
-  const state = { file, order: register.order }
+  const state = { ...register, file }
   const current = presentSlides(state)[index]
   const layout = change === "add" && current !== undefined ? newSlideLayout(parts, state, current.id) : undefined
-  const built = slideCommand(file, register.order, change, index, to, layout)
+  const built = slideCommand(state, change, index, to, layout)
   if (built === null) throw new Error(`no ${change}`)
   return commit(deck, [{ ...flooredEdit(parts, register, file, built.edit), file }])
 }

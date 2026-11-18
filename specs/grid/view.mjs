@@ -48,6 +48,11 @@ const names = [
   "Selection duplication undone",
   "Whole-deck deletion refused",
   "Set with a colliding copy id refused",
+  "Section starts indexed",
+  "Version two initializes",
+  "Version one follows version two",
+  "Version one initializes",
+  "Version two follows version one",
 ]
 export const state = (v) => names[v.stage] + ", device at " + names[v.cacheStage]
 export const step = (action) => (action === "Adopt" ? "the device adopts the accepted prefix" : action)

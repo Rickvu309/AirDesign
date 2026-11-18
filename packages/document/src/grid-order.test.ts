@@ -223,7 +223,7 @@ it("rejects modern commands with redundant keyed placement or an unshipped row m
   expect(
     readSlideState({ file, order: [{ slide: "move", grid: 1, row: "new", id: "266", after: "259" }] }),
   ).toBeUndefined()
-  expect(readSlideState({ file, order: [{ ...command, grid: 2 }] })).toBeUndefined()
+  expect(readSlideState({ file, order: [{ ...command, grid: 3 }] })).toBeUndefined()
 })
 
 it("refuses a head restore that would take a foreign slide from the preceding row", () => {

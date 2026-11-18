@@ -82,8 +82,8 @@ export default async function drive(kit) {
   }
   await expect.poll(serverValue).toContain('"font":"Lato Light"')
   await page.reload()
-  await expect(canvas.locator("[data-run]").first()).toHaveCSS("font-family", /Lato/)
   await canvas.click({ position: { x: 4, y: 4 } })
+  await expect(canvas.locator("[data-run]").first()).toHaveCSS("font-family", /Lato/)
   await expect(weight).toContainText(light)
   const file = path.join(path.dirname(await capture("reloaded")), "text-style-weight.pptx")
   const downloading = page.waitForEvent("download")

@@ -4,20 +4,20 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
-      "digest": "c20c89592602",
-      "blob": "7987cb9d5e8760e968a365a18af90fe1ce529f6d"
+      "digest": "f1149eb9838a",
+      "blob": "9ba356657d793758accea9bbaea08a4fe5cc0dca"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["changeHeld", "editHeld", "takeEdits", "adoptRows", "confirmRows", "sealRows", "heldView"],
-      "digest": "f58923a6289c",
-      "blob": "5f57db5440e4b952a96ab11a451f17159de1b8c3"
+      "digest": "c2282a1477de",
+      "blob": "2474249e4aecbc138bfb24bcca8fb361c6da1f5d"
     },
     {
       "file": "packages/live/src/deck-view.ts",
       "names": ["rowsFromRegister", "played"],
-      "digest": "8eec2a7abaaf",
-      "blob": "f5eb59f7dd2c43bf0a3fc0f75fb14f8661c3a755"
+      "digest": "fbcb0843c386",
+      "blob": "cec07da06ef6b280e3db51823cd35f5579499e50"
     },
     {
       "file": "packages/live/src/store.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "aec38e714da8",
-      "blob": "ddd51641987071965da25e9b57853b3bcf7ce9d6"
+      "digest": "08b66b6c54c0",
+      "blob": "df0488deaabd622a26a93d242aefaa1e3fadedce"
     },
     {
       "file": "apps/web/src/device-copy.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange"],
       "digest": "a121795dd85c",
-      "blob": "69c3d06e6720473dc4fb39206e78509408430335"
+      "blob": "6c9ef52fe885ff0e96a4573b00683e390e46569e"
     }
   ]
 }

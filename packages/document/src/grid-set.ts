@@ -1,5 +1,5 @@
 import type { SlideId } from "./element-id.js"
-import { orderedSpots, type GridCopy, type GridRow, type V1Command } from "./grid-order.js"
+import { gridCommandVersion, orderedSpots, type GridCopy, type GridRow, type GridCommand } from "./grid-order.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween } from "./order-key.js"
 import { slideBirths } from "./slide-births.js"
@@ -12,7 +12,7 @@ import {
   type SlideState,
 } from "./slide-order.js"
 
-type SlideSet = Extract<V1Command, { readonly slide: "remove-many" | "clone-many" }>
+type SlideSet = Extract<GridCommand, { readonly slide: "remove-many" | "clone-many" }>
 
 export function setRefusal(state: SlideState, command: SlideSet, present: ReadonlySet<SlideId>): SlideRefusal | null {
   if (command.slide === "remove-many") {
@@ -49,7 +49,7 @@ export function cloneMany(
     return { id, source, ...(opening === undefined ? {} : { floor: opening }) }
   })
   const [first, ...rest] = copies
-  return first === undefined ? null : { slide: "clone-many", grid: 1, copies: [first, ...rest] }
+  return first === undefined ? null : { slide: "clone-many", grid: gridCommandVersion(state), copies: [first, ...rest] }
 }
 
 export function changeSet(

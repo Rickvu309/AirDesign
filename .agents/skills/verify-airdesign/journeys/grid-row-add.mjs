@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 import { undoCopy } from "../../../../apps/web/src/copy/undo-copy.ts"
-import { gridRows, readSlideState } from "../../../../packages/document/dist/index.js"
+import { gridRows } from "../../../../packages/document/dist/index.js"
 import { belowRow, openRowDeck, rowNumbers } from "../look/grid-row-add.mjs"
 
 export default async function drive(kit) {
@@ -25,11 +25,9 @@ export default async function drive(kit) {
   await expect.poll(() => rowNumbers(page)).toEqual(added)
   await expect.poll(async () => (await saved()).order?.length).toBe(1)
   const confirmed = await saved()
-  expect(confirmed.order[0]).toMatchObject({ slide: "add", grid: 1, row: "new", after: confirmed.file[0] })
+  expect(confirmed.order[0]).toMatchObject({ slide: "add", grid: 2, row: "new", after: confirmed.file[0] })
   expect(confirmed.order[0]).not.toHaveProperty("key")
-  const state = readSlideState(confirmed)
-  if (state === null) throw new Error("server slide state")
-  expect(gridRows(state)).toEqual([
+  expect(gridRows(confirmed)).toEqual([
     confirmed.file.slice(0, 4),
     [confirmed.order[0].id],
     confirmed.file.slice(4, 8),
@@ -53,7 +51,7 @@ export default async function drive(kit) {
   const sectionAccount = await openRowDeck(kit, 6, true)
   await expect(page.locator("[data-section-head]")).toHaveCount(2)
   await belowRow(page).click()
-  await expect.poll(() => rowNumbers(page)).toEqual([[1, 2, 3, 4], [5], [6, 7]])
+  await expect.poll(() => rowNumbers(page)).toEqual([[1, 2, 3], [4], [5, 6, 7]])
   await expect(page.locator("[data-section-head]")).toHaveCount(2)
   const sectionDeck = page.url().split("/").at(-1)
   await expect

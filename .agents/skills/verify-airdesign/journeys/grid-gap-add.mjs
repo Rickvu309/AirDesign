@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { gridRows, readSlideState } from "../../../../packages/document/dist/index.js"
+import { gridRows } from "../../../../packages/document/dist/index.js"
 import { slideListCopy } from "../../../../apps/web/src/copy/slide-list-copy.ts"
 import { undoCopy } from "../../../../apps/web/src/copy/undo-copy.ts"
 import { openRowDeck, rowNumbers } from "../look/grid-row-add.mjs"
@@ -31,11 +31,11 @@ export default async function drive(kit) {
     const register = await saved()
     const added = register.order.at(-1)
     expect(added).toMatchObject({ row: "same", after: register.file[after - 1], layout: register.file[after - 1] })
-    original ??= gridRows(readSlideState({ file: register.file, order: [] }))
+    original ??= gridRows({ ...register, order: [] })
     const expected = original.map((row) =>
       row.includes(added.after) ? row.flatMap((id) => (id === added.after ? [id, added.id] : [id])) : row,
     )
-    expect(gridRows(readSlideState(register))).toEqual(expected)
+    expect(gridRows(register)).toEqual(expected)
     await capture(`added-after-${after}`)
     await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
     await expect
@@ -45,7 +45,7 @@ export default async function drive(kit) {
         [5, 6, 7, 8],
         [9, 10],
       ])
-    await expect.poll(async () => gridRows(readSlideState(await saved()))).toEqual(original)
+    await expect.poll(async () => gridRows(await saved())).toEqual(original)
   }
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill("10")

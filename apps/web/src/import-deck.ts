@@ -24,7 +24,7 @@ export async function saveDeck(
 ): Promise<string | null> {
   const mint = options.mint ?? crypto.randomUUID.bind(crypto)
   const deckId = mint()
-  const indexed = await connect(server).index(deckId, indexedParts(parts))
+  const indexed = await connect(server).index(deckId, indexedParts(parts), true)
   if (!indexed.ok) return null
   const saved = await putParts(deckId, { parts, file, ...(name === undefined ? {} : { name }) })
   if (saved.ok) await queueOriginal(deckId)

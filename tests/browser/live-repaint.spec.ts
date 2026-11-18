@@ -85,7 +85,12 @@ test("slide revisions follow without reload, keep selection, and select a neighb
   async function outside(change: "clone" | "move" | "remove", index: number, to = index) {
     const opened = deckRoutes.open.result((await stack.post(deckRoutes.open.path, { deck }, cookie)).json)
     if (!opened.ok) throw new Error("open")
-    const command = slideCommand(opened.register.file, opened.register.order, change, index, to)
+    const command = slideCommand(
+      { ...opened.register, file: opened.register.file ?? [], order: opened.register.order ?? [] },
+      change,
+      index,
+      to,
+    )
     if (command === null) throw new Error("command")
     expect(
       (

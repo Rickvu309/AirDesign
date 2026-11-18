@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { gridRows, readSlideState } from "../../packages/document/src/index"
+import { readSlideState } from "../../packages/document/src/index"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { test } from "./api-stack"
@@ -14,14 +14,7 @@ test("gap and row-boundary adds save left layouts and unequal rows and undo rest
   stack,
 }) => {
   const saved = await openSaved(page, context, stack, 10)
-  const rows = async () => {
-    const state = readSlideState((await stack.saved(saved.deck))?.register)
-    if (!state) throw new Error("saved slides")
-    return gridRows(state)
-  }
-  const initial = readSlideState({ file: saved.ids, order: [] })
-  if (!initial) throw new Error("initial slides")
-  const original = gridRows(initial)
+  const original = await saved.rows()
   await zoomTo(page, 20)
   for (const number of [2, 4, 10]) {
     await entry(page, number).focus()
@@ -35,13 +28,13 @@ test("gap and row-boundary adds save left layouts and unequal rows and undo rest
     const added = order[number]
     expect(order.slice(0, number)).toEqual(saved.ids.slice(0, number))
     expect(order.slice(number + 1)).toEqual(saved.ids.slice(number))
-    expect(await rows()).toEqual(
+    expect(await saved.rows()).toEqual(
       original.map((row) => row.flatMap((id) => (id === saved.ids[number - 1] ? [id, added] : [id]))),
     )
     await expect(entry(page, number + 1)).toBeFocused()
     await expect(entry(page, number + 1)).toBeInViewport()
     await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
     await expect.poll(saved.order).toEqual(saved.ids)
-    expect(await rows()).toEqual(original)
+    expect(await saved.rows()).toEqual(original)
   }
 })
