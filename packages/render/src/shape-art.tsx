@@ -259,11 +259,11 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
   const art = (
     <>
       <EffectLayers {...effect} />
-      {fills}
+      {fills === null ? null : <g>{fills}</g>}
       <SoftFill {...effect} paint={fill} />
       <EffectFill {...effect} paint={fill} />
       <InnerShadow {...effect} />
-      {strokes}
+      {strokes === null ? null : <g>{strokes}</g>}
       {frame}
       {markerCopy}
       {bands.map((d, index) => (
