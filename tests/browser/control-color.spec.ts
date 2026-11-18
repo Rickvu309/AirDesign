@@ -131,6 +131,7 @@ for (const opacity of ["100", "10"]) {
       .first()
       .evaluate((node) => getComputedStyle(node).color)
     const field = panel.getByRole("group", { name: "Text color" })
+    await expect(shownColor(field)).toHaveText(formatCopy.colors.dk1)
     await shownColor(field).click()
     await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
     await picker(page).getByRole("button", { name: colorCopy.add, exact: true }).click()

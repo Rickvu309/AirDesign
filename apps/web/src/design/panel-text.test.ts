@@ -38,8 +38,10 @@ it("shows a template font's family while retaining its native token and matching
   const panel = panelOf(
     {
       ...shape,
-      value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Title", font: "+mj-lt" }] }]),
-      textStyles: [{ id: "title", name: "Title", fields: { font: "+mj-lt" } }],
+      value: writeTextValue([
+        { from: 0, runs: [{ from: 0, text: "Title", font: "+mj-lt", color: { scheme: "dk1" } }] },
+      ]),
+      textStyles: [{ id: "title", name: "Title", fields: { font: "+mj-lt", color: { scheme: "dk1" } } }],
     },
     { fonts: { major: "Lato" }, reads: {}, moves: true },
   )

@@ -36,7 +36,7 @@ function runStyle(run: PaintRunStyle, scale: number, src: PictureSource): Canvas
   const picture = run.picture === undefined || url === null ? null : pictureLayer(run.picture, url)
   return {
     ...(picture === null ? {} : { picture }),
-    ...(run.fill === undefined ? {} : { fill: run.fill }),
+    ...(run.fill === undefined || "solid" in run.fill ? {} : { fill: run.fill }),
     font: run.font,
     size: run.size * emuPerPoint * scale,
     points: Math.round(run.size * 100),
