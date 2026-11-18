@@ -162,7 +162,7 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
   const soft = softened ? softAttributes(id) : {}
   const shape = {
     ...(line?.cap === undefined ? {} : { strokeLinecap: line.cap }),
-    ...(line?.join === undefined ? {} : { strokeLinejoin: line.join.kind }),
+    ...(line?.join === undefined ? { strokeLinejoin: "round" as const } : { strokeLinejoin: line.join.kind }),
     ...(line?.join?.limit === undefined ? {} : { strokeMiterlimit: line.join.limit }),
   }
   const edge = {
