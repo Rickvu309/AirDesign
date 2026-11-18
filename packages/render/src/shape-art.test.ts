@@ -48,11 +48,11 @@ const box = {
 }
 
 describe("line paint", () => {
-  it("sets no cap, join or miter limit when the line has none", async () => {
+  it("sets no cap or miter limit and a round join when the line has none", async () => {
     const host = await painted(base)
     const stroke = host.querySelector("line")
     expect(stroke?.getAttribute("stroke-linecap")).toBeNull()
-    expect(stroke?.getAttribute("stroke-linejoin")).toBeNull()
+    expect(stroke?.getAttribute("stroke-linejoin")).toBe("round")
     expect(stroke?.getAttribute("stroke-miterlimit")).toBeNull()
   })
 
