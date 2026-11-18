@@ -1,9 +1,9 @@
 import { useState, type KeyboardEvent, type PointerEvent } from "react"
-import { Sparkle, Type } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { adjustToneCopy as words } from "@/copy/adjust-tone-copy"
 import { dialStep, dialSteps, toneCenter, toneName, type Tone, type TonePoint, type ToneScope } from "@/aira-prompts"
+import { SparkIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export type ToneAction = {
@@ -121,10 +121,7 @@ export function AdjustTone({ action }: { action: ToneAction }) {
       <PopoverTrigger
         render={<Button type="button" variant="ghost" size="icon" className="size-6" aria-label={words.title} />}
       >
-        <span className="relative block size-4" aria-hidden>
-          <Sparkle className="absolute top-0 left-0 size-3" />
-          <Type className="absolute right-0 bottom-0 size-2" />
-        </span>
+        <SparkIcon size={14} />
       </PopoverTrigger>
       <PopoverContent
         side="left"

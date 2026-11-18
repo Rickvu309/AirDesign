@@ -46,7 +46,8 @@ test("selects three matching footers, updates them while offline, and undoes eac
   expect(changed).not.toBe(original)
   for (const run of await paint.all()) await expect(run).toHaveCSS("color", changed)
 
-  const text = panel.getByRole("textbox", { name: designCopy.multiEditText })
+  await panel.getByRole("button", { name: designCopy.multiEditText, exact: true }).click()
+  const text = page.getByRole("textbox", { name: designCopy.multiEditText })
   await text.fill("Revised footer")
   await text.press("ControlOrMeta+Enter")
   for (const entry of await entries.all()) await expect(entry).toContainText("Revised footer")

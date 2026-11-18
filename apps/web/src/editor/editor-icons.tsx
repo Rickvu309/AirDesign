@@ -47,6 +47,9 @@ const iconPaths = {
   bullets:
     '<circle cx="6" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="17" r="1.15" fill="currentColor" stroke="none"/><path d="M10 7h10M10 12h10M10 17h10"/>',
   blur: '<g fill="currentColor" stroke="none"><circle cx="7" cy="7" r="1.15"/><circle cx="12" cy="7" r="1.15"/><circle cx="17" cy="7" r="1.15"/><circle cx="7" cy="12" r="1.15"/><circle cx="12" cy="12" r="1.15"/><circle cx="17" cy="12" r="1.15"/><circle cx="7" cy="17" r="1.15"/><circle cx="12" cy="17" r="1.15"/><circle cx="17" cy="17" r="1.15"/></g>',
+  match:
+    '<rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3" stroke-dasharray="2.1 1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3" stroke-dasharray="2.1 1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3" stroke-dasharray="2.1 1.8"/>',
+  swap: '<path d="M5.5 7.4h5.6a1.4 1.4 0 0 1 1.4 1.4V11"/><path d="M5.5 7.4V13a1.4 1.4 0 0 0 1.4 1.4h2"/><path d="M14.8 8.4a5.7 5.7 0 1 1-4.6 7.4"/><path d="M17.6 4.4 14.6 8.2h4.6"/>',
 } as const
 
 export type EditorIconName = keyof typeof iconPaths

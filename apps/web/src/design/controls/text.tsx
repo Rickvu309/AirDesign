@@ -183,7 +183,10 @@ export function PassageField({
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.nativeEvent.isComposing) return
-    if (event.key === "Escape") setDraft(null)
+    if (event.key === "Escape") {
+      event.stopPropagation()
+      setDraft(null)
+    }
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault()
       commit()
