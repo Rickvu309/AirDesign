@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { openRowDeck } from "./grid-row-add.mjs"
 
-export const handle = (page, row = 1) => page.getByRole("button", { name: `Move row ${row}`, exact: true })
+export const handle = (page, row = 1) => page.getByRole("button", { name: `Move slide group ${row}`, exact: true })
 export async function prepareRows(kit) {
   const account = await openRowDeck(kit, 7)
   const { page } = kit

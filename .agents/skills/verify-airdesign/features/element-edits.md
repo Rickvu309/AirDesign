@@ -4,7 +4,7 @@ In an open deck, `Add text box` in the toolbar puts a new text box in clear spac
 
 ## Sub-features
 
-- `element-add` `button "Add text box"` adds a box where the slide has room for it (`placeNewBox` in `packages/document`; centred when no free area fits), selects it and focuses its text. The server's `register.order` gets one row with `slide: "element-add"`. Known failure: letters typed before the new box takes focus, about 70 to 110 ms after the click or Enter, are lost, so a keyboard user who presses Enter on `Add text box` and types at once loses the first letters (`ped fast` for `Typed fast` at 80 ms a key); pinned in `tests/browser/element-edits.spec.ts`.
+- `element-add` `button "Add text"` adds a box where the slide has room for it (`placeNewBox` in `packages/document`; centred when no free area fits), selects it and focuses its text. The server's `register.order` gets one row with `slide: "element-add"`. Known failure: letters typed before the new box takes focus, about 70 to 110 ms after the click or Enter, are lost, so a keyboard user who presses Enter on `Add text box` and types at once loses the first letters (`ped fast` for `Typed fast` at 80 ms a key); pinned in `tests/browser/element-edits.spec.ts`.
 - `element-type` text typed into the new box reaches the server like any text edit.
 - `element-remove` Delete or Backspace on a selected frame, outside its text and with no modifier key, removes the element. The server gets one `slide: "element-remove"` row. While the caret is in the text, the keys edit the text instead. An animated shape or a group is not removed: a toast says why and no undo step is recorded.
 - `element-undo` `Undo add text box` takes the box away and `Undo delete element` brings the element back (see `person-undo.md`).
@@ -25,7 +25,7 @@ Preconditions:
 
 - **Run it.** `$V journey <run> element-edits`. Prints `"passed":true`.
 - **Blank deck.** `New deck` > `Blank deck`. Two `[data-slide-paint] [contenteditable="true"]`. Evidence `NN-before-add`.
-- **Add.** Click `button "Add text box"`. Three boxes, the last one focused. Evidence `NN-added-box`. Type `Added text`; poll `deckRoutes.open` for one `element-add` row and the text. Evidence `NN-added-text`.
+- **Add.** Click `button "Add text"`. Three boxes, the last one focused. Evidence `NN-added-box`. Type `Added text`; poll `deckRoutes.open` for one `element-add` row and the text. Evidence `NN-added-text`.
 - **Delete.** Reload, click the title, Escape, Delete. Two boxes; poll for one `element-remove` row. Evidence `NN-deleted-element`.
 - **Reload, export, import.** The deleted title stays gone and `Added text` stays. Evidence `NN-reloaded`, `NN-reimported`.
 - **States for look.** `element-added`, `element-deleted`.

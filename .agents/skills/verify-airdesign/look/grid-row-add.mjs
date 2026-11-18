@@ -3,7 +3,7 @@ import { manySlides, rowNumbers } from "../../../../tests/browser/slide-grid-dec
 import { openDeck } from "./open-deck.mjs"
 
 export const belowRow = (page, row = 1) =>
-  page.getByRole("button", { name: `Add slide in a new row below row ${row}`, exact: true })
+  page.getByRole("button", { name: `Add slide in a new slide group below slide group ${row}`, exact: true })
 
 export { rowNumbers }
 

@@ -70,6 +70,7 @@ const presets: Readonly<Record<Preset, string>> = {
 export const fillWords: Readonly<Record<string, string>> = {
   none: "None",
   solid: "Solid",
+  "value.solid": "Color",
   gradient: "Gradient",
   pattern: "Pattern",
   picture: "Icon",

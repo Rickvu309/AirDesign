@@ -62,9 +62,9 @@ test("an export after every edit is undone changes no part of the original", asy
   await page.keyboard.press("Delete")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
 
-  for (const name of ["delete slide", "new slide", "add text box", "move", "text edit"]) {
-    await page.getByRole("button", { name: `Undo ${name}` }).click()
-    await expect(page.getByRole("button", { name: `Redo ${name}` })).toBeEnabled()
+  for (const name of ["delete", "new", "add-box", "move", "text"] as const) {
+    await page.getByRole("button", { name: undoCopy.undoNamed[name] }).click()
+    await expect(page.getByRole("button", { name: undoCopy.redoNamed[name] })).toBeEnabled()
   }
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)

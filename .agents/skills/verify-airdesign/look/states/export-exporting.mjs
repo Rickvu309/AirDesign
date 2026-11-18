@@ -1,3 +1,4 @@
+import { notesCopy } from "../../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openExportDialog, powerpoint } from "../export-dialog.mjs"
@@ -10,8 +11,8 @@ async function drive(kit) {
   await kit.page.goto("/")
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/nasa-1d-cnn.pptx"))
   await holdDevice(kit.page)
-  const notes = kit.page.getByRole("textbox", { name: "Speaker notes", exact: true })
-  if (!(await notes.isVisible())) await kit.page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  const notes = kit.page.getByRole("textbox", { name: notesCopy.value, exact: true })
+  if (!(await notes.isVisible())) await kit.page.getByRole("button", { name: "Expand presenter notes" }).first().click()
   await notes.fill("Held note")
   const dialog = await openExportDialog(kit)
   await kit.page.keyboard.press("Enter")

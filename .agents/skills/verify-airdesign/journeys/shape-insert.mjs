@@ -1,3 +1,4 @@
+import { undoCopy } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { importTitleDeck } from "../bin/new-deck.mjs"
@@ -47,11 +48,11 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
   await page.keyboard.press("Delete")
   await expect(element(6)).toHaveCount(0)
-  await page.getByRole("button", { name: "Undo delete element", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true }).click()
   await expect(painted(6)).toBeVisible()
-  await page.getByRole("button", { name: "Redo delete element", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["delete-element"], exact: true }).click()
   await expect(element(6)).toHaveCount(0)
-  await page.getByRole("button", { name: "Undo delete element", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true }).click()
   await expect(painted(6)).toBeVisible()
   await capture("shape-undone")
   const order = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order

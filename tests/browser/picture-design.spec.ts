@@ -80,7 +80,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   await expect.poll(async () => (await look(photo)).filter).toContain("grayscale(1)")
   await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
   await expect.poll(async () => (await look(photo)).filter).toBe("none")
-  await page.getByRole("button", { name: "Redo picture", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
   await expect.poll(async () => (await look(photo)).filter).toContain("grayscale(1)")
 
   await typed(panel.getByRole("textbox", { name: "Opacity", exact: true }), "60")

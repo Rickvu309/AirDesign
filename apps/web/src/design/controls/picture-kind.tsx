@@ -1,10 +1,9 @@
 import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { fillCopy, fillWords } from "@/copy/fill-copy"
+import { picturePanelCopy } from "@/copy/picture-panel-copy"
 import { fillIcons } from "@/design/preset-icons"
 import { cn } from "@/lib/class-names"
-
-const heldBack = "This image can't change to another fill yet."
 
 const kinds: readonly (readonly [string, LucideIcon])[] = [
   ["none", fillIcons.none],
@@ -31,7 +30,7 @@ export function PictureFillKinds() {
             variant="ghost"
             aria-pressed={pressed}
             disabled={!pressed}
-            title={pressed ? word : heldBack}
+            title={pressed ? word : picturePanelCopy.heldBack}
             className={cn(
               "h-5 min-w-0 flex-1 rounded-[var(--shape-segment)] px-1 text-xs font-normal active:translate-y-0",
               pressed

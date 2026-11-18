@@ -1,4 +1,4 @@
-import { pictureCopy } from "../../bin/product-copy.mjs"
+import { pictureCopy, undoCopy } from "../../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
@@ -20,7 +20,7 @@ async function drive(kit) {
     .filter({ has: kit.page.getByRole("heading", { name: pictureCopy.section, exact: true }) })
   if ((await picture.count()) === 0) return
   await picture.getByRole("group", { name: "Recolor", exact: true }).getByRole("button", { name: "Grayscale" }).click()
-  await expect(kit.page.getByRole("button", { name: "Undo picture", exact: true })).toBeVisible()
+  await expect(kit.page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true })).toBeVisible()
   await unfold(panel, "Name and alt text")
   await panel.getByRole("heading", { name: "Name and alt text", exact: true }).scrollIntoViewIfNeeded()
 }

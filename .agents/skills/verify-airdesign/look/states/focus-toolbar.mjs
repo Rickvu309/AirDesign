@@ -9,7 +9,7 @@ async function drive(kit) {
   for (let press = 0; press < 12; press += 1) {
     await kit.page.keyboard.press("Tab")
     const name = await kit.page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "")
-    if (name === "Add text box") return
+    if (name === "Add text") return
   }
   throw new Error("Add text box never took focus")
 }

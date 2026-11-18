@@ -4,7 +4,7 @@ In an open deck, `Add picture` in the toolbar opens the file picker for PNG, JPE
 
 ## Sub-features
 
-- `picture-add` `button "Add picture"` and a file. The server's `register.order` gets one `slide: "element-add"` row with `element.kind: "picture"` and `media: { sha256, type }`. The new picture frame (`group "Image"`) has focus.
+- `picture-add` `button "Add image"` and a file. The server's `register.order` gets one `slide: "element-add"` row with `element.kind: "picture"` and `media: { sha256, type }`. The new picture frame (`group "Image"`) has focus.
 - `picture-refuse` an SVG, any other type, a file of 10 MB or more, or a file the browser cannot decode paints nothing and shows `Unable to add picture.` with what to choose.
 - `picture-upload` the bytes upload after the command; a failed upload retries when the editor next opens the deck or comes back online (`flushOriginal` flushes media too).
 - `picture-uploading` another device paints the box with `Picture is still uploading from another device` until the bytes land, and its export refuses with `Unable to export. A picture is uploading.`

@@ -1,3 +1,4 @@
+import { undoCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { importTitleDeck } from "../../bin/new-deck.mjs"
 import { editor } from "../editor-screen.mjs"
@@ -23,7 +24,7 @@ async function drive(kit) {
   await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveCount(2)
   await page.keyboard.press("Delete")
   await expect(element(5)).toHaveCount(0)
-  await expect(page.getByRole("button", { name: "Undo delete element", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true })).toBeEnabled()
 }
 
 export default { name: "elements-deleted", design: editor, drive }

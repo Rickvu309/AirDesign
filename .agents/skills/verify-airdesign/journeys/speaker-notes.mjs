@@ -1,3 +1,4 @@
+import { notesCopy } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
@@ -8,10 +9,10 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/nasa-1d-cnn.pptx"))
   await expect(page.locator("[data-deck-ready]")).toHaveAttribute("data-deck-ready", /.+/)
-  await page.getByRole("button", { name: "Collapse speaker notes" }).click()
+  await page.getByRole("button", { name: "Collapse presenter notes" }).click()
   await capture("notes-closed")
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
-  const field = page.getByRole("textbox", { name: "Speaker notes", exact: true })
+  await page.getByRole("button", { name: "Expand presenter notes" }).first().click()
+  const field = page.getByRole("textbox", { name: notesCopy.value, exact: true })
   await expect(field).toBeEditable()
   await capture("notes-open")
   await page.locator('[data-slide-entry="2"]').click()

@@ -4,7 +4,7 @@ Under the slide of an open deck, the speaker notes bar shows the current slide's
 
 ## Sub-features
 
-- `notes-open` `button "Expand speaker notes"` opens `textbox "Speaker notes"` (placeholder `Add speaker notes`); `Collapse speaker notes` closes it. Notes start open in a compact card. Closed, only the handle is visible. A click or Enter on it opens the field with the cursor at the end of the notes; `Collapse speaker notes` gives the focus back to the closed bar. The notes are in body ink, the placeholder quiet.
+- `notes-open` `button "Expand presenter notes"` opens `textbox "Speaker notes"` (placeholder `Add speaker notes`); `Collapse presenter notes` closes it. Notes start open in a compact card. Closed, only the handle is visible. A click or Enter on it opens the field with the cursor at the end of the notes; `Collapse presenter notes` gives the focus back to the closed bar. The notes are in body ink, the placeholder quiet.
 - `notes-edit` typed notes paint at once and reach the server as the slide's `.notes` element, on any slide, including one whose PowerPoint has no notes part.
 - `notes-undo` a visit's typing in the field is one `Undo speaker notes edit` step on the toolbar, and its undo repaints the bar. Inside the field Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z are the person's undo too (the field carries `data-person-undo`), and it refuses the browser's own undo from its menu.
 - `notes-offline` typed offline, the editor says `You're offline. Edits are saved on this device.` and sends them when the browser is back online.
@@ -23,7 +23,7 @@ Preconditions:
 - `scripts/pptx-fixtures/nasa-1d-cnn.pptx` exists: slide 1 has a notes part, slide 2 has none.
 
 - **Run it.** `$V journey <run> speaker-notes`. Prints `"passed":true`.
-- **Open.** Import the fixture, click `Expand speaker notes`. The field is editable. Evidence `NN-notes-closed`, `NN-notes-open`.
+- **Open.** Import the fixture, click `Expand presenter notes`. The field is editable. Evidence `NN-notes-closed`, `NN-notes-open`.
 - **Any slide.** Click `[data-slide-entry="2"]`, the slide with no notes part. The field is editable and empty.
 - **Offline edit.** Back on slide 1, go offline, fill the field, see the offline toast, go online; poll `deckRoutes.open` for the `.notes` element's value.
 - **Reload, export, import.** The notes come back each time. Evidence `NN-notes-reloaded`, `NN-notes-reimported`.
