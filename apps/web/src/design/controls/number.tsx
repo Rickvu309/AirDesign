@@ -60,7 +60,7 @@ export function NumberField({
 }: ControlProps & { unit: string; kind: string; step?: number; scale?: number }) {
   const size = control.trait === "text" && control.field === "size"
   const look = control.look
-  const borderWidth = ["border", "line"].includes(control.trait) && control.field === "width"
+  const borderWidth = control.trait === "border" && control.field === "width"
   const Icon =
     look.glyph ??
     (look.name.show === "icon"

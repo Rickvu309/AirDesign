@@ -16,6 +16,10 @@ export function canonicalKeys(raw: Keyed): Keyed | null {
   return keyed
 }
 
+export function namesAlias(value: string): boolean {
+  return keyAliases.some(({ alias }) => value.includes(`"${alias}":`))
+}
+
 function holdsRenamedKey(value: unknown): boolean {
   return typeof value === "string" && keyAliases.some(({ key }) => value.includes(`"${key}":`))
 }

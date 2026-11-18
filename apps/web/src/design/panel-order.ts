@@ -26,7 +26,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     design("boxFill"),
     design("paragraphSpacing"),
     design("box"),
-    design("line"),
+    design("border"),
     design("effects"),
     design("body"),
     design("geometry"),
@@ -43,7 +43,6 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("shadow"),
     slides("selectionColors"),
     design("geometry"),
-    design("line"),
     design("effects"),
     design("box"),
     design("text"),
@@ -63,7 +62,6 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     design("image"),
     design("crop"),
     design("box"),
-    design("line"),
     design("effects"),
     design("geometry"),
     design("identity"),
@@ -73,7 +71,6 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("alignment"),
     slides("border"),
     slides("shadow"),
-    design("line"),
     design("connection"),
     design("opacity"),
     design("box"),
@@ -100,7 +97,6 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("selectionColors"),
     design("paragraphSpacing"),
     design("box"),
-    design("line"),
     design("effects"),
   ],
   slide: [slides("templateStyle"), slides("background"), slides("selectionColors"), design("theme", true)],
@@ -117,9 +113,11 @@ export function panelPlaces(
 }
 
 export function sectionInMode(section: PanelSection, mode: PanelMode): PanelSection {
-  if (mode === "design" || section.trait !== "fills") return section
+  const { designStrips, ...shown } = section
+  if (mode === "design") return designStrips === undefined ? shown : { ...shown, strips: designStrips }
+  if (section.trait !== "fills") return shown
   return {
-    ...section,
+    ...shown,
     strips: section.strips.map((strip) =>
       strip.map((control) => {
         if (control.desc.kind !== "union") return control

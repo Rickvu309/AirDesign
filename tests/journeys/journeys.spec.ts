@@ -47,7 +47,7 @@ for (const name of [
   "element-order",
   "slide-background",
   "shape-fill",
-  "line-style",
+  "border-style",
   "shape-effects",
   "appearance-presets",
   "shape-geometry",

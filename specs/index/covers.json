@@ -11,13 +11,13 @@
       "file": "packages/document/src/deck-index.ts",
       "names": ["appendIndex", "indexDue"],
       "digest": "36de3786c719",
-      "blob": "61fee966d0e44fe01395aa067d6f7f13c3a0e785"
+      "blob": "9a8cb4ba18fad08f65edfb7a8f78c664d810ef24"
     },
     {
       "file": "packages/document/src/answered-register.ts",
       "names": ["answeredRegister"],
-      "digest": "73e53b76eb44",
-      "blob": "9f06a1f13d196517af79cd8d4f14935624d60ab2"
+      "digest": "fe74d448c517",
+      "blob": "0cf4162987820daa93c9b50e8000686e0186d37d"
     },
     {
       "file": "packages/live/src/deck-index.ts",

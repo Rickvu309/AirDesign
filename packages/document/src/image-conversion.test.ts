@@ -8,6 +8,7 @@ import { readSlideState } from "./slide-order.js"
 import { readRegister, readRow } from "./stored.js"
 
 const imageFormat = 63
+const borderFormat = 64
 
 function readDeck(): Register {
   const read = readRegister(written.register)
@@ -37,7 +38,7 @@ describe("a deck the first fills build saved, with a photo, an icon and an icon 
           },
         },
       },
-      { v: imageFormat, patch: { line: { alpha: { set: 70_000 } }, fills: { alpha: { set: 70_000 } } } },
+      { v: borderFormat, patch: { border: { alpha: { set: 70_000 } }, fills: { alpha: { set: 70_000 } } } },
     ])
   })
 

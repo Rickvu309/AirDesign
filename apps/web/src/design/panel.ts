@@ -31,7 +31,16 @@ import { cropChange } from "./crop-change"
 import { appearanceSections } from "./appearance-presets"
 import { cornersSection } from "./corners-control"
 import { opacitySection } from "./opacity-control"
-import { hidden, loneRows, panelKind, panelOrder, panelPlaces, type PanelKind, type PanelMode } from "./panel-order"
+import {
+  hidden,
+  loneRows,
+  panelKind,
+  panelOrder,
+  panelPlaces,
+  sectionInMode,
+  type PanelKind,
+  type PanelMode,
+} from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
 import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
@@ -41,7 +50,6 @@ export type SectionName =
   | TraitName
   | "opacity"
   | "alignment"
-  | "border"
   | "shadow"
   | "pictureFill"
   | "textFill"
@@ -110,6 +118,7 @@ export type PanelSection = {
   readonly label: string | null
   readonly open: boolean
   readonly strips: readonly (readonly PanelControl[])[]
+  readonly designStrips?: readonly (readonly PanelControl[])[]
 }
 
 export type PanelModel = {
@@ -484,7 +493,12 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode
   const nodes = models.flatMap((model) => model.nodes)
   const selectionKinds = models.map(({ kind }) => kind)
   const sections = panelPlaces("many", mode, selectionKinds).flatMap((place): PanelSection[] => {
-    const found = present(models.map((model) => model.sections.find(({ trait }) => trait === place.section)))
+    const found = present(
+      models.map((model) => {
+        const section = model.sections.find(({ trait }) => trait === place.section)
+        return section === undefined ? undefined : sectionInMode(section, mode)
+      }),
+    )
     const [lead] = found ?? []
     if (found === null || lead === undefined) return []
     const controls = lead.strips.flat().flatMap((control): PanelControl[] => {

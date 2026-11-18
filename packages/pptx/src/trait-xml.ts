@@ -8,7 +8,7 @@ import type { Faded } from "./alpha-codec.js"
 import { fillAlpha, fillsXml, writtenFills } from "./trait-xml-fills.js"
 import { geometryXml } from "./trait-xml-geometry.js"
 import { identityXml } from "./trait-xml-identity.js"
-import { lineAlpha, lineXml } from "./trait-xml-line.js"
+import { borderAlpha, borderXml } from "./trait-xml-border.js"
 import { notesXml } from "./trait-xml-notes.js"
 import { tableXml } from "./trait-xml-table.js"
 import { textAlpha, textXml } from "./trait-xml-text.js"
@@ -24,7 +24,7 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   box: boxXml,
   geometry: geometryXml,
   fills: fillsXml,
-  line: lineXml,
+  border: borderXml,
   effects: effectsXml,
   body: bodyXml,
   text: textXml,
@@ -42,8 +42,8 @@ export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, tra
   return writeFields(parts, at, traitXml[trait], patch)
 }
 
-export type ShownAlphas = { readonly fills: Faded; readonly line: Faded; readonly text: Faded }
+export type ShownAlphas = { readonly fills: Faded; readonly border: Faded; readonly text: Faded }
 
 export function shownAlphas(parts: Parts, at: ElementAt): ShownAlphas {
-  return { fills: fillAlpha(parts, at), line: lineAlpha(parts, at), text: textAlpha(parts, at) }
+  return { fills: fillAlpha(parts, at), border: borderAlpha(parts, at), text: textAlpha(parts, at) }
 }

@@ -2,11 +2,11 @@ import { expect, it } from "vitest"
 import { foldOpen, folds, setFold } from "./panel-folds"
 
 it("remembers a person's folding for each panel kind apart, and falls back to the panel's own", () => {
-  expect(foldOpen(folds(), "text", "line", false)).toBe(false)
-  setFold("text", "line", true)
+  expect(foldOpen(folds(), "text", "border", false)).toBe(false)
+  setFold("text", "border", true)
   setFold("shape", "fills", false)
-  expect(foldOpen(folds(), "text", "line", false)).toBe(true)
-  expect(foldOpen(folds(), "shape", "line", true)).toBe(true)
+  expect(foldOpen(folds(), "text", "border", false)).toBe(true)
+  expect(foldOpen(folds(), "shape", "border", true)).toBe(true)
   expect(foldOpen(folds(), "shape", "fills", true)).toBe(false)
   expect(foldOpen(folds(), "picture", "fills", true)).toBe(true)
 })

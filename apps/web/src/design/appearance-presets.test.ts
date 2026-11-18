@@ -4,7 +4,7 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
 import { effectsWords } from "@/copy/effects-copy"
-import { lineCopy, lineWords } from "@/copy/line-copy"
+import { borderCopy, borderWords } from "@/copy/border-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { optionWord } from "@/copy/option-copy"
 import { borderWidths } from "./appearance-presets"
@@ -48,22 +48,22 @@ it("orders shape appearance before its shut detail sections", () => {
     ["border", true],
     ["shadow", true],
     ["geometry", false],
-    ["line", false],
     ["effects", false],
+    ["box", false],
   ])
 })
 
 it("writes each border preset and recognizes only exact supported appearances", () => {
   const border = preset("border")
-  expect(border.change("none")).toEqual({ target: { node: view.node }, line: { fill: { none: true } } })
+  expect(border.change("none")).toEqual({ target: { node: view.node }, border: { fill: { none: true } } })
   for (const dash of ["solid", "dash", "dot"]) {
     const change = border.change(dash)
-    expect(change).toEqual({ target: { node: view.node }, line: { fill: { solid: { scheme: "tx1" } }, dash } })
-    expect(preset("border", { "line.fill": { solid: { rgb: "123456" } }, "line.dash": dash }).value).toBe(dash)
+    expect(change).toEqual({ target: { node: view.node }, border: { fill: { solid: { scheme: "tx1" } }, dash } })
+    expect(preset("border", { "border.fill": { solid: { rgb: "123456" } }, "border.dash": dash }).value).toBe(dash)
   }
-  expect(preset("border", { "line.fill": { none: true } }).value).toBe("none")
-  expect(preset("border", { "line.fill": { gradient: {} }, "line.dash": "solid" }).value).toBeUndefined()
-  expect(preset("border", { "line.fill": { solid: {} }, "line.dash": "dashDot" }).value).toBeUndefined()
+  expect(preset("border", { "border.fill": { none: true } }).value).toBe("none")
+  expect(preset("border", { "border.fill": { gradient: {} }, "border.dash": "solid" }).value).toBeUndefined()
+  expect(preset("border", { "border.fill": { solid: {} }, "border.dash": "dashDot" }).value).toBeUndefined()
 })
 
 it("writes fixed outer shadow strengths, recognizes each and leaves custom shadows unpressed", () => {
@@ -90,8 +90,8 @@ function borderSection(kind: "shape" | "picture" | "connector", fill: unknown, d
       moves: true,
       fields: {
         ...image,
-        "line.fill": { value: fill, own: true },
-        "line.dash": { value: dash, own: true },
+        "border.fill": { value: fill, own: true },
+        "border.dash": { value: dash, own: true },
       },
     },
   ).sections.find(({ trait }) => trait === "border")
@@ -101,12 +101,12 @@ it("shows Color and Border width under solid, dashed and dotted for shapes, pict
   for (const kind of ["shape", "picture", "connector"] as const) {
     for (const dash of ["solid", "dash", "dot"] as const) {
       const controls = borderSection(kind, { solid: { rgb: "000000" } }, dash)?.strips.flat() ?? []
-      expect(controls.map(({ field }) => field)).toEqual(["border", "fill.solid", "width"])
+      expect(controls.map(({ field }) => field)).toEqual(["border", "color", "width"])
       expect(controls[0]?.desc).toMatchObject({
         options: kind === "connector" ? ["solid", "dash", "dot"] : ["none", "solid", "dash", "dot"],
       })
-      expect(controls[1]?.label).toBe(lineCopy.color)
-      expect(controls[2]?.label).toBe(lineCopy.borderWidth)
+      expect(controls[1]?.label).toBe(borderCopy.color)
+      expect(controls[2]?.label).toBe(borderCopy.width)
       expect(controls[2]?.look.glyph).toBe(Minus)
       expect(controls[2]?.look.steps).toEqual([...borderWidths])
       expect(controls[2]?.look.unit).toBe("")
@@ -171,5 +171,5 @@ it("does not name the three shadow strengths soft, medium or hard", () => {
       onChange: () => {},
     }),
   )
-  expect(border).toContain(`title="${lineWords["border.solid"]}"`)
+  expect(border).toContain(`title="${borderWords["border.solid"]}"`)
 })

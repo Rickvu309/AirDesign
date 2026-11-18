@@ -95,3 +95,40 @@ it("adds an icon as a shape whose fills hold it, under the old picture kind too"
     field: "text",
   })
 })
+
+it("reads an agent's line, the border's old name, as the border, with every field", () => {
+  const border = {
+    width: 3,
+    fill: "accent2",
+    dash: "sysDot",
+    cap: "rnd",
+    compound: "dbl",
+    join: "bevel",
+    head: { type: "oval", width: "lg", length: "sm" },
+    tail: { type: "stealth", width: "lg", length: "lg" },
+  }
+  const canonical = readSetChange({ op: "set", target, border })
+  expect(canonical).toMatchObject({ ok: true, change: { border: { width: 38_100, compound: "dbl" } } })
+  expect(readSetChange({ op: "set", target, line: border })).toEqual(canonical)
+  expect(readSetChange({ op: "set", target, line: { fill: null } })).toEqual(
+    readSetChange({ op: "set", target, border: { fill: null } }),
+  )
+  const edit = { deck: "deck", base: 0, changes: [{ op: "set", target, line: { width: 2 } }] }
+  expect(readAgentEdit(edit)).toMatchObject({ ok: true, changes: [{ op: "set", border: { width: 25_400 } }] })
+})
+
+it("refuses the border spelled both ways in one change and names the field the tools advertise", () => {
+  expect(readSetChange({ op: "set", target, line: { width: 2 }, border: { width: 3 } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "border.width",
+  })
+  expect(readSetChange({ op: "set", target, line: { width: 2 }, border: { dash: "dot" } })).toEqual(
+    readSetChange({ op: "set", target, border: { width: 2, dash: "dot" } }),
+  )
+  expect(readSetChange({ op: "set", target, line: { width: 1585 } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "border.width",
+  })
+})

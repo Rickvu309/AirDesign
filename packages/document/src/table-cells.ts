@@ -1,5 +1,5 @@
 import { record } from "./plain-object.js"
-import { line } from "./trait-line.js"
+import { border } from "./trait-border.js"
 import { readValue, type ValueOf } from "./value-kind.js"
 
 export const tableSides = ["top", "right", "bottom", "left"] as const
@@ -7,17 +7,17 @@ export const borderSides = ["all", "outside", "inside", "top", "bottom", "left",
 
 export type TableSide = (typeof tableSides)[number]
 export type BorderSides = (typeof borderSides)[number]
-export type CellFill = ValueOf<typeof line.fields.fill>
+export type CellFill = ValueOf<typeof border.fields.fill>
 export type Border = {
   readonly fill?: CellFill
   readonly width?: number
-  readonly dash?: ValueOf<typeof line.fields.dash>
+  readonly dash?: ValueOf<typeof border.fields.dash>
 }
 export type Borders = { readonly [S in TableSide]?: Border }
 export type CellRange = { readonly rows: readonly [number, number]; readonly columns: readonly [number, number] }
 
-export const cellFill = line.fields.fill
-export const borderKinds = { fill: line.fields.fill, width: line.fields.width, dash: line.fields.dash } as const
+export const cellFill = border.fields.fill
+export const borderKinds = { fill: border.fields.fill, width: border.fields.width, dash: border.fields.dash } as const
 
 function known(value: Record<string, unknown>, keys: readonly string[]): boolean {
   const own = Object.keys(value)
@@ -29,12 +29,12 @@ export function readCellFill(raw: unknown): CellFill | null {
 }
 
 function readBorder(raw: unknown): Border | null {
-  const border = record(raw)
-  if (border === null || !known(border, Object.keys(borderKinds))) return null
+  const sides = record(raw)
+  if (sides === null || !known(sides, Object.keys(borderKinds))) return null
   const read: Record<string, unknown> = {}
   for (const [name, kind] of Object.entries(borderKinds)) {
-    if (!Object.hasOwn(border, name)) continue
-    const value = readValue<unknown>(kind, border[name])
+    if (!Object.hasOwn(sides, name)) continue
+    const value = readValue<unknown>(kind, sides[name])
     if (value === null) return null
     read[name] = value
   }

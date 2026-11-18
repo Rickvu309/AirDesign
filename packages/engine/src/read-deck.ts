@@ -25,6 +25,7 @@ import {
   themeSlots,
   textStylesOf,
   version,
+  withCurrentKeys,
   type Box,
   type ElementLink,
   type ElementId,
@@ -135,6 +136,10 @@ function foldedElement(register: Register, node: ElementId): IndexElement | unde
   return opening === undefined ? undefined : { ...opening, grouped: groupedNow(register, node) }
 }
 
+function shownValue(value: string | null): string | null {
+  return value === null ? null : withCurrentKeys(value)
+}
+
 function elementOf(
   node: ElementId,
   body: NodeRegister | undefined,
@@ -147,7 +152,7 @@ function elementOf(
   const held = {
     node,
     slide: shapeOf(node).slide,
-    value: own || body === undefined ? (indexed?.value ?? null) : currentValue(body),
+    value: shownValue(own || body === undefined ? (indexed?.value ?? null) : currentValue(body)),
     version: body === undefined ? 0 : version(body),
     ...(indexed === undefined
       ? own

@@ -27,7 +27,7 @@ import {
   shownIdentity,
   shownPictureMode,
   shownImage,
-  shownLine,
+  shownBorder,
   shownTextStyle,
   shownTurn,
   type DeckTraits,
@@ -119,7 +119,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
   try {
     const geometry = shownGeometry(parts, at)
     const turn = shownTurn(parts, at)
-    const line = Object.entries(shownLine(parts, at) ?? {}).map(([field, shown]) => [`line.${field}`, shown])
+    const border = Object.entries(shownBorder(parts, at) ?? {}).map(([field, shown]) => [`border.${field}`, shown])
     const body = Object.entries(shownBody(parts, at) ?? {}).map(([field, shown]) => [`body.${field}`, shown])
     const text = Object.entries(shownTextStyle(parts, at) ?? {}).map(([field, shown]) => [`text.${field}`, shown])
     const alphas = Object.entries(shownAlphas(parts, at)).map(([trait, value]) => [
@@ -159,7 +159,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       "box.rot": { value: turn.rot, own: true },
       "box.flipH": { value: turn.flipH, own: true },
       "box.flipV": { value: turn.flipV, own: true },
-      ...Object.fromEntries(line),
+      ...Object.fromEntries(border),
       ...Object.fromEntries(body),
       ...Object.fromEntries(text),
       ...Object.fromEntries(alphas),

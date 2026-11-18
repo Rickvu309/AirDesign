@@ -107,11 +107,11 @@ function shapeReads(
         : { held: fillReference.entry, value: fillOf(fillReference.entry, fillReference.placed) }
   if (fill !== undefined && fill.value !== null && fill.value !== "none")
     reads.fills = read(fill.value, fill.held.source)
-  lineReads(properties, owners, styles, reads)
+  borderReads(properties, owners, styles, reads)
   effectReads(properties, owners, styles, reads, kept)
 }
 
-function lineReads(
+function borderReads(
   properties: readonly Held[],
   owners: readonly Held[],
   styles: Styles,
@@ -127,10 +127,15 @@ function lineReads(
   const filled = lines.find(({ line }) => fillIn(line) !== undefined)
   const fill = filled === undefined ? undefined : fillOf(fillIn(filled.line)!, filled.placed)
   if (filled === undefined || fill === undefined || fill === null || fill === "none") return
-  reads["line.fill"] = read(fill, filled.line.source)
+  reads["border.fill"] = read(fill, filled.line.source)
   const width = lines.find(({ line }) => whole(line.element, "w") !== undefined)
-  if (width !== undefined) reads["line.width"] = read(whole(width.line.element, "w")!, width.line.source)
-  const ending = (kind: string, name: "line.dash" | "line.head" | "line.tail", attribute: string, quiet: string) => {
+  if (width !== undefined) reads["border.width"] = read(whole(width.line.element, "w")!, width.line.source)
+  const ending = (
+    kind: string,
+    name: "border.dash" | "border.head" | "border.tail",
+    attribute: string,
+    quiet: string,
+  ) => {
     const found = lines.find(({ line }) => {
       const held = child(line, kind)
       return held !== undefined && paintAttribute(held.element, attribute) !== null
@@ -138,9 +143,9 @@ function lineReads(
     const value = found === undefined ? null : paintAttribute(child(found.line, kind)!.element, attribute)
     if (found !== undefined && value !== null && value !== quiet) reads[name] = read(value, found.line.source)
   }
-  ending("a:prstDash", "line.dash", "val", "solid")
-  ending("a:headEnd", "line.head", "type", "none")
-  ending("a:tailEnd", "line.tail", "type", "none")
+  ending("a:prstDash", "border.dash", "val", "solid")
+  ending("a:headEnd", "border.head", "type", "none")
+  ending("a:tailEnd", "border.tail", "type", "none")
 }
 
 function connectionReads(slide: string, own: Held, reads: Partial<Record<DesignKey, Read<unknown>>>) {

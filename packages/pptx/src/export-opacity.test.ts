@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest"
 import { exportParts } from "./export-parts.js"
 import { shownFill } from "./fill-read.js"
 import { indexPackage } from "./index-package.js"
-import { shownLine } from "./line-read.js"
+import { shownBorder } from "./border-read.js"
 import { readParts } from "./package-container.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readSlides } from "./read-shapes.js"
@@ -25,8 +25,8 @@ declare const process: {
 type Parts = ReadonlyMap<string, Uint8Array>
 
 const faded = { set: 60_000 as Alpha }
-const opacity: ElementPatch = { fills: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } }
-const shapeOpacity: ElementPatch = { fills: { alpha: faded }, line: { alpha: faded } }
+const opacity: ElementPatch = { fills: { alpha: faded }, border: { alpha: faded }, text: { alpha: faded } }
+const shapeOpacity: ElementPatch = { fills: { alpha: faded }, border: { alpha: faded } }
 const slidePart = "ppt/slides/slide1.xml"
 
 async function deck(name: string): Promise<Parts> {
@@ -87,8 +87,8 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
     expect(after.match(/<p:style>.*?<\/p:style>/g)).toEqual(before.match(/<p:style>.*?<\/p:style>/g))
     const written = exported(parts, "4", shapeOpacity)
     expect(shownFill(written, at(parts, "4"))?.own).toBe(true)
-    expect(shownLine(written, at(parts, "4"))?.width).toEqual({ value: 12700, own: false })
-    expect(shownAlphas(written, at(parts, "4"))).toEqual({ fills: 60_000, line: 60_000, text: null })
+    expect(shownBorder(written, at(parts, "4"))?.width).toEqual({ value: 12700, own: false })
+    expect(shownAlphas(written, at(parts, "4"))).toEqual({ fills: 60_000, border: 60_000, text: null })
   })
 
   it("copies a gradient style fill byte for byte with the reference colour in place of phClr, and fades every stop", async () => {
@@ -148,7 +148,7 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
     expect(exported(once, "2", opacity).get(slidePart)).toEqual(once.get(slidePart))
     const undone = exported(parts, "2", opacity, {
       fills: { alpha: "opening" },
-      line: { alpha: "opening" },
+      border: { alpha: "opening" },
       text: { alpha: "opening" },
     })
     expect(undone.get(slidePart)).toEqual(parts.get(slidePart))

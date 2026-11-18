@@ -1,6 +1,7 @@
 import { slideListCopy } from "@/copy/slide-list-copy"
 import type { TraitName, WireField } from "@airdesign/document"
 import { bodyControls } from "./trait-controls-body"
+import { borderControls } from "./trait-controls-border"
 import { boxControls } from "./trait-controls-box"
 import { connectionControls } from "./trait-controls-connection"
 import { effectsControls } from "./trait-controls-effects"
@@ -8,7 +9,6 @@ import { fillsControls } from "./trait-controls-fills"
 import { geometryControls } from "./trait-controls-geometry"
 import { identityControls } from "./trait-controls-identity"
 import { linkControls } from "./trait-controls-link"
-import { lineControls } from "./trait-controls-line"
 import { notesControls } from "./trait-controls-notes"
 import { textControls } from "./trait-controls-text"
 import { designCopy } from "@/copy/design-copy"
@@ -30,7 +30,7 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   box: boxControls,
   geometry: geometryControls,
   fills: fillsControls,
-  line: lineControls,
+  border: borderControls,
   effects: effectsControls,
   body: bodyControls,
   text: textControls,

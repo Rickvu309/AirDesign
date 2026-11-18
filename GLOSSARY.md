@@ -115,7 +115,7 @@ The twelve colors of a template style, each named by its PowerPoint slot, such a
 _Avoid_: theme colors, palette
 
 **color picker**:
-Where a person picks any color a field takes: a fill, line, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
+Where a person picks any color a field takes: a fill, border, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
 _Avoid_: palette, swatches, color menu
 
 **table style**:
@@ -199,7 +199,7 @@ Anything an edit can address that holds its own rows: an element, a slide's own 
 _Avoid_: entity, object, item
 
 **trait**:
-A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `line`, `effects`, `body`, `text`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
+A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `border`, `effects`, `body`, `text`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
 
 **fills**:
@@ -210,8 +210,15 @@ _Avoid_: fill value, background fill
 One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none, or an image.
 _Avoid_: fill kind, layer (a layer is a thing on a slide)
 
+**border**:
+The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, stored as the trait `border`. The design panel's Border section shows none, solid, dashed and dotted, then Color and Border width; design mode shows the paint and every setting. A deck, device or agent that still says `line` is read as border. PowerPoint writes `a:ln`.
+_Avoid_: line (as a trait or a panel section), stroke, outline
+
+**line**:
+A layer drawn as a line. Never the stroke around a shape.
+
 **field**:
-One value of a trait, written `trait.field`, such as `box.x`, `line.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.
+One value of a trait, written `trait.field`, such as `box.x`, `border.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.
 _Avoid_: property, attribute, setting
 
 **control**:
@@ -220,7 +227,7 @@ _Avoid_: row (a row is a stored edit), input, widget
 
 **strip**:
 Controls that share one horizontal line of a panel section, such as X and Y, or bold, italic and underline.
-_Avoid_: line (a line is a trait), row, group
+_Avoid_: line (a line is a layer), row, group
 
 **alignment**:
 The untitled section above the design panel title, holding align and distribute.
@@ -308,10 +315,6 @@ _Avoid_: poor contrast, illegible
 **empty placeholder**:
 A placeholder that shows its prompt while someone edits and nothing in a slide show.
 _Avoid_: blank shape, missing text
-
-### Border
-
-The Design panel’s none, solid, dashed and dotted presets. Line keeps exact settings.
 
 ## Link
 

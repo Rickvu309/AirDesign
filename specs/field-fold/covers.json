@@ -29,7 +29,7 @@
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
       "digest": "a022f6949f23",
-      "blob": "b213ab0707ba4eb0cc2b3d53d7a52d30f631cd26"
+      "blob": "155c9c8769e4b3dd3ffb80f34ecb3c8034a1c05e"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -41,7 +41,7 @@
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
       "digest": "e7d728935bf9",
-      "blob": "006690e633df62e88d831eb585c8993a3254c5ff"
+      "blob": "43b15a1d90fbec5196629908e36c61f5fd3cff8f"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,8 +52,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
-      "digest": "760d5732aaa5",
-      "blob": "2a98aaa9197aca9880590e795cd6ae7047d79327"
+      "digest": "a58444ff0064",
+      "blob": "e9265a484f07c32ab8df009d0afb63427743102b"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -71,7 +71,7 @@
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
       "digest": "8e4877a7d351",
-      "blob": "b9337e10a20e32526905cafd396d00a0868f59f5"
+      "blob": "ff6da5dbf259c0cbb674e2d77e7c129bf4cc5927"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
@@ -88,20 +88,20 @@
     {
       "file": "packages/pptx/src/trait-xml-fills.ts",
       "names": ["fillAlpha", "fadedFill", "fillsXml"],
-      "digest": "9cccf62e984c",
-      "blob": "a0d255983f3c3acc3a8b984dd660905b1b11430e"
+      "digest": "674cd7688782",
+      "blob": "ed3c04e1438eaa42b3fc00aa0e7c3e6493d77ccd"
     },
     {
       "file": "packages/pptx/src/alpha-codec.ts",
       "names": ["alphaKept"],
       "digest": "ce0077cf1df2",
-      "blob": "3295201fee4b7f90f7e7d1c1a920c0131a887993"
+      "blob": "6bd25ed3c26b356851b8587c8beb1b6f6cbe9665"
     },
     {
       "file": "packages/engine/src/apply-change.ts",
       "names": ["applySet", "landRow"],
       "digest": "b3d2b91658cb",
-      "blob": "f7e8456743f668c766ece8ccc687a0087f819885"
+      "blob": "d357796f8a533bdb134badc1c097a1d208ae6364"
     }
   ]
 }

@@ -46,13 +46,13 @@ describe("opacity fades every fills, line and text an element takes, at once", (
       rows: [
         {
           node: "258.2",
-          row: { v: format, patch: { fills: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } } },
+          row: { v: format, patch: { fills: { alpha: faded }, border: { alpha: faded }, text: { alpha: faded } } },
         },
       ],
     })
     expect(plan({ target: { node: elementId("258.4") }, opacity: alpha(60_000) })).toEqual({
       ok: true,
-      rows: [{ node: "258.4", row: { v: format, patch: { fills: { alpha: faded }, line: { alpha: faded } } } }],
+      rows: [{ node: "258.4", row: { v: format, patch: { fills: { alpha: faded }, border: { alpha: faded } } } }],
     })
   })
 
@@ -76,7 +76,7 @@ describe("opacity fades every fills, line and text an element takes, at once", (
                 p3: { set: { none: true } },
                 alpha: { set: 0 },
               },
-              line: { alpha: { set: 0 } },
+              border: { alpha: { set: 0 } },
             },
           },
         },

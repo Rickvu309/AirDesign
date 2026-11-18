@@ -123,7 +123,7 @@ type Planned = {
 
 const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
   fills: "fill",
-  line: "line",
+  border: "border",
   effects: "effects",
   body: "text-box",
   geometry: "shape",

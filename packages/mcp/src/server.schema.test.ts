@@ -70,7 +70,7 @@ describe("the listed tool schemas", () => {
       const invalid = {
         deck: "deck",
         base: 0,
-        changes: [{ op: "set", target: "258.7", line: { head: { type: "bogus", width: "sm", length: "sm" } } }],
+        changes: [{ op: "set", target: "258.7", border: { head: { type: "bogus", width: "sm", length: "sm" } } }],
       }
       expect((await schema["~standard"].validate(invalid)).issues?.length).toBeGreaterThan(0)
     })

@@ -98,7 +98,7 @@ it("opens a deck the build before line height stored, shows each line height it 
   expect((await stored(deck)).import_index).toEqual(saved.index)
 })
 
-it("edits, undoes and applies a stored text style on that deck, and answers an agent that still says lineSpacing", async () => {
+it("edits, undoes and applies a stored text style on that deck, reads an agent today's key, and answers an agent that still says lineSpacing", async () => {
   const owner = await account()
   const deck = await plant(owner, saved.register, saved.index)
   const title = elementId("256.2")
@@ -130,6 +130,10 @@ it("edits, undoes and applies a stored text style on that deck, and answers an a
 
   const agent = await connected({ authorization: `Bearer ${await grant(owner, "claude")}` })
   const read = await agent.call("read_deck", { deck, slide: "256" })
+  const values = (read.body.elements as readonly { readonly value: string | null }[]).map(({ value }) => value ?? "")
+  expect(values.join("")).toContain('"lineHeight":')
+  expect(values.join("")).not.toContain("lineSpacing")
+  expect(JSON.stringify((await stored(deck)).register)).toContain("lineSpacing")
   const styles = (
     read.body.slides as readonly {
       readonly textStyles?: readonly { readonly name: string; readonly fields: object }[]

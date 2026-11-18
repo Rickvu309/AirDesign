@@ -142,7 +142,15 @@ export { readTextFill, type TextFill } from "./text-fill.js"
 export { changeFills, paintSlots, patternPresets, readFills, type Paint, type ShownFills } from "./trait-fills.js"
 export { nameBytes } from "./trait-identity.js"
 export { assetIcon, assetMedia, iconNamePattern, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
-export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
+export {
+  arrowheads,
+  arrowSizes,
+  borderCaps,
+  borderCompounds,
+  borderJoins,
+  dashPresets,
+  widestBorder,
+} from "./trait-border.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
 export {
@@ -236,6 +244,7 @@ export {
   type TextRun,
   type TextValue,
 } from "./text-value.js"
+export { withCurrentKeys } from "./current-keys.js"
 export {
   linkRange,
   linkState,

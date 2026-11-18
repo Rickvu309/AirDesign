@@ -7,7 +7,7 @@ export default async function drive(kit) {
   const { repo, page, expect, post, deckRoutes, capture, note } = kit
   const require = createRequire(import.meta.url)
   const { appearanceCopy: designCopy } = require(path.join(repo, "apps/web/src/copy/appearance-copy.ts"))
-  const { lineCopy, lineWords } = require(path.join(repo, "apps/web/src/copy/line-copy.ts"))
+  const { borderCopy, borderWords } = require(path.join(repo, "apps/web/src/copy/border-copy.ts"))
   const { effectsWords } = require(path.join(repo, "apps/web/src/copy/effects-copy.ts"))
   const { opacityCopy } = require(path.join(repo, "apps/web/src/copy/opacity-copy.ts"))
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
@@ -26,12 +26,12 @@ export default async function drive(kit) {
   const shadow = panel.getByRole("group", { name: designCopy.shadowPreset, exact: true })
   const at = { part: "ppt/slides/slide1.xml", shape: "4" }
   for (const [kind, choices] of [
-    ["border", [...["none", "solid", "dash", "dot"].map((name) => [name, lineWords[`border.${name}`]])]],
+    ["border", [...["none", "solid", "dash", "dot"].map((name) => [name, borderWords[`border.${name}`]])]],
     [
       "shadow",
       [
         ...["subtle", "medium", "strong"].map((name) => [name, effectsWords[`shadow.${name}`]]),
-        ["none", lineWords["border.none"]],
+        ["none", borderWords["border.none"]],
       ],
     ],
   ]) {
@@ -40,14 +40,14 @@ export default async function drive(kit) {
       await group.getByRole("button", { name: label, exact: true }).click()
       if (kind === "border" && name !== "none") {
         const borderSection = panel.locator(`[data-design-section="${designCopy.border}"]`)
-        await expect(borderSection.getByText(lineCopy.color, { exact: true })).toBeVisible()
-        await expect(borderSection.getByRole("textbox", { name: lineCopy.borderWidth, exact: true })).toBeVisible()
+        await expect(borderSection.getByText(borderCopy.color, { exact: true })).toBeVisible()
+        await expect(borderSection.getByRole("textbox", { name: borderCopy.width, exact: true })).toBeVisible()
       }
       if (kind === "border" && name === "none") {
         await expect(
           panel
             .locator(`[data-design-section="${designCopy.border}"]`)
-            .getByRole("textbox", { name: lineCopy.borderWidth, exact: true }),
+            .getByRole("textbox", { name: borderCopy.width, exact: true }),
         ).toHaveCount(0)
       }
       await expect(group.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true")
@@ -73,11 +73,11 @@ export default async function drive(kit) {
       await (await downloading).saveAs(file)
       const parts = await pptx.readParts(await readFile(file))
       if (kind === "border") {
-        const line = pptx.shownLine(parts, at)
-        if (name === "none") expect(line.fill.value).toEqual({ none: true })
+        const border = pptx.shownBorder(parts, at)
+        if (name === "none") expect(border.fill.value).toEqual({ none: true })
         else {
-          expect(line.fill.value).toHaveProperty("solid")
-          expect(line.dash.value).toBe(name)
+          expect(border.fill.value).toHaveProperty("solid")
+          expect(border.dash.value).toBe(name)
         }
       } else {
         const effects = pptx.shownEffects(parts, at)
@@ -102,7 +102,7 @@ export default async function drive(kit) {
     "aria-pressed",
     "true",
   )
-  await shadow.getByRole("button", { name: lineWords["border.none"], exact: true }).click()
+  await shadow.getByRole("button", { name: borderWords["border.none"], exact: true }).click()
   await expect(slider).toHaveCount(0)
   const resize = page.getByRole("separator", { name: designCopy.resizePanel })
   for (const width of [220, 440, 240]) {

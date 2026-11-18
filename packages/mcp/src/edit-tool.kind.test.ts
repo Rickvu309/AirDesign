@@ -156,7 +156,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
       expect(landed.isError).toBeFalsy()
     })
     const line = held.deck.register.elements[elementId("256.9")]
-    expect(line === undefined ? undefined : landedPatch(line, "text")).toEqual({ line: { alpha: { set: 60_000 } } })
+    expect(line === undefined ? undefined : landedPatch(line, "text")).toEqual({ border: { alpha: { set: 60_000 } } })
   })
 
   it("lands what each kind can take: a move of a table, a picture or a chart", async () => {

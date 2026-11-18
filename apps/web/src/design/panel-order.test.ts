@@ -27,7 +27,6 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
         placed: placed
           .filter(
             (section) =>
-              section !== "border" &&
               section !== "shadow" &&
               section !== "pictureFill" &&
               section !== "image" &&
@@ -79,7 +78,7 @@ it("orders a text box Text first, with its rare sections and its shape type fold
     ["boxFill", false],
     ["paragraphSpacing", false],
     ["box", false],
-    ["line", false],
+    ["border", false],
     ["effects", false],
     ["body", false],
     ["geometry", false],
@@ -87,7 +86,7 @@ it("orders a text box Text first, with its rare sections and its shape type fold
   ])
 })
 
-it("orders a drawn shape by its fill, line and shape type", () => {
+it("orders a drawn shape by its fill, border and shape type", () => {
   const oval = { ...textBox, facts: { ...textBox.facts, text: false }, value: null }
   const fields = { "geometry.shape": { preset: "ellipse", adjust: {} } }
   expect(panelKind(oval, shown(fields))).toBe("shape")
@@ -98,7 +97,6 @@ it("orders a drawn shape by its fill, line and shape type", () => {
     ["border", true],
     ["shadow", true],
     ["geometry", false],
-    ["line", false],
     ["effects", false],
     ["box", false],
     ["identity", false],
@@ -123,7 +121,6 @@ it("offers a shape whose fills hold an image no shape type while it is a plain r
     "image",
     "crop",
     "box",
-    "line",
     "effects",
     "identity",
   ])
@@ -131,7 +128,7 @@ it("offers a shape whose fills hold an image no shape type while it is a plain r
   expect(oval).toContainEqual(["geometry", false])
 })
 
-it("leads a connector with its line and the shapes it joins", () => {
+it("leads a connector with its border and the shapes it joins", () => {
   const connector = { ...textBox, facts: { ...textBox.facts, kind: "connector" as const, text: false }, value: null }
   expect(sections(connector, {}).slice(0, 3)).toEqual([
     ["alignment", true],

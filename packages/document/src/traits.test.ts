@@ -33,9 +33,11 @@ export type Derived = [
   >,
   Expect<Same<FieldValue<"fills", "alpha">, Alpha>>,
   Expect<Same<WireField<"fills">, "paint" | "source" | "mode" | "crop" | "recolor" | "blur" | "overlay">>,
-  Expect<Same<FieldName<"line">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail" | "alpha">>,
-  Expect<null extends WireAgent<"line", "width"> ? true : false>,
-  Expect<"none" | "accent2" extends WireAgent<"line", "fill"> ? true : false>,
+  Expect<
+    Same<FieldName<"border">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail" | "alpha">
+  >,
+  Expect<null extends WireAgent<"border", "width"> ? true : false>,
+  Expect<"none" | "accent2" extends WireAgent<"border", "fill"> ? true : false>,
   Expect<null extends WireAgent<"fills", "paint"> ? true : false>,
   Expect<null extends WireAgent<"box", "x"> ? false : true>,
   Expect<"none" | "group" | "accent1" extends WireAgent<"fills", "paint"> ? true : false>,
@@ -46,9 +48,9 @@ export type Derived = [
   Expect<Same<HasAlpha, true>>,
   Expect<"table.value" extends FieldKey ? true : false>,
   Expect<"fills.p3" extends FieldKey ? true : false>,
-  Expect<"line.width" extends FieldKey ? true : false>,
-  Expect<"line.alpha" extends FieldKey ? true : false>,
-  Expect<Same<WireField<"line">, Exclude<FieldName<"line">, "alpha">>>,
+  Expect<"border.width" extends FieldKey ? true : false>,
+  Expect<"border.alpha" extends FieldKey ? true : false>,
+  Expect<Same<WireField<"border">, Exclude<FieldName<"border">, "alpha">>>,
 ]
 
 describe("the one table of traits", () => {
@@ -59,7 +61,7 @@ describe("the one table of traits", () => {
       box: "whole",
       geometry: "whole",
       fills: "whole",
-      line: "field",
+      border: "field",
       effects: "whole",
       body: "field",
       text: "run",
@@ -98,15 +100,15 @@ describe("the one table of traits", () => {
       "fills.blur",
       "fills.overlay",
       "fills.alpha",
-      "line.fill",
-      "line.width",
-      "line.dash",
-      "line.cap",
-      "line.compound",
-      "line.join",
-      "line.head",
-      "line.tail",
-      "line.alpha",
+      "border.fill",
+      "border.width",
+      "border.dash",
+      "border.cap",
+      "border.compound",
+      "border.join",
+      "border.head",
+      "border.tail",
+      "border.alpha",
       "effects.shadow",
       "effects.glow",
       "effects.softEdge",
@@ -144,7 +146,7 @@ describe("the one table of traits", () => {
       "show.skipped",
       "transition.value",
     ])
-    expect(alphaKeys).toEqual(["fills.alpha", "line.alpha", "text.alpha"])
+    expect(alphaKeys).toEqual(["fills.alpha", "border.alpha", "text.alpha"])
   })
 
   it("lets only a declared field go back to the value its layout, master or style gives", () => {
@@ -153,14 +155,14 @@ describe("the one table of traits", () => {
     )
     expect(fields).toEqual([
       "fills.p0",
-      "line.fill",
-      "line.width",
-      "line.dash",
-      "line.cap",
-      "line.compound",
-      "line.join",
-      "line.head",
-      "line.tail",
+      "border.fill",
+      "border.width",
+      "border.dash",
+      "border.cap",
+      "border.compound",
+      "border.join",
+      "border.head",
+      "border.tail",
       "body.insets",
       "body.anchor",
       "body.wrap",

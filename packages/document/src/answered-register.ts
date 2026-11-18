@@ -1,9 +1,14 @@
 import type { DeckIndex } from "./deck-index.js"
-import { commandHoldsFills, indexHoldsFills } from "./fills-conversion.js"
+import { holdsBorder } from "./border-conversion.js"
+import { commandHolds, holdsFills, indexHolds } from "./fills-conversion.js"
 import { format } from "./format.js"
 import { opensRenamedKey } from "./key-alias.js"
 
 type Rowed = { readonly landed: readonly { readonly v?: number }[] }
+
+function renamed(raw: unknown): boolean {
+  return holdsFills(raw) || holdsBorder(raw)
+}
 
 function rowFormat(elements: Readonly<Partial<Record<string, Rowed>>>): number {
   let highest = 1
@@ -24,9 +29,9 @@ export function answeredRegister<
       (command) =>
         (command.grid ?? 1) > 1 ||
         (command.slide === "move-many" && command.row === "before") ||
-        commandHoldsFills(command) ||
+        commandHolds(command, renamed) ||
         opensRenamedKey(command),
-    ) || indexHoldsFills(register.index)
+    ) || indexHolds(register.index, renamed)
   const rows = newerCommand === true ? format : rowFormat(register.elements)
   if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register
   const { next, ...index } = register.index

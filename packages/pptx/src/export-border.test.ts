@@ -2,7 +2,7 @@ import { decide, format, openRegister, type Command, type ElementPatch, type Reg
 import { describe, expect, it } from "vitest"
 import { exportParts } from "./export-parts.js"
 import { indexPackage } from "./index-package.js"
-import { shownLine } from "./line-read.js"
+import { shownBorder } from "./border-read.js"
 import { readParts } from "./package-container.js"
 import { decodeUtf8 } from "./package-bytes.js"
 import { readSlides } from "./read-shapes.js"
@@ -16,7 +16,7 @@ type Parts = ReadonlyMap<string, Uint8Array>
 
 const accent2 = { solid: { scheme: "accent2" } } as const
 const every: ElementPatch = {
-  line: {
+  border: {
     width: { set: 38100 },
     fill: { set: accent2 },
     dash: { set: "sysDot" },
@@ -28,7 +28,7 @@ const every: ElementPatch = {
   },
 }
 const inherited: ElementPatch = {
-  line: {
+  border: {
     width: "inherit",
     fill: "inherit",
     dash: "inherit",
@@ -79,13 +79,13 @@ describe("exportParts on a line", () => {
   it("writes only the width into a shape whose line comes from its style, so the style still gives the rest", async () => {
     const parts = await deck("shapes-added.pptx")
     const rectangle = at(parts, 1, "4")
-    const out = exported(parts, rectangle.node, { line: { width: { set: 38100 } } })
+    const out = exported(parts, rectangle.node, { border: { width: { set: 38100 } } })
     const before = text(parts, rectangle.part)
     const after = text(out, rectangle.part)
     const own = '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln w="38100"/></p:spPr>'
     expect(after).toContain(own)
     expect(after.replace('<a:ln w="38100"/>', "")).toBe(before)
-    expect(shownLine(out, rectangle)).toEqual({
+    expect(shownBorder(out, rectangle)).toEqual({
       width: { value: 38100, own: true },
       fill: { value: { solid: { scheme: "accent1", transforms: [{ op: "shade", val: 15000 }] } }, own: false },
       dash: { value: "solid", own: false },
@@ -104,10 +104,10 @@ describe("exportParts on a line", () => {
     expect(text(out, shape.part)).toContain(
       '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill><a:ln w="38100" cap="rnd" cmpd="dbl"><a:solidFill><a:schemeClr val="accent2"/></a:solidFill><a:prstDash val="sysDot"/><a:bevel/><a:headEnd type="triangle" w="lg" len="lg"/><a:tailEnd type="stealth" w="sm" len="med"/></a:ln></p:spPr>',
     )
-    const shown = shownLine(out, shape)
+    const shown = shownBorder(out, shape)
     expect(Object.values(shown ?? {}).every((each) => each.own)).toBe(true)
     expect(Object.fromEntries(Object.entries(shown ?? {}).map(([name, each]) => [name, { set: each.value }]))).toEqual(
-      every.line,
+      every.border,
     )
     expect(text(exported(parts, shape.node, inherited), shape.part)).toBe(text(parts, shape.part))
   })
@@ -116,12 +116,12 @@ describe("exportParts on a line", () => {
     const parts = await deck("census-updating-spm.pptx")
     const connector = at(parts, 7, "26")
     const before = text(parts, connector.part)
-    const dashed = text(exported(parts, connector.node, { line: { dash: { set: "lgDash" } } }), connector.part)
+    const dashed = text(exported(parts, connector.node, { border: { dash: { set: "lgDash" } } }), connector.part)
     expect(dashed).toBe(before.replace('<a:prstDash val="dash"/>', '<a:prstDash val="lgDash"/>'))
-    const mitered = text(exported(parts, connector.node, { line: { join: { set: "miter" } } }), connector.part)
+    const mitered = text(exported(parts, connector.node, { border: { join: { set: "miter" } } }), connector.part)
     expect(mitered).toBe(before.replace("<a:round/>", '<a:miter lim="800000"/>'))
     const out = exported(parts, connector.node, inherited)
     expect(text(out, connector.part)).toContain("<p:spPr><a:xfrm")
-    expect(Object.values(shownLine(out, connector) ?? {}).some((each) => each.own)).toBe(false)
+    expect(Object.values(shownBorder(out, connector) ?? {}).some((each) => each.own)).toBe(false)
   })
 })
