@@ -6,7 +6,7 @@ function hex(digits: string): `#${string}` {
 
 export const themeWire: TraitWire<"theme"> = {
   description:
-    "With target deck.theme: all themes. With deck.template1, deck.template2, etc. from read_deck.templates order: only that template. Colors and fonts update objects using them.",
+    "deck.theme sets every theme. deck.templateN, N from templates[].node, sets that template. A deleted template is omitted and its number is not reused.",
   fields: {
     name: { description: "Template name in this deck.", example: { theme: { name: "Light slides" } } },
     dk1: { description: "Dark 1, usually tx1.", example: { theme: { dk1: hex("1F1F1F") } } },
@@ -23,5 +23,13 @@ export const themeWire: TraitWire<"theme"> = {
     folHlink: { description: "A visited link's text.", example: { theme: { folHlink: hex("7F3F98") } } },
     major: { description: "Heading font.", example: { theme: { major: "Georgia" } } },
     minor: { description: "Body font.", example: { theme: { minor: "Verdana" } } },
+    custom: {
+      description: "Named colors stored in the theme. A shape cannot reference one, so applying it stores the hex.",
+      example: { theme: { custom: [{ name: "Coral", color: hex("FF6600") }] } },
+    },
+    removed: {
+      description: "Delete this template when no slide uses it. Target deck.templateN, not deck.theme.",
+      example: { theme: { removed: true } },
+    },
   },
 }

@@ -19,5 +19,7 @@ export const themeControls: TraitControls<"theme"> = {
     folHlink: { label: themeCopy.folHlink },
     major: { label: themeCopy.major },
     minor: { label: themeCopy.minor },
+    custom: { label: themeCopy.custom },
+    removed: { label: themeCopy.removed },
   },
 }

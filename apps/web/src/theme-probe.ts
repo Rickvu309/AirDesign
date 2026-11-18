@@ -1,5 +1,5 @@
 import { format, themeSlots, type ThemeSlot } from "@airdesign/document"
-import { exportParts, paintReader, shownTheme, templateStyle } from "@airdesign/pptx"
+import { exportParts, paintReader, shownTheme, slideTheme, templateStyle, themeCustomColors } from "@airdesign/pptx"
 import { indexed, landed, type At, type Parts, type Probe } from "./parity-probe"
 
 const themeOpening = {
@@ -18,6 +18,8 @@ const themeOpening = {
   folHlink: "opening",
   major: "opening",
   minor: "opening",
+  custom: "opening",
+  removed: "opening",
 } as const
 
 function shown(field: keyof typeof themeOpening) {
@@ -37,15 +39,23 @@ function named(parts: Parts, at: At, field: string): Parts {
   return exportParts(parts, register)
 }
 
+function themeBytes(parts: Parts, at: At): Uint8Array {
+  const theme = slideTheme(parts, at.part)
+  return theme === null ? new Uint8Array() : (parts.get(theme) ?? new Uint8Array())
+}
+
 export const themeProbe: Probe<"theme"> = {
-  deck: "doe-heat-pumps.pptx",
+  deck: "two-templates.pptx",
   kind: "deck",
   opening: () => ({ v: format, patch: { theme: themeOpening } }),
   edit: (_, field, value) => ({ v: format, patch: { theme: { [field]: { set: value } } } }),
-  painted: (parts, at, field) =>
-    field === "name"
+  painted: (parts, at, field) => {
+    if (field === "removed") return parts.has("ppt/theme/theme2.xml") ? "kept" : "dropped"
+    if (field === "custom") return JSON.stringify(themeCustomColors(themeBytes(parts, at)) ?? [])
+    return field === "name"
       ? (templateStyle(parts, at.part).name ?? "")
-      : JSON.stringify(paintReader(named(parts, at, field)).slide(at.part).elements),
+      : JSON.stringify(paintReader(named(parts, at, field)).slide(at.part).elements)
+  },
   fields: {
     name: { file: (parts, at) => templateStyle(parts, at.part).name, shows: (value) => value },
     dk1: shown("dk1"),
@@ -62,5 +72,13 @@ export const themeProbe: Probe<"theme"> = {
     folHlink: shown("folHlink"),
     major: shown("major"),
     minor: shown("minor"),
+    custom: {
+      file: (parts, at) => themeCustomColors(themeBytes(parts, at)) ?? [],
+      shows: (value) => value,
+    },
+    removed: {
+      file: (parts) => !parts.has("ppt/theme/theme2.xml"),
+      shows: (value) => value,
+    },
   },
 }

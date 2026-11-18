@@ -56,13 +56,18 @@ export type ReadElement = {
   readonly closed?: true
 }
 
+export type ReadTemplate = TemplateStyle & {
+  readonly node: ElementId
+  readonly custom?: readonly { readonly name: string; readonly color: string }[]
+}
+
 export type ReadDeckAnswer = {
   readonly ok: true
   readonly revision: number
   readonly grid: { readonly starts: readonly string[] }
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template" | "textStyles">[]
-  readonly templates?: readonly TemplateStyle[]
+  readonly templates?: readonly ReadTemplate[]
   readonly palettes?: readonly Palette[]
   readonly theme?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
@@ -216,8 +221,42 @@ function themeSet(register: Register, node = themeNode): Readonly<Record<string,
   const body = register.nodes.includes(node) ? register.elements[node] : undefined
   const edits = body === undefined ? {} : (landedPatch(body, "text").theme ?? {})
   return Object.fromEntries(
-    Object.entries(edits).flatMap(([field, edit]) => (typeof edit === "object" ? [[field, edit.set]] : [])),
+    Object.entries(edits).flatMap(([field, edit]) =>
+      typeof edit === "object" && typeof edit.set === "string" ? [[field, edit.set]] : [],
+    ),
   )
+}
+
+function themeRemoved(register: Register, node: ElementId): boolean {
+  const body = register.nodes.includes(node) ? register.elements[node] : undefined
+  if (body === undefined) return false
+  const edit = landedPatch(body, "text").theme?.removed
+  return typeof edit === "object" && edit.set === true
+}
+
+function customColors(
+  register: Register,
+  node: ElementId,
+): readonly { readonly name: string; readonly color: string }[] | undefined {
+  const body = register.nodes.includes(node) ? register.elements[node] : undefined
+  if (body === undefined) return undefined
+  const edit = landedPatch(body, "text").theme?.custom
+  if (typeof edit !== "object" || !Array.isArray(edit.set)) return undefined
+  return edit.set.map((item) => ({ name: item.name, color: `#${item.color}` }))
+}
+
+function usedTemplates(register: Register): ReadonlySet<string> {
+  const bySlide = new Map<string, string>()
+  for (const slide of register.index?.slides ?? []) {
+    if (slide.template !== undefined) bySlide.set(slide.id, slide.template)
+  }
+  for (const node of register.nodes) {
+    if (slideKind(node) !== "slide") continue
+    const body = register.elements[node]
+    const edit = body === undefined ? undefined : landedPatch(body, "text").template?.id
+    if (typeof edit === "object") bySlide.set(shapeOf(node).slide, edit.set)
+  }
+  return new Set(bySlide.values())
 }
 
 function themedHead(palettes: readonly Palette[] | undefined, set: Readonly<Record<string, string>>) {
@@ -291,11 +330,23 @@ export function readDeckPage(
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index
-  const templates = index?.templates?.map((style, at) => {
-    const scoped = themeSet(deck.register, templateNode(at))
+  const used = usedTemplates(deck.register)
+  const templates = index?.templates?.flatMap((style, at) => {
+    const node = templateNode(at)
+    if (themeRemoved(deck.register, node) && !used.has(style.id)) return []
+    const scoped = themeSet(deck.register, node)
     const palette =
       themedHead([style.palette], { ...themeSet(deck.register), ...scoped }).palettes?.[0] ?? style.palette
-    return { ...style, name: scoped.name ?? themeSet(deck.register).name ?? style.name, palette }
+    const custom = customColors(deck.register, node) ?? customColors(deck.register, themeNode)
+    return [
+      {
+        ...style,
+        node,
+        name: scoped.name ?? themeSet(deck.register).name ?? style.name,
+        palette,
+        ...(custom === undefined ? {} : { custom }),
+      },
+    ]
   })
   const palettes = new Map(
     (index?.slides ?? []).flatMap(({ id, palette }) => (palette === undefined ? [] : [[id, palette]])),

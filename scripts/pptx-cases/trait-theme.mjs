@@ -25,6 +25,8 @@ export default {
     "theme.folHlink",
     "theme.major",
     "theme.minor",
+    "theme.custom",
+    "theme.removed",
   ],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => !themes.includes(name))

@@ -38,7 +38,24 @@ const openings = new WeakMap<Parts, ReturnType<typeof indexPackage>>()
 function indexed(parts: Parts, register: Register): Register {
   const opening = openings.get(parts) ?? indexPackage(parts)
   openings.set(parts, opening)
-  return { ...register, index: { ...opening, total: opening.elements.length, pages: [] } }
+  const stored = register.index?.templates
+  const fresh = opening.templates ?? []
+  const templates =
+    stored === undefined
+      ? undefined
+      : [
+          ...stored.map((style) => fresh.find((each) => each.id === style.id) ?? style),
+          ...fresh.filter((style) => stored.every((each) => each.id !== style.id)),
+        ]
+  return {
+    ...register,
+    index: {
+      ...opening,
+      total: opening.elements.length,
+      pages: [],
+      ...(templates === undefined ? {} : { templates }),
+    },
+  }
 }
 
 export function deviceScope(parts: Parts, register: Register): Scope {
