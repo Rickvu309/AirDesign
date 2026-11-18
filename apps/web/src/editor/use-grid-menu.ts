@@ -34,11 +34,13 @@ export function useGridMenu({
     setMenu({ index, anchor, pointer })
   }
 
-  function close() {
+  function close(keyboard: boolean) {
     const shown = menu
     setMenu(null)
     if (shown === null) return
-    list.current?.querySelector<HTMLElement>(`[data-slide-entry="${shown.index + 1}"]`)?.focus()
+    list.current
+      ?.querySelector<HTMLElement>(`[data-slide-entry="${shown.index + 1}"]`)
+      ?.focus({ preventScroll: true, focusVisible: keyboard })
   }
 
   const below = menu === null ? null : moveBelowPlace(rows, pickedSlides(picked, menu.index), menu.index)

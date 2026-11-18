@@ -104,6 +104,7 @@ export function GridSectionCell({
   held,
   onToggle,
   shown,
+  handle,
   children,
 }: {
   row: Pick<GridRow, "start" | "end">
@@ -115,6 +116,7 @@ export function GridSectionCell({
   held: ReadonlySet<number>
   onToggle: (number: number) => void
   shown: boolean
+  handle?: ReactNode
   children: ReactNode
 }) {
   const offset = index - row.start
@@ -144,6 +146,7 @@ export function GridSectionCell({
           </div>
         </div>
       )}
+      {handle}
       {shown ? <div style={{ gridColumn: offset + 1, gridRow: marked ? 2 : 1 }}>{children}</div> : null}
     </div>
   )

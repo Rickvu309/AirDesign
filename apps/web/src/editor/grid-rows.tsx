@@ -1,7 +1,7 @@
 import type { SlideId } from "@airdesign/document"
 import { useState, type CSSProperties, type PointerEvent, type ReactNode } from "react"
 import { GridRowAdd } from "@/editor/grid-row-add"
-import { GridRowFrame } from "@/editor/grid-row-frame"
+import { GridRowFrame, GridRowHandle } from "@/editor/grid-row-frame"
 import { GridSectionCell } from "@/editor/grid-section"
 import { gridFrameHeight, gridGroupCenter, gridSlideCenters } from "@/editor/grid-lines"
 import {
@@ -131,19 +131,21 @@ export function GridRows({
         const centers = gridSlideCenters(measured, height, gaps)
         const span = Math.max(...group.map(gridTrackColumns))
         const band = wrapped ? groupBand(centers, height, span, width, spacing.column, scale) : undefined
+        const members = [...new Set([...line.heads, ...line.cards])].sort((a, b) => a - b)
+        const host = groupFull && index === first ? (members[0] ?? -1) : -1
+        const hidden = rowBlocked || height * scale < gridRowHandle.minimumHeight
+        const frameHover = rowFocus === "add" ? "add" : rowHover
         return [
-          ...(groupFull && index === first
-            ? [
+          ...(host === -1
+            ? []
+            : [
                 <GridRowFrame
                   key={`row:${key}`}
-                  number={line.number + 1}
                   start={row.start}
-                  height={height}
                   scale={scale}
-                  blocked={rowBlocked}
-                  hover={rowFocus === "add" ? "add" : rowHover}
+                  blocked={hidden}
+                  hover={frameHover}
                   tint={wrapped && tinted}
-                  center={wrapped ? gridGroupCenter(centers) : undefined}
                   rule={band?.rule}
                   band={band?.band}
                   style={{
@@ -152,51 +154,59 @@ export function GridRows({
                     alignSelf: wrapped ? "start" : undefined,
                     height: wrapped ? gridFrameHeight(measured, height, gaps) : rowHeight,
                   }}
-                  onGrab={(event) => onGrab(row.start, event)}
-                  onMove={(direction) => {
-                    setHover(null)
-                    onMove(line.number, direction)
-                  }}
                 />,
-              ]
-            : []),
-          ...[...new Set([...line.heads, ...line.cards])]
-            .sort((a, b) => a - b)
-            .map((slide) => (
-              <div
-                key={ids?.[slide] ?? slide}
-                data-grid-row-member={line.cards.length > 0 ? row.start : undefined}
-                data-row-tint={tinted ? "" : undefined}
-                data-wrapped={wrapped && line.cards.length > 0 ? "" : undefined}
-                className="pointer-events-none relative grid [&>div>div]:pointer-events-auto"
-                style={{
-                  ...place,
-                  height: rowHeight,
-                  gridTemplateColumns: columnsOf(length),
-                  gridTemplateRows:
-                    line.heads.length === 0
-                      ? undefined
-                      : line.cards.length === 0
-                        ? `${gridHeadingHeight / scale}px`
-                        : `${gridSectionHeight / scale}px 1fr`,
-                  columnGap: spacing.column,
-                }}
+              ]),
+          ...members.map((slide) => (
+            <div
+              key={ids?.[slide] ?? slide}
+              data-grid-row-member={line.cards.length > 0 ? row.start : undefined}
+              data-row-tint={tinted ? "" : undefined}
+              data-wrapped={wrapped && line.cards.length > 0 ? "" : undefined}
+              className="pointer-events-none relative grid [&>div>div]:pointer-events-auto"
+              style={{
+                ...place,
+                height: rowHeight,
+                gridTemplateColumns: columnsOf(length),
+                gridTemplateRows:
+                  line.heads.length === 0
+                    ? undefined
+                    : line.cards.length === 0
+                      ? `${gridHeadingHeight / scale}px`
+                      : `${gridSectionHeight / scale}px 1fr`,
+                columnGap: spacing.column,
+              }}
+            >
+              <GridSectionCell
+                row={line}
+                index={slide}
+                sections={sections}
+                count={count}
+                scale={scale}
+                pitch={width + spacing.column}
+                held={collapsed.held}
+                onToggle={collapsed.toggle}
+                shown={line.cards.includes(slide)}
+                handle={
+                  slide === host ? (
+                    <GridRowHandle
+                      number={line.number + 1}
+                      scale={scale}
+                      height={height}
+                      blocked={rowBlocked}
+                      center={wrapped ? gridGroupCenter(centers) : undefined}
+                      onGrab={(event) => onGrab(row.start, event)}
+                      onMove={(direction) => {
+                        setHover(null)
+                        onMove(line.number, direction)
+                      }}
+                    />
+                  ) : undefined
+                }
               >
-                <GridSectionCell
-                  row={line}
-                  index={slide}
-                  sections={sections}
-                  count={count}
-                  scale={scale}
-                  pitch={width + spacing.column}
-                  held={collapsed.held}
-                  onToggle={collapsed.toggle}
-                  shown={line.cards.includes(slide)}
-                >
-                  {line.cards.includes(slide) ? renderCard(slide) : null}
-                </GridSectionCell>
-              </div>
-            )),
+                {line.cards.includes(slide) ? renderCard(slide) : null}
+              </GridSectionCell>
+            </div>
+          )),
           ...(addBlocked || !groupFull || index !== last
             ? []
             : [

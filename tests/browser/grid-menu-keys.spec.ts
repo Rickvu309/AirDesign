@@ -123,6 +123,36 @@ for (const path of ["right", "ContextMenu"] as const) {
   })
 }
 
+test("closing the slide menu rings the slide only when the keyboard closed it", async ({ page }) => {
+  await openFile(page, sectioned)
+  await openGrid(page)
+  const menu = page.getByRole("menu")
+  const held = () =>
+    page.evaluate(() => ({
+      slide: document.activeElement?.matches("[data-slide-entry]") ?? false,
+      ring: document.activeElement?.matches(":focus-visible") ?? false,
+    }))
+  await entry(page, 1).click({ button: "right" })
+  await expect(menu).toBeVisible()
+  await page.keyboard.press("ArrowDown")
+  await menu.getByRole("menuitem").first().click()
+  await expect(menu).toBeHidden()
+  expect(await held()).toEqual({ slide: true, ring: false })
+  await entry(page, 1).focus()
+  await page.keyboard.press("ContextMenu")
+  await expect(menu).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(menu).toBeHidden()
+  expect(await held()).toEqual({ slide: true, ring: true })
+  await entry(page, 1).focus()
+  await page.keyboard.press("ContextMenu")
+  await expect(menu).toBeVisible()
+  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("Enter")
+  await expect(menu).toBeHidden()
+  expect(await held()).toEqual({ slide: true, ring: true })
+})
+
 test("Escape from the canvas closes the zoom menu without clearing the selection", async ({ page }) => {
   await openFile(page, sectioned)
   await openGrid(page)

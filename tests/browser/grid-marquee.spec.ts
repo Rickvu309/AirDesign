@@ -151,6 +151,48 @@ test("Escape cancels the drag and restores the selection, and Space does not pan
   await expect(page.locator("[data-grid-selected]")).toHaveText(slideListCopy.selected(2))
 })
 
+test("a lost window and a cancelled pointer end the drag like Escape and restore the selection", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openSaved(page, context, stack, 7)
+  await pick(page, 1, 2)
+  const from = await belowRight(page, 7)
+  const six = await centre(page, 6)
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(six.x, six.y, { steps: 6 })
+  await expect.poll(() => selectedNumbers(page)).toEqual(await crossed(page, from, six))
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")))
+  await expect(marquee(page)).toBeHidden()
+  await expect.poll(() => selectedNumbers(page)).toEqual([1, 2])
+  await page.mouse.move(from.x, from.y, { steps: 3 })
+  await page.mouse.up()
+  await expect.poll(() => selectedNumbers(page)).toEqual([1, 2])
+  await expect(page.locator("[data-grid-selected]")).toHaveText(slideListCopy.selected(2))
+
+  await page.evaluate(() => {
+    window.addEventListener("pointerdown", (event) => {
+      const seen = window as unknown as { pointer?: number }
+      seen.pointer = event.pointerId
+    })
+  })
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(six.x, six.y, { steps: 6 })
+  await expect.poll(() => selectedNumbers(page)).toEqual(await crossed(page, from, six))
+  await page.evaluate(
+    (pointer) => window.dispatchEvent(new PointerEvent("pointercancel", { pointerId: pointer })),
+    await page.evaluate(() => (window as unknown as { pointer?: number }).pointer),
+  )
+  await expect(marquee(page)).toBeHidden()
+  await expect.poll(() => selectedNumbers(page)).toEqual([1, 2])
+  await page.mouse.move(from.x, from.y, { steps: 3 })
+  await page.mouse.up()
+  await expect.poll(() => selectedNumbers(page)).toEqual([1, 2])
+})
+
 test("the rectangle edge-pans the canvas and stays anchored to its start in canvas space", async ({
   page,
   context,

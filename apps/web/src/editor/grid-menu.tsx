@@ -41,7 +41,7 @@ export function GridSlideMenu({
   onAdd: (side: GridSide) => void
   onMoveBelow: () => void
   onAct: (command: GridCommand, index: number) => void
-  onClose: () => void
+  onClose: (keyboard: boolean) => void
   skipped: readonly boolean[] | undefined
   onSkip: ((indices: readonly number[], skipped: boolean) => void) | undefined
 }) {
@@ -55,8 +55,12 @@ export function GridSlideMenu({
   return (
     <DropdownMenu
       open
-      onOpenChange={(next) => {
-        if (!next) onClose()
+      onOpenChange={(next, details) => {
+        if (next) return
+        onClose(
+          details.reason === "escape-key" ||
+            (details.reason === "item-press" && !(details.event instanceof MouseEvent && details.event.detail > 0)),
+        )
       }}
     >
       <EditorMenuContent
@@ -65,6 +69,7 @@ export function GridSlideMenu({
         side={menu.pointer ? "bottom" : "right"}
         align="start"
         sideOffset={menu.pointer ? 2 : 8}
+        finalFocus={false}
       >
         <DropdownMenuItem
           disabled={multiple}

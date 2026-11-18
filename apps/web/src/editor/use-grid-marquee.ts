@@ -134,7 +134,8 @@ export function useGridMarquee({
 
   function down(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 || !event.isPrimary || event.pointerType === "touch" || hand) return
-    if (press.current !== null || !gridBlank(event.target) || list.current === null) return
+    if ((press.current !== null && !press.current.cancelled) || !gridBlank(event.target) || list.current === null)
+      return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     const from = { x: event.clientX, y: event.clientY }
@@ -199,10 +200,14 @@ export function useGridMarquee({
 
   function lose() {
     const held = press.current
-    press.current = null
-    if (held === null || held.faces === null || held.cancelled) return
+    if (held === null || held.cancelled) return
+    if (held.faces === null) {
+      press.current = null
+      return
+    }
+    press.current = { ...held, cancelled: true }
     end()
-    finish(held)
+    apply(held, { kind: "restore", state: held.before })
   }
 
   const latest = useRef({ step, follow, release, escape, lose })
