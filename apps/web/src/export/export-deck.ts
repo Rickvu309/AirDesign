@@ -18,7 +18,7 @@ export async function exportDeck(
   ready: Promise<void>,
   pictures: PictureStore,
   request?: ExportRequest,
-): Promise<string | null> {
+): Promise<void> {
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
   await ready
@@ -30,17 +30,15 @@ export async function exportDeck(
   const chosen = chosenParts(stored.parts, opened.register, slides, held)
   const baked = await bakeFills(chosen, opened.register)
   const bytes = await exportPackage(stored.file, await bakeShadows(baked))
-  if (request?.signal?.aborted === true) return null
+  if (request?.signal?.aborted === true) return
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)
   const url = URL.createObjectURL(new Blob([copy]))
   const link = document.createElement("a")
-  const name = exportFileName(stored.name)
   link.href = url
-  link.download = name
+  link.download = exportFileName(stored.name)
   document.body.append(link)
   link.click()
   link.remove()
   URL.revokeObjectURL(url)
-  return name
 }

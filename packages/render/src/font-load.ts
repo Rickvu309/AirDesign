@@ -47,7 +47,6 @@ async function installFonts(doc: Document, family: Manifest): Promise<void> {
 export class FontLoader {
   private readonly pending = new Map<string, Promise<FontIssue | null>>()
   private readonly settled = new Set<string>()
-  private readonly doc: Document
   private readonly network: typeof fetch
   private readonly install: (family: Manifest) => Promise<void>
 
@@ -56,7 +55,6 @@ export class FontLoader {
     network: typeof fetch = (...args) => fetch(...args),
     install = (family: Manifest) => installFonts(doc, family),
   ) {
-    this.doc = doc
     this.network = network
     this.install = install
   }
@@ -77,7 +75,6 @@ export class FontLoader {
       .catch((): FontIssue => ({ family: name, refusal: "unavailable" }))
       .then((issue) => {
         this.settled.add(key)
-        if (issue !== null) this.doc.dispatchEvent(new CustomEvent("airdesign-font-issue", { detail: issue }))
         return issue
       })
     this.pending.set(key, pending)
