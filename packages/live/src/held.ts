@@ -107,12 +107,12 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
     const opening = store.get(scoped(account, gridOpeningKey(deck)))
     opening.onsuccess = () => {
       const all = readStoredRows(rows.result as StoredRow[])
-      if (newerFormat(opening.result) || all.newer) {
+      if (newerFormat(opening.result) || all.held) {
         markNewer()
         return
       }
       const loaded = load(deck, headOf(stored.result), all.read, readGridOpening(opening.result))
-      const dropped = all.unread.map((row) => storedKey(deck, row))
+      const dropped = all.dropped.map((row) => storedKey(deck, row))
       apply(loaded, change(loaded), dropped)
     }
   }
@@ -408,12 +408,12 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
     const opening = store.get(scoped(account, gridOpeningKey(deck)))
     opening.onsuccess = () => {
       const all = readStoredRows(rows.result as StoredRow[])
-      if (newerFormat(opening.result) || all.newer) {
+      if (newerFormat(opening.result) || all.held) {
         markNewer()
         return
       }
       held = load(deck, headOf(stored.result), all.read, readGridOpening(opening.result))
-      dropped = all.unread.map((row) => storedKey(deck, row))
+      dropped = all.dropped.map((row) => storedKey(deck, row))
       remember(account, deck, held)
     }
   }

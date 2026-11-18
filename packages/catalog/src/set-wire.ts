@@ -16,6 +16,7 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
+import { canonicalFields } from "./field-alias.js"
 import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
 
@@ -90,8 +91,10 @@ function presetFits(trait: TraitName, field: string, value: unknown): boolean {
 
 function readTrait(trait: TraitName, raw: unknown): Read<Inputs> {
   if (!plainObject(raw) || Object.keys(raw).length === 0) return refused(trait)
+  const named = canonicalFields(trait, raw)
+  if (!named.ok) return refused(named.field)
   const read: Record<string, unknown> = {}
-  for (const [field, value] of Object.entries(raw)) {
+  for (const [field, value] of Object.entries(named.fields)) {
     const desc = descOf(trait, field)
     const got = desc === undefined ? null : value === null ? inherited(trait, field) : readAgent(desc, value)
     if (got === null || !got.ok || !presetFits(trait, field, got.value)) return refused(`${trait}.${field}`)

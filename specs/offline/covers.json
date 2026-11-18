@@ -4,26 +4,38 @@
     {
       "file": "packages/document/src/replay.ts",
       "names": ["replay", "unsent"],
-      "digest": "4c073638cf71",
-      "blob": "1c76816c50b3b499011aa54fa397bc2176cd784b"
+      "digest": "86f7f7e79e43",
+      "blob": "66cc64d63e7b2ef0cea9d2676ad90b39781bfc2e"
     },
     {
       "file": "packages/live/src/deck-edit.ts",
       "names": ["valueChange", "joins"],
       "digest": "3b938f3e8cb8",
-      "blob": "df2b60c2099056df272ab95d0305d64105445355"
+      "blob": "049301d52226e4e7e2621c6de74ebeb17f158656"
     },
     {
       "file": "packages/live/src/deck-view.ts",
-      "names": ["joinable"],
-      "digest": "8361fa2f8d19",
-      "blob": "80e985714c6ed288785cf04da6855476f7e59461"
+      "names": ["joinable", "readStoredRows"],
+      "digest": "3480131b3416",
+      "blob": "ac6ecfc8fa28b80f4b9fbcbd337e9ec302ea7093"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["sealRows"],
       "digest": "130395e867bc",
-      "blob": "ac9e4f141d0e7c66ddc80ba2182e77f900e4e822"
+      "blob": "7bf84df28572ecabe7cfc71c9595572508ce635f"
+    },
+    {
+      "file": "packages/live/src/unsaved.ts",
+      "names": ["keepUnsaved", "releaseUnsaved", "recoverUnsaved"],
+      "digest": "ee0f7557f454",
+      "blob": "0af47a1ac4db2eca4fe4a6d6e48d6c751eae5233"
+    },
+    {
+      "file": "packages/live/src/cache.ts",
+      "names": ["keptIfNewer"],
+      "digest": "dc0940f27cce",
+      "blob": "88e26e89a07159016be481f5a12a9b6add9f842b"
     }
   ]
 }

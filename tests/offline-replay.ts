@@ -80,13 +80,13 @@ export function replayOffline(
 ) {
   let replayed = 0
   let stuttered = 0
-  const unconnected: Record<string, number> = { Crash: 0, Wipe: 0, Undo: 0 }
+  const unconnected: Record<string, number> = { Crash: 0, Wipe: 0, Undo: 0, MeetNewer: 0, TypeLate: 0 }
   for (const edge of graph.edges) {
     const source = graph.states.get(edge.from)
     const target = graph.states.get(edge.to)
     if (!source || !target) throw new Error(`missing offline state for ${edge.action}`)
     const at = where(source, target, edge.action)
-    if (edge.action === "Crash" || edge.action === "Wipe" || edge.action === "Undo") {
+    if (edge.action in unconnected) {
       unconnected[edge.action] += 1
       continue
     }

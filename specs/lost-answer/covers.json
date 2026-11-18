@@ -4,20 +4,20 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "8a4a0c193305",
-      "blob": "9ba356657d793758accea9bbaea08a4fe5cc0dca"
+      "digest": "31179b0ddd9e",
+      "blob": "88e26e89a07159016be481f5a12a9b6add9f842b"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
       "names": ["withSlides", "landed", "refusedRows"],
       "digest": "112cebacbd48",
-      "blob": "ebfb971ee339d0d36f3b44e6957d784132aee54d"
+      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["sealRows", "confirmRows", "takeEdits", "unsealRows", "setAside", "takeAside"],
       "digest": "4ab7dde1de44",
-      "blob": "2474249e4aecbc138bfb24bcca8fb361c6da1f5d"
+      "blob": "7bf84df28572ecabe7cfc71c9595572508ce635f"
     },
     {
       "file": "packages/live/src/commit-body.ts",
@@ -28,8 +28,8 @@
     {
       "file": "apps/api/src/saved.ts",
       "names": ["commitEdits"],
-      "digest": "77d9d4d8dc66",
-      "blob": "3cb8a055dcc5b3a2d2cef0e04f08e9b8c27b1ef8"
+      "digest": "13f2400994f9",
+      "blob": "dc22fa8bcfb80a4a303ee8780d8d47edd3622eda"
     },
     {
       "file": "apps/web/src/deck-resend.ts",

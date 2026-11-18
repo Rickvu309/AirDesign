@@ -237,14 +237,15 @@ export async function commitEdits(
     const read = await readSaved(db, parsed.deck)
     if (read === undefined) return { ok: false, refusal: "deck" }
     const access = deckAccess(read, owner)
-    if (!access.ok) return access
-    const saved = access.saved
+    if (!access.ok && (access.refusal === "owner" || access.refusal === "deleted")) return access
     if (parsed.once !== undefined) {
       const prior = await readStoredOnce(db, owner, parsed.deck, parsed.once)
       if (prior !== undefined) {
         return { ok: true, deck: parsed.deck, revision: prior.revision, key: prior.notify }
       }
     }
+    if (!access.ok) return access
+    const saved = access.saved
     const current: Deck = { id: saved.id as DeckId, revision: saved.revision, register: saved.register }
     const result = call("commit_edits", current, { actor: "person" }, wire)
     if (!result.ok) return { ok: false, refusal: result.refusal }

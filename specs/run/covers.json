@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide", "startRun", "agentEdit", "stopRun", "decideUndo", "version"],
-      "digest": "04af00bd7da1",
-      "blob": "90cdf9ca572b8b1ade104decd785c82027b56fec"
+      "digest": "4b37076de368",
+      "blob": "24dcc7b57cc99e1e29237174c6817421d05acf11"
     }
   ]
 }

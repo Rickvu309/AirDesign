@@ -4,20 +4,20 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
-      "digest": "f1149eb9838a",
-      "blob": "9ba356657d793758accea9bbaea08a4fe5cc0dca"
+      "digest": "4e86c92b3247",
+      "blob": "88e26e89a07159016be481f5a12a9b6add9f842b"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["changeHeld", "editHeld", "takeEdits", "adoptRows", "confirmRows", "sealRows", "heldView"],
-      "digest": "c2282a1477de",
-      "blob": "2474249e4aecbc138bfb24bcca8fb361c6da1f5d"
+      "digest": "93cca9d3b78a",
+      "blob": "7bf84df28572ecabe7cfc71c9595572508ce635f"
     },
     {
       "file": "packages/live/src/deck-view.ts",
       "names": ["rowsFromRegister", "played"],
-      "digest": "fbcb0843c386",
-      "blob": "cec07da06ef6b280e3db51823cd35f5579499e50"
+      "digest": "fefe7dae22ff",
+      "blob": "ac6ecfc8fa28b80f4b9fbcbd337e9ec302ea7093"
     },
     {
       "file": "packages/live/src/store.ts",
@@ -29,7 +29,7 @@
       "file": "packages/live/src/slide-replay.ts",
       "names": ["withSlides", "landed", "staleText"],
       "digest": "08d2e75fef0a",
-      "blob": "ebfb971ee339d0d36f3b44e6957d784132aee54d"
+      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
     },
     {
       "file": "packages/live/src/device.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange"],
       "digest": "a121795dd85c",
-      "blob": "6c9ef52fe885ff0e96a4573b00683e390e46569e"
+      "blob": "5699c1ce482eb6c91ffdd28aca94546239c2f601"
     }
   ]
 }

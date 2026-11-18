@@ -174,3 +174,38 @@ it("reads each kind of entry back as it was kept, and a slide background an olde
     },
   })
 })
+
+const journalKey = `airdesign:unsaved:${account}:deck`
+const newerRow = {
+  kind: "row",
+  id: "newer",
+  node,
+  floor: "file",
+  row: { v: format + 1, patch: { fill: { paints: { set: [] } } } },
+  format: format + 1,
+}
+const unknownKind = { kind: "grid-note", id: "unknown", format: format + 1, note: "kept" }
+
+it("keeps entries a newer build wrote, and ones it cannot read, when it keeps and releases its own", () => {
+  const held = new Map([[journalKey, JSON.stringify([newerRow, unknownKind])]])
+  const shelf = memoryShelf(held)
+  keepUnsaved(shelf, account, "deck", "a", text("T"))
+  expect(JSON.parse(held.get(journalKey) ?? "[]")).toEqual([newerRow, unknownKind, { ...text("T"), id: "a", format }])
+  releaseUnsaved(shelf, account, "deck", "a")
+  expect(JSON.parse(held.get(journalKey) ?? "[]")).toEqual([newerRow, unknownKind])
+})
+
+it("stops replaying at an entry it cannot read, keeps it and every later entry, and says so", async () => {
+  const held = new Map<string, string>()
+  const shelf = memoryShelf(held)
+  keepUnsaved(shelf, account, "deck", "a", text("T"))
+  held.set(journalKey, JSON.stringify([...JSON.parse(held.get(journalKey) ?? "[]"), newerRow]))
+  keepUnsaved(shelf, account, "deck", "b", text("Say hi", other))
+  const replayed: string[] = []
+  const stopped = await recoverUnsaved(shelf, account, "deck", async (entry) => {
+    replayed.push(entry.id)
+  })
+  expect(replayed).toEqual(["a"])
+  expect(stopped).toBe("newer")
+  expect(JSON.parse(held.get(journalKey) ?? "[]").map((entry: { id: string }) => entry.id)).toEqual(["newer", "b"])
+})

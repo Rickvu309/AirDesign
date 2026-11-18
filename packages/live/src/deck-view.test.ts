@@ -5,6 +5,7 @@ import {
   elementId,
   format,
   openRegister,
+  slideId,
   type Command,
   type Register,
 } from "@airdesign/document"
@@ -57,4 +58,34 @@ it("reads a stored row through the stored reader and names a row from a newer bu
   expect(readStored({ ...row, v: format + 1 })).toEqual({ ok: false, refusal: "newer" })
   const typed = { kind: "confirmed" as const, deck, revision: 0, node, value: "typed" }
   expect(readStored(typed)).toEqual({ ok: true, value: typed })
+})
+
+it("keeps a sealed pending row's order, base and once through the reader, a row an older build kept included", () => {
+  const sealed = { kind: "pending" as const, deck, order: 4, base: 2, node, value: "typed", once: "sealed" }
+  expect(readStored(sealed)).toEqual({ ok: true, value: sealed })
+  const background = {
+    kind: "pending" as const,
+    deck,
+    order: 5,
+    base: 3,
+    value: "",
+    once: "sealed",
+    format: 20,
+    slideFile: [slideId("256")],
+    slideEdit: JSON.parse('{"slide":"background","id":"256","color":{"scheme":"accent1"}}') as never,
+  }
+  expect(readStored(background)).toEqual({
+    ok: true,
+    value: {
+      kind: "pending",
+      deck,
+      order: 5,
+      base: 3,
+      v: 28,
+      patch: { fill: { value: { set: { solid: { scheme: "accent1" } } } } },
+      node: "256.slide",
+      floor: "",
+      once: "sealed",
+    },
+  })
 })
