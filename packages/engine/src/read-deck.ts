@@ -360,11 +360,19 @@ export function readDeckPage(
               }),
         order: deck.register.order,
       }).grid,
-      ...(templates === undefined ? {} : { templates }),
-      slides:
-        deck.register.order.length === 0
-          ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
-          : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position)),
+      ...(templates === undefined || query.cursor !== undefined ? {} : { templates }),
+      slides: (deck.register.order.length === 0
+        ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
+        : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position))
+      ).map((slide) =>
+        query.cursor === undefined || slide.template === undefined
+          ? slide
+          : {
+              id: slide.id,
+              position: slide.position,
+              ...(slide.palette === undefined ? {} : { palette: slide.palette }),
+            },
+      ),
       ...themed,
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
