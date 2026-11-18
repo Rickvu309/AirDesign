@@ -1,13 +1,15 @@
 import { trait } from "./trait-decl.js"
 import { typefaceBytes } from "./text-value.js"
-import { flag, hex, list, record, words } from "./value-kind.js"
+import { flag, hex, list, record, typeSize, words } from "./value-kind.js"
 
 const typeface = words(typefaceBytes)
 const customColor = record({ name: words(255), color: hex })
+export const textStyleLimit = 64
+const textStyleEdit = record({ id: words(200), size: typeSize, font: typeface })
 
 export const theme = trait(
   "own",
-  { version: 3, shape: "fca050fd" },
+  { version: 4, shape: "9fd0fc46" },
   {
     name: words(256),
     dk1: hex,
@@ -26,5 +28,6 @@ export const theme = trait(
     minor: typeface,
     custom: list(customColor, 0, 32),
     removed: flag,
+    textStyle: list(textStyleEdit, 0, textStyleLimit),
   },
 )

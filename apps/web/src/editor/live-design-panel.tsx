@@ -35,6 +35,7 @@ import {
 } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
 import { LiveTemplateStyle } from "@/editor/live-template-style"
+import { TemplateTextStyleHost } from "@/editor/text-style-dialog"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
@@ -396,7 +397,15 @@ type PanelProps = {
   toneFor?: ToneControlFor
 }
 
-export function LiveDesignPanel({ deck, selectedSlides = 0, mode, toneFor }: PanelProps) {
+export function LiveDesignPanel(props: PanelProps) {
+  return (
+    <TemplateTextStyleHost deck={props.deck}>
+      <DesignPanelSwitch {...props} />
+    </TemplateTextStyleHost>
+  )
+}
+
+function DesignPanelSwitch({ deck, selectedSlides = 0, mode, toneFor }: PanelProps) {
   if (selectedSlides > 1)
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-design-panel>

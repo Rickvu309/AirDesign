@@ -146,7 +146,11 @@ function rowName(node: ElementId, row: Row): UndoName {
   if (row.patch.template !== undefined) return "template"
   if (slideKind(node) === "slide") return "background"
   const theme = row.patch.theme
-  if (theme !== undefined) return theme.major === undefined && theme.minor === undefined ? "theme-color" : "theme-font"
+  if (theme !== undefined) {
+    const names = Object.keys(theme)
+    if (names.length === 1 && names[0] === "textStyle") return "text-style"
+    return theme.major === undefined && theme.minor === undefined ? "theme-color" : "theme-font"
+  }
   if (faded(row)) return "opacity"
   if (row.patch.connection !== undefined) return "connector"
   const box = row.patch.box

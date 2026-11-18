@@ -14,7 +14,6 @@ import {
   slideTheme,
   templateStyle,
   templateStyles,
-  templateTextStyles,
   themeCustomColors,
   type ThemeCustomColor,
 } from "@airdesign/pptx"
@@ -28,10 +27,12 @@ import { themeCopy } from "@/copy/theme-copy"
 import { ColorPicker } from "@/design/color-picker"
 import { changeDesign } from "@/design/design-change"
 import { panelOf } from "@/design/panel"
-import { deviceScope } from "@/design/trait-edit"
 import { rebasedChange } from "@/design/rebase"
+import { useTextStyleEdit } from "@/design/text-style-edit"
+import { deviceScope } from "@/design/trait-edit"
 import { DesignSection, SectionStrips } from "@/editor/design-panel"
 import type { DesigningDeck } from "@/editor/live-design-panel"
+import { listedTextStyles } from "@/editor/text-style-dialog"
 import { TemplateStyleCard } from "@/editor/template-style-card"
 
 function colorName(colors: readonly ThemeCustomColor[]): string {
@@ -201,8 +202,9 @@ function TemplateStyleDialog({
   const replaceAdded = (colors: readonly ThemeCustomColor[]) => {
     changeDesign(deck, () => ({ target: { node }, theme: { custom: colors } }))
   }
-  const textStyles = templateTextStyles(parts, style.id)
   const fonts = style.palette.fonts ?? {}
+  const edit = useTextStyleEdit()
+  const listed = listedTextStyles(parts, style.id, fonts.major ?? null, fonts.minor ?? null)
   const view = deviceScope(
     deck.shown.shownParts.current,
     deck.shown.shownRegister.current ?? openRegister("", ""),
@@ -259,18 +261,20 @@ function TemplateStyleDialog({
       <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
         <section className="flex flex-col gap-3">
           <h3 className="font-medium">{designCopy.templateTextStyles}</h3>
-          <p className="text-xs text-muted-foreground">{designCopy.templateReadOnly}</p>
-          {textStyles.map((text) => (
-            <div key={text.role}>
-              <div className="text-lg" style={{ fontFamily: text.font ?? undefined }}>
-                {designCopy.templateStyleRole[text.role]}
+          {listed.map((text) => (
+            <button
+              key={text.id}
+              type="button"
+              className="flex w-full flex-col items-start rounded-md px-1 py-1 text-left hover:bg-muted"
+              onClick={() => edit?.(text.id)}
+            >
+              <div className="text-lg" style={{ fontFamily: text.shown }}>
+                {text.name}
               </div>
               <div className="text-xs text-muted-foreground">
-                {text.size === null
-                  ? text.font
-                  : designCopy.templateFontSize(text.font ?? designCopy.themeFontsMissing, text.size)}
+                {text.points === null ? text.shown : designCopy.templateFontSize(text.shown, text.points)}
               </div>
-            </div>
+            </button>
           ))}
         </section>
         <section className="flex flex-col gap-3">

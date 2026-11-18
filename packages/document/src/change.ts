@@ -1,4 +1,5 @@
 import { textStylesOf, type TextStyle } from "./text-style.js"
+import { mergeTextStyleEdits, storedTextStyleEdits, type TextStyleEdit } from "./text-style-edit.js"
 import type { Box } from "./box.js"
 import { outlineOf, siteKinds, type Outline } from "./connector.js"
 import { currentBox, currentValue, elementFacts, landedPatch, type Register } from "./decide.js"
@@ -67,6 +68,7 @@ export type ScopedElement = {
   readonly node: ElementId
   readonly facts: ElementFacts
   readonly textStyles?: readonly TextStyle[]
+  readonly textStyleEdits?: readonly TextStyleEdit[]
   readonly kept: readonly DesignKey[]
   readonly value: string | null
   readonly box: Box | null
@@ -304,6 +306,9 @@ function planNode(
   if (opacity !== undefined)
     for (const [trait, field] of opacityFields(view.facts).map(fieldOf))
       patch[trait] = { ...patch[trait], [field]: { set: opacity } }
+  const merged = mergeTextStyleEdits(view.textStyleEdits, patch.theme?.textStyle)
+  if (merged === "too-many") return [{ node: view.node, trait: "theme", code: "kind" }]
+  if (merged !== undefined && patch.theme !== undefined) patch.theme = { ...patch.theme, textStyle: { set: merged } }
   return { node: view.node, row: { v: format, patch: patch as ElementPatch } }
 }
 
@@ -423,6 +428,7 @@ export function registerScope(register: Register): Scope {
         node,
         facts,
         textStyles: textStylesOf(register, shapeOf(node).slide),
+        textStyleEdits: storedTextStyleEdits(body),
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
         box: (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,

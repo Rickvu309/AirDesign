@@ -5,7 +5,7 @@ export const templateCopy = {
   templateMore: "More options",
   templateScope: "Changes apply to all slides using this template style.",
   templateFonts: "Theme fonts",
-  templateReadOnly: "Text styles are read-only.",
+  editTextStyle: "Edit text style",
   templateStyleRole: { title: "Heading", body: "Body", other: "Other" },
   templateFontSize: (font: string, size: number) => `${font} · ${String(size)}`,
   renameTemplate: "Rename template style",

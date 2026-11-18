@@ -31,5 +31,13 @@ export const themeWire: TraitWire<"theme"> = {
       description: "Delete this template when no slide uses it. Target deck.templateN, not deck.theme.",
       example: { theme: { removed: true } },
     },
+    textStyle: {
+      description: "Each entry updates one textStyles id and leaves the other edits.",
+      example: {
+        theme: {
+          textStyle: [{ id: "ppt/slideMasters/slideMaster1.xml/titleStyle/0", size: 32, font: "Georgia" }],
+        },
+      },
+    },
   },
 }
