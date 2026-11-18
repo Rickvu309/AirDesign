@@ -1,12 +1,16 @@
 import { widestEffect, type Color, type FieldName, type FieldValue } from "@airdesign/document"
 import { colorIn } from "./color-read.js"
 import type { MarkupElement } from "./element-span.js"
+import { dropSlots, innerSlots, readExtension, type StoredDrop } from "./effects-extension.js"
 import { placedBytes } from "./fill-read.js"
 import { child, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
+import { requireMarkup } from "./part-markup.js"
 import type { Sheet } from "./paint-sheet.js"
+import { standRecords, type StandRecord } from "./stand-read.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf, type Chain } from "./trait-read.js"
+import { markupChildren } from "./text-value-route.js"
 
 export type EffectsField = FieldName<"effects">
 
@@ -161,31 +165,103 @@ export function keptEffectText(parts: ReadonlyMap<string, Uint8Array>, at: Effec
   return slot === null ? null : keptIn(slot.list, slot.dag)
 }
 
-export function shownEffects(parts: ReadonlyMap<string, Uint8Array>, at: EffectsAt): ShownEffects | null {
-  const slot = effectsSlot(parts, at)
-  if (slot === null) return null
-  const { list, dag, own, placed } = slot
-  const empty: ShownEffects = {
+function closed(own: boolean): ShownEffects {
+  return {
     shadow: { value: { none: true }, own },
     innerShadow: { value: { none: true }, own },
     glow: { value: { none: true }, own },
     softEdge: { value: { none: true }, own },
     blur: { value: { none: true }, own },
+    drop1: { value: { none: true }, own: false },
+    drop2: { value: { none: true }, own: false },
+    drop3: { value: { none: true }, own: false },
+    inner1: { value: { none: true }, own: false },
+    inner2: { value: { none: true }, own: false },
+    inner3: { value: { none: true }, own: false },
   }
-  if (dag)
-    return {
-      shadow: { value: null, own },
-      innerShadow: { value: null, own },
-      glow: { value: null, own },
-      softEdge: { value: null, own },
-      blur: { value: null, own },
-    }
-  if (list === undefined) return empty
+}
+
+function unread(own: boolean): ShownEffects {
   return {
-    shadow: { value: shadowOf(list, placed), own },
-    innerShadow: { value: innerShadowOf(list, placed), own },
-    glow: { value: glowOf(list, placed), own },
-    softEdge: { value: softEdgeOf(list), own },
-    blur: { value: blurOf(list), own },
+    shadow: { value: null, own },
+    innerShadow: { value: null, own },
+    glow: { value: null, own },
+    softEdge: { value: null, own },
+    blur: { value: null, own },
+    drop1: { value: null, own },
+    drop2: { value: null, own },
+    drop3: { value: null, own },
+    inner1: { value: null, own },
+    inner2: { value: null, own },
+    inner3: { value: null, own },
   }
+}
+
+function standOf(parts: ReadonlyMap<string, Uint8Array>, at: EffectsAt): StandRecord | null {
+  if (at.shape === "slide") return null
+  const bytes = parts.get(at.part)
+  if (bytes === undefined) return null
+  const { elements } = requireMarkup(bytes)
+  return standRecords(elements, markupChildren(elements)).find((record) => record.shape === at.shape) ?? null
+}
+
+function dropShown(
+  slot: (typeof dropSlots)[number],
+  extras: ReturnType<typeof readExtension>,
+  stand: StandRecord | null,
+): ShownEffects[typeof slot] {
+  const n = Number(slot.slice(4))
+  if (stand?.matched === true) {
+    const found = stand.drops.find((drop) => drop.n === n)
+    return found === undefined
+      ? { value: { none: true }, own: false }
+      : { value: { outer: heldOffset(found) }, own: true }
+  }
+  if (stand !== null) return { value: { none: true }, own: false }
+  const value = extras[slot]
+  if (value === null) return { value: null, own: true }
+  if (value !== undefined && "outer" in value) return { value, own: true }
+  return { value: { none: true }, own: false }
+}
+
+function heldOffset(drop: StoredDrop): { blur: number; distance: number; direction: number; color: Color } {
+  const { blur, distance, direction, color } = drop
+  return { blur, distance, direction, color }
+}
+
+function innerShown(
+  slot: (typeof innerSlots)[number],
+  extras: ReturnType<typeof readExtension>,
+): ShownEffects[typeof slot] {
+  const value = extras[slot]
+  if (value === null) return { value: null, own: true }
+  if (value !== undefined && "inner" in value) return { value, own: true }
+  return { value: { none: true }, own: false }
+}
+
+export function shownEffects(parts: ReadonlyMap<string, Uint8Array>, at: EffectsAt): ShownEffects | null {
+  const slot = effectsSlot(parts, at)
+  if (slot === null) return null
+  const { list, dag, own, placed } = slot
+  if (dag) return unread(own)
+  const base =
+    list === undefined
+      ? closed(own)
+      : {
+          ...closed(own),
+          shadow: { value: shadowOf(list, placed), own },
+          innerShadow: { value: innerShadowOf(list, placed), own },
+          glow: { value: glowOf(list, placed), own },
+          softEdge: { value: softEdgeOf(list), own },
+          blur: { value: blurOf(list), own },
+        }
+  const extras = readExtension(parts, at)
+  const stand = standOf(parts, at)
+  const drops = Object.fromEntries(dropSlots.map((name) => [name, dropShown(name, extras, stand)])) as {
+    [F in (typeof dropSlots)[number]]: ShownEffects[F]
+  }
+  const inners = Object.fromEntries(innerSlots.map((name) => [name, innerShown(name, extras)])) as {
+    [F in (typeof innerSlots)[number]]: ShownEffects[F]
+  }
+  return { ...base, ...drops, ...inners }
 }

@@ -10,6 +10,8 @@ export const effectsCopy = {
   fillOverlay: "Fill overlay",
   presetShadow: "Preset shadow",
   graph: "Effect graph",
+  placeholder:
+    "A title or a body takes one drop shadow. A second would put it in a group, and a placeholder cannot sit in a group.",
 } as const
 
 export const effectsWords: Readonly<Record<string, string>> = {

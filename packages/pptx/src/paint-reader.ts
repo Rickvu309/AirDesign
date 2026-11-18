@@ -10,7 +10,9 @@ import {
   type PaintTextHolder,
   type PaintTextScope,
 } from "./paint-text.js"
+import { paintedDrops } from "./effects-extension.js"
 import { paintShape, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
+import { standRecords } from "./stand-read.js"
 import { addedPicturePart } from "./picture-write.js"
 import { paintContentType, paintImage, paintPictureFill, type PaintImage, type PaintPicture } from "./paint-image.js"
 import type { ShapeKind } from "./shape-tree.js"
@@ -455,10 +457,25 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
         palette: context.palette,
         fonts: () => scope().fonts,
       }
+      const stands = standRecords(sheet.elements, sheet.children)
+      const hidden = new Set(
+        stands.filter((record) => record.matched).flatMap((record) => [record.group, record.picture]),
+      )
+      const matched = new Map(stands.filter((record) => record.matched).map((record) => [record.shape, record]))
+      const moved = new Set(stands.filter((record) => !record.matched).map((record) => record.shape))
       const painted = sheet.drawn
-        .filter((item) => !item.hidden)
+        .filter((item) => !item.hidden && !hidden.has(item.shape))
         .map((item): PaintElement => {
           const box = boxOf(slidePlacement(item, layout?.sheet ?? null, master?.sheet ?? null))
+          const paint = paints.get(item)!
+          const held = matched.get(item.shape)
+          const drops = held === undefined ? undefined : paintedDrops(sheet.children, held.stand, context.palette)
+          let effects = paint.effects
+          if (drops !== undefined && drops.length > 0) effects = { ...effects, drops }
+          if (held === undefined && moved.has(item.shape) && effects?.drops !== undefined) {
+            const rest = Object.fromEntries(Object.entries(effects).filter(([key]) => key !== "drops"))
+            effects = Object.keys(rest).length === 0 ? undefined : rest
+          }
           return {
             part: slidePart,
             shape: item.shape,
@@ -466,7 +483,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             kind: item.kind,
             image: imageOf(sheet, item, context.palette),
             box,
-            group: item.group,
+            group: held === undefined ? item.group : held.parent,
             placeholder: item.placeholder,
             prompt: placeholderPrompt(item, sheet, layoutSheet, options?.fallbackPrompt),
             text: textOf(item, sheet, layoutSheet, masterSheet, () => ({
@@ -478,7 +495,8 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             ...frameChart(item.element, sheet.children, slidePart, charts),
             ...labelOf(item),
             ...paintConnection(item.element, sheet.children),
-            ...paints.get(item)!,
+            ...paint,
+            ...(held !== undefined || moved.has(item.shape) ? { effects } : {}),
           }
         })
       const showsLayout = sheet.showsMaster

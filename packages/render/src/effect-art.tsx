@@ -43,7 +43,12 @@ export function softensFill(element: CanvasElement): boolean {
 export function holdsEffectFill(element: CanvasElement): boolean {
   const effects = element.effects
   if (effects === undefined || element.outline === "line" || element.fill === null) return false
-  return effects.softEdge !== undefined || effects.innerShadow !== undefined || effects.blur !== undefined
+  return (
+    effects.softEdge !== undefined ||
+    effects.innerShadow !== undefined ||
+    (effects.inners?.length ?? 0) > 0 ||
+    effects.blur !== undefined
+  )
 }
 
 export function castShift(direction: number, distance: number): { readonly x: number; readonly y: number } {
@@ -99,18 +104,23 @@ export function shadowTransform(element: CanvasElement, shadow: CanvasShadow, sc
   return steps.join(" ")
 }
 
-function reachOf(element: CanvasElement, scaled: Scaled): number {
-  const box = element.box
-  if (box === null) return 0
-  const shadow = element.effects?.shadow
-  const size = Math.max(scaled(box.width), scaled(box.height))
-  const glow = scaled(element.effects?.glow?.radius ?? 0) * reachSpread
-  if (shadow === undefined) return glow
+function shadowReach(shadow: CanvasShadow, scaled: Scaled, size: number): number {
   const stretch =
     Math.max(1, Math.abs(shadow.scaleX), Math.abs(shadow.scaleY)) +
     Math.tan(Math.min(Math.abs(shadow.skewX), 89) * radiansPerDegree) +
     Math.tan(Math.min(Math.abs(shadow.skewY), 89) * radiansPerDegree)
-  return Math.max(glow, scaled(shadow.distance) + scaled(shadow.blur) * reachSpread + size * stretch)
+  return scaled(shadow.distance) + scaled(shadow.blur) * reachSpread + size * stretch
+}
+
+function reachOf(element: CanvasElement, scaled: Scaled): number {
+  const box = element.box
+  if (box === null) return 0
+  const size = Math.max(scaled(box.width), scaled(box.height))
+  const glow = scaled(element.effects?.glow?.radius ?? 0) * reachSpread
+  const shadows = [element.effects?.shadow, ...(element.effects?.drops ?? [])].filter(
+    (shadow): shadow is CanvasShadow => shadow !== undefined,
+  )
+  return shadows.reduce((reach, shadow) => Math.max(reach, shadowReach(shadow, scaled, size)), glow)
 }
 
 type SilhouetteProps = {
@@ -175,7 +185,7 @@ type EffectProps = {
 
 function colorFilter(id: string, area: Area, color: string, shape: ReactNode) {
   return (
-    <filter id={id} filterUnits="userSpaceOnUse" {...area}>
+    <filter key={id} id={id} filterUnits="userSpaceOnUse" {...area}>
       {shape}
       <feFlood floodColor={color} result="color" />
       <feComposite in="color" in2="shape" operator="in" />
@@ -200,9 +210,11 @@ export function EffectDefs(props: EffectProps) {
   const shadow = effects.shadow
   const glow = effects.glow
   const soft = effects.softEdge
+  const drops = effects.drops ?? []
+  const inners = effects.inners ?? []
   return (
     <>
-      {outside === null || (shadow === undefined && glow === undefined) ? null : (
+      {outside === null || (shadow === undefined && glow === undefined && drops.length === 0) ? null : (
         <mask id={`${id}-outside`} maskUnits="userSpaceOnUse" {...areaAround(width, height, outside)}>
           <rect {...areaAround(width, height, outside)} fill="white" />
           <Silhouette
@@ -259,6 +271,33 @@ export function EffectDefs(props: EffectProps) {
           <feComposite in="cast" in2="SourceAlpha" operator="in" />
         </filter>
       )}
+      {drops.map((drop, index) =>
+        colorFilter(
+          `${id}-drop-${index}`,
+          areaAround(width, height, scaled(drop.blur) * reachSpread),
+          drop.color,
+          <feGaussianBlur in="SourceAlpha" stdDeviation={scaled(drop.blur) / blurDeviation} result="shape" />,
+        ),
+      )}
+      {inners.map((inner, index) => (
+        <filter
+          key={`${id}-inner-${index}`}
+          id={`${id}-inner-${index}`}
+          filterUnits="userSpaceOnUse"
+          {...areaAround(width, height, scaled(inner.blur) * reachSpread)}
+        >
+          <feFlood floodColor={inner.color} result="flood" />
+          <feComposite in="flood" in2="SourceAlpha" operator="out" result="outside" />
+          <feGaussianBlur in="outside" stdDeviation={scaled(inner.blur) / blurDeviation} result="soft" />
+          <feOffset
+            in="soft"
+            dx={tidy(castShift(inner.direction, scaled(inner.distance)).x)}
+            dy={tidy(castShift(inner.direction, scaled(inner.distance)).y)}
+            result="cast"
+          />
+          <feComposite in="cast" in2="SourceAlpha" operator="in" />
+        </filter>
+      ))}
       {effects.blur === undefined ? null : (
         <filter
           id={`${id}-blur`}
@@ -277,7 +316,8 @@ export function EffectLayers(props: EffectProps) {
   const effects = element.effects
   if (effects === undefined || silhouetteOf(element) === null) return null
   const { glow, shadow } = effects
-  if (shadow === undefined && glow === undefined) return null
+  const drops = effects.drops ?? []
+  if (shadow === undefined && glow === undefined && drops.length === 0) return null
   const silhouette = (
     <Silhouette
       element={element}
@@ -300,6 +340,11 @@ export function EffectLayers(props: EffectProps) {
           {silhouette}
         </g>
       )}
+      {drops.map((drop, index) => (
+        <g key={`${id}-drop-${index}`} data-effect-drop transform={shadowTransform(element, drop, props.scaled)}>
+          <g filter={`url(#${id}-drop-${index})`}>{silhouette}</g>
+        </g>
+      ))}
     </g>
   )
 }
@@ -371,18 +416,31 @@ export const softAttributes = (id: string) => ({ "data-effect-soft": "", filter:
 export function InnerShadow(props: EffectProps) {
   const { element, height, id, width } = props
   const inner = element.effects?.innerShadow
-  if (inner === undefined || silhouetteOf(element) === null) return null
+  const extras = element.effects?.inners ?? []
+  if ((inner === undefined && extras.length === 0) || silhouetteOf(element) === null) return null
+  const silhouette = (
+    <Silhouette
+      element={element}
+      paths={props.paths}
+      width={width}
+      height={height}
+      {...inked(element, "black")}
+      strokeWidth={props.weight}
+    />
+  )
   return (
-    <g data-effect-inner filter={`url(#${id}-inner)`}>
-      <Silhouette
-        element={element}
-        paths={props.paths}
-        width={width}
-        height={height}
-        {...inked(element, "black")}
-        strokeWidth={props.weight}
-      />
-    </g>
+    <>
+      {inner === undefined ? null : (
+        <g data-effect-inner filter={`url(#${id}-inner)`}>
+          {silhouette}
+        </g>
+      )}
+      {extras.map((inner, index) => (
+        <g key={`${id}-inner-${index}-${inner.color}`} data-effect-inner filter={`url(#${id}-inner-${index})`}>
+          {silhouette}
+        </g>
+      ))}
+    </>
   )
 }
 
@@ -409,7 +467,9 @@ export function paintsEffects(element: CanvasElement): boolean {
   return (
     softensFill(element) ||
     effects.innerShadow !== undefined ||
+    (effects.inners?.length ?? 0) > 0 ||
     effects.blur !== undefined ||
-    ((effects.shadow !== undefined || effects.glow !== undefined) && silhouetteOf(element) !== null)
+    ((effects.shadow !== undefined || effects.glow !== undefined || (effects.drops?.length ?? 0) > 0) &&
+      silhouetteOf(element) !== null)
   )
 }

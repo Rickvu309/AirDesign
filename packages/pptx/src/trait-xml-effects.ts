@@ -1,6 +1,7 @@
 import type { Color, FieldValue } from "@airdesign/document"
 import { insertChild, type ChildOf } from "./child-order.js"
 import { colorXml } from "./color-xml.js"
+import { writtenExtra, type ExtraSlot } from "./effects-extension.js"
 import { effectsSlot, shownEffects, type EffectsField } from "./effects-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
@@ -169,6 +170,13 @@ function field<F extends EffectsField>(
   })
 }
 
+function extraField<F extends ExtraSlot>(name: F): FieldXml<FieldValue<"effects", F>> {
+  return whole({
+    read: (parts, at) => shownEffects(parts, at)?.[name].value ?? null,
+    write: (parts, at, value) => writtenExtra(parts, at, name, value),
+  })
+}
+
 export const effectsXml: TraitXml<"effects"> = {
   slot: null,
   fields: {
@@ -177,5 +185,11 @@ export const effectsXml: TraitXml<"effects"> = {
     glow: field("glow", glowList),
     softEdge: field("softEdge", softEdgeList),
     blur: field("blur", blurList),
+    drop1: extraField("drop1"),
+    drop2: extraField("drop2"),
+    drop3: extraField("drop3"),
+    inner1: extraField("inner1"),
+    inner2: extraField("inner2"),
+    inner3: extraField("inner3"),
   },
 }

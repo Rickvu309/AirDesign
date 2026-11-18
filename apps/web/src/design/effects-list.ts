@@ -19,7 +19,13 @@ import type { PanelControl, PanelReads, PanelSection } from "./panel"
 
 const kindNames = ["blur", "glow", "innerShadow", "shadow", "softEdge"] as const
 
+const slotNames = ["drop1", "drop2", "drop3", "inner1", "inner2", "inner3"] as const
+
+const placeholderRoles = new Set(["title", "ctrTitle", "body"])
+
 type KindName = (typeof kindNames)[number]
+
+type SlotName = (typeof slotNames)[number]
 
 const keptNames = ["reflection", "fillOverlay", "presetShadow", "graph"] as const
 
@@ -81,18 +87,31 @@ function cleared(value: unknown): boolean {
   return typeof value === "object" && value !== null && "none" in value
 }
 
-function sourceOf(controls: readonly PanelControl[]): EffectsSource {
-  const landed: Partial<Record<KindName, { set: unknown }>> = {}
-  const opening: Partial<Record<KindName, { set: unknown }>> = {}
+function liveSlot(slot: SlotName, value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false
+  return slot.startsWith("drop") ? "outer" in value : "inner" in value
+}
+
+function sourceOf(controls: readonly PanelControl[], shown: PanelReads): EffectsSource {
+  const landed: Record<string, { set: unknown }> = {}
+  const opening: Record<string, { set: unknown }> = {}
   for (const control of controls) {
     if (!isKind(control.field) || !liveValue(control.field, control.value)) continue
     const slot = { set: control.value }
     if (control.inherited) opening[control.field] = slot
     else landed[control.field] = slot
   }
+  for (const slot of slotNames) {
+    const field = shown.fields?.[`effects.${slot}`]
+    if (field === undefined || !liveSlot(slot, field.value)) continue
+    const placed = { set: field.value }
+    if (field.own) landed[slot] = placed
+    else opening[slot] = placed
+  }
   return {
     ...(Object.keys(landed).length === 0 ? {} : { landed: landed as TraitPatch<"effects"> }),
     ...(Object.keys(opening).length === 0 ? {} : { opening: opening as TraitPatch<"effects"> }),
+    ...(shown.role !== undefined && placeholderRoles.has(shown.role) ? { placeholder: true } : {}),
   }
 }
 
@@ -141,11 +160,43 @@ function starter(kind: KindName): Effect {
   return { kind, radius: 63_500 }
 }
 
-function removeControl(kind: KindName, read: ResolvedEffects, view: ScopedElement): PanelControl {
+function stored(effect: Effect): unknown {
+  if (effect.kind === "shadow") {
+    const { blur, distance, direction, color } = effect
+    return { outer: { blur, distance, direction, color } }
+  }
+  if (effect.kind === "innerShadow") {
+    const { blur, distance, direction, color } = effect
+    return { inner: { blur, distance, direction, color } }
+  }
+  if (effect.kind === "glow") return { halo: { radius: effect.radius, color: effect.color } }
+  return { radius: effect.radius }
+}
+
+function boundEntry(
+  control: PanelControl,
+  entry: Extract<Entry, { effect: Effect }>,
+  read: ResolvedEffects,
+  view: ScopedElement,
+): PanelControl {
+  return {
+    ...control,
+    value: stored(entry.effect),
+    inherited: false,
+    change: (value) => {
+      if (cleared(value)) return written(view, read, { remove: entry.key })
+      const effect = effectFrom(entry.effect.kind, value)
+      if (effect === null) return targetOf(view)
+      return written(view, read, { at: entry.key, effect })
+    },
+  }
+}
+
+function removeControl(key: EffectKey, label: string, read: ResolvedEffects, view: ScopedElement): PanelControl {
   return {
     trait: "effects",
-    field: `remove.${kind}`,
-    label: effectsCopy[kind],
+    field: `remove.${key}`,
+    label,
     kind: "action",
     look: { name: { show: "hidden" }, options: { remove: Minus }, form: "segments" },
     desc: { kind: "choice", options: ["remove"] },
@@ -153,7 +204,23 @@ function removeControl(kind: KindName, read: ResolvedEffects, view: ScopedElemen
     mixed: false,
     inherited: false,
     reset: null,
-    change: () => written(view, read, { remove: effectKey(kind) }),
+    change: () => written(view, read, { remove: key }),
+  }
+}
+
+function placeholderNote(view: ScopedElement): PanelControl {
+  return {
+    trait: "effects",
+    field: "placeholder",
+    label: effectsCopy.placeholder,
+    kind: "text",
+    look: { name: { show: "above" }, options: {}, form: "segments" },
+    desc: { kind: "words", max: 180 },
+    value: effectsCopy.placeholder,
+    mixed: false,
+    inherited: false,
+    reset: null,
+    change: () => targetOf(view),
   }
 }
 
@@ -203,17 +270,23 @@ function rows(
     controls.flatMap((control) => (isKind(control.field) ? [[control.field, control] as const] : [])),
   )
   const present = new Set(read.list.flatMap((entry) => (keptEntry(entry) ? [] : [entry.effect.kind])))
-  const shown = read.list.flatMap((entry): (readonly PanelControl[])[] => {
+  const shownRows = read.list.flatMap((entry): (readonly PanelControl[])[] => {
     if (keptEntry(entry)) return [[keptControl(entry.kept, view)]]
     const control = byField.get(entry.effect.kind)
-    return control === undefined ? [] : [[bound(control, read, view), removeControl(entry.effect.kind, read, view)]]
+    return control === undefined
+      ? []
+      : [[boundEntry(control, entry, read, view), removeControl(entry.key, effectsCopy[entry.effect.kind], read, view)]]
   })
   const absent = kindNames.flatMap((kind) => {
     if (present.has(kind)) return []
     const control = byField.get(kind)
     return control === undefined ? [] : [[bound(control, read, view)]]
   })
-  return [...shown, ...absent, [addControl(read, view)]]
+  const note =
+    read.placeholder && read.list.some((entry) => "effect" in entry && entry.effect.kind === "shadow")
+      ? [[placeholderNote(view)]]
+      : []
+  return [...note, ...shownRows, ...absent, [addControl(read, view)]]
 }
 
 export function listEffects(
@@ -224,7 +297,7 @@ export function listEffects(
   const effects = sections.find((section) => section.trait === "effects")
   const controls = effects?.strips.flat() ?? []
   const kept = keptList(shown, view)
-  const read = readEffects({ ...sourceOf(controls), ...(kept.length === 0 ? {} : { kept }) })
+  const read = readEffects({ ...sourceOf(controls, shown), ...(kept.length === 0 ? {} : { kept }) })
   if (effects === undefined && !kept.includes("graph")) return sections
   const section: PanelSection = {
     trait: "effects",

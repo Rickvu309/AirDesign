@@ -1,6 +1,7 @@
 import { landedPatch, readElementId, shapeOf, type ElementPatch, type Register } from "@airdesign/document"
 import {
   bakedFill,
+  clearedInners,
   drawablePicture,
   installedPicture,
   paintReader,
@@ -8,6 +9,7 @@ import {
   strippedStacks,
   type PaintBox,
   type PaintElement,
+  type PaintInner,
 } from "@airdesign/pptx"
 import { fillPlan, type PlanLayer } from "@/fill-plan"
 import { cssColor } from "@/paint-css"
@@ -45,10 +47,19 @@ type ImageBake = {
   readonly recolor: NonNullable<PictureImage["recolor"]> | null
 }
 
+type InnerBake = {
+  readonly kind: "inner"
+  readonly color: string
+  readonly blur: number
+  readonly dx: number
+  readonly dy: number
+}
+
 type LayerBake =
   | { readonly kind: "color"; readonly color: string }
   | { readonly kind: "gradient"; readonly gradient: Extract<PlanLayer, { kind: "gradient" }>["gradient"] }
   | ImageBake
+  | InnerBake
 
 export type BakePlan = { readonly width: number; readonly height: number; readonly layers: readonly LayerBake[] }
 
@@ -103,11 +114,30 @@ function imageBake(
   }
 }
 
+function planOf(row: PaintElement): readonly PlanLayer[] {
+  const inners = (row.effects?.inners ?? []).map((inner): PlanLayer => ({ kind: "inner", inner }))
+  return [...fillPlan(row), ...inners]
+}
+
+function innerBake(inner: PaintInner, canvas: BakeBox, box: BakeBox): InnerBake {
+  const scale = canvas.width / box.width
+  const turn = (inner.direction * Math.PI) / 180
+  const distance = inner.distance * scale
+  return {
+    kind: "inner",
+    color: cssColor(inner.color),
+    blur: (inner.blur * scale) / 2,
+    dx: Math.cos(turn) * distance,
+    dy: Math.sin(turn) * distance,
+  }
+}
+
 export function bakePlan(plan: readonly PlanLayer[], box: BakeBox, natural: BakeBox | null): BakePlan {
   const canvas = canvasSize(box, natural ?? { width: 1, height: 1 })
   const layers = plan.map((layer): LayerBake => {
     if (layer.kind === "color") return { kind: "color", color: cssColor(layer.color) }
     if (layer.kind === "gradient") return layer
+    if (layer.kind === "inner") return innerBake(layer.inner, canvas, box)
     return imageBake(layer, canvas, box, natural ?? { width: 1, height: 1 })
   })
   return { ...canvas, layers }
@@ -269,8 +299,30 @@ function imageLayer(source: CanvasImageSource, layer: ImageBake, size: BakeBox):
   return second
 }
 
+function paintInner(out: OffscreenCanvasRenderingContext2D, layer: InnerBake, size: BakeBox) {
+  const margin = Math.max(1, Math.ceil(layer.blur * 3 + Math.abs(layer.dx) + Math.abs(layer.dy)))
+  const scratch = new OffscreenCanvas(size.width + margin * 2, size.height + margin * 2)
+  const ctx = scratch.getContext("2d")
+  if (ctx === null) throw new Error("picture-bake")
+  ctx.fillStyle = layer.color
+  ctx.fillRect(0, 0, scratch.width, scratch.height)
+  ctx.globalCompositeOperation = "destination-out"
+  ctx.fillRect(margin, margin, size.width, size.height)
+  const blurred = new OffscreenCanvas(scratch.width, scratch.height)
+  const soft = blurred.getContext("2d")
+  if (soft === null) throw new Error("picture-bake")
+  if (layer.blur > 0) soft.filter = `blur(${String(layer.blur)}px)`
+  soft.drawImage(scratch, 0, 0)
+  out.save()
+  out.beginPath()
+  out.rect(0, 0, size.width, size.height)
+  out.clip()
+  out.drawImage(blurred, layer.dx - margin, layer.dy - margin)
+  out.restore()
+}
+
 async function raster(row: PaintElement, box: PaintBox, parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
-  const plan = fillPlan(row)
+  const plan = planOf(row)
   const pictured = plan.find((layer) => layer.kind === "image")
   const bytes = pictured === undefined ? undefined : parts.get(pictured.image.part)
   if (pictured !== undefined && bytes === undefined) throw new Error("picture-bake")
@@ -286,6 +338,7 @@ async function raster(row: PaintElement, box: PaintBox, parts: ReadonlyMap<strin
         out.fillStyle = layer.color
         out.fillRect(0, 0, size.width, size.height)
       } else if (layer.kind === "gradient") paintGradient(out, layer.gradient, size)
+      else if (layer.kind === "inner") paintInner(out, layer, size)
       else if (held !== null) out.drawImage(imageLayer(held.source, layer, size), 0, 0)
     }
     const blob = await canvas.convertToBlob({ type: "image/png" })
@@ -328,11 +381,13 @@ export async function bakeFills(
     for (const row of reader.slide(slide.part).elements) {
       if (row.from !== "slide" || row.box === null) continue
       const stacked = row.stack !== undefined
-      if (!stacked && !touchedNodes.has(`${slide.slide}.${row.shape}`)) continue
+      const extraInner = (row.effects?.inners?.length ?? 0) > 0
+      if (!stacked && !extraInner && !touchedNodes.has(`${slide.slide}.${row.shape}`)) continue
       if (row.box.width <= 0 || row.box.height <= 0) throw new Error("picture-bake")
       const png = await raster(row, row.box, parts)
       const at = { slide: slide.slide, part: slide.part, shape: row.shape }
-      next = stacked ? bakedFill(next, at, png, await sha256(png)) : installedPicture(next, at, png)
+      next = stacked || extraInner ? bakedFill(next, at, png, await sha256(png)) : installedPicture(next, at, png)
+      if (extraInner) next = clearedInners(next, at)
     }
   }
   return strippedStacks(next)

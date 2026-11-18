@@ -1,3 +1,4 @@
+import { standRecords } from "./stand-read.js"
 import { isShapeTag, paintKind, type ShapeKind } from "./shape-tree.js"
 import type { Kind, TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
@@ -129,6 +130,15 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     if (slide === undefined) continue
     const { elements } = markupDocument(bytes)
     const children = markupChildren(elements)
+    const stands = standRecords(elements, children)
+    const hidden = new Set<string>()
+    const parentOf = new Map<string, string | null>()
+    for (const record of stands) {
+      if (!record.matched) continue
+      hidden.add(record.group)
+      hidden.add(record.picture)
+      parentOf.set(record.shape, record.parent)
+    }
     const fallbackIds = new Set<string>()
     const kept: ReadShape[] = []
     const { parts: found, fallback, grouped } = slideShapes(elements)
@@ -136,12 +146,13 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
       if (!isShapeTag(shape.kind)) continue
       const held = found.get(shape.index) ?? emptyParts()
       const { id, contentKind } = held
-      if (id === null) continue
+      if (id === null || hidden.has(id)) continue
       if (fallback[shape.index] === 1) {
         fallbackIds.add(id)
         continue
       }
-      const group = held.above < 0 ? null : (found.get(held.above)?.id ?? null)
+      const stood = parentOf.get(id)
+      const group = stood !== undefined ? stood : held.above < 0 ? null : (found.get(held.above)?.id ?? null)
       const frame = shape.kind === "p:grpSp" ? boxOf(held.childOff, held.childExt) : null
       kept.push({
         slide,
@@ -157,7 +168,13 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
           }),
         })),
         locked: tableIn(shape, children) !== undefined,
-        ...(grouped[shape.index] === 1 ? { grouped: true } : {}),
+        ...(stood !== undefined
+          ? stood === null
+            ? {}
+            : { grouped: true as const }
+          : grouped[shape.index] === 1
+            ? { grouped: true as const }
+            : {}),
         ...(group === null ? {} : { group }),
         ...(frame === null ? {} : { frame }),
         ...(shape.kind === "p:graphicFrame" ? { contentKind: contentKind ?? "kept" } : {}),

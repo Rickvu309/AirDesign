@@ -14,7 +14,7 @@ import { borderCopy } from "@/copy/border-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { designCopy } from "@/copy/design-copy"
 import { resolveControl, arrange } from "./panel-arrangement"
-import { partControl, type PanelControl, type PanelSection } from "./panel"
+import { partControl, type PanelControl, type PanelReads, type PanelSection } from "./panel"
 
 export const borderWidths = [1, 2, 4, 6, 8] as const
 
@@ -119,10 +119,18 @@ function widthControl(controls: readonly PanelControl[]): PanelControl | undefin
       }
 }
 
+function stackedShadow(shown: PanelReads | undefined): boolean {
+  return ["drop1", "drop2", "drop3"].some((slot) => {
+    const value = shown?.fields?.[`effects.${slot}`]?.value
+    return typeof value === "object" && value !== null && "outer" in value
+  })
+}
+
 export function appearanceSections(
   sections: readonly PanelSection[],
   kind: PanelKind | null,
   ends = false,
+  shown?: PanelReads,
 ): readonly PanelSection[] {
   const controls = sections.flatMap((section) => section.strips.flat())
   const fill = controls.find((control) => control.trait === "border" && control.field === "fill")
@@ -188,20 +196,21 @@ export function appearanceSections(
     })
   }
   if (shadow !== undefined) {
+    const extra = stackedShadow(shown)
     const control = resolveControl({
       ...shadow,
       trait: "shadow",
       field: "shadow",
       label: designCopy.shadowPreset,
       desc: { kind: "choice", options: ["none", "subtle", "medium", "strong"] },
-      value: shadowValue(shadow.value),
+      value: extra ? undefined : shadowValue(shadow.value),
       reset: null,
       change: (value) =>
         typeof value === "string" && namedShadow(value)
           ? shadowChange(shadow, { slide: { shadow: value } })
           : { target: shadow.change(shadow.value).target },
     })
-    const opacity = shadowOpacity(shadow)
+    const opacity = extra ? null : shadowOpacity(shadow)
     added.push({
       trait: "shadow",
       label: designCopy.shadow,

@@ -237,6 +237,7 @@ export type PanelReads = {
   readonly fields?: Readonly<Record<string, ShownField | undefined>>
   readonly slides?: readonly string[]
   readonly nodes?: readonly NodeChoice[]
+  readonly role?: string
 }
 
 function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
@@ -375,6 +376,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
             ],
             kind,
             endsOpen(kind, shown),
+            shown,
           ),
           view,
           shown,
