@@ -26,3 +26,10 @@ it("folds bold, italic and underline last", () => {
 it("counts only the parts that show", () => {
   expect(toolbarFold(insertParts, 2)).toEqual({ row: ["number", "text", "shape"], more: ["image", "icon"] })
 })
+
+it("folds the slide number before Add text box", () => {
+  expect(toolbarFold(all, 4)).toEqual({
+    row: ["text", "styles", "size", "color", "align", "bullets"],
+    more: ["number", "shape", "image", "icon"],
+  })
+})
