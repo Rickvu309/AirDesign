@@ -40,12 +40,13 @@ export type GridCommand = (
   | { readonly slide: "remove-many"; readonly ids: readonly [SlideId, ...SlideId[]] }
   | { readonly slide: "clone-many"; readonly copies: readonly [GridCopy, ...GridCopy[]] }
   | { readonly slide: "move"; readonly id: SlideId; readonly after: SlideId | null; readonly row: "same" }
-  | {
+  | ({
       readonly slide: "move-many"
       readonly ids: readonly [SlideId, ...SlideId[]]
-      readonly after: SlideId | null
-      readonly row: GridSide | "keep"
-    }
+    } & (
+      | { readonly after: SlideId | null; readonly row: GridSide | "keep" }
+      | { readonly before: SlideId; readonly row: "before" }
+    ))
   | { readonly slide: "grid-turn"; readonly turn: GridTurn }
 ) & { readonly grid: GridVersion; readonly runId?: string }
 

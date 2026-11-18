@@ -46,7 +46,7 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
         : body.slide === "clone-many"
           ? ["slide", "grid", "copies", "file"]
           : body.slide === "move-many"
-            ? ["slide", "grid", "ids", "after", "row", "file"]
+            ? ["slide", "grid", "ids", body.row === "before" ? "before" : "after", "row", "file"]
             : body.slide === "grid-turn"
               ? ["slide", "grid", "turn", "file"]
               : body.slide === "move"

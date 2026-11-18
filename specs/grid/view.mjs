@@ -53,6 +53,13 @@ const names = [
   "Version one follows version two",
   "Version one initializes",
   "Version two follows version one",
+  "Previous row tail becomes the next row head",
+  "Row head move undone",
+  "Group joins the start of a row",
+  "Group before move undone",
+  "Missing before anchor refused",
+  "Previous row tail joins the sectioned row",
+  "Sectioned row move undone",
 ]
 export const state = (v) => names[v.stage] + ", device at " + names[v.cacheStage]
 export const step = (action) => (action === "Adopt" ? "the device adopts the accepted prefix" : action)

@@ -430,11 +430,14 @@ function rowFormat(elements: Readonly<Partial<Record<string, Rowed>>>): number {
 export function answeredRegister<
   Stored extends {
     readonly index?: DeckIndex
-    readonly order?: readonly { readonly slide: string; readonly grid?: 1 | 2 }[]
+    readonly order?: readonly { readonly slide: string; readonly grid?: 1 | 2; readonly row?: string }[]
     readonly elements: Readonly<Partial<Record<string, Rowed>>>
   },
 >(register: Stored): Stored & { readonly format?: number } {
-  const rows = register.order?.some((command) => command.grid === 2) === true ? format : rowFormat(register.elements)
+  const newerCommand = register.order?.some(
+    (command) => command.grid === 2 || (command.slide === "move-many" && command.row === "before"),
+  )
+  const rows = newerCommand === true ? format : rowFormat(register.elements)
   if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register
   const { next, ...index } = register.index
   const stored = Math.max(index.format ?? 1, next?.format ?? 1, rows)

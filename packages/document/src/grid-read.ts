@@ -100,7 +100,7 @@ export function readGridCommand(raw: Record<string, unknown>): GridCommand | und
       : raw.slide === "clone-many"
         ? ["copies"]
         : raw.slide === "move-many"
-          ? ["ids", "after", "row"]
+          ? ["ids", raw.row === "before" ? "before" : "after", "row"]
           : raw.slide === "grid-turn"
             ? ["turn"]
             : raw.slide === "remove"
@@ -127,9 +127,13 @@ export function readGridCommand(raw: Record<string, unknown>): GridCommand | und
   }
   if (raw.slide === "move-many") {
     const ids = uniqueIds(raw.ids)
+    if (ids === undefined) return undefined
+    if (raw.row === "before") {
+      const before = readSlideId(raw.before)
+      return before === undefined ? undefined : { slide: "move-many", grid, ids, before, row: "before" }
+    }
     const after = raw.after === null ? null : readSlideId(raw.after)
-    if (ids === undefined || after === undefined) return undefined
-    if (raw.row !== "same" && raw.row !== "new" && raw.row !== "keep") return undefined
+    if (after === undefined || (raw.row !== "same" && raw.row !== "new" && raw.row !== "keep")) return undefined
     return { slide: "move-many", grid, ids, after, row: raw.row }
   }
   const id = readSlideId(raw.id)

@@ -33,11 +33,19 @@ describe("drag preview", () => {
     expect([0, 1, 2].map((index) => previewSlot(index, 1, null))).toEqual([0, 1, 2])
   })
 
+  const rows = [{ start: 0, end: 5 }]
+
   it("finds the slot under the pointer, counting half of each gap to its nearer slide", () => {
-    expect(slotUnder(150, 80, slots)?.index).toBe(0)
-    expect(slotUnder(310, 80, slots)?.index).toBe(0)
-    expect(slotUnder(322, 80, slots)?.index).toBe(1)
-    expect(slotUnder(150, 400, slots)).toBeUndefined()
+    expect(slotUnder(150, 80, slots, rows)?.index).toBe(0)
+    expect(slotUnder(310, 80, slots, rows)?.index).toBe(0)
+    expect(slotUnder(322, 80, slots, rows)?.index).toBe(1)
+    expect(slotUnder(150, 400, slots, rows)).toBeUndefined()
+  })
+
+  it("extends a row end through its gap and leaves the distant canvas empty", () => {
+    const right = 4 * 332 + 300
+    expect(slotUnder(right + 20, 80, slots, rows)?.index).toBe(4)
+    expect(slotUnder(right + 40, 80, slots, rows)).toBeUndefined()
   })
 })
 
@@ -78,6 +86,18 @@ describe("moving slides between rows", () => {
     expect(gridDrop(rows, [5, 6], 5, "same")).toBe(5)
     expect(gridDrop(rows, [5, 6, 7], 5, "same")).toBe(5)
     expect(gridDrop(rows, [3], 4, "new")).toBe(3)
+  })
+
+  it("distinguishes a row start from the previous row end at the same position", () => {
+    expect(gridDrop(rows, [3], 4, "same")).toBeNull()
+    expect(gridDrop(rows, [3], 4, "before")).toBe(3)
+    expect(gridDrop(rows, [3, 4], 5, "before")).toBe(3)
+    expect(gridDrop(rows, [5, 6], 0, "before")).toBe(0)
+  })
+
+  it("uses the first unheld slide in the destination row as the anchor", () => {
+    expect(gridDrop(rows, [0, 5], 5, "before")).toBe(4)
+    expect(gridDrop(rows, [0, 4], 4, "before")).toBeNull()
   })
 
   it("ignores a drop where the slides remain in the same row and place", () => {

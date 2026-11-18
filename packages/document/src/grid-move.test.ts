@@ -1,4 +1,6 @@
 import { expect, it } from "vitest"
+import { answeredRegister } from "./deck-index.js"
+import { format } from "./format.js"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId } from "./element-id.js"
 import { gridRows } from "./grid-order.js"
@@ -49,6 +51,44 @@ it("moves a non-contiguous group in presentation order in one command and one in
   expect(gridRows(restored)).toEqual(gridRows(before))
   expect(gridRows(turn(restored, redoOf(restored, undoable)))).toEqual(gridRows(after))
 })
+function beforeMove(ids: string[], before: string) {
+  const edit = readSlideState({ file, order: [{ slide: "move-many", grid: 1, ids, row: "before", before }] })?.order[0]
+  if (edit === undefined) throw new Error("row start was not decoded")
+  return edit
+}
+
+it("prepends at the row boundary with unchanged slide order and one undo", () => {
+  const before = opened()
+  const edit = beforeMove(["4"], "5")
+  const undoable = slideUndoable(before, file, edit)
+  if (undoable === null) throw new Error("undoable")
+  const after = apply(before, edit)
+  expect(after.order).toEqual([edit])
+  expect(gridRows(after)).toEqual([file.slice(0, 3), file.slice(3, 8), file.slice(8)])
+  expect(gridRows(turn(after, undoOf(after, undoable)))).toEqual(gridRows(before))
+})
+
+it("fences a version-one before move in a server answer without an index", () => {
+  const register = apply(opened(), beforeMove(["4"], "5"))
+  expect(answeredRegister(register).format).toBe(format)
+})
+
+it("prepends multiple slides in deck order after removing their empty source row", () => {
+  const edit = beforeMove(["10", "9"], "5")
+  const after = apply(opened(), edit)
+  expect(gridRows(after)).toEqual([file.slice(0, 4), [...file.slice(8), ...file.slice(4, 8)]])
+  expect(readSlideState(JSON.parse(JSON.stringify({ file, order: after.order })))).toEqual({ file, order: [edit] })
+})
+
+it("refuses a held or absent before anchor and an ambiguous encoding", () => {
+  for (const edit of [beforeMove(["4"], "4"), beforeMove(["4"], "11")]) {
+    expect(decide(opened(), { command: "slide", file, edit })).toMatchObject({ decision: "refuse", code: "dead" })
+  }
+  const edit = { slide: "move-many", grid: 1, ids: ["4"], row: "before" }
+  for (const order of [[edit], [{ ...edit, before: null }], [{ ...edit, before: "5", after: null }]])
+    expect(readSlideState({ file, order })).toBeUndefined()
+})
+
 it("extracts before resolving a new row's remaining tail and removes empty source rows", () => {
   expect(gridRows(apply(opened(), move([8, 5, 6, 7, 4], 1, "new")))).toEqual([
     ["1", "2", "3"],

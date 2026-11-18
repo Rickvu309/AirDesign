@@ -10,14 +10,14 @@
     {
       "file": "packages/document/src/deck-index.ts",
       "names": ["appendIndex", "indexDue", "answeredRegister"],
-      "digest": "8d4d3ce7fde9",
-      "blob": "1d7d67e30261fc85d835aba5e01a896ed53d2eb0"
+      "digest": "76c81c797e60",
+      "blob": "16b8490da52696b51faaa1cdfea8ae6be14f7a84"
     },
     {
       "file": "packages/live/src/deck-index.ts",
       "names": ["keepIndex", "sendIndex"],
       "digest": "5ec1b6877551",
-      "blob": "7d6b5da538acc6e61606f937670b7dba9c17213e"
+      "blob": "204fafa6dfa3bf50204b18087024658ca9d4e74b"
     },
     {
       "file": "packages/live/src/store.ts",

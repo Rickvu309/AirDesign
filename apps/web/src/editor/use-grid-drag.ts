@@ -118,7 +118,7 @@ export function useGridDrag({
   const active = useRef<Preview | null>(null)
   const frame = useRef<number | null>(null)
   const clock = useRef(0)
-  const place = useRef<number | null>(null)
+  const place = useRef<{ at: number; side: GridMoveSide } | null>(null)
   const slots = useRef<readonly GridSlot[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
   const [settling, setSettling] = useState(false)
@@ -134,19 +134,15 @@ export function useGridDrag({
     if (mark !== null) mark.hidden = true
   }
 
-  function showBar(at: number, index: number) {
+  function showBar(at: number, slot: GridSlot, scale: number) {
     const mark = bar.current
-    const after = at !== index || rows.some((row) => row.start === at && at > 0)
-    const slot = slots.current.find((each) => each.index === (after ? at - 1 : index))
-    const world = list.current
-    if (mark === null || slot === undefined || world === null) {
+    if (mark === null) {
       place.current = null
       hideBar()
       return
     }
     const gap = gridSpacing(slot.width, slot.height).column
-    const scale = world.offsetWidth === 0 ? 1 : world.getBoundingClientRect().width / world.offsetWidth
-    const left = after ? slot.left + slot.width + gap / 2 : slot.left - gap / 2
+    const left = at === slot.index ? slot.left - gap / 2 : slot.left + slot.width + gap / 2
     mark.removeAttribute("data-row-drop")
     mark.style.width = `${4 / scale}px`
     mark.hidden = false
@@ -262,7 +258,7 @@ export function useGridDrag({
         clearPlace(held)
         return
       }
-      place.current = at
+      place.current = { at, side: "keep" }
       mark.hidden = false
       mark.dataset.rowDrop = ""
       mark.dataset.dropPlace = String(at + 1)
@@ -271,23 +267,24 @@ export function useGridDrag({
       mark.style.transform = `translate(0px, ${top - 2 / scale}px)`
       return
     }
-    const slot = slotUnder(x, y, slots.current)
+    const slot = slotUnder(x, y, slots.current, rows)
     if (slot === undefined) {
       clearPlace(held)
       return
     }
     const at = dropPlace(x, slot, slot.index)
     const band = rowOf(rows, slot.index)
+    const side = at === band?.start ? "before" : "same"
     const withinHeldRow = band !== undefined && gridIndices(band).every((index) => held.held.includes(index))
-    if (withinHeldRow || gridDrop(rows, held.held, at, "same") === null) {
+    if (withinHeldRow || gridDrop(rows, held.held, at, side) === null) {
       clearPlace(held)
       return
     }
-    place.current = at
+    place.current = { at, side }
     const home = rowOf(rows, held.from)
-    const moves = held.moving && home !== undefined && home === band && !(at === home.start && at > 0)
+    const moves = held.moving && band !== undefined && home === band && side === "same" && at !== band.end
     if (moves) hideBar()
-    else showBar(at, slot.index)
+    else showBar(at, slot, scale)
     const next = moves ? dropTarget(held.from, at) : null
     if (next !== held.to) show({ ...held, to: next })
   }
@@ -349,10 +346,10 @@ export function useGridDrag({
     const drag = active.current
     if (drag === null) return
     locate({ x: event.clientX, y: event.clientY })
-    const at = place.current
-    setSettling(at !== null)
+    const drop = place.current
+    setSettling(drop !== null)
     end()
-    if (at !== null) onMove(drag.held, at, drag.row ? "keep" : "same")
+    if (drop !== null) onMove(drag.held, drop.at, drop.side)
   }
 
   function escape(event: globalThis.KeyboardEvent) {

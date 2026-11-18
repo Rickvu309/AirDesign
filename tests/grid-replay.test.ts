@@ -215,6 +215,31 @@ const expected = [
     [1, 4],
     [5, 6],
   ],
+  [
+    [1, 2, 3],
+    [4, 5, 6],
+  ],
+  [
+    [1, 2, 3, 4],
+    [5, 6],
+  ],
+  [
+    [2, 4],
+    [1, 3, 5, 6],
+  ],
+  [
+    [1, 2, 3, 4],
+    [5, 6],
+  ],
+  [[1, 2, 3, 4], [6]],
+  [
+    [1, 2],
+    [3, 4, 5, 6],
+  ],
+  [
+    [1, 2, 3],
+    [4, 5, 6],
+  ],
 ]
 
 type World = { register: Register; cache: Register; undo: readonly Undoable[]; redo: Undoable | null }
@@ -261,6 +286,11 @@ function step(world: World, action: string): World {
       decision: "refuse",
       code: action === "RefuseGroupAnchor" ? "dead" : "stale",
     })
+    return world
+  }
+  if (action === "RefuseDeadBefore") {
+    const edit: SlideCommand = { slide: "move-many", grid: 1, ids: [id(4)], before: id(5), row: "before" }
+    expect(decide(world.register, { command: "slide", file, edit })).toMatchObject({ decision: "refuse", code: "dead" })
     return world
   }
   if (action === "RefuseDeadBelow" || action === "RefuseCollision") {
@@ -311,6 +341,9 @@ function step(world: World, action: string): World {
     FirstVersionTwo: { slide: "remove", grid: 2, id: id(2) },
     LaterVersionOne: { slide: "remove", grid: 1, id: id(5) },
     LaterVersionTwo: { slide: "remove", grid: 2, id: id(3) },
+    MoveBefore: { slide: "move-many", grid: 1, ids: [id(4)], before: id(5), row: "before" },
+    GroupBefore: { slide: "move-many", grid: 1, ids: [id(3), id(1)], before: id(5), row: "before" },
+    SectionedMoveBefore: { slide: "move-many", grid: 2, ids: [id(3)], before: id(4), row: "before" },
     GroupSame: { slide: "move-many", grid: 1, ids: [id(3), id(1)], after: id(5), row: "same" },
     GroupNew: { slide: "move-many", grid: 1, ids: [id(3), id(1)], after: id(5), row: "new" },
     RowKeep: { slide: "move-many", grid: 1, ids: [id(6), id(5)], after: null, row: "keep" },
@@ -426,6 +459,13 @@ it("replays every bounded Grid edge through the joint fold and guarded inverses"
         "LaterVersionOne",
         "FirstVersionOne",
         "LaterVersionTwo",
+        "MoveBefore",
+        "UndoBefore",
+        "GroupBefore",
+        "UndoGroupBefore",
+        "RefuseDeadBefore",
+        "SectionedMoveBefore",
+        "UndoSectionedBefore",
       ]
       const next = step(world, edge.action === "Land" ? actions[state.stage]! : edge.action)
       expect(gridRows(next.register).map((row) => row.map(Number))).toEqual(expected[state.stage])
