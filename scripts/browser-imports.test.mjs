@@ -49,9 +49,12 @@ try {
   rmSync(root, { recursive: true, force: true })
 }
 
-const { stagesFor, runCheck } = await import("./check.mjs")
-const { cheapSteps } = await import("./gate.mjs")
-for (const chosen of [cheapSteps, ...["main", "side", "browser", "design"].map((part) => stagesFor(part, true))]) {
+const { runCheck } = await import("./check.mjs")
+const { checkSteps } = await import("./check-steps.mjs")
+for (const chosen of [
+  checkSteps.cheapGateStages(),
+  ...checkSteps.parts().map((part) => checkSteps.stagesFor(part, true)),
+]) {
   const ran = []
   const result = await runCheck({
     chosen,

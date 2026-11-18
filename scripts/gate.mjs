@@ -4,23 +4,15 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
-import { preflight, run, runCheck, stages, stampable, stepsOf } from "./check.mjs"
+import { run, runCheck } from "./check.mjs"
+import { checkSteps } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
-import { smallLaneCommand } from "./machine-lock.mjs"
 import { timeMetric } from "./metrics.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const prove = ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs"
 
 export const testLimit = 40
-
-const stepNamed = (name) =>
-  stages
-    .flat()
-    .flatMap(stepsOf)
-    .find(([each]) => each === name)
-
-export const cheapSteps = [[...preflight, "actionlint", "copy-literals", "worktrees"].map(stepNamed)]
 
 export const packagesFor = (changed) =>
   [...new Set(changed.flatMap((file) => file.match(/^(?:apps|packages)\/[^/]+(?=\/)/)?.[0] ?? []))].sort()
@@ -37,19 +29,6 @@ export const testsFor = ({ plan, related, changed, limit = testLimit }) => {
   return { files, ci }
 }
 
-export const gateSteps = ({ tests, tooling, packages }) => {
-  const [, command, args, env] = stepNamed("test")
-  const built = packages.flatMap((folder) => ["--filter", `...{./${folder}}`])
-  const steps = [
-    ...(packages.length > 0
-      ? [["build", "pnpm", ["--workspace-concurrency=1", ...built, "-r", "--if-present", "run", "build"]]]
-      : []),
-    ...(tests.length > 0 ? [["test", ...smallLaneCommand(command, [...args, "--maxWorkers=2", ...tests]), env]] : []),
-    ...(tooling.length > 0 ? [["tooling", "node", ["scripts/tooling-tests.mjs", ...tooling]]] : []),
-  ]
-  return steps.length > 0 ? [steps] : []
-}
-
 const noLine = async () => () => {}
 
 export const runGate = async ({
@@ -57,7 +36,7 @@ export const runGate = async ({
   run: runStep,
   stamp,
   all = false,
-  cheap = cheapSteps,
+  cheap = checkSteps.cheapGateStages(),
   report = async () => {},
 }) => {
   const choosing = later().then(
@@ -76,7 +55,7 @@ export const runGate = async ({
   const second = await runCheck({ chosen: picked.chosen, run: runStep, all, lock: noLine })
   const failed = [...first.failed, ...second.failed]
   const ranSteps = first.ranSteps && second.ranSteps
-  if (stampable(failed, ranSteps)) stamp()
+  if (checkSteps.stampable(failed, ranSteps)) stamp()
   return { failed, ranSteps }
 }
 
@@ -125,7 +104,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
           `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s: ${String(tests.files.length)} unit test files, ${String(tooling.length)} tooling test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
         )
         selection = { base, plan, related, tests: tests.files, tooling, ci: tests.ci, limit: testLimit }
-        return gateSteps({ tests: tests.files, tooling, packages })
+        return checkSteps.affectedGateStages({ tests: tests.files, tooling, packages })
       },
       report: async () => {
         const started = performance.now()

@@ -2,12 +2,12 @@ import { spawn } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { stages } from "./check.mjs"
+import { checkSteps } from "./check-steps.mjs"
 import { stampChecked } from "./checked.mjs"
 import { attributionLine } from "./commit-authors.mjs"
 import { filesWithMarkers, markerFault } from "./conflict-markers.mjs"
 import { readWithRetry } from "./github-read.mjs"
-import { aloneRun, judgeCheck } from "./land-check.mjs"
+import { judgeCheck } from "./land-check.mjs"
 import { followPull } from "./land-follow.mjs"
 import { behindMain, conflictsWithMain, currentBranch, dirtyFiles, runner, succeeds } from "./land-git.mjs"
 import { statusLines } from "./land-status.mjs"
@@ -289,7 +289,6 @@ const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const root = path.resolve(path.dirname(self), "..")
   const say = (text) => console.log(text)
-  const testStep = stages.flat().find(([name]) => name === "test")
   const code = await land({
     args: parseArgs(process.argv.slice(2)),
     git: runner("git", root),
@@ -299,7 +298,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       const release = await takeMachineLock({ job: "rerun", lane: "small", say: console.error })
       let status = "exited"
       try {
-        const [command, args, env] = aloneRun(testStep, file)
+        const [command, args, env] = checkSteps.aloneCommand(file)
         const ran = await tee(command, args, { ...process.env, ...env }, root)
         status = ran.status === 0 ? "passed" : "failed"
         return ran

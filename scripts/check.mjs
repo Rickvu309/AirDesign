@@ -3,92 +3,12 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { checkSteps, onCi, partOf, shardOf } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { timeMetric } from "./metrics.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-
-const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-results")
-
-export const stages = [
-  [
-    ["format", "pnpm", ["exec", "oxfmt", "--check"]],
-    ["lint", "pnpm", ["lint"]],
-    ["copy-literals", "node", ["scripts/copy-literals.mjs"]],
-    ["browser-imports", "node", ["scripts/browser-imports.mjs"]],
-    ["actionlint", "node", ["scripts/actionlint.mjs"]],
-    [
-      "test",
-      "node",
-      ["node_modules/vitest/vitest.mjs", "run"],
-      { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache },
-    ],
-    ["tooling", "pnpm", ["test:tooling"]],
-    ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
-    ["file-size", "node", ["scripts/file-size.mjs"]],
-    ["references", "node", ["scripts/reference-order.mjs"]],
-    ["interface-width", "node", ["scripts/interface-width.mjs"]],
-    ["worktrees", "node", ["scripts/sweep.mjs"]],
-    ["commit-authors", "node", ["scripts/commit-authors.mjs"]],
-    ["commit-titles", "node", ["scripts/commit-titles.mjs"]],
-    ["conflict-markers", "node", ["scripts/conflict-markers.mjs"]],
-    ["migration-numbers", "node", ["scripts/migration-numbers.mjs"]],
-    ["stale-tree", "node", ["scripts/stale-tree.mjs"]],
-    ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
-    ["spec-replays", "node", ["scripts/spec-replays.mjs"]],
-    ["spec-sync", "node", ["scripts/spec-sync.mjs"]],
-    ["browser", "pnpm", ["test:browser"]],
-    ["boundaries", "pnpm", ["check:boundaries"]],
-    [
-      ["typecheck", "pnpm", ["typecheck"]],
-      ["build", "pnpm", ["--filter", "!@airdesign/site", "-r", "--if-present", "run", "build"]],
-      ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
-    ],
-    ["bar", "node", ["scripts/bar.mjs", "local"]],
-  ],
-  [
-    ["metrics", "node", ["scripts/metrics.mjs"]],
-    ["design-findings", "node", ["scripts/design-findings.mjs"]],
-  ],
-]
-
-export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
-
-export const partSteps = {
-  side: new Set(["site", "tooling"]),
-  design: new Set(["browser", "design-findings"]),
-  browser: new Set(["browser"]),
-}
-
-const parts = ["main", ...Object.keys(partSteps)]
-
-const inPart = (part, name) =>
-  name === "browser-imports" ||
-  part === "all" ||
-  (part === "main" ? !Object.values(partSteps).some((steps) => steps.has(name)) : partSteps[part].has(name))
-
-export const partOf = (argv) => {
-  const given = argv.find((word) => word.startsWith("--part="))
-  if (given === undefined) return "all"
-  const part = given.slice("--part=".length)
-  if (!parts.includes(part)) throw new Error(`--part must be one of ${parts.join(", ")}, and it is ${part}.`)
-  return part
-}
-
-export const shardOf = (argv) => {
-  const given = argv.find((word) => word.startsWith("--shard="))
-  if (given === undefined) return undefined
-  const value = given.slice("--shard=".length)
-  const [current, total] = /^[1-9]\d*\/[1-9]\d*$/.test(value) ? value.split("/").map(Number) : []
-  if (current === undefined || current > total)
-    throw new Error(`--shard must be a part of a whole, such as 1/3, and it is ${value}.`)
-  return { current, total }
-}
-
-export const localSteps = new Set(["bar"])
-
-export const onCi = (env) => env.CI === "true" || env.CI === "1"
 
 const isLane = (entry) => Array.isArray(entry[0])
 
@@ -103,74 +23,7 @@ const keepSteps = (chosen, keep) =>
     )
     .filter((stage) => stage.length > 0)
 
-const exceptDesignScans = designScans.map((file) => path.basename(file).replaceAll(".", "\\.")).join("|")
-
-const browserArgs = (part, shard) =>
-  part === "design"
-    ? designScans
-    : part === "browser"
-      ? [
-          "--grep-invert",
-          exceptDesignScans,
-          ...(shard === undefined ? [] : [`--shard=${shard.current}/${shard.total}`]),
-        ]
-      : []
-
-const browserOf =
-  (part, shard) =>
-  ([name, command, args, ...rest]) =>
-    name === "browser"
-      ? [name, command, [...args, ...browserArgs(part, shard)], ...rest]
-      : [name, command, args, ...rest]
-
-export const stagesFor = (part, ci = onCi(process.env), shard = undefined) =>
-  keepSteps(stages, ([name]) => !(ci && localSteps.has(name)) && inPart(part, name)).map((stage) =>
-    stage.map((entry) => (isLane(entry) ? entry.map(browserOf(part, shard)) : browserOf(part, shard)(entry))),
-  )
-
-export const ciOnlySteps = new Set(["browser", "design-findings"])
-
-export const stepsToRun = (chosen, ci) => (ci ? chosen : keepSteps(chosen, ([name]) => !ciOnlySteps.has(name)))
-
-export const judgedOnCi = new Set(["test", "browser"])
-
-export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
-
-export const stampable = (failed, ran) => ran && failed.every((name) => name === "browser")
-
-export const warnSteps = new Set([
-  "design-findings",
-  "spec-replays",
-  "spec-sync",
-  "conflict-markers",
-  "migration-numbers",
-  "stale-tree",
-  "commit-titles",
-])
-
-const warnStepsFor = (eventName) => (eventName === "merge_group" ? new Set([...warnSteps, "file-size"]) : warnSteps)
-
-export const recordFailure = (failed, name, warned = warnSteps) => {
-  if (warned.has(name)) return "warn"
-  failed.push(name)
-  return "fail"
-}
-
-const showOnSuccess = new Set(["bug-rule", "commit-authors", "lint", "metrics", "specs", "worktrees", ...localSteps])
-export const preflight = [
-  "browser-imports",
-  "format",
-  "lint",
-  "file-size",
-  "references",
-  "bug-rule",
-  "commit-authors",
-  "boundaries",
-  "interface-width",
-]
-
 export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" }) => {
-  const warned = warnStepsFor(eventName)
   const failed = []
   let hung = false
   const runStep = async (step) => {
@@ -178,12 +31,12 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" 
     if (status === "hung") {
       hung = true
       failed.push(step[0])
-    } else if (status !== 0) recordFailure(failed, step[0], warned)
+    } else if (status !== 0 && !checkSteps.warns(step[0], eventName)) failed.push(step[0])
   }
-  const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(([name]) => preflight.includes(name))
+  const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(([name]) => checkSteps.isPreflight(name))
   await Promise.all(cheap.map(runStep))
   if (failed.length > 0 && !all) return { failed, ranSteps: false, early: true }
-  const remaining = keepSteps(chosen, ([name]) => !preflight.includes(name))
+  const remaining = keepSteps(chosen, ([name]) => !checkSteps.isPreflight(name))
   const release = await lock()
   let ranSteps = true
   try {
@@ -195,7 +48,7 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" 
     }
     for (const [index, stage] of remaining.entries()) {
       await Promise.all(stage.map(runLane))
-      if (failed.length > 0 && !all && !hung && !mayPush(failed, true)) {
+      if (failed.length > 0 && !all && !hung && !checkSteps.mayPush(failed, true)) {
         ranSteps = index === remaining.length - 1
         break
       }
@@ -205,10 +58,6 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" 
     await release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
   }
 }
-
-const slowSteps = new Set(["test"])
-
-export const stepLimit = (name, ci) => (ci ? undefined : slowSteps.has(name) ? 720 : 480)
 
 const groups = new Set()
 
@@ -269,11 +118,12 @@ export const stepRunner =
         groups.delete(child.pid)
         const seconds = ((Date.now() - started) / 1000).toFixed(1)
         if (status !== 0 || hung) {
-          say(`${output}${warnStepsFor(eventName).has(name) && !hung ? "warn" : "fail"} ${name} ${seconds}s\n`, "error")
+          say(`${output}${checkSteps.warns(name, eventName) && !hung ? "warn" : "fail"} ${name} ${seconds}s\n`, "error")
         } else {
-          say(`${showOnSuccess.has(name) ? output : ""}ok ${name} ${seconds}s\n`)
+          say(`${checkSteps.showsOutput(name) ? output : ""}ok ${name} ${seconds}s\n`)
         }
-        if (status !== 0 && name === "format") say("Run pnpm exec oxfmt <files> and commit again.\n", "error")
+        const hint = checkSteps.failureHint(name)
+        if (status !== 0 && hint !== undefined) say(`${hint}\n`, "error")
         resolve(hung ? "hung" : status)
       }
       child.on("error", (error) => {
@@ -283,7 +133,7 @@ export const stepRunner =
       child.on("close", (status) => finish(status ?? 1))
     })
 
-export const run = stepRunner({ limitOf: (name) => stepLimit(name, false) })
+export const run = stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, false) })
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   process.on("exit", stopEveryGroup)
@@ -301,9 +151,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     result = await runCheck({
       eventName,
-      chosen: stepsToRun(stagesFor(part, ci, shardOf(process.argv)), ci),
+      chosen: checkSteps.stagesFor(part, ci, shardOf(process.argv)),
       all: process.argv.includes("--all"),
-      run: stepRunner({ limitOf: (name) => stepLimit(name, ci), eventName }),
+      run: stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, ci), eventName }),
       lock: async () => {
         const release = await takeMachineLock()
         checkStarted = Date.now()
@@ -326,13 +176,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
   }
 
-  if (checkedTree !== undefined && stampable(failed, ranSteps)) {
+  if (checkedTree !== undefined && checkSteps.stampable(failed, ranSteps)) {
     stampChecked(root, checkedTree)
     console.log(`checked ${checkedTree.slice(0, 8)}: a commit with exactly these files may be pushed`)
     if (failed.length > 0) console.error("Only the browser tests failed here, so ci judges them on GitHub.")
-  } else if (checkedTree !== undefined && mayPush(failed, ranSteps)) {
+  } else if (checkedTree !== undefined && checkSteps.mayPush(failed, ranSteps)) {
     console.error(
-      "NOT checked: the test step failed, so this commit is not stamped and the push guard will refuse it. Run pnpm land --check: it reruns each failed test file alone, tells load from a fault, and stamps the commit only when every file passes alone.",
+      `NOT checked: the ${failed.find(checkSteps.rerunsAlone) ?? failed[0]} step failed, so this commit is not stamped and the push guard will refuse it. Run pnpm land --check: it reruns each failed test file alone, tells load from a fault, and stamps the commit only when every file passes alone.`,
     )
   }
   if (failed.length > 0) {

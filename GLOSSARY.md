@@ -7,55 +7,67 @@ Use one word per idea: the bold term, never its Avoid terms.
 ### What runs
 
 **check**:
-One mechanical rule that passes or fails with no person and no paid model.
+A mechanical rule that passes or fails without a person or paid model.
 _Avoid_: guard, validation
 
 **gate**:
-The checks a push needs on this machine, as `pnpm gate` runs them: the cheap checks, the build of what the diff changed, and the unit and tooling tests selected from the diff. It stamps the commit. ci still runs every step.
+The run `pnpm gate` stamps for a push: cheap checks, builds and unit and tooling tests selected by the diff. ci runs every step.
 _Avoid_: pre-push check, quick check, fast check
 
 **step**:
-One check as `pnpm check` or CI runs it, with a name and a command.
+One thing `pnpm check` or ci runs, with a name and a command. Every step has one kind.
 _Avoid_: task, job, stage
 
+**rule**:
+A check on what the files say. It needs nothing built and nothing running.
+
+**tests**:
+A suite of tests that runs code.
+
+**build**:
+Work whose output other steps need.
+
+**report**:
+Work that prints or lists something and judges nothing.
+
 **part**:
-A group of steps that CI runs on its own machine, beside the other parts.
+Steps ci runs on one machine, beside the other parts.
 _Avoid_: shard, job, matrix
 
 **ci**:
-The one result a pull request needs to merge. It passes when every part passes.
-_Avoid_: pipeline, build
+The result a pull request needs to merge. Every part must pass.
+_Avoid_: pipeline
 
 **owner**:
-The person who owns this repository and reads what the checks list.
+The repository owner, who reads what the checks list.
 _Avoid_: the organization's name, admin, maintainer
 
 **journey**:
-A scripted walk through the real app, done the way a user does it.
+A script that walks through the real app as a user does.
 _Avoid_: end-to-end test, scenario, flow
 
 ### What a check says
 
 **block**:
-A step blocks when its failure fails the run.
+To fail the run when the step fails.
 _Avoid_: hard fail, enforce
 
 **warn**:
-A step warns when it prints its failure and the run still passes.
+To print a step failure and let the run pass.
 _Avoid_: soft fail, advisory, non-blocking
 
 **false stop**:
-A failed run on a pull request that later merged with the same content.
+A failed run on a pull request that merged with the same content.
 _Avoid_: flake, spurious failure
 
 **red main**:
-The state of `main` after ci fails on a commit that is already there.
+The state of `main` when ci fails on a commit already there.
 _Avoid_: broken build, broken main
 
 ### What we measure
 
 **metric**:
-A number we want moved, printed on every run of `pnpm check`.
+A number `pnpm check` prints to track progress.
 _Avoid_: stick, score, KPI
 
 **goal**:
@@ -79,13 +91,13 @@ A pull request lowers the bar when it moves a metric away from its goal, raises 
 _Avoid_: regresses, weakens, loosens
 
 **changes ci**:
-A pull request changes ci when it edits a file that decides what ci checks.
+An edit to a file that decides what ci checks.
 _Avoid_: touches infra, tooling change
 
 ### How a change is shown to work
 
 **proof**:
-What a builder shows for a change: the commands it ran and what they printed.
+The commands a builder ran for a change and what they printed.
 _Avoid_: evidence, verification, validation
 
 **judge**:
@@ -111,7 +123,7 @@ _Avoid_: mutant, planted break, injected bug
 ### How a pull request is named
 
 **title**:
-The first line of a pull request or a commit: at most 72 characters, an imperative verb and the one outcome, with no full stop.
+A pull request or commit's first line. Use an imperative verb and one outcome in at most 72 characters, with no full stop.
 _Avoid_: subject, headline, summary line
 
 **area**:

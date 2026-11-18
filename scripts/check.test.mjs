@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs"
-import { stages } from "./check.mjs"
-import { designScans, partOf, partSteps, stagesFor } from "./check.mjs"
-import { judgedOnCi, mayPush, stampable } from "./check.mjs"
-import { localSteps, onCi, stepsOf } from "./check.mjs"
-import { recordFailure, warnSteps } from "./check.mjs"
-import { shardOf } from "./check.mjs"
+import { runCheck, stepRunner, stepsOf } from "./check.mjs"
+import { checkSteps, designScans, onCi, partOf, shardOf } from "./check-steps.mjs"
+
+const { isPreflight, mayPush, stagesFor, stampable, warns } = checkSteps
+const stages = stagesFor("all", true)
 
 const requiredSteps = [
   "interface-width",
@@ -38,17 +37,18 @@ for (const later of ["build", "site"]) {
 if (stageOf("metrics") <= stageOf("build")) throw new Error("metrics reads the build before it is written")
 if (stageOf("references") === -1) throw new Error("check lost the step references")
 
-const namesIn = (part) => stagesFor(part).flatMap(stepNames)
-const everyStep = namesIn("all")
+const namesIn = (part) => stagesFor(part, true).flatMap(stepNames)
+const everyCiStep = namesIn("all")
+const everyStep = [...new Set([...everyCiStep, ...stagesFor("all", false).flatMap(stepNames)])]
 const split = [...namesIn("main"), ...namesIn("side"), ...namesIn("design")].filter(
   (name, index, names) => name !== "browser-imports" || names.indexOf(name) === index,
 )
-if (split.length !== everyStep.length || everyStep.some((name) => !split.includes(name))) {
+if (split.length !== everyCiStep.length || everyCiStep.some((name) => !split.includes(name))) {
   throw new Error("the main, side and design parts must run every step exactly once")
 }
-for (const [part, names] of Object.entries(partSteps)) {
-  for (const name of names) {
-    if (!everyStep.includes(name)) throw new Error(`the ${part} part names ${name}, which check does not run`)
+for (const part of checkSteps.parts()) {
+  for (const name of namesIn(part)) {
+    if (!everyCiStep.includes(name)) throw new Error(`the ${part} part names ${name}, which check does not run`)
   }
 }
 if (namesIn("side").toSorted().join() !== "browser-imports,site,tooling")
@@ -56,7 +56,7 @@ if (namesIn("side").toSorted().join() !== "browser-imports,site,tooling")
 for (const name of ["test", "build", "metrics", "specs", "typecheck"]) {
   if (!namesIn("main").includes(name)) throw new Error(`the main part must run ${name}`)
 }
-const mainStages = stagesFor("main")
+const mainStages = stagesFor("main", true)
 const mainStageOf = (name) => mainStages.findIndex((stage) => stepNames(stage).includes(name))
 for (const earlier of ["test", "build"]) {
   if (mainStageOf(earlier) >= mainStageOf("metrics"))
@@ -74,12 +74,13 @@ try {
 if (refused !== "--part must be one of main, side, design, browser, and it is everything.")
   throw new Error("an unknown part is not refused")
 const stepsWhen = (ci) => stagesFor("all", ci).flatMap(stepNames)
-for (const name of ["bar"]) {
-  if (!localSteps.has(name)) throw new Error(`check does not run ${name} on this machine`)
-  if (!stepsWhen(false).includes(name)) throw new Error(`a local check skips ${name}`)
-  if (stepsWhen(true).includes(name)) throw new Error(`check runs ${name} on CI, where the real guard runs`)
-}
-if (stepsWhen(true).length + localSteps.size !== stepsWhen(false).length) {
+if (!stepsWhen(false).includes("bar")) throw new Error("a local check skips bar")
+if (stepsWhen(true).includes("bar")) throw new Error("check runs bar on CI, where the real guard runs")
+if (
+  stepsWhen(false)
+    .filter((name) => !stepsWhen(true).includes(name))
+    .join() !== "bar"
+) {
   throw new Error("CI skips a step that is not a local guard")
 }
 if (!onCi({ CI: "true" }) || !onCi({ CI: "1" }) || onCi({}) || onCi({ CI: "false" })) {
@@ -101,48 +102,47 @@ for (const name of [
   "bug-rule",
   "specs",
 ]) {
-  if (judgedOnCi.has(name) || mayPush([name], true))
-    throw new Error(`${name} does not depend on load and must stop a push`)
+  if (mayPush([name], true)) throw new Error(`${name} does not depend on load and must stop a push`)
   if (mayPush(["test", name], true)) throw new Error(`${name} failing next to test must still stop a push`)
 }
 if (mayPush([], false)) throw new Error("a check that stopped early saw too little to allow a push")
 
-import { ciOnlySteps, stepsToRun } from "./check.mjs"
-
-const ranWhen = (part, ci) => stepsToRun(stagesFor(part, ci), ci).flatMap(stepNames)
+const ranWhen = (part, ci) => stagesFor(part, ci).flatMap(stepNames)
 if (ranWhen("all", false).includes("browser")) throw new Error("a local check runs the browser tests")
 if (!ranWhen("all", true).includes("browser")) throw new Error("ci lost the browser tests")
 if (!ranWhen("browser", true).includes("browser")) throw new Error("the browser part on ci lost the browser tests")
 if (ranWhen("side", true).includes("browser"))
   throw new Error("the side part runs browser tests beside the site build and the tooling tests")
-if (!ciOnlySteps.has("browser")) throw new Error("the browser tests are not marked as ci only")
-for (const name of everyStep.filter((step) => !ciOnlySteps.has(step))) {
+for (const name of everyStep.filter((step) => step !== "browser" && step !== "design-findings")) {
   if (!ranWhen("all", false).includes(name)) throw new Error(`a local check skips ${name}`)
 }
-if (stepsToRun([[["browser"]], [["lint"]]], false).length !== 1) throw new Error("an emptied stage was kept")
-const warned = new Set(["new-step"])
-const warnFailed = []
-if (recordFailure(warnFailed, "new-step", warned) !== "warn") throw new Error("a warn step does not print as a warning")
-if (warnFailed.length !== 0) throw new Error("a warn step made check fail")
-if (!mayPush(warnFailed, true)) throw new Error("a warn step stopped a push")
-if (recordFailure(warnFailed, "lint", warned) !== "fail") throw new Error("a step outside warnSteps does not fail")
-if (warnFailed.join() !== "lint" || mayPush(warnFailed, true)) throw new Error("a failing step must stop a push")
-for (const name of warnSteps) {
-  if (!everyStep.includes(name) && !localSteps.has(name))
-    throw new Error(`warnSteps names ${name}, which check does not run`)
-}
-for (const name of [...requiredSteps, ...localSteps]) {
-  if (warnSteps.has(name)) throw new Error(`${name} already blocks and cannot go back to warnSteps`)
+if (stagesFor("design", false).length !== 1) throw new Error("an emptied stage was kept")
+const warningResult = await runCheck({
+  chosen: [[["spec-sync"]]],
+  run: async () => 1,
+  lock: async () => () => {},
+})
+if (warningResult.failed.length !== 0) throw new Error("a warn step made check fail")
+if (!mayPush(warningResult.failed, warningResult.ranSteps)) throw new Error("a warn step stopped a push")
+const blockingResult = await runCheck({
+  chosen: [[["lint"]]],
+  run: async () => 1,
+  lock: async () => () => {},
+})
+if (blockingResult.failed.join() !== "lint" || mayPush(blockingResult.failed, blockingResult.ranSteps))
+  throw new Error("a failing step must stop a push")
+for (const name of [...requiredSteps, "bar"]) {
+  if (warns(name)) throw new Error(`${name} already blocks and cannot go back to warning`)
 }
 if (!namesIn("main").includes("commit-authors")) throw new Error("the main part must run commit-authors")
 if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run commit-authors")
-if (warnSteps.has("commit-authors")) throw new Error("commit-authors blocks from the start")
+if (warns("commit-authors")) throw new Error("commit-authors blocks from the start")
 
 const designStages = stagesFor("design", true)
 const designStageOf = (name) => designStages.findIndex((stage) => stepNames(stage).includes(name))
 if (designStageOf("design-findings") <= designStageOf("browser"))
   throw new Error("design-findings reads what the browser tests wrote, so it must run after them")
-if (!ciOnlySteps.has("design-findings"))
+if (ranWhen("all", false).includes("design-findings"))
   throw new Error("design-findings needs the browser tests, which run only on ci")
 
 if (!stampable([], true)) throw new Error("a passing check must stamp the commit")
@@ -152,9 +152,18 @@ if (stampable(["test"], true)) {
 if (stampable(["browser", "test"], true)) throw new Error("a failed test next to browser must not stamp the commit")
 if (!stampable(["browser"], true)) throw new Error("the browser tests run on ci and must not stop a stamp")
 if (stampable([], false)) throw new Error("a check that stopped early must not stamp the commit")
-for (const name of ["conflict-markers", "migration-numbers", "commit-titles", "stale-tree", "spec-sync"]) {
+const warningSteps = [
+  "conflict-markers",
+  "migration-numbers",
+  "commit-titles",
+  "stale-tree",
+  "spec-sync",
+  "spec-replays",
+  "design-findings",
+]
+for (const name of warningSteps) {
   if (!everyStep.includes(name)) throw new Error(`check lost the step ${name}`)
-  if (!warnSteps.has(name)) throw new Error(`${name} is new and starts in warnSteps`)
+  if (!warns(name)) throw new Error(`${name} starts as a warning`)
 }
 
 const testStep = stages.flat().find(([name]) => name === "test")
@@ -181,7 +190,7 @@ for (const shard of ["0/3", "4/3", "2", "a/b", "1/0"]) {
     throw new Error(`--shard=${shard} is not refused`)
 }
 const browserRun = (part, shard) =>
-  stepsToRun(stagesFor(part, true, shard), true)
+  stagesFor(part, true, shard)
     .flat()
     .flatMap(stepsOf)
     .find(([name]) => name === "browser")?.[2]
@@ -201,13 +210,11 @@ if (browserRun("design", { current: 2, total: 3 }) !== browserRun("design"))
   throw new Error("a shard must not split the design scans, which design-findings reads together")
 if (browserRun("all") !== "test:browser") throw new Error("a check with no part runs every browser test")
 
-const { preflight, runCheck, stepRunner } = await import("./check.mjs")
-if (preflight === undefined || runCheck === undefined) throw new Error("check needs a preflight before the lock")
 for (const name of ["format", "file-size", "lint", "references", "bug-rule", "commit-authors", "boundaries"]) {
-  if (!preflight.includes(name) || !everyStep.includes(name)) throw new Error(`preflight lost ${name}`)
+  if (!isPreflight(name) || !everyStep.includes(name)) throw new Error(`preflight lost ${name}`)
 }
 for (const name of ["test", "browser", "build", "typecheck", "tooling", "specs"]) {
-  if (preflight.includes(name)) throw new Error(`${name} must wait for the machine`)
+  if (isPreflight(name)) throw new Error(`${name} must wait for the machine`)
 }
 for (const fail of [undefined, "format", "lint", "file-size"]) {
   const events = []
@@ -247,15 +254,15 @@ if (allEvents.join() !== "format,lock,test,release") throw new Error("--all must
 
 for (const eventName of [undefined, "", "pull_request", "push", "merge_group"]) {
   for (const name of everyStep) {
-    const warns = warnSteps.has(name) || (name === "file-size" && eventName === "merge_group")
+    const shouldWarn = warningSteps.includes(name) || (name === "file-size" && eventName === "merge_group")
     const result = await runCheck({
       eventName,
       chosen: [[[name]]],
       run: async () => 1,
       lock: async () => () => {},
     })
-    if (result.failed.join() !== (warns ? "" : name))
-      throw new Error(`${name} must ${warns ? "warn" : "fail"} on ${eventName ?? "this machine"}`)
+    if (result.failed.join() !== (shouldWarn ? "" : name))
+      throw new Error(`${name} must ${shouldWarn ? "warn" : "fail"} on ${eventName ?? "this machine"}`)
   }
   const printed = []
   const result = await runCheck({

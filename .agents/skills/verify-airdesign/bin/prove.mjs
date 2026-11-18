@@ -96,8 +96,8 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
   const out = path.join(evidenceRoot, `prove-${new Date().toISOString().replace(/[:.]/g, "-")}`)
   mkdirSync(out, { recursive: true })
   const { takeMachineLock, smallLaneCommand } = await fromRepo(repo, "scripts/machine-lock.mjs")
-  const { stages } = await fromRepo(repo, "scripts/check.mjs")
-  const specCache = { AIRDESIGN_SPEC_CACHE: stages.flat().find(([name]) => name === "test")[3].AIRDESIGN_SPEC_CACHE }
+  const { specCache } = await fromRepo(repo, "scripts/check-steps.mjs")
+  const specEnv = { AIRDESIGN_SPEC_CACHE: specCache }
   const run = (lane, command, args) => (lane === "small" ? smallLaneCommand(command, args) : [command, args])
   const tests = (lane, files, json) =>
     run(lane, "node", [
@@ -128,7 +128,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
         return {
           lane: "full",
           what: "every unit test",
-          go: async () => vitestResult(await exec(repo, tests("full", [], json), specCache, log), json),
+          go: async () => vitestResult(await exec(repo, tests("full", [], json), specEnv, log), json),
         }
       }
       const listed = path.join(out, "unit-list.json")
@@ -142,7 +142,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
       return {
         lane,
         what,
-        go: async () => vitestResult(await exec(repo, tests(lane, files, json), specCache, log), json),
+        go: async () => vitestResult(await exec(repo, tests(lane, files, json), specEnv, log), json),
       }
     },
     tooling: async (step, log) => ({
@@ -163,12 +163,12 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
       lane: "small",
       what: `${step.topics.join(", ")}: TLC, then ${step.replays.join(", ") || "no replay"}`,
       go: async () => {
-        const tlc = await exec(repo, run("small", "node", ["scripts/check-specs.mjs", ...step.topics]), specCache, log)
+        const tlc = await exec(repo, run("small", "node", ["scripts/check-specs.mjs", ...step.topics]), specEnv, log)
         if (tlc.status !== 0)
           return { passed: false, result: "FAILED in TLC", rerun: `pnpm check:specs ${step.topics.join(" ")}` }
         if (step.replays.length === 0) return { passed: true, result: "PASSED TLC" }
         const json = path.join(out, "replays.json")
-        return vitestResult(await exec(repo, tests("small", step.replays, json), specCache, log), json)
+        return vitestResult(await exec(repo, tests("small", step.replays, json), specEnv, log), json)
       },
     }),
     browser: async (step, log) => {
