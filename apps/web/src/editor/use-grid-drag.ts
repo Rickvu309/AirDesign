@@ -9,9 +9,18 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
-import { dropPlace, dropTarget, edgePan, previewSlot, slotUnder, type GridSlot } from "@/editor/grid-drop"
+import {
+  dropPlace,
+  dropTarget,
+  edgePan,
+  previewSlot,
+  rowPan,
+  slotUnder,
+  terminalRowBand,
+  type GridSlot,
+} from "@/editor/grid-drop"
 import { cardPress } from "@/editor/grid-hit"
-import { gridSpacing } from "@/editor/grid-viewport"
+import { gridRowHandle, gridSpacing } from "@/editor/grid-viewport"
 import { still } from "@/editor/slide-opening"
 
 type Range = { readonly start: number; readonly end: number }
@@ -204,16 +213,19 @@ export function useGridDrag({
     frame.current = requestAnimationFrame((time) => latest.current.step(time))
   }
 
-  function locate() {
-    const point = pointer.current
+  function clearPlace(held: Preview) {
+    place.current = null
+    hideBar()
+    if (held.to !== null) show({ ...held, to: null })
+  }
+
+  function locate(point: Point) {
     const world = list.current
     const held = active.current
     const room = viewport.current?.getBoundingClientRect()
-    if (point === null || world === null || held === null || room === undefined) return
-    if (!inside(point, room)) {
-      place.current = null
-      hideBar()
-      if (held.to !== null) show({ ...held, to: null })
+    if (held === null) return
+    if (world === null || room === undefined || !inside(point, room)) {
+      clearPlace(held)
       return
     }
     const box = world.getBoundingClientRect()
@@ -221,6 +233,11 @@ export function useGridDrag({
     const x = (point.x - box.left) / scale
     const y = (point.y - box.top) / scale
     if (held.row) {
+      const leading = gridRowHandle.offset + gridRowHandle.width / 2
+      if (point.x < box.left - leading || point.x > box.right) {
+        clearPlace(held)
+        return
+      }
       const bands = rows.flatMap((row) => {
         const cells = slots.current.filter((slot) => slot.index >= row.start && slot.index < row.end)
         return cells.length === 0
@@ -233,17 +250,19 @@ export function useGridDrag({
               },
             ]
       })
-      const next = bands.find((band, i) => y < band.top && y >= (bands[i - 1]?.bottom ?? band.top - 80 / scale))
+      const next = bands.find(
+        (band, i) => y < band.top && y >= (bands[i - 1]?.bottom ?? band.top - terminalRowBand / scale),
+      )
       const last = bands.at(-1)
       const at =
-        next?.start ?? (last !== undefined && y >= last.bottom && y <= last.bottom + 80 / scale ? last.end : null)
+        next?.start ??
+        (last !== undefined && y >= last.bottom && y <= last.bottom + terminalRowBand / scale ? last.end : null)
       const previous = bands.find((band) => band.end === at)
       const top =
         next === undefined ? last?.bottom : previous === undefined ? next.top : (previous.bottom + next.top) / 2
       const mark = bar.current
       if (at === null || top === undefined || mark === null) {
-        place.current = null
-        hideBar()
+        clearPlace(held)
         return
       }
       place.current = at
@@ -256,7 +275,10 @@ export function useGridDrag({
       return
     }
     const slot = slotUnder(x, y, slots.current)
-    if (slot === undefined) return
+    if (slot === undefined) {
+      clearPlace(held)
+      return
+    }
     const at = dropPlace(x, slot, slot.index)
     place.current = at
     const home = rowOf(rows, held.from)
@@ -280,8 +302,18 @@ export function useGridDrag({
     if (point !== null && host !== null) {
       const speed = edgePan(point, host.getBoundingClientRect())
       if (speed.x !== 0 || speed.y !== 0) {
-        panBy({ x: speed.x * beats, y: speed.y * beats })
-        locate()
+        const x = speed.x * beats
+        let y = speed.y * beats
+        const world = list.current
+        const first = slots.current[0]
+        const last = slots.current.at(-1)
+        if (active.current.row && y !== 0 && world !== null && first !== undefined && last !== undefined) {
+          const box = world.getBoundingClientRect()
+          const scale = world.offsetWidth === 0 ? 1 : box.width / world.offsetWidth
+          y = rowPan(y, point.y, box.top + first.top * scale, box.top + (last.top + last.height) * scale)
+        }
+        if (x !== 0 || y !== 0) panBy({ x, y })
+        locate(point)
       }
     }
     frame.current = requestAnimationFrame((next) => latest.current.step(next))
@@ -300,7 +332,7 @@ export function useGridDrag({
     document.getSelection()?.removeAllRanges()
     pointer.current = point
     placeGhost(point)
-    locate()
+    locate(point)
   }
 
   function release(event: globalThis.PointerEvent) {
@@ -314,12 +346,11 @@ export function useGridDrag({
     }
     const drag = active.current
     if (drag === null) return
+    locate({ x: event.clientX, y: event.clientY })
     const at = place.current
-    const room = viewport.current?.getBoundingClientRect()
-    const lands = at !== null && room !== undefined && inside({ x: event.clientX, y: event.clientY }, room)
-    setSettling(lands)
+    setSettling(at !== null)
     end()
-    if (lands) onMove(drag.held, at, drag.row)
+    if (at !== null) onMove(drag.held, at, drag.row)
   }
 
   function escape(event: globalThis.KeyboardEvent) {

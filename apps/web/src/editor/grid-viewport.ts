@@ -1,4 +1,5 @@
 import type { PaintBox } from "@airdesign/render"
+import { gridElementPresses } from "./grid-number"
 import { zoomRanges } from "./canvas-zoom"
 
 export type GridViewport = { readonly x: number; readonly y: number; readonly scale: number }
@@ -25,13 +26,10 @@ export function boundedGridScale(scale: number): number {
 }
 
 export function fittedGrid(bounds: GridBounds, room: GridBounds): GridViewport {
-  const scale = boundedGridScale(
-    Math.min((room.width - 96) / Math.max(1, bounds.width), (room.height - 96) / Math.max(1, bounds.height)),
-  )
-  return { x: (room.width - bounds.width * scale) / 2, y: (room.height - bounds.height * scale) / 2, scale }
+  return fitGridBounds(bounds, room, 0, () => ({ left: 0, right: 0 }))
 }
 
-export function revealedGrid(view: GridViewport, box: GridRect, room: GridRect): GridViewport {
+export function revealedGrid(view: GridViewport, box: GridRect, room: GridRect, keepLeft = false): GridViewport {
   function delta(start: number, size: number, edge: number, length: number) {
     if (size > length - 48) return edge + (length - size) / 2 - start
     if (start < edge + 24) return edge + 24 - start
@@ -39,7 +37,10 @@ export function revealedGrid(view: GridViewport, box: GridRect, room: GridRect):
     return 0
   }
   return pannedGrid(view, {
-    x: delta(box.left, box.width, room.left, room.width),
+    x:
+      keepLeft && box.width > room.width - 48
+        ? room.left + 24 - box.left
+        : delta(box.left, box.width, room.left, room.width),
     y: delta(box.top, box.height, room.top, room.height),
   })
 }
@@ -113,6 +114,7 @@ export function gridSectionGap(scale: number): number {
 export type GridGeometry = {
   readonly rows: readonly { readonly start: number; readonly end: number }[]
   readonly sections: readonly number[]
+  readonly rowHandles?: boolean
   readonly width: number
   readonly height: number
 }
@@ -131,6 +133,8 @@ function gridCard(geometry: GridGeometry, index: number) {
   const spacing = gridSpacing(width, height)
   return {
     left: (index - row.start) * (width + spacing.column),
+    leading: index === row.start,
+    trailing: index === row.end - 1,
     top: number * (height + 24 + spacing.row),
     fixed: sectionRows(geometry, rows.slice(0, number + 1)) * sectionPixels,
   }
@@ -146,14 +150,15 @@ export function fittedGridCards(
   const left = Math.min(...cards.map((card) => card.left))
   const top = Math.min(...cards.map((card) => card.top))
   const fixed = Math.min(...cards.map((card) => card.fixed))
+  const right = Math.max(...cards.map((card) => card.left))
   const bounds = {
-    width: Math.max(...cards.map((card) => card.left)) - left + geometry.width,
+    width: right - left + geometry.width,
     height: Math.max(...cards.map((card) => card.top)) - top + geometry.height + 24,
   }
-  const fit = fittedGrid(bounds, {
-    width: room.width,
-    height: room.height - Math.max(...cards.map((card) => card.fixed)) + fixed,
-  })
+  const leading = cards.some((card) => card.leading)
+  const trailing = cards.some((card) => card.trailing && card.left === right)
+  const heads = Math.max(...cards.map((card) => card.fixed)) - fixed
+  const fit = fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, leading, trailing))
   return { x: fit.x - left * fit.scale, y: fit.y - top * fit.scale - fixed, scale: fit.scale }
 }
 
@@ -204,10 +209,75 @@ export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridVi
     height: rows.length * (height + 24) + Math.max(0, rows.length - 1) * spacing.row,
   }
   const heads = sectionRows(geometry, rows) * sectionPixels
-  const scale = boundedGridScale(
-    Math.min((room.width - 96) / bounds.width, (room.height - 96 - heads) / Math.max(1, bounds.height)),
+  return fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, true, true))
+}
+
+export const gridRowHandle = { offset: 32, width: 28, minimumHeight: 80 }
+
+function rowChrome(bounds: GridGeometry, scale: number, leading: boolean, trailing: boolean) {
+  const gap = gridSpacing(bounds.width, bounds.height).column * scale
+  return {
+    left:
+      leading && bounds.rowHandles !== false && bounds.height * scale >= gridRowHandle.minimumHeight
+        ? gridRowHandle.offset + gridRowHandle.width / 2
+        : 0,
+    right: trailing && gridElementPresses({ width: bounds.width * scale, gap }) ? gap / 2 + 4 : 0,
+  }
+}
+
+export function gridCardBounds(
+  geometry: GridGeometry,
+  index: number,
+  scale: number,
+  box: GridRect,
+  trailingMargin = 0,
+): GridRect {
+  const row = geometry.rows.find((row) => index >= row.start && index < row.end)
+  const chrome = rowChrome(geometry, scale, index === row?.start, index === (row?.end ?? 0) - 1)
+  return {
+    left: box.left - chrome.left,
+    top: box.top,
+    width: box.width + chrome.left + Math.max(0, chrome.right - trailingMargin),
+    height: box.height,
+  }
+}
+
+const fitPadding = 48
+
+function fitGridBounds(
+  bounds: GridBounds,
+  room: GridBounds,
+  heads: number,
+  chrome: (scale: number) => { left: number; right: number },
+): GridViewport {
+  const available = room.width - 2 * fitPadding
+  const widest = Math.max(1, bounds.width)
+  let scale = boundedGridScale(
+    Math.min(available / widest, (room.height - 2 * fitPadding - heads) / Math.max(1, bounds.height)),
   )
-  return { x: (room.width - bounds.width * scale) / 2, y: (room.height - bounds.height * scale - heads) / 2, scale }
+  const fits = (at: number) => {
+    const { left, right } = chrome(at)
+    return widest * at + left + right <= available
+  }
+  if (!fits(scale)) {
+    let high = scale
+    scale = zoomRanges.grid.least / 100
+    for (let i = 0; i < 32; i++) {
+      const middle = (scale + high) / 2
+      if (fits(middle)) scale = middle
+      else high = middle
+    }
+  }
+  const { left, right } = chrome(scale)
+  return {
+    x: (room.width - bounds.width * scale + left - right) / 2,
+    y: (room.height - bounds.height * scale - heads) / 2,
+    scale,
+  }
+}
+
+export function gridHeadingEdge(width: number, view: GridViewport, fit: boolean): number {
+  return width - view.x - (fit ? fitPadding : 0)
 }
 
 export function resizedGrid(view: GridViewport, box: GridRect, before: GridRect, after: GridRect): GridViewport {

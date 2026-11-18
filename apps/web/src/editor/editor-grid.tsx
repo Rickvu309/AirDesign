@@ -97,6 +97,7 @@ export function EditorGrid({
     geometry: {
       rows: gridRows(strip),
       sections: (strip.sections ?? []).map((section) => section.start),
+      rowHandles: strip.onMoveMany !== undefined,
       width,
       height: gridThumbHeight(width, strip.thumbHeight),
     },
@@ -488,6 +489,7 @@ export function EditorGrid({
                         sections={sections}
                         count={count}
                         scale={percent / 100}
+                        pitch={width + spacing.column}
                         held={collapsed.held}
                         onToggle={collapsed.toggle}
                         shown={shown(index)}

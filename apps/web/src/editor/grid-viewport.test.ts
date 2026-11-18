@@ -10,6 +10,7 @@ import {
   fittedGrid,
   revealedGrid,
   gridSpacing,
+  gridCardBounds,
   gridSectionGap,
   wheeledGrid,
   gridScaleMoved,
@@ -75,9 +76,10 @@ it("fits the occupied cards across section headers with screen-space padding", (
     [1, 3],
     { width: 1096, height: 1473 },
   )
-  expect(view?.scale).toBe(1)
-  expect(view?.y).toBe(4)
-  expect(view?.x).toBe(-1082)
+  const scale = (1000 - 4) / (1000 + 65)
+  expect(view?.scale).toBeCloseTo(scale)
+  expect(view?.y).toBeCloseTo((1473 - 44 - 1333 * scale) / 2 - 44)
+  expect(view?.x).toBeCloseTo(48 - 1130 * scale)
 })
 
 describe("grid spacing", () => {
@@ -238,4 +240,38 @@ it("clamps a very small element to Grid's maximum zoom", () => {
   const geometry = { rows: [{ start: 0, end: 1 }], sections: [], width: 1000, height: 500 }
   const box = { x: 100, y: 50, width: 1, height: 1, rotation: 0 }
   expect(fittedGridElements(geometry, 0, [box], 1000, { width: 996, height: 696 })?.scale).toBe(4)
+})
+
+it("fits and centres the widest row including its handle and end dot", () => {
+  const room = { width: 1280, height: 720 }
+  const fit = fittedGridRows({ rows: [{ start: 0, end: 4 }], sections: [], width: 1280, height: 720 }, room)
+  const left = fit.x - 46
+  const right = fit.x + (4 * 1280 + 3.5 * 166.4) * fit.scale + 4
+  expect(left).toBeGreaterThanOrEqual(48 - 1e-8)
+  expect(right).toBeLessThanOrEqual(room.width - 48 + 1e-8)
+  expect(left + right).toBeCloseTo(room.width)
+})
+
+it("reveals row chrome with breathing room and stays put when it already fits", () => {
+  const view = { x: 0, y: 0, scale: 0.25 }
+  const geometry = { rows: [{ start: 0, end: 4 }], sections: [], width: 1280, height: 720 }
+  const room = { left: 0, top: 0, width: 1280, height: 720 }
+  const first = { left: 24, top: 24, width: 320, height: 180 }
+  const bounds = gridCardBounds(geometry, 0, view.scale, first)
+  expect(bounds.left).toBe(-22)
+  expect(revealedGrid(view, bounds, room).x).toBe(46)
+  expect(revealedGrid(view, { ...bounds, left: 24 }, room)).toEqual(view)
+  expect(gridCardBounds(geometry, 0, 0.05, first)).toEqual(first)
+  const last = gridCardBounds(geometry, 3, view.scale, { ...first, left: 920 })
+  expect(last.width).toBeCloseTo(344.8)
+})
+
+it("fits a selected row head and tail using the stored columns and their chrome", () => {
+  const geometry = { rows: [{ start: 0, end: 4 }], sections: [], width: 1280, height: 720 }
+  const room = { width: 1280, height: 720 }
+  const view = fittedGridCards(geometry, [0, 3], room)
+  const fitted = fittedGridRows(geometry, room)
+  expect(view?.scale).toBeCloseTo(fitted.scale, 9)
+  expect(view?.x).toBeCloseTo(fitted.x, 9)
+  expect(view?.y).toBeCloseTo(fitted.y, 9)
 })

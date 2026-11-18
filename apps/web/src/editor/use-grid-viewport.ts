@@ -25,6 +25,8 @@ import {
   type GridGeometry,
   revealedGrid,
   gridScaleMoved,
+  gridHeadingEdge,
+  gridCardBounds,
   type GridViewport,
 } from "@/editor/grid-viewport"
 import { keptGridViewport, keepGridViewport } from "@/editor/grid-zoom"
@@ -90,6 +92,7 @@ export function useGridViewport({
   geometryRef.current = geometry
   const frame = useRef<number | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
+  const roomWidth = useRef<number | null>(null)
   const [restored] = useState(() => keptGridViewport(deck))
   const view = useRef<GridViewport>(restored ?? { x: 48, y: 24, scale })
   const kept = useRef(deck)
@@ -124,6 +127,7 @@ export function useGridViewport({
   function settle() {
     dirty.current = true
     fits.current = false
+    sizeHeadings()
     stopTimer()
     timer.current = setTimeout(store, settleAfter)
   }
@@ -175,8 +179,21 @@ export function useGridViewport({
 
   function paint(next: GridViewport) {
     view.current = next
-    if (world.current !== null)
-      world.current.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.scale})`
+    const content = world.current
+    const host = viewport.current
+    if (content === null || host === null) return
+    content.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.scale})`
+    sizeHeadings()
+  }
+
+  function sizeHeadings() {
+    const host = viewport.current
+    if (host === null) return
+    roomWidth.current ??= host.clientWidth
+    world.current?.style.setProperty(
+      "--grid-heading-edge",
+      `${gridHeadingEdge(roomWidth.current, view.current, fits.current)}px`,
+    )
   }
 
   useLayoutEffect(() => {
@@ -226,17 +243,25 @@ export function useGridViewport({
     let before = host.getBoundingClientRect()
     const observer = new ResizeObserver(() => {
       const after = host.getBoundingClientRect()
+      roomWidth.current = after.width
       if (fits.current) flushSync(() => fit())
       else {
         const card = world.current?.querySelector(`[data-slide-entry="${focused.current + 1}"]`)
         if (card) {
-          const next = resizedGrid(view.current, card.getBoundingClientRect(), before, after)
+          const box = gridCardBounds(
+            geometryRef.current,
+            focused.current,
+            view.current.scale,
+            card.getBoundingClientRect(),
+          )
+          const next = resizedGrid(view.current, box, before, after)
           if (next !== view.current) {
             paint(next)
             settle()
           }
         }
       }
+      sizeHeadings()
       before = after
     })
     observer.observe(host)
@@ -280,8 +305,19 @@ export function useGridViewport({
     host.scrollLeft = 0
     host.scrollTop = 0
     const box = card.getBoundingClientRect()
+    const entry = card.querySelector("[data-slide-entry]")
+    const bounds =
+      entry === null
+        ? box
+        : gridCardBounds(
+            geometryRef.current,
+            Number(entry.getAttribute("data-slide-entry")) - 1,
+            view.current.scale,
+            box,
+            24,
+          )
     const room = host.getBoundingClientRect()
-    paint(revealedGrid(view.current, box, room))
+    paint(revealedGrid(view.current, bounds, room, bounds.left < box.left))
   }
 
   function fit(indices?: readonly number[]) {
@@ -303,6 +339,7 @@ export function useGridViewport({
   }
 
   function paintFit(next: GridViewport, selection: boolean) {
+    fits.current = !selection
     paint(next)
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     frame.current = null
@@ -313,7 +350,6 @@ export function useGridViewport({
       fitted.current(next.scale * 100)
       return
     }
-    fits.current = false
     keepGridViewport(kept.current, next)
     zoom.current(next.scale * 100, false)
   }
@@ -324,10 +360,10 @@ export function useGridViewport({
     selection: (indices: readonly number[]) => fit(indices),
     space,
     panBy: (delta: { readonly x: number; readonly y: number }) => {
+      fits.current = false
       paint(pannedGrid(view.current, delta))
       stopTimer()
       dirty.current = true
-      fits.current = false
     },
     panEnd: () => {
       if (dirty.current) settle()

@@ -47,21 +47,21 @@ test("several selected slides travel together in deck order, and the drag shows 
   await expect(entry(page, 6)).toHaveAttribute("aria-label", /selected$/)
 })
 
-test("Escape mid-drag and a drop outside the canvas put every slide back and send no move", async ({
-  page,
-  context,
-  stack,
-}) => {
+test("escape, outside, and empty releases put every slide back and send no move", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, 8)
   const moves = moveRequests(page)
-  for (const cancel of ["Escape", "outside"]) {
+  for (const cancel of ["Escape", "outside", "empty"]) {
     await grab(page, 1)
     await hover(page, 3, 0.8)
     await expect
       .poll(async () => card(page, 2).evaluate((element) => getComputedStyle(element).transform))
       .not.toBe("none")
     if (cancel === "Escape") await page.keyboard.press("Escape")
-    else await page.mouse.move(700, 30, { steps: 4 })
+    else if (cancel === "outside") await page.mouse.move(700, 30, { steps: 4 })
+    else {
+      const room = await roomOf(page)
+      await page.mouse.move(room.x + room.width - 60, room.y + room.height - 60)
+    }
     await expect(page.locator("[data-drop-bar]")).toBeHidden()
     await expect.poll(async () => card(page, 2).evaluate((element) => getComputedStyle(element).transform)).toBe("none")
     await page.mouse.up()
@@ -236,3 +236,31 @@ for (const [percent, placement] of [
     await expect.poll(saved.order).toEqual(picked(saved.ids, [2, 1, 3, 4]))
   })
 }
+
+test("releasing selected slides on empty canvas clears the drop and saves nothing", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const saved = await openSaved(page, context, stack, 7)
+  const moves = moveRequests(page)
+  const number = page.locator("[data-slide-number]")
+  await number.nth(0).click()
+  await number.nth(2).click({ modifiers: ["ControlOrMeta"] })
+  const from = await number.first().boundingBox()
+  const to = await boxOf(page, 6)
+  if (from === null) throw new Error("slide number")
+  await page.mouse.move(from.x + 4, from.y + 8)
+  await page.mouse.down()
+  await page.mouse.move(to.x + to.width * 0.2, to.y + to.height * 0.5, { steps: 15 })
+  const bar = page.locator("[data-drop-bar]")
+  await expect(bar).toBeVisible()
+  const room = await roomOf(page)
+  await page.mouse.move(1380, room.height + 37, { steps: 15 })
+  const cleared = await bar.isHidden()
+  await page.mouse.up()
+  await expect(page.locator("[data-drag-ghost]")).toHaveCount(0)
+  expect.soft(cleared).toBe(true)
+  expect.soft(moves()).toBe(0)
+  expect(await saved.order()).toEqual(saved.ids)
+})
