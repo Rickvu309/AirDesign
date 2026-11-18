@@ -63,7 +63,7 @@ const focus = record({ l: fraction, t: fraction, r: fraction, b: fraction })
 
 const stop = record({ pos: fraction, color })
 
-const gradient = record({
+export const gradient = record({
   stops: list(stop, 2, 10),
   shade: union({
     linear: record({ angle, scaled: flag }),

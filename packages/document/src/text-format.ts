@@ -36,6 +36,7 @@ export function sameFormats(left: TextRun, right: TextRun): boolean {
     left.size === right.size &&
     left.font === right.font &&
     left.letterSpacing === right.letterSpacing &&
+    JSON.stringify(left.fill) === JSON.stringify(right.fill) &&
     sameColor(left.color, right.color)
   )
 }
@@ -174,7 +175,7 @@ function setSize(run: TextRun, paragraphFrom: number, size: number, file: FileSi
 }
 
 function setColor(run: TextRun, paragraphFrom: number, color: Color, file: FileColor): TextRun {
-  const { color: _dropped, ...rest } = run
+  const { color: _dropped, fill: _fill, ...rest } = run
   return sameColor(color, file(paragraphFrom, run.from)) ? rest : { ...rest, color }
 }
 

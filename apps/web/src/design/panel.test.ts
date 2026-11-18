@@ -143,7 +143,7 @@ it("shows an untouched text box's painted size, font and spacing as inherited", 
   const controls = shownControls({ ...shape, value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello" }] }]) })
   expect(controls["text.size"]).toEqual([1800, true])
   expect(controls["text.font"]).toEqual(["Arial", true])
-  expect(controls["text.color"]).toEqual([{ scheme: "tx1" }, true])
+  expect(controls["textFill.value"]).toEqual([{ solid: { scheme: "tx1" } }, true])
   expect(controls["text.align"]).toEqual(["left", true])
   expect(controls["text.lineSpacing"]).toEqual([100_000, true])
   expect(controls["text.spaceBefore"]).toEqual([0, true])
@@ -226,7 +226,11 @@ it("leaves Flip to the route of a connector that is bound to a shape", () => {
 
 function filled(node: string, fill: unknown, x: number) {
   const view = { ...shape, node: elementId(node), value: "", box: { x, y: 0, cx: 914_400, cy: 914_400 } }
-  return panelOf(view, { reads: {}, moves: true, fields: { "fill.value": { value: fill, own: true } } })
+  return panelOf(view, {
+    reads: {},
+    moves: true,
+    fields: { "geometry.shape": { value: { preset: "ellipse" }, own: true }, "fill.value": { value: fill, own: true } },
+  })
 }
 
 it("reads Mixed where two shapes differ and sets the fill of both in one change", () => {
@@ -315,7 +319,6 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["lineSpacing", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
-    ["color"],
     ["spaceBefore", "spaceAfter"],
   ])
   expect(text?.strips[0]?.[0]?.look.name).toEqual({ show: "hidden" })
@@ -475,4 +478,21 @@ it("shows a template font's family while retaining its native token and matching
   expect(
     controls.find((control) => control.field === "weight")?.choices?.some((choice) => choice.value === "Lato Light"),
   ).toBe(true)
+})
+
+it("routes a text box's Fill to its letters and keeps its box fill folded", () => {
+  const panel = panelOf(shape, { reads: {}, moves: true })
+  const fill = panel.sections.find((section) => section.trait === "textFill")?.strips.flat()[0]
+  expect(fill?.desc).toMatchObject({ kind: "union", cases: { solid: { kind: "color" }, gradient: { kind: "record" } } })
+  expect(fill?.change({ solid: { scheme: "accent1" } })).toEqual({
+    target: { node: shape.node },
+    text: { fill: { solid: { scheme: "accent1" } } },
+  })
+  expect(panel.sections.find((section) => section.trait === "boxFill")).toMatchObject({ open: false })
+  expect(
+    panel.sections
+      .find((section) => section.trait === "text")
+      ?.strips.flat()
+      .some((control) => control.field === "fill" || control.field === "color"),
+  ).toBe(false)
 })

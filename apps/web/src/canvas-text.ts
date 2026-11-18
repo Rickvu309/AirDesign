@@ -1,5 +1,7 @@
 import type { PaintParagraph, PaintRunStyle, PaintText } from "@airdesign/pptx"
 import type { CanvasParagraph, CanvasRunStyle, CanvasText } from "@airdesign/render"
+import type { PictureSource } from "@/picture-fill"
+import { pictureLayer } from "@/picture-fill"
 import { cssColor } from "@/paint-css"
 
 const emuPerPoint = 12_700
@@ -29,8 +31,12 @@ function canvasBullet(bullet: PaintParagraph["bullet"]) {
     : { autoNumber: bullet.autoNumber, number: bullet.number, start: bullet.start, ...look }
 }
 
-function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
+function runStyle(run: PaintRunStyle, scale: number, src: PictureSource): CanvasRunStyle {
+  const url = run.picture === undefined ? null : src(run.picture)
+  const picture = run.picture === undefined || url === null ? null : pictureLayer(run.picture, url)
   return {
+    ...(picture === null ? {} : { picture }),
+    ...(run.fill === undefined ? {} : { fill: run.fill }),
     font: run.font,
     size: run.size * emuPerPoint * scale,
     points: Math.round(run.size * 100),
@@ -46,7 +52,12 @@ function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
   }
 }
 
-function canvasParagraph(paragraph: PaintParagraph, scale: number, reduction: number): CanvasParagraph {
+function canvasParagraph(
+  paragraph: PaintParagraph,
+  scale: number,
+  reduction: number,
+  src: PictureSource,
+): CanvasParagraph {
   return {
     from: paragraph.from,
     ...(paragraph.level === 0 ? {} : { level: paragraph.level }),
@@ -57,8 +68,8 @@ function canvasParagraph(paragraph: PaintParagraph, scale: number, reduction: nu
     spaceBefore: spacingOf(paragraph.spaceBefore),
     spaceAfter: spacingOf(paragraph.spaceAfter),
     bullet: canvasBullet(paragraph.bullet),
-    runs: paragraph.runs.map((run) => ({ from: run.from, text: run.text, ...runStyle(run, scale) })),
-    endStyle: runStyle(paragraph.endStyle, scale),
+    runs: paragraph.runs.map((run) => ({ from: run.from, text: run.text, ...runStyle(run, scale, src) })),
+    endStyle: runStyle(paragraph.endStyle, scale, src),
   }
 }
 
@@ -67,12 +78,14 @@ function fitOf(text: PaintText): Pick<CanvasText, "fit"> {
   return text.fit === "grow" ? { fit: { kind: "grow" } } : {}
 }
 
-export function canvasText(text: PaintText | null): CanvasText | null {
+export function canvasText(text: PaintText | null, src: PictureSource = () => null): CanvasText | null {
   if (text === null) return null
   return {
     ...fitOf(text),
     ...(text.fonts === undefined ? {} : { fonts: text.fonts }),
-    paragraphs: text.paragraphs.map((paragraph) => canvasParagraph(paragraph, text.fontScale, text.spacingReduction)),
+    paragraphs: text.paragraphs.map((paragraph) =>
+      canvasParagraph(paragraph, text.fontScale, text.spacingReduction, src),
+    ),
     anchor: text.anchor,
     insets: text.insets,
     wrap: text.wrap,

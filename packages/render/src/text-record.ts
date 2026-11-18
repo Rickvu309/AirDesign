@@ -1,4 +1,4 @@
-import type { SchemeName } from "@airdesign/document"
+import type { TextFill, SchemeName } from "@airdesign/document"
 
 export type CanvasFit =
   | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number; readonly held?: true }
@@ -15,6 +15,8 @@ export type CanvasBullet = {
 } & ({ readonly char: string } | { readonly autoNumber: string; readonly number: number; readonly start?: number })
 
 export type CanvasRunStyle = {
+  readonly picture?: string
+  readonly fill?: TextFill
   readonly font: string | null
   readonly size: number
   readonly points?: number
