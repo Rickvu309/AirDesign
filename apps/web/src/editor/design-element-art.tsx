@@ -19,7 +19,7 @@ const sampleColors = {
 } as const
 
 const palette: Palette = {
-  theme: Object.entries(sampleColors).map(([scheme, css]) => ({
+  templateColors: Object.entries(sampleColors).map(([scheme, css]) => ({
     scheme: scheme as keyof typeof sampleColors,
     css,
     name: formatCopy.colors[scheme as keyof typeof sampleColors],

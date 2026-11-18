@@ -11,9 +11,8 @@ import { identityControls } from "./trait-controls-identity"
 import { linkControls } from "./trait-controls-link"
 import { notesControls } from "./trait-controls-notes"
 import { textControls } from "./trait-controls-text"
-import { designCopy } from "@/copy/design-copy"
 import { transitionCopy } from "@/copy/transition-copy"
-import { themeControls } from "./trait-controls-theme"
+import { templateStyleControls } from "./trait-controls-template-style"
 
 export type FieldCopy = {
   readonly label: string
@@ -37,8 +36,7 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   connection: connectionControls,
   table: { fields: {} },
   notes: notesControls,
-  theme: themeControls,
-  template: { section: designCopy.templateStyle, fields: { id: { label: designCopy.templateStyle } } },
+  templateStyle: templateStyleControls,
   show: { section: slideListCopy.listName, fields: { skipped: { label: slideListCopy.skip } } },
   transition: { section: transitionCopy.transition, fields: { value: { label: transitionCopy.style } } },
 }

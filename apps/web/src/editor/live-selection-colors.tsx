@@ -16,7 +16,7 @@ import { shownHex } from "@/design/color-choices"
 import { replaceSelectionColor, type ColorSource } from "@/design/selection-colors"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown } from "@/design-shown"
-import { fieldsOf, readsOf, themeAt, usePalette, type DesigningDeck } from "./live-design-panel"
+import { fieldsOf, readsOf, templateColorsAt, usePalette, type DesigningDeck } from "./live-design-panel"
 import { SelectionColorsSection } from "./selection-colors-section"
 
 function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonly ColorSource[] {
@@ -64,7 +64,7 @@ function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonl
         const color = painted?.paragraphs[paragraph]?.runs[run]?.color
         if (color == null) return undefined
         const nominal =
-          shownHex(textColor, themeAt(parts, shown.current)) === color.hex.toUpperCase()
+          shownHex(textColor, templateColorsAt(parts, shown.current)) === color.hex.toUpperCase()
             ? textColor
             : { rgb: color.hex.toUpperCase() }
         return fadedColor(nominal, Math.round(color.alpha * 100000))

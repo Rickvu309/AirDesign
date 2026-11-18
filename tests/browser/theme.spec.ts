@@ -1,6 +1,6 @@
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { themeCopy } from "../../apps/web/src/copy/theme-copy"
+import { templateStyleCopy } from "../../apps/web/src/copy/template-style-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -28,7 +28,7 @@ async function themePanel(page: Page, index?: number): Promise<Locator> {
       .nth(index + 1)
       .click()
   }
-  const theme = page.locator("[data-design-theme]")
+  const theme = page.locator("[data-template-style]")
   await expect(theme).toBeVisible()
   return theme
 }
@@ -58,40 +58,48 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   const oval = painted(page, "ppt/slides/slide8.xml#7")
   await expect(oval).toBeVisible()
   const ovalBefore = await oval.innerHTML()
-  await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
+  await typeColor(
+    page,
+    theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true }),
+    colorCopy.hexName(red),
+  )
   await expect.poll(() => oval.innerHTML()).not.toBe(ovalBefore)
-  await expect(theme.getByRole("button", { name: themeCopy.accent1, exact: true })).toHaveAttribute(
+  await expect(theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true })).toHaveAttribute(
     "title",
     new RegExp(colorCopy.hexName(red), "i"),
   )
 
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   theme = await themePanel(page, 0)
-  await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
+  await typeColor(
+    page,
+    theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true }),
+    colorCopy.hexName(red),
+  )
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   await entry(page, 1).click()
   theme = await themePanel(page, 0)
   const title = painted(page, "ppt/slides/slide1.xml#2")
   await expect.poll(() => fonts(title)).toContain("Calibri Light")
-  const heading = theme.getByRole("textbox", { name: themeCopy.major, exact: true })
+  const heading = theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })
   await expect(heading).toHaveValue("Calibri Light")
   await heading.fill("Georgia")
   await heading.press("Enter")
   await expect.poll(() => fonts(title)).toContain("Georgia")
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
-  await page.getByRole("button", { name: undoCopy.undoNamed["theme-font"], exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["template-font"], exact: true }).click()
   await expect.poll(() => fonts(title)).not.toContain("Georgia")
   theme = await themePanel(page)
   await expect(heading).toHaveValue("Calibri Light")
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
-  await page.getByRole("button", { name: undoCopy.redoNamed["theme-font"], exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["template-font"], exact: true }).click()
   await expect.poll(() => fonts(title)).toContain("Georgia")
 
   await page.reload()
   await settled(page)
   theme = await themePanel(page)
-  await expect(theme.getByRole("textbox", { name: themeCopy.major, exact: true })).toHaveValue("Georgia")
-  await expect(theme.getByRole("button", { name: themeCopy.accent1, exact: true })).toHaveAttribute(
+  await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
+  await expect(theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true })).toHaveAttribute(
     "title",
     new RegExp(colorCopy.hexName(red), "i"),
   )
@@ -99,8 +107,8 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
 
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   theme = await themePanel(page, 1)
-  await theme.getByRole("textbox", { name: themeCopy.major, exact: true }).fill("Georgia")
-  await theme.getByRole("textbox", { name: themeCopy.major, exact: true }).press("Enter")
+  await theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true }).fill("Georgia")
+  await theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true }).press("Enter")
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -124,8 +132,8 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   theme = await themePanel(page)
-  await expect(theme.getByRole("textbox", { name: themeCopy.major, exact: true })).toHaveValue("Georgia")
-  await expect(theme.getByRole("button", { name: themeCopy.accent1, exact: true })).toHaveAttribute(
+  await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
+  await expect(theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true })).toHaveAttribute(
     "title",
     new RegExp(colorCopy.hexName(red), "i"),
   )
@@ -136,7 +144,11 @@ test("a shape filled with accent 1 shows the theme's new accent 1 in its fill sw
 }) => {
   await openDeck(page, "clean.pptx")
   const theme = await themePanel(page)
-  await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
+  await typeColor(
+    page,
+    theme.getByRole("button", { name: templateStyleCopy.accent1, exact: true }),
+    colorCopy.hexName(red),
+  )
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const shape = painted(page, "ppt/slides/slide1.xml#2")
   const fill = await boxFillPanel(page, shape)

@@ -28,7 +28,7 @@ it.each([
       },
     })
     const html = renderToStaticMarkup(
-      createElement(ToggleControl, { control, palette: { theme: [], deck: [] }, onChange: () => {} }),
+      createElement(ToggleControl, { control, palette: { templateColors: [], deck: [] }, onChange: () => {} }),
     )
     expect(html).toContain(`title="${label}"`)
     expect(html).toContain(`class="sr-only">${label}</span>`)

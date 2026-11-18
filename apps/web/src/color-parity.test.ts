@@ -13,7 +13,7 @@ import {
 import { exportParts, themeSwatches } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { formatCopy } from "./copy/format-copy"
-import { themeColumns, typedColor, type Swatch } from "./design/color-choices"
+import { templateColorColumns, typedColor, type Swatch } from "./design/color-choices"
 import { ensureMarkup } from "./markup"
 import { deckParts, indexed, painted, panelRegister, placed, type At, type Parts } from "./parity-probe"
 import { probes } from "./trait-probes"
@@ -65,15 +65,15 @@ function recolored(value: unknown, color: Color): unknown {
   return Object.fromEntries(Object.entries(value).map(([key, each]) => [key, recolored(each, color)]))
 }
 
-function personColors(theme: readonly Swatch[]): Readonly<Record<string, Color | null>> {
-  const columns = themeColumns(theme)
+function personColors(templateColors: readonly Swatch[]): Readonly<Record<string, Color | null>> {
+  const columns = templateColorColumns(templateColors)
   const accent = columns.find((column) => "scheme" in column.swatch.color && column.swatch.color.scheme === "accent1")
   const tinted = columns
     .flatMap((column) => column.shades)
     .find((shade) => shade.color.transforms?.some((each) => each.op === "lumOff") === true)
   return {
-    "theme slot": accent?.swatch.color ?? null,
-    "theme tint": tinted?.color ?? null,
+    "template color": accent?.swatch.color ?? null,
+    "template tint": tinted?.color ?? null,
     hex: typedColor(`${hash}1F4E79`),
   }
 }
@@ -103,11 +103,11 @@ async function landings(): Promise<readonly Landed[]> {
       const on = probe.fields[field]?.on ?? probe
       const parts = await deckParts(on.deck)
       const at = placed(parts, on.kind, on.node)
-      const theme = themeSwatches(parts, at.part).map((swatch) => ({
+      const templateColors = themeSwatches(parts, at.part).map((swatch) => ({
         ...swatch,
         name: formatCopy.colors[swatch.scheme],
       }))
-      for (const [name, color] of Object.entries(personColors(theme))) {
+      for (const [name, color] of Object.entries(personColors(templateColors))) {
         const value = read.ok && color !== null ? recolored(read.value, color) : undefined
         const register = value === undefined ? null : panelRegister(indexed(parts), at, trait, field, value, parts)
         const exported = register === null ? null : exportParts(parts, register)
@@ -132,14 +132,14 @@ beforeAll(async () => {
 }, 120_000)
 
 describe("a person reaches every colour an agent can send", () => {
-  it("lands a theme slot, a theme tint and a hex colour from the picker in every colour field", () => {
+  it("lands a template color, a template tint and a hex colour from the picker in every colour field", () => {
     expect(found.length).toBeGreaterThanOrEqual(15)
     expect(found.filter((each) => !each.landed)).toEqual([])
   })
 
-  it("offers a tint written as the slot with lumMod and lumOff, so it follows a theme change", () => {
-    const theme = [{ scheme: "accent1", css: "4472C4", name: "Accent 1" }] as const
-    expect(personColors(theme)["theme tint"]).toEqual({
+  it("offers a tint written as the slot with lumMod and lumOff, so it follows a template color change", () => {
+    const templateColors = [{ scheme: "accent1", css: "4472C4", name: "Accent 1" }] as const
+    expect(personColors(templateColors)["template tint"]).toEqual({
       scheme: "accent1",
       transforms: [
         { op: "lumMod", val: 20_000 },

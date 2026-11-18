@@ -90,7 +90,7 @@ export function CustomColor({
   palette: Palette
   onPick: (color: Color) => void
 }) {
-  const start = value === undefined ? "FFFFFF" : shownHex(value, palette.theme)
+  const start = value === undefined ? "FFFFFF" : shownHex(value, palette.templateColors)
   const [hsv, setHsv] = useState<Hsv>(() => hsvOf(start))
   const [alpha, setAlpha] = useState(() => (value === undefined ? opaque : alphaOf(value)))
   const [typed, setTyped] = useState<string | null>(null)

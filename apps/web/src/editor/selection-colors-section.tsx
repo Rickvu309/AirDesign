@@ -32,7 +32,12 @@ export function SelectionColorsSection({
             onPick={(picked) => onPick(hex, picked)}
             trigger={<Button type="button" variant="ghost" aria-labelledby={`${id}-${hex}`} className={fieldLook} />}
           >
-            <ColorField id={`${id}-${hex}`} css={`#${hex}`} name={shownName(color, palette.theme)} disclosure={false} />
+            <ColorField
+              id={`${id}-${hex}`}
+              css={`#${hex}`}
+              name={shownName(color, palette.templateColors)}
+              disclosure={false}
+            />
           </ColorPicker>
         ))}
       </div>

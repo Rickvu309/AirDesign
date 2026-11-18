@@ -39,9 +39,9 @@ const openings = new WeakMap<Parts, ReturnType<typeof indexPackage>>()
 function indexed(parts: Parts, register: Register): Register {
   const opening = openings.get(parts) ?? indexPackage(parts)
   openings.set(parts, opening)
-  const stored = register.index?.templates
-  const fresh = opening.templates ?? []
-  const templates =
+  const stored = register.index?.templateStyles
+  const fresh = opening.templateStyles ?? []
+  const templateStyles =
     stored === undefined
       ? undefined
       : [
@@ -54,7 +54,7 @@ function indexed(parts: Parts, register: Register): Register {
       ...opening,
       total: opening.elements.length,
       pages: [],
-      ...(templates === undefined ? {} : { templates }),
+      ...(templateStyles === undefined ? {} : { templateStyles }),
     },
   }
 }
@@ -143,14 +143,14 @@ function rowName(node: ElementId, row: Row): UndoName {
   if (row.patch.show?.skipped !== undefined)
     return typeof row.patch.show.skipped === "object" && row.patch.show.skipped.set ? "skip-slide" : "unskip-slide"
   if (row.patch.transition !== undefined) return "transition"
-  if (row.patch.template !== undefined) return "template"
-  if (slideKind(node) === "slide") return "background"
-  const theme = row.patch.theme
-  if (theme !== undefined) {
-    const names = Object.keys(theme)
+  const style = row.patch.templateStyle
+  if (style !== undefined) {
+    const names = Object.keys(style)
+    if (names.length === 1 && names[0] === "id") return "template"
     if (names.length === 1 && names[0] === "textStyle") return "text-style"
-    return theme.major === undefined && theme.minor === undefined ? "theme-color" : "theme-font"
+    return style.major === undefined && style.minor === undefined ? "template-color" : "template-font"
   }
+  if (slideKind(node) === "slide") return "background"
   if (faded(row)) return "opacity"
   if (row.patch.connection !== undefined) return "connector"
   const box = row.patch.box

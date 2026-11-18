@@ -53,8 +53,8 @@ export function ColorControl({ control, palette, onChange }: ControlProps) {
   const shown = held === null || held === undefined ? undefined : fadedColor(held, opaque)
   const carried = alphaKeys.some((key) => key.startsWith(`${control.trait}.`)) || shown === undefined
   const picked = (color: Color) => (carried ? color : fadedColor(color, alphaOf(held ?? color)))
-  const css = shown === undefined ? null : `#${shownHex(shown, palette.theme)}`
-  const name = control.mixed ? designCopy.mixed : shown === undefined ? "" : shownName(shown, palette.theme)
+  const css = shown === undefined ? null : `#${shownHex(shown, palette.templateColors)}`
+  const name = control.mixed ? designCopy.mixed : shown === undefined ? "" : shownName(shown, palette.templateColors)
   return (
     <div
       role="group"

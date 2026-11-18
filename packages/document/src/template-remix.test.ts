@@ -3,7 +3,7 @@ import { cycledColor, presentSlots } from "./template-remix.js"
 
 const present = presentSlots({ dk1: "111111", lt1: "EEEEEE", accent1: "AA0000", accent2: "00AA00", folHlink: "770077" })
 
-it("rotates a theme colour one step through the slots the template actually has", () => {
+it("rotates a template color one step through the slots the template style actually has", () => {
   expect(present).toEqual(["dk1", "lt1", "accent1", "accent2", "folHlink"])
   expect(cycledColor({ scheme: "accent1" }, present, {})).toEqual({ scheme: "accent2" })
   expect(cycledColor({ scheme: "folHlink" }, present, {})).toEqual({ scheme: "dk1" })

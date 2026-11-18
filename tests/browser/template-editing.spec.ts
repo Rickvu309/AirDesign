@@ -16,7 +16,7 @@ const coral = "ff6600"
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 function themeDialog(page: Page): Locator {
-  return page.locator("[data-design-theme]")
+  return page.locator("[data-template-style]")
 }
 
 async function paint(page: Page): Promise<string> {

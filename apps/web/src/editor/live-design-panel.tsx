@@ -62,7 +62,7 @@ import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { fillSlotFields } from "@/design/fill-slots"
 import { deviceScope } from "@/design/trait-edit"
-import { designShown, themeOf, type DesignShown } from "@/design-shown"
+import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
 import { SlideSurface } from "@/editor/slide-design-tabs"
 import { colorsIn } from "./deck-colors"
 import { ElementTitleActions } from "./element-title-actions"
@@ -172,9 +172,9 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
   }
 }
 
-export function themeAt(parts: Parts, index: number): readonly Swatch[] {
+export function templateColorsAt(parts: Parts, index: number): readonly Swatch[] {
   const part = readSlides(parts)[index]?.part
-  return part === undefined ? [] : themeOf(parts, part)
+  return part === undefined ? [] : templateColorsOf(parts, part)
 }
 
 function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly NodeChoice[] {
@@ -236,8 +236,8 @@ export function usePalette(deck: DesigningDeck): Palette {
   const { shown } = deck
   const { current } = shown
   const display = shown.displayParts.current
-  const theme = useMemo(() => themeAt(display, current), [display, current])
-  return { theme, deck: colorsIn(display) }
+  const templateColors = useMemo(() => templateColorsAt(display, current), [display, current])
+  return { templateColors, deck: colorsIn(display) }
 }
 
 function toneHead(deck: DesigningDeck, selection: readonly ElementId[], toneFor?: ToneControlFor) {
@@ -502,14 +502,14 @@ function SlideBackground({
     <DesignSection title={designCopy.background}>
       <UnionControl
         control={control}
-        palette={{ theme: shown.theme, deck }}
+        palette={{ templateColors: shown.templateColors, deck }}
         onChange={(value) => onFill(value as Paint)}
         inner={(props) =>
           props.control.field === "paint.solid" ? (
             <ColorPicker
               title={designCopy.background}
               value={background.value}
-              palette={{ theme: shown.theme, deck }}
+              palette={{ templateColors: shown.templateColors, deck }}
               onPick={(solid) => onFill({ solid })}
               trigger={
                 <Button

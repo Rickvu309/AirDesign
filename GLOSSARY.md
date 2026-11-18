@@ -107,12 +107,16 @@ The distance from one line of text to the next, in percent of PowerPoint's singl
 _Avoid_: line spacing
 
 **template style**:
-The look a slide takes: its template colors, heading and body fonts and text styles. Anything that names a template color or font follows its changes, including shapes, lines, text, backgrounds and tables. In a PowerPoint file it is a master with its theme, and the code still says theme (`theme`, `deck.theme`) until its rename lands.
+The look a slide takes: its template colors, heading and body fonts and text styles. The code stores the trait `templateStyle`. `deck.templateStyles` sets every template style and `deck.templateStyleN` sets one. A slide's `templateStyle.id` chooses one. A deck or an agent that still says `theme` or `template`, or addresses `deck.theme` or `deck.templateN`, is read as this.
 _Avoid_: theme, palette, color scheme
 
 **template colors**:
-The twelve colors of a template style, each named by its PowerPoint slot, such as Dark 1 or Accent 1. The code still calls them theme colors until the rename lands.
+The twelve colors of a template style, each named by its PowerPoint slot, such as Dark 1 or Accent 1.
 _Avoid_: theme colors, palette
+
+**template fonts**:
+The heading font and the body font of a template style, stored as `major` and `minor`.
+_Avoid_: theme fonts
 
 **color picker**:
 Where a person picks any color a field takes: a fill, border, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
@@ -195,11 +199,11 @@ One thing on a slide: a shape, connector, group, table, chart, or a kept part of
 _Avoid_: object, item, widget
 
 **node**:
-Anything an edit can address that holds its own rows: an element, a slide's own node `<slide>.slide`, a slide's notes `<slide>.notes`, or the theme, `deck.theme`. An element's id, such as `258.7`, is its node. The code says `node`; the tool texts say "layer id" for the same string.
+Anything an edit can address that holds its own rows: an element, a slide's own node `<slide>.slide`, a slide's notes `<slide>.notes`, or the template styles, `deck.templateStyles`. An element's id, such as `258.7`, is its node. The code says `node`; the tool texts say "layer id" for the same string.
 _Avoid_: entity, object, item
 
 **trait**:
-A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `border`, `effects`, `body`, `text`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
+A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `border`, `effects`, `body`, `text`, `connection`, `table`, `notes` and `templateStyle`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
 
 **fills**:
@@ -277,7 +281,7 @@ One item in an edit's `changes`. Its `op` names it: `set`, `add`, `diagram`, `gr
 _Avoid_: action, command (a command is what the server orders), operation
 
 **set**:
-The change that sets fields on every node its `target` names: an element id, a slide id, `<slide>.<role>`, `*.<role>` or `deck.theme`. Each field it sends becomes a row, and `null` sends it back to inherit. It lands on every node it names or on none.
+The change that sets fields on every node its `target` names: an element id, a slide id, `<slide>.<role>`, `*.<role>` or `deck.templateStyles`. Each field it sends becomes a row, and `null` sends it back to inherit. It lands on every node it names or on none.
 _Avoid_: update, modify, write
 
 **add**:

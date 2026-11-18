@@ -99,7 +99,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     design("box"),
     design("effects"),
   ],
-  slide: [slides("templateStyle"), slides("background"), slides("selectionColors"), design("theme", true)],
+  slide: [slides("templateStyle"), slides("background"), slides("selectionColors")],
 }
 
 export function panelPlaces(

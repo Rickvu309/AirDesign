@@ -36,8 +36,8 @@ function percentOf(stored: number): number {
   return Math.round(stored / 1_000)
 }
 
-function cssOf(color: Color, theme: ControlProps["palette"]["theme"]): string {
-  const hex = shownHex(color, theme)
+function cssOf(color: Color, templateColors: ControlProps["palette"]["templateColors"]): string {
+  const hex = shownHex(color, templateColors)
   const alpha = Math.round((alphaOf(color) / 100_000) * 255)
   return alpha >= 255 ? `#${hex}` : `#${hex}${alpha.toString(16).padStart(2, "0")}`
 }
@@ -100,7 +100,7 @@ export function OverlayControl({ control, palette, onChange }: ControlProps) {
           aria-hidden
           data-overlay-swatch
           className="size-3.5 shrink-0 rounded-[var(--shape-swatch)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
-          style={color === null ? checker : { background: cssOf(color, palette.theme) }}
+          style={color === null ? checker : { background: cssOf(color, palette.templateColors) }}
         />
         <span className="whitespace-nowrap">{control.label}</span>
         <EditorIcon name="chev" size={12} className="ml-auto size-3 shrink-0 text-quiet" />

@@ -11,7 +11,7 @@ import type { PanelControl } from "@/design/panel"
 import { NumberField } from "./number"
 import { PercentControl } from "./percent"
 
-const palette = { theme: [], deck: [] }
+const palette = { templateColors: [], deck: [] }
 
 function percent(value: number, extra: Partial<PanelControl["look"]>): PanelControl {
   const control = resolveControl({

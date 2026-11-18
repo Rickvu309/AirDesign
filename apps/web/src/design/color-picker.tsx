@@ -7,7 +7,7 @@ import {
   deckChoices,
   hexOf,
   matches,
-  themeColumns,
+  templateColorColumns,
   tintChoices,
   type Choice,
   type Palette,
@@ -162,7 +162,7 @@ export function PickerBody({
   title,
   value,
   palette,
-  theme = true,
+  showTemplateColors = true,
   picking = false,
   onPick,
   onSwatch,
@@ -173,7 +173,7 @@ export function PickerBody({
   title: string
   value: Color | undefined
   palette: Palette
-  theme?: boolean
+  showTemplateColors?: boolean
   picking?: boolean
   onPick: (color: Color) => void
   onSwatch?: () => void
@@ -187,17 +187,17 @@ export function PickerBody({
     onPick(color)
     onSwatch?.()
   }
-  const bases = themeColumns(palette.theme).map((column) => column.swatch)
+  const bases = templateColorColumns(palette.templateColors).map((column) => column.swatch)
   const heldBase = value === undefined ? -1 : bases.findIndex((choice) => matches(choice.color, value))
   const deck = deckChoices(palette)
   const heldDeck = value === undefined ? -1 : deck.findIndex((choice) => matches(choice.color, value))
   const deckShown = visibleChoices(deck, heldDeck, moreOthers, otherLimit - 1)
   const deckPressed = deckShown.findIndex((choice) => value !== undefined && matches(choice.color, value))
-  const tints = tintChoices(palette.theme, value)
+  const tints = tintChoices(palette.templateColors, value)
   const heldTint = value === undefined ? -1 : tints.findIndex((choice) => matches(choice.color, value))
   const tintShown = visibleChoices(tints, heldTint, moreTints, tintLimit)
   const deckFocus = deckPressed < 0 ? "0,0" : atOf(deckPressed + 1)
-  const templateShown = theme && bases.length > 0
+  const templateShown = showTemplateColors && bases.length > 0
   return (
     <>
       <Heading
@@ -219,7 +219,7 @@ export function PickerBody({
       {picking ? (
         <>
           <CustomColor value={value} palette={palette} onPick={onPick} />
-          {theme && tintShown.length > 0 ? (
+          {showTemplateColors && tintShown.length > 0 ? (
             <div className="flex flex-col gap-2">
               <span className="text-[length:var(--type-caption)] text-quiet">{colorCopy.tints}</span>
               <ColorGrid
@@ -296,7 +296,7 @@ export function ColorPicker({
   title,
   value,
   palette,
-  theme = true,
+  showTemplateColors = true,
   keepsFormat = false,
   closesOnSwatch = false,
   side = "bottom",
@@ -308,7 +308,7 @@ export function ColorPicker({
   title: string
   value: Color | undefined
   palette: Palette
-  theme?: boolean
+  showTemplateColors?: boolean
   keepsFormat?: boolean
   closesOnSwatch?: boolean
   side?: "top" | "bottom" | "left" | "right"
@@ -340,7 +340,7 @@ export function ColorPicker({
           title={title}
           value={value}
           palette={palette}
-          theme={theme}
+          showTemplateColors={showTemplateColors}
           picking={picking}
           onPick={onPick}
           onAdd={() => setPicking(true)}

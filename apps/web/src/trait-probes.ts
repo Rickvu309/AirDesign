@@ -20,11 +20,10 @@ import {
   shownGeometry,
   shownBorder,
   shownTurn,
-  slideTheme,
 } from "@airdesign/pptx"
 import { element, type At, type Parts, type Probe } from "./parity-probe"
 import { identityProbe, imageProbes } from "./picture-probes"
-import { themeProbe } from "./theme-probe"
+import { templateStyleProbe } from "./template-style-probe"
 
 const borderOpening = {
   fill: "opening",
@@ -148,14 +147,6 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
         shows: (value) => value,
       },
     },
-  },
-  template: {
-    deck: "doe-heat-pumps.pptx",
-    kind: "slide",
-    node: "256.slide",
-    opening: () => ({ v: format, patch: { template: { id: "opening" } } }),
-    edit: (_, __, value) => ({ v: format, patch: { template: { id: { set: value } } } }),
-    fields: { id: { file: (parts, at) => slideTheme(parts, at.part), shows: (value) => value } },
   },
   geometry: {
     deck: "clean.pptx",
@@ -320,5 +311,5 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
       value: { file: grid, shows: gridShown },
     },
   },
-  theme: themeProbe,
+  templateStyle: templateStyleProbe,
 }

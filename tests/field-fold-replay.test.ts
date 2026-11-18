@@ -33,7 +33,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/field-fold/view.mjs"
 import { paint } from "@/deck-paint"
-import { themeOf } from "@/design-shown"
+import { templateColorsOf } from "@/design-shown"
 import { panelOf, type PanelControl, type ShownField } from "@/design/panel"
 import { rebasedChange } from "@/design/rebase"
 import { applyChange, deviceScope, valueFits, type ChangingDeck } from "@/design/trait-edit"
@@ -74,7 +74,7 @@ const personAlpha = 30_000
 const personSize = 4000
 const agentHex = "7030A0"
 const agentAlpha = 45_000
-const themeHex = "00B050"
+const accentHex = "00B050"
 const fileAlpha = 60_000
 const opaque = 100_000
 
@@ -178,7 +178,7 @@ function painted(register: Register) {
   const model = panelOf(element, { reads, moves: false, fields })
   const controls = model.sections.flatMap((section) => section.strips.flat())
   const canvas = shown.canvases(0)?.elements.find((each) => each.id === node)
-  return { display, fields, controls, canvas, theme: themeOf(display, part) }
+  return { display, fields, controls, canvas, templateColors: templateColorsOf(display, part) }
 }
 
 function controlOf(controls: readonly PanelControl[], trait: string, field: string): PanelControl {
@@ -256,8 +256,8 @@ function hexOf(css: string | null | undefined): { readonly hex: string; readonly
   return { hex: (matched[1] ?? "").toUpperCase(), alpha: matched[2] === undefined ? 255 : parseInt(matched[2], 16) }
 }
 
-function swatch(theme: readonly { readonly scheme: string; readonly css: string }[], scheme: string): string {
-  const found = theme.find((each) => each.scheme === scheme)
+function swatch(templateColors: readonly { readonly scheme: string; readonly css: string }[], scheme: string): string {
+  const found = templateColors.find((each) => each.scheme === scheme)
   if (found === undefined) throw new Error(`no ${scheme}`)
   return found.css.replace("#", "").toUpperCase()
 }
@@ -280,11 +280,11 @@ function judged(target: Spec, said: string, failures: string[]) {
   const shown = painted(device)
   const fill = controlOf(shown.controls, "fills", "paint")
   const solid = (fill.value as { readonly solid?: Color } | undefined)?.solid
-  const panelHex = solid === undefined ? null : colorHex(solid, shown.theme).toUpperCase()
-  const fileTheme = themeOf(file, part)
+  const panelHex = solid === undefined ? null : colorHex(solid, shown.templateColors).toUpperCase()
+  const fileColors = templateColorsOf(file, part)
   const wanted: Readonly<Record<string, string>> = {
-    file: swatch(fileTheme, "accent1"),
-    inherited: target.dTheme === 2 ? themeHex : swatch(fileTheme, "accent2"),
+    file: swatch(fileColors, "accent1"),
+    inherited: target.dTheme === 2 ? accentHex : swatch(fileColors, "accent2"),
     person: personColour.rgb,
     agent: agentHex,
   }
@@ -316,7 +316,11 @@ function openedRegister(): Register {
   return opened().register
 }
 
-const theme = { op: "set", target: "deck.theme", theme: { accent2: `#${themeHex}` } }
+const templateColor = {
+  op: "set",
+  target: "deck.templateStyles",
+  templateStyle: { accent2: `#${accentHex}` },
+}
 
 const actions: Record<string, () => Promise<void>> = {
   Reset: () => changed("fills", "paint", null),
@@ -340,7 +344,7 @@ const actions: Record<string, () => Promise<void>> = {
     held.world = { ...world(), server: agentSet(world().server, node, change) }
   },
   AgentTheme: async () => {
-    held.world = { ...world(), server: agentSet(world().server, templateStylesNode, theme) }
+    held.world = { ...world(), server: agentSet(world().server, templateStylesNode, templateColor) }
   },
   Sync: async () => synced(),
 }
@@ -432,7 +436,7 @@ describe("field-fold replay", () => {
     expect(
       await applyChange(changing, [
         { target: { node }, text: { value: recolored }, fills: { paint: { solid: personColour } } },
-        { target: { node: templateStylesNode }, theme: { accent2: "FF0000" } },
+        { target: { node: templateStylesNode }, templateStyle: { accent2: "FF0000" } },
       ]),
     ).toBe(true)
     expect(world().list.undo).toHaveLength(2)

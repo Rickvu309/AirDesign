@@ -241,7 +241,7 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
     }
     return ownHeld(sides[field])
   }
-  if (trait === "geometry" || trait === "theme" || trait === "connection") return ownHeld(undefined)
+  if (trait === "geometry" || trait === "templateStyle" || trait === "connection") return ownHeld(undefined)
   return ownHeld(field === "value" ? (view.value ?? "") : undefined)
 }
 

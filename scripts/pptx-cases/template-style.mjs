@@ -7,7 +7,7 @@ export default {
   specs: ["tests/browser/template-style.spec.ts"],
   exports: [exported],
   renders: [exported],
-  covers: ["template.id", "theme.name"],
+  covers: ["templateStyle.id", "templateStyle.name"],
   lines(answers) {
     const allowed = new Set([
       "[Content_Types].xml",

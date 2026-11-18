@@ -17,9 +17,9 @@ export const templateCopy = {
   deleteTemplateStyle: "Delete template style",
   templateInUse: "This template style is used by a slide.",
   addedColorNote: "Editing an added color does not restyle existing layers.",
-  currentTheme: "Current template style",
-  themeFontsMissing: "Fonts not specified",
-  templateFonts: (heading: string, body: string) => `${heading} / ${body}`,
+  currentTemplateStyle: "Current template style",
+  templateFontsMissing: "Fonts not specified",
+  templateFontLine: (heading: string, body: string) => `${heading} / ${body}`,
   headingFont: (font: string) => `Heading: ${font}`,
   bodyFont: (font: string) => `Body: ${font}`,
 } as const

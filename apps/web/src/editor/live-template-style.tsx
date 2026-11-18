@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
-import { themeCopy } from "@/copy/theme-copy"
+import { templateStyleCopy } from "@/copy/template-style-copy"
 import { ColorPicker } from "@/design/color-picker"
 import { changeDesign } from "@/design/design-change"
 import { panelOf } from "@/design/panel"
@@ -44,7 +44,7 @@ function colorName(colors: readonly ThemeCustomColor[]): string {
 }
 
 function templatePlace(deck: DesigningDeck, id: string, fallback: number): number {
-  const stored = deck.shown.shownRegister.current?.index?.templates
+  const stored = deck.shown.shownRegister.current?.index?.templateStyles
   const found = stored?.findIndex((style) => style.id === id) ?? -1
   return found >= 0 ? found : fallback
 }
@@ -87,7 +87,7 @@ export function LiveTemplateStyle({ deck }: { deck: DesigningDeck }) {
             return id === undefined ? [] : [slideNode(id, "slide")]
           }),
       },
-      template: { id },
+      templateStyle: { id },
     }))
     setChoosing(false)
   }
@@ -137,7 +137,7 @@ export function LiveTemplateStyle({ deck }: { deck: DesigningDeck }) {
                 <TemplateStyleCard
                   style={cardOf(choice)}
                   open={false}
-                  label={choice.name ?? designCopy.currentTheme}
+                  label={choice.name ?? designCopy.currentTemplateStyle}
                   onOpen={() => apply(choice.id)}
                 />
                 <Button
@@ -201,7 +201,7 @@ function TemplateStyleDialog({
   const used = readSlides(parts).some((slide) => slideTheme(parts, slide.part) === style.id)
   const sole = templateStyles(parts).length < 2
   const replaceAdded = (colors: readonly ThemeCustomColor[]) => {
-    changeDesign(deck, () => ({ target: { node }, theme: { custom: colors } }))
+    changeDesign(deck, () => ({ target: { node }, templateStyle: { custom: colors } }))
   }
   const fonts = style.palette.fonts ?? {}
   const edit = useTextStyleEdit()
@@ -210,19 +210,21 @@ function TemplateStyleDialog({
     deck.shown.shownParts.current,
     deck.shown.shownRegister.current ?? openRegister("", ""),
   ).view(node)
-  const fields = Object.fromEntries(Object.entries(fonts).map(([key, value]) => [`theme.${key}`, { value, own: true }]))
+  const fields = Object.fromEntries(
+    Object.entries(fonts).map(([key, value]) => [`templateStyle.${key}`, { value, own: true }]),
+  )
   const section =
     view === undefined
       ? undefined
-      : panelOf(view, { reads: {}, moves: false, fields }).sections.find((section) => section.trait === "theme")
+      : panelOf(view, { reads: {}, moves: false, fields }).sections.find((section) => section.trait === "templateStyle")
   const strips =
     section?.strips.filter((strip) =>
       strip.some((control) => control.field === "major" || control.field === "minor"),
     ) ?? []
   return (
-    <DialogContent data-design-theme>
+    <DialogContent data-template-style>
       <div className="flex items-center gap-2 pr-8">
-        <DialogTitle className="min-w-0 flex-1 truncate">{style.name ?? designCopy.currentTheme}</DialogTitle>
+        <DialogTitle className="min-w-0 flex-1 truncate">{style.name ?? designCopy.currentTemplateStyle}</DialogTitle>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -230,7 +232,7 @@ function TemplateStyleDialog({
           title={used || sole ? designCopy.templateInUse : undefined}
           disabled={used || sole}
           onClick={() => {
-            changeDesign(deck, () => ({ target: { node }, theme: { removed: true } }))
+            changeDesign(deck, () => ({ target: { node }, templateStyle: { removed: true } }))
             onClose()
           }}
         >
@@ -253,7 +255,7 @@ function TemplateStyleDialog({
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               const name = event.currentTarget.value
-              changeDesign(deck, () => ({ target: { node }, theme: { name } }))
+              changeDesign(deck, () => ({ target: { node }, templateStyle: { name } }))
               setRenaming(false)
             }
           }}
@@ -288,21 +290,21 @@ function TemplateStyleDialog({
                 : [
                     <ColorPicker
                       key={slot}
-                      title={themeCopy[slot]}
+                      title={templateStyleCopy[slot]}
                       value={{ rgb: hex }}
-                      palette={{ theme: [], deck: [] }}
-                      theme={false}
+                      palette={{ templateColors: [], deck: [] }}
+                      showTemplateColors={false}
                       onPick={(color) => {
                         if ("rgb" in color)
-                          changeDesign(deck, () => ({ target: { node }, theme: { [slot]: color.rgb } }))
+                          changeDesign(deck, () => ({ target: { node }, templateStyle: { [slot]: color.rgb } }))
                       }}
                       children={null}
                       trigger={
                         <Button
                           variant="outline"
                           className="size-9"
-                          aria-label={themeCopy[slot]}
-                          title={`${themeCopy[slot]} #${hex}`}
+                          aria-label={templateStyleCopy[slot]}
+                          title={`${templateStyleCopy[slot]} #${hex}`}
                           style={{ backgroundColor: `#${hex}` }}
                         />
                       }
@@ -316,8 +318,8 @@ function TemplateStyleDialog({
                     key={color.name}
                     title={color.name}
                     value={{ rgb: color.color }}
-                    palette={{ theme: [], deck: [] }}
-                    theme={false}
+                    palette={{ templateColors: [], deck: [] }}
+                    showTemplateColors={false}
                     onPick={(next) => {
                       if ("rgb" in next)
                         replaceAdded(added.map((each, place) => (place === at ? { ...each, color: next.rgb } : each)))
@@ -338,8 +340,8 @@ function TemplateStyleDialog({
               <ColorPicker
                 title={designCopy.addTemplateColor}
                 value={undefined}
-                palette={{ theme: [], deck: [] }}
-                theme={false}
+                palette={{ templateColors: [], deck: [] }}
+                showTemplateColors={false}
                 onPick={(next) => {
                   if ("rgb" in next) replaceAdded([...added, { name: colorName(added), color: next.rgb }])
                 }}
@@ -358,7 +360,7 @@ function TemplateStyleDialog({
           <h3 className="font-medium">{designCopy.templateFonts}</h3>
           <SectionStrips
             strips={strips}
-            palette={{ theme: [], deck: [] }}
+            palette={{ templateColors: [], deck: [] }}
             onChange={(control, value) => changeDesign(deck, () => rebasedChange(strips.flat(), control, value))}
           />
         </section>

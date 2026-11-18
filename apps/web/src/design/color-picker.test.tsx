@@ -8,7 +8,7 @@ import { PickerBody } from "@/design/color-picker"
 const hash = "#"
 
 const palette: Palette = {
-  theme: [
+  templateColors: [
     { scheme: "dk1", css: "000000", name: "Dark 1" },
     { scheme: "lt1", css: "FFFFFF", name: "Light 1" },
     { scheme: "dk2", css: "000000", name: "Dark 2" },
@@ -33,7 +33,7 @@ function buttons(markup: string): readonly { readonly name: string; readonly pre
 }
 
 describe("the colour list", () => {
-  it("shows the theme colours as plain swatches, then Add color and the deck, with no thirteenth colour and no tint rows", () => {
+  it("shows the template colors as plain swatches, then Add color and the deck, with no thirteenth colour and no tint rows", () => {
     const markup = renderToStaticMarkup(
       <PickerBody title="Fill" value={tint} palette={palette} onPick={() => undefined} />,
     )
@@ -54,7 +54,7 @@ describe("the colour list", () => {
     expect(markup).not.toContain(`aria-label="${colorCopy.hue}"`)
   })
 
-  it("opens Add color onto the picker, where the tint in use is pressed and the theme colours stay out of a hex field", () => {
+  it("opens Add color onto the picker, where the tint in use is pressed and the template colors stay out of a hex field", () => {
     const open = renderToStaticMarkup(
       <PickerBody title="Fill" picking value={tint} palette={palette} onPick={() => undefined} />,
     )
@@ -76,7 +76,7 @@ describe("the colour list", () => {
         title="Accent 1"
         value={{ rgb: "1F4E79" }}
         palette={palette}
-        theme={false}
+        showTemplateColors={false}
         onPick={() => undefined}
       />,
     )
@@ -88,7 +88,7 @@ describe("the colour list", () => {
         picking
         value={{ rgb: "1F4E79" }}
         palette={palette}
-        theme={false}
+        showTemplateColors={false}
         onPick={() => undefined}
       />,
     )
@@ -98,7 +98,7 @@ describe("the colour list", () => {
 
   it("offers a way to show the rest of the deck when one row of swatches is not enough", () => {
     const many: Palette = {
-      theme: palette.theme,
+      templateColors: palette.templateColors,
       deck: Array.from({ length: 20 }, (_, index) => (index + 1).toString(16).padStart(6, "0").toUpperCase()),
     }
     const markup = renderToStaticMarkup(
