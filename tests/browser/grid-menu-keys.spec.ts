@@ -100,6 +100,8 @@ for (const path of ["right", "ContextMenu"] as const) {
     await openFile(page, sectioned)
     await openGrid(page)
     await entry(page, 1).focus()
+    await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")
+    await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
     const before = await gridState(page)
     await page.evaluate(() => {
       const observer = new MutationObserver(() => {
