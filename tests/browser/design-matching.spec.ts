@@ -81,19 +81,31 @@ test("replaces a picture file through the title action and keeps its frame throu
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await picture.click({ position: { x: 8, y: 8 } })
   const frame = await picture.boundingBox()
-  const source = () => picture.evaluate((image) => getComputedStyle(image).backgroundImage)
-  const before = await source()
+  const source = () =>
+    picture.evaluate(async (image) => {
+      const url = /^url\("([^"]+)"\)$/.exec(getComputedStyle(image).backgroundImage)?.[1]
+      if (url === undefined) return null
+      try {
+        return (await (await fetch(url)).blob()).type
+      } catch {
+        return null
+      }
+    })
+  await expect.poll(source).toBe("image/png")
   const file = join(fixtures, "picture.jpeg")
   const panel = page.locator("[data-design-element]")
   const choosing = page.waitForEvent("filechooser")
   await panel.getByRole("button", { name: pictureCopy.replace, exact: true }).click()
   await (await choosing).setFiles(file)
-  await expect.poll(source).not.toBe(before)
+  await expect.poll(source).toBe("image/jpeg")
   expect(await picture.boundingBox()).toEqual(frame)
   await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
+  await expect.poll(source).toBe("image/png")
   await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
+  await expect.poll(source).toBe("image/jpeg")
   await page.reload()
   await settled(page)
+  await expect.poll(source).toBe("image/jpeg")
   const exported = testInfo.outputPath("replaced.pptx")
   await savedExport(page, exported)
   const parts = await partsOf(exported)
