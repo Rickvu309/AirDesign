@@ -4,6 +4,13 @@ export type GridHit = "number" | "blank" | "element" | "text" | "typing"
 
 export type GridPressed = "slide" | "element" | "editor"
 
+export function gridBlank(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest("[data-grid-card], [data-section-head], [data-add-row], [data-row-handle]") === null
+  )
+}
+
 export function gridHit(frames: readonly { key: string; box: GridBox }[], x: number, y: number): string | null {
   return frames.findLast(({ box }) => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)?.key ?? null
 }

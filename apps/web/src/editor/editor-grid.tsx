@@ -20,10 +20,12 @@ import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoo
 import { gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-interaction"
 import { GridThumbnail, useGridViewport } from "@/editor/use-grid-viewport"
 import { useGridEditing } from "@/editor/use-grid-editing"
+import { useGridMarquee } from "@/editor/use-grid-marquee"
+import { useGridMenu } from "@/editor/use-grid-menu"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { focusMove, gridCommand } from "@/editor/editor-grid-keys"
 import { gridSlideActions } from "@/editor/grid-slide-actions"
-import { GridSlideMenu, pointAt, type GridMenu, type MenuAnchor } from "@/editor/grid-menu"
+import { GridSlideMenu, pointAt } from "@/editor/grid-menu"
 import { pickAll, pickedSlides, pickRange, prunedPick } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
 import { useGridSelection } from "@/editor/use-grid-selection"
@@ -90,6 +92,8 @@ export function EditorGrid({
   const [zoom, setZoom] = useKeptGridZoom(id)
   const [fitPercent, setFitPercent] = useState(25)
   const percent = zoom === "fit" ? fitPercent : zoom
+  const scale = percent / 100
+  const hand = pointer?.tool === "hand"
   const fit = gridLayout(100, size ?? wideSlide, strip.count)
   const width = fit.width
   const rows = gridRows(strip)
@@ -103,8 +107,8 @@ export function EditorGrid({
     },
     deck: id,
     world: list,
-    scale: percent / 100,
-    hand: pointer?.tool === "hand",
+    scale,
+    hand,
     working: !presenting,
     onZoom: setZoom,
     onFit: setFitPercent,
@@ -121,7 +125,6 @@ export function EditorGrid({
   }
   const [touch, setTouch] = useState(false)
   const [elementPressed, setElementPressed] = useState(false)
-  const [menu, setMenu] = useState<GridMenu | null>(null)
   const { current, count } = strip
   const picked = prunedPick(gridPick(state), count, strip.slideIds)
   const selected = new Set(gridRinged(state, current, count, strip.slideIds))
@@ -141,6 +144,18 @@ export function EditorGrid({
     [],
   )
   const edit = useGridEditing({ world: list, state, dispatch, current, select, onSelect: strip.onSelect, announce })
+  const slideMenu = useGridMenu({
+    list,
+    rows,
+    picked,
+    selected,
+    step: edit.step,
+    onSelect: strip.onSelect,
+    onStop: setStop,
+    moveSlides,
+  })
+  const { menu } = slideMenu
+  const marquee = useGridMarquee({ list, viewport, edit, strip, state, selection, select, hand, announce })
   useSlideSay(strip.say, announce)
   const order = strip.slideIds?.join(",")
   const starts = strip.gridStarts?.join(",")
@@ -205,13 +220,13 @@ export function EditorGrid({
     onMove: moveSlides,
   })
   const dragging = drag.dragging
-  const scale = percent / 100
   const addBlocked =
     strip.onAdd === undefined ||
     count >= limits.slides ||
     viewport.space ||
-    pointer?.tool === "hand" ||
+    hand ||
     dragging !== null ||
+    marquee.active ||
     elementPressed ||
     edit.editing ||
     menu !== null ||
@@ -262,28 +277,6 @@ export function EditorGrid({
     announce,
   })
 
-  function openMenu(index: number, anchor: MenuAnchor, pointer: boolean) {
-    if (!selected.has(index)) {
-      edit.step({ kind: "pick", pick: null })
-      strip.onSelect(index)
-    }
-    setStop(index)
-    setMenu({ index, anchor, pointer })
-  }
-
-  function closeMenu() {
-    const shown = menu
-    setMenu(null)
-    if (shown === null) return
-    list.current?.querySelector<HTMLElement>(`[data-slide-entry="${shown.index + 1}"]`)?.focus()
-  }
-
-  function moveBelow() {
-    if (menu === null) return
-    const row = rows.find(({ start, end }) => start <= menu.index && menu.index < end)
-    if (row !== undefined) moveSlides(pickedSlides(picked, menu.index), row.end, "new")
-  }
-
   function onGridKey(event: KeyboardEvent<HTMLDivElement>) {
     if (!editorOwnsKey(event)) return
     if (touch) setTouch(false)
@@ -306,7 +299,7 @@ export function EditorGrid({
       const card = document.activeElement?.closest<HTMLElement>("[data-slide-entry]")
       if (card === null || card === undefined) return
       event.preventDefault()
-      openMenu(Number(card.dataset.slideEntry) - 1, card, false)
+      slideMenu.open(Number(card.dataset.slideEntry) - 1, card, false)
       return
     }
     if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "a") {
@@ -355,7 +348,7 @@ export function EditorGrid({
       dragging={drag.held.includes(index)}
       busy={dragging !== null}
       active={edit.editing && index === current && slide !== undefined}
-      scale={percent / 100}
+      scale={scale}
       width={width}
       height={height}
       shift={drag.shift(index)}
@@ -372,7 +365,7 @@ export function EditorGrid({
       onContextMenu={(event) => {
         event.preventDefault()
         event.currentTarget.focus()
-        openMenu(index, pointAt(event.clientX, event.clientY), true)
+        slideMenu.open(index, pointAt(event.clientX, event.clientY), true)
       }}
       rowEnd={rows.some((row) => row.end === index + 1)}
       addBlocked={addBlocked}
@@ -449,9 +442,9 @@ export function EditorGrid({
           canChangeSet={strip.onChangeSet !== undefined}
           canAdd={strip.onAdd !== undefined}
           onAdd={(side) => addSlide(menu.index, side, true)}
-          onMoveBelow={moveBelow}
+          onMoveBelow={slideMenu.moveBelow}
           onAct={act}
-          onClose={closeMenu}
+          onClose={slideMenu.close}
           skipped={strip.skipped}
           onSkip={strip.onSkip}
         />
@@ -461,13 +454,14 @@ export function EditorGrid({
         className={cn(
           "relative min-h-0 flex-1 overflow-hidden touch-none after:pointer-events-none after:absolute after:inset-0 after:content-['']",
           "has-[>[data-focus-edge]:focus-visible]:after:shadow-[inset_0_0_0_var(--focus-ring-width)_var(--focus-ring)]",
-          (pointer?.tool === "hand" || viewport.space) && "cursor-grab active:cursor-grabbing [&_*]:cursor-[inherit]",
+          (hand || viewport.space) && "cursor-grab active:cursor-grabbing [&_*]:cursor-[inherit]",
         )}
+        onPointerDown={marquee.press}
         onClick={(event) => {
           if (event.target instanceof Element && event.target.closest("[data-grid-card]") === null) edit.clear()
         }}
         data-hover-disabled={
-          viewport.space || pointer?.tool === "hand" || dragging !== null || elementPressed ? "true" : undefined
+          viewport.space || hand || dragging !== null || marquee.active || elementPressed ? "true" : undefined
         }
         data-grid-viewport
         data-slide-list
@@ -491,7 +485,7 @@ export function EditorGrid({
             hidden
             data-drop-bar
             className="pointer-events-none absolute top-0 left-0 z-10 rounded-full bg-primary"
-            style={{ width: 4 / (percent / 100), borderRadius: 2 / (percent / 100) }}
+            style={{ width: 4 / scale, borderRadius: 2 / scale }}
           />
           <GridRows
             rows={rows}
@@ -507,7 +501,7 @@ export function EditorGrid({
             addBlocked={addBlocked}
             rowBlocked={
               viewport.space ||
-              pointer?.tool === "hand" ||
+              hand ||
               dragging !== null ||
               elementPressed ||
               edit.editing ||
@@ -518,6 +512,7 @@ export function EditorGrid({
             onAdd={(index) => addSlide(index, "new", true)}
           />
         </div>
+        {marquee.box}
       </div>
       <div className="flex shrink-0 justify-center pb-6">
         <EditorToolbar {...insertsFirst(tools, edit.activate)} />

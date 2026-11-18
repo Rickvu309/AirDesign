@@ -10,6 +10,7 @@ import {
   type RefObject,
 } from "react"
 import {
+  dragSlop,
   dropPlace,
   dropTarget,
   edgePan,
@@ -50,8 +51,6 @@ type Press = {
 
 const slideMotion = "transform var(--ease-panel)"
 
-const slop = 4
-
 const frameTime = 1000 / 60
 
 const ghostOffset = 12
@@ -60,7 +59,7 @@ function rowOf(rows: readonly GridRange[], index: number): GridRange | undefined
   return rows.find((row) => index >= row.start && index < row.end)
 }
 
-function slotsIn(scroller: HTMLElement): readonly GridSlot[] {
+export function slotsIn(scroller: HTMLElement): readonly GridSlot[] {
   const box = scroller.getBoundingClientRect()
   const scale = scroller.offsetWidth === 0 ? 1 : box.width / scroller.offsetWidth
   return [...scroller.querySelectorAll<HTMLElement>("[data-slide-entry]")].map((card) => {
@@ -79,7 +78,7 @@ function inside(point: Point, room: DOMRect): boolean {
   return point.x >= room.left && point.x <= room.right && point.y >= room.top && point.y <= room.bottom
 }
 
-function swallowClick() {
+export function swallowClick() {
   const stop = (event: MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
@@ -323,7 +322,7 @@ export function useGridDrag({
     if (held === null || held.pointer !== event.pointerId) return
     const point = { x: event.clientX, y: event.clientY }
     if (!held.dragged) {
-      if (Math.hypot(point.x - held.start.x, point.y - held.start.y) < slop) return
+      if (Math.hypot(point.x - held.start.x, point.y - held.start.y) < dragSlop) return
       press.current = { ...held, dragged: true }
       begin(held.index, held.row)
     }

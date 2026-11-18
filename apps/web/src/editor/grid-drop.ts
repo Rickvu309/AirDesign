@@ -1,6 +1,8 @@
 import { gridMovePlacement, type SlideCommand } from "@airdesign/document"
 import { gridSpacing } from "@/editor/grid-viewport"
 
+export const dragSlop = 4
+
 const edge = 56
 
 const fastest = 24

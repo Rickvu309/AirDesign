@@ -161,6 +161,15 @@ html:has(.reflow-frame) #root {
 [data-grid-card][data-selected] [data-slide-entry] {
   box-shadow: var(--shadow-grid-selected);
 }
+[data-grid-marquee] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  border: var(--grid-marquee-width) solid var(--grid-marquee-edge);
+  background: var(--grid-marquee-fill);
+}
 [data-grid-halo] {
   position: absolute;
   pointer-events: none;

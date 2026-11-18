@@ -31,6 +31,7 @@ import {
   exposedGrid,
   type GridViewport,
 } from "@/editor/grid-viewport"
+import { gridBlank } from "@/editor/grid-hit"
 import { keptGridViewport, keepGridViewport } from "@/editor/grid-zoom"
 
 const settleAfter = 180
@@ -278,11 +279,9 @@ export function useGridViewport({
   }, [])
 
   function press(event: PointerEvent<HTMLDivElement>) {
-    const target = event.target
-    const blank =
-      target instanceof Element &&
-      target.closest("[data-grid-card], [data-section-head], [data-add-row], [data-row-handle]") === null
-    if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || blank))) return
+    const blank = gridBlank(event.target)
+    const touch = blank && event.pointerType === "touch"
+    if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || touch))) return
     dragged.current = hand || heldSpace.current || event.button === 1
     if (blank) event.currentTarget.focus({ preventScroll: true })
     event.preventDefault()
