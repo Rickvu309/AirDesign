@@ -9,5 +9,5 @@ How a slide arrives when presenting: its style, how long that style takes, and w
 _Avoid_: animation, effect
 
 **Animate**:
-The tab of the design panel that sets a slide's transition. The other tab, Design, sets the slide background and the deck theme.
+The tab of the design panel that sets a slide's transition. The other tab, Design, sets the slide background and the template style.
 _Avoid_: motion, effects
