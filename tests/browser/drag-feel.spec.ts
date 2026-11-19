@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
@@ -70,25 +70,20 @@ async function report(feel: Feel): Promise<void> {
     string,
     { readonly limit?: number }
   >
-  const lines: string[] = []
   for (const [name, now] of [
     ["drag-frame", feel.frameP95],
     ["drag-delay", feel.delayP95],
   ] as const) {
     const limit = limits[name]?.limit
     if (limit === undefined) throw new Error(`${name} has no limit in metrics.json.`)
-    lines.push(`metric ${name}  now ${String(now)}  limit ${String(limit)}`)
-    if (now > limit) {
-      const over = `${name} is ${String(now)} and its limit is ${String(limit)}. Make it faster.`
-      test.info().annotations.push({ type: "warning", description: over })
-      lines.push(over)
-    }
+    const notes = test.info().annotations
+    notes.push({ type: "metric", description: `metric ${name}  now ${String(now)}  limit ${String(limit)}` })
+    if (now > limit)
+      notes.push({
+        type: "warning",
+        description: `${name} is ${String(now)} and its limit is ${String(limit)}. Make it faster.`,
+      })
   }
-  console.log([...lines, JSON.stringify(feel)].join("\n"))
-  await mkdir("test-results", { recursive: true })
-  await writeFile("test-results/drag-feel.json", `${JSON.stringify(feel)}\n`)
-  const summary = process.env.GITHUB_STEP_SUMMARY
-  if (summary !== undefined) await appendFile(summary, `\n${lines.join("\n")}\n`)
 }
 
 test("a drag of six cards on a busy slide paints once a frame, leaves the filmstrip and Design panel until it lands, and undoes in one step", async ({
