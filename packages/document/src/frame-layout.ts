@@ -8,14 +8,16 @@ import {
   frameMembers,
   groupBounds,
   groupParent,
-  madeGroup,
+  frameSource,
   type ElementGroup,
+  type FrameSource,
   type ElementJoin,
   type Member,
 } from "./element-group.js"
 import { memberOf, placeOf, type PlacedRow } from "./group-place.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
-import { openingElement } from "./slide-floor.js"
+import { floorOf, openingElement } from "./slide-floor.js"
+import type { Framing } from "./frame-index.js"
 import { flows, layoutAligns } from "./trait-layout.js"
 
 export type Flow = (typeof flows)[number]
@@ -54,7 +56,9 @@ const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
 type Fields = Readonly<Record<string, unknown>>
 
 function traitNow(register: Register, node: ElementId, trait: "layout" | "identity" | "box"): Fields {
-  const opening: Readonly<Record<string, FieldEdit<unknown>>> = openingElement(register, node)?.opening?.[trait] ?? {}
+  const filed = trait === "layout" ? filedLayout(openingElement(register, node)?.framing) : undefined
+  const opening: Readonly<Record<string, FieldEdit<unknown>>> =
+    filed ?? openingElement(register, node)?.opening?.[trait] ?? {}
   const body = Object.hasOwn(register.elements, node) ? register.elements[node] : undefined
   const landed: Readonly<Record<string, FieldEdit<unknown>>> =
     (body === undefined ? undefined : landedPatch(body, "text")[trait]) ?? {}
@@ -64,6 +68,18 @@ function traitNow(register: Register, node: ElementId, trait: "layout" | "identi
     if (typeof edit === "object") now[field] = edit.set
   }
   return now
+}
+
+function filedLayout(framing: Framing | undefined): Readonly<Record<string, FieldEdit<unknown>>> | undefined {
+  if (framing === undefined) return undefined
+  const { flow, gap, padding, align } = framing.layout
+  const [left, top, right, bottom] = padding
+  return {
+    flow: { set: flow },
+    gap: { set: gap },
+    padding: { set: { left, top, right, bottom } },
+    align: { set: align },
+  }
 }
 
 function flowOf(fields: Fields): Flow {
@@ -110,13 +126,13 @@ function hiddenNow(register: Register, node: ElementId): boolean {
   return traitNow(register, node, "identity").hidden === true
 }
 
-function frameOrigin(register: Register, node: ElementId, made: ElementGroup): Box {
-  return boxNow(register, node, made.element.box ?? { x: 0, y: 0, cx: 0, cy: 0 })
+function frameOrigin(register: Register, node: ElementId, made: FrameSource): Box {
+  return boxNow(register, node, made.box)
 }
 
 function laidOut(
   register: Register,
-  made: ElementGroup,
+  made: FrameSource,
   members: readonly Member[],
   origin: Box,
   fields: {
@@ -149,7 +165,7 @@ function laidOut(
     children.push({ node: member.node, box: { ...box, x: slotX + box.x - bounds.x, y: slotY + box.y - bounds.y } })
     cursor += along(bounds) + gap
   }
-  const opened = made.element.box ?? origin
+  const opened = made.box
   for (const member of members.filter((each) => !shown.includes(each))) {
     const box = childBox(register, member)
     children.push({
@@ -171,11 +187,11 @@ function laidOut(
 
 function heldFree(
   register: Register,
-  made: ElementGroup,
+  made: FrameSource,
   members: readonly Member[],
   origin: Box,
 ): readonly LayoutChild[] {
-  const opened = made.element.box ?? origin
+  const opened = made.box
   return members.map((member) => {
     const box = boxNow(register, member.node, { ...member.box, x: member.box.x - opened.x, y: member.box.y - opened.y })
     return { node: member.node, box: { ...box, x: origin.x + box.x, y: origin.y + box.y } }
@@ -184,8 +200,8 @@ function heldFree(
 
 export function readLayout(register: Register, node: ElementId): LayoutView | null {
   const backdrop = frameBackdrop(register, node)
-  const made = madeGroup(register, node)
-  if (backdrop === null || made === undefined) return null
+  const made = frameSource(register, node)
+  if (backdrop === null || made === null) return null
   const fields = traitNow(register, node, "layout")
   const flow = flowOf(fields)
   const gap = typeof fields.gap === "number" ? fields.gap : 0
@@ -199,6 +215,14 @@ export function readLayout(register: Register, node: ElementId): LayoutView | nu
 }
 
 export function layoutNodes(register: Register): readonly ElementId[] {
+  const filed = [...(register.index?.elements ?? []), ...register.order.flatMap((command) => floorOf(command))]
+  const opened = filed.flatMap((element) =>
+    element.framing !== undefined && frameBackdrop(register, element.node) !== null ? [element.node] : [],
+  )
+  return [...new Set(opened)].concat(made(register))
+}
+
+function made(register: Register): readonly ElementId[] {
   return register.order.flatMap((command) =>
     command.slide === "element-group" &&
     command.backdrop !== undefined &&
@@ -297,8 +321,8 @@ function frozen(register: Register, node: ElementId): readonly PlacedRow[] | nul
 }
 
 export function refrozenRows(register: Register, node: ElementId): readonly PlacedRow[] {
-  const made = madeGroup(register, node)
-  if (made === undefined || frameNow(register, node) !== "free") return []
+  const made = frameSource(register, node)
+  if (made === null || frameNow(register, node) !== "free") return []
   const origin = frameOrigin(register, node, made)
   return frameMembers(register, node).flatMap((member): PlacedRow[] => {
     const sides = traitNow(register, member.node, "box")

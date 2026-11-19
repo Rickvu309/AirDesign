@@ -2,6 +2,7 @@ import { slideTextStyles } from "./slide-text-styles.js"
 import {
   bytesOf,
   elementId,
+  layoutFromFile,
   limits,
   readSlideId,
   writeTableValue,
@@ -9,6 +10,7 @@ import {
   type DeckIndex,
   type IndexElement,
 } from "@airdesign/document"
+import { frameMarker } from "./frame-tag.js"
 import { sectionStarts } from "./section-read.js"
 import { templateStyles } from "./template-style.js"
 import { slideTheme } from "./theme-swatches.js"
@@ -22,6 +24,19 @@ import { animatedShapeIds, freeShapeId } from "./shape-id.js"
 import { readTable } from "./table-write.js"
 
 type Shape = ReturnType<typeof readShapes>[number]
+
+function framingOf(parts: ReadonlyMap<string, Uint8Array>, shapes: readonly Shape[], group: Shape) {
+  if (group.box === null) return null
+  const marker = frameMarker(parts, group.part, group.shape)
+  if (marker === null) return null
+  const children = shapes.flatMap((shape) =>
+    shape.part === group.part && shape.group === group.shape && shape.box !== null
+      ? [{ node: elementId(`${shape.slide}.${shape.shape}`), box: shape.box }]
+      : [],
+  )
+  const node = elementId(`${group.slide}.${group.shape}`)
+  return layoutFromFile(marker, { node, box: group.box, frame: group.frame ?? null, children })
+}
 
 function tableValue(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
   try {
@@ -82,15 +97,20 @@ export function indexPackage(
     }
   })
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))
-  const elements: IndexElement[] = readShapes(parts).map((shape) => ({
-    node: elementId(`${shape.slide}.${shape.shape}`),
-    kind: shapeKind(shape),
-    value: valueOf(parts, shape),
-    box: shape.box,
-    grouped: shape.grouped === true,
-    ...(shape.group === undefined ? {} : { group: elementId(`${shape.slide}.${shape.group}`) }),
-    ...(shape.frame === undefined ? {} : { frame: shape.frame }),
-  }))
+  const shapes = readShapes(parts)
+  const elements: IndexElement[] = shapes.map((shape) => {
+    const framing = shapeKind(shape) === "group" ? framingOf(parts, shapes, shape) : null
+    return {
+      node: elementId(`${shape.slide}.${shape.shape}`),
+      kind: shapeKind(shape),
+      value: valueOf(parts, shape),
+      box: shape.box,
+      grouped: shape.grouped === true,
+      ...(shape.group === undefined ? {} : { group: elementId(`${shape.slide}.${shape.group}`) }),
+      ...(shape.frame === undefined ? {} : { frame: shape.frame }),
+      ...(framing === null ? {} : { framing }),
+    }
+  })
   elements.push(
     ...readNotes(parts).map((notes) => ({
       node: elementId(`${notes.slide}.notes`),

@@ -41,6 +41,12 @@ function packaged() {
       ),
     ],
     [part, xml(body)],
+    [
+      "[Content_Types].xml",
+      xml(
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/></Types>',
+      ),
+    ],
   ])
 }
 
@@ -105,7 +111,7 @@ describe("auto layout frame export", () => {
     expect(painted(shown, 21)).toMatchObject({ x: 100000, y: 100000, width: 401600, height: 100000 })
     const text = decodeUtf8(shown.get(part) ?? new Uint8Array())
     expect(text).toContain(
-      '<p:cNvPr id="20" name="Frame 20"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="100000" y="100000"/><a:ext cx="401600" cy="100000"/><a:chOff x="100000" y="100000"/><a:chExt cx="401600" cy="100000"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="21" name="Backdrop 21"/>',
+      '<p:cNvPr id="20" name="Frame 20"/><p:cNvGrpSpPr/><p:nvPr><p:custDataLst><p:tags xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/></p:custDataLst></p:nvPr></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="100000" y="100000"/><a:ext cx="401600" cy="100000"/><a:chOff x="100000" y="100000"/><a:chExt cx="401600" cy="100000"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="21" name="Backdrop 21"/>',
     )
     expect(text).toContain("<a:noFill/><a:ln><a:noFill/></a:ln>")
     const read = readShapes(shown).filter((each) => ["3", "5", "21"].includes(each.shape))
@@ -200,5 +206,48 @@ describe("auto layout frame of added shapes", () => {
     expect(text).toContain('<p:cNvPr id="32" name="Frame 32"/>')
     expect(text).toContain('<p:cNvPr id="30"')
     expect(text).not.toContain('<p:cNvPr id="31"')
+  })
+})
+
+describe("auto layout frame in PowerPoint", () => {
+  const exportedFrame = () => exported(gapped(wrapped(opened), 50000))
+  const reread = (shown: ReadonlyMap<string, Uint8Array>) =>
+    indexPackage(shown).elements.find((element) => element.node === node(20))
+  const edited = (shown: ReadonlyMap<string, Uint8Array>, change: (text: string) => string) =>
+    new Map([
+      ...shown,
+      [
+        part,
+        Uint8Array.from(change(decodeUtf8(shown.get(part) ?? new Uint8Array())), (letter) => letter.charCodeAt(0)),
+      ],
+    ])
+
+  it("writes a tag that reads back as the same auto layout frame, with its fields, backdrop and flow", () => {
+    const shown = exportedFrame()
+    expect([...shown.keys()].filter((name) => name.startsWith("ppt/tags/"))).toEqual(["ppt/tags/tag1.xml"])
+    expect(decodeUtf8(shown.get("[Content_Types].xml") ?? new Uint8Array())).toContain('PartName="/ppt/tags/tag1.xml"')
+    expect(decodeUtf8(shown.get(part) ?? new Uint8Array())).toContain("<p:custDataLst><p:tags")
+    expect(reread(shown)?.framing).toEqual({
+      backdrop: node(21),
+      children: [node(3), node(5)],
+      layout: { flow: "horizontal", gap: 50000, padding: [0, 0, 0, 0], align: "topLeft" },
+    })
+    expect(
+      exportParts(shown, { ...openRegister("", ""), index: { ...indexPackage(shown), total: 0, pages: [] } }),
+    ).toBe(shown)
+  })
+
+  it("reads a frame whose child moved in PowerPoint as a frame without auto layout, a lost backdrop as a group", () => {
+    const shown = exportedFrame()
+    const moved = edited(shown, (text) =>
+      text.replace('<a:off x="350000" y="100000"/>', '<a:off x="350000" y="900000"/>'),
+    )
+    expect(reread(moved)?.framing).toMatchObject({ children: [node(3), node(5)], layout: { flow: "none", gap: 50000 } })
+    const lost = edited(shown, (text) => text.replace(/<p:sp><p:nvSpPr><p:cNvPr id="21"[\s\S]*?<\/p:sp>/, ""))
+    expect(reread(lost)?.framing).toBeUndefined()
+    const scaled = edited(shown, (text) =>
+      text.replace(/<a:chExt cx="(\d+)"/, (_, cx) => `<a:chExt cx="${Number(cx) * 2}"`),
+    )
+    expect(reread(scaled)?.framing).toBeUndefined()
   })
 })

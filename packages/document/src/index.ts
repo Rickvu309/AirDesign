@@ -205,6 +205,7 @@ export { elementStacks, stackTarget, type ElementStack, type StackMove } from ".
 export { groupCommand, groupedNow, groupFormed, groupNode, madeGroup, type Member } from "./element-group.js"
 export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
 export { changeLayout, layoutNodes, readLayout } from "./frame-layout.js"
+export { layoutFromFile, layoutMarker } from "./frame-marker.js"
 export { regroupTurn, ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,

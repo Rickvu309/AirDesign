@@ -69,9 +69,21 @@ function removedNow(state: SlideState, node: ElementId): boolean {
   return gone
 }
 
+const backdrops = new WeakMap<DeckIndex, ReadonlyMap<ElementId, ElementId>>()
+
+function filedBackdrops(index: DeckIndex): ReadonlyMap<ElementId, ElementId> {
+  const kept = backdrops.get(index)
+  if (kept !== undefined) return kept
+  const found = new Map<ElementId, ElementId>()
+  for (const element of index.elements)
+    if (element.framing !== undefined) found.set(element.framing.backdrop, element.node)
+  backdrops.set(index, found)
+  return found
+}
+
 export function elementGone(state: SlideState, node: ElementId): boolean {
   let gone = false
-  let frame: ElementId | null = null
+  let frame: ElementId | null = state.index === undefined ? null : (filedBackdrops(state.index).get(node) ?? null)
   for (const command of state.order) {
     if (command.slide === "element-group" && command.backdrop?.node === node) frame = command.element.node
     const named = "node" in command && (command.node === node || command.node === frame)

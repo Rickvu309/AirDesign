@@ -251,3 +251,11 @@ export function joinShape(bytes: Uint8Array, shape: string, frame: string | null
     edits.sort((one, other) => one.start - other.start),
   )
 }
+
+export function childSpace(bytes: Uint8Array, shape: string): { readonly box: ShapeBox } | null {
+  const { elements } = requireMarkup(bytes)
+  const children = markupChildren(elements)
+  const xfrm = transformOf(children, shapeById(elements, shape))
+  const box = xfrm === undefined ? null : boxAt(children, xfrm, "a:chOff", "a:chExt")
+  return box === null ? null : { box }
+}

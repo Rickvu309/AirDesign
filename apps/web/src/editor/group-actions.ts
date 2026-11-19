@@ -13,7 +13,6 @@ import {
   type Box,
   type Command,
   type NodeStep,
-  type DeckIndex,
   type ElementId,
   type Register,
   type Undoable,
@@ -22,29 +21,10 @@ import { connect, memoryRemote } from "@airdesign/live"
 import { freeShapeId, readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideBase } from "@/exported-parts"
-import { designedParts } from "@/index-deck"
+import { indexedRegister } from "@/indexed-register"
 import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
-
-const indexes = new WeakMap<Parts, DeckIndex>()
-
-export function indexedRegister(parts: Parts, register: Register): Register {
-  const held = register.index
-  if (held !== undefined && held.total === held.elements.length) return register
-  const kept = indexes.get(parts)
-  if (kept !== undefined) return { ...register, index: kept }
-  const { palettes, slides, elements } = designedParts(parts)
-  const index: DeckIndex = {
-    total: elements.length,
-    slides,
-    elements,
-    ...(palettes === undefined ? {} : { palettes }),
-    pages: [],
-  }
-  indexes.set(parts, index)
-  return { ...register, index }
-}
 
 export type GroupChange =
   | { readonly change: "group"; readonly nodes: readonly ElementId[] }

@@ -2,6 +2,7 @@ import {
   elementGone,
   floorNodes,
   landedPatch,
+  layoutMarker,
   layoutNodes,
   netPatch,
   readLayout,
@@ -25,7 +26,9 @@ import {
   type SlideNumbers,
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
-import { placeFrame } from "./group-write.js"
+import { childSpace, placeFrame, shapePlace } from "./group-write.js"
+import { markFrame } from "./frame-tag.js"
+import type { ShapeBox } from "./shape-write.js"
 import { dropUnusedTemplates } from "./template-drop.js"
 import { slidePart } from "./package-address.js"
 import { partBytes } from "./part-markup.js"
@@ -177,20 +180,40 @@ function boxFields(box: { readonly x: number; readonly y: number; readonly cx: n
   return { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } }
 }
 
+function sameBox(left: { readonly box: ShapeBox } | null, right: ShapeBox): boolean {
+  if (left === null) return false
+  const { x, y, cx, cy } = left.box
+  return x === right.x && y === right.y && cx === right.cx && cy === right.cy
+}
+
+function framePlaced(bytes: Uint8Array, shape: string, box: ShapeBox): boolean {
+  return sameBox(shapePlace(bytes, shape), box) && sameBox(childSpace(bytes, shape), box)
+}
+
+function laidOutFrame(parts: Parts, register: Register, node: ElementId): Parts {
+  const view = readLayout(register, node)
+  const slide = shapeOf(node).slide
+  const part = slidePart(parts, slide)
+  if (view === null || part === null || slideGone(register, slide)) return parts
+  let next = parts
+  const shapes = [view.backdrop, ...view.children.map((child) => child.node)].map((each) => shapeOf(each).shape)
+  const boxes = [view.box, ...view.children.map((child) => child.box)]
+  let moved = !framePlaced(partBytes(next, part), shapeOf(node).shape, view.box)
+  if (moved) next = new Map([...next, [part, placeFrame(partBytes(next, part), shapeOf(node).shape, view.box)]])
+  for (const [at, shape] of shapes.entries()) {
+    const box = boxes[at]
+    if (box === undefined || sameBox(shapePlace(partBytes(next, part), shape), box)) continue
+    moved = true
+    next = writeTrait(next, { slide, part, shape }, "box", boxFields(box))
+  }
+  const made = register.order.some((command) => command.slide === "element-group" && command.element.node === node)
+  if (!moved && !made && !register.nodes.includes(node)) return next
+  return markFrame(next, part, shapeOf(node).shape, layoutMarker(view))
+}
+
 function laidOutFrames(parts: Parts, register: Register): Parts {
   let next = parts
-  for (const node of layoutNodes(register)) {
-    const view = readLayout(register, node)
-    const slide = shapeOf(node).slide
-    const part = slidePart(next, slide)
-    if (view === null || part === null || slideGone(register, slide)) continue
-    const bytes = partBytes(next, part)
-    const placed = new Map(next)
-    placed.set(part, placeFrame(bytes, shapeOf(node).shape, view.box))
-    next = writeTrait(placed, { slide, part, shape: shapeOf(view.backdrop).shape }, "box", boxFields(view.box))
-    for (const child of view.children)
-      next = writeTrait(next, { slide, part, shape: shapeOf(child.node).shape }, "box", boxFields(child.box))
-  }
+  for (const node of layoutNodes(register)) next = laidOutFrame(next, register, node)
   return next
 }
 

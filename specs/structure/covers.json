@@ -4,14 +4,14 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "9f1335a4f520",
-      "blob": "acc813acea0552227c0f6c3dc79294e3702763e8"
+      "digest": "27dddb227644",
+      "blob": "9340465762f96be8b14fce5727cd6c1ec2f8f89b"
     },
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "1d69904f25e0",
-      "blob": "39c315e4ce386b2a41ce7fa9f97f37f3a17987c0"
+      "digest": "8230c45a820d",
+      "blob": "a98eeb5bb4f8acd7b7e40237f87d28dea1f65555"
     },
     {
       "file": "packages/document/src/group-turn.ts",
@@ -28,8 +28,8 @@
     {
       "file": "packages/document/src/frame-layout.ts",
       "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow", "joinTurn", "spotNow"],
-      "digest": "93da4b5b89cb",
-      "blob": "6c23dea978d52cfcb9b5a61ea85eaaa558b67c17"
+      "digest": "6ef3c774d6cb",
+      "blob": "43ebeeddf73df7d22ed9d610aed9c0f732765663"
     }
   ]
 }

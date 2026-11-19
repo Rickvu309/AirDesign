@@ -26,6 +26,7 @@ import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { kinds, type Kind } from "./kinds.js"
 import type { ElementPatch } from "./row.js"
+import { readFraming, type Framing } from "./frame-index.js"
 
 export type SlideSize = { readonly width: number; readonly height: number }
 export type IndexSlide = {
@@ -54,6 +55,7 @@ export type IndexElement = {
   readonly placed?: Box
   readonly group?: ElementId
   readonly frame?: Box
+  readonly framing?: Framing
   readonly opening?: ElementPatch
 }
 export type IndexPage = {
@@ -95,7 +97,21 @@ export const indexKeys = {
     "skipped",
     "transition",
   ],
-  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
+  element: [
+    "node",
+    "kind",
+    "value",
+    "box",
+    "grouped",
+    "role",
+    "design",
+    "kept",
+    "placed",
+    "group",
+    "frame",
+    "framing",
+    "link",
+  ],
   design: designKeys,
   roles,
   sources,
@@ -203,7 +219,7 @@ const elementKeys: readonly string[] = indexKeys.element
 const openingKeys = 5
 
 type Derived = Pick<IndexElement, "role" | "design" | "kept" | "placed" | "link">
-type Tree = Pick<IndexElement, "group" | "frame">
+type Tree = Pick<IndexElement, "group" | "frame" | "framing">
 
 function readDerived(row: Record<string, unknown>): Derived | null {
   const link = row.link === undefined ? undefined : readElementLink(row.link)
@@ -228,7 +244,13 @@ function readTree(row: Record<string, unknown>, node: ElementId, kind: Kind): Tr
   if (row.group !== undefined && (group === undefined || row.grouped !== true || group === node)) return null
   if (group !== undefined && shapeOf(group).slide !== shapeOf(node).slide) return null
   if (frame === null || (frame !== undefined && kind !== "group")) return null
-  return { ...(group === undefined ? {} : { group }), ...(frame === undefined ? {} : { frame }) }
+  const framing = row.framing === undefined ? undefined : readFraming(row.framing, node)
+  if (framing === null || (framing !== undefined && kind !== "group")) return null
+  return {
+    ...(group === undefined ? {} : { group }),
+    ...(frame === undefined ? {} : { frame }),
+    ...(framing === undefined ? {} : { framing }),
+  }
 }
 
 export function readElement(raw: unknown, slides: ReadonlySet<string>): IndexElement | null {

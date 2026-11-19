@@ -52,8 +52,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
-      "digest": "87d85e07729e",
-      "blob": "8b5d8ac4036b16f33c1ef5f0f350f6fd91be2a4d"
+      "digest": "f79903960733",
+      "blob": "90fd133204fb9f9f984d7e4bc956ef9bac706318"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
@@ -76,14 +76,14 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "96db19dee868",
-      "blob": "7efcedbfa4bbfbf7bf627b6cc5b77dbf514c0a0e"
+      "digest": "0dae79830c5e",
+      "blob": "2eac5cecab9e863da144e5717840ba9b37b2acbd"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
       "digest": "873f40279244",
-      "blob": "92066fb672cdb65ee12838f12951d7012af65e7c"
+      "blob": "909dad7eab5eb27d7369decc2803e8f8970b623f"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",

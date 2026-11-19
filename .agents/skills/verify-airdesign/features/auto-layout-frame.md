@@ -10,7 +10,7 @@ On an open deck, Shift+A (or Add auto layout in the element's menu) wraps the se
 - `free-children` in a frame without auto layout, the second click selects a child, which moves and resizes on its own; its box is stored relative to the frame, so moving the frame carries it. A frame moves and resizes without scaling its children; an auto layout frame only moves, since it hugs. Shift+A on a frame without auto layout lays its children out again with a gap and alignment guessed from where they sit.
 - `members` a layer dropped onto a frame joins it (in an auto layout frame, at the place in the row where it was dropped); a child dropped outside its frame leaves it; a child dragged along its row moves to that place. Each is one `element-join` slide command, with box rows where the stored place changes meaning, and one undo step. Delete removes a child chosen inside its frame, and the row closes up.
 - `growing-text` a text child set to Resize shape to fit text grows with its text, and the editor writes its measured height back as one `box.h` row, so the next children move and the server and the export hold the new place. Not an undo step of its own.
-- `export` the export writes a `p:grpSp` named Frame with the backdrop `p:sp` first and every child at its laid-out place, child space equal to slide space.
+- `export` the export writes a `p:grpSp` named Frame with the backdrop `p:sp` first and every child at its laid-out place, child space equal to slide space, and a PowerPoint tag `AIRDESIGN_LAYOUT` (in `ppt/tags/`) with the layout fields, the flow order and a seal of the places. On import the tag reads back as the same frame; a frame whose shapes moved in PowerPoint reads as a frame without auto layout, a scaled group or a lost backdrop as a plain group. An untouched frame is not rewritten.
 
 ## How to get to it (user POV)
 
@@ -26,7 +26,7 @@ Preconditions:
 - **Run it.** `$V journey <run> auto-layout-frame`. Prints `"passed":true`.
 - **Wrap.** A blank deck, `Rectangle` then `Ellipse` dragged to its right, both chosen, Shift+A. Evidence `NN-wrapped`; `deckRoutes.open` ends with an `element-group` row with a `backdrop`; the ellipse sits beside the rectangle, top aligned.
 - **Fill, remove, undo.** Fill Solid lands a fills row on the backdrop (`NN-frame-filled`); Remove auto layout keeps both places (`NN-auto-layout-removed`); its Undo, then Undo fill and Undo add auto layout (`NN-wrap-undone`), then Redo.
-- **Reload, export, reimport.** Evidence `auto-layout-frame.pptx` and `NN-reimported`: the frame paints where it was.
+- **Reload, export, reimport.** Evidence `auto-layout-frame.pptx` and `NN-reimported`: the frame paints where it was, and selecting it shows Auto layout frame (its tag read back).
 - **Frame without auto layout.** Back on the deck: Remove auto layout, a second click on the ellipse, a drag 90 px up (`NN-child-moved-in-frame`); the stored box is relative to the frame. Shift+A on the frame lays it back in the row (`NN-auto-layout-again`).
 - **Members.** A triangle dragged between the two children joins the row (`NN-joined-frame`; `deckRoutes.open` ends with `element-join`); Delete on it closes the row (`NN-child-deleted`).
 - **Growing text.** `$V journey <run> auto-layout-text`: two growing text boxes wrapped in a column; three more lines typed into the top one push the bottom one down, and `deckRoutes.open` holds a `box.h` row on the top one.
