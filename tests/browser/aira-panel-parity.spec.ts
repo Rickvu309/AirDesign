@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, indexed, openClean, signInBrowser, test } from "./api-stack"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -84,6 +84,7 @@ test("the real Agent panel keeps the designed head, composer, message and step r
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const deck = await openClean(page)
+  await indexed(stack, deck, cookie)
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   const empty = await panelRegions(page, null)
   sameFrame(empty, designDone)

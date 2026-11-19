@@ -1,7 +1,7 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { airaCopy, airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, indexed, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
 import { holdableDevice, slowDevice } from "./slow-device"
 
 const node = "256.2"
@@ -12,11 +12,18 @@ const answer = "Lead with the claim. Then show the evidence."
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
-async function openDeck(page: Page, context: BrowserContext, stack: Stack) {
+async function openDeck(page: Page, context: BrowserContext, stack: Stack, indexDelay = 0) {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
+  if (indexDelay > 0) {
+    await page.route("**/decks/index", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, indexDelay))
+      await route.fallback()
+    })
+  }
   const deck = await openClean(page)
+  await indexed(stack, deck, cookie)
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   const side = page.locator("[data-editor-panel]")
   return { cookie, deck, base: String(base), side, log: side.getByRole("log") }
@@ -180,6 +187,14 @@ test("Undo on a restored chat takes the run back, and the chat stays undone afte
   await expect(editor).toHaveText("Hello")
   await expect(side.getByText(reply, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
+})
+
+test("an edit shows on the slide when the deck's index reached the server late", async ({ page, context, stack }) => {
+  const { deck, base, side } = await openDeck(page, context, stack, 2500)
+  stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" })
+  await ask(page, asked)
+  await expect(side.getByText(reply, { exact: true })).toBeVisible()
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
 })
 
 test("a chat whose run was undone elsewhere says Undo is no longer possible instead of showing it", async ({

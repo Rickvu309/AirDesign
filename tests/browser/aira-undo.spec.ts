@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, indexed, openClean, settled, signInBrowser, test } from "./api-stack"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -18,6 +18,7 @@ test("an Undo that cannot reach the server says so and keeps Undo, and the next 
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const deck = await openClean(page)
+  await indexed(stack, deck, cookie)
   const opened = deckRoutes.open.result((await stack.post(deckRoutes.open.path, { deck }, cookie)).json)
   expect(opened.ok).toBe(true)
   if (!opened.ok) return

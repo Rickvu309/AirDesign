@@ -305,6 +305,12 @@ export async function settled(page: Page): Promise<void> {
   })
 }
 
+export async function indexed(stack: Stack, deck: string, cookie: string): Promise<void> {
+  await expect
+    .poll(async () => (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)).index)
+    .toBe("ready")
+}
+
 export async function openClean(page: Page): Promise<string> {
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(cleanFixture)
