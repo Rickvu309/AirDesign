@@ -3,7 +3,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { measures, overLimit, readMetrics as readEvery, timeMetric, timedMetrics, timedOnCi } from "./metrics.mjs"
+import { measures, overLimit, readMetrics as readEvery, reportedMetrics, timeMetric } from "./metrics.mjs"
+import { timedMetrics, timedOnCi } from "./metrics.mjs"
 
 const offline = Object.fromEntries(Object.entries(measures).filter(([name]) => name !== "import-parse"))
 const readMetrics = (at) => readEvery(at, offline)
@@ -38,6 +39,8 @@ const record = (faults, tests = 2) => {
       "gate-duration": { limit: 60 },
       "ci-duration": { limit: 40 },
       "pptx-check-duration": { limit: 90 },
+      "time-to-merge": { limit: 45 },
+      "time-to-notice": { limit: 15 },
     }),
   )
 }
@@ -95,6 +98,11 @@ if (timedMetrics["check-duration"] !== "scripts/check.mjs" || "ci-duration" in t
   throw new Error("check-duration is the local check's seconds, timed by scripts/check.mjs")
 if (timedOnCi["ci-duration"] !== ".github/workflows/ci.yml" || "check-duration" in timedOnCi)
   throw new Error("ci-duration is the merge queue's minutes, timed by the ci workflow")
+if (
+  reportedMetrics["time-to-merge"] !== "scripts/ci-failure-report.mjs" ||
+  reportedMetrics["time-to-notice"] !== "scripts/ci-failure-report.mjs"
+)
+  throw new Error("time-to-merge and time-to-notice are medians the failure report prints")
 if (!fs.readFileSync(path.join(repoRoot, "scripts/check.mjs"), "utf8").includes('timeMetric(root, "check-duration"'))
   throw new Error("scripts/check.mjs must time check-duration")
 if (

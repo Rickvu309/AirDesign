@@ -13,5 +13,7 @@
   "check-duration": { "limit": 40 },
   "gate-duration": { "limit": 60 },
   "ci-duration": { "limit": 40 },
-  "pptx-check-duration": { "limit": 90 }
+  "pptx-check-duration": { "limit": 90 },
+  "time-to-merge": { "limit": 45 },
+  "time-to-notice": { "limit": 15 }
 }

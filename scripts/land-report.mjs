@@ -40,16 +40,16 @@ const snapshotLines = ({ repository, run, git, gh, files }) => {
   )
 }
 
-const failedJobLogs = ({ repository, run, gh }) =>
-  gh([
-    "api",
-    `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`,
-    "--jq",
-    '.jobs[] | select(.conclusion == "failure") | .id',
-  ])
+export const failedJobLogs = ({ repository, run, gh }) => {
+  const jobs =
+    run.attempt === undefined
+      ? `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`
+      : `repos/${repository}/actions/runs/${run.id}/attempts/${run.attempt}/jobs?per_page=100`
+  return gh(["api", jobs, "--jq", '.jobs[] | select(.conclusion == "failure" and .name != "ci") | .id'])
     .stdout.split("\n")
     .filter((id) => id !== "")
     .map((id) => gh(["api", `repos/${repository}/actions/jobs/${id}/logs`]).stdout)
+}
 
 export const ciFailureLines = ({ repository, run, gh, git }) => {
   const logs = failedJobLogs({ repository, run, gh })

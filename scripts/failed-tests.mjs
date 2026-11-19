@@ -24,7 +24,7 @@ const nextError = (lines, from) =>
     ?.trim() ?? ""
 
 const vitestFailure = /^ FAIL\s+(?:\S+\s+)??(\S+\.(?:test|spec)\.\w+)(?: > (.+?))?(?: \[ .+ \])?\s*$/
-const playwrightFailure = /^\s+\d+\) (\S+\.spec\.\w+):\d+:\d+ › (.+?)\s*$/
+const playwrightFailure = /^\s+\d+\) (\S+\.spec\.\w+):(\d+):\d+ › (.+?)\s*$/
 
 export const failedTests = (text) => {
   const lines = plainLog(text).split("\n")
@@ -32,11 +32,20 @@ export const failedTests = (text) => {
   lines.forEach((line, at) => {
     const vitest = vitestFailure.exec(line)
     const playwright = playwrightFailure.exec(line)
-    const [file, name] =
-      vitest !== null ? [vitest[1], vitest[2]] : playwright !== null ? [playwright[1], playwright[2]] : []
+    const [file, name, lineNumber] =
+      vitest !== null
+        ? [vitest[1], vitest[2], undefined]
+        : playwright !== null
+          ? [playwright[1], playwright[3], Number(playwright[2])]
+          : []
     if (file === undefined) return
-    const test = { file, name: name ?? "(the whole file)", error: nextError(lines, at + 1) }
-    const key = `${file} ${test.name}`
+    const test = {
+      file,
+      name: name ?? "(the whole file)",
+      error: nextError(lines, at + 1),
+      ...(lineNumber === undefined ? {} : { line: lineNumber }),
+    }
+    const key = `${file}:${test.line ?? ""} ${test.name}`
     if (!found.has(key)) found.set(key, test)
   })
   return [...found.values()]

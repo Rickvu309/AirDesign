@@ -1,7 +1,16 @@
-import { audit, failureClass, report } from "./ci-failure-report.mjs"
+import fs from "node:fs"
+import { audit, classesIn, classesOf, failureClass, formatMetric, report } from "./ci-failure-report.mjs"
 import { alarmAction, attemptId, countIn, falseStopBudget, falseStopLine } from "./ci-failure-report.mjs"
-import { falseStops, lastMerged, mergedLimit } from "./ci-failure-report.mjs"
-import { queueNumber, repeatRebaseLines, repeatRebases, stopLine } from "./ci-failure-report.mjs"
+import { falseStops, lastMerged, lostMinutes, median, mergeMinutes, mergedLimit } from "./ci-failure-report.mjs"
+import {
+  noticeSamples,
+  queueNumber,
+  rankLosses,
+  repeatRebaseLines,
+  repeatRebases,
+  stopLine,
+} from "./ci-failure-report.mjs"
+import { failedJobLogs } from "./land-report.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -67,9 +76,21 @@ same("the most common class comes first", result.ranked, [
   ["pnpm check: lint", [2, 4]],
   ["pnpm check: typecheck", [3]],
 ])
-const lines = report(result, "owner/repo")
-if (!lines.includes("| 2 | pnpm check: lint | https://github.com/owner/repo/actions/runs/2 |"))
+const lines = report(
+  rankLosses([
+    { name: "pnpm check: lint", minutes: 4, runId: 2 },
+    { name: "pnpm check: lint", minutes: 8, runId: 4 },
+    { name: "pnpm check: typecheck", minutes: 3, runId: 3 },
+  ]),
+  "owner/repo",
+)
+if (
+  !lines.includes(
+    "| 12.0 | 2 | pnpm check: lint | https://github.com/owner/repo/actions/runs/2 | run `/correct` on this class |",
+  )
+)
   throw new Error(lines.join("\n"))
+if (lines[0] !== "| Minutes lost | Failures | Class | Example run | |") throw new Error(lines.join("\n"))
 
 const run = (id, attempt, sha, conclusion) => ({ id, attempt, sha, conclusion })
 const pull = (number, runs) => ({
@@ -238,6 +259,119 @@ same(
   "repeat rebases never read as a false stop count",
   countIn(repeatRebaseLines({ count: 9, read: 20, repeats: [] })),
   undefined,
+)
+
+const browserLog = fs.readFileSync(new URL("./land-fixtures/job-playwright-failed.log", import.meta.url), "utf8")
+const saveStatus =
+  "tests/browser/save-status.spec.ts:206 › an added slide reads Saving while its commit waits and Saved once the server takes it"
+same("a browser failure is its file, line and name", classesIn(browserLog), [saveStatus])
+same("a step with no named test stays the step", classesIn("failed: typecheck\n"), ["pnpm check: typecheck"])
+const gitHint = [
+  "2026-11-18T16:09:45.4799754Z hint: \tgit config --global init.defaultBranch <name>",
+  "2026-11-18T16:09:45.4805583Z hint: \tgit branch -m <name>",
+  "2026-11-18T16:17:24.7478084Z \tTest runner crashed. Tried twice to restart it without any luck.",
+].join("\n")
+same("a git hint inside a job log is not a failed step", failureClass(gitHint), "the run left no log")
+same("a job log with no named test does not join a real failure", classesOf([browserLog, gitHint]), [saveStatus])
+same("a summary job with no test does not add an empty class", classesOf([browserLog, 'test "failure" = success\n']), [
+  saveStatus,
+])
+const split = audit({
+  runs: [{ id: 7, conclusion: "failure", branch: "a" }],
+  logs: new Map([[7, browserLog]]),
+})
+same(
+  "a browser failure is not the whole browser step",
+  split.ranked.map(([name]) => name),
+  [saveStatus],
+)
+
+same(
+  "the class that cost more time ranks above a class that failed more often",
+  rankLosses([
+    { name: "often", minutes: 2, runId: "1" },
+    { name: "often", minutes: 2, runId: "2" },
+    { name: "often", minutes: 2, runId: "3" },
+    { name: "slow", minutes: 30, runId: "4" },
+  ]).map((row) => [row.name, row.count, row.minutes]),
+  [
+    ["slow", 1, 30],
+    ["often", 3, 6],
+  ],
+)
+
+const dropped = [
+  { event: "added_to_merge_queue", at: "2026-11-19T10:00:00Z" },
+  { event: "committed", at: "2026-11-19T09:00:00Z" },
+  { event: "removed_from_merge_queue", at: "2026-11-19T10:06:00Z" },
+  { event: "head_ref_force_pushed", at: "2026-11-19T10:09:00Z" },
+  { event: "added_to_merge_queue", at: "2026-11-19T10:20:00Z" },
+  { event: "removed_from_merge_queue", at: "2026-11-19T10:26:00Z" },
+  { event: "merged", at: "2026-11-19T10:26:05Z" },
+]
+const failedQueue = [
+  { conclusion: "failure", updatedAt: "2026-11-19T10:05:30Z", startedAt: "2026-11-19T10:00:00Z" },
+  { conclusion: "success", updatedAt: "2026-11-19T10:25:50Z", startedAt: "2026-11-19T10:20:00Z" },
+]
+same("a queue drop waits until the next push, and the merge is not a drop", noticeSamples(dropped, failedQueue), [3])
+same(
+  "time lost adds the failed run to the wait, and a commit already on the branch does not count",
+  lostMinutes({ startedAt: "2026-11-19T10:00:00Z", updatedAt: "2026-11-19T10:05:30Z" }, dropped),
+  9,
+)
+same(
+  "a re-queue beats a later push",
+  lostMinutes({ startedAt: "2026-11-19T10:00:00Z", updatedAt: "2026-11-19T10:06:00Z" }, [
+    { event: "removed_from_merge_queue", at: "2026-11-19T10:06:00Z" },
+    { event: "added_to_merge_queue", at: "2026-11-19T10:07:00Z" },
+    { event: "head_ref_force_pushed", at: "2026-11-19T10:30:00Z" },
+  ]),
+  7,
+)
+same(
+  "a push of a new commit is the next response",
+  lostMinutes({ startedAt: "2026-11-19T10:00:00Z", updatedAt: "2026-11-19T10:05:00Z" }, [
+    { event: "committed", at: "2026-11-19T09:00:00Z" },
+    { event: "committed", at: "2026-11-19T10:10:00Z" },
+  ]),
+  10,
+)
+
+const opened = (number, minutes) => ({
+  number,
+  createdAt: "2026-11-01T00:00:00Z",
+  mergedAt: new Date(Date.parse("2026-11-01T00:00:00Z") + minutes * 60000).toISOString(),
+})
+same(
+  "time to merge is the median of the last 20 merged pull requests",
+  median(mergeMinutes(Array.from({ length: mergedLimit + 1 }, (_, index) => opened(index + 1, index + 1)))),
+  11.5,
+)
+same("the median of an even count averages the middle pair", median([10, 40, 20, 30]), 25)
+same("no samples has no median", median([]), undefined)
+
+const late = formatMetric("time-to-merge", 50.04, 45)
+same("the metric line prints its limit", late.line, "metric time-to-merge  now 50.0  limit 45")
+same("over the limit warns with both numbers", late.over, "time-to-merge is 50 and its limit is 45. Make it faster.")
+same("at the limit does not warn", formatMetric("time-to-notice", 15, 15).over, undefined)
+const recorded = JSON.parse(fs.readFileSync(new URL("../metrics.json", import.meta.url), "utf8"))
+same("both medians have a limit", [recorded["time-to-merge"].limit, recorded["time-to-notice"].limit], [45, 15])
+
+const calls = []
+failedJobLogs({
+  repository: "owner/repo",
+  run: { id: 9, attempt: 2 },
+  gh: (args) => {
+    calls.push(args.slice(1).join(" "))
+    return { status: 0, stdout: args[1].includes("/logs") ? "fail lint 1.0s\n" : "42\n" }
+  },
+})
+same(
+  "an earlier attempt is read through the jobs API, not the summary job",
+  calls[0].includes("repos/owner/repo/actions/runs/9/attempts/2/jobs?per_page=100") &&
+    calls[0].includes('.name != "ci"') &&
+    calls[1] === "repos/owner/repo/actions/jobs/42/logs",
+  true,
 )
 
 console.log("ci-failure-report tests passed")
