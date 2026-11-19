@@ -1,5 +1,11 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { groupCopy } from "../../../../apps/web/src/copy/arrange-copy.ts"
+import { fillCopy, fillWords } from "../../../../apps/web/src/copy/fill-copy.ts"
+import { frameCopy } from "../../../../apps/web/src/copy/frame-copy.ts"
+import { shapeCopy } from "../../../../apps/web/src/copy/shape-copy.ts"
+import { transitionCopy } from "../../../../apps/web/src/copy/transition-copy.ts"
+import { undoCopy } from "../../../../apps/web/src/copy/undo-copy.ts"
 
 const slide = "ppt/slides/slide1.xml"
 const fixture = "scripts/pptx-fixtures/blank.pptx"
@@ -17,7 +23,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const panel = page.locator("[data-design-panel]")
   const saved = async () => (await post(deckRoutes.open, { deck }, cookie)).json
   const insert = async (name) => {
-    await page.getByRole("button", { name: "Shapes", exact: true }).click()
+    await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
     await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   }
@@ -41,10 +47,10 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
 
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  await insert("Rectangle")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await insert(shapeCopy.shapes.square)
   await expect(element(4)).toBeVisible()
-  await insert("Ellipse")
+  await insert(shapeCopy.shapes.circle)
   await expect(element(5)).toBeVisible()
   const ellipse = await center(5)
   const rectangle = await center(4)
@@ -59,7 +65,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await element(5).click({ modifiers: ["Shift"] })
   await expect(canvas.locator("[data-chosen]")).toHaveCount(2)
   await page.keyboard.press("Shift+A")
-  await expect(status).toHaveText("Added auto layout")
+  await expect(status).toHaveText(groupCopy.said.frame)
   await expect
     .poll(async () => (await saved()).register.order.at(-1))
     .toMatchObject({ slide: "element-group", backdrop: { kind: "shape" } })
@@ -67,15 +73,15 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const frame = wrap.element.node
   const backdrop = wrap.backdrop.node.split(".")[1]
   await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", frame)
-  await expect(panel.getByText("Auto layout frame", { exact: true })).toBeVisible()
-  await expect(panel.getByRole("button", { name: "Remove auto layout" })).toBeVisible()
+  await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
+  await expect(panel.getByRole("button", { name: frameCopy.removeAutoLayout })).toBeVisible()
   const [left, right] = await boxes()
   expect(right.x).toBeGreaterThanOrEqual(left.x + left.width - 1)
   expect(Math.abs(right.y - left.y)).toBeLessThanOrEqual(1.5)
   const laid = await boxes()
   await capture("wrapped")
 
-  await panel.getByRole("group", { name: "Fill" }).getByRole("button", { name: "Solid" }).click()
+  await panel.getByRole("group", { name: fillCopy.section }).getByRole("button", { name: fillWords.solid }).click()
   await expect
     .poll(async () => Object.keys((await saved()).register.elements[wrap.backdrop.node]?.landed.at(-1)?.patch ?? {}))
     .toContain("fills")
@@ -87,23 +93,23 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await page.mouse.click(inside.x + 2, inside.y + inside.height - 2)
   await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", frame)
 
-  await panel.getByRole("button", { name: "Remove auto layout" }).click()
-  await expect(panel.getByText("Frame", { exact: true })).toBeVisible()
-  await expect(panel.getByRole("button", { name: "Remove auto layout" })).toHaveCount(0)
+  await panel.getByRole("button", { name: frameCopy.removeAutoLayout }).click()
+  await expect(panel.getByText(frameCopy.frame, { exact: true })).toBeVisible()
+  await expect(panel.getByRole("button", { name: frameCopy.removeAutoLayout })).toHaveCount(0)
   await holds(laid)
   await capture("auto-layout-removed")
-  await page.getByRole("button", { name: "Undo remove auto layout", exact: true }).click()
-  await expect(panel.getByText("Auto layout frame", { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: undoCopy.undoNamed["remove-auto-layout"], exact: true }).click()
+  await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
   await holds(laid)
-  await page.getByRole("button", { name: "Undo fill", exact: true }).click()
-  await page.getByRole("button", { name: "Undo add auto layout", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.fill, exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["add-auto-layout"], exact: true }).click()
   await expect(element(backdrop)).toHaveCount(0)
   await holds(loose)
   await capture("wrap-undone")
-  await page.getByRole("button", { name: "Redo add auto layout", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["add-auto-layout"], exact: true }).click()
   await expect(element(backdrop)).toHaveCount(1)
   await holds(laid)
-  await page.getByRole("button", { name: "Redo fill", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed.fill, exact: true }).click()
 
   await page.reload()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
@@ -121,7 +127,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const reopened = page.url().split("/").at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", reopened)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect(element(frame.split(".")[1])).toHaveCount(1)
   await holds(laid)
   await capture("reimported")

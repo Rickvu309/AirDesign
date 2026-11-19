@@ -2,6 +2,7 @@ import { templateCopy } from "./template-copy"
 import { appearanceCopy } from "./appearance-copy"
 import type { PaintFill } from "@airdesign/pptx"
 import { nameTooLongOf } from "./product-copy"
+import { frameCopy } from "./frame-copy"
 import type { PanelKind } from "@/design/panel-order"
 
 type Named = Exclude<PaintFill["type"], "solid" | "none">
@@ -23,7 +24,7 @@ export const designCopy = {
     picture: "Image",
     connector: "Line",
     group: "Group",
-    frame: "Frame",
+    frame: frameCopy.frame,
     table: "Table",
     chart: "Chart",
     kept: "Layer",
@@ -33,8 +34,8 @@ export const designCopy = {
   noMatching: "No matching layers found.",
   multiEditText: "Multi-edit text",
   titles: { text: "Text", picture: "Image" },
-  autoFrame: "Auto layout frame",
-  removeAutoLayout: "Remove auto layout",
+  autoFrame: frameCopy.autoFrame,
+  removeAutoLayout: frameCopy.removeAutoLayout,
   square: "Square",
   fillDetails: "Fill details",
   nothing: "Nothing on this layer can be changed here yet.",

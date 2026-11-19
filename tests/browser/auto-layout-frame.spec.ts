@@ -2,6 +2,11 @@ import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
+import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
 
@@ -87,9 +92,9 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await page.locator("input[type=file]").setInputFiles(blank)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  for (const name of ["Rectangle", "Ellipse"]) {
-    await page.getByRole("button", { name: "Shapes", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
+    await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
   }
   const shapes = [frame(page, part, 4), frame(page, part, 5)]
@@ -100,19 +105,19 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await page.mouse.down()
   await page.mouse.move(square.x + square.width / 2 + 260, square.y + square.height / 2 + 12, { steps: 6 })
   await page.mouse.up()
-  await expect(page.getByRole("button", { name: "Undo move", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true })).toBeEnabled()
   await shapes[0]!.click()
   await shapes[1]!.click({ modifiers: ["Shift"] })
   await page.keyboard.press("Shift+A")
-  await expect(status(page)).toHaveText("Added auto layout")
+  await expect(status(page)).toHaveText(groupCopy.said.frame)
   await expect(frame(page, part, 7)).toHaveCount(1)
   const [left, right] = await Promise.all(shapes.map(placed))
   expect(right!.x).toBeGreaterThanOrEqual(left!.x + left!.width - 1)
   expect(Math.abs(right!.y - left!.y)).toBeLessThanOrEqual(1.5)
   const laid = [left!, right!]
   const panel = page.locator("[data-design-panel]")
-  await panel.getByRole("group", { name: "Fill" }).getByRole("button", { name: "Solid" }).click()
-  await expect(page.getByRole("button", { name: "Undo fill", exact: true })).toBeEnabled()
+  await panel.getByRole("group", { name: fillCopy.section }).getByRole("button", { name: fillWords.solid }).click()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.fill, exact: true })).toBeEnabled()
   await holds(shapes, laid)
   await page.reload()
   await settled(page)
@@ -129,7 +134,7 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(download)
   await settled(page)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect(frame(page, part, 6)).toHaveCount(1)
   await holds(shapes, laid)
 })
