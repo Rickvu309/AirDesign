@@ -28,6 +28,7 @@ same("the failed browser test is named once, with its file and first error", fai
     file: "tests/browser/real-save.spec.ts",
     name: "home import through the first typed edit opens the deck exactly once",
     error: "Error: expect(received).toHaveLength(expected)",
+    line: 120,
   },
 ])
 

@@ -81,6 +81,11 @@ export const timedOnCi = {
   "ci-duration": ".github/workflows/ci.yml",
 }
 
+export const reportedMetrics = {
+  "time-to-merge": "scripts/ci-failure-report.mjs",
+  "time-to-notice": "scripts/ci-failure-report.mjs",
+}
+
 export const judgedWrites = "export-verified"
 
 const judgedBy = {
@@ -125,13 +130,14 @@ export const readMetrics = async (root, measuring = measures) => {
     if (goal !== metric.goal)
       drift.push(`${name} has goal ${goal} and metrics.json says ${metric.goal}. Record goal ${goal} in metrics.json.`)
   }
-  for (const [name, runner] of Object.entries({ ...timedMetrics, ...timedOnCi })) {
+  for (const [name, runner] of Object.entries({ ...timedMetrics, ...timedOnCi, ...reportedMetrics })) {
     const limit = recorded[name]?.limit
     if (typeof limit === "number") rows.push({ name, limit })
     else drift.push(`${name} is timed by ${runner} and has no limit in metrics.json.`)
   }
   for (const [name, metric] of Object.entries(recorded)) {
-    if (name in measuring || name in timedMetrics || name in timedOnCi || name in judgedBy) continue
+    if (name in measuring || name in timedMetrics || name in timedOnCi || name in reportedMetrics || name in judgedBy)
+      continue
     if ("limit" in metric) drift.push(`${name} has a limit in metrics.json and no runner times it.`)
     else drift.push(`${name} is in metrics.json and nothing measures it.`)
   }

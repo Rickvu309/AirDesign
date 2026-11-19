@@ -1,8 +1,11 @@
 import { execFileSync } from "node:child_process"
+import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { failedSteps, failedTests } from "./failed-tests.mjs"
+import { failedJobLogs } from "./land-report.mjs"
+import { overLimit } from "./metrics.mjs"
 
-const logLimit = 60
 const pullListLimit = 100
 
 export const mergedLimit = 20
@@ -27,21 +30,42 @@ const formerStepNames = new Map([
   ["site", "site-build"],
 ])
 
+const stepClass = (step) => `pnpm check: ${formerStepNames.get(step) ?? step}`
+
 export const failureClass = (log) => {
   const step = /\bfail ([a-z:-]+)(?: [\d.]+s)?$/m.exec(log)
-  if (step) return `pnpm check: ${formerStepNames.get(step[1]) ?? step[1]}`
+  if (step) return stepClass(step[1])
   if (/\d+ pptx checks failed/.test(log)) return "PowerPoint check: a case failed"
   if (/ is \d+(\.\d+)? and its limit is /.test(log)) return "a timed metric went over its limit"
-  const named = /^[^\t]*\t([^\t]+)\t/m.exec(log)
+  const named = /^[^\t\n]*\t([^\t\n]+)\t\d{4}-\d\d-\d\dT/m.exec(log)
   return named ? `other: ${named[1].replace(/[^\w .:/-]/g, "")}` : "the run left no log"
+}
+
+export const testClass = (test) => {
+  const where = test.line === undefined ? test.file : `${test.file}:${test.line}`
+  return `${where} › ${test.name}`.replace(/\|/g, "/")
+}
+
+export const classesIn = (log) => {
+  const tests = failedTests(log).map(testClass)
+  if (tests.length > 0) return tests
+  const steps = failedSteps(log).map(stepClass)
+  if (steps.length > 0) return steps
+  return [failureClass(log)]
+}
+
+export const classesOf = (logs) => {
+  const named = [...new Set(logs.flatMap((log) => classesIn(log)))].filter((name) => name !== "the run left no log")
+  return named.length > 0 ? named : ["the run left no log"]
 }
 
 export const audit = ({ runs, logs }) => {
   const failed = runs.filter((run) => run.conclusion === "failure")
   const classes = new Map()
   for (const run of failed) {
-    const name = failureClass(logs.get(run.id) ?? "")
-    classes.set(name, [...(classes.get(name) ?? []), run.id])
+    for (const name of classesOf([logs.get(run.id) ?? ""])) {
+      classes.set(name, [...(classes.get(name) ?? []), run.id])
+    }
   }
   const unnamed = (entry) => (entry[0] === "the run left no log" ? 1 : 0)
   const ranked = [...classes].sort(
@@ -56,16 +80,35 @@ export const audit = ({ runs, logs }) => {
   }
 }
 
-export const report = (result, repository) => [
-  `Failed runs: ${result.failed}.`,
-  "",
-  "| Failures | Class | Example run |",
-  "| --- | --- | --- |",
-  ...result.ranked.map(
-    ([name, ids]) => `| ${ids.length} | ${name} | https://github.com/${repository}/actions/runs/${ids[0]} |`,
+const correct = "run `/correct` on this class"
+
+export const rankLosses = (rows) => {
+  const classes = new Map()
+  for (const row of rows) {
+    const current = classes.get(row.name) ?? { name: row.name, count: 0, minutes: 0, runId: row.runId }
+    current.count += 1
+    current.minutes += row.minutes
+    classes.set(row.name, current)
+  }
+  const unnamed = (row) => (row.name === "the run left no log" ? 1 : 0)
+  return [...classes.values()].sort(
+    (left, right) =>
+      right.minutes - left.minutes ||
+      unnamed(left) - unnamed(right) ||
+      right.count - left.count ||
+      left.name.localeCompare(right.name),
+  )
+}
+
+export const report = (ranked, repository) => [
+  "| Minutes lost | Failures | Class | Example run | |",
+  "| --- | --- | --- | --- | --- |",
+  ...ranked.map(
+    (row) =>
+      `| ${row.minutes.toFixed(1)} | ${row.count} | ${row.name} | https://github.com/${repository}/actions/runs/${row.runId} | ${correct} |`,
   ),
   "",
-  "Take the top class. Find the mistake behind it, and change the repo so it cannot repeat: code first, a check second, a line in AGENTS.md last.",
+  "Minutes lost add each failed run to the wait until that pull request's next push or re-queue. Take the top class. Find the mistake behind it, and change the repo so it cannot repeat: code first, a check second, a line in AGENTS.md last.",
 ]
 
 const failedConclusions = new Set(["failure", "timed_out", "startup_failure"])
@@ -147,12 +190,89 @@ export const alarmAction = (count, open) => {
 
 export const attemptId = (run) => `${run.id}/attempts/${run.attempt}`
 
+const responses = new Set(["head_ref_force_pushed", "committed", "added_to_merge_queue"])
+
+const minutesFrom = (start, end) => {
+  const span = Date.parse(end) - Date.parse(start)
+  return Number.isFinite(span) ? span / 60000 : undefined
+}
+
+const held = (minutes) => (minutes === undefined || minutes < 0 ? 0 : minutes)
+
+export const responseAt = (events, after) => {
+  const from = Date.parse(after)
+  return events
+    .filter((event) => responses.has(event.event) && Date.parse(event.at) > from)
+    .sort((left, right) => Date.parse(left.at) - Date.parse(right.at))[0]?.at
+}
+
+export const lostMinutes = (run, events) => {
+  const duration = held(minutesFrom(run.startedAt ?? run.createdAt, run.updatedAt))
+  const next = run.updatedAt === undefined ? undefined : responseAt(events, run.updatedAt)
+  return duration + (next === undefined ? 0 : held(minutesFrom(run.updatedAt, next)))
+}
+
+export const noticeSamples = (events, queueRuns) => {
+  const failed = (queueRuns ?? [])
+    .filter((run) => failedConclusions.has(run.conclusion) && run.updatedAt)
+    .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt))
+  const removals = events
+    .filter((event) => event.event === "removed_from_merge_queue" && event.at)
+    .sort((left, right) => left.at.localeCompare(right.at))
+  const used = new Set()
+  const waits = []
+  for (const run of failed) {
+    const removal = removals.find((event) => {
+      if (used.has(event)) return false
+      const delta = minutesFrom(run.updatedAt, event.at)
+      return delta !== undefined && delta >= 0 && delta <= 15
+    })
+    if (removal === undefined) continue
+    used.add(removal)
+    const next = responseAt(events, removal.at)
+    if (next === undefined) continue
+    waits.push(held(minutesFrom(removal.at, next)))
+  }
+  return waits
+}
+
+export const mergeMinutes = (pulls) =>
+  lastMerged(pulls)
+    .map((pull) => minutesFrom(pull.createdAt, pull.mergedAt))
+    .filter((minutes) => minutes !== undefined && minutes >= 0)
+
+export const median = (values) => {
+  if (values.length === 0) return undefined
+  const sorted = [...values].sort((left, right) => left - right)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
+
+export const formatMetric = (name, now, limit) => {
+  const value = Number((now ?? 0).toFixed(1))
+  return {
+    line: `metric ${name}  now ${value.toFixed(1)}  limit ${limit}`,
+    over: overLimit({ name, now: value, limit }),
+  }
+}
+
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const repository = process.argv[2]
+  const env = { ...process.env, NO_COLOR: "1" }
+  delete env.FORCE_COLOR
+  delete env.CLICOLOR
+  delete env.CLICOLOR_FORCE
+  delete env.GH_FORCE_TTY
   const gh = (args) =>
-    execFileSync("gh", args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
-  const fields = "{id, attempt: .run_attempt, sha: .head_sha, conclusion, createdAt: .created_at, branch: .head_branch}"
+    execFileSync("gh", args, {
+      encoding: "utf8",
+      env,
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).replace(/\u001b\[[0-9;]*m/g, "")
+  const fields =
+    "{id, attempt: .run_attempt, sha: .head_sha, conclusion, createdAt: .created_at, startedAt: .run_started_at, updatedAt: .updated_at, branch: .head_branch}"
   const earlierAttempts = (run) =>
     Array.from({ length: run.attempt - 1 }, (_, index) =>
       JSON.parse(gh(["api", `repos/${repository}/actions/runs/${run.id}/attempts/${index + 1}`, "--jq", fields])),
@@ -194,45 +314,78 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     .split("\n")
     .filter(Boolean)
     .map((text) => JSON.parse(text))
-  const eventsOf = (pull) =>
-    gh(["api", `repos/${repository}/issues/${pull.number}/timeline?per_page=100`, "--paginate", "--jq", ".[] | .event"])
+  const timelineOf = (pull) =>
+    gh([
+      "api",
+      `repos/${repository}/issues/${pull.number}/timeline?per_page=100`,
+      "--paginate",
+      "--jq",
+      '.[] | {event: (.event // "committed"), at: (.created_at // .committer.date // .author.date // "")}',
+    ])
       .split("\n")
       .filter(Boolean)
-  const pulls = read.map((pull) => ({
-    ...pull,
-    runs: runsOf(pull),
-    queueRuns: queueRuns
-      .filter((run) => queueNumber(run.branch) === pull.number)
-      .flatMap((run) => [...earlierAttempts(run), run]),
-    events: eventsOf(pull),
-  }))
+      .map((text) => JSON.parse(text))
+  const pulls = read.map((pull) => {
+    const timeline = timelineOf(pull)
+    return {
+      ...pull,
+      runs: runsOf(pull),
+      queueRuns: queueRuns
+        .filter(
+          (run) =>
+            queueNumber(run.branch) === pull.number &&
+            run.createdAt >= pull.createdAt &&
+            run.createdAt <= pull.mergedAt,
+        )
+        .flatMap((run) => [...earlierAttempts(run), run]),
+      timeline,
+      events: timeline.map((event) => event.event),
+    }
+  })
   const result = falseStops(pulls)
-  const stopped = result.stops.flatMap((stop) => stop.runs).slice(0, logLimit)
-  const logs = new Map()
-  for (const run of stopped) {
+  const jobs = (args) => {
     try {
-      logs.set(
-        attemptId(run),
-        gh(["run", "view", String(run.id), "--attempt", String(run.attempt), "--repo", repository, "--log-failed"]),
-      )
+      return { status: 0, stdout: gh(args), stderr: "" }
     } catch {
-      logs.set(attemptId(run), "")
+      return { status: 1, stdout: "", stderr: "" }
     }
   }
-  const classes = audit({
-    runs: stopped.map((run) => ({ id: attemptId(run), conclusion: "failure", branch: "" })),
-    logs,
-  })
+  const losses = pulls.flatMap((pull) =>
+    [...pull.runs, ...pull.queueRuns]
+      .filter((run) => failedConclusions.has(run.conclusion))
+      .flatMap((run) =>
+        classesOf(failedJobLogs({ repository, run, gh: jobs })).map((name) => ({
+          name,
+          minutes: lostMinutes(run, pull.timeline),
+          runId: attemptId(run),
+        })),
+      ),
+  )
+  const limits = JSON.parse(fs.readFileSync(path.join(path.dirname(self), "..", "metrics.json"), "utf8"))
+  const merge = formatMetric("time-to-merge", median(mergeMinutes(pulls)), limits["time-to-merge"].limit)
+  const notice = formatMetric(
+    "time-to-notice",
+    median(pulls.flatMap((pull) => noticeSamples(pull.timeline, pull.queueRuns))),
+    limits["time-to-notice"].limit,
+  )
   const line = falseStopLine(result)
   const lines = [
+    ...report(rankLosses(losses), repository),
+    "",
+    merge.line,
+    ...(merge.over === undefined ? [] : [merge.over]),
+    notice.line,
+    ...(notice.over === undefined ? [] : [notice.over]),
+    "",
     line,
     "",
     ...result.stops.map(stopLine),
     "",
     ...repeatRebaseLines(repeatRebases(pulls)),
-    "",
-    ...report(classes, repository),
   ]
+  for (const metric of [merge, notice]) {
+    if (metric.over !== undefined) console.log(`::warning title=${metric.name}::${metric.over}`)
+  }
   for (const each of lines) console.log(each)
   if (process.argv[3] === "--issue") {
     const [found] = JSON.parse(
