@@ -132,8 +132,10 @@ test("closing the slide menu rings the slide only when the keyboard closed it", 
       slide: document.activeElement?.matches("[data-slide-entry]") ?? false,
       ring: document.activeElement?.matches(":focus-visible") ?? false,
     }))
+  const ready = () => expect.poll(() => menu.evaluate((open) => open.contains(document.activeElement))).toBe(true)
   await entry(page, 1).click({ button: "right" })
   await expect(menu).toBeVisible()
+  await ready()
   await page.keyboard.press("ArrowDown")
   await menu.getByRole("menuitem").first().click()
   await expect(menu).toBeHidden()
@@ -147,6 +149,7 @@ test("closing the slide menu rings the slide only when the keyboard closed it", 
   await entry(page, 1).focus()
   await page.keyboard.press("ContextMenu")
   await expect(menu).toBeVisible()
+  await ready()
   await page.keyboard.press("ArrowDown")
   await page.keyboard.press("Enter")
   await expect(menu).toBeHidden()
