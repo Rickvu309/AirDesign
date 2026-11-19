@@ -7,6 +7,7 @@ A person clicks an element on the slide to select it. A frame with four corner h
 - `select` a click in a text box puts the caret there and shows the frame and four corner handles. A click on a picture or shape with no text to edit selects it. A click on the empty slide, or Escape twice, clears the frame.
 - `move` dragging the frame's edge, or anywhere on a picture or shape with no text to edit, moves the element.
 - `resize` dragging a corner handle resizes from that corner and keeps the opposite one. No side gets shorter than a quarter inch unless it already was.
+- `snap` while a drag or a corner handle moves an element, its edges and centre snap to another element's or the slide's within 4.5 screen pixels, and a red snap guide shows through what lines up until the pointer is let go. A move also snaps to an equal gap in its row or column and marks the gaps with pink spacing guides. Holding Control during the drag places it with no snapping. The saved box is the snapped one, and one Undo puts it back. Journey `snap-drag`; the words are in `snapping.md`.
 - `nudge` with the element selected and not in its text (Escape from the text), the arrows move it 1 pt and Shift+arrow 10 pt. Enter goes back into the text.
 - `edge` a move stops while a quarter inch of the element is still on the slide.
 - `kept` the server copy's last box row for the element is the moved box. With the local rows gone, reopening paints the element there.

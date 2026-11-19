@@ -71,6 +71,7 @@ for (const name of [
   "delete-account",
   "move-resize",
   "navigate-zoom-pan",
+  "snap-drag",
   "connected-agents",
   "slide-commands",
   "grid-group-add",

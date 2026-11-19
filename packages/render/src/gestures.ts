@@ -9,6 +9,7 @@ export type Pointing = {
   readonly drag: boolean
   readonly shift?: true
   readonly mod?: true
+  readonly ctrl?: true
 }
 
 export type GestureRow = {
@@ -48,6 +49,16 @@ export const gestures = [
   { id: "edit-text", group: "select", keys: [{ key: "Enter" }], where: ["element"] },
   { id: "delete", group: "select", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["element"] },
   { id: "move", group: "move", keys: [], pointing: [{ on: "element", drag: true }], where: ["slide"] },
+  {
+    id: "snap-off",
+    group: "move",
+    keys: [],
+    pointing: [
+      { on: "element", drag: true, ctrl: true },
+      { on: "corner", drag: true, ctrl: true },
+    ],
+    where: ["slide"],
+  },
   { id: "nudge", group: "move", keys: arrows.map((key) => ({ key })), where: ["element"] },
   {
     id: "nudge-far",
