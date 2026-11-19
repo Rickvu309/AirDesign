@@ -60,7 +60,11 @@ export type FollowResult =
   | { ok: true; readonly deck: DeckId; readonly revision: number; readonly changed: boolean }
   | Extract<WatchResult, { ok: false }>
 
-export type FlushResult = CommitResult & { readonly aside?: number; readonly asideTooLarge?: number }
+export type FlushResult = CommitResult & {
+  readonly aside?: number
+  readonly asideTooLarge?: number
+  readonly empty?: true
+}
 
 export type EnqueueResult<Painted = string> =
   | { ok: true; readonly painted: Painted }
@@ -195,7 +199,7 @@ export function connect(remote: Remote, options: Options = {}) {
     return refused.length > 0
   }
 
-  async function sendRows(deck: DeckId, index: Awaited<ReturnType<typeof sendIndex>>): Promise<CommitResult> {
+  async function sendRows(deck: DeckId, index: Awaited<ReturnType<typeof sendIndex>>): Promise<FlushResult> {
     if (index?.ok === false) return index
     let held = await heldView(deck)
     if (index?.indexedSections) {
@@ -207,9 +211,9 @@ export function connect(remote: Remote, options: Options = {}) {
       }
     }
     if (!held?.pending.length) {
-      if (index === null) return { ok: false, refusal: "batch" }
+      if (index === null) return { ok: false, refusal: "batch", empty: true }
       const { indexedSections: _indexedSections, ...result } = index
-      return result
+      return { ...result, empty: true }
     }
     const opened = await openOnce(deck)
     if (!opened.ok) return opened

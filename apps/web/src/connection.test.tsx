@@ -203,7 +203,7 @@ async function openEditor(start: Spec): Promise<World> {
         const answer = answerOf(source)
         deviceHolds(target.rows === true)
         if (answer === "offline") first.reject(new TypeError("Failed to fetch"))
-        else first.resolve(answer === "sent" ? { ok: true } : { ok: false, refusal: "batch" })
+        else first.resolve(answer === "sent" ? { ok: true } : { ok: false, refusal: "batch", empty: true })
       }),
     Retry: () =>
       settled(() => {

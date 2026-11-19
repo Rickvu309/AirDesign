@@ -51,7 +51,7 @@ describe("live cache", () => {
     expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
     expect(commits).toEqual([["named"]])
     expect(await cache.rows("deck")).toEqual([expect.objectContaining({ kind: "confirmed", value: "named", node })])
-    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "batch" })
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "batch", empty: true })
   })
 
   it("drops a stored confirmed row with a malformed node and keeps the legacy node row", async () => {
