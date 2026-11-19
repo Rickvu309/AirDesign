@@ -187,7 +187,7 @@ function LiveElementDesign({
     <ElementDesign
       titleActions={
         <div className="flex items-center gap-1">
-          {design.model.kind === "group" ? toneHead(deck, [node], toneFor) : null}
+          {design.model.kind === "group" || design.model.kind === "frame" ? toneHead(deck, [node], toneFor) : null}
           <ElementTitleActions onMatch={matchAction(deck)} model={design.model} onReplace={deck.replacePicture} />
         </div>
       }

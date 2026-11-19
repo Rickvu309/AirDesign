@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
+import { adjustToneCopy } from "../../apps/web/src/copy/adjust-tone-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
@@ -118,4 +120,14 @@ test("replaces a picture file through the title action and keeps its frame throu
   const parts = await partsOf(exported)
   const raster = [...parts].find(([name]) => /^ppt\/media\/picture-[a-f0-9]+\.jpeg$/.test(name))
   expect(raster?.[1]).toEqual(await readFile(file))
+})
+
+test("shows Adjust tone on an imported auto layout frame", async ({ page }) => {
+  await openDeck(page, "frame.pptx")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await shapeAt(page, "4").click()
+  const frame = page.locator('[data-panel-kind="frame"] [data-design-head]')
+  const tone = frame.getByRole("button", { name: adjustToneCopy.title, exact: true })
+  await tone.click()
+  await expect(page.locator("[data-adjust-tone]")).toBeVisible()
 })

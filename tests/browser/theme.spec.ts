@@ -1,6 +1,8 @@
+import { colorNameCopy } from "../../apps/web/src/copy/color-name-copy"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { templateStyleCopy } from "../../apps/web/src/copy/template-style-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -148,4 +150,10 @@ test("a shape filled with accent 1 shows the theme's new accent 1 in its fill sw
   const swatch = fill.locator("[data-control='color'] span[aria-hidden]").first()
   await expect(swatch).toHaveCSS("background-color", "rgb(192, 0, 0)")
   await expect.poll(() => filled(shape)).toBe("rgb(192, 0, 0)")
+})
+
+test("names the pale teal template accent in Selection colors", async ({ page }) => {
+  await openDeck(page, "clean.pptx")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await expect(page.locator("[data-selection-colors]")).toContainText(colorNameCopy.lightTeal)
 })

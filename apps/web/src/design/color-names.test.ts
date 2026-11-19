@@ -24,6 +24,15 @@ describe("a template colour's name", () => {
     expect(name("0000FF")).toBe(colorNameCopy.blue)
   })
 
+  it.each([
+    ["BBE0E3", colorNameCopy.lightTeal],
+    ["CADEFA", colorNameCopy.lightBlue],
+    ["F9D9E4", colorNameCopy.lightPink],
+    ["D0D0D0", colorNameCopy.lightGrey],
+  ])("names the pale swatch %s %s", (hex, expected) => {
+    expect(name(hex)).toBe(expected)
+  })
+
   it("tells two colours that share a word apart by lightness, then by a number", () => {
     expect(names(["6488DC", "2C58B4"])).toEqual([colorNameCopy.lightBlue, colorNameCopy.darkBlue])
     expect(names(["000000", "000000", "000000"])).toEqual([
@@ -113,11 +122,11 @@ describe("a template colour's name", () => {
         colorNameCopy.white,
         colorNameCopy.numbered(colorNameCopy.black, 2),
         colorNameCopy.grey,
-        colorNameCopy.lightGrey,
+        colorNameCopy.lightTeal,
         colorNameCopy.numbered(colorNameCopy.darkBlue, 2),
         colorNameCopy.numbered(colorNameCopy.white, 2),
         colorNameCopy.numbered(colorNameCopy.black, 3),
-        colorNameCopy.numbered(colorNameCopy.white, 3),
+        colorNameCopy.numbered(colorNameCopy.lightTeal, 2),
         colorNameCopy.darkBlue,
         colorNameCopy.teal,
         colorNameCopy.lightGreen,
