@@ -263,14 +263,14 @@ const proofless = harness({
   bodyText: "## What changes\n\nA.\n",
   args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--check"],
 })
-same("a body with no Proof heading only warns", await proofless.run(), 0)
+same("a body with no Evidence heading only warns", await proofless.run(), 0)
 same(
   "and says so in one line",
-  proofless.said.filter((line) => line.startsWith("body       warning: the body has no ## Proof heading")).length,
+  proofless.said.filter((line) => line.startsWith("body       warning: the body has no ## Evidence heading")).length,
   1,
 )
 same(
-  "a body with a Proof heading says nothing",
+  "a body with an Evidence heading says nothing",
   clean.said.some((line) => line.startsWith("body")),
   false,
 )
@@ -281,7 +281,7 @@ const prProofless = harness({
 await prProofless.run()
 same(
   "an open pull request's body is read too",
-  prProofless.said.some((line) => line.includes("no ## Proof heading")),
+  prProofless.said.some((line) => line.includes("no ## Evidence heading")),
   true,
 )
 same(

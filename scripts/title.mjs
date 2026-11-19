@@ -22,4 +22,4 @@ export const titleVerdict = (title) => {
 
 export const titleAdvice = `Write one line of at most ${titleLimit} characters: an imperative verb, then the one outcome, with no full stop. Put the rest in the body.`
 
-export const hasProof = (body) => /^#{1,6}[ \t]+proof\b/im.test(String(body ?? ""))
+export const hasProof = (body) => /^#{1,6}[ \t]+(?:evidence|proof)\b/im.test(String(body ?? ""))
