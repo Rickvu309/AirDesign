@@ -29,7 +29,7 @@ Regions are the `data-*` handles both sides share, listed in `compare.mjs`. The 
 
 ## states and sheet
 
-`states/` holds one file per named state of the real app, and `states.mjs` reads the folder in name order. A state names its design screen, if one exists, and how to reach it: a journey and the label of one of its captures, or a small driver built on the journey kit. `sheet` walks each journey once for all of its states, so a journey's later states cost little.
+`states/` holds one file per named state of the real app, and `states.mjs` reads the folder in name order. A state names its design screen, if one exists, and how to reach it: a journey and the label of one of its captures, or a small driver built on the journey kit. `sheet` walks each journey once for all of its states, so a journey's later states cost little. A sweep runs one lane per 4 cores, at least 3 and at most 8 (`sweepLanes`). Each lane keeps one browser context (`context-pool.mjs`): every state gets a new page, and before the next state the lane's context closes its pages and drops its routes, cookies, permissions, offline mode and the storage of every origin it reached.
 
 `sheet <run> [--only 'agent-*']` drives every state, runs `look`, and runs `compare` where a design exists. It writes `sheet.html` for a person, `sheet-00.png` as the summary and then one PNG page per state, and `sheet.json` with every finding ranked. A full sheet also names any allow entry that silenced nothing.
 

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import { matching, states, sweep, units } from "./states.mjs"
+import { matching, states, sweep, sweepLanes, units } from "./states.mjs"
 
 describe("states", () => {
   it("names each state once and points each journey state at a capture its journey makes", () => {
@@ -44,6 +44,10 @@ describe("states", () => {
       ["agent-step-refused"],
     ])
     expect(grouped[0].aira).toBe(true)
+  })
+
+  it("sweeps three lanes on a four-core ci runner and one lane per four cores on a larger machine, at most eight", () => {
+    expect([2, 4, 8, 16, 20, 32, 48, 96].map(sweepLanes)).toEqual([3, 3, 3, 4, 5, 8, 8, 8])
   })
 
   it("keeps sweeping after a state fails and names only the state not reached", async () => {

@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test, type BrowserContext, type Page } from "@playwright/test"
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test"
 
 type Kit = { page: Page; context: BrowserContext; out: string }
 type State = { name: string; design: string | null }
@@ -23,6 +23,16 @@ type Helper = {
   }>
 }
 type Reports = { writeReport: (root: string, name: string, report: object) => void }
+type Pool = {
+  contextPool: (
+    browser: Browser,
+    options: object,
+  ) => {
+    take: () => Promise<BrowserContext>
+    give: (context: BrowserContext) => Promise<void>
+    close: () => Promise<void>
+  }
+}
 
 const root = process.cwd()
 const skill = join(root, ".agents/skills/verify-airdesign")
@@ -69,21 +79,23 @@ test("every named state of the real app is reached and scanned in one stack", as
     const identifiers = catalog.projectTools(catalog.catalog).map((tool) => tool.name)
     const rows: { page: string; findings: Finding[] }[] = []
     const used = new Set<number>()
+    const { contextPool } = await load<Pool>(join(skill, "look/context-pool.mjs"))
+    const contexts = contextPool(browser, {
+      baseURL: origin,
+      storageState: { cookies: [], origins: [] },
+      viewport: { width: 1470, height: 923 },
+      deviceScaleFactor: 2,
+      reducedMotion: "reduce",
+    })
     const failed = await sweep(
       states,
       async (unit) => {
-        const context = await browser.newContext({
-          baseURL: origin,
-          storageState: { cookies: [], origins: [] },
-          viewport: { width: 1470, height: 923 },
-          deviceScaleFactor: 2,
-          reducedMotion: "reduce",
-        })
+        const context = await contexts.take()
         const page = await context.newPage()
         page.setDefaultTimeout(20_000)
         const name = `scan-${unit.states.map((state) => state.name).join("+")}`
         const { kit, out } = await journeyKit({ run, name, page, context })
-        return { kit: { ...kit, out }, close: () => context.close() }
+        return { kit: { ...kit, out }, close: () => contexts.give(context) }
       },
       async (state, kit) => {
         await kit.page.evaluate(() => document.fonts.ready.then(() => undefined))
@@ -93,6 +105,7 @@ test("every named state of the real app is reached and scanned in one stack", as
         for (const index of scanned.used) used.add(index)
       },
     )
+    await contexts.close()
     const failures = failed.map((failure) => ({ page: failure.state, error: failure.error }))
     rows.sort((a, b) => a.page.localeCompare(b.page))
     const { writeReport } = await load<Reports>(join(root, "scripts/design-findings.mjs"))

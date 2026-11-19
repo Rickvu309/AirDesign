@@ -83,5 +83,6 @@ Checks block gate or CI; review needs judgment.
 | Copy: `better-writing`, `GLOSSARY.md`, current behavior | review; `no-limit-in-copy`: use `@airdesign/document` limits |
 | How agents work here | review |
 | Every design screen and named state of the app shows no mechanical design fault: cut, covered or invisible text and controls, internal names, empty panels, stacked frames, low contrast | the `design-findings` step counts what the scanner finds in the browser tests into the `design-findings` metric. It warns for now and blocks nothing. Looking at the images is review |
+| A design sweep reuses a context per lane, and each state starts as new | `tests/browser/context-pool.spec.ts` |
 | Action/error toasts persist with Close; plain successes expire | `toast.test.tsx` checks duration overrides; `toast-layout.spec.ts` checks fit/dismissal; `apps/web/.oxlintrc.json` requires the wrapper |
 | Proof uploads preserve links and fit the release | verify-airdesign `bin/publish.test.mjs` covers the 1000-asset limit, rollover and repeat uploads |
