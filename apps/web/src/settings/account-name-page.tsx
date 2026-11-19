@@ -17,7 +17,7 @@ export function AccountNamePage({
     <main className="flex min-h-dvh flex-col items-center bg-canvas px-6 pt-[clamp(48px,14.3svh,132px)] pb-8 text-foreground">
       <div className="w-full max-w-[440px]">
         <header className="flex flex-col items-center text-center">
-          <AirdesignMark size={40} weight="bold" />
+          <AirdesignMark size={40} />
           <h1
             tabIndex={-1}
             ref={(heading) => heading?.focus()}

@@ -1,3 +1,4 @@
-export const markRegular = "#111111"
-export const markBold = "#222222"
+export const markColor = "#111111"
 export const markSlash = "#FF58AE"
+export const markStem = "7"
+export const markBar = "5"

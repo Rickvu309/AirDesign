@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { DeleteAccountDialog } from "@/decks/delete-account"
 import { accountName } from "@/decks/account-name"
-import { AgentPromo } from "@/decks/agent-promo"
+import { AgentButton, AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
 import { settingsPaths, type SettingsPath } from "@/settings/settings-routes"
@@ -271,13 +271,7 @@ export function DecksShell({
         )}
         <div className="mt-auto">
           {firstVisit && !realAccount ? (
-            <a
-              href={deckRoutes.connectAgent}
-              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[length:var(--type-dense)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_rgba(0,0,0,0.04)]"
-            >
-              <DeckGlyph name="plug" size={14} />
-              Connect an agent
-            </a>
+            <AgentButton href={deckRoutes.connectAgent} />
           ) : (
             settingsTab !== "agents" && (
               <AgentPromo {...(realAccount ? { href: settingsPaths.agents, ornaments: false } : {})} />

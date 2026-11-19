@@ -33,7 +33,6 @@ import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { server } from "@/commit-edit"
-import { importDeck } from "@/import-deck"
 import { signInAddress } from "@/thin-notice"
 
 type Deck = ListedDeck
@@ -238,6 +237,7 @@ export function Home({
   async function choose(file: File) {
     setImporting({ name: file.name, failed: false })
     try {
+      const { importDeck } = await import("@/import-deck")
       const imported = await importDeck(file)
       if (!imported.ok) {
         setImporting({ name: file.name, failed: true, reason: imported.reason })
