@@ -188,6 +188,13 @@
   --grid-marquee-edge: var(--ring);
   --grid-marquee-fill: color-mix(in oklch, var(--grid-marquee-edge) 10%, transparent);
   --grid-marquee-width: 1px;
+  --snap-guide: #e05534;
+  --spacing-guide: #ff00ff;
+  --guide-label-size: 11px;
+  --guide-label-leading: 16px;
+  --guide-label-radius: 2px;
+  --guide-label-offset: 6px;
+  --guide-label-text: #ffffff;
   --grid-hover: #bfe4ff;
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);

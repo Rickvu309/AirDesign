@@ -10,7 +10,6 @@ import {
 } from "react"
 import {
   boxOf,
-  draggedBoxes,
   isArrow,
   nudgedBoxes,
   resizedByKey,
@@ -21,6 +20,7 @@ import {
   type Held,
   type Moved,
 } from "./box-gesture.js"
+import { snappedDrag, snapTargets } from "./drag-snap.js"
 import { gestureFor } from "./gestures.js"
 import { typeHeld } from "./held-keys.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
@@ -36,6 +36,7 @@ import {
   unitOf,
   type Selection,
 } from "./selection.js"
+import { guideBoard, type GuideBoard } from "./guide-layer.js"
 import type { BoxGrip, PaintStore } from "./store.js"
 
 export type Grouping = {
@@ -51,6 +52,7 @@ export type Picking = {
 
 export type Moves = {
   readonly selection: Selection
+  readonly guides: GuideBoard
   readonly message: string
   readonly say: (message: string) => void
   readonly select: (id: ElementId) => void
@@ -127,6 +129,7 @@ export function useMoves(
     onSelection?.(selection)
   }, [given, selection, onSelection])
   const [message, setMessage] = useState("")
+  const [guides] = useState(guideBoard)
   const keyed = useRef({ verb: "", label: "" })
   const held = useRef<Held | null>(null)
   const grips = useRef(new Map<ElementId, BoxGrip>())
@@ -181,6 +184,7 @@ export function useMoves(
 
   function letGo(changed: readonly ElementId[]) {
     held.current = null
+    guides.show([])
     for (const [id, grip] of grips.current) {
       if (changed.includes(id)) grip.keep()
       else grip.release()
@@ -214,13 +218,16 @@ export function useMoves(
   }
 
   function follow(pressed: Drag, document: Document) {
+    const snap = snapTargets(size, store, pressed.ids)
     function move(event: globalThis.PointerEvent) {
       const now = held.current
       if (now?.by !== "pointer" || event.pointerId !== now.pointer) return
       const at = { x: event.clientX, y: event.clientY }
       if (!now.moved && !travelled(now.from, at)) return
       held.current = { ...now, moved: true }
-      place(draggedBoxes(now, at, width, size))
+      const snapped = snappedDrag(now, at, width, size, event.ctrlKey ? null : snap)
+      guides.show(snapped.guides)
+      place(snapped.boxes)
     }
     function stop() {
       document.removeEventListener("pointermove", move)
@@ -424,5 +431,5 @@ export function useMoves(
     choose(focused(size, latest.current, id))
   }
 
-  return { selection, message, say: setMessage, select, press, key, slide }
+  return { selection, guides, message, say: setMessage, select, press, key, slide }
 }

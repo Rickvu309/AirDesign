@@ -75,6 +75,15 @@ async function drag(page: Page, from: { x: number; y: number }, by: { x: number;
   await page.mouse.up()
 }
 
+async function dragFree(page: Page, from: { x: number; y: number }, by: { x: number; y: number }): Promise<void> {
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.keyboard.down("Control")
+  await page.mouse.move(from.x + by.x, from.y + by.y, { steps: 8 })
+  await page.mouse.up()
+  await page.keyboard.up("Control")
+}
+
 async function answerOpens(page: Page): Promise<void> {
   await page.route("**/decks/{open,index}", async (route) => {
     const body = route.request().postDataJSON() as { deck: string }
@@ -261,7 +270,7 @@ test("a picture moves by a drag anywhere on it and keeps the arrows once selecte
     [frame.style.left, frame.style.top].map(Number.parseFloat),
   )
   const origin = await corner(page)
-  await drag(page, { x: origin.x + 100, y: origin.y + 300 }, { x: 20, y: 10 })
+  await dragFree(page, { x: origin.x + 100, y: origin.y + 300 }, { x: 20, y: 10 })
   await expect(picture).toBeFocused()
   await page.keyboard.press("ArrowLeft")
   const after = await picture.evaluate((frame: HTMLElement) =>
@@ -281,7 +290,7 @@ async function dragAndPressAtOnce(page: Page, from: { x: number; y: number }, by
       if (frame === null) throw new Error("no frame")
       const options = { bubbles: true, cancelable: true, pointerId: 1, button: 0, isPrimary: true }
       frame.dispatchEvent(new PointerEvent("pointerdown", { ...options, clientX: start.x, clientY: start.y }))
-      const end = { clientX: start.x + step.x, clientY: start.y + step.y }
+      const end = { clientX: start.x + step.x, clientY: start.y + step.y, ctrlKey: true }
       document.dispatchEvent(new PointerEvent("pointermove", { ...options, ...end }))
       document.dispatchEvent(new PointerEvent("pointerup", { ...options, ...end, buttons: 0 }))
       frame.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }))

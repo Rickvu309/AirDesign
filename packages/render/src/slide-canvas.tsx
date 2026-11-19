@@ -10,6 +10,7 @@ import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
+import { GuideLayer } from "./guide-layer.js"
 import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import { leadOf, type Selection } from "./selection.js"
 import type { CanvasSlide } from "./record.js"
@@ -208,6 +209,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           width={width}
         />
       )}
+      {moving === null ? null : <GuideLayer board={moving.guides} scaled={scaled} />}
     </div>
   )
 })

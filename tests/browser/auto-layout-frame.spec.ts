@@ -175,8 +175,10 @@ async function dragBy(page: Page, shape: Locator, dx: number, dy: number): Promi
   const box = await placed(shape)
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
+  await page.keyboard.down("Control")
   await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy, { steps: 8 })
   await page.mouse.up()
+  await page.keyboard.up("Control")
 }
 
 function by(boxes: readonly Placed[], dx: number, dy: number): readonly Placed[] {
