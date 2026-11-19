@@ -66,7 +66,7 @@ type Edge = { readonly from: string; readonly to: string; readonly action: strin
 type Graph = { readonly states: Map<string, Spec>; readonly edges: readonly Edge[] }
 type View = { state: (v: Spec) => string }
 type World = {
-  readonly steps: Record<string, (source: Spec) => Promise<void>>
+  readonly steps: Record<string, (source: Spec, target: Spec) => Promise<void>>
   readonly seen: () => Spec
   readonly close: () => Promise<void>
 }
@@ -175,12 +175,12 @@ async function openEditor(): Promise<World> {
       if (first === undefined) throw new Error("no send in the lane")
       first.started = true
     },
-    Answer: (source) =>
+    Answer: (source, target) =>
       settled(() => {
         const first = world.lane.shift()
         if (first === undefined) throw new Error("no send in the lane")
         const answer = answerOf(source)
-        world.waiting = source.rows === true
+        world.waiting = target.rows === true
         if (answer === "offline") first.reject(new TypeError("Failed to fetch"))
         else first.resolve(answer === "sent" ? { ok: true } : { ok: false, refusal: "batch" })
       }),
@@ -262,7 +262,7 @@ async function walked(walk: readonly Edge[], failures: string[], taken: (edge: E
       const said = `after ${trail.join(", ")}: ${view.state(source)} -${edge.action}-> ${view.state(target)}`
       const step = world.steps[edge.action]
       if (step === undefined) failures.push(`${said} is not connected`)
-      else await step(source).catch((error: unknown) => failures.push(`${said}: ${String(error)}`))
+      else await step(source, target).catch((error: unknown) => failures.push(`${said}: ${String(error)}`))
       if (failures.length > 0) break
       actual = world.seen()
       const expected = modelled(target)

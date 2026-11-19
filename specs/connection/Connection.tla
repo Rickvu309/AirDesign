@@ -9,9 +9,9 @@
 \* flushPending in apps/web/src/commit-edit.ts, and settle reads its outcome into the flags.
 \* The device's queue is one flag, rows: some rows wait on the device or none. Every send joins
 \* one lane per deck (serial in packages/live/src/cache.ts) and the first in the lane is the only
-\* one on the wire. It carries every row the device holds when it starts. When it carried none it
-\* asks no server, and answers sent if no row waits on the device and kept if one does; otherwise
-\* it answers sent when the server answered, and offline when the browser or the server was down. The lane is a number whose digits are its sends, the first one first:
+\* one on the wire. It carries every row the device holds when it starts. It answers sent when no
+\* rows remain after the send, kept when rows remain, and offline when it failed to reach the server.
+\* The lane is a number whose digits are its sends, the first one first:
 \* 1 the online event's, 2 the resend loop's, 3 an edit's or the deck's opening, 4 a send of a
 \* resend loop that was stopped, whose answer nobody reads.
 EXTENDS Integers
@@ -67,7 +67,7 @@ TypeOK ==
   /\ loop \in {"off", "rest", "wait"}
   /\ flips \in 0..2
   /\ outages \in 0..1
-  /\ edits \in 0..1
+  /\ edits \in 0..2
 
 \* The deck is open and online, with nothing waiting on the device.
 Init ==
@@ -92,6 +92,7 @@ Was == Unsent(open, net, offline, pending)
 GoOffline ==
   /\ net
   /\ flips < 2
+  /\ edits < 2
   /\ net' = FALSE
   /\ flips' = flips + 1
   /\ offline' = (open \/ offline)
@@ -103,6 +104,7 @@ GoOffline ==
 GoOnline ==
   /\ ~net
   /\ flips < 2
+  /\ edits < 2
   /\ net' = TRUE
   /\ flips' = flips + 1
   /\ lane' = IF open THEN Join(lane, Event) ELSE lane
@@ -112,6 +114,7 @@ GoOnline ==
 ServerDown ==
   /\ up
   /\ outages < 1
+  /\ edits < 2
   /\ up' = FALSE
   /\ outages' = outages + 1
   /\ UNCHANGED <<open, net, rows, fresh, pending, offline, lane, started, carry, loop, flips, edits>>
@@ -126,7 +129,7 @@ ServerUp ==
 \* A row written while a send is on the wire is not in that send.
 EditRow ==
   /\ open
-  /\ edits < 1
+  /\ (edits < 1 \/ (edits = 1 /\ started /\ carry /\ flips = 0 /\ outages = 0))
   /\ edits' = edits + 1
   /\ rows' = TRUE
   /\ fresh' = (fresh \/ started)
@@ -149,7 +152,9 @@ Send ==
 \* before the next try on offline.
 Answer ==
   /\ started
-  /\ LET outcome == IF ~carry THEN (IF rows THEN "kept" ELSE "sent") ELSE IF net /\ up THEN "sent" ELSE "offline"
+  /\ LET reached == net /\ up
+         remaining == IF carry /\ reached THEN fresh ELSE rows
+         outcome == IF carry /\ ~reached THEN "offline" ELSE IF remaining THEN "kept" ELSE "sent"
          caller == First(lane)
          heard == (caller \in {Event, Edit} /\ open) \/ caller = Resend
          pending2 == IF ~heard THEN pending
@@ -159,7 +164,7 @@ Answer ==
          offline2 == IF heard THEN outcome = "offline" ELSE offline
          loop2 == IF caller = Resend THEN (IF outcome = "offline" THEN "rest" ELSE "off") ELSE loop
          after == Unsent(open, net, offline2, pending2)
-     IN /\ rows' = IF outcome = "sent" THEN fresh ELSE rows
+     IN /\ rows' = remaining
         /\ fresh' = FALSE
         /\ started' = FALSE
         /\ carry' = FALSE
@@ -195,8 +200,8 @@ Shown == Status(net, pending, offline)
 \* The browser going offline reads Offline at once, with or without rows waiting.
 TellsWhenOffline == open /\ ~net => Shown = "offline"
 
-\* Saved shows while rows wait on the device only while a send that carries them is in the lane.
-SavedOnlyWhileSending == open /\ rows /\ Shown = "saved" => lane # 0
+\* The editor reports Saved only after the server has every row.
+SavedOnlyWhenLanded == open /\ Shown = "saved" => ~rows
 
 \* Online, with nothing waiting, every send answered and no resend due, the status never says the
 \* server was not reached.

@@ -10,7 +10,6 @@ import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deckInserts } from "@/editor/inserts"
 import { useDeckPaint } from "@/editor/use-deck-paint"
 import { saveStatus, useDeckStatus } from "@/editor/use-deck-status"
-import { useShownSave } from "@/editor/save-status"
 import { useDeckTitle } from "@/editor/use-deck-title"
 import { useExport } from "@/editor/use-export"
 import { useUndoList } from "@/editor/use-undo"
@@ -22,7 +21,7 @@ export type EditorDeck = ReturnType<typeof useEditorDeck>
 
 export function useEditorDeck(id: string) {
   const status = useDeckStatus()
-  const save = useShownSave(saveStatus(status))
+  const save = saveStatus(status)
   const { settle, setPending } = status
   const [title, setTitle] = useState("")
   const [selection, setSelection] = useState<Selection>(noSelection)

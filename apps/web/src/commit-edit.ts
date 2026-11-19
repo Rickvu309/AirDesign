@@ -42,7 +42,6 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
       const allTooLarge = "asideTooLarge" in flushed && flushed.asideTooLarge === flushed.aside
       return allTooLarge ? "set-aside-too-large" : "set-aside"
     }
-    if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
     if ("refusal" in flushed && (flushed.refusal === "storage" || flushed.refusal === "size")) return flushed.refusal
     return (await link.pending(deckId)).length === 0 ? "sent" : "kept"

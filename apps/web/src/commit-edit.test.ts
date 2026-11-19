@@ -1,6 +1,6 @@
 import { elementId, limits } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { commitBoxes, commitEdit, server } from "./commit-edit"
+import { commitBoxes, commitEdit, flushPending, server } from "./commit-edit"
 
 it("paints before the commit is sent", async () => {
   const order: string[] = []
@@ -66,6 +66,11 @@ it("keeps the edit when the send carried nothing but rows still wait on the devi
     { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("kept")
+})
+
+it("keeps a later edit pending when an earlier send succeeds", async () => {
+  const open = linkAnswering(() => Promise.resolve({ ok: true }))
+  expect(await flushPending(open, "any-deck")).toBe("kept")
 })
 
 it("reports a refused flush as kept, not as sent", async () => {
@@ -143,9 +148,9 @@ it("keeps the edit without a word when the answer body is not JSON", async () =>
   expect(outcome).toBe("kept")
 })
 
-it("reports sent when the flush lands", async () => {
+it("reports sent when the flush lands and no rows remain", async () => {
   const outcome = await commitEdit(
-    linkAnswering(() => Promise.resolve({ ok: true })),
+    linkAnswering(() => Promise.resolve({ ok: true }), []),
     "any-deck",
     "Hello!",
     { id: elementId("256.2"), file: "Hello" },
