@@ -52,3 +52,4 @@ export const { templateStyleCopy } = createRequire(import.meta.url)(
 export const { slideListCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/slide-list-copy.ts")
 
 export const { notesCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/notes-copy.ts")
+export const { frameCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/frame-copy.ts")
