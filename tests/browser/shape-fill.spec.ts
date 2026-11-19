@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { exportFromDialog } from "./export-dialog"
 import { boxFillPanel, fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
+import { colorWords } from "./color-words"
 import { openDeck, openFillDetails, pickColor, settled, setPanelMode, shownColor } from "./design-panel"
 import { fillWords } from "../../apps/web/src/copy/fill-copy.ts"
 
@@ -26,6 +27,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
+  const names = await colorWords("shapes-added.pptx")
   const rectangle = shapeAt(page, "4")
   const oval = shapeAt(page, "5")
   const accentOne = await filled(rectangle)
@@ -39,11 +41,11 @@ test("a person fills a shape whose fill comes from its style with a color and an
   )
   await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
-  await expect(shownColor(colors)).toHaveText("Accent 1")
-  await pickColor(page, colors, "Accent 2")
+  await expect(shownColor(colors)).toHaveText(names.accent1)
+  await pickColor(page, colors, names.accent2)
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   const accentTwo = await filled(rectangle)
-  await expect(shownColor(colors)).toHaveText("Accent 2")
+  await expect(shownColor(colors)).toHaveText(names.accent2)
   await openFillDetails(panel)
   await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toBeVisible()
 

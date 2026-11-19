@@ -4,6 +4,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
+import { colorWords } from "./color-words"
 import { openDeck, pickColor, settled, shownColor, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 
@@ -69,6 +70,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, deck)
+  const names = await colorWords(deck, { slide: 6 })
   await actualSize(page)
   await slide(page, 7)
   const first = shapeAt(page, "4", glowing)
@@ -83,9 +85,9 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 1, inner: 0, blur: 0 })
   await expect(effects.getByRole("textbox", { name: "Radius", exact: true })).toHaveValue("5")
   const glowColor = effects.getByRole("group", { name: "Color", exact: true }).first()
-  await expect(shownColor(glowColor)).toHaveText("Accent 1")
-  await pickColor(page, glowColor, "Accent 2")
-  await expect(shownColor(glowColor)).toHaveText("Accent 2")
+  await expect(shownColor(glowColor)).toHaveText(names.accent1)
+  await pickColor(page, glowColor, names.accent2)
+  await expect(shownColor(glowColor)).toHaveText(names.accent2)
   await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
   await page
     .getByRole("menuitem", { name: `${effectsCopy.add} ${effectsWords["add.innerShadow"].toLowerCase()}`, exact: true })

@@ -1,19 +1,21 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { colorCopy } from "@/copy/color-copy"
+import { colorNameCopy } from "@/copy/color-name-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import type { Palette } from "@/design/color-choices"
+import { namedByColor } from "@/design/color-names"
 import { PickerBody } from "@/design/color-picker"
 
 const hash = "#"
 
 const palette: Palette = {
-  templateColors: [
-    { scheme: "dk1", css: "000000", name: "Dark 1" },
-    { scheme: "lt1", css: "FFFFFF", name: "Light 1" },
-    { scheme: "dk2", css: "000000", name: "Dark 2" },
-    { scheme: "accent1", css: "4472C4", name: "Accent 1" },
-  ],
+  templateColors: namedByColor([
+    { scheme: "dk1" as const, css: "000000" },
+    { scheme: "lt1" as const, css: "FFFFFF" },
+    { scheme: "dk2" as const, css: "000000" },
+    { scheme: "accent1" as const, css: "4472C4" },
+  ]),
   deck: ["C00000", "4472C4"],
 }
 
@@ -43,10 +45,10 @@ describe("the colour list", () => {
     expect(markup).not.toContain(colorCopy.tints)
     expect(markup).not.toContain("lighter")
     expect(buttons(markup).map((button) => button.name)).toEqual([
-      "Dark 1",
-      "Light 1",
-      "Dark 2",
-      "Accent 1",
+      colorNameCopy.black,
+      colorNameCopy.white,
+      colorNameCopy.numbered(colorNameCopy.black, 2),
+      colorNameCopy.blue,
       colorCopy.add,
       `${hash}C00000`,
     ])
@@ -61,7 +63,7 @@ describe("the colour list", () => {
     const pressed = buttons(open)
       .filter((button) => button.pressed === "true")
       .map((button) => button.name)
-    expect(pressed).toEqual([colorCopy.lighter("Accent 1", 40)])
+    expect(pressed).toEqual([colorCopy.lighter(colorNameCopy.blue, 40)])
     expect(open).toContain(colorCopy.tints)
     expect(open).toContain(`aria-label="${colorCopy.area}"`)
     expect(open).toContain(`aria-label="${colorCopy.hue}"`)
@@ -73,7 +75,7 @@ describe("the colour list", () => {
 
     const hexOnly = renderToStaticMarkup(
       <PickerBody
-        title="Accent 1"
+        title={colorNameCopy.blue}
         value={{ rgb: "1F4E79" }}
         palette={palette}
         showTemplateColors={false}
@@ -84,7 +86,7 @@ describe("the colour list", () => {
     expect(hexOnly).toContain(colorCopy.add)
     const pickingHex = renderToStaticMarkup(
       <PickerBody
-        title="Accent 1"
+        title={colorNameCopy.blue}
         picking
         value={{ rgb: "1F4E79" }}
         palette={palette}

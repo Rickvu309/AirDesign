@@ -15,6 +15,7 @@ import { useRef, useState, useSyncExternalStore } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { formatCopy } from "@/copy/format-copy"
 import { shownHex } from "@/design/color-choices"
+import { namedByColor } from "@/design/color-names"
 import { ColorPicker } from "@/design/color-picker"
 import { formatSwatches } from "@/editor/format-art"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
@@ -160,10 +161,7 @@ export function FormatButtons({
   const designColor: Color = { scheme: "dk1" }
   const colorShown = color === undefined ? designColor : color
   const alignShown = align === undefined ? "left" : align
-  const templateColors = (swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches).map((swatch) => ({
-    ...swatch,
-    name: formatCopy.colors[swatch.scheme],
-  }))
+  const templateColors = namedByColor(swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches)
   const value = colorShown === null || colorShown === "mixed" ? undefined : colorShown
   const bar = value === undefined ? null : `#${shownHex(value, templateColors)}`
   const checked = alignShown === "left" || alignShown === "center" || alignShown === "right" ? alignShown : null

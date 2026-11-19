@@ -10,6 +10,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { describe, expect, it } from "vitest"
+import { colorNameCopy } from "@/copy/color-name-copy"
 import { shownHex } from "@/design/color-choices"
 import { designShown } from "@/design-shown"
 import { exportedParts } from "@/exported-parts"
@@ -44,27 +45,27 @@ describe("design shown", () => {
     const shown = designShown(parts, 0)
     expect(shown?.slide).toBe(readSlides(parts)[0]?.slide)
     expect(shown?.number).toBe(1)
-    expect(shown?.background.name).toBe("Light 1")
+    expect(shown?.background.name).toBe(colorNameCopy.white)
     expect(shown?.background.value).toEqual({ scheme: "lt1" })
     expect(shown?.background.css).toBe(shown?.templateColors.find((color) => color.scheme === "lt1")?.css)
     expect(shown?.templateColors.map((color) => color.name)).toEqual([
-      "Dark 1",
-      "Light 1",
-      "Dark 2",
-      "Light 2",
-      "Accent 1",
-      "Accent 2",
-      "Accent 3",
-      "Accent 4",
-      "Accent 5",
-      "Accent 6",
+      colorNameCopy.black,
+      colorNameCopy.white,
+      colorNameCopy.darkBlue,
+      colorNameCopy.numbered(colorNameCopy.white, 2),
+      colorNameCopy.blue,
+      colorNameCopy.orange,
+      colorNameCopy.green,
+      colorNameCopy.purple,
+      colorNameCopy.red,
+      colorNameCopy.teal,
     ])
   })
 
   it("shows a colour set on the slide by its template color name, a tint by its hex, and an RGB colour by its hex", async () => {
     const parts = await fixture("blank.pptx")
     const accent = designShown(painted(parts, { scheme: "accent2" }), 0)
-    expect(accent?.background.name).toBe("Accent 2")
+    expect(accent?.background.name).toBe(colorNameCopy.orange)
     expect(accent?.background.value).toEqual({ scheme: "accent2" })
     const tint: Color = {
       scheme: "accent1",

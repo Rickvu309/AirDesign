@@ -217,6 +217,12 @@ function stripColumns(strip: readonly PanelControl[]): string {
     return strip
       .map((control) => (control.field === "distribute" || control.field === "add" ? "24px" : "minmax(0, 1fr)"))
       .join(" ")
+  const color = strip.findIndex((control) => control.kind === "color")
+  if (color !== -1 && strip.length === 2) {
+    const wide = "minmax(0, 1.5fr)"
+    const rest = "minmax(0, 1fr)"
+    return color === 0 ? `${wide} ${rest}` : `${rest} ${wide}`
+  }
   return `repeat(${strip.length}, minmax(0, 1fr))`
 }
 

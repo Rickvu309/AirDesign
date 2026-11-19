@@ -1,8 +1,17 @@
-import { readSlideId, type Color, type FieldValue, type SlideId } from "@airdesign/document"
-import { ownBackground, shownBackground, paintReader, readSlides, themeSwatches, type PaintFill } from "@airdesign/pptx"
+import { readSlideId, templateColors, type Color, type FieldValue, type SlideId } from "@airdesign/document"
+import {
+  ownBackground,
+  paintReader,
+  readSlides,
+  shownBackground,
+  slideTheme,
+  templateStyles,
+  themeSwatches,
+  type PaintFill,
+} from "@airdesign/pptx"
 import { designCopy } from "@/copy/design-copy"
-import { formatCopy } from "@/copy/format-copy"
 import { shownName, type Swatch } from "@/design/color-choices"
+import { namedByColor } from "@/design/color-names"
 import { cssColor } from "@/paint-css"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -53,11 +62,25 @@ function valueOf(
   return slot === undefined ? { rgb: hex } : { scheme: slot.scheme }
 }
 
+function colorLabels(parts: Parts, part: string): ReadonlyMap<string, string> {
+  const theme = slideTheme(parts, part)
+  const style = theme === null ? undefined : templateStyles(parts).find((item) => item.id === theme)
+  const entries =
+    style === undefined
+      ? themeSwatches(parts, part).map((swatch) => ({ slot: swatch.scheme, css: swatch.css }))
+      : templateColors.flatMap((slot) => {
+          const hex = style.palette.slots[slot]
+          return hex === undefined ? [] : [{ slot, css: `#${hex}` }]
+        })
+  return new Map(namedByColor(entries).map((entry) => [entry.slot, entry.name]))
+}
+
 export function templateColorsOf(parts: Parts, part: string): readonly Swatch[] {
+  const labels = colorLabels(parts, part)
   return themeSwatches(parts, part).map((swatch) => ({
-    ...swatch,
+    scheme: swatch.scheme,
     css: swatch.css.toUpperCase(),
-    name: formatCopy.colors[swatch.scheme],
+    name: labels.get(swatch.scheme) ?? namedByColor([swatch])[0]?.name ?? "",
   }))
 }
 

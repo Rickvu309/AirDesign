@@ -24,8 +24,8 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
-import { templateStyleCopy } from "@/copy/template-style-copy"
 import { ColorPicker } from "@/design/color-picker"
+import { namedByColor } from "@/design/color-names"
 import { changeDesign } from "@/design/design-change"
 import { panelOf } from "@/design/panel"
 import { rebasedChange } from "@/design/rebase"
@@ -34,7 +34,7 @@ import { deviceScope } from "@/design/trait-edit"
 import { DesignSection, SectionStrips } from "@/editor/design-panel"
 import type { DesigningDeck } from "@/editor/live-design-panel"
 import { listedTextStyles } from "@/editor/text-style-dialog"
-import { TemplateStyleCard } from "@/editor/template-style-card"
+import { TemplateStyleCard, TemplateStyleFace } from "@/editor/template-style-card"
 
 function colorName(colors: readonly ThemeCustomColor[]): string {
   const used = new Set(colors.map((color) => color.name))
@@ -97,39 +97,33 @@ export function LiveTemplateStyle({ deck }: { deck: DesigningDeck }) {
     <DesignSection
       title={designCopy.templateStyle}
       action={
-        <div className="flex items-center gap-1">
-          {remixable ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-6"
-              aria-label={designCopy.remixTemplateColors}
-              onClick={() => {
-                if (part === undefined) return
-                changeDesign(deck, () => remixTargets(deck.shown.displayParts.current, part))
-              }}
-            >
-              <Shuffle className="size-3.5" />
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-6"
-            aria-label={designCopy.editTemplateStyle}
-            onClick={() => setEditing(current)}
-          >
-            <EditorIcon name="styleSliders" size={14} />
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          aria-label={designCopy.editTemplateStyle}
+          onClick={() => setEditing(current)}
+        >
+          <EditorIcon name="styleSliders" size={14} />
+        </Button>
       }
     >
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-1 rounded border border-line p-2 hover:bg-muted">
         <Popover open={choosing} onOpenChange={setChoosing}>
           <PopoverTrigger
-            render={<TemplateStyleCard style={style} open={choosing} onOpen={() => setChoosing(!choosing)} />}
+            render={
+              <button
+                type="button"
+                data-template-style
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                aria-label={designCopy.chooseTemplateStyle}
+                aria-expanded={choosing}
+                onClick={() => setChoosing(!choosing)}
+              >
+                <TemplateStyleFace style={style} />
+              </button>
+            }
           />
           <PopoverContent align="end" aria-label={designCopy.chooseTemplateStyle}>
             {styles.map((choice) => (
@@ -155,6 +149,23 @@ export function LiveTemplateStyle({ deck }: { deck: DesigningDeck }) {
             ))}
           </PopoverContent>
         </Popover>
+        {remixable ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-6 shrink-0"
+            aria-label={designCopy.remixTemplateColors}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              if (part === undefined) return
+              changeDesign(deck, () => remixTargets(deck.shown.displayParts.current, part))
+            }}
+          >
+            <Shuffle className="size-3.5" />
+          </Button>
+        ) : null}
       </div>
       <Dialog
         open={edited !== undefined}
@@ -221,6 +232,14 @@ function TemplateStyleDialog({
     section?.strips.filter((strip) =>
       strip.some((control) => control.field === "major" || control.field === "minor"),
     ) ?? []
+  const colorLabels = new Map(
+    namedByColor(
+      templateColors.flatMap((slot) => {
+        const hex = style.palette.slots[slot]
+        return hex === undefined ? [] : [{ slot, css: `#${hex}` }]
+      }),
+    ).map((entry) => [entry.slot, entry.name]),
+  )
   return (
     <DialogContent data-template-style-dialog>
       <div className="flex items-center gap-2 pr-8">
@@ -285,12 +304,13 @@ function TemplateStyleDialog({
           <div className="grid grid-cols-6 gap-2">
             {templateColors.flatMap((slot) => {
               const hex = style.palette.slots[slot]
+              const label = colorLabels.get(slot) ?? slot
               return hex === undefined
                 ? []
                 : [
                     <ColorPicker
                       key={slot}
-                      title={templateStyleCopy[slot]}
+                      title={label}
                       value={{ rgb: hex }}
                       palette={{ templateColors: [], deck: [] }}
                       showTemplateColors={false}
@@ -303,8 +323,8 @@ function TemplateStyleDialog({
                         <Button
                           variant="outline"
                           className="size-9"
-                          aria-label={templateStyleCopy[slot]}
-                          title={`${templateStyleCopy[slot]} #${hex}`}
+                          aria-label={label}
+                          title={`${label} #${hex}`}
                           style={{ backgroundColor: `#${hex}` }}
                         />
                       }

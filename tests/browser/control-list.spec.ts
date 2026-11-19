@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
+import { colorWords } from "./color-words"
 import { openDeck, pickColor } from "./design-panel"
 import { boxFillPanel, filled, shapeAt } from "./shape-fills"
 
@@ -9,6 +10,7 @@ test("a list adds an item and removes one within its bounds, and Undo brings the
   page,
 }) => {
   await openDeck(page, "clean.pptx")
+  const names = await colorWords("clean.pptx")
   const shape = shapeAt(page, "2")
   const panel = await boxFillPanel(page, shape)
   await panel.getByRole("group", { name: fillCopy.box, exact: true }).getByRole("button", { name: "Gradient" }).click()
@@ -22,7 +24,7 @@ test("a list adds an item and removes one within its bounds, and Undo brings the
   await pickColor(
     page,
     panel.getByRole("group", { name: "Stop 2", exact: true }).locator('[data-control="color"]'),
-    "Accent 6",
+    names.accent6,
   )
   await expect.poll(() => filled(shape)).not.toBe(two)
   const three = await filled(shape)

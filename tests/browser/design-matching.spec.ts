@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
+import { colorWords } from "./color-words"
 import { fixtures, openDeck, pickColor, settled } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
@@ -15,6 +16,7 @@ test("selects three matching footers, updates them while offline, and undoes eac
   context,
 }, testInfo) => {
   await openDeck(page, "clean.pptx")
+  const names = await colorWords("clean.pptx")
   const footer = shapeAt(page, "2")
   const words = footer.locator("[contenteditable]")
   await words.click()
@@ -46,7 +48,7 @@ test("selects three matching footers, updates them while offline, and undoes eac
   const color = panel.getByRole("group", { name: formatCopy.color, exact: true })
   const paint = entries.locator("[data-text-body] [data-paragraph] > span")
   const original = await paint.first().evaluate((run) => getComputedStyle(run).color)
-  await pickColor(page, color, formatCopy.colors.accent6)
+  await pickColor(page, color, names.accent6)
   const changed = await paint.first().evaluate((run) => getComputedStyle(run).color)
   expect(changed).not.toBe(original)
   for (const run of await paint.all()) await expect(run).toHaveCSS("color", changed)

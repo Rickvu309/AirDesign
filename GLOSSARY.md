@@ -111,7 +111,7 @@ The look a slide takes: its template colors, heading and body fonts and text sty
 _Avoid_: theme, palette, color scheme
 
 **template colors**:
-The twelve colors of a template style, each named by its PowerPoint slot, such as Dark 1 or Accent 1.
+The twelve template colors: a person reads a color word such as Black, and the code keeps the slot.
 _Avoid_: theme colors, palette
 
 **template fonts**:
