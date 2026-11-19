@@ -196,6 +196,11 @@
   --guide-label-offset: 6px;
   --guide-label-text: #ffffff;
   --guide-dash: 3 3;
+  --slide-marquee-edge: var(--ring);
+  --slide-marquee-fill: color-mix(in oklch, var(--slide-marquee-edge) 10%, transparent);
+  --slide-marquee-width: 1px;
+  --layer-hover-edge: var(--primary);
+  --layer-hover-width: 1px;
   --grid-hover: #bfe4ff;
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);

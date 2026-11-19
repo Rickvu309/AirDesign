@@ -131,11 +131,15 @@ async function chord(target: HTMLElement, shiftKey: boolean) {
 const selected = (host: HTMLElement) => host.querySelector("[data-selection]")?.getAttribute("data-selection") ?? null
 
 describe("SlideCanvas groups", () => {
-  it("picks a child's group on the first press and the child on the next", async () => {
+  it("picks a child's group on click and steps into the child on double-click", async () => {
     const { host } = await mounted()
     await click(frameOf(host, first))
     expect(selected(host)).toBe(group)
     await click(frameOf(host, first))
+    expect(selected(host)).toBe(group)
+    await act(async () => {
+      frameOf(host, first).dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }))
+    })
     expect(selected(host)).toBe(first)
     await click(frameOf(host, second))
     expect(selected(host)).toBe(second)

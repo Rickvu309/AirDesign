@@ -144,7 +144,7 @@ async function add(target: HTMLElement): Promise<void> {
         clientX: 0,
         clientY: 0,
         button: 0,
-        metaKey: true,
+        shiftKey: true,
       }),
     )
   })

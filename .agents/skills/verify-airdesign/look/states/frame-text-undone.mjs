@@ -48,8 +48,7 @@ async function drive(kit) {
   await page.keyboard.press("Shift+A")
   await expect(page.locator("[data-slide-paint] [data-chosen], [data-slide-paint] [data-grip]").first()).toBeVisible()
   const before = await shape(21).boundingBox()
-  await shape(20).click()
-  await shape(20).click()
+  await shape(20).dblclick()
   await page.keyboard.press("Enter")
   await page.keyboard.press("End")
   for (const _ of [1, 2, 3]) {

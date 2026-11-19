@@ -5,12 +5,13 @@ type Chord = { readonly mod?: true; readonly ctrl?: true; readonly shift?: true;
 export type Keys = Chord & ({ readonly key: string } | { readonly code: string })
 
 export type Pointing = {
-  readonly on: "element" | "corner"
+  readonly on: "element" | "corner" | "slide"
   readonly drag: boolean
   readonly shift?: true
   readonly mod?: true
   readonly ctrl?: true
   readonly alt?: true
+  readonly double?: true
 }
 
 export type GestureRow = {
@@ -38,14 +39,39 @@ export const gestures = [
     id: "select-add",
     group: "select",
     keys: [],
+    pointing: [{ on: "element", drag: false, shift: true }],
+    where: ["slide"],
+  },
+  {
+    id: "deep-select",
+    group: "select",
+    keys: [],
     pointing: [
-      { on: "element", drag: false, shift: true },
       { on: "element", drag: false, mod: true },
+      { on: "element", drag: false, mod: true, shift: true },
+    ],
+    where: ["slide"],
+  },
+  {
+    id: "marquee",
+    group: "select",
+    keys: [],
+    pointing: [
+      { on: "slide", drag: true },
+      { on: "slide", drag: true, shift: true },
+      { on: "slide", drag: true, mod: true },
     ],
     where: ["slide"],
   },
   { id: "select-next", group: "select", keys: [{ key: "Tab" }, { key: "Tab", shift: true }], where: ["element"] },
-  { id: "step-in", group: "select", keys: [], pointing: [{ on: "element", drag: false }], where: ["slide"] },
+  {
+    id: "step-in",
+    group: "select",
+    keys: [],
+    pointing: [{ on: "element", drag: false, double: true }],
+    where: ["slide"],
+  },
+  { id: "select-parent", group: "select", keys: [{ key: "Enter", shift: true }], where: ["element"] },
   {
     id: "measure",
     group: "select",

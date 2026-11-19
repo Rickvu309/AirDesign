@@ -10,7 +10,7 @@ async function drive(kit) {
   const panel = page.locator("[data-design-panel]")
   await panel.getByRole("button", { name: frameCopy.removeAutoLayout }).click()
   await expect(panel.getByText(frameCopy.frame, { exact: true })).toBeVisible()
-  await page.locator(shape(5)).click({ position: { x: 8, y: 8 } })
+  await page.locator(shape(5)).dblclick({ position: { x: 8, y: 8 } })
   await expect(page.locator("[data-slide-paint] [data-grip]").first()).toBeVisible()
   await page.mouse.move(4, 4)
 }

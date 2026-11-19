@@ -81,8 +81,7 @@ test("a growing text box in an auto layout column pushes the next one down as it
   await expect(page.locator("[data-slide-paint]").getByRole("status")).toHaveText(groupCopy.said.frame)
   const before = await placed(bottom)
   const gap = before.y - ((await placed(top)).y + (await placed(top)).height)
-  await top.click()
-  await top.click()
+  await top.dblclick()
   await page.keyboard.press("Enter")
   await page.keyboard.press("End")
   for (const _ of [1, 2, 3]) {

@@ -44,8 +44,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(page.locator("[data-slide-paint]").getByRole("status")).toHaveText(groupCopy.said.frame)
   const before = await shape(21).boundingBox()
   await capture("column-wrapped")
-  await shape(20).click()
-  await shape(20).click()
+  await shape(20).dblclick()
   await page.keyboard.press("Enter")
   await page.keyboard.press("End")
   for (const _ of [1, 2, 3]) {

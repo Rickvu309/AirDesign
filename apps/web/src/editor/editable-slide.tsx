@@ -3,6 +3,7 @@ import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { commitPlace } from "@/editor/group-actions"
 import { commitBoxes, commitEdit, flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -230,6 +231,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               )
             }}
             onOrder={order}
+            ownsKey={editorOwnsKey}
             selection={selection}
             onSelection={select}
             onConnect={(node, end, to) => {
