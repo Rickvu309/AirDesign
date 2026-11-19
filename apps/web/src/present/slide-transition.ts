@@ -6,6 +6,15 @@ export type TransitionFrames = {
   readonly duration: number
   readonly easing: string
   readonly outgoingOnTop?: boolean
+  readonly morph?: true
+}
+
+export type LayerBox = {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+  readonly turn: string
 }
 
 const pushFrom: Readonly<Record<string, { readonly axis: "X" | "Y"; readonly sign: 1 | -1 }>> = {
@@ -34,8 +43,25 @@ function motion(direction: string | null, way: "in" | "out"): readonly Keyframe[
     : [{ transform: `translate${axis}(0)` }, { transform: `translate${axis}(${-from}%)` }]
 }
 
+function ratio(from: number, to: number): number {
+  return to <= 0 ? 1 : from / to
+}
+
+export function layerFrames(before: LayerBox, after: LayerBox): readonly Keyframe[] {
+  const dx = before.x + before.width / 2 - (after.x + after.width / 2)
+  const dy = before.y + before.height / 2 - (after.y + after.height / 2)
+  const scale = `scale(${String(ratio(before.width, after.width))}, ${String(ratio(before.height, after.height))})`
+  const turned = (turn: string) => (turn === "" ? "" : `${turn} `)
+  return [
+    { transform: `translate(${String(dx)}px, ${String(dy)}px) ${turned(before.turn)}${scale}` },
+    { transform: `translate(0px, 0px) ${turned(after.turn)}scale(1, 1)` },
+  ]
+}
+
 export function transitionFrames(transition: SlideTransition): TransitionFrames {
   const { duration } = transition
+  if (transition.kind === "morph")
+    return { incoming: [{ opacity: 0 }, { opacity: 1 }], outgoing: null, duration, easing: travel, morph: true }
   if (transition.kind === "push")
     return {
       incoming: motion(transition.direction, "in"),

@@ -27,6 +27,7 @@ import { PresentButton } from "@/present/present-button"
 import { usePresentKeys } from "@/present/present-keys"
 import { PresentLayer } from "@/present/present-layer"
 import type { ShownSlide } from "@/present/slide-shows"
+import type { LayerPairs } from "@/present/use-leaving"
 import { usePresent } from "@/present/use-present"
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
@@ -54,6 +55,7 @@ export type EditorDeck = {
   readonly notesOf?: (index: number) => string
   readonly presentPaint?: (index: number, width: number, go: (index: number) => void) => ReactNode
   readonly shows?: () => readonly ShownSlide[]
+  readonly morphOf?: (from: number, to: number) => LayerPairs
 }
 
 export type EditorShellProps = {
@@ -117,6 +119,7 @@ export function EditorShell({
           count: strip.count,
           current: strip.current,
           ...(deck?.shows === undefined ? {} : { shows: deck.shows }),
+          ...(deck?.morphOf === undefined ? {} : { morphOf: deck.morphOf }),
           onLand: (at) => {
             strip.onSelect(at)
             setTimeout(() => presentButton.current?.focus({ preventScroll: true }))

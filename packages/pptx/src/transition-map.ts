@@ -1,5 +1,9 @@
 export const p14Namespace = "http://schemas.microsoft.com/office/powerpoint/2010/main"
 
+export const p159Namespace = "http://schemas.microsoft.com/office/powerpoint/2015/09/main"
+
+export const mcNamespace = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+
 export const speeds: Readonly<Record<string, number>> = { fast: 500, med: 750, slow: 1000 }
 
 export const fromSide = { left: "l", right: "r", top: "u", bottom: "d" } as const

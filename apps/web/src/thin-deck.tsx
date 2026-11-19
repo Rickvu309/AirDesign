@@ -18,7 +18,7 @@ import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
 import { useUndoTurn } from "@/editor/use-undo"
 import { notesOn } from "@/present/notes-on"
-import { showsIn } from "@/present/slide-shows"
+import { layerPairs, showsIn } from "@/present/slide-shows"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
 import { colorsIn } from "@/editor/deck-colors"
@@ -112,6 +112,10 @@ export function ThinDeck({ id }: { id: string }) {
               </PresentLinks>
             ),
             notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),
+            morphOf: (from, to) => {
+              const slides = shown.store.current.slides()
+              return layerPairs(shown.displayParts.current, slides[from]?.id, slides[to]?.id)
+            },
             shows: () =>
               showsIn(
                 shown.displayParts.current,

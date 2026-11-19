@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react"
 import type { SlideTransition } from "@airdesign/pptx"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"
 import type { ShownSlide } from "@/present/slide-shows"
+import type { LayerPairs } from "@/present/use-leaving"
 
 export type PresentDeck = {
   readonly count: number
   readonly current: number
   readonly shows?: () => readonly ShownSlide[]
+  readonly morphOf?: (from: number, to: number) => LayerPairs
   readonly onLand: (index: number) => void
 }
 
@@ -25,6 +27,7 @@ export type Present = {
   readonly restart: () => void
   readonly hidden: readonly boolean[]
   readonly transitionOf: (index: number) => SlideTransition | null
+  readonly morphOf: (from: number, to: number) => LayerPairs
 }
 
 const idle = 2500
@@ -161,6 +164,7 @@ export function usePresent(deck: PresentDeck | null): Present {
         place({ ...held.current, at: index, ended: false, typed: "" })
     },
     transitionOf: (index) => slides[index]?.transition ?? null,
+    morphOf: (from, to) => latest.current?.morphOf?.(from, to) ?? [],
     elapsed: secondsOf(clock, now),
     running: clock.since !== null,
     start,

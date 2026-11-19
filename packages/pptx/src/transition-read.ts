@@ -5,7 +5,7 @@ import { pushSide, sideOf, speedDuration, speeds, type Side } from "./transition
 
 export type Arrival = { readonly state: "value"; readonly value: TransitionValue } | { readonly state: "kept" }
 
-export type PlayedKind = "fade" | "push" | "wipe" | "cover" | "pull"
+export type PlayedKind = "fade" | "push" | "wipe" | "cover" | "pull" | "morph"
 
 export type PlayedTransition = {
   readonly kind: PlayedKind
@@ -127,6 +127,34 @@ function readEffect(elements: readonly MarkupElement[], transition: MarkupElemen
   return { state: "value", value: { moveOut: { direction, duration, advance } } }
 }
 
+function morphOf(elements: readonly MarkupElement[], block: MarkupElement) {
+  const choices = children(elements, block).filter((kid) => kid.kind === "mc:Choice")
+  const choice = choices.length === 1 ? choices[0] : undefined
+  if (choice === undefined || attr(choice, "Requires") !== "p159") return null
+  const kids = children(elements, choice)
+  const transition = kids.length === 1 ? kids[0] : undefined
+  if (transition?.kind !== "p:transition") return null
+  const effects = children(elements, transition)
+  const morph = effects.length === 1 ? effects[0] : undefined
+  return morph?.kind === "p159:morph" ? { transition, morph } : null
+}
+
+function readMorph(elements: readonly MarkupElement[], block: MarkupElement): Arrival {
+  const found = morphOf(elements, block)
+  if (found === null) return { state: "kept" }
+  const { transition, morph } = found
+  const names = transition.attributes.map((attribute) => attribute.name).filter((name) => !declared(name))
+  if (names.some((name) => !allowed.has(name))) return { state: "kept" }
+  const options = morph.attributes.filter((attribute) => !declared(attribute.name))
+  if (options.some((attribute) => attribute.name !== "option")) return { state: "kept" }
+  const option = attr(morph, "option")
+  if (option !== undefined && option !== "byObject") return { state: "kept" }
+  const advance = readAdvance(transition)
+  const duration = readDuration(transition)
+  if (advance === null || duration === null) return { state: "kept" }
+  return { state: "value", value: { smartAnimate: { duration, advance } } }
+}
+
 export function readArrival(bytes: Uint8Array | undefined): Arrival {
   if (bytes === undefined) return { state: "value", value: noneClick }
   const document = markupDocument(bytes)
@@ -136,7 +164,8 @@ export function readArrival(bytes: Uint8Array | undefined): Arrival {
   const blocks = transitionBlocks(document.elements)
   const block = blocks[0]
   if (block === undefined) return { state: "value", value: noneClick }
-  if (blocks.length > 1 || block.kind === "mc:AlternateContent") return { state: "kept" }
+  if (blocks.length > 1) return { state: "kept" }
+  if (block.kind === "mc:AlternateContent") return readMorph(document.elements, block)
   return readEffect(document.elements, block)
 }
 
@@ -167,7 +196,14 @@ export function readPlayback(bytes: Uint8Array | undefined): Playback {
   if (!document.wellFormed) return empty
   const blocks = transitionBlocks(document.elements)
   const block = blocks[0]
-  if (block === undefined || blocks.length > 1 || block.kind !== "p:transition") return empty
+  if (block === undefined || blocks.length > 1) return empty
+  if (block.kind === "mc:AlternateContent") {
+    const found = morphOf(document.elements, block)
+    if (found === null) return empty
+    const morph = { kind: "morph" as const, direction: null, duration: playedDuration(found.transition) }
+    return { transition: morph, advance: playedAdvance(found.transition) }
+  }
+  if (block.kind !== "p:transition") return empty
   const effects = children(document.elements, block).flatMap((kid) => {
     const kind = playedKind(kid.kind)
     return kind === null ? [] : [{ kind, kid }]

@@ -157,6 +157,38 @@ describe("a slide transition", () => {
     expect(readArrival(encode(delayed))).toEqual({ state: "value", value: { none: { advance: { delay: 1500 } } } })
   })
 
+  it("writes Smart animate as PowerPoint's Morph with a fade for older readers, and reads it back", () => {
+    const smart: TransitionValue = { smartAnimate: { duration: 1200, advance: clicked } }
+    const host = slide(`<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr><p:transition><p:fade/></p:transition>`)
+    const morphed = written(host, smart)
+    expect(morphed).toContain(
+      `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159"><p:transition xmlns:p14="${p14}" spd="slow" p14:dur="1200"><p159:morph option="byObject"/></p:transition></mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent></p:sld>`,
+    )
+    expect(readArrival(encode(morphed))).toEqual({ state: "value", value: smart })
+    expect(readPlayback(encode(morphed))).toEqual({
+      transition: { kind: "morph", direction: null, duration: 1200 },
+      advance: null,
+    })
+    const delayed: TransitionValue = { smartAnimate: { duration: 500, advance: { delay: 2000 } } }
+    const later = written(slide(""), delayed)
+    expect(later).toContain(`<mc:Fallback><p:transition spd="fast" advClick="0" advTm="2000"><p:fade/></p:transition>`)
+    expect(readArrival(encode(later))).toEqual({ state: "value", value: delayed })
+    expect(written(encode(morphed), dissolve)).not.toContain("mc:AlternateContent")
+  })
+
+  it("reads PowerPoint's own Morph by object and keeps Morph by word untouched", () => {
+    const powerpoint = slide(
+      `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159"><p:transition spd="slow" p14:dur="2000"><p159:morph option="byObject"/></p:transition></mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>`,
+    )
+    const smart: TransitionValue = { smartAnimate: { duration: 2000, advance: clicked } }
+    expect(readArrival(powerpoint)).toEqual({ state: "value", value: smart })
+    const byWord = slide(
+      `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159"><p:transition spd="slow" p14:dur="2000"><p159:morph option="byWord"/></p:transition></mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>`,
+    )
+    expect(readArrival(byWord)).toEqual({ state: "kept" })
+    expect(readPlayback(byWord).transition?.kind).toBe("morph")
+  })
+
   it("refuses to splice a transition into markup it cannot parse", () => {
     const broken = encode("<p:sld><p:transition>")
     expect(readArrival(broken)).toEqual({ state: "kept" })
