@@ -13,12 +13,12 @@ export type ActionPart = (typeof actionParts)[number]
 export type ToolbarPart = InsertPart | FormatPart | ActionPart
 
 export const foldOrder: readonly ToolbarPart[] = [
+  "actions",
   "icon",
   "image",
   "shape",
   "number",
   "text",
-  "actions",
   "bullets",
   "align",
   "color",

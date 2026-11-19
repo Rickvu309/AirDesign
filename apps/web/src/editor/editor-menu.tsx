@@ -105,7 +105,7 @@ export function EditorMenuSub({ label, children }: { label: string; children: Re
       <DropdownMenuSubTrigger
         className={cn(
           menuRow,
-          "data-open:bg-quiet data-open:text-white data-popup-open:bg-quiet data-popup-open:text-white",
+          "data-open:bg-quiet data-open:text-white data-popup-open:bg-quiet data-popup-open:text-white **:text-white!",
         )}
       >
         <span className="size-4" />

@@ -34,11 +34,8 @@ it("folds the slide number before Add text box", () => {
   })
 })
 
-it("folds Actions after the insert tools and before the text controls", () => {
+it("folds Actions before every other part, so the tools a person already reaches keep their place", () => {
   const withActions = [...insertParts, ...formatParts, ...actionParts]
-  expect(toolbarFold(withActions, 5).more).toEqual(["number", "text", "shape", "image", "icon"])
-  expect(toolbarFold(withActions, 6)).toEqual({
-    row: ["styles", "size", "color", "align", "bullets"],
-    more: ["number", "text", "shape", "image", "icon", "actions"],
-  })
+  expect(toolbarFold(withActions, 1)).toEqual({ row: all, more: ["actions"] })
+  expect(toolbarFold(withActions, 2).more).toEqual(["icon", "actions"])
 })

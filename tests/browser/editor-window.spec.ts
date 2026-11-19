@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { designing, openDeck } from "./design-panel"
 import { first, second, store } from "./home-store.ts"
 import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
+import { toolbarCopy } from "../../apps/web/src/copy/toolbar-copy.ts"
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
 
@@ -147,7 +148,7 @@ test("in a 1280x720 window the controls that do not fit sit in More, reached and
   await expect(more).toBeVisible()
   await page.screenshot({ path: test.info().outputPath("more-open.png") })
   const order = await more.getByRole("button").evaluateAll((all) => all.map((each) => each.getAttribute("aria-label")))
-  expect(order.at(-1)).toBe(formatCopy.bullets)
+  expect(order.slice(-2)).toEqual([formatCopy.bullets, toolbarCopy.actions])
   const bullets = more.getByRole("button", { name: formatCopy.bullets })
   for (const _ of order) {
     if (await bullets.evaluate((each) => each === document.activeElement)) break
