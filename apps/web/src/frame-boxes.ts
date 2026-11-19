@@ -1,4 +1,4 @@
-import { layoutNodes, readLayout, type Box, type ElementId, type Register } from "@airdesign/document"
+import { layoutNodes, opaque, readLayout, type Box, type ElementId, type Register } from "@airdesign/document"
 import type { Framing } from "@airdesign/render"
 
 export type Framed = {
@@ -7,6 +7,7 @@ export type Framed = {
   readonly backdrops: ReadonlySet<ElementId>
   readonly frames: ReadonlyMap<ElementId, Framing>
   readonly children: ReadonlyMap<ElementId, Framing>
+  readonly opacities: ReadonlyMap<ElementId, number>
   readonly key: string
 }
 
@@ -16,6 +17,7 @@ const none: Framed = {
   backdrops: new Set(),
   frames: new Map(),
   children: new Map(),
+  opacities: new Map(),
   key: "",
 }
 
@@ -29,11 +31,13 @@ function laidOut(register: Register): Framed {
   const backdrops = new Set<ElementId>()
   const frames = new Map<ElementId, Framing>()
   const children = new Map<ElementId, Framing>()
+  const opacities = new Map<ElementId, number>()
   for (const node of layoutNodes(register)) {
     const view = readLayout(register, node)
     if (view === null) continue
     const frame = view.flow === "none" ? "free" : "auto"
     frames.set(node, frame)
+    if (view.opacity < opaque) opacities.set(node, view.opacity / opaque)
     boxes.set(node, view.box)
     boxes.set(view.backdrop, view.box)
     backdrops.add(view.backdrop)
@@ -43,8 +47,8 @@ function laidOut(register: Register): Framed {
       if (frame === "free") origins.set(child.node, view.box)
     }
   }
-  const key = JSON.stringify([[...frames], [...children]])
-  const found = { boxes, origins, backdrops, frames, children, key }
+  const key = JSON.stringify([[...frames], [...children], [...opacities]])
+  const found = { boxes, origins, backdrops, frames, children, opacities, key }
   laid.set(register, found)
   return found
 }

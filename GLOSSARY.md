@@ -143,7 +143,7 @@ The words a screen reader reads for a layer, shown beside its name in the design
 _Avoid_: description, caption, alternative text
 
 **opacity**:
-How solid a layer is, in percent: one value that fades its fill, border, text and image together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
+How solid a layer is, in percent: one value that fades its fill, border, text and image together, stored as each colour's alpha. A frame's fades it and its layers as one; the export multiplies it into each. A plain group, a table and a slide background have none.
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
@@ -151,7 +151,7 @@ Two or more layers of one slide that move and resize as one: Group or Ctrl+G, an
 _Avoid_: bundle, combine, merge, set
 
 **frame**:
-A group with its own fill, opacity, corners, border and shadow; all but the shadow sit on its backdrop.
+A group with its own fill, opacity, corners, border and shadow; fill, corners and border sit on its backdrop.
 _Avoid_: container
 
 **auto layout**:

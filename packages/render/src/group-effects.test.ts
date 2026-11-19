@@ -130,6 +130,13 @@ describe("group effects", () => {
     expect(host.querySelector('[data-thumb-paint] > [data-thumb-element="a"]')).not.toBeNull()
   })
 
+  it("fades a faded frame and everything it holds as one picture, with no filter when it has no effects", async () => {
+    const host = await painted([{ ...group("g", undefined, 2), opacity: 0.5 }, shape("a"), shape("b")])
+    expect(members(host)).toEqual(["a", "b"])
+    expect(layer(host)?.style.opacity).toBe("0.5")
+    expect(layer(host)?.style.filter).toBe("")
+  })
+
   it("paints the effects of a group held by a group that has none", async () => {
     const host = await painted([group("outer", undefined, 3), group("inner", { shadow }, 1), shape("a"), shape("b")])
     expect(members(host)).toEqual(["a"])

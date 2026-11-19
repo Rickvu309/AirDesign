@@ -3,11 +3,9 @@ import { blurDeviation, castShift, edgeDeviation, slideShift, tidy } from "./eff
 import type { CanvasElement } from "./record.js"
 import type { Scaled } from "./text-look.js"
 
-export function paintsGroupEffects(element: CanvasElement): boolean {
+function filtered(element: CanvasElement): boolean {
   const effects = element.effects
   return (
-    element.kind === "group" &&
-    element.box !== null &&
     effects !== undefined &&
     (effects.shadow !== undefined ||
       effects.glow !== undefined ||
@@ -15,6 +13,10 @@ export function paintsGroupEffects(element: CanvasElement): boolean {
       effects.innerShadow !== undefined ||
       effects.blur !== undefined)
   )
+}
+
+export function paintsGroupEffects(element: CanvasElement): boolean {
+  return element.kind === "group" && element.box !== null && (filtered(element) || element.opacity !== undefined)
 }
 
 export function layered(
@@ -94,14 +96,24 @@ export function GroupEffects(props: {
   readonly children: readonly ReactNode[]
 }) {
   const id = `${useId().replaceAll(":", "")}-group`
+  const effects = filtered(props.element)
+  const { opacity } = props.element
   return (
     <>
-      <svg aria-hidden="true" width="0" height="0" style={{ position: "absolute" }}>
-        <GroupFilter id={id} element={props.element} scaled={props.scaled} />
-      </svg>
+      {effects ? (
+        <svg aria-hidden="true" width="0" height="0" style={{ position: "absolute" }}>
+          <GroupFilter id={id} element={props.element} scaled={props.scaled} />
+        </svg>
+      ) : null}
       <div
         data-group-effects={props.element.key}
-        style={{ position: "absolute", inset: 0, pointerEvents: "none", filter: `url(#${id})` }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          ...(effects ? { filter: `url(#${id})` } : {}),
+          ...(opacity === undefined ? {} : { opacity }),
+        }}
       >
         {props.children}
       </div>

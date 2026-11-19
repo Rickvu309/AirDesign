@@ -37,6 +37,7 @@ export type ElementPaint = {
   readonly frame?: Framing
   readonly inFrame?: Framing
   readonly held?: number
+  readonly opacity?: number
   readonly box: PaintBox | null
   readonly editable: boolean
   readonly movable?: boolean

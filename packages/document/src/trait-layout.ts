@@ -1,5 +1,5 @@
 import { trait } from "./trait-decl.js"
-import { choice, record, size } from "./value-kind.js"
+import { alphaOver, choice, record, size } from "./value-kind.js"
 
 export const flows = ["none", "horizontal", "vertical"] as const
 
@@ -17,11 +17,12 @@ export const layoutAligns = [
 
 export const layout = trait(
   "own",
-  { version: 1, shape: "8d73e44c" },
+  { version: 2, shape: "1094f216" },
   {
     flow: choice(flows),
     gap: size,
     padding: record({ left: size, top: size, right: size, bottom: size }),
     align: choice(layoutAligns),
+    opacity: alphaOver("children"),
   },
 )

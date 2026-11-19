@@ -21,6 +21,7 @@ export function paintGroup(row: PaintElement, source: CanvasSource, key: string)
     editable: false,
     movable: shape.movable && row.group === null,
     ...(shape.frame === undefined ? {} : { frame: shape.frame }),
+    ...(shape.opacity === undefined ? {} : { opacity: shape.opacity }),
     placeholder: false,
     filled: false,
     fill: null,

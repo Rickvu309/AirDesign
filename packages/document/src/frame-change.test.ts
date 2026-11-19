@@ -8,6 +8,7 @@ import {
   readLayout,
   registerScope,
   slideId,
+  type Alpha,
   type IndexElement,
   type Register,
 } from "./index.js"
@@ -53,7 +54,7 @@ function wrapped(flow: "horizontal" | "none"): Register {
 }
 
 describe("a change aimed at a frame", () => {
-  it("paints fill, border, corners and opacity on the backdrop and keeps the rest on the frame", () => {
+  it("paints fill, border and corners on the backdrop and keeps the rest on the frame", () => {
     const plan = planChange(
       { target: { node: frame }, fills: { paint: { solid: { rgb: "C00000" } } }, layout: { gap: 10 } },
       registerScope(wrapped("horizontal")),
@@ -62,6 +63,22 @@ describe("a change aimed at a frame", () => {
       [frame, ["layout"]],
       [backdrop, ["fills"]],
     ])
+  })
+
+  it("fades the whole frame with one layout.opacity row on the frame, and reads it back", () => {
+    const register = wrapped("horizontal")
+    expect(readLayout(register, frame)?.opacity).toBe(100_000)
+    const plan = planChange({ target: { node: frame }, opacity: 50_000 as Alpha }, registerScope(register))
+    expect(plan.ok && plan.rows.map((row) => [row.node, row.row.patch])).toEqual([
+      [frame, { layout: { opacity: { set: 50_000 } } }],
+    ])
+    const row = plan.ok ? plan.rows[0]?.row : undefined
+    if (row === undefined) throw new Error("plan")
+    const opened = decide(register, { command: "add", node: frame, floor: "", route: "" })
+    if (opened.decision !== "apply") throw new Error(opened.code)
+    const faded = decide(opened.register, { command: "person", node: frame, ...row })
+    if (faded.decision !== "apply") throw new Error(faded.code)
+    expect(readLayout(faded.register, frame)?.opacity).toBe(50_000)
   })
 
   it("reads a child of a frame without auto layout where it shows and stores its move from the frame's corner", () => {
