@@ -1,6 +1,6 @@
 import { trait, type NoInputs } from "./trait-decl.js"
 import { fillCases } from "./trait-fills.js"
-import { alphaOver, choice, record, sizeUpTo, union } from "./value-kind.js"
+import { alphaOver, choice, customChoice, fractionWithin, list, record, sizeUpTo, union } from "./value-kind.js"
 
 export const dashPresets = [
   "solid",
@@ -32,15 +32,19 @@ const arrowSize = choice(arrowSizes)
 
 const arrow = record({ type: choice(arrowheads), width: arrowSize, length: arrowSize })
 
+const dashLength = fractionWithin(1, 2_147_483_647)
+const gapLength = fractionWithin(0, 2_147_483_647)
+const dashPattern = list(record({ dash: dashLength, gap: gapLength }), 1, 32)
+
 const noInputs: NoInputs = {}
 
 export const border = trait(
   "field",
-  { version: 3, shape: "db2c2c2c" },
+  { version: 4, shape: "9b980f65" },
   {
     fill: union(fillCases, "solid"),
     width: sizeUpTo(widestBorder),
-    dash: choice(dashPresets),
+    dash: customChoice(dashPresets, dashPattern),
     cap: choice(borderCaps),
     compound: choice(borderCompounds),
     join: choice(borderJoins),

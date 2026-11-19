@@ -1,7 +1,6 @@
 import {
   arrowheads,
   arrowSizes,
-  dashPresets,
   borderCaps,
   borderCompounds,
   borderJoins,
@@ -10,6 +9,7 @@ import {
   type FieldName,
   type FieldValue,
 } from "@airdesign/document"
+import { readDash } from "./dash-markup.js"
 import { colorIn, fillIn } from "./color-read.js"
 import { fillValueOf } from "./fill-read.js"
 import { child, whole, type Held } from "./markup-held.js"
@@ -82,12 +82,6 @@ const fill: Reader<FieldValue<"border", "fill">> = ({ line, placed }) => {
   return value === null || "group" in value || "image" in value ? null : value
 }
 
-const dash: Reader<FieldValue<"border", "dash">> = ({ line }) => {
-  const preset = child(line, "a:prstDash")
-  if (preset !== undefined) return oneOf(dashPresets, paintAttribute(preset.element, "val") ?? "solid")
-  return child(line, "a:custDash") === undefined ? undefined : null
-}
-
 const join: Reader<FieldValue<"border", "join">> = ({ line }) => {
   const found = borderJoins.find((kind) => child(line, `a:${kind}`) !== undefined)
   return found ?? undefined
@@ -114,7 +108,7 @@ export function shownBorder(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt
   return {
     width: first(levels, width, null),
     fill: first(levels, fill, { none: true }),
-    dash: first(levels, dash, "solid"),
+    dash: first(levels, ({ line }) => readDash(line), "solid"),
     cap: first(levels, attribute("cap", borderCaps), "flat"),
     compound: first(levels, attribute("cmpd", borderCompounds), "sng"),
     join: first(levels, join, "round"),

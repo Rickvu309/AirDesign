@@ -218,13 +218,19 @@ function altShown(alt: string): string {
   return trimmed.length > altLength ? `${trimmed.slice(0, altLength - 1)}…` : trimmed
 }
 
+function dashShown(value: Exclude<FieldValue<"border", "dash">, string>): string {
+  return value.custom.flatMap(({ dash, gap }) => [dash / 1000, gap / 1000]).join(", ")
+}
+
 export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
   const border = patch.border
   const before = design ?? {}
   let next = folded(before, "fills", patch.fills?.p0, agentFillValue)
   next = folded(next, "border.width", border?.width, (value) => tenths(value / emuPerPoint))
   next = folded(next, "border.fill", border?.fill, agentFillValue)
-  next = folded(next, "border.dash", border?.dash, (value) => (value === "solid" ? null : value))
+  next = folded(next, "border.dash", border?.dash, (value) =>
+    value === "solid" ? null : typeof value === "string" ? value : dashShown(value),
+  )
   next = folded(next, "border.head", border?.head, arrowShown)
   next = folded(next, "border.tail", border?.tail, arrowShown)
   next = folded(next, "geometry", patch.geometry?.shape, (value) => (value.preset === "rect" ? null : value.preset))
@@ -352,7 +358,15 @@ export function agentSchema(desc: Desc): JsonSchema {
     case "node":
       return { type: "string" }
     case "choice":
-      return { type: "string", enum: desc.options }
+      return desc.custom === undefined
+        ? { type: "string", enum: desc.options }
+        : {
+            type: ["string", "object"],
+            pattern: `^(?:${desc.options.map(escaped).join("|")})$`,
+            properties: { custom: agentSchema(desc.custom) },
+            required: ["custom"],
+            additionalProperties: false,
+          }
     case "color":
       return { type: "string", pattern: `^${colorPattern}$` }
     case "hex":
@@ -461,7 +475,9 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
     case "node":
       return readString(raw, (text) => readElementId(text) !== undefined)
     case "choice":
-      return readString(raw, (text) => desc.options.includes(text))
+      return desc.custom !== undefined && typeof raw !== "string"
+        ? readFields({ custom: desc.custom }, raw)
+        : readString(raw, (text) => desc.options.includes(text))
     case "color": {
       const color = readAgentColor(raw)
       return color === null ? refused : { ok: true, value: color }
