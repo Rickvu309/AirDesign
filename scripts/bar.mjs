@@ -2,9 +2,10 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { areasOf } from "./areas.mjs"
-import { judges, loosenings, netLines, patchLines } from "./bar-files.mjs"
+import { judges, lowerings, netLines, patchLines } from "./bar-files.mjs"
 import { beforeAfterLabel, beforeAfterLine, beforeAfterNeed, seen } from "./before-after.mjs"
 import { workingTree } from "./checked.mjs"
+import { barSigned, commentsArgs, commentsFrom, countersignFor } from "./countersign.mjs"
 import { ghApi, readWithRetry } from "./github-read.mjs"
 import { bodyFaults, githubOffBranch } from "./pr-body.mjs"
 import { baseFault } from "./pull-base.mjs"
@@ -130,14 +131,14 @@ export const ownerReasons = ({
   changedDecks = [],
   changedFixtures = [],
   changedKinds = [],
-  loosened = [],
+  lowered = [],
 }) => {
   const reasons = []
   for (const name of new Set([...Object.keys(baseMetrics), ...Object.keys(headMetrics)])) {
     const text = metricReason(name, baseMetrics[name], headMetrics[name])
     if (text !== undefined) reasons.push({ about: `metric ${name}`, text, lowers: true })
   }
-  for (const { file, text } of loosened) reasons.push({ about: `file ${file}`, text, lowers: true })
+  for (const { file, text } of lowered) reasons.push({ about: `file ${file}`, text, lowers: true })
   for (const file of changedFiles.filter(judges)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, lowers: false })
   }
@@ -302,8 +303,8 @@ export const readReasons = ({ text, fork, head, listed }) => {
     changedCases: changedFiles.includes(casesFile) ? lostCases(casesAt(json, fork), casesAt(json, head)) : [],
     changedDecks: changedFiles.includes(corpusFile) ? lostDecks(corpusAt(json, fork), corpusAt(json, head)) : [],
     changedKinds: changedFiles.includes(proofFile) ? lostKinds(proofAt(json, fork), proofAt(json, head)) : [],
-    loosened: listed.flatMap((file) =>
-      loosenings(file, reader(text, fork, head)).map((said) => ({ file: file.name, text: said })),
+    lowered: listed.flatMap((file) =>
+      lowerings(file, reader(text, fork, head)).map((said) => ({ file: file.name, text: said })),
     ),
     changedScripts: changedFiles
       .filter(packageFile)
@@ -343,6 +344,7 @@ const readPull = (repository, number) => {
       repository,
     }),
     wrongBase: baseFault(number, pull.baseRef),
+    head: pull.head,
   }
 }
 
@@ -435,6 +437,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
     if (beforeAfterLine(read.shown) && !read.shown.needed) console.log(beforeAfterLine(read.shown))
     for (const fault of read.body) console.log(`Body: ${fault}`)
     if (read.body.length > 0) process.exitCode = 1
+    const comments = result.lowers ? commentsFrom(github(commentsArgs(repository, number))) : []
+    const signed = barSigned({
+      lowers: result.lowers,
+      head: read.head,
+      countersign: countersignFor(comments, read.head),
+    })
+    if (signed.line !== undefined) console.log(signed.line)
+    if (!signed.pass) process.exitCode = 1
     if (read.wrongBase !== undefined) {
       console.log(`Wrong base: ${read.wrongBase}`)
       process.exitCode = 1

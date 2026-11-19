@@ -4,8 +4,10 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { checkSteps } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
+import { readLocal, verdict } from "./bar.mjs"
 import { attributionLine } from "./commit-authors.mjs"
 import { filesWithMarkers, markerFault } from "./conflict-markers.mjs"
+import { barSigned, commentsArgs, commentsFrom, countersignFor, verifierSteps } from "./countersign.mjs"
 import { readWithRetry } from "./github-read.mjs"
 import { judgeCheck } from "./land-check.mjs"
 import { followPull } from "./land-follow.mjs"
@@ -262,6 +264,12 @@ export const land = async (ctx) => {
     const queued = enqueue({ merge: gh, read, repository, number: pull.number })
     if (!queued.ok) stop("queue", queued.message)
     line("queue", queueLine(queued.state))
+    const signed = ctx.countersign?.({ number: pull.number, repository })
+    if (signed?.line !== undefined) line("bar", signed.line)
+    if (signed !== undefined && !signed.pass) {
+      for (const each of verifierSteps(pull.number)) line("next", each)
+      return 0
+    }
     return args.follow ? await follow(pull.number, branch) : 0
   } catch (error) {
     if (error instanceof Stop) {
@@ -292,10 +300,12 @@ const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const root = path.resolve(path.dirname(self), "..")
   const say = (text) => console.log(text)
+  const git = runner("git", root)
+  const gh = runner("gh", root)
   const code = await land({
     args: parseArgs(process.argv.slice(2)),
-    git: runner("git", root),
-    gh: runner("gh", root),
+    git,
+    gh,
     check: () => tee(process.execPath, ["scripts/gate.mjs"], process.env, root),
     rerun: async (file) => {
       const release = await takeMachineLock({ job: "rerun", lane: "small", say: console.error })
@@ -311,6 +321,16 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       }
     },
     stamp: () => stampChecked(root),
+    countersign: ({ number, repository }) => {
+      const read = readLocal(root)
+      if (read.why !== undefined) return undefined
+      const { lowers } = verdict(read)
+      const head = succeeds(git(["rev-parse", "HEAD"]), "could not read HEAD").trim()
+      const comments = lowers
+        ? commentsFrom(succeeds(gh(["api", ...commentsArgs(repository, number)]), "could not read the comments"))
+        : []
+      return barSigned({ lowers, head, countersign: countersignFor(comments, head) })
+    },
     say,
   })
   process.exit(code)

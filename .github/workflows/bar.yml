@@ -8,9 +8,10 @@ on:
       - reopened
       - ready_for_review
       - edited
+  merge_group:
 
 concurrency:
-  group: bar-${{ github.event.pull_request.number }}
+  group: bar-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +24,11 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - env:
+      - if: github.event_name == 'merge_group'
+        run: echo "bar judged each pull request, and its countersign, before it entered the queue."
+      - if: github.event_name != 'merge_group'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - if: github.event_name != 'merge_group'
+        env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/bar.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label
