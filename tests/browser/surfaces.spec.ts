@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { deckRoutes } from "../../apps/web/src/decks/deck-routes"
 import { settingsRoutes } from "../../apps/web/src/settings/settings-routes"
+import { openScreen } from "./open-screen"
 
 test.use({ reducedMotion: "reduce", viewport: { width: 1470, height: 923 } })
 
@@ -75,7 +76,7 @@ for (const path of [...deckScreens, ...settingsScreens]) {
 }
 
 test("a deck card's preview box is the line colour, not the card's", async ({ page }) => {
-  await page.goto(deckRoutes.recentsGrid)
+  await openScreen(page, deckRoutes.recentsGrid)
   const previews = await page.evaluate(() =>
     [...document.querySelectorAll("[data-decks-main] article")].map((card) => {
       const preview = card.lastElementChild
@@ -87,7 +88,7 @@ test("a deck card's preview box is the line colour, not the card's", async ({ pa
 })
 
 test("New deck is the signature fill with no border or ring around it", async ({ page }) => {
-  await page.goto("/screens/s31-02-decks-browse-recents-grid")
+  await openScreen(page, "/screens/s31-02-decks-browse-recents-grid")
   const edge = await page
     .locator("[data-decks-header] button")
     .first()
@@ -103,7 +104,7 @@ test("New deck is the signature fill with no border or ring around it", async ({
 })
 
 test("the sidebar keeps its icons on one line and its words on another", async ({ page }) => {
-  await page.goto("/screens/s31-02-decks-browse-recents-grid")
+  await openScreen(page, "/screens/s31-02-decks-browse-recents-grid")
   const lefts = (selector: string) =>
     page
       .locator(`[data-decks-sidebar] ${selector}`)

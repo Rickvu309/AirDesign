@@ -2,6 +2,7 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test, type Page } from "@playwright/test"
 import { deckRoutes } from "../../apps/web/src/decks/deck-routes"
+import { openScreen } from "./open-screen"
 
 test.use({ reducedMotion: "reduce", viewport: { width: 1470, height: 923 } })
 
@@ -38,7 +39,7 @@ async function screenFaults(page: Page, screenPath: string) {
 }
 
 test("every registered screen opens with no error", async ({ context, page }) => {
-  await page.goto(screenIndexPath)
+  await openScreen(page, screenIndexPath)
   const everyScreen = await page
     .getByRole("link")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href") ?? ""))

@@ -114,7 +114,7 @@ export function AgentPromo({
             keepCollapsed()
             setCollapsed(true)
           }}
-          className="absolute top-2 left-[192px] flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)] outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="absolute top-2 left-[192px] flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)] hover:text-foreground"
         >
           <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
             <line

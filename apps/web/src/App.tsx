@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react"
+import { LiveProof } from "./live-proof"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
@@ -10,7 +11,6 @@ import { UsagePage } from "./settings/usage-page"
 import { AccountProfile } from "./settings/account-profile"
 
 const ThinDeck = lazy(() => import("./thin-deck").then((module) => ({ default: module.ThinDeck })))
-const LiveProof = lazy(() => import("./live-proof").then((module) => ({ default: module.LiveProof })))
 const ScreenRoute = lazy(() => import("./screen-routes"))
 
 function currentPath(): string {
@@ -44,12 +44,7 @@ function AppRoutes() {
         <ThinDeck id={deck[1]} />
       </Suspense>
     )
-  if (path === "/live-proof")
-    return (
-      <Suspense>
-        <LiveProof />
-      </Suspense>
-    )
+  if (path === "/live-proof") return <LiveProof />
   if (path === "/oauth/authorize") return <OAuthAuthorize />
   if (path === "/screens" || path.startsWith("/screens/"))
     return (
