@@ -81,6 +81,12 @@ function inText(target: EventTarget, frame: HTMLElement): boolean {
   return text !== null && frame.contains(text)
 }
 
+function unlabelled(element: CanvasElement, frame: HTMLElement, target: EventTarget): boolean {
+  if (!element.editable || (!element.filled && element.line === null)) return false
+  const text = target instanceof Element ? target.closest<HTMLElement>(editableText) : null
+  return text !== null && frame.contains(text) && (text.textContent ?? "").trim() === "" && !text.matches(":focus")
+}
+
 function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null {
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
 }
@@ -255,7 +261,8 @@ export function useMoves(
     const id = element.id
     if (id === null) return
     const frame = frameOf(event.currentTarget, element)
-    if (frame === null || (grip === "move" && inText(event.target, frame))) return
+    if (frame === null || (grip === "move" && inText(event.target, frame) && !unlabelled(element, frame, event.target)))
+      return
     event.preventDefault()
     pressedFrame.current = frame
     frame.focus()
@@ -311,7 +318,8 @@ export function useMoves(
     const next = leadOf(picked(size, latest.current, id))
     const own = frameOf(event.currentTarget, element)
     if (next === unit.id) pressOn(event, unit, "move")
-    else if (own !== null && inText(event.target, own)) choose(alone(size, id))
+    else if (own !== null && inText(event.target, own) && !unlabelled(element, own, event.target))
+      choose(alone(size, id))
     else pressOn(event, unit, "move", next ?? undefined)
   }
 

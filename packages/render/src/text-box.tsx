@@ -5,7 +5,7 @@ export function TextBoxArt(props: ElementPaintProps) {
     <ElementHost
       {...props}
       drawnWhenBlank={false}
-      fallbackName={props.element.editable ? "Text" : "Shape"}
+      fallbackName={props.element.editable && !props.element.filled && props.element.line === null ? "Text" : "Shape"}
       unshown={false}
     />
   )

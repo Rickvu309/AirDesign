@@ -256,8 +256,9 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
     tabIndex: canMove(element) && !typing ? 0 : -1,
     onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
     onDoubleClick: (event: MouseEvent<HTMLElement>) => {
-      if (typing && event.target instanceof Element && event.target.closest("[contenteditable]") === null)
-        enterText(event.currentTarget)
+      if (!typing || !(event.target instanceof Element)) return
+      const text = event.target.closest("[contenteditable]")
+      if (text === null || !text.matches(":focus")) enterText(event.currentTarget)
     },
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
     onFocus: () => moves.select(id),
