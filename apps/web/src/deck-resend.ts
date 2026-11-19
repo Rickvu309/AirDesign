@@ -22,6 +22,6 @@ export async function resendPending(
     const outcome = await flush()
     if (signal.aborted) return undefined
     settle(outcome)
-    if (outcome !== "offline") return outcome
+    if (outcome !== "offline" && outcome !== "kept") return outcome
   }
 }

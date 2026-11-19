@@ -10,14 +10,14 @@
     {
       "file": "apps/web/src/editor/use-deck-status.ts",
       "names": ["useDeckStatus", "saveStatus", "watchNetwork", "browserOnline"],
-      "digest": "477c78504b69",
-      "blob": "2d2277d9781fe23abc94c88c685973ea928b6752"
+      "digest": "4f8279ba11ec",
+      "blob": "549d05138757461a72a55b37929d7e028499a449"
     },
     {
       "file": "apps/web/src/deck-resend.ts",
       "names": ["resendPending"],
-      "digest": "cc5743d8ebdd",
-      "blob": "a9cdf6f5ebbfc0f9eaa8af542084ff21a59c5d2a"
+      "digest": "82c5773f61f3",
+      "blob": "0a26f8c7fd6dd61b4eb2ae6a038e97d9a29797cf"
     },
     {
       "file": "apps/web/src/commit-edit.ts",
