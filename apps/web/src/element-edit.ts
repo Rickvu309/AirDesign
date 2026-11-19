@@ -26,6 +26,7 @@ import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { elementCopy, type RemovalRefusal } from "@/copy/element-copy"
 import { commitGroup, type GroupChange } from "@/editor/group-actions"
 import { slideBase } from "@/exported-parts"
+import { framedOf } from "@/frame-boxes"
 import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -65,7 +66,8 @@ export function removalRefusal(parts: Parts, register: Register, node: ElementId
   const { slide, shape } = shapeOf(node)
   const found = readShapes(base).find((each) => each.slide === slide && each.shape === shape)
   if (found === undefined) return null
-  if (found.grouped === true || paintKind(found.kind) === "group") return "group"
+  const framed = framedOf(register).children.has(node)
+  if ((found.grouped === true && !framed) || paintKind(found.kind) === "group") return "group"
   try {
     applyRoute(base, { name: "remove", part: found.part, shape })
     return null

@@ -159,7 +159,7 @@ export function paint(
   const slides = read.map(({ slide, part }): PaintedSlide => {
     const old = before.get(part)
     const same = old !== undefined && old.framed === framed.key && sameSlide(old.shapes, slide, base, display)
-    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display, framed.origins)
+    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display, framed.children)
     const values = shapes.shapes
       .map(({ id, file }) => shownOf(register, id, numberText(id, shownValue(register, id, file))))
       .join("\n")

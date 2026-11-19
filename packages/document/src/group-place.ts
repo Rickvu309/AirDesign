@@ -4,6 +4,7 @@ import type { IndexElement } from "./deck-index.js"
 import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import {
   frameBackdrop,
+  frameMembers,
   groupBounds,
   groupChildren,
   groupFrame,
@@ -90,7 +91,11 @@ export function placeOf(register: Register, node: ElementId): Place | null {
   const opening = openingElement(register, node)
   const parent = groupParent(register, node)
   if (parent !== null) {
-    const member = parent === undefined ? undefined : madeGroup(register, parent)?.members.find((m) => m.node === node)
+    const member =
+      parent === undefined
+        ? undefined
+        : (frameMembers(register, parent).find((m) => m.node === node) ??
+          madeGroup(register, parent)?.members.find((m) => m.node === node))
     if (member !== undefined) return memberPlace(member)
     if (opening?.box === null || opening?.box === undefined) return null
     return {
@@ -180,9 +185,12 @@ export type Freed = "laid" | "made"
 
 function framedPlace(register: Register, node: ElementId, child: ElementId, place: Place, freed: Freed): Place | null {
   const view = readLayout(register, node)
-  const made = madeGroup(register, node)?.element.box
+  const group = madeGroup(register, node)
+  const made = group?.element.box
   if (view === null || made === undefined || made === null) return null
-  if (freed === "made") {
+  const wrapped = group?.members.find((member) => member.node === child)
+  const kept = wrapped !== undefined && frameMembers(register, node).includes(wrapped)
+  if (freed === "made" && kept) {
     const box = { ...place.box, x: place.box.x + view.box.x - made.x, y: place.box.y + view.box.y - made.y }
     return { ...place, box }
   }

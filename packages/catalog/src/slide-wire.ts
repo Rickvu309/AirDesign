@@ -13,6 +13,7 @@ const keysFor = {
   "element-group": ["slide", "id", "element", "members", "backdrop", "file"],
   "element-ungroup": ["slide", "id", "node", "file"],
   "element-regroup": ["slide", "id", "node", "file"],
+  "element-join": ["slide", "id", "member", "frame", "before", "file"],
   remove: ["slide", "id", "file"],
   move: ["slide", "id", "key", "file"],
   restore: ["slide", "id", "key", "file"],
@@ -28,6 +29,7 @@ function slideKeys(slide: unknown): readonly string[] | undefined {
   if (slide === "element-group") return keysFor["element-group"]
   if (slide === "element-ungroup") return keysFor["element-ungroup"]
   if (slide === "element-regroup") return keysFor["element-regroup"]
+  if (slide === "element-join") return keysFor["element-join"]
   if (slide === "remove") return keysFor.remove
   if (slide === "move") return keysFor.move
   if (slide === "restore") return keysFor.restore
@@ -87,6 +89,8 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
   }
   if (edit.slide === "element-ungroup") return { slide: "element-ungroup", id: edit.id, node: edit.node }
   if (edit.slide === "element-regroup") return { slide: "element-regroup", id: edit.id, node: edit.node }
+  if (edit.slide === "element-join")
+    return { slide: "element-join", id: edit.id, member: edit.member, frame: edit.frame, before: edit.before }
   if (edit.slide === "remove") return { slide: "remove", id: edit.id }
   if (edit.slide === "move") return { slide: "move", id: edit.id, key: edit.key }
   if (edit.slide === "restore") return { slide: "restore", id: edit.id, key: edit.key }

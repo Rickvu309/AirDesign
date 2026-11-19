@@ -23,7 +23,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "caa722abc1dd",
-      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
+      "blob": "da9e8643ad8b8ff01db6c9bdc0421e6a31e3f3c1"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
@@ -76,8 +76,8 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "5aca4ebc7ada",
-      "blob": "f12b68261d3db3516dab63a63d8f7095d3b71982"
+      "digest": "96db19dee868",
+      "blob": "7efcedbfa4bbfbf7bf627b6cc5b77dbf514c0a0e"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",

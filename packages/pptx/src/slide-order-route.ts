@@ -133,15 +133,26 @@ function elementsShown(
   shapes: ReadonlyMap<string, Shown> | undefined,
   media: MediaBytes,
   now: boolean,
+  grouped: ReadonlySet<string>,
 ): ReadonlyMap<string, Uint8Array> {
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("slide")
   let next = parts
   for (const [shape, shown] of shapes ?? []) {
-    if (shown.start === shown.now || shown.now !== now) continue
+    const passing = !shown.start && !shown.now && grouped.has(shape)
+    if (!passing && (shown.start === shown.now || shown.now !== now)) continue
     next = now ? elementAdded(next, part, shape, shown, media) : applyRoute(next, { name: "remove", part, shape })
   }
   return next
+}
+
+function groupedShapes(state: GroupedState, from: SlideId, upTo: number): ReadonlySet<string> {
+  const nodes = state.order.slice(0, upTo).flatMap((command) => {
+    if (!groupCommand(command) || command.id !== from) return []
+    if (command.slide === "element-group") return command.members.map((member) => member.node)
+    return command.slide === "element-join" ? [command.member.node] : []
+  })
+  return new Set(nodes.map((node) => shapeOf(node).shape))
 }
 
 function slideShown(
@@ -153,9 +164,10 @@ function slideShown(
   shapes: ReadonlyMap<string, Shown> | undefined,
   media: MediaBytes,
 ): ReadonlyMap<string, Uint8Array> {
-  const added = elementsShown(parts, minted, shapes, media, true)
+  const members = groupedShapes(state, from, upTo)
+  const added = elementsShown(parts, minted, shapes, media, true, members)
   const grouped = groupsReplayed(added, minted, from, state, upTo)
-  return elementsShown(grouped, minted, shapes, media, false)
+  return elementsShown(grouped, minted, shapes, media, false, members)
 }
 
 function needed(state: SlideState): ReadonlySet<SlideId> {

@@ -10,6 +10,7 @@ import {
   shapeOf,
   slideUndoable,
   ungroupTurn,
+  type Box,
   type Command,
   type NodeStep,
   type DeckIndex,
@@ -110,5 +111,25 @@ export async function commitGroup(
   for (const command of commands) if (!(await sent(deckId, command))) return "refused"
   const made = head.command === "slide" && head.edit.slide === "element-group" ? head.edit.element.node : null
   await paint(made, undoable)
+  return flushPending(connect, deckId)
+}
+
+export async function commitPlace(
+  deckId: string,
+  parts: Parts,
+  register: Register,
+  node: ElementId,
+  box: Box,
+  paint: (undoable: Undoable | null) => void | Promise<void>,
+): Promise<CommitOutcome | "moved" | "kept"> {
+  const indexed = indexedRegister(parts, register)
+  const file = fileSlides(parts, register)
+  const changed = changeLayout(indexed, { place: node, box, file })
+  if (changed === null || !("turn" in changed)) return "moved"
+  const head = changed.turn[0]
+  if (head?.command !== "slide") return "kept"
+  const undoable = slideUndoable(indexed, head.file, head.edit)
+  for (const command of changed.turn) if (!(await sent(deckId, command))) return "refused"
+  await paint(undoable)
   return flushPending(connect, deckId)
 }

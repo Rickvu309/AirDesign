@@ -53,3 +53,4 @@ export const { slideListCopy } = createRequire(import.meta.url)("../../../../app
 
 export const { notesCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/notes-copy.ts")
 export const { frameCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/frame-copy.ts")
+export const { shapeCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/shape-copy.ts")

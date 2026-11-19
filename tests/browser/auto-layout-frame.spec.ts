@@ -189,8 +189,8 @@ test("a child of a frame without auto layout moves on its own, follows its frame
   const laid = await Promise.all(shapes.map(placed))
   await shapes[1]!.click()
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.5$/)
-  await dragBy(page, shapes[1]!, 0, 80)
-  await holds(shapes, [laid[0]!, by([laid[1]!], 0, 80)[0]!])
+  await dragBy(page, shapes[1]!, -40, 0)
+  await holds(shapes, [laid[0]!, by([laid[1]!], -40, 0)[0]!])
   const apart = await Promise.all(shapes.map(placed))
   await shapes[0]!.click()
   await page.keyboard.press("Escape")
@@ -210,4 +210,53 @@ test("a child of a frame without auto layout moves on its own, follows its frame
   expect(Math.abs(right!.y - left!.y)).toBeLessThanOrEqual(1.5)
   await page.getByRole("button", { name: undoCopy.undoNamed["add-auto-layout"], exact: true }).click()
   await holds(shapes, by(apart, 100, 0))
+})
+
+function centreOf(box: Placed): { readonly x: number; readonly y: number } {
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+}
+
+async function dragTo(page: Page, shape: Locator, x: number, y: number): Promise<void> {
+  const box = await placed(shape)
+  await page.mouse.move(centreOf(box).x, centreOf(box).y)
+  await page.mouse.down()
+  await page.mouse.move(x, y, { steps: 10 })
+  await page.mouse.up()
+}
+
+test("a shape dropped into an auto layout frame joins its row, a child dragged out leaves it, and Delete removes a child", async ({
+  page,
+}) => {
+  const part = "ppt/slides/slide1.xml"
+  const [square, circle] = await wrappedPair(page, part)
+  const selection = page.locator("[data-slide-paint] [data-selection]")
+  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
+  await page.getByRole("button", { name: shapeCopy.shapes.triangle, exact: true }).click()
+  const triangle = frame(page, part, 8)
+  await expect(triangle).toBeVisible()
+  const left = await placed(square!)
+  const right = await placed(circle!)
+  await dragTo(page, triangle, (left.x + left.width + right.x) / 2, centreOf(left).y)
+  await expect
+    .poll(async () => {
+      const [one, two, three] = await Promise.all([square!, triangle, circle!].map(placed))
+      return one!.x + one!.width <= two!.x + 1 && two!.x + two!.width <= three!.x + 1 && Math.abs(two!.y - one!.y) < 2
+    })
+    .toBe(true)
+  await square!.click()
+  await square!.click()
+  await expect(selection).toHaveAttribute("data-selection", /\.4$/)
+  const row = await placed(triangle)
+  await dragTo(page, square!, centreOf(row).x, centreOf(row).y + 260)
+  await expect.poll(async () => (await placed(triangle)).x < row.x - 10).toBe(true)
+  await expect.poll(async () => (await placed(square!)).y > row.y + row.height).toBe(true)
+  const shifted = await placed(circle!)
+  await circle!.click()
+  await circle!.click()
+  await expect(selection).toHaveAttribute("data-selection", /\.5$/)
+  await page.keyboard.press("Delete")
+  await expect(circle!).toHaveCount(0)
+  await page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true }).click()
+  await expect(circle!).toHaveCount(1)
+  await holds([circle!], [shifted])
 })

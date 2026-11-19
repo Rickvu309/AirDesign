@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf", "turn", "turnCommands", "stepCommands", "applying", "holderOf"],
-      "digest": "365122854c66",
-      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
+      "digest": "047bc97ce014",
+      "blob": "da9e8643ad8b8ff01db6c9bdc0421e6a31e3f3c1"
     },
     {
       "file": "packages/document/src/decide.ts",

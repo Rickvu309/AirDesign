@@ -15,7 +15,7 @@ import {
   type TraitPatch,
 } from "@airdesign/document"
 import { arrangeSlide } from "./element-stack-route.js"
-import { regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
+import { joinShape, regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
 import { requireMarkup } from "./part-markup.js"
 import { removeShape } from "./slide-route.js"
@@ -94,6 +94,18 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
       elementStacks(prefix).filter((stack) => stack.slide === from),
     )
     const where = (shape: string) => ({ slide: minted, part, shape })
+    if (command.slide === "element-join") {
+      const { frame, before } = command
+      if (frame !== null && passed.has(shapeOf(frame).shape)) continue
+      const placed = joinShape(
+        bytesOf(next, part),
+        shapeOf(command.member.node).shape,
+        frame === null ? null : shapeOf(frame).shape,
+        before === null ? null : shapeOf(before).shape,
+      )
+      next = withPart(next, part, placed)
+      continue
+    }
     if (command.slide === "element-group") {
       const { element } = command
       if (element.box === null) throw new Error("box")

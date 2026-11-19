@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "65c2b56994b6",
-      "blob": "ddb0f75e10f1f44d415939b4cdbdc22c32c4cc85"
+      "digest": "c3ad25e89366",
+      "blob": "779bd9d3c3474c9d24342104776a2f275474203f"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "a76a1cb764ab",
-      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
+      "digest": "95cb742d47c3",
+      "blob": "da9e8643ad8b8ff01db6c9bdc0421e6a31e3f3c1"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -45,7 +45,7 @@
       "file": "packages/document/src/slide-order.ts",
       "names": ["applySlide"],
       "digest": "201ce181ae77",
-      "blob": "178dd12bcd1e0c5011fb5b67a0135d2973cd8b24"
+      "blob": "627178ecb3719639a4ac9b638c3cb5fe58336c7d"
     },
     {
       "file": "packages/document/src/decide.ts",

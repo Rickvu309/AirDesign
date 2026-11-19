@@ -57,7 +57,8 @@ export function paintElements(
     if (painted === null) continue
     const diagram = row.diagram === undefined ? {} : { diagram: diagramOf(row.diagram, key, src) }
     const backdrop = shape?.backdrop === true ? { backdrop: true as const } : {}
-    elements.push([{ ...painted, ...diagram, ...carried, ...backdrop, ...connectionOf(row, source) }, row])
+    const inFrame = shape?.inFrame === undefined ? {} : { inFrame: shape.inFrame }
+    elements.push([{ ...painted, ...diagram, ...carried, ...backdrop, ...inFrame, ...connectionOf(row, source) }, row])
   }
   return withHeld(elements, rows)
 }

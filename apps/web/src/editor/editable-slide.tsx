@@ -3,6 +3,7 @@ import { connect, memoryRemote } from "@airdesign/live"
 import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
+import { commitPlace } from "@/editor/group-actions"
 import { commitBoxes, commitEdit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
@@ -94,7 +95,24 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     return outcome
   }
 
+  async function placed(only: Moved): Promise<boolean> {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) return false
+    const parts = deck.shown.shownParts.current
+    const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
+      if (undoable !== null) record({ name: "move", undoable })
+      setPending(true)
+      await deck.shown.showEdited(current)
+    })
+    if (outcome === "moved") return false
+    if (outcome === "kept") store.current.placeBox(only.id, landedBox(await deviceRegister(id), only.id))
+    else settle(outcome)
+    return true
+  }
+
   async function onBoxes(moved: readonly Moved[]) {
+    const [only] = moved
+    if (moved.length === 1 && only !== undefined && (await placed(only))) return
     const opening = connect(memoryRemote()).openDeck(id)
     async function refused(target: ElementId) {
       store.current.placeBox(target, landedBox(await deviceRegister(id), target))

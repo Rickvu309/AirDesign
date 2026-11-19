@@ -36,7 +36,7 @@ export type DrawnSpec = {
 }
 
 export function movableRow(ctx: RowPaint): boolean {
-  const placed = ctx.row.group === null || ctx.shape?.freed === true
+  const placed = ctx.row.group === null || ctx.shape?.inFrame !== undefined
   return (ctx.shape?.movable ?? false) && placed && ctx.row.box !== null
 }
 
