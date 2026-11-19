@@ -1,6 +1,9 @@
-import { elementId, type ScopedElement } from "@airdesign/document"
+import { elementId, planChange, registerScope, type ScopedElement } from "@airdesign/document"
+import { exportParts, shownGeometry } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { geometryCopy } from "@/copy/geometry-copy"
+import { ensureMarkup } from "@/markup"
+import { deckParts, indexed, landed, painted, placed, type Parts } from "@/parity-probe"
 import { cornerSteps, cornersSection } from "./corners-control"
 import { panelOf } from "./panel"
 
@@ -59,11 +62,22 @@ it("reads native adjusts including defaults and clamps rounding at half the shor
   ).toBe(false)
 })
 
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left === right) return true
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) if (left[index] !== right[index]) return false
+  return true
+}
+
+function driftedParts(before: Parts, after: Parts, slide: string): readonly string[] {
+  return [...before].flatMap(([name, bytes]) => {
+    if (name === slide) return []
+    const next = after.get(name)
+    return next !== undefined && sameBytes(next, bytes) ? [] : [name]
+  })
+}
+
 it.each(["shape", "image"] as const)("exports Corners as native %s geometry and keeps other parts", async (name) => {
-  const { deckParts, placed, indexed, landed, painted } = await import("@/parity-probe")
-  const { registerScope, planChange } = await import("@airdesign/document")
-  const { exportParts, shownGeometry } = await import("@airdesign/pptx")
-  const { ensureMarkup } = await import("@/markup")
   await ensureMarkup()
   const parts = await deckParts("doe-heat-pumps.pptx")
   const at = placed(parts, "shape", name === "shape" ? "2797.13" : "2883.13")
@@ -88,5 +102,5 @@ it.each(["shape", "image"] as const)("exports Corners as native %s geometry and 
   const exported = exportParts(parts, next)
   expect(shownGeometry(exported, at)?.value).toMatchObject({ preset: "roundRect" })
   expect(painted(exported, at)).not.toBe(painted(parts, at))
-  for (const [name, bytes] of parts) if (name !== at.part) expect(exported.get(name)).toEqual(bytes)
+  expect(driftedParts(parts, exported, at.part)).toEqual([])
 })
