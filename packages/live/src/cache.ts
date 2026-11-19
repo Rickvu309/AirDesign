@@ -66,20 +66,29 @@ export type EnqueueResult<Painted = string> =
   | { ok: false; readonly refusal: WireRefusal }
 
 const flushing = new Map<string, Promise<unknown>>()
+const mutating = new Map<string, Promise<unknown>>()
 type OpenOnceResult = { ok: true; index?: DeckIndex } | Extract<OpenResult, { ok: false }>
 
 const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenResult>>>()
 const knownByRemote = new WeakMap<Remote, Map<DeckId, number>>()
 
-function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
+function queued<T>(lanes: Map<string, Promise<unknown>>, deck: DeckId, work: () => Promise<T>): Promise<T> {
   const lane = `${accountKey() ?? ""}\u0005${deck}`
-  const before = flushing.get(lane) ?? Promise.resolve()
+  const before = lanes.get(lane) ?? Promise.resolve()
   const run = before.then(
     () => work(),
     () => work(),
   )
-  flushing.set(lane, run)
+  lanes.set(lane, run)
   return run
+}
+
+function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
+  return queued(mutating, deck, work)
+}
+
+function flushLane<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
+  return queued(flushing, deck, work)
 }
 
 const signedOut = { ok: false, refusal: "session" } as const
@@ -206,8 +215,7 @@ export function connect(remote: Remote, options: Options = {}) {
     return refused.length > 0
   }
 
-  async function sendRows(deck: DeckId): Promise<CommitResult> {
-    const index = await sendIndex(remote, deck, () => openOnce(deck))
+  async function sendRows(deck: DeckId, index: Awaited<ReturnType<typeof sendIndex>>): Promise<CommitResult> {
     if (index?.ok === false) return index
     let held = await heldView(deck)
     if (index?.indexedSections) {
@@ -414,11 +422,15 @@ export function connect(remote: Remote, options: Options = {}) {
         if (!parsed.ok) return { ok: false, refusal: "deck" }
         if (accountKey() === undefined) return signedOut
         await recovered(parsed.deck)
-        return serial(parsed.deck, async () => {
-          const result = commitRefusal(parsed.deck) ?? (await sendRows(parsed.deck))
-          const { aside, tooLarge } = await takeAside(parsed.deck)
-          if (aside === 0) return result
-          return tooLarge === 0 ? { ...result, aside } : { ...result, aside, asideTooLarge: tooLarge }
+        return flushLane(parsed.deck, async () => {
+          const refused = commitRefusal(parsed.deck)
+          const index = refused === undefined ? await sendIndex(remote, parsed.deck, () => openOnce(parsed.deck)) : null
+          return serial(parsed.deck, async () => {
+            const result = commitRefusal(parsed.deck) ?? refused ?? (await sendRows(parsed.deck, index))
+            const { aside, tooLarge } = await takeAside(parsed.deck)
+            if (aside === 0) return result
+            return tooLarge === 0 ? { ...result, aside } : { ...result, aside, asideTooLarge: tooLarge }
+          })
         })
       })
     },

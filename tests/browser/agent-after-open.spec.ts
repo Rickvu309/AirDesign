@@ -106,6 +106,21 @@ test("Aira asked before the server's first open of a new deck adds the slide onc
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })
 
+test("Aira's edit paints on the slide while the index is still uploading", async ({ page, context, stack }) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const release = await hold(page, "/decks/index")
+  const deck = await openClean(page)
+  const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node: "256.2" } }, { name: "edited.sse" })
+  await page.getByRole("textbox", { name: airaCopy.askAira }).fill("Change the title to Hello from Aira")
+  await page.keyboard.press("Enter")
+  await expect(page.getByText(airaStepWords.edit_deck.done)).toBeVisible()
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
+  release()
+})
+
 test("Aira's edit paints on the slide while the imported file is still uploading", async ({ page, context, stack }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)

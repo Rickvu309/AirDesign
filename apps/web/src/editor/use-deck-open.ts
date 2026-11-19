@@ -110,14 +110,7 @@ export function useDeckOpen(deck: OpeningDeck) {
       const register = opened?.ok === true ? opened.register : null
       if (device === null) openFrom(stored, register)
       else if (register !== null) reconcile(register)
-      if (answered?.ok !== true || indexDue(answered.index)) await backfillIndex(id, stored.parts)
-      settle(await flushPending(connect, id))
-      if (live && gridSectionStarts(shown.shownRegister.current ?? {}) === undefined) {
-        const indexed = await connect(memoryRemote()).openDeck(id)
-        if (live && indexed.ok && gridSectionStarts(indexed.register) !== undefined) reconcile(indexed.register)
-      }
-      void flushOriginal(id)
-      const ended = await followDeck(
+      const followed = followDeck(
         connect(server),
         id,
         async () => {
@@ -126,6 +119,14 @@ export function useDeckOpen(deck: OpeningDeck) {
         },
         leaving.signal,
       )
+      if (answered?.ok !== true || indexDue(answered.index)) await backfillIndex(id, stored.parts)
+      settle(await flushPending(connect, id))
+      if (live && gridSectionStarts(shown.shownRegister.current ?? {}) === undefined) {
+        const indexed = await connect(memoryRemote()).openDeck(id)
+        if (live && indexed.ok && gridSectionStarts(indexed.register) !== undefined) reconcile(indexed.register)
+      }
+      void flushOriginal(id)
+      const ended = await followed
       if (live && ended !== undefined) await refusedBy(ended)
     })()
     return () => {
