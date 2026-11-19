@@ -1,4 +1,5 @@
 import { templateCopy, templateStyleCopy, productCopy, transitionCopy } from "../bin/product-copy.mjs"
+import { colorWords } from "../bin/color-words.mjs"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
@@ -54,9 +55,14 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(theme).toBeVisible()
   await capture("theme-panel")
 
+  const accent = await colorWords(repo, "doe-heat-pumps.pptx", { theme: 0 })
+  const accentRed = await colorWords(repo, "doe-heat-pumps.pptx", {
+    theme: 0,
+    slots: { accent1: "c00000", accent2: "00B050" },
+  })
   const oval = painted("ppt/slides/slide8.xml#7")
   const ovalBefore = await oval.innerHTML()
-  await theme.getByRole("button", { name: "Accent 1", exact: true }).click()
+  await theme.getByRole("button", { name: accent.accent1, exact: true }).click()
   const picker = page.locator("[data-color-picker]")
   await picker.getByRole("button", { name: colorCopy.add, exact: true }).click()
   const hex = picker.getByRole("textbox", { name: colorCopy.hex, exact: true })
@@ -173,7 +179,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
-  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute("title", /#C00000/)
+  await expect(theme.getByRole("button", { name: accentRed.accent1, exact: true })).toHaveAttribute("title", /#C00000/)
   await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
   await expect.poll(() => fonts(painted("ppt/slides/slide1.xml#2"))).toContain("Georgia")
   await capture("reopened")

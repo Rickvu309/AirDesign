@@ -1,5 +1,6 @@
 import { createRequire } from "node:module"
 import { productCopy, fillWords } from "../bin/product-copy.mjs"
+import { colorWords, toolbarWords } from "../bin/color-words.mjs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
@@ -59,15 +60,17 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const panel = page.locator("[data-design-panel]")
   const background = panel.getByRole("button", { name: /^Background color/ })
   await expect(panel.getByText("Slide 1", { exact: true })).toBeVisible()
-  await expect(background).toHaveText("Light 1")
+  const names = await colorWords(repo, "apps/web/src/decks/blank.pptx")
+  const menu = await toolbarWords(repo, "apps/web/src/decks/blank.pptx")
+  await expect(background).toHaveText(names.lt1)
   await capture("design-panel")
   await background.click()
-  const accent = page.locator("[data-color-picker]").getByRole("button", { name: "Accent 1", exact: true })
+  const accent = page.locator("[data-color-picker]").getByRole("button", { name: menu.accent1, exact: true })
   const chip = await accent.evaluate((node) => getComputedStyle(node).backgroundColor)
   await accent.click()
   await painted(chip)
   await page.keyboard.press("Escape")
-  await expect(background).toHaveText("Accent 1")
+  await expect(background).toHaveText(names.accent1)
   await capture("background-set")
   const fills = async () => {
     const { register } = (await post(deckRoutes.open, { deck }, cookie)).json
