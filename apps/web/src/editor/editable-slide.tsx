@@ -1,13 +1,16 @@
-import { boxPatch, format, type ElementId, type StackMove } from "@airdesign/document"
+import { boxPatch, format, openRegister, takes, type ElementId, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
-import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
+import { leadOf, type Moved, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
+import { CropCanvas } from "@/editor/crop-canvas"
+import { fieldsOf } from "@/editor/panel-fields"
+import { cropChange, cropRect, cropTurn } from "@/design/crop-change"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitPlace } from "@/editor/group-actions"
 import { commitBoxes, commitEdit, flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
-import { valueFits } from "@/design/trait-edit"
+import { deviceScope, valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
 import type { ElementChange } from "@/element-edit"
@@ -36,6 +39,21 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     const file = boxes.current.get(target)?.file ?? ""
     const shown = shapes.current.get(target)?.contentKind === "table" ? shownTable : shownValue
     return shown(await deviceRegister(id), target, file)
+  }
+
+  function cropTarget() {
+    const node = selection.ids.length === 1 ? leadOf(selection) : null
+    if (node === null) return null
+    const fields = fieldsOf(deck.shown.displayParts.current, node)
+    if (fields?.["fills.mode"]?.value !== "crop") return null
+    const register = deck.shown.shownRegister.current ?? openRegister("", "")
+    const opening = deviceScope(deck.shown.shownParts.current, register).view(node)
+    if (opening === undefined || !takes(opening.facts).includes("box.w")) return null
+    const view = { ...opening, box: store.current.getBox(node) ?? opening.box }
+    if (view.box === null) return null
+    const rect = cropRect(fields["fills.crop"]?.value)
+    const change = cropChange(view, rect, cropTurn(fields))
+    return { node, rect, commit: (next: typeof rect) => changeDesign(deck, () => change(next)) }
   }
 
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
@@ -215,7 +233,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         onGroup={changeElement}
       >
         {({ notice, order, group, clear }) => (
-          <SlideCanvas
+          <CropCanvas
+            cropTarget={cropTarget}
             className="overflow-clip rounded-[2px] focus-within:overflow-visible"
             entering={entering}
             formatting={formatting.current}

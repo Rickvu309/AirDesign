@@ -49,6 +49,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
+  readonly hideSelectionFrame?: boolean
   readonly selection?: Selection
   readonly onSelection?: (selection: Selection) => void
   readonly onGroup?: (ids: readonly ElementId[]) => void
@@ -182,7 +183,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           store={props.store}
         />
       )}
-      {moving === null || selected === undefined || selected.id === null ? null : (
+      {props.hideSelectionFrame || moving === null || selected === undefined || selected.id === null ? null : (
         <SelectionFrame
           element={selected}
           id={selected.id}

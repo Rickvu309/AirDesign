@@ -24,7 +24,7 @@ import { pictureCopy } from "@/copy/picture-copy"
 import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
-import { cropChange } from "./crop-change"
+import { cropChange, cropTurn } from "./crop-change"
 import { fillsList } from "./fills-list"
 import { fillsHeld, overlayChange, overlayHeld, ownHeld, shownFills, type Held } from "./fills-held"
 import { appearanceSections } from "./appearance-presets"
@@ -272,17 +272,17 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const labels = traitControls[trait] as Labels
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
-      const unread = key === "fills.blur" && shown.fields?.[key] !== undefined && shown.fields[key]?.value == null
+      const read = shown.fields?.[key]
       if (
         (trait === "text" && field === "color") ||
-        unread ||
+        (key === "fills.blur" && read !== undefined && read.value == null) ||
         canvasControl(trait, field) ||
         !taken.includes(key) ||
         keptRefuses(view.kept, trait, field)
       )
         return []
       const copy = labels.fields[field]
-      const own = shown.fields?.[key]?.own === true
+      const own = read?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
       const held = shownOf(view, trait, field, shown)
       const over = held.inherited ? alphaFieldOver(trait, key.slice(trait.length + 1)) : undefined
@@ -291,7 +291,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         trait === "fills" && field === "overlay"
           ? overlayChange(view, shown)
           : key === "fills.crop" && taken.includes("box.w")
-            ? cropChange(view, held.value)
+            ? cropChange(view, held.value, cropTurn(shown.fields))
             : (value: unknown) =>
                 ({
                   target: { node: view.node },

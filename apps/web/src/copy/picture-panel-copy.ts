@@ -7,6 +7,16 @@ export const picturePanelCopy = {
   blur: "Blur",
   overlayOpacity: "Overlay opacity",
   crop: "Crop",
+  cropHandles: {
+    topLeft: "Crop top left",
+    top: "Crop top",
+    topRight: "Crop top right",
+    right: "Crop right",
+    bottomRight: "Crop bottom right",
+    bottom: "Crop bottom",
+    bottomLeft: "Crop bottom left",
+    left: "Crop left",
+  },
 } as const
 
 export const pictureWords: Readonly<Record<string, string>> = {

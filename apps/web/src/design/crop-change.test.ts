@@ -1,6 +1,6 @@
 import { elementId, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { cropChange, croppedBox } from "./crop-change"
+import { cropChange, croppedBox, draggedCrop } from "./crop-change"
 
 const box = { x: 1_000_000, y: 500_000, cx: 4_000_000, cy: 2_000_000 }
 
@@ -33,5 +33,38 @@ it("sends the crop and the frame in one change, and the crop alone for an elemen
   expect(cropChange({ ...view, box: null }, undefined)(rect)).toEqual({
     target: { node: "256.4" },
     fills: { crop: rect, mode: "crop" },
+  })
+})
+
+it("drags a crop edge in image coordinates and opens it back to the source edge", () => {
+  const start = { l: 10_000, t: 0, r: 20_000, b: 0 }
+  expect(draggedCrop(start, ["l"], { x: 35, y: 50 }, { width: 350, height: 200 })).toEqual({
+    l: 17_000,
+    t: 0,
+    r: 20_000,
+    b: 0,
+  })
+  expect(draggedCrop(start, ["l", "b"], { x: -60, y: 150 }, { width: 350, height: 200 })).toEqual({
+    l: 0,
+    t: 0,
+    r: 20_000,
+    b: 0,
+  })
+  expect(draggedCrop(start, ["r"], { x: -1000, y: 0 }, { width: 350, height: 200 }).r).toBe(89_000)
+})
+
+it("anchors the original image when cropping a rotated or reflected layer", () => {
+  const rect = { l: 10_000, t: 0, r: 0, b: 0 }
+  expect(croppedBox(box, undefined, rect, { rotation: 90, flipH: false, flipV: false })).toEqual({
+    x: 1_200_000,
+    y: 700_000,
+    cx: 3_600_000,
+    cy: 2_000_000,
+  })
+  expect(croppedBox(box, undefined, rect, { rotation: 0, flipH: true, flipV: false })).toEqual({
+    x: 1_000_000,
+    y: 500_000,
+    cx: 3_600_000,
+    cy: 2_000_000,
   })
 })

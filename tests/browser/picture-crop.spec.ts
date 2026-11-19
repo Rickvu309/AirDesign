@@ -4,8 +4,9 @@ import { elementId, landedPatch, type ElementId, type Register } from "../../pac
 import { forward, settled, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
-import { unfold } from "./design-panel"
+import { openDeck, unfold } from "./design-panel"
 import { holdableDevice } from "./slow-device"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const slidePart = "ppt/slides/slide1.xml"
@@ -71,4 +72,39 @@ test("two crop sides typed one after another on a slow device both land, on the 
   await savedExport(page, file)
   const slide = (await partsOf(file)).get(slidePart)?.toString("utf8") ?? ""
   expect(slide).toContain('<a:srcRect l="10000" r="10000"/>')
+})
+
+test("one drag crops the image and one undo restores its frame", async ({ page, context, stack }) => {
+  const { picturePanelCopy, pictureWords } = await import("../../apps/web/src/copy/picture-panel-copy")
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  await openDeck(page, "picture-png.pptx")
+  const photo = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
+  const section = await cropped(page, photo)
+  const panel = page.locator("[data-design-element]")
+  await panel.getByRole("combobox", { name: picturePanelCopy.mode, exact: true }).click()
+  await page.getByRole("option", { name: pictureWords.crop, exact: true }).click()
+  await expect(panel.getByRole("combobox", { name: picturePanelCopy.mode, exact: true })).toContainText(
+    pictureWords.crop!,
+  )
+  await photo.dblclick()
+  const handle = page.getByRole("button", { name: picturePanelCopy.cropHandles.left, exact: true })
+  await expect(handle).toBeVisible()
+  const original = await width(photo)
+  const frame = await photo.boundingBox()
+  const grip = await handle.boundingBox()
+  if (frame === null || grip === null) throw new Error("crop bounds")
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(grip.x + grip.width / 2 + frame.width / 5, grip.y + grip.height / 2, { steps: 5 })
+  await page.mouse.up()
+  const left = section.getByRole("textbox").first()
+  await expect.poll(async () => Math.round(Number(await left.inputValue()))).toBe(20)
+  await expect.poll(async () => Math.round(((await width(photo)) / original) * 100)).toBe(80)
+  await page.getByRole("button", { name: undoCopy.undoNamed.crop, exact: true }).click()
+  await expect.poll(() => width(photo)).toBe(original)
+  await handle.focus()
+  await page.keyboard.press("Escape")
+  await expect(handle).toHaveCount(0)
 })
