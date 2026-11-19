@@ -4,10 +4,10 @@
 
 AirDesign reads any `a:effectDag` as one kept effect graph. It does not edit the graph and it does not show the two shadows as separate rows. The bytes of that graph stay as they are.
 
-Open the file in PowerPoint and look at the rectangle:
+Known limit: no one here opens this file in desktop PowerPoint, so how PowerPoint itself paints it, saves it or lists it in Format Shape is not known, and this note makes no claim about it.
 
-- Does the slide paint both shadows?
-- After Save, are both `a:outerShdw` elements still in the `a:effectDag`?
-- Does Format Shape show both shadows as editable?
+A reader for two outer shadows may be built and judged on what can be proved:
 
-Only a person opening the file can answer. Do not build a reader for two outer shadows until that answer is in.
+- Microsoft's validator accepts the exported file.
+- `pnpm check:pptx`, including its LibreOffice render, shows the shadows as the reader says.
+- After export, both `a:outerShdw` elements are still in the `a:effectDag`.
