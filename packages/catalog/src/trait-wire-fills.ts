@@ -5,15 +5,14 @@ const black = "000000"
 const white = "FFFFFF"
 
 export const fillsWire: TraitWire<"fills"> = {
-  description:
-    "What fills a shape, or a slide's background: a color, gradient, pattern, image, none, or the group's fill. Image fields apply while an image fills it.",
+  description: "Shape fill or slide background. Image fields apply to image fills.",
   fields: {
     paint: {
       description: `A color such as "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" for the group's fill; a gradient (pos and focus in percent, angle in degrees); a pattern preset such as "dkDnDiag" with two colors; or an image such as a Lucide icon name.`,
       example: { fills: { paint: "accent2" } },
     },
     source: {
-      description: "The image: a Lucide icon name; an unknown name is refused with close names.",
+      description: "Lucide icon name. Unknown names return suggestions.",
       example: { fills: { source: "rocket" } },
     },
     mode: {
@@ -22,11 +21,11 @@ export const fillsWire: TraitWire<"fills"> = {
       example: { fills: { mode: "fit" } },
     },
     crop: {
-      description: "Percent of the image cut from its left, top, right and bottom; the frame keeps its size.",
+      description: "Percent cut from each edge. Keeps frame size.",
       example: { fills: { crop: { l: 10, t: 0, r: 10, b: 0 } } },
     },
     recolor: {
-      description: "Gray tones, or two colors that replace the image's dark and light tones.",
+      description: "Grayscale or two replacement colors for dark and light tones.",
       example: { fills: { recolor: { duotone: { dark: "accent1", light: `#${white}` } } } },
     },
     overlay: {
@@ -34,7 +33,7 @@ export const fillsWire: TraitWire<"fills"> = {
       example: { fills: { overlay: `#${black} alpha 50` } },
     },
     blur: {
-      description: "How soft the image looks, in percent.",
+      description: "Image blur in percent.",
       example: { fills: { blur: 40 } },
     },
   },

@@ -4,6 +4,7 @@ import {
   designBytes,
   mappedSlots,
   readDesign,
+  shadowSlotKeys,
   templateColors,
   valuedTransforms,
   type Alpha,
@@ -292,6 +293,68 @@ it("folds the effects a change set over the design line, and drops one set to no
       effects: { shadow: { set: { none: true } }, glow: { set: { none: true } }, softEdge: { set: { none: true } } },
     }),
   ).toEqual({ fills: ["accent1", "style"] })
+})
+
+it("indexes a full shadow stack alongside the usual design fields", () => {
+  const shadow = {
+    value: {
+      blur: 50_800,
+      distance: 38_100,
+      direction: 2_700_000,
+      color: { rgb: black, transforms: [{ op: "alpha", val: 35_000 }] },
+    },
+  } as const
+  const indexed = designOf({
+    kept: [],
+    reads: {
+      ...Object.fromEntries(shadowSlotKeys.map((slot) => [slot, shadow])),
+      "effects.shadow": shadow,
+      "effects.innerShadow": shadow,
+      "box.rot": { value: 2_700_000 },
+      fills: { value: { color: { rgb: navy } } },
+    },
+  }).design
+  expect(readDesign(indexed)).toEqual(indexed)
+  const keys = ["effects.shadow", "effects.innerShadow", ...shadowSlotKeys] as const
+  for (const key of keys) expect(indexed?.[key]).toEqual([`blur 4 distance 3 direction 45 #${black} alpha 35`])
+  expect(indexed?.["box.rot"]).toEqual([45])
+  expect(indexed?.fills).toEqual([`#${navy}`])
+})
+
+it("reports all shadow slots and folds changes without shifting the other slots", () => {
+  const color = { scheme: "accent1" } as const
+  const shadow = { blur: 50_800, distance: 38_100, direction: 2_700_000, color }
+  const drop = { outer: shadow }
+  const inner = { inner: shadow }
+  const line = ["blur 4 distance 3 direction 45 accent1"]
+  const stacked = foldDesign(undefined, {
+    effects: {
+      shadow: { set: drop },
+      drop1: { set: drop },
+      drop2: { set: drop },
+      drop3: { set: drop },
+      innerShadow: { set: inner },
+      inner1: { set: inner },
+      inner2: { set: inner },
+      inner3: { set: inner },
+    },
+  })
+  expect(stacked).toEqual({
+    "effects.shadow": line,
+    "effects.drop1": line,
+    "effects.drop2": line,
+    "effects.drop3": line,
+    "effects.innerShadow": line,
+    "effects.inner1": line,
+    "effects.inner2": line,
+    "effects.inner3": line,
+  })
+  const changed = foldDesign(stacked, {
+    effects: { drop1: { set: { none: true } }, inner3: { set: { inner: { ...shadow, blur: 0 } } } },
+  })
+  expect(changed).not.toHaveProperty(["effects.drop1"])
+  expect(changed?.["effects.drop2"]).toEqual(line)
+  expect(changed?.["effects.inner3"]).toEqual(["blur 0 distance 3 direction 45 accent1"])
 })
 
 describe("foldDesign shows a text box's layout as its rows set it", () => {

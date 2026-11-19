@@ -34,8 +34,10 @@ export {
 } from "./deck-index.js"
 export {
   designBytes,
+  designWordBytes,
   designKeys,
   designOrder,
+  shadowSlotKeys,
   readDesign,
   roles,
   sources,

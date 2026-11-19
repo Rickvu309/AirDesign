@@ -1,22 +1,27 @@
 import type { TraitWire } from "./trait-wire.js"
 
 const black = "000000"
+const offset = { blur: 4, distance: 3, direction: 45, color: `#${black} alpha 35` } as const
+const drop = { outer: offset }
+const inner = { inner: offset }
 
 export const effectsWire: TraitWire<"effects"> = {
-  description: "Shadow, inner shadow, glow, soft edge and blur, sizes in points. Setting one keeps the others.",
+  description:
+    "Sizes in points, direction in degrees. Drop shadow slots: shadow, drop1–3 (titles and bodies take shadow only). Inner shadow slots: innerShadow, inner1–3. Set slots together or independently. none clears one.",
   fields: {
     shadow: {
-      description: "Outer shadow; direction in degrees.",
-      example: { effects: { shadow: { outer: { blur: 4, distance: 3, direction: 45, color: `#${black} alpha 35` } } } },
+      example: { effects: { shadow: drop } },
     },
     innerShadow: {
-      description: "Shadow inside the edge.",
-      example: {
-        effects: { innerShadow: { inner: { blur: 4, distance: 3, direction: 45, color: `#${black} alpha 35` } } },
-      },
+      example: { effects: { innerShadow: inner } },
     },
+    drop1: { example: { effects: { drop1: drop } } },
+    drop2: { example: { effects: { drop2: drop } } },
+    drop3: { example: { effects: { drop3: drop } } },
+    inner1: { example: { effects: { inner1: inner } } },
+    inner2: { example: { effects: { inner2: inner } } },
+    inner3: { example: { effects: { inner3: inner } } },
     glow: {
-      description: "Glow around the edge.",
       example: { effects: { glow: { halo: { radius: 8, color: "accent1 alpha 60" } } } },
     },
     softEdge: {
@@ -24,7 +29,6 @@ export const effectsWire: TraitWire<"effects"> = {
       example: { effects: { softEdge: 5 } },
     },
     blur: {
-      description: "Blurs the layer.",
       example: { effects: { blur: 4 } },
     },
   },

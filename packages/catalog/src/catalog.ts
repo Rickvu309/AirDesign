@@ -59,7 +59,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call when your turn is finished, so a person's changes stop closing layers to you and other agents can change the layers your turn holds. Takes the runId your edit answers carried.",
+      "Call when your turn is finished, with the runId from airdesign_edit_deck, so a person's changes stop closing layers to you and other agents can change the layers your turn holds.",
   },
   undo_run: { kind: "command", exposure: "web" },
   watch_deck: { kind: "stream", exposure: "web" },
@@ -70,14 +70,14 @@ export const catalog = {
     destructive: true,
     read: readAgentEdit,
     description:
-      "Change one deck: text, boxes, looks, layers and slides, all landing or none. Read it first with airdesign_read_deck; send its revision as base and each layer's version as readAt (a change with op needs none). Each answer carries your turn's runId; call airdesign_stop_run with it when done.",
+      "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). Pass the returned runId to airdesign_stop_run when done.",
   },
   list_decks: {
     kind: "query",
     exposure: "agent",
     runsOn: "server",
     read: readListDecks,
-    description: "List the decks this account owns, each with its id, its name, and trash when it is in Trash.",
+    description: "List owned decks with id, name, and trash when in Trash.",
   },
   read_deck: {
     kind: "query",
@@ -85,7 +85,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. Layers give node (layer id), slide, kind, value, box and version (0 unchanged); role names a placeholder; design is one line of its look. closed: a person's newer change or another run holds it. Grouped layers refuse box changes; frame is auto or free. index is ready, pending or missing; if not ready, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
+      "Read an owned deck. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. A layer's node is its id, version 0 is unchanged, role names a placeholder, design is one line of its look, and closed means a person's newer change or another run holds it. Grouped layers refuse box changes; frame is auto or free. If index is pending or missing, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

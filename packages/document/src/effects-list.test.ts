@@ -273,7 +273,7 @@ it("keeps two shadows two people added at once, and lets the later write win on 
   expect(netPatch([first, later]).effects).toEqual({ drop1: { set: { outer: { ...medium, blur: 1 } } } })
 })
 
-it("plans one extra shadow as one row, and undoes that row in one step", () => {
+it("plans two Drop shadows and two Inner shadows as one row and undoes all four in one step", () => {
   const node = elementId("258.4")
   const shape: IndexElement = {
     node,
@@ -291,12 +291,30 @@ it("plans one extra shadow as one row, and undoes that row in one step", () => {
   const shown = readEffects({ landed: { shadow: { set: { outer: medium } } } })
   const added = changeEffects(shown, { add: shadow })
   if (!added.ok) throw new Error(added.refusal)
-  const planned = planChange({ target: { node }, effects: added.effects }, registerScope(indexed()))
+  const effects = {
+    shadow: { outer: medium },
+    innerShadow: { inner: medium },
+    inner1: { inner: medium },
+    ...added.effects,
+  }
+  const planned = planChange({ target: { node }, effects }, registerScope(indexed()))
+  const title: IndexElement = { ...shape, role: "title" }
+  const titleDeck = { ...indexed(), index: { format, total: 1, slides, elements: [title], pages: [] } }
+  expect(planChange({ target: { node }, effects }, registerScope(titleDeck))).toEqual({
+    ok: false,
+    refusals: [{ node, trait: "effects", code: "kind" }],
+  })
   expect(planned.ok).toBe(true)
   if (!planned.ok) return
   expect(planned.rows).toHaveLength(1)
   const patch = planned.rows[0]?.row.patch
   if (patch === undefined) throw new Error("patch")
+  expect(patch.effects).toEqual({
+    shadow: { set: { outer: medium } },
+    drop1: { set: { outer: medium } },
+    innerShadow: { set: { inner: medium } },
+    inner1: { set: { inner: medium } },
+  })
   const addedNode = decide(indexed(), { command: "add", node, floor: "", route: "clean" })
   if (addedNode.decision !== "apply") throw new Error(addedNode.code)
   const body = addedNode.register.elements[node]

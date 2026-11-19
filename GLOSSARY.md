@@ -179,7 +179,7 @@ Shapes joined by connectors and grouped, which an agent adds in one change with 
 _Avoid_: flowchart, SmartArt
 
 **effects**:
-A layer's ordered list of effects: shadow, inner shadow, glow, soft edge, blur. Four shadows, the first native. A title or body takes one. Effects keeps exact settings. A group's effects paint around its contents.
+A layer's Drop shadow, Inner shadow, glow, soft edge and blur. See [Effects](effects.md) for slots and strengths.
 _Avoid_: filters, shadow styles
 
 **request**:

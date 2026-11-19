@@ -33,7 +33,7 @@ it("describes each element kind", async () => {
     const instructions = client.getInstructions() ?? ""
     expect(instructions).toContain('"op": "set"')
     expect(instructions).toContain(
-      "A shape takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fills (paint, source, mode, crop, recolor, overlay, blur), border (fill, width, dash, cap, compound, join, head, tail), effects (shadow, innerShadow, glow, softEdge, blur), body (insets, anchor, wrap, autofit, vertical, columns), text (value, fill, color, size, font",
+      "A shape takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fills (paint, source, mode, crop, recolor, overlay, blur), border (fill, width, dash, cap, compound, join, head, tail), effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur), body (insets, anchor, wrap, autofit, vertical, columns), text (value, fill, color, size, font",
     )
     expect(instructions).toContain(
       "letterSpacing, lineHeight, spaceBefore, style, spaceAfter), link (target) and opacity.",
@@ -47,7 +47,7 @@ it("describes each element kind", async () => {
       "A table takes identity (name, alt, hidden) and box (x, y, w, h, align, distribute).",
     )
     expect(instructions).toContain(
-      "A group takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute) and effects (shadow, innerShadow, glow, softEdge, blur).",
+      "A group takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute) and effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur).",
     )
   })
 })

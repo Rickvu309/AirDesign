@@ -23,7 +23,8 @@ import { linkedPart } from "./notes-part.js"
 import { pictureReads } from "./picture-read.js"
 import { paintAttribute } from "./paint-color.js"
 import { layoutMatch, masterMatch, sheetFrom, type Drawn, type Sheet } from "./paint-sheet.js"
-import { effectReads } from "./effect-reads.js"
+import { effectReads, extraEffectReads } from "./effect-reads.js"
+import { standRecords } from "./stand-read.js"
 import { readSlides } from "./read-shapes.js"
 import { referenceOf } from "./style-reference.js"
 import { isShapeTag, shapeTags } from "./shape-tree.js"
@@ -387,6 +388,7 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
     }
     slides.set(slide, paletteKeys.indexOf(key))
     const styles = stylesOf(theme)
+    const stands = new Map(standRecords(sheet.elements, sheet.children).map((stand) => [stand.shape, stand]))
     for (const item of sheet.drawn) {
       const owners = ownersOf(item, chain)
       const reads: Partial<Record<DesignKey, Read<unknown>>> = {}
@@ -396,7 +398,10 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
       bodyReads(owners, reads)
       textReads(owners, item.placeholder?.type ?? null, chain, fonts, reads)
       Object.assign(reads, pictureReads(parts, sheet, item))
-      if (owners[0] !== undefined) connectionReads(slide, owners[0], reads)
+      if (owners[0] !== undefined) {
+        extraEffectReads(propertiesOf(owners[0]), stands.get(item.shape), reads)
+        connectionReads(slide, owners[0], reads)
+      }
       const type = item.placeholder?.type
       const role =
         type === undefined

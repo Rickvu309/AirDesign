@@ -1,5 +1,7 @@
 import type { DesignKey, GlowRead, Read, ShadowRead, Source } from "@airdesign/document"
 import { colorIn } from "./color-read.js"
+import { dropSlots, heldExtras, innerSlots } from "./effects-extension.js"
+import type { StandRecord } from "./stand-read.js"
 import { keptIn } from "./effects-read.js"
 import { child, whole, type Held } from "./markup-held.js"
 import { referenceOf } from "./style-reference.js"
@@ -15,6 +17,27 @@ const effectKeys = [
   "effects.softEdge",
   "effects.blur",
 ] as const
+
+export function extraEffectReads(
+  properties: Held | undefined,
+  stand: StandRecord | undefined,
+  reads: Partial<Record<DesignKey, Read<unknown>>>,
+): void {
+  if (reads["effects.kept"]?.value === "graph") return
+  const extras = heldExtras(properties)
+  for (const slot of innerSlots) {
+    const value = extras[slot]
+    if (value != null && "inner" in value) reads[`effects.${slot}`] = read(value.inner, undefined)
+  }
+  if (stand === undefined) {
+    for (const slot of dropSlots) {
+      const value = extras[slot]
+      if (value != null && "outer" in value) reads[`effects.${slot}`] = read(value.outer, undefined)
+    }
+  } else if (stand.matched) {
+    for (const { n, ...value } of stand.drops) reads[`effects.drop${n}`] = read(value, undefined)
+  }
+}
 
 export function effectReads(
   properties: readonly Held[],

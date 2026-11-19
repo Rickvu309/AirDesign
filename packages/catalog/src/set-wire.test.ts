@@ -83,6 +83,51 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     })
   })
 
+  it("sets and clears any of the four Drop shadow and Inner shadow slots", () => {
+    const wire = { blur: 4, distance: 3, direction: 45, color: "accent1" }
+    const read = { blur: 50_800, distance: 38_100, direction: 2_700_000, color: { scheme: "accent1" } }
+    const effects = {
+      shadow: { outer: wire },
+      drop1: { outer: wire },
+      drop2: "none",
+      drop3: { outer: wire },
+      innerShadow: { inner: wire },
+      inner1: "none",
+      inner2: { inner: wire },
+      inner3: { inner: wire },
+    }
+    const change = { op: "set", target: title, effects }
+    const check = z.fromJSONSchema(setChangeSchema())
+    expect(check.safeParse(change).success).toBe(true)
+    expect(readSetChange(change)).toEqual({
+      ok: true,
+      change: {
+        op: "set",
+        target: { node: title },
+        effects: {
+          shadow: { outer: read },
+          drop1: { outer: read },
+          drop2: { none: true },
+          drop3: { outer: read },
+          innerShadow: { inner: read },
+          inner1: { none: true },
+          inner2: { inner: read },
+          inner3: { inner: read },
+        },
+      },
+    })
+    for (const [field, value] of [
+      ["drop4", { outer: wire }],
+      ["inner4", { inner: wire }],
+      ["inner1", { outer: wire }],
+      ["drop1", { outer: { ...wire, blur: 201 } }],
+    ] as const) {
+      const invalid = { ...change, effects: { ...effects, [field]: value } }
+      expect(check.safeParse(invalid).success).toBe(false)
+      expect(readSetChange(invalid)).toEqual({ ok: false, refusal: "field", field: `effects.${field}` })
+    }
+  })
+
   it("names the field it refuses", () => {
     const refused = (raw: Record<string, unknown>) => readSetChange({ op: "set", target: "258.2", ...raw })
     expect(refused({ box: { x: 914_400 } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
@@ -317,10 +362,10 @@ describe("the set and add schemas derive from the agent forms", () => {
     }
     for (const trait of wired) {
       const kinds = { ...traits[trait].fields, ...traits[trait].inputs } as Readonly<Record<string, { desc: Desc }>>
-      const fields = traitWire[trait as TraitName].fields as Readonly<Record<string, { readonly description: string }>>
+      const fields = traitWire[trait as TraitName].fields as Readonly<Record<string, { readonly description?: string }>>
       for (const [field, { description }] of Object.entries(fields)) {
         const listed = quoted(kinds[field]?.desc ?? { kind: "mark" }).filter((options) =>
-          options.every((option) => description.includes(`"${option}"`)),
+          options.every((option) => description?.includes(`"${option}"`)),
         )
         expect(listed, `${trait}.${field}`).toEqual([])
       }

@@ -3,7 +3,7 @@ import { body } from "./trait-body.js"
 import { border } from "./trait-border.js"
 import { box } from "./trait-box.js"
 import { connection } from "./trait-connection.js"
-import { effects } from "./trait-effects.js"
+import { dropSlots, effects, innerSlots } from "./trait-effects.js"
 import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
 import { identity } from "./trait-identity.js"
@@ -55,7 +55,9 @@ export type AlphaField<T extends TraitName> = {
 
 export type HasAlpha = { [T in TraitName]: AlphaField<T> }[TraitName] extends never ? false : true
 
-export type WireField<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T> | SlotField<T>> | InputName<T>
+export type WireField<T extends TraitName> =
+  | Exclude<FieldName<T>, AlphaField<T> | (T extends "effects" ? never : SlotField<T>)>
+  | InputName<T>
 
 export type WireAgent<T extends TraitName, F extends WireField<T>> =
   F extends FieldName<T>
@@ -105,5 +107,9 @@ const replacing: Partial<Readonly<Record<TraitName, string>>> = { fills: "paint"
 
 export function keptRefuses(kept: readonly string[], trait: TraitName, field: string): boolean {
   if (kept.includes(`${trait}.${field}`)) return true
+  if (trait === "effects") {
+    if (dropSlots.some((slot) => slot === field) && kept.includes("effects.shadow")) return true
+    if (innerSlots.some((slot) => slot === field) && kept.includes("effects.innerShadow")) return true
+  }
   return kept.includes(trait) && replacing[trait] !== field
 }
