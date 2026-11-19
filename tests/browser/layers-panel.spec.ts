@@ -17,7 +17,7 @@ async function insert(page: Page, name: string): Promise<void> {
 function paintedOrder(page: Page, where: string, mark: string) {
   return page
     .locator(`${where} [${mark}$="#4"], ${where} [${mark}$="#5"]`)
-    .evaluateAll((all, name) => all.map((each) => each.getAttribute(name)?.split("#")[1]), mark)
+    .evaluateAll((all, name) => all.map((each) => /(\d+)$/.exec(each.getAttribute(name) ?? "")?.[1]), mark)
 }
 
 test("the layers panel lists a slide's layers front first, selects, renames and reorders them", async ({ page }) => {
