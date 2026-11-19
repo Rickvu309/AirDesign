@@ -180,6 +180,16 @@ async function score({ repo, page, task, original, file, validate }) {
   }
 }
 
+async function indexed(kit, deck, cookie, limitMs) {
+  const started = Date.now()
+  for (;;) {
+    const index = (await kit.post(kit.deckRoutes.open, { deck }, cookie)).json.register?.index
+    if (index !== undefined && index.elements.length === index.total) return
+    if (Date.now() - started >= limitMs) throw new Error(`deck ${deck} was not indexed in ${String(limitMs)} ms`)
+    await kit.page.waitForTimeout(100)
+  }
+}
+
 export async function trial(kit, task, { out, validate, number = 1, opened }) {
   const { page, repo } = kit
   const original = deckPath(repo, task.deck)
@@ -188,7 +198,9 @@ export async function trial(kit, task, { out, validate, number = 1, opened }) {
   await page.locator("input[type=file]").setInputFiles(original)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await page.locator(".thin-page[data-deck-ready]").waitFor()
-  await opened?.({ deck: page.url().split("/").at(-1), cookie })
+  const deck = page.url().split("/").at(-1)
+  await indexed(kit, deck, cookie, task.limit.seconds * 1000)
+  await opened?.({ deck, cookie })
   const seen = watch(page, kit)
   const countsFrom = kit.airaCounts !== undefined && existsSync(kit.airaCounts) ? statSync(kit.airaCounts).size : 0
   await page.getByRole("textbox", { name: "Ask Aira" }).fill(task.prompt)

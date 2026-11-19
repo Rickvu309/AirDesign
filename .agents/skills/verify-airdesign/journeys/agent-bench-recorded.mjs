@@ -26,7 +26,14 @@ function streams(kit, alsoSlideOne) {
 }
 
 export default async function drive(kit) {
-  const { expect, note } = kit
+  const { expect, note, page, deckRoutes } = kit
+  await page.route(
+    (url) => url.pathname === deckRoutes.index.path,
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+      await route.fallback()
+    },
+  )
   const out = mkdtempSync(path.join(os.tmpdir(), "agent-bench-recorded-"))
   try {
     const done = await trial(kit, task, { out, validate: null, opened: streams(kit, false) })
