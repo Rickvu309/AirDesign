@@ -81,8 +81,11 @@ function found(host: HTMLElement, selector: string): HTMLElement {
 }
 
 const movingFrame = `[data-canvas-element="ppt/slides/slide1.xml#${moving}"]`
+const stillFrame = `[data-canvas-element="ppt/slides/slide1.xml#${still}"]`
 
-async function pointer(target: EventTarget, type: string, x: number, y: number, ctrlKey = false): Promise<void> {
+type Held = { readonly ctrlKey?: boolean; readonly altKey?: boolean }
+
+async function pointer(target: EventTarget, type: string, x: number, y: number, held: Held = {}): Promise<void> {
   await act(async () => {
     target.dispatchEvent(
       new PointerEvent(type, {
@@ -92,7 +95,7 @@ async function pointer(target: EventTarget, type: string, x: number, y: number, 
         clientY: y,
         pointerId: 1,
         button: 0,
-        ctrlKey,
+        ...held,
       }),
     )
   })
@@ -119,11 +122,11 @@ describe("SlideCanvas snapping", () => {
   it("drags with no snapping and no guides while Control is held", async () => {
     const { host, boxes } = await mounted()
     await pointer(found(host, movingFrame), "pointerdown", 500, 330)
-    await pointer(host.ownerDocument, "pointermove", 470, 330, true)
-    await pointer(host.ownerDocument, "pointermove", 443, 330, true)
+    await pointer(host.ownerDocument, "pointermove", 470, 330, { ctrlKey: true })
+    await pointer(host.ownerDocument, "pointermove", 443, 330, { ctrlKey: true })
     expect(found(host, movingFrame).style.left).toBe("393px")
     expect(host.querySelector("[data-guides]")).toBeNull()
-    await pointer(host.ownerDocument, "pointerup", 443, 330, true)
+    await pointer(host.ownerDocument, "pointerup", 443, 330, { ctrlKey: true })
     expect(boxes).toEqual([[moving, { x: 393 * perPixel, y: 300 * perPixel, cx: 120 * perPixel, cy: 60 * perPixel }]])
   })
 
@@ -137,5 +140,52 @@ describe("SlideCanvas snapping", () => {
     expect(guideLines(host)).toEqual(["snap y 225"])
     await pointer(host.ownerDocument, "pointerup", 450, 228)
     expect(boxes).toEqual([[moving, { x: 450 * perPixel, y: 225 * perPixel, cx: 120 * perPixel, cy: 135 * perPixel }]])
+  })
+})
+
+async function alt(target: EventTarget, type: "keydown" | "keyup"): Promise<void> {
+  await act(async () => {
+    target.dispatchEvent(
+      new KeyboardEvent(type, { bubbles: true, cancelable: true, key: "Alt", altKey: type === "keydown" }),
+    )
+  })
+}
+
+function labels(host: HTMLElement): readonly string[] {
+  return [...host.querySelectorAll("[data-guides] [data-distance]")].map((label) => label.textContent ?? "")
+}
+
+describe("SlideCanvas measuring", () => {
+  it("shows the distances to the layer under the pointer while Alt is held, and to the slide's edges off any layer", async () => {
+    const { host } = await mounted()
+    await pointer(found(host, movingFrame), "pointerdown", 500, 330)
+    await pointer(host.ownerDocument, "pointerup", 500, 330)
+    await alt(found(host, movingFrame), "keydown")
+    await pointer(found(host, stillFrame), "pointermove", 200, 90, { altKey: true })
+    expect(guideLines(host)).toEqual([
+      "outline 30 30 390 150",
+      "distance x 390 450",
+      "extension y 390",
+      "distance y 150 300",
+      "extension x 150",
+    ])
+    expect(labels(host)).toEqual(["72", "180"])
+    await pointer(found(host, "[data-slide-paint]"), "pointermove", 700, 420, { altKey: true })
+    expect(guideLines(host)).toEqual([
+      "outline 0 0 800 450",
+      "distance x 0 450",
+      "distance x 570 800",
+      "distance y 0 300",
+      "distance y 360 450",
+    ])
+    await alt(found(host, movingFrame), "keyup")
+    expect(host.querySelector("[data-guides]")).toBeNull()
+  })
+
+  it("measures nothing with no layer selected", async () => {
+    const { host } = await mounted()
+    await alt(host.ownerDocument.body, "keydown")
+    await pointer(found(host, stillFrame), "pointermove", 200, 90, { altKey: true })
+    expect(host.querySelector("[data-guides]")).toBeNull()
   })
 })

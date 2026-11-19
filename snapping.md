@@ -15,3 +15,7 @@ _Avoid_: smart guide, alignment line, guide (a guide is a ruler line a person pl
 **spacing guide**:
 The pink marks drawn across two or more equal gaps in a row or column while a layer is held, each with the gap in points.
 _Avoid_: distribution marker, equal spacing guide
+
+**measuring**:
+Holding Alt (Option on a Mac) with a layer selected shows red lines and labels, in points, for the distances from it to the layer under the pointer, or to the slide's edges when the pointer is on no other layer. The measured layer or the slide is outlined in red.
+_Avoid_: redlines, measure tool (Figma's saved measurements are another thing)

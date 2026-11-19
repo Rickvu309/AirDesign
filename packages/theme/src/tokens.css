@@ -195,6 +195,7 @@
   --guide-label-radius: 2px;
   --guide-label-offset: 6px;
   --guide-label-text: #ffffff;
+  --guide-dash: 3 3;
   --grid-hover: #bfe4ff;
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);

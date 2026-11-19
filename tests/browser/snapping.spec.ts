@@ -95,3 +95,24 @@ test("holding Control during a drag places the layer where the pointer leaves it
   const free = { x: 290 * emuPerPixel, y: 227 * emuPerPixel, cx: 180 * emuPerPixel, cy: 120 * emuPerPixel }
   await expect.poll(() => boxRows(page)).toEqual([free])
 })
+
+test("holding Alt with a layer selected shows the distances to the layer under the pointer, then to the slide's edges", async ({
+  page,
+}) => {
+  covers("measure")
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(fixture)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  const origin = await corner(page)
+  await page.mouse.click(origin.x + 360, origin.y + 150)
+  await expect(page.locator(`[data-slide-paint] [data-selection="256.5"]`)).toHaveCount(1)
+  await page.keyboard.down("Alt")
+  await page.mouse.move(origin.x + 150, origin.y + 150)
+  await expect(page.locator("[data-guides] [data-distance]")).toHaveText(["36"])
+  await expect(page.locator('[data-guides] [data-guide="distance x 240 270"]')).toHaveCount(1)
+  await page.mouse.move(origin.x + 700, origin.y + 420)
+  await expect(page.locator("[data-guides] [data-distance]")).toHaveText(["324", "420", "108", "288"])
+  await page.keyboard.up("Alt")
+  await expect(page.locator("[data-guides]")).toHaveCount(0)
+})
