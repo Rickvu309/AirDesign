@@ -27,9 +27,15 @@
     },
     {
       "file": "packages/live/src/cache.ts",
-      "names": ["serial", "connect"],
-      "digest": "d1f25eede160",
-      "blob": "60a5037aae63cc46c70cc4a81c5519631fd50fa6"
+      "names": ["connect"],
+      "digest": "f612cbab57b9",
+      "blob": "cefc9cfb911573d982efdbca42f9e9dd056369dc"
+    },
+    {
+      "file": "packages/live/src/deck-lane.ts",
+      "names": ["serial", "flushLane"],
+      "digest": "4577466b88f2",
+      "blob": "7d5218df5c6b05e744c4be6667f5d4cadac44973"
     }
   ]
 }
