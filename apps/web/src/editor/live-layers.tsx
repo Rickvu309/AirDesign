@@ -6,6 +6,7 @@ import { changeDesign, type DesignDeck } from "@/design/design-change"
 import { panelKind } from "@/design/panel-order"
 import { deviceScope } from "@/design/trait-edit"
 import { layerTree, type Layer } from "@/editor/layer-tree"
+import { hideLayers } from "@/editor/layer-hiding"
 import { LayersPanel, type LayerPick } from "@/editor/layers-panel"
 import { fieldsOf } from "@/editor/panel-fields"
 import { slideLayerRows, type LayerLook } from "@/editor/slide-layers"
@@ -95,6 +96,7 @@ export function LiveLayers({
         onHover,
         onRename: (node, name) => changeDesign(deck, () => ({ target: { node }, identity: { name } })),
         onOrder: (node, before) => void deck.changeElement({ change: "order", node, move: { before } }),
+        onHide: (node, hidden) => hideLayers(deck, [node], hidden),
       }}
     />
   )

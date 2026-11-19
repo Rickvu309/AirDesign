@@ -1,4 +1,5 @@
 import { bytesOf, nameBytes, type ElementId } from "@airdesign/document"
+import { Eye, EyeOff } from "lucide-react"
 import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { designCopy } from "@/copy/design-copy"
@@ -26,6 +27,7 @@ export type LayersSource = {
   readonly onHover?: (node: ElementId | null) => void
   readonly onRename?: (node: ElementId, name: string) => void
   readonly onOrder?: (node: ElementId, before: ElementId | null) => void
+  readonly onHide?: (node: ElementId, hidden: boolean) => void
 }
 
 const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
@@ -118,7 +120,7 @@ function NameEdit({ name, onDone }: { readonly name: string; readonly onDone: (n
 }
 
 export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
-  const { tree, selected, onSelect, onHover, onRename, onOrder } = layers
+  const { tree, selected, onSelect, onHover, onRename, onOrder, onHide } = layers
   const list = useRef<HTMLDivElement>(null)
   const anchor = useRef<ElementId | null>(null)
   const dragged = useRef<ElementId | null>(null)
@@ -221,7 +223,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         {...(chosen ? { "data-layer-selected": "" } : {})}
         {...(dim ? { "data-layer-hidden": "" } : {})}
         className={cn(
-          "relative flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-[var(--shape-control)] pr-2 text-[length:var(--type-caption)] select-none",
+          "group/layer relative flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-[var(--shape-control)] pr-1 text-[length:var(--type-caption)] select-none",
           chosen ? "bg-[var(--row)]" : within ? "bg-[var(--row-inside)] hover:bg-black/4" : "hover:bg-black/4",
           dim ? "text-faint" : "text-foreground",
         )}
@@ -292,6 +294,26 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
           <span className={cn("min-w-0 flex-1 truncate", layer.kind === "frame" && "font-medium")} data-layer-name>
             {layer.name}
           </span>
+        )}
+        {onHide === undefined || editing ? null : (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={layer.hidden ? layersCopy.show(layer.name) : layersCopy.hide(layer.name)}
+            aria-pressed={layer.hidden}
+            data-layer-eye
+            className={cn(
+              "flex size-6 shrink-0 items-center justify-center rounded-[var(--shape-control)] text-quiet hover:bg-black/6 hover:text-foreground",
+              layer.hidden ? "" : "opacity-0 group-hover/layer:opacity-100 group-focus-visible/layer:opacity-100",
+            )}
+            onClick={(event) => {
+              event.stopPropagation()
+              onHide(layer.node, !layer.hidden)
+            }}
+            onDoubleClick={(event) => event.stopPropagation()}
+          >
+            {layer.hidden ? <EyeOff aria-hidden="true" size={14} /> : <Eye aria-hidden="true" size={14} />}
+          </button>
         )}
         {line === null ? null : (
           <span

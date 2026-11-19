@@ -105,6 +105,16 @@ describe("kept", () => {
     expect(kept({ ids: [first, second], inside: outer }, ungrouped)).toEqual({ ids: [first, second], inside: null })
   })
 
+  it("keeps a layer the slide holds but does not paint, as a hidden layer picked in the layers panel", () => {
+    const hidden = { ...slideOf(slide.elements.filter((each) => each.id !== other)), unpainted: [other] }
+    const selection = many(loose, other)
+    expect(kept(selection, hidden)).toBe(selection)
+    expect(kept(selection, slideOf(slide.elements.filter((each) => each.id !== other)))).toEqual({
+      ids: [loose],
+      inside: null,
+    })
+  })
+
   it("drops elements an agent grouped, since they no longer share the selection's parent", () => {
     const grouped = slideOf([element(outer), element(loose, outer), element(other, outer)])
     expect(kept(many(loose, other), grouped)).toEqual(noSelection)

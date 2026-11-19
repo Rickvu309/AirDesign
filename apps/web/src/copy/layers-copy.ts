@@ -5,4 +5,6 @@ export const layersCopy = {
   rename: (name: string) => `Rename ${name}`,
   moved: (name: string) => `Moved ${name}`,
   hidden: "Hidden",
+  hide: (name: string) => `Hide ${name}`,
+  show: (name: string) => `Show ${name}`,
 } as const

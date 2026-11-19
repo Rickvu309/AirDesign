@@ -77,12 +77,25 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await page.getByRole("button", { name: undoCopy.redoNamed["layer-order"], exact: true }).click()
   await expect.poll(names).toEqual([rectangle, "Badge"])
 
+  const badge = layers.getByRole("treeitem", { name: "Badge", exact: true })
+  await badge.hover()
+  await layers.getByRole("button", { name: layersCopy.hide("Badge"), exact: true }).click()
+  await expect(element(5)).toHaveCount(0)
+  await expect(page.locator(`[data-thumb-paint] [data-thumb-element="${slide}#5"]`)).toHaveCount(0)
+  await expect(layers.getByRole("treeitem", { name: `Badge, ${layersCopy.hidden}`, exact: true })).toBeVisible()
+  await capture("layer-hidden")
+  await expect.poll(async () => JSON.stringify(await register()).includes('"hidden":{"set":true}')).toBe(true)
+  await layers.getByRole("treeitem", { name: `Badge, ${layersCopy.hidden}`, exact: true }).click()
+  await page.keyboard.press("ControlOrMeta+Shift+KeyH")
+  await expect(element(5)).toBeVisible()
+  await expect(page.locator(`[data-thumb-paint] [data-thumb-element="${slide}#5"]`)).toHaveCount(1)
+  await capture("layer-shown")
   await page.reload()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   await page.locator("[data-design-mode]").click()
   await expect.poll(names).toEqual([rectangle, "Badge"])
   await capture("layers-reloaded")
   note(
-    `Two overlapping shapes listed front first as ${ellipse} and ${rectangle}. Hover outlined ${rectangle} on the slide, a click selected it there, a double-click renamed ${ellipse} to Badge and the server kept the name. A drag put ${rectangle} above Badge: the slide and the filmstrip painted it in front, the server holds an element-order row, Undo layer order and Redo layer order took it back and forth, and a reload kept the order and the name.`,
+    `Two overlapping shapes listed front first as ${ellipse} and ${rectangle}. Hover outlined ${rectangle} on the slide, a click selected it there, a double-click renamed ${ellipse} to Badge and the server kept the name. A drag put ${rectangle} above Badge: the slide and the filmstrip painted it in front, the server holds an element-order row, Undo layer order and Redo layer order took it back and forth. The eye hid Badge from the slide and the filmstrip with its row dimmed and the server holding identity.hidden, and Ctrl+Shift+H on the selected hidden row showed it again. A reload kept the order and the name.`,
   )
 }
