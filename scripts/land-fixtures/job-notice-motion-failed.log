@@ -1,0 +1,22 @@
+2026-11-19T07:59:46.3479763Z [177/241] tests/browser/not-found.spec.ts:7:1 › an address nothing serves shows Page not found with a link to the decks
+2026-11-19T07:59:46.3480695Z [178/241] tests/browser/notice-motion.spec.ts:64:1 › the offline notice slides in and leaves by the top edge
+2026-11-19T07:59:46.3481855Z [179/241] tests/browser/not-found.spec.ts:23:1 › a deck that is not in the account shows Deck not found with a link to the decks
+2026-11-19T07:59:46.3482972Z   1) tests/browser/notice-motion.spec.ts:64:1 › the offline notice slides in and leaves by the top edge
+2026-11-19T07:59:46.3483433Z
+2026-11-19T07:59:46.3483615Z     Error: expect(locator).toBeVisible() failed
+2026-11-19T07:59:46.3483846Z
+2026-11-19T07:59:46.3484253Z     Locator: locator('[data-sonner-toast]').filter({ hasText: 'You\'re offline. Edits are saved on this device.' })
+2026-11-19T07:59:46.3484787Z     Expected: visible
+2026-11-19T07:59:46.3485481Z     Error: strict mode violation: locator('[data-sonner-toast]').filter({ hasText: 'You\'re offline. Edits are saved on this device.' }) resolved to 2 elements:
+2026-11-19T07:59:46.3488013Z         1) <li tabindex="0" data-index="0" class="cn-toast" data-front="true" data-styled="false" data-mounted="true" data-swiped="false" data-visible="true" data-sonner-toast="" data-promise="false" data-removed="false" data-swiping="false" data-y-position="top" data-expanded="false" data-swipe-out="false" data-dismissible="true" data-x-position="center" data-testid="airdesign-toast-"_r_26_"/1">…</li> aka getByTestId('airdesign-toast-"_r_26_"/1')
+2026-11-19T07:59:46.3491596Z         2) <li inert="" tabindex="0" data-index="1" class="cn-toast" data-front="false" aria-hidden="true" data-styled="false" data-mounted="true" data-swiped="false" data-removed="true" data-sonner-toast="" data-promise="false" data-visible="false" data-swiping="false" data-y-position="top" data-expanded="false" data-swipe-out="false" data-dismissible="true" data-x-position="center" data-testid="airdesign-toast-"_r_25_"/0">…</li> aka getByTestId('airdesign-toast-"_r_25_"/0')
+2026-11-19T07:59:46.3493336Z
+2026-11-19T07:59:46.3493578Z     Call log:
+2026-11-19T07:59:46.3577759Z     tests/browser/notice-motion.spec.ts:64:1 › the offline notice slides in and leaves by the top edge
+2026-11-19T07:59:46.3578255Z   240 passed (5.0m)
+2026-11-19T07:59:46.3578569Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-19T07:59:46.3578917Z fail browser-tests 301.8s
+2026-11-19T07:59:46.4190146Z metric check-duration  now 301.9  limit 40
+2026-11-19T07:59:46.4191288Z check-duration is 301.9 and its limit is 40. Make it faster.
+2026-11-19T07:59:46.4192165Z failed: browser-tests
+2026-11-19T07:59:46.4254868Z [ELIFECYCLE] Command failed with exit code 1.

@@ -9,6 +9,7 @@ const same = (what, actual, expected) => {
 }
 const fixture = (name) => fs.readFileSync(new URL(`./land-fixtures/${name}`, import.meta.url), "utf8")
 const ok = (stdout) => ({ status: 0, stdout, stderr: "" })
+const browserJob = (id) => ok(JSON.stringify([{ id, name: "check (browser 4/4)" }]))
 
 const queueRun = {
   id: 43261070421,
@@ -21,20 +22,20 @@ const queueRun = {
 const asked = []
 const gh = (args) => {
   asked.push(args.join(" "))
-  if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100")) return ok("135322156039\n")
   if (args[0] === "api" && args[1].endsWith("/jobs/135322156039/logs")) return ok(fixture("job-playwright-failed.log"))
-  if (args[0] === "run" && args.includes("jobs")) return ok("check (browser 4/4)\n")
+  if (args[0] === "run" && args.includes("jobs")) return browserJob(135322156039)
   if (args[0] === "api" && args[1].endsWith("/artifacts"))
     return ok("test-results-check-browser-3\nbrowser-timings-3\n")
   throw new Error(`unexpected gh ${args.join(" ")}`)
 }
 const git = (args) => {
   if (args[0] === "cat-file") return ok("")
+  if (args[0] === "merge-base") return ok(args[1] + "\n")
   if (args[0] === "rev-list") return ok("0\n")
   throw new Error(`unexpected git ${args.join(" ")}`)
 }
 
-const comment = dropComment({ repository: "Rickvu309/AirDesign", run: queueRun, gh, git })
+const comment = await dropComment({ repository: "Rickvu309/AirDesign", run: queueRun, gh, git })
 const lines = comment.body.split("\n")
 same("the comment goes to the pull request the queue branch names", comment.number, 645)
 same(
@@ -47,7 +48,7 @@ same("it names the failed step", lines.includes("ci run 43261070421 (merge_group
 same(
   "it names the failed test",
   lines.includes(
-    "  tests/browser/save-status.spec.ts: an added slide reads Saving while its commit waits and Saved once the server takes it",
+    "  tests/browser/save-status.spec.ts:206: an added slide reads Saving while its commit waits and Saved once the server takes it",
   ),
   true,
 )
@@ -73,9 +74,82 @@ same(
 
 same(
   "a run on a branch that names no pull request tells nobody",
-  dropComment({ repository: "Rickvu309/AirDesign", run: { ...queueRun, branch: "main" }, gh, git }),
+  await dropComment({ repository: "Rickvu309/AirDesign", run: { ...queueRun, branch: "main" }, gh, git }),
   undefined,
 )
+
+const noticeRun = {
+  id: 44483186457,
+  event: "merge_group",
+  branch: "gh-readonly-queue/main/pr-917-2b6758046db318bb21018c6302dddcd1ca2267c4",
+  sha: "e36857135aec8e779af33a81589230a2d164b3ca",
+  createdAt: "2026-11-19T07:54:09Z",
+}
+const queueBase = "2b6758046db318bb21018c6302dddcd1ca2267c4"
+const previousMain = "b9d4c07e079ad8cb72c8251dab452ca87c31b867"
+const missing = { status: 1, stdout: "", stderr: "gh: Not Found (HTTP 404)" }
+const noticeLog = fixture("job-notice-motion-failed.log")
+const noticeComment = async (reads) => {
+  let attempts = 0
+  const waits = []
+  const calls = []
+  const result = await dropComment({
+    repository: "Rickvu309/AirDesign",
+    run: noticeRun,
+    sleep: (ms) => waits.push(ms),
+    gh: (args) => {
+      if (args[1]?.endsWith("/jobs/135420140611/logs")) return reads[attempts++] ?? missing
+      if (args[0] === "run") return browserJob(135420140611)
+      if (args[1]?.endsWith("/artifacts")) return ok("test-results-check-browser-6\n")
+      throw new Error(`unexpected gh ${args.join(" ")}`)
+    },
+    git: (args) => {
+      const command = args.join(" ")
+      calls.push(command)
+      if (command === `cat-file -e ${queueBase}^{commit}`) return missing
+      if (command === `fetch --no-tags --no-write-fetch-head origin ${queueBase}`) return ok("")
+      if (command === `merge-base ${queueBase} origin/main`) return ok(previousMain + "\n")
+      if (command === `rev-list --count ${previousMain}..origin/main`) return ok("2\n")
+      if (command === `diff --name-only ${previousMain} origin/main`) return ok("README.md\n")
+      throw new Error(`unexpected git ${command}`)
+    },
+  })
+  return { body: result.body, waits, calls, attempts }
+}
+
+const delayed = await noticeComment([missing, ok(""), ok(noticeLog)])
+same(
+  "the drop names the real failed browser test once the job log becomes available",
+  delayed.body.includes(
+    "  tests/browser/notice-motion.spec.ts:64: the offline notice slides in and leaves by the top edge",
+  ),
+  true,
+)
+same("the drop names the failed step", delayed.body.includes("failed in browser-tests."), true)
+same("the drop includes the test error", delayed.body.includes("Error: expect(locator).toBeVisible() failed"), true)
+same("the drop waits only for missing and empty logs", [delayed.attempts, delayed.waits.length], [3, 2])
+same(
+  "the hidden queue commit is fetched",
+  delayed.calls.includes(`fetch --no-tags --no-write-fetch-head origin ${queueBase}`),
+  true,
+)
+same(
+  "the queued commits are excluded from the count of commits added to main",
+  delayed.body.includes("main has moved 2 commits since this run started"),
+  true,
+)
+
+const unavailable = await noticeComment([])
+same("waiting for the job log is bounded", [unavailable.attempts, unavailable.waits.length], [6, 5])
+same(
+  "the drop identifies a job log GitHub never returned",
+  unavailable.body.includes("Could not read the log for job 135420140611 after 6 reads (HTTP 404)."),
+  true,
+)
+
+const forbidden = await noticeComment([{ status: 1, stdout: "", stderr: "gh: Forbidden (HTTP 403)" }])
+same("a forbidden log is reported immediately", [forbidden.attempts, forbidden.waits.length], [1, 0])
+same("a forbidden log names the HTTP failure", forbidden.body.includes("after 1 read (HTTP 403)."), true)
 
 const workflow = parse(fs.readFileSync(new URL("../.github/workflows/ci-failure-report.yml", import.meta.url), "utf8"))
 const job = workflow.jobs["queue-drop"]
