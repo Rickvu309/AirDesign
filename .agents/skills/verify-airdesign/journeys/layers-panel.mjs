@@ -1,5 +1,6 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { layersCopy, shapeCopy, undoCopy } from "../bin/product-copy.mjs"
 
 const slide = "ppt/slides/slide1.xml"
 const fixture = "scripts/pptx-fixtures/blank.pptx"
@@ -13,13 +14,13 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   const element = (shape) => page.locator(`[data-slide-paint] [data-canvas-element="${slide}#${shape}"]`)
   const insert = async (name) => {
-    await page.getByRole("button", { name: "Shapes", exact: true }).click()
+    await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
     await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   }
-  await insert("Rectangle")
+  await insert(shapeCopy.shapes.square)
   await expect(element(4)).toBeVisible()
-  await insert("Ellipse")
+  await insert(shapeCopy.shapes.circle)
   await expect(element(5)).toBeVisible()
   const back = await element(4).boundingBox()
   const front = await element(5).boundingBox()
@@ -38,7 +39,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
 
   await page.locator("[data-design-mode]").click()
   const layers = page.locator("[data-layers-panel]")
-  await expect(layers.getByRole("heading", { name: "Layers" })).toBeVisible()
+  await expect(layers.getByRole("heading", { name: layersCopy.section })).toBeVisible()
   await expect(layers.getByRole("treeitem")).toHaveCount(4)
   const names = async () => (await layers.locator("[data-layer-name]").allTextContents()).slice(0, 2)
   const [ellipse, rectangle] = await names()
@@ -70,10 +71,10 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect.poll(() => painted("[data-thumb-paint]")).toEqual([`${slide}#5`, `${slide}#4`])
   await capture("layer-reordered")
   await expect.poll(async () => (await register()).order.some((row) => row.slide === "element-order")).toBe(true)
-  await page.getByRole("button", { name: "Undo layer order", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["layer-order"], exact: true }).click()
   await expect.poll(names).toEqual(["Badge", rectangle])
   await expect.poll(() => painted("[data-slide-paint]")).toEqual([`${slide}#4`, `${slide}#5`])
-  await page.getByRole("button", { name: "Redo layer order", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["layer-order"], exact: true }).click()
   await expect.poll(names).toEqual([rectangle, "Badge"])
 
   await page.reload()
