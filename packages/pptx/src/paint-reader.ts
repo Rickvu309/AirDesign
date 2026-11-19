@@ -1,5 +1,5 @@
-import { lockedAt } from "./shape-locks.js"
-import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
+import { labelOf, type PaintLabel } from "./paint-label.js"
+import { markupDocument, type MarkupElement } from "./element-span.js"
 import { partOf, presentationPart, relsOf } from "./package-address.js"
 import { paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
@@ -60,11 +60,9 @@ export type PaintElement = {
   table?: PaintTable
   diagram?: readonly PaintElement[]
   chart?: PaintChart
-  name?: string
-  alt?: string
-  locked?: true
   connection?: PaintConnection
-} & ShapePaint
+} & ShapePaint &
+  PaintLabel
 
 export type SlidePaint = {
   width: number
@@ -91,15 +89,6 @@ type Above = {
 }
 
 const slideName = /^ppt\/slides\/[^/]+\.xml$/
-
-const labelOf = (item: Drawn): Pick<PaintElement, "name" | "alt"> => {
-  const name = attr(item.identity, "name")
-  const alt = attr(item.identity, "descr")
-  return {
-    ...(name === null || name === "" ? {} : { name: decodedXmlText(name) }),
-    ...(alt === null || alt === "" ? {} : { alt: decodedXmlText(alt) }),
-  }
-}
 
 const shownAbove = (sheet: Sheet): readonly Drawn[] =>
   sheet.drawn.filter((item) => !item.hidden && item.placeholder === null)
@@ -479,8 +468,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
           ...tableOf(item, sheet, scope),
           ...diagramOf(item, box),
           ...frameChart(item.element, sheet.children, slidePart, charts),
-          ...labelOf(item),
-          ...(lockedAt(sheet.children, item.identity) ? { locked: true as const } : {}),
+          ...labelOf(item, sheet.children),
           ...paintConnection(item.element, sheet.children),
           ...item.paint,
         }

@@ -26,7 +26,7 @@ function shape(id: ElementId, locked: boolean): CanvasElement {
     ...(locked ? { locked: true as const } : {}),
     placeholder: false,
     filled: true,
-    fill: "#336699",
+    fill: "var(--primary)",
     line: null,
     outline: "box",
     text: null,
