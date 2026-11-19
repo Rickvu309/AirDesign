@@ -33,7 +33,7 @@ Checks block gate or CI; review needs judgment.
 | Browser/support imports resolve, including lazy entries | `test-imports` step. Computed targets need runtime checks |
 | Cheap checks fail before taking a slot; gate takes none | `scripts/check.test.mjs`, `scripts/gate.test.mjs` |
 | Run `pnpm gate` after your last edit, before every push | `pnpm gate` or `pnpm check` stamps it; `pre-push` refuses any other and names `pnpm land` (`scripts/checked.test.mjs`) |
-| The gate runs what the diff reaches and waits in no line | `scripts/gate.test.mjs`: cheap checks, changed builds and `pnpm prove --plan`. Past 40 unit files, only changed ones. ci runs every step |
+| The gate runs what the diff reaches and waits in no line | `scripts/gate.test.mjs`: changed builds, script tests and every reached unit file. `scripts/selected-unit-tests.test.mjs` checks exact paths |
 | A commit whose test failed is not pushed; a failed test is load only when it passes alone | `pnpm gate` and `pnpm check` withhold the stamp if step `unit-tests` fails. `pnpm land` stamps after the alone rerun (`scripts/land-check.mjs`) |
 | PR titles and bodies follow the rules; name the areas | `pnpm land` refuses bad titles and bodies before the gate; `bar` fails on local paths, placeholders or commits absent from branch and main (`scripts/pr-body.mjs`). Missing Evidence warns. `commit-titles` warns; `bar` adds title and area labels |
 | A commit is authored by the owner and has no `Co-authored-by` trailer or AI attribution line; a PR body has no "Generated with" line | `scripts/commit-authors.mjs` refuses the commit. `pnpm land` refuses that line in a body file or an open pull request before the gate and names it |

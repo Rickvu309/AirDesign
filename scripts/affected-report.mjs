@@ -131,9 +131,7 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
       ? { files: sorted(Object.values(testFilesByProject(root)).flat()) }
       : await vitestGraph(root, changed)
     const related = gate?.related ?? inventory.related
-    const legacy = gate ? undefined : await import("./gate.mjs")
-    const currentGate = gate ? { files: gate.tests, ci: gate.ci } : legacy.testsFor({ plan, related, changed })
-    const run = currentGate.files
+    const run = gate?.tests ?? (step("unit-tests")?.tests === "all" ? inventory.files : related)
     const deleted = git(root, ["diff", "--name-only", "--diff-filter=D", "--no-renames", base, head])
       .split("\n")
       .filter(Boolean)
@@ -165,13 +163,6 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
     const picked = broad ? "all" : sorted([...related, ...changed.filter((file) => inventory.files.includes(file))])
     report.unit = {
       ...family(inventory.files, picked, broad ?? "Vitest graph and added tests", run, cachedTimings(root)),
-      gateRule: {
-        limit: gate?.limit ?? legacy?.testLimit ?? null,
-        reason: currentGate.ci ?? null,
-        leftOut: (step("unit-tests")?.tests === "all" ? inventory.files : related).filter(
-          (file) => !run.includes(file),
-        ),
-      },
     }
     report.unit.prerequisites = plan.steps.filter((step) => step.kind === "model-check")
     const tooling = toolingTests(root)

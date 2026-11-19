@@ -87,6 +87,6 @@ same("every failed file is rerun", two.asked, [file, "packages/live/src/x.test.t
 
 same("a file rerun alone runs niced on two workers in the small lane", checkSteps.aloneCommand(file), [
   "nice",
-  ["-n", "10", "node", "node_modules/vitest/vitest.mjs", "run", "--maxWorkers=2", file],
+  ["-n", "10", "node", "scripts/selected-unit-tests.mjs", "2", file],
   { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache },
 ])
