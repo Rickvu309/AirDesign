@@ -5,6 +5,7 @@ import { designContext, openBrowser } from "./browser.mjs"
 import { pageMatches, readAllow, staleEntries } from "../look/allow.mjs"
 import { captureLook, themeValues } from "../look/capture.mjs"
 import { captureCompare } from "../look/compare.mjs"
+import { contextPool } from "../look/context-pool.mjs"
 import { writeSheet } from "../look/sheet.mjs"
 import { find, matching, openDeck, reach, states, sweep } from "../look/states.mjs"
 
@@ -49,12 +50,13 @@ export async function designCommand(command, args, runtime) {
   const identifiers = catalog.projectTools(catalog.catalog).map((tool) => tool.name)
   const allow = readAllow()
   const browser = await openBrowser()
+  const contexts = contextPool(browser, { ...designContext, baseURL: state.origin })
   const open = async (name) => {
-    const context = await browser.newContext({ ...designContext, baseURL: state.origin })
+    const context = await contexts.take()
     const page = await context.newPage()
     page.setDefaultTimeout(20_000)
     const { kit, out: folder } = await runtime.journeyKit({ run, name, page, context })
-    return { kit: { ...kit, out: folder }, close: () => context.close() }
+    return { kit: { ...kit, out: folder }, close: () => contexts.give(context) }
   }
   const look = async (page, scope, folder) =>
     captureLook(page, folder, {

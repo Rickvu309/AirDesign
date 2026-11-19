@@ -1,4 +1,5 @@
 import { readdirSync } from "node:fs"
+import { availableParallelism } from "node:os"
 import { walk } from "./walk.mjs"
 
 export { openDeck } from "./open-deck.mjs"
@@ -67,7 +68,11 @@ export async function visit(unit, kit, reached) {
   )
 }
 
-export async function sweep(selected, open, reached, lanes = 3) {
+export function sweepLanes(cores) {
+  return Math.min(8, Math.max(3, Math.floor(cores / 4)))
+}
+
+export async function sweep(selected, open, reached, lanes = sweepLanes(availableParallelism())) {
   const waiting = units(selected)
   const failures = []
   const work = async (lane) => {
