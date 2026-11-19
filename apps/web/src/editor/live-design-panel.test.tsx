@@ -86,8 +86,12 @@ async function fixtureFile(name: string): Promise<Uint8Array> {
   return fs.readFile(new URL(`../../../../scripts/pptx-fixtures/${name}`, import.meta.url))
 }
 
-async function slidePanel(fixture = "blank.pptx", selected: boolean | number = false, title?: Title) {
-  const parts = await readParts(await fixtureFile(fixture))
+async function slidePanel(
+  fixture: string | ReadonlyMap<string, Uint8Array> = "blank.pptx",
+  selected: boolean | number = false,
+  title?: Title,
+) {
+  const parts = typeof fixture === "string" ? await readParts(await fixtureFile(fixture)) : fixture
   const slide = readSlides(parts)[0]?.slide
   const shape = selected === true ? 4 : selected
   const node = shape !== false && slide !== undefined ? elementId(`${slide}.${shape}`) : null
@@ -261,6 +265,41 @@ it("shows Select matching layers only when the layer has matches, and Adjust ton
   expect(head(slide)).toEqual([adjustToneCopy.title])
   await slide.close()
 }, 20_000)
+
+it("shows Adjust tone on an auto layout frame and scopes it to the frame's text", async () => {
+  const parts = new Map(await readParts(await fixtureFile("frame.pptx")))
+  const at = "ppt/slides/slide1.xml"
+  const xml = new TextDecoder().decode(parts.get(at))
+  const text = "<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Frame text</a:t></a:r></a:p></p:txBody>"
+  const child = /<p:sp><p:nvSpPr><p:cNvPr id="4"[^]*?<\/p:sp>/.exec(xml)?.[0]
+  if (child === undefined) throw new Error("Frame child missing")
+  const withText = child.replace("</p:sp>", `${text}</p:sp>`)
+  const outside = withText.replace('id="4"', 'id="6"').replace("Frame text", "Outside text")
+  parts.set(at, new TextEncoder().encode(xml.replace(child, withText).replace("</p:grpSp>", `</p:grpSp>${outside}`)))
+  const toneFor = vi.fn<ToneControlFor>(() => ({
+    blocked: undefined,
+    notice: undefined,
+    busy: false,
+    choice: undefined,
+    resettable: false,
+    refresh: () => undefined,
+    choose: () => undefined,
+    reset: () => undefined,
+  }))
+  const panel = await slidePanel(parts, 2, { toneFor })
+  try {
+    const slide = readSlides(parts)[0]?.slide
+    expect(panel.host.querySelector('[data-panel-kind="frame"]')).not.toBeNull()
+    expect(panel.host.querySelector(`button[aria-label="${adjustToneCopy.title}"]`)).not.toBeNull()
+    expect(toneFor).toHaveBeenLastCalledWith({
+      slide,
+      selection: [elementId(`${slide}.2`)],
+      text: [elementId(`${slide}.4`)],
+    })
+  } finally {
+    await panel.close()
+  }
+})
 
 it("lists a table's inherited text color when its canvas value is plain text", async () => {
   const panel = await slidePanel("table-added.pptx", true)

@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
+import { namedByColor } from "../../apps/web/src/design/color-names"
 
 export async function colorWords(
   fixture: string,
@@ -7,7 +8,6 @@ export async function colorWords(
 ): Promise<Record<string, string>> {
   const { readParts, readSlides, slideTheme, templateStyles } = await import("../../packages/pptx/dist/index.js")
   const { templateColors } = await import("../../packages/document/dist/index.js")
-  const { namedByColor } = await import("../../apps/web/src/design/color-names")
   const parts = await readParts(await readFile(join(process.cwd(), "scripts/pptx-fixtures", fixture)))
   const styles = templateStyles(parts)
   const slide = readSlides(parts)[options?.slide ?? 0]?.part
@@ -25,7 +25,6 @@ export async function colorWords(
 
 export async function toolbarWords(fixture: string, slide = 0): Promise<Record<string, string>> {
   const { readParts, readSlides, themeSwatches } = await import("../../packages/pptx/dist/index.js")
-  const { namedByColor } = await import("../../apps/web/src/design/color-names")
   const parts = await readParts(await readFile(join(process.cwd(), "scripts/pptx-fixtures", fixture)))
   const part = readSlides(parts)[slide]?.part ?? null
   return Object.fromEntries(namedByColor(themeSwatches(parts, part)).map((swatch) => [swatch.scheme, swatch.name]))

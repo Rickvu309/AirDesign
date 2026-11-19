@@ -107,12 +107,22 @@ function distance(left: Lab, right: Lab): number {
   return Math.hypot(left.L - right.L, left.a - right.a, left.b - right.b)
 }
 
+function namingDistance(lab: Lab, entry: Word): number {
+  if (entry.tone !== "light" || entry.neutral) return distance(lab, entry.lab)
+  const { L, a, b } = entry.lab
+  const shade = 1 - L
+  const strength = ((1 - lab.L) * shade + lab.a * a + lab.b * b) / (shade ** 2 + a ** 2 + b ** 2)
+  const tint = Math.max(0, Math.min(1, strength))
+  return distance(lab, { L: 1 - shade * tint, a: a * tint, b: b * tint })
+}
+
 function nearest(lab: Lab): Word {
-  const pool = chroma(lab) < chromaGate ? words.filter((entry) => entry.neutral) : words
+  const neutral = chroma(lab) < chromaGate
+  const pool = words.filter((entry) => entry.neutral === neutral)
   let best = pool[0] ?? words[0]
-  let gap = best === undefined ? Infinity : distance(lab, best.lab)
+  let gap = best === undefined ? Infinity : namingDistance(lab, best)
   for (const entry of pool) {
-    const next = distance(lab, entry.lab)
+    const next = namingDistance(lab, entry)
     if (next < gap) {
       best = entry
       gap = next
