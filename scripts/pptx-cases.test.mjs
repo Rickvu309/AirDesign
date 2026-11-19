@@ -45,6 +45,7 @@ assert.deepEqual(
     "slide-subset.mjs",
     "slide-transition.mjs",
     "slides.mjs",
+    "smart-animate.mjs",
     "template-style.mjs",
     "text-fields.mjs",
     "text-format.mjs",
