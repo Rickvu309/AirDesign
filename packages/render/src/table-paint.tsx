@@ -21,6 +21,7 @@ function TableObject(
         "aria-label": "Table",
         tabIndex: 0,
         onPointerDown: (event) => moves.press(event, element, "move"),
+        onDoubleClick: (event) => moves.doubleClick(event, element),
         onKeyDown: (event) => moves.key(event, element),
         onFocus: () => moves.select(id),
       }}

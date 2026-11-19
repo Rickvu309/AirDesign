@@ -216,7 +216,7 @@ test("a move made offline is kept on the device and sent when the page comes bac
   expect(sent).toEqual([{ node: "256.2", property: "box", value: moved, floor: expect.any(String) }])
 })
 
-test("a first press on text inside a group picks the group, and the next types in it with no handles or move", async ({
+test("a first press on text inside a group picks the group, and a double-click steps into it with no handles or move", async ({
   page,
 }) => {
   covers("step-in")
@@ -227,16 +227,17 @@ test("a first press on text inside a group picks the group, and the next types i
   await text.click()
   await expect(page.locator("[data-selection]")).toHaveCount(1)
   await expect(page.locator("[data-grip]")).not.toHaveCount(0)
-  await text.click()
-  await expect(text).toBeFocused()
+  await text.dblclick()
   await expect(page.locator("[data-grip]")).toHaveCount(0)
+  await page.keyboard.press("Enter")
+  await expect(text).toBeFocused()
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowRight")
   await page.keyboard.press("ArrowDown")
   expect(await boxRows(page)).toEqual([])
 })
 
-test("Tab reaches the slide number, which can move, and then the empty unfilled box the pointer passes through", async ({
+test("Tab reaches the slide number, which can move, and then cycles to the empty unfilled box frame", async ({
   page,
 }) => {
   covers("select-next")
@@ -255,7 +256,7 @@ test("Tab reaches the slide number, which can move, and then the empty unfilled 
   await page.keyboard.press("Tab")
   await expect(page.getByRole("group", { name: "29" })).toBeFocused()
   await page.keyboard.press("Tab")
-  await expect(page.locator(`[data-canvas-element="${slide}#4"] [contenteditable="true"]`)).toBeFocused()
+  await expect(page.locator(`[data-canvas-element="${slide}#4"]`)).toBeFocused()
 })
 
 test("a picture moves by a drag anywhere on it and keeps the arrows once selected", async ({ page }) => {

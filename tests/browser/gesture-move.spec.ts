@@ -75,8 +75,8 @@ test("three selected shapes move by one drag and one nudge, each undone in one s
   const shapes = [frame(page, 4), frame(page, 5), frame(page, 3)]
   const start = await spots(shapes)
   await shapes[0]!.click()
-  await shapes[1]!.click({ modifiers: ["ControlOrMeta"] })
-  await shapes[2]!.click({ modifiers: ["ControlOrMeta"] })
+  await shapes[1]!.click({ modifiers: ["Shift"] })
+  await shapes[2]!.click({ modifiers: ["Shift"] })
   await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveCount(3)
   await expect(page.locator("[data-slide-paint] [data-selection-around]")).toHaveAttribute("data-selection-around", "3")
 

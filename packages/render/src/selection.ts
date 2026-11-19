@@ -1,5 +1,5 @@
 import type { ElementId } from "@airdesign/document"
-import type { CanvasSlide } from "./record.js"
+import type { CanvasElement, CanvasSlide } from "./record.js"
 
 export type Selection = {
   readonly ids: readonly ElementId[]
@@ -13,8 +13,17 @@ export function leadOf(selection: Selection): ElementId | null {
   return selection.ids.at(-1) ?? null
 }
 
-function parentOf(slide: CanvasSlide, id: ElementId): ElementId | null {
-  return slide.elements.find((each) => each.id === id)?.group?.id ?? null
+function findElement(slide: CanvasSlide, id: ElementId): CanvasElement | undefined {
+  return slide.elements.find((each) => each.id === id)
+}
+
+export function parentOf(slide: CanvasSlide, id: ElementId): ElementId | null {
+  return findElement(slide, id)?.group?.id ?? null
+}
+
+export function ownerOf(slide: CanvasSlide, id: ElementId): ElementId {
+  const element = findElement(slide, id)
+  return element?.backdrop === true && element.group !== undefined ? element.group.id : id
 }
 
 function unitIn(slide: CanvasSlide, inside: ElementId | null, pressed: ElementId): ElementId {
@@ -25,8 +34,18 @@ function unitIn(slide: CanvasSlide, inside: ElementId | null, pressed: ElementId
   return unit
 }
 
+export function selectionOf(slide: CanvasSlide, ids: readonly ElementId[]): Selection {
+  if (ids.length === 0) return noSelection
+  const parents = new Set(ids.map((id) => parentOf(slide, id)))
+  if (parents.size === 1) {
+    const [inside = null] = parents
+    return { ids, inside }
+  }
+  return { ids, inside: null, acrossGroups: true }
+}
+
 export function unitOf(slide: CanvasSlide, selection: Selection, pressed: ElementId): ElementId {
-  return unitIn(slide, selection.inside, pressed)
+  return unitIn(slide, selection.inside, ownerOf(slide, pressed))
 }
 
 export function alone(slide: CanvasSlide, id: ElementId): Selection {
@@ -34,23 +53,99 @@ export function alone(slide: CanvasSlide, id: ElementId): Selection {
 }
 
 export function picked(slide: CanvasSlide, selection: Selection, pressed: ElementId): Selection {
+  return alone(slide, unitOf(slide, selection, pressed))
+}
+
+export function steppedIn(slide: CanvasSlide, selection: Selection, pressed: ElementId): Selection | null {
+  if (findElement(slide, pressed)?.backdrop === true) return null
   const unit = unitOf(slide, selection, pressed)
-  const opened = selection.ids.length === 1 && selection.ids[0] === unit && unit !== pressed
-  return alone(slide, opened ? unitIn(slide, unit, pressed) : unit)
+  if (unit === pressed) return null
+  return alone(slide, unitIn(slide, unit, pressed))
+}
+
+export function deepPicked(slide: CanvasSlide, pressed: ElementId): Selection {
+  return alone(slide, ownerOf(slide, pressed))
 }
 
 export function toggled(slide: CanvasSlide, selection: Selection, pressed: ElementId): Selection {
   const unit = unitOf(slide, selection, pressed)
+  if (selection.acrossGroups === true) {
+    const ids = selection.ids.includes(unit) ? selection.ids.filter((id) => id !== unit) : [...selection.ids, unit]
+    return selectionOf(slide, ids)
+  }
   const inside = parentOf(slide, unit)
   if (inside !== selection.inside) return { ids: [unit], inside }
   const ids = selection.ids.includes(unit) ? selection.ids.filter((id) => id !== unit) : [...selection.ids, unit]
   return { ids, inside }
 }
 
+export function deepToggled(slide: CanvasSlide, selection: Selection, pressed: ElementId): Selection {
+  const target = ownerOf(slide, pressed)
+  const ids = selection.ids.includes(target) ? selection.ids.filter((id) => id !== target) : [...selection.ids, target]
+  return selectionOf(slide, ids)
+}
+
+export function parentSelection(slide: CanvasSlide, selection: Selection): Selection | null {
+  if (selection.ids.length === 0) return null
+  if (selection.inside !== null) {
+    return findElement(slide, selection.inside) === undefined ? null : alone(slide, selection.inside)
+  }
+  const parents: ElementId[] = []
+  for (const id of selection.ids) {
+    const parent = parentOf(slide, id)
+    if (parent !== null && !parents.includes(parent) && findElement(slide, parent) !== undefined) parents.push(parent)
+  }
+  return parents.length === 0 ? null : selectionOf(slide, parents)
+}
+
+export function childrenSelection(slide: CanvasSlide, selection: Selection): Selection | null {
+  if (selection.ids.length === 0) return null
+  const parents = new Set(selection.ids)
+  const children: ElementId[] = []
+  for (const each of slide.elements) {
+    if (each.id === null || each.backdrop === true) continue
+    if (each.group !== undefined && parents.has(each.group.id) && !children.includes(each.id)) children.push(each.id)
+  }
+  return children.length === 0 ? null : selectionOf(slide, children)
+}
+
+export function siblingSelection(slide: CanvasSlide, selection: Selection, step: 1 | -1): Selection | null {
+  const lead = leadOf(selection)
+  const scope = selection.acrossGroups === true && lead !== null ? parentOf(slide, lead) : selection.inside
+  const siblings: ElementId[] = []
+  for (const each of slide.elements) {
+    if (each.id === null || each.backdrop === true) continue
+    if ((each.group?.id ?? null) === scope) siblings.push(each.id)
+  }
+  if (siblings.length === 0) return null
+  const anchor = step === 1 ? lead : (selection.ids[0] ?? null)
+  const current = anchor === null ? -1 : siblings.indexOf(anchor)
+  const index =
+    current === -1 ? (step === 1 ? 0 : siblings.length - 1) : (current + step + siblings.length) % siblings.length
+  const next = siblings[index]
+  return next === undefined ? null : alone(slide, next)
+}
+
+export function hoverTarget(
+  slide: CanvasSlide,
+  selection: Selection,
+  hovered: ElementId | null,
+  deep: boolean,
+): ElementId | null {
+  if (hovered === null) return null
+  const owned = ownerOf(slide, hovered)
+  const target = deep ? owned : unitOf(slide, selection, owned)
+  return selection.ids.includes(target) ? null : target
+}
+
 export function focused(slide: CanvasSlide, selection: Selection, id: ElementId): Selection {
-  if (!selection.ids.includes(id)) return alone(slide, id)
-  if (leadOf(selection) === id) return selection
-  return { ids: [...selection.ids.filter((each) => each !== id), id], inside: selection.inside }
+  if (selection.ids.includes(id)) {
+    if (leadOf(selection) === id) return selection
+    return { ...selection, ids: [...selection.ids.filter((each) => each !== id), id] }
+  }
+  const unit = unitOf(slide, selection, id)
+  if (unit !== id && selection.ids.includes(unit)) return selection
+  return alone(slide, id)
 }
 
 export function kept(selection: Selection, slide: CanvasSlide): Selection {

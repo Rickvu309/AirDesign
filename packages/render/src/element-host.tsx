@@ -4,6 +4,7 @@ import {
   type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   type RefObject,
 } from "react"
@@ -256,6 +257,7 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
     "aria-description": `${canDrag(element) ? "Arrow keys move. Alt and Shift with the arrow keys resize. " : ""}${element.editable ? "Enter edits the text. " : ""}Delete removes it.`,
     tabIndex: canMove(element) && !typing ? 0 : -1,
     onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
+    onDoubleClick: (event: MouseEvent<HTMLElement>) => moves.doubleClick(event, element),
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
     onFocus: () => moves.select(id),
   }

@@ -147,7 +147,7 @@ How solid a layer is, in percent: one value that fades its fill, border, text an
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
-Two or more layers of one slide that move and resize as one: Group or Ctrl+G, and Ungroup or Ctrl+Shift+G leaves each where it showed. An agent sends `group` with two or more layer ids of one slide, or `ungroup` with group ids. The first click on a layer of a group selects the group, the next that layer.
+Two or more layers of one slide that move and resize as one: Group or Ctrl+G, and Ungroup or Ctrl+Shift+G leaves each where it showed. An agent sends `group` with two or more layer ids of one slide, or `ungroup` with group ids. Click selects the group, double-click steps in, and Cmd/Ctrl+click deep-selects.
 _Avoid_: bundle, combine, merge, set
 
 **frame**:
@@ -163,7 +163,7 @@ A frame's bottom layer, a rectangle with its fill, border and corners, never sel
 _Avoid_: background (slide fills)
 
 **selection**:
-The layers a person selects on the slide or inside one group. Click selects one; Shift+click or Ctrl+click (Cmd+click on a Mac) adds or removes one. One has handles, several a ring each inside one outline. Drag, arrows and Delete act on all as one undo step. An agent's delete drops that layer.
+The layers a person selects on a slide. Click selects one, Shift+click adds or removes, and dragging a [marquee](select.md) selects touched layers. One has handles, several a ring inside one outline. Drag, arrows and Delete act as one undo step.
 _Avoid_: chosen, picked, active element
 
 **connector**:

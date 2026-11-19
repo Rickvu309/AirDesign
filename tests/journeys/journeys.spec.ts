@@ -73,6 +73,7 @@ for (const name of [
   "navigate-zoom-pan",
   "snap-drag",
   "busy-drag",
+  "canvas-select",
   "connected-agents",
   "slide-commands",
   "grid-group-add",

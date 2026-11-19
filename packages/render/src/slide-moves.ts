@@ -6,7 +6,9 @@ import {
   useState,
   type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
+  type RefObject,
 } from "react"
 import {
   boxOf,
@@ -28,18 +30,24 @@ import { oncePerFrame } from "./once-per-frame.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import {
   alone,
+  childrenSelection,
+  deepPicked,
+  deepToggled,
   focused,
   kept,
   leadOf,
   noSelection,
-  picked,
+  parentSelection,
   sameSelection,
+  siblingSelection,
+  steppedIn,
   toggled,
   unitOf,
   type Selection,
 } from "./selection.js"
 import { guideBoard, type GuideBoard } from "./guide-layer.js"
 import type { BoxGrip, PaintStore } from "./store.js"
+import type { OwnsKey } from "./use-slide-marquee.js"
 
 export type Grouping = {
   readonly onFrame?: (ids: readonly ElementId[]) => void
@@ -50,15 +58,23 @@ export type Grouping = {
 export type Picking = {
   readonly selection?: Selection
   readonly onSelection?: (selection: Selection) => void
+  readonly ownsKey?: OwnsKey
+  readonly onEmptyPress?: (event: PointerEvent<HTMLDivElement>) => void
+  readonly onBackdropMarquee?: (event: PointerEvent<HTMLElement>, owner: CanvasElement) => void
+  readonly onDragChange?: (dragging: boolean) => void
 }
 
 export type Moves = {
   readonly selection: Selection
   readonly guides: GuideBoard
+  readonly latest: RefObject<Selection>
+  readonly choose: (next: Selection) => void
+  readonly isDragging: () => boolean
   readonly message: string
   readonly say: (message: string) => void
   readonly select: (id: ElementId) => void
   readonly press: (event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) => void
+  readonly doubleClick: (event: MouseEvent<HTMLElement>, element: CanvasElement) => void
   readonly key: (event: KeyboardEvent<HTMLElement>, element: CanvasElement) => void
   readonly slide: {
     readonly onPointerDown: (event: PointerEvent<HTMLDivElement>) => void
@@ -178,6 +194,7 @@ export function useMoves(
   function hold(next: Held) {
     held.current = next
     grips.current = new Map(next.ids.map((id) => [id, store.gripBox(id)]))
+    picking?.onDragChange?.(true)
   }
 
   function place(boxes: ReadonlyMap<ElementId, Box>) {
@@ -185,6 +202,7 @@ export function useMoves(
   }
 
   function letGo(changed: readonly ElementId[]) {
+    const wasHeld = held.current !== null
     held.current = null
     guides.show([])
     for (const [id, grip] of grips.current) {
@@ -192,6 +210,7 @@ export function useMoves(
       else grip.release()
     }
     grips.current = new Map()
+    if (wasHeld) picking?.onDragChange?.(false)
   }
 
   function finish(done: Held) {
@@ -296,27 +315,72 @@ export function useMoves(
     follow(enter === undefined ? drag : { ...drag, enter }, frame.ownerDocument)
   }
 
-  function chooseOn(event: PointerEvent<HTMLElement>, element: CanvasElement) {
+  function focusSelection(from: HTMLElement, next: Selection) {
+    const lead = elementOf(leadOf(next))
+    const frame = lead === undefined ? null : frameOf(from, lead)
+    if (frame !== null) frame.focus({ preventScroll: true })
+    else from.closest<HTMLElement>(slidePaint)?.focus({ preventScroll: true })
+  }
+
+  function deepPress(event: PointerEvent<HTMLElement>, element: CanvasElement) {
+    const id = element.id
+    if (id === null) return
+    const frame = frameOf(event.currentTarget, element)
+    if (frame === null) return
+    event.preventDefault()
+    pressedFrame.current = frame
+    choose(deepPicked(size, id))
+    frame.focus()
+    const starts = startsOf([id])
+    if (!starts.has(id)) return
+    const from = { x: event.clientX, y: event.clientY }
+    const keepRatio = element.kind === "picture"
+    const rotation = element.box?.rotation ?? 0
+    follow(
+      {
+        by: "pointer",
+        ids: [id],
+        grip: "move",
+        pointer: event.pointerId,
+        from,
+        starts,
+        moved: false,
+        keepRatio,
+        rotation,
+      },
+      frame.ownerDocument,
+    )
+  }
+
+  function chooseOn(event: PointerEvent<HTMLElement>, element: CanvasElement, deep: boolean) {
     if (element.id === null) return
     event.preventDefault()
-    const next = toggled(size, latest.current, element.id)
+    const next = deep ? deepToggled(size, latest.current, element.id) : toggled(size, latest.current, element.id)
     choose(next)
-    const lead = elementOf(leadOf(next))
-    const frame = lead === undefined ? null : frameOf(event.currentTarget, lead)
-    if (frame !== null) frame.focus()
-    else event.currentTarget.closest<HTMLElement>(slidePaint)?.focus()
+    focusSelection(event.currentTarget, next)
   }
 
   function press(event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) {
     const id = element.id
     if (id === null || event.button !== 0 || held.current !== null) return
-    if (grip === "move" && (event.shiftKey || event.metaKey || event.ctrlKey)) {
-      chooseOn(event, element)
+    const mod = event.metaKey || event.ctrlKey
+    if (grip === "move" && element.backdrop === true) {
+      const owner = elementOf(element.group?.id)
+      if (owner === undefined) return
+      if (mod && !event.shiftKey && picking?.onBackdropMarquee !== undefined) {
+        picking.onBackdropMarquee(event, owner)
+        return
+      }
+      if (event.shiftKey) chooseOn(event, owner, false)
+      else pressOn(event, owner, "move")
       return
     }
-    const owner = element.backdrop === true ? elementOf(element.group?.id) : undefined
-    if (owner !== undefined) {
-      pressOn(event, owner, "move")
+    if (grip === "move" && event.shiftKey) {
+      chooseOn(event, element, mod)
+      return
+    }
+    if (grip === "move" && mod) {
+      deepPress(event, element)
       return
     }
     const unit = grip === "move" ? elementOf(unitOf(size, latest.current, id)) : undefined
@@ -324,16 +388,33 @@ export function useMoves(
       pressOn(event, element, grip)
       return
     }
-    const next = leadOf(picked(size, latest.current, id))
-    const own = frameOf(event.currentTarget, element)
-    if (next === unit.id) pressOn(event, unit, "move")
-    else if (own !== null && inText(event.target, own)) choose(alone(size, id))
-    else pressOn(event, unit, "move", next ?? undefined)
+    pressOn(event, unit, "move")
+  }
+
+  function doubleClick(event: MouseEvent<HTMLElement>, element: CanvasElement) {
+    const id = element.id
+    if (id === null || event.shiftKey || event.metaKey || event.ctrlKey || held.current !== null) return
+    const next = steppedIn(size, latest.current, id)
+    if (next !== null) {
+      event.preventDefault()
+      event.stopPropagation()
+      choose(next)
+      focusSelection(event.currentTarget, next)
+      return
+    }
+    if (element.editable && !inText(event.target, event.currentTarget)) {
+      const frame = frameOf(event.currentTarget, element)
+      if (frame !== null && enterText(frame)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
   }
 
   function key(event: KeyboardEvent<HTMLElement>, element: CanvasElement) {
     const id = element.id
     if (id === null || event.nativeEvent.isComposing) return
+    if (picking?.ownsKey !== undefined && !picking.ownsKey(event)) return
     const frame = event.currentTarget
     const onFrame = event.target === frame
     const gesture = gestureFor(event, onFrame ? "element" : "text")
@@ -341,12 +422,38 @@ export function useMoves(
       event.preventDefault()
       const cancel = cancelling.current
       if (cancel !== null) cancel()
-      else if (onFrame) frame.closest<HTMLElement>(slidePaint)?.focus()
-      else frame.focus()
+      else if (!onFrame) frame.focus()
+      else {
+        const parent = parentSelection(size, latest.current)
+        if (parent !== null) {
+          choose(parent)
+          focusSelection(frame, parent)
+        } else frame.closest<HTMLElement>(slidePaint)?.focus()
+      }
       return
     }
     if (!onFrame) return
     const now = held.current
+    if (gesture === "select-parent") {
+      if (now !== null) return
+      const parent = parentSelection(size, latest.current)
+      if (parent !== null) {
+        event.preventDefault()
+        choose(parent)
+        focusSelection(frame, parent)
+      }
+      return
+    }
+    if (gesture === "select-next") {
+      if (now !== null) return
+      const next = siblingSelection(size, latest.current, event.shiftKey ? -1 : 1)
+      if (next !== null) {
+        event.preventDefault()
+        choose(next)
+        focusSelection(frame, next)
+      }
+      return
+    }
     if (gesture === "auto-layout") {
       if (now !== null || grouping?.onFrame === undefined) return
       event.preventDefault()
@@ -367,6 +474,14 @@ export function useMoves(
       return
     }
     if (gesture === "edit-text") {
+      if (now !== null) return
+      const children = childrenSelection(size, latest.current)
+      if (children !== null) {
+        event.preventDefault()
+        choose(children)
+        focusSelection(frame, children)
+        return
+      }
       if (enterText(frame)) event.preventDefault()
       return
     }
@@ -414,6 +529,10 @@ export function useMoves(
   const slide = {
     onPointerDown(event: PointerEvent<HTMLDivElement>) {
       if (event.target !== event.currentTarget || event.button !== 0) return
+      if (picking?.onEmptyPress !== undefined) {
+        picking.onEmptyPress(event)
+        return
+      }
       event.preventDefault()
       event.currentTarget.focus()
     },
@@ -440,5 +559,18 @@ export function useMoves(
     choose(focused(size, latest.current, id))
   }
 
-  return { selection, guides, message, say: setMessage, select, press, key, slide }
+  return {
+    selection,
+    guides,
+    latest,
+    choose,
+    isDragging: () => held.current !== null,
+    message,
+    say: setMessage,
+    select,
+    press,
+    doubleClick,
+    key,
+    slide,
+  }
 }

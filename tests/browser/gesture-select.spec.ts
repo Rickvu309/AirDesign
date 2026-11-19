@@ -16,7 +16,7 @@ function shapes(page: Page): Promise<string[]> {
     .evaluateAll((nodes) => nodes.map((node) => `256.${node.getAttribute("data-canvas-element")?.split("#")[1] ?? ""}`))
 }
 
-test("Cmd or Ctrl+click adds a second shape, and when an agent deletes it the first keeps the selection", async ({
+test("Shift+click adds a second shape, and when an agent deletes it the first keeps the selection", async ({
   page,
   context,
   stack,
@@ -35,7 +35,7 @@ test("Cmd or Ctrl+click adds a second shape, and when an agent deletes it the fi
   const [first, second] = (await shapes(page)).filter((node) => !before.includes(node))
   if (first === undefined || second === undefined) throw new Error("no shapes")
   await frame(page, first).click()
-  await frame(page, second).click({ modifiers: ["ControlOrMeta"] })
+  await frame(page, second).click({ modifiers: ["Shift"] })
   const selected = page.locator("[data-slide-paint] [data-selection]")
   const chosen = page.locator("[data-slide-paint] [data-chosen]")
   await expect(chosen).toHaveCount(2)

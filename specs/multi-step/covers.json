@@ -5,7 +5,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["elementsUndoable", "turn", "elementsTurn", "applying", "stillShows"],
       "digest": "3f7501a5a492",
-      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
+      "blob": "8d92ad7d0dc4c6280072daf9b2987a9dc575cede"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -17,13 +17,13 @@
       "file": "apps/web/src/element-edit.ts",
       "names": ["removals", "commitElement"],
       "digest": "8403ec6c26a7",
-      "blob": "ccbf3d64ca089fb063bae6bb42c4b93078256c49"
+      "blob": "f1f592c34a7c636435a03c1274455023e30464b8"
     },
     {
       "file": "packages/render/src/slide-moves.ts",
       "names": ["useMoves"],
-      "digest": "59880d1cf12a",
-      "blob": "00be59b7b2902b255b7a16ea55d8b7d63622ff8e"
+      "digest": "8c4df054333e",
+      "blob": "2da8e73ec68f0ea9203ccd45eefb586eb91fdb98"
     }
   ]
 }

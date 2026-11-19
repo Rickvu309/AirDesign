@@ -171,6 +171,9 @@ html:has(.reflow-frame) #root {
   border: var(--grid-marquee-width) solid var(--grid-marquee-edge);
   background: var(--grid-marquee-fill);
 }
+[data-slide-paint]:has(> [data-slide-marquee]:not([hidden])) {
+  overflow: visible;
+}
 [data-grid-halo] {
   position: absolute;
   pointer-events: none;

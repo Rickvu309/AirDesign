@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef } from "react"
+import { memo, useLayoutEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react"
 import type { ElementId, StackMove } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
@@ -14,11 +14,13 @@ import { GuideLayer } from "./guide-layer.js"
 import { useMeasuring } from "./measuring.js"
 import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import { leadOf, type Selection } from "./selection.js"
-import type { CanvasSlide } from "./record.js"
+import type { CanvasElement, CanvasSlide } from "./record.js"
 import type { PaintStore } from "./store.js"
 import type { TextEditKind } from "./passage.js"
 import { ensureTextRule, type Scaled } from "./text-look.js"
 import type { TextFormatting } from "./text-formatting.js"
+import { useHoverOutline } from "./use-hover-outline.js"
+import { useSlideMarquee, type OwnsKey } from "./use-slide-marquee.js"
 
 const defaultTextSize = 203_200
 
@@ -61,6 +63,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly entering?: Entering | null
   readonly formatting?: TextFormatting
   readonly slideName?: string
+  readonly ownsKey?: OwnsKey
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
@@ -68,9 +71,19 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   useLayoutEffect(() => {
     ensureTextRule(document)
   }, [])
+  const surface = useRef<HTMLDivElement>(null)
+  const startMarquee = useRef<((event: ReactPointerEvent<HTMLElement>, fallback?: CanvasElement) => void) | null>(null)
+  const hideHover = useRef<(() => void) | null>(null)
   const picking = {
     ...(props.selection === undefined ? {} : { selection: props.selection }),
     ...(props.onSelection === undefined ? {} : { onSelection: props.onSelection }),
+    ...(props.ownsKey === undefined ? {} : { ownsKey: props.ownsKey }),
+    onEmptyPress: (event: ReactPointerEvent<HTMLDivElement>) => startMarquee.current?.(event),
+    onBackdropMarquee: (event: ReactPointerEvent<HTMLElement>, owner: CanvasElement) =>
+      startMarquee.current?.(event, owner),
+    onDragChange: (dragging: boolean) => {
+      if (dragging) hideHover.current?.()
+    },
   }
   const moves = useMoves(props.store, slide, width, props.onBoxes, props.onRemove, props.onOrder, picking, {
     ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
@@ -78,6 +91,32 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     ...(props.onFrame === undefined ? {} : { onFrame: props.onFrame }),
   })
   const moving = props.onBoxes === undefined ? null : moves
+  const marquee = useSlideMarquee({
+    surface,
+    enabled: moving !== null,
+    slide,
+    width,
+    store: props.store,
+    selection: moves.latest,
+    choose: moves.choose,
+    isDragging: moves.isDragging,
+    ownsKey: props.ownsKey,
+    onActiveChange: (active) => {
+      if (active) hideHover.current?.()
+    },
+  })
+  startMarquee.current = marquee.start
+  const hover = useHoverOutline({
+    surface,
+    enabled: moving !== null,
+    slide,
+    width,
+    scaled,
+    store: props.store,
+    selection: moves.selection,
+    isBusy: () => moves.isDragging() || marquee.isActive(),
+  })
+  hideHover.current = hover.hide
   const ids = moving?.selection.ids
   const many = useMemo(
     () =>
@@ -89,7 +128,6 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   const lead = moving === null || many.length > 0 ? null : leadOf(moving.selection)
   const selected = lead === null ? undefined : slide.elements.find((each) => each.id === lead)
   const onConnect = selected?.kind === "connector" ? props.onConnect : undefined
-  const surface = useRef<HTMLDivElement>(null)
   useMeasuring(surface, slide, props.store, ids, moving?.guides)
   const entered = useRef<ElementId | null>(null)
   const keys = props.entering?.keys
@@ -164,6 +202,22 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           {props.notice !== undefined && props.notice !== "" ? props.notice : moving.message}
         </div>
       )}
+      {moving === null ? null : (
+        <div
+          ref={hover.mark}
+          hidden
+          aria-hidden="true"
+          data-hover-outline=""
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 9,
+            pointerEvents: "none",
+            boxShadow: "0 0 0 var(--layer-hover-width) var(--layer-hover-edge)",
+          }}
+        />
+      )}
       {props.highlights === undefined
         ? null
         : slide.elements.map((each) =>
@@ -212,6 +266,24 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
         />
       )}
       {moving === null ? null : <GuideLayer board={moving.guides} scaled={scaled} />}
+      {moving === null ? null : (
+        <div
+          ref={marquee.mark}
+          hidden
+          aria-hidden="true"
+          data-slide-marquee=""
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 10,
+            pointerEvents: "none",
+            boxSizing: "border-box",
+            border: "var(--slide-marquee-width) solid var(--slide-marquee-edge)",
+            background: "var(--slide-marquee-fill)",
+          }}
+        />
+      )}
     </div>
   )
 })
