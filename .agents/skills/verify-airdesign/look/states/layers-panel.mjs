@@ -1,9 +1,10 @@
 import { expect } from "@playwright/test"
+import { transitionCopy } from "../../bin/product-copy.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
 async function drive(kit) {
   await fixtureDeck(kit, "frame.pptx")
-  await kit.page.getByRole("button", { name: "Design", exact: true }).click()
+  await kit.page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await kit.page.locator("[data-design-mode]").click()
   const layers = kit.page.locator("[data-layers-panel]")
   const listed = await layers
@@ -11,7 +12,9 @@ async function drive(kit) {
     .then(() => true)
     .catch(() => false)
   if (!listed) {
-    await kit.page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#5"]').click()
+    const oval = kit.page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#5"]')
+    await oval.click()
+    await oval.click()
     return
   }
   await layers.locator("[data-layer-caret]").first().click()
