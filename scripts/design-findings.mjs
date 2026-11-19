@@ -5,11 +5,36 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 export const metricName = "design-findings"
 export const reportNames = ["screens", "states"]
 
-export const reportFile = (root, name) => path.join(root, "test-results", `design-${name}.json`)
+const reportPattern = /^design-([a-z]+)-(\d+)-of-(\d+)\.json$/
 
-export function writeReport(root, name, report) {
-  fs.mkdirSync(path.dirname(reportFile(root, name)), { recursive: true })
-  fs.writeFileSync(reportFile(root, name), `${JSON.stringify(report, null, 2)}\n`)
+export const reportFile = (root, name, shard) =>
+  path.join(root, "test-results", `design-${name}-${shard.current}-of-${shard.total}.json`)
+
+export function writeReport(root, name, shard, report) {
+  fs.mkdirSync(path.dirname(reportFile(root, name, shard)), { recursive: true })
+  fs.writeFileSync(reportFile(root, name, shard), `${JSON.stringify({ shard, ...report }, null, 2)}\n`)
+}
+
+export function gather(files) {
+  const found = files
+    .map((file) => file.match(reportPattern))
+    .filter((match) => match !== null && reportNames.includes(match[1]))
+    .map(([file, name, current, total]) => ({ file, name, current: Number(current), total: Number(total) }))
+  const problems = reportNames.flatMap((name) => {
+    const shards = found.filter((report) => report.name === name)
+    const totals = [...new Set(shards.map((report) => report.total))].toSorted((a, b) => a - b)
+    if (totals.length === 0)
+      return [`No design report for ${name}. The browser tests write them; run pnpm test:browser.`]
+    if (totals.length > 1)
+      return [`The design reports for ${name} come from splits into ${totals.join(" and ")} shards. Run them again.`]
+    return Array.from({ length: totals[0] }, (_, index) => index + 1)
+      .filter((current) => !shards.some((report) => report.current === current))
+      .map(
+        (current) =>
+          `No design report for ${name} shard ${current} of ${totals[0]}. Its design job did not finish; read its log.`,
+      )
+  })
+  return { files: found.map((report) => report.file).toSorted(), problems }
 }
 
 export function judge({ reports, entries, recorded }) {
@@ -44,12 +69,10 @@ const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const root = path.resolve(path.dirname(self), "..")
   try {
-    const missing = reportNames.filter((name) => !fs.existsSync(reportFile(root, name)))
-    if (missing.length > 0)
-      throw new Error(
-        `No design report for ${missing.join(" and ")}. The browser tests write them; run pnpm test:browser.`,
-      )
-    const reports = reportNames.map((name) => JSON.parse(fs.readFileSync(reportFile(root, name), "utf8")))
+    const folder = path.join(root, "test-results")
+    const { files, problems } = gather(fs.existsSync(folder) ? fs.readdirSync(folder) : [])
+    if (problems.length > 0) throw new Error(problems.join("\n"))
+    const reports = files.map((file) => JSON.parse(fs.readFileSync(path.join(folder, file), "utf8")))
     const allow = path.join(root, ".agents/skills/verify-airdesign/look/allow.mjs")
     const { readAllow } = await import(pathToFileURL(allow).href)
     const recorded = JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))[metricName]

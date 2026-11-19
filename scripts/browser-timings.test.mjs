@@ -8,8 +8,9 @@ import { parse } from "yaml"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const workflow = parse(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"))
-const upload = workflow.jobs.check.steps.find((step) => step.with?.path === "test-results/browser-timings.json")
+const upload = workflow.jobs.check.steps.find((step) => (step.with?.name ?? "").startsWith("browser-timings-"))
 assert.ok(upload, "successful browser timings must be downloadable")
+assert.equal(upload.with.path, "test-results/*.json", "the timings travel with the design reports")
 assert.equal(
   upload.if,
   "!cancelled() && steps.work.outputs.needed == 'true' && (matrix.part == 'browser' || matrix.part == 'design')",

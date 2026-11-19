@@ -26,9 +26,9 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 
 const entries = check.strategy.matrix.include
 same(
-  "the check job runs the source, scripts, design and pptx parts and the browser tests in four shards side by side",
-  entries.map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
-  ["source", "scripts", "design", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
+  "the check job runs the source, scripts and pptx parts and the browser tests in four shards beside the design shards",
+  entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
+  ["source", "scripts", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
 )
 same(
   "pnpm check gets the shard of its browser part",

@@ -80,7 +80,12 @@ const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "
 const workflow = parse(read(".github/workflows/ci.yml"))
 const question = parse(read(".github/actions/queued/action.yml")).runs.steps[0]
 const matrixParts = [...new Set(workflow.jobs.check.strategy.matrix.include.map(({ part }) => part))]
-assert.deepEqual(matrixParts.toSorted(), [...checkSteps.parts(), "pptx"].toSorted(), "ci.yml parts")
+const calledParts = fs
+  .readdirSync(new URL("../.github/workflows/", import.meta.url))
+  .flatMap((file) => [...read(`.github/workflows/${file}`).matchAll(/pnpm check --part=([\w-]+)$/gm)])
+  .map(([, part]) => part)
+const ranParts = [...matrixParts, ...calledParts]
+assert.deepEqual(ranParts.toSorted(), [...checkSteps.parts(), "pptx"].toSorted(), "ci.yml parts")
 const queueScript = question.run
 const queueCase = queueScript.match(/case "\$PART" in([\s\S]*?)^\s*esac/m)?.[1] ?? ""
 const queueParts = [
@@ -108,7 +113,7 @@ for (const file of ["CHECKS.md", "COMMANDS.md"]) {
   assert.deepEqual(
     [
       ...steps.filter((name) => checkSteps.kindOf(name) === undefined),
-      ...parts.filter((part) => !matrixParts.includes(part)),
+      ...parts.filter((part) => !ranParts.includes(part)),
     ],
     [],
     `${file} names declared steps and parts`,

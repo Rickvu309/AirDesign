@@ -28,6 +28,9 @@ jobs:
           - part: source
           - part: scripts
           - part: design
+            shard: 1/2
+          - part: design
+            shard: 2/2
           - part: browser
             shard: 1/4
           - part: browser
@@ -178,7 +181,7 @@ jobs:
         timeout-minutes: 2
         with:
           name: browser-timings-${{ matrix.part }}-${{ strategy.job-index }}
-          path: test-results/browser-timings.json
+          path: test-results/*.json
           retention-days: 7
           if-no-files-found: ignore
       - if: failure()
@@ -192,6 +195,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh
+  design-findings:
+    needs: check
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/design-findings.yml
   corpus:
     name: corpus (${{ matrix.shard }}/2)
     if: github.event_name == 'push' || github.event_name == 'merge_group'

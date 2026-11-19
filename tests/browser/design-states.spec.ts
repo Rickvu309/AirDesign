@@ -6,8 +6,10 @@ import { expect, test, type Browser, type BrowserContext, type Page } from "@pla
 type Kit = { page: Page; context: BrowserContext; out: string }
 type State = { name: string; design: string | null }
 type Unit = { states: State[] }
+type Shard = { current: number; total: number }
 type Look = {
   states: State[]
+  shardStates: (selected: State[], shard: Shard) => State[]
   sweep: (
     selected: State[],
     open: (unit: Unit) => Promise<{ kit: Kit; close: () => Promise<void> }>,
@@ -22,7 +24,8 @@ type Helper = {
     out: string
   }>
 }
-type Reports = { writeReport: (root: string, name: string, report: object) => void }
+type Reports = { writeReport: (root: string, name: string, shard: Shard, report: object) => void }
+type Steps = { designShardOf: (env: NodeJS.ProcessEnv) => Shard }
 type Pool = {
   contextPool: (
     browser: Browser,
@@ -39,15 +42,18 @@ const skill = join(root, ".agents/skills/verify-airdesign")
 const helper = join(skill, "bin/verify-airdesign.mjs")
 const load = async <Module>(file: string) => (await import(pathToFileURL(file).href)) as Module
 const swept = new Map<string, Finding[]>()
+const ours = new Set<string>()
 
 function seen(names: readonly string[], detector: string): string[] {
-  return names.flatMap((name) => {
-    const findings = swept.get(name)
-    if (findings === undefined) throw new Error(`${name} was not reached, so nothing about it is known`)
-    return findings
-      .filter((finding) => finding.detector === detector)
-      .map((finding) => `${name} ${finding.selector}: ${finding.message}`)
-  })
+  return names
+    .filter((name) => ours.has(name))
+    .flatMap((name) => {
+      const findings = swept.get(name)
+      if (findings === undefined) throw new Error(`${name} was not reached, so nothing about it is known`)
+      return findings
+        .filter((finding) => finding.detector === detector)
+        .map((finding) => `${name} ${finding.selector}: ${finding.message}`)
+    })
 }
 
 test.describe.configure({ mode: "serial" })
@@ -62,7 +68,7 @@ test("loads product copy through workspace exports under Playwright", async () =
   expect(readPictureToolCopy().addIcon).toBe(pictureCopy.addIcon)
 })
 
-test("every named state of the real app is reached and scanned in one stack", async ({ browser }) => {
+test("every named state of this design shard is reached and scanned in one stack", async ({ browser }) => {
   test.setTimeout(240_000)
   const started = performance.now()
   execFileSync("pnpm", ["--filter", "@airdesign/api", "build"], { cwd: root, stdio: "ignore" })
@@ -71,7 +77,11 @@ test("every named state of the real app is reached and scanned in one stack", as
   ) as { run: string; origin: string }
   try {
     const { journeyKit } = await load<Helper>(helper)
-    const { states, sweep } = await load<Look>(join(skill, "look/states.mjs"))
+    const { states, shardStates, sweep } = await load<Look>(join(skill, "look/states.mjs"))
+    const { designShardOf } = await load<Steps>(join(root, "scripts/check-steps.mjs"))
+    const shard = designShardOf(process.env)
+    const selected = shardStates(states, shard)
+    for (const state of selected) ours.add(state.name)
     const { scan } = await load<Scanner>(join(skill, "look/scan.mjs"))
     const catalog = await load<{ catalog: unknown; projectTools: (all: unknown) => { name: string }[] }>(
       join(root, "packages/catalog/dist/index.js"),
@@ -88,7 +98,7 @@ test("every named state of the real app is reached and scanned in one stack", as
       reducedMotion: "reduce",
     })
     const failed = await sweep(
-      states,
+      selected,
       async (unit) => {
         const context = await contexts.take()
         const page = await context.newPage()
@@ -109,9 +119,14 @@ test("every named state of the real app is reached and scanned in one stack", as
     const failures = failed.map((failure) => ({ page: failure.state, error: failure.error }))
     rows.sort((a, b) => a.page.localeCompare(b.page))
     const { writeReport } = await load<Reports>(join(root, "scripts/design-findings.mjs"))
-    writeReport(root, "states", { rows, used: [...used], failures, seconds: (performance.now() - started) / 1000 })
+    writeReport(root, "states", shard, {
+      rows,
+      used: [...used],
+      failures,
+      seconds: (performance.now() - started) / 1000,
+    })
     expect(failures, "every named state is reached").toEqual([])
-    expect(rows.length).toBe(states.length)
+    expect(rows.length).toBe(selected.length)
   } finally {
     execFileSync(process.execPath, [helper, "stop", run], { cwd: root, stdio: "ignore" })
   }
@@ -177,9 +192,14 @@ test("text in the real app meets WCAG AA contrast", () => {
   expect(seen([...swept.keys()], "text-contrast"), "text is below WCAG AA contrast").toEqual([])
 })
 
-test.fail("the landing header keeps its name clear beside the product demo", () => {
+test("the landing header keeps its name clear beside the product demo", () => {
+  const landing = ["landing-product-playing", "landing-product-paused", "landing-product-reduced"]
+  test.fail(
+    landing.some((name) => ours.has(name)),
+    "the fixed header name is flagged as clipped beside the product demo",
+  )
   expect(
-    seen(["landing-product-playing", "landing-product-paused", "landing-product-reduced"], "overflowing-text"),
+    seen(landing, "overflowing-text"),
     "the fixed header name is flagged as clipped beside the product demo",
   ).toEqual([])
 })

@@ -5,6 +5,9 @@ import { smallLaneCommand } from "./machine-lock.mjs"
 export const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-results")
 export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
+export const designShardVariable = "AIRDESIGN_DESIGN_SHARD"
+export const statesPerDesignShard = 200
+export const designShardCount = (states) => Math.max(1, Math.ceil(states / statesPerDesignShard))
 
 const exceptDesignScans = designScans.map((file) => path.basename(file).replaceAll(".", "\\.")).join("|")
 
@@ -18,6 +21,9 @@ const browserArgs = (part, shard) =>
           ...(shard === undefined ? [] : [`--shard=${shard.current}/${shard.total}`]),
         ]
       : []
+
+const designShardEnv = (part, shard) =>
+  part === "design" && shard !== undefined ? { [designShardVariable]: `${shard.current}/${shard.total}` } : undefined
 
 const gateTests = ({ tests }, [name, command, , env]) =>
   tests?.length
@@ -171,6 +177,7 @@ const rows = [
     part: ["design", "browser"],
     where: "ci",
     partArgs: browserArgs,
+    partEnv: designShardEnv,
     judgedOnCi: true,
     stampOnFailure: true,
   },
@@ -221,7 +228,7 @@ const rows = [
     command: "node",
     args: ["scripts/design-findings.mjs"],
     after: "work",
-    part: "design",
+    part: "findings",
     where: "ci",
     verdict: "warn",
   },
@@ -231,12 +238,11 @@ const defaultPart = "source"
 
 const partsOf = ({ part = defaultPart }) => (Array.isArray(part) ? part : [part])
 
-const tuple = ({ name, command, args = [], env, partArgs }, part, shard) => [
-  name,
-  command,
-  [...args, ...(partArgs?.(part, shard) ?? [])],
-  ...(env === undefined ? [] : [env]),
-]
+const tuple = ({ name, command, args = [], env, partArgs, partEnv }, part, shard) => {
+  const added = partEnv?.(part, shard)
+  const stepEnv = env === undefined && added === undefined ? undefined : { ...env, ...added }
+  return [name, command, [...args, ...(partArgs?.(part, shard) ?? [])], ...(stepEnv === undefined ? [] : [stepEnv])]
+}
 
 const wrapStage = (steps) => (steps.length === 0 ? [] : [steps])
 
@@ -372,3 +378,5 @@ export const shardOf = (argv) => {
     throw new Error(`--shard must be a part of a whole, such as 1/3, and it is ${value}.`)
   return { current, total }
 }
+
+export const designShardOf = (env) => shardOf([`--shard=${env?.[designShardVariable] ?? "1/1"}`])

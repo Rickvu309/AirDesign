@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import { matching, states, sweep, sweepLanes, units } from "./states.mjs"
+import { matching, shardStates, states, sweep, sweepLanes, units } from "./states.mjs"
 
 describe("states", () => {
   it("names each state once and points each journey state at a capture its journey makes", () => {
@@ -48,6 +48,22 @@ describe("states", () => {
 
   it("sweeps three lanes on a four-core ci runner and one lane per four cores on a larger machine, at most eight", () => {
     expect([2, 4, 8, 16, 20, 32, 48, 96].map(sweepLanes)).toEqual([3, 3, 3, 4, 5, 8, 8, 8])
+  })
+
+  it("puts every state in exactly one design shard and keeps each journey's states together", () => {
+    const largestUnit = Math.max(...units(states).map((unit) => unit.states.length))
+    for (const total of [1, 2, 3, 5]) {
+      const shards = Array.from({ length: total }, (_, index) => shardStates(states, { current: index + 1, total }))
+      expect(shards.flat().map((state) => state.name)).toEqual(
+        expect.arrayContaining(states.map((state) => state.name)),
+      )
+      expect(shards.flat()).toHaveLength(states.length)
+      for (const unit of units(states))
+        expect(shards.filter((shard) => unit.states.some((state) => shard.includes(state)))).toHaveLength(1)
+      const sizes = shards.map((shard) => shard.length)
+      expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(largestUnit)
+      if (total <= 2) for (const shard of shards) expect(units(shard).some((unit) => unit.aira)).toBe(true)
+    }
   })
 
   it("keeps sweeping after a state fails and names only the state not reached", async () => {

@@ -4,7 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { runCheck, stepRunner, stepsOf } from "./check.mjs"
-import { checkSteps, designScans, onCi, partOf, shardOf } from "./check-steps.mjs"
+import { checkSteps, designScans, designShardOf, designShardVariable, onCi, partOf, shardOf } from "./check-steps.mjs"
 
 const { isPreflight, mayPush, stagesFor, stampable, warns } = checkSteps
 const stages = stagesFor("all", true)
@@ -44,11 +44,11 @@ if (stageOf("tsconfig-references") === -1) throw new Error("check lost the step 
 const namesIn = (part) => stagesFor(part, true).flatMap(stepNames)
 const everyCiStep = namesIn("all")
 const everyStep = [...new Set([...everyCiStep, ...stagesFor("all", false).flatMap(stepNames)])]
-const split = [...namesIn("source"), ...namesIn("scripts"), ...namesIn("design")].filter(
+const split = [...namesIn("source"), ...namesIn("scripts"), ...namesIn("design"), ...namesIn("findings")].filter(
   (name, index, names) => name !== "test-imports" || names.indexOf(name) === index,
 )
 if (split.length !== everyCiStep.length || everyCiStep.some((name) => !split.includes(name))) {
-  throw new Error("the source, scripts and design parts must run every step exactly once")
+  throw new Error("the source, scripts, design and findings parts must run every step exactly once")
 }
 for (const part of checkSteps.parts()) {
   for (const name of namesIn(part)) {
@@ -68,7 +68,7 @@ for (const earlier of ["unit-tests", "build"]) {
 }
 if (
   partOf([]) !== "all" ||
-  ["source", "scripts", "design", "browser"].some((part) => partOf([`--part=${part}`]) !== part)
+  ["source", "scripts", "design", "browser", "findings"].some((part) => partOf([`--part=${part}`]) !== part)
 ) {
   throw new Error("--part does not choose its part")
 }
@@ -78,7 +78,7 @@ try {
 } catch (error) {
   refused = error.message
 }
-if (refused !== "--part must be one of source, scripts, design, browser, and it is everything.")
+if (refused !== "--part must be one of source, scripts, design, browser, findings, and it is everything.")
   throw new Error("an unknown part is not refused")
 const stepsWhen = (ci) => stagesFor("all", ci).flatMap(stepNames)
 if (!stepsWhen(false).includes("bar")) throw new Error("a local check skips bar")
@@ -146,10 +146,10 @@ if (!namesIn("source").includes("commit-authors")) throw new Error("the source p
 if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run commit-authors")
 if (warns("commit-authors")) throw new Error("commit-authors blocks from the start")
 
-const designStages = stagesFor("design", true)
-const designStageOf = (name) => designStages.findIndex((stage) => stepNames(stage).includes(name))
-if (designStageOf("design-findings") <= designStageOf("browser-tests"))
-  throw new Error("design-findings reads what the browser tests wrote, so it must run after them")
+if (ranWhen("design", true).includes("design-findings"))
+  throw new Error("design-findings judges every design shard's report together, so no one design shard runs it")
+if (ranWhen("findings", true).join() !== "test-imports,design-findings")
+  throw new Error("the findings part judges the design reports and runs no browser test")
 if (ranWhen("all", false).includes("design-findings"))
   throw new Error("design-findings needs the browser tests, which run only on ci")
 
@@ -198,12 +198,12 @@ for (const shard of ["0/3", "4/3", "2", "a/b", "1/0"]) {
   if (shardRefused !== `--shard must be a part of a whole, such as 1/3, and it is ${shard}.`)
     throw new Error(`--shard=${shard} is not refused`)
 }
-const browserRun = (part, shard) =>
+const browserStep = (part, shard) =>
   stagesFor(part, true, shard)
     .flat()
     .flatMap(stepsOf)
-    .find(([name]) => name === "browser-tests")?.[2]
-    .join(" ")
+    .find(([name]) => name === "browser-tests")
+const browserRun = (part, shard) => browserStep(part, shard)?.[2].join(" ")
 const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\\.spec\\.ts"
 for (const current of [1, 2, 3]) {
   if (browserRun("browser", { current, total: 3 }) !== `test:browser ${exceptDesignScans} --shard=${current}/3`)
@@ -213,10 +213,17 @@ for (const current of [1, 2, 3]) {
 }
 if (browserRun("design") !== `test:browser ${designScans.join(" ")}`)
   throw new Error("the design part must run the design scans and no other browser test")
-if (ranWhen("design", true).join() !== "test-imports,browser-tests,design-findings")
-  throw new Error("the design part must run the design scans and then judge their findings")
-if (browserRun("design", { current: 2, total: 3 }) !== browserRun("design"))
-  throw new Error("a shard must not split the design scans, which design-findings reads together")
+if (ranWhen("design", true).join() !== "test-imports,browser-tests")
+  throw new Error("a design shard runs the design scans and leaves judging them to the findings part")
+for (const current of [1, 2, 3]) {
+  const step = browserStep("design", { current, total: 3 })
+  if (step[2].join(" ") !== browserRun("design") || step[3]?.[designShardVariable] !== `${current}/3`)
+    throw new Error(`design shard ${current} must run both design scans over its own share of the states`)
+  if (JSON.stringify(designShardOf(step[3])) !== JSON.stringify({ current, total: 3 }))
+    throw new Error(`the design scans do not read design shard ${current} from the step`)
+}
+if (browserStep("design")[3]?.[designShardVariable] !== undefined || designShardOf({}).total !== 1)
+  throw new Error("a design part with no shard sweeps every state")
 if (browserRun("all") !== "test:browser") throw new Error("a check with no part runs every browser test")
 
 for (const name of [

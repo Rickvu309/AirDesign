@@ -2,6 +2,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
+import { stepsOf } from "./check.mjs"
+import { checkSteps } from "./check-steps.mjs"
 import { tlaHash } from "./check-specs.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -22,7 +24,18 @@ const jobs = fs
       steps,
     })),
   )
-const replaysSpecs = (step) => /pnpm check --part|check-mutation\.mjs/.test(step.run ?? "")
+const partReplaysSpecs = (part) =>
+  checkSteps
+    .stagesFor(part, true)
+    .flat()
+    .flatMap(stepsOf)
+    .some(([name]) => name === "unit-tests" || name === "model-check")
+const replaysSpecs = (step) => {
+  const part = (step.run ?? "").match(/pnpm check --part=([\w-]+)$/)?.[1]
+  return (
+    /pnpm check --part=\$|check-mutation\.mjs/.test(step.run ?? "") || (part !== undefined && partReplaysSpecs(part))
+  )
+}
 const action = "./.github/actions/tla"
 
 const served = jobs.filter(({ steps }) => steps.some(replaysSpecs))

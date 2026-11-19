@@ -7,7 +7,9 @@ test.use({ reducedMotion: "reduce", viewport: { width: 1470, height: 923 } })
 
 type Scanned = { findings: unknown[]; used: number[] }
 type Scanner = { scan: (page: Page, options: { scope: string }) => Promise<Scanned> }
-type Reports = { writeReport: (root: string, name: string, report: object) => void }
+type Shard = { current: number; total: number }
+type Reports = { writeReport: (root: string, name: string, shard: Shard, report: object) => void }
+type Steps = { designShardOf: (env: NodeJS.ProcessEnv) => Shard }
 const root = process.cwd()
 
 const screenIndexPath = "/screens"
@@ -37,10 +39,13 @@ async function screenFaults(page: Page, screenPath: string) {
 
 test("every registered screen opens with no error", async ({ context, page }) => {
   await page.goto(screenIndexPath)
-  const screenPaths = await page
+  const everyScreen = await page
     .getByRole("link")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href") ?? ""))
-  expect(screenPaths.length).toBeGreaterThan(0)
+  expect(everyScreen.length).toBeGreaterThan(0)
+  const { designShardOf } = (await import(pathToFileURL(join(root, "scripts/check-steps.mjs")).href)) as Steps
+  const shard = designShardOf(process.env)
+  const screenPaths = everyScreen.filter((_, index) => index % shard.total === shard.current - 1)
 
   const waiting = [...screenPaths]
   const { scan } = (await import(
@@ -72,7 +77,7 @@ test("every registered screen opens with no error", async ({ context, page }) =>
     }),
   )
   rows.sort((a, b) => a.page.localeCompare(b.page))
-  writeReport(root, "screens", { rows, used: [...used], failures, seconds: scanning / 1000 / pageCount })
+  writeReport(root, "screens", shard, { rows, used: [...used], failures, seconds: scanning / 1000 / pageCount })
 
   expect(faultsByScreen, `${Object.keys(faultsByScreen).length} of ${screenPaths.length} screens are broken`).toEqual(
     {},
