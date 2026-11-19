@@ -9,7 +9,7 @@ import {
   type Command,
   type Register,
 } from "@airdesign/document"
-import { iconParts, readPackage, readParts, readShapes } from "@airdesign/pptx"
+import { iconParts, indexPackage, readPackage, readParts, readShapes } from "@airdesign/pptx"
 import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
@@ -263,4 +263,50 @@ it("paints a title filled with an icon as the exported picture clipped to its le
       ?.elements.find((element) => element.key.endsWith("#2"))?.text?.paragraphs[0]?.runs[0]
   expect(run(person(openRegister("", "doe"), "256.2", value))?.picture).toMatch(/^url\(/)
   expect(run(person(openRegister("", "doe"), "256.2", "Heat pumps"))?.picture).toBeUndefined()
+})
+
+it("paints a Fill picture covering the frame a person made portrait", async () => {
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const file = await readParts(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/picture-png.pptx", import.meta.url)),
+  )
+  const index = indexPackage(file)
+  const picture = elementId("256.4")
+  const opened = {
+    ...openRegister("", "clean"),
+    index: { ...index, total: index.elements.length, pages: [] },
+  }
+  const added = landed(opened, { command: "add", node: picture, floor: "", route: "clean" })
+  const resized = landed(added, {
+    command: "person",
+    node: picture,
+    property: "box",
+    value: { x: 3_810_000, y: 1_905_000, cx: 4_572_000, cy: 6_858_000 },
+  })
+  const painted = paint(paintStore(), file, resized, busyElements())
+    .canvases(0)
+    ?.elements.find((element) => element.id === picture)
+  expect(painted?.fill).toContain("50% 0% / 225% 100%")
+})
+
+it("paints that cover when the device register kept the box and lost the opening size", async () => {
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const file = await readParts(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/picture-png.pptx", import.meta.url)),
+  )
+  const picture = elementId("256.4")
+  const added = landed(openRegister("", "clean"), { command: "add", node: picture, floor: "", route: "clean" })
+  expect(added.elements[picture]?.floorBox).toBeUndefined()
+  const resized = landed(added, {
+    command: "person",
+    node: picture,
+    property: "box",
+    value: { x: 3_810_000, y: 1_905_000, cx: 4_572_000, cy: 6_858_000 },
+  })
+  const painted = paint(paintStore(), file, resized, busyElements())
+    .canvases(0)
+    ?.elements.find((element) => element.id === picture)
+  expect(painted?.fill).toContain("50% 0% / 225% 100%")
 })

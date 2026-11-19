@@ -15,6 +15,7 @@ import { textAlpha, textXml } from "./trait-xml-text.js"
 import { showXml } from "./slide-show.js"
 import { templateStyleXml } from "./trait-xml-template-style.js"
 import { transitionXml } from "./trait-xml-transition.js"
+import { coverOnResize } from "./picture-mode.js"
 import { writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
 type Written = Exclude<TraitName, "layout">
@@ -40,7 +41,9 @@ export const traitXml: { readonly [T in Written]: TraitXml<T> } = {
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {
   if (trait === "fills") return writtenFills(parts, at, patch as TraitPatch<"fills">)
   if (trait === "layout") return parts
-  return writeFields(parts, at, traitXml[trait as Written], patch as TraitPatch<Written>)
+  const next = writeFields(parts, at, traitXml[trait as Written], patch as TraitPatch<Written>)
+  if (trait !== "box" || next === parts) return next
+  return coverOnResize(parts, next, at)
 }
 
 export type ShownAlphas = { readonly fills: Faded; readonly border: Faded; readonly text: Faded }

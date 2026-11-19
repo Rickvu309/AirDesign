@@ -7,6 +7,7 @@ import { applyChange, applyRows, valueFits, type ChangingDeck } from "@/design/t
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
+import { withFileFloors } from "@/deck-paint"
 import { fileTableValue } from "@/table-edit"
 import { structureOf } from "@/table-hook"
 import type { UndoEntry } from "@/undo-list"
@@ -36,7 +37,8 @@ function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
     hold: () => undo.records.current.hold(),
     record: (entry) => deck.record(session === null ? entry : { ...entry, session }),
     show: (register) => {
-      if (shown.structure.current !== structureOf(register, shown.bound.current)) shown.showRegister(register)
+      const framed = withFileFloors(register, shown.shownParts.current)
+      if (shown.structure.current !== structureOf(framed, shown.bound.current)) shown.showRegister(register)
       shown.repaint.current(register, "person")
       deck.setPending(true)
     },

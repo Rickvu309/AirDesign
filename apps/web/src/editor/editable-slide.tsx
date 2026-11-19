@@ -133,10 +133,11 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         const steps = boxes.flatMap(({ box, element }) => {
           const target = element.id
           if (!kept.includes(target)) return []
-          if (bound.current.has(target)) void deck.shown.showEdited(current)
           const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
           const shown = shownBox(opened.ok ? opened.register : null, target, file)
           const before = shown === null ? null : storedBox(framing, target, shown)
+          if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
+            void deck.shown.showEdited(current)
           const name = before === null ? null : boxName(before, box)
           return before === null || name === null
             ? []
