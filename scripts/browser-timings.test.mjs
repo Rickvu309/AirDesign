@@ -32,7 +32,11 @@ export default { ...config, testDir: '.', globalSetup: undefined, webServer: und
     path.join(folder, "a.spec.ts"),
     `
 import { test } from '@playwright/test'
-test('passes', async () => {})
+test('passes', async () => {
+  test.info().annotations.push({ type: 'gesture', description: 'move' })
+  test.info().annotations.push({ type: 'metric', description: 'metric demo-time  now 3  limit 2' })
+  test.info().annotations.push({ type: 'warning', description: 'demo-time is 3 and its limit is 2. Make it faster.' })
+})
 test('also passes', async () => {})
 test('still passes', async () => {})
 test.skip('skips', async () => {})
@@ -55,7 +59,7 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
       {
         cwd: folder,
         encoding: "utf8",
-        env: { ...process.env, GITHUB_STEP_SUMMARY: summary },
+        env: { ...process.env, GITHUB_STEP_SUMMARY: summary, GITHUB_ACTIONS: "true" },
       },
     )
     assert.equal(run.status, current === 1 ? 0 : 1, run.stdout + run.stderr)
@@ -66,6 +70,17 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
     assert.equal(report.status, current === 1 ? "passed" : "failed")
     assert.ok(report.duration >= 0)
     assert.ok(fs.readFileSync(summary, "utf8").includes(JSON.stringify(report)))
+    if (current === 1) {
+      assert.match(run.stdout, /^metric demo-time {2}now 3 {2}limit 2$/m, "a test's metric line reaches the log")
+      assert.match(run.stdout, /^::warning::demo-time is 3 and its limit is 2\. Make it faster\.$/m)
+      assert.ok(fs.readFileSync(summary, "utf8").includes("metric demo-time  now 3  limit 2"))
+      const measured = report.tests.find((test) => test.title.at(-1) === "passes")
+      assert.deepEqual(measured?.notes, [
+        { type: "metric", description: "metric demo-time  now 3  limit 2" },
+        { type: "warning", description: "demo-time is 3 and its limit is 2. Make it faster." },
+      ])
+      assert.ok(report.tests.filter((test) => test !== measured).every((test) => !("notes" in test)))
+    }
     reports.push(report)
   }
   const tests = reports.flatMap((report) => report.tests)
@@ -85,7 +100,7 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
     assert.equal(test.retry, 0)
     assert.ok(test.title.length > 0)
   }
-  console.log("browser-timings: passing, failing and skipped tests retain timings across shards")
+  console.log("browser-timings: passing, failing and skipped tests retain timings and metrics across shards")
 } finally {
   fs.rmSync(folder, { recursive: true, force: true })
 }

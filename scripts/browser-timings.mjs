@@ -1,6 +1,8 @@
 import fs from "node:fs"
 import path from "node:path"
 
+const noted = ["metric", "warning"]
+
 export default class BrowserTimings {
   tests = []
 
@@ -12,6 +14,7 @@ export default class BrowserTimings {
   }
 
   onTestEnd(test, result) {
+    const notes = test.annotations.filter(({ type }) => noted.includes(type))
     this.tests.push({
       id: test.id,
       file: path.relative(this.root, test.location.file),
@@ -22,6 +25,7 @@ export default class BrowserTimings {
       worker: result.workerIndex,
       startTime: result.startTime.toISOString(),
       retry: result.retry,
+      ...(notes.length === 0 ? {} : { notes }),
     })
   }
 
@@ -35,12 +39,18 @@ export default class BrowserTimings {
       scheduled: this.scheduled,
       tests: this.tests,
     })
+    const notes = this.tests.flatMap((test) => test.notes ?? [])
+    const lines = notes.filter(({ type }) => type === "metric").map(({ description }) => description)
+    for (const line of lines) console.log(line)
+    for (const { type, description } of notes)
+      if (type === "warning")
+        console.log(process.env.GITHUB_ACTIONS === "true" ? `::warning::${description}` : description)
     fs.mkdirSync("test-results", { recursive: true })
     fs.writeFileSync("test-results/browser-timings.json", `${report}\n`)
     if (process.env.GITHUB_STEP_SUMMARY) {
       fs.appendFileSync(
         process.env.GITHUB_STEP_SUMMARY,
-        `\n<details><summary>Browser timings (milliseconds)</summary>\n\n\`\`\`json\n${report}\n\`\`\`\n</details>\n`,
+        `${lines.map((line) => `\n${line}\n`).join("")}\n<details><summary>Browser timings (milliseconds)</summary>\n\n\`\`\`json\n${report}\n\`\`\`\n</details>\n`,
       )
     }
   }
