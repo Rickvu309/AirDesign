@@ -100,7 +100,7 @@ async function forgetDeckRows(page: Page): Promise<void> {
 
 async function typeOver(page: Page, text: string): Promise<void> {
   const editor = page.locator('[contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially(text, { delay: 50 })
   await expect(editor).toHaveText(text)

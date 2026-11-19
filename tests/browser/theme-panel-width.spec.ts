@@ -59,7 +59,6 @@ async function choose(page: Page, elements: readonly number[]): Promise<void> {
 
 async function chooseText(page: Page): Promise<void> {
   await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
-  await page.keyboard.press("Escape")
 }
 
 async function resize(page: Page, width: number): Promise<void> {

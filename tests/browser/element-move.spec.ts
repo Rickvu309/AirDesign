@@ -114,7 +114,7 @@ const moved = { ...start, x: start.x + 30 * emuPerPixel, y: start.y + 60 * emuPe
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
-test("a click selects an element with a frame and four handles, and the empty slide or Escape clears it", async ({
+test("a click selects an element with its handles, a double-click goes into its text, and the empty slide or Escape clears it", async ({
   page,
 }) => {
   covers("select", "deselect")
@@ -123,9 +123,11 @@ test("a click selects an element with a frame and four handles, and the empty sl
   const frame = page.getByRole("group", { name: "Hello" })
   await expect(page.locator("[data-selection]")).toHaveCount(0)
   await text.click()
-  await expect(text).toBeFocused()
+  await expect(frame).toBeFocused()
   await expect(page.locator("[data-selection]")).toHaveCount(1)
-  await expect(page.locator("[data-grip]:not([data-grip=move])")).toHaveCount(4)
+  await expect(page.locator("[data-grip]")).toHaveCount(12)
+  await text.dblclick()
+  await expect(text).toBeFocused()
   await page.keyboard.press("Escape")
   await expect(frame).toBeFocused()
   await expect(page.locator("[data-selection]")).toHaveCount(1)
@@ -143,7 +145,6 @@ test("typing still goes into the text after the element is selected and nudged",
   await open(page, clean)
   const text = page.locator('[contenteditable="true"]')
   await text.click()
-  await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowRight")
   await page.keyboard.press("Enter")
   await page.keyboard.press("End")
@@ -159,7 +160,7 @@ test("a drag follows the pointer, keeps one box edit when it ends, and the box s
   await open(page, clean)
   const origin = await corner(page)
   await page.locator('[contenteditable="true"]').click()
-  const press = { x: origin.x + 300, y: origin.y + 150 }
+  const press = { x: origin.x + 300, y: origin.y + 120 }
   await page.mouse.move(press.x, press.y)
   await page.mouse.down()
   await page.mouse.move(press.x + 15, press.y + 30, { steps: 4 })
@@ -206,7 +207,7 @@ test("a move made offline is kept on the device and sent when the page comes bac
   await context.setOffline(true)
   const origin = await corner(page)
   await page.locator('[contenteditable="true"]').click()
-  await drag(page, { x: origin.x + 300, y: origin.y + 150 }, { x: 30, y: 60 })
+  await drag(page, { x: origin.x + 300, y: origin.y + 120 }, { x: 30, y: 60 })
   expect(await placed(page)).toEqual([60, 90, 360, 120])
   await expect.poll(() => boxRows(page)).toEqual([`pending:256.2:${JSON.stringify(moved)}`])
   await expect(page.getByText("You're offline. Edits are saved on this device.")).toBeVisible()
@@ -251,7 +252,7 @@ test("Tab reaches the slide number, which can move, and then cycles to the empty
     const words = range.getBoundingClientRect()
     return { x: words.x + words.width / 2, y: words.y + words.height / 2 }
   })
-  await page.mouse.click(point.x, point.y)
+  await page.mouse.dblclick(point.x, point.y)
   await expect(title).toBeFocused()
   await page.keyboard.press("Tab")
   await expect(page.getByRole("group", { name: "29" })).toBeFocused()

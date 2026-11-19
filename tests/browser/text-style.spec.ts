@@ -75,7 +75,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
   const names = await toolbarWords("clean.pptx")
   await open(page, fixture)
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially("Hello world", { delay: 30 })
   await selectText(editor.locator("[data-run]").first(), 6, 11)
@@ -133,7 +133,7 @@ test("the text colour menu keeps the text box chosen while it is open and closes
   await open(page, fixture)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially("Hello world", { delay: 30 })
   await selectText(editor.locator("[data-run]").first(), 6, 11)
@@ -157,7 +157,7 @@ test("the text colour menu keeps the text box chosen while it is open and closes
 test("a size typed in the toolbar sets the selected words and puts the cursor back in the text", async ({ page }) => {
   await open(page, fixture)
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially("Hello world", { delay: 30 })
   await selectText(editor.locator("[data-run]").first(), 6, 11)
@@ -184,7 +184,7 @@ for (const leave of ["Tab", "Shift+Tab", "canvas", "tray", "Enter", "Escape", "i
   test(`a typed font size handles ${leave} without changing another word`, async ({ page }) => {
     await open(page, fixture)
     const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-    await editor.click()
+    await editor.dblclick()
     await page.keyboard.press("ControlOrMeta+a")
     await editor.pressSequentially("Hello world")
     const originalSize = await editor

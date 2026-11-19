@@ -1,6 +1,6 @@
 import { quantile } from "../bin/bench-verdict.mjs"
 import { transitionCopy } from "../bin/product-copy.mjs"
-import { chooseCards, openBusyDeck } from "../look/busy-drag.mjs"
+import { chooseCards, leadCentre, openBusyDeck } from "../look/busy-drag.mjs"
 
 export default {
   name: "drag-busy",
@@ -10,8 +10,7 @@ export default {
     await openBusyDeck(kit)
     await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
     await chooseCards(page)
-    const band = await page.locator("[data-selection-around] [data-grip=move]").first().boundingBox()
-    return { x: Math.round(band.x + band.width / 3), y: Math.round(band.y + band.height / 2) }
+    return leadCentre(page)
   },
   async measure({ page }, from) {
     await page.mouse.move(from.x, from.y)

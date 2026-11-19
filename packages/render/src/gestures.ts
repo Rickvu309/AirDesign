@@ -5,7 +5,7 @@ type Chord = { readonly mod?: true; readonly ctrl?: true; readonly shift?: true;
 export type Keys = Chord & ({ readonly key: string } | { readonly code: string })
 
 export type Pointing = {
-  readonly on: "element" | "corner" | "slide"
+  readonly on: "element" | "corner" | "edge" | "rotate" | "slide"
   readonly drag: boolean
   readonly shift?: true
   readonly mod?: true
@@ -100,13 +100,25 @@ export const gestures = [
     keys: arrows.map((key) => ({ key, shift: true }) as const),
     where: ["element"],
   },
-  { id: "resize", group: "size", keys: [], pointing: [{ on: "corner", drag: true }], where: ["slide"] },
+  {
+    id: "resize",
+    group: "size",
+    keys: [],
+    pointing: [
+      { on: "corner", drag: true },
+      { on: "edge", drag: true },
+    ],
+    where: ["slide"],
+  },
+  { id: "rotate", group: "size", keys: [], pointing: [{ on: "rotate", drag: true }], where: ["slide"] },
   {
     id: "resize-keys",
     group: "size",
     keys: arrows.map((key) => ({ key, alt: true, shift: true }) as const),
     where: ["element"],
   },
+  { id: "flip-horizontal", group: "size", keys: [{ code: "KeyH", shift: true }], where: ["element"] },
+  { id: "flip-vertical", group: "size", keys: [{ code: "KeyV", shift: true }], where: ["element"] },
   { id: "forward", group: "arrange", keys: [{ code: "BracketRight", mod: true }], where: ["element"] },
   { id: "backward", group: "arrange", keys: [{ code: "BracketLeft", mod: true }], where: ["element"] },
   { id: "front", group: "arrange", keys: [{ code: "BracketRight", mod: true, shift: true }], where: ["element"] },

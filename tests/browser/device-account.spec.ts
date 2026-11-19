@@ -15,7 +15,7 @@ test("a second account on the same browser sees nothing of the first, whose unse
   const deck = await openClean(page)
   await page.route("**/decks/commit", (route) => route.abort())
   const editor = page.locator('[contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("End")
   await editor.pressSequentially(" unsent", { delay: 30 })
   await expect(editor).toHaveText("Hello unsent")

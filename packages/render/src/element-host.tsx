@@ -11,7 +11,7 @@ import {
 import type { ElementId } from "@airdesign/document"
 import { followed, ownBox } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
-import { restingBox, shownBox, useBox, useElement, type BoxRead } from "./element-view.js"
+import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { framedOutline, Passage, type TextEditKind } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
@@ -180,7 +180,7 @@ function usePlaced(
 ): CanvasElement {
   const group = element.group
   const carried = useBox(store, group?.id ?? id, read)
-  const own = ownBox(element, useBox(store, id, read))
+  const own = ownBox(element, useBox(store, id, read), useRotation(store, id))
   const box = group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
   return useFollowed(store, box === element.box ? element : { ...element, box }, targets, read)
 }

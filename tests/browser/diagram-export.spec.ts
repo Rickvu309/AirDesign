@@ -79,7 +79,7 @@ test("a diagram paints its saved shapes and words, offers nothing to edit, and e
   await expect(frame.locator('[contenteditable="true"]')).toHaveCount(0)
   await expect(entry(page, 5).locator("[data-diagram-shape]")).toHaveCount(6)
   const title = page.locator(`[data-slide-paint] [data-canvas-element="${titleKey}"] [contenteditable="true"]`)
-  await title.click()
+  await title.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await title.pressSequentially(edited, { delay: 20 })
   await expect(title).toHaveText(edited)

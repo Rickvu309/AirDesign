@@ -63,7 +63,6 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   await expect(texts.last()).toHaveText("Added")
 
   await texts.first().click()
-  await page.keyboard.press("Escape")
   await page.keyboard.press("Delete")
   await expect(texts).toHaveCount(1)
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["delete-element"] })).toBeEnabled()

@@ -72,7 +72,7 @@ async function blank(page: Page): Promise<void> {
 }
 
 async function replace(page: Page, box: ReturnType<typeof title>, text: string): Promise<void> {
-  await box.click()
+  await box.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await box.pressSequentially(text, { delay: 20 })
   await expect(box).toHaveText(text)
@@ -133,8 +133,7 @@ test("a duplicate keeps the title it had when it was made, and a new slide takes
   await expect(copy).toHaveText("Snapshot title")
   await copy.click()
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
-  await expect(page.locator("[data-slide-paint] [data-grip]:not([data-grip=move])")).toHaveCount(4)
-  await page.keyboard.press("Escape")
+  await expect(page.locator("[data-slide-paint] [data-grip]")).toHaveCount(12)
   await expect(page.locator("[data-slide-paint]").getByRole("group", { name: "Snapshot title" })).toBeFocused()
   await page.keyboard.press("ArrowRight")
   const frame = page.locator(`[data-slide-paint] [data-canvas-element="${copyPart}#2"]`)
@@ -160,7 +159,7 @@ test("a duplicate keeps the title it had when it was made, and a new slide takes
   await added.click()
   await added.pressSequentially("Typed on a new slide", { delay: 20 })
   await expect(added).toHaveText("Typed on a new slide")
-  await expect(page.locator("[data-slide-paint] [data-grip]:not([data-grip=move])")).toHaveCount(4)
+  await expect(page.locator("[data-slide-paint] [data-grip]")).toHaveCount(12)
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowDown")
   await page.reload()

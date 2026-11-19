@@ -1,7 +1,6 @@
 import { elementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import {
-  draggedBox,
   emuOf,
   largeNudgeStep,
   minimumSide,
@@ -12,10 +11,6 @@ import {
   nudgedBoxes,
   nudgeStep,
   paintedAt,
-  resizedBox,
-  resizedByKey,
-  type Corner,
-  type Pull,
 } from "./box-gesture.js"
 import type { PaintBox } from "./record.js"
 
@@ -24,10 +19,6 @@ const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 const id = elementId("256.2")
 const other = elementId("256.3")
 const beside = { ...start, x: 6_400_800, y: 3_200_400 }
-
-function pressed(grip: Pull["grip"], from = { x: 100, y: 100 }): Pull {
-  return { grip, from, start }
-}
 
 describe("emuOf", () => {
   it.each([
@@ -78,132 +69,6 @@ describe("movedBox", () => {
   })
 })
 
-describe("resizedBox", () => {
-  it.each([
-    ["bottom-right", 100, 200, { x: start.x, y: start.y, cx: start.cx + 100, cy: start.cy + 200 }],
-    ["top-left", 100, 200, { x: start.x + 100, y: start.y + 200, cx: start.cx - 100, cy: start.cy - 200 }],
-    ["top-right", 100, 200, { x: start.x, y: start.y + 200, cx: start.cx + 100, cy: start.cy - 200 }],
-    ["bottom-left", 100, 200, { x: start.x + 100, y: start.y, cx: start.cx - 100, cy: start.cy + 200 }],
-  ] as const)("moves only the %s corner and keeps the opposite one", (corner, dx, dy, box) => {
-    expect(resizedBox(start, corner, dx, dy)).toEqual(box)
-  })
-
-  it("keeps a picture's ratio from the side that moved most and keeps the opposite corner", () => {
-    const grown = resizedBox(start, "bottom-right", 548_640, 0, true)
-    expect(grown).toEqual({ x: start.x, y: start.y, cx: start.cx + 548_640, cy: start.cy + 182_880 })
-    const shrunk = resizedBox(start, "top-left", 0, 914_400, true)
-    expect(shrunk).toEqual({
-      x: start.x + 2_743_200,
-      y: start.y + 914_400,
-      cx: start.cx - 2_743_200,
-      cy: start.cy - 914_400,
-    })
-    expect(resizedBox(start, "top-left", 20_000_000, 20_000_000, true).cy).toBe(minimumSide)
-  })
-
-  it("stops at a quarter inch on each side and keeps the opposite corner", () => {
-    const shrunk = resizedBox(start, "top-left", 20_000_000, 20_000_000)
-    expect(shrunk).toEqual({
-      x: start.x + start.cx - minimumSide,
-      y: start.y + start.cy - minimumSide,
-      cx: minimumSide,
-      cy: minimumSide,
-    })
-  })
-
-  it("never turns a box inside out", () => {
-    expect(resizedBox(start, "bottom-right", -20_000_000, -20_000_000)).toEqual({
-      ...start,
-      cx: minimumSide,
-      cy: minimumSide,
-    })
-  })
-
-  it("lets a side already under a quarter inch grow but not shrink", () => {
-    const line = { x: 0, y: 0, cx: 3_000_000, cy: 0 }
-    expect(resizedBox(line, "bottom-right", 0, -5_000)).toEqual(line)
-    expect(resizedBox(line, "bottom-right", 0, 5_000)).toEqual({ ...line, cy: 5_000 })
-  })
-})
-
-describe("resizedBox on a turned box", () => {
-  function onScreen(box: typeof start, corner: Corner, degrees: number) {
-    const turn = (degrees * Math.PI) / 180
-    const across = (corner.endsWith("left") ? -1 : 1) * (box.cx / 2)
-    const down = (corner.startsWith("top") ? -1 : 1) * (box.cy / 2)
-    return {
-      x: box.x + box.cx / 2 + across * Math.cos(turn) - down * Math.sin(turn),
-      y: box.y + box.cy / 2 + across * Math.sin(turn) + down * Math.cos(turn),
-    }
-  }
-
-  const opposite: Readonly<Record<Corner, Corner>> = {
-    "top-left": "bottom-right",
-    "top-right": "bottom-left",
-    "bottom-left": "top-right",
-    "bottom-right": "top-left",
-  }
-
-  it("grows a box turned 90 degrees along its own sides and keeps the opposite corner on screen", () => {
-    expect(resizedBox(start, "bottom-right", -100_000, 200_000, false, 90)).toEqual({
-      x: 307_200,
-      y: 507_200,
-      cx: 5_686_400,
-      cy: 1_928_800,
-    })
-  })
-
-  it.each([
-    ["bottom-right", { x: 452_296, y: 538_899, cx: 5_796_208, cy: 1_765_403 }],
-    ["top-left", { x: 762_104, y: 475_502, cx: 5_176_592, cy: 1_892_197 }],
-  ] as const)("resizes a box turned 30 degrees from its %s corner", (corner, box) => {
-    expect(resizedBox(start, corner, 300_000, 100_000, false, 30)).toEqual(box)
-  })
-
-  it.each(["top-left", "top-right", "bottom-left", "bottom-right"] as const)(
-    "keeps the corner opposite %s where it was on screen and moves the pressed one with the pointer",
-    (corner) => {
-      const box = resizedBox(start, corner, 300_000, -150_000, false, 30)
-      const kept = onScreen(start, opposite[corner], 30)
-      const now = onScreen(box, opposite[corner], 30)
-      expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
-      expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
-      const pressed = onScreen(start, corner, 30)
-      const followed = onScreen(box, corner, 30)
-      expect(Math.abs(followed.x - pressed.x - 300_000)).toBeLessThanOrEqual(2)
-      expect(Math.abs(followed.y - pressed.y + 150_000)).toBeLessThanOrEqual(2)
-    },
-  )
-
-  it("keeps the opposite corner on screen when a turned box stops at a quarter inch", () => {
-    const box = resizedBox(start, "top-left", 20_000_000, 20_000_000, false, 30)
-    expect([box.cx, box.cy]).toEqual([minimumSide, minimumSide])
-    const kept = onScreen(start, "bottom-right", 30)
-    const now = onScreen(box, "bottom-right", 30)
-    expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
-    expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
-  })
-
-  it("grows a turned box by a key along its own width and keeps its top-left corner on screen", () => {
-    const box = resizedByKey(start, "ArrowRight", 30)
-    expect(box).toEqual({ x: 456_349, y: 460_375, cx: start.cx + nudgeStep, cy: start.cy })
-    const kept = onScreen(start, "top-left", 30)
-    const now = box === null ? kept : onScreen(box, "top-left", 30)
-    expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
-    expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
-  })
-
-  it("resizes a turned box from a drag by the pointer's travel on screen", () => {
-    const turned = { ...pressed("bottom-right"), rotation: 90 }
-    expect(draggedBox(turned, { x: 95, y: 110 }, 800, wide)).toEqual({
-      x: 342_900,
-      y: 495_300,
-      cx: 5_638_800,
-      cy: 1_905_000,
-    })
-  })
-})
-
 describe("nudgedBox", () => {
   it.each([
     ["ArrowLeft", false, -nudgeStep, 0],
@@ -223,24 +88,6 @@ describe("nudgedBox", () => {
   it("stops at the same slide edge as a drag", () => {
     const edge = { ...start, x: wide.width - minimumSide }
     expect(nudgedBox(edge, "ArrowRight", true, wide)).toEqual(edge)
-  })
-})
-
-describe("draggedBox", () => {
-  it("moves by the pointer's travel at the canvas zoom", () => {
-    expect(draggedBox(pressed("move"), { x: 130, y: 160 }, 800, wide)).toEqual({ ...start, x: 914_400, y: 1_371_600 })
-  })
-
-  it("resizes from the pressed corner by the pointer's travel at the canvas zoom", () => {
-    expect(draggedBox(pressed("bottom-right"), { x: -20, y: 160 }, 800, wide)).toEqual({
-      ...start,
-      cx: 3_657_600,
-      cy: 2_743_200,
-    })
-  })
-
-  it("lands on the same box at half the zoom with half the travel", () => {
-    expect(draggedBox(pressed("move"), { x: 115, y: 130 }, 400, wide)).toEqual({ ...start, x: 914_400, y: 1_371_600 })
   })
 })
 

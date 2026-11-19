@@ -12,7 +12,8 @@ import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { GuideLayer } from "./guide-layer.js"
 import { useMeasuring } from "./measuring.js"
-import { canDrag, enterElement, useMoves } from "./slide-moves.js"
+import { useMoves } from "./slide-moves.js"
+import { enterElement } from "./text-entry.js"
 import { leadOf, type Selection } from "./selection.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import type { PaintStore } from "./store.js"
@@ -21,6 +22,9 @@ import { ensureTextRule, type Scaled } from "./text-look.js"
 import type { TextFormatting } from "./text-formatting.js"
 import { useHoverOutline } from "./use-hover-outline.js"
 import { useSlideMarquee, type OwnsKey } from "./use-slide-marquee.js"
+import { canResizeElement, canRotateElement, type Turned } from "./transform-drag.js"
+import { TransformHud } from "./transform-hud.js"
+import type { FlippedLayer } from "./transform-math.js"
 
 const defaultTextSize = 203_200
 
@@ -51,6 +55,8 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
   readonly onFit?: (id: ElementId, height: number) => void
   readonly onBoxes?: (moved: readonly Moved[]) => void
+  readonly onRotate?: (turned: readonly Turned[]) => void
+  readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
   readonly selection?: Selection
@@ -85,11 +91,24 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       if (dragging) hideHover.current?.()
     },
   }
-  const moves = useMoves(props.store, slide, width, props.onBoxes, props.onRemove, props.onOrder, picking, {
-    ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
-    ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
-    ...(props.onFrame === undefined ? {} : { onFrame: props.onFrame }),
-  })
+  const moves = useMoves(
+    props.store,
+    slide,
+    width,
+    props.onBoxes,
+    props.onRemove,
+    props.onOrder,
+    picking,
+    {
+      ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
+      ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
+      ...(props.onFrame === undefined ? {} : { onFrame: props.onFrame }),
+    },
+    {
+      ...(props.onRotate === undefined ? {} : { onRotate: props.onRotate }),
+      ...(props.onFlip === undefined ? {} : { onFlip: props.onFlip }),
+    },
+  )
   const moving = props.onBoxes === undefined ? null : moves
   const marquee = useSlideMarquee({
     surface,
@@ -233,10 +252,12 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       {moving === null || many.length === 0 ? null : (
         <AroundFrame
           elements={many}
-          onPress={(event) => {
+          onPress={(event, grip) => {
             const pressed = many.find((each) => each.id === leadOf(moving.selection)) ?? many[0]
-            if (pressed !== undefined) moving.press(event, pressed, "move")
+            if (pressed !== undefined) moving.press(event, pressed, grip)
           }}
+          resizable={many.every(canResizeElement)}
+          rotatable={props.onRotate !== undefined && many.every(canRotateElement)}
           scaled={scaled}
           store={props.store}
         />
@@ -245,15 +266,14 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
         <SelectionFrame
           element={selected}
           id={selected.id}
-          movable={canDrag(selected)}
           onPress={(event, grip) => moving.press(event, selected, grip)}
-          resizable={
-            canDrag(selected) && onConnect === undefined && selected.frame !== "auto" && selected.inFrame !== "auto"
-          }
+          resizable={canResizeElement(selected) && onConnect === undefined}
+          rotatable={props.onRotate !== undefined && canRotateElement(selected) && onConnect === undefined}
           scaled={scaled}
           store={props.store}
         />
       )}
+      {moving === null ? null : <TransformHud channel={moving.hud} scaled={scaled} />}
       {selected?.id === undefined || selected.id === null || onConnect === undefined ? null : (
         <ConnectorEnds
           element={selected}

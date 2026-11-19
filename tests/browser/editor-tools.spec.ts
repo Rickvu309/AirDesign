@@ -107,7 +107,7 @@ test("V and H pick the tool, but not while typing in a text box", async ({ page 
   covers("tool-move", "tool-hand")
   await openClean(page)
   const text = page.locator('[contenteditable="true"]')
-  await text.click()
+  await text.dblclick()
   await page.keyboard.press("End")
   await page.keyboard.type("h", { delay: 50 })
   await expect(text).toHaveText("Helloh")
@@ -135,7 +135,7 @@ test("zoom fits by default, each step sets the slide width, and a drag at anothe
   const slide = await slideBox(page)
   expect(slide.width).toBe(640)
   await page.locator('[contenteditable="true"]').click()
-  const press = { x: slide.x + 240, y: slide.y + 120 }
+  const press = { x: slide.x + 240, y: slide.y + 96 }
   await page.mouse.move(press.x, press.y)
   await page.mouse.down()
   await page.mouse.move(press.x + 30, press.y + 60, { steps: 8 })

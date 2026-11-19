@@ -69,8 +69,8 @@ test("a turned shape resizes by its corner, keeps the opposite corner on screen 
   await rotation.press("Enter")
   const frame = page.locator("[data-slide-paint] [data-selection]")
   await expect(frame).toHaveCSS("transform", /matrix\(0\.866/)
-  const corners = frame.locator("[data-grip]:not([data-grip=move])")
-  await expect(corners).toHaveCount(4)
+  const grips = frame.locator("[data-grip]")
+  await expect(grips).toHaveCount(12)
   const painted = await page.locator("[data-slide-paint]").boundingBox()
   if (painted === null) throw new Error("no slide")
   const twentieth = painted.width / 20

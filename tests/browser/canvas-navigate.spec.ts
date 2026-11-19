@@ -118,7 +118,6 @@ test("Ctrl+scroll zooms about the layer under the cursor, Space pans, Shift+2 an
 
   const text = page.locator('[contenteditable="true"]')
   await text.click()
-  await page.keyboard.press("Escape")
   await expect(page.locator("[data-selection]")).toHaveCount(1)
   await page.keyboard.press("Shift+Digit2")
   await expect
@@ -142,7 +141,7 @@ test("Ctrl+scroll zooms about the layer under the cursor, Space pans, Shift+2 an
   await expect.poll(() => percent(page)).toBeGreaterThan(fit)
   await expect(page.locator("[data-canvas-stage] > div")).toHaveAttribute("style", /^(?!.*transform)/)
   const slide = await slideBox(page)
-  const grip = { x: slide.x + slide.width * 0.3, y: slide.y + (slide.height * (start.y + start.cy)) / 6_858_000 }
+  const grip = { x: slide.x + slide.width * 0.3, y: slide.y + (slide.height * (start.y + start.cy * 0.5)) / 6_858_000 }
   await page.mouse.move(grip.x, grip.y)
   await page.mouse.down()
   await page.mouse.move(grip.x + 40, grip.y + 70, { steps: 8 })
@@ -157,7 +156,7 @@ test("Ctrl+scroll zooms about the layer under the cursor, Space pans, Shift+2 an
 test("Space types a space while editing text and does not pan", async ({ page }) => {
   await openClean(page)
   const text = page.locator('[contenteditable="true"]')
-  await text.click()
+  await text.dblclick()
   await page.keyboard.press("End")
   await page.keyboard.down("Space")
   await expect(page.locator("[data-hand-pan]")).toHaveCount(0)

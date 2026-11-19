@@ -56,7 +56,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(editor).toHaveText("Hello")
   await capture("imported")
   note(`imported clean.pptx as deck ${deck}; the slide shows "Hello"`)
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially(typed, { delay: 50 })
   await expect(editor).toHaveText(typed)

@@ -91,7 +91,6 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   note("holding Space and dragging by -120,-60 px moved the view by 120,60 px and moved nothing on the slide")
 
   await page.locator('[contenteditable="true"]').click()
-  await page.keyboard.press("Escape")
   await expect(page.locator("[data-selection]")).toHaveCount(1)
   await page.keyboard.press("Shift+Digit2")
   await expect.poll(async () => Math.round((await selectionInView(page)).margin)).toBeLessThanOrEqual(100)
@@ -112,7 +111,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await zoomWheel(page, cursor, 3)
   await expect.poll(() => percent(page)).toBeGreaterThan(fit)
   const slide = await slideBox(page)
-  const grip = { x: slide.x + slide.width * 0.3, y: slide.y + (slide.height * (start.y + start.cy)) / slideTall }
+  const grip = { x: slide.x + slide.width * 0.3, y: slide.y + (slide.height * (start.y + start.cy * 0.5)) / slideTall }
   await page.mouse.move(grip.x, grip.y)
   await page.mouse.down()
   await page.mouse.move(grip.x + 40, grip.y + 70, { steps: 8 })
@@ -131,6 +130,6 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
     .toBe(true)
   await capture("dragged-at-zoom")
   note(
-    `at ${await percent(page)}% a drag of the frame's bottom edge by 40,70 px saved the box at ${kept.x},${kept.y} EMU on the server (${deckRoutes.open.path}); the pointer says ${Math.round(wanted.x)},${Math.round(wanted.y)}, within one pixel of ${Math.round(perPixel)} EMU`,
+    `at ${await percent(page)}% a drag inside the focused frame by 40,70 px saved the box at ${kept.x},${kept.y} EMU on the server (${deckRoutes.open.path}); the pointer says ${Math.round(wanted.x)},${Math.round(wanted.y)}, within one pixel of ${Math.round(perPixel)} EMU`,
   )
 }

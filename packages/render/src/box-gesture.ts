@@ -3,38 +3,13 @@ import type { PaintBox } from "./record.js"
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
-export type Grip = "move" | Corner
-
 export type Point = { readonly x: number; readonly y: number }
-
-export type Pull = {
-  readonly grip: Grip
-  readonly from: Point
-  readonly start: Box
-  readonly keepRatio?: boolean
-  readonly rotation?: number
-}
-
-export type Drag = {
-  readonly by: "pointer"
-  readonly ids: readonly ElementId[]
-  readonly grip: Grip
-  readonly pointer: number
-  readonly from: Point
-  readonly starts: ReadonlyMap<ElementId, Box>
-  readonly moved: boolean
-  readonly keepRatio?: boolean
-  readonly rotation?: number
-  readonly enter?: ElementId
-}
 
 export type Nudge = {
   readonly by: "keys"
   readonly ids: readonly ElementId[]
   readonly starts: ReadonlyMap<ElementId, Box>
 }
-
-export type Held = Drag | Nudge
 
 export type Moved = { readonly id: ElementId; readonly box: Box }
 
@@ -77,56 +52,6 @@ export function movedBox(start: Box, dx: number, dy: number, slide: SlideSize): 
   }
 }
 
-function side(size: number, change: number): number {
-  return Math.max(size + change, Math.min(minimumSide, size))
-}
-
-function ratioKept(start: Box, cx: number, cy: number): { readonly cx: number; readonly cy: number } {
-  if (start.cx <= 0 || start.cy <= 0) return { cx, cy }
-  const across = cx / start.cx
-  const down = cy / start.cy
-  const chosen = Math.abs(across - 1) >= Math.abs(down - 1) ? across : down
-  const smallest = Math.min(1, minimumSide / Math.min(start.cx, start.cy))
-  const scale = Math.max(chosen, smallest)
-  return { cx: Math.round(start.cx * scale), cy: Math.round(start.cy * scale) }
-}
-
-function turned(point: Point, degrees: number): Point {
-  const turn = (degrees * Math.PI) / 180
-  const cos = Math.cos(turn)
-  const sin = Math.sin(turn)
-  return { x: point.x * cos - point.y * sin, y: point.x * sin + point.y * cos }
-}
-
-function uprightResize(start: Box, corner: Corner, dx: number, dy: number, keepRatio: boolean): Box {
-  const left = corner === "top-left" || corner === "bottom-left"
-  const top = corner === "top-left" || corner === "top-right"
-  const free = { cx: side(start.cx, left ? -dx : dx), cy: side(start.cy, top ? -dy : dy) }
-  const { cx, cy } = keepRatio ? ratioKept(start, free.cx, free.cy) : free
-  return { x: left ? start.x + start.cx - cx : start.x, y: top ? start.y + start.cy - cy : start.y, cx, cy }
-}
-
-function turnedResize(start: Box, corner: Corner, dx: number, dy: number, keepRatio: boolean, rotation: number): Box {
-  const upright = uprightResize(start, corner, dx, dy, keepRatio)
-  if (rotation === 0) return upright
-  const { cx, cy } = upright
-  const across = corner === "top-left" || corner === "bottom-left" ? 1 : -1
-  const down = corner === "top-left" || corner === "top-right" ? 1 : -1
-  const kept = turned({ x: (across * start.cx) / 2, y: (down * start.cy) / 2 }, rotation)
-  const next = turned({ x: (across * cx) / 2, y: (down * cy) / 2 }, rotation)
-  return {
-    x: Math.round(start.x + start.cx / 2 + kept.x - next.x - cx / 2),
-    y: Math.round(start.y + start.cy / 2 + kept.y - next.y - cy / 2),
-    cx,
-    cy,
-  }
-}
-
-export function resizedBox(start: Box, corner: Corner, dx: number, dy: number, keepRatio = false, rotation = 0): Box {
-  const own = turned({ x: dx, y: dy }, -rotation)
-  return turnedResize(start, corner, Math.round(own.x), Math.round(own.y), keepRatio, rotation)
-}
-
 export function frameOf(boxes: readonly Box[]): Box | null {
   if (boxes.length === 0) return null
   const left = Math.min(...boxes.map((box) => box.x))
@@ -154,6 +79,10 @@ export function isArrow(key: string): boolean {
   return arrows.has(key)
 }
 
+export function arrowOf(key: string): Point | null {
+  return arrows.get(key) ?? null
+}
+
 export function nudgedBox(start: Box, key: string, large: boolean, slide: SlideSize): Box | null {
   const arrow = arrows.get(key)
   if (arrow === undefined) return null
@@ -171,32 +100,6 @@ export function nudgedBoxes(
   if (arrow === undefined) return null
   const step = large ? largeNudgeStep : nudgeStep
   return movedBoxes(starts, arrow.x * step, arrow.y * step, slide)
-}
-
-export function resizedByKey(start: Box, key: string, rotation = 0): Box | null {
-  const arrow = arrows.get(key)
-  if (arrow === undefined) return null
-  return turnedResize(start, "bottom-right", arrow.x * nudgeStep, arrow.y * nudgeStep, false, rotation)
-}
-
-export function draggedBox(gesture: Pull, at: Point, width: number, slide: SlideSize): Box {
-  const dx = emuOf(at.x - gesture.from.x, width, slide)
-  const dy = emuOf(at.y - gesture.from.y, width, slide)
-  return gesture.grip === "move"
-    ? movedBox(gesture.start, dx, dy, slide)
-    : resizedBox(gesture.start, gesture.grip, dx, dy, gesture.keepRatio === true, gesture.rotation ?? 0)
-}
-
-export function draggedBoxes(drag: Drag, at: Point, width: number, slide: SlideSize): ReadonlyMap<ElementId, Box> {
-  if (drag.grip === "move") {
-    const dx = emuOf(at.x - drag.from.x, width, slide)
-    const dy = emuOf(at.y - drag.from.y, width, slide)
-    return movedBoxes(drag.starts, dx, dy, slide)
-  }
-  const [id] = drag.ids
-  const start = id === undefined ? undefined : drag.starts.get(id)
-  if (id === undefined || start === undefined) return new Map()
-  return new Map([[id, draggedBox({ ...drag, start }, at, width, slide)]])
 }
 
 export function travelled(from: Point, at: Point): boolean {
@@ -217,9 +120,17 @@ export function sameBox(left: Box | null, right: Box | null): boolean {
   return left.x === right.x && left.y === right.y && left.cx === right.cx && left.cy === right.cy
 }
 
-export function paintedAt(file: PaintBox | null, box: Box | null): PaintBox | null {
-  if (box === null) return file
-  return { ...(file ?? upright), x: box.x, y: box.y, width: box.cx, height: box.cy }
+export function paintedAt(file: PaintBox | null, box: Box | null, rotation: number | null = null): PaintBox | null {
+  if (box === null && rotation === null) return file
+  if (box === null) return file === null ? null : { ...file, rotation: rotation ?? file.rotation }
+  return {
+    ...(file ?? upright),
+    x: box.x,
+    y: box.y,
+    width: box.cx,
+    height: box.cy,
+    ...(rotation === null ? {} : { rotation }),
+  }
 }
 
 export function ownBox(
@@ -229,10 +140,11 @@ export function ownBox(
     readonly group?: { readonly frame?: unknown }
   },
   box: Box | null,
+  rotation: number | null = null,
 ) {
   if (element.connection !== undefined) return element.box
   if (element.group !== undefined && element.group.frame === undefined) return element.box
-  return paintedAt(element.box, box)
+  return paintedAt(element.box, box, rotation)
 }
 
 export function followed(

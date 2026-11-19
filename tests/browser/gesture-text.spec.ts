@@ -24,7 +24,7 @@ test("Ctrl+U underlines the selected text and a second press takes it off", asyn
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await page.keyboard.press("ControlOrMeta+u")
   const run = editor.locator("[data-run]").first()

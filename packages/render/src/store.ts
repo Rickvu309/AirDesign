@@ -11,6 +11,12 @@ export type BoxGrip = {
   readonly release: () => void
 }
 
+export type RotationGrip = {
+  readonly place: (rotation: number | null) => void
+  readonly keep: () => void
+  readonly release: () => void
+}
+
 export type PaintStore = {
   readonly getElement: (id: ElementId) => ElementRecord | null
   readonly publish: (record: ElementRecord) => PaintResult
@@ -25,6 +31,9 @@ export type PaintStore = {
   readonly getRestingBox: (id: ElementId) => Box | null
   readonly placeBox: (id: ElementId, box: Box | null) => void
   readonly gripBox: (id: ElementId) => BoxGrip
+  readonly getRotation: (id: ElementId) => number | null
+  readonly placeRotation: (id: ElementId, rotation: number | null) => void
+  readonly gripRotation: (id: ElementId) => RotationGrip
   readonly boxSubscribe: (id: ElementId) => (listener: () => void) => () => void
 }
 
@@ -111,6 +120,8 @@ export function paintStore(): PaintStore {
   const boxListeners = new Map<ElementId, Set<() => void>>()
   const boxSubscribeCache = new Map<ElementId, (listener: () => void) => () => void>()
   const gripped = new Map<ElementId, { held: Box | null }>()
+  const rotations = new Map<ElementId, number>()
+  const grippedRotations = new Map<ElementId, { held: number | null }>()
   const composing = new Set<ElementId>()
   const held = new Map<ElementId, ElementRecord[]>()
   let slideList: readonly SlideRecord[] = Object.freeze([])
@@ -178,6 +189,41 @@ export function paintStore(): PaintStore {
     }
   }
 
+  function showRotation(id: ElementId, rotation: number | null): void {
+    const current = rotations.get(id) ?? null
+    if (current === rotation) return
+    if (rotation === null) rotations.delete(id)
+    else rotations.set(id, rotation)
+    notify(boxListeners, id)
+  }
+
+  function placeRotation(id: ElementId, rotation: number | null): void {
+    const grip = grippedRotations.get(id)
+    if (grip === undefined) showRotation(id, rotation)
+    else grip.held = rotation
+  }
+
+  function gripRotation(id: ElementId): RotationGrip {
+    const grip = { held: rotations.get(id) ?? null }
+    grippedRotations.set(id, grip)
+    function ended(): boolean {
+      if (grippedRotations.get(id) !== grip) return false
+      grippedRotations.delete(id)
+      return true
+    }
+    return {
+      place(rotation) {
+        if (grippedRotations.get(id) === grip) showRotation(id, rotation)
+      },
+      keep() {
+        ended()
+      },
+      release() {
+        if (ended()) showRotation(id, grip.held)
+      },
+    }
+  }
+
   function setSlides(next: readonly SlideRecord[]): PaintResult {
     if (overLimit({ decks: 1, slides: next.length, bytes: 0 })) return { ok: false, code: "limit" }
     for (const slide of next) {
@@ -234,6 +280,9 @@ export function paintStore(): PaintStore {
     getRestingBox,
     placeBox,
     gripBox,
+    getRotation: (id) => rotations.get(id) ?? null,
+    placeRotation,
+    gripRotation,
     boxSubscribe: (id) => subscribeTo(boxListeners, boxSubscribeCache, id),
   }
 }

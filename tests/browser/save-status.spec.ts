@@ -23,7 +23,7 @@ async function browserNetwork(page: Page, online: boolean): Promise<void> {
 
 async function typeAtEnd(page: Page, text: string): Promise<void> {
   const editor = page.locator('[contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("End")
   await editor.pressSequentially(text, { delay: 50 })
 }

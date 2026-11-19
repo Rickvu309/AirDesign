@@ -3,7 +3,7 @@ import element from "./design-element.mjs"
 
 async function drive(kit) {
   await element.drive(kit)
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
+  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').dblclick()
   await kit.page.keyboard.insertText("Long text ".repeat(900))
   await kit.page.keyboard.press("Escape")
   await expect(

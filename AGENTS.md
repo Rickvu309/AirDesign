@@ -29,7 +29,7 @@ Land finished work now as its own PR, since the queue keeps the order. To wait o
 
 - `COMMANDS.md` has each command's flags, limits and what every stage runs. Read it when a command refuses, waits or fails, before you change what `ci` runs, and before a deploy.
 - `CHECKS.md` has each rule and the check that holds it. Read it before you add or change a rule or a check, and when a check fails. When a mistake repeats, give its rule a check and a row there.
-- `GLOSSARY.md` has the one word for each idea. The words for checks and proof are in `check-words.md`, and overlay and blur are in `picture-fill.md`, a slide transition is in `transition.md`, the layers panel is in `layers.md`, zoom and pan are in `zoom.md`, snapping and its guides are in `snapping.md`, and selection is in `select.md`, because `GLOSSARY.md` is already over the file-size limit. Use that word in the code, the test and the tool, so one search finds all three.
+- `GLOSSARY.md` has the one word for each idea. The words for checks and proof are in `check-words.md`, and overlay and blur are in `picture-fill.md`, a slide transition is in `transition.md`, the layers panel is in `layers.md`, zoom and pan are in `zoom.md`, snapping and its guides are in `snapping.md`, selection is in `select.md`, and canvas handles and flips are in `transform.md`, because `GLOSSARY.md` is already over the file-size limit. Use that word in the code, the test and the tool, so one search finds all three.
 
 ## Where code lives
 

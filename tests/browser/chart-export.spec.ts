@@ -73,7 +73,7 @@ test("a chart paints its title and labels, offers nothing to edit, and exports b
   await expect(tenure.locator('[contenteditable="true"]')).toHaveCount(0)
   await expect(entry(page, 19).locator("svg[data-chart=pie]")).toHaveCount(3)
   const title = page.locator(`[data-slide-paint] [data-canvas-element="${titleKey}"] [contenteditable="true"]`)
-  await title.click()
+  await title.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await title.pressSequentially(edited, { delay: 20 })
   await expect(title).toHaveText(edited)
