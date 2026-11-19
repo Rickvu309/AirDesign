@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { areasOf } from "./areas.mjs"
+import { judges, loosenings, netLines, patchLines } from "./bar-files.mjs"
 import { beforeAfterLabel, beforeAfterLine, beforeAfterNeed, seen } from "./before-after.mjs"
 import { workingTree } from "./checked.mjs"
 import { ghApi, readWithRetry } from "./github-read.mjs"
@@ -10,29 +11,10 @@ import { baseFault } from "./pull-base.mjs"
 import { measuredLive } from "./metrics.mjs"
 import { titleVerdict } from "./title.mjs"
 
-const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
-const openFolders = ["scripts/pptx-fixtures/"]
-const guardedFiles = new Set([
-  ".node-version",
-  ".npmrc",
-  ".oxfmtrc.json",
-  "AGENTS.md",
-  "CHECK-QUEUE.md",
-  "CHECKS.md",
-  "COMMANDS.md",
-  "pnpm-workspace.yaml",
-])
-const guardedNames = [/^tsconfig.*\.json$/, /^\.oxlintrc\.json$/, /^vitest\./, /^playwright\.config\./]
+const fixturesFolder = "scripts/pptx-fixtures/"
 const casesFile = "scripts/pptx-fixtures/cases.json"
 const proofFile = "scripts/pptx-fixtures/judge-proof.json"
 const corpusFile = "scripts/pptx-fixtures/corpus.json"
-
-export const guarded = (file) => {
-  if (openFolders.some((folder) => file.startsWith(folder))) return false
-  if (guardedFiles.has(file) || guardedFolders.some((folder) => file.startsWith(folder))) return true
-  const name = file.slice(file.lastIndexOf("/") + 1)
-  return guardedNames.some((pattern) => pattern.test(name))
-}
 
 export const replacedFixtures = (files) =>
   files
@@ -40,7 +22,8 @@ export const replacedFixtures = (files) =>
       (file) =>
         file.status !== "added" && file.name !== casesFile && file.name !== proofFile && file.name !== corpusFile,
     )
-    .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
+    .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(fixturesFolder)))
+    .filter((name) => !name.endsWith(".md"))
 
 const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
 
@@ -147,13 +130,15 @@ export const ownerReasons = ({
   changedDecks = [],
   changedFixtures = [],
   changedKinds = [],
+  loosened = [],
 }) => {
   const reasons = []
   for (const name of new Set([...Object.keys(baseMetrics), ...Object.keys(headMetrics)])) {
     const text = metricReason(name, baseMetrics[name], headMetrics[name])
     if (text !== undefined) reasons.push({ about: `metric ${name}`, text, lowers: true })
   }
-  for (const file of changedFiles.filter(guarded)) {
+  for (const { file, text } of loosened) reasons.push({ about: `file ${file}`, text, lowers: true })
+  for (const file of changedFiles.filter(judges)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, lowers: false })
   }
   for (const file of changedFixtures) {
@@ -236,16 +221,38 @@ const missing = (error) => String(error.stderr ?? error.message).includes("HTTP 
 export const contents = (repository, sha, file) =>
   `repos/${repository}/contents/${file.split("/").map(encodeURIComponent).join("/")}?ref=${sha}`
 
-const githubJson = (repository) => (sha, file) => {
+const githubText = (repository) => (sha, file) => {
   try {
-    return JSON.parse(github([contents(repository, sha, file), "-H", "Accept: application/vnd.github.raw"]))
+    return github([contents(repository, sha, file), "-H", "Accept: application/vnd.github.raw"])
   } catch (error) {
-    if (missing(error) || error instanceof SyntaxError) return undefined
+    if (missing(error)) return undefined
     throw error
   }
 }
 
+const jsonFrom = (text) => (sha, file) => {
+  try {
+    return JSON.parse(text(sha, file))
+  } catch {
+    return undefined
+  }
+}
+
+const scriptsChanged = (before = {}, after = {}) => Object.keys(before).some((name) => before[name] !== after[name])
+
 const scriptsAt = (json, sha, file) => JSON.stringify(json(sha, file)?.scripts ?? {})
+
+const reader = (text, fork, head) => (file) => ({
+  get base() {
+    return file.status === "added" ? undefined : text(fork, file.before ?? file.name)
+  },
+  get head() {
+    return file.status === "removed" ? undefined : text(head, file.name)
+  },
+  get lines() {
+    return file.patch === undefined ? netLines(this.base, this.head) : patchLines(file.patch)
+  },
+})
 
 const casesAt = (json, sha) => {
   const cases = json(sha, casesFile)
@@ -264,7 +271,8 @@ const proofAt = (json, sha) => {
 
 const metricsAt = (json, sha) => metricsFrom((file) => json(sha, file))
 
-export const readReasons = ({ json, fork, head, listed }) => {
+export const readReasons = ({ text, fork, head, listed }) => {
+  const json = jsonFrom(text)
   const changedFiles = listed.flatMap((file) => [file.name, file.before].filter((name) => name != null))
   const baseMetrics = metricsAt(json, fork)
   if (baseMetrics === undefined) throw new Error("metrics.json could not be read where this branch left main.")
@@ -294,10 +302,13 @@ export const readReasons = ({ json, fork, head, listed }) => {
     changedCases: changedFiles.includes(casesFile) ? lostCases(casesAt(json, fork), casesAt(json, head)) : [],
     changedDecks: changedFiles.includes(corpusFile) ? lostDecks(corpusAt(json, fork), corpusAt(json, head)) : [],
     changedKinds: changedFiles.includes(proofFile) ? lostKinds(proofAt(json, fork), proofAt(json, head)) : [],
+    loosened: listed.flatMap((file) =>
+      loosenings(file, reader(text, fork, head)).map((said) => ({ file: file.name, text: said })),
+    ),
     changedScripts: changedFiles
       .filter(packageFile)
       .filter((file) => !generated.has(file))
-      .filter((file) => scriptsAt(json, fork, file) !== scriptsAt(json, head, file)),
+      .filter((file) => scriptsChanged(json(fork, file)?.scripts, json(head, file)?.scripts)),
   })
 }
 
@@ -315,11 +326,11 @@ const readPull = (repository, number) => {
     "--jq",
     ".merge_base_commit.sha",
   ]).trim()
-  const listed = rows(`${pulls}/files`, "{name: .filename, before: .previous_filename, status}")
+  const listed = rows(`${pulls}/files`, "{name: .filename, before: .previous_filename, status, patch}")
   if (listed.length !== pull.files) {
     throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
   }
-  const reasons = readReasons({ json: githubJson(repository), fork, head: pull.head, listed })
+  const reasons = readReasons({ text: githubText(repository), fork, head: pull.head, listed })
   const changedFiles = listed.map((file) => file.name)
   return {
     reasons,
@@ -383,9 +394,9 @@ export const listedFiles = (nameStatus) => {
   return listed
 }
 
-const localJson = (root) => (tree, file) => {
+const localText = (root) => (tree, file) => {
   try {
-    return JSON.parse(localGit(root, ["show", `${tree}:${file}`]))
+    return localGit(root, ["show", `${tree}:${file}`])
   } catch {
     return undefined
   }
@@ -397,7 +408,7 @@ export const readLocal = (root) => {
   const head = workingTree(root)
   const listed = listedFiles(localGit(root, ["diff", "--name-status", "-z", "-M", fork, head]))
   return {
-    reasons: readReasons({ json: localJson(root), fork, head, listed }),
+    reasons: readReasons({ text: localText(root), fork, head, listed }),
     shown: { shown: listed.map((file) => file.name).filter(seen), needed: true },
   }
 }
