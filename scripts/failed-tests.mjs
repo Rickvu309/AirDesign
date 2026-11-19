@@ -1,5 +1,5 @@
 const colors = /\u001b\[[0-9;]*m/g
-const githubPrefix = /^[^\t\n]*\t[^\t\n]*\t﻿?\d{4}-\d\d-\d\dT[\d:.]+Z ?/
+const githubPrefix = /^(?:[^\t\n]*\t[^\t\n]*\t)?﻿?\d{4}-\d\d-\d\dT[\d:.]+Z ?/
 
 export const plainLog = (text) =>
   text

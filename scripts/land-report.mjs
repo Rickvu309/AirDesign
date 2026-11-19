@@ -40,10 +40,21 @@ const snapshotLines = ({ repository, run, git, gh, files }) => {
   )
 }
 
+const failedJobLogs = ({ repository, run, gh }) =>
+  gh([
+    "api",
+    `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`,
+    "--jq",
+    '.jobs[] | select(.conclusion == "failure") | .id',
+  ])
+    .stdout.split("\n")
+    .filter((id) => id !== "")
+    .map((id) => gh(["api", `repos/${repository}/actions/jobs/${id}/logs`]).stdout)
+
 export const ciFailureLines = ({ repository, run, gh, git }) => {
-  const log = gh(["run", "view", String(run.id), "--repo", repository, "--log-failed"]).stdout
-  const steps = failedSteps(log)
-  const tests = failedTests(log)
+  const logs = failedJobLogs({ repository, run, gh })
+  const steps = [...new Set(logs.flatMap(failedSteps))]
+  const tests = failedTests(logs.join("\n"))
   const lines = [
     `ci run ${run.id} (${run.event}) failed in ${steps.length > 0 ? steps.join(", ") : "a step that left no name"}.`,
   ]
