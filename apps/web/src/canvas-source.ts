@@ -9,6 +9,7 @@ export type CanvasShape = {
   readonly refit?: true
   readonly backdrop?: true
   readonly frame?: Framing
+  readonly freed?: true
 }
 
 export type CanvasSource = { readonly part: string; readonly shapes: ReadonlyMap<string, CanvasShape> }
