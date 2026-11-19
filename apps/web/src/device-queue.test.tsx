@@ -163,7 +163,6 @@ function Editor(props: {
     shown: props.paint,
     notesBar: { show: nothing },
     settle: props.settle,
-    setPending: nothing,
   })
   props.exposed({ undo, buttons })
   return null
@@ -237,7 +236,6 @@ async function queueDeck() {
     undo: hooks().undo,
     record: hooks().undo.record,
     settle,
-    setPending: () => undefined,
   })
   const widthChange = (code: number): SetChange => ({ target: { node }, border: { width: widths[code] } }) as SetChange
   async function clicked(click: () => void, direction: "undo" | "redo" | null) {

@@ -26,11 +26,10 @@ export type CommandedDeck = {
   readonly shown: DeckPaint
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
-  readonly setPending: (pending: boolean) => void
 }
 
 export function slideCommands(deck: CommandedDeck, showMatching = true): SlideStrip {
-  const { id, record, settle, setPending } = deck
+  const { id, record, settle } = deck
   const { store, shownParts, canvases, slideCount, sections, current, setCurrent, layouts, showEdited } = deck.shown
 
   let pending = Promise.resolve()
@@ -51,7 +50,6 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
           const entry = { name: slideNames[change], undoable }
           record(entry)
         }
-        setPending(true)
         await showEdited(currentIndex)
         if (change === "add") deck.shown.saySlide.current(slideListCopy.added(currentIndex + 1))
       }
@@ -122,7 +120,6 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
         settle(
           await commitSlideMove(id, file, opened.register, edit, async (currentIndex, undoable) => {
             if (undoable !== null) record({ name: slideNames.move, undoable })
-            setPending(true)
             await showEdited(currentIndex)
           }),
         )
@@ -144,7 +141,6 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
           async (currentIndex, copies, undoable) => {
             const entry = { name: slideNames[change], undoable }
             record(entry)
-            setPending(true)
             paint(copies)
             await showEdited(currentIndex)
           },

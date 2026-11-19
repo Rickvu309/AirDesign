@@ -22,8 +22,8 @@
     {
       "file": "packages/live/src/held.ts",
       "names": ["sealRows", "confirmRows", "takeEdits", "unsealRows", "setAside", "takeAside"],
-      "digest": "4ab7dde1de44",
-      "blob": "7bf84df28572ecabe7cfc71c9595572508ce635f"
+      "digest": "a8beeedada97",
+      "blob": "f832cf83221d4c8aa4acb4368cd0d6a13879861b"
     },
     {
       "file": "packages/live/src/commit-body.ts",

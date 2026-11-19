@@ -95,7 +95,6 @@ function Editor(props: {
     shown: props.paint,
     notesBar: notes,
     settle: nothing,
-    setPending: nothing,
   })
   props.exposed({ notes, undo })
   return createElement(
@@ -231,7 +230,7 @@ async function typingDeck() {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  const notesDeck = { id: deck, record, settle: () => (count.nUp += 1), sending: () => undefined }
+  const notesDeck = { id: deck, record, settle: () => (count.nUp += 1) }
   const expose = (current: Hooks) => (exposed.current = current)
   await settled(() => root.render(createElement(Editor, { paint, onEdit, notes: notesDeck, exposed: expose })))
   await settled(() => notes().show([{ slide, text: oldNotes }]))

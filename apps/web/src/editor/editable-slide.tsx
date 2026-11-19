@@ -27,7 +27,7 @@ export type EditableDeck = DesignDeck & {
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
-  const { id, settle, setPending, changeElement, selection, select } = deck
+  const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
@@ -73,7 +73,6 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       box,
       async () => {
         const before = await started
-        setPending(true)
         const holder = shape?.contentKind === "table" ? "table" : "text"
         record({
           name,
@@ -100,7 +99,6 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     const floor = boxes.current.get(node)?.file ?? movables.current.get(node)?.file ?? ""
     const row = { v: format, patch: { box: { h: { set: height } } } }
     if (!(await connect(memoryRemote()).enqueueRow(id, row, node, floor)).ok) return
-    setPending(true)
     await deck.shown.showEdited(current)
     settle(await flushPending(connect, id))
   }
@@ -111,7 +109,6 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     const parts = deck.shown.shownParts.current
     const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
       if (undoable !== null) record({ name: "move", undoable })
-      setPending(true)
       await deck.shown.showEdited(current)
     })
     if (outcome === "moved") return false
@@ -140,7 +137,6 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       boxes,
       async (kept) => {
         const opened = await opening
-        setPending(true)
         const steps = boxes.flatMap(({ box, element }) => {
           const target = element.id
           if (!kept.includes(target)) return []

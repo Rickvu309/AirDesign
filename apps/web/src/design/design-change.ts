@@ -18,7 +18,6 @@ export type DesignDeck = {
   readonly undo: UndoList
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
-  readonly setPending: (pending: boolean) => void
 }
 
 export function fileValue(shown: DeckPaint, node: ElementId): string | null {
@@ -40,7 +39,6 @@ function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
       const framed = withFileFloors(register, shown.shownParts.current)
       if (shown.structure.current !== structureOf(framed, shown.bound.current)) shown.showRegister(register)
       shown.repaint.current(register, "person")
-      deck.setPending(true)
     },
   }
 }

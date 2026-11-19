@@ -76,7 +76,6 @@ function Panel(
       selection: { ids: props.node === null ? [] : [props.node], inside: null },
       record: nothing,
       settle: nothing,
-      setPending: nothing,
     },
   })
 }

@@ -35,7 +35,6 @@ function Deck(props: { readonly seen: Seen }) {
     shown,
     notesBar: { show: nothing },
     settle: nothing,
-    setPending: nothing,
   })
   props.seen.renders += 1
   props.seen.undo = undo

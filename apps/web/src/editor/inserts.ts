@@ -18,17 +18,15 @@ export type InsertingDeck = {
   readonly pictureTool: { readonly store: PictureStore }
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
-  readonly setPending: (pending: boolean) => void
 }
 
 export function deckInserts(deck: InsertingDeck) {
-  const { id, pictureTool, record, settle, setPending } = deck
+  const { id, pictureTool, record, settle } = deck
   const { shownParts, canvases, current, setEntering, showEdited } = deck.shown
 
   function recordAdded(name: UndoName, keys?: HeldKeys) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
       if (undoable !== null) record({ name, undoable })
-      setPending(true)
       await showEdited(current)
       setEntering(added === null ? null : { id: added, ...(keys === undefined ? {} : { keys }) })
     }

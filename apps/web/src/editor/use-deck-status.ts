@@ -1,4 +1,5 @@
-import { useCallback, useState, useSyncExternalStore } from "react"
+import { watchUnsent } from "@airdesign/live"
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
 import { toast } from "@/components/ui/toast"
 import type { CommitOutcome, SaveRefusal } from "@/commit-edit"
 import { productCopy } from "@/copy/product-copy"
@@ -24,9 +25,10 @@ export function tellRefusal(outcome: CommitOutcome): void {
   if (outcome === "too-large") toast.error(productCopy.editTooLarge, { id: "edit-too-large" })
 }
 
-export function useDeckStatus() {
+export function useDeckStatus(id: string) {
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const [pending, setPending] = useState(false)
+  useEffect(() => watchUnsent(id, setPending), [id])
   const online = useSyncExternalStore(watchNetwork, browserOnline)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
   const [failure, setFailure] = useState<DeckFailure | null>(null)
@@ -37,16 +39,13 @@ export function useDeckStatus() {
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") {
-      setPending(false)
       setAside(0)
       setAsideTooLarge(false)
     }
     if (outcome === "set-aside" || outcome === "set-aside-too-large") {
-      setPending(false)
       setAside((count) => count + 1)
       setAsideTooLarge(outcome === "set-aside-too-large")
     }
-    if (outcome === "offline") setPending(true)
     tellRefusal(outcome)
     if (outcome === "refused" || outcome === "too-large") return
     setOffline(outcome === "offline")
@@ -59,7 +58,6 @@ export function useDeckStatus() {
     paintedDeck,
     setPaintedDeck,
     pending,
-    setPending,
     online,
     offline,
     failure,

@@ -130,7 +130,6 @@ export async function addSlideNumbers(deck: Omit<InsertingDeck, "pictureTool">, 
     return
   }
   if (undoable !== null) deck.record({ name: "slide-number", undoable })
-  deck.setPending(true)
   await shown.showEdited(shown.current)
   if (source === undefined) shown.setEntering({ id: first.element.node })
   deck.settle(await flushPending(connect, id))

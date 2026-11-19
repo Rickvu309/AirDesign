@@ -20,9 +20,9 @@ import { usePictureStore, usePictureTool } from "@/picture-tool"
 export type EditorDeck = ReturnType<typeof useEditorDeck>
 
 export function useEditorDeck(id: string) {
-  const status = useDeckStatus()
+  const status = useDeckStatus(id)
   const save = saveStatus(status)
-  const { settle, setPending } = status
+  const { settle } = status
   const [title, setTitle] = useState("")
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [matched, setMatched] = useState<readonly ElementId[]>([])
@@ -30,7 +30,7 @@ export function useEditorDeck(id: string) {
   const undo = useUndoList()
   const { typed, sessions, records, record } = undo
   const pictures = { store: usePictureStore() }
-  const notesBar = useNotes({ id, typed, sessions, records, record, settle, sending: () => setPending(true) })
+  const notesBar = useNotes({ id, typed, sessions, records, record, settle })
   const shown = useDeckPaint(id, pictures, notesBar)
   const slides = shown.store.current.slides()
   const local = slides[shown.current]?.elements
@@ -69,7 +69,7 @@ export function useEditorDeck(id: string) {
 
   useMatchingShortcut(selection.ids.length > 0 ? selectMatching : undefined)
 
-  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, setPending })
+  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
   function placeImage(node: ElementId, file: File, paint: boolean) {
     pictureTool.pick(file, async (picture) => {
@@ -78,7 +78,7 @@ export function useEditorDeck(id: string) {
         pictures.store.keep(sha256, picture.bytes)
         const ref = `${picture.type}:${sha256}`
         changeDesign(
-          { id, shown, undo, record, settle, setPending },
+          { id, shown, undo, record, settle },
           () =>
             paint
               ? { target: { node }, fills: { paint: { image: ref } } }
