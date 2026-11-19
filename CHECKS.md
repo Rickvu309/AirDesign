@@ -21,7 +21,7 @@ Checks block gate or CI; review needs judgment.
 | Every spec has a code replay test or a listed exemption | `spec-coverage` step warns |
 | Specs track covered declarations and their last synced digests in `specs/<topic>/covers.json` | The `spec-drift` step warns about changed or removed declarations. `--sync <topic>` records a new sync only after `pnpm check:specs <topic>` passed. |
 | A broken spec property stays in `<Module>.known.cfg` beside an `it.fails` test | `pnpm check:specs` fails when a known config stops failing |
-| Untouched PowerPoint content survives byte for byte; edits change only their parts and add no validator error | `pnpm check:pptx`: untouched bytes; Microsoft validator against original |
+| Untouched PowerPoint content survives byte for byte; edits change only their parts and add no validator error | `pnpm check:pptx`: untouched bytes; Microsoft validator against original. With `ci`, it is the whole merge test: no PowerPoint hand check |
 | Elements with no native PowerPoint form export as pictures; AirDesign looks come first | review; exporter and tests pending |
 | Every lint rule has a test and is switched on | `lint-rules` step |
 | Rule code in `tooling/` stays under 10 percent of product code | `lint-rules` step |
