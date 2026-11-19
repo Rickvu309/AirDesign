@@ -74,6 +74,11 @@ export function selectionColors(sources: readonly ColorSource[], palette: Palett
     .sort((a, b) => brightness(a.hex) - brightness(b.hex) || a.hex.localeCompare(b.hex))
 }
 
+export function layersWithColor(sources: readonly ColorSource[], hex: string, palette: Palette): readonly ElementId[] {
+  return sources
+    .filter((source) => selectionColors([source], palette).some((row) => row.hex === hex))
+    .map((source) => source.node)
+}
 export function replaceSelectionColor(
   sources: readonly ColorSource[],
   hex: string,
