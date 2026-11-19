@@ -50,6 +50,7 @@ import {
   type Unsaved,
 } from "./unsaved.js"
 import { fitConfirmed, rowKey, type ConfirmedRow, type PendingRow, type StoredRow } from "./store.js"
+import { flushLane, serial } from "./deck-lane.js"
 
 export type { LivePhase } from "./deck-view.js"
 
@@ -65,31 +66,10 @@ export type EnqueueResult<Painted = string> =
   | { ok: true; readonly painted: Painted }
   | { ok: false; readonly refusal: WireRefusal }
 
-const flushing = new Map<string, Promise<unknown>>()
-const mutating = new Map<string, Promise<unknown>>()
 type OpenOnceResult = { ok: true; index?: DeckIndex } | Extract<OpenResult, { ok: false }>
 
 const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenResult>>>()
 const knownByRemote = new WeakMap<Remote, Map<DeckId, number>>()
-
-function queued<T>(lanes: Map<string, Promise<unknown>>, deck: DeckId, work: () => Promise<T>): Promise<T> {
-  const lane = `${accountKey() ?? ""}\u0005${deck}`
-  const before = lanes.get(lane) ?? Promise.resolve()
-  const run = before.then(
-    () => work(),
-    () => work(),
-  )
-  lanes.set(lane, run)
-  return run
-}
-
-function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
-  return queued(mutating, deck, work)
-}
-
-function flushLane<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
-  return queued(flushing, deck, work)
-}
 
 const signedOut = { ok: false, refusal: "session" } as const
 
