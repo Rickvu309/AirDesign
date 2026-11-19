@@ -143,6 +143,7 @@ test("closing the slide menu rings the slide only when the keyboard closed it", 
   await entry(page, 1).focus()
   await page.keyboard.press("ContextMenu")
   await expect(menu).toBeVisible()
+  await ready()
   await page.keyboard.press("Escape")
   await expect(menu).toBeHidden()
   expect(await held()).toEqual({ slide: true, ring: true })
