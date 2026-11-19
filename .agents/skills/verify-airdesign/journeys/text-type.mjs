@@ -93,7 +93,6 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
 
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await titleShape.click({ position: { x: 4, y: 4 } })
-  await page.keyboard.press("Escape")
   const panel = page.locator("[data-design-element]")
   const section = (name) => panel.locator("section").filter({ has: page.getByRole("heading", { name, exact: true }) })
   const text = panel

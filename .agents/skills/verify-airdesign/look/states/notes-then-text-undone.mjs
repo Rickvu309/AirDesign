@@ -12,7 +12,7 @@ async function drive(kit) {
   await field.pressSequentially("Hi", { delay: 40 })
   await expect.poll(() => held.length).toBeGreaterThan(0)
   const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]').first()
-  await text.click()
+  await text.dblclick()
   await kit.page.keyboard.press("ControlOrMeta+a")
   await text.pressSequentially("Mine", { delay: 40 })
   await kit.page.keyboard.press("ControlOrMeta+z")

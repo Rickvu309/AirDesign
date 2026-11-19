@@ -121,10 +121,9 @@ function adjustOf(slide: string, id: string): string | undefined {
 
 async function dragBy(page: Page, element: Locator, dx: number, dy: number) {
   await element.click()
-  await page.keyboard.press("Escape")
-  const band = await page.locator("[data-selection] [data-grip='move']").first().boundingBox()
-  if (band === null) throw new Error("no move band")
-  const from = { x: band.x + band.width / 2, y: band.y + band.height / 2 }
+  const box = await element.boundingBox()
+  if (box === null) throw new Error("no element box")
+  const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   await page.mouse.move(from.x, from.y)
   await page.mouse.down()
   await page.mouse.move(from.x + dx, from.y + dy, { steps: 8 })
@@ -180,7 +179,7 @@ test("a person drags a connector's end off its shape to a point on the slide, an
   const bend = await point(page, 4_572_000, 3_619_500)
   await page.mouse.click(bend.x, bend.y)
   await expect(page.locator("[data-connector-end]")).toHaveCount(2)
-  await expect(page.locator("[data-grip='move']")).toHaveCount(0)
+  await expect(page.locator("[data-grip]")).toHaveCount(0)
 
   const grip = await page.locator('[data-connector-end="end"]').boundingBox()
   if (grip === null) throw new Error("no end")
@@ -219,7 +218,6 @@ test("an elbow connector follows Build through a corner resize and a turn in the
   const under = frame(page, "5", deckSlide)
   const file = { place: await placement(under), path: await outline(under) }
   await build.click({ position: { x: 20, y: 20 } })
-  await page.keyboard.press("Escape")
   const corner = await page.locator("[data-selection] [data-grip='bottom-right']").boundingBox()
   if (corner === null) throw new Error("no corner")
   await page.mouse.move(corner.x + corner.width / 2, corner.y + corner.height / 2)

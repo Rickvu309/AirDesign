@@ -73,7 +73,7 @@ test("the slide list thumbnail follows a drag, a resize, a nudge and their undo 
   const origin = await corner(page)
   await page.locator('[data-slide-paint] [contenteditable="true"]').click()
 
-  await drag(page, { x: origin.x + 300, y: origin.y + 150 }, { x: 30, y: 60 })
+  await drag(page, { x: origin.x + 300, y: origin.y + 120 }, { x: 30, y: 60 })
   const dragged = { ...start, x: start.x + 30 * emuPerPixel, y: start.y + 60 * emuPerPixel }
   await expectShownAt(page, dragged)
 

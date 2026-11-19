@@ -46,7 +46,7 @@ test("the person's typing stays on screen while an agent edits the deck", async 
   const asked = await forward(page, stack)
   const deck = await openClean(page)
   const editor = page.locator('[contenteditable="true"]')
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially("Typed by me", { delay: 50 })
   await expect.poll(() => asked.filter((path) => path === "/decks/commit").length).toBeGreaterThan(0)

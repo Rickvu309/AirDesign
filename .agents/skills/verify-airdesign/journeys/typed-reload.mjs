@@ -14,7 +14,7 @@ export default async function drive({ repo, page, context, signIn, post, capture
   const journal = () =>
     page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("airdesign:unsaved:")))
 
-  await text.click()
+  await text.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await text.pressSequentially("Kept", { delay: 0 })
   await page.reload()
@@ -42,7 +42,7 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await page.unroute(opening)
   note("with the server's open held, the device copy painted Kept and the deck was ready")
 
-  await text.click()
+  await text.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await text.pressSequentially("Closed", { delay: 0 })
   await page.close()

@@ -48,7 +48,6 @@ async function centre(page: Page, shape: number): Promise<{ x: number; y: number
 async function chooseCards(page: Page): Promise<void> {
   const first = await centre(page, lead)
   await page.mouse.click(first.x, first.y)
-  await page.keyboard.press("Escape")
   await page.keyboard.down("Shift")
   for (const shape of chosen.filter((each) => each !== lead)) {
     const each = await centre(page, shape)
@@ -95,9 +94,7 @@ test("a drag of six cards on a busy slide paints once a frame, leaves the filmst
   await expect(page.locator("[data-design-panel]").first()).toBeVisible()
   const before = await corners(page)
   const thumbBefore = await thumbnail(page, lead).evaluate(corner)
-  const band = await page.locator("[data-selection-around] [data-grip=move]").first().boundingBox()
-  if (band === null) throw new Error("no move band")
-  const from = { x: band.x + band.width / 3, y: band.y + band.height / 2 }
+  const from = await centre(page, lead)
   const feel = await dragFeel(page, from, by, 120, busyKey(lead))
   await report(feel)
   expect(feel.placements, "the dragged card paints at most once a frame").toBeLessThanOrEqual(2 * feel.frames)

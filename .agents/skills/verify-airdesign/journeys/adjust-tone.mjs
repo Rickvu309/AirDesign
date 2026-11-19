@@ -77,7 +77,6 @@ export default async function drive(kit) {
   await capture("dial")
   await page.keyboard.press("Escape")
   await editor.click()
-  await page.keyboard.press("Escape")
   await expect(page.locator("[data-design-element]")).toHaveAttribute("data-design-element", node)
   await expect(trigger).toHaveCount(0)
   await capture("text")

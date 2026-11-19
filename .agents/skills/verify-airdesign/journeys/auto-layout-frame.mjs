@@ -90,7 +90,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await capture("frame-filled")
 
   const inside = await element(backdrop).boundingBox()
-  await page.mouse.click(inside.x + 2, inside.y + inside.height - 2)
+  await page.mouse.click(inside.x + inside.width / 2, inside.y + inside.height / 2)
   await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", frame)
 
   await panel.getByRole("button", { name: frameCopy.removeAutoLayout }).click()

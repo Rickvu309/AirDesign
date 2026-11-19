@@ -1,6 +1,6 @@
-import { boxPatch, format, type ElementId, type StackMove } from "@airdesign/document"
+import { boxPatch, format, type ElementId, type SetChange, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
-import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
+import { SlideCanvas, type FlippedLayer, type Moved, type Selection, type Turned } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
@@ -163,8 +163,10 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
           })
           const [first] = steps
           if (first === undefined) return
+          const name =
+            steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
           record({
-            name: steps.length > 1 ? "move" : first.name,
+            name,
             undoable: { steps: steps.map((each) => each.step) },
           })
         },
@@ -181,6 +183,57 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     return work().finally(() => {
       for (const release of releases) release()
     })
+  }
+
+  function angleUnits(degrees: number): number {
+    const normalized = ((degrees % 360) + 360) % 360
+    return Math.round(normalized * 60_000) % 21_600_000
+  }
+
+  function onRotate(turned: readonly Turned[]) {
+    const shownRegister = deck.shown.shownRegister.current
+    const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
+    const changes: readonly SetChange[] = turned.map((each) => {
+      const placed = each.box === undefined ? undefined : storedBox(framing, each.id, each.box)
+      return {
+        target: { node: each.id },
+        box: {
+          ...(placed === undefined ? {} : { x: placed.x, y: placed.y }),
+          rot: angleUnits(each.rotation),
+        },
+      }
+    })
+    const clearLive = async () => {
+      const currentRegister = await deviceRegister(id)
+      for (const each of turned) {
+        store.current.placeRotation(each.id, null)
+        if (each.box !== undefined) store.current.placeBox(each.id, landedBox(currentRegister, each.id))
+      }
+    }
+    changeDesign(
+      deck,
+      () => changes,
+      undefined,
+      () => void clearLive(),
+    )
+  }
+
+  function onFlip(flipped: readonly FlippedLayer[]) {
+    const shownRegister = deck.shown.shownRegister.current
+    const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
+    const changes: readonly SetChange[] = flipped.map((each) => {
+      const placed = each.box === undefined ? undefined : storedBox(framing, each.id, each.box)
+      return {
+        target: { node: each.id },
+        box: {
+          ...(placed === undefined ? {} : { x: placed.x, y: placed.y }),
+          ...(each.rotation === undefined ? {} : { rot: angleUnits(each.rotation) }),
+          ...(each.flipH === undefined ? {} : { flipH: each.flipH }),
+          ...(each.flipV === undefined ? {} : { flipV: each.flipV }),
+        },
+      }
+    })
+    changeDesign(deck, () => changes)
   }
 
   function orderElement(node: ElementId, move: StackMove) {
@@ -229,6 +282,14 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
                 moved.map((each) => each.id),
                 () => onBoxes(moved),
               )
+            }}
+            onRotate={(turned) => {
+              clear()
+              onRotate(turned)
+            }}
+            onFlip={(flipped) => {
+              clear()
+              onFlip(flipped)
             }}
             onOrder={order}
             ownsKey={editorOwnsKey}

@@ -147,7 +147,7 @@ test("slide list entries paint different slides and follow an edit", async ({ pa
   expect(motions.filter((duration) => duration !== 0)).toEqual([])
   await page.locator('[data-slide-entry="1"]').click()
   const title = page.locator('[contenteditable="true"]').filter({ hasText: "Introduction to Heat Pumps" })
-  await title.click()
+  await title.dblclick()
   await page.keyboard.press("End")
   await title.pressSequentially(" today", { delay: 30 })
   await expect(first).toContainText("Introduction to Heat Pumps today")

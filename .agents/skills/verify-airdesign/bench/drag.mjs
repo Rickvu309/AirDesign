@@ -12,7 +12,8 @@ export default {
     const slide = await page.locator("[data-slide-paint]").boundingBox()
     await text.click()
     await expect(page.locator("[data-selection]")).toHaveCount(1)
-    return { x: Math.round(slide.x) + 300, y: Math.round(slide.y) + 150 }
+    await page.keyboard.press("Escape")
+    return { x: Math.round(slide.x) + 300, y: Math.round(slide.y) + 120 }
   },
   async measure({ page }, from) {
     await page.mouse.move(from.x, from.y)

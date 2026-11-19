@@ -241,7 +241,7 @@ test("typing in a placed box keeps the box at its place and shows the text past 
   const canvas = page.locator("[data-slide-paint]")
   const editor = page.locator(`[data-canvas-element="${key}"] [contenteditable="true"]`)
   await expect(canvas).toHaveCSS("overflow-x", "clip")
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("End")
   await page.keyboard.type("!")
   await expect(editor).toHaveText("What is a heat pump?!")
@@ -249,17 +249,17 @@ test("typing in a placed box keeps the box at its place and shows the text past 
   await expectPlaced(page, parts, key, inheritedBox(parts, slide, "2", "title"))
 })
 
-async function clickOnText(page: Page, key: string): Promise<void> {
+async function editText(page: Page, key: string): Promise<void> {
   const point = await page.locator(`[data-canvas-element="${key}"] [contenteditable="true"]`).evaluate((box) => {
     const range = box.ownerDocument.createRange()
     range.selectNodeContents(box)
     const words = range.getBoundingClientRect()
     return { x: words.x + words.width / 2, y: words.y + words.height / 2 }
   })
-  await page.mouse.click(point.x, point.y)
+  await page.mouse.dblclick(point.x, point.y)
 }
 
-test("a click on a title under an empty unfilled box edits the title and leaves the box alone", async ({ page }) => {
+test("a double-click on a title under an empty unfilled box edits only the title", async ({ page }) => {
   await open(page)
   await showSlide(page, 29)
   const slide = "ppt/slides/slide29.xml"
@@ -267,7 +267,7 @@ test("a click on a title under an empty unfilled box edits the title and leaves 
   const cover = page.locator(`[data-canvas-element="${slide}#4"] [contenteditable="true"]`)
   const before = (await title.textContent()) ?? ""
   expect(before).not.toBe("")
-  await clickOnText(page, `${slide}#2`)
+  await editText(page, `${slide}#2`)
   await expect(title).toBeFocused()
   await page.keyboard.press("Control+End")
   await page.keyboard.type("Zq")
@@ -275,7 +275,7 @@ test("a click on a title under an empty unfilled box edits the title and leaves 
   await expect(cover).toHaveText("")
 })
 
-test("every text under an empty unfilled box takes its own click", async ({ page }) => {
+test("every text under an empty unfilled box takes its own double-click", async ({ page }) => {
   await open(page)
   for (const [number, shape] of [
     [29, "3"],
@@ -284,7 +284,7 @@ test("every text under an empty unfilled box takes its own click", async ({ page
   ] as const) {
     await showSlide(page, number)
     const key = `ppt/slides/slide${number}.xml#${shape}`
-    await clickOnText(page, key)
+    await editText(page, key)
     await expect(page.locator(`[data-canvas-element="${key}"] [contenteditable="true"]`)).toBeFocused()
   }
 })

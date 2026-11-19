@@ -5,7 +5,7 @@ import { fixtureDeck } from "../fixture-deck.mjs"
 async function drive(kit) {
   await fixtureDeck(kit)
   const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
-  await text.click()
+  await text.dblclick()
   await kit.page.keyboard.press("ControlOrMeta+a")
   await text.pressSequentially("Mine", { delay: 40 })
   await kit.page.keyboard.press("Escape")

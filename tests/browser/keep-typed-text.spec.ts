@@ -43,7 +43,7 @@ async function expectNothingUnsaved(page: Page): Promise<void> {
 async function typeTitle(page: Page): Promise<void> {
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await slowDevice(page)
   await editor.pressSequentially(typedTitle, { delay: 0 })
@@ -79,7 +79,7 @@ test("a box moved while the device write is slow keeps its place after an immedi
   if (slide === null) throw new Error("no slide")
   await page.locator('[contenteditable="true"]').click()
   await slowDevice(page)
-  const press = { x: Math.round(slide.x) + 300, y: Math.round(slide.y) + 150 }
+  const press = { x: Math.round(slide.x) + 300, y: Math.round(slide.y) + 120 }
   await page.mouse.move(press.x, press.y)
   await page.mouse.down()
   await page.mouse.move(press.x + 30, press.y + 60, { steps: 8 })

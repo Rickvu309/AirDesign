@@ -222,6 +222,7 @@ export function paint(
       }
       if (!sameRecord(current, record)) store.publish(record)
       store.placeBox(id, landedBox(laid, id))
+      store.placeRotation(id, null)
     }
     for (const [id, box] of shapes.boxes) boxes.set(id, box)
     for (const [id, box] of shapes.movables) movables.set(id, box)

@@ -5,10 +5,9 @@ async function drive(kit) {
   const { page } = kit
   const element = await largeTextBox(kit)
   await element.click({ position: { x: 10, y: 10 }, force: true })
-  await page.keyboard.press("Escape")
-  const band = await page.locator("[data-slide-paint] [data-selection] [data-grip='move']").first().boundingBox()
-  if (band === null) throw new Error("no move band")
-  const from = { x: band.x + band.width / 2, y: band.y + band.height / 2 }
+  const box = await element.boundingBox()
+  if (box === null) throw new Error("no element box")
+  const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   await committed(kit, async () => {
     await page.mouse.move(from.x, from.y)
     await page.mouse.down()

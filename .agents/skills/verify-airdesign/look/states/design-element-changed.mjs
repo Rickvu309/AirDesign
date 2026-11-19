@@ -9,7 +9,6 @@ async function drive(kit) {
   const menu = await toolbarWords(kit.repo, "clean.pptx")
   await kit.page.getByRole("button", { name: "Design", exact: true }).click()
   await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  await kit.page.keyboard.press("Escape")
   const panel = kit.page.locator("[data-design-element]")
   await unfold(panel, boxCopy.section)
   const x = panel.getByRole("textbox", { name: "X", exact: true })

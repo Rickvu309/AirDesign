@@ -57,6 +57,7 @@ export function changeDesign(
   deck: DesignDeck,
   change: () => SetChange | readonly SetChange[],
   afterPaint?: () => void,
+  onRefused?: () => void,
 ) {
   const session = deck.undo.focused.current
   deck.undo.turnAfter(async () => {
@@ -65,6 +66,7 @@ export function changeDesign(
       void flushPending(connect, deck.id).then(deck.settle)
       return
     }
+    onRefused?.()
     toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
     deck.settle("refused")
   })

@@ -78,7 +78,9 @@ test("a paragraph spaced at 90% puts its lines 0.9 of a single line, 1.2 times t
   }
 })
 
-test("a click on a word on a later line puts the caret in that word, and typing lands there", async ({ page }) => {
+test("a double-click on a word on a later line puts the caret in that word, and typing lands there", async ({
+  page,
+}) => {
   await open(page)
   const run = page.locator(wrapped)
   const target = await run.evaluate((span) => {
@@ -94,7 +96,7 @@ test("a click on a word on a later line puts the caret in that word, and typing 
   })
   const tops = await lineTops(run)
   expect(target.y).toBeGreaterThan((tops[1] ?? Number.POSITIVE_INFINITY) - 1)
-  await page.mouse.click(target.x, target.y)
+  await page.mouse.dblclick(target.x, target.y)
   await expect(page.locator(`${box} [contenteditable="true"]`)).toBeFocused()
   const offset = await page.evaluate(() => getSelection()?.anchorOffset ?? -1)
   expect(offset).toBeGreaterThanOrEqual(target.start + 3)

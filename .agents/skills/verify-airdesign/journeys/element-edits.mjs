@@ -29,7 +29,6 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await page.reload()
   await expect(texts.last()).toHaveText("Added text")
   await texts.first().click()
-  await page.keyboard.press("Escape")
   await capture("box-selected")
   await page.keyboard.press("Delete")
   await expect(texts).toHaveCount(1)

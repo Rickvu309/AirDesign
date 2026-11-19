@@ -30,7 +30,6 @@ test("a person saves and removes a whole text element URL @export", async ({ pag
   })
   await copyFile(file, join(process.cwd(), "tests/browser/exported-element-link.pptx"))
   await shapeAt(page, "2").click()
-  await page.keyboard.press("Escape")
   await field.fill("")
   await field.press("Enter")
   await expect(field).toHaveValue("")

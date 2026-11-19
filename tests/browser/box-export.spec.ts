@@ -87,7 +87,7 @@ test("a box dragged and resized in the editor exports through the move and resiz
   if (slideBox === null) throw new Error("no slide")
   const origin = { x: Math.round(slideBox.x), y: Math.round(slideBox.y) }
   await page.locator('[contenteditable="true"]').click()
-  await drag(page, { x: origin.x + 300, y: origin.y + 150 }, { x: 30, y: 60 })
+  await drag(page, { x: origin.x + 300, y: origin.y + 120 }, { x: 30, y: 60 })
   await drag(page, { x: origin.x + 420, y: origin.y + 210 }, { x: -120, y: 60 })
   await expect.poll(() => keptBox(page)).toEqual(box)
   await page.reload()

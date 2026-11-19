@@ -70,4 +70,33 @@ describe("paintStore", () => {
     expect(store.slides()).toBe(previous)
     expect(store.getElement(keptId)?.text).toBe("kept")
   })
+
+  it("places and grips live rotation and notifies box subscribers", () => {
+    const store = paintStore()
+    const id = elementId("1.1")
+    let calls = 0
+    const off = store.boxSubscribe(id)(() => {
+      calls += 1
+    })
+    expect(store.getRotation(id)).toBeNull()
+    store.placeRotation(id, 30)
+    expect(store.getRotation(id)).toBe(30)
+    expect(calls).toBe(1)
+
+    const grip = store.gripRotation(id)
+    grip.place(45)
+    expect(store.getRotation(id)).toBe(45)
+    store.placeRotation(id, 60)
+    expect(store.getRotation(id)).toBe(45)
+    grip.release()
+    expect(store.getRotation(id)).toBe(60)
+
+    const second = store.gripRotation(id)
+    second.place(90)
+    second.keep()
+    expect(store.getRotation(id)).toBe(90)
+    store.placeRotation(id, null)
+    expect(store.getRotation(id)).toBeNull()
+    off()
+  })
 })

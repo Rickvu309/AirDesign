@@ -161,8 +161,8 @@ function rowName(node: ElementId, row: Row): UndoName {
   if (faded(row)) return "opacity"
   if (row.patch.connection !== undefined) return "connector"
   const box = row.patch.box
-  if (box?.rot !== undefined) return "rotate"
   if (box?.flipH !== undefined || box?.flipV !== undefined) return "flip"
+  if (box?.rot !== undefined) return "rotate"
   const fills = row.patch.fills
   if (fills?.crop !== undefined) return "crop"
   if (fills !== undefined && paintSlots.every((slot) => fills[slot] === undefined) && fills.alpha === undefined)

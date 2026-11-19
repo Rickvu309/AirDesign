@@ -45,7 +45,7 @@ async function drive(kit) {
   await composer.fill("Change the title to Hello from Aira")
   await composer.press("Enter")
   await expect(side.locator('[data-tool-state="working"]')).toBeVisible()
-  await title.click()
+  await title.dblclick()
   await page.keyboard.type("X")
   await page.keyboard.press("Escape")
   await expect.poll(async () => (await post(deckRoutes.open, { deck }, cookie)).json.revision).toBeGreaterThan(base)

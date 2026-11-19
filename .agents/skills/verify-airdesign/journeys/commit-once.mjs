@@ -43,7 +43,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
       await route.continue()
     }
   })
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("End")
   await page.keyboard.type("!")
   await expect(editor).toHaveText("Hello!")

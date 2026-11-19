@@ -42,7 +42,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
   const painted = await page.locator("[data-canvas-element]").count()
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await editor.pressSequentially(typed, { delay: 20 })
   await expect.poll(async () => textsIn((await post(deckRoutes.open, { deck }, cookie)).json.register)).toEqual([typed])

@@ -43,7 +43,6 @@ export async function chooseCards(page) {
   }
   const first = await centre(lead)
   await page.mouse.click(first.x, first.y)
-  await page.keyboard.press("Escape")
   await page.keyboard.down("Shift")
   for (const shape of chosen.filter((each) => each !== lead)) {
     const at = await centre(shape)
@@ -53,10 +52,14 @@ export async function chooseCards(page) {
   await expect(page.locator("[data-selection-around]")).toHaveAttribute("data-selection-around", String(chosen.length))
 }
 
+export async function leadCentre(page) {
+  const box = await card(page, lead).boundingBox()
+  return { x: Math.round(box.x + box.width / 2), y: Math.round(box.y + box.height / 2) }
+}
+
 export async function holdDrag(page) {
   const [x = 0, y = 0] = await card(page, lead).evaluate(corner)
-  const band = await page.locator("[data-selection-around] [data-grip=move]").first().boundingBox()
-  const from = { x: band.x + band.width / 3, y: band.y + band.height / 2 }
+  const from = await leadCentre(page)
   await page.mouse.move(from.x, from.y)
   await page.mouse.down()
   await page.mouse.move(from.x + dragBy.x, from.y + dragBy.y, { steps: 12 })

@@ -170,7 +170,7 @@ describe("SlideCanvas boxes", () => {
     expect(placement(frameOf(host))).toEqual(["30px", "30px", "360px", "120px"])
   })
 
-  it("selects an element on a press and shows a frame at its box with four corner handles", async () => {
+  it("selects an element on a press and shows a frame at its box with edge and corner handles", async () => {
     const { host } = await mounted([element(id), element(other, { box: { ...place, y: 3_000_000 } })])
     expect(selection(host)).toBeNull()
     await pointer(frameOf(host), "pointerdown", 100, 100)
@@ -178,9 +178,16 @@ describe("SlideCanvas boxes", () => {
     const frame = selection(host)
     expect(frame?.dataset.selection).toBe(id)
     expect(frame === null ? [] : placement(frame)).toEqual(["30px", "30px", "360px", "120px"])
-    expect(
-      [...host.querySelectorAll<HTMLElement>("[data-grip]:not([data-grip=move])")].map((each) => each.dataset.grip),
-    ).toEqual(["top-left", "top-right", "bottom-left", "bottom-right"])
+    expect([...host.querySelectorAll<HTMLElement>("[data-grip]")].map((each) => each.dataset.grip)).toEqual([
+      "top",
+      "right",
+      "bottom",
+      "left",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+    ])
     expect(host.ownerDocument.activeElement).toBe(frameOf(host))
     await pointer(frameOf(host, other), "pointerdown", 100, 220)
     await pointer(host.ownerDocument, "pointerup", 100, 220)
@@ -241,28 +248,6 @@ describe("SlideCanvas boxes", () => {
     expect(host.ownerDocument.activeElement).toBe(frameOf(host).querySelector('[contenteditable="true"]'))
   })
 
-  it("starts no drag from a press in the text, so the caret and text selection keep working", async () => {
-    const { host, boxes } = await mounted([element(id, { editable: true })], "Hello", true)
-    const text = frameOf(host).querySelector<HTMLElement>('[contenteditable="true"]')
-    if (text === null) throw new Error("no text")
-    const press = new PointerEvent("pointerdown", {
-      bubbles: true,
-      cancelable: true,
-      clientX: 40,
-      clientY: 40,
-      pointerId: 1,
-      button: 0,
-    })
-    await act(async () => {
-      text.dispatchEvent(press)
-    })
-    expect(press.defaultPrevented).toBe(false)
-    await pointer(host.ownerDocument, "pointermove", 140, 140)
-    await pointer(host.ownerDocument, "pointerup", 140, 140)
-    expect(placement(frameOf(host))).toEqual(["30px", "30px", "360px", "120px"])
-    expect(boxes).toEqual([])
-  })
-
   it("paints a drag at each frame and reports one box when the pointer is released", async () => {
     const { host, boxes } = await mounted([element(id)])
     const target = frameOf(host)
@@ -316,15 +301,6 @@ describe("SlideCanvas boxes", () => {
       { ...start, cx: 3_657_600, cy: 2_743_200 },
       { x: 914_400, y: 609_600, cx: 3_200_400, cy: 2_590_800 },
     ])
-  })
-
-  it("moves the selected element by its frame's edge band", async () => {
-    const { host, boxes } = await mounted([element(id, { editable: true })], "Hello", true)
-    await focus(frameOf(host))
-    const band = host.querySelector<HTMLElement>("[data-grip=move]")
-    if (band === null) throw new Error("no band")
-    await drag(band, [100, 30], [130, 60])
-    expect(boxes).toEqual([[id, { ...start, x: 914_400, y: 914_400 }]])
   })
 
   it("nudges with the arrows, further with Shift, and reports one box when the key is released", async () => {
@@ -390,9 +366,16 @@ describe("SlideCanvas boxes", () => {
     const { host, boxes } = await mounted([element(id, { box: { ...place, rotation: 30 } })])
     await focus(frameOf(host))
     expect(selection(host)?.style.transform).toBe("rotate(30deg)")
-    expect(
-      [...host.querySelectorAll<HTMLElement>("[data-grip]:not([data-grip=move])")].map((each) => each.dataset.grip),
-    ).toEqual(["top-left", "top-right", "bottom-left", "bottom-right"])
+    expect([...host.querySelectorAll<HTMLElement>("[data-grip]")].map((each) => each.dataset.grip)).toEqual([
+      "top",
+      "right",
+      "bottom",
+      "left",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+    ])
     expect(
       ["top-left", "top-right", "bottom-left", "bottom-right"].map((name) => grip(host, name).style.cursor),
     ).toEqual(["ns-resize", "ew-resize", "ew-resize", "ns-resize"])

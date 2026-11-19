@@ -119,7 +119,7 @@ test("a step refused because the person typed in the same title says why, flags 
   )
   await ask(page, asked)
   await expect(side.locator('[data-tool-state="working"]')).toHaveText("Editing slides")
-  await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
+  await page.locator('[data-slide-paint] [contenteditable="true"]').first().dblclick()
   await page.keyboard.type("X")
   await page.keyboard.press("Escape")
   await expect

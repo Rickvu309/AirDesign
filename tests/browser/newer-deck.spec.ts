@@ -58,7 +58,7 @@ test("a deck a newer build stored asks the person to reload and sends nothing", 
   await expect(page).toHaveURL(deckAddress)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   const address = new URL(page.url()).pathname
-  await page.locator('[contenteditable="true"]').click()
+  await page.locator('[contenteditable="true"]').dblclick()
   await page.keyboard.press("End")
   await page.keyboard.type(" there")
   await expect(page.getByText("Unable to reach AirDesign. Edits are saved on this device.")).toBeVisible()

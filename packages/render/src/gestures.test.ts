@@ -114,6 +114,19 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "d", ctrlKey: true }, "slides")).toBe("slide-duplicate")
   })
 
+  it("flips horizontally with Shift+H and vertically with Shift+V on an element without switching tools", () => {
+    const flipH = { ...plain, key: "H", code: "KeyH", shiftKey: true }
+    const flipV = { ...plain, key: "V", code: "KeyV", shiftKey: true }
+    expect(gestureFor(flipH, "element")).toBe("flip-horizontal")
+    expect(gestureFor(flipV, "element")).toBe("flip-vertical")
+    expect(gestureFor(flipH, "text")).toBeNull()
+    expect(gestureFor(flipV, "text")).toBeNull()
+    expect(gestureFor(flipH, "editor")).toBeNull()
+    expect(gestureFor(flipV, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "h", code: "KeyH" }, "editor")).toBe("tool-hand")
+    expect(gestureFor({ ...plain, key: "v", code: "KeyV" }, "editor")).toBe("tool-move")
+  })
+
   it("acts only where the gesture works", () => {
     expect(gestureFor({ ...plain, key: "Delete" }, "element")).toBe("delete")
     expect(gestureFor({ ...plain, key: "Delete" }, "slides")).toBe("slide-delete")

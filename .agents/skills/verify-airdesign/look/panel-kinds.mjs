@@ -24,7 +24,6 @@ export async function reachPanel(kit, kind, mode) {
   await setPanelMode(page, mode)
   if (text) {
     await page.locator('[data-slide-paint] [contenteditable="true"]').click()
-    await page.keyboard.press("Escape")
   }
   for (const [index, number] of elements.entries()) {
     const box = await page.locator(element(number)).boundingBox()

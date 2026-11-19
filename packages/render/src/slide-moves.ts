@@ -10,24 +10,11 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
-import {
-  boxOf,
-  isArrow,
-  nudgedBoxes,
-  resizedByKey,
-  sameBox,
-  travelled,
-  type Drag,
-  type Grip,
-  type Held,
-  type Moved,
-  type Point,
-} from "./box-gesture.js"
-import { snappedDrag, snapTargets } from "./drag-snap.js"
+import { boxOf, isArrow, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gesture.js"
+import { snapTargets } from "./drag-snap.js"
 import { gestureFor } from "./gestures.js"
-import { typeHeld } from "./held-keys.js"
-import { oncePerFrame } from "./once-per-frame.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
+import { editingText, enterText } from "./text-entry.js"
 import {
   alone,
   childrenSelection,
@@ -46,7 +33,21 @@ import {
   type Selection,
 } from "./selection.js"
 import { guideBoard, type GuideBoard } from "./guide-layer.js"
+import { rotationGrips } from "./rotation-grips.js"
 import type { BoxGrip, PaintStore } from "./store.js"
+import {
+  finishedTurns,
+  flipsBy,
+  modifiersOf,
+  pointerDragOf,
+  watchPointerDrag,
+  type DragAfter,
+  type PointerDrag,
+  type TransformActions,
+  type TransformModifiers,
+} from "./transform-drag.js"
+import { hudChannel, type HudChannel } from "./transform-hud.js"
+import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 
 export type Grouping = {
@@ -64,16 +65,19 @@ export type Picking = {
   readonly onDragChange?: (dragging: boolean) => void
 }
 
+type ActiveHold = PointerDrag | Nudge
+
 export type Moves = {
   readonly selection: Selection
   readonly guides: GuideBoard
   readonly latest: RefObject<Selection>
   readonly choose: (next: Selection) => void
   readonly isDragging: () => boolean
+  readonly hud: HudChannel
   readonly message: string
   readonly say: (message: string) => void
   readonly select: (id: ElementId) => void
-  readonly press: (event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) => void
+  readonly press: (event: PointerEvent<HTMLElement>, element: CanvasElement, grip: TransformGrip) => void
   readonly doubleClick: (event: MouseEvent<HTMLElement>, element: CanvasElement) => void
   readonly key: (event: KeyboardEvent<HTMLElement>, element: CanvasElement) => void
   readonly slide: {
@@ -84,7 +88,6 @@ export type Moves = {
   }
 }
 
-const editableText = '[contenteditable="true"]'
 const slidePaint = "[data-slide-paint]"
 const keepsSelection = "[data-keeps-selection]"
 
@@ -96,33 +99,8 @@ export function canDrag(element: CanvasElement): boolean {
   return canMove(element) && element.connection === undefined
 }
 
-function inText(target: EventTarget, frame: HTMLElement): boolean {
-  const text = target instanceof Element ? target.closest(editableText) : null
-  return text !== null && frame.contains(text)
-}
-
 function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null {
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
-}
-
-function enterText(frame: HTMLElement): boolean {
-  const text = frame.querySelector<HTMLElement>(editableText)
-  if (text === null) return false
-  text.focus()
-  const range = text.ownerDocument.createRange()
-  range.selectNodeContents(text)
-  range.collapse(false)
-  const caret = text.ownerDocument.getSelection()
-  caret?.removeAllRanges()
-  caret?.addRange(range)
-  return true
-}
-
-export function enterElement(slide: HTMLElement, element: CanvasElement, typed: string): void {
-  const frame = slide.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`)
-  if (frame === null) return
-  if (enterText(frame)) typeHeld(slide.ownerDocument, typed)
-  else frame.focus()
 }
 
 export function useMoves(
@@ -134,6 +112,7 @@ export function useMoves(
   onOrder?: (id: ElementId, move: StackMove) => void,
   picking?: Picking,
   grouping?: Grouping,
+  transforms?: TransformActions,
 ): Moves {
   const [own, setOwn] = useState<Selection>(noSelection)
   const given = picking?.selection ?? own
@@ -148,9 +127,11 @@ export function useMoves(
   }, [given, selection, onSelection])
   const [message, setMessage] = useState("")
   const [guides] = useState(guideBoard)
+  const [hud] = useState(hudChannel)
   const keyed = useRef({ verb: "", label: "" })
-  const held = useRef<Held | null>(null)
+  const held = useRef<ActiveHold | null>(null)
   const grips = useRef(new Map<ElementId, BoxGrip>())
+  const [turning] = useState(rotationGrips)
   const cancelling = useRef<(() => void) | null>(null)
   const pressedFrame = useRef<HTMLElement | null>(null)
   useEffect(() => () => letGo([]), [])
@@ -162,9 +143,15 @@ export function useMoves(
     for (const id of now.ids.filter((each) => !shown.includes(each))) {
       grips.current.get(id)?.release()
       grips.current.delete(id)
+      turning.drop(id)
     }
     const starts = new Map([...now.starts].filter(([id]) => shown.includes(id)))
-    held.current = { ...now, ids: shown, starts }
+    if (now.by === "pointer") {
+      const layers = new Map([...now.layers].filter(([id]) => shown.includes(id)))
+      held.current = { ...now, ids: shown, starts, layers }
+    } else {
+      held.current = { ...now, ids: shown, starts }
+    }
   }, [size])
 
   function elementOf(id: ElementId | null | undefined): CanvasElement | undefined {
@@ -178,7 +165,7 @@ export function useMoves(
     onSelection?.(next)
   }
 
-  function entered(done: Drag) {
+  function entered(done: PointerDrag) {
     const child = elementOf(done.enter)
     const frame = pressedFrame.current
     if (child?.id === undefined || child.id === null || frame === null) return
@@ -191,9 +178,10 @@ export function useMoves(
     return store.getBox(element.id) ?? (element.box === null ? null : boxOf(element.box))
   }
 
-  function hold(next: Held) {
+  function hold(next: ActiveHold) {
     held.current = next
     grips.current = new Map(next.ids.map((id) => [id, store.gripBox(id)]))
+    turning.grip(store, next.by === "pointer" && isRotateGrip(next.grip) ? next.ids : [])
     picking?.onDragChange?.(true)
   }
 
@@ -205,15 +193,23 @@ export function useMoves(
     const wasHeld = held.current !== null
     held.current = null
     guides.show([])
+    hud.write(null)
     for (const [id, grip] of grips.current) {
       if (changed.includes(id)) grip.keep()
       else grip.release()
     }
+    turning.end(changed)
     grips.current = new Map()
     if (wasHeld) picking?.onDragChange?.(false)
   }
 
-  function finish(done: Held) {
+  function finish(done: ActiveHold) {
+    if (done.by === "pointer" && isRotateGrip(done.grip)) {
+      const turned = finishedTurns(done.layers, store)
+      letGo(turned.map((each) => each.id))
+      if (turned.length > 0) transforms?.onRotate?.(turned)
+      return
+    }
     const moved = done.ids.flatMap((id): Moved[] => {
       const box = store.getBox(id)
       const start = done.starts.get(id)
@@ -238,81 +234,79 @@ export function useMoves(
     return ids.length > 1 && ids.includes(id) ? [id, ...ids.filter((each) => each !== id)] : [id]
   }
 
-  function follow(pressed: Drag, document: Document) {
-    const snap = snapTargets(size, store, pressed.ids)
-    const moving = oncePerFrame(({ at, free }: { readonly at: Point; readonly free: boolean }) => {
-      const now = held.current
-      if (now?.by !== "pointer") return
-      const snapped = snappedDrag(now, at, width, size, free ? null : snap)
-      guides.show(snapped.guides)
-      place(snapped.boxes)
-    })
-    function move(event: globalThis.PointerEvent) {
-      const now = held.current
-      if (now?.by !== "pointer" || event.pointerId !== now.pointer) return
-      const at = { x: event.clientX, y: event.clientY }
-      if (!now.moved && !travelled(now.from, at)) return
-      held.current = { ...now, moved: true }
-      moving.push({ at, free: event.ctrlKey })
-    }
-    function stop() {
-      document.removeEventListener("pointermove", move)
-      document.removeEventListener("pointerup", end)
-      document.removeEventListener("pointercancel", lost)
-      cancelling.current = null
-    }
-    function cancel() {
-      moving.drop()
-      stop()
-      letGo([])
-    }
-    function end(event: globalThis.PointerEvent) {
-      if (event.pointerId !== pressed.pointer) return
-      moving.flush()
-      stop()
-      const now = held.current
-      if (now !== null) finish(now)
-      if (now?.by !== "pointer" || now.moved) return
-      if (now.enter !== undefined) entered(now)
-      else if (now.ids.length > 1 && now.ids[0] !== undefined) choose(alone(size, now.ids[0]))
-    }
-    function lost(event: globalThis.PointerEvent) {
-      if (event.pointerId === pressed.pointer) cancel()
-    }
+  function follow(pressed: PointerDrag, document: Document, initialModifiers: TransformModifiers) {
     hold(pressed)
-    cancelling.current = cancel
-    document.addEventListener("pointermove", move)
-    document.addEventListener("pointerup", end)
-    document.addEventListener("pointercancel", lost)
+    cancelling.current = watchPointerDrag({
+      document,
+      pointer: pressed.pointer,
+      from: pressed.from,
+      initialModifiers,
+      width,
+      slide: size,
+      snap: snapTargets(size, store, pressed.ids),
+      current: () => (held.current?.by === "pointer" ? held.current : null),
+      markMoved: (now) => {
+        const active = { ...now, moved: true }
+        held.current = active
+        return active
+      },
+      applyResult: (result) => {
+        place(result.boxes)
+        for (const [id, rotation] of result.rotations) turning.place(id, rotation)
+        guides.show(result.guides)
+        hud.write(result.hud)
+      },
+      onFinish: (now) => {
+        finish(now)
+        if (now.moved) return
+        if (now.toggleOnClick !== undefined) {
+          const next = toggled(size, latest.current, now.toggleOnClick)
+          choose(next)
+          if (pressedFrame.current !== null) focusSelection(pressedFrame.current, next)
+          return
+        }
+        if (now.enter !== undefined) entered(now)
+        else if (now.grip === "move" && now.ids.length > 1 && now.ids[0] !== undefined) choose(alone(size, now.ids[0]))
+      },
+      onCancel: () => letGo([]),
+      onStop: () => {
+        cancelling.current = null
+      },
+    })
   }
 
-  function pressOn(event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip, enter?: ElementId) {
+  function pressOn(
+    event: PointerEvent<HTMLElement>,
+    element: CanvasElement,
+    grip: TransformGrip,
+    enter?: ElementId,
+    toggleOnClick?: ElementId,
+  ) {
     const id = element.id
     if (id === null) return
     const frame = frameOf(event.currentTarget, element)
-    if (frame === null || (grip === "move" && inText(event.target, frame))) return
+    if (frame === null || (grip === "move" && editingText(event.target, frame))) return
     event.preventDefault()
     pressedFrame.current = frame
     frame.focus()
-    const ids = grip === "move" ? movingWith(id) : [id]
+    const ids = movingWith(id)
     if (ids.length === 1) choose(alone(size, id))
-    const starts = startsOf(ids)
-    if (!starts.has(id)) return
-    const from = { x: event.clientX, y: event.clientY }
-    const keepRatio = element.kind === "picture"
-    const rotation = element.box?.rotation ?? 0
-    const drag: Drag = {
-      by: "pointer",
-      ids: ids.filter((each) => starts.has(each)),
-      grip,
-      pointer: event.pointerId,
-      from,
-      starts,
-      moved: false,
-      keepRatio,
-      rotation,
-    }
-    follow(enter === undefined ? drag : { ...drag, enter }, frame.ownerDocument)
+    dragFrom(event, frame, ids, grip, {
+      ...(enter === undefined ? {} : { enter }),
+      ...(toggleOnClick === undefined ? {} : { toggleOnClick }),
+    })
+  }
+
+  function dragFrom(
+    event: PointerEvent<HTMLElement>,
+    frame: HTMLElement,
+    ids: readonly ElementId[],
+    grip: TransformGrip,
+    after: DragAfter,
+  ) {
+    const surface = frame.closest<HTMLElement>(slidePaint)
+    const drag = pointerDragOf(event, { surface, slide: size, store, width }, startsOf(ids), ids, grip, after)
+    if (drag !== null) follow(drag, frame.ownerDocument, modifiersOf(event))
   }
 
   function focusSelection(from: HTMLElement, next: Selection) {
@@ -331,25 +325,7 @@ export function useMoves(
     pressedFrame.current = frame
     choose(deepPicked(size, id))
     frame.focus()
-    const starts = startsOf([id])
-    if (!starts.has(id)) return
-    const from = { x: event.clientX, y: event.clientY }
-    const keepRatio = element.kind === "picture"
-    const rotation = element.box?.rotation ?? 0
-    follow(
-      {
-        by: "pointer",
-        ids: [id],
-        grip: "move",
-        pointer: event.pointerId,
-        from,
-        starts,
-        moved: false,
-        keepRatio,
-        rotation,
-      },
-      frame.ownerDocument,
-    )
+    dragFrom(event, frame, [id], "move", {})
   }
 
   function chooseOn(event: PointerEvent<HTMLElement>, element: CanvasElement, deep: boolean) {
@@ -360,7 +336,7 @@ export function useMoves(
     focusSelection(event.currentTarget, next)
   }
 
-  function press(event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) {
+  function press(event: PointerEvent<HTMLElement>, element: CanvasElement, grip: TransformGrip) {
     const id = element.id
     if (id === null || event.button !== 0 || held.current !== null) return
     const mod = event.metaKey || event.ctrlKey
@@ -376,7 +352,11 @@ export function useMoves(
       return
     }
     if (grip === "move" && event.shiftKey) {
-      chooseOn(event, element, mod)
+      const unitId = unitOf(size, latest.current, id)
+      const chosen = latest.current.ids.includes(id) || (unitId !== null && latest.current.ids.includes(unitId))
+      if (chosen && !mod)
+        pressOn(event, unitId === null ? element : (elementOf(unitId) ?? element), "move", undefined, id)
+      else chooseOn(event, element, mod)
       return
     }
     if (grip === "move" && mod) {
@@ -402,12 +382,13 @@ export function useMoves(
       focusSelection(event.currentTarget, next)
       return
     }
-    if (element.editable && !inText(event.target, event.currentTarget)) {
-      const frame = frameOf(event.currentTarget, element)
-      if (frame !== null && enterText(frame)) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
+    const frame = frameOf(event.currentTarget, element)
+    const chosen = latest.current.ids
+    if (!element.editable || frame === null || chosen.length !== 1 || chosen[0] !== id) return
+    if (editingText(event.target, frame)) return
+    if (enterText(frame, { x: event.clientX, y: event.clientY })) {
+      event.preventDefault()
+      event.stopPropagation()
     }
   }
 
@@ -456,6 +437,13 @@ export function useMoves(
         choose(next)
         focusSelection(frame, next)
       }
+      return
+    }
+    if (gesture === "flip-horizontal" || gesture === "flip-vertical") {
+      const flips = now === null ? flipsBy(size, store, movingWith(id), gesture) : []
+      if (flips.length === 0 || transforms?.onFlip === undefined) return
+      event.preventDefault()
+      transforms.onFlip(flips)
       return
     }
     if (gesture === "auto-layout") {
@@ -570,6 +558,7 @@ export function useMoves(
     latest,
     choose,
     isDragging: () => held.current !== null,
+    hud,
     message,
     say: setMessage,
     select,

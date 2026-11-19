@@ -25,6 +25,14 @@ export function useBox(store: PaintStore, id: ElementId, read: BoxRead = shownBo
   )
 }
 
+export function useRotation(store: PaintStore, id: ElementId): number | null {
+  return useSyncExternalStore(
+    store.boxSubscribe(id),
+    () => store.getRotation(id),
+    () => store.getRotation(id),
+  )
+}
+
 function useSlide(store: PaintStore, id: SlideId) {
   return useSyncExternalStore(
     store.slideSubscribe(id),

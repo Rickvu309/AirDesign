@@ -35,12 +35,11 @@ export async function following(kit) {
   const shown = await opened(kit)
   const { page } = kit
   await shown.element(3).click({ position: { x: 20, y: 20 } })
-  await page.keyboard.press("Escape")
-  const band = await page.locator("[data-selection] [data-grip='move']").first().boundingBox()
-  if (band === null) throw new Error("no move band")
-  await page.mouse.move(band.x + band.width / 2, band.y + band.height / 2)
+  const box = await shown.element(3).boundingBox()
+  if (box === null) throw new Error("no element box")
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
-  await page.mouse.move(band.x + band.width / 2 + 80, band.y + band.height / 2 - 145, { steps: 8 })
+  await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 - 145, { steps: 8 })
   return shown
 }
 

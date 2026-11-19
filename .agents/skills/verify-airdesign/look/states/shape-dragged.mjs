@@ -12,7 +12,7 @@ async function drive(kit) {
   await expect(kit.page.locator(`[data-slide-list] [data-thumb-element="${element}"]`)).toBeAttached()
   const slide = await kit.page.locator("[data-slide-paint]").boundingBox()
   await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  const from = { x: slide.x + 300, y: slide.y + 150 }
+  const from = { x: slide.x + 300, y: slide.y + 120 }
   await kit.page.mouse.move(from.x, from.y)
   await kit.page.mouse.down()
   await kit.page.mouse.move(from.x + 240, from.y + 240, { steps: 8 })

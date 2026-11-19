@@ -72,7 +72,7 @@ test("a person's typing stays on a slide whose font arrives while they type", as
     await openClean(page)
     const editor = page.locator('[contenteditable="true"]')
     await expect(pending(page).first()).toBeAttached()
-    await editor.click()
+    await editor.dblclick()
     await page.keyboard.press("ControlOrMeta+a")
     await editor.pressSequentially("Typed early", { delay: 30 })
     await expect(editor).toHaveText("Typed early")

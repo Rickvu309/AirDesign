@@ -27,7 +27,9 @@ export function placedBox(place: Place): PaintBox {
 }
 
 function still(file: PaintBox | null, live: PaintBox | null): boolean {
-  return file === null || live === null ? file === live : sameBox(boxOf(file), boxOf(live))
+  return file === null || live === null
+    ? file === live
+    : sameBox(boxOf(file), boxOf(live)) && file.rotation === live.rotation
 }
 
 function tieOf(target: CanvasElement | null, box: PaintBox | null, tie: CanvasTie | null): Tie | null {
@@ -86,7 +88,7 @@ export function useFollowed(
     },
     [store, key],
   )
-  const boxes = () => ids.map((id) => JSON.stringify(read(store, id))).join(" ")
+  const boxes = () => ids.map((id) => JSON.stringify([read(store, id), store.getRotation(id)])).join(" ")
   useSyncExternalStore(subscribe, boxes, boxes)
   return targets === undefined ? connector : followedConnector(connector, targets, (each) => liveBox(store, each, read))
 }

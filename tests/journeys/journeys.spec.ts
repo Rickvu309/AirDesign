@@ -74,6 +74,7 @@ for (const name of [
   "snap-drag",
   "busy-drag",
   "canvas-select",
+  "transform-canvas",
   "connected-agents",
   "slide-commands",
   "grid-group-add",

@@ -56,7 +56,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await settled(page)
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toHaveText("Added text")
-  await texts.first().click()
+  await texts.first().dblclick()
   await page.keyboard.press("Backspace")
   await expect(texts).toHaveCount(2)
   await page.keyboard.press("Escape")

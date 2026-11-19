@@ -33,7 +33,6 @@ export async function openDeck(page: Page, file: string): Promise<void> {
 export async function designing(page: Page, element: Locator): Promise<Locator> {
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await element.click()
-  await page.keyboard.press("Escape")
   const panel = page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
   return panel

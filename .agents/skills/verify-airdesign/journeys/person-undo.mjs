@@ -22,7 +22,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(text).toHaveText("Hello")
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
-  await text.click()
+  await text.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
   await text.pressSequentially("Mine", { delay: 40 })
   await page.keyboard.press("Escape")

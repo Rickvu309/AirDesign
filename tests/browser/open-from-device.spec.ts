@@ -77,7 +77,7 @@ test("an edit made while the server holds the open paints at once and is there a
   await page.goto(address)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
-  await editor.click()
+  await editor.dblclick()
   await page.keyboard.press("End")
   await editor.pressSequentially("!", { delay: 50 })
   await expect(editor).toHaveText("Hello!")
