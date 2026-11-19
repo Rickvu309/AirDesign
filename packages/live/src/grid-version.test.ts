@@ -114,7 +114,7 @@ it("refuses, on a tab one command stamp older, the deck a version three Grid edi
   const answered = await server.open({ deck: "deck" })
   if (!answered.ok) throw new Error(answered.refusal)
   expect(formatOf(answered.register)).toBe(format)
-  expect(stamps.command).toBe(13)
+  expect(stamps.command).toBe(15)
 
   const unsent = { slide: "add", grid: 2, row: "same", id: slideId("300"), after: file[1]!, layout: file[0]! } as const
   const sent = vi.spyOn(server, "commit")
