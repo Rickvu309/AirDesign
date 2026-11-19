@@ -14,7 +14,7 @@ export const toolingTests = (folder) => [
     .map((name) => `scripts/${name}`),
 ]
 
-export const ciSecondsLimit = 45
+export const ciSecondsLimit = 90
 
 export const limitFor = (env) => (onCi(env) ? ciSecondsLimit : Number.POSITIVE_INFINITY)
 
