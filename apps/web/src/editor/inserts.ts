@@ -40,7 +40,12 @@ export function deckInserts(deck: InsertingDeck) {
       keys?.stop()
       return "closed"
     }
-    const name = change.change === "order" ? stackNames[change.move] : elementNames[change.change]
+    const name =
+      change.change !== "order"
+        ? elementNames[change.change]
+        : typeof change.move === "string"
+          ? stackNames[change.move]
+          : "layer-order"
     const outcome = await commitElement(id, shownParts.current, opened.register, change, recordAdded(name, keys))
     if (outcome === "refused") keys?.stop()
     settle(outcome)

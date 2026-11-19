@@ -44,12 +44,14 @@ export type SlideRoom = {
 
 export type TableSize = { readonly rows: number; readonly columns: number }
 
+export type LayerSpot = { readonly before: ElementId | null }
+
 export type ElementChange =
   | { readonly change: "text"; readonly index: number; readonly size: SlideRoom }
   | ({ readonly change: "table"; readonly index: number; readonly size: SlideRoom } & TableSize)
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "remove"; readonly nodes: readonly ElementId[] }
-  | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove }
+  | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove | LayerSpot }
   | GroupChange
 
 export function takenBoxes(room: SlideRoom): readonly Box[] {
@@ -77,10 +79,16 @@ export function removalRefusal(parts: Parts, register: Register, node: ElementId
   }
 }
 
+function spotted(among: readonly ElementId[], change: { readonly node: ElementId; readonly move: LayerSpot }) {
+  const { before } = change.move
+  if (before === change.node || (before !== null && !among.includes(before))) return undefined
+  return (among[among.indexOf(change.node) + 1] ?? null) === before ? undefined : before
+}
+
 function orderCommand(base: Parts, change: Extract<ElementChange, { change: "order" }>): SlideCommand | null {
   const among = shapeSiblings(base, change.node)
   if (among === null) return null
-  const before = stackTarget(among, change.node, change.move)
+  const before = typeof change.move === "string" ? stackTarget(among, change.node, change.move) : spotted(among, change)
   if (before === undefined) return null
   const id = readSlideId(shapeOf(change.node).slide)
   if (id === undefined) return null

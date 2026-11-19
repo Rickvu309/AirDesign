@@ -3,6 +3,8 @@ import { productCopy } from "@/copy/product-copy"
 import { galleryDeck } from "@/editor/gallery-deck"
 import { DesignElementArt } from "@/editor/design-element-art"
 import { EditorView } from "@/editor/screens/editor-view"
+import { LayersPanel } from "@/editor/layers-panel"
+import { sampleLayers, sampleSelected } from "@/editor/sample-layers"
 
 export function AgentWorking() {
   return <EditorView {...galleryDeck} run="working" />
@@ -30,6 +32,19 @@ export function DesignPanelScreen() {
 
 export function DesignElementScreen() {
   return <EditorView {...galleryDeck} run="done" panel="design" designed={<DesignElementArt />} />
+}
+
+export function LayersScreen() {
+  return (
+    <EditorView
+      {...galleryDeck}
+      run="done"
+      panel="design"
+      designMode={{ value: "design", onChange: () => undefined }}
+      layers={<LayersPanel layers={{ tree: sampleLayers, selected: sampleSelected }} />}
+      designed={<DesignElementArt />}
+    />
+  )
 }
 
 export function ImagesScreen() {

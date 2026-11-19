@@ -21,6 +21,7 @@ export type UndoName =
   | "forward"
   | "backward"
   | "back"
+  | "layer-order"
   | "group"
   | "ungroup"
   | "add-auto-layout"
@@ -77,6 +78,7 @@ export const undoCopy = {
     forward: "Undo bring forward",
     backward: "Undo send backward",
     back: "Undo send to back",
+    "layer-order": "Undo layer order",
     group: "Undo group",
     ungroup: "Undo ungroup",
     "add-auto-layout": "Undo add auto layout",
@@ -130,6 +132,7 @@ export const undoCopy = {
     forward: "Redo bring forward",
     backward: "Redo send backward",
     back: "Redo send to back",
+    "layer-order": "Redo layer order",
     group: "Redo group",
     ungroup: "Redo ungroup",
     "add-auto-layout": "Redo add auto layout",

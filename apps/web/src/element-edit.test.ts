@@ -164,6 +164,21 @@ it("brings a shape to the front of its siblings and refuses a move that changes 
   expect(elementCommand(parts, register, { change: "order", node: elementId("256.7"), move: "front" })).toBeNull()
 })
 
+it("moves a layer to sit before a named sibling, as a drop in the layers panel does, with the order an agent sends", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const register = openRegister("", "")
+  const back = elementId("256.2")
+  const front = elementId("256.3")
+  const dropped = elementCommand(parts, register, { change: "order", node: front, move: { before: back } })
+  expect(dropped).toEqual({ slide: "element-order", id: "256", node: front, before: back, among: [back, front] })
+  expect(readShapes(exportedParts(parts, landed(register, dropped))).map((shape) => shape.shape)).toEqual(["3", "2"])
+  expect(elementCommand(parts, register, { change: "order", node: back, move: { before: front } })).toBeNull()
+  expect(elementCommand(parts, register, { change: "order", node: back, move: { before: back } })).toBeNull()
+  expect(
+    elementCommand(parts, register, { change: "order", node: back, move: { before: elementId("256.7") } }),
+  ).toBeNull()
+})
+
 it("adds a rectangle, an ellipse and a line on the slide under the next free id, each in the template style", () => {
   const parts = onSlide(xml(twoBoxSlide))
   const register = openRegister("", "")
