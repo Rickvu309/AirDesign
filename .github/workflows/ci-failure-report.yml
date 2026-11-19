@@ -8,6 +8,7 @@ on:
       - completed
     branches:
       - main
+      - gh-readonly-queue/main/**
   workflow_dispatch:
 
 permissions:
@@ -17,7 +18,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ci-failure-report
+  group: ci-failure-report-${{ github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.id || 'main' }}
   cancel-in-progress: false
 
 jobs:
@@ -33,3 +34,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/ci-failure-report.mjs "$GITHUB_REPOSITORY" --issue
+  queue-drop:
+    name: queue-drop
+    if: github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_CREATED: ${{ github.event.workflow_run.created_at }}
+        run: node scripts/queue-drop.mjs "$GITHUB_REPOSITORY"
