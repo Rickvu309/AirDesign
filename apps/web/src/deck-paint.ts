@@ -16,6 +16,7 @@ import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
 import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
 import { framedOf } from "@/frame-boxes"
+import { indexedRegister } from "@/indexed-register"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
@@ -198,7 +199,7 @@ export function paint(
   const reusable = earlier !== null && sameShared(shared, earlier.shared, slideParts)
   const before = new Map(reusable ? earlier.slides.map((each) => [each.shapes.part, each]) : [])
   const repainted: SlideId[] = []
-  const framed = framedOf(register)
+  const framed = framedOf(register === null ? null : indexedRegister(parts, register))
   const slides = read.map(({ slide, part }): PaintedSlide => {
     const old = before.get(part)
     const same = old !== undefined && old.framed === framed.key && sameSlide(old.shapes, slide, base, display)

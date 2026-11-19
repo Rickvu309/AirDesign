@@ -13,6 +13,7 @@ import { slideFrame } from "@/editor/revenue-slide"
 import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { storedBox } from "@/frame-boxes"
+import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
 import { shownTable } from "@/table-hook"
@@ -126,7 +127,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     async function refused(target: ElementId) {
       store.current.placeBox(target, landedBox(await deviceRegister(id), target))
     }
-    const framing = deck.shown.shownRegister.current
+    const shownRegister = deck.shown.shownRegister.current
+    const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
     const boxes = moved.flatMap(({ id: target, box }) => {
       const element = movables.current.get(target)
       return element === undefined ? [] : [{ box: storedBox(framing, target, box), element }]

@@ -92,15 +92,16 @@ const noIndex = {}
 
 function foldTree(state: Indexed): Tree {
   const parent = new Map<ElementId, Parent>()
+  const flow = new Map<ElementId, readonly ElementId[]>()
   for (const element of openingRows(state)) {
     if (parent.has(element.node)) continue
     parent.set(element.node, element.grouped ? (element.group ?? "unknown") : null)
+    if (element.framing !== undefined) flow.set(element.node, element.framing.children)
   }
   const dissolved = new Set<ElementId>()
   const former = new Map<ElementId, readonly ElementId[]>()
   const made = new Map<ElementId, ElementGroup>()
   const joined = new Map<ElementId, Member>()
-  const flow = new Map<ElementId, readonly ElementId[]>()
   for (const command of state.order) {
     if (command.slide === "element-group") {
       const node = command.element.node
@@ -181,18 +182,37 @@ export function madeGroup(state: Indexed, node: ElementId): ElementGroup | undef
   return treeOf(state).made.get(node)
 }
 
+export type FrameSource = { readonly backdrop: ElementId; readonly box: Box; readonly members: readonly Member[] }
+
+function filedMember(state: Indexed, node: ElementId, dx: number, dy: number): readonly Member[] {
+  const box = openingElement(state, node)?.box
+  return box === undefined || box === null ? [] : [{ node, box: { ...box, x: box.x + dx, y: box.y + dy } }]
+}
+
+export function frameSource(state: Indexed, node: ElementId): FrameSource | null {
+  const made = madeGroup(state, node)
+  if (made?.backdrop !== undefined && made.element.box !== null)
+    return { backdrop: made.backdrop.node, box: made.element.box, members: made.members }
+  const filed = made === undefined ? openingElement(state, node) : undefined
+  if (filed?.framing === undefined || filed.box === null) return null
+  const space = filed.frame ?? filed.box
+  const [dx, dy] = [filed.box.x - space.x, filed.box.y - space.y]
+  const members = filed.framing.children.flatMap((child) => filedMember(state, child, dx, dy))
+  return { backdrop: filed.framing.backdrop, box: filed.box, members }
+}
+
 export function frameMembers(state: Indexed, node: ElementId): readonly Member[] {
   const tree = treeOf(state)
-  const made = tree.made.get(node)
+  const source = frameSource(state, node)
   return (tree.flow.get(node) ?? []).flatMap((child) => {
     if (tree.parent.get(child) !== node || elementGone(state, child)) return []
-    const member = tree.joined.get(child) ?? made?.members.find((each) => each.node === child)
+    const member = tree.joined.get(child) ?? source?.members.find((each) => each.node === child)
     return member === undefined ? [] : [member]
   })
 }
 
 export function frameBackdrop(state: Indexed, node: ElementId): ElementId | null {
-  const backdrop = madeGroup(state, node)?.backdrop?.node
+  const backdrop = frameSource(state, node)?.backdrop
   return backdrop === undefined || groupDissolved(state, node) || elementGone(state, node) ? null : backdrop
 }
 
@@ -322,7 +342,7 @@ function ungroupRefusal(state: Indexed, command: ElementUngroup): SlideRefusal |
 
 function regroupRefusal(state: Indexed, command: ElementRegroup): SlideRefusal | null {
   if (!groupDissolved(state, command.node)) return "dead"
-  const backdrop = madeGroup(state, command.node)?.backdrop?.node
+  const backdrop = frameSource(state, command.node)?.backdrop
   for (const child of formerChildren(state, command.node)) {
     if (child === backdrop) continue
     if (elementGone(state, child)) return "dead"
@@ -333,7 +353,7 @@ function regroupRefusal(state: Indexed, command: ElementRegroup): SlideRefusal |
 
 function backdropOf(state: Indexed, node: ElementId): boolean {
   const parent = groupParent(state, node)
-  return typeof parent === "string" && madeGroup(state, parent)?.backdrop?.node === node
+  return typeof parent === "string" && frameSource(state, parent)?.backdrop === node
 }
 
 function placeRefusal(state: Indexed, command: ElementJoin): SlideRefusal | null {

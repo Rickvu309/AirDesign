@@ -35,6 +35,7 @@ import { rebasedChange } from "@/design/rebase"
 import { chosenFill } from "@/design/fill-image"
 import { deviceScope } from "@/design/trait-edit"
 import { framePanel } from "@/design/frame-panel"
+import { indexedRegister } from "@/indexed-register"
 import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
 import { SlideSurface } from "@/editor/slide-design-tabs"
@@ -90,7 +91,7 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
   const design = nodeDesign(deck, node)
   const register = deck.shown.shownRegister.current
   if (design === null || design.model.kind !== "frame" || register === null) return design
-  const layout = readLayout(register, node)
+  const layout = readLayout(indexedRegister(deck.shown.shownParts.current, register), node)
   const backdrop = layout === null ? null : nodeDesign(deck, layout.backdrop)
   if (layout === null || backdrop === null) return design
   return { view: design.view, model: framePanel(design.model, backdrop.model, layout.flow !== "none") }

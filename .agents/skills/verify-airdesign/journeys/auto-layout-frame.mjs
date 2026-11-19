@@ -130,6 +130,8 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect(element(frame.split(".")[1])).toHaveCount(1)
   await holds(laid)
+  await element(4).click()
+  await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
   await capture("reimported")
 
   await page.goto(`/deck/${deck}`)
@@ -186,6 +188,6 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await capture("child-deleted")
 
   note(
-    `A rectangle and an ellipse, chosen with Shift+click, became an auto layout frame with Shift+A: the ellipse moved to sit beside the rectangle at the guessed gap, top aligned, and the panel read Auto layout frame with Remove auto layout. A solid fill landed on the frame's backdrop (shape ${backdrop}) without moving either shape; a click on the backdrop selected the frame. Remove auto layout turned the title to Frame with nothing moving, and its Undo brought auto layout back. A reload kept every place, the export ${path.basename(exported)} re-imported with the group where it was, Undo fill then Undo add auto layout put both shapes back where they started with the backdrop gone, and Redo brought the frame back laid out, before the reload. Back on the deck, Remove auto layout, a second click on the ellipse selected it inside the frame, and a drag moved it 40 px left on its own, stored relative to the frame; Shift+A on the frame laid it back in the row. A triangle dragged between the two children joined the row there (an element-join before the ellipse), and Delete on it, chosen inside the frame, closed the row up again.`,
+    `A rectangle and an ellipse, chosen with Shift+click, became an auto layout frame with Shift+A: the ellipse moved to sit beside the rectangle at the guessed gap, top aligned, and the panel read Auto layout frame with Remove auto layout. A solid fill landed on the frame's backdrop (shape ${backdrop}) without moving either shape; a click on the backdrop selected the frame. Remove auto layout turned the title to Frame with nothing moving, and its Undo brought auto layout back. A reload kept every place, the export ${path.basename(exported)} re-imported as the same auto layout frame (its PowerPoint tag read back), Undo fill then Undo add auto layout put both shapes back where they started with the backdrop gone, and Redo brought the frame back laid out, before the reload. Back on the deck, Remove auto layout, a second click on the ellipse selected it inside the frame, and a drag moved it 40 px left on its own, stored relative to the frame; Shift+A on the frame laid it back in the row. A triangle dragged between the two children joined the row there (an element-join before the ellipse), and Delete on it, chosen inside the frame, closed the row up again.`,
   )
 }

@@ -268,7 +268,7 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 18,
+      stamp: 19,
       keys: {
         page: [
           "format",
@@ -307,6 +307,7 @@ describe("index format", () => {
           "placed",
           "group",
           "frame",
+          "framing",
           "link",
         ],
         design: designKeys,

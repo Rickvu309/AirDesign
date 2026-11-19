@@ -5,6 +5,7 @@ import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import {
   frameBackdrop,
   frameMembers,
+  frameSource,
   groupBounds,
   groupChildren,
   groupFrame,
@@ -95,6 +96,7 @@ export function placeOf(register: Register, node: ElementId): Place | null {
       parent === undefined
         ? undefined
         : (frameMembers(register, parent).find((m) => m.node === node) ??
+          frameSource(register, parent)?.members.find((m) => m.node === node) ??
           madeGroup(register, parent)?.members.find((m) => m.node === node))
     if (member !== undefined) return memberPlace(member)
     if (opening?.box === null || opening?.box === undefined) return null
@@ -185,8 +187,8 @@ export type Freed = "laid" | "made"
 
 function framedPlace(register: Register, node: ElementId, child: ElementId, place: Place, freed: Freed): Place | null {
   const view = readLayout(register, node)
-  const group = madeGroup(register, node)
-  const made = group?.element.box
+  const group = frameSource(register, node)
+  const made = group?.box
   if (view === null || made === undefined || made === null) return null
   const wrapped = group?.members.find((member) => member.node === child)
   const kept = wrapped !== undefined && frameMembers(register, node).includes(wrapped)
