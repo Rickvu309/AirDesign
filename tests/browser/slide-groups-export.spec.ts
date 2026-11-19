@@ -12,7 +12,7 @@ test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 const partOne = "Part 1: Basic Principles of Heat Pump Operation"
 const partTwo = "Part 2: System Design Options/Considerations"
 const handle = (page: Page, group: number) =>
-  page.getByRole("button", { name: slideListCopy.moveRow(group), exact: true })
+  page.getByRole("button", { name: slideListCopy.moveGroup(group), exact: true })
 const addBelow = (page: Page, group: number) =>
   page.getByRole("button", { name: slideListCopy.addBelow(group), exact: true })
 
@@ -79,7 +79,7 @@ test("dragging a slide group's first slide to its third line keeps one group and
   await expect(groups.nth(1)).toHaveAccessibleName(partOne)
   await expect(groups.nth(2)).toHaveAccessibleName(new RegExp(`^${partTwo}`))
   await expect(groups.nth(3)).toHaveAccessibleName("Appendices")
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
 
   const file = testInfo.outputPath("first-slide-later.pptx")
   await savedExport(page, file)

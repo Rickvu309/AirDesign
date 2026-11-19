@@ -1,11 +1,11 @@
 import type { SlideId } from "@airdesign/document"
 import { useLayoutEffect, useRef, type CSSProperties, type PointerEvent, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { gridRowHandle } from "@/editor/grid-viewport"
+import { gridGroupHandle } from "@/editor/grid-viewport"
 import { gridIndices, type GridMoveSide } from "@/editor/grid-drop"
 import { gridCommand } from "@/editor/editor-grid-keys"
 
-export function GridRowFrame({
+export function GridGroupFrame({
   start,
   scale,
   blocked,
@@ -24,11 +24,11 @@ export function GridRowFrame({
 }) {
   return (
     <div
-      data-grid-row-frame
-      data-grid-row={start}
-      data-row-hover={blocked ? undefined : (hover ?? undefined)}
-      data-row-blocked={blocked ? "" : undefined}
-      data-row-tint={tint ? "" : undefined}
+      data-grid-group-frame
+      data-grid-group={start}
+      data-group-hover={blocked ? undefined : (hover ?? undefined)}
+      data-group-blocked={blocked ? "" : undefined}
+      data-group-tint={tint ? "" : undefined}
       className="relative"
       style={style}
     >
@@ -40,7 +40,7 @@ export function GridRowFrame({
   )
 }
 
-export function GridRowHandle({
+export function GridGroupHandle({
   number,
   scale,
   height,
@@ -60,13 +60,13 @@ export function GridRowHandle({
   return (
     <button
       type="button"
-      data-row-handle
-      aria-label={slideListCopy.moveRow(number)}
-      aria-keyshortcuts={slideListCopy.rowKeys}
-      disabled={blocked || height * scale < gridRowHandle.minimumHeight}
+      data-group-handle
+      aria-label={slideListCopy.moveGroup(number)}
+      aria-keyshortcuts={slideListCopy.groupKeys}
+      disabled={blocked || height * scale < gridGroupHandle.minimumHeight}
       style={{
-        left: -gridRowHandle.offset / scale,
-        width: gridRowHandle.width,
+        left: -gridGroupHandle.offset / scale,
+        width: gridGroupHandle.width,
         top: center === undefined ? `calc(100% - ${height / 2}px)` : center,
         transform: `scale(${1 / scale}) translate(-50%, -50%)`,
         transformOrigin: "0 0",
@@ -86,7 +86,7 @@ export function GridRowHandle({
         onMove(command)
       }}
     >
-      <span data-row-grip aria-hidden="true" className="flex items-center justify-center rounded-full">
+      <span data-group-grip aria-hidden="true" className="flex items-center justify-center rounded-full">
         <svg
           width="12"
           height="16"
@@ -103,23 +103,23 @@ export function GridRowHandle({
   )
 }
 
-export function moveGridRow(
-  rows: readonly { readonly start: number; readonly end: number }[],
+export function moveGridGroup(
+  groups: readonly { readonly start: number; readonly end: number }[],
   number: number,
   direction: "earlier" | "later",
   move: (held: readonly number[], at: number, side: GridMoveSide) => void,
 ) {
-  const row = rows[number]
+  const group = groups[number]
   const target = number + (direction === "earlier" ? -1 : 1)
-  const next = rows[target]
-  if (row === undefined || next === undefined) return
+  const next = groups[target]
+  if (group === undefined || next === undefined) return
   const at = direction === "earlier" ? next.start : next.end
-  move(gridIndices(row), at, "keep")
+  move(gridIndices(group), at, "keep")
 }
 
-export function useGridRowFocus(
+export function useGridGroupFocus(
   list: RefObject<HTMLDivElement | null>,
-  rows: readonly { readonly start: number }[],
+  groups: readonly { readonly start: number }[],
   ids: readonly SlideId[],
 ) {
   const pending = useRef<{ readonly head: SlideId; readonly to: number; readonly order: string } | null>(null)
@@ -128,29 +128,29 @@ export function useGridRowFocus(
     const wanted = pending.current
     if (wanted === null || order === wanted.order) return
     pending.current = null
-    if (ids[rows[wanted.to]?.start ?? -1] !== wanted.head) return
-    const handle = list.current?.querySelectorAll<HTMLButtonElement>("[data-row-handle]")[wanted.to]
+    if (ids[groups[wanted.to]?.start ?? -1] !== wanted.head) return
+    const handle = list.current?.querySelectorAll<HTMLButtonElement>("[data-group-handle]")[wanted.to]
     handle?.focus({ preventScroll: true, focusVisible: true })
-  }, [list, rows, ids, order])
+  }, [list, groups, ids, order])
   return (held: readonly number[], at: number) => {
     const head = ids[held[0] ?? -1]
     if (head === undefined) return
-    pending.current = { head, to: rows.filter((row) => row.start < at && row.start !== held[0]).length, order }
+    pending.current = { head, to: groups.filter((group) => group.start < at && group.start !== held[0]).length, order }
   }
 }
 
 export function gridMoveMessage(
-  rows: readonly { readonly start: number }[],
+  groups: readonly { readonly start: number }[],
   held: readonly number[],
   at: number,
-  row: boolean,
+  group: boolean,
 ): string {
   const first = at - held.filter((index) => index < at).length
-  if (!row)
+  if (!group)
     return held.length === 1
       ? slideListCopy.moved((held[0] ?? first) + 1, first + 1)
       : slideListCopy.movedSeveral(held.length, first + 1)
-  const from = rows.findIndex((range) => range.start === held[0])
-  const to = rows.filter((range) => range.start < at && range.start !== held[0]).length
-  return slideListCopy.rowMoved(from + 1, to + 1)
+  const from = groups.findIndex((range) => range.start === held[0])
+  const to = groups.filter((range) => range.start < at && range.start !== held[0]).length
+  return slideListCopy.groupMoved(from + 1, to + 1)
 }

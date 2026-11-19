@@ -16,7 +16,7 @@ An opened deck shows its current slide as a canvas with the deck's own aspect ra
 - `paint-device` a deck this browser opened before paints from the device copy before the server answers. See `keep-typed-text.md`.
 - `paint-fonts` Calibri, Cambria, Arial, Helvetica and Times New Roman fall back to Carlito, Caladea, Arimo and Tinos, which have the same widths, and a single line is 1.2 times the size, so lines break where PowerPoint breaks them.
 - `paint-prompts` an empty placeholder shows its prompt, such as `Click to add title` or `Click to add subtitle`, in `[data-placeholder-prompt]` with a dashed outline. Thumbnails show no prompts.
-- `paint-sections` a deck with sections lists `[data-section-head]` headings, each named from the PowerPoint, above its slides, and numbers the slides straight through. A heading collapses its section to one row with the range of its slides, such as `1 to 2` and opens again; it opens by itself for the slide in view. `scripts/pptx-fixtures/sections-before.pptx` has two sections, `Opening` and `Numbers`; `tests/browser/slide-sections.spec.ts` proves the rest.
+- `paint-sections` a deck with sections lists `[data-group-head]` headings, each named from the PowerPoint, above its slides, and numbers the slides straight through. A heading collapses its section to one row with the range of its slides, such as `1 to 2` and opens again; it opens by itself for the slide in view. `scripts/pptx-fixtures/sections-before.pptx` has two sections, `Opening` and `Numbers`; `tests/browser/slide-sections.spec.ts` proves the rest.
 
 ## How to get to it (user POV)
 

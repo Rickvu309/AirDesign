@@ -233,7 +233,7 @@ function turnCommands(
     const turn: GridTurn = {
       spots: undoable.spots.map((step) => ({ id: step.id, ...inverse(step) })),
       heads: undoable.heads.map((step) => ({ id: step.id, ...inverse(step) })),
-      rows: from === "before" ? undoable.rowsBefore : undoable.rowsAfter,
+      rows: from === "before" ? undoable.groupsBefore : undoable.groupsAfter,
     }
     return landing(register, {
       command: "slide",
@@ -294,7 +294,7 @@ function turnCommands(
     edit: {
       slide: "grid-turn",
       grid: planned.grid,
-      turn: { spots: planned.spots, heads: planned.heads, rows: planned.rowsBefore },
+      turn: { spots: planned.spots, heads: planned.heads, rows: planned.groupsBefore },
     },
   })
 }

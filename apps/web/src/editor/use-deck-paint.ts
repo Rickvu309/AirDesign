@@ -4,7 +4,7 @@ import { boundTargets, type ReadShape } from "@airdesign/pptx"
 import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
-import type { StripSection } from "@/editor/slide-sidebar"
+import type { StripGroup } from "@/editor/slide-sidebar"
 import { type TextBox } from "@/commit-edit"
 import { paint, withFileFloors, type Painted } from "@/deck-paint"
 import { busyElements, liveRepaint } from "@/live-repaint"
@@ -39,7 +39,7 @@ export function useDeckPaint(
   const [entering, setEntering] = useState<Entering | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
-  const [sections, setSections] = useState<readonly StripSection[]>([])
+  const [groups, setSections] = useState<readonly StripGroup[]>([])
   const [current, setCurrent] = useState(0)
   const saySlide = useRef<(text: string) => void>(() => undefined)
 
@@ -73,7 +73,7 @@ export function useDeckPaint(
     }
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
-    setSections(next.sections)
+    setSections(next.groups)
     void pictureTool.store.load(id, register).then((more) => {
       if (more && structure.current === structureOf(framed, bound.current)) showRegister(shownRegister.current)
     })
@@ -105,7 +105,7 @@ export function useDeckPaint(
     setEntering,
     slideCount,
     layouts,
-    sections,
+    groups,
     current,
     setCurrent,
     showOpened,

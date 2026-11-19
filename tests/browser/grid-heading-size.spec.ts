@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
-import { entry, fixtures, manySlides, openFile, openGrid, rowNumbers } from "./slide-grid-deck"
+import { entry, fixtures, manySlides, openFile, openGrid, groupNumbers } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -27,9 +27,9 @@ async function openTwelve(page: Page) {
 
 test("twelve two-slide sections fit at 5% with a gap and no heading", async ({ page }) => {
   await openTwelve(page)
-  expect(await rowNumbers(page)).toHaveLength(12)
+  expect(await groupNumbers(page)).toHaveLength(12)
   await expect(readout(page)).toHaveText("5%")
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
   await expect(page.locator("[data-section-name]")).toHaveCount(0)
   const groups = page.locator("[data-slide-group]")
@@ -46,7 +46,7 @@ test("the heat-pump deck fits at 11% and a wrapped group's lines sit closer than
   await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
   await expect(readout(page)).toHaveText("11%")
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
   const groups = page.locator("[data-slide-group]")
   await expect(groups).toHaveCount(4)
@@ -78,13 +78,13 @@ test("six slides in two sections fit at 31%", async ({ page }) => {
   })
   await openGrid(page)
   await expect(readout(page)).toHaveText("31%")
-  expect(await rowNumbers(page)).toEqual([
+  expect(await groupNumbers(page)).toEqual([
     [1, 2, 3],
     [4, 5, 6],
   ])
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Opening")
   await expect(page.locator("[data-slide-group]").last()).toHaveAccessibleName("Results")
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
 })
 
 test("an unsectioned six-slide deck fits at 23% with four slides on the first line", async ({ page }) => {
@@ -95,7 +95,7 @@ test("an unsectioned six-slide deck fits at 23% with four slides on the first li
   })
   await openGrid(page)
   await expect(readout(page)).toHaveText("23%")
-  expect(await rowNumbers(page)).toEqual([[1, 2, 3, 4, 5, 6]])
+  expect(await groupNumbers(page)).toEqual([[1, 2, 3, 4, 5, 6]])
   const tops = await Promise.all(
     [1, 2, 3, 4, 5, 6].map(async (number) => Math.round((await entry(page, number).boundingBox())!.y)),
   )
@@ -103,5 +103,5 @@ test("an unsectioned six-slide deck fits at 23% with four slides on the first li
   expect(new Set(tops.slice(4)).size).toBe(1)
   expect(tops[4]).toBeGreaterThan(tops[0]!)
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
 })

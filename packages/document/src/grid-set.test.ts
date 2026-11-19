@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import {
   decide,
-  gridRows,
+  gridGroups,
   limits,
   openRegister,
   readSlideState,
@@ -38,14 +38,14 @@ function returnToOpening(edit: SlideCommand, landed: Register) {
   const command = turn.commands[0]!
   const undone = decide(landed, command)
   if (undone.decision !== "apply") throw new Error(undone.code)
-  expect(gridRows(undone.register)).toEqual(whole)
+  expect(gridGroups(undone.register)).toEqual(whole)
 }
 
-it("deletes row heads and the rest of a selected row in one reversible edit", () => {
+it("deletes slide group heads and the rest of a selected slide group in one reversible edit", () => {
   const edit = read({ slide: "remove-many", grid: 1, ids: opening(1, 5, 6, 7) })
   const landed = land(first, edit)
   expect(landed.order).toEqual([edit])
-  expect(gridRows(landed)).toEqual([opening(2, 3, 4)])
+  expect(gridGroups(landed)).toEqual([opening(2, 3, 4)])
   returnToOpening(edit, landed)
 })
 
@@ -60,7 +60,7 @@ it("duplicates a selection in presentation order after its last slide in one rev
   })
   const landed = land(first, edit)
   expect(landed.order).toEqual([edit])
-  expect(gridRows(landed)).toEqual([opening(1, 2, 3, 4), opening(5, 6, 8, 9, 7)])
+  expect(gridGroups(landed)).toEqual([opening(1, 2, 3, 4), opening(5, 6, 8, 9, 7)])
   returnToOpening(edit, landed)
 })
 
@@ -96,5 +96,5 @@ it("refuses to undo the whole duplicate after another edit moves one copy", () =
   const copied = land(first, edit)
   const moved = land(copied, read({ slide: "move", grid: 1, id: "8", after: null, row: "same" }))
   expect(undoOf(moved, undoable)).toMatchObject({ ok: false })
-  expect(gridRows(moved)).toEqual([opening(8, 1, 2, 3, 4), opening(5, 6, 9, 7)])
+  expect(gridGroups(moved)).toEqual([opening(8, 1, 2, 3, 4), opening(5, 6, 9, 7)])
 })

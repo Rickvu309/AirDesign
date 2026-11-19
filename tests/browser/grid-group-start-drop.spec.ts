@@ -1,16 +1,16 @@
 import { expect } from "@playwright/test"
 import { forward, test } from "./api-stack"
 import { boxOf, grab, hover, openSaved, panOf, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, openGrid, rowNumbers, settled, rowSizes } from "./slide-grid-deck"
+import { entry, openGrid, groupNumbers, settled, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("row-start drops follow the pointer, save across tabs and reload, and undo once", async ({
+test("slide group start drops follow the pointer, save across tabs and reload, and undo once", async ({
   page,
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
+  const saved = await openSaved(page, context, stack, 8, groupSizes(8))
   const before = await saved.rows()
   expect(before).toEqual([saved.ids.slice(0, 4), saved.ids.slice(4)])
   await zoomTo(page, 20)
@@ -37,7 +37,7 @@ test("row-start drops follow the pointer, save across tabs and reload, and undo 
   await settled(second)
   await openGrid(second)
   await expect
-    .poll(() => rowNumbers(second))
+    .poll(() => groupNumbers(second))
     .toEqual([
       [1, 2, 3, 4],
       [5, 6, 7, 8],
@@ -52,7 +52,7 @@ test("row-start drops follow the pointer, save across tabs and reload, and undo 
     await expect.poll(saved.rows).toEqual([saved.ids.slice(0, 3), saved.ids.slice(3)])
     expect(await saved.order()).toEqual(saved.ids)
     await expect
-      .poll(() => rowNumbers(second))
+      .poll(() => groupNumbers(second))
       .toEqual([
         [1, 2, 3],
         [4, 5, 6, 7, 8],
@@ -61,7 +61,7 @@ test("row-start drops follow the pointer, save across tabs and reload, and undo 
     await settled(page)
     await openGrid(page)
     await expect
-      .poll(() => rowNumbers(page))
+      .poll(() => groupNumbers(page))
       .toEqual([
         [1, 2, 3],
         [4, 5, 6, 7, 8],

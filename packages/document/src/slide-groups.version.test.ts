@@ -3,7 +3,7 @@ import { appendIndex } from "./deck-index.js"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId, type SlideId } from "./element-id.js"
 import { format } from "./format.js"
-import { gridCommandVersion, gridRows } from "./grid-order.js"
+import { gridCommandVersion, gridGroups } from "./grid-order.js"
 import { slideUndoable, undoOf } from "./person-undo.js"
 import { presentSlides, readSlideState, type SlideCommand } from "./slide-order.js"
 import { slideGroups } from "./slide-groups.js"
@@ -28,7 +28,7 @@ function land(register: Register, ...edits: readonly SlideCommand[]): Register {
 function seen(register: Register) {
   return {
     order: presentSlides(register).map((spot) => [spot.id, spot.key]),
-    rows: gridRows(register),
+    rows: gridGroups(register),
     groups: slideGroups(register),
   }
 }
@@ -114,7 +114,7 @@ describe("an older command folded after a version three command", () => {
     })
   })
 
-  it("lands an undo planned against rows whose heads still match, and refuses one whose heads do not", () => {
+  it("lands an undo planned against slide groups whose heads still match, and refuses one whose heads do not", () => {
     const start = land(opened(deck(12), []), { slide: "remove", grid: 1, id: id(266) })
     const plan = (register: Register, edit: SlideCommand) => {
       const undoable = slideUndoable(register, register.file, edit)
@@ -129,7 +129,7 @@ describe("an older command folded after a version three command", () => {
     const undone = decide(kept, added.undo)
     if (undone.decision !== "apply") throw new Error(undone.code)
     expect(presentSlides(undone.register).some((spot) => spot.id === "300")).toBe(false)
-    expect(gridRows(undone.register).map((row) => row.map(Number))).toEqual([
+    expect(gridGroups(undone.register).map((row) => row.map(Number))).toEqual([
       [257, 258, 259, 260],
       [261, 262, 263, 264, 265, 267],
     ])
@@ -160,8 +160,8 @@ describe("two tabs: an old tab's offline edits reach a deck a new tab regrouped"
     return { codes, current }
   }
 
-  it("lands what keeps its meaning and refuses a new row once the deck is regrouped", () => {
-    expect(gridRows(land(server, ...offline)).map((row) => row.map(Number))).toEqual([
+  it("lands what keeps its meaning and refuses a new slide group once the deck is regrouped", () => {
+    expect(gridGroups(land(server, ...offline)).map((row) => row.map(Number))).toEqual([
       [256, 257, 258, 300, 259],
       [260, 261, 262, 263],
       [301],
@@ -177,7 +177,7 @@ describe("two tabs: an old tab's offline edits reach a deck a new tab regrouped"
     expect(slideGroups({ ...decoded, sectionStarts: [] })).toEqual(slideGroups(current))
   })
 
-  it("keeps the old tab's new row as a slide group when its edits arrive first", () => {
+  it("keeps the old tab's new slide group as a slide group when its edits arrive first", () => {
     const { codes, current } = answers(server, [...offline, regroup])
     expect(codes).toEqual(["apply", "apply", "apply", "apply"])
     expect(slideGroups(current).map((group) => [group.key, ...group.slides.map(Number)])).toEqual([
@@ -197,7 +197,7 @@ describe("frozen recorded logs", () => {
     elements: [],
   }
 
-  it("still folds the recorded version one log to the same rows and reads its slide groups", () => {
+  it("still folds the recorded version one log to the same slide groups and reads its slide groups", () => {
     const state = readSlideState({
       file: ["256", "257", "258", "259", "260", "261"],
       order: [{ id: "257", grid: 1, slide: "remove" }],
@@ -209,8 +209,8 @@ describe("frozen recorded logs", () => {
       ["256", "258", "259"],
       ["260", "261"],
     ]
-    expect(gridRows(state)).toEqual(frozen)
-    expect(gridRows({ ...state, index: index.index })).toEqual(frozen)
+    expect(gridGroups(state)).toEqual(frozen)
+    expect(gridGroups({ ...state, index: index.index })).toEqual(frozen)
     expect(slideGroups(state).map((group) => [group.key, ...group.slides])).toEqual([
       ["f0", "256", "258", "259", "260", "261"],
     ])
@@ -220,7 +220,7 @@ describe("frozen recorded logs", () => {
     ])
   })
 
-  it("still folds the recorded version two log to the same rows and keeps its packed sections", () => {
+  it("still folds the recorded version two log to the same slide groups and keeps its packed sections", () => {
     const state = readSlideState({
       file: ["256", "257", "258", "259", "260", "261"],
       sectionStarts: ["256", "257", "258", "259"],
@@ -230,7 +230,7 @@ describe("frozen recorded logs", () => {
     const index = appendIndex(undefined, { ...page, format, sectionStarts: [id(256), id(257), id(258), id(259)] })
     if (!index.ok) throw new Error(index.refusal)
     const indexed = { ...state, index: index.index }
-    expect(gridRows(indexed)).toEqual([
+    expect(gridGroups(indexed)).toEqual([
       ["256", "258"],
       ["259", "260", "261"],
     ])

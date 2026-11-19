@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
-import { openRowDeck } from "./grid-row-add.mjs"
+import { openGroupDeck } from "./grid-group-add.mjs"
 
 export async function selectSlides(kit) {
-  const account = await openRowDeck(kit, 7)
+  const account = await openGroupDeck(kit, 7)
   const number = kit.page.locator("[data-slide-number]")
   await number.nth(0).click()
   await number.nth(2).click({ modifiers: ["Shift"] })

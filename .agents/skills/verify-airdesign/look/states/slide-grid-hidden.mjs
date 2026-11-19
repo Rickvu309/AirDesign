@@ -1,8 +1,8 @@
 import { slideListCopy } from "../../bin/product-copy.mjs"
-import { openRowDeck } from "../grid-row-add.mjs"
+import { openGroupDeck } from "../grid-group-add.mjs"
 
 export async function hiddenGrid(kit) {
-  const account = await openRowDeck(kit, 5)
+  const account = await openGroupDeck(kit, 5)
   const { page, expect } = kit
   const numbers = page.locator("[data-slide-number]")
   await numbers.nth(1).click()

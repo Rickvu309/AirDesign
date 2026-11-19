@@ -54,17 +54,17 @@ export function gridAnchor<Id>(sequence: readonly Id[], held: readonly number[],
   )
 }
 
-export function gridDrop(rows: readonly GridRange[], held: readonly number[], at: number, side: GridMoveSide) {
-  const before = rows.map(gridIndices)
+export function gridDrop(groups: readonly GridRange[], held: readonly number[], at: number, side: GridMoveSide) {
+  const before = groups.map(gridIndices)
   const anchor = gridAnchor(before.flat(), held, at, side)
-  const destination = side === "before" ? rows.find((row) => row.start === at) : undefined
+  const destination = side === "before" ? groups.find((group) => group.start === at) : undefined
   if (side === "before" && (destination === undefined || anchor === null || anchor >= destination.end)) return null
-  const next = gridMovePlacement(before, held, anchor, side).rows
+  const next = gridMovePlacement(before, held, anchor, side).groups
   if (
     next.length === before.length &&
     next.every(
-      (row, number) =>
-        row.length === before[number]?.length && row.every((index, offset) => index === before[number]?.[offset]),
+      (group, number) =>
+        group.length === before[number]?.length && group.every((index, offset) => index === before[number]?.[offset]),
     )
   )
     return null
@@ -95,10 +95,10 @@ export function slotUnder(
   x: number,
   y: number,
   slots: readonly GridSlot[],
-  rows: readonly GridRange[],
+  groups: readonly GridRange[],
 ): GridSlot | undefined {
   return slots.find((slot) => {
-    const last = rows.some((row) => row.end === slot.index + 1)
+    const last = groups.some((group) => group.end === slot.index + 1)
     const gap = last ? gridSpacing(slot.width, slot.height).column : halfGap
     return (
       x >= slot.left - halfGap &&
@@ -109,44 +109,44 @@ export function slotUnder(
   })
 }
 
-export const terminalRowBand = 80
+export const terminalGroupBand = 80
 
-export function rowPan(delta: number, pointerY: number, firstTop: number, lastBottom: number): number {
-  const clearance = terminalRowBand / 2
+export function groupPan(delta: number, pointerY: number, firstTop: number, lastBottom: number): number {
+  const clearance = terminalGroupBand / 2
   return delta > 0
     ? Math.min(delta, Math.max(0, pointerY + clearance - firstTop))
     : Math.max(delta, Math.min(0, pointerY - clearance - lastBottom))
 }
 
-function rangeOf(rows: readonly GridRange[], index: number): GridRange | undefined {
-  return rows.find((row) => index >= row.start && index < row.end)
+function rangeOf(groups: readonly GridRange[], index: number): GridRange | undefined {
+  return groups.find((group) => index >= group.start && index < group.end)
 }
 
 export function dropAt(
-  rows: readonly GridRange[],
+  groups: readonly GridRange[],
   held: readonly number[],
   slot: number,
   at: number,
 ): { readonly at: number; readonly side: GridMoveSide } {
-  const band = rangeOf(rows, slot)
+  const band = rangeOf(groups, slot)
   return band !== undefined && gridIndices({ start: band.start, end: at }).every((index) => held.includes(index))
     ? { at: band.start, side: "before" }
     : { at, side: "same" }
 }
 
-export function liveTarget(rows: readonly GridRange[], from: number, slot: number, at: number): number | null {
-  const home = rangeOf(rows, from)
-  return home !== undefined && home === rangeOf(rows, slot) && at < home.end ? dropTarget(from, at) : null
+export function liveTarget(groups: readonly GridRange[], from: number, slot: number, at: number): number | null {
+  const home = rangeOf(groups, from)
+  return home !== undefined && home === rangeOf(groups, slot) && at < home.end ? dropTarget(from, at) : null
 }
 
 export type GridBand = GridRange & { readonly top: number; readonly bottom: number }
 
-export function rowDrop(
+export function groupDrop(
   bands: readonly GridBand[],
   y: number,
   scale: number,
 ): { readonly at: number; readonly top: number } | null {
-  const reach = terminalRowBand / scale
+  const reach = terminalGroupBand / scale
   const next = bands.find((band, i) => y < band.top && y >= (bands[i - 1]?.bottom ?? band.top - reach))
   const previous = next === undefined ? undefined : bands[bands.indexOf(next) - 1]
   if (next !== undefined)
@@ -157,7 +157,7 @@ export function rowDrop(
     : null
 }
 
-export function moveBelowPlace(rows: readonly GridRange[], held: readonly number[], index: number): number | null {
-  const row = rangeOf(rows, index)
-  return row === undefined || gridDrop(rows, held, row.end, "new") === null ? null : row.end
+export function moveBelowPlace(groups: readonly GridRange[], held: readonly number[], index: number): number | null {
+  const group = rangeOf(groups, index)
+  return group === undefined || gridDrop(groups, held, group.end, "new") === null ? null : group.end
 }

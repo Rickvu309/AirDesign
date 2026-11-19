@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { entry, fifty, manySlides, openFile, openGrid, rowNumbers, settled, rowSizes } from "./slide-grid-deck"
+import { entry, fifty, manySlides, openFile, openGrid, groupNumbers, settled, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -17,7 +17,7 @@ async function ten(page: Page) {
   await openFile(page, {
     name: "ten.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(10, rowSizes(10)),
+    buffer: await manySlides(10, groupSizes(10)),
   })
   await openGrid(page)
 }
@@ -34,7 +34,7 @@ test("a one-slide deck keeps the below control within the fitted viewport", asyn
   await openFile(page, {
     name: "one.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(1, rowSizes(1)),
+    buffer: await manySlides(1, groupSizes(1)),
   })
   await openGrid(page)
   await expect(below(page, 1)).toBeInViewport({ ratio: 1 })
@@ -53,10 +53,10 @@ test("the below plus previews an insertion line without moving any slide", async
   const second = (await entry(page, 2).boundingBox())!
   await page.mouse.move(second.x + second.width / 2, button.y + button.height / 2)
   await expect(below(page, 1)).toHaveCSS("opacity", "0")
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(0)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(0)
   await below(page, 1).hover()
   expect(await boxes()).toEqual(before)
-  const line = page.locator("[data-row-insertion-line]:visible")
+  const line = page.locator("[data-group-insertion-line]:visible")
   await expect(line).toHaveCount(1)
   const preview = await line.boundingBox()
   const first = await entry(page, 1).boundingBox()
@@ -69,18 +69,18 @@ test("the below plus previews an insertion line without moving any slide", async
   expect(preview.y).toBeLessThan(next.y)
   await below(page, 1).click()
   await expect(slides).toHaveCount(11)
-  expect(await rowNumbers(page)).toEqual([[1, 2, 3, 4], [5], [6, 7, 8, 9], [10, 11]])
+  expect(await groupNumbers(page)).toEqual([[1, 2, 3, 4], [5], [6, 7, 8, 9], [10, 11]])
   await expect(entry(page, 5)).toHaveAttribute("aria-current", "true")
 })
 
-test("the last row previews a full cell when there is space below", async ({ page }) => {
+test("the last slide group previews a full cell when there is space below", async ({ page }) => {
   await ten(page)
   await zoom(page, 25)
   await page.locator("[data-grid-viewport]").hover()
   await page.mouse.wheel(0, 375)
-  await expect(page.locator("[data-row-placeholder]")).toBeInViewport({ ratio: 1 })
+  await expect(page.locator("[data-group-placeholder]")).toBeInViewport({ ratio: 1 })
   await below(page, 3).hover()
-  const placeholder = page.locator("[data-row-placeholder]:visible")
+  const placeholder = page.locator("[data-group-placeholder]:visible")
   await expect(placeholder).toHaveCount(1)
   const card = await entry(page, 9).boundingBox()
   const ghost = await placeholder.boundingBox()
@@ -97,27 +97,27 @@ test("the last row previews a full cell when there is space below", async ({ pag
   await expect(placeholder).toBeInViewport({ ratio: 1 })
 })
 
-test("a final-row add keeps fit zoom then survives undo redo and reload", async ({ page }) => {
+test("a final slide group add keeps fit zoom then survives undo redo and reload", async ({ page }) => {
   await ten(page)
   const percent = await page.locator("[data-zoom-readout]").textContent()
   await below(page, 3).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   const added = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10], [11]]
-  expect(await rowNumbers(page)).toEqual(added)
+  expect(await groupNumbers(page)).toEqual(added)
   await expect(page.locator("[data-zoom-readout]")).toHaveText(percent ?? "")
   await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rowNumbers(page)).toEqual(original)
+  expect(await groupNumbers(page)).toEqual(original)
   await page.getByRole("button", { name: undoCopy.redoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   await zoom(page, 50)
-  expect(await rowNumbers(page)).toEqual(added)
+  expect(await groupNumbers(page)).toEqual(added)
   await page.setViewportSize({ width: 1000, height: 800 })
-  expect(await rowNumbers(page)).toEqual(added)
+  expect(await groupNumbers(page)).toEqual(added)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  expect(await rowNumbers(page)).toEqual(added)
+  expect(await groupNumbers(page)).toEqual(added)
 })
 
 test("keyboard focus previews below and Escape returns to the originating slide", async ({ page }) => {
@@ -137,10 +137,10 @@ test("keyboard focus previews below and Escape returns to the originating slide"
   ).toEqual(before)
   await expect(below(page, 1)).toBeFocused()
   expect(await below(page, 1).evaluate((button) => getComputedStyle(button).outlineStyle)).not.toBe("none")
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(1)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(1)
   await page.keyboard.press("Escape")
   await expect(entry(page, 3)).toBeFocused()
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(0)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(0)
   await below(page, 1).focus()
   const view = await page.locator("[data-focus-edge]").getAttribute("style")
   await page.keyboard.press("ArrowDown")
@@ -154,11 +154,11 @@ test("keyboard focus previews below and Escape returns to the originating slide"
 test("below controls and the preview yield to Space pan and Hand mode", async ({ page }) => {
   await ten(page)
   await below(page, 1).hover()
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(1)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(1)
   await entry(page, 1).focus()
   await page.keyboard.down("Space")
   await expect(below(page, 1)).toBeHidden()
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(0)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(0)
   await page.keyboard.up("Space")
   await page.keyboard.press("h")
   await expect(below(page, 1)).toBeHidden()
@@ -171,15 +171,15 @@ test("a full deck removes every inline add and describes the limit in the top ba
   await openFile(page, {
     name: "fifty.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(fifty, rowSizes(fifty)),
+    buffer: await manySlides(fifty, groupSizes(fifty)),
   })
   await openGrid(page)
   await zoom(page, 25)
-  await expect(page.locator("[data-add-row], [data-add-gap]")).toHaveCount(0)
+  await expect(page.locator("[data-add-group], [data-add-gap]")).toHaveCount(0)
   const newSlide = page.getByRole("button", { name: slideListCopy.newSlide, exact: true })
   await expect(newSlide).toBeDisabled()
   await expect(newSlide).toHaveAccessibleDescription(slideListCopy.addLimit(fifty))
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(0)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(0)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(50)
 })
 
@@ -190,7 +190,7 @@ test("leaving text editing restores the below add and keeps the text edit", asyn
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
   await expect(text).toBeVisible()
   await text.fill("Changed before adding below")
-  await expect(page.locator("[data-add-row], [data-add-gap]")).toHaveCount(0)
+  await expect(page.locator("[data-add-group], [data-add-gap]")).toHaveCount(0)
   await entry(page, 2).click()
   await zoom(page, 25)
   await below(page, 1).click()
@@ -206,19 +206,22 @@ test("leaving text editing restores the below add and keeps the text edit", asyn
   await expect(entry(page, 5)).toContainText("Text in the new row")
 })
 
-test("an offline below add and undo keep the original rows after reconnect and reload", async ({ page, context }) => {
+test("an offline below add and undo keep the original slide groups after reconnect and reload", async ({
+  page,
+  context,
+}) => {
   await ten(page)
   await context.setOffline(true)
   await below(page, 1).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rowNumbers(page)).toEqual(original)
+  expect(await groupNumbers(page)).toEqual(original)
   await context.setOffline(false)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  expect(await rowNumbers(page)).toEqual(original)
+  expect(await groupNumbers(page)).toEqual(original)
 })
 
 test.describe("touch", () => {
@@ -227,7 +230,7 @@ test.describe("touch", () => {
     await ten(page)
     await zoom(page, 25)
     await entry(page, 1).tap()
-    await expect(page.locator("[data-add-row], [data-add-gap]")).toHaveCount(0)
+    await expect(page.locator("[data-add-group], [data-add-gap]")).toHaveCount(0)
     await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
     await expect(page.getByRole("button", { name: slideListCopy.newSlide, exact: true })).toBeEnabled()
   })

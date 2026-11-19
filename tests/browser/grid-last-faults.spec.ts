@@ -3,7 +3,7 @@ import { limits } from "../../packages/document/src/index.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test, type Stack } from "./api-stack"
 import { boxOf, canvas, hover, openSaved, panOf, roomOf, zoomTo, type Saved } from "./grid-reorder-deck"
-import { entry, fixtures, rowSizes } from "./slide-grid-deck"
+import { entry, fixtures, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -38,8 +38,12 @@ async function focusMeasure(page: Page) {
   return { ...focused, selected }
 }
 
-test("a drop with unchanged slide order saves new row membership and undoes once", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
+test("a drop with unchanged slide order saves new slide group membership and undoes once", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const saved = await openSaved(page, context, stack, 7, groupSizes(7))
   await addBelow(page).focus()
   await page.keyboard.press("Enter")
   await expect.poll(saved.rows).toHaveLength(3)
@@ -71,7 +75,7 @@ test("a drop with unchanged slide order saves new row membership and undoes once
 
 for (const target of ["element", "slide"] as const) {
   test(`Design keeps the working ${target} inside the canvas`, async ({ page, context, stack }) => {
-    await openSaved(page, context, stack, 7, rowSizes(7))
+    await openSaved(page, context, stack, 7, groupSizes(7))
     if (target === "element") {
       await entry(page, 1).press("Enter")
       await liveElement(page).click()
@@ -104,7 +108,7 @@ for (const target of ["element", "slide"] as const) {
 }
 
 test("five slide Undos and Redos focus the restored selection", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
+  const saved = await openSaved(page, context, stack, 7, groupSizes(7))
   const before = await saved.rows()
   const start = await revision(stack, saved)
   await entry(page, 1).focus()
@@ -140,7 +144,7 @@ test("five slide Undos and Redos focus the restored selection", async ({ page, c
 
 for (const path of [slideListCopy.deleteKey, "menu"] as const) {
   test(`last slide deletion explains the refusal via ${path}`, async ({ page, context, stack }) => {
-    const saved = await openSaved(page, context, stack, 1, rowSizes(1))
+    const saved = await openSaved(page, context, stack, 1, groupSizes(1))
     await entry(page, 1).focus()
     if (path === "menu") {
       await page.keyboard.press("ContextMenu")
@@ -151,16 +155,16 @@ for (const path of [slideListCopy.deleteKey, "menu"] as const) {
   })
 }
 
-test("context menu inserts relative to its slide and moves the selection into a new row at low zoom", async ({
+test("context menu inserts relative to its slide and moves the selection into a new slide group at low zoom", async ({
   page,
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
+  const saved = await openSaved(page, context, stack, 7, groupSizes(7))
   const before = await saved.rows()
   const start = await revision(stack, saved)
   await zoomTo(page, 8)
-  await expect(page.locator("[data-add-gap], [data-add-row]")).toHaveCount(0)
+  await expect(page.locator("[data-add-gap], [data-add-group]")).toHaveCount(0)
   await entry(page, 2).click({ button: "right" })
   await menuItem(page, menuAfter).click()
   await expect.poll(saved.order).toHaveLength(8)
@@ -190,7 +194,7 @@ test("context menu inserts relative to its slide and moves the selection into a 
 })
 
 test("context menu describes the slide limit at Fit", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, limits.slides, rowSizes(limits.slides))
+  const saved = await openSaved(page, context, stack, limits.slides, groupSizes(limits.slides))
   await entry(page, 1).press("ContextMenu")
   for (const name of [menuAfter, menuBelow]) {
     const item = menuItem(page, name)

@@ -1,19 +1,19 @@
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { expect, test, type Page } from "@playwright/test"
-import { entry, fixtures, manySlides, openFile, openGrid, rowNumbers, rowSizes, settled } from "./slide-grid-deck"
+import { entry, fixtures, manySlides, openFile, openGrid, groupNumbers, groupSizes, settled } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 async function openTen(page: Page) {
   await openFile(page, {
     name: "ten.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    buffer: await manySlides(10, rowSizes(10)),
+    buffer: await manySlides(10, groupSizes(10)),
   })
   await openGrid(page)
 }
-test("the eleventh slide keeps stored rows across zoom resize and reload", async ({ page }) => {
+test("the eleventh slide keeps stored slide groups across zoom resize and reload", async ({ page }) => {
   await openTen(page)
-  expect(await rowNumbers(page)).toEqual([
+  expect(await groupNumbers(page)).toEqual([
     [1, 2, 3, 4],
     [5, 6, 7, 8],
     [9, 10],
@@ -26,27 +26,27 @@ test("the eleventh slide keeps stored rows across zoom resize and reload", async
     [5, 6, 7, 8],
     [9, 10, 11],
   ]
-  expect(await rowNumbers(page)).toEqual(after)
+  expect(await groupNumbers(page)).toEqual(after)
   await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rowNumbers(page)).toEqual([
+  expect(await groupNumbers(page)).toEqual([
     [1, 2, 3, 4],
     [5, 6, 7, 8],
     [9, 10],
   ])
   await page.getByRole("button", { name: undoCopy.redoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
-  expect(await rowNumbers(page)).toEqual(after)
+  expect(await groupNumbers(page)).toEqual(after)
   await page.keyboard.press("ControlOrMeta+Equal")
-  expect(await rowNumbers(page)).toEqual(after)
+  expect(await groupNumbers(page)).toEqual(after)
   await page.setViewportSize({ width: 1000, height: 800 })
-  expect(await rowNumbers(page)).toEqual(after)
+  expect(await groupNumbers(page)).toEqual(after)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  expect(await rowNumbers(page)).toEqual(after)
+  expect(await groupNumbers(page)).toEqual(after)
 })
-test("Grid adds duplicates deletes moves and undoes with its row boundaries", async ({ page }) => {
+test("Grid adds duplicates deletes moves and undoes with its slide group boundaries", async ({ page }) => {
   await openTen(page)
   const original = [
     [1, 2, 3, 4],
@@ -56,36 +56,36 @@ test("Grid adds duplicates deletes moves and undoes with its row boundaries", as
   await entry(page, 4).focus()
   await page.keyboard.press("ControlOrMeta+d")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
-  expect(await rowNumbers(page)).toEqual([
+  expect(await groupNumbers(page)).toEqual([
     [1, 2, 3, 4, 5],
     [6, 7, 8, 9],
     [10, 11],
   ])
   await page.getByRole("button", { name: undoCopy.undoNamed.duplicate, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rowNumbers(page)).toEqual(original)
+  expect(await groupNumbers(page)).toEqual(original)
   await entry(page, 5).focus()
   await page.keyboard.press("Alt+ArrowUp")
   await expect
-    .poll(() => rowNumbers(page))
+    .poll(() => groupNumbers(page))
     .toEqual([
       [1, 2, 3, 4, 5],
       [6, 7, 8],
       [9, 10],
     ])
   await page.getByRole("button", { name: undoCopy.undoNamed.order, exact: true }).click()
-  await expect.poll(() => rowNumbers(page)).toEqual(original)
+  await expect.poll(() => groupNumbers(page)).toEqual(original)
   await entry(page, 5).focus()
   await page.keyboard.press("Delete")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(9)
-  expect(await rowNumbers(page)).toEqual([
+  expect(await groupNumbers(page)).toEqual([
     [1, 2, 3, 4],
     [5, 6, 7],
     [8, 9],
   ])
   await page.getByRole("button", { name: undoCopy.undoNamed.delete, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rowNumbers(page)).toEqual(original)
+  expect(await groupNumbers(page)).toEqual(original)
 })
 
 test("two named groups stay fully shown, with the second group below the first", async ({ page }) => {
@@ -95,11 +95,11 @@ test("two named groups stay fully shown, with the second group below the first",
     buffer: await manySlides(10, true),
   })
   await openGrid(page)
-  expect(await rowNumbers(page)).toEqual([
+  expect(await groupNumbers(page)).toEqual([
     [1, 2, 3, 4, 5],
     [6, 7, 8, 9, 10],
   ])
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Opening")
   await expect(page.locator("[data-slide-group]").last()).toHaveAccessibleName("Results")
   const first = await entry(page, 1).boundingBox()
@@ -113,7 +113,7 @@ test("two named groups stay fully shown, with the second group below the first",
 test("each heat-pump group is announced by its name and draws no heading", async ({ page }) => {
   await openFile(page, `${fixtures}/doe-heat-pumps.pptx`)
   await openGrid(page)
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
   const groups = page.locator("[data-slide-group]")
   await expect(groups).toHaveCount(4)

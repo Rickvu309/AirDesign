@@ -1,13 +1,13 @@
 import { expect } from "@playwright/test"
-import { manySlides, rowNumbers, rowSizes } from "../../../../tests/browser/slide-grid-deck.ts"
+import { manySlides, groupNumbers, groupSizes } from "../../../../tests/browser/slide-grid-deck.ts"
 import { openDeck } from "./open-deck.mjs"
 
-export const belowRow = (page, row = 1) =>
+export const belowGroup = (page, row = 1) =>
   page.getByRole("button", { name: `Add slide in a new slide group below slide group ${row}`, exact: true })
 
-export { rowNumbers }
+export { groupNumbers }
 
-export async function openRowDeck(kit, count = 10, sections = rowSizes(count)) {
+export async function openGroupDeck(kit, count = 10, sections = groupSizes(count)) {
   const account = await kit.signIn()
   await kit.page.goto("/")
   await openDeck(kit.page, {
@@ -19,15 +19,15 @@ export async function openRowDeck(kit, count = 10, sections = rowSizes(count)) {
   return account
 }
 
-export async function rowAddState(kit, state) {
+export async function groupAddState(kit, state) {
   const { page } = kit
   const count = state === "limit" ? 50 : state === "sections" ? 6 : 10
-  await openRowDeck(kit, count, state === "sections" ? true : rowSizes(count))
+  await openGroupDeck(kit, count, state === "sections" ? true : groupSizes(count))
   if (state === "limit") return
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill("25")
   await page.keyboard.press("Enter")
-  const button = belowRow(page)
+  const button = belowGroup(page)
   if ((await button.count()) === 0) {
     if (state === "added" || state === "sections") {
       await page.locator('[data-slide-entry="4"]').hover()
@@ -42,7 +42,7 @@ export async function rowAddState(kit, state) {
     await page.keyboard.press("Tab")
     await expect(button).toBeFocused()
   } else await button.hover()
-  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(1)
+  await expect(page.locator("[data-group-insertion-line]:visible")).toHaveCount(1)
   if (state === "added" || state === "sections") {
     await button.click()
     await page.mouse.move(1400, 90)

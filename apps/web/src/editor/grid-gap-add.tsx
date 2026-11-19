@@ -1,5 +1,5 @@
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { GridAddButton, GridPlaceholder } from "@/editor/grid-row-add"
+import { GridAddButton, GridPlaceholder } from "@/editor/grid-group-add"
 import { gridSpacing } from "@/editor/grid-viewport"
 
 export function GridGapAdd({

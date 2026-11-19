@@ -1,5 +1,6 @@
 import { limits, readElementId, readSlideId, type ElementId, type GridSide, type SlideId } from "@airdesign/document"
 import type { JsonSchema } from "./agent-form.js"
+import { canonicalOpFields } from "./field-alias.js"
 import { slideSchema } from "./set-wire.js"
 
 export const slideOps = [
@@ -18,10 +19,10 @@ export type WireSlideChange =
       readonly op: "move_slides"
       readonly slides: readonly [SlideId, ...SlideId[]]
       readonly after: SlideId | null
-      readonly row: GridSide | "keep"
+      readonly group: GridSide | "keep"
     }
   | { readonly op: "duplicate_slides" | "delete_slides"; readonly slides: readonly [SlideId, ...SlideId[]] }
-  | { readonly op: "add_slide"; readonly after: SlideId; readonly layout: SlideId; readonly row?: GridSide }
+  | { readonly op: "add_slide"; readonly after: SlideId; readonly layout: SlideId; readonly group?: GridSide }
   | { readonly op: "duplicate_slide" | "delete_slide"; readonly slide: SlideId }
   | { readonly op: "move_slide"; readonly slide: SlideId; readonly after: SlideId | null }
 
@@ -36,7 +37,7 @@ const fieldsOf = {
   duplicate_slide: ["slide"],
   delete_slide: ["slide"],
   move_slide: ["slide", "after"],
-  move_slides: ["slides", "after", "row"],
+  move_slides: ["slides", "after", "group"],
   duplicate_slides: ["slides"],
   delete_slides: ["slides"],
 } as const satisfies Record<SlideOp, readonly string[]>
@@ -52,12 +53,15 @@ function bodyOf(raw: unknown): Readonly<Record<string, unknown>> | undefined {
 }
 
 export function readSlideChange(raw: unknown): Read<WireSlideChange> {
-  const body = bodyOf(raw)
-  const op = slideOps.find((each) => each === body?.op)
-  if (body === undefined || op === undefined) return refused("op")
+  const sent = bodyOf(raw)
+  const op = slideOps.find((each) => each === sent?.op)
+  if (sent === undefined || op === undefined) return refused("op")
+  const named = canonicalOpFields(op, sent)
+  if (!named.ok) return refused(named.field)
+  const body = named.fields
   const fields: readonly string[] = fieldsOf[op]
   const extra = Object.keys(body).find(
-    (key) => key !== "op" && !fields.includes(key) && !(op === "add_slide" && key === "row"),
+    (key) => key !== "op" && !fields.includes(key) && !(op === "add_slide" && key === "group"),
   )
   if (extra !== undefined) return refused(extra)
   const missing = fields.find((key) => !Object.hasOwn(body, key))
@@ -67,8 +71,8 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
     const layout = readSlideId(body.layout)
     if (after === undefined) return refused("after")
     if (layout === undefined) return refused("layout")
-    if (body.row !== undefined && body.row !== "same" && body.row !== "new") return refused("row")
-    return { ok: true, change: { op, after, layout, ...(body.row === undefined ? {} : { row: body.row }) } }
+    if (body.group !== undefined && body.group !== "same" && body.group !== "new") return refused("group")
+    return { ok: true, change: { op, after, layout, ...(body.group === undefined ? {} : { group: body.group }) } }
   }
   if (op === "move_slides" || op === "duplicate_slides" || op === "delete_slides") {
     if (!Array.isArray(body.slides) || body.slides.length > limits.slides) return refused("slides")
@@ -80,8 +84,8 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
     if (op !== "move_slides") return { ok: true, change: { op, slides: [first, ...rest] } }
     const after = body.after === null ? null : readSlideId(body.after)
     if (after === undefined) return refused("after")
-    if (body.row !== "same" && body.row !== "new" && body.row !== "keep") return refused("row")
-    return { ok: true, change: { op, slides: [first, ...rest], after, row: body.row } }
+    if (body.group !== "same" && body.group !== "new" && body.group !== "keep") return refused("group")
+    return { ok: true, change: { op, slides: [first, ...rest], after, group: body.group } }
   }
   const slide = readSlideId(body.slide)
   if (slide === undefined) return refused("slide")
@@ -107,7 +111,7 @@ export function slideChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op"],
     description:
-      "add_slide takes after and layout, with optional slide group placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and row (same, new or keep). It moves them in presentation order in one edit; keep requires one complete current slide group. duplicate_slides and delete_slides take slides and land one edit. Copies follow the last source slide in presentation order. New ids come back in slides. The last slide cannot be deleted.",
+      "add_slide takes after and layout, with optional slide group placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and group (same, new or keep). It moves them in presentation order in one edit; keep requires one complete current slide group. duplicate_slides and delete_slides take slides and land one edit. Copies follow the last source slide in presentation order. New ids come back in slides. The last slide cannot be deleted.",
     properties: {
       op: { type: "string", enum: slideOps },
       slide: slideSchema,
@@ -117,7 +121,7 @@ export function slideChangeSchema(): JsonSchema {
         description: "Place it after this slide id; with move_slide, null for the beginning.",
       },
       layout: { ...slideSchema, description: "Use the layout of this slide id." },
-      row: {
+      group: {
         type: "string",
         enum: ["same", "new", "keep"],
         description:

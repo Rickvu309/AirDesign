@@ -11,7 +11,7 @@ async function drive(kit) {
   await kit.page.getByRole("button", { name: "Grid" }).click()
   await expect(kit.page.locator("[data-editor-grid]")).toBeVisible()
   await expect(kit.page.locator("[data-editor-grid] [data-grid-card]").first()).toBeVisible()
-  await expect(kit.page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
+  await expect(kit.page.locator("[data-editor-grid] [data-group-head]")).toHaveCount(0)
 }
 
 export default { name: "slide-grid", design, drive }

@@ -8,7 +8,7 @@ export type SlideNumber = {
   readonly format: (typeof numberFormats)[number] | null
 }
 
-export type SlideNumbers = { readonly number: number; readonly total: number; readonly rowNumber: number }
+export type SlideNumbers = { readonly number: number; readonly total: number; readonly groupNumber: number }
 
 export const plainSlideNumber: SlideNumber = { count: "all", format: null }
 
@@ -22,7 +22,7 @@ export function readSlideNumber(raw: unknown): SlideNumber | null {
 }
 
 export function shownSlideNumber(settings: SlideNumber, numbers: SlideNumbers) {
-  const number = String(settings.count === "row" ? numbers.rowNumber : numbers.number)
+  const number = String(settings.count === "row" ? numbers.groupNumber : numbers.number)
   const suffix = settings.format === null ? "" : `${settings.format === "slash" ? " / " : " of "}${numbers.total}`
   return { number, suffix }
 }

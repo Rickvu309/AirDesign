@@ -55,7 +55,7 @@ export function revealedGrid(view: GridViewport, box: GridRect, room: GridRect, 
 }
 
 export function gridSpacing(width: number, height: number) {
-  return { column: width * 0.13, row: height * 0.57 }
+  return { column: width * 0.13, line: height * 0.57 }
 }
 
 const wheelPixels = [1, 16, 800] as const
@@ -117,16 +117,16 @@ export function readGridViewport(raw: string | null): GridViewport | null {
 }
 
 export type GridGeometry = {
-  readonly rows: readonly { readonly start: number; readonly end: number }[]
-  readonly sections: readonly number[]
-  readonly rowHandles?: boolean
+  readonly groups: readonly { readonly start: number; readonly end: number }[]
+  readonly named: readonly number[]
+  readonly groupHandles?: boolean
   readonly width: number
   readonly height: number
 }
 
-export function gridTracks({ rows, sections }: GridGeometry) {
-  return rows.flatMap(({ start, end }, number) => {
-    const heads = sections.filter((index) => index >= start && index < end)
+export function gridTracks({ groups, named }: GridGeometry) {
+  return groups.flatMap(({ start, end }, number) => {
+    const heads = named.filter((index) => index >= start && index < end)
     const cards = Array.from({ length: end - start }, (_, offset) => start + offset)
     return cards.length === 0 ? [] : [{ start, end, number, heads, cards }]
   })
@@ -135,8 +135,8 @@ export function gridTracks({ rows, sections }: GridGeometry) {
 type GridTrack = ReturnType<typeof gridTracks>[number]
 
 export function gridLayoutLines(geometry: GridGeometry): GridTrack[] {
-  const count = geometry.rows.at(-1)?.end ?? 0
-  return gridVisualLines(gridTracks(geometry), gridWrapColumns(count, geometry.rows))
+  const count = geometry.groups.at(-1)?.end ?? 0
+  return gridVisualLines(gridTracks(geometry), gridWrapColumns(count, geometry.groups))
 }
 
 export function gridColumnCount(geometry: GridGeometry): number {
@@ -152,8 +152,8 @@ export function gridTrackGap(
   const line = lines[index]
   if (next === undefined || line === undefined) return 0
   const spacing = gridSpacing(geometry.width, geometry.height)
-  if (next.number === line.number) return gridLineGap(spacing.row, spacing.column)
-  return spacing.row
+  if (next.number === line.number) return gridLineGap(spacing.line, spacing.column)
+  return spacing.line
 }
 
 export function gridTrackColumns(track: GridTrack): number {
@@ -186,7 +186,7 @@ function gridCard(geometry: GridGeometry, index: number) {
     left: (index - line.start) * (width + gridSpacing(width, height).column),
     leading: index === line.cards[0] && line.cards.length === line.end - line.start,
     trailing: index === line.cards.at(-1),
-    top: preceding.reduce((total, row) => total + row.world, 0),
+    top: preceding.reduce((total, group) => total + group.world, 0),
     fixed: 0,
   }
 }
@@ -220,7 +220,7 @@ export function fittedGridCards(
     right - left + geometry.width,
     (scale) => span(scale).height,
     room,
-    (scale) => rowChrome(geometry, scale, leading, trailing),
+    (scale) => groupChrome(geometry, scale, leading, trailing),
   )
   const { top, fixed } = span(fit.scale)
   return { x: fit.x - left * fit.scale, y: fit.y - top * fit.scale - fixed, scale: fit.scale }
@@ -269,7 +269,7 @@ export function fittedGridElements(
   }
 }
 
-export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridViewport {
+export function fittedGridGroups(geometry: GridGeometry, room: GridBounds): GridViewport {
   const { width, height } = geometry
   const lines = gridLayoutLines(geometry)
   const columns = Math.max(1, ...lines.map(gridTrackColumns))
@@ -279,18 +279,18 @@ export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridVi
     columns * width + (columns - 1) * gridSpacing(width, height).column,
     (scale) => gridTrackSizes(geometry, lines).reduce((total, size) => total + size.world * scale + size.fixed, 0),
     room,
-    (scale) => rowChrome(geometry, scale, handles, trailing),
+    (scale) => groupChrome(geometry, scale, handles, trailing),
   )
 }
 
-export const gridRowHandle = { offset: 32, width: 28, minimumHeight: 80 }
+export const gridGroupHandle = { offset: 32, width: 28, minimumHeight: 80 }
 
-function rowChrome(bounds: GridGeometry, scale: number, leading: boolean, trailing: boolean) {
+function groupChrome(bounds: GridGeometry, scale: number, leading: boolean, trailing: boolean) {
   const gap = gridSpacing(bounds.width, bounds.height).column * scale
   return {
     left:
-      leading && bounds.rowHandles !== false && bounds.height * scale >= gridRowHandle.minimumHeight
-        ? gridRowHandle.offset + gridRowHandle.width / 2
+      leading && bounds.groupHandles !== false && bounds.height * scale >= gridGroupHandle.minimumHeight
+        ? gridGroupHandle.offset + gridGroupHandle.width / 2
         : 0,
     right: trailing && gridElementPresses({ width: bounds.width * scale, gap }) ? gap / 2 + 4 : 0,
   }
@@ -304,7 +304,7 @@ export function gridCardBounds(
   trailingMargin = 0,
 ): GridRect {
   const card = gridCard(geometry, index)
-  const chrome = rowChrome(geometry, scale, card?.leading ?? false, card?.trailing ?? false)
+  const chrome = groupChrome(geometry, scale, card?.leading ?? false, card?.trailing ?? false)
   return {
     left: box.left - chrome.left,
     top: box.top,

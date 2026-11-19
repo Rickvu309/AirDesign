@@ -120,12 +120,12 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       id,
       after: parsed.after,
       grid,
-      row: parsed.row ?? "same",
+      row: parsed.group ?? "same",
       layout: parsed.layout,
       floor: floorFor(floor, id),
     }
   } else if (parsed.op === "move_slides") {
-    edit = { slide: "move-many", ids: parsed.slides, after: parsed.after, grid, row: parsed.row }
+    edit = { slide: "move-many", ids: parsed.slides, after: parsed.after, grid, row: parsed.group }
   } else if (parsed.op === "move_slide") {
     edit = { slide: "move", id: parsed.slide, after: parsed.after, grid, row: "same" }
   } else if (parsed.op === "delete_slide") {

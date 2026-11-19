@@ -1,12 +1,12 @@
 import { expect } from "@playwright/test"
-import { gridRows } from "../../../../packages/document/dist/index.js"
+import { gridGroups } from "../../../../packages/document/dist/index.js"
 import { slideListCopy } from "../../../../apps/web/src/copy/slide-list-copy.ts"
 import { undoCopy } from "../../../../apps/web/src/copy/undo-copy.ts"
-import { openRowDeck, rowNumbers } from "../look/grid-row-add.mjs"
+import { openGroupDeck, groupNumbers } from "../look/grid-group-add.mjs"
 
 export default async function drive(kit) {
   const { page, post, deckRoutes, capture, note } = kit
-  const { cookie } = await openRowDeck(kit)
+  const { cookie } = await openGroupDeck(kit)
   const deck = page.url().split("/").at(-1)
   const saved = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register
   let original
@@ -31,21 +31,21 @@ export default async function drive(kit) {
     const register = await saved()
     const added = register.order.at(-1)
     expect(added).toMatchObject({ row: "same", after: register.file[after - 1], layout: register.file[after - 1] })
-    original ??= gridRows({ ...register, order: [] })
+    original ??= gridGroups({ ...register, order: [] })
     const expected = original.map((row) =>
       row.includes(added.after) ? row.flatMap((id) => (id === added.after ? [id, added.id] : [id])) : row,
     )
-    expect(gridRows(register)).toEqual(expected)
+    expect(gridGroups(register)).toEqual(expected)
     await capture(`added-after-${after}`)
     await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
     await expect
-      .poll(() => rowNumbers(page))
+      .poll(() => groupNumbers(page))
       .toEqual([
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10],
       ])
-    await expect.poll(async () => gridRows(await saved())).toEqual(original)
+    await expect.poll(async () => gridGroups(await saved())).toEqual(original)
   }
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill("10")

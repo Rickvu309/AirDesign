@@ -180,7 +180,7 @@ test("named groups keep their names for a screen reader when the window is narro
   await page.setViewportSize({ width: 1280, height: 720 })
   await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Introduction")
   await zoomTo(page, 3)
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Introduction")

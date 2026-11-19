@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
-import { openRowDeck } from "../grid-row-add.mjs"
+import { openGroupDeck } from "../grid-group-add.mjs"
 
 async function drive(kit) {
-  await openRowDeck(kit, 7)
+  await openGroupDeck(kit, 7)
   const { page } = kit
   await page.locator('[data-slide-entry="1"] [data-thumb-node]').first().click()
   await expect(page.locator("[data-grid-edit] [data-selection]").first()).toBeVisible()

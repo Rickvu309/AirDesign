@@ -1,5 +1,5 @@
 import type { SlideId } from "./element-id.js"
-import { gridRows, type GridRow, type GridCommand } from "./grid-order.js"
+import { gridGroups, type GridGroup, type GridCommand } from "./grid-order.js"
 import { orderKeyBetween } from "./order-key.js"
 import {
   presentSlides,
@@ -21,8 +21,8 @@ export function groupRefusal(state: SlideState, command: Move): SlideRefusal | n
     return "dead"
   if (
     command.row === "keep" &&
-    !gridRows(state, command.grid).some(
-      (row) => row.length === command.ids.length && row.every((id) => command.ids.includes(id)),
+    !gridGroups(state, command.grid).some(
+      (group) => group.length === command.ids.length && group.every((id) => command.ids.includes(id)),
     )
   )
     return "stale"
@@ -31,7 +31,7 @@ export function groupRefusal(state: SlideState, command: Move): SlideRefusal | n
 
 export function moveGroup(
   before: readonly FoldedSlide[],
-  rows: readonly GridRow[],
+  groups: readonly GridGroup[],
   command: Move,
 ): {
   readonly spots: readonly FoldedSlide[]
@@ -39,12 +39,12 @@ export function moveGroup(
   readonly effects: readonly LegacySlideCommand[]
 } {
   const anchor = command.row === "before" ? command.before : command.after
-  const placement = gridMovePlacement(rows, command.ids, anchor, command.row)
+  const placement = gridMovePlacement(groups, command.ids, anchor, command.row)
   const held = new Set(command.ids)
   const moving = before.filter((spot) => held.has(spot.id))
   const remaining = before.filter((spot) => !held.has(spot.id))
   const at = remaining.findIndex((spot) => spot.id === placement.after)
-  const heads = new Set(placement.rows.flatMap((row) => row.slice(0, 1)))
+  const heads = new Set(placement.groups.flatMap((group) => group.slice(0, 1)))
   let key = remaining[at]?.key ?? null
   const right = remaining[at + 1]?.key ?? null
   const spots = moving.map((spot) => {
@@ -61,22 +61,22 @@ export function moveGroup(
 }
 
 export function gridMovePlacement<Id>(
-  rows: readonly (readonly Id[])[],
+  groups: readonly (readonly Id[])[],
   ids: readonly Id[],
   anchor: Id | null,
   side: Move["row"],
 ) {
   const held = new Set(ids)
-  const moving = rows.flat().filter((id) => held.has(id))
-  const next = rows.map((row) => row.filter((id) => !held.has(id))).filter((row) => row.length > 0)
-  const number = anchor === null ? -1 : next.findIndex((row) => row.includes(anchor))
-  const row = next[number]
+  const moving = groups.flat().filter((id) => held.has(id))
+  const next = groups.map((group) => group.filter((id) => !held.has(id))).filter((group) => group.length > 0)
+  const number = anchor === null ? -1 : next.findIndex((group) => group.includes(anchor))
+  const group = next[number]
   const separate = side === "new" || side === "keep"
-  const at = row === undefined || anchor === null ? 0 : row.indexOf(anchor) + (side === "before" ? 0 : 1)
-  const after = separate ? (row?.at(-1) ?? null) : (row?.[at - 1] ?? next[number - 1]?.at(-1) ?? null)
+  const at = group === undefined || anchor === null ? 0 : group.indexOf(anchor) + (side === "before" ? 0 : 1)
+  const after = separate ? (group?.at(-1) ?? null) : (group?.[at - 1] ?? next[number - 1]?.at(-1) ?? null)
   if (moving.length > 0) {
     if (separate || next.length === 0) next.splice(number + 1, 0, moving)
-    else (row ?? next[0])?.splice(at, 0, ...moving)
+    else (group ?? next[0])?.splice(at, 0, ...moving)
   }
-  return { after, rows: next }
+  return { after, groups: next }
 }

@@ -2,7 +2,7 @@ import { readSlideId, type SlideId } from "./element-id.js"
 import { readOrderKey } from "./order-key.js"
 import { readSlideState } from "./slide-order.js"
 import { readFloor } from "./slide-floor.js"
-import type { GridCopy, GridTurn, HeadStep, RowGuard, SlideStep, GridCommand } from "./grid-order.js"
+import type { GridCopy, GridTurn, HeadStep, GroupGuard, SlideStep, GridCommand } from "./grid-order.js"
 import type { SlideSpot } from "./person-undo.js"
 import { limits } from "./limits.js"
 
@@ -19,7 +19,7 @@ function turn(raw: unknown): GridTurn | undefined {
   if (Math.max(raw.spots.length, raw.heads.length, raw.rows.length) > limits.slides) return undefined
   const spots: SlideStep[] = []
   const heads: HeadStep[] = []
-  const rows: RowGuard[] = []
+  const rows: GroupGuard[] = []
   for (const step of raw.spots) {
     if (typeof step !== "object" || step === null) return undefined
     const id = readSlideId(step.id)

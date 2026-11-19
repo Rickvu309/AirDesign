@@ -24,7 +24,7 @@ export async function blankAt(page: Page, point: Point): Promise<Point> {
     return (
       target !== null &&
       target.closest("[data-grid-viewport]") !== null &&
-      target.closest("[data-grid-card], [data-section-head], [data-add-row], [data-row-handle]") === null
+      target.closest("[data-grid-card], [data-group-head], [data-add-group], [data-group-handle]") === null
     )
   }, point)
   expect(blank).toBe(true)

@@ -273,10 +273,10 @@ test("a slide dropped at the start of a section's line shows there and joins tha
 })
 
 async function groupCounts(page: Page): Promise<number[]> {
-  return page.locator("[data-editor-grid] [data-grid-row-member]").evaluateAll((nodes) => {
+  return page.locator("[data-editor-grid] [data-grid-group-member]").evaluateAll((nodes) => {
     const counts = new Map<string, number>()
     for (const node of nodes) {
-      const start = node.getAttribute("data-grid-row-member")
+      const start = node.getAttribute("data-grid-group-member")
       if (start === null) continue
       const slides = node.querySelectorAll("[data-slide-entry]").length
       if (slides === 0) continue

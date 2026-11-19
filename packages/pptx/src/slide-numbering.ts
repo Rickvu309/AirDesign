@@ -14,7 +14,7 @@ export function slideNumbering(parts: Parts): ReadonlyMap<string, SlideNumbers> 
   return new Map(
     slides.map(({ slide }, at) => {
       const start = starts.findLast((each) => each <= at) ?? 0
-      return [slide, { number: first + at, total: slides.length, rowNumber: at - start + 1 }]
+      return [slide, { number: first + at, total: slides.length, groupNumber: at - start + 1 }]
     }),
   )
 }

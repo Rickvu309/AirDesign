@@ -42,7 +42,7 @@
     "reason": "A group's frame is where a person grabs the group, so it paints nothing of its own. The shapes it holds paint under it with plain fills, which the detector does not count as a sign that something is there."
   },
   {
-    "page": "grid-rows-eleven",
+    "page": "grid-groups-eleven",
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",
     "reason": "The hover halo sits outside the card edge of slide 10 while the added slide 11 keeps its selection frame. The two frames show hover and the card surface, as designed."
@@ -54,7 +54,7 @@
     "reason": "Grid keeps its existing hover halo outside the slide frame while a pointer reaches the add control. The halo identifies the source slide; it is not a second object selection."
   },
   {
-    "page": "grid-row-*",
+    "page": "grid-group-*",
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",
     "reason": "The row hover frame intentionally surrounds each card edge, matching the supplied Figma row-handle reference. It indicates the whole row without changing the separate selected-slide ring."

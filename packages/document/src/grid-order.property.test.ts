@@ -2,7 +2,7 @@ import fc from "fast-check"
 import { expect, it } from "vitest"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId } from "./element-id.js"
-import { gridRows } from "./grid-order.js"
+import { gridGroups } from "./grid-order.js"
 import { presentSlides, readSlideState, type SlideCommand } from "./slide-order.js"
 import { slideUndoable, undoOf } from "./person-undo.js"
 
@@ -52,19 +52,19 @@ it("partitions every accepted trace and reverses each immediate lifecycle edit",
                         after: anchor.id === source.id ? null : anchor.id,
                         row: "same",
                       }
-          const before = gridRows(register)
+          const before = gridGroups(register)
           const undoable = slideUndoable(register, file, edit)
           const decision = decide(register, { command: "slide", file, edit })
           if (decision.decision !== "apply") continue
           register = decision.register
-          const rows = gridRows(register)
+          const rows = gridGroups(register)
           const flat = rows.flat()
           expect(rows.every((row) => row.length > 0)).toBe(true)
           expect(new Set(flat).size).toBe(flat.length)
           expect(flat).toEqual(presentSlides(register).map((spot) => spot.id))
           const decoded = readSlideState(JSON.parse(JSON.stringify(register)))
           if (decoded === undefined) throw new Error("decode")
-          expect(gridRows(decoded)).toEqual(rows)
+          expect(gridGroups(decoded)).toEqual(rows)
           if (undoable === null) throw new Error("undoable")
           const undone = undoOf(register, undoable)
           if (!undone.ok) throw new Error("undo")
@@ -74,7 +74,7 @@ it("partitions every accepted trace and reverses each immediate lifecycle edit",
             if (answer.decision !== "apply") throw new Error(answer.code)
             restored = answer.register
           }
-          expect(gridRows(restored)).toEqual(before)
+          expect(gridGroups(restored)).toEqual(before)
         }
       },
     ),

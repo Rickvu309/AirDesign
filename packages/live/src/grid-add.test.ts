@@ -1,4 +1,4 @@
-import { gridRows, slideId, slideUndoable, undoOf, type SlideCommand } from "@airdesign/document"
+import { gridGroups, slideId, slideUndoable, undoOf, type SlideCommand } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { newPage } from "./device.js"
@@ -15,7 +15,7 @@ afterEach(async () => {
   await deleteDatabase()
 })
 
-it("replays a below add after an offline reload against the server's current row tail", async () => {
+it("replays a below add after an offline reload against the server's current slide group tail", async () => {
   const server = memoryRemote()
   const down = { ...server, commit: () => Promise.reject(new TypeError("offline")) }
   const cache = connect(down)
@@ -25,7 +25,7 @@ it("replays a below add after an offline reload against the server's current row
   newPage()
   const reloaded = await connect(down).openDeck("deck")
   if (!reloaded.ok) throw new Error(reloaded.refusal)
-  expect(gridRows(reloaded.register)).toEqual(inserted)
+  expect(gridGroups(reloaded.register)).toEqual(inserted)
   expect(
     await server.commit({
       deck: "deck",
@@ -47,7 +47,7 @@ it("replays a below add after an offline reload against the server's current row
   newPage()
   const confirmed = await connect({ ...server }).openDeck("deck")
   if (!confirmed.ok) throw new Error(confirmed.refusal)
-  expect(gridRows(confirmed.register)).toEqual([[...file.slice(0, 4), "301"], ["300"], file.slice(4)])
+  expect(gridGroups(confirmed.register)).toEqual([[...file.slice(0, 4), "301"], ["300"], file.slice(4)])
 })
 
 it("keeps a sealed below-add request byte-identical after a lost answer and reload", async () => {
@@ -79,7 +79,7 @@ it("keeps a sealed below-add request byte-identical after a lost answer and relo
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
   expect(saved.revision).toBe(1)
-  expect(gridRows(saved.register)).toEqual(inserted)
+  expect(gridGroups(saved.register)).toEqual(inserted)
 })
 
 it("keeps a below add and its undo through an offline reload and one flush", async () => {
@@ -102,10 +102,10 @@ it("keeps a below add and its undo through an offline reload and one flush", asy
   newPage()
   const reloaded = await connect(down).openDeck("deck")
   if (!reloaded.ok) throw new Error(reloaded.refusal)
-  expect(gridRows(reloaded.register)).toEqual(original)
+  expect(gridGroups(reloaded.register)).toEqual(original)
   expect(await connect(server).flush("deck")).toMatchObject({ ok: true })
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
-  expect(gridRows(saved.register)).toEqual(original)
+  expect(gridGroups(saved.register)).toEqual(original)
   expect(saved.register.order[0]).toMatchObject({ grid: 1, row: "new" })
 })

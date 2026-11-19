@@ -81,7 +81,7 @@ test("a slide moved into a collapsed section opens it and keeps focus, across th
   await entry(page, 1).click()
   await addSlides(page, 1)
   await expect(page.locator("[data-slide-item]")).toHaveCount(3)
-  const opening = page.locator("[data-section-head]").first()
+  const opening = page.locator("[data-group-head]").first()
   await opening.click()
   await expect(opening).toHaveAttribute("aria-expanded", "false")
   await entry(page, 3).click()

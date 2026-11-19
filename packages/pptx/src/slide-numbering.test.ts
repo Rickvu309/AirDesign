@@ -38,7 +38,7 @@ describe("writing a slide number", () => {
       part,
       shape: "2",
       value,
-      numbers: { number: 2, total: 6, rowNumber: 1 },
+      numbers: { number: 2, total: 6, groupNumber: 1 },
     })
     const xml = decodeUtf8(written.get(part) ?? new Uint8Array())
     expect(xml).toContain(
@@ -58,13 +58,13 @@ describe("writing a slide number", () => {
         ],
       },
     ])
-    const at = { slide: "256", part, shape: "2", numbers: { number: 2, total: 6, rowNumber: 1 } }
+    const at = { slide: "256", part, shape: "2", numbers: { number: 2, total: 6, groupNumber: 1 } }
     const written = writeFields(new Map([[part, box]]), at, textXml, { value: { set: value } })
     expect(shownLink(written, { ...at, paragraph: 0, run: 1 })).toEqual({ kind: "none" })
     expect(shownLink(written, { ...at, paragraph: 0, run: 2 })).toEqual(link)
   })
 
-  it("writes row-relative ordinals as text because PowerPoint numbers the full deck", () => {
+  it("writes ordinals relative to the slide group as text because PowerPoint numbers the full deck", () => {
     const box = boxOf(
       '<a:p><a:fld id="{DEADBEEF-1234-5678-1234-123456789ABC}" type="slidenum"><a:rPr b="1"/><a:t>7</a:t></a:fld></a:p>',
     )
@@ -74,7 +74,7 @@ describe("writing a slide number", () => {
       part,
       shape: "2",
       value,
-      numbers: { number: 7, total: 10, rowNumber: 2 },
+      numbers: { number: 7, total: 10, groupNumber: 2 },
     })
     const xml = decodeUtf8(written.get(part) ?? new Uint8Array())
     expect(xml).toContain('<a:p><a:r><a:rPr b="1"/><a:t>2 of 10</a:t></a:r></a:p>')

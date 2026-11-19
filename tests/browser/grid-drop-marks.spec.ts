@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { boxOf, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, manySlides, openFile, openGrid, rowNumbers } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, groupNumbers } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -10,7 +10,7 @@ type Box = { readonly x: number; readonly y: number; readonly width: number; rea
 
 const number = (page: Page, slide: number) => entry(page, slide).locator("..").locator("[data-slide-number]")
 const rowHandle = (page: Page, row: number) =>
-  page.getByRole("button", { name: slideListCopy.moveRow(row), exact: true })
+  page.getByRole("button", { name: slideListCopy.moveGroup(row), exact: true })
 
 async function boxIn(page: Page, selector: string): Promise<Box> {
   const box = await page.locator(selector).boundingBox()
@@ -27,22 +27,24 @@ async function eight(page: Page, percent: number): Promise<void> {
   await openGrid(page)
   await zoomTo(page, percent)
   await expect
-    .poll(() => rowNumbers(page))
+    .poll(() => groupNumbers(page))
     .toEqual([
       [1, 2, 3, 4],
       [5, 6, 7, 8],
     ])
 }
 
-test("the add-a-row line between rows sits on the plus, clear of the slides and numbers", async ({ page }) => {
+test("the add-a-slide-group line between slide groups sits on the plus, clear of the slides and numbers", async ({
+  page,
+}) => {
   await eight(page, 23)
   await expect(page.locator('[data-number-placement="above"]')).toHaveCount(8)
-  await page.locator('[data-row-insert="between"]').hover()
-  const line = page.locator('[data-row-insert="between"] [data-row-insertion-line]')
+  await page.locator('[data-group-insert="between"]').hover()
+  const line = page.locator('[data-group-insert="between"] [data-group-insertion-line]')
   await expect(line).toBeVisible()
   const [mark, plus, upper, lower] = await Promise.all([
-    boxIn(page, '[data-row-insert="between"] [data-row-insertion-line]'),
-    boxIn(page, '[data-row-insert="between"] [data-add-mark]'),
+    boxIn(page, '[data-group-insert="between"] [data-group-insertion-line]'),
+    boxIn(page, '[data-group-insert="between"] [data-add-mark]'),
     boxOf(page, 1),
     number(page, 5).boundingBox(),
   ])
@@ -68,9 +70,11 @@ test("the pointer keeps the hover look on its way from a slide up to its number"
   expect(label.y + label.height).toBeCloseTo(slide.y, 0)
 })
 
-test("a whole row dragged above the first row or below the last shows the bar outside the rows", async ({ page }) => {
+test("a whole slide group dragged above the first slide group or below the last shows the bar outside the slide groups", async ({
+  page,
+}) => {
   await eight(page, 23)
-  const bar = page.locator("[data-drop-bar][data-row-drop]")
+  const bar = page.locator("[data-drop-bar][data-group-drop]")
   const first = await number(page, 1).boundingBox()
   const firstSlide = await boxOf(page, 1)
   const lastSlide = await boxOf(page, 5)
@@ -118,13 +122,15 @@ test("the Design panel says to select a slide when Grid has none selected", asyn
   await expect(panel).toContainText(designCopy.slide(3))
 })
 
-test("Move to a new row below is disabled for slides that already make up their row", async ({ page }) => {
+test("Move to a new slide group below is disabled for slides that already make up their slide group", async ({
+  page,
+}) => {
   await eight(page, 23)
   const item = page.getByRole("menuitem", { name: slideListCopy.moveBelowMenu, exact: true })
   await entry(page, 4).click({ button: "right" })
   await expect(item).toBeEnabled()
   await item.click()
-  await expect.poll(() => rowNumbers(page)).toEqual([[1, 2, 3], [4], [5, 6, 7, 8]])
+  await expect.poll(() => groupNumbers(page)).toEqual([[1, 2, 3], [4], [5, 6, 7, 8]])
   await entry(page, 4).click({ button: "right" })
   await expect(item).toBeDisabled()
   await page.keyboard.press("Escape")

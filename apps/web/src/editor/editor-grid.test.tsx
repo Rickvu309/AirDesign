@@ -6,7 +6,7 @@ import type { SlideStrip } from "@/editor/slide-sidebar"
 const strip: SlideStrip = {
   count: 4,
   current: 2,
-  sections: [
+  groups: [
     { name: "Opening", start: 0, key: "f0" },
     { name: "Results", start: 2, key: "f1" },
   ],
@@ -36,13 +36,13 @@ function tags(html: string, pattern: RegExp): string[] {
 }
 
 describe("slide grid", () => {
-  it("names every slide, keeps one tab stop on the current slide, and groups a deck by its sections", () => {
+  it("names every slide, keeps one tab stop on the current slide, and groups a deck by its slide groups", () => {
     const html = grid()
     expect(html).toContain('data-editor-grid="true"')
     expect(html).toContain('role="group" aria-label="Slides"')
     expect(html).toContain('aria-label="Opening"')
     expect(html).toContain('aria-label="Results"')
-    expect(html).not.toContain("data-section-head")
+    expect(html).not.toContain("data-group-head")
     expect(html).not.toContain("data-group-rule")
     expect(html).toContain('aria-label="Grid"')
     expect(html).toContain('aria-pressed="true"')
@@ -63,7 +63,7 @@ describe("slide grid", () => {
   })
 
   it("names no section a deck does not have", () => {
-    const html = grid({ sections: undefined })
+    const html = grid({ groups: undefined })
     expect(html).not.toContain(">Opening<")
     expect(html).not.toContain(">Results<")
     expect(tags(html, /<button[^>]*data-slide-entry="\d"[^>]*>/g)).toHaveLength(4)
@@ -73,7 +73,7 @@ describe("slide grid", () => {
     const html = grid({
       count: 100,
       current: 0,
-      sections: undefined,
+      groups: undefined,
       thumb: (index) => <span data-painted={index} />,
     })
     expect(html.match(/data-slide-thumb/g)).toHaveLength(100)
@@ -86,7 +86,7 @@ describe("slide grid", () => {
     expect(html).toContain('aria-label="Opening"')
     expect(html).toContain('aria-label="Results"')
     expect(html).not.toContain("2 slides")
-    expect(html).not.toContain("data-section-head")
+    expect(html).not.toContain("data-group-head")
   })
 
   it("keeps each slide number separate from its slide button", () => {

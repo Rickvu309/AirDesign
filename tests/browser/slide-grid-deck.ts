@@ -34,7 +34,7 @@ export function mark(number: number, count: number): string {
   return `Mark ${String(number).padStart(String(count).length, "0")}`
 }
 
-export function rowSizes(count: number): number[] {
+export function groupSizes(count: number): number[] {
   const columns = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(count * 1.5))))
   return Array.from({ length: Math.ceil(count / columns) }, (_, row) => Math.min(columns, count - row * columns))
 }
@@ -139,13 +139,15 @@ export async function openGrid(page: Page): Promise<void> {
   await expect(page.locator("[data-editor-grid]")).toBeVisible()
 }
 
-export function rowNumbers(page: Page): Promise<number[][]> {
+export function groupNumbers(page: Page): Promise<number[][]> {
   return page
     .locator("[data-grid-viewport]")
     .evaluate((canvas) =>
-      [...canvas.querySelectorAll<HTMLElement>("[data-grid-row]")].map((row) =>
+      [...canvas.querySelectorAll<HTMLElement>("[data-grid-group]")].map((row) =>
         [
-          ...canvas.querySelectorAll<HTMLElement>(`[data-grid-row-member="${row.dataset.gridRow}"] [data-slide-entry]`),
+          ...canvas.querySelectorAll<HTMLElement>(
+            `[data-grid-group-member="${row.dataset.gridGroup}"] [data-slide-entry]`,
+          ),
         ].map((slide) => Number(slide.dataset.slideEntry)),
       ),
     )

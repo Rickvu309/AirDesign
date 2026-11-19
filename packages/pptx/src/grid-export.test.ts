@@ -1,5 +1,5 @@
 declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array } }
-import { gridRows, presentSlides, slideId, type SlideCommand, type SlideId } from "@airdesign/document"
+import { gridGroups, presentSlides, slideId, type SlideCommand, type SlideId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { deckDiff } from "./deck-diff.js"
 import { readParts } from "./package-container.js"
@@ -94,7 +94,7 @@ it("writes a slide group made inside a section as a new section after the part t
   expect(regrouped(parts, exported)).toEqual({ parts: ["ppt/presentation.xml"], failures: [] })
 })
 
-it("exports exactly the original bytes when the slide groups are the file's sections, whatever the rows", async () => {
+it("exports exactly the original bytes when the slide groups are the file's sections, whatever the slide groups", async () => {
   const original = process
     .getBuiltinModule("node:fs")
     .readFileSync(process.cwd() + "/scripts/pptx-fixtures/sections-before.pptx")
@@ -111,7 +111,7 @@ it("exports exactly the original bytes when the slide groups are the file's sect
     },
   }
   const state = { file, order: [edit] }
-  expect(gridRows(state)).toEqual([[file[0]], [file[1]]])
+  expect(gridGroups(state)).toEqual([[file[0]], [file[1]]])
   const exported = orderedParts(parts, state)
   expect(await exportPackage(original, exported)).toEqual(new Uint8Array(original))
 })
@@ -162,14 +162,14 @@ it("writes a slide added in a new slide group as its own section, and one added 
   const newRow = orderedParts(parts, { file, order: [below] })
   const sameRow = orderedParts(parts, { file, order: [beside] })
   expect([...sectionListFailures(newRow), ...sectionListFailures(sameRow)]).toEqual([])
-  expect(gridRows({ file, order: [below] })).toEqual([[...file], ["258"]])
+  expect(gridGroups({ file, order: [below] })).toEqual([[...file], ["258"]])
   expect([...newRow.keys()].some((path) => path.includes("grid"))).toBe(false)
   expect(shown(newRow)).toEqual(["Opening 1", "Numbers 1", "Untitled Section 1"])
   expect(shown(sameRow)).toEqual(["Opening 1", "Numbers 2"])
   expect(deckDiff(newRow, sameRow).changed).toEqual(["ppt/presentation.xml"])
 })
 
-it("round-trips an untouched sectioned import byte for byte after its version two rows are read", async () => {
+it("round-trips an untouched sectioned import byte for byte after its version two slide groups are read", async () => {
   const original = process
     .getBuiltinModule("node:fs")
     .readFileSync(process.cwd() + "/scripts/pptx-fixtures/doe-heat-pumps.pptx")
@@ -178,22 +178,22 @@ it("round-trips an untouched sectioned import byte for byte after its version tw
   const file = opening.slides.map(({ id }) => slideId(id))
   const index = { ...opening, total: opening.elements.length, pages: [] }
   const state = { file, order: [], index }
-  expect(gridRows(state).map((row) => row.length)).toEqual([1, 10, 10, 8, 10, 2])
+  expect(gridGroups(state).map((row) => row.length)).toEqual([1, 10, 10, 8, 10, 2])
   expect(await exportPackage(original, orderedParts(parts, state))).toEqual(new Uint8Array(original))
 })
 
 it("numbers each slide within its slide group, across the lines of a wrapped section", async () => {
   const { parts, file, sections } = await heatPumpDeck()
   const numbers = slideNumbering(parts)
-  expect(numbers.get(file[11]!)).toEqual({ number: 12, total: 41, rowNumber: 11 })
-  expect(numbers.get(file[29]!)).toEqual({ number: 30, total: 41, rowNumber: 1 })
+  expect(numbers.get(file[11]!)).toEqual({ number: 12, total: 41, groupNumber: 11 })
+  expect(numbers.get(file[29]!)).toEqual({ number: 30, total: 41, groupNumber: 1 })
   const edit: SlideCommand = { slide: "move-many", grid: 3, ids: [file[29]!], after: file[28]!, row: "same" }
   const joined = slideNumbering(
     orderedParts(parts, { file, sectionStarts: sections.map((run) => run[0]!), order: [edit] }),
   )
-  expect(numbers.get(file[30]!)?.rowNumber).toBe(2)
-  expect(joined.get(file[29]!)?.rowNumber).toBe(29)
-  expect(joined.get(file[30]!)?.rowNumber).toBe(1)
+  expect(numbers.get(file[30]!)?.groupNumber).toBe(2)
+  expect(joined.get(file[29]!)?.groupNumber).toBe(29)
+  expect(joined.get(file[30]!)?.groupNumber).toBe(1)
 })
 
 it("numbers slides within their slide groups after a version two edit", async () => {
@@ -206,8 +206,8 @@ it("numbers slides within their slide groups after a version two edit", async ()
   const edit = { slide: "add", grid: 2, row: "new", id, after: file[0]!, layout: file[0]! } as const
   const state = { file, sectionStarts: file, order: [edit] }
   expect([...slideNumbering(orderedParts(parts, state))]).toEqual([
-    [file[0], { number: 1, total: 3, rowNumber: 1 }],
-    [file[1], { number: 2, total: 3, rowNumber: 1 }],
-    [id, { number: 3, total: 3, rowNumber: 1 }],
+    [file[0], { number: 1, total: 3, groupNumber: 1 }],
+    [file[1], { number: 2, total: 3, groupNumber: 1 }],
+    [id, { number: 3, total: 3, groupNumber: 1 }],
   ])
 })

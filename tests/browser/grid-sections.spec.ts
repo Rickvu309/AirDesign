@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
-import { entry, fixtures, openFile, openGrid, rowNumbers } from "./slide-grid-deck"
+import { entry, fixtures, openFile, openGrid, groupNumbers } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -16,7 +16,7 @@ async function faceGap(page: Page, from: number, to: number): Promise<number> {
 test("named groups stay fully shown and are announced without a heading or a rule", async ({ page }) => {
   await openFile(page, join(fixtures, "sections-after.pptx"))
   await openGrid(page)
-  await expect(page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-editor-grid] [data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
   const groups = page.locator("[data-slide-group]")
   await expect(groups).toHaveCount(2)
@@ -35,8 +35,8 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     await openFile(page, heatPumps)
     await openGrid(page)
-    expect((await rowNumbers(page)).map((row) => row.length)).toEqual([1, 28, 10, 2])
-    await expect(page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
+    expect((await groupNumbers(page)).map((row) => row.length)).toEqual([1, 28, 10, 2])
+    await expect(page.locator("[data-editor-grid] [data-group-head]")).toHaveCount(0)
     await expect(page.locator("[data-group-rule]")).toHaveCount(0)
     const groups = page.locator("[data-slide-group]")
     await expect(groups).toHaveCount(4)
@@ -57,7 +57,7 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     await openFile(page, join(fixtures, "sections-after.pptx"))
     await openGrid(page)
-    await expect(page.locator("[data-grid-row]")).toHaveCount(2)
+    await expect(page.locator("[data-grid-group]")).toHaveCount(2)
     await expect(page.locator("[data-slide-group]")).toHaveCount(2)
     const first = await entry(page, 1).boundingBox()
     const next = await entry(page, 2).boundingBox()
@@ -69,18 +69,18 @@ for (const viewport of [
 
 test("a group collapsed in the filmstrip still shows every slide in Grid", async ({ page }) => {
   await openFile(page, join(fixtures, "sections-after.pptx"))
-  const opening = page.locator("button[data-section-head]").first()
+  const opening = page.locator("button[data-group-head]").first()
   await expect(opening).toHaveAttribute("aria-expanded", "true")
   await opening.click()
   await expect(opening).toHaveAttribute("aria-expanded", "false")
   await expect(page.locator("[data-slide-item]")).toHaveCount(2)
   await openGrid(page)
-  await expect(page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-editor-grid] [data-group-head]")).toHaveCount(0)
   await expect(entry(page, 1)).toBeVisible()
   await expect(entry(page, 2)).toBeVisible()
   await expect(entry(page, 3)).toBeVisible()
   await page.getByRole("button", { name: slideListCopy.listName, exact: true }).click()
   await expect(page.locator("[data-editor-grid]")).toHaveCount(0)
-  await expect(page.locator("button[data-section-head]").first()).toBeVisible()
+  await expect(page.locator("button[data-group-head]").first()).toBeVisible()
   await expect(entry(page, 1)).toBeVisible()
 })

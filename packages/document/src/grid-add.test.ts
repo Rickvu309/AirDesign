@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId } from "./element-id.js"
-import { foldGrid, gridRows } from "./grid-order.js"
+import { foldGrid, gridGroups } from "./grid-order.js"
 import { foldSections } from "./section-order.js"
 import { redoOf, slideUndoable, undoOf } from "./person-undo.js"
 import { presentSlides, readSlideState, type SlideCommand } from "./slide-order.js"
@@ -35,23 +35,23 @@ function turned(register: Register, result: ReturnType<typeof undoOf>): Register
   return register
 }
 
-it("adds below an interior row at its tail and keeps the next row intact", () => {
+it("adds below an interior slide group at its tail and keeps the next slide group intact", () => {
   const register = opened()
   const edit = addition(register)
   const added = apply(register, edit)
-  expect(gridRows(added)).toEqual([["256", "257", "258", "259"], ["300"], ["260", "261"]])
+  expect(gridGroups(added)).toEqual([["256", "257", "258", "259"], ["300"], ["260", "261"]])
   expect(added.order.at(-1)).toEqual({ slide: "add", grid: 1, row: "new", id: "300", after: "256", layout: "256" })
   expect(foldGrid(added).effects.at(-1)).toMatchObject({ slide: "add", id: "300", after: "259" })
   expect(readSlideState(JSON.parse(JSON.stringify(added)))).toEqual({ file: added.file, order: added.order })
 })
 
-it("adds below the final row without changing its members", () => {
+it("adds below the final slide group without changing its members", () => {
   const register = opened()
   const added = apply(register, addition(register, "260"))
-  expect(gridRows(added)).toEqual([["256", "257", "258", "259"], ["260", "261"], ["300"]])
+  expect(gridGroups(added)).toEqual([["256", "257", "258", "259"], ["260", "261"], ["300"]])
 })
 
-it("inherits the section at the resolved row tail without creating a section", () => {
+it("inherits the section at the resolved slide group tail without creating a section", () => {
   const register = opened()
   const sections = [
     { name: "Opening", slides: ["256", "257"] },
@@ -64,20 +64,20 @@ it("inherits the section at the resolved row tail without creating a section", (
   ])
 })
 
-it("resolves a queued below add after a foreign append to the source row", () => {
+it("resolves a queued below add after a foreign append to the source slide group", () => {
   const register = opened()
   const queued = addition(register)
   const foreign = apply(register, addition(register, "259", "301", "same"))
   const added = apply(foreign, queued)
-  expect(gridRows(added)).toEqual([["256", "257", "258", "259", "301"], ["300"], ["260", "261"]])
+  expect(gridGroups(added)).toEqual([["256", "257", "258", "259", "301"], ["300"], ["260", "261"]])
   expect(foldGrid(added).effects.at(-1)).toMatchObject({ after: "301" })
 })
 
-it("keeps two accepted below adds in separate rows after their current source row", () => {
+it("keeps two accepted below adds in separate slide groups after their current source slide group", () => {
   const register = opened()
   const first = addition(register)
   const second = addition(register, "257", "301")
-  expect(gridRows(apply(apply(register, first), second))).toEqual([
+  expect(gridGroups(apply(apply(register, first), second))).toEqual([
     ["256", "257", "258", "259"],
     ["301"],
     ["300"],
@@ -97,19 +97,19 @@ it("refuses a queued below add whose semantic anchor was deleted", () => {
   expect(JSON.stringify(changed)).toBe(before)
 })
 
-it("undoes and redoes a below add with the same rows", () => {
+it("undoes and redoes a below add with the same slide groups", () => {
   const register = opened()
   const edit = addition(register)
   const undoable = slideUndoable(register, register.file, edit)
   if (undoable === null) throw new Error("undoable")
   const added = apply(register, edit)
   const undone = turned(added, undoOf(added, undoable))
-  expect(gridRows(undone)).toEqual(gridRows(register))
-  expect(gridRows(turned(undone, redoOf(undone, undoable)))).toEqual(gridRows(added))
+  expect(gridGroups(undone)).toEqual(gridGroups(register))
+  expect(gridGroups(turned(undone, redoOf(undone, undoable)))).toEqual(gridGroups(added))
   expect(undone.order[0]).toHaveProperty("grid", 1)
 })
 
-it("undoes a below add after a foreign insertion inside the source row", () => {
+it("undoes a below add after a foreign insertion inside the source slide group", () => {
   const register = opened()
   const edit = addition(register)
   const undoable = slideUndoable(register, register.file, edit)
@@ -117,13 +117,13 @@ it("undoes a below add after a foreign insertion inside the source row", () => {
   const added = apply(register, edit)
   const foreign = apply(added, addition(added, "257", "301", "same"))
   const undone = turned(foreign, undoOf(foreign, undoable))
-  expect(gridRows(undone)).toEqual([
+  expect(gridGroups(undone)).toEqual([
     ["256", "257", "301", "258", "259"],
     ["260", "261"],
   ])
 })
 
-it("guards a below-add inverse on the server when another person fills the new row", () => {
+it("guards a below-add inverse on the server when another person fills the new slide group", () => {
   const register = opened()
   const edit = addition(register)
   const undoable = slideUndoable(register, register.file, edit)
@@ -134,14 +134,14 @@ it("guards a below-add inverse on the server when another person fills the new r
   const foreign = apply(added, addition(added, "300", "301", "same"))
   expect(decide(foreign, inverse.commands[0])).toMatchObject({ decision: "refuse", code: "stale" })
   expect(undoOf(foreign, undoable).ok).toBe(false)
-  expect(gridRows(foreign)).toEqual([
+  expect(gridGroups(foreign)).toEqual([
     ["256", "257", "258", "259"],
     ["300", "301"],
     ["260", "261"],
   ])
 })
 
-it("refuses a redo that would steal a newer source-tail insertion into the restored row", () => {
+it("refuses a redo that would steal a newer source-tail insertion into the restored slide group", () => {
   const register = opened()
   const edit = addition(register)
   const undoable = slideUndoable(register, register.file, edit)
@@ -150,7 +150,7 @@ it("refuses a redo that would steal a newer source-tail insertion into the resto
   const undone = turned(added, undoOf(added, undoable))
   const foreign = apply(undone, addition(undone, "259", "301", "same"))
   expect(redoOf(foreign, undoable).ok).toBe(false)
-  expect(gridRows(foreign)).toEqual([
+  expect(gridGroups(foreign)).toEqual([
     ["256", "257", "258", "259", "301"],
     ["260", "261"],
   ])
@@ -160,7 +160,7 @@ it("adds the fiftieth slide as a singleton and refuses the fifty-first atomicall
   const register = opened(49)
   const added = apply(register, addition(register, "304", "400"))
   expect(presentSlides(added)).toHaveLength(50)
-  expect(gridRows(added).at(-1)).toEqual(["400"])
+  expect(gridGroups(added).at(-1)).toEqual(["400"])
   const before = JSON.stringify(added)
   expect(decide(added, { command: "slide", file: added.file, edit: addition(added, "304", "401") })).toMatchObject({
     decision: "refuse",

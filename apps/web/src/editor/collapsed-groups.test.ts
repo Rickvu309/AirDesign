@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { heldSections } from "@/editor/collapsed-sections"
+import { heldGroups } from "@/editor/collapsed-groups"
 
 describe("collapsed sections", () => {
   const sections = [
@@ -10,13 +10,13 @@ describe("collapsed sections", () => {
 
   it("keeps a collapsed slide group by its key, so a move that empties another collapses no other group", () => {
     const emptied = [sections[0]!, { ...sections[2]!, start: 2 }]
-    expect([...heldSections(new Set(["f1"]), emptied)]).toEqual([])
-    expect([...heldSections(new Set(["f2"]), emptied)]).toEqual([1])
+    expect([...heldGroups(new Set(["f1"]), emptied)]).toEqual([])
+    expect([...heldGroups(new Set(["f2"]), emptied)]).toEqual([1])
     const moved = [
       { ...sections[2]!, start: 0 },
       { ...sections[0]!, start: 3 },
       { ...sections[1]!, start: 5 },
     ]
-    expect([...heldSections(new Set(["f2", "f1"]), moved)]).toEqual([0, 2])
+    expect([...heldGroups(new Set(["f2", "f1"]), moved)]).toEqual([0, 2])
   })
 })

@@ -91,7 +91,7 @@ test("keeps chrome constant and numbers visible while they fit", async ({ page }
   await zoomTo(page, 10)
   await expect(page.locator("[data-slide-number]").first()).toBeVisible()
 })
-test("keeps rows fixed across resize and panel changes", async ({ page }) => {
+test("keeps slide groups fixed across resize and panel changes", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 923 })
   await openFile(page, {
     name: "rows.pptx",
@@ -133,12 +133,12 @@ test("keeps the selected slide visible when menu and keys zoom", async ({ page }
   await expect(entry(page, 7)).toBeInViewport()
 })
 
-test("centres the occupied row including chrome even with one slide", async ({ page }) => {
+test("centres the occupied slide group including chrome even with one slide", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
   const card = await page.locator("[data-grid-card]").boundingBox()
   const room = await page.locator("[data-grid-viewport]").boundingBox()
-  const grip = await page.locator("[data-row-handle]").boundingBox()
+  const grip = await page.locator("[data-group-handle]").boundingBox()
   const end = await page.locator('[data-gap-insert="end"] [data-add-mark]').boundingBox()
   if (card === null || room === null || grip === null || end === null) throw new Error("row bounds")
   expect(grip.x).toBeGreaterThanOrEqual(48)
@@ -147,7 +147,7 @@ test("centres the occupied row including chrome even with one slide", async ({ p
   expect(card.y + card.height / 2).toBeCloseTo(room.y + room.height / 2, 0)
 })
 
-test("numbers clear the preceding row at fit", async ({ page }) => {
+test("numbers clear the preceding slide group at fit", async ({ page }) => {
   await openFile(page, { name: "numbers.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   const first = await entry(page, 1).boundingBox()
@@ -276,7 +276,7 @@ test("typed Grid zoom accepts low values and keeps them after reload", async ({ 
   await expect(page.locator("[data-zoom-readout]")).toContainText("1%")
 })
 
-test("zoom reveals the whole row handle after panning past it", async ({ page }) => {
+test("zoom reveals the whole slide group handle after panning past it", async ({ page }) => {
   await openFile(page, {
     name: "seven.pptx",
     mimeType: "application/octet-stream",
@@ -287,7 +287,7 @@ test("zoom reveals the whole row handle after panning past it", async ({ page })
   await canvas.dispatchEvent("wheel", { deltaX: 385 })
   await zoomTo(page, 25)
   await entry(page, 1).hover()
-  const grip = await page.locator("[data-row-handle]").first().boundingBox()
+  const grip = await page.locator("[data-group-handle]").first().boundingBox()
   const room = await canvas.boundingBox()
   if (grip === null || room === null) throw new Error("row grip")
   expect(grip.x - room.x).toBeCloseTo(24, 0)

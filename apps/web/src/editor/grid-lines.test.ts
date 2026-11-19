@@ -12,7 +12,7 @@ import {
 } from "@/editor/grid-lines"
 import { gridColumns } from "@/editor/grid-zoom"
 
-const rows = (lengths: readonly number[]) => {
+const groups = (lengths: readonly number[]) => {
   const ranges: { start: number; end: number }[] = []
   let start = 0
   for (const length of lengths) {
@@ -36,23 +36,23 @@ describe("grid line layout", () => {
   })
 
   it("wraps one group at the deck's column count, and widens several groups only while that removes lines", () => {
-    expect(gridWrapColumns(6, rows([6]))).toBe(gridColumns(6))
+    expect(gridWrapColumns(6, groups([6]))).toBe(gridColumns(6))
     expect(gridColumns(6)).toBe(4)
-    expect(gridWrapColumns(10, rows([10]))).toBe(gridColumns(10))
+    expect(gridWrapColumns(10, groups([10]))).toBe(gridColumns(10))
     expect(gridColumns(10)).toBe(4)
-    expect(gridWrapColumns(16, rows([16]))).toBe(5)
+    expect(gridWrapColumns(16, groups([16]))).toBe(5)
     expect(
-      gridVisualLines([track(0, 0, 6)], gridWrapColumns(6, rows([6]))).map((line) => line.end - line.start),
+      gridVisualLines([track(0, 0, 6)], gridWrapColumns(6, groups([6]))).map((line) => line.end - line.start),
     ).toEqual([4, 2])
     expect(
-      gridVisualLines([track(0, 0, 10)], gridWrapColumns(10, rows([10]))).map((line) => line.end - line.start),
+      gridVisualLines([track(0, 0, 10)], gridWrapColumns(10, groups([10]))).map((line) => line.end - line.start),
     ).toEqual([4, 4, 2])
-    expect(gridWrapColumns(41, rows([1, 28, 10, 2]))).toBe(10)
-    expect(gridWrapColumns(41, rows([1, 10, 10, 8, 10, 2]))).toBe(10)
-    expect(gridWrapColumns(8, rows([4, 4]))).toBe(4)
+    expect(gridWrapColumns(41, groups([1, 28, 10, 2]))).toBe(10)
+    expect(gridWrapColumns(41, groups([1, 10, 10, 8, 10, 2]))).toBe(10)
+    expect(gridWrapColumns(8, groups([4, 4]))).toBe(4)
   })
 
-  it("wraps a stored row onto several lines and leaves a row that fits on one", () => {
+  it("wraps a stored group onto several lines and leaves a group that fits on one", () => {
     const wrapped = gridVisualLines([track(0, 0, 1), track(1, 1, 29), track(2, 29, 39), track(3, 39, 41)], 10)
     expect(wrapped.map((line) => [line.number, line.end - line.start])).toEqual([
       [0, 1],
