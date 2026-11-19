@@ -40,14 +40,14 @@
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoTurn"],
-      "digest": "48295d10047c",
-      "blob": "b96384694d713081f55c7d0412438a4ae49eed05"
+      "digest": "2db0045cadae",
+      "blob": "9929c54ffddae6c0e338b178a3a33d6ff7e3f25a"
     },
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "d0531b0783b1",
-      "blob": "4d931e67293c867cbcf1e4931fa10e13fa7b5f55"
+      "digest": "d0ec9ce6617e",
+      "blob": "fbce5e1a502788b644cb85622273dcff61889440"
     }
   ]
 }
