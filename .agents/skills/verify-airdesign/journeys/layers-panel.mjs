@@ -90,12 +90,20 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(element(5)).toBeVisible()
   await expect(page.locator(`[data-thumb-paint] [data-thumb-element="${slide}#5"]`)).toHaveCount(1)
   await capture("layer-shown")
+  const front = layers.getByRole("treeitem", { name: rectangle, exact: true })
+  await front.hover()
+  await layers.getByRole("button", { name: layersCopy.lock(rectangle), exact: true }).click()
+  const locked = layers.getByRole("treeitem", { name: `${rectangle}, ${layersCopy.locked}`, exact: true })
+  await expect(locked).toBeVisible()
+  await expect.poll(() => element(4).evaluate((node) => getComputedStyle(node).pointerEvents)).toBe("none")
+  await expect.poll(async () => JSON.stringify(await register()).includes('"locked":{"set":true}')).toBe(true)
+  await capture("layer-locked")
   await page.reload()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   await page.locator("[data-design-mode]").click()
   await expect.poll(names).toEqual([rectangle, "Badge"])
   await capture("layers-reloaded")
   note(
-    `Two overlapping shapes listed front first as ${ellipse} and ${rectangle}. Hover outlined ${rectangle} on the slide, a click selected it there, a double-click renamed ${ellipse} to Badge and the server kept the name. A drag put ${rectangle} above Badge: the slide and the filmstrip painted it in front, the server holds an element-order row, Undo layer order and Redo layer order took it back and forth. The eye hid Badge from the slide and the filmstrip with its row dimmed and the server holding identity.hidden, and Ctrl+Shift+H on the selected hidden row showed it again. A reload kept the order and the name.`,
+    `Two overlapping shapes listed front first as ${ellipse} and ${rectangle}. Hover outlined ${rectangle} on the slide, a click selected it there, a double-click renamed ${ellipse} to Badge and the server kept the name. A drag put ${rectangle} above Badge: the slide and the filmstrip painted it in front, the server holds an element-order row, Undo layer order and Redo layer order took it back and forth. The eye hid Badge from the slide and the filmstrip with its row dimmed and the server holding identity.hidden, and Ctrl+Shift+H on the selected hidden row showed it again. The padlock locked ${rectangle}: its row read Locked, the slide stopped taking pointers on it, and the server holds identity.locked. A reload kept the order and the name.`,
   )
 }
