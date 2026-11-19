@@ -112,6 +112,25 @@ describe("exportParts on a line", () => {
     expect(text(exported(parts, shape.node, inherited), shape.part)).toBe(text(parts, shape.part))
   })
 
+  it("replaces a preset with native dash and gap pairs and preserves every other byte", async () => {
+    const parts = await deck("census-updating-spm.pptx")
+    const connector = at(parts, 7, "26")
+    const pattern = {
+      custom: [
+        { dash: 350000, gap: 125000 },
+        { dash: 50000, gap: 275000 },
+      ],
+    }
+    const out = exported(parts, connector.node, { border: { dash: { set: pattern } } })
+    expect(text(out, connector.part)).toBe(
+      text(parts, connector.part).replace(
+        '<a:prstDash val="dash"/>',
+        '<a:custDash><a:ds d="350000" sp="125000"/><a:ds d="50000" sp="275000"/></a:custDash>',
+      ),
+    )
+    expect(shownBorder(out, connector)?.dash).toEqual({ value: pattern, own: true })
+  })
+
   it("patches one attribute of a connector's own line and leaves every other byte", async () => {
     const parts = await deck("census-updating-spm.pptx")
     const connector = at(parts, 7, "26")

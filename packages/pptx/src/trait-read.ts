@@ -17,6 +17,7 @@ import {
   type TemplateColor,
   type TraitReads,
 } from "@airdesign/document"
+import { readDash } from "./dash-markup.js"
 import { colorIn, fillIn, fillKinds, fillOf } from "./color-read.js"
 import { child, flag, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
@@ -131,12 +132,7 @@ function borderReads(
   reads["border.fill"] = read(fill, filled.line.source)
   const width = lines.find(({ line }) => whole(line.element, "w") !== undefined)
   if (width !== undefined) reads["border.width"] = read(whole(width.line.element, "w")!, width.line.source)
-  const ending = (
-    kind: string,
-    name: "border.dash" | "border.head" | "border.tail",
-    attribute: string,
-    quiet: string,
-  ) => {
+  const ending = (kind: string, name: "border.head" | "border.tail", attribute: string, quiet: string) => {
     const found = lines.find(({ line }) => {
       const held = child(line, kind)
       return held !== undefined && paintAttribute(held.element, attribute) !== null
@@ -144,7 +140,16 @@ function borderReads(
     const value = found === undefined ? null : paintAttribute(child(found.line, kind)!.element, attribute)
     if (found !== undefined && value !== null && value !== quiet) reads[name] = read(value, found.line.source)
   }
-  ending("a:prstDash", "border.dash", "val", "solid")
+  for (const { line } of lines) {
+    const dash = readDash(line)
+    if (dash === undefined) continue
+    if (dash !== null && dash !== "solid") {
+      const value =
+        typeof dash === "string" ? dash : dash.custom.flatMap(({ dash, gap }) => [dash / 1000, gap / 1000]).join(", ")
+      reads["border.dash"] = read(value, line.source)
+    }
+    break
+  }
   ending("a:headEnd", "border.head", "type", "none")
   ending("a:tailEnd", "border.tail", "type", "none")
 }

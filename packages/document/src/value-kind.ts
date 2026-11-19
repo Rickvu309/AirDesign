@@ -13,7 +13,7 @@ export type Desc =
   | { readonly kind: "number"; readonly unit: NumberUnit; readonly min: number; readonly max: number }
   | { readonly kind: "flag" }
   | { readonly kind: "words"; readonly max: number }
-  | { readonly kind: "choice"; readonly options: readonly string[] }
+  | { readonly kind: "choice"; readonly options: readonly string[]; readonly custom?: Desc }
   | { readonly kind: "mark" }
   | { readonly kind: "color" }
   | { readonly kind: "hex" }
@@ -89,6 +89,13 @@ export function words(max: number): ValueKind<string, string> {
 
 export function choice<const O extends string>(options: readonly [O, ...O[]]): ValueKind<O, O> {
   return kind({ kind: "choice", options })
+}
+
+export function customChoice<const O extends string, const C extends AnyKind>(
+  options: readonly [O, ...O[]],
+  custom: C,
+): ValueKind<O | { readonly custom: ValueOf<C> }, O | { readonly custom: AgentOf<C> }> {
+  return kind({ kind: "choice", options, custom: custom.desc })
 }
 
 export function alphaOver<const F extends string>(over: F): ValueKind<Alpha, never> & { readonly over: F } {
@@ -209,7 +216,8 @@ function readDesc(desc: Desc, raw: unknown): unknown {
     case "words":
       return typeof raw === "string" && bytesOf(raw) <= desc.max ? raw : unread
     case "choice":
-      return typeof raw === "string" && desc.options.includes(raw) ? raw : unread
+      if (typeof raw === "string" && desc.options.includes(raw)) return raw
+      return desc.custom === undefined ? unread : readFields({ custom: desc.custom }, raw)
     case "color":
       return readColor(raw) ?? unread
     case "hex":

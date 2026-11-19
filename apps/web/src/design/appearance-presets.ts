@@ -178,15 +178,23 @@ export function appearanceSections(
       },
     })
     const on = !(typeof fill.value === "object" && fill.value !== null && "none" in fill.value)
-    const styled = dash.value === "solid" || dash.value === "dash" || dash.value === "dot"
+    const styled =
+      dash.value === "solid" ||
+      dash.value === "dash" ||
+      dash.value === "dot" ||
+      (typeof dash.value === "object" && dash.value !== null && "custom" in dash.value)
     const width = widthControl(controls)
     const color = styled ? colorControl(fill) : undefined
-    const exact = controls.filter(
-      (control) =>
-        control.trait === "border" &&
-        exactFields.includes(control.field) &&
-        (ends || (control.field !== "head" && control.field !== "tail")),
-    )
+    const rawWidth = width?.value
+    const widthInPixels = typeof rawWidth === "number" && rawWidth > 0 ? rawWidth / 9525 : 1
+    const exact = controls
+      .filter(
+        (control) =>
+          control.trait === "border" &&
+          exactFields.includes(control.field) &&
+          (ends || (control.field !== "head" && control.field !== "tail")),
+      )
+      .map((control) => (control === dash ? { ...control, numberScale: widthInPixels } : control))
     added.push({
       trait: "border",
       label: designCopy.border,

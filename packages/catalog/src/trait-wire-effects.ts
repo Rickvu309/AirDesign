@@ -7,7 +7,7 @@ const inner = { inner: offset }
 
 export const effectsWire: TraitWire<"effects"> = {
   description:
-    "Sizes in points, direction in degrees. Drop shadow slots: shadow, drop1–3 (titles and bodies take shadow only). Inner shadow slots: innerShadow, inner1–3. Set slots together or independently. none clears one.",
+    "Points and degrees. Drop shadows: shadow, drop1–3. Inner shadows: innerShadow, inner1–3. Titles and bodies take shadow only. none clears a slot.",
   fields: {
     shadow: {
       example: { effects: { shadow: drop } },

@@ -1,6 +1,7 @@
 import { namesAlpha, type Alpha, type FieldValue } from "@airdesign/document"
 import { alphaKept, colorsOf, fadedBytes, fadedFill, shownAlpha, type Faded } from "./alpha-codec.js"
 import { insertChild, type ChildOf } from "./child-order.js"
+import { writeDash } from "./dash-markup.js"
 import { spliceBytes, type ByteEdit } from "./element-span.js"
 import { shownBorder, type BorderField } from "./border-read.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
@@ -16,7 +17,6 @@ type Arrow = FieldValue<"border", "head">
 
 const empty = "<a:ln/>"
 const fillTags = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"]
-const dashTags = ["a:prstDash", "a:custDash"]
 const joinTags = ["a:round", "a:bevel", "a:miter"]
 const miterLimit = "800000"
 const fadedKinds = ["a:solidFill", "a:gradFill", "a:pattFill"]
@@ -110,11 +110,7 @@ export const borderXml: TraitXml<"border"> = {
       alphaKept(codec("fill", filled), borderAlpha, fadedBorder, (value) => namesAlpha(colorsOf(value))),
       (parts, at) => borderEdited(parts, at, borderChild(fillTags, null, null)),
     ),
-    dash: field(
-      "dash",
-      (value) => borderChild(dashTags, "a:prstDash", `<a:prstDash val="${value}"/>`),
-      borderChild(dashTags, null, null),
-    ),
+    dash: field("dash", (value) => writeDash("a:ln", value), writeDash("a:ln", null)),
     cap: field("cap", (value) => withAttribute("cap", value), withAttribute("cap", null)),
     compound: field("compound", (value) => withAttribute("cmpd", value), withAttribute("cmpd", null)),
     join: field(

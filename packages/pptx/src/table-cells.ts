@@ -1,5 +1,4 @@
 import {
-  dashPresets,
   tableSides,
   widestBorder,
   type Border,
@@ -9,12 +8,12 @@ import {
   type TableSide,
 } from "@airdesign/document"
 import { readableEdits, type TemplateColor } from "./cell-text.js"
+import { readDash, writeDash } from "./dash-markup.js"
 import { fillIn } from "./color-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { fillValueOf } from "./fill-read.js"
 import { child, whole, type Held } from "./markup-held.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
-import { paintAttribute } from "./paint-color.js"
 import { requireMarkup } from "./part-markup.js"
 import { slotRoot, withAttribute, withChild, type Slot } from "./slot-edit.js"
 import { cellsOf, type Grid } from "./table-grid.js"
@@ -26,7 +25,6 @@ type SideTag = "a:lnL" | "a:lnR" | "a:lnT" | "a:lnB"
 
 const sideTags: Readonly<Record<TableSide, SideTag>> = { left: "a:lnL", right: "a:lnR", top: "a:lnT", bottom: "a:lnB" }
 const fillTags = ["a:noFill", "a:solidFill", "a:gradFill", "a:blipFill", "a:pattFill", "a:grpFill"]
-const dashTags = ["a:prstDash", "a:custDash"]
 
 function fillOf(held: Held | undefined): CellFill | null {
   const fill = fillIn(held)
@@ -37,9 +35,7 @@ function fillOf(held: Held | undefined): CellFill | null {
 function borderOf(line: Held): Border {
   const width = whole(line.element, "w")
   const fill = fillOf(line)
-  const preset = child(line, "a:prstDash")
-  const dash =
-    preset === undefined ? undefined : dashPresets.find((each) => each === paintAttribute(preset.element, "val"))
+  const dash = readDash(line) ?? undefined
   return {
     ...(width === undefined || width < 0 || width > widestBorder ? {} : { width }),
     ...(fill === null ? {} : { fill }),
@@ -76,8 +72,7 @@ function borderSlot(tag: SideTag, wanted: Border, shown: Border | undefined): Sl
   if (wanted.fill !== undefined && !same(wanted.fill, shown?.fill)) {
     slots.push(filledChild(tag, fillTags, wanted.fill))
   }
-  if (wanted.dash !== undefined && wanted.dash !== shown?.dash)
-    slots.push(withChild(tag, dashTags, "a:prstDash", `<a:prstDash val="${wanted.dash}"/>`))
+  if (wanted.dash !== undefined && !same(wanted.dash, shown?.dash)) slots.push(writeDash(tag, wanted.dash))
   return slots.length === 0 ? null : (line) => slots.reduce((next, slot) => slot(next), line)
 }
 
