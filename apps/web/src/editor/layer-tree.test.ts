@@ -11,6 +11,7 @@ function row(shape: number, parent: number | null = null, hidden = false): Layer
     name: `L${String(shape)}`,
     kind: "shape",
     hidden,
+    locked: false,
   }
 }
 

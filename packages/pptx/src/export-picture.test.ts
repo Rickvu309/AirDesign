@@ -219,28 +219,43 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
   })
 })
 
-describe("an element's name, alt text and hidden flag export onto its p:cNvPr", () => {
-  it("writes each attribute escaped, keeps line breaks, and removes alt text and hidden when cleared", async () => {
+describe("an element's name, alt text, hidden flag and lock export onto its non-visual properties", () => {
+  it("writes each attribute escaped, keeps line breaks, and removes alt text, hidden and lock when cleared", async () => {
     const parts = await deck("doe-heat-pumps.pptx")
     const picture = at(parts, "2883", "13")
     expect(shownIdentity(parts, picture)).toEqual({
       name: "Picture 9",
       alt: "Diagram\n\nDescription automatically generated",
       hidden: false,
+      locked: false,
     })
     const named = exported(parts, picture.node, {
-      identity: { name: { set: 'Heat & "pump"' }, alt: { set: "Line one\nLine two" }, hidden: { set: true } },
+      identity: {
+        name: { set: 'Heat & "pump"' },
+        alt: { set: "Line one\nLine two" },
+        hidden: { set: true },
+        locked: { set: true },
+      },
     })
     expect(text(named, picture.part)).toContain(
       '<p:cNvPr id="13" name="Heat &amp; &quot;pump&quot;" descr="Line one&#xA;Line two" hidden="1">',
     )
-    expect(shownIdentity(named, picture)).toEqual({ name: 'Heat & "pump"', alt: "Line one\nLine two", hidden: true })
+    expect(text(named, picture.part)).toContain('<a:picLocks noChangeAspect="1" noMove="1" noResize="1" noRot="1"/>')
+    expect(shownIdentity(named, picture)).toEqual({
+      name: 'Heat & "pump"',
+      alt: "Line one\nLine two",
+      hidden: true,
+      locked: true,
+    })
     expect(
       paintReader(named)
         .slide(picture.part)
         .elements.some((each) => each.shape === "13"),
     ).toBe(false)
-    const cleared = exported(named, picture.node, { identity: { alt: { set: "" }, hidden: { set: false } } })
+    const cleared = exported(named, picture.node, {
+      identity: { alt: { set: "" }, hidden: { set: false }, locked: { set: false } },
+    })
+    expect(text(cleared, picture.part)).toContain('<a:picLocks noChangeAspect="1"/>')
     expect(text(cleared, picture.part)).toContain('<p:cNvPr id="13" name="Heat &amp; &quot;pump&quot;">')
     const painted = paintReader(cleared)
       .slide(picture.part)

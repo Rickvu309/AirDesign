@@ -136,7 +136,7 @@ export function deleteChangeSchema(): JsonSchema {
     type: "object",
     additionalProperties: false,
     required: ["op", "node"],
-    description: "Delete one layer. A group, a layer in a plain group, and an animated layer cannot be deleted.",
+    description: "Delete one layer. A group, a layer in a plain group, or an animated layer cannot be.",
     properties: {
       op: { type: "string", const: "delete" },
       node: {

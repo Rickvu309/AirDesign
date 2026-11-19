@@ -80,6 +80,7 @@ describe("the one table of traits", () => {
       "identity.name",
       "identity.alt",
       "identity.hidden",
+      "identity.locked",
       "link.target",
       "box.x",
       "box.y",

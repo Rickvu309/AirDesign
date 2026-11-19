@@ -1,7 +1,7 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const bodyWire: TraitWire<"body"> = {
-  description: "How a text layer or shape lays out its text. Each field stands alone.",
+  description: "How a layer lays out its text. Fields stand alone.",
   fields: {
     insets: {
       description: "Space between each edge and the text, in points.",
@@ -10,7 +10,7 @@ export const bodyWire: TraitWire<"body"> = {
     anchor: { description: "Where the text sits: t top, ctr middle, b bottom.", example: { body: { anchor: "b" } } },
     wrap: { description: "false keeps each line on one line.", example: { body: { wrap: false } } },
     autofit: {
-      description: "shrink makes overflowing text smaller; grow makes the box taller to hold it.",
+      description: "shrink shrinks overflowing text; grow makes the box taller.",
       example: { body: { autofit: "grow" } },
     },
     vertical: {

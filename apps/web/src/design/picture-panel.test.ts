@@ -57,6 +57,7 @@ it("leads a shape whose fills hold an image with Fill, Opacity, Border and Shado
     ["Name", "text"],
     ["Alt text", "text"],
     ["Hide on slide", "toggle"],
+    ["Lock on slide", "toggle"],
   ])
   expect(panel.sections.find((section) => section.trait === "opacity")?.strips.flat()[0]?.value).toBe(60_000)
 })

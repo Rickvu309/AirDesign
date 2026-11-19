@@ -11,6 +11,7 @@ export type LayerRow = {
   readonly name: string
   readonly kind: LayerKind
   readonly hidden: boolean
+  readonly locked: boolean
   readonly flow?: LayerFlow
 }
 

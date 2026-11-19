@@ -33,7 +33,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
     ...fieldKeys("templateStyle").filter((field) => field !== chosenStyle),
   ],
   deck: [chosenStyle],
-  kept: ["identity.name", "identity.alt", "identity.hidden"],
+  kept: ["identity.name", "identity.alt", "identity.hidden", "identity.locked"],
 }
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]

@@ -135,6 +135,7 @@ function grabbed(element: CanvasElement): boolean {
 }
 
 function takesPointer(element: CanvasElement, text: string, moving: boolean, drawnWhenBlank: boolean): boolean {
+  if (element.locked === true) return false
   const movable = moving && grabbed(element)
   if (element.backdrop === true) return movable
   if (!element.editable && !movable) return false

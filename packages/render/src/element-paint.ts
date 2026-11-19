@@ -44,6 +44,7 @@ export type ElementPaint = {
   readonly box: PaintBox | null
   readonly editable: boolean
   readonly movable?: boolean
+  readonly locked?: true
   readonly placeholder: boolean
   readonly prompt?: string | null
   readonly unshownText?: string

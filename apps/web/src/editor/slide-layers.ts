@@ -23,7 +23,16 @@ export function slideLayerRows(parts: Parts, slide: string, look: (node: Element
     if (node === undefined) return []
     const parent = shape.group === undefined ? null : (readElementId(`${slide}.${shape.group}`) ?? null)
     const identity = shownIdentity(parts, { slide, part: shape.part, shape: shape.shape })
-    return [{ node, parent, look: look(node), name: identity?.name ?? "", hidden: identity?.hidden === true }]
+    return [
+      {
+        node,
+        parent,
+        look: look(node),
+        name: identity?.name ?? "",
+        hidden: identity?.hidden === true,
+        locked: identity?.locked === true,
+      },
+    ]
   })
   const backdrops = new Set(found.flatMap((each) => (each.look.backdrop === undefined ? [] : [each.look.backdrop])))
   const kept = found.filter((each) => !backdrops.has(each.node))
@@ -34,6 +43,7 @@ export function slideLayerRows(parts: Parts, slide: string, look: (node: Element
     name: names[at] ?? each.name,
     kind: each.look.kind,
     hidden: each.hidden,
+    locked: each.locked,
     ...(each.look.flow === undefined ? {} : { flow: each.look.flow }),
   }))
 }
