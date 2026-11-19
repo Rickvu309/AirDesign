@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { openScreen } from "./open-screen"
 
 const sectioned = join(process.cwd(), "scripts/pptx-fixtures/sections-before.pptx")
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
@@ -181,7 +182,7 @@ test("a deck without sections lists its slides with no headings", async ({ page 
 test("the real filmstrip draws section headings and a collapsed section where the designed editor puts them", async ({
   page,
 }) => {
-  await page.goto(designed)
+  await openScreen(page, designed)
   const design = await sections(page)
   await open(page, sectioned)
   await page.locator("[data-slide-entry='2']").click()

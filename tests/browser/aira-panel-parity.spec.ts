@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { forward, indexed, openClean, signInBrowser, test } from "./api-stack"
+import { openScreen } from "./open-screen"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -75,9 +76,9 @@ test("the real Agent panel keeps the designed head, composer, message and step r
   context,
   stack,
 }) => {
-  await page.goto("/screens/s42-01-editor-agent-working")
+  await openScreen(page, "/screens/s42-01-editor-agent-working")
   const designWorking = await panelRegions(page, "Building slide 3 of 8")
-  await page.goto("/screens/s42-02-editor-agent-run-complete")
+  await openScreen(page, "/screens/s42-02-editor-agent-run-complete")
   const designDone = await panelRegions(page, "Read 1 file, built 8 slides")
 
   const cookie = await stack.signIn()

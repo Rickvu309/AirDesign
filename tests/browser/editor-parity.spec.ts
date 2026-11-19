@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
+import { openScreen } from "./open-screen"
 
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const designed = "/screens/s42-02-editor-agent-run-complete"
@@ -120,7 +121,7 @@ test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 test("the real editor's sidebar, canvas, toolbar and panel head sit where the designed editor puts them", async ({
   page,
 }) => {
-  await page.goto(designed)
+  await openScreen(page, designed)
   const design = await regions(page, 2, 1)
   await openClean(page)
   const real = await regions(page, 0, 0)
@@ -267,7 +268,7 @@ for (const [state, screen, ask, hold] of [
   ],
 ] as const) {
   test(`the Agent panel head sits where the designed head puts it when ${state}`, async ({ page }) => {
-    await page.goto(screen)
+    await openScreen(page, screen)
     const design = await headRegions(page)
     await mockAira(page, hold)
     await openClean(page)
