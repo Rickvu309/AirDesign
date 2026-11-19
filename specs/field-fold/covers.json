@@ -76,8 +76,8 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "0dae79830c5e",
-      "blob": "2eac5cecab9e863da144e5717840ba9b37b2acbd"
+      "digest": "3d023d1cfe65",
+      "blob": "f2d6c26c10b8b46204645bd9381be35aed86e221"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
