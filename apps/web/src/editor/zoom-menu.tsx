@@ -70,7 +70,13 @@ export function ZoomMenu({
   function restoreAfterTyping() {
     if (!typed.current || canvas === undefined) return true
     typed.current = false
-    queueMicrotask(() => canvas.current?.focus({ preventScroll: true, focusVisible: false }))
+    queueMicrotask(() => {
+      const root = canvas.current
+      if (root === null) return
+      const active = document.activeElement
+      if (active instanceof Element && root.contains(active) && active !== root) return
+      root.focus({ preventScroll: true, focusVisible: false })
+    })
     return false
   }
   const choose = (next: Zoom) => {
