@@ -5,7 +5,7 @@ export const transitionWire: TraitWire<"transition"> = {
   fields: {
     value: {
       description:
-        "Omit when it arrives on click with no transition, or when the file keeps a transition this value cannot say. Setting it replaces that kept transition.",
+        "Omit for on click with no transition, or when the file keeps one this cannot say; setting it replaces that.",
       example: { transition: { value: { dissolve: { duration: 500, advance: "click" } } } },
     },
   },

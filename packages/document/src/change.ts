@@ -16,7 +16,8 @@ import {
   type ElementId,
   type SlideId,
 } from "./element-id.js"
-import { groupParent } from "./element-group.js"
+import { frameBackdrop, groupParent } from "./element-group.js"
+import { framedNow, readLayout } from "./frame-layout.js"
 import { elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
@@ -79,6 +80,8 @@ export type ScopedElement = {
   readonly placed?: Box
   readonly outline?: Outline | null
   readonly parent?: ElementId | null
+  readonly backdrop?: ElementId
+  readonly origin?: Box
 }
 
 export type Scope = {
@@ -146,6 +149,12 @@ function wholeBox(box: Box | null): Loose {
 
 type Spot = { readonly x: number; readonly y: number }
 
+function framedFields(view: ScopedElement, fields: Loose): Loose {
+  const origin = view.origin
+  if (origin === undefined || typeof fields.x !== "number" || typeof fields.y !== "number") return fields
+  return { ...fields, x: fields.x - origin.x, y: fields.y - origin.y }
+}
+
 function traitPatch(
   trait: TraitName,
   input: Loose,
@@ -153,7 +162,7 @@ function traitPatch(
   spot: Spot | undefined,
 ): Readonly<Record<string, FieldEdit<unknown>>> {
   const box = view.box ?? (spot === undefined ? null : (view.placed ?? null))
-  const fields = trait === "box" ? { ...wholeBox(box), ...input, ...spot } : input
+  const fields = trait === "box" ? framedFields(view, { ...wholeBox(box), ...input, ...spot }) : input
   const edits: Record<string, FieldEdit<unknown>> = {}
   for (const [key, value] of Object.entries(fields))
     if (!inputOf(trait, key)) edits[key] = value === null ? "inherit" : { set: value }
@@ -245,6 +254,27 @@ function planNode(
   return { node: view.node, row: { v: format, patch: patch as ElementPatch } }
 }
 
+const backdropKeys: readonly string[] = ["fills", "border", "geometry", "opacity"]
+
+export function paintsBackdrop(view: ScopedElement, field: string): boolean {
+  return view.backdrop !== undefined && backdropKeys.includes(field.split(".")[0] ?? "")
+}
+
+function framePaint(
+  change: SetChange,
+  view: ScopedElement | undefined,
+  scope: Scope,
+): readonly (readonly [SetChange, ScopedElement | undefined])[] {
+  const backdrop = view?.backdrop
+  const entries = Object.entries(change).filter(([, value]) => value !== undefined)
+  if (backdrop === undefined || !entries.some(([key]) => backdropKeys.includes(key))) return [[change, view]]
+  const painted = Object.fromEntries(entries.filter(([key]) => backdropKeys.includes(key)))
+  const own = Object.fromEntries(entries.filter(([key]) => !backdropKeys.includes(key)))
+  const named = Object.keys(own).some((key) => key === "opacity" || traitNames.some((trait) => trait === key))
+  const rest = named ? [[own as SetChange, view] as const] : []
+  return [...rest, [{ ...painted, target: { node: backdrop } } as SetChange, scope.view(backdrop)] as const]
+}
+
 export function planChange(change: SetChange, scope: Scope): PlannedChange {
   const nodes = scope.expand(change.target)
   if (nodes === "indexing" || nodes.length === 0)
@@ -255,12 +285,14 @@ export function planChange(change: SetChange, scope: Scope): PlannedChange {
   const placed = placements(change.box as Loose | undefined, views, scope.size)
   for (const node of nodes) {
     const view = scope.view(node)
-    const planned =
-      view === undefined
-        ? [{ node, trait: null, code: "dead" as const }]
-        : planNode(change, view, placed.get(node), scope)
-    if ("row" in planned) rows.push(planned)
-    else refusals.push(...planned)
+    for (const [part, target] of framePaint(change, view, scope)) {
+      const planned =
+        target === undefined
+          ? [{ node, trait: null, code: "dead" as const }]
+          : planNode(part, target, placed.get(node), scope)
+      if ("row" in planned) rows.push(planned)
+      else refusals.push(...planned)
+    }
   }
   return refusals.length > 0 ? { ok: false, refusals } : { ok: true, rows }
 }
@@ -346,6 +378,19 @@ function outlineNow(
   return outlineOf(typeof named === "string" ? named : null, {})
 }
 
+function backdropOf(register: Register, node: ElementId): { readonly backdrop?: ElementId } {
+  const backdrop = frameBackdrop(register, node)
+  return backdrop === null ? {} : { backdrop }
+}
+
+function framedBox(register: Register, node: ElementId): { readonly box: Box; readonly origin: Box } | null {
+  const parent = groupParent(register, node)
+  if (parent === null || parent === undefined || framedNow(register, node) === null) return null
+  const view = readLayout(register, parent)
+  const child = view?.children.find((each) => each.node === node)
+  return view === null || view === undefined || child === undefined ? null : { box: child.box, origin: view.box }
+}
+
 export function registerScope(register: Register): Scope {
   return {
     expand: (target) => expanded(register, target),
@@ -357,6 +402,7 @@ export function registerScope(register: Register): Scope {
       const facts = elementFacts(register, node)
       if (facts === undefined) return undefined
       const body = register.nodes.includes(node) ? register.elements[node] : undefined
+      const framed = framedBox(register, node)
       return {
         node,
         facts,
@@ -364,10 +410,12 @@ export function registerScope(register: Register): Scope {
         textStyleEdits: storedTextStyleEdits(body),
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
-        box: (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
+        box: framed?.box ?? (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
+        ...(framed === null ? {} : { origin: framed.origin }),
         ...(opening?.placed === undefined ? {} : { placed: opening.placed }),
         outline: outlineNow(body === undefined ? undefined : landedPatch(body, "text").geometry, opening),
         parent: groupParent(register, node) ?? null,
+        ...(facts.frame === undefined ? {} : backdropOf(register, node)),
       }
     },
   }

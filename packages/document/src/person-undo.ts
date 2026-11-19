@@ -7,7 +7,7 @@ import { elementStacks, sitsBefore } from "./element-stack.js"
 import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./element-group.js"
 import { rowsKept } from "./group-place.js"
 import { regroupTurn, ungroupTurn } from "./group-turn.js"
-import { joinTurn, spotNow, type Spot } from "./frame-layout.js"
+import { joinEdit, joinTurn, spotNow, type Spot } from "./frame-layout.js"
 import type { OrderKey } from "./order-key.js"
 import { openingElement } from "./slide-floor.js"
 import { readTextValue } from "./text-value.js"
@@ -385,6 +385,14 @@ export function undoSlides(register: Register, runId: string): Register | null {
   for (let at = register.order.length - 1; at >= 0; at -= 1) {
     const edit = register.order[at]
     if (edit === undefined || edit.runId !== runId) continue
+    if (edit.slide === "element-join") {
+      const spot = spotNow({ ...register, order: register.order.slice(0, at) }, edit.member.node)
+      const back = spot === null ? null : joinEdit(current, edit.member.node, spot)
+      const decision = back === null ? null : decide(current, { command: "slide", file: register.file, edit: back })
+      if (decision === null || decision.decision !== "apply") return null
+      current = decision.register
+      continue
+    }
     if (groupCommand(edit)) {
       const turned = groupUndone(current, edit)
       if (turned === null) return null

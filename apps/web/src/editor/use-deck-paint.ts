@@ -3,6 +3,7 @@ import { connect, memoryRemote } from "@airdesign/live"
 import { boundTargets, type ReadShape } from "@airdesign/pptx"
 import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
+import { indexedRegister } from "@/indexed-register"
 import { type SlideCanvases } from "@/canvas-slide"
 import type { StripGroup } from "@/editor/slide-sidebar"
 import { type TextBox } from "@/commit-edit"
@@ -66,10 +67,11 @@ export function useDeckPaint(
     bound.current = boundTargets(next.display)
     structure.current = structureOf(framed, bound.current)
     shownRegister.current = register
-    const paintChanges = liveRepaint(store.current, next.files, framed, busy.current, next.numberText)
+    const laid = framed === null ? null : indexedRegister(shownParts.current, framed)
+    const paintChanges = liveRepaint(store.current, next.files, laid, busy.current, next.numberText)
     repaint.current = (changed, from) => {
       shownRegister.current = changed
-      paintChanges(changed, from)
+      paintChanges(indexedRegister(shownParts.current, changed), from)
     }
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)

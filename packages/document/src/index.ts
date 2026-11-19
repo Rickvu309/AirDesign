@@ -87,6 +87,7 @@ export { fitNewBox, placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
 export {
   namedFields,
+  paintsBackdrop,
   planChange,
   registerScope,
   writtenField,
@@ -204,7 +205,7 @@ export {
 export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
 export { groupCommand, groupedNow, groupFormed, groupNode, madeGroup, type Member } from "./element-group.js"
 export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
-export { changeLayout, layoutNodes, readLayout } from "./frame-layout.js"
+export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
 export { regroupTurn, ungroupTurn } from "./group-turn.js"
 export {

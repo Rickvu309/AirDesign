@@ -49,6 +49,7 @@ export type LayoutIntent =
   | { readonly remove: ElementId }
   | { readonly reflow: ElementId }
   | { readonly place: ElementId; readonly box: Box; readonly file: readonly SlideId[] }
+  | { readonly move: ElementId; readonly frame: ElementId | null; readonly file: readonly SlideId[] }
 
 const point = 12_700
 const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -350,6 +351,13 @@ export function changeLayout(
     const slide = wrapped(register, intent)
     return slide === null ? null : { slide }
   }
+  if ("move" in intent) {
+    const now = spotNow(register, intent.move)
+    const box = now === null ? null : intent.frame === null ? now.box : (placeOf(register, intent.move)?.box ?? null)
+    const spot = box === null ? null : { frame: intent.frame, before: null, box }
+    const turn = spot === null ? null : joinTurn(register, intent.file, intent.move, spot)
+    return turn === null ? null : { turn }
+  }
   if ("place" in intent) {
     const spot = dropSpot(register, intent.place, intent.box)
     if (spot === "kept") return { turn: [] }
@@ -391,17 +399,22 @@ function spotRows(register: Register, node: ElementId, spot: Spot): readonly Pla
   return [{ node, patch: { box: { x: { set: box.x - view.box.x }, y: { set: box.y - view.box.y } } } }]
 }
 
+export function joinEdit(register: Register, node: ElementId, spot: Spot): ElementJoin | null {
+  const slide = readSlideId(shapeOf(node).slide)
+  const place = placeOf(register, node)
+  if (slide === undefined || place === null) return null
+  const member = memberOf(node, { ...place, box: spot.box })
+  return { slide: "element-join", id: slide, member, frame: spot.frame, before: spot.before }
+}
+
 export function joinTurn(
   register: Register,
   file: readonly SlideId[],
   node: ElementId,
   spot: Spot,
 ): readonly Command[] | null {
-  const slide = readSlideId(shapeOf(node).slide)
-  const place = placeOf(register, node)
-  if (slide === undefined || place === null) return null
-  const member = memberOf(node, { ...place, box: spot.box })
-  const edit: ElementJoin = { slide: "element-join", id: slide, member, frame: spot.frame, before: spot.before }
+  const edit = joinEdit(register, node, spot)
+  if (edit === null) return null
   const commands = [{ command: "slide" as const, file, edit }, ...personRows(spotRows(register, node, spot))]
   return landedTurn(register, commands) ? commands : null
 }

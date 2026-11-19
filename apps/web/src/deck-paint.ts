@@ -182,7 +182,7 @@ export function paint(
       designRows(floored).length > 0 ||
       imageTexts(floored).length > 0 ||
       cover)
-      ? editedParts(base, floored, pictureBytes)
+      ? editedParts(base, indexedRegister(parts, floored), pictureBytes)
       : base
   const display = sameIdentity(edited, earlier?.display)
   const read = readSlides(display)
@@ -192,13 +192,14 @@ export function paint(
   const reusable = earlier !== null && sameShared(shared, earlier.shared, slideParts)
   const before = new Map(reusable ? earlier.slides.map((each) => [each.shapes.part, each]) : [])
   const repainted: SlideId[] = []
-  const framed = framedOf(register === null ? null : indexedRegister(parts, register))
+  const laid = register === null ? null : indexedRegister(parts, register)
+  const framed = framedOf(laid)
   const slides = read.map(({ slide, part }): PaintedSlide => {
     const old = before.get(part)
     const same = old !== undefined && old.framed === framed.key && sameSlide(old.shapes, slide, base, display)
     const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display, framed.children)
     const values = shapes.shapes
-      .map(({ id, file }) => shownOf(register, id, numberText(id, shownValue(register, id, file))))
+      .map(({ id, file }) => shownOf(laid, id, numberText(id, shownValue(register, id, file))))
       .join("\n")
     if (same && old.values === values && old.canvas !== null && sameMedia(old.canvas, display))
       return { shapes, values, framed: framed.key, canvas: old.canvas }
@@ -220,7 +221,7 @@ export function paint(
         text: numberText(id, shownValue(register, id, file)),
       }
       if (!sameRecord(current, record)) store.publish(record)
-      store.placeBox(id, landedBox(register, id))
+      store.placeBox(id, landedBox(laid, id))
     }
     for (const [id, box] of shapes.boxes) boxes.set(id, box)
     for (const [id, box] of shapes.movables) movables.set(id, box)
@@ -239,7 +240,7 @@ export function paint(
     reader ??= paintReader(display, { fallbackPrompt })
     const fileTexts = () => (texts ??= paintReader(changedStyleParts(base, display), { fallbackPrompt }))
     const swatches = themeSwatches(display, painted.shapes.part)
-    const refit = new Set(painted.shapes.shapes.filter((shape) => refitted(register, shape)).map((shape) => shape.id))
+    const refit = new Set(painted.shapes.shapes.filter((shape) => refitted(laid, shape)).map((shape) => shape.id))
     painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit, framed)
     return painted.canvas.slide
   }

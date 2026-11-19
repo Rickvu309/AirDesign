@@ -59,7 +59,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call this when your turn is finished, so a person's changes stop closing layers to you and other agents can change the layers your turn holds. Takes the runId your edit answers carried.",
+      "Call when your turn is finished, so a person's changes stop closing layers to you and other agents can change the layers your turn holds. Takes the runId your edit answers carried.",
   },
   undo_run: { kind: "command", exposure: "web" },
   watch_deck: { kind: "stream", exposure: "web" },
@@ -70,7 +70,7 @@ export const catalog = {
     destructive: true,
     read: readAgentEdit,
     description:
-      "Change one deck: text, boxes, looks, layers and slides, all landing or none. Read it first with airdesign_read_deck and send that revision as base and each layer's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+      "Change one deck: text, boxes, looks, layers and slides, all landing or none. Read it first with airdesign_read_deck; send its revision as base and each layer's version as readAt (a change with op needs none). Each answer carries your turn's runId; call airdesign_stop_run with it when done.",
   },
   list_decks: {
     kind: "query",
@@ -85,7 +85,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. slides lists slide ids in position order. Every page includes groups, each slide group's first slide id; a slide group exports as a PowerPoint section. Added, duplicated and moved slides join their anchor's slide group. Indexed layers include node (layer id), slide, kind, opening or changed value and box, and version (0 before any change). role names a placeholder. design is one line of the layer's look, as the instructions say. closed means a person's newer change or another run holds it. grouped layers refuse box changes. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+      "Read one deck this account owns. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. Layers give node (layer id), slide, kind, value, box and version (0 unchanged); role names a placeholder; design is one line of its look. closed: a person's newer change or another run holds it. Grouped layers refuse box changes; frame is auto or free. index is ready, pending or missing; if not ready, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

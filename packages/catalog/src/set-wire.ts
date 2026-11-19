@@ -240,7 +240,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add a text layer, or with icon a shape whose fills hold a Lucide icon, to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
+      "Add a text layer, or with icon a shape whose fills hold a Lucide icon, to one slide; without box it takes the largest free area. Its id comes back in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },

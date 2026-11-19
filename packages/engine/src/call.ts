@@ -12,6 +12,7 @@ import {
   limits,
   openRegister,
   openingElement,
+  readLayout,
   valueBytes,
   type Command,
   type Decision,
@@ -225,10 +226,19 @@ export function liveRuns(deck: Deck): readonly string[] {
   return [...new Set(runs.filter((runId) => runId !== null))]
 }
 
+function withBackdrops(register: Register, elements: readonly WireRunElement[]): readonly WireRunElement[] {
+  return elements.flatMap((element) => {
+    const backdrop = readLayout(register, element.node)?.backdrop
+    return backdrop === undefined || elements.some((each) => each.node === backdrop)
+      ? [element]
+      : [element, { node: backdrop }]
+  })
+}
+
 function startRun(deck: Deck, requested: string, elements: readonly WireRunElement[]): StartResult {
   const runId = liveRun(deck.register, elements) ?? requested
   let register = deck.register
-  for (const element of elements) {
+  for (const element of withBackdrops(register, elements)) {
     if (floorOver(register, element)) return refused("limit")
     const opened = openedRegister(register, element)
     if (!opened.ok) return refused(opened.refusal)

@@ -103,6 +103,7 @@ test.describe("recorded Aira", () => {
     "aira-head",
     "agent-after-open",
     "group-elements",
+    "auto-layout-agent",
     "connector-diagram",
     "agent-bench-recorded",
   ]) {

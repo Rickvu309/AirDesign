@@ -41,6 +41,7 @@ import {
 } from "@airdesign/document"
 
 import type { Deck } from "./call.js"
+import { framedElement, readFrames } from "./read-frames.js"
 
 export const readTokens = 8000
 
@@ -56,6 +57,7 @@ export type ReadElement = {
   readonly role?: Role
   readonly design?: string
   readonly closed?: true
+  readonly frame?: "auto" | "free"
 }
 
 export type ReadTemplateStyle = TemplateStyle & {
@@ -345,6 +347,7 @@ export function readDeckPage(
 ): ReadDeckAnswer {
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
+  const framed = readFrames(deck.register)
   const index = deck.register.index
   const used = usedStyles(deck.register)
   const templateStyles = index?.templateStyles?.flatMap((style, at) => {
@@ -477,16 +480,20 @@ export function readDeckPage(
     query.cursor === undefined ? 0 : firstAfter(nodes, query.cursor),
     (node) => {
       const slide = shapeOf(node).slide
+      if (framed.backdrops.has(node)) return false
       return !goneSlides.has(slide) && (query.slide === undefined || slide === query.slide)
     },
-    (node) =>
-      elementOf(
-        node,
-        deck.register.elements[node],
-        query.runId,
-        fontsOf(shapeOf(node).slide),
-        foldedElement(deck.register, node),
-      ),
+    (node) => {
+      const shown = (each: ElementId) =>
+        elementOf(
+          each,
+          deck.register.elements[each],
+          query.runId,
+          fontsOf(shapeOf(each).slide),
+          foldedElement(deck.register, each),
+        )
+      return framedElement(shown(node), framed, shown)
+    },
   )
 }
 
