@@ -95,3 +95,17 @@ test("a layer hides from its eye in the layers panel and with Ctrl+Shift+H, and 
   await page.getByRole("button", { name: undoCopy.undoNamed.hide, exact: true }).click()
   await expect(square).toBeVisible()
 })
+
+test("a hidden layer inside a frame stays selected in the layers panel", async ({ page }) => {
+  await openDeck(page, "frame.pptx")
+  await page.locator("[data-design-mode]").click()
+  const layers = page.locator("[data-layers-panel]")
+  await layers.locator("[data-layer-caret]").first().click()
+  const row = layers.getByRole("treeitem").nth(1)
+  await row.click()
+  await expect(row).toHaveAttribute("aria-selected", "true")
+  await row.hover()
+  await row.locator("[data-layer-eye]").click()
+  await expect(row).toHaveAttribute("data-layer-hidden", "")
+  await expect(row).toHaveAttribute("aria-selected", "true")
+})

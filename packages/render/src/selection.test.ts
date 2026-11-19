@@ -115,6 +115,12 @@ describe("kept", () => {
     })
   })
 
+  it("keeps a hidden layer inside a group selected with the group as its parent", () => {
+    const hidden = { ...slideOf(slide.elements.filter((each) => each.id !== deep)), unpainted: [deep] }
+    const selection = { ids: [deep], inside: outer }
+    expect(kept(selection, hidden)).toBe(selection)
+  })
+
   it("drops elements an agent grouped, since they no longer share the selection's parent", () => {
     const grouped = slideOf([element(outer), element(loose, outer), element(other, outer)])
     expect(kept(many(loose, other), grouped)).toEqual(noSelection)
