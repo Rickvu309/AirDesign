@@ -480,7 +480,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
           ...diagramOf(item, box),
           ...frameChart(item.element, sheet.children, slidePart, charts),
           ...labelOf(item),
-          ...(lockedAt(sheet.elements, item.identity) ? { locked: true as const } : {}),
+          ...(lockedAt(sheet.children, item.identity) ? { locked: true as const } : {}),
           ...paintConnection(item.element, sheet.children),
           ...item.paint,
         }
