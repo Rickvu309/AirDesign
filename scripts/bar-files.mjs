@@ -77,7 +77,7 @@ const checkRows = (text = "") =>
       where: row.match(/where: "([^"]+)"/)?.[1] ?? "everywhere",
     }))
 
-const looserRows = (file, { base, head }) => {
+const rowsLowered = (file, { base, head }) => {
   const before = checkRows(base)
   const after = checkRows(head)
   const named = new Set(before.map((row) => row.name))
@@ -103,7 +103,7 @@ const needsOf = (text = "") =>
     match[1].split(",").map((name) => name.trim()),
   )
 
-const looserWorkflow = (file, { base, head }) => [
+const workflowLowered = (file, { base, head }) => [
   ...minus(jobsOf(base), jobsOf(head)).map((job) => `The job ${job} in ${file} was removed.`),
   ...minus(needsOf(base), needsOf(head)).map((job) => `A job in ${file} no longer needs ${job}.`),
 ]
@@ -113,7 +113,7 @@ const specNames = (text = "") =>
     match[1].split(/\s+/).filter((name) => name !== ""),
   )
 
-const looserSpec = (file, { base, head }) =>
+const specLowered = (file, { base, head }) =>
   specNames(head).length < specNames(base).length
     ? minus(specNames(base), specNames(head)).map((name) => `${file} no longer checks ${name}.`)
     : []
@@ -128,7 +128,7 @@ const parsed = (text) => {
 
 const failing = (level) => ["error", "deny", 2].includes(Array.isArray(level) ? level[0] : level)
 
-const looserLint = (file, { base, head }) => {
+const lintLowered = (file, { base, head }) => {
   const before = parsed(base)?.rules ?? {}
   const after = parsed(head)?.rules ?? {}
   return Object.keys(before)
@@ -138,7 +138,7 @@ const looserLint = (file, { base, head }) => {
 
 const strictOption = /^(?:strict|noImplicit|noUnused|noUnchecked|noFallthrough|noPropertyAccess|exactOptional)/
 
-const looserTypes = (file, { base, head }) => {
+const typesLowered = (file, { base, head }) => {
   const before = parsed(base)?.compilerOptions ?? {}
   const after = parsed(head)?.compilerOptions ?? {}
   return Object.keys(before)
@@ -147,7 +147,7 @@ const looserTypes = (file, { base, head }) => {
 }
 
 const skipped = /^\s*(?:it|test|describe|suite)(?:\.\w+)*\.(?:skip|skipIf|only|todo|fixme)\b/
-const looserTests = (file, { lines }) => {
+const testsLowered = (file, { lines }) => {
   const { added, removed } = lines
   const more = added.filter((line) => skipped.test(line)).length - removed.filter((line) => skipped.test(line)).length
   return more > 0 ? [`${file} skips ${more} more test${more === 1 ? "" : "s"}.`] : []
@@ -178,12 +178,12 @@ const lintFile = (file) => /^\.?oxlintrc\.json$/.test(nameOf(file))
 const typesFile = (file) => /^tsconfig.*\.json$/.test(nameOf(file))
 
 const detectors = [
-  [(file) => file === "scripts/check-steps.mjs", looserRows],
-  [workflowFile, looserWorkflow],
-  [(file) => kindOf(file) === "spec" && file.endsWith(".cfg") && !file.endsWith(".known.cfg"), looserSpec],
-  [lintFile, looserLint],
-  [typesFile, looserTypes],
-  [(file) => /\.(?:test|spec)\.tsx?$/.test(file), looserTests],
+  [(file) => file === "scripts/check-steps.mjs", rowsLowered],
+  [workflowFile, workflowLowered],
+  [(file) => kindOf(file) === "spec" && file.endsWith(".cfg") && !file.endsWith(".known.cfg"), specLowered],
+  [lintFile, lintLowered],
+  [typesFile, typesLowered],
+  [(file) => /\.(?:test|spec)\.tsx?$/.test(file), testsLowered],
   [judges, raisedLimits],
 ]
 
@@ -193,8 +193,8 @@ export const patchLines = (patch) => {
   return netLines(side("-").join("\n"), side("+").join("\n"))
 }
 
-export const loosenings = (file, read) => {
+export const lowerings = (file, read) => {
   if (kindOf(file.name) === "case" && file.status === "removed")
     return [`The PowerPoint case ${file.name} was removed.`]
-  return detectors.flatMap(([applies, looser]) => (applies(file.name) ? looser(file.name, read(file)) : []))
+  return detectors.flatMap(([applies, lowers]) => (applies(file.name) ? lowers(file.name, read(file)) : []))
 }

@@ -1,0 +1,37 @@
+name: countersign
+
+on:
+  issue_comment:
+    types:
+      - created
+
+concurrency:
+  group: countersign-${{ github.event.issue.number }}
+
+jobs:
+  countersign:
+    name: countersign
+    if: >-
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, 'countersign ') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .head.sha)
+          run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow bar.yml --commit "$head" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -z "$run" ]; then
+            echo "No bar run for $head yet. The next bar run reads the countersign."
+            exit 0
+          fi
+          gh run watch "$run" --repo "$GITHUB_REPOSITORY" > /dev/null
+          gh run rerun "$run" --repo "$GITHUB_REPOSITORY"
+          echo "The bar check runs again on $head and reads the countersign."

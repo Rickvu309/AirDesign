@@ -13,7 +13,7 @@ Prefer the simple system. Keep only complexity the product needs.
 
 ## How a change lands
 
-One agent builds, proves and lands its own change, and starts no review agent. A bug that gets through is fixed later, with a test or check that stops it coming back.
+One agent builds, proves and lands its own change, and starts no review agent, except the countersign verifier `pnpm land` names when the `bar` check says the PR lowers the bar. A bug that gets through is fixed later, with a test or check that stops it coming back.
 
 1. Branch from `origin/main` in a worktree of your own. One change is one PR against `main`.
 2. Write the failing test first, at the lowest layer that fails. Tests never retry. A test that fails only under load has found a race: fix the race.

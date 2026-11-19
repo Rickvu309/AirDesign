@@ -85,12 +85,16 @@ Every goal, every limit, and every PowerPoint case and deck that is already judg
 _Avoid_: quality bar, standard, baseline
 
 **lowers the bar**:
-A pull request lowers the bar when it moves a metric away from its goal, raises a limit, or changes a judged case or deck.
+A pull request lowers the bar when it raises a limit, moves a goal, moves a metric away from its goal, removes a metric, check step, job, spec invariant, case, deck or caught break, skips a test, makes a check step a warning or local, or turns down a lint or type rule.
 _Avoid_: regresses, weakens, loosens
 
 **changes ci**:
-An edit to a file that decides what ci checks.
+An edit to a file that decides which checks run or how they judge: a workflow, a check step or check script, test selection, the gate, or lint and type config. Tests, cases, fixtures, specs and docs alone do not change ci.
 _Avoid_: touches infra, tooling change
+
+**countersign**:
+A comment `countersign <head> right: <reason>` on a pull request that lowers the bar, from an agent that did not write it and judged only its diff and the bar's list. The `bar` check fails until one names the current head.
+_Avoid_: approval, sign-off, review
 
 ## How a change is shown to work
 
