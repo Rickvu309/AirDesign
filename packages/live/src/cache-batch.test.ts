@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb, node, other, countingRemote } from "./browser-fixtures.js"
+import { newPage } from "./device.js"
 import { type CommitResult, connect, deleteDatabase, memoryRemote, type Remote } from "./index.js"
 
 beforeEach(() => {
@@ -80,6 +81,37 @@ describe("live cache batches", () => {
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(sizes).toEqual([100, 100])
     expect(await cache.pending("deck")).toHaveLength(101)
+  })
+
+  it.each(["storage", "size"] as const)("keeps a %s refusal for queued flushes until reload", async (refusal) => {
+    const real = memoryRemote()
+    let reached: () => void = () => undefined
+    const sent = new Promise<void>((resolve) => (reached = resolve))
+    let answer: (result: CommitResult) => void = () => undefined
+    const answered = new Promise<CommitResult>((resolve) => (answer = resolve))
+    const commit = vi.fn<typeof real.commit>((body) => real.commit(body))
+    commit.mockImplementationOnce(() => {
+      reached()
+      return answered
+    })
+    const remote = { ...real, commit }
+    const cache = connect(remote)
+    await cache.enqueue("deck", "first", node, "")
+    const opening = cache.flush("deck")
+    await sent
+    await cache.enqueue("deck", "second", other, "")
+    const editing = connect(remote).flush("deck")
+    const refused = { ok: false, refusal }
+    answer({ ok: false, refusal })
+
+    expect(await Promise.all([opening, editing])).toEqual([refused, refused])
+    expect(commit).toHaveBeenCalledTimes(1)
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["first", "second"])
+
+    newPage()
+    const reloaded = connect(remote)
+    expect(await reloaded.flush("deck")).toMatchObject({ ok: true })
+    expect(await reloaded.pending("deck")).toEqual([])
   })
 
   it("keeps the second batch pending when its commit key does not match", async () => {

@@ -2,6 +2,8 @@ const steps = {
   Send: "the device sends the pending slide command with its once",
   Land: "the server lands the command, or answers where its once already landed",
   Lose: "the request or its answer is lost, and the fetch throws",
+  Refuse: "the device keeps a terminal refusal and its pending command",
+  FlushAfterRefusal: "a later flush reads the same refusal without sending",
   Answer: "the device reads the answer and confirms the command",
   Reload: "the person reloads the page",
   OrphanLands: "a request the old page sent reaches the server",
@@ -17,7 +19,8 @@ export const state = (v) =>
   `device ${v.known === -1 ? "has not read the deck" : `read ${v.known}`}, mirror holds it ${v.mirror === 0 ? "not" : v.mirror === 1 ? "once" : "twice"}` +
   `${v.pending ? `, row pending${v.mine ? "" : " from an earlier page"}` : ""}${wire(v)}${v.orphan === "sent" ? ", an old page's send on its way" : ""}` +
   `${v.reloads > 0 ? `, ${v.reloads} reload${v.reloads === 1 ? "" : "s"}` : ""}${v.other === 1 ? ", another writer wrote" : ""}` +
-  `${v.pending && v.due ? ", a send due" : ""}`
+  `${v.wire === "refused" ? ", sending blocked until reload" : ""}` +
+  `${v.pending && v.due ? ", a flush due" : ""}`
 
 export const step = (action) => steps[action] ?? null
 
