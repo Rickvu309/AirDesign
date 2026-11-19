@@ -28,6 +28,7 @@ import {
 import { routedParts } from "./connector-route.js"
 import { childSpace, placeFrame, shapePlace } from "./group-write.js"
 import { markFrame } from "./frame-tag.js"
+import { withFiledFrames } from "./filed-frames.js"
 import type { ShapeBox } from "./shape-write.js"
 import { dropUnusedTemplates } from "./template-drop.js"
 import { slidePart } from "./package-address.js"
@@ -247,5 +248,5 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
           ? writtenSlide(next, node, body, opening)
           : writtenElement(next, shapes, node, body, opening, media, numbers)
   }
-  return dropUnusedTemplates(routedParts(parts, laidOutFrames(next, register)), register)
+  return dropUnusedTemplates(routedParts(parts, laidOutFrames(next, withFiledFrames(parts, register))), register)
 }

@@ -101,6 +101,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("border"),
     slides("shadow"),
     slides("selectionColors"),
+    design("layout", true),
     design("box"),
     design("effects"),
     design("identity"),

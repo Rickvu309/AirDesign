@@ -4,7 +4,7 @@ export const geometryWire: TraitWire<"geometry"> = {
   description: "A PowerPoint preset; it replaces the whole shape.",
   fields: {
     shape: {
-      description: "adjust maps the preset's adjust names, such as adj1, to whole numbers; { } keeps the defaults.",
+      description: "adjust maps preset adjust names such as adj1 to whole numbers; { } keeps defaults.",
       example: { geometry: { shape: { preset: "roundRect", adjust: { adj: 30_000 } } } },
     },
   },

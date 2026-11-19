@@ -111,7 +111,7 @@ export function slideChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op"],
     description:
-      "add_slide takes after and layout, with optional slide group placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and group (same, new or keep). It moves them in presentation order in one edit; keep requires one complete current slide group. duplicate_slides and delete_slides take slides and land one edit. Copies follow the last source slide in presentation order. New ids come back in slides. The last slide cannot be deleted.",
+      "add_slide takes after and layout, with optional slide group placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and group (same, new, or keep for one whole slide group), in presentation order in one edit. duplicate_slides and delete_slides take slides in one edit; copies follow the last source. New ids come back in slides. The last slide cannot be deleted.",
     properties: {
       op: { type: "string", enum: slideOps },
       slide: slideSchema,
@@ -125,7 +125,7 @@ export function slideChangeSchema(): JsonSchema {
         type: "string",
         enum: ["same", "new", "keep"],
         description:
-          "Slide group. add_slide: same (default) or new. move_slides: same joins one, new starts one, keep moves a complete one. new/keep follow the anchor's remaining slide group; null moves to the front.",
+          "Slide group. add_slide: same (default) or new. move_slides: same joins one, new starts one, keep moves a whole one; new/keep follow the anchor's slide group; null moves to the front.",
       },
     },
   }
@@ -136,7 +136,7 @@ export function deleteChangeSchema(): JsonSchema {
     type: "object",
     additionalProperties: false,
     required: ["op", "node"],
-    description: "Delete one layer. A group, a layer inside a group, and a layer with an animation cannot be deleted.",
+    description: "Delete one layer. A group, a layer in a plain group, and an animated layer cannot be deleted.",
     properties: {
       op: { type: "string", const: "delete" },
       node: {

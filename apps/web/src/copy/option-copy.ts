@@ -7,6 +7,7 @@ import { fillWords } from "@/copy/fill-copy"
 import { borderWords } from "@/copy/border-copy"
 import { geometryWords } from "@/copy/geometry-copy"
 import { pictureWords } from "@/copy/picture-copy"
+import { layoutWords } from "@/copy/frame-copy"
 import { transitionWords } from "@/copy/transition-copy"
 
 export const optionCopy: Readonly<Record<string, string>> = {
@@ -23,6 +24,7 @@ export const optionCopy: Readonly<Record<string, string>> = {
   ...pictureWords,
   ...connectionWords,
   ...transitionWords,
+  ...layoutWords,
   name: "Name",
   id: "Text style",
   size: "Size",

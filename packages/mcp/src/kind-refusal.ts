@@ -7,6 +7,7 @@ import {
   writtenField,
   namedFields,
   opacityFields,
+  paintsBackdrop,
   openingElement,
   planChange,
   registerScope,
@@ -105,8 +106,14 @@ function setLines(register: Register, change: WireSet, at: number): readonly str
   return nodes.flatMap((node) => {
     const view = scope.view(node)
     if (view === undefined) return []
-    const faded = change.opacity !== undefined && opacityFields(view.facts).length === 0 ? alphaKeys : []
-    const missing = [...namedFields(change).filter((field) => !takes(view.facts).includes(field)), ...faded]
+    const faded =
+      change.opacity !== undefined && opacityFields(view.facts).length === 0 && !paintsBackdrop(view, "opacity")
+        ? alphaKeys
+        : []
+    const missing = [
+      ...namedFields(change).filter((field) => !takes(view.facts).includes(field) && !paintsBackdrop(view, field)),
+      ...faded,
+    ]
     if (missing.length === 0 || (view.facts.grouped && boxOnly(missing))) return []
     const found = { facts: view.facts, missing, box: openingElement(register, node)?.box ?? null }
     return [`Change ${String(at + 1)} (${node}): ${kindSentence(node, found)}`]

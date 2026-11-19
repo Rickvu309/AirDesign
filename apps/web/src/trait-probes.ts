@@ -23,6 +23,7 @@ import {
   shownTurn,
 } from "@airdesign/pptx"
 import { element, type At, type Parts, type Probe } from "./parity-probe"
+import { layoutProbe } from "./layout-probe"
 import { identityProbe, imageProbes } from "./picture-probes"
 import { templateStyleProbe } from "./template-style-probe"
 
@@ -306,7 +307,7 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
       },
     },
   },
-  layout: { fields: {} },
+  layout: layoutProbe,
   table: {
     deck: "table-added.pptx",
     kind: "table",

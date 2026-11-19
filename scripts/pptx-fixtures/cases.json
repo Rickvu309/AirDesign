@@ -198,5 +198,15 @@
     "errors": 0,
     "dupes": 0,
     "pages": true
+  },
+  {
+    "name": "frame-original",
+    "before": "frame.pptx",
+    "after": "frame.pptx",
+    "visible": false,
+    "targeted": [],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
   }
 ]

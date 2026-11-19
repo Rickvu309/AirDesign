@@ -4,7 +4,7 @@ const navy = "1F4E79"
 
 export const borderWire: TraitWire<"border"> = {
   description:
-    "The border of a shape, image or line: its width, color, dash, ends, compound strokes, corners and arrowheads. Each field stands alone.",
+    "A shape, image or line's border: width, color, dash, ends, compound strokes, corners and arrowheads, each alone.",
   fields: {
     fill: {
       description: `A color such as "accent1", "#${navy}" or "accent1 lumMod 75"; "none" for no border; or a gradient or pattern, written as for fills.`,

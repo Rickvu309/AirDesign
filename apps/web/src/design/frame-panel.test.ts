@@ -54,6 +54,7 @@ it("orders an auto layout frame's slides panel as Figma does, with Fill, Border 
     "corners",
     "border",
     "shadow",
+    "layout",
     "effects",
   ])
   const fill = shown.sections.find(({ trait }) => trait === "fills")?.strips.flat()[0]

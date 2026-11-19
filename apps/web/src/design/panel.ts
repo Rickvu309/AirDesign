@@ -241,6 +241,11 @@ export type PanelReads = {
   readonly role?: string
 }
 
+function directions(trait: TraitName, field: string, desc: Desc): Desc {
+  if (trait !== "layout" || field !== "flow" || desc.kind !== "choice") return desc
+  return { ...desc, options: desc.options.filter((option) => option !== "none") }
+}
+
 function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
   if (desc.kind !== "union" || grouped || (typeof value === "object" && value !== null && "group" in value)) return desc
   return { ...desc, cases: Object.fromEntries(Object.entries(desc.cases).filter(([name]) => name !== "group")) }
@@ -292,7 +297,11 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
                   target: { node: view.node },
                   [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
                 }) as SetChange
-      const desc = shownDesc(kind, view.facts.grouped && view.facts.framed === undefined, held.value)
+      const desc = directions(
+        trait,
+        field,
+        shownDesc(kind, view.facts.grouped && view.facts.framed === undefined, held.value),
+      )
       const label = copy?.label ?? ""
       const text = readTextValue(view.value ?? "")
       const size =

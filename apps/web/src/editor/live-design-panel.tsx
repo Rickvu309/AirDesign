@@ -34,7 +34,7 @@ import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change
 import { rebasedChange } from "@/design/rebase"
 import { chosenFill } from "@/design/fill-image"
 import { deviceScope } from "@/design/trait-edit"
-import { framePanel } from "@/design/frame-panel"
+import { framePanel, layoutFields } from "@/design/frame-panel"
 import { indexedRegister } from "@/indexed-register"
 import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
@@ -108,13 +108,18 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const held = opening.value ?? fileValue(shown, node)
   const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
+  const register = shown.shownRegister.current
+  const layout =
+    opening.facts.frame === undefined || register === null
+      ? null
+      : readLayout(indexedRegister(shown.shownParts.current, register), node)
   const role = placeholderRole(shown.displayParts.current, node)
   const model = panelOf(view, {
     fonts: fontsOf(shown.displayParts.current, node),
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
     slides: readSlides(shown.displayParts.current).map((each) => each.slide),
-    fields: fieldsOf(shown.displayParts.current, node),
+    fields: { ...fieldsOf(shown.displayParts.current, node), ...layoutFields(layout) },
     ...(role === undefined ? {} : { role }),
     ...(view.facts.kind === "connector"
       ? {

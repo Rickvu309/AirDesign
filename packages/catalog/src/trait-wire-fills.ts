@@ -6,10 +6,10 @@ const white = "FFFFFF"
 
 export const fillsWire: TraitWire<"fills"> = {
   description:
-    "What fills a shape, or with a slide target the slide's background: one color, a gradient, a pattern, an image, no fill, or a shape's group's fill. The image fields apply while an image is what fills the shape.",
+    "What fills a shape, or a slide's background: a color, gradient, pattern, image, none, or the group's fill. Image fields apply while an image fills it.",
   fields: {
     paint: {
-      description: `A color such as "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" for the fill of the shape's group; a gradient, with pos and focus in percent and the angle in degrees; a PowerPoint pattern preset such as "dkDnDiag" with its two colors; or an image, such as a Lucide icon name.`,
+      description: `A color such as "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" for the group's fill; a gradient (pos and focus in percent, angle in degrees); a pattern preset such as "dkDnDiag" with two colors; or an image such as a Lucide icon name.`,
       example: { fills: { paint: "accent2" } },
     },
     source: {

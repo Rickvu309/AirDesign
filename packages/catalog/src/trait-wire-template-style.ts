@@ -6,7 +6,7 @@ function hex(digits: string): `#${string}` {
 
 export const templateStyleWire: TraitWire<"templateStyle"> = {
   description:
-    "On a slide, id picks its template style and keeps geometry, placeholders and explicit formatting. deck.templateStyles sets every template style; deck.templateStyleN, N from templateStyles[].node, sets one. A deleted one is omitted and its number is not reused.",
+    "On a slide, id picks its template style, keeping geometry, placeholders and explicit formatting. deck.templateStyles sets them all; deck.templateStyleN (N from templateStyles[].node) sets one.",
   fields: {
     id: {
       description: "A template style id from read_deck.templateStyles.",
@@ -28,8 +28,7 @@ export const templateStyleWire: TraitWire<"templateStyle"> = {
     major: { description: "Heading font.", example: { templateStyle: { major: "Georgia" } } },
     minor: { description: "Body font.", example: { templateStyle: { minor: "Verdana" } } },
     custom: {
-      description:
-        "Named colors stored in the template style. A shape cannot reference one, so applying it stores the hex.",
+      description: "Named template style colors; a shape cannot use one, so applying it stores the hex.",
       example: { templateStyle: { custom: [{ name: "Coral", color: hex("FF6600") }] } },
     },
     removed: {
