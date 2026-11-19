@@ -158,3 +158,22 @@ describe("frame members", () => {
     ).toBeNull()
   })
 })
+
+describe("child size in an auto layout frame", () => {
+  it("takes a child's own height, so a taller child moves the row's cross alignment and widens nothing", () => {
+    const before = set(wrapped(), frame, { layout: { gap: { set: 50 }, align: { set: "bottom" } } })
+    const taller = set(before, a, { box: { h: { set: 300 } } })
+    const view = readLayout(taller, frame)
+    expect(view?.children[0]?.box).toEqual({ x: 100, y: 100, cx: 200, cy: 300 })
+    expect(view?.children[1]?.box.y).toBe(300)
+    expect(view?.box.cy).toBe(300)
+    expect(
+      decide(ran(before, [{ command: "add", node: a, floor: "", route: "" }]), {
+        command: "person",
+        v: 13,
+        patch: { box: { x: { set: 5 } } },
+        node: a,
+      }),
+    ).toMatchObject({ decision: "refuse", code: "group-box" })
+  })
+})

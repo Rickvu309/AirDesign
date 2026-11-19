@@ -1,10 +1,10 @@
-import { boxPatch, type ElementId, type StackMove } from "@airdesign/document"
+import { boxPatch, format, type ElementId, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitPlace } from "@/editor/group-actions"
-import { commitBoxes, commitEdit, type CommitOutcome } from "@/commit-edit"
+import { commitBoxes, commitEdit, flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { valueFits } from "@/design/trait-edit"
@@ -93,6 +93,15 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     )
     settle(outcome)
     return outcome
+  }
+
+  async function fitted(node: ElementId, height: number) {
+    const floor = boxes.current.get(node)?.file ?? movables.current.get(node)?.file ?? ""
+    const row = { v: format, patch: { box: { h: { set: height } } } }
+    if (!(await connect(memoryRemote()).enqueueRow(id, row, node, floor)).ok) return
+    setPending(true)
+    await deck.shown.showEdited(current)
+    settle(await flushPending(connect, id))
   }
 
   async function placed(only: Moved): Promise<boolean> {
@@ -215,6 +224,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               clear()
               void holding(targets, () => changeElement({ change: "remove", nodes: targets }))
             }}
+            onFit={(node, height) => void fitted(node, height)}
             onEdit={(target, value, kind) => {
               clear()
               void holding([target], () => onEdit(target, value, kind))
