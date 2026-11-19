@@ -18,7 +18,7 @@ function ToneActionsFor({ node, source }: { node: ElementId; source: ToneSource 
   const [menuOpen, setMenuOpen] = useState(false)
   const [toneOpen, setToneOpen] = useState(false)
   const anchor = useRef<HTMLButtonElement>(null)
-  const toneFor = useSyncExternalStore(source.link.subscribe, source.link.current)
+  const toneFor = useSyncExternalStore(source.link.subscribe, source.link.current, noTone)
   const scope = toneFor === null ? null : source.scope(node)
   if (toneFor === null || scope === null) return null
   return (
@@ -63,10 +63,10 @@ function noTone(): null {
 }
 
 export function useToneReady(source: ToneSource | undefined): boolean {
-  return useSyncExternalStore(source?.link.subscribe ?? unsubscribed, source?.link.current ?? noTone) !== null
+  return useSyncExternalStore(source?.link.subscribe ?? unsubscribed, source?.link.current ?? noTone, noTone) !== null
 }
 
 export function ToneActions({ formatting, source }: { formatting: TextFormatting; source: ToneSource }) {
-  const node = useSyncExternalStore(formatting.subscribe, formatting.aimed)
+  const node = useSyncExternalStore(formatting.subscribe, formatting.aimed, noTone)
   return node === null ? null : <ToneActionsFor key={node} node={node} source={source} />
 }
