@@ -24,8 +24,8 @@ import { AiraPanel } from "@/aira-panel"
 import { colorsIn } from "@/editor/deck-colors"
 import { LiveDesignPanel } from "@/editor/live-design-panel"
 import { LiveLayers } from "@/editor/live-layers"
-import { useHideKeys } from "@/editor/hide-keys"
-import { toggleHidden } from "@/editor/layer-hiding"
+import { useLayerKeys } from "@/editor/layer-keys"
+import { toggleLayerFlag } from "@/editor/layer-flags"
 import { toneLink } from "@/editor/tone-link"
 import { toneScope } from "@/editor/tone-scope"
 
@@ -41,7 +41,7 @@ export function ThinDeck({ id }: { id: string }) {
   useDeckOpen(deck)
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
-  useHideKeys(deck.paintedDeck === id, () => toggleHidden(deck, deck.selection.ids))
+  useLayerKeys(deck.paintedDeck === id, (flag) => toggleLayerFlag(deck, deck.selection.ids, flag))
   const newer = useSyncExternalStore(watchNewer, storeNewer)
   const { shown, notesBar, exported } = deck
   const currentSlide = shown.store.current.slides()[shown.current]?.id

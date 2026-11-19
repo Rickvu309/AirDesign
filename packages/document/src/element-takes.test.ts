@@ -173,7 +173,7 @@ describe("the server admits only the edits the device can write onto an element 
       "effects.inner2",
       "effects.inner3",
     ]
-    const named = ["identity.name", "identity.alt", "identity.hidden"]
+    const named = ["identity.name", "identity.alt", "identity.hidden", "identity.locked"]
     expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...border, ...effects, ...text])
     expect(takes({ ...facts, kind: "shape", text: false })).toEqual([
       ...named,

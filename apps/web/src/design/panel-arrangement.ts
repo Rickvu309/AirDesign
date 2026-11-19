@@ -213,7 +213,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   corners: [[placed("corners", { show: "beside" }, { kind: "corners" })]],
   opacity: [[placed("opacity", { show: "beside" })]],
-  identity: [[placed("name", inside)], [placed("alt", inside)], [placed("hidden")]],
+  identity: [[placed("name", inside)], [placed("alt", inside)], [placed("hidden")], [placed("locked")]],
   geometry: [
     [placed("shape", hidden)],
     [placed("shape.preset", above, { kind: "preset" })],

@@ -1,3 +1,4 @@
+import { lockedAt } from "./shape-locks.js"
 import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
 import { partOf, presentationPart, relsOf } from "./package-address.js"
 import { paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
@@ -61,6 +62,7 @@ export type PaintElement = {
   chart?: PaintChart
   name?: string
   alt?: string
+  locked?: true
   connection?: PaintConnection
 } & ShapePaint
 
@@ -478,6 +480,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
           ...diagramOf(item, box),
           ...frameChart(item.element, sheet.children, slidePart, charts),
           ...labelOf(item),
+          ...(lockedAt(sheet.elements, item.identity) ? { locked: true as const } : {}),
           ...paintConnection(item.element, sheet.children),
           ...item.paint,
         }

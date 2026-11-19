@@ -90,6 +90,7 @@ const agent: Agent = {
   "fills.crop": agentCrop,
   "identity.alt": (value) => value,
   "identity.hidden": (value) => value,
+  "identity.locked": (value) => value,
   "connection.start": agentBound,
   "connection.end": agentBound,
 }
@@ -248,6 +249,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   )
   next = folded(next, "identity.alt", patch.identity?.alt, (value) => (value.trim() === "" ? null : altShown(value)))
   next = folded(next, "identity.hidden", patch.identity?.hidden, (value) => (value ? true : null))
+  next = folded(next, "identity.locked", patch.identity?.locked, (value) => (value ? true : null))
   next = folded(next, "connection.start", patch.connection?.start, endShown)
   next = folded(next, "connection.end", patch.connection?.end, endShown)
   next = faded(next, before, "fills", patch.fills?.p0, patch.fills?.alpha)

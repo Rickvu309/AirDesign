@@ -12,7 +12,7 @@ import { agentRegister, indexed, type At, type Parts, type Probe } from "./parit
 
 const on = { deck: "doe-heat-pumps.pptx", kind: "shape" as Kind, node: "2883.13" }
 
-const identityOpening = { name: "opening", alt: "opening", hidden: "opening" } as const
+const identityOpening = { name: "opening", alt: "opening", hidden: "opening", locked: "opening" } as const
 
 export const identityProbe: Probe<"identity"> = {
   ...on,
@@ -22,6 +22,7 @@ export const identityProbe: Probe<"identity"> = {
     name: { file: (parts, at) => shownIdentity(parts, at)?.name, shows: (value) => value },
     alt: { file: (parts, at) => shownIdentity(parts, at)?.alt, shows: (value) => value },
     hidden: { file: (parts, at) => shownIdentity(parts, at)?.hidden, shows: (value) => value },
+    locked: { file: (parts, at) => shownIdentity(parts, at)?.locked, shows: (value) => value },
   },
 }
 

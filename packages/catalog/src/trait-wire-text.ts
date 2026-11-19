@@ -3,7 +3,7 @@ import type { TraitWire } from "./trait-wire.js"
 const navy = "1F4E79"
 
 export const textWire: TraitWire<"text"> = {
-  description: "Styles all runs or paragraphs of current text or supplied value.",
+  description: "Styles all runs or paragraphs of the text or supplied value.",
   fields: {
     value: {
       description:

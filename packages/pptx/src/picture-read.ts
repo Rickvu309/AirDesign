@@ -1,4 +1,5 @@
 import type { Color, CropRead, FieldValue, RecolorRead } from "@airdesign/document"
+import { shownLocked } from "./shape-locks.js"
 import { blurPercent } from "./picture-adjust.js"
 import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./blip-edit.js"
 import { colorsIn } from "./color-read.js"
@@ -22,7 +23,12 @@ export type ShownImage = {
   readonly overlay: Overlay | null
 }
 
-export type ShownIdentity = { readonly name: string; readonly alt: string; readonly hidden: boolean }
+export type ShownIdentity = {
+  readonly name: string
+  readonly alt: string
+  readonly hidden: boolean
+  readonly locked: boolean
+}
 
 const opaque = 100_000
 
@@ -122,7 +128,12 @@ export function shownIdentity(parts: Parts, at: ElementAt): ShownIdentity | null
   const element = bytes === undefined ? undefined : nonVisualOf(requireMarkup(bytes).elements, at.shape)
   if (element === undefined) return null
   const hidden = text(element, "hidden")
-  return { name: text(element, "name"), alt: text(element, "descr"), hidden: hidden === "1" || hidden === "true" }
+  return {
+    name: text(element, "name"),
+    alt: text(element, "descr"),
+    hidden: hidden === "1" || hidden === "true",
+    locked: shownLocked(parts, at) === true,
+  }
 }
 
 const altShown = 60

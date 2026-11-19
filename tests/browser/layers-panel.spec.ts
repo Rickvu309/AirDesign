@@ -1,8 +1,11 @@
+import { copyFile } from "node:fs/promises"
+import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { layersCopy } from "../../apps/web/src/copy/layers-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { openDeck } from "./design-panel"
+import { savedExport } from "./export-dialog"
 import { covers } from "./gesture"
 
 const slidePart = "ppt/slides/slide1.xml"
@@ -108,4 +111,40 @@ test("a hidden layer inside a frame stays selected in the layers panel", async (
   await row.locator("[data-layer-eye]").click()
   await expect(row).toHaveAttribute("data-layer-hidden", "")
   await expect(row).toHaveAttribute("aria-selected", "true")
+})
+
+test("a locked layer lets clicks pass on the slide, unlocks with Ctrl+Shift+L, and exports its PowerPoint locks @export", async ({
+  page,
+}, testInfo) => {
+  covers("lock")
+  await openDeck(page, "clean.pptx")
+  const shape = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#2"]`)
+  await expect(shape).toBeVisible()
+  await page.locator("[data-design-mode]").click()
+  const layers = page.locator("[data-layers-panel]")
+  const row = layers.getByRole("treeitem").first()
+  const name = (await row.locator("[data-layer-name]").textContent()) ?? ""
+  await row.hover()
+  await layers.getByRole("button", { name: layersCopy.lock(name), exact: true }).click()
+  await expect(row).toHaveAccessibleName(`${name}, ${layersCopy.locked}`)
+  await expect.poll(() => shape.evaluate((node) => getComputedStyle(node).pointerEvents)).toBe("none")
+  const box = await shape.boundingBox()
+  if (box === null) throw new Error("no shape")
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(0)
+  await expect(row).toHaveAttribute("aria-selected", "false")
+  await row.click()
+  await expect(row).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ControlOrMeta+Shift+KeyL")
+  await expect(row).toHaveAccessibleName(name)
+  await expect.poll(() => shape.evaluate((node) => getComputedStyle(node).pointerEvents)).toBe("auto")
+  await page.keyboard.press("ControlOrMeta+Shift+KeyL")
+  await expect(row).toHaveAccessibleName(`${name}, ${layersCopy.locked}`)
+  await page.getByRole("button", { name: undoCopy.undoNamed.lock, exact: true }).click()
+  await expect(row).toHaveAccessibleName(name)
+  await page.getByRole("button", { name: undoCopy.redoNamed.lock, exact: true }).click()
+  await expect(row).toHaveAccessibleName(`${name}, ${layersCopy.locked}`)
+  const exported = testInfo.outputPath("exported-layer-lock.pptx")
+  await savedExport(page, exported)
+  await copyFile(exported, join(process.cwd(), "tests/browser/exported-layer-lock.pptx"))
 })

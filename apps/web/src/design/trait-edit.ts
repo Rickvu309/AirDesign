@@ -132,7 +132,12 @@ const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
   connection: "connector",
 }
 
-const identityNames: Readonly<Record<string, UndoName>> = { name: "rename", alt: "alt-text", hidden: "hide" }
+const identityNames: Readonly<Record<string, UndoName>> = {
+  name: "rename",
+  alt: "alt-text",
+  hidden: "hide",
+  locked: "lock",
+}
 
 function faded(row: Row): boolean {
   const fields = Object.entries(row.patch).flatMap(([trait, edits]) =>

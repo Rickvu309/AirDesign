@@ -1,6 +1,15 @@
 import { bytesOf, nameBytes, type ElementId } from "@airdesign/document"
-import { Eye, EyeOff } from "lucide-react"
-import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react"
+import { Eye, EyeOff, Lock, LockOpen } from "lucide-react"
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { designCopy } from "@/copy/design-copy"
 import { layersCopy } from "@/copy/layers-copy"
@@ -16,6 +25,7 @@ import {
   type LayerSide,
   type ShownLayer,
 } from "@/editor/layer-tree"
+import type { LayerFlag } from "@/editor/layer-flags"
 import { cn } from "@/lib/class-names"
 
 export type LayerPick = "pointer" | "keys"
@@ -27,7 +37,7 @@ export type LayersSource = {
   readonly onHover?: (node: ElementId | null) => void
   readonly onRename?: (node: ElementId, name: string) => void
   readonly onOrder?: (node: ElementId, before: ElementId | null) => void
-  readonly onHide?: (node: ElementId, hidden: boolean) => void
+  readonly onFlag?: (node: ElementId, flag: LayerFlag, on: boolean) => void
 }
 
 const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
@@ -63,6 +73,41 @@ function sizeOf(words: string) {
   let bytes = 0
   for (const letter of words) bytes += bytesOf(letter)
   return { bytes, wide: bytes > [...words].length }
+}
+
+function FlagButton({
+  on,
+  label,
+  mark,
+  icon,
+  onPress,
+}: {
+  readonly on: boolean
+  readonly label: string
+  readonly mark: string
+  readonly icon: ReactNode
+  readonly onPress: () => void
+}) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-label={label}
+      aria-pressed={on}
+      {...{ [mark]: "" }}
+      className={cn(
+        "flex size-6 shrink-0 items-center justify-center rounded-[var(--shape-control)] text-quiet hover:bg-black/6 hover:text-foreground",
+        on ? "" : "opacity-0 group-hover/layer:opacity-100 group-focus-visible/layer:opacity-100",
+      )}
+      onClick={(event) => {
+        event.stopPropagation()
+        onPress()
+      }}
+      onDoubleClick={(event) => event.stopPropagation()}
+    >
+      {icon}
+    </button>
+  )
 }
 
 function NameEdit({ name, onDone }: { readonly name: string; readonly onDone: (name: string | null) => void }) {
@@ -120,7 +165,7 @@ function NameEdit({ name, onDone }: { readonly name: string; readonly onDone: (n
 }
 
 export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
-  const { tree, selected, onSelect, onHover, onRename, onOrder, onHide } = layers
+  const { tree, selected, onSelect, onHover, onRename, onOrder, onFlag } = layers
   const list = useRef<HTMLDivElement>(null)
   const anchor = useRef<ElementId | null>(null)
   const dragged = useRef<ElementId | null>(null)
@@ -214,7 +259,11 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         role="treeitem"
         aria-level={depth + 1}
         aria-selected={chosen}
-        aria-label={dim ? `${layer.name}, ${layersCopy.hidden}` : layer.name}
+        aria-label={[
+          layer.name,
+          ...(dim ? [layersCopy.hidden] : []),
+          ...(layer.locked ? [layersCopy.locked] : []),
+        ].join(", ")}
         {...(opened === null ? {} : { "aria-expanded": opened })}
         tabIndex={reachable === layer.node ? 0 : -1}
         draggable={!editing && onOrder !== undefined}
@@ -295,25 +344,23 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
             {layer.name}
           </span>
         )}
-        {onHide === undefined || editing ? null : (
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={layer.hidden ? layersCopy.show(layer.name) : layersCopy.hide(layer.name)}
-            aria-pressed={layer.hidden}
-            data-layer-eye
-            className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-[var(--shape-control)] text-quiet hover:bg-black/6 hover:text-foreground",
-              layer.hidden ? "" : "opacity-0 group-hover/layer:opacity-100 group-focus-visible/layer:opacity-100",
-            )}
-            onClick={(event) => {
-              event.stopPropagation()
-              onHide(layer.node, !layer.hidden)
-            }}
-            onDoubleClick={(event) => event.stopPropagation()}
-          >
-            {layer.hidden ? <EyeOff aria-hidden="true" size={14} /> : <Eye aria-hidden="true" size={14} />}
-          </button>
+        {onFlag === undefined || editing ? null : (
+          <>
+            <FlagButton
+              on={layer.locked}
+              label={layer.locked ? layersCopy.unlock(layer.name) : layersCopy.lock(layer.name)}
+              mark="data-layer-lock"
+              icon={layer.locked ? <Lock aria-hidden="true" size={14} /> : <LockOpen aria-hidden="true" size={14} />}
+              onPress={() => onFlag(layer.node, "locked", !layer.locked)}
+            />
+            <FlagButton
+              on={layer.hidden}
+              label={layer.hidden ? layersCopy.show(layer.name) : layersCopy.hide(layer.name)}
+              mark="data-layer-eye"
+              icon={layer.hidden ? <EyeOff aria-hidden="true" size={14} /> : <Eye aria-hidden="true" size={14} />}
+              onPress={() => onFlag(layer.node, "hidden", !layer.hidden)}
+            />
+          </>
         )}
         {line === null ? null : (
           <span

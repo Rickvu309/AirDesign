@@ -7,4 +7,7 @@ export const layersCopy = {
   hidden: "Hidden",
   hide: (name: string) => `Hide ${name}`,
   show: (name: string) => `Show ${name}`,
+  locked: "Locked",
+  lock: (name: string) => `Lock ${name}`,
+  unlock: (name: string) => `Unlock ${name}`,
 } as const

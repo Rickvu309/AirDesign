@@ -45,6 +45,7 @@ export type UndoName =
   | "rename"
   | "alt-text"
   | "hide"
+  | "lock"
   | "cell-fill"
   | "border"
   | "add-row"
@@ -104,6 +105,7 @@ export const undoCopy = {
     rename: "Undo rename",
     "alt-text": "Undo alt text",
     hide: "Undo hide",
+    lock: "Undo lock",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
     "add-column": "Undo add column",
@@ -158,6 +160,7 @@ export const undoCopy = {
     rename: "Redo rename",
     "alt-text": "Redo alt text",
     hide: "Redo hide",
+    lock: "Redo lock",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
     "add-column": "Redo add column",

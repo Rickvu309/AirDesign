@@ -31,6 +31,21 @@ export function paintKindOf(row: PaintElement): PaintKind {
   return "text"
 }
 
+function lockedShapes(rows: readonly PaintElement[]): ReadonlySet<string> {
+  const above = new Map<string, string | null>()
+  for (const row of rows) if (row.from === "slide") above.set(row.shape, row.group)
+  const own = new Set(rows.flatMap((row) => (row.from === "slide" && row.locked === true ? [row.shape] : [])))
+  const locked = new Set<string>()
+  for (const shape of above.keys()) {
+    const seen = new Set<string>()
+    for (let at: string | null = shape; at !== null && !seen.has(at); at = above.get(at) ?? null) {
+      seen.add(at)
+      if (own.has(at)) locked.add(shape)
+    }
+  }
+  return locked
+}
+
 export function paintElements(
   rows: readonly PaintElement[],
   source: CanvasSource,
@@ -39,6 +54,7 @@ export function paintElements(
   const seen = new Map<string, number>()
   const elements: (readonly [CanvasElement, PaintElement])[] = []
   const tops = groupsOf(rows, source)
+  const locked = lockedShapes(rows)
   for (const row of rows) {
     const kind = paintKindOf(row)
     const name = `${row.part}#${row.shape}`
@@ -47,9 +63,10 @@ export function paintElements(
     const key = count === 0 ? name : `${name}#${count}`
     const group = row.from === "slide" ? tops.get(row.shape) : undefined
     const carried = group === undefined ? {} : { group }
+    const lock = row.from === "slide" && locked.has(row.shape) ? ({ locked: true, movable: false } as const) : {}
     if (kind === "group") {
       const painted = paintGroup(row, source, key)
-      if (painted !== null) elements.push([{ ...painted, ...carried }, row])
+      if (painted !== null) elements.push([{ ...painted, ...carried, ...lock }, row])
       continue
     }
     const shape = row.from === "slide" ? source.shapes.get(row.shape) : undefined
@@ -61,7 +78,10 @@ export function paintElements(
       shape?.inFrame === undefined
         ? {}
         : { inFrame: shape.inFrame, ...(shape.measure === undefined ? {} : { measure: shape.measure }) }
-    elements.push([{ ...painted, ...diagram, ...carried, ...backdrop, ...inFrame, ...connectionOf(row, source) }, row])
+    elements.push([
+      { ...painted, ...diagram, ...carried, ...backdrop, ...inFrame, ...connectionOf(row, source), ...lock },
+      row,
+    ])
   }
   return withHeld(elements, rows)
 }
