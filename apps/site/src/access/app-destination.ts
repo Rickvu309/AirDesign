@@ -1,3 +1,5 @@
+import { readAccountCookie } from "@airdesign/catalog"
+
 const placeholderOrigin = "https://placeholder.invalid"
 
 function hasControlCharacterOrBackslash(value: string): boolean {
@@ -33,4 +35,11 @@ export function safeNextPath(value: string | null | undefined): string {
 
 export function appDestination(appOrigin: string | undefined, next: string | null | undefined): string {
   return `${appOrigin ?? ""}${safeNextPath(next)}`
+}
+
+export function signedInDestination(cookie: string, appOrigin: string | undefined, search: string): string | null {
+  if (!appOrigin || readAccountCookie(cookie) === undefined) {
+    return null
+  }
+  return appDestination(appOrigin, new URLSearchParams(search).get("next"))
 }

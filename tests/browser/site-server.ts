@@ -6,6 +6,7 @@ import { extname, join, relative } from "node:path"
 import { pathToFileURL } from "node:url"
 
 type SiteBuild = {
+  appPlaceholder: string
   builtSite: (repo: string) => { dist: string }
   siteFile: (dist: string, pathname: string) => string | null
 }
@@ -18,7 +19,14 @@ const types: Record<string, string> = {
   ".woff2": "font/woff2",
 }
 
-export type ServedSite = { readonly origin: string; readonly dist: string; readonly close: () => Promise<void> }
+export type ServedSite = {
+  readonly origin: string
+  readonly app: string
+  readonly dist: string
+  readonly close: () => Promise<void>
+}
+
+export const signedOut = { cookies: [], origins: [] }
 
 async function siteBuild(repo: string): Promise<SiteBuild> {
   return (await import(pathToFileURL(join(repo, ".agents/skills/verify-airdesign/bin/site.mjs")).href)) as SiteBuild
@@ -48,6 +56,7 @@ export async function serveSite(): Promise<ServedSite> {
   })
   return {
     origin: `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`,
+    app: build.appPlaceholder,
     dist,
     close: () =>
       new Promise<void>((resolve) => {
