@@ -316,6 +316,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - env:
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [ "$RUN_ATTEMPT" -gt 1 ]; then
+            echo "::error title=ci was rerun::A failed ci run is never rerun. Push a fix, or run \`pnpm land\` again so the merge queue builds a fresh run."
+            exit 1
+          fi
       - run: |
           test "${{ needs.check.result }}" = success
           test "${{ needs.corpus.result }}" = success || test "${{ needs.corpus.result }}" = skipped
