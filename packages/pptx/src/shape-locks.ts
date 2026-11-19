@@ -3,6 +3,7 @@ import { attributeEdit } from "./markup-attribute.js"
 import type { MarkupElement } from "./markup-reader.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
+import type { MarkupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
 const locksOf: Readonly<Record<string, string>> = {
@@ -30,8 +31,14 @@ function found(bytes: Uint8Array, shape: string): Found | null {
   return identity === undefined ? null : holderOf(elements, identity)
 }
 
-export function lockedAt(elements: readonly MarkupElement[], identity: MarkupElement): boolean {
-  return isOn(holderOf(elements, identity)?.locks, "noMove")
+export function lockedAt(children: MarkupChildren, identity: MarkupElement): boolean {
+  const holder = children[identity.parent]?.find((each) => locksOf[each.kind] !== undefined)
+  const tag = holder === undefined ? undefined : locksOf[holder.kind]
+  if (holder === undefined || tag === undefined) return false
+  return isOn(
+    children[holder.index]?.find((each) => each.kind === tag),
+    "noMove",
+  )
 }
 
 function flagsOf(tag: string): readonly string[] {
