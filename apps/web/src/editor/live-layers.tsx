@@ -41,7 +41,8 @@ function useSlideTree(deck: LayeringDeck): readonly Layer[] {
     const look = (node: ElementId): LayerLook => {
       const view = scope.view(node)
       if (view === undefined) return { kind: "kept" }
-      const kind = panelKind(view, { reads: {}, moves: false, fields: fieldsOf(parts, node) }) ?? "kept"
+      const found = panelKind(view, { reads: {}, moves: false, fields: fieldsOf(parts, node) })
+      const kind = found === null || found === "many" ? "kept" : found
       return view.backdrop === undefined ? { kind } : { kind, backdrop: view.backdrop }
     }
     return layerTree(slideLayerRows(parts, slide, look))

@@ -79,16 +79,19 @@ export function removalRefusal(parts: Parts, register: Register, node: ElementId
   }
 }
 
-function spotted(among: readonly ElementId[], change: { readonly node: ElementId; readonly move: LayerSpot }) {
-  const { before } = change.move
-  if (before === change.node || (before !== null && !among.includes(before))) return undefined
-  return (among[among.indexOf(change.node) + 1] ?? null) === before ? undefined : before
+function spotted(among: readonly ElementId[], node: ElementId, spot: LayerSpot) {
+  const { before } = spot
+  if (before === node || (before !== null && !among.includes(before))) return undefined
+  return (among[among.indexOf(node) + 1] ?? null) === before ? undefined : before
 }
 
 function orderCommand(base: Parts, change: Extract<ElementChange, { change: "order" }>): SlideCommand | null {
   const among = shapeSiblings(base, change.node)
   if (among === null) return null
-  const before = typeof change.move === "string" ? stackTarget(among, change.node, change.move) : spotted(among, change)
+  const before =
+    typeof change.move === "string"
+      ? stackTarget(among, change.node, change.move)
+      : spotted(among, change.node, change.move)
   if (before === undefined) return null
   const id = readSlideId(shapeOf(change.node).slide)
   if (id === undefined) return null
