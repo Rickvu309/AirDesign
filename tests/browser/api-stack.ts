@@ -1,10 +1,12 @@
 import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
+import { mkdir, writeFile } from "node:fs/promises"
 import { createServer, request as forwardTo } from "node:http"
 import type { AddressInfo } from "node:net"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { expect, test as base, type BrowserContext, type Page } from "@playwright/test"
 import type { Script } from "../../apps/api/src/aira-replay.ts"
+import { watchRequests } from "../request-timeline.ts"
 import { sessionCookie, type Production } from "./production.ts"
 
 export const cleanFixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
@@ -127,8 +129,20 @@ async function deployedStack(production: Production): Promise<Stack> {
   }
 }
 
-export const test = base.extend<object, { stack: Stack; production: Production | undefined }>({
+export const test = base.extend<{ requests: void }, { stack: Stack; production: Production | undefined }>({
   production: [undefined, { option: true, scope: "worker" }],
+  requests: [
+    async ({ context }, use, testInfo) => {
+      const timeline = watchRequests(context)
+      await use()
+      if (testInfo.status === testInfo.expectedStatus) return
+      const file = testInfo.outputPath("requests.txt")
+      await mkdir(dirname(file), { recursive: true })
+      await writeFile(file, `${timeline()}\n`)
+      await testInfo.attach("requests", { path: file, contentType: "text/plain" })
+    },
+    { auto: true },
+  ],
   stack: [
     async ({ production }, use) => {
       if (production !== undefined) {
