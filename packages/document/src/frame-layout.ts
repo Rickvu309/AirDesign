@@ -35,6 +35,7 @@ export type LayoutIntent =
       readonly backdrop: ElementId
     }
   | { readonly remove: ElementId }
+  | { readonly reflow: ElementId }
 
 const point = 12_700
 const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -245,6 +246,7 @@ function wrapped(register: Register, intent: Extract<LayoutIntent, { readonly wr
   for (const node of intent.wrap) {
     const place = placeOf(register, node)
     if (place === null || shapeOf(node).slide !== intent.slide || groupParent(register, node) !== null) return null
+    if (frameBackdrop(register, node) !== null) return null
     members.push(memberOf(node, place))
   }
   if (members.length === 0 || new Set(intent.wrap).size !== intent.wrap.length) return null
@@ -287,6 +289,13 @@ export function refrozenRows(register: Register, node: ElementId): readonly Plac
   })
 }
 
+function reflowed(register: Register, node: ElementId): readonly PlacedRow[] | null {
+  const view = readLayout(register, node)
+  if (view === null || view.flow !== "none" || view.children.length === 0) return null
+  const { flow, gap, align } = guessed(view.children.map((child) => ({ node: child.node, box: child.box })))
+  return [{ node, patch: { layout: { flow: { set: flow }, gap: { set: gap }, align: { set: align } } } }]
+}
+
 export function changeLayout(
   register: Register,
   intent: LayoutIntent,
@@ -295,6 +304,6 @@ export function changeLayout(
     const slide = wrapped(register, intent)
     return slide === null ? null : { slide }
   }
-  const rows = frozen(register, intent.remove)
+  const rows = "remove" in intent ? frozen(register, intent.remove) : reflowed(register, intent.reflow)
   return rows === null ? null : { rows }
 }

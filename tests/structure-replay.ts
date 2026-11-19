@@ -33,7 +33,7 @@ import { flag, num, phaseOf, text } from "./spec-values.js"
 
 type Spec = Record<string, boolean | number | string>
 
-const frameActions = ["Wrap", "Pad", "RemoveAutoLayout", "UndoRemoveAutoLayout", "Unwrap"]
+const frameActions = ["Wrap", "Pad", "RemoveAutoLayout", "UndoRemoveAutoLayout", "Unwrap", "MoveInFrame"]
 type Told = (source: Spec, target: Spec, action: string) => string
 
 const treeActions = [
@@ -50,6 +50,7 @@ const treeActions = [
   "RemoveAutoLayout",
   "UndoRemoveAutoLayout",
   "Unwrap",
+  "MoveInFrame",
 ]
 
 function same(left: unknown, right: unknown): boolean {
@@ -240,6 +241,15 @@ function framed(register: Register, action: string, removal: Undoable | undefine
       changed.rows.map(({ node, patch }): Command => ({ command: "person", v: 1, patch, node })),
     )
     return next === null ? null : { register: next, removal: { steps } }
+  }
+  if (action === "MoveInFrame") {
+    const view = readLayout(register, group)
+    const laid = view?.children.find((each) => each.node === child)?.box
+    if (view === undefined || view === null || laid === undefined) return null
+    const inside = laid.x - view.box.x
+    const x = { set: inside === 0 ? step : inside - step }
+    const next = ran(register, [{ command: "person", v: 1, patch: { box: { x } }, node: child }])
+    return next === null ? null : { register: next }
   }
   if (action === "UndoRemoveAutoLayout") {
     const undone = removal === undefined ? null : undoOf(register, removal)

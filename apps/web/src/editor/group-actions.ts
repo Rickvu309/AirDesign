@@ -1,5 +1,8 @@
 import {
+  beforeOf,
   changeLayout,
+  format,
+  landedPatch,
   elementId,
   groupOf,
   nextElementId,
@@ -8,6 +11,7 @@ import {
   slideUndoable,
   ungroupTurn,
   type Command,
+  type NodeStep,
   type DeckIndex,
   type ElementId,
   type Register,
@@ -46,6 +50,22 @@ export type GroupChange =
   | { readonly change: "ungroup"; readonly node: ElementId }
   | { readonly change: "frame"; readonly nodes: readonly ElementId[] }
 
+function reflowRows(register: Register, nodes: readonly ElementId[]): readonly Command[] | null {
+  const [frame] = nodes
+  const changed = frame === undefined ? null : changeLayout(register, { reflow: frame })
+  if (changed === null || !("rows" in changed)) return null
+  return changed.rows.map((row): Command => ({ command: "person", v: format, patch: row.patch, node: row.node }))
+}
+
+function rowSteps(register: Register, commands: readonly Command[]): readonly NodeStep[] {
+  return commands.flatMap((command): NodeStep[] => {
+    if (command.command !== "person" || command.node === undefined || command.v === undefined) return []
+    const body = register.elements[command.node]
+    const before = beforeOf(body === undefined ? {} : landedPatch(body, "text"), command.patch)
+    return [{ node: command.node, before, after: command.patch }]
+  })
+}
+
 export function groupCommands(parts: Parts, register: Register, change: GroupChange): readonly Command[] | null {
   const base = slideBase(parts, register)
   const file = fileSlides(parts, register)
@@ -55,6 +75,8 @@ export function groupCommands(parts: Parts, register: Register, change: GroupCha
   if (change.change === "ungroup") return ungroupTurn(register, file, slide, change.node)
   const found = readSlides(base).find((each) => each.slide === slide)
   if (found === undefined) return null
+  const reflowed = change.change === "frame" && change.nodes.length === 1 ? reflowRows(register, change.nodes) : null
+  if (reflowed !== null) return reflowed
   const node = nextElementId(register, slide, freeShapeId(base, found.part))
   if (change.change === "group") {
     const command = groupOf(register, slide, node, change.nodes)
@@ -82,9 +104,11 @@ export async function commitGroup(
   const indexed = indexedRegister(parts, register)
   const commands = groupCommands(parts, indexed, change)
   const head = commands?.[0]
-  if (commands === null || head?.command !== "slide") return "refused"
-  const undoable = slideUndoable(indexed, head.file, head.edit)
+  if (commands === null || head === undefined) return "refused"
+  const undoable =
+    head.command === "slide" ? slideUndoable(indexed, head.file, head.edit) : { steps: rowSteps(indexed, commands) }
   for (const command of commands) if (!(await sent(deckId, command))) return "refused"
-  await paint(head.edit.slide === "element-group" ? head.edit.element.node : null, undoable)
+  const made = head.command === "slide" && head.edit.slide === "element-group" ? head.edit.element.node : null
+  await paint(made, undoable)
   return flushPending(connect, deckId)
 }

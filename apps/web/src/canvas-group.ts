@@ -20,6 +20,7 @@ export function paintGroup(row: PaintElement, source: CanvasSource, key: string)
     box: row.box,
     editable: false,
     movable: shape.movable && row.group === null,
+    ...(shape.frame === undefined ? {} : { frame: shape.frame }),
     placeholder: false,
     filled: false,
     fill: null,
@@ -42,8 +43,10 @@ export function groupsOf(rows: readonly PaintElement[], source: CanvasSource): R
     if (row.from !== "slide" || row.group === null) continue
     let top = row.group
     for (let next = above.get(top) ?? null; next !== null; next = above.get(top) ?? null) top = next
-    const id = source.shapes.get(top)?.id
-    if (id !== undefined) tops.set(row.shape, { id, box: boxes.get(top) ?? null })
+    const owner = source.shapes.get(top)
+    if (owner === undefined) continue
+    const frame = owner.frame === undefined ? {} : { frame: owner.frame }
+    tops.set(row.shape, { id: owner.id, box: boxes.get(top) ?? null, ...frame })
   }
   return tops
 }

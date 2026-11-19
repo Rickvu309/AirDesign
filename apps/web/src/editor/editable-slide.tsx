@@ -11,6 +11,7 @@ import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
 import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
+import { storedBox } from "@/frame-boxes"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
 import { shownTable } from "@/table-hook"
@@ -98,9 +99,10 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     async function refused(target: ElementId) {
       store.current.placeBox(target, landedBox(await deviceRegister(id), target))
     }
+    const framing = deck.shown.shownRegister.current
     const boxes = moved.flatMap(({ id: target, box }) => {
       const element = movables.current.get(target)
-      return element === undefined ? [] : [{ box, element }]
+      return element === undefined ? [] : [{ box: storedBox(framing, target, box), element }]
     })
     for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
     const outcome = await commitBoxes(
@@ -115,7 +117,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
           if (!kept.includes(target)) return []
           if (bound.current.has(target)) void deck.shown.showEdited(current)
           const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
-          const before = shownBox(opened.ok ? opened.register : null, target, file)
+          const shown = shownBox(opened.ok ? opened.register : null, target, file)
+          const before = shown === null ? null : storedBox(framing, target, shown)
           const name = before === null ? null : boxName(before, box)
           return before === null || name === null
             ? []

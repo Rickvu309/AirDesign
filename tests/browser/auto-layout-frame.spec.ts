@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
@@ -137,4 +138,76 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect(frame(page, part, 6)).toHaveCount(1)
   await holds(shapes, laid)
+})
+
+async function wrappedPair(page: Page, part: string): Promise<readonly Locator[]> {
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(blank)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
+    await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
+    await page.getByRole("button", { name, exact: true }).click()
+  }
+  const shapes = [frame(page, part, 4), frame(page, part, 5)]
+  await expect(shapes[1]!).toBeVisible()
+  const ellipse = await placed(shapes[1]!)
+  const square = await placed(shapes[0]!)
+  await page.mouse.move(ellipse.x + ellipse.width / 2, ellipse.y + ellipse.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(square.x + square.width / 2 + 260, square.y + square.height / 2 + 12, { steps: 6 })
+  await page.mouse.up()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true })).toBeEnabled()
+  await shapes[0]!.click()
+  await shapes[1]!.click({ modifiers: ["Shift"] })
+  await page.keyboard.press("Shift+A")
+  await expect(status(page)).toHaveText(groupCopy.said.frame)
+  return shapes
+}
+
+async function dragBy(page: Page, shape: Locator, dx: number, dy: number): Promise<void> {
+  const box = await placed(shape)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy, { steps: 8 })
+  await page.mouse.up()
+}
+
+function by(boxes: readonly Placed[], dx: number, dy: number): readonly Placed[] {
+  return boxes.map((box) => ({ ...box, x: box.x + dx, y: box.y + dy }))
+}
+
+test("a child of a frame without auto layout moves on its own, follows its frame, and Shift+A lays it out again", async ({
+  page,
+}) => {
+  const part = "ppt/slides/slide1.xml"
+  const shapes = await wrappedPair(page, part)
+  const panel = page.locator("[data-design-panel]")
+  await panel.getByRole("button", { name: frameCopy.removeAutoLayout }).click()
+  await expect(panel.getByText(frameCopy.frame, { exact: true })).toBeVisible()
+  const laid = await Promise.all(shapes.map(placed))
+  await shapes[1]!.click()
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.5$/)
+  await dragBy(page, shapes[1]!, 0, 80)
+  await holds(shapes, [laid[0]!, by([laid[1]!], 0, 80)[0]!])
+  const apart = await Promise.all(shapes.map(placed))
+  await shapes[0]!.click()
+  await page.keyboard.press("Escape")
+  await shapes[0]!.click()
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.6$/)
+  await dragBy(page, shapes[0]!, 100, 0)
+  await holds(shapes, by(apart, 100, 0))
+  await page.reload()
+  await settled(page)
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await holds(shapes, by(apart, 100, 0))
+  await shapes[0]!.click()
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.6$/)
+  await page.keyboard.press("Shift+A")
+  await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
+  const [left, right] = await Promise.all(shapes.map(placed))
+  expect(Math.abs(right!.y - left!.y)).toBeLessThanOrEqual(1.5)
+  await page.getByRole("button", { name: undoCopy.undoNamed["add-auto-layout"], exact: true }).click()
+  await holds(shapes, by(apart, 100, 0))
 })

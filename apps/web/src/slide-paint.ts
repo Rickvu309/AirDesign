@@ -4,6 +4,7 @@ import type { CanvasSlide, CanvasTemplateColor } from "@airdesign/render"
 import { slideCanvas, type CanvasSource } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { boxStorable } from "@/element-move"
+import type { Framed } from "@/frame-boxes"
 import { storedText } from "@/exported-parts"
 import type { PictureSource } from "@/picture-fill"
 import { tableEditable } from "@/table-edit"
@@ -102,7 +103,14 @@ export function sameSlide(painted: SlideShapes, slide: string, base: Parts, disp
   )
 }
 
-export function slideShapes(shared: Parts, slide: string, part: string, base: Parts, display: Parts): SlideShapes {
+export function slideShapes(
+  shared: Parts,
+  slide: string,
+  part: string,
+  base: Parts,
+  display: Parts,
+  freed: ReadonlyMap<ElementId, unknown> = new Map(),
+): SlideShapes {
   const baseBytes = base.get(part)
   const shownBytes = display.get(part)
   const named = namedShapes(withSlide(shared, part, shownBytes))
@@ -120,7 +128,7 @@ export function slideShapes(shared: Parts, slide: string, part: string, base: Pa
     shapes.push({ id, shape: shown, kind: paintKind(shown.kind), file, opening: shape.box })
     if (holding === null || seen.get(id) !== 1) continue
     const table = shape.contentKind === "table" && tableEditable(holding, shape)
-    if (table || boxStorable(holding, shape)) movables.set(id, { id, file })
+    if (table || boxStorable(holding, shape, freed.has(id))) movables.set(id, { id, file })
     const numbered = [...shape.text, ...shown.text].some((each) =>
       each.runs.some((run) => run.slideNumber !== undefined),
     )
@@ -168,7 +176,7 @@ export function paintCanvas(
   display: Parts,
   swatches: readonly CanvasTemplateColor[],
   refit: ReadonlySet<ElementId>,
-  backdrops: ReadonlySet<ElementId> = new Set(),
+  framed?: Framed,
 ): PaintedCanvas {
   const media = new Map<string, Uint8Array | undefined>()
   const recorded: PictureSource = (image) => {
@@ -178,9 +186,11 @@ export function paintCanvas(
   const file = painted.base === painted.shown ? undefined : texts()
   const shapes = [...painted.source.shapes].map(([key, shape]) => {
     const marked = refit.has(shape.id) ? { ...shape, refit: true as const } : shape
-    return [key, backdrops.has(shape.id) ? { ...marked, backdrop: true as const } : marked] as const
+    const frame = framed?.frames.get(shape.id)
+    if (framed?.backdrops.has(shape.id) === true) return [key, { ...marked, backdrop: true as const }] as const
+    return [key, frame === undefined ? marked : { ...marked, frame }] as const
   })
-  const source =
-    refit.size === 0 && backdrops.size === 0 ? painted.source : { ...painted.source, shapes: new Map(shapes) }
+  const plain = refit.size === 0 && (framed === undefined || framed.frames.size === 0)
+  const source = plain ? painted.source : { ...painted.source, shapes: new Map(shapes) }
   return { slide: slideCanvas(reader, source, recorded, file, swatches), media }
 }

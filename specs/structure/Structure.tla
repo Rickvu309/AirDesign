@@ -328,6 +328,16 @@ UndoRemoveAutoLayout ==
   /\ UNCHANGED <<grouped, maker, offset, inside, own, seen, childMoved, touched, framed, pad, backdrop>>
   /\ UNCHANGED old
 
+MoveInFrame ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ framed /\ ~auto
+  /\ pad' = 1 - pad
+  /\ seen' = seen + (1 - 2 * pad)
+  /\ groupKind' = "child"
+  /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, backdrop>>
+  /\ UNCHANGED old
+
 Unwrap ==
   /\ Quiet
   /\ grouped = "formed"
@@ -374,6 +384,7 @@ Next ==
   \/ Pad
   \/ RemoveAutoLayout
   \/ UndoRemoveAutoLayout
+  \/ MoveInFrame
   \/ Unwrap
 
 Spec == Init /\ [][Next]_vars

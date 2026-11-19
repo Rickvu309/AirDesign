@@ -21,7 +21,9 @@ export type CanvasGeometry = {
   }
 }
 
-export type GroupOf = { readonly id: ElementId; readonly box: PaintBox | null }
+export type Framing = "auto" | "free"
+
+export type GroupOf = { readonly id: ElementId; readonly box: PaintBox | null; readonly frame?: Framing }
 
 export type CanvasTie = { readonly node: ElementId; readonly site: number }
 
@@ -32,6 +34,7 @@ export type ElementPaint = {
   readonly id: ElementId | null
   readonly group?: GroupOf
   readonly backdrop?: true
+  readonly frame?: Framing
   readonly held?: number
   readonly box: PaintBox | null
   readonly editable: boolean
