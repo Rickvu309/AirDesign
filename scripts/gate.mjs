@@ -12,13 +12,23 @@ import { testFilesByProject } from "./unit-test-files.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const prove = ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs"
+const testLimit = 40
 
 export const packagesFor = (changed) =>
   [...new Set(changed.flatMap((file) => file.match(/^(?:apps|packages)\/[^/]+(?=\/)/)?.[0] ?? []))].sort()
 
-const wholeSuite = (plan) => plan.steps.some((step) => step.kind === "unit-tests" && step.tests === "all")
+const wholeSuite = (plan) => plan.steps.find((step) => step.kind === "unit-tests" && step.tests === "all")
 
-export const testsFor = ({ plan, related, inventory }) => (wholeSuite(plan) ? inventory : related)
+export const testsFor = ({ plan, related, inventory, changed }) => {
+  const unit = wholeSuite(plan)
+  if (unit === undefined && related.length <= testLimit) return { files: related, ci: undefined }
+  const files = (unit === undefined ? related : inventory).filter((file) => changed.includes(file))
+  const ci =
+    unit === undefined
+      ? `${String(related.length - files.length)} more test files reach this diff`
+      : `every unit test, because ${unit.because}`
+  return { files, ci }
+}
 
 const noLine = async () => () => {}
 
@@ -66,6 +76,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"))
   const previousTemp = process.env.TMPDIR
   process.env.TMPDIR = ownTemp
+  let left
   let result
   let selection
   try {
@@ -75,9 +86,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       later: async () => {
         const base = execFileSync("git", ["merge-base", against, "HEAD"], { cwd: root, encoding: "utf8" }).trim()
         const plan = JSON.parse((await node([prove, "prove", "--plan", "--base", against])).stdout)
-        const inventory = Object.values(testFilesByProject(root)).flat()
-        const related = wholeSuite(plan) ? [] : await relatedTests(base, ownTemp)
-        const tests = testsFor({ plan, related, inventory })
+        const all = wholeSuite(plan) !== undefined
+        const inventory = all ? Object.values(testFilesByProject(root)).flat() : []
+        const related = all ? [] : await relatedTests(base, ownTemp)
+        const { files: tests, ci } = testsFor({ plan, related, inventory, changed: plan.changed })
+        left = ci
         const tooling = plan.steps.find((step) => step.kind === "script-tests")?.files ?? []
         const packages = packagesFor(plan.changed)
         console.log(
@@ -121,7 +134,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const seconds = timeMetric(root, "gate-duration", started)
   console.log(seconds.line)
   if (seconds.over !== undefined) console.error(seconds.over)
-  console.log("ci runs every step of pnpm check on GitHub before the merge.")
+  console.log(
+    `ci runs every step of pnpm check on GitHub${left === undefined ? "" : `, with ${left}`}, before the merge.`,
+  )
   if (result.failed.length > 0) {
     console.error(`failed: ${result.failed.join(", ")}`)
     process.exit(1)
