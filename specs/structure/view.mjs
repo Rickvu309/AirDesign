@@ -9,7 +9,7 @@ const readAccepts = (v) => v.readId === v.runId && (v.phase === "stopped" || v.p
 
 const laid = (v) => (v.framed === true ? v.pad : 0)
 
-const shown = (v) => (v.grouped === "formed" ? v.inside + v.offset + laid(v) : v.own)
+const shown = (v) => (v.grouped === "formed" && v.member !== false ? v.inside + v.offset + laid(v) : v.own)
 
 export const state = (v) => {
   const memory = v.didRead === true ? ", the read holds the nodes" : ""
@@ -38,6 +38,8 @@ export const step = (action, from) => {
   if (action === "RemoveAutoLayout") return "the person removes auto layout"
   if (action === "UndoRemoveAutoLayout") return "the person undoes Remove auto layout"
   if (action === "Unwrap") return "the person undoes the wrap"
+  if (action === "Leave") return "the person drags the child out of the frame"
+  if (action === "UndoLeave") return "the person undoes that, and the child joins the frame where it was"
   if (action === "MoveInFrame") return "the person moves the child inside the frame without auto layout, or undoes that"
   if (action === "RunUndo" && from.touched !== true && from.own === from.inside)
     return "the run's Undo ungroups the agent's group"

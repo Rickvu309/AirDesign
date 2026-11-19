@@ -17,6 +17,7 @@ import {
   rootElement,
   slideId,
   throughGroup,
+  slideUndoable,
   undoOf,
   undoSlides,
   ungroupTurn,
@@ -33,7 +34,16 @@ import { flag, num, phaseOf, text } from "./spec-values.js"
 
 type Spec = Record<string, boolean | number | string>
 
-const frameActions = ["Wrap", "Pad", "RemoveAutoLayout", "UndoRemoveAutoLayout", "Unwrap", "MoveInFrame"]
+const frameActions = [
+  "Wrap",
+  "Pad",
+  "RemoveAutoLayout",
+  "UndoRemoveAutoLayout",
+  "Unwrap",
+  "MoveInFrame",
+  "Leave",
+  "UndoLeave",
+]
 type Told = (source: Spec, target: Spec, action: string) => string
 
 const treeActions = [
@@ -51,6 +61,8 @@ const treeActions = [
   "UndoRemoveAutoLayout",
   "Unwrap",
   "MoveInFrame",
+  "Leave",
+  "UndoLeave",
 ]
 
 function same(left: unknown, right: unknown): boolean {
@@ -242,6 +254,20 @@ function framed(register: Register, action: string, removal: Undoable | undefine
     )
     return next === null ? null : { register: next, removal: { steps } }
   }
+  if (action === "Leave") {
+    const box = { x: step + step * 3, y: 5000, cx: 500, cy: 500 }
+    const changed = changeLayout(register, { place: child, box, file })
+    const head = changed !== null && "turn" in changed ? changed.turn[0] : undefined
+    if (changed === null || !("turn" in changed) || head?.command !== "slide") return null
+    const removal = slideUndoable(register, file, head.edit) ?? undefined
+    const next = ran(register, changed.turn)
+    return next === null || removal === undefined ? null : { register: next, removal }
+  }
+  if (action === "UndoLeave") {
+    const undone = removal === undefined ? null : undoOf(register, removal)
+    const next = undone === null || !undone.ok ? null : ran(register, undone.commands)
+    return next === null ? null : { register: next }
+  }
   if (action === "MoveInFrame") {
     const view = readLayout(register, group)
     const laid = view?.children.find((each) => each.node === child)?.box
@@ -284,7 +310,8 @@ function treeStep(register: Register, action: string): Register | null | "refuse
 
 function shownOf(spec: Spec): number {
   const laid = flag(spec, "framed") ? num(spec, "pad") : 0
-  return text(spec, "grouped") === "formed" ? num(spec, "inside") + num(spec, "offset") + laid : num(spec, "own")
+  const inside = text(spec, "grouped") === "formed" && flag(spec, "member")
+  return inside ? num(spec, "inside") + num(spec, "offset") + laid : num(spec, "own")
 }
 
 function slideX(register: Register): number | null {
@@ -346,7 +373,7 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
       const after = next === "refused" ? register : next
       const expected = {
         formed: text(target, "grouped") === "formed",
-        grouped: text(target, "grouped") === "formed",
+        grouped: text(target, "grouped") === "formed" && flag(target, "member"),
         x: step + step * shownOf(target),
         backdrop: flag(target, "backdrop"),
         auto: text(target, "grouped") === "formed" && flag(target, "framed") && flag(target, "auto"),
@@ -361,7 +388,8 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
       if (!registers.has(edge.to)) {
         registers.set(edge.to, after)
         const removal = stepped?.removal ?? removals.get(edge.from)
-        if (removal !== undefined && edge.action !== "UndoRemoveAutoLayout") removals.set(edge.to, removal)
+        const spent = edge.action === "UndoRemoveAutoLayout" || edge.action === "UndoLeave"
+        if (removal !== undefined && !spent) removals.set(edge.to, removal)
         waiting.push(edge.to)
       }
     }

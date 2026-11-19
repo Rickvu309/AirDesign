@@ -238,7 +238,12 @@ function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   if (raw.slide === "element-order") return readElementOrder(raw, id)
   if (raw.slide === "element-add" || raw.slide === "element-remove" || raw.slide === "element-restore")
     return readElementCommand(raw, id)
-  if (raw.slide === "element-group" || raw.slide === "element-ungroup" || raw.slide === "element-regroup")
+  if (
+    raw.slide === "element-group" ||
+    raw.slide === "element-ungroup" ||
+    raw.slide === "element-regroup" ||
+    raw.slide === "element-join"
+  )
     return readGroupCommand(raw, id)
   if (raw.slide === "remove") return { slide: "remove", id }
   const key = readOrderKey(raw.key)
@@ -301,6 +306,7 @@ export function newerSlideCommand(raw: unknown): boolean {
       "element-group",
       "element-ungroup",
       "element-regroup",
+      "element-join",
     ].includes(raw.slide)
   )
 }

@@ -219,3 +219,35 @@ export function placeFrame(bytes: Uint8Array, shape: string, box: ShapeBox): Uin
   )
   return spliceBytes(bytes, [{ start: xfrm.start, end: xfrm.end, next }])
 }
+
+function groupOf(elements: readonly MarkupElement[], unit: MarkupElement): MarkupElement | null {
+  const parent = elements[unit.parent]
+  return parent?.kind === "p:grpSp" ? parent : null
+}
+
+function closeAt(children: MarkupChildren, group: MarkupElement): number {
+  const tail = (children[group.index] ?? []).find((each) => each.kind === "p:extLst")
+  return tail?.start ?? group.end - encodeUtf8("</p:grpSp>").byteLength
+}
+
+export function joinShape(bytes: Uint8Array, shape: string, frame: string | null, before: string | null): Uint8Array {
+  const { elements } = requireMarkup(bytes)
+  const children = markupChildren(elements)
+  const unit = treeUnit(elements, shapeById(elements, shape))
+  const moved = bytes.slice(unit.start, unit.end)
+  const left = groupOf(elements, unit)
+  const at =
+    frame === null
+      ? (left?.end ?? unit.end)
+      : before === null
+        ? closeAt(children, shapeById(elements, frame))
+        : treeUnit(elements, shapeById(elements, before)).start
+  const edits: ByteEdit[] = [
+    { start: unit.start, end: unit.end, next: new Uint8Array() },
+    { start: at, end: at, next: moved },
+  ]
+  return spliceBytes(
+    bytes,
+    edits.sort((one, other) => one.start - other.start),
+  )
+}

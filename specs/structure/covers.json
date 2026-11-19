@@ -4,14 +4,14 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "70c90bf88416",
-      "blob": "5b5d8d05aac2adde776ca2a9bf0a55b6afe96fcc"
+      "digest": "e1a4b86cc984",
+      "blob": "9c6ee8e84154e013e896901acb383dab112d5299"
     },
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "cdeef2dd244d",
-      "blob": "684d19e9ca071332426604dc7ec5bd7cece642d2"
+      "digest": "1d69904f25e0",
+      "blob": "39c315e4ce386b2a41ce7fa9f97f37f3a17987c0"
     },
     {
       "file": "packages/document/src/group-turn.ts",
@@ -22,14 +22,14 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone", "stepCommands"],
-      "digest": "770f45e3e75b",
-      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
+      "digest": "a5c4b2e64f4d",
+      "blob": "da9e8643ad8b8ff01db6c9bdc0421e6a31e3f3c1"
     },
     {
       "file": "packages/document/src/frame-layout.ts",
-      "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow"],
-      "digest": "5e496baf73a2",
-      "blob": "621fde034a5b2a6b439342fdbd968268f73ee563"
+      "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow", "joinTurn", "spotNow"],
+      "digest": "93da4b5b89cb",
+      "blob": "6c23dea978d52cfcb9b5a61ea85eaaa558b67c17"
     }
   ]
 }

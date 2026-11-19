@@ -35,14 +35,15 @@ VARIABLES
   framed,
   auto,
   pad,
-  backdrop
+  backdrop,
+  member
 
 old == <<
   nodeA, nodeB, record, recordNode, beforeA, beforeB, didRead, snapA, snapB, storedA, storedB,
   lastKind, personBefore, personAfter, agent, prevBefore, prevAfter, prevAgent, phase, runId, readId
 >>
 
-tree == <<grouped, maker, offset, inside, own, seen, childMoved, touched, groupKind, framed, auto, pad, backdrop>>
+tree == <<grouped, maker, offset, inside, own, seen, childMoved, touched, groupKind, framed, auto, pad, backdrop, member>>
 
 vars == <<old, tree>>
 
@@ -76,11 +77,12 @@ TypeOK ==
   /\ seen \in 0..3
   /\ childMoved \in {0, 1}
   /\ touched \in BOOLEAN
-  /\ groupKind \in {"none", "group", "move", "child", "ungroup", "regroup", "runUndo", "refused", "frame"}
+  /\ groupKind \in {"none", "group", "move", "child", "ungroup", "regroup", "runUndo", "refused", "frame", "member"}
   /\ framed \in BOOLEAN
   /\ auto \in BOOLEAN
   /\ pad \in {0, 1}
   /\ backdrop \in BOOLEAN
+  /\ member \in BOOLEAN
 
 accepted == readId = runId /\ phase \in {"stopped", "undone"}
 
@@ -119,6 +121,7 @@ Init ==
   /\ auto = FALSE
   /\ pad = 0
   /\ backdrop = FALSE
+  /\ member = TRUE
 
 Ungrouped == grouped = "none" /\ groupKind = "none"
 
@@ -131,9 +134,9 @@ Quiet ==
 
 Laid == IF framed THEN pad ELSE 0
 
-Shown == IF grouped = "formed" THEN inside + offset + Laid ELSE own
+Shown == IF grouped = "formed" /\ member THEN inside + offset + Laid ELSE own
 
-frame == <<framed, auto, pad, backdrop>>
+frame == <<framed, auto, pad, backdrop, member>>
 
 AddNode ==
   /\ Ungrouped
@@ -204,6 +207,7 @@ GroupBy(by) ==
   /\ auto' = FALSE
   /\ pad' = 0
   /\ backdrop' = FALSE
+  /\ member' = TRUE
   /\ UNCHANGED <<own, seen, childMoved>>
   /\ UNCHANGED old
 
@@ -214,6 +218,7 @@ GroupAgent == GroupBy("agent")
 MoveGroup ==
   /\ Quiet
   /\ grouped = "formed"
+  /\ member
   /\ offset = 0
   /\ offset' = 1
   /\ seen' = seen + 1
@@ -226,6 +231,8 @@ MoveGroup ==
 UndoMoveGroup ==
   /\ Quiet
   /\ grouped = "formed"
+  /\ member
+  /\ member
   /\ offset = 1
   /\ offset' = 0
   /\ seen' = seen - 1
@@ -268,7 +275,7 @@ Ungroup ==
   /\ childMoved' = 0
   /\ groupKind' = "ungroup"
   /\ backdrop' = FALSE
-  /\ UNCHANGED <<maker, offset, inside, seen, touched, framed, auto, pad>>
+  /\ UNCHANGED <<maker, offset, inside, seen, touched, framed, auto, pad, member>>
   /\ UNCHANGED old
 
 Regroup ==
@@ -279,7 +286,7 @@ Regroup ==
   /\ grouped' = "formed"
   /\ groupKind' = "regroup"
   /\ backdrop' = framed
-  /\ UNCHANGED <<maker, offset, inside, own, seen, childMoved, touched, framed, auto, pad>>
+  /\ UNCHANGED <<maker, offset, inside, own, seen, childMoved, touched, framed, auto, pad, member>>
   /\ UNCHANGED old
 
 Wrap ==
@@ -296,17 +303,18 @@ Wrap ==
   /\ auto' = TRUE
   /\ pad' = 0
   /\ backdrop' = TRUE
+  /\ member' = TRUE
   /\ UNCHANGED <<own, seen, childMoved>>
   /\ UNCHANGED old
 
 Pad ==
   /\ Quiet
   /\ grouped = "formed"
-  /\ framed /\ auto
+  /\ framed /\ auto /\ member
   /\ pad' = 1 - pad
   /\ seen' = seen + (1 - 2 * pad)
   /\ groupKind' = "move"
-  /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, backdrop>>
+  /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, backdrop, member>>
   /\ UNCHANGED old
 
 RemoveAutoLayout ==
@@ -315,7 +323,7 @@ RemoveAutoLayout ==
   /\ framed /\ auto
   /\ auto' = FALSE
   /\ groupKind' = "frame"
-  /\ UNCHANGED <<grouped, maker, offset, inside, own, seen, childMoved, touched, framed, pad, backdrop>>
+  /\ UNCHANGED <<grouped, maker, offset, inside, own, seen, childMoved, touched, framed, pad, backdrop, member>>
   /\ UNCHANGED old
 
 UndoRemoveAutoLayout ==
@@ -325,17 +333,40 @@ UndoRemoveAutoLayout ==
   /\ groupKind = "frame"
   /\ auto' = TRUE
   /\ groupKind' = "frame"
-  /\ UNCHANGED <<grouped, maker, offset, inside, own, seen, childMoved, touched, framed, pad, backdrop>>
+  /\ UNCHANGED <<grouped, maker, offset, inside, own, seen, childMoved, touched, framed, pad, backdrop, member>>
   /\ UNCHANGED old
 
 MoveInFrame ==
   /\ Quiet
   /\ grouped = "formed"
-  /\ framed /\ ~auto
+  /\ framed /\ ~auto /\ member
   /\ pad' = 1 - pad
   /\ seen' = seen + (1 - 2 * pad)
   /\ groupKind' = "child"
-  /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, backdrop>>
+  /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, backdrop, member>>
+  /\ UNCHANGED old
+
+Leave ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ framed /\ member
+  /\ member' = FALSE
+  /\ own' = 3
+  /\ seen' = 3
+  /\ childMoved' = 0
+  /\ groupKind' = "member"
+  /\ UNCHANGED <<grouped, maker, offset, inside, touched, framed, auto, pad, backdrop>>
+  /\ UNCHANGED old
+
+UndoLeave ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ framed /\ ~member
+  /\ groupKind = "member"
+  /\ member' = TRUE
+  /\ seen' = inside + offset + pad
+  /\ groupKind' = "child"
+  /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, pad, backdrop>>
   /\ UNCHANGED old
 
 Unwrap ==
@@ -343,11 +374,11 @@ Unwrap ==
   /\ grouped = "formed"
   /\ framed /\ auto /\ pad = 0
   /\ grouped' = "dissolved"
-  /\ own' = inside + offset
+  /\ own' = IF member THEN inside + offset ELSE own
   /\ childMoved' = 0
   /\ groupKind' = "ungroup"
   /\ backdrop' = FALSE
-  /\ UNCHANGED <<maker, offset, inside, seen, touched, framed, auto, pad>>
+  /\ UNCHANGED <<maker, offset, inside, seen, touched, framed, auto, pad, member>>
   /\ UNCHANGED old
 
 RunUndo ==
@@ -385,6 +416,8 @@ Next ==
   \/ RemoveAutoLayout
   \/ UndoRemoveAutoLayout
   \/ MoveInFrame
+  \/ Leave
+  \/ UndoLeave
   \/ Unwrap
 
 Spec == Init /\ [][Next]_vars
@@ -415,6 +448,8 @@ AbsentEditLeavesCounts ==
 ChildrenKeepPlace == Shown = seen
 
 RunUndoTurnsBackGroup == groupKind = "runUndo" => grouped = "dissolved" /\ maker = "none"
+
+LeftChildStaysOut == ~member => framed /\ grouped # "none"
 
 BackdropOnlyInFrame == backdrop <=> (grouped = "formed" /\ framed)
 

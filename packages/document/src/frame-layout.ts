@@ -1,8 +1,18 @@
 import type { Box } from "./box.js"
-import { landedPatch, type Register } from "./decide.js"
+import { decide, landedPatch, type Command, type Register } from "./decide.js"
 import type { IndexElement } from "./deck-index.js"
-import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
-import { frameBackdrop, groupBounds, groupParent, madeGroup, type ElementGroup, type Member } from "./element-group.js"
+import { readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { format } from "./format.js"
+import {
+  frameBackdrop,
+  frameMembers,
+  groupBounds,
+  groupParent,
+  madeGroup,
+  type ElementGroup,
+  type ElementJoin,
+  type Member,
+} from "./element-group.js"
 import { memberOf, placeOf, type PlacedRow } from "./group-place.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { openingElement } from "./slide-floor.js"
@@ -36,6 +46,7 @@ export type LayoutIntent =
     }
   | { readonly remove: ElementId }
   | { readonly reflow: ElementId }
+  | { readonly place: ElementId; readonly box: Box; readonly file: readonly SlideId[] }
 
 const point = 12_700
 const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -106,6 +117,7 @@ function frameOrigin(register: Register, node: ElementId, made: ElementGroup): B
 function laidOut(
   register: Register,
   made: ElementGroup,
+  members: readonly Member[],
   origin: Box,
   fields: {
     readonly flow: Exclude<Flow, "none">
@@ -115,7 +127,7 @@ function laidOut(
   },
 ): { readonly box: Box; readonly children: readonly LayoutChild[] } {
   const horizontal = fields.flow === "horizontal"
-  const shown = made.members.filter((member) => !hiddenNow(register, member.node))
+  const shown = members.filter((member) => !hiddenNow(register, member.node))
   const slots = shown.map((member) => {
     const box = childBox(register, member)
     const bounds = groupBounds([{ ...member, box }])
@@ -138,7 +150,7 @@ function laidOut(
     cursor += along(bounds) + gap
   }
   const opened = made.element.box ?? origin
-  for (const member of made.members.filter((each) => !shown.includes(each))) {
+  for (const member of members.filter((each) => !shown.includes(each))) {
     const box = childBox(register, member)
     children.push({
       node: member.node,
@@ -157,9 +169,14 @@ function laidOut(
   return { box, children }
 }
 
-function heldFree(register: Register, made: ElementGroup, origin: Box): readonly LayoutChild[] {
+function heldFree(
+  register: Register,
+  made: ElementGroup,
+  members: readonly Member[],
+  origin: Box,
+): readonly LayoutChild[] {
   const opened = made.element.box ?? origin
-  return made.members.map((member) => {
+  return members.map((member) => {
     const box = boxNow(register, member.node, { ...member.box, x: member.box.x - opened.x, y: member.box.y - opened.y })
     return { node: member.node, box: { ...box, x: origin.x + box.x, y: origin.y + box.y } }
   })
@@ -176,8 +193,9 @@ export function readLayout(register: Register, node: ElementId): LayoutView | nu
   const align = layoutAligns.find((each) => each === fields.align) ?? "topLeft"
   const origin = frameOrigin(register, node, made)
   const view = { node, backdrop, flow, gap, padding, align }
-  if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, origin) }
-  return { ...view, ...laidOut(register, made, origin, { flow, gap, padding, align }) }
+  const members = frameMembers(register, node)
+  if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin) }
+  return { ...view, ...laidOut(register, made, members, origin, { flow, gap, padding, align }) }
 }
 
 export function layoutNodes(register: Register): readonly ElementId[] {
@@ -282,7 +300,7 @@ export function refrozenRows(register: Register, node: ElementId): readonly Plac
   const made = madeGroup(register, node)
   if (made === undefined || frameNow(register, node) !== "free") return []
   const origin = frameOrigin(register, node, made)
-  return made.members.flatMap((member): PlacedRow[] => {
+  return frameMembers(register, node).flatMap((member): PlacedRow[] => {
     const sides = traitNow(register, member.node, "box")
     if (typeof sides.x !== "number" || typeof sides.y !== "number") return []
     return [{ node: member.node, patch: { box: { x: { set: sides.x - origin.x }, y: { set: sides.y - origin.y } } } }]
@@ -299,11 +317,111 @@ function reflowed(register: Register, node: ElementId): readonly PlacedRow[] | n
 export function changeLayout(
   register: Register,
   intent: LayoutIntent,
-): { readonly slide: ElementGroup } | { readonly rows: readonly PlacedRow[] } | null {
+):
+  | { readonly slide: ElementGroup }
+  | { readonly rows: readonly PlacedRow[] }
+  | { readonly turn: readonly Command[] }
+  | null {
   if ("wrap" in intent) {
     const slide = wrapped(register, intent)
     return slide === null ? null : { slide }
   }
+  if ("place" in intent) {
+    const spot = dropSpot(register, intent.place, intent.box)
+    if (spot === "kept") return { turn: [] }
+    const turn = spot === null ? null : joinTurn(register, intent.file, intent.place, spot)
+    return turn === null ? null : { turn }
+  }
   const rows = "remove" in intent ? frozen(register, intent.remove) : reflowed(register, intent.reflow)
   return rows === null ? null : { rows }
+}
+
+export type Spot = { readonly frame: ElementId | null; readonly before: ElementId | null; readonly box: Box }
+
+function personRows(rows: readonly PlacedRow[]): readonly Command[] {
+  return rows.map((row): Command => ({ command: "person", v: format, patch: row.patch, node: row.node }))
+}
+
+function landedTurn(register: Register, commands: readonly Command[]): boolean {
+  let current = register
+  for (const command of commands) {
+    const node = command.command === "person" ? command.node : undefined
+    if (node !== undefined && !current.nodes.includes(node)) {
+      const opened = decide(current, { command: "add", node, floor: current.floor, route: current.route })
+      if (opened.decision !== "apply") return false
+      current = opened.register
+    }
+    const decision = decide(current, command)
+    if (decision.decision !== "apply") return false
+    current = decision.register
+  }
+  return true
+}
+
+function spotRows(register: Register, node: ElementId, spot: Spot): readonly PlacedRow[] {
+  const { box } = spot
+  if (spot.frame === null)
+    return [{ node, patch: { box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } } } }]
+  const view = readLayout(register, spot.frame)
+  if (view === null || view.flow !== "none") return []
+  return [{ node, patch: { box: { x: { set: box.x - view.box.x }, y: { set: box.y - view.box.y } } } }]
+}
+
+export function joinTurn(
+  register: Register,
+  file: readonly SlideId[],
+  node: ElementId,
+  spot: Spot,
+): readonly Command[] | null {
+  const slide = readSlideId(shapeOf(node).slide)
+  const place = placeOf(register, node)
+  if (slide === undefined || place === null) return null
+  const member = memberOf(node, { ...place, box: spot.box })
+  const edit: ElementJoin = { slide: "element-join", id: slide, member, frame: spot.frame, before: spot.before }
+  const commands = [{ command: "slide" as const, file, edit }, ...personRows(spotRows(register, node, spot))]
+  return landedTurn(register, commands) ? commands : null
+}
+
+function centre(box: Box): { readonly x: number; readonly y: number } {
+  return { x: box.x + box.cx / 2, y: box.y + box.cy / 2 }
+}
+
+function holds(box: Box, point: { readonly x: number; readonly y: number }): boolean {
+  return point.x >= box.x && point.x <= box.x + box.cx && point.y >= box.y && point.y <= box.y + box.cy
+}
+
+function nextInFlow(view: LayoutView, node: ElementId, box: Box): ElementId | null {
+  const along = (each: Box) => (view.flow === "vertical" ? centre(each).y : centre(each).x)
+  const at = along(box)
+  return view.children.find((child) => child.node !== node && along(child.box) > at)?.node ?? null
+}
+
+export function spotNow(register: Register, node: ElementId): Spot | null {
+  const parent = groupParent(register, node)
+  const laid = parent === null || parent === undefined ? undefined : readLayout(register, parent)
+  if (laid === null || laid === undefined) {
+    const place = placeOf(register, node)
+    return parent === null && place !== null ? { frame: null, before: null, box: place.box } : null
+  }
+  const at = laid.children.findIndex((child) => child.node === node)
+  const box = laid.children[at]?.box
+  if (box === undefined) return null
+  return { frame: laid.node, before: laid.children[at + 1]?.node ?? null, box }
+}
+
+function dropSpot(register: Register, node: ElementId, box: Box): Spot | "kept" | null {
+  const now = spotNow(register, node)
+  if (now === null) return null
+  const point = centre(box)
+  const slide = shapeOf(node).slide
+  const frames = layoutNodes(register).flatMap((frame) => {
+    const view = frame === node || shapeOf(frame).slide !== slide ? null : readLayout(register, frame)
+    return view !== null && holds(view.box, point) ? [view] : []
+  })
+  const target = frames.find((view) => view.node === now.frame) ?? frames.at(-1)
+  if (target === undefined) return now.frame === null ? null : { frame: null, before: null, box }
+  if (target.flow === "none") return target.node === now.frame ? null : { frame: target.node, before: null, box }
+  const before = nextInFlow(target, node, box)
+  if (target.node === now.frame && before === now.before) return "kept"
+  return { frame: target.node, before, box }
 }

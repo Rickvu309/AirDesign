@@ -165,3 +165,20 @@ it("carries an auto layout frame's backdrop and its layout opening on a person's
   if (edit === undefined || !("slide" in edit)) throw new Error("slide")
   expect(slideEditCommand(edit)).toMatchObject({ slide: "element-group", element, backdrop })
 })
+
+it("carries a layer joining or leaving a frame on a person's commit", () => {
+  const member = { node: "256.5", box: { x: 0, y: 0, cx: 100, cy: 100 } }
+  for (const [frame, before] of [
+    ["256.20", "256.3"],
+    [null, null],
+  ] as const) {
+    const join = { slide: "element-join", id: "256", member, frame, before, file: ["256", "257"] }
+    const read = readCommit({ deck: "deck", batch: [join] })
+    if (!read.ok) throw new Error(read.refusal)
+    const edit = read.batch[0]
+    if (edit === undefined || !("slide" in edit)) throw new Error("slide")
+    expect(slideEditCommand(edit)).toEqual({ slide: "element-join", id: "256", member, frame, before })
+  }
+  const elsewhere = { slide: "element-join", id: "256", member, frame: "257.20", before: null, file: ["256", "257"] }
+  expect(readCommit({ deck: "deck", batch: [elsewhere] })).toEqual(field)
+})

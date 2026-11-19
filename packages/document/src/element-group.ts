@@ -29,7 +29,15 @@ export type ElementUngroup = { readonly slide: "element-ungroup"; readonly id: S
 
 export type ElementRegroup = { readonly slide: "element-regroup"; readonly id: SlideId; readonly node: ElementId }
 
-export type GroupCommand = ElementGroup | ElementUngroup | ElementRegroup
+export type ElementJoin = {
+  readonly slide: "element-join"
+  readonly id: SlideId
+  readonly member: Member
+  readonly frame: ElementId | null
+  readonly before: ElementId | null
+}
+
+export type GroupCommand = ElementGroup | ElementUngroup | ElementRegroup | ElementJoin
 
 type Indexed = SlideState & { readonly index?: DeckIndex }
 
@@ -40,6 +48,8 @@ type Tree = {
   readonly dissolved: ReadonlySet<ElementId>
   readonly former: ReadonlyMap<ElementId, readonly ElementId[]>
   readonly made: ReadonlyMap<ElementId, ElementGroup>
+  readonly joined: ReadonlyMap<ElementId, Member>
+  readonly flow: ReadonlyMap<ElementId, readonly ElementId[]>
 }
 
 export const groupable: readonly Kind[] = ["shape", "connector", "group", "table", "chart"]
@@ -48,11 +58,23 @@ const highestShape = 4294967295
 const fullTurn = 21_600_000
 
 export function groupCommand(command: { readonly slide: string }): command is GroupCommand {
-  return command.slide === "element-group" || command.slide === "element-ungroup" || command.slide === "element-regroup"
+  return (
+    command.slide === "element-group" ||
+    command.slide === "element-ungroup" ||
+    command.slide === "element-regroup" ||
+    command.slide === "element-join"
+  )
 }
 
 export function groupNode(command: GroupCommand): ElementId {
+  if (command.slide === "element-join") return command.member.node
   return command.slide === "element-group" ? command.element.node : command.node
+}
+
+function flowWith(flow: readonly ElementId[], node: ElementId, before: ElementId | null): readonly ElementId[] {
+  const rest = flow.filter((each) => each !== node)
+  const at = before === null ? -1 : rest.indexOf(before)
+  return at < 0 ? [...rest, node] : [...rest.slice(0, at), node, ...rest.slice(at)]
 }
 
 function openingRows(state: Indexed): readonly IndexElement[] {
@@ -77,6 +99,8 @@ function foldTree(state: Indexed): Tree {
   const dissolved = new Set<ElementId>()
   const former = new Map<ElementId, readonly ElementId[]>()
   const made = new Map<ElementId, ElementGroup>()
+  const joined = new Map<ElementId, Member>()
+  const flow = new Map<ElementId, readonly ElementId[]>()
   for (const command of state.order) {
     if (command.slide === "element-group") {
       const node = command.element.node
@@ -84,7 +108,24 @@ function foldTree(state: Indexed): Tree {
       if (command.backdrop !== undefined) parent.set(command.backdrop.node, node)
       for (const member of command.members) parent.set(member.node, node)
       made.set(node, command)
+      flow.set(
+        node,
+        command.members.map((member) => member.node),
+      )
       dissolved.delete(node)
+      continue
+    }
+    if (command.slide === "element-join") {
+      const node = command.member.node
+      const left = parent.get(node)
+      if (left !== undefined && left !== null && left !== "unknown")
+        flow.set(
+          left,
+          (flow.get(left) ?? []).filter((each) => each !== node),
+        )
+      parent.set(node, command.frame)
+      joined.set(node, command.member)
+      if (command.frame !== null) flow.set(command.frame, flowWith(flow.get(command.frame) ?? [], node, command.before))
       continue
     }
     if (command.slide === "element-ungroup") {
@@ -99,7 +140,7 @@ function foldTree(state: Indexed): Tree {
     for (const child of former.get(command.node) ?? []) parent.set(child, command.node)
     dissolved.delete(command.node)
   }
-  return { parent, dissolved, former, made }
+  return { parent, dissolved, former, made, joined, flow }
 }
 
 function treeOf(state: Indexed): Tree {
@@ -138,6 +179,16 @@ export function groupDissolved(state: Indexed, node: ElementId): boolean {
 
 export function madeGroup(state: Indexed, node: ElementId): ElementGroup | undefined {
   return treeOf(state).made.get(node)
+}
+
+export function frameMembers(state: Indexed, node: ElementId): readonly Member[] {
+  const tree = treeOf(state)
+  const made = tree.made.get(node)
+  return (tree.flow.get(node) ?? []).flatMap((child) => {
+    if (tree.parent.get(child) !== node || elementGone(state, child)) return []
+    const member = tree.joined.get(child) ?? made?.members.find((each) => each.node === child)
+    return member === undefined ? [] : [member]
+  })
 }
 
 export function frameBackdrop(state: Indexed, node: ElementId): ElementId | null {
@@ -280,8 +331,40 @@ function regroupRefusal(state: Indexed, command: ElementRegroup): SlideRefusal |
   return null
 }
 
+function backdropOf(state: Indexed, node: ElementId): boolean {
+  const parent = groupParent(state, node)
+  return typeof parent === "string" && madeGroup(state, parent)?.backdrop?.node === node
+}
+
+function placeRefusal(state: Indexed, command: ElementJoin): SlideRefusal | null {
+  const { frame, before } = command
+  const node = command.member.node
+  if (frame === null) {
+    const parent = groupParent(state, node)
+    return typeof parent === "string" && frameBackdrop(state, parent) !== null ? null : "dead"
+  }
+  if (shapeOf(frame).slide !== command.id || frameBackdrop(state, frame) === null) return "kind"
+  if (before === null) return null
+  if (before === node || groupParent(state, before) !== frame || backdropOf(state, before)) return "dead"
+  return elementGone(state, before) ? "dead" : null
+}
+
+function joinRefusal(state: Indexed, command: ElementJoin): SlideRefusal | null {
+  const node = command.member.node
+  if (slideKind(node) !== null || elementGone(state, node)) return "dead"
+  if (frameBackdrop(state, node) !== null || backdropOf(state, node)) return "kind"
+  const parent = groupParent(state, node)
+  if (typeof parent === "string" && frameBackdrop(state, parent) === null) return "group-box"
+  const opening = openingElement(state, node)
+  if (opening === undefined) return indexComplete(state) ? "dead" : null
+  if (!groupable.includes(opening.kind) || opening.role !== undefined) return "kind"
+  if (animated(state, command.id, node)) return "locked"
+  return placeRefusal(state, command)
+}
+
 export function groupRefusal(state: Indexed, command: GroupCommand): SlideRefusal | null {
   if (shapeOf(groupNode(command)).slide !== command.id) return "dead"
+  if (command.slide === "element-join") return joinRefusal(state, command)
   if (command.slide === "element-group") return madeRefusal(state, command)
   if (command.slide === "element-ungroup") return ungroupRefusal(state, command)
   return regroupRefusal(state, command)
@@ -335,6 +418,15 @@ export function readGroupCommand(raw: Record<string, unknown>, id: SlideId): Gro
       members.push(member)
     }
     return { slide: "element-group", id, element, members, ...(backdrop === undefined ? {} : { backdrop }) }
+  }
+  if (raw.slide === "element-join") {
+    const member = readMember(raw.member, id)
+    const frame = raw.frame === null ? null : readElementId(raw.frame)
+    const before = raw.before === null ? null : readElementId(raw.before)
+    if (member === undefined || frame === undefined || before === undefined) return undefined
+    if ((frame !== null && shapeOf(frame).slide !== id) || (before !== null && shapeOf(before).slide !== id))
+      return undefined
+    return { slide: "element-join", id, member, frame, before }
   }
   const node = readElementId(raw.node)
   if (node === undefined || shapeOf(node).slide !== id) return undefined

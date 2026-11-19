@@ -143,3 +143,62 @@ describe("auto layout frame export", () => {
     expect(decodeUtf8(exported(ran(after, undone.commands)).get(part) ?? new Uint8Array())).toBe(body)
   })
 })
+
+describe("auto layout frame members export", () => {
+  it("moves a joined shape into the frame's group at its flow place, and a leaving one out after the group", () => {
+    const framed = wrapped(opened)
+    const join = changeLayout(framed, { place: node(4), box: { x: 250000, y: 100000, cx: 10000, cy: 10000 }, file })
+    if (join === null || !("turn" in join)) throw new Error("join")
+    const joined = ran(framed, join.turn)
+    const text = decodeUtf8(exported(joined).get(part) ?? new Uint8Array())
+    const at = (shape: number) => text.indexOf(`<p:cNvPr id="${shape}"`)
+    expect(
+      [at(21), at(3), at(4), at(5)].every((value, index, all) => index === 0 || value > (all[index - 1] ?? 0)),
+    ).toBe(true)
+    expect(text.indexOf("</p:grpSp>")).toBeGreaterThan(at(5))
+    expect(painted(exported(joined), 4).x).toBe(401600)
+    const leave = changeLayout(joined, {
+      place: node(3),
+      box: { x: 3000000, y: 3000000, cx: 200000, cy: 100000 },
+      file,
+    })
+    if (leave === null || !("turn" in leave)) throw new Error("leave")
+    const left = exported(ran(joined, leave.turn))
+    const after = decodeUtf8(left.get(part) ?? new Uint8Array())
+    expect(after.indexOf('<p:cNvPr id="3"')).toBeGreaterThan(after.indexOf("</p:grpSp>"))
+    expect(painted(left, 3)).toMatchObject({ x: 3000000, y: 3000000 })
+    expect(painted(left, 4).x).toBe(100000)
+  })
+
+  it("lays the frame out without a deleted child", () => {
+    const framed = wrapped(opened)
+    const removed = ran(framed, [slideCommand({ slide: "element-remove", id: slide, node: node(3) })])
+    const shown = exported(removed)
+    expect(decodeUtf8(shown.get(part) ?? new Uint8Array())).not.toContain('<p:cNvPr id="3"')
+    expect(painted(shown, 5).x).toBe(100000)
+  })
+})
+
+describe("auto layout frame of added shapes", () => {
+  it("keeps the frame when one of its added shapes is deleted", () => {
+    const added = [30, 31].map((shape, at) => ({
+      node: node(shape),
+      kind: "shape" as const,
+      value: "",
+      box: { x: 1_000_000 + at * 600_000, y: 1_000_000, cx: 400_000, cy: 300_000 },
+      grouped: false,
+    }))
+    const made = ran(
+      opened,
+      added.map((element) => slideCommand({ slide: "element-add", id: slide, element })),
+    )
+    const changed = changeLayout(made, { wrap: [node(30), node(31)], slide, node: node(32), backdrop: node(33) })
+    if (changed === null || !("slide" in changed)) throw new Error("wrap")
+    const framed = ran(made, [slideCommand(changed.slide)])
+    const removed = ran(framed, [slideCommand({ slide: "element-remove", id: slide, node: node(31) })])
+    const text = decodeUtf8(exported(removed).get(part) ?? new Uint8Array())
+    expect(text).toContain('<p:cNvPr id="32" name="Frame 32"/>')
+    expect(text).toContain('<p:cNvPr id="30"')
+    expect(text).not.toContain('<p:cNvPr id="31"')
+  })
+})

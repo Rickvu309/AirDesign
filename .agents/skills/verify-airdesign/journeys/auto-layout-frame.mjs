@@ -145,9 +145,9 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const child = await center(5)
   await page.mouse.move(child.x, child.y)
   await page.mouse.down()
-  await page.mouse.move(child.x, child.y - 90, { steps: 8 })
+  await page.mouse.move(child.x - 40, child.y, { steps: 8 })
   await page.mouse.up()
-  await holds([laid[0], { ...laid[1], y: laid[1].y - 90 }])
+  await holds([laid[0], { ...laid[1], x: laid[1].x - 40 }])
   await capture("child-moved-in-frame")
   const moved = await saved()
   const relative = moved.register.elements[wrap.members[1].node]?.landed.at(-1)?.value
@@ -159,10 +159,33 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", frame)
   await page.keyboard.press("Shift+A")
   await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
-  await holds(laid)
+  await expect.poll(async () => Math.abs((await boxes())[0].y - (await boxes())[1].y) < 1.5).toBe(true)
+  const again = await boxes()
   await capture("auto-layout-again")
 
+  await insert(shapeCopy.shapes.triangle)
+  const triangle = wrap.backdrop.node.split(".")[0] + ".8"
+  await expect(element(8)).toBeVisible()
+  const [first, second] = await boxes()
+  const target = { x: (first.x + first.width + second.x) / 2, y: first.y + first.height / 2 }
+  const dragged = await center(8)
+  await page.mouse.move(dragged.x, dragged.y)
+  await page.mouse.down()
+  await page.mouse.move(target.x, target.y, { steps: 10 })
+  await page.mouse.up()
+  await expect
+    .poll(async () => (await saved()).register.order.at(-1))
+    .toMatchObject({ slide: "element-join", frame, before: wrap.members[1].node, member: { node: triangle } })
+  await capture("joined-frame")
+  await element(8).click()
+  await element(8).click()
+  await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", triangle)
+  await page.keyboard.press("Delete")
+  await expect(element(8)).toHaveCount(0)
+  await holds(again)
+  await capture("child-deleted")
+
   note(
-    `A rectangle and an ellipse, chosen with Shift+click, became an auto layout frame with Shift+A: the ellipse moved to sit beside the rectangle at the guessed gap, top aligned, and the panel read Auto layout frame with Remove auto layout. A solid fill landed on the frame's backdrop (shape ${backdrop}) without moving either shape; a click on the backdrop selected the frame. Remove auto layout turned the title to Frame with nothing moving, and its Undo brought auto layout back. A reload kept every place, the export ${path.basename(exported)} re-imported with the group where it was, Undo fill then Undo add auto layout put both shapes back where they started with the backdrop gone, and Redo brought the frame back laid out, before the reload. Back on the deck, Remove auto layout, a second click on the ellipse selected it inside the frame, and a drag moved it 90 px up on its own, stored relative to the frame; Shift+A on the frame laid it back in the row.`,
+    `A rectangle and an ellipse, chosen with Shift+click, became an auto layout frame with Shift+A: the ellipse moved to sit beside the rectangle at the guessed gap, top aligned, and the panel read Auto layout frame with Remove auto layout. A solid fill landed on the frame's backdrop (shape ${backdrop}) without moving either shape; a click on the backdrop selected the frame. Remove auto layout turned the title to Frame with nothing moving, and its Undo brought auto layout back. A reload kept every place, the export ${path.basename(exported)} re-imported with the group where it was, Undo fill then Undo add auto layout put both shapes back where they started with the backdrop gone, and Redo brought the frame back laid out, before the reload. Back on the deck, Remove auto layout, a second click on the ellipse selected it inside the frame, and a drag moved it 40 px left on its own, stored relative to the frame; Shift+A on the frame laid it back in the row. A triangle dragged between the two children joined the row there (an element-join before the ellipse), and Delete on it, chosen inside the frame, closed the row up again.`,
   )
 }

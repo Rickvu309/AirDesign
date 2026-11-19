@@ -109,7 +109,7 @@ export function slideShapes(
   part: string,
   base: Parts,
   display: Parts,
-  freed: ReadonlyMap<ElementId, unknown> = new Map(),
+  framed: ReadonlyMap<ElementId, unknown> = new Map(),
 ): SlideShapes {
   const baseBytes = base.get(part)
   const shownBytes = display.get(part)
@@ -128,7 +128,7 @@ export function slideShapes(
     shapes.push({ id, shape: shown, kind: paintKind(shown.kind), file, opening: shape.box })
     if (holding === null || seen.get(id) !== 1) continue
     const table = shape.contentKind === "table" && tableEditable(holding, shape)
-    if (table || boxStorable(holding, shape, freed.has(id))) movables.set(id, { id, file })
+    if (table || boxStorable(holding, shape, framed.has(id))) movables.set(id, { id, file })
     const numbered = [...shape.text, ...shown.text].some((each) =>
       each.runs.some((run) => run.slideNumber !== undefined),
     )
@@ -188,7 +188,8 @@ export function paintCanvas(
     const marked = refit.has(shape.id) ? { ...shape, refit: true as const } : shape
     const frame = framed?.frames.get(shape.id)
     if (framed?.backdrops.has(shape.id) === true) return [key, { ...marked, backdrop: true as const }] as const
-    if (framed?.origins.has(shape.id) === true) return [key, { ...marked, freed: true as const }] as const
+    const inFrame = framed?.children.get(shape.id)
+    if (inFrame !== undefined) return [key, { ...marked, inFrame }] as const
     return [key, frame === undefined ? marked : { ...marked, frame }] as const
   })
   const plain = refit.size === 0 && (framed === undefined || framed.frames.size === 0)

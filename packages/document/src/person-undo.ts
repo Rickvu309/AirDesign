@@ -8,6 +8,7 @@ import { elementStacks, sitsBefore } from "./element-stack.js"
 import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./element-group.js"
 import { rowsKept } from "./group-place.js"
 import { regroupTurn, ungroupTurn } from "./group-turn.js"
+import { joinTurn, spotNow, type Spot } from "./frame-layout.js"
 import type { OrderKey } from "./order-key.js"
 import { openingElement } from "./slide-floor.js"
 import { readTextValue } from "./text-value.js"
@@ -60,6 +61,13 @@ export type Undoable =
       readonly file: readonly SlideId[]
       readonly before: boolean
       readonly after: boolean
+    }
+  | {
+      readonly joined: ElementId
+      readonly slide: SlideId
+      readonly file: readonly SlideId[]
+      readonly before: Spot
+      readonly after: Spot
     }
 
 type ElementsUndoable = Extract<Undoable, { readonly elements: unknown }>
@@ -117,6 +125,12 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
   const decision = decide(register, { command: "slide", file, edit })
   if (decision.decision !== "apply") return null
   if (edit.slide === "element-order") return stackUndoable(edit, file)
+  if (edit.slide === "element-join") {
+    const before = spotNow(register, edit.member.node)
+    if (before === null) return null
+    const after = { frame: edit.frame, before: edit.before, box: edit.member.box }
+    return { joined: edit.member.node, slide: edit.id, file, before, after }
+  }
   if (groupCommand(edit)) {
     const group = groupNode(edit)
     return {
@@ -244,6 +258,12 @@ function turnCommands(
     }
     return landing(register, { command: "slide", file, edit })
   }
+  if ("joined" in undoable) {
+    const now = spotNow(register, undoable.joined)
+    const was = undoable[from]
+    if (now === null || now.frame !== was.frame || now.before !== was.before) return null
+    return joinTurn(register, file, undoable.joined, undoable[to])
+  }
   if ("group" in undoable) {
     if (groupFormed(register, undoable.group) !== undoable[from] || undoable[from] === undoable[to]) return null
     if (undoable[to]) return regroupTurn(register, file, undoable.slide, undoable.group)
@@ -347,6 +367,7 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
 }
 
 function groupUndone(register: Register, edit: GroupCommand): Register | null {
+  if (edit.slide === "element-join") return null
   const node = groupNode(edit)
   const formed = groupFormed(register, node)
   if (edit.slide === "element-ungroup" ? formed : !formed) return register

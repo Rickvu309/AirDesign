@@ -6,10 +6,18 @@ export type Framed = {
   readonly origins: ReadonlyMap<ElementId, Box>
   readonly backdrops: ReadonlySet<ElementId>
   readonly frames: ReadonlyMap<ElementId, Framing>
+  readonly children: ReadonlyMap<ElementId, Framing>
   readonly key: string
 }
 
-const none: Framed = { boxes: new Map(), origins: new Map(), backdrops: new Set(), frames: new Map(), key: "" }
+const none: Framed = {
+  boxes: new Map(),
+  origins: new Map(),
+  backdrops: new Set(),
+  frames: new Map(),
+  children: new Map(),
+  key: "",
+}
 
 const laid = new WeakMap<Register, Framed>()
 
@@ -20,6 +28,7 @@ function laidOut(register: Register): Framed {
   const origins = new Map<ElementId, Box>()
   const backdrops = new Set<ElementId>()
   const frames = new Map<ElementId, Framing>()
+  const children = new Map<ElementId, Framing>()
   for (const node of layoutNodes(register)) {
     const view = readLayout(register, node)
     if (view === null) continue
@@ -30,11 +39,12 @@ function laidOut(register: Register): Framed {
     backdrops.add(view.backdrop)
     for (const child of view.children) {
       boxes.set(child.node, child.box)
+      children.set(child.node, frame)
       if (frame === "free") origins.set(child.node, view.box)
     }
   }
-  const key = JSON.stringify([...frames])
-  const found = { boxes, origins, backdrops, frames, key }
+  const key = JSON.stringify([[...frames], [...children]])
+  const found = { boxes, origins, backdrops, frames, children, key }
   laid.set(register, found)
   return found
 }
