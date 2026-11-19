@@ -1,6 +1,6 @@
 import { stepsOf } from "./check.mjs"
 import { checkSteps } from "./check-steps.mjs"
-import { packagesFor, runGate, testLimit, testsFor } from "./gate.mjs"
+import { packagesFor, runGate, testsFor } from "./gate.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -14,27 +14,20 @@ const planWith = (tests) => ({
       ? []
       : [{ kind: "unit-tests", tests, files: ["x.ts"], because: "package.json is read outside the import graph" }],
 })
-same(
-  "a diff with no unit source runs no unit test",
-  testsFor({ plan: planWith(), related: ["a.test.ts"], changed: ["AGENTS.md"] }),
-  { files: [], ci: undefined },
-)
+same("a diff that reaches no unit source runs no unit test", testsFor({ plan: planWith(), related: [] }), [])
 const few = ["a.test.ts", "b.test.ts"]
+same("every test file in the import graph runs", testsFor({ plan: planWith("related"), related: few }), few)
+same("Vitest reach applies to script inputs too", testsFor({ plan: planWith(), related: few }), few)
+const many = Array.from({ length: 41 }, (_, at) => `t${String(at)}.test.ts`)
 same(
-  "every test file a diff reaches runs while they are few",
-  testsFor({ plan: planWith("related"), related: few, changed: ["a.ts"] }),
-  { files: few, ci: undefined },
-)
-const many = Array.from({ length: testLimit + 1 }, (_, at) => `t${String(at)}.test.ts`)
-same(
-  "past the limit only the changed test files run, and ci runs the rest",
-  testsFor({ plan: planWith("related"), related: many, changed: ["t3.test.ts", "core.ts"] }),
-  { files: ["t3.test.ts"], ci: `${String(testLimit)} more test files reach this diff` },
+  "every related file runs even when the diff reaches more than 40",
+  testsFor({ plan: planWith("related"), related: many }),
+  many,
 )
 same(
-  "a file read outside the import graph runs only the changed test files, and ci runs every unit test",
-  testsFor({ plan: planWith("all"), related: few, changed: ["b.test.ts", "package.json"] }),
-  { files: ["b.test.ts"], ci: "every unit test, because package.json is read outside the import graph" },
+  "an input read outside the import graph selects the whole suite",
+  testsFor({ plan: planWith("all"), related: few, inventory: many }),
+  many,
 )
 
 same(
@@ -117,7 +110,7 @@ const testStep = ofName(checkSteps.stagesFor("all", false), "unit-tests")
 same(
   "the unit-tests step runs only the chosen files, niced on two workers, with the unit-tests step's settings",
   ofName(full, "unit-tests"),
-  ["unit-tests", "nice", ["-n", "10", testStep[1], ...testStep[2], "--maxWorkers=2", "a.test.ts"], testStep[3]],
+  ["unit-tests", "nice", ["-n", "10", testStep[1], "scripts/selected-unit-tests.mjs", "2", "a.test.ts"], testStep[3]],
 )
 same("the script-tests step runs only the chosen files", ofName(full, "script-tests"), [
   "script-tests",

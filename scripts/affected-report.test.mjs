@@ -85,10 +85,10 @@ try {
   assert.equal((await affectedReport({ root: folder, base: "HEAD^", head: "HEAD" })).unit.reached, "all")
   const changed = ["scripts/a.mjs"]
   const plan = proofPlan({ changed, scripts: { "scripts/a.mjs": [], "scripts/a.test.mjs": ["scripts/a.mjs"] } })
-  const related = ["packages/a/src/a.test.ts"]
+  const related = []
   const chosen = () =>
     checkSteps.affectedGateStages({
-      tests: testsFor({ plan, related, changed }).files,
+      tests: testsFor({ plan, related }),
       tooling: plan.steps.find((s) => s.kind === "script-tests").files,
       packages: packagesFor(changed),
     })

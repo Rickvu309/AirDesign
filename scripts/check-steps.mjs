@@ -19,8 +19,10 @@ const browserArgs = (part, shard) =>
         ]
       : []
 
-const gateTests = ({ tests }, [name, command, args, env]) =>
-  tests?.length ? [name, ...smallLaneCommand(command, [...args, "--maxWorkers=2", ...tests]), env] : undefined
+const gateTests = ({ tests }, [name, command, , env]) =>
+  tests?.length
+    ? [name, ...smallLaneCommand(command, ["scripts/selected-unit-tests.mjs", "2", ...tests]), env]
+    : undefined
 
 const gateTooling = ({ tooling }, [name]) =>
   tooling?.length ? [name, "node", ["scripts/tooling-tests.mjs", ...tooling]] : undefined
