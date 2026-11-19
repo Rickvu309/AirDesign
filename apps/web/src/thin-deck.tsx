@@ -23,6 +23,8 @@ export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
 import { colorsIn } from "@/editor/deck-colors"
 import { LiveDesignPanel } from "@/editor/live-design-panel"
+import { toneLink } from "@/editor/tone-link"
+import { toneScope } from "@/editor/tone-scope"
 
 import type { PanelMode } from "@/design/panel-order"
 
@@ -31,6 +33,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [selectedSlides, setSelectedSlides] = useState<readonly number[]>([])
   const [panel, setPanel] = useKeptPanel(id)
   const [mode, setMode] = useState<PanelMode>("slides")
+  const [tone] = useState(toneLink)
   useDeckOpen(deck)
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
@@ -81,6 +84,7 @@ export function ThinDeck({ id }: { id: string }) {
                 window.location.assign("/")
               }),
             formatting: deck.undo.formatting.current,
+            tone: { link: tone, scope: (node) => toneScope(shown, [node]) },
             deckColors: colorsIn(shown.displayParts.current),
             onPicture: deck.pictureTool.pick,
             onShape: deck.inserts.addShape,
@@ -123,6 +127,7 @@ export function ThinDeck({ id }: { id: string }) {
             <AiraPanel
               key={id}
               deck={id}
+              toneLink={tone}
               hidden={panel !== "agent"}
               online={deck.online}
               showAgent={() => setPanel("agent")}

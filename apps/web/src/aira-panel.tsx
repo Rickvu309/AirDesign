@@ -23,6 +23,7 @@ import { useWeekUsage, type UsageLoad } from "@/usage-load"
 import { requestedTone, tonePrompt, type Tone, type ToneScope } from "@/aira-prompts"
 import { adjustToneCopy } from "@/copy/adjust-tone-copy"
 import type { ToneControlFor } from "@/editor/adjust-tone"
+import type { ToneLink } from "@/editor/tone-link"
 
 function usageBlock(loaded: UsageLoad | undefined) {
   if (loaded?.kind === "signed-out") return airaCopy.signIn
@@ -39,6 +40,7 @@ export function AiraPanel({
   deck,
   hidden,
   design,
+  toneLink,
   showAgent,
   online = true,
   now = Date.now,
@@ -48,6 +50,7 @@ export function AiraPanel({
   deck: string
   hidden: boolean
   design?: (toneFor: ToneControlFor) => ReactNode
+  toneLink?: ToneLink
   showAgent?: () => void
   online?: boolean
   now?: () => number
@@ -251,6 +254,12 @@ export function AiraPanel({
       reset: () => void adjust(undefined),
     }
   }
+
+  useEffect(() => {
+    toneLink?.publish(toneFor)
+  })
+
+  useEffect(() => () => toneLink?.publish(null), [toneLink])
 
   function newChat() {
     waiting.current = []

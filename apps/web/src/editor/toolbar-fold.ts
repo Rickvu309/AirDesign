@@ -2,11 +2,15 @@ export const insertParts = ["number", "text", "shape", "image", "icon"] as const
 
 export const formatParts = ["styles", "size", "color", "align", "bullets"] as const
 
+export const actionParts = ["actions"] as const
+
 export type InsertPart = (typeof insertParts)[number]
 
 export type FormatPart = (typeof formatParts)[number]
 
-export type ToolbarPart = InsertPart | FormatPart
+export type ActionPart = (typeof actionParts)[number]
+
+export type ToolbarPart = InsertPart | FormatPart | ActionPart
 
 export const foldOrder: readonly ToolbarPart[] = [
   "icon",
@@ -14,6 +18,7 @@ export const foldOrder: readonly ToolbarPart[] = [
   "shape",
   "number",
   "text",
+  "actions",
   "bullets",
   "align",
   "color",

@@ -7,6 +7,8 @@ import { EditorMenuContent, EditorMenuRow } from "@/editor/editor-menu"
 import { FormatButtons, useLiveFormat, type FormatProps, type FormatShown } from "@/editor/format-buttons"
 import { PanelSwitch } from "@/editor/panel-switch"
 import type { PointerTool, ToolPick } from "@/editor/pointer-tool"
+import { ToneActions, useToneReady } from "@/editor/tone-actions"
+import type { ToneSource } from "@/editor/tone-link"
 import { UndoButtons, type UndoButtonsState } from "@/editor/undo-buttons"
 import { cn } from "@/lib/class-names"
 import type { TextFormatting } from "@airdesign/render"
@@ -20,9 +22,11 @@ import { designCopy } from "@/copy/design-copy"
 import type { PanelMode } from "@/design/panel-order"
 import { toolbarCopy } from "@/copy/toolbar-copy"
 import {
+  actionParts,
   formatParts,
   insertParts,
   toolbarFold,
+  type ActionPart,
   type FormatPart,
   type InsertPart,
   type ToolbarPart,
@@ -60,6 +64,10 @@ function isInsertPart(part: ToolbarPart): part is InsertPart {
 
 function isFormatPart(part: ToolbarPart): part is FormatPart {
   return formatParts.some((each) => each === part)
+}
+
+function isActionPart(part: ToolbarPart): part is ActionPart {
+  return actionParts.some((each) => each === part)
 }
 
 function holdCaret(event: MouseEvent) {
@@ -125,14 +133,19 @@ function ToolbarParts({
   inRow,
   inserts,
   format,
+  formatting,
+  tone,
 }: {
   parts: readonly ToolbarPart[]
   inRow: boolean
   inserts: Inserts
   format: FormatProps | null
+  formatting: TextFormatting | undefined
+  tone: ToneSource | undefined
 }) {
   const tools = parts.filter(isInsertPart)
   const formats = parts.filter(isFormatPart)
+  const actions = parts.some(isActionPart)
   return (
     <>
       {tools.map((tool) => (
@@ -140,6 +153,9 @@ function ToolbarParts({
       ))}
       {formats.length > 0 && (inRow || tools.length > 0) ? <Divider /> : null}
       {format === null || formats.length === 0 ? null : <FormatButtons {...format} parts={formats} />}
+      {actions && formatting !== undefined && tone !== undefined ? (
+        <ToneActions formatting={formatting} source={tone} />
+      ) : null}
     </>
   )
 }
@@ -148,12 +164,16 @@ function MoreTools({
   parts,
   inserts,
   format,
+  formatting,
+  tone,
   open,
   onOpen,
 }: {
   parts: readonly ToolbarPart[]
   inserts: Inserts
   format: FormatProps | null
+  formatting: TextFormatting | undefined
+  tone: ToneSource | undefined
   open: boolean
   onOpen: (open: boolean) => void
 }) {
@@ -181,7 +201,14 @@ function MoreTools({
         data-keeps-format
         data-toolbar-more
       >
-        <ToolbarParts parts={parts} inRow={false} inserts={inserts} format={format} />
+        <ToolbarParts
+          parts={parts}
+          inRow={false}
+          inserts={inserts}
+          format={format}
+          formatting={formatting}
+          tone={tone}
+        />
       </PopoverContent>
     </Popover>
   )
@@ -229,6 +256,7 @@ export function EditorToolbar({
   onText,
   onSlideNumber,
   formatting,
+  tone,
   deckColors,
   formats,
   onPicture,
@@ -245,6 +273,7 @@ export function EditorToolbar({
   onText?: () => void
   onSlideNumber?: () => void
   formatting?: TextFormatting
+  tone?: ToneSource
   deckColors?: readonly string[]
   formats?: FormatShown
   onPicture?: (file: File) => void
@@ -257,7 +286,11 @@ export function EditorToolbar({
   const live = useLiveFormat(formatting, deckColors)
   const format = live ?? (formats === undefined ? null : { shown: formats })
   const available = insertParts.filter((part) => part !== "number" || onSlideNumber !== undefined)
-  const fold = useFold(format === null ? available : [...available, ...formatParts])
+  const toneReady = useToneReady(tone)
+  const withFormat = format === null ? available : [...available, ...formatParts]
+  const fold = useFold(
+    format !== null && formatting !== undefined && toneReady ? [...withFormat, ...actionParts] : withFormat,
+  )
   const inserts: Inserts = { activeTool, pointer, onText, onPicture, onShape, onIcon, onSlideNumber }
   return (
     <div ref={fold.room} className="flex w-full min-w-0 justify-center">
@@ -316,9 +349,17 @@ export function EditorToolbar({
             </EditorMenuContent>
           </DropdownMenu>
         </span>
-        <ToolbarParts parts={fold.row} inRow inserts={inserts} format={format} />
+        <ToolbarParts parts={fold.row} inRow inserts={inserts} format={format} formatting={formatting} tone={tone} />
         {fold.more.length === 0 ? null : (
-          <MoreTools parts={fold.more} inserts={inserts} format={format} open={fold.open} onOpen={fold.onOpen} />
+          <MoreTools
+            parts={fold.more}
+            inserts={inserts}
+            format={format}
+            formatting={formatting}
+            tone={tone}
+            open={fold.open}
+            onOpen={fold.onOpen}
+          />
         )}
         <Divider />
         <UndoButtons {...(undo === undefined ? {} : { state: undo })} />

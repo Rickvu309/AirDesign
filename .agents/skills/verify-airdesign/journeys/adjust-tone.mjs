@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
 import { selectTwoTextBoxes } from "../look/tone-selection.mjs"
-import { adjustToneCopy as words, airaCopy, productCopy, undoCopy } from "../bin/product-copy.mjs"
+import { adjustToneCopy as words, airaCopy, productCopy, toolbarCopy, undoCopy } from "../bin/product-copy.mjs"
 
 const node = "256.2"
 const original = "Hello"
@@ -231,4 +231,36 @@ export default async function drive(kit) {
   await log.getByRole("button", { name: undoCopy.undo, exact: true }).click()
   await expect(editor).toHaveText([original, "Welcome"])
   note("Dragging the dial on a group targeted both text children in one recorded edit. One Agent Undo restored both.")
+  await page.keyboard.press("Control+Shift+g")
+  await page.keyboard.press("Escape")
+  await expect(many).toHaveCount(0)
+  const welcome = page.locator('[data-slide-paint] [contenteditable="true"]').last()
+  await expect(welcome).toHaveText("Welcome")
+  await welcome.click()
+  await expect(page.locator("[data-editor-toolbar] [data-text-format]")).toBeVisible()
+  const actions = page.getByRole("button", { name: toolbarCopy.actions, exact: true })
+  await actions.click()
+  await page.getByRole("menuitem", { name: toolbarCopy.rewriteThis, exact: true }).hover()
+  await capture("text-actions")
+  await page.getByRole("menuitem", { name: words.title, exact: true }).click()
+  await expect(preset).toBeEnabled()
+  await capture("text-tone")
+  const before = await read()
+  const edited = before.elements.find((element) => element.value !== undefined && readText(element.value) === "Welcome")
+  aira(script(before.revision, change(edited, "Greetings, all")))
+  await preset.click()
+  await expect(welcome).toHaveText("Greetings, all")
+  await expect(editor.first()).toHaveText(original)
+  await expect(log.getByRole("button", { name: undoCopy.undo, exact: true })).toBeEnabled()
+  const lastAsked = requests[8].messages.at(-1).content
+  expect(lastAsked).toContain(`selection ${edited.node}. Tone: ${words.presets[0]}`)
+  expect(lastAsked.split("\n")[1]).toContain(edited.node)
+  expect(lastAsked.split("\n")[1]).not.toContain(node)
+  await capture("text-aira-rewrite")
+  await log.getByRole("button", { name: undoCopy.undo, exact: true }).click()
+  await expect(welcome).toHaveText("Welcome")
+  await expect(editor.first()).toHaveText(original)
+  note(
+    "From the text toolbar, Actions > Rewrite this > Adjust tone rewrote only the layer in hand as one recorded Aira run. One Agent Undo restored it and left the other layer alone.",
+  )
 }

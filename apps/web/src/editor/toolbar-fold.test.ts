@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { formatParts, insertParts, toolbarFold } from "@/editor/toolbar-fold"
+import { actionParts, formatParts, insertParts, toolbarFold } from "@/editor/toolbar-fold"
 
 const all = [...insertParts, ...formatParts]
 
@@ -31,5 +31,14 @@ it("folds the slide number before Add text box", () => {
   expect(toolbarFold(all, 4)).toEqual({
     row: ["text", "styles", "size", "color", "align", "bullets"],
     more: ["number", "shape", "image", "icon"],
+  })
+})
+
+it("folds Actions after the insert tools and before the text controls", () => {
+  const withActions = [...insertParts, ...formatParts, ...actionParts]
+  expect(toolbarFold(withActions, 5).more).toEqual(["number", "text", "shape", "image", "icon"])
+  expect(toolbarFold(withActions, 6)).toEqual({
+    row: ["styles", "size", "color", "align", "bullets"],
+    more: ["number", "text", "shape", "image", "icon", "actions"],
   })
 })

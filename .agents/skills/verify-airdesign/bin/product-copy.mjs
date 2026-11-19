@@ -20,6 +20,7 @@ export const { productCopy, starOf, unstarOf } = createRequire(import.meta.url)(
 
 export const { airaCopy, airaStepWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/aira-copy.ts")
 export const { adjustToneCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/adjust-tone-copy.ts")
+export const { toolbarCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/toolbar-copy.ts")
 export const { undoCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/undo-copy.ts")
 
 export const { fillCopy, fillWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/fill-copy.ts")
