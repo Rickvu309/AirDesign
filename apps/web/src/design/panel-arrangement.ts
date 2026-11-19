@@ -34,6 +34,20 @@ import {
   AlignBottomEdge,
 } from "./preset-icons"
 import { LineHeightIcon, LetterSpacingIcon } from "./text-icons"
+import {
+  BottomPadding,
+  HorizontalFlow,
+  HorizontalGap,
+  HorizontalLayoutAlignment,
+  HorizontalPadding,
+  LeftPadding,
+  RightPadding,
+  TopPadding,
+  VerticalFlow,
+  VerticalGap,
+  VerticalLayoutAlignment,
+  VerticalPadding,
+} from "./layout-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -49,7 +63,7 @@ export type NameLook =
 export type ControlLook = {
   readonly name: NameLook
   readonly options: Readonly<Record<string, LucideIcon | undefined>>
-  readonly form: "segments" | "list" | "header"
+  readonly form: "segments" | "list" | "grid" | "header"
   readonly glyph?: LucideIcon
   readonly steps?: readonly number[]
   readonly slider?: boolean
@@ -63,7 +77,8 @@ type Placed = {
   readonly control?: "canvas"
   readonly kind?: ControlKind
   readonly options?: Readonly<Record<string, LucideIcon>>
-  readonly form?: "segments" | "list"
+  readonly form?: "segments" | "list" | "grid"
+  readonly unit?: string
   readonly glyph?: LucideIcon
   readonly steps?: readonly number[]
   readonly slider?: boolean
@@ -86,7 +101,26 @@ const letter = (field: string, text: string): Placed => placed(field, { show: "l
 const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)]
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
-  layout: [[placed("flow", hidden)], [placed("gap", above), placed("padding", above)], [placed("align", hidden)]],
+  layout: [
+    [placed("flow", above, { options: { vertical: VerticalFlow, horizontal: HorizontalFlow } })],
+    [
+      placed("align", above, { form: "grid", glyph: HorizontalLayoutAlignment }),
+      placed("gap", above, { glyph: HorizontalGap, unit: "" }),
+    ],
+    [placed("padding")],
+    [
+      placed("padding.horizontal", { show: "icon", icon: HorizontalPadding }, { unit: "" }),
+      placed("padding.vertical", { show: "icon", icon: VerticalPadding }, { unit: "" }),
+    ],
+    [
+      placed("padding.left", { show: "icon", icon: LeftPadding }, { unit: "" }),
+      placed("padding.top", { show: "icon", icon: TopPadding }, { unit: "" }),
+    ],
+    [
+      placed("padding.right", { show: "icon", icon: RightPadding }, { unit: "" }),
+      placed("padding.bottom", { show: "icon", icon: BottomPadding }, { unit: "" }),
+    ],
+  ],
   show: [[placed("skipped", hidden, { control: "canvas" })]],
   transition: [[{ field: "value", name: hidden }]],
   link: [[placed("target", hidden)]],
@@ -274,6 +308,7 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       options,
       form: place?.form ?? choiceLayout(control.field, choices),
       ...(place?.glyph === undefined ? {} : { glyph: place.glyph }),
+      ...(place?.unit === undefined ? {} : { unit: place.unit }),
       ...(place?.steps === undefined ? {} : { steps: place.steps }),
       ...(place?.slider === undefined ? {} : { slider: true }),
       ...(place?.unnamed === undefined ? {} : { unnamed: true }),
@@ -286,11 +321,21 @@ export function canvasControl(trait: SectionName, field: string): boolean {
 }
 
 export function arrange(trait: SectionName, controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {
+  const vertical =
+    trait === "layout" && controls.some((control) => control.field === "flow" && control.value === "vertical")
   const strips = sectionStrips[trait]
     .map((strip) => strip.flatMap((place) => controls.filter((control) => control.field === place.field)))
     .filter((strip) => strip.length > 0)
   const placed = new Set(strips.flat().map((control) => control.field))
-  return [...strips, ...fallbackStrips(controls.filter((control) => !placed.has(control.field)))]
+  const rows = [...strips, ...fallbackStrips(controls.filter((control) => !placed.has(control.field)))]
+  if (!vertical) return rows
+  return rows.map((row) =>
+    row.map((control) => {
+      const glyph =
+        control.field === "align" ? VerticalLayoutAlignment : control.field === "gap" ? VerticalGap : undefined
+      return glyph === undefined ? control : { ...control, look: { ...control.look, glyph } }
+    }),
+  )
 }
 
 function fallbackStrips(controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {

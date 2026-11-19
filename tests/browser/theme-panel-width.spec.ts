@@ -1,4 +1,6 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
+import { frameCopy, layoutWords } from "../../apps/web/src/copy/frame-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test, type Page } from "@playwright/test"
@@ -126,3 +128,35 @@ for (const fixture of [...new Set(panels.map((panel) => panel.fixture))])
       }
     expect(found).toEqual([])
   })
+
+test("frame Auto layout fits at 220, 240 and 440 px with either padding view", async ({ page }) => {
+  await openDeck(page, "frame.pptx")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await setPanelMode(page, "design")
+  await choose(page, [4])
+  const section = page
+    .locator("[data-design-section]")
+    .filter({ has: page.getByText(frameCopy.autoLayout, { exact: true }) })
+  const individual = section.getByRole("button", { name: frameCopy.individualPadding })
+  const alignment = section.getByRole("group", { name: frameCopy.align, exact: true })
+  const gap = section.getByRole("textbox", { name: frameCopy.gap, exact: true }).locator("xpath=ancestor::label")
+  const vertical = section
+    .getByRole("textbox", { name: layoutWords["padding.vertical"], exact: true })
+    .locator("xpath=ancestor::label")
+  for (const width of [220, 240, 440]) {
+    await resize(page, width)
+    await expect(individual).toBeVisible()
+    const alignmentBox = await alignment.boundingBox()
+    const gapBox = await gap.boundingBox()
+    expect(gapBox?.width).toBe(alignmentBox?.width)
+    expect(gapBox?.y).toBe(alignmentBox?.y)
+    expect(gapBox?.x).toBeGreaterThan(alignmentBox?.x ?? 0)
+    const verticalBox = await vertical.boundingBox()
+    expect(gapBox?.width).toBe(verticalBox?.width)
+    expect(gapBox?.x).toBe(verticalBox?.x)
+    expect(await clipped(page), `Paired padding at ${width} px`).toEqual([])
+    await individual.click()
+    expect(await clipped(page), `Individual padding at ${width} px`).toEqual([])
+    await individual.click()
+  }
+})

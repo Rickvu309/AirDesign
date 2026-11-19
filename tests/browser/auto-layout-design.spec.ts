@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { frameCopy, layoutWords } from "../../apps/web/src/copy/frame-copy"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, setPanelMode } from "./design-panel"
@@ -52,17 +53,81 @@ async function typed(field: Locator, value: string): Promise<void> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
+test.beforeEach(async ({ page }) => {
+  await openDeck(page, "frame.pptx")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await setPanelMode(page, "design")
+  await painted(page, 4).click()
+})
+
+test("shows nine alignments in three rows and moves the selection with arrow keys", async ({ page }) => {
+  const alignment = page.getByRole("group", { name: frameCopy.align, exact: true })
+  const choices = alignment.getByRole("button")
+  await expect(choices).toHaveCount(9)
+  const rows = await choices.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().y))
+  expect([...new Set(rows)].map((row) => rows.filter((y) => y === row).length)).toEqual([3, 3, 3])
+  await choices.first().click()
+  await expect(choices.first()).toHaveAttribute("aria-pressed", "true")
+  await choices.first().press("ArrowDown")
+  await expect(choices.nth(3)).toHaveAttribute("aria-pressed", "true")
+  await expect(choices.nth(3)).toBeFocused()
+})
+
+test("edits opposite padding sides together and reveals their individual values", async ({ page }) => {
+  const padding = page.getByRole("group", { name: frameCopy.padding, exact: true })
+  const horizontal = padding.getByRole("textbox", { name: layoutWords["padding.horizontal"] })
+  const vertical = padding.getByRole("textbox", { name: layoutWords["padding.vertical"] })
+  const individual = padding.getByRole("button", { name: frameCopy.individualPadding })
+  await expect(padding.getByRole("textbox")).toHaveCount(2)
+  await typed(horizontal, "14")
+  await typed(vertical, "9")
+  await individual.click()
+  for (const [side, value] of [
+    ["left", "14"],
+    ["top", "9"],
+    ["right", "14"],
+    ["bottom", "9"],
+  ] as const) {
+    await expect(padding.getByRole("textbox", { name: layoutWords[`padding.${side}`], exact: true })).toHaveValue(value)
+  }
+  await typed(padding.getByRole("textbox", { name: layoutWords["padding.left"], exact: true }), "8")
+  await individual.click()
+  await expect(horizontal).toHaveValue("")
+  await expect(horizontal).toHaveAttribute("placeholder", designCopy.mixed)
+  await expect(vertical).toHaveValue("9")
+  await typed(horizontal, "12")
+  await individual.click()
+  for (const side of ["left", "right"] as const) {
+    await expect(padding.getByRole("textbox", { name: layoutWords[`padding.${side}`], exact: true })).toHaveValue("12")
+  }
+})
+
+test("uses the same muted 9 px label above every Auto layout control", async ({ page }) => {
+  const section = page
+    .locator("[data-design-section]")
+    .filter({ has: page.getByText(frameCopy.autoLayout, { exact: true }) })
+  const labels = [frameCopy.gap, frameCopy.padding, frameCopy.flow, frameCopy.align]
+  const styles = await Promise.all(
+    labels.map(async (name) => {
+      const label = section.getByText(name, { exact: true })
+      await expect(label).toBeVisible()
+      return label.evaluate((node) => {
+        const { fontSize, color, lineHeight } = getComputedStyle(node)
+        return { fontSize, color, lineHeight }
+      })
+    }),
+  )
+  expect(styles.map((style) => style.fontSize)).toEqual(labels.map(() => "9px"))
+  expect(styles).toEqual(labels.map(() => styles[0]))
+})
+
 test("design mode's Auto layout section sets direction, gap, padding and alignment, and the export keeps them @export", async ({
   page,
 }, testInfo) => {
   covers("auto-layout")
   const judged = join(process.cwd(), "tests/browser", exportName)
   await rm(judged, { force: true })
-  await openDeck(page, "frame.pptx")
-  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
-  await setPanelMode(page, "design")
   const [square, oval] = [painted(page, 4), painted(page, 5)]
-  await square.click()
   const panel = page.locator("[data-design-panel]")
   await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
   await panel
@@ -73,15 +138,14 @@ test("design mode's Auto layout section sets direction, gap, padding and alignme
     .poll(async () => (await boxOf(oval)).y > (await boxOf(square)).y + (await boxOf(square)).height - 1)
     .toBe(true)
   await typed(panel.getByRole("textbox", { name: frameCopy.gap, exact: true }), "16")
-  await typed(
-    panel.getByRole("group", { name: frameCopy.padding }).getByRole("textbox", { name: layoutWords["padding.left"] }),
-    "8",
-  )
-  await panel.getByRole("combobox", { name: frameCopy.align, exact: true }).click()
-  await page.getByRole("option", { name: layoutWords["align.center"], exact: true }).click()
-  await expect(panel.getByRole("combobox", { name: frameCopy.align, exact: true })).toHaveText(
-    new RegExp(`^${layoutWords["align.center"]}`),
-  )
+  const padding = panel.getByRole("group", { name: frameCopy.padding, exact: true })
+  await padding.getByRole("button", { name: frameCopy.individualPadding }).click()
+  await typed(padding.getByRole("textbox", { name: layoutWords["padding.left"] }), "8")
+  const center = panel
+    .getByRole("group", { name: frameCopy.align, exact: true })
+    .getByRole("button", { name: layoutWords["align.center"], exact: true })
+  await center.click()
+  await expect(center).toHaveAttribute("aria-pressed", "true")
   const [top, bottom] = [await boxOf(square), await boxOf(oval)]
   expect(Math.abs(top.x + top.width / 2 - (bottom.x + bottom.width / 2))).toBeLessThanOrEqual(1.5)
   const saving = page.waitForEvent("download")

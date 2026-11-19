@@ -1,3 +1,4 @@
+import { AlignmentGrid } from "@/design/controls/alignment-grid"
 import { controlLabel } from "@/design/controls/control-label"
 import { designCopy } from "@/copy/design-copy"
 import { useId } from "react"
@@ -91,6 +92,8 @@ export function ChoiceControl(props: ControlProps) {
       )}
       {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
+      ) : layout === "grid" ? (
+        <AlignmentGrid {...props} label={label} options={options} />
       ) : (
         <div
           role="group"
