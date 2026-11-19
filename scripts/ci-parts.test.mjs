@@ -131,7 +131,20 @@ same(
   "github.event_name == 'push' || github.event_name == 'merge_group'",
 )
 same("corpus uses two independent runners", corpus.strategy, { "fail-fast": false, matrix: { shard: [1, 2] } })
-const verdict = ciSteps[0].run
+const rerunGuard = ciSteps[0]
+const verdict = ciSteps[1].run
+const runsGuard = (attempt) =>
+  spawnSync("bash", ["-e", "-c", rerunGuard.run], { encoding: "utf8", env: { ...process.env, RUN_ATTEMPT: attempt } })
+same("the rerun guard reads the run attempt", rerunGuard.env, { RUN_ATTEMPT: "${{ github.run_attempt }}" })
+same("a first attempt passes the rerun guard", runsGuard("1").status, 0)
+same("a rerun fails the rerun guard", runsGuard("2").status, 1)
+same(
+  "a rerun is told to push a fix or run pnpm land again",
+  runsGuard("2").stdout.includes("A failed ci run is never rerun. Push a fix, or run `pnpm land` again"),
+  true,
+)
+same("a later rerun fails the rerun guard too", runsGuard("10").status, 1)
+same("the rerun guard runs on every event and before every other ci step", workflow.jobs.ci.if, "${{ always() }}")
 const passes = (check, corpusResult, journeysResult = "skipped") =>
   spawnSync("bash", [
     "-e",
