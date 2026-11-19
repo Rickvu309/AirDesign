@@ -42,3 +42,18 @@ same(
   failedTests(" FAIL  unit packages/x/src/y.test.ts [ packages/x/src/y.test.ts ]\nError: Cannot find module 'z'\n"),
   [{ file: "packages/x/src/y.test.ts", name: "(the whole file)", error: "Error: Cannot find module 'z'" }],
 )
+
+const job = fixture("job-playwright-failed.log")
+same("a job log from the jobs API loses its time stamps", /^\d{4}-\d\d-\d\dT/m.test(plainLog(job)), false)
+same("a job log names its failed step", failedSteps(job), ["browser-tests"])
+same(
+  "a job log names its failed browser test",
+  failedTests(job).map((test) => [test.file, test.name, test.error]),
+  [
+    [
+      "tests/browser/save-status.spec.ts",
+      "an added slide reads Saving while its commit waits and Saved once the server takes it",
+      "Error: expect(locator).toHaveText(expected) failed",
+    ],
+  ],
+)
