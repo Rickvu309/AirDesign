@@ -3,6 +3,7 @@ import { layersCopy } from "../../apps/web/src/copy/layers-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { openDeck } from "./design-panel"
+import { covers } from "./gesture"
 
 const slidePart = "ppt/slides/slide1.xml"
 
@@ -62,4 +63,35 @@ test("the layers panel lists a slide's layers front first, selects, renames and 
   await page.getByRole("button", { name: undoCopy.undoNamed["layer-order"], exact: true }).click()
   await expect.poll(names).toEqual(["Badge", square])
   await expect.poll(() => paintedOrder(page, "[data-slide-paint]", "data-canvas-element")).toEqual(["4", "5"])
+})
+
+test("a layer hides from its eye in the layers panel and with Ctrl+Shift+H, and stays selectable there", async ({
+  page,
+}) => {
+  covers("hide")
+  await openDeck(page, "blank.pptx")
+  await insert(page, shapeCopy.shapes.square)
+  const square = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
+  await expect(square).toBeVisible()
+  await page.locator("[data-design-mode]").click()
+  const layers = page.locator("[data-layers-panel]")
+  const row = layers.getByRole("treeitem").first()
+  const name = (await row.locator("[data-layer-name]").textContent()) ?? ""
+  await row.hover()
+  await layers.getByRole("button", { name: layersCopy.hide(name), exact: true }).click()
+  await expect(square).toHaveCount(0)
+  await expect(row).toHaveAttribute("data-layer-hidden", "")
+  await expect(page.locator(`[data-slide-entry='1'] [data-thumb-element="${slidePart}#4"]`)).toHaveCount(0)
+  await row.click()
+  await expect(row).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ControlOrMeta+Shift+KeyH")
+  await expect(square).toBeVisible()
+  await expect(row).not.toHaveAttribute("data-layer-hidden", "")
+  await expect(layers.getByRole("button", { name: layersCopy.show(name), exact: true })).toHaveCount(0)
+  await square.click()
+  await page.keyboard.press("ControlOrMeta+Shift+KeyH")
+  await expect(square).toHaveCount(0)
+  await expect(row).toHaveAttribute("aria-selected", "true")
+  await page.getByRole("button", { name: undoCopy.undoNamed.hide, exact: true }).click()
+  await expect(square).toBeVisible()
 })

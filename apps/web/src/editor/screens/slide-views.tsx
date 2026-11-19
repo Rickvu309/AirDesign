@@ -41,7 +41,7 @@ export function LayersScreen() {
       run="done"
       panel="design"
       designMode={{ value: "design", onChange: () => undefined }}
-      layers={<LayersPanel layers={{ tree: sampleLayers, selected: sampleSelected }} />}
+      layers={<LayersPanel layers={{ tree: sampleLayers, selected: sampleSelected, onHide: () => undefined }} />}
       designed={<DesignElementArt />}
     />
   )

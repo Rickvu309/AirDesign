@@ -48,11 +48,15 @@ function canvasOf(
   const file = texts === undefined ? null : paintOf(texts, source.part)
   const rows = paintElements(fileTexts(paint.elements, file), source, src)
   const readsSlide = paint.elements.some((row) => row.from === "slide")
+  const elements = readsSlide ? rows : [...rows, ...unplaced(source)]
+  const drawn = new Set(elements.map((each) => each.id))
+  const unpainted = [...source.shapes.values()].flatMap(({ id }) => (drawn.has(id) ? [] : [id]))
   return {
     width: size.width,
     height: size.height,
     background: backgroundOf(paint.background, src),
-    elements: readsSlide ? rows : [...rows, ...unplaced(source)],
+    elements,
+    ...(unpainted.length === 0 ? {} : { unpainted }),
     part: source.part,
   }
 }
