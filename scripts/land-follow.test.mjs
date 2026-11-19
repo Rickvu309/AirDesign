@@ -56,7 +56,7 @@ const follow = async ({ reads, runs = [] }) => {
     read: () => reads[Math.min(at++, reads.length - 1)],
     gh: (args) => {
       asked.push(args.join(" "))
-      if (args[1]?.endsWith("/jobs?per_page=100")) return ok("135322156039\n")
+      if (args[1]?.endsWith("/jobs?per_page=100")) return ok('[{"id":135322156039,"name":"check (source)"}]')
       if (args[1]?.endsWith("/jobs/135322156039/logs")) return ok(fixture("vitest-failed.log"))
       if (args[1]?.includes("/actions/workflows/ci.yml/runs")) return ok(JSON.stringify(runs))
       if (args[1]?.endsWith("/artifacts")) return ok("test-results-check-main\n")

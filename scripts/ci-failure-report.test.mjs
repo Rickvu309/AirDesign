@@ -10,7 +10,8 @@ import {
   repeatRebases,
   stopLine,
 } from "./ci-failure-report.mjs"
-import { failedJobLogs } from "./land-report.mjs"
+import { runClasses } from "./ci-failure-report.mjs"
+import { failedJobLogs } from "./job-logs.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -363,15 +364,76 @@ failedJobLogs({
   run: { id: 9, attempt: 2 },
   gh: (args) => {
     calls.push(args.slice(1).join(" "))
-    return { status: 0, stdout: args[1].includes("/logs") ? "fail lint 1.0s\n" : "42\n" }
+    return { status: 0, stdout: args[1].includes("/logs") ? "fail lint 1.0s\n" : '[{"id":42,"name":"check (source)"}]' }
   },
 })
 same(
   "an earlier attempt is read through the jobs API, not the summary job",
   calls[0].includes("repos/owner/repo/actions/runs/9/attempts/2/jobs?per_page=100") &&
     calls[0].includes('.name != "ci"') &&
-    calls[1] === "repos/owner/repo/actions/jobs/42/logs",
+    calls[1].startsWith("repos/owner/repo/actions/jobs/42/logs"),
   true,
+)
+
+const deckStatusLog = fs.readFileSync(new URL("./land-fixtures/job-deck-status-failed.log", import.meta.url), "utf8")
+const failedRun = { id: 44487565178, attempt: 1 }
+const ghAnswering = (logAnswer) => (args) => {
+  if (args[1].endsWith("/jobs?per_page=100"))
+    return { status: 0, stdout: '[{"id":135434736495,"name":"check (browser 1/4)"}]', stderr: "" }
+  if (args[1].endsWith("/jobs/135434736495/logs")) return logAnswer(args)
+  throw new Error(`unexpected gh ${args.join(" ")}`)
+}
+const deckStatusClass = [
+  "tests/browser/deck-status.spec.ts:18 › a device that stayed online says AirDesign cannot be reached, and the words go when a commit is answered 404",
+]
+const escapeRefusal = {
+  status: 1,
+  stdout: "",
+  stderr: "the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway\n",
+}
+same(
+  "a job log with color codes names its failed test where gh refuses escape sequences unless told to allow them",
+  runClasses({
+    repository: "Rickvu309/AirDesign",
+    run: failedRun,
+    gh: ghAnswering((args) =>
+      args.includes("--allow-escape-sequences") ? { status: 0, stdout: deckStatusLog, stderr: "" } : escapeRefusal,
+    ),
+  }).names,
+  deckStatusClass,
+)
+same(
+  "a job log names its failed test where gh does not know the flag that allows escape sequences",
+  runClasses({
+    repository: "Rickvu309/AirDesign",
+    run: failedRun,
+    gh: ghAnswering((args) =>
+      args.includes("--allow-escape-sequences")
+        ? { status: 1, stdout: "", stderr: "unknown flag: --allow-escape-sequences\n" }
+        : { status: 0, stdout: deckStatusLog, stderr: "" },
+    ),
+  }).names,
+  deckStatusClass,
+)
+const unread = runClasses({
+  repository: "Rickvu309/AirDesign",
+  run: failedRun,
+  gh: ghAnswering(() => ({ status: 1, stdout: "", stderr: "gh: Forbidden (HTTP 403)" })),
+})
+same("a job log gh would not give is not called a run that left no log", unread.names, [
+  "the job log could not be read",
+])
+same("the report says why it could not read the log", unread.warnings, [
+  "Could not read the log for job 135434736495 after 1 read (HTTP 403).",
+])
+same(
+  "an unread log ranks below a named class that cost fewer minutes",
+  rankLosses([
+    { name: "the job log could not be read", minutes: 10, runId: "1/attempts/1" },
+    { name: "the job log could not be read", minutes: 10, runId: "2/attempts/1" },
+    { name: deckStatusClass[0], minutes: 20, runId: "3/attempts/1" },
+  ]).map((row) => row.name),
+  [deckStatusClass[0], "the job log could not be read"],
 )
 
 console.log("ci-failure-report tests passed")

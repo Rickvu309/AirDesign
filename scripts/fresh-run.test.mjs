@@ -100,7 +100,7 @@ const follow = async ({
       const call = args.join(" ")
       asked.push(call)
       if (call.includes("/actions/workflows/ci.yml/runs")) return ok(JSON.stringify(runs))
-      if (call.includes("/jobs?per_page=100")) return ok(`5\t${job.name}\n`)
+      if (call.includes("/jobs?per_page=100")) return ok(JSON.stringify([{ id: 5, name: job.name }]))
       if (call.includes("/jobs/5/logs")) return ok(job.log)
       if (call.includes("/pulls/394/files")) return ok(files)
       if (call.includes("/issues/394/comments") && !call.includes("POST")) return ok(comments)

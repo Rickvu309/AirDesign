@@ -24,7 +24,7 @@ const nextError = (lines, from) =>
     ?.trim() ?? ""
 
 const vitestFailure = /^ FAIL\s+(?:\S+\s+)??(\S+\.(?:test|spec)\.\w+)(?: > (.+?))?(?: \[ .+ \])?\s*$/
-const playwrightFailure = /^\s+\d+\) (\S+\.spec\.\w+):(\d+):\d+ › (.+?)\s*$/
+const playwrightFailure = /^\s+\d+\) (\S+\.spec\.\w+):(\d+):\d+ › (.+?)[\s─]*$/
 
 export const failedTests = (text) => {
   const lines = plainLog(text).split("\n")

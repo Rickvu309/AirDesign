@@ -44,6 +44,14 @@ same(
   [{ file: "packages/x/src/y.test.ts", name: "(the whole file)", error: "Error: Cannot find module 'z'" }],
 )
 
+same(
+  "a journey header loses the rule Playwright pads it with",
+  failedTests(
+    "2026-11-19T01:26:23.7716500Z   1) tests/journeys/journeys.spec.ts:88:3 › grid-group-add ─────────────────────────────────────────\n\n    Error: expect(locator).toHaveCount(expected) failed\n",
+  ).map((test) => test.name),
+  ["grid-group-add"],
+)
+
 const job = fixture("job-playwright-failed.log")
 same("a job log from the jobs API loses its time stamps", /^\d{4}-\d\d-\d\dT/m.test(plainLog(job)), false)
 same("a job log names its failed step", failedSteps(job), ["browser-tests"])
