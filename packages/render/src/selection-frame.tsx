@@ -1,8 +1,9 @@
 import type { ElementId } from "@airdesign/document"
 import { useMemo, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react"
-import { corners, frameOf, ownBox, type Corner, type Grip } from "./box-gesture.js"
+import { corners, followed, frameOf, ownBox, type Corner, type Grip } from "./box-gesture.js"
 import { useBox } from "./element-view.js"
-import type { CanvasElement } from "./record.js"
+import { liveBox } from "./live-box.js"
+import type { CanvasElement, PaintBox } from "./record.js"
 import type { PaintStore } from "./store.js"
 import type { Scaled } from "./text-look.js"
 
@@ -47,6 +48,13 @@ const handle: CSSProperties = {
   boxShadow: "inset 0 0 0 1px var(--primary)",
 }
 
+function useLiveBox(store: PaintStore, id: ElementId, element: CanvasElement): PaintBox | null {
+  const group = element.group
+  const carried = useBox(store, group?.id ?? id)
+  const own = ownBox(element, useBox(store, id))
+  return group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
+}
+
 export function SelectionFrame(props: {
   readonly store: PaintStore
   readonly id: ElementId
@@ -57,7 +65,7 @@ export function SelectionFrame(props: {
   readonly onPress: (event: PointerEvent<HTMLElement>, grip: Grip) => void
 }) {
   const { element, onPress, scaled } = props
-  const box = ownBox(element, useBox(props.store, props.id))
+  const box = useLiveBox(props.store, props.id, element)
   if (box === null) return null
   return (
     <div
@@ -105,7 +113,7 @@ export function ChosenFrame(props: {
   readonly scaled: Scaled
 }) {
   const { element, scaled } = props
-  const box = ownBox(element, useBox(props.store, props.id))
+  const box = useLiveBox(props.store, props.id, element)
   if (box === null) return null
   return (
     <div
@@ -134,7 +142,12 @@ export function AroundFrame(props: {
   const { elements, scaled, store } = props
   const subscribe = useMemo(
     () => (listener: () => void) => {
-      const offs = elements.flatMap((each) => (each.id === null ? [] : [store.boxSubscribe(each.id)(listener)]))
+      const ids = new Set<ElementId>()
+      for (const each of elements) {
+        if (each.id !== null) ids.add(each.id)
+        if (each.group !== undefined) ids.add(each.group.id)
+      }
+      const offs = [...ids].map((id) => store.boxSubscribe(id)(listener))
       return () => {
         for (const off of offs) off()
       }
@@ -143,7 +156,7 @@ export function AroundFrame(props: {
   )
   const read = () => {
     const boxes = elements.flatMap((each) => {
-      const box = ownBox(each, each.id === null ? null : store.getBox(each.id))
+      const box = liveBox(store, each)
       return box === null ? [] : [{ x: box.x, y: box.y, cx: box.width, cy: box.height }]
     })
     const frame = frameOf(boxes)

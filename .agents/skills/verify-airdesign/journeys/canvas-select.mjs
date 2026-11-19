@@ -111,7 +111,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect
     .poll(async () => {
       const rows = (await saved()).register.elements[groupNode]?.landed ?? []
-      return rows.some((row) => row.patch?.box?.x?.set !== undefined)
+      return rows.some((row) => row.property === "box" && row.value?.x !== undefined)
     })
     .toBe(true)
   const movedOne = await boxOf(one)

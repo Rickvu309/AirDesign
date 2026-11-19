@@ -4,7 +4,8 @@ import type { CanvasSlide } from "./record.js"
 import { hoverTarget, type Selection } from "./selection.js"
 import type { PaintStore } from "./store.js"
 import type { Scaled } from "./text-look.js"
-import { hasOpenOverlay, liveBoxOf } from "./use-slide-marquee.js"
+import { liveBox } from "./live-box.js"
+import { hasOpenOverlay } from "./use-slide-marquee.js"
 
 function elementIdFromTarget(target: EventTarget | null, slide: CanvasSlide): ElementId | null {
   if (!(target instanceof Element)) return null
@@ -49,7 +50,7 @@ export function useHoverOutline(params: {
       return
     }
     const element = slide.elements.find((each) => each.id === target)
-    const placed = element === undefined ? null : liveBoxOf(element, store)
+    const placed = element === undefined ? null : liveBox(store, element)
     if (placed === null) {
       hide()
       return

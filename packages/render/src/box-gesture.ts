@@ -222,8 +222,17 @@ export function paintedAt(file: PaintBox | null, box: Box | null): PaintBox | nu
   return { ...(file ?? upright), x: box.x, y: box.y, width: box.cx, height: box.cy }
 }
 
-export function ownBox(element: { readonly box: PaintBox | null; readonly connection?: unknown }, box: Box | null) {
-  return element.connection === undefined ? paintedAt(element.box, box) : element.box
+export function ownBox(
+  element: {
+    readonly box: PaintBox | null
+    readonly connection?: unknown
+    readonly group?: { readonly frame?: unknown }
+  },
+  box: Box | null,
+) {
+  if (element.connection !== undefined) return element.box
+  if (element.group !== undefined && element.group.frame === undefined) return element.box
+  return paintedAt(element.box, box)
 }
 
 export function followed(

@@ -384,4 +384,39 @@ describe("SlideCanvas groups, deep select, keyboard traversal and hover", () => 
     expect(outline.hidden).toBe(true)
     expect(renders).toBe(before)
   })
+
+  it("keeps plain-group children and their selection frames at the moved group position despite stale pre-group boxes", async () => {
+    const plainGroup = elementId("256.20")
+    const member1 = elementId("256.21")
+    const member2 = elementId("256.22")
+    const movedGroupBox = placed(300, 140, 240, 100)
+    const carry = { id: plainGroup, box: movedGroupBox }
+    const { host, store } = await mount({
+      elements: [
+        shape(plainGroup, movedGroupBox, { kind: "group", filled: false }),
+        shape(member1, placed(300, 140, 100, 100), { group: carry, movable: false }),
+        shape(member2, placed(440, 140, 100, 100), { group: carry, movable: false }),
+      ],
+    })
+    await act(async () => {
+      store.placeBox(member1, { x: 100 * scale, y: 100 * scale, cx: 100 * scale, cy: 100 * scale })
+      store.placeBox(plainGroup, { x: 380 * scale, y: 170 * scale, cx: 240 * scale, cy: 100 * scale })
+    })
+    expect(frameOf(host, member1).style.left).toBe("380px")
+    expect(frameOf(host, member1).style.top).toBe("170px")
+
+    await pointer(frameOf(host, member1), "pointerdown", 400, 200, { ctrlKey: true })
+    await pointer(document, "pointerup", 400, 200, { ctrlKey: true })
+    const single = host.querySelector<HTMLElement>("[data-selection]")!
+    expect(single.style.left).toBe("380px")
+    expect(single.style.top).toBe("170px")
+
+    await key(frameOf(host, member1), "Escape")
+    await key(frameOf(host, plainGroup), "Enter")
+    const chosen = [...host.querySelectorAll<HTMLElement>("[data-chosen]")]
+    expect(chosen.map((each) => each.style.left)).toEqual(["380px", "520px"])
+    const around = host.querySelector<HTMLElement>("[data-selection-around]")!
+    expect(around.style.left).toBe("380px")
+    expect(around.style.top).toBe("170px")
+  })
 })
