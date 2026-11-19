@@ -199,7 +199,10 @@ export const land = async (ctx) => {
     if (body === undefined)
       line("body", "not judged here: pass --body-file, or the bar check judges it on the pull request")
     if (body !== undefined && !hasProof(body))
-      line("body", "warning: the body has no ## Proof heading. Say what you ran and what you saw, with counts.")
+      line(
+        "body",
+        "warning: the body has no ## Evidence heading. Say what you ran and what you saw, before and after, with counts.",
+      )
     const conflicts = conflictsWithMain(git)
     if (conflicts.length > 0) {
       stop(
