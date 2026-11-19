@@ -106,8 +106,17 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await forgetLocalRows(page)
   await page.goto(deckUrl)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello", { timeout: 20_000 })
-  const shown = await placed(page)
-  ;[kept.x, kept.y, kept.cx, kept.cy].forEach((emu, index) => expect(shown[index]).toBeCloseTo(emu / emuPerPixel, 3))
+  await expect
+    .poll(
+      async () => {
+        const shown = await placed(page)
+        return [kept.x, kept.y, kept.cx, kept.cy].every(
+          (emu, index) => Math.abs((shown[index] ?? Number.NaN) - emu / emuPerPixel) < 5e-4,
+        )
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true)
   await capture("reloaded-from-server")
   note("with every local edit row gone, reopening the deck paints the box where the server keeps it")
   const saving = page.waitForEvent("download")
