@@ -10,13 +10,14 @@ const kinds = {
   picture: { fixture: "picture-png.pptx", elements: [4] },
   connector: { fixture: "shapes-added.pptx", elements: [6] },
   pair: { fixture: "shapes-added.pptx", elements: [4, 5] },
+  frame: { fixture: "shapes-added.pptx", elements: [4, 5], wrap: true },
   slide: { fixture: "clean.pptx", elements: [] },
 }
 
 export const panelKinds = Object.keys(kinds)
 
 export async function reachPanel(kit, kind, mode) {
-  const { fixture, text = false, elements = [] } = kinds[kind]
+  const { fixture, text = false, elements = [], wrap = false } = kinds[kind]
   await fixtureDeck(kit, fixture)
   const { page } = kit
   await page.getByRole("button", { name: "Design", exact: true }).click()
@@ -32,6 +33,10 @@ export async function reachPanel(kit, kind, mode) {
     if (index > 0) await page.keyboard.up("Shift")
   }
   if (elements.length > 1) await expect(page.locator("[data-chosen]")).toHaveCount(elements.length)
+  if (wrap) {
+    await page.keyboard.press("Shift+A")
+    await expect(page.locator('[data-panel-kind="frame"]')).toBeVisible()
+  }
   await expect(page.locator(kind === "slide" ? "[data-design-panel]" : "[data-design-element]")).toBeVisible()
   await page.mouse.move(4, 4)
   await page.locator("[data-design-panel]").evaluate((panel) => {

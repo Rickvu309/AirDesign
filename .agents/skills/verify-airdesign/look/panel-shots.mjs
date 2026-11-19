@@ -5,6 +5,7 @@ import { panelKinds, reachPanel } from "./panel-kinds.mjs"
 const figma = process.env.PANEL_FIGMA
 const out = process.env.PANEL_OUT
 const modes = (process.env.PANEL_MODES ?? "slides,design").split(",")
+const figmaShots = { frame: "pair" }
 const kinds = process.env.PANEL_KINDS ? process.env.PANEL_KINDS.split(",") : panelKinds
 
 async function shoot(kit, kind, mode) {
@@ -24,7 +25,7 @@ async function shoot(kit, kind, mode) {
 }
 
 function beside(shot, kind, mode) {
-  const shown = path.join(figma, `${kind}.png`)
+  const shown = path.join(figma, `${figmaShots[kind] ?? kind}.png`)
   const right = existsSync(shown)
     ? `<img src="file://${shown}" style="width:240px;display:block">`
     : "<p>No Figma shot</p>"

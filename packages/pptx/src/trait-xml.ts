@@ -17,7 +17,9 @@ import { templateStyleXml } from "./trait-xml-template-style.js"
 import { transitionXml } from "./trait-xml-transition.js"
 import { writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
-export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
+type Written = Exclude<TraitName, "layout">
+
+export const traitXml: { readonly [T in Written]: TraitXml<T> } = {
   identity: identityXml,
   link: linkXml,
   box: boxXml,
@@ -37,7 +39,8 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
 
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {
   if (trait === "fills") return writtenFills(parts, at, patch as TraitPatch<"fills">)
-  return writeFields(parts, at, traitXml[trait], patch)
+  if (trait === "layout") return parts
+  return writeFields(parts, at, traitXml[trait as Written], patch as TraitPatch<Written>)
 }
 
 export type ShownAlphas = { readonly fills: Faded; readonly border: Faded; readonly text: Faded }

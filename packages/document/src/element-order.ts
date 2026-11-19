@@ -71,11 +71,12 @@ function removedNow(state: SlideState, node: ElementId): boolean {
 
 export function elementGone(state: SlideState, node: ElementId): boolean {
   let gone = false
+  let frame: ElementId | null = null
   for (const command of state.order) {
-    if ((command.slide === "element-remove" || command.slide === "element-ungroup") && command.node === node)
-      gone = true
-    if ((command.slide === "element-restore" || command.slide === "element-regroup") && command.node === node)
-      gone = false
+    if (command.slide === "element-group" && command.backdrop?.node === node) frame = command.element.node
+    const named = "node" in command && (command.node === node || command.node === frame)
+    if ((command.slide === "element-remove" || command.slide === "element-ungroup") && named) gone = true
+    if ((command.slide === "element-restore" || command.slide === "element-regroup") && named) gone = false
   }
   return gone
 }
@@ -90,6 +91,8 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
     if (!("id" in command) || command.id !== slide) continue
     if (command.slide === "element-add" || command.slide === "element-group")
       next = Math.max(next, shapeNumber(command.element.node) + 1)
+    if (command.slide === "element-group" && command.backdrop !== undefined)
+      next = Math.max(next, shapeNumber(command.backdrop.node) + 1)
     if (command.slide === "element-remove" || command.slide === "element-restore")
       next = Math.max(next, shapeNumber(command.node) + 1)
   }

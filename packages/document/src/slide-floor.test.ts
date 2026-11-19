@@ -135,7 +135,7 @@ describe("the floor of a slide that was not in the file", () => {
     expect(read({ fills: { p0: "opening" } })).toBeUndefined()
     expect(read({ fills: { p0: { set: { solid: { scheme: "nope" } } } } })).toBeUndefined()
     expect(read({ glow: { value: "inherit" } })).toBeUndefined()
-    expect(stamps.command).toBe(13)
+    expect(stamps.command).toBe(14)
   })
 
   it("gives a clone the fields its source shows, over the source's own opening, past the box and text", () => {

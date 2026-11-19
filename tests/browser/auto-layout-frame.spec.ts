@@ -1,0 +1,135 @@
+import { copyFile, readFile, rm } from "node:fs/promises"
+import { createRequire } from "node:module"
+import { join } from "node:path"
+import { expect, test, type Locator, type Page } from "@playwright/test"
+import { exportFromDialog } from "./export-dialog"
+import { covers } from "./gesture"
+
+type ZipEntry = {
+  readonly filename: string
+  readonly directory: boolean
+  getData(writer: unknown): Promise<Uint8Array>
+}
+
+type ZipLibrary = {
+  readonly ZipReader: new (reader: unknown) => { getEntries(): Promise<ZipEntry[]>; close(): Promise<void> }
+  readonly Uint8ArrayReader: new (bytes: Uint8Array) => unknown
+  readonly Uint8ArrayWriter: new () => unknown
+}
+
+type Placed = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+
+const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as ZipLibrary
+const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
+const frameName = "exported-frame.pptx"
+
+async function partsOf(file: string): Promise<Map<string, Buffer>> {
+  const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(file))))
+  const parts = new Map<string, Buffer>()
+  for (const entry of await reader.getEntries()) {
+    if (!entry.directory) parts.set(entry.filename, Buffer.from(await entry.getData(new zip.Uint8ArrayWriter())))
+  }
+  await reader.close()
+  return parts
+}
+
+test.use({ viewport: { width: 1600, height: 1000 } })
+
+async function settled(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
+  })
+}
+
+function frame(page: Page, part: string, shape: number): Locator {
+  return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
+}
+
+async function placed(locator: Locator): Promise<Placed> {
+  const box = await locator.boundingBox()
+  if (box === null) throw new Error("not painted")
+  return box
+}
+
+function near(left: readonly Placed[], right: readonly Placed[]): boolean {
+  return left.every((box, at) => {
+    const other = right[at]
+    if (other === undefined) return false
+    const sides = [box.x - other.x, box.y - other.y, box.width - other.width, box.height - other.height]
+    return sides.every((side) => Math.abs(side) <= 1.5)
+  })
+}
+
+async function holds(shapes: readonly Locator[], expected: readonly Placed[]): Promise<void> {
+  await expect.poll(async () => near(await Promise.all(shapes.map(placed)), expected)).toBe(true)
+}
+
+function status(page: Page): Locator {
+  return page.locator("[data-slide-paint]").getByRole("status")
+}
+
+async function changedParts(original: string, saved: string): Promise<string[]> {
+  const before = await partsOf(original)
+  const after = await partsOf(saved)
+  expect([...after.keys()]).toEqual([...before.keys()])
+  return [...before].filter(([name, bytes]) => after.get(name)?.equals(bytes) !== true).map(([name]) => name)
+}
+
+test("two shapes wrap in an auto layout frame with a filled backdrop, and the export keeps the frame @export", async ({
+  page,
+}, testInfo) => {
+  covers("auto-layout")
+  const part = "ppt/slides/slide1.xml"
+  const judged = join(process.cwd(), "tests/browser", frameName)
+  await rm(judged, { force: true })
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(blank)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  for (const name of ["Rectangle", "Ellipse"]) {
+    await page.getByRole("button", { name: "Shapes", exact: true }).click()
+    await page.getByRole("button", { name, exact: true }).click()
+  }
+  const shapes = [frame(page, part, 4), frame(page, part, 5)]
+  await expect(shapes[1]!).toBeVisible()
+  const ellipse = await placed(shapes[1]!)
+  const square = await placed(shapes[0]!)
+  await page.mouse.move(ellipse.x + ellipse.width / 2, ellipse.y + ellipse.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(square.x + square.width / 2 + 260, square.y + square.height / 2 + 12, { steps: 6 })
+  await page.mouse.up()
+  await expect(page.getByRole("button", { name: "Undo move", exact: true })).toBeEnabled()
+  await shapes[0]!.click()
+  await shapes[1]!.click({ modifiers: ["Shift"] })
+  await page.keyboard.press("Shift+A")
+  await expect(status(page)).toHaveText("Added auto layout")
+  await expect(frame(page, part, 7)).toHaveCount(1)
+  const [left, right] = await Promise.all(shapes.map(placed))
+  expect(right!.x).toBeGreaterThanOrEqual(left!.x + left!.width - 1)
+  expect(Math.abs(right!.y - left!.y)).toBeLessThanOrEqual(1.5)
+  const laid = [left!, right!]
+  const panel = page.locator("[data-design-panel]")
+  await panel.getByRole("group", { name: "Fill" }).getByRole("button", { name: "Solid" }).click()
+  await expect(page.getByRole("button", { name: "Undo fill", exact: true })).toBeEnabled()
+  await holds(shapes, laid)
+  await page.reload()
+  await settled(page)
+  await holds(shapes, laid)
+  const saving = page.waitForEvent("download")
+  await exportFromDialog(page)
+  const download = testInfo.outputPath(frameName)
+  await (await saving).saveAs(download)
+  expect(await changedParts(blank, download)).toEqual([part])
+  const xml = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
+  expect(xml).toMatch(/<p:grpSp><p:nvGrpSpPr><p:cNvPr id="6" name="Frame 6"\/>/)
+  expect(xml.indexOf('<p:cNvPr id="7" name="Backdrop 7"/>')).toBeLessThan(xml.indexOf('<p:cNvPr id="4"'))
+  await copyFile(download, judged)
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(download)
+  await settled(page)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await expect(frame(page, part, 6)).toHaveCount(1)
+  await holds(shapes, laid)
+})

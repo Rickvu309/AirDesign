@@ -16,7 +16,8 @@ import { shownHex } from "@/design/color-choices"
 import { replaceSelectionColor, type ColorSource } from "@/design/selection-colors"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown } from "@/design-shown"
-import { fieldsOf, readsOf, templateColorsAt, usePalette, type DesigningDeck } from "./live-design-panel"
+import { readsOf, templateColorsAt, usePalette, type DesigningDeck } from "./live-design-panel"
+import { fieldsOf } from "./panel-fields"
 import { SelectionColorsSection } from "./selection-colors-section"
 
 function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonly ColorSource[] {

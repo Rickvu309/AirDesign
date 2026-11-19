@@ -4,26 +4,32 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "3e52e8983d8e",
-      "blob": "8690579014ebb634acf995f53bba202a13268af3"
+      "digest": "70c90bf88416",
+      "blob": "5b5d8d05aac2adde776ca2a9bf0a55b6afe96fcc"
     },
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "94abc4041a6d",
-      "blob": "7342c9149c5bc699f35fc19ee6cea47f0381f518"
+      "digest": "cdeef2dd244d",
+      "blob": "684d19e9ca071332426604dc7ec5bd7cece642d2"
     },
     {
       "file": "packages/document/src/group-turn.ts",
       "names": ["*"],
-      "digest": "75880761416b",
-      "blob": "3a847072ae40ea167503ce28e4fe8b43c67a0580"
+      "digest": "3cd61c33e2b5",
+      "blob": "815f05501953f3944a462fd9b708c867f32f5b29"
     },
     {
       "file": "packages/document/src/person-undo.ts",
-      "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone"],
-      "digest": "356e20c2b344",
-      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
+      "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone", "stepCommands"],
+      "digest": "770f45e3e75b",
+      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
+    },
+    {
+      "file": "packages/document/src/frame-layout.ts",
+      "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow"],
+      "digest": "41bfbd32f759",
+      "blob": "6932d91596e1e2afdcb76bcaf3d446b5341ac7f2"
     }
   ]
 }

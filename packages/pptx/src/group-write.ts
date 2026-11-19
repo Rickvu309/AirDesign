@@ -108,13 +108,29 @@ function gathered(bytes: Uint8Array, units: readonly MarkupElement[], wrap: (ins
   return spliceBytes(bytes, edits)
 }
 
-export function wrapGroup(bytes: Uint8Array, id: number, box: ShapeBox, members: readonly string[]): Uint8Array {
+function backdropXml(id: number, box: ShapeBox): string {
+  const transform = `<a:xfrm><a:off x="${box.x}" y="${box.y}"/><a:ext cx="${box.cx}" cy="${box.cy}"/></a:xfrm>`
+  return (
+    `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Backdrop ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>` +
+    `<p:spPr>${transform}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`
+  )
+}
+
+export function wrapGroup(
+  bytes: Uint8Array,
+  id: number,
+  box: ShapeBox,
+  members: readonly string[],
+  backdrop?: number,
+): Uint8Array {
   const units = unitsOf(bytes, members)
   const offset = `x="${box.x}" y="${box.y}"`
   const extent = `cx="${box.cx}" cy="${box.cy}"`
+  const name = backdrop === undefined ? "Group" : "Frame"
   const open = encodeUtf8(
-    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="Group ${id}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
-      `<p:grpSpPr><a:xfrm><a:off ${offset}/><a:ext ${extent}/><a:chOff ${offset}/><a:chExt ${extent}/></a:xfrm></p:grpSpPr>`,
+    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="${name} ${id}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
+      `<p:grpSpPr><a:xfrm><a:off ${offset}/><a:ext ${extent}/><a:chOff ${offset}/><a:chExt ${extent}/></a:xfrm></p:grpSpPr>` +
+      (backdrop === undefined ? "" : backdropXml(backdrop, box)),
   )
   const close = encodeUtf8("</p:grpSp>")
   return gathered(bytes, units, (inside) => joined([open, inside, close]))
@@ -187,4 +203,19 @@ export function unwrapGroup(bytes: Uint8Array, shape: string): Unwrapped {
     frame,
     place: placeOfShape(children, group),
   }
+}
+
+export function placeFrame(bytes: Uint8Array, shape: string, box: ShapeBox): Uint8Array {
+  const { elements } = requireMarkup(bytes)
+  const children = markupChildren(elements)
+  const group = shapeById(elements, shape)
+  if (group.kind !== "p:grpSp") throw new Error("p:grpSp")
+  const xfrm = transformOf(children, group)
+  if (xfrm === undefined) throw new Error("a:xfrm")
+  const offset = `x="${box.x}" y="${box.y}"`
+  const extent = `cx="${box.cx}" cy="${box.cy}"`
+  const next = encodeUtf8(
+    `<a:xfrm><a:off ${offset}/><a:ext ${extent}/><a:chOff ${offset}/><a:chExt ${extent}/></a:xfrm>`,
+  )
+  return spliceBytes(bytes, [{ start: xfrm.start, end: xfrm.end, next }])
 }

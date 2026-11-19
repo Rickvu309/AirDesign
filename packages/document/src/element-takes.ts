@@ -8,9 +8,13 @@ export type ElementFacts = {
   readonly text: boolean
   readonly grouped: boolean
   readonly animated: boolean
+  readonly frame?: "auto" | "free"
+  readonly framed?: "auto" | "free"
 }
 
 const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
+
+const placed: readonly FieldKey[] = ["box.x", "box.y", "box.w", "box.h"]
 
 const chosenStyle: FieldKey = "templateStyle.id"
 
@@ -34,7 +38,11 @@ const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.valu
 const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept"]
 
 export function takes(facts: ElementFacts): readonly FieldKey[] {
-  const fields = kindTraits[facts.kind].flatMap((trait) => (trait === "box" && facts.grouped ? [] : fieldKeys(trait)))
+  const fields = kindTraits[facts.kind].flatMap((trait): readonly FieldKey[] => {
+    if (trait === "layout") return facts.frame === undefined ? [] : fieldKeys(trait)
+    if (trait === "box" && facts.grouped) return facts.framed === "free" ? placed : []
+    return fieldKeys(trait)
+  })
   return fields.filter(
     (field) =>
       !(unwritten[facts.kind]?.includes(field) ?? false) &&

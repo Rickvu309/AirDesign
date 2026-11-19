@@ -1,4 +1,6 @@
 import {
+  changeLayout,
+  elementId,
   groupOf,
   nextElementId,
   readSlideId,
@@ -42,18 +44,25 @@ export function indexedRegister(parts: Parts, register: Register): Register {
 export type GroupChange =
   | { readonly change: "group"; readonly nodes: readonly ElementId[] }
   | { readonly change: "ungroup"; readonly node: ElementId }
+  | { readonly change: "frame"; readonly nodes: readonly ElementId[] }
 
 export function groupCommands(parts: Parts, register: Register, change: GroupChange): readonly Command[] | null {
   const base = slideBase(parts, register)
   const file = fileSlides(parts, register)
-  const first = change.change === "group" ? change.nodes[0] : change.node
+  const first = change.change === "ungroup" ? change.node : change.nodes[0]
   const slide = first === undefined ? undefined : readSlideId(shapeOf(first).slide)
   if (slide === undefined) return null
   if (change.change === "ungroup") return ungroupTurn(register, file, slide, change.node)
   const found = readSlides(base).find((each) => each.slide === slide)
   if (found === undefined) return null
-  const command = groupOf(register, slide, nextElementId(register, slide, freeShapeId(base, found.part)), change.nodes)
-  return command === null ? null : [{ command: "slide", file, edit: command }]
+  const node = nextElementId(register, slide, freeShapeId(base, found.part))
+  if (change.change === "group") {
+    const command = groupOf(register, slide, node, change.nodes)
+    return command === null ? null : [{ command: "slide", file, edit: command }]
+  }
+  const backdrop = elementId(`${slide}.${String(Number(shapeOf(node).shape) + 1)}`)
+  const framed = changeLayout(register, { wrap: change.nodes, slide, node, backdrop })
+  return framed === null || !("slide" in framed) ? null : [{ command: "slide", file, edit: framed.slide }]
 }
 
 async function sent(deckId: string, command: Command): Promise<boolean> {

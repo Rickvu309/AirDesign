@@ -3,6 +3,7 @@ import { currentBox, landedPatch, type Register } from "./decide.js"
 import type { IndexElement } from "./deck-index.js"
 import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import {
+  frameBackdrop,
   groupBounds,
   groupChildren,
   groupFrame,
@@ -12,6 +13,7 @@ import {
   type Member,
 } from "./element-group.js"
 import { takes, type ElementFacts } from "./element-takes.js"
+import { readLayout } from "./frame-layout.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { openingElement } from "./slide-floor.js"
 import type { FieldKey } from "./traits.js"
@@ -174,17 +176,35 @@ function heldSides(register: Register, node: ElementId): ReadonlySet<string> {
   return new Set(Object.entries(edits).flatMap(([field, edit]) => (typeof edit === "object" ? [field] : [])))
 }
 
-export function ungroupRows(register: Register, node: ElementId): readonly PlacedRow[] | null {
+export type Freed = "laid" | "made"
+
+function framedPlace(register: Register, node: ElementId, child: ElementId, place: Place, freed: Freed): Place | null {
+  const view = readLayout(register, node)
+  const made = madeGroup(register, node)?.element.box
+  if (view === null || made === undefined || made === null) return null
+  if (freed === "made") {
+    const box = { ...place.box, x: place.box.x + view.box.x - made.x, y: place.box.y + view.box.y - made.y }
+    return { ...place, box }
+  }
+  const laid = view.children.find((each) => each.node === child)?.box
+  return laid === undefined ? null : { ...place, box: laid }
+}
+
+export function ungroupRows(register: Register, node: ElementId, freed: Freed = "laid"): readonly PlacedRow[] | null {
   const frame = groupFrame(register, node)
   const group = placeOf(register, node)
   if (frame === null || group === null) return null
+  const backdrop = frameBackdrop(register, node)
   const rows: PlacedRow[] = []
   for (const child of groupChildren(register, node)) {
     const opening = openingElement(register, child)
     const place = placeOf(register, child)
-    if (opening === undefined || place === null) continue
+    if (opening === undefined || place === null || child === backdrop) continue
     const facts: ElementFacts = { kind: opening.kind, text: opening.value !== null, grouped: false, animated: false }
-    const patch = boxEdits(place, throughGroup(place, group, frame), heldSides(register, child), takes(facts))
+    const target =
+      backdrop === null ? throughGroup(place, group, frame) : framedPlace(register, node, child, place, freed)
+    if (target === null) continue
+    const patch = boxEdits(place, target, heldSides(register, child), takes(facts))
     if (patch.box !== undefined) rows.push({ node: child, patch })
   }
   return rows

@@ -86,6 +86,7 @@ const letter = (field: string, text: string): Placed => placed(field, { show: "l
 const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)]
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
+  layout: [[placed("flow", hidden)], [placed("gap", above), placed("padding", above)], [placed("align", hidden)]],
   show: [[placed("skipped", hidden, { control: "canvas" })]],
   transition: [[{ field: "value", name: hidden }]],
   link: [[placed("target", hidden)]],

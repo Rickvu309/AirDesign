@@ -2,6 +2,7 @@ import { currentBox, type Box, type ElementId, type Register } from "@airdesign/
 import { applyRoute, type ReadShape } from "@airdesign/pptx"
 import { boxOf, type PaintBox } from "@airdesign/render"
 import { newSlideElement } from "@/exported-parts"
+import { laidBox } from "@/frame-boxes"
 
 const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp", "p:grpSp"])
 
@@ -18,6 +19,8 @@ export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadS
 }
 
 export function landedBox(register: Register | null, id: ElementId): Box | null {
+  const laid = register === null ? undefined : laidBox(register, id)
+  if (laid !== undefined) return laid
   const body = register?.elements[id]
   const moved = body?.landed.some(
     (row) => row.visible && (row.v === undefined ? row.property === "box" : row.patch.box !== undefined),

@@ -142,3 +142,26 @@ it("refuses PR 478's background command, which a slide's fill row replaced", () 
   expect(readCommit({ deck: "deck", batch: [{ ...background, color: null }] })).toEqual(field)
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [background] })).toEqual(field)
 })
+
+it("carries an auto layout frame's backdrop and its layout opening on a person's commit", () => {
+  const box = { x: 0, y: 0, cx: 300, cy: 100 }
+  const element = {
+    node: "256.20",
+    kind: "group",
+    value: null,
+    box,
+    grouped: false,
+    opening: { layout: { flow: { set: "horizontal" }, gap: { set: 0 } } },
+  }
+  const backdrop = { node: "256.21", kind: "shape", value: null, box, grouped: false }
+  const members = [
+    { node: "256.2", box: { x: 0, y: 0, cx: 100, cy: 100 } },
+    { node: "256.3", box: { x: 200, y: 0, cx: 100, cy: 100 } },
+  ]
+  const group = { slide: "element-group", id: "256", element, members, backdrop, file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [group] })
+  if (!read.ok) throw new Error(read.refusal)
+  const edit = read.batch[0]
+  if (edit === undefined || !("slide" in edit)) throw new Error("slide")
+  expect(slideEditCommand(edit)).toMatchObject({ slide: "element-group", element, backdrop })
+})

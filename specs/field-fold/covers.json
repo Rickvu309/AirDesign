@@ -11,7 +11,7 @@
       "file": "packages/document/src/decide.ts",
       "names": ["landedPatch", "shownPatch"],
       "digest": "ef74e6ff3820",
-      "blob": "0825150679cd602dbbab24193c9ce422efc11eef"
+      "blob": "2f4972c2e048809bc3a99c81c9e036e634f4146f"
     },
     {
       "file": "packages/document/src/change.ts",
@@ -22,14 +22,14 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
-      "digest": "4e0fd4a0c00c",
-      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
+      "digest": "caa722abc1dd",
+      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
       "digest": "a022f6949f23",
-      "blob": "13e6811d4291102c59e70cbe41164885a79d36bb"
+      "blob": "24fcb6f4210eb285da143a4316d59ce92a822358"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "335c3e91d190",
-      "blob": "ee384c504f1cb5f1c4a6da11707725c0d05c7910"
+      "digest": "0578caec8c27",
+      "blob": "4bab7bd2ad4850d5b1915dbf4bb49a5b638023e7"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -51,9 +51,15 @@
     },
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
-      "names": ["fieldsRead", "elementDesign"],
-      "digest": "687f5eb13f90",
-      "blob": "4b6dd0fd2d7122aafce67d9780ef9c75d3ff8e92"
+      "names": ["elementDesign", "nodeDesign"],
+      "digest": "87d85e07729e",
+      "blob": "74ec3bd93df5a604ff2b7d5d3c8a04d39b84001b"
+    },
+    {
+      "file": "apps/web/src/editor/panel-fields.ts",
+      "names": ["fieldsRead"],
+      "digest": "bc3867e41815",
+      "blob": "22c47198b47d5f19678fc6fd63fcebf5eb1739c2"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -65,19 +71,19 @@
       "file": "apps/web/src/exported-parts.ts",
       "names": ["editedParts", "exportedParts"],
       "digest": "c5701d939b9c",
-      "blob": "0517f01dcae3b4c49f9597c9d6a4ee00ed344787"
+      "blob": "2d77084890464e01b7535c33c2e509d691d05229"
     },
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "29f6653bc0b1",
-      "blob": "c3c32251e6f54836197f2ad7c0726095fc8afe47"
+      "digest": "17e8ad0ece73",
+      "blob": "7caf6baa9404cb6f7f958e22ef9c7117d0f2866c"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "5d39106443aa",
-      "blob": "623004e1e9d0251944d738eb1cb40e3515b5636b"
+      "digest": "873f40279244",
+      "blob": "92066fb672cdb65ee12838f12951d7012af65e7c"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",

@@ -126,6 +126,7 @@ export type PanelModel = {
   readonly node: ElementId
   readonly nodes: readonly ElementId[]
   readonly kind: PanelKind | null
+  readonly frame?: "auto" | "free"
   readonly selectionKinds?: readonly (PanelKind | null)[]
   readonly sections: readonly PanelSection[]
 }
@@ -291,7 +292,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
                   target: { node: view.node },
                   [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
                 }) as SetChange
-      const desc = shownDesc(kind, view.facts.grouped, held.value)
+      const desc = shownDesc(kind, view.facts.grouped && view.facts.framed === undefined, held.value)
       const label = copy?.label ?? ""
       const text = readTextValue(view.value ?? "")
       const size =

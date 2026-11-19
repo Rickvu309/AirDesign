@@ -68,6 +68,7 @@ export const gestures = [
   { id: "back", group: "arrange", keys: [{ code: "BracketLeft", mod: true, shift: true }], where: ["element"] },
   { id: "group", group: "arrange", keys: [{ code: "KeyG", mod: true }], where: ["element"] },
   { id: "ungroup", group: "arrange", keys: [{ code: "KeyG", mod: true, shift: true }], where: ["element"] },
+  { id: "auto-layout", group: "arrange", keys: [{ code: "KeyA", shift: true }], where: ["element"] },
   { id: "undo", group: "history", keys: [{ key: "z", mod: true }], where: ["editor"] },
   {
     id: "redo",

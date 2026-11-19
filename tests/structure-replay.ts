@@ -1,16 +1,23 @@
 import {
+  beforeOf,
+  changeLayout,
   decide,
+  elementGone,
   elementId,
   groupedNow,
+  landedPatch,
   groupFormed,
   groupOf,
   legacyElement,
   madeGroup,
   openRegister,
   placeOf,
+  readLayout,
+  regroupTurn,
   rootElement,
   slideId,
   throughGroup,
+  undoOf,
   undoSlides,
   ungroupTurn,
   type Command,
@@ -18,12 +25,15 @@ import {
   type NodeName,
   type Register,
   type SlideCommand,
+  type Undoable,
 } from "@airdesign/document"
 import type { Graph } from "./spec-graph.js"
 import { viewed } from "./spec-register.js"
 import { flag, num, phaseOf, text } from "./spec-values.js"
 
 type Spec = Record<string, boolean | number | string>
+
+const frameActions = ["Wrap", "Pad", "RemoveAutoLayout", "UndoRemoveAutoLayout", "Unwrap"]
 type Told = (source: Spec, target: Spec, action: string) => string
 
 const treeActions = [
@@ -35,6 +45,11 @@ const treeActions = [
   "Ungroup",
   "Regroup",
   "RunUndo",
+  "Wrap",
+  "Pad",
+  "RemoveAutoLayout",
+  "UndoRemoveAutoLayout",
+  "Unwrap",
 ]
 
 function same(left: unknown, right: unknown): boolean {
@@ -156,6 +171,7 @@ const file = [slide]
 const child = elementId("256.2")
 const sibling = elementId("256.3")
 const group = elementId("256.20")
+const backdrop = elementId("256.21")
 const step = 1000
 const elements: readonly IndexElement[] = [
   { node: child, kind: "shape", value: "", box: { x: step, y: 0, cx: 500, cy: 500 }, grouped: false },
@@ -197,6 +213,44 @@ function slideCommand(edit: SlideCommand): Command {
   return { command: "slide", file, edit }
 }
 
+type Stepped = { readonly register: Register; readonly removal?: Undoable }
+
+function framed(register: Register, action: string, removal: Undoable | undefined): Stepped | null {
+  if (action === "Wrap") {
+    const changed = changeLayout(register, { wrap: [child, sibling], slide, node: group, backdrop })
+    const next = changed === null || !("slide" in changed) ? null : ran(register, [slideCommand(changed.slide)])
+    return next === null ? null : { register: next }
+  }
+  if (action === "Pad") {
+    const left = readLayout(register, group)?.padding.left === 0 ? step : 0
+    const padding = { set: { left, top: 0, right: 0, bottom: 0 } }
+    const next = ran(register, [{ command: "person", v: 1, patch: { layout: { padding } }, node: group }])
+    return next === null ? null : { register: next }
+  }
+  if (action === "RemoveAutoLayout") {
+    const changed = changeLayout(register, { remove: group })
+    if (changed === null || !("rows" in changed)) return null
+    const steps = changed.rows.map(({ node, patch }) => {
+      const body = register.elements[node]
+      const held = body === undefined ? {} : landedPatch(body, "text")
+      return { node, before: beforeOf(held, patch), after: patch }
+    })
+    const next = ran(
+      register,
+      changed.rows.map(({ node, patch }): Command => ({ command: "person", v: 1, patch, node })),
+    )
+    return next === null ? null : { register: next, removal: { steps } }
+  }
+  if (action === "UndoRemoveAutoLayout") {
+    const undone = removal === undefined ? null : undoOf(register, removal)
+    const next = undone === null || !undone.ok ? null : ran(register, undone.commands)
+    return next === null ? null : { register: next }
+  }
+  const turn = ungroupTurn(register, file, slide, group, "made")
+  const next = turn === null ? null : ran(register, turn)
+  return next === null ? null : { register: next }
+}
+
 function treeStep(register: Register, action: string): Register | null | "refused" {
   if (action === "GroupPerson" || action === "GroupAgent") {
     const made = groupOf(register, slide, group, [child, sibling])
@@ -211,17 +265,23 @@ function treeStep(register: Register, action: string): Register | null | "refuse
     const turn = ungroupTurn(register, file, slide, group)
     return turn === null ? null : ran(register, turn)
   }
-  if (action === "Regroup") return ran(register, [slideCommand({ slide: "element-regroup", id: slide, node: group })])
+  if (action === "Regroup") {
+    const turn = regroupTurn(register, file, slide, group)
+    return turn === null ? null : ran(register, turn)
+  }
   return undoSlides(register, "run") ?? "refused"
 }
 
 function shownOf(spec: Spec): number {
-  return text(spec, "grouped") === "formed" ? num(spec, "inside") + num(spec, "offset") : num(spec, "own")
+  const laid = flag(spec, "framed") ? num(spec, "pad") : 0
+  return text(spec, "grouped") === "formed" ? num(spec, "inside") + num(spec, "offset") + laid : num(spec, "own")
 }
 
 function slideX(register: Register): number | null {
   const own = placeOf(register, child)
   if (own === null || !groupedNow(register, child)) return own?.box.x ?? null
+  const laid = readLayout(register, group)?.children.find((each) => each.node === child)
+  if (laid !== undefined) return laid.box.x
   const frame = madeGroup(register, group)?.element.box ?? null
   const outer = placeOf(register, group)
   return frame === null || outer === null ? null : throughGroup(own, outer, frame).box.x
@@ -232,6 +292,8 @@ function picture(register: Register) {
     formed: groupFormed(register, group),
     grouped: groupedNow(register, child),
     x: slideX(register),
+    backdrop: madeGroup(register, group)?.backdrop !== undefined && !elementGone(register, backdrop),
+    auto: readLayout(register, group)?.flow === "horizontal",
   }
 }
 
@@ -248,6 +310,7 @@ function quietStart(spec: Spec): boolean {
 
 function replayTree(graph: Graph, told: Told, failures: string[]): number {
   const registers = new Map<string, Register>()
+  const removals = new Map<string, Undoable>()
   for (const [id, spec] of graph.states) if (quietStart(spec)) registers.set(id, start)
   const waiting = [...registers.keys()]
   let replayed = 0
@@ -261,7 +324,10 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
       if (!source || !target) throw new Error(`missing structure state for ${edge.action}`)
       const where = told(source, target, edge.action)
       const made = text(target, "maker") === "agent" ? "GroupAgent" : "GroupPerson"
-      const next = treeStep(register, edge.action === "GroupBy" ? made : edge.action)
+      const stepped = frameActions.includes(edge.action) ? framed(register, edge.action, removals.get(edge.from)) : null
+      const next = frameActions.includes(edge.action)
+        ? (stepped?.register ?? null)
+        : treeStep(register, edge.action === "GroupBy" ? made : edge.action)
       const refused = text(target, "groupKind") === "refused"
       if (next === null || (next === "refused") !== refused) {
         failures.push(`structure ${where} ${next === null ? "was refused" : "did not match the refusal"}`)
@@ -272,6 +338,8 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
         formed: text(target, "grouped") === "formed",
         grouped: text(target, "grouped") === "formed",
         x: step + step * shownOf(target),
+        backdrop: flag(target, "backdrop"),
+        auto: text(target, "grouped") === "formed" && flag(target, "framed") && flag(target, "auto"),
       }
       if (!same(picture(after), expected)) {
         failures.push(
@@ -282,6 +350,8 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
       replayed += 1
       if (!registers.has(edge.to)) {
         registers.set(edge.to, after)
+        const removal = stepped?.removal ?? removals.get(edge.from)
+        if (removal !== undefined && edge.action !== "UndoRemoveAutoLayout") removals.set(edge.to, removal)
         waiting.push(edge.to)
       }
     }

@@ -39,6 +39,7 @@ import {
 import type { BoxGrip, PaintStore } from "./store.js"
 
 export type Grouping = {
+  readonly onFrame?: (ids: readonly ElementId[]) => void
   readonly onGroup?: (ids: readonly ElementId[]) => void
   readonly onUngroup?: (id: ElementId) => void
 }
@@ -297,6 +298,11 @@ export function useMoves(
       chooseOn(event, element)
       return
     }
+    const owner = element.backdrop === true ? elementOf(element.group?.id) : undefined
+    if (owner !== undefined) {
+      pressOn(event, owner, "move")
+      return
+    }
     const unit = grip === "move" ? elementOf(unitOf(size, latest.current, id)) : undefined
     if (unit?.id === undefined || unit.id === null || unit.id === id) {
       pressOn(event, element, grip)
@@ -325,6 +331,12 @@ export function useMoves(
     }
     if (!onFrame) return
     const now = held.current
+    if (gesture === "auto-layout") {
+      if (now !== null || grouping?.onFrame === undefined) return
+      event.preventDefault()
+      grouping.onFrame(latest.current.ids)
+      return
+    }
     if (gesture === "group" || gesture === "ungroup") {
       if (now !== null) return
       const ids = latest.current.ids

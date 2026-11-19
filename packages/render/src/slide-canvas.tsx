@@ -51,6 +51,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onSelection?: (selection: Selection) => void
   readonly onGroup?: (ids: readonly ElementId[]) => void
   readonly onUngroup?: (id: ElementId) => void
+  readonly onFrame?: (ids: readonly ElementId[]) => void
   readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
   readonly notice?: string
   readonly entering?: Entering | null
@@ -70,6 +71,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   const moves = useMoves(props.store, slide, width, props.onBoxes, props.onRemove, props.onOrder, picking, {
     ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
     ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
+    ...(props.onFrame === undefined ? {} : { onFrame: props.onFrame }),
   })
   const moving = props.onBoxes === undefined ? null : moves
   const ids = moving?.selection.ids

@@ -1,6 +1,7 @@
 import {
   alphaKeys,
   beforeOf,
+  format,
   formatOne,
   landedPatch,
   paintSlots,
@@ -14,6 +15,7 @@ import {
   type FieldEdit,
   type FormatOneValue,
   type NodeStep,
+  type PlacedRow,
   type Register,
   type Row,
   type Scope,
@@ -227,6 +229,33 @@ export async function applyChange(deck: ChangingDeck, change: SetChange | readon
     const name = rows[0]?.name
     if (name !== undefined && steps.length > 0) deck.record({ name, undoable: { steps } })
     const next = await connect(memoryRemote()).openDeck(deck.id)
+    if (next.ok) deck.show(next.register)
+    return steps.length === rows.length
+  } finally {
+    release()
+  }
+}
+
+export async function applyRows(
+  deck: ChangingDeck,
+  plan: (register: Register) => readonly PlacedRow[] | null,
+  name: UndoName,
+): Promise<boolean> {
+  const release = deck.hold()
+  try {
+    const live = connect(memoryRemote())
+    const opened = await live.openDeck(deck.id)
+    const register = opened.ok ? indexed(deck.parts(), opened.register) : null
+    const rows = register === null ? null : plan(register)
+    if (register === null || rows === null || rows.length === 0) return false
+    const steps: NodeStep[] = []
+    for (const { node, patch } of rows) {
+      const before = landedBefore(register, node, patch)
+      if (!(await live.enqueueRow(deck.id, { v: format, patch }, node, deck.floor(node))).ok) break
+      steps.push({ node, before, after: patch })
+    }
+    if (steps.length > 0) deck.record({ name, undoable: { steps } })
+    const next = await live.openDeck(deck.id)
     if (next.ok) deck.show(next.register)
     return steps.length === rows.length
   } finally {

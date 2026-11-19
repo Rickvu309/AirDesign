@@ -19,7 +19,7 @@ export type FieldCopy = {
   readonly reset?: string
 }
 
-export type TraitControls<T extends TraitName> = [T extends "table" ? never : WireField<T>] extends [never]
+export type TraitControls<T extends TraitName> = [T extends "table" | "layout" ? never : WireField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
   : { readonly section: string; readonly fields: { readonly [F in WireField<T>]-?: FieldCopy } }
 
@@ -35,6 +35,7 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   text: textControls,
   connection: connectionControls,
   table: { fields: {} },
+  layout: { fields: {} },
   notes: notesControls,
   templateStyle: templateStyleControls,
   show: { section: slideListCopy.listName, fields: { skipped: { label: slideListCopy.skip } } },
