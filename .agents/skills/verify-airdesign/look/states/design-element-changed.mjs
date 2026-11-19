@@ -1,10 +1,12 @@
 import { expect } from "@playwright/test"
+import { toolbarWords } from "../../bin/color-words.mjs"
 import { boxCopy } from "../../bin/product-copy.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
 import { unfold } from "../unfold.mjs"
 
 async function drive(kit) {
   await fixtureDeck(kit)
+  const menu = await toolbarWords(kit.repo, "clean.pptx")
   await kit.page.getByRole("button", { name: "Design", exact: true }).click()
   await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
   await kit.page.keyboard.press("Escape")
@@ -15,7 +17,7 @@ async function drive(kit) {
   await x.press("Enter")
   await panel.getByRole("button", { name: "Bold", exact: true }).click()
   await panel.getByRole("group", { name: "Text color" }).getByRole("button").first().click()
-  await kit.page.locator("[data-color-picker]").getByRole("button", { name: "Accent 2", exact: true }).click()
+  await kit.page.locator("[data-color-picker]").getByRole("button", { name: menu.accent2, exact: true }).click()
   await kit.page.keyboard.press("Escape")
   await panel
     .getByRole("group", { name: "Alignment", exact: true })

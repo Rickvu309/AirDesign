@@ -1,10 +1,13 @@
-import { templateCopy, formatCopy } from "../../bin/product-copy.mjs"
+import { templateCopy } from "../../bin/product-copy.mjs"
+import { colorWords } from "../../bin/color-words.mjs"
 import { expect } from "@playwright/test"
 import { colorCopy } from "../../bin/product-copy.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
 async function drive(kit) {
   await fixtureDeck(kit, "clean.pptx")
+  const accent = await colorWords(kit.repo, "clean.pptx")
+  const accentRed = await colorWords(kit.repo, "clean.pptx", { slots: { accent1: "c00000" } })
   await kit.page.getByRole("button", { name: "Design", exact: true }).click()
   await expect(kit.page.locator("[data-design-panel]")).toBeVisible()
   const settings = kit.page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true })
@@ -13,17 +16,14 @@ async function drive(kit) {
     await kit.page.locator("[data-template-style]").click()
   const theme = kit.page.locator("[data-template-style-dialog]")
   if ((await theme.count()) === 0) return
-  await theme.getByRole("button", { name: formatCopy.colors.accent1, exact: true }).click()
+  await theme.getByRole("button", { name: accent.accent1, exact: true }).click()
   const picker = kit.page.locator("[data-color-picker]")
   await picker.getByRole("button", { name: colorCopy.add, exact: true }).click()
   const hex = picker.getByRole("textbox", { name: colorCopy.hex, exact: true })
   await hex.fill("#c00000")
   await hex.press("Enter")
   await kit.page.keyboard.press("Escape")
-  await expect(theme.getByRole("button", { name: formatCopy.colors.accent1, exact: true })).toHaveAttribute(
-    "title",
-    /#C00000/i,
-  )
+  await expect(theme.getByRole("button", { name: accentRed.accent1, exact: true })).toHaveAttribute("title", /#C00000/i)
   await theme.scrollIntoViewIfNeeded()
 }
 

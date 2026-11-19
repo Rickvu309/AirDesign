@@ -6,7 +6,7 @@ registerHooks({
     if (specifier.startsWith("@airdesign/") && context.parentURL?.includes("/apps/web/src/copy/")) {
       return next(specifier, { ...context, conditions: [...context.conditions, "import"] })
     }
-    if (specifier.startsWith(".") && context.parentURL?.includes("/apps/web/src/copy/")) {
+    if (specifier.startsWith(".") && context.parentURL?.includes("/apps/web/src/")) {
       const typed = new URL(`${specifier}.ts`, context.parentURL)
       if (existsSync(typed)) return { url: typed.href, shortCircuit: true }
     }

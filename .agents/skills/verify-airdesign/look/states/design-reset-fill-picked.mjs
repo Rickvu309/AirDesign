@@ -1,18 +1,19 @@
 import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { toolbarWords } from "../../bin/color-words.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
 import { openDeck } from "../open-deck.mjs"
 import { setPanelMode } from "../panel-mode.mjs"
 
 const require = createRequire(import.meta.url)
 const { fillCopy, fillWords } = require("../../../../../apps/web/src/copy/fill-copy.ts")
-const { formatCopy } = require("../../../../../apps/web/src/copy/format-copy.ts")
 const { opacityCopy } = require("../../../../../apps/web/src/copy/opacity-copy.ts")
 
 async function drive(kit) {
   const { page } = kit
   await fixtureDeck(kit, "shapes-added.pptx")
+  const menu = await toolbarWords(kit.repo, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const shape = page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]')
   await shape.click({ position: { x: 4, y: 4 } })
@@ -36,10 +37,7 @@ async function drive(kit) {
   if ((await fold.getAttribute("aria-expanded")) !== "true") await fold.click()
   await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await panel.getByRole("group", { name: fillWords.color, exact: true }).getByRole("button").first().click()
-  await page
-    .locator("[data-color-picker]")
-    .getByRole("button", { name: formatCopy.colors.accent2, exact: true })
-    .click()
+  await page.locator("[data-color-picker]").getByRole("button", { name: menu.accent2, exact: true }).click()
   await page.keyboard.press("Escape")
 }
 
