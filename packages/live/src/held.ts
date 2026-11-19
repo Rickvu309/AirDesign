@@ -119,18 +119,19 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
   const store = writing.objectStore(storeName)
   const head = scoped(account, headKey(deck))
   let result: Result | undefined
-  let done = false
+  const written: { held?: Held } = {}
   const apply = (held: Held, planned: Change<Result>, deletes: readonly string[]) => {
     result = planned.result
-    done = true
     if (planned.next === undefined && deletes.length === 0) {
+      written.held = held
       remember(account, deck, held)
       return
     }
     for (const key of deletes) store.delete(scoped(account, key))
     for (const put of planned.puts) store.put(put.row, scoped(account, put.key))
     store.put(held.head + 1, head)
-    remember(account, deck, { ...(planned.next ?? held), head: held.head + 1 })
+    written.held = { ...(planned.next ?? held), head: held.head + 1 }
+    remember(account, deck, written.held)
   }
   const reload = () => {
     const rows = store.getAll(rowRange(scoped(account, deck)))
@@ -170,8 +171,8 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
     throw error
   }
   if (storeNewer()) throw new Error("newer")
-  if (!done) throw new Error("rows were not read")
-  await told(account, deck)
+  if (written.held === undefined) throw new Error("rows were not read")
+  tellUnsent(account, deck, written.held)
   return result as Result
 }
 

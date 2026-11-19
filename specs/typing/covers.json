@@ -48,6 +48,12 @@
       "names": ["editableSlide"],
       "digest": "d2aa598f91e6",
       "blob": "4d31e9795f77a996e01a226003685036d6362589"
+    },
+    {
+      "file": "packages/live/src/held.ts",
+      "names": ["changeHeld"],
+      "digest": "d1d0a1a2902d",
+      "blob": "8245f3986054625d1edc292f6d6ffe0762d25640"
     }
   ]
 }

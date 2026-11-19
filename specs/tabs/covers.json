@@ -10,8 +10,8 @@
     {
       "file": "packages/live/src/held.ts",
       "names": ["changeHeld", "editHeld", "takeEdits", "adoptRows", "confirmRows", "sealRows", "heldView"],
-      "digest": "e264afcb0783",
-      "blob": "f832cf83221d4c8aa4acb4368cd0d6a13879861b"
+      "digest": "29c18d6bb03e",
+      "blob": "8245f3986054625d1edc292f6d6ffe0762d25640"
     },
     {
       "file": "packages/live/src/deck-view.ts",
