@@ -245,9 +245,11 @@ function installStore(slow?: SlowStore): void {
                 const pump = () => {
                   const next = queue.shift()
                   if (next === undefined) {
-                    current.live.splice(current.live.indexOf(transaction), 1)
-                    transaction.oncomplete?.()
-                    for (const waiting of [...current.live]) current.settle(waiting)
+                    nextTask(() => {
+                      current.live.splice(current.live.indexOf(transaction), 1)
+                      transaction.oncomplete?.()
+                      for (const waiting of [...current.live]) current.settle(waiting)
+                    })
                     return
                   }
                   next.request.result = next.run()

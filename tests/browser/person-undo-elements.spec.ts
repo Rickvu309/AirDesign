@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { elementGone, elementId, readSlideState } from "../../packages/document/src/index.ts"
 import { forward, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { holdWriteOf, holdWrites, readwrites, releaseWrite, writeHeld } from "./held-write"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -148,6 +149,56 @@ test("one visit to the speaker notes is one undo step", async ({ page, context, 
   await expect(field).toHaveValue(before)
   await expect(page.getByRole("button", { name: undoCopy.redoNamed.notes })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
+})
+
+test("one visit to the speaker notes stays one undo step when a save's answer lands between two keystrokes", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signInBrowser(context, await stack.signIn())
+  await forward(page, stack)
+  await holdWrites(page)
+  let asked: () => void = () => undefined
+  let answer: () => void = () => undefined
+  const sent = new Promise<void>((resolve) => {
+    asked = resolve
+  })
+  const answered = new Promise<void>((resolve) => {
+    answer = resolve
+  })
+  let holding = false
+  await page.route("**/decks/commit", async (route) => {
+    if (holding) {
+      holding = false
+      asked()
+      await answered
+    }
+    await route.fallback()
+  })
+  await open(page, "nasa-1d-cnn.pptx")
+  const field = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
+  const before = await field.inputValue()
+  await field.click()
+  await field.pressSequentially(" Ty")
+  await expect(page.locator("[data-save-status]")).toHaveAttribute("data-save-status", "saved")
+  holding = true
+  await field.press("p")
+  await sent
+  await holdWriteOf(page, `${before} Type`)
+  await field.press("e")
+  await writeHeld(page)
+  const confirming = await readwrites(page)
+  answer()
+  await expect.poll(() => readwrites(page)).toBeGreaterThan(confirming)
+  const typing = await readwrites(page)
+  await field.press("d")
+  await expect.poll(() => readwrites(page)).toBeGreaterThan(typing)
+  await releaseWrite(page)
+  await expect(field).toHaveValue(`${before} Typed`)
+  await page.getByRole("button", { name: undoCopy.undoNamed.notes }).click()
+  await expect(field).toHaveValue(before)
+  await expect(page.getByRole("button", { name: undoCopy.redoNamed.notes })).toBeEnabled()
 })
 
 test("a person undoes a picture move", async ({ page, context, stack }) => {
