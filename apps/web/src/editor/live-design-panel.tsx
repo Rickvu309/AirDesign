@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
+import { Fragment, useCallback, useId, useMemo, useState, useSyncExternalStore, type ReactNode } from "react"
 import {
   keptRefuses,
   openRegister,
@@ -38,7 +38,7 @@ import { framePanel, layoutFields } from "@/design/frame-panel"
 import { indexedRegister } from "@/indexed-register"
 import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
-import { SlideSurface } from "@/editor/slide-design-tabs"
+import { SlideSurface, SlidesSurface, type SlideTab } from "@/editor/slide-design-tabs"
 import { colorsIn } from "./deck-colors"
 import { nodeChoices } from "./node-choices"
 import { placeholderRole } from "./placeholder-role"
@@ -325,6 +325,8 @@ export function LiveDesignPanel(props: PanelProps) {
 }
 
 function DesignPanelSwitch({ deck, selectedSlides = 1, mode, toneFor }: PanelProps) {
+  const [tab, onTab] = useState<SlideTab["tab"]>("design")
+  const tabs: SlideTab = { tab, onTab }
   if (selectedSlides === 0)
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
@@ -334,23 +336,43 @@ function DesignPanelSwitch({ deck, selectedSlides = 1, mode, toneFor }: PanelPro
     )
   if (selectedSlides > 1)
     return (
-      <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
-        <DesignHead>{slideListCopy.selected(selectedSlides)}</DesignHead>
-        <LiveTemplateStyle deck={deck} />
-        <p className="px-4 py-3 text-[length:var(--type-caption)] text-muted-foreground">{designCopy.selectOneSlide}</p>
-      </div>
+      <SlidesSurface
+        deck={deck}
+        tabs={tabs}
+        indices={deck.selectedSlides ?? []}
+        head={slideListCopy.selected(selectedSlides)}
+        design={
+          <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
+            <DesignHead>{slideListCopy.selected(selectedSlides)}</DesignHead>
+            <LiveTemplateStyle deck={deck} />
+            <p className="px-4 py-3 text-[length:var(--type-caption)] text-muted-foreground">
+              {designCopy.selectOneSlide}
+            </p>
+          </div>
+        }
+      />
     )
   const { shown, selection } = deck
   const ids = shown.store.current.slides()[shown.current]?.elements ?? []
   const [first, ...rest] = [...selection.ids.filter((id) => ids.includes(id)), ...(deck.matching ?? [])]
-  if (first === undefined) return <LiveSlideDesign deck={deck} mode={mode} toneFor={toneFor} />
+  if (first === undefined) return <LiveSlideDesign deck={deck} mode={mode} toneFor={toneFor} tabs={tabs} />
   if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} mode={mode} toneFor={toneFor} />
   const nodes: Several = [first, ...rest]
   return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} mode={mode} toneFor={toneFor} />
 }
 
-function LiveSlideDesign({ deck, mode, toneFor }: { deck: DesigningDeck; mode: PanelMode; toneFor?: ToneControlFor }) {
-  return <SlideSurface deck={deck} design={<SlideChrome deck={deck} mode={mode} toneFor={toneFor} />} />
+function LiveSlideDesign({
+  deck,
+  mode,
+  toneFor,
+  tabs,
+}: {
+  deck: DesigningDeck
+  mode: PanelMode
+  toneFor?: ToneControlFor
+  tabs: SlideTab
+}) {
+  return <SlideSurface deck={deck} tabs={tabs} design={<SlideChrome deck={deck} mode={mode} toneFor={toneFor} />} />
 }
 
 function SlideChrome({ deck, mode, toneFor }: { deck: DesigningDeck; mode: PanelMode; toneFor?: ToneControlFor }) {

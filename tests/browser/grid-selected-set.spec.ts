@@ -3,6 +3,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { test } from "./api-stack"
 import { openSaved, picked, roomOf } from "./grid-reorder-deck"
 import { entry, groupSizes } from "./slide-grid-deck"
@@ -64,6 +65,37 @@ test("Design shows the slide count without a single slide Background control", a
   await expect(panel.getByRole("heading", { name: designCopy.background, exact: true })).toHaveCount(0)
   await entry(page, 4).click()
   await expect(panel.getByRole("heading", { name: designCopy.background, exact: true })).toBeVisible()
+})
+
+test("Animate sets one transition on every selected slide and one Undo takes it back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openSaved(page, context, stack, 7, groupSizes(7))
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await selectThree(page)
+  await page.getByRole("tab", { name: transitionCopy.animate }).click()
+  const panel = page.locator("[data-animate-panel]")
+  const style = panel.getByRole("combobox", { name: transitionCopy.style })
+  await expect(panel).toContainText(slideListCopy.selected(3))
+  await expect(style).toContainText(transitionCopy.styles.none)
+  await style.click()
+  await page.getByRole("option", { name: transitionCopy.styles.dissolve, exact: true }).click()
+  await expect(style).toContainText(transitionCopy.styles.dissolve)
+  await entry(page, 4).click()
+  await expect(style).toContainText(transitionCopy.styles.none)
+  await page.locator("[data-slide-number]").nth(1).click()
+  await page
+    .locator("[data-slide-number]")
+    .nth(3)
+    .click({ modifiers: ["Shift"] })
+  await expect(style).toContainText(designCopy.mixed)
+  await expect(panel.getByLabel(transitionCopy.duration)).toHaveCount(0)
+  await page.getByRole("button", { name: undoCopy.undoNamed.transition, exact: true }).click()
+  await expect(style).toContainText(transitionCopy.styles.none)
+  await entry(page, 2).click()
+  await expect(style).toContainText(transitionCopy.styles.none)
 })
 
 test("Zoom to selection centers the element and repeats the same viewport", async ({ page, context, stack }) => {

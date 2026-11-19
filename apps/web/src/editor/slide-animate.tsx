@@ -1,7 +1,6 @@
 import { useId, useState, type ReactNode } from "react"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react"
 import type { TransitionValue } from "@airdesign/document"
-import { readArrival, readSlides } from "@airdesign/pptx"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { airaRefusalWords } from "@/copy/aira-copy"
 import { designCopy } from "@/copy/design-copy"
@@ -21,6 +20,7 @@ import {
   withTiming,
   type ArrivalSide,
   type ArrivalStyle,
+  type SlideArrival,
 } from "@/editor/transition-value"
 
 const field =
@@ -119,32 +119,30 @@ function delayOf(value: TransitionValue): number {
 }
 
 export function SlideAnimate({
-  parts,
-  index,
-  number,
+  arrival,
+  head,
   onSet,
   onAll,
 }: {
-  parts: ReadonlyMap<string, Uint8Array>
-  index: number
-  number: number
+  arrival: SlideArrival | "mixed"
+  head: string
   onSet: (value: TransitionValue) => void
   onAll: (value: TransitionValue) => void
 }): ReactNode {
-  const found = readSlides(parts)[index]
-  const arrival = readArrival(found === undefined ? undefined : parts.get(found.part))
-  const kept = arrival.state === "kept"
-  const value = arrival.state === "value" ? arrival.value : null
-  const style = value === null ? "kept" : styleOf(value)
+  const mixed = arrival === "mixed"
+  const kept = !mixed && arrival.state === "kept"
+  const value = !mixed && arrival.state === "value" ? arrival.value : null
+  const style = mixed ? "mixed" : value === null ? "kept" : styleOf(value)
   const directed = value !== null && style !== "none" && style !== "dissolve"
   const styleOptions: (readonly [string, string])[] = [
+    ...(mixed ? [["mixed", designCopy.mixed] as const] : []),
     ...(kept ? [["kept", transitionCopy.styles.kept] as const] : []),
     ...styles.map((id) => [id, transitionCopy.styles[id]] as const),
   ]
   const timing = value === null ? "click" : "delay" in advanceOf(value) ? "delay" : "click"
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-animate-panel>
-      <DesignHead>{designCopy.slide(number)}</DesignHead>
+      <DesignHead>{head}</DesignHead>
       <DesignSection title={transitionCopy.transition} last>
         <div className="flex flex-col gap-3">
           <Choice
@@ -206,7 +204,7 @@ export function SlideAnimate({
               onCommit={(ms) => onSet(withDelay(value, ms))}
             />
           ) : null}
-          {kept ? null : (
+          {kept || mixed ? null : (
             <button
               type="button"
               className="h-[var(--control-dense)] rounded-[var(--shape-control)] bg-white px-2.5 text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
