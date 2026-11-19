@@ -182,7 +182,7 @@ function textShown(text: TextValue, key: string, fallback: Held): Held {
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
 
-const imageFields: readonly string[] = ["mode", "source", "recolor", "overlay", "blur"]
+const imageFields: readonly string[] = ["mode", "tileScale", "source", "recolor", "overlay", "blur"]
 
 export function shownPlace(trait: TraitName, field: string): { readonly trait: SectionName; readonly field: string } {
   if (trait !== "fills") return { trait, field }

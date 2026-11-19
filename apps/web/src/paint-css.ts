@@ -32,7 +32,7 @@ function cssFill(fill: PaintFill | null): string | null {
 
 function pictureCss(image: PictureImage, src: PictureSource, under: string | null = null): string {
   const url = src(image)
-  const layer = url === null ? null : pictureLayer(image, url)
+  const layer = url === null ? null : pictureLayer(image, url, src.dimensions?.(image))
   if (layer === null) return unshownFill
   return under === null ? layer : `${layer}, ${under}`
 }

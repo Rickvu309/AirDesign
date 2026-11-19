@@ -8,6 +8,7 @@ import { inheritedFill, ownBackground, shownFill, type Fill, type SlotFill } fro
 import { decodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { iconOf } from "./picture-read.js"
+import { tileScaleXml } from "./picture-tile.js"
 import { cropFieldXml } from "./trait-xml-crop.js"
 import { blipOverlay, imageAlpha, imageFieldsXml, withoutOverlay, writtenImageAlpha } from "./trait-xml-image.js"
 import { markupChildren } from "./text-value-route.js"
@@ -193,6 +194,7 @@ const settingsXml = {
   fields: {
     crop: cropFieldXml,
     mode: imageFieldsXml.mode,
+    tileScale: tileScaleXml,
     source: imageFieldsXml.source,
     alpha: whole({
       read: (parts, at) => {
@@ -266,6 +268,7 @@ export const fillsXml: TraitXml<"fills"> = {
       write: (parts, at, value) => writtenFills(parts, at, { source: { set: value } }),
     }),
     mode: settingsXml.fields.mode,
+    tileScale: settingsXml.fields.tileScale,
     crop: settingsXml.fields.crop,
     recolor: settingsXml.fields.recolor,
     blur: settingsXml.fields.blur,

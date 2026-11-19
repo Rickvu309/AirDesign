@@ -4,7 +4,7 @@ const exports = modes.map((mode) => `exported-picture-${mode}.pptx`)
 export default {
   specs: ["tests/browser/picture-mode.spec.ts"],
   exports,
-  covers: ["fills.mode"],
+  covers: ["fills.mode", "fills.tileScale"],
   cases: exports.map((after) => ({
     name: after.slice(0, -5),
     before: "picture-png.pptx",

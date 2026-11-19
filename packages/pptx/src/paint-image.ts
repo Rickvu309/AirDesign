@@ -1,3 +1,4 @@
+import { tileRatios } from "./picture-tile.js"
 import { svgEmbed } from "./blip-edit.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintColor, type PaintPalette } from "./paint-color.js"
@@ -13,6 +14,7 @@ export type PaintImage = {
   crop: PaintCrop
   destination?: PaintCrop
   tile: boolean
+  tileScale?: { x: number; y: number }
   alpha?: number
   recolor?: PaintRecolor
   blur?: number
@@ -100,6 +102,8 @@ export const paintImage = (
   const rect = stretch === undefined ? undefined : children[stretch.index]?.find((item) => item.kind === "a:fillRect")
   const destination = (name: string) => Number(rect === undefined ? 0 : (paintAttribute(rect, name) ?? 0)) / 100000
   const placed = rect !== undefined && ["l", "t", "r", "b"].some((name) => destination(name) !== 0)
+  const tile = inside.find((element) => element.kind === "a:tile")
+  const ratios = tile === undefined ? null : tileRatios(tile)
   return {
     ...image,
     ...(placed
@@ -113,7 +117,10 @@ export const paintImage = (
         }
       : {}),
     crop: { left: side("l"), top: side("t"), right: side("r"), bottom: side("b") },
-    tile: inside.some((element) => element.kind === "a:tile"),
+    tile: tile !== undefined,
+    ...(ratios === null || (ratios.x === opaque && ratios.y === opaque)
+      ? {}
+      : { tileScale: { x: ratios.x / opaque, y: ratios.y / opaque } }),
     ...alphaOf(blip, children),
     ...recolorOf(blip, children, palette),
     ...blurOf(blip, children),

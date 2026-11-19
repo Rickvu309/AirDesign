@@ -25,6 +25,23 @@ test("a person changes a picture's fill mode and exports its native placement @e
     await expect(panel.getByRole("combobox", { name: pictureCopy.mode, exact: true })).toContainText(
       pictureWords[mode]!,
     )
+    const scale = panel.getByRole("textbox", { name: pictureCopy.tileScale, exact: true })
+    if (mode === "tile") {
+      await expect(scale).toHaveValue("100")
+      await scale.fill("25")
+      await scale.press("Enter")
+      await expect(scale).toHaveValue("25")
+      await expect
+        .poll(() =>
+          picture.evaluate((node) => {
+            const style = getComputedStyle(node)
+            const [width = "", height = ""] = style.backgroundSize.split(" ")
+            const slideScale = Number(style.getPropertyValue("--tile-slide-scale"))
+            return [Math.round(parseFloat(width) / slideScale), Math.round(parseFloat(height) / slideScale)]
+          }),
+        )
+        .toEqual([120, 80])
+    } else await expect(scale).toHaveCount(0)
     const size = () => picture.evaluate((node) => getComputedStyle(node).backgroundSize)
     if (mode === "fit") fitted = await size()
     if (mode === "fill") await expect.poll(size).not.toBe(fitted)
@@ -32,6 +49,7 @@ test("a person changes a picture's fill mode and exports its native placement @e
     await savedExport(page, file)
     const parts = await partsOf(file)
     expect(parts.get(part)?.toString()).toContain(mode === "tile" ? "<a:tile " : "<a:stretch>")
+    if (mode === "tile") expect(parts.get(part)?.toString()).toContain('sx="25000" sy="25000"')
     if (mode === "crop") expect(parts.get(part)?.toString()).toContain("<a:srcRect")
   }
 })

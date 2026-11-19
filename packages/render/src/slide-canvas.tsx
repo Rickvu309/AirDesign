@@ -109,12 +109,14 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     enterElement(host, entering, keys?.take() ?? "")
   }
   useLayoutEffect(enterPainted, [entering, keys])
+  const tileScale = { "--tile-slide-scale": scaled(9525) }
   return (
     <div
       ref={surface}
       {...(quiet ? { "data-thumb-paint": true } : { "data-slide-paint": true })}
       className={props.className}
       style={{
+        ...tileScale,
         position: "relative",
         width,
         height: scaled(slide.height),

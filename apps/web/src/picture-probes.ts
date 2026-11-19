@@ -1,6 +1,14 @@
 import { format, type Kind } from "@airdesign/document"
-import { shownPictureMode, shownCrop, shownIdentity, shownImage, shownSlots } from "@airdesign/pptx"
-import type { At, Parts, Probe } from "./parity-probe"
+import {
+  shownPictureMode,
+  shownCrop,
+  shownIdentity,
+  shownImage,
+  shownSlots,
+  shownTileScale,
+  exportParts,
+} from "@airdesign/pptx"
+import { agentRegister, indexed, type At, type Parts, type Probe } from "./parity-probe"
 
 const on = { deck: "doe-heat-pumps.pptx", kind: "shape" as Kind, node: "2883.13" }
 
@@ -24,6 +32,14 @@ function imageProbe(file: (parts: Parts, at: At) => unknown) {
 export const imageProbes = {
   mode: imageProbe((parts, at) => shownPictureMode(parts, at)),
   source: imageProbe((parts, at) => shownImage(parts, at)?.source),
+  tileScale: {
+    ...imageProbe(shownTileScale),
+    prepare: (parts: Parts, at: At) => {
+      const tiled = agentRegister(indexed(parts), at, { fills: { mode: "tile" } })
+      if (tiled === null) throw new Error("tile-probe")
+      return exportParts(parts, tiled)
+    },
+  },
   crop: imageProbe((parts, at) => shownCrop(parts, at)),
   recolor: imageProbe((parts, at) => shownImage(parts, at)?.recolor),
   blur: imageProbe((parts, at) => shownImage(parts, at)?.blur),

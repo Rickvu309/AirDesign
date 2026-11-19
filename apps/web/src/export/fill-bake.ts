@@ -97,8 +97,8 @@ function imageBake(
   }
   const placed = layer.placed
   if (placed.tile) {
-    const stepX = (natural.width * canvas.width) / (box.width / cssPerEmu)
-    const stepY = (natural.height * canvas.height) / (box.height / cssPerEmu)
+    const stepX = (natural.width * canvas.width * (image.tileScale?.x ?? 1)) / (box.width / cssPerEmu)
+    const stepY = (natural.height * canvas.height * (image.tileScale?.y ?? 1)) / (box.height / cssPerEmu)
     return { ...adjusted, draw: { tile: true, stepX, stepY } }
   }
   const { x, y, width, height } = placed

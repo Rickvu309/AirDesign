@@ -26,10 +26,13 @@ export type Derived = [
   Expect<Same<FieldValue<"box", "w">, number>>,
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
   Expect<
-    Same<FieldName<"fills">, "p0" | "p1" | "p2" | "p3" | "source" | "mode" | "crop" | "recolor" | "blur" | "alpha">
+    Same<
+      FieldName<"fills">,
+      "p0" | "p1" | "p2" | "p3" | "source" | "mode" | "tileScale" | "crop" | "recolor" | "blur" | "alpha"
+    >
   >,
   Expect<Same<FieldValue<"fills", "alpha">, Alpha>>,
-  Expect<Same<WireField<"fills">, "paint" | "source" | "mode" | "crop" | "recolor" | "blur" | "overlay">>,
+  Expect<Same<WireField<"fills">, "paint" | "source" | "mode" | "tileScale" | "crop" | "recolor" | "blur" | "overlay">>,
   Expect<
     Same<FieldName<"border">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail" | "alpha">
   >,
@@ -92,6 +95,7 @@ describe("the one table of traits", () => {
       "fills.p3",
       "fills.source",
       "fills.mode",
+      "fills.tileScale",
       "fills.crop",
       "fills.recolor",
       "fills.blur",

@@ -25,6 +25,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   chart: turns,
   slide: [
     "fills.mode",
+    "fills.tileScale",
     "fills.crop",
     "fills.recolor",
     "fills.blur",

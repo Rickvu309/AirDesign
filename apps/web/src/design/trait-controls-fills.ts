@@ -7,6 +7,7 @@ export const fillsControls: TraitControls<"fills"> = {
   fields: {
     paint: { label: fillCopy.value, reset: fillCopy.reset },
     mode: { label: pictureCopy.mode },
+    tileScale: { label: pictureCopy.tileScale },
     source: { label: pictureCopy.source },
     crop: { label: pictureCopy.crop },
     recolor: { label: pictureCopy.recolor },

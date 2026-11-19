@@ -3,7 +3,7 @@ import { kindInstructions } from "./kind-refusal.js"
 
 it("tells the agent a photo is a shape whose fills hold an image, and how to add a Lucide icon and its alt text", () => {
   const instructions = kindInstructions()
-  expect(instructions).toContain("fills (paint, source, mode, crop, recolor, overlay, blur)")
+  expect(instructions).toContain("fills (paint, source, mode, tileScale, crop, recolor, overlay, blur)")
   expect(instructions).toContain("A photo or an icon is a shape whose fills hold an image")
   expect(instructions).not.toContain("kind picture")
   expect(instructions).toContain('{ "op": "add", "kind": "shape", "slide": ..., "icon": "rocket" }')
