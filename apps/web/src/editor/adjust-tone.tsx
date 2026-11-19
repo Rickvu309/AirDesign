@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type PointerEvent } from "react"
+import { useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { adjustToneCopy as words } from "@/copy/adjust-tone-copy"
@@ -108,27 +108,38 @@ function ToneDial({
   )
 }
 
-export function AdjustTone({ action }: { action: ToneAction }) {
+export type ToneOpening = {
+  readonly open: boolean
+  readonly onOpenChange: (open: boolean) => void
+  readonly anchor: RefObject<HTMLElement | null>
+}
+
+export function AdjustTone({ action, opening }: { action: ToneAction; opening?: ToneOpening }) {
   const { blocked, notice, busy, choice, resettable, refresh, choose, reset } = action
   const point = typeof choice === "object" ? choice : toneCenter
 
   return (
     <Popover
+      {...(opening === undefined ? {} : { open: opening.open })}
       onOpenChange={(open) => {
         if (open) refresh()
+        opening?.onOpenChange(open)
       }}
     >
-      <PopoverTrigger
-        render={<Button type="button" variant="ghost" size="icon" className="size-6" aria-label={words.title} />}
-      >
-        <ToneIcon size={14} />
-      </PopoverTrigger>
+      {opening === undefined ? (
+        <PopoverTrigger
+          render={<Button type="button" variant="ghost" size="icon" className="size-6" aria-label={words.title} />}
+        >
+          <ToneIcon size={14} />
+        </PopoverTrigger>
+      ) : null}
       <PopoverContent
-        side="left"
-        align="start"
-        sideOffset={12}
+        {...(opening === undefined
+          ? { side: "left", align: "start", sideOffset: 12 }
+          : { side: "top", align: "end", sideOffset: 12, anchor: opening.anchor })}
         className="gap-3 p-4 motion-reduce:transition-none"
         data-keeps-selection
+        {...(opening === undefined ? {} : { "data-keeps-format": "" })}
         data-adjust-tone
       >
         <PopoverTitle>{words.title}</PopoverTitle>

@@ -36,6 +36,7 @@ export type TextFormatting = {
   readonly selection: () => boolean
   readonly register: (id: ElementId, target: FormatTarget) => () => void
   readonly aim: (id: ElementId | null, focused?: HTMLElement) => void
+  readonly aimed: () => ElementId | null
   readonly state: (format: TextFormat) => FormatState | null
   readonly toggle: (format: TextFormat) => void
   readonly size: () => number | "mixed" | null
@@ -104,6 +105,9 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
       aimed = id
       returnTo = id === null ? null : (focused ?? null)
       changed()
+    },
+    aimed() {
+      return aimed
     },
     link() {
       const found = target()

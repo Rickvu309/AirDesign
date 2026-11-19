@@ -12,6 +12,7 @@ import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
+import type { ToneSource } from "@/editor/tone-link"
 import type { Selection, TextFormatting } from "@airdesign/render"
 import type { Geometry } from "@airdesign/document"
 import type { SaveStatus } from "@/editor/use-deck-status"
@@ -44,6 +45,7 @@ export type EditorDeck = {
   readonly onTrash?: () => void
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
+  readonly tone?: ToneSource
   readonly deckColors?: readonly string[]
   readonly onPicture?: (file: File) => void
   readonly onShape?: (geometry: Geometry) => void
@@ -146,6 +148,7 @@ export function EditorShell({
     ...(deck?.onSlideNumber === undefined ? {} : { onSlideNumber: deck.onSlideNumber }),
     ...(deck?.onText === undefined ? {} : { onText: deck.onText }),
     ...(deck?.formatting === undefined ? {} : { formatting: deck.formatting }),
+    ...(deck?.tone === undefined ? {} : { tone: deck.tone }),
     ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),
     ...(formats === undefined ? {} : { formats }),
     ...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture }),

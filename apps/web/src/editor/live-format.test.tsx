@@ -83,3 +83,14 @@ it("paints the format controls again only when the shown format changes, not on 
   await act(async () => root.unmount())
   host.remove()
 })
+
+it("says which layer the format controls are aimed at, and none once aim is dropped", () => {
+  const formatting = textFormatting()
+  const id = elementId("256.4")
+  expect(formatting.aimed()).toBeNull()
+  formatting.register(id, targetWith({ bold: "off", size: 18 }))
+  formatting.aim(id)
+  expect(formatting.aimed()).toBe(id)
+  formatting.aim(null)
+  expect(formatting.aimed()).toBeNull()
+})
