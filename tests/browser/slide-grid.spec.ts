@@ -356,7 +356,7 @@ test("the grid fits the deck by default, zooms by percent with the keyboard and 
   await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")
   await expect.poll(() => perRow(page)).toBe(9)
   await entry(page, 1).focus()
-  await page.keyboard.press("ControlOrMeta+0")
+  await page.keyboard.press("Shift+Digit1")
   await expect.poll(() => percent(page)).toBe(fit)
   await expect.poll(() => perRow(page)).toBe(9)
 })

@@ -54,12 +54,17 @@ export function zoomWidth(zoom: Zoom, room: SlideSize, slide: SlideSize): number
   return percentWidth(zoom, slide)
 }
 
+export function widthZoom(width: number, slide: SlideSize, range: ZoomRange = zoomRanges.slides): number {
+  if (slide.width <= 0) return 100
+  return boundedZoom((width * emuPerPixel * 100) / slide.width, range)
+}
+
 export function zoomPercent(width: number, slide: SlideSize): number {
   if (slide.width <= 0) return 100
   return Math.round((width * emuPerPixel * 100) / slide.width)
 }
 
-export type ZoomKey = "in" | "out" | "fit" | "selection"
+export type ZoomKey = "in" | "out" | "fit" | "selection" | "actual"
 
 export function zoomKey(event: {
   readonly key: string
@@ -75,6 +80,7 @@ export function zoomKey(event: {
   if (gesture === "zoom-in") return "in"
   if (gesture === "zoom-out") return "out"
   if (gesture === "zoom-selection") return "selection"
+  if (gesture === "zoom-100") return "actual"
   return gesture === "zoom-fit" ? "fit" : null
 }
 

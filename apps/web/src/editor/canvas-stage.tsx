@@ -1,6 +1,8 @@
-import { useLayoutEffect, useRef, type PointerEvent, type ReactNode, type WheelEvent } from "react"
+import { useLayoutEffect, useRef, type PointerEvent, type ReactNode, type RefObject } from "react"
 
 import { canvasInset, slideTop } from "@/editor/canvas-zoom"
+import { stagePadding, type WidthLimits } from "@/editor/canvas-viewport"
+import { useCanvasGestures, type CanvasView } from "@/editor/use-canvas-gestures"
 
 type Pan = {
   readonly pointer: number
@@ -13,35 +15,50 @@ type Pan = {
 export function CanvasStage({
   fit = true,
   hand,
+  pans = false,
   width,
   height,
+  canvasWidth,
   canvasHeight,
   overlay,
+  limits,
+  onZoom,
+  view,
   children,
 }: {
   fit?: boolean
   hand: boolean
+  pans?: boolean
   width: number
   height: number
+  canvasWidth: number
   canvasHeight: number
   overlay: number
+  limits?: WidthLimits
+  onZoom?: (width: number) => void
+  view?: RefObject<CanvasView | null>
   children: ReactNode
 }) {
+  const root = useRef<HTMLDivElement>(null)
   const stage = useRef<HTMLDivElement>(null)
-  const top = slideTop({ height: canvasHeight, overlay, slide: height })
+  const content = useRef<HTMLDivElement>(null)
   const pan = useRef<Pan | null>(null)
+  const gestures = useCanvasGestures({ root, stage, content, overlay, pans, limits, onZoom, view })
+  const padding = stagePadding({ width: canvasWidth, height: canvasHeight - overlay }, fit)
+  const top = padding?.block ?? slideTop({ height: canvasHeight, overlay, slide: height })
 
   useLayoutEffect(() => {
     const element = stage.current
-    if (element === null) return
+    if (element === null || gestures.placing()) return
     element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2
     element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
-  }, [width])
+  }, [width, fit])
 
   function grab(event: PointerEvent<HTMLDivElement>) {
     const element = stage.current
     if (element === null || event.button !== 0) return
     event.currentTarget.setPointerCapture(event.pointerId)
+    gestures.setPanning(true)
     pan.current = {
       pointer: event.pointerId,
       x: event.clientX,
@@ -60,24 +77,27 @@ export function CanvasStage({
   }
 
   function drop(event: PointerEvent<HTMLDivElement>) {
-    if (pan.current?.pointer === event.pointerId) pan.current = null
-  }
-
-  function wheel(event: WheelEvent<HTMLDivElement>) {
-    stage.current?.scrollBy({ left: event.deltaX, top: event.deltaY })
+    if (pan.current?.pointer !== event.pointerId) return
+    pan.current = null
+    gestures.setPanning(false)
   }
 
   return (
-    <>
+    <div ref={root} className="absolute inset-0">
       <div ref={stage} className="absolute inset-0 overflow-auto" data-canvas-stage data-canvas-fit={fit}>
         <div
+          ref={content}
           className="flex w-max min-w-full flex-col items-center"
-          style={{ paddingInline: canvasInset.side, paddingTop: top, paddingBottom: top + overlay }}
+          style={{
+            paddingInline: padding?.inline ?? canvasInset.side,
+            paddingTop: top,
+            paddingBottom: top + overlay,
+          }}
         >
           {children}
         </div>
       </div>
-      {hand ? (
+      {hand || gestures.space || gestures.panning ? (
         <div
           className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
           data-hand-pan
@@ -85,9 +105,9 @@ export function CanvasStage({
           onPointerDown={grab}
           onPointerMove={drag}
           onPointerUp={drop}
-          onWheel={wheel}
+          onLostPointerCapture={drop}
         />
       ) : null}
-    </>
+    </div>
   )
 }

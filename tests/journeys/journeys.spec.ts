@@ -70,6 +70,7 @@ for (const name of [
   "cleared-browser",
   "delete-account",
   "move-resize",
+  "navigate-zoom-pan",
   "connected-agents",
   "slide-commands",
   "grid-group-add",

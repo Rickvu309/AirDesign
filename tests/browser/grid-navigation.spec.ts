@@ -77,7 +77,7 @@ test("Shift+2 fills the canvas with the selected slide and Shift+1 fits the deck
   await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toBeChecked()
   await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toHaveAttribute(
     "aria-keyshortcuts",
-    "Control+0 Meta+0 Shift+1",
+    zoomCopy.fitKey,
   )
   await page.getByRole("menuitem", { name: zoomCopy.selection }).click()
   expect((await entry(page, 7).boundingBox())!.width).toBeCloseTo(seventh.width, 0)

@@ -2,7 +2,18 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
-import { slideRoom, steppedZoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
+import {
+  percentWidth,
+  slideRoom,
+  steppedZoom,
+  widthZoom,
+  zoomPercent,
+  zoomRanges,
+  zoomWidth,
+  type SlideSize,
+  type Zoom,
+} from "@/editor/canvas-zoom"
+import type { CanvasView } from "@/editor/use-canvas-gestures"
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
@@ -158,9 +169,22 @@ export function EditorShell({
         {...(deck.notesOf === undefined ? {} : { notesOf: deck.notesOf })}
       />
     )
-  useZoomKeys(deck !== undefined && size !== null && !gridOpen, (key) =>
-    setZoom(key === "fit" || key === "selection" || size === null ? "fit" : steppedZoom(key, zoomPercent(width, size))),
-  )
+  const view = useRef<CanvasView>(null)
+  function zoomTo(next: Zoom) {
+    const aim = view.current
+    if (next === "fit" || size === null || aim === null) setZoom(next)
+    else aim.aim(zoomWidth(next, room, size), () => setZoom(next))
+  }
+  function zoomToSelection() {
+    const zoomed =
+      size !== null && view.current !== null && view.current.selection((next) => setZoom(widthZoom(next, size)))
+    if (!zoomed) setZoom("fit")
+  }
+  useZoomKeys(deck !== undefined && size !== null && !gridOpen, (key) => {
+    if (key === "selection") zoomToSelection()
+    else if (key === "fit" || size === null) setZoom("fit")
+    else zoomTo(key === "actual" ? 100 : steppedZoom(key, zoomPercent(width, size)))
+  })
   const tools: ToolbarTools = {
     activeTool,
     menuOpen: toolMenu,
@@ -262,10 +286,22 @@ export function EditorShell({
         <CanvasStage
           fit={zoom === "fit"}
           hand={deck !== undefined && pointer.tool === "hand"}
+          pans={deck !== undefined && size !== null && present.show === null}
           width={width}
           height={size === null ? (width * 9) / 16 : (width * size.height) / size.width}
+          canvasWidth={canvas.width}
           canvasHeight={canvas.height}
           overlay={canvas.overlay}
+          view={view}
+          {...(size === null
+            ? {}
+            : {
+                limits: {
+                  least: percentWidth(zoomRanges.slides.least, size),
+                  most: percentWidth(zoomRanges.slides.most, size),
+                },
+                onZoom: (next: number) => setZoom(widthZoom(next, size)),
+              })}
         >
           <div data-slide-wrapper className="relative" style={{ width }}>
             <span
@@ -288,7 +324,7 @@ export function EditorShell({
         >
           {notes === undefined ? null : (
             <>
-              <div data-notes-width style={{ width }}>
+              <div data-notes-width style={{ width: Math.min(width, room.width) }}>
                 <NotesBar
                   text={run === "working" ? "" : notes}
                   {...(onNotes === undefined ? {} : { onEdit: onNotes })}
@@ -314,7 +350,14 @@ export function EditorShell({
           ) : size === null ? (
             <span />
           ) : (
-            <ZoomMenu zoom={zoom} percent={zoomPercent(width, size)} onZoom={setZoom} />
+            <ZoomMenu
+              zoom={zoom}
+              percent={zoomPercent(width, size)}
+              onZoom={zoomTo}
+              {...(deck.selection === undefined || deck.selection.ids.length === 0
+                ? {}
+                : { onSelection: zoomToSelection })}
+            />
           )}
           <span className="flex items-center gap-1">
             <PresentButton
