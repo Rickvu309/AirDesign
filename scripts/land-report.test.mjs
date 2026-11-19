@@ -23,7 +23,9 @@ const lines = (changedOnMain, behind = 3) => {
     repository: "Rickvu309/AirDesign",
     run: queueRun,
     gh: (args) => {
-      if (args[0] === "run" && args[1] === "view") return ok(fixture("vitest-failed.log"))
+      if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100")) return ok("135322156039\n135324262611\n")
+      if (args[0] === "api" && args[1].endsWith("/jobs/135322156039/logs")) return ok(fixture("vitest-failed.log"))
+      if (args[0] === "api" && args[1].endsWith("/jobs/135324262611/logs")) return ok("failed: ci-gate\n")
       if (args[0] === "api" && args[1].endsWith("/artifacts")) return ok("test-results-check-main\n")
       throw new Error(`unexpected gh ${args.join(" ")}`)
     },
@@ -39,7 +41,11 @@ const lines = (changedOnMain, behind = 3) => {
 }
 
 const fixed = lines([oneFile, "README.md"])
-same("the run is named with its failed step", fixed.out[0], "ci run 43261070420 (merge_group) failed in unit-tests.")
+same(
+  "the run is named with the failed step of each failed job",
+  fixed.out[0],
+  "ci run 43261070420 (merge_group) failed in unit-tests, ci-gate.",
+)
 same(
   "each failed test is named with its first error",
   fixed.out[1],

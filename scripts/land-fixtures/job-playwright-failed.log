@@ -1,0 +1,66 @@
+2026-11-19T03:47:39.6806896Z [212/234] tests/browser/save-status.spec.ts:149:1 › going offline reads Offline before any edit, and Saved again when the browser is back
+2026-11-19T03:47:39.6809630Z [213/234] tests/browser/save-status.spec.ts:164:1 › going offline and back while a resend is on the wire reads Saved once it lands
+2026-11-19T03:47:39.6812424Z [214/234] tests/browser/slide-follow.spec.ts:87:1 › a cleared browser rebuilds a duplicate from the server's snapshot, not from the source's later text
+2026-11-19T03:47:39.6815612Z [215/234] tests/browser/save-status.spec.ts:206:3 › an added slide reads Saving while its commit waits and Saved once the server takes it
+2026-11-19T03:47:39.6818327Z [216/234] tests/browser/slide-follow.spec.ts:134:1 › an agent's edit of a cloned slide and of an added slide paints in the open editor
+2026-11-19T03:47:39.6821375Z [217/234] tests/browser/thumbnail-move.spec.ts:63:1 › the slide list thumbnail follows a drag, a resize, a nudge and their undo in the same paint
+2026-11-19T03:47:39.6823994Z [218/234] tests/browser/thumbnail-move.spec.ts:101:1 › the slide list thumbnail follows a shape an agent moves
+2026-11-19T03:47:39.6826550Z [219/234] tests/browser/undo-export.spec.ts:35:1 › an export after every edit is undone changes no part of the original
+2026-11-19T03:47:39.6828988Z   1) tests/browser/save-status.spec.ts:206:3 › an added slide reads Saving while its commit waits and Saved once the server takes it 
+2026-11-19T03:47:39.6830191Z 
+2026-11-19T03:47:39.6830673Z     Error: expect(locator).toHaveText(expected) failed
+2026-11-19T03:47:39.6831238Z 
+2026-11-19T03:47:39.6831517Z     Locator:  locator('[data-save-status]')
+2026-11-19T03:47:39.6832461Z     Expected: "Saving…"
+2026-11-19T03:47:39.6833068Z     Received: "Saved"
+2026-11-19T03:47:39.6833617Z     Timeout:  5000ms
+2026-11-19T03:47:39.6833997Z 
+2026-11-19T03:47:39.6834165Z     Call log:
+2026-11-19T03:47:39.6835001Z       - Expect "toHaveText" locator('[data-save-status]') with timeout 5000ms
+2026-11-19T03:47:39.6836302Z       - waiting for locator('[data-save-status]')
+2026-11-19T03:47:39.6837422Z         14 × locator resolved to <span role="status" class="sr-only" data-save-status="saved">Saved</span>
+2026-11-19T03:47:39.6838094Z            - unexpected value "Saved"
+2026-11-19T03:47:39.6838308Z 
+2026-11-19T03:47:39.6838315Z 
+2026-11-19T03:47:39.6838411Z       223 |     )
+2026-11-19T03:47:39.6838893Z       224 |     await page.getByRole("button", { name: button, exact: true }).click()
+2026-11-19T03:47:39.6839528Z     > 225 |     await expect(saveStatus(page)).toHaveText(saving)
+2026-11-19T03:47:39.6840007Z           |                                    ^
+2026-11-19T03:47:39.6840316Z       226 |     release()
+2026-11-19T03:47:39.6840674Z       227 |     await expect(saveStatus(page)).toHaveText(saved)
+2026-11-19T03:47:39.6841095Z       228 |   })
+2026-11-19T03:47:39.6841544Z         at /home/runner/work/AirDesign/AirDesign/tests/browser/save-status.spec.ts:225:36
+2026-11-19T03:47:39.6841920Z 
+2026-11-19T03:47:39.6842448Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-19T03:47:39.6843556Z     test-results/save-status-an-added-slide-a0e3a-ed-once-the-server-takes-it/test-failed-1.png
+2026-11-19T03:47:39.6844467Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-19T03:47:39.6844770Z 
+2026-11-19T03:47:39.6845214Z     Error Context: test-results/save-status-an-added-slide-a0e3a-ed-once-the-server-takes-it/error-context.md
+2026-11-19T03:47:39.6846108Z 
+2026-11-19T03:47:39.6846114Z 
+2026-11-19T03:47:39.6846938Z [220/234] tests/browser/save-status.spec.ts:206:3 › an added text box reads Saving while its commit waits and Saved once the server takes it
+2026-11-19T03:47:39.6848233Z [221/234] tests/browser/undo-export.spec.ts:84:1 › an export after a layout placeholder's move is undone changes no part of the original
+2026-11-19T03:47:39.6849799Z [222/234] tests/browser/usage-motion.spec.ts:45:1 › the usage popover grows from its ring on the micro curve, holds still with reduced motion, and closes on Escape or a press outside
+2026-11-19T03:47:39.6851179Z [223/234] tests/browser/usage.spec.ts:12:1 › the usage ring shows before any ask, stays current, and See all opens the Usage page
+2026-11-19T03:47:39.6852404Z [224/234] tests/browser/save-status.spec.ts:245:3 › a commit the server refuses with storage says why it is not saved and is not sent again
+2026-11-19T03:47:39.6853563Z [225/234] tests/browser/usage.spec.ts:53:1 › the account menu opens Usage, and its tabs move between Usage and Agents
+2026-11-19T03:47:39.6854859Z [226/234] tests/browser/usage.spec.ts:80:1 › the Usage page says when it cannot load and tries again, and sends a signed-out person to sign in
+2026-11-19T03:47:39.6856525Z [227/234] tests/browser/usage.spec.ts:108:1 › a long email stays inside the sidebar with its menu arrow, and the full address is its title
+2026-11-19T03:47:39.6857995Z [228/234] tests/browser/usage.spec.ts:130:1 › the Usage page shows a loading label while usage is loading and respects reduced motion
+2026-11-19T03:47:39.6859373Z [229/234] tests/browser/save-status.spec.ts:245:3 › a commit the server refuses with size says why it is not saved and is not sent again
+2026-11-19T03:47:39.6860635Z [230/234] tests/browser/type-at-once.spec.ts:22:1 › keys typed at once after Add text box land in the new box, before and after it paints
+2026-11-19T03:47:39.6861821Z [231/234] tests/browser/type-at-once.spec.ts:41:1 › typing after selecting an imported table leaves its cells unchanged
+2026-11-19T03:47:39.6863163Z [232/234] tests/browser/save-status.spec.ts:275:1 › a commit answered newer shows that AirDesign has a new version with Reload, and sends nothing more
+2026-11-19T03:47:39.6864563Z [233/234] tests/browser/type-at-once.spec.ts:57:1 › the first text box takes focus while its font is still arriving, and the keys land in it
+2026-11-19T03:47:39.6866577Z [234/234] tests/browser/typing-renders.spec.ts:36:1 › the editor stops rendering within a second of the last key typed fast into a two-column box with the Design panel open
+2026-11-19T03:47:39.6867361Z   1 failed
+2026-11-19T03:47:39.6868174Z     tests/browser/save-status.spec.ts:206:3 › an added slide reads Saving while its commit waits and Saved once the server takes it 
+2026-11-19T03:47:39.6868962Z   233 passed (4.9m)
+2026-11-19T03:47:39.6869304Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-19T03:47:39.6869736Z fail browser-tests 293.0s
+2026-11-19T03:47:39.7374671Z metric check-duration  now 293.1  limit 40
+2026-11-19T03:47:39.7375793Z check-duration is 293.1 and its limit is 40. Make it faster.
+2026-11-19T03:47:39.7376307Z failed: browser-tests
+2026-11-19T03:47:39.7437726Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-19T03:47:39.7474921Z ##[error]Process completed with exit code 1.
+2026-11-19T03:47:39.7821064Z Prepare all required actions
