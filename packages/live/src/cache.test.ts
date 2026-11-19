@@ -201,7 +201,7 @@ describe("live cache", () => {
     await cache.enqueue("deck", "two", other, "")
     const [first, second] = await Promise.all([cache.flush("deck"), connect(remote).flush("deck")])
     expect(first).toMatchObject({ ok: true, revision: 1 })
-    expect(second).toEqual({ ok: false, refusal: "batch" })
+    expect(second).toEqual({ ok: false, refusal: "batch", empty: true })
     expect(commits).toEqual([["one", "two"]])
   })
 
@@ -260,7 +260,7 @@ describe("live cache", () => {
 
   it("opens nothing when no row is pending", async () => {
     const { remote, calls } = tracedRemote()
-    expect(await connect(remote).flush("deck")).toEqual({ ok: false, refusal: "batch" })
+    expect(await connect(remote).flush("deck")).toEqual({ ok: false, refusal: "batch", empty: true })
     expect(calls).toEqual([])
   })
 

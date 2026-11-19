@@ -68,6 +68,16 @@ it("keeps the edit when the send carried nothing but rows still wait on the devi
   expect(outcome).toBe("kept")
 })
 
+it("answers empty when the send carried no rows and an edit waits once it answered", async () => {
+  const open = linkAnswering(() => Promise.resolve({ ok: false, refusal: "batch", empty: true }))
+  expect(await flushPending(open, "any-deck")).toBe("empty")
+})
+
+it("answers sent when the send carried no rows and none wait", async () => {
+  const open = linkAnswering(() => Promise.resolve({ ok: true, empty: true }), [])
+  expect(await flushPending(open, "any-deck")).toBe("sent")
+})
+
 it("keeps a later edit pending when an earlier send succeeds", async () => {
   const open = linkAnswering(() => Promise.resolve({ ok: true }))
   expect(await flushPending(open, "any-deck")).toBe("kept")

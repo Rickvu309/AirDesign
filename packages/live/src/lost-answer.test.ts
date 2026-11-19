@@ -322,7 +322,7 @@ it("sets aside text typed on a slide another writer removed, and tells it after 
   const reopened = connect({ ...server })
   expect(await reopened.flush(deck)).toEqual({ ok: true, deck, revision: 2, key: `${deck}:2`, aside: 1 })
   expect(await reopened.pending(deck)).toEqual([])
-  expect(await reopened.flush(deck)).toEqual({ ok: false, refusal: "batch" })
+  expect(await reopened.flush(deck)).toEqual({ ok: false, refusal: "batch", empty: true })
   const stored = await server.open({ deck })
   if (!stored.ok) throw new Error(stored.refusal)
   expect(currentValue(stored.register.elements[shape]!)).toBe("Kept")

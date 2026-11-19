@@ -12,7 +12,8 @@
 \* The device's queue is one flag, rows: some rows wait on the device or none. Every send joins
 \* one lane per deck (serial in packages/live/src/cache.ts) and the first in the lane is the only
 \* one on the wire. It carries every row the device holds when it starts. It answers sent when no
-\* rows remain after the send, kept when rows remain, and offline when it failed to reach the server.
+\* rows remain after the send, kept when rows remain after it carried some, empty when rows remain
+\* after it carried none, and offline when it failed to reach the server.
 \* The lane is a number whose digits are its sends, the first one first:
 \* 1 the online event's, 2 the resend loop's, 3 an edit's or the deck's opening, 4 a send of a
 \* resend loop that was stopped, whose answer nobody reads.
@@ -148,18 +149,21 @@ Send ==
   /\ UNCHANGED <<open, net, up, rows, offline, lane, loop, flips, outages, edits>>
 
 \* Its answer comes and leaves the lane. Its caller settles it, unless the editor closed or the
-\* loop that sent it was stopped. Kept says rows still wait, not whether the server answered, so
-\* settle leaves offline as it was. The resend loop ends on sent, and rests before the next try
-\* on offline or kept.
+\* loop that sent it was stopped. A send that began with no rows waiting and finds rows after it
+\* answers empty: it says nothing of the server, so settle leaves offline as it was. The resend
+\* loop rests before the next try on offline or empty, and ends on any other outcome.
 Answer ==
   /\ started
   /\ LET reached == net /\ up
          remaining == IF carry /\ reached THEN fresh ELSE rows
-         outcome == IF carry /\ ~reached THEN "offline" ELSE IF remaining THEN "kept" ELSE "sent"
+         outcome == IF carry /\ ~reached THEN "offline"
+                    ELSE IF ~remaining THEN "sent"
+                    ELSE IF carry THEN "kept"
+                    ELSE "empty"
          caller == First(lane)
          heard == (caller \in {Event, Edit} /\ open) \/ caller = Resend
-         offline2 == IF heard /\ outcome # "kept" THEN outcome = "offline" ELSE offline
-         loop2 == IF caller = Resend THEN (IF outcome = "sent" THEN "off" ELSE "rest") ELSE loop
+         offline2 == IF heard /\ outcome # "empty" THEN outcome = "offline" ELSE offline
+         loop2 == IF caller = Resend THEN (IF outcome \in {"offline", "empty"} THEN "rest" ELSE "off") ELSE loop
          after == Unsent(open, net, offline2, remaining)
      IN /\ rows' = remaining
         /\ fresh' = FALSE

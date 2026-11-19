@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
-      "digest": "2ef8ccfc4718",
-      "blob": "cefc9cfb911573d982efdbca42f9e9dd056369dc"
+      "digest": "2021008d1845",
+      "blob": "5cb88b4221fb0bcad8a21120426394a6880de4de"
     },
     {
       "file": "packages/live/src/held.ts",

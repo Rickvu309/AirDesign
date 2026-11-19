@@ -27,6 +27,7 @@ export type FlushOutcome =
   | "offline"
   | "signed-out"
   | "kept"
+  | "empty"
   | "set-aside"
   | "set-aside-too-large"
   | SaveRefusal
@@ -44,7 +45,8 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
     }
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
     if ("refusal" in flushed && (flushed.refusal === "storage" || flushed.refusal === "size")) return flushed.refusal
-    return (await link.pending(deckId)).length === 0 ? "sent" : "kept"
+    if ((await link.pending(deckId)).length === 0) return "sent"
+    return "empty" in flushed && flushed.empty === true ? "empty" : "kept"
   } catch (error) {
     return error instanceof TypeError ? "offline" : "kept"
   }
