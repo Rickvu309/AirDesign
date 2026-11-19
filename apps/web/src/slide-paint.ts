@@ -188,6 +188,7 @@ export function paintCanvas(
     const marked = refit.has(shape.id) ? { ...shape, refit: true as const } : shape
     const frame = framed?.frames.get(shape.id)
     if (framed?.backdrops.has(shape.id) === true) return [key, { ...marked, backdrop: true as const }] as const
+    if (framed?.origins.has(shape.id) === true) return [key, { ...marked, freed: true as const }] as const
     return [key, frame === undefined ? marked : { ...marked, frame }] as const
   })
   const plain = refit.size === 0 && (framed === undefined || framed.frames.size === 0)
