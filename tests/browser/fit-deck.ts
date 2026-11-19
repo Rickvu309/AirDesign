@@ -227,23 +227,32 @@ export function placeCases(cases: readonly FitCase[]): readonly PlacedCase[] {
   })
 }
 
-export async function fitDeck(placed: readonly PlacedCase[]): Promise<Buffer> {
+export function fitDeck(placed: readonly PlacedCase[]): Promise<Buffer> {
   const slides = Math.max(...placed.map((item) => item.slide))
+  return slidesDeck(
+    Array.from({ length: slides }, (_, at) =>
+      placed
+        .filter((item) => item.slide === at + 1)
+        .map((item) => boxXml(Number(item.key.split("#")[1]), item))
+        .join(""),
+    ),
+  )
+}
+
+export async function slidesDeck(trees: readonly string[]): Promise<Buffer> {
   const parts = new Map<string, string>()
-  for (let slide = 1; slide <= slides; slide += 1) {
-    const boxes = placed
-      .filter((item) => item.slide === slide)
-      .map((item) => boxXml(Number(item.key.split("#")[1]), item))
+  trees.forEach((tree, at) => {
+    const slide = at + 1
     parts.set(
       `ppt/slides/slide${slide}.xml`,
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld ${ns}><p:cSld><p:spTree>${group}${boxes.join("")}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld ${ns}><p:cSld><p:spTree>${group}${tree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`,
     )
     parts.set(
       `ppt/slides/_rels/slide${slide}.xml.rels`,
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${relType}/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`,
     )
-  }
-  const numbers = Array.from({ length: slides }, (_, at) => at + 1)
+  })
+  const numbers = trees.map((_, at) => at + 1)
   const reader = new zip.ZipReader(
     new zip.Uint8ArrayReader(new Uint8Array(await readFile(join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")))),
   )

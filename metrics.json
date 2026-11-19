@@ -15,5 +15,7 @@
   "ci-duration": { "limit": 40 },
   "pptx-check-duration": { "limit": 90 },
   "time-to-merge": { "limit": 45 },
-  "time-to-notice": { "limit": 15 }
+  "time-to-notice": { "limit": 15 },
+  "drag-frame": { "limit": 20 },
+  "drag-delay": { "limit": 50 }
 }

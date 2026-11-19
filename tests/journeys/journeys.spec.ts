@@ -72,6 +72,7 @@ for (const name of [
   "move-resize",
   "navigate-zoom-pan",
   "snap-drag",
+  "busy-drag",
   "connected-agents",
   "slide-commands",
   "grid-group-add",

@@ -129,6 +129,7 @@ async function pointer(target: EventTarget, type: string, x: number, y: number, 
     target.dispatchEvent(
       new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId, button: 0 }),
     )
+    if (type === "pointermove") await new Promise((painted) => requestAnimationFrame(painted))
   })
 }
 
@@ -262,7 +263,7 @@ describe("SlideCanvas boxes", () => {
     expect(boxes).toEqual([])
   })
 
-  it("paints a drag at every move and reports one box when the pointer is released", async () => {
+  it("paints a drag at each frame and reports one box when the pointer is released", async () => {
     const { host, boxes } = await mounted([element(id)])
     const target = frameOf(host)
     await pointer(target, "pointerdown", 100, 100)

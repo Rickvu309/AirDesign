@@ -104,6 +104,7 @@ async function pointer(target: EventTarget, type: string, x: number, y: number, 
         shiftKey,
       }),
     )
+    if (type === "pointermove") await new Promise((painted) => requestAnimationFrame(painted))
   })
 }
 

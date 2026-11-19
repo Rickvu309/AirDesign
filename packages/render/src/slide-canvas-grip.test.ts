@@ -66,6 +66,7 @@ async function pointer(target: EventTarget, type: string, x: number, y: number):
     target.dispatchEvent(
       new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, button: 0 }),
     )
+    if (type === "pointermove") await new Promise((painted) => requestAnimationFrame(painted))
   })
 }
 

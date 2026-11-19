@@ -189,14 +189,15 @@ export function useTextFit(
     if (shown === null || !measured(text)) return
     const measure = () => {
       const over = overflowOf(shown, text?.columns ?? 1)
-      if (over !== null) hold((before) => nextFitting(sameFor(before, now) ? before : now, fit, over, steps.length))
+      if (over !== null)
+        hold((before) => nextFitting(sameFor(before, fitting) ? before : fitting, fit, over, steps.length))
     }
     measure()
     if (typeof ResizeObserver === "undefined") return
     const watch = new ResizeObserver(measure)
     for (const each of shown.children) watch.observe(each)
     return () => watch.disconnect()
-  })
+  }, [text, fit, steps, fitting])
   const step = steps[fitting.step]
   const shrunk = text !== null && step !== undefined && fitting.step > 0 ? fitted(text, step) : text
   const shown = shrunk !== null && fitting.overflow ? { ...shrunk, overflow: true } : shrunk

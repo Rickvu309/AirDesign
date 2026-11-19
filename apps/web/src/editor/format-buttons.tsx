@@ -1,3 +1,4 @@
+import { designCopy } from "@/copy/design-copy"
 import {
   alignNames,
   formatNames,
@@ -85,8 +86,9 @@ function SizeBox({
       inputMode="decimal"
       aria-label={label}
       data-keeps-format=""
-      className="h-7 w-10 rounded-md bg-transparent text-center text-[length:var(--type-dense)] text-foreground tabular-nums hover:bg-canvas focus-visible:bg-canvas"
+      className="h-7 w-10 rounded-md bg-transparent text-center text-[length:var(--type-dense)] text-foreground tabular-nums placeholder:text-quiet hover:bg-canvas focus-visible:bg-canvas"
       value={draft ?? shown}
+      placeholder={size === "mixed" ? designCopy.mixed : undefined}
       onFocus={(event) => {
         justFocused.current = true
         event.currentTarget.select()

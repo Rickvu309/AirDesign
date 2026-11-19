@@ -76,6 +76,14 @@ _Avoid_: target, threshold
 The most seconds a timed step may take.
 _Avoid_: budget, ceiling, threshold
 
+**frame time**:
+The milliseconds from one painted frame to the next. At 60 frames a second it is 16.7.
+_Avoid_: fps, frame rate
+
+**input to paint**:
+The milliseconds from a pointer event to the end of the frame that shows it.
+_Avoid_: input lag, latency
+
 **known failure**:
 A test that is skipped, marked to do, expected to fail, or asserts nothing.
 _Avoid_: known fault, known bug, disabled test

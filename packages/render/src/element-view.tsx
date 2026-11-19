@@ -11,11 +11,17 @@ export function useElement(store: PaintStore, id: ElementId): ElementRecord | nu
   )
 }
 
-export function useBox(store: PaintStore, id: ElementId): Box | null {
+export type BoxRead = (store: PaintStore, id: ElementId) => Box | null
+
+export const shownBox: BoxRead = (store, id) => store.getBox(id)
+
+export const restingBox: BoxRead = (store, id) => store.getRestingBox(id)
+
+export function useBox(store: PaintStore, id: ElementId, read: BoxRead = shownBox): Box | null {
   return useSyncExternalStore(
     store.boxSubscribe(id),
-    () => store.getBox(id),
-    () => store.getBox(id),
+    () => read(store, id),
+    () => read(store, id),
   )
 }
 
