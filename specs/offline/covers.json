@@ -17,25 +17,25 @@
       "file": "packages/live/src/deck-view.ts",
       "names": ["joinable", "readStoredRows"],
       "digest": "3480131b3416",
-      "blob": "ac6ecfc8fa28b80f4b9fbcbd337e9ec302ea7093"
+      "blob": "4c2cab40d95d0e8399d71bcd5d807cf31116ef66"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["sealRows"],
       "digest": "130395e867bc",
-      "blob": "7bf84df28572ecabe7cfc71c9595572508ce635f"
+      "blob": "f832cf83221d4c8aa4acb4368cd0d6a13879861b"
     },
     {
       "file": "packages/live/src/unsaved.ts",
-      "names": ["keepUnsaved", "releaseUnsaved", "recoverUnsaved"],
-      "digest": "ee0f7557f454",
-      "blob": "0af47a1ac4db2eca4fe4a6d6e48d6c751eae5233"
+      "names": ["keepUnsaved", "releaseUnsaved", "recoverUnsaved", "noteBoxes"],
+      "digest": "51ea3b040765",
+      "blob": "d9f24602a6a3bbf01eb7464e8e69263b7e9a8398"
     },
     {
       "file": "packages/live/src/cache.ts",
       "names": ["keptIfNewer"],
       "digest": "dc0940f27cce",
-      "blob": "88e26e89a07159016be481f5a12a9b6add9f842b"
+      "blob": "cefc9cfb911573d982efdbca42f9e9dd056369dc"
     }
   ]
 }

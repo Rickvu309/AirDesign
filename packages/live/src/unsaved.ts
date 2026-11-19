@@ -11,6 +11,7 @@ import {
   type SlideId,
   type StoredRead,
 } from "@airdesign/document"
+import { accountKey } from "./device.js"
 
 export type Shelf = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">
 
@@ -209,6 +210,29 @@ type Recovered = "newer" | "payload" | undefined
 
 const recovering = new WeakMap<Shelf, Map<string, Promise<Recovered>>>()
 
+const noted = new Set<string>()
+
+export function noteBoxes(
+  deck: string,
+  boxes: readonly { readonly node: string; readonly floor: string; readonly box: Box }[],
+  shelf: Shelf | undefined = pageShelf(),
+  account: string | undefined = accountKey(),
+): () => void {
+  if (shelf === undefined || account === undefined || boxes.length === 0) return () => undefined
+  const ids = boxes.map((each) => {
+    const id = crypto.randomUUID()
+    noted.add(id)
+    keepUnsaved(shelf, account, deck, id, { kind: "box", node: each.node, floor: each.floor, box: each.box })
+    return id
+  })
+  return () => {
+    for (const id of ids) {
+      noted.delete(id)
+      releaseUnsaved(shelf, account, deck, id)
+    }
+  }
+}
+
 export function recoverUnsaved(
   shelf: Shelf | undefined,
   account: string,
@@ -224,6 +248,7 @@ export function recoverUnsaved(
   const entries = heldAt(shelf, lane)
   const done = (async () => {
     for (const entry of entries) {
+      if (noted.has(entry.id)) continue
       const read = readUnsaved(entry)
       if (!read.ok) return read.refusal
       try {

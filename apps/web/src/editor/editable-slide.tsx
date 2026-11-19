@@ -1,5 +1,5 @@
 import { boxPatch, format, type ElementId, type StackMove } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
+import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
@@ -118,48 +118,56 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
   }
 
   async function onBoxes(moved: readonly Moved[]) {
-    const [only] = moved
-    if (moved.length === 1 && only !== undefined && (await placed(only))) return
-    const opening = connect(memoryRemote()).openDeck(id)
-    async function refused(target: ElementId) {
-      store.current.placeBox(target, landedBox(await deviceRegister(id), target))
-    }
     const shownRegister = deck.shown.shownRegister.current
     const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
     const boxes = moved.flatMap(({ id: target, box }) => {
       const element = movables.current.get(target)
       return element === undefined ? [] : [{ box: storedBox(framing, target, box), element }]
     })
-    for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
-    const outcome = await commitBoxes(
-      connect,
+    const release = noteBoxes(
       id,
-      boxes,
-      async (kept) => {
-        const opened = await opening
-        const steps = boxes.flatMap(({ box, element }) => {
-          const target = element.id
-          if (!kept.includes(target)) return []
-          const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
-          const shown = shownBox(opened.ok ? opened.register : null, target, file)
-          const before = shown === null ? null : storedBox(framing, target, shown)
-          if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
-            void deck.shown.showEdited(current)
-          const name = before === null ? null : boxName(before, box)
-          return before === null || name === null
-            ? []
-            : [{ name, step: { node: target, before: boxPatch(before), after: boxPatch(box) } }]
-        })
-        const [first] = steps
-        if (first === undefined) return
-        record({
-          name: steps.length > 1 ? "move" : first.name,
-          undoable: { steps: steps.map((each) => each.step) },
-        })
-      },
-      refused,
+      boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
     )
-    settle(outcome)
+    try {
+      const [only] = moved
+      if (moved.length === 1 && only !== undefined && (await placed(only))) return
+      const opening = connect(memoryRemote()).openDeck(id)
+      async function refused(target: ElementId) {
+        store.current.placeBox(target, landedBox(await deviceRegister(id), target))
+      }
+      for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
+      const outcome = await commitBoxes(
+        connect,
+        id,
+        boxes,
+        async (kept) => {
+          const opened = await opening
+          const steps = boxes.flatMap(({ box, element }) => {
+            const target = element.id
+            if (!kept.includes(target)) return []
+            const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
+            const shown = shownBox(opened.ok ? opened.register : null, target, file)
+            const before = shown === null ? null : storedBox(framing, target, shown)
+            if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
+              void deck.shown.showEdited(current)
+            const name = before === null ? null : boxName(before, box)
+            return before === null || name === null
+              ? []
+              : [{ name, step: { node: target, before: boxPatch(before), after: boxPatch(box) } }]
+          })
+          const [first] = steps
+          if (first === undefined) return
+          record({
+            name: steps.length > 1 ? "move" : first.name,
+            undoable: { steps: steps.map((each) => each.step) },
+          })
+        },
+        refused,
+      )
+      settle(outcome)
+    } finally {
+      release()
+    }
   }
 
   function holding<T>(targets: readonly ElementId[], work: () => Promise<T>): Promise<T> {
