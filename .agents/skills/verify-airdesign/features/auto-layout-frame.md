@@ -25,3 +25,9 @@ Preconditions:
 - **Fill, remove, undo.** Fill Solid lands a fills row on the backdrop (`NN-frame-filled`); Remove auto layout keeps both places (`NN-auto-layout-removed`); its Undo, then Undo fill and Undo add auto layout (`NN-wrap-undone`), then Redo.
 - **Reload, export, reimport.** Evidence `auto-layout-frame.pptx` and `NN-reimported`: the frame paints where it was.
 - **States for look.** `panel-frame`.
+
+## Gotchas
+
+- `deckRoutes.open` can lag the status line by a moment: poll it for the `element-group` row, as the journey does.
+- Shift+A guesses the direction from how the layers lie: drag the second shape beside the first for a row, under it for a column.
+- A re-imported deck opens with the Agent panel, so open Design before comparing places with the ones measured beside the Design panel.
