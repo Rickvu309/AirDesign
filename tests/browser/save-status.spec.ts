@@ -1,7 +1,7 @@
 import { expect, type Page, type Request } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -298,6 +298,39 @@ for (const { name, edit, sizeRefusal } of [
     expect(await revision()).toBe(before + (sizeRefusal ? 1 : 2))
   })
 }
+
+test("a deck reopened with an edit still on the device reads Saving until that edit lands", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+  const before = await revision()
+  const committing = (url: URL) => url.pathname === "/decks/commit"
+  await page.route(committing, (route) => route.abort("connectionfailed"))
+  await typeAtEnd(page, "!")
+  await expect(saveStatus(page)).toHaveText(unreached)
+  await page.unroute(committing)
+  let release = () => undefined as void
+  const released = new Promise<void>((resolve) => (release = resolve))
+  await page.route(committing, async (route) => {
+    await released
+    await route.fallback()
+  })
+  await page.reload()
+  await settled(page)
+  await expect(saveStatus(page)).toHaveText(saving)
+  await page.waitForTimeout(1000)
+  await expect(saveStatus(page)).toHaveText(saving)
+  expect(await revision()).toBe(before)
+  release()
+  await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
+  expect(await revision()).toBeGreaterThan(before)
+})
 
 const refusals = [
   {
