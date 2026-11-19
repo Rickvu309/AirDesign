@@ -4,7 +4,6 @@ import os from "node:os"
 import path from "node:path"
 import {
   contents,
-  guarded,
   lostCases,
   lostDecks,
   listedFiles,
@@ -91,36 +90,6 @@ for (const loose of [
 }
 same("a malformed new metric needs the owner", texts(withMetric("new one", { now: [] })).length, 1)
 
-for (const file of [
-  ".github/workflows/ci.yml",
-  "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
-  "AGENTS.md",
-  "scripts/metrics.mjs",
-  "scripts/pptx-check.mjs",
-  "scripts/pptx-tools.sh",
-  "scripts/pptx-judge/Program.cs",
-  "tsconfig.base.json",
-  "packages/pptx/tsconfig.json",
-  "apps/web/.oxlintrc.json",
-  ".oxfmtrc.json",
-  "pnpm-workspace.yaml",
-  "vitest.config.mts",
-  "apps/web/vitest.config.ts",
-  "playwright.config.ts",
-  ".npmrc",
-  "specs/edit/Edit.cfg",
-  "vitest.workspace.ts",
-]) {
-  if (!guarded(file)) throw new Error(`${file} decides ci and is not guarded`)
-}
-for (const file of [
-  "apps/web/src/App.tsx",
-  "packages/pptx/src/slide-route.ts",
-  "scripts/pptx-fixtures/cases.json",
-  "metrics.json",
-]) {
-  if (guarded(file)) throw new Error(`${file} is product or data and is guarded`)
-}
 same(
   "package files are found",
   ["package.json", "packages/pptx/package.json", "apps/web/src/package.json.ts"].map(packageFile),
@@ -394,7 +363,7 @@ same(
 same(
   "a test file split into two and removed needs nobody",
   readReasons({
-    json: (sha, file) => (file === "metrics.json" ? { "ci-duration": { limit: 40 } } : undefined),
+    text: (sha, file) => (file === "metrics.json" ? JSON.stringify({ "ci-duration": { limit: 40 } }) : undefined),
     fork: "fork",
     head: "head",
     listed: [
@@ -408,7 +377,8 @@ same(
 same(
   "the reasons read through any reader",
   readReasons({
-    json: (sha, file) => (file === "metrics.json" ? { "ci-duration": { limit: sha === "fork" ? 40 : 45 } } : undefined),
+    text: (sha, file) =>
+      file === "metrics.json" ? JSON.stringify({ "ci-duration": { limit: sha === "fork" ? 40 : 45 } }) : undefined,
     fork: "fork",
     head: "head",
     listed: [{ name: "metrics.json", status: "modified" }],

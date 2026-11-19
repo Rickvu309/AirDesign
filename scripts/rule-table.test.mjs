@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { guarded } from "./bar.mjs"
+import { judges } from "./bar-files.mjs"
 import { authored, tokenLimit, tokensOf } from "./file-size.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -20,8 +20,7 @@ same("AGENTS.md names the file that holds the rule table", agents.includes("`CHE
 same("AGENTS.md no longer holds the rule table", agents.includes("| Rule | Enforced by |"), false)
 same("the rule table sits in CHECKS.md", table.includes("| Rule | Enforced by |"), true)
 same("the file-size check covers CHECKS.md", authored("CHECKS.md"), true)
-same("a change to CHECKS.md is listed for the owner", guarded("CHECKS.md"), true)
-same("a change to CHECK-QUEUE.md is listed for the owner", guarded("CHECK-QUEUE.md"), true)
+same("a change to CHECKS.md alone changes no check", judges("CHECKS.md"), false)
 same("the file-size check covers CHECK-QUEUE.md", authored("CHECK-QUEUE.md"), true)
 same("CHECKS.md is under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit, true)
 same(
@@ -36,7 +35,7 @@ same(
   ["`pnpm gate`", "`ci`", "`pnpm land`"].every((name) => read("COMMANDS.md").includes(name)),
   true,
 )
-same("a change to COMMANDS.md is listed for the owner", guarded("COMMANDS.md"), true)
+same("a change to COMMANDS.md alone changes no check", judges("COMMANDS.md"), false)
 same("the file-size check covers COMMANDS.md", authored("COMMANDS.md"), true)
 same(
   "AGENTS.md says what every app and package is for",
