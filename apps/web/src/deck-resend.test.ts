@@ -38,7 +38,22 @@ it("sends the pending edits again with no new edit until the server answers", as
   ])
 })
 
-it.each(["kept", "set-aside", "signed-out"] as const)("stops once the server answers %s", async (answer) => {
+it("sends again after kept, since rows still wait and nothing showed AirDesign answered", async () => {
+  const seen: string[] = []
+  const settled: FlushOutcome[] = []
+  const outcome = await resendPending(
+    flushes(["kept", "sent"], seen),
+    (each) => settled.push(each),
+    new AbortController().signal,
+    resting(seen),
+    () => 1,
+  )
+  expect(outcome).toBe("sent")
+  expect(settled).toEqual(["kept", "sent"])
+  expect(seen.filter((step) => step === "flush")).toHaveLength(2)
+})
+
+it.each(["set-aside", "signed-out"] as const)("stops once the server answers %s", async (answer) => {
   const seen: string[] = []
   const settled: FlushOutcome[] = []
   const outcome = await resendPending(

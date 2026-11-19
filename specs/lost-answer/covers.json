@@ -5,7 +5,7 @@
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
       "digest": "f612cbab57b9",
-      "blob": "60a5037aae63cc46c70cc4a81c5519631fd50fa6"
+      "blob": "cefc9cfb911573d982efdbca42f9e9dd056369dc"
     },
     {
       "file": "packages/live/src/device.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/deck-resend.ts",
       "names": ["resendPending"],
-      "digest": "cc5743d8ebdd",
-      "blob": "a9cdf6f5ebbfc0f9eaa8af542084ff21a59c5d2a"
+      "digest": "82c5773f61f3",
+      "blob": "0a26f8c7fd6dd61b4eb2ae6a038e97d9a29797cf"
     },
     {
       "file": "packages/live/src/remote.ts",

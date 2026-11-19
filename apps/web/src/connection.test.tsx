@@ -1,7 +1,7 @@
 import { connect } from "@airdesign/live"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
-import { commitKept } from "./commit-edit"
+import { commitKept, flushPending } from "./commit-edit"
 import { saveStatus, useDeckStatus } from "./editor/use-deck-status"
 import { useNetwork } from "./editor/use-network"
 
@@ -147,12 +147,12 @@ async function settled(work: () => void): Promise<void> {
   })
 }
 
-async function openEditor(): Promise<World> {
+async function openEditor(start: Spec): Promise<World> {
   world.caller = 0
   world.net = true
   world.lane = []
   world.rests = []
-  world.waiting = false
+  world.waiting = start.rows === true
   world.tell = null
   world.status = null
   let open = true
@@ -164,6 +164,10 @@ async function openEditor(): Promise<World> {
     if (world.status === null) throw new Error("the editor did not render")
     return world.status
   }
+  await settled(() => {
+    world.caller = edit
+    void flushPending(connect, deck).then(status().settle)
+  })
   const steps: World["steps"] = {
     GoOffline: () =>
       settled(() => {
@@ -253,10 +257,16 @@ function same(left: Spec, right: Spec): boolean {
   return sorted(left) === sorted(right)
 }
 
-function startOf(): string {
+function startsOf(): string[] {
   const targets = new Set(graph.edges.map((edge) => edge.to))
-  const start = [...graph.states.keys()].find((id) => !targets.has(id))
-  if (start === undefined) throw new Error("no start")
+  const starts = [...graph.states.keys()].filter((id) => !targets.has(id))
+  if (starts.length === 0) throw new Error("no start")
+  return starts
+}
+
+function startOf(rows: boolean): string {
+  const start = startsOf().find((id) => graph.states.get(id)?.rows === rows)
+  if (start === undefined) throw new Error(`no start with rows ${String(rows)}`)
   return start
 }
 
@@ -267,7 +277,9 @@ function outgoingOf(): Map<string, Edge[]> {
 }
 
 async function walked(walk: readonly Edge[], failures: string[], taken: (edge: Edge) => void): Promise<Spec | null> {
-  const world = await openEditor()
+  const first = walk[0]
+  if (first === undefined) return null
+  const world = await openEditor(graph.states.get(first.from) ?? {})
   const trail: string[] = []
   let actual: Spec | null = null
   try {
@@ -295,9 +307,9 @@ async function walked(walk: readonly Edge[], failures: string[], taken: (edge: E
 
 function shortestTo(reached: (v: Spec) => boolean, left: Set<Edge> | null): Edge[] | undefined {
   const outgoing = outgoingOf()
-  const start = startOf()
-  const way = new Map<string, Edge[]>([[start, []]])
-  const queue = [start]
+  const starts = startsOf()
+  const way = new Map<string, Edge[]>(starts.map((start) => [start, []]))
+  const queue = [...starts]
   for (let at = queue.shift(); at !== undefined; at = queue.shift()) {
     const path = way.get(at) ?? []
     if (left === null && reached(graph.states.get(at) ?? {})) return path
@@ -333,9 +345,9 @@ async function replayed(): Promise<{ walks: number; edges: number; failures: str
   return { walks, edges: graph.edges.length - left.size, failures }
 }
 
-function followed(actions: readonly string[]): Edge[] {
+function followed(rows: boolean, actions: readonly string[]): Edge[] {
   const outgoing = outgoingOf()
-  let at = startOf()
+  let at = startOf(rows)
   return actions.map((action) => {
     const edge = (outgoing.get(at) ?? []).find((each) => each.action === action)
     if (edge === undefined) throw new Error(`no ${action} after ${view.state(graph.states.get(at) ?? {})}`)
@@ -385,7 +397,9 @@ it("replays every edge of the connection spec through the editor's network hook,
 
 it("reads Saved once a stopped loop's send carried the rows and the online event's send found none", async () => {
   expect(shortestTo(settledButNotSaved, null)).toBeUndefined()
-  const walk = followed([
+  const walk = followed(false, [
+    "Send",
+    "Answer",
     "ServerDown",
     "EditRow",
     "Send",
@@ -403,4 +417,12 @@ it("reads Saved once a stopped loop's send carried the rows and the online event
   const seen = await walked(walk, failures, () => undefined)
   expect(failures).toEqual([])
   expect(seen?.shown).toBe("saved")
+}, 60_000)
+
+it("keeps one offline notice when the opening send, which carried nothing, answers after an edit made offline", async () => {
+  const walk = followed(false, ["GoOffline", "Send", "EditRow", "Answer"])
+  const failures: string[] = []
+  const seen = await walked(walk, failures, () => undefined)
+  expect(failures).toEqual([])
+  expect(seen).toMatchObject({ net: false, pending: true, offline: true })
 }, 60_000)

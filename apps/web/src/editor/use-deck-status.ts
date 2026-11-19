@@ -48,7 +48,7 @@ export function useDeckStatus(id: string) {
     }
     tellRefusal(outcome)
     if (outcome === "refused" || outcome === "too-large") return
-    setOffline(outcome === "offline")
+    if (outcome !== "kept") setOffline(outcome === "offline")
     setRefusal(outcome === "storage" || outcome === "size" ? outcome : null)
     if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
   }, [])

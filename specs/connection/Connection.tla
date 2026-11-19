@@ -68,8 +68,8 @@ TypeOK ==
   /\ outages \in 0..1
   /\ edits \in 0..2
 
-\* The deck is open and online. Rows from an earlier visit may wait on the device, and the deck's
-\* opening send (useDeckOpen's flushPending) is in the lane.
+\* The deck is open and online. Rows from an earlier visit may wait on the device. The deck's
+\* opening send (useDeckOpen's flushPending) is in the lane either way.
 Init ==
   /\ open = TRUE
   /\ net = TRUE
@@ -77,7 +77,7 @@ Init ==
   /\ rows \in BOOLEAN
   /\ fresh = FALSE
   /\ offline = ~net
-  /\ lane = IF rows THEN Edit ELSE 0
+  /\ lane = Edit
   /\ started = FALSE
   /\ carry = FALSE
   /\ loop = "off"
@@ -125,9 +125,11 @@ ServerUp ==
                  edits>>
 
 \* The person edits: the device writes a row, and its send joins the lane.
-\* A row written while a send is on the wire is not in that send.
+\* A row written while a send is on the wire is not in that send. An edit before the opening send
+\* leaves is the start with a row waiting, so the first edit comes after it left.
 EditRow ==
   /\ open
+  /\ ~(lane = Edit /\ edits = 0 /\ ~started)
   /\ (edits < 1 \/ (edits = 1 /\ started /\ carry /\ flips = 0 /\ outages = 0))
   /\ edits' = edits + 1
   /\ rows' = TRUE
@@ -146,8 +148,9 @@ Send ==
   /\ UNCHANGED <<open, net, up, rows, offline, lane, loop, flips, outages, edits>>
 
 \* Its answer comes and leaves the lane. Its caller settles it, unless the editor closed or the
-\* loop that sent it was stopped. The resend loop ends on any outcome but offline, and rests
-\* before the next try on offline.
+\* loop that sent it was stopped. Kept says rows still wait, not whether the server answered, so
+\* settle leaves offline as it was. The resend loop ends on sent, and rests before the next try
+\* on offline or kept.
 Answer ==
   /\ started
   /\ LET reached == net /\ up
@@ -155,8 +158,8 @@ Answer ==
          outcome == IF carry /\ ~reached THEN "offline" ELSE IF remaining THEN "kept" ELSE "sent"
          caller == First(lane)
          heard == (caller \in {Event, Edit} /\ open) \/ caller = Resend
-         offline2 == IF heard THEN outcome = "offline" ELSE offline
-         loop2 == IF caller = Resend THEN (IF outcome = "offline" THEN "rest" ELSE "off") ELSE loop
+         offline2 == IF heard /\ outcome # "kept" THEN outcome = "offline" ELSE offline
+         loop2 == IF caller = Resend THEN (IF outcome = "sent" THEN "off" ELSE "rest") ELSE loop
          after == Unsent(open, net, offline2, remaining)
      IN /\ rows' = remaining
         /\ fresh' = FALSE
@@ -203,6 +206,11 @@ NoUnreachedWhenAnswered == Settled => Shown \notin {"offline", "unreached"}
 
 \* And it says Saved.
 SavedWhenSettled == Settled => Shown = "saved"
+
+\* The notice shows while rows wait and offline holds. One outage is one notice: while rows
+\* wait in the open editor, only their landing clears offline, so the notice never leaves and
+\* comes back with the same rows waiting.
+OneNoticePerOutage == [][open /\ open' /\ rows /\ rows' /\ offline => offline']_vars
 
 \* Once the editor closed, no resend loop runs and none of its sends is read.
 StopsOnLeave == ~open => loop = "off" /\ ~Has(lane, Resend)
