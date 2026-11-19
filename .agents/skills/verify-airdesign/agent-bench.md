@@ -31,7 +31,7 @@ $V agent-bench publish <run-dir>                                             # s
 
 ## Scoring
 
-Each trial signs in a fresh account, imports the deck, types the prompt into Ask Aira, waits until the run stops (no Stop button and no open turn or tool call for 1 s) or its time runs out (then it presses Stop), and exports through the Export button.
+Each trial signs in a fresh account, imports the deck, waits until the server holds its whole index (so no call is refused for indexing and counted twice), types the prompt into Ask Aira, waits until the run stops (no Stop button and no open turn or tool call for 1 s) or its time runs out (then it presses Stop), and exports through the Export button.
 
 1. Faults: `resolvedSlide` from `tests/browser/resolved-paint.mts` resolves both decks' slides, as `fixture-slides.mts` does, `slideWidths` measures the fonts in the trial's page, and `slideFindings` lists faults (notes do not count).
 2. Untouched: `deckDiff` of original and export. A part outside `may` (the slide's part and its rels; for `"new"` added parts and the deck's list of slides) names the trial failed.
