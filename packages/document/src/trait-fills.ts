@@ -2,6 +2,7 @@ import type { TraitPatch } from "./row.js"
 import { trait } from "./trait-decl.js"
 import {
   alphaOver,
+  fractionWithin,
   angle,
   choice,
   color,
@@ -76,12 +77,25 @@ const focus = record({ l: fraction, t: fraction, r: fraction, b: fraction })
 
 const stop = record({ pos: fraction, color })
 
-export const gradient = record({
-  stops: list(stop, 2, 10),
+const nativeShade = {
+  linear: record({ angle, scaled: flag }),
+  path: record({ kind: choice(["circle", "rect", "shape"]), focus }),
+}
+
+const stops = list(stop, 2, 10)
+
+export const gradient = record({ shade: union(nativeShade), stops, rotateWithShape: flag })
+
+const center = { x: fraction, y: fraction }
+const radius = fractionWithin(1, 100_000)
+
+const editorGradient = record({
   shade: union({
-    linear: record({ angle, scaled: flag }),
-    path: record({ kind: choice(["circle", "rect", "shape"]), focus }),
+    ...nativeShade,
+    angular: record({ angle, ...center }),
+    diamond: record({ ...center, width: radius, height: radius }),
   }),
+  stops,
   rotateWithShape: flag,
 })
 
@@ -93,15 +107,17 @@ export const recolors = union({ none: mark, grayscale: mark, duotone: record({ d
 
 export const fillModes = ["fill", "fit", "crop", "tile", "stretch"] as const
 
-const shownPaint = union({ ...fillCases, image: mark, group: mark }, "solid")
+const layerFills = { ...fillCases, gradient: editorGradient }
 
-const slotPaint = union({ ...fillCases, image: mark, group: mark, hidden: shownPaint }, "solid")
+const shownPaint = union({ ...layerFills, image: mark, group: mark }, "solid")
+
+const slotPaint = union({ ...layerFills, image: mark, group: mark, hidden: shownPaint }, "solid")
 
 export const overlay = union({ none: mark, solid: color, gradient }, "solid")
 
 export type Overlay = ValueOf<typeof overlay>
 
-export const paint = union({ ...fillCases, image: pictureSource, group: mark }, "solid")
+export const paint = union({ ...layerFills, image: pictureSource, group: mark }, "solid")
 
 export type Paint = ValueOf<typeof paint>
 
@@ -115,7 +131,7 @@ export type PaintSlot = (typeof paintSlots)[number]
 
 export const fills = trait(
   "whole",
-  { version: 13, shape: "1d69c93e" },
+  { version: 14, shape: "83fa7d3e" },
   {
     p0: slotPaint,
     p1: slotPaint,

@@ -1,3 +1,4 @@
+import { editorGradientAttrs } from "./editor-gradient.js"
 import { assetIcon, assetMedia } from "@airdesign/document"
 import { partDeclares } from "./blip-edit.js"
 import { withChild, slotRoot, type Slot } from "./slot-edit.js"
@@ -23,11 +24,15 @@ function flagText(value: boolean): string {
 
 function gradientXml(fill: Gradient): string {
   const stops = fill.stops.map((stop) => `<a:gs pos="${stop.pos}">${colorXml(stop.color)}</a:gs>`).join("")
-  const shade =
-    "linear" in fill.shade
-      ? `<a:lin ang="${fill.shade.linear.angle}" scaled="${flagText(fill.shade.linear.scaled)}"/>`
-      : `<a:path path="${fill.shade.path.kind}"><a:fillToRect l="${fill.shade.path.focus.l}" t="${fill.shade.path.focus.t}" r="${fill.shade.path.focus.r}" b="${fill.shade.path.focus.b}"/></a:path>`
-  return `<a:gradFill rotWithShape="${flagText(fill.rotateWithShape)}"><a:gsLst>${stops}</a:gsLst>${shade}</a:gradFill>`
+  const { shade } = fill
+  const custom = "angular" in shade || "diamond" in shade ? shade : null
+  const mode =
+    "linear" in shade
+      ? `<a:lin ang="${shade.linear.angle}" scaled="${flagText(shade.linear.scaled)}"/>`
+      : "path" in shade
+        ? `<a:path path="${shade.path.kind}"><a:fillToRect l="${shade.path.focus.l}" t="${shade.path.focus.t}" r="${shade.path.focus.r}" b="${shade.path.focus.b}"/></a:path>`
+        : '<a:lin ang="0" scaled="0"/>'
+  return `<a:gradFill rotWithShape="${flagText(fill.rotateWithShape)}"${custom === null ? "" : editorGradientAttrs(custom)}><a:gsLst>${stops}</a:gsLst>${mode}</a:gradFill>`
 }
 
 function keptGradient(xml: string, previous: Uint8Array | null): string {

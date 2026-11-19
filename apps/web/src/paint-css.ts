@@ -2,6 +2,8 @@ import type { PaintColor, PaintElement, PaintFill } from "@airdesign/pptx"
 import { unshownFill, type CanvasOutline } from "@airdesign/render"
 import { pictureLayer, type PictureImage, type PictureSource } from "@/picture-fill"
 
+import { diamondImage } from "@/diamond-gradient"
+
 const quarterTurn = 90
 
 export function visibleFill(fill: PaintFill | null): boolean {
@@ -20,7 +22,13 @@ export function cssColor(color: PaintColor): string {
 }
 
 export function cssGradient(fill: Extract<PaintFill, { type: "gradient" }>): string {
-  const stops = fill.stops.map((stop) => `${cssColor(stop.color)} ${stop.position * 100}%`).join(", ")
+  const colors = fill.stops.map((stop) => ({ position: stop.position, color: cssColor(stop.color) }))
+  if (fill.editor !== undefined && "diamond" in fill.editor) return diamondImage(fill.editor.diamond, colors)
+  const stops = colors.map((stop) => `${stop.color} ${stop.position * 100}%`).join(", ")
+  if (fill.editor !== undefined && "angular" in fill.editor) {
+    const { angle, x, y } = fill.editor.angular
+    return `conic-gradient(from ${angle / 60000}deg at ${x / 1000}% ${y / 1000}%, ${stops})`
+  }
   return fill.angle === null ? `radial-gradient(${stops})` : `linear-gradient(${fill.angle + quarterTurn}deg, ${stops})`
 }
 

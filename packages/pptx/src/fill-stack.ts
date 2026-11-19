@@ -46,7 +46,7 @@ export function stackXml(paints: readonly SlotFill[], bake: boolean): string {
 
 function entryOf(element: MarkupElement, children: ReturnType<typeof markupChildren>): SlotFill | null {
   if (element.kind === "adf:image") return { image: true }
-  if (element.kind !== "adf:hidden") return fillValueOf({ element, children }, null)
+  if (element.kind !== "adf:hidden") return fillValueOf({ element, children }, null, true)
   const inner = children[element.index]?.[0]
   const shown = inner === undefined ? null : entryOf(inner, children)
   return shown === null || "hidden" in shown ? null : ({ hidden: shown } as SlotFill)

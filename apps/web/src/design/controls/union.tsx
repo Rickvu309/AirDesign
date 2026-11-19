@@ -31,6 +31,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
   }
 
   const shapeFill = control.field === "paint" && control.trait === "fills" && control.label !== fillCopy.box
+  const gradientType = control.field.endsWith(".gradient.shade")
   const names = Object.keys(cases).filter((name) => !shapeFill || name !== "pattern")
 
   return (
@@ -57,7 +58,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
           {control.label}
         </span>
       )}
-      {names.length <= 1 ? null : control.look.form === "list" ? (
+      {names.length <= 1 ? null : gradientType || control.look.form === "list" ? (
         <UnionList
           label={label}
           names={names}
@@ -175,6 +176,13 @@ export function unionValue(control: ControlProps["control"], palette: ControlPro
   const desc = control.desc.kind === "union" ? control.desc.cases[name] : undefined
   if (desc === undefined) return undefined
   if (desc.kind === "mark") return { [name]: true }
+  if (control.field.endsWith(".gradient.shade")) {
+    const center = { x: 50_000, y: 50_000 }
+    if (name === "path")
+      return { path: { kind: "circle", focus: { l: center.x, t: center.y, r: center.x, b: center.y } } }
+    if (name === "angular") return { angular: { ...center, angle: 0 } }
+    if (name === "diamond") return { diamond: { ...center, width: center.x, height: center.y } }
+  }
   const accent = palette.templateColors.find((swatch) => swatch.scheme === "accent1")
   const color: Color = firstColor(heldOf(control)) ?? { scheme: accent?.scheme ?? "accent1" }
   return {

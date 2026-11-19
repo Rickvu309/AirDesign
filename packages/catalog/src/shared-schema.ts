@@ -1,7 +1,5 @@
 type Schema = Readonly<Record<string, unknown>>
 
-const smallest = 120
-
 function plain(value: unknown): value is Schema {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
@@ -9,8 +7,13 @@ function plain(value: unknown): value is Schema {
 type Use = { count: number; readonly keys: Map<string, number>; readonly first: Schema }
 type Group = Use & { readonly worded: Map<string, Use> }
 type Seen = Map<string, Group>
-type Shared = { readonly name: string; readonly body: Schema; readonly worded: boolean }
-type Candidate = Shared & { readonly key: string }
+type Candidate = {
+  readonly key: string
+  readonly name: string
+  readonly body: Schema
+  readonly worded: boolean
+  readonly saved: number
+}
 
 function bare(value: Schema): string {
   const { description: _description, ...body } = value
@@ -49,9 +52,17 @@ function commonKey(keys: ReadonlyMap<string, number>): string {
   return [...keys].sort(([left, many], [right, more]) => more - many || (left < right ? -1 : 1))[0]?.[0] ?? "shared"
 }
 
+function saving(use: Use, body: Schema, name: string): number {
+  const size = JSON.stringify(body).length
+  const reference = JSON.stringify({ $ref: `#/$defs/${name}` }).length
+  return use.count * (size - reference) - size - name.length - 3
+}
+
 function candidate(key: string, use: Use, body: Schema, worded: boolean): readonly Candidate[] {
-  if (use.count < 2 || JSON.stringify(body).length < smallest) return []
-  return [{ key, name: commonKey(use.keys), body, worded }]
+  if (use.count < 2) return []
+  const name = commonKey(use.keys)
+  const saved = saving(use, body, name)
+  return saved > 0 ? [{ key, name, body, worded, saved }] : []
 }
 
 function candidates(text: string, group: Group): readonly Candidate[] {
@@ -61,44 +72,50 @@ function candidates(text: string, group: Group): readonly Candidate[] {
   return [...group.worded].flatMap(([whole, use]) => candidate(`whole ${whole}`, use, use.first, true))
 }
 
-function named(seen: Seen, held: readonly string[]): Map<string, Shared> {
-  const names = new Map<string, Shared>()
-  const taken = new Set<string>(held)
-  const shared = [...seen]
+function best(seen: Seen): Candidate | undefined {
+  return [...seen]
     .flatMap(([text, group]) => candidates(text, group))
-    .sort((left, right) => JSON.stringify(right.body).length - JSON.stringify(left.body).length)
-  for (const { key, name, body, worded } of shared) {
-    const base = /^[A-Za-z][A-Za-z0-9]*$/.test(name) ? name : "shared"
-    let chosen = base
-    for (let copy = 2; taken.has(chosen); copy += 1) chosen = `${base}${String(copy)}`
-    taken.add(chosen)
-    names.set(key, { name: chosen, body, worded })
-  }
-  return names
+    .sort((left, right) => right.saved - left.saved)[0]
 }
 
-function referenced(value: unknown, names: ReadonlyMap<string, Shared>, inside: string | null): unknown {
-  if (Array.isArray(value)) return value.map((item) => referenced(item, names, inside))
+function freeName(name: string, taken: Schema): string {
+  const base = /^[A-Za-z][A-Za-z0-9]*$/.test(name) ? name : "shared"
+  let chosen = base
+  for (let copy = 2; Object.hasOwn(taken, chosen); copy += 1) chosen = `${base}${String(copy)}`
+  return chosen
+}
+
+function referenced(value: unknown, found: Candidate, inside: boolean): unknown {
+  if (Array.isArray(value)) return value.map((item) => referenced(item, found, false))
   if (!plain(value)) return value
-  const found = names.get(`bare ${bare(value)}`) ?? names.get(`whole ${JSON.stringify(value)}`)
-  if (found !== undefined && found.name !== inside) {
+  const matches = found.key === `bare ${bare(value)}` || found.key === `whole ${JSON.stringify(value)}`
+  if (matches && !inside) {
     const words = found.worded || value.description === undefined ? {} : { description: value.description }
     return { $ref: `#/$defs/${found.name}`, ...words }
   }
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, referenced(item, names, inside)]))
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, referenced(item, found, false)]))
 }
 
-export function sharedSchemas(schema: Schema): Schema {
+function sharedOnce(schema: Schema): Schema | null {
   const { $defs: given, ...body } = schema
   const held: Schema = plain(given) ? given : {}
   const seen: Seen = new Map()
   counted(body, seen, "shared")
-  const names = named(seen, Object.keys(held))
-  if (names.size === 0) return schema
-  const defs = Object.fromEntries(
-    [...names.values()].map((found) => [found.name, referenced(found.body, names, found.name)]),
-  )
-  return { ...(referenced(body, names, null) as Schema), $defs: { ...held, ...defs } }
+  for (const [name, def] of Object.entries(held)) counted(def, seen, name)
+  const found = best(seen)
+  if (found === undefined) return null
+  const named = { ...found, name: freeName(found.name, held) }
+  const defs = Object.fromEntries(Object.entries(held).map(([name, def]) => [name, referenced(def, named, false)]))
+  return {
+    ...(referenced(body, named, false) as Schema),
+    $defs: { ...defs, [named.name]: referenced(named.body, named, true) },
+  }
+}
+
+export function sharedSchemas(schema: Schema): Schema {
+  let shared = schema
+  for (let next = sharedOnce(shared); next !== null; next = sharedOnce(shared)) shared = next
+  return shared
 }
 
 const local = "#/$defs/"

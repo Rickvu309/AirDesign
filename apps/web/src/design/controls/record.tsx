@@ -1,5 +1,7 @@
+import { Fragment } from "react"
 import { PaddingControl } from "@/design/controls/padding"
-import type { Desc } from "@airdesign/document"
+import { GradientHandles } from "@/design/controls/gradient-handles"
+import type { Desc, Paint } from "@airdesign/document"
 import { arrange } from "@/design/panel-arrangement"
 import { partControl, type ControlProps } from "@/design/panel"
 
@@ -23,6 +25,10 @@ export function RecordControl(props: ControlProps) {
     fields.map(([name, desc]) => partControl(control, name, desc, held[name])),
   )
   const titled = control.look.name.show === "above"
+  const gradient =
+    control.field.endsWith(".gradient") && "shade" in held && "stops" in held
+      ? (held as Extract<Paint, { gradient: unknown }>["gradient"])
+      : null
   const part = (each: typeof control) => {
     const name = each.field.slice(control.field.length + 1)
     return inner?.({
@@ -38,15 +44,16 @@ export function RecordControl(props: ControlProps) {
         <span className="text-[length:var(--type-caption)] font-medium text-foreground">{control.label}</span>
       ) : null}
       {strips.map((strip) => (
-        <div
-          key={strip.map((each) => each.field).join(" ")}
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${strip.length}, minmax(0, 1fr))` }}
-        >
-          {strip.map((each) => (
-            <div key={each.field}>{part(each)}</div>
-          ))}
-        </div>
+        <Fragment key={strip.map((each) => each.field).join(" ")}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${strip.length}, minmax(0, 1fr))` }}>
+            {strip.map((each) => (
+              <div key={each.field}>{part(each)}</div>
+            ))}
+          </div>
+          {gradient !== null && strip.some((each) => each.field === `${control.field}.shade`) ? (
+            <GradientHandles gradient={gradient} palette={palette} onChange={onChange} />
+          ) : null}
+        </Fragment>
       ))}
     </div>
   )

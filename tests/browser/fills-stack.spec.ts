@@ -133,3 +133,47 @@ test("a text box with two paints exports as one image fill and opens again with 
   await page.keyboard.type(" again")
   await expect(reopened).toContainText(`${words.trim()} again`)
 })
+
+const sweep = [
+  { pos: 0, color: { rgb: "1F4E79" } },
+  { pos: 100_000, color: { rgb: "F4B183" } },
+] as const
+
+for (const [named, shade] of [
+  ["an angular", { angular: { angle: 5_400_000, x: 30_000, y: 60_000 } }],
+  ["a diamond", { diamond: { x: 40_000, y: 50_000, width: 50_000, height: 40_000 } }],
+] as const) {
+  const kind = Object.keys(shade)[0] ?? ""
+  test(`${named} gradient bakes into the shape's one image fill as the canvas paints it @export`, async ({
+    page,
+    context,
+    stack,
+  }, testInfo) => {
+    test.setTimeout(90_000)
+    const { slideDiff } = await import("../../scripts/slide-diff.mjs")
+    const cookie = await signedIn(page, context, stack)
+    const deck = await imported(page, join(fixtures, "shapes-added.pptx"))
+    await stacked(stack, cookie, deck, "4", {
+      p0: { set: { gradient: { stops: sweep, shade, rotateWithShape: true } } },
+    })
+    await page.reload()
+    await settled(page)
+    const square = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
+    const painted = await exactShot(square)
+    const file = testInfo.outputPath(`${kind}.pptx`)
+    await savedExport(page, file)
+    const parts = await partsOf(file)
+    const slide = parts.get(slidePart)?.toString("utf8") ?? ""
+    expect(slide).not.toContain("airdesign.app/drawing/gradient")
+    expect(slide).not.toContain("<a:gradFill")
+    const embed = /<a:blipFill rotWithShape="1"><a:blip r:embed="(rId\d+)"\/>/.exec(slide)?.[1]
+    const rels = parts.get("ppt/slides/_rels/slide1.xml.rels")?.toString("utf8") ?? ""
+    const target = new RegExp(`Id="${embed ?? ""}"[^>]*Target="\\.\\./media/([^"]+)"`).exec(rels)?.[1]
+    const baked = PNG.sync.read(parts.get(`ppt/media/${target ?? ""}`) ?? Buffer.alloc(0))
+    await writeFile(testInfo.outputPath("canvas.png"), PNG.sync.write(painted))
+    await writeFile(testInfo.outputPath("baked.png"), PNG.sync.write(baked))
+    const result = slideDiff(inner(baked), inner(painted))
+    testInfo.annotations.push({ type: "slide-diff", description: JSON.stringify(result) })
+    expect(result.match, JSON.stringify(result)).toBe(true)
+  })
+}

@@ -1,3 +1,4 @@
+import { editorShade } from "./editor-gradient.js"
 import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintFill, type PaintGradientPath, type PaintPalette } from "./paint-color.js"
 import type { MarkupChildren } from "./text-value-route.js"
@@ -78,5 +79,12 @@ export const paintFill = (
   const shade = paintChild(children, fill, "a:path")
   const path = shade === undefined ? null : (paintGradientPath(children, shade) ?? null)
   if (shade !== undefined && path === null) return null
-  return { type: "gradient", stops, angle: angle === null ? null : Number(angle) / 60000, path }
+  const editor = editorShade(fill)
+  return {
+    type: "gradient",
+    stops,
+    angle: angle === null ? null : Number(angle) / 60000,
+    path,
+    ...(editor === null ? {} : { editor }),
+  }
 }

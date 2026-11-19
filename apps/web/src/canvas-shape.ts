@@ -102,7 +102,7 @@ export function geometryOf(row: PaintElement) {
   if (row.geometry === null) return undefined
   const fill = row.fill
   const gradient =
-    fill?.type !== "gradient" || row.image !== null
+    fill?.type !== "gradient" || fill.editor !== undefined || row.image !== null
       ? undefined
       : {
           angle: fill.angle,
