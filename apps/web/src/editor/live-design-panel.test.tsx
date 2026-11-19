@@ -14,7 +14,7 @@ import {
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement, useState } from "react"
 import { designCopy } from "@/copy/design-copy"
-import { formatCopy } from "@/copy/format-copy"
+import { colorNameCopy } from "@/copy/color-name-copy"
 import { fillCopy } from "@/copy/fill-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { toast } from "@/components/ui/toast"
@@ -265,7 +265,7 @@ it("shows Select matching layers only when the layer has matches, and Adjust ton
 
 it("lists a table's inherited text color when its canvas value is plain text", async () => {
   const panel = await slidePanel("table-added.pptx", true)
-  expect(panel.host.querySelector("[data-selection-colors]")?.textContent).toContain(formatCopy.colors.dk1)
+  expect(panel.host.querySelector("[data-selection-colors]")?.textContent).toContain(colorNameCopy.black)
   await panel.close()
 })
 
@@ -299,7 +299,7 @@ it("shows a slide's background and template style once each, with no section or 
   expect(text).not.toContain("not available")
   expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
-  for (const name of ["Dark 1", "Accent 1", "Accent 6"])
+  for (const name of [colorNameCopy.black, colorNameCopy.blue, colorNameCopy.teal])
     expect(window.document.querySelector(`[data-template-style-dialog] button[aria-label="${name}"]`)).not.toBeNull()
   await slide.close()
 }, 20_000)

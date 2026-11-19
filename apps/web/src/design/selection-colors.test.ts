@@ -1,4 +1,4 @@
-import { formatCopy } from "@/copy/format-copy"
+import { namedByColor } from "@/design/color-names"
 import { describe, expect, it } from "vitest"
 import { elementId } from "@airdesign/document"
 import { selectionColors, replaceSelectionColor } from "./selection-colors"
@@ -144,7 +144,7 @@ describe("selection colors", () => {
 
   it("deduplicates template colors and rgb colors that paint alike and replaces only the chosen scope", () => {
     const palette = {
-      templateColors: [{ scheme: "accent1" as const, css: `#${"000000"}`, name: formatCopy.colors.accent1 }],
+      templateColors: namedByColor([{ scheme: "accent1" as const, css: `#${"000000"}` }]),
       deck: [],
     }
     const sources = [

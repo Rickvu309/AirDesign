@@ -2,6 +2,7 @@ import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { colorWords } from "./color-words"
 import { exportFromDialog } from "./export-dialog"
 
 type ZipEntry = {
@@ -94,7 +95,8 @@ test("a background stored as a theme colour with lumMod paints darker and export
     .locator("[data-design-panel]")
     .getByRole("button", { name: /^Background color/ })
     .click()
-  await page.locator("[data-color-picker]").getByRole("button", { name: "Dark 2", exact: true }).click()
+  const names = await colorWords("blank.pptx")
+  await page.locator("[data-color-picker]").getByRole("button", { name: names.dk2, exact: true }).click()
   await page.keyboard.press("Escape")
   await painted(page, darkTwo)
   expect(await storeColor(page, darker)).toBe(1)

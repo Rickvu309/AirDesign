@@ -2,11 +2,11 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
-import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { borderCopy } from "../../apps/web/src/copy/border-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { colorPickerExport, colorPickerWritten } from "../../scripts/pptx-cases/color-picker.mjs"
+import { colorWords } from "./color-words"
 import { designing, openDeck, picker, settled, shownColor, typeColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
@@ -16,8 +16,6 @@ const slidePart = "ppt/slides/slide1.xml"
 const deckParts = ["[Content_Types].xml", "ppt/_rels/presentation.xml.rels", "ppt/presentation.xml"]
 const hash = "#"
 const navy = "rgb(31, 78, 121)"
-const tint = colorCopy.lighter(formatCopy.colors.accent1, 40)
-const darker = colorCopy.darker(formatCopy.colors.accent2, 50)
 
 async function nudge(page: Page, swatch: Locator): Promise<void> {
   const at = (await swatch.getAttribute("data-at")) ?? "0,0"
@@ -43,17 +41,19 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
+  const names = await colorWords("shapes-added.pptx")
+  const tint = colorCopy.lighter(names.accent1, 40)
   const rectangle = shapeAt(page, "4")
   const oval = shapeAt(page, "5")
   const accent = await filled(oval)
 
   let panel = await fillPanel(page, oval)
   let field = panel.getByRole("group", { name: "Color", exact: true })
-  await expect(shownColor(field)).toHaveText("Accent 1")
+  await expect(shownColor(field)).toHaveText(names.accent1)
   await typeColor(page, shownColor(field), "1f4e79")
   await expect.poll(() => filled(oval)).toBe(navy)
   await expect(shownColor(field)).toHaveText(`${hash}1F4E79`)
-  await undone(page, oval, field, accent, "Accent 1")
+  await undone(page, oval, field, accent, names.accent1)
   await expect.poll(() => filled(oval)).toBe(navy)
 
   panel = await fillPanel(page, rectangle)
@@ -67,7 +67,7 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   await expect(shownColor(field)).toBeFocused()
   await expect.poll(() => filled(rectangle)).toBe(navy)
   await expect(shownColor(field)).toHaveText(`${hash}1F4E79`)
-  await undone(page, rectangle, field, accent, "Accent 1")
+  await undone(page, rectangle, field, accent, names.accent1)
   await expect.poll(() => filled(rectangle)).toBe(navy)
 
   await shownColor(field).click()
@@ -113,6 +113,8 @@ for (const opacity of ["100", "10"]) {
     page,
   }) => {
     await openDeck(page, "clean.pptx")
+    const names = await colorWords("clean.pptx")
+    const darker = colorCopy.darker(names.accent2, 50)
     const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
     const panel = await designing(page, editor)
     const opacityField = panel.getByRole("textbox", { name: opacityCopy.label, exact: true })
@@ -131,7 +133,7 @@ for (const opacity of ["100", "10"]) {
       .first()
       .evaluate((node) => getComputedStyle(node).color)
     const field = panel.getByRole("group", { name: "Text color" })
-    await expect(shownColor(field)).toHaveText(formatCopy.colors.dk1)
+    await expect(shownColor(field)).toHaveText(names.dk1)
     await shownColor(field).click()
     await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
     await picker(page).getByRole("button", { name: colorCopy.add, exact: true }).click()
@@ -154,15 +156,16 @@ for (const opacity of ["100", "10"]) {
 
 test("arrow keys move through the template colours and Escape returns focus to the row", async ({ page }) => {
   await openDeck(page, "shapes-added.pptx")
+  const names = await colorWords("shapes-added.pptx")
   const panel = await fillPanel(page, shapeAt(page, "5"))
   const field = panel.getByRole("group", { name: borderCopy.color, exact: true })
   const row = shownColor(field)
   await row.click()
-  const accent = picker(page).getByRole("button", { name: formatCopy.colors.accent2, exact: true })
+  const accent = picker(page).getByRole("button", { name: names.accent2, exact: true })
   await nudge(page, accent)
   await page.keyboard.press(slideListCopy.openKey)
   await page.keyboard.press("Escape")
   await expect(picker(page)).toHaveCount(0)
   await expect(row).toBeFocused()
-  await expect(row).toHaveText(formatCopy.colors.accent2)
+  await expect(row).toHaveText(names.accent2)
 })

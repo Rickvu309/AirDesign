@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
-import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy"
+import { colorWords } from "./color-words"
 import { clean, entry, openFile, openGrid, manySlides } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
@@ -117,13 +117,14 @@ test("touch never leaves a hover halo", async ({ browser }) => {
 })
 
 test("inside numbers stay readable over a dark slide", async ({ page }) => {
+  const names = await colorWords("clean.pptx")
   await openFile(page, clean)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page
     .locator("[data-design-panel]")
     .getByRole("button", { name: /^Background color/ })
     .click()
-  await page.locator("[data-color-picker]").getByRole("button", { name: formatCopy.colors.dk1, exact: true }).click()
+  await page.locator("[data-color-picker]").getByRole("button", { name: names.dk1, exact: true }).click()
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await openGrid(page)

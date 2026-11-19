@@ -1,6 +1,6 @@
 import { elementId, writeTextValue, type ScopedElement } from "@airdesign/document"
-import { formatCopy } from "@/copy/format-copy"
 import type { Palette } from "@/design/color-choices"
+import { namedByColor } from "@/design/color-names"
 import { panelOf } from "@/design/panel"
 import { haldenMist, haldenTeal, swatchNavy, swatchWhite } from "@/editor/design-panel-art"
 import { ElementDesign } from "@/editor/design-panel"
@@ -19,11 +19,12 @@ const sampleColors = {
 } as const
 
 const palette: Palette = {
-  templateColors: Object.entries(sampleColors).map(([scheme, css]) => ({
-    scheme: scheme as keyof typeof sampleColors,
-    css,
-    name: formatCopy.colors[scheme as keyof typeof sampleColors],
-  })),
+  templateColors: namedByColor(
+    Object.entries(sampleColors).map(([scheme, css]) => ({
+      scheme: scheme as keyof typeof sampleColors,
+      css,
+    })),
+  ),
   deck: [],
 }
 

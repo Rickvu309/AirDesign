@@ -2,6 +2,7 @@ import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { colorWords } from "./color-words"
 import { exportFromDialog } from "./export-dialog"
 
 type ZipEntry = {
@@ -73,15 +74,16 @@ test("a person sets a slide's background colour, undoes and redoes it, and the e
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const panel = page.locator("[data-design-panel]")
   await expect(panel.getByText("Slide 1", { exact: true })).toBeVisible()
-  await expect(background(page)).toHaveText("Light 1")
+  const names = await colorWords("blank.pptx")
+  await expect(background(page)).toHaveText(names.lt1)
   await expect(panel.locator("[data-template-style]")).toBeVisible()
   await expect(panel.getByRole("button", { name: /^Picture/ })).toHaveCount(0)
-  await pick(page, "Dark 2")
+  await pick(page, names.dk2)
   await painted(page, darkTwo)
-  await expect(background(page)).toHaveText("Dark 2")
+  await expect(background(page)).toHaveText(names.dk2)
   await page.getByRole("button", { name: "Undo background color", exact: true }).click()
   await painted(page, white)
-  await expect(background(page)).toHaveText("Light 1")
+  await expect(background(page)).toHaveText(names.lt1)
   await page.getByRole("button", { name: "Redo background color", exact: true }).click()
   await painted(page, darkTwo)
   await page.reload()

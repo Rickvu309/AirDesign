@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { storedValues } from "./device-store"
+import { toolbarWords } from "./color-words"
 import { savedExport } from "./export-dialog.ts"
 import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
 
@@ -71,6 +72,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
   page,
 }, testInfo) => {
   const download = testInfo.outputPath("exported-text-format.pptx")
+  const names = await toolbarWords("clean.pptx")
   await open(page, fixture)
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
   await editor.click()
@@ -85,7 +87,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
   await expect(word).toHaveAttribute("data-size", "3300")
   await expect(editor).toBeFocused()
   await page.getByRole("button", { name: "Text color" }).click()
-  await page.locator("[data-color-picker]").getByRole("button", { name: "Accent 2", exact: true }).click()
+  await page.locator("[data-color-picker]").getByRole("button", { name: names.accent2, exact: true }).click()
   await expect(word).toHaveAttribute("data-color", "scheme:accent2")
   await page.getByRole("radio", { name: "Align center" }).click()
   await expect(page.getByRole("radio", { name: "Align center" })).toHaveAttribute("aria-checked", "true")
@@ -127,6 +129,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
 })
 
 test("the text colour menu keeps the text box chosen while it is open and closes on a pick", async ({ page }) => {
+  const names = await toolbarWords("clean.pptx")
   await open(page, fixture)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
@@ -143,7 +146,7 @@ test("the text colour menu keeps the text box chosen while it is open and closes
   await expect(picker).toBeVisible()
   await expect(panel).toBeVisible()
   await expect(frame).toHaveCount(1)
-  await picker.getByRole("button", { name: "Accent 2", exact: true }).click()
+  await picker.getByRole("button", { name: names.accent2, exact: true }).click()
   await expect(picker).toHaveCount(0)
   await expect(editor.locator("[data-color='scheme:accent2']")).toHaveText("world")
   await expect(editor).toBeFocused()

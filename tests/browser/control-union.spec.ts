@@ -1,5 +1,6 @@
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { expect, test } from "@playwright/test"
+import { colorWords } from "./color-words"
 import { openDeck, settled, setPanelMode } from "./design-panel"
 import { boxFillPanel, filled, shapeAt } from "./shape-fills"
 
@@ -9,13 +10,14 @@ test("a union picks one case of a field, shows the pick and its own controls, an
   page,
 }) => {
   await openDeck(page, "clean.pptx")
+  const names = await colorWords("clean.pptx")
   const shape = shapeAt(page, "2")
   const own = await filled(shape)
   const panel = await boxFillPanel(page, shape)
   const kinds = panel.getByRole("group", { name: fillCopy.box, exact: true })
   const kind = (name: string) => kinds.getByRole("button", { name, exact: true })
   await expect(kind(fillWords.solid)).toHaveAttribute("aria-pressed", "true")
-  await expect(panel.getByRole("group", { name: "Color", exact: true }).getByRole("button")).toHaveText("Accent 1")
+  await expect(panel.getByRole("group", { name: "Color", exact: true }).getByRole("button")).toHaveText(names.accent1)
   await kind("None").click()
   await expect.poll(() => filled(shape)).toBe("rgba(0, 0, 0, 0)")
   await expect(kind("None")).toHaveAttribute("aria-pressed", "true")

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { colorCopy } from "@/copy/color-copy"
+import { colorNameCopy } from "@/copy/color-name-copy"
 import {
   deckChoices,
   hexOf,
@@ -13,17 +14,18 @@ import {
   typedColor,
   type Palette,
 } from "@/design/color-choices"
+import { namedByColor } from "@/design/color-names"
 
 const hash = "#"
 
-const templateColors = [
-  { scheme: "dk1", css: "000000", name: "Dark 1" },
-  { scheme: "lt1", css: "FFFFFF", name: "Light 1" },
-  { scheme: "dk2", css: "000000", name: "Dark 2" },
-  { scheme: "lt2", css: "E7E6E6", name: "Light 2" },
-  { scheme: "accent1", css: "4472C4", name: "Accent 1" },
-  { scheme: "accent2", css: "1A1A1A", name: "Accent 2" },
-] as const
+const templateColors = namedByColor([
+  { scheme: "dk1" as const, css: "000000" },
+  { scheme: "lt1" as const, css: "FFFFFF" },
+  { scheme: "dk2" as const, css: "000000" },
+  { scheme: "lt2" as const, css: "E7E6E6" },
+  { scheme: "accent1" as const, css: "4472C4" },
+  { scheme: "accent2" as const, css: "1A1A1A" },
+])
 
 const palette: Palette = { templateColors, deck: ["C00000", "4472C4", "1F4E79"] }
 
@@ -79,13 +81,14 @@ describe("PowerPoint's tint and shade rows", () => {
 describe("the template colors a person picks from", () => {
   it("keeps equal-looking slots and paints their shades as the canvas does", () => {
     const columns = templateColorColumns(templateColors)
+    expect(columns.map((column) => column.swatch.name)).toEqual(templateColors.map((swatch) => swatch.name))
     expect(columns.map((column) => column.swatch.name)).toEqual([
-      "Dark 1",
-      "Light 1",
-      "Dark 2",
-      "Light 2",
-      "Accent 1",
-      "Accent 2",
+      colorNameCopy.black,
+      colorNameCopy.white,
+      colorNameCopy.numbered(colorNameCopy.black, 2),
+      colorNameCopy.lightGrey,
+      colorNameCopy.blue,
+      colorNameCopy.numbered(colorNameCopy.black, 3),
     ])
     const accent = columns[4]
     expect(accent?.swatch.color).toEqual({ scheme: "accent1" })
@@ -98,7 +101,7 @@ describe("the template colors a person picks from", () => {
         ],
       },
       css: `${hash}8FAADC`,
-      name: colorCopy.lighter("Accent 1", 40),
+      name: colorCopy.lighter(colorNameCopy.blue, 40),
     })
   })
 
@@ -135,12 +138,12 @@ describe("the template colors a person picks from", () => {
     expect(matches({ scheme: "dk2" }, dark2)).toBe(false)
     expect(matches({ scheme: "lt1" }, { scheme: "bg1" })).toBe(true)
     expect(matches({ scheme: "lt2" }, { scheme: "bg2" })).toBe(true)
-    expect(shownName({ scheme: "dk2" }, templateColors)).toBe("Dark 2")
+    expect(shownName({ scheme: "dk2" }, templateColors)).toBe(colorNameCopy.numbered(colorNameCopy.black, 2))
     const changed = templateColors.map((swatch) => (swatch.scheme === "dk2" ? { ...swatch, css: "4472C4" } : swatch))
     expect(shownHex({ scheme: "dk2" }, templateColors)).toBe("000000")
     expect(shownHex({ scheme: "dk2" }, changed)).toBe("4472C4")
     expect(shownHex({ scheme: "dk1" }, changed)).toBe("000000")
-    expect(shownName({ scheme: "dk2" }, changed)).toBe("Dark 2")
+    expect(shownName({ scheme: "dk2" }, changed)).toBe(colorNameCopy.numbered(colorNameCopy.black, 2))
   })
 })
 
@@ -160,7 +163,7 @@ describe("template color tints inside Add color", () => {
     const odd = { scheme: "accent1" as const, transforms: [{ op: "lumMod" as const, val: 33_000 }] }
     const choices = tintChoices(templateColors, odd)
     expect(choices[0]?.color).toEqual(odd)
-    expect(choices.some((choice) => choice.name === colorCopy.lighter("Accent 1", 40))).toBe(true)
+    expect(choices.some((choice) => choice.name === colorCopy.lighter(colorNameCopy.blue, 40))).toBe(true)
     const standard = templateColorColumns(templateColors)[4]?.shades[2]?.color
     const same =
       standard === undefined
@@ -188,10 +191,10 @@ describe("a custom colour", () => {
 
 describe("the shown value", () => {
   it("names a template color slot, and shows a hex for a tint, an rgb colour and a colour the picker cannot write", () => {
-    expect(shownName({ scheme: "accent1" }, templateColors)).toBe("Accent 1")
-    expect(shownName({ scheme: "tx1" }, templateColors)).toBe("Dark 1")
+    expect(shownName({ scheme: "accent1" }, templateColors)).toBe(colorNameCopy.blue)
+    expect(shownName({ scheme: "tx1" }, templateColors)).toBe(colorNameCopy.black)
     expect(shownName({ scheme: "accent1", transforms: [{ op: "alpha", val: 40_000 }] }, templateColors)).toBe(
-      "Accent 1",
+      colorNameCopy.blue,
     )
     expect(
       shownName(

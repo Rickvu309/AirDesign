@@ -1,11 +1,11 @@
 import { openFillDetails } from "./design-panel"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
-import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
+import { colorWords } from "./color-words"
 import { openDeck, pickColor, settled, shownColor, unfold } from "./design-panel"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 
@@ -68,6 +68,7 @@ test("a person fades a shape whose fill and line come from its style, and a line
   const judged = join(process.cwd(), "tests/browser", styleExport)
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
+  const names = await colorWords("shapes-added.pptx")
   const rectangle = shapeAt(page, "4")
   const connector = shapeAt(page, "6")
   const solid = await filled(rectangle)
@@ -88,8 +89,8 @@ test("a person fades a shape whose fill and line come from its style, and a line
 
   const panel = await fillPanel(page, rectangle)
   const colors = panel.getByRole("group", { name: fillWords.color, exact: true })
-  await expect(shownColor(colors)).toHaveText("Accent 1")
-  await pickColor(page, colors, "Accent 2")
+  await expect(shownColor(colors)).toHaveText(names.accent1)
+  await pickColor(page, colors, names.accent2)
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   await expect.poll(() => filled(rectangle)).toMatch(/^rgba\(.+, 0\.6\)$/)
   await expect(shown).toHaveValue("60")
@@ -159,6 +160,7 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   page,
 }, testInfo) => {
   await openDeck(page, "shapes-added.pptx")
+  const names = await colorWords("shapes-added.pptx")
   await opacity(await pick(page, "4"), "60")
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -174,7 +176,7 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   await openFillDetails(panel)
   await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await expect.poll(() => filled(rectangle)).not.toMatch(/0\.6\)$/)
-  await pickColor(page, panel.getByRole("group", { name: fillWords.color, exact: true }), formatCopy.colors.accent2)
+  await pickColor(page, panel.getByRole("group", { name: fillWords.color, exact: true }), names.accent2)
   const after = "rgb(96, 96, 96)"
   await expect.poll(() => filled(rectangle)).toBe(after)
   await page.reload()

@@ -1,14 +1,15 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { templateStyleCopy } from "../../apps/web/src/copy/template-style-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test, type Page } from "@playwright/test"
+import { colorWords } from "./color-words"
 import { openDeck, setPanelMode, unfoldAll } from "./design-panel"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
 test("template colors stay named and reachable at narrow editor widths", async ({ page }) => {
   await openDeck(page, "clean.pptx")
+  const names = await colorWords("clean.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   for (const width of [220, 240, 440]) {
     const resize = page.getByRole("separator")
@@ -18,9 +19,10 @@ test("template colors stay named and reachable at narrow editor widths", async (
     await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
     const dialog = page.locator("[data-template-style-dialog]")
     for (const slot of ["dk1", "accent1", "accent6"] as const) {
-      const swatch = dialog.getByRole("button", { name: templateStyleCopy[slot], exact: true })
+      const name = names[slot] ?? ""
+      const swatch = dialog.getByRole("button", { name, exact: true })
       await expect(swatch).toBeVisible()
-      await expect(swatch).toHaveAttribute("title", new RegExp(templateStyleCopy[slot]))
+      await expect(swatch).toHaveAttribute("title", new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
     }
     await dialog.getByRole("button", { name: productCopy.close, exact: true }).click()
   }

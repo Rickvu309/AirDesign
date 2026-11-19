@@ -3,10 +3,10 @@ import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { effectsCopy } from "../../apps/web/src/copy/effects-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
-import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
+import { colorWords } from "./color-words"
 import { openDeck, unfold, setPanelMode, pickColor, shownColor } from "./design-panel"
 import { fillPanel, filled, shapeAt } from "./shape-fills"
 
@@ -16,11 +16,12 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
   page,
 }) => {
   await openDeck(page, "shapes-added.pptx")
+  const names = await colorWords("shapes-added.pptx")
   const rectangle = shapeAt(page, "4")
   const oval = shapeAt(page, "5")
   const accentOne = await filled(oval)
   const alone = await fillPanel(page, rectangle)
-  await pickColor(page, alone.getByRole("group", { name: fillWords.color, exact: true }), formatCopy.colors.accent2)
+  await pickColor(page, alone.getByRole("group", { name: fillWords.color, exact: true }), names.accent2)
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   const accentTwo = await filled(rectangle)
 
@@ -59,11 +60,11 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
   const colors = panel.getByRole("group", { name: fillWords.color, exact: true })
   await expect(shownColor(colors)).toHaveText(designCopy.mixed)
 
-  await pickColor(page, colors, formatCopy.colors.accent6)
+  await pickColor(page, colors, names.accent6)
   await expect.poll(() => filled(oval)).not.toBe(accentOne)
   const accentSix = await filled(oval)
   await expect.poll(() => filled(rectangle)).toBe(accentSix)
-  await expect(shownColor(colors)).toHaveText(formatCopy.colors.accent6)
+  await expect(shownColor(colors)).toHaveText(names.accent6)
 
   await page.getByRole("button", { name: undoCopy.undoNamed.fill, exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(accentTwo)
