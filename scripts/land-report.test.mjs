@@ -23,7 +23,8 @@ const lines = (changedOnMain, behind = 3) => {
     repository: "Rickvu309/AirDesign",
     run: queueRun,
     gh: (args) => {
-      if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100")) return ok("135322156039\n135324262611\n")
+      if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100"))
+        return ok('[{"id":135322156039,"name":"check (source)"},{"id":135324262611,"name":"ci-gate"}]')
       if (args[0] === "api" && args[1].endsWith("/jobs/135322156039/logs")) return ok(fixture("vitest-failed.log"))
       if (args[0] === "api" && args[1].endsWith("/jobs/135324262611/logs")) return ok("failed: ci-gate\n")
       if (args[0] === "api" && args[1].endsWith("/artifacts")) return ok("test-results-check-main\n")

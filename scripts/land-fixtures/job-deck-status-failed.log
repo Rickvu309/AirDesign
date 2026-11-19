@@ -1,0 +1,61 @@
+﻿2026-11-19T08:26:09.4972728Z Current runner version: '2.338.2'
+2026-11-19T08:26:30.1268911Z ##[group]Run pnpm check --part=browser --shard=1/4
+2026-11-19T08:26:30.1269345Z [36;1mpnpm check --part=browser --shard=1/4[0m
+2026-11-19T08:26:30.1289972Z shell: /usr/bin/bash -e {0}
+2026-11-19T08:26:30.1290246Z env:
+2026-11-19T08:26:30.1290518Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-11-19T08:26:30.1290857Z ##[endgroup]
+2026-11-19T08:30:27.4862801Z [108/245] tests/browser/deck-rename.spec.ts:31:1 › the new name is the exported file's name
+2026-11-19T08:30:27.4864214Z [109/245] tests/browser/deck-rename.spec.ts:42:1 › Escape leaves the name as it was
+2026-11-19T08:30:27.4865917Z [110/245] tests/browser/deck-rename.spec.ts:53:1 › an empty or too long name is refused with words, and the field stays open
+2026-11-19T08:30:27.4868129Z [111/245] tests/browser/deck-status.spec.ts:18:1 › a device that stayed online says AirDesign cannot be reached, and the words go when a commit is answered 404
+2026-11-19T08:30:27.4870078Z [112/245] tests/browser/deck-rename.spec.ts:70:1 › leaving the field saves a valid name and drops an invalid one
+2026-11-19T08:30:27.4871825Z [113/245] tests/browser/deck-rename.spec.ts:83:1 › a rename made offline reaches the server once the network is back
+2026-11-19T08:30:27.4873620Z [114/245] tests/browser/deck-rename.spec.ts:96:1 › the deck home shows the new name
+2026-11-19T08:30:27.4875227Z [115/245] tests/browser/deck-rename.spec.ts:328:1 › the title menu renames with focus in a selected full-width field
+2026-11-19T08:30:27.4876807Z [116/245] tests/browser/deck-rename.spec.ts:358:3 › moving from the title menu goes home
+2026-11-19T08:30:27.4878605Z [117/245] tests/browser/deck-rename.spec.ts:358:3 › moving from the title menu stays with a failure notice
+2026-11-19T08:30:27.4880595Z   1) tests/browser/deck-status.spec.ts:18:1 › a device that stayed online says AirDesign cannot be reached, and the words go when a commit is answered 404 
+2026-11-19T08:30:27.4881636Z 
+2026-11-19T08:30:27.4881985Z     Error: expect(locator).toHaveCount(expected) failed
+2026-11-19T08:30:27.4882685Z 
+2026-11-19T08:30:27.4883203Z     Locator:  getByText('Unable to reach AirDesign. Edits are saved on this device.')
+2026-11-19T08:30:27.4883977Z     Expected: 0
+2026-11-19T08:30:27.4884346Z     Received: 1
+2026-11-19T08:30:27.4884760Z     Timeout:  5000ms
+2026-11-19T08:30:27.4885028Z 
+2026-11-19T08:30:27.4885145Z     Call log:
+2026-11-19T08:30:27.4886143Z       - Expect "toHaveCount" getByText('Unable to reach AirDesign. Edits are saved on this device.') with timeout 5000ms
+2026-11-19T08:30:27.4887529Z       - waiting for getByText('Unable to reach AirDesign. Edits are saved on this device.')
+2026-11-19T08:30:27.4888537Z         14 × locator resolved to 1 element
+2026-11-19T08:30:27.4889039Z            - unexpected value "1"
+2026-11-19T08:30:27.4889372Z 
+2026-11-19T08:30:27.4889382Z 
+2026-11-19T08:30:27.4889629Z       43 |   await typeAtEnd(page, "!")
+2026-11-19T08:30:27.4890206Z       44 |   await stored(page, "Hello!!")
+2026-11-19T08:30:27.4890959Z     > 45 |   await expect(page.getByText(unreachedWords)).toHaveCount(0)
+2026-11-19T08:30:27.4891751Z          |                                                ^
+2026-11-19T08:30:27.4892308Z       46 | })
+2026-11-19T08:30:27.4892973Z       47 |
+2026-11-19T08:30:27.4893720Z         at /home/runner/work/AirDesign/AirDesign/tests/browser/deck-status.spec.ts:45:48
+2026-11-19T08:30:27.4894338Z 
+2026-11-19T08:30:27.4895161Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-19T08:30:27.4896789Z     test-results/deck-status-a-device-that--3ff2a-en-a-commit-is-answered-404/test-failed-1.png
+2026-11-19T08:30:27.4898284Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-19T08:30:27.4898842Z 
+2026-11-19T08:30:27.4899605Z     Error Context: test-results/deck-status-a-device-that--3ff2a-en-a-commit-is-answered-404/error-context.md
+2026-11-19T08:30:27.4900426Z 
+2026-11-19T08:30:27.4900436Z 
+2026-11-19T08:30:27.4901521Z [118/245] tests/browser/design-detectors.spec.ts:136:3 › truncated-text 0: fires on its fault and spares the near miss
+2026-11-19T08:30:27.5059990Z [244/245] tests/browser/grid-canvas.spec.ts:263:1 › typed Grid zoom accepts low values and keeps them after reload
+2026-11-19T08:30:27.5061079Z [245/245] tests/browser/grid-canvas.spec.ts:279:1 › zoom reveals the whole slide group handle after panning past it
+2026-11-19T08:30:27.5061598Z   1 failed
+2026-11-19T08:30:27.5062354Z     tests/browser/deck-status.spec.ts:18:1 › a device that stayed online says AirDesign cannot be reached, and the words go when a commit is answered 404 
+2026-11-19T08:30:27.5063312Z   244 passed (3.9m)
+2026-11-19T08:30:27.5063637Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-19T08:30:27.5063978Z fail browser-tests 233.3s
+2026-11-19T08:30:27.5604647Z metric check-duration  now 233.4  limit 40
+2026-11-19T08:30:27.5605596Z check-duration is 233.4 and its limit is 40. Make it faster.
+2026-11-19T08:30:27.5606304Z failed: browser-tests
+2026-11-19T08:30:27.5666280Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-19T08:30:27.5695190Z ##[error]Process completed with exit code 1.

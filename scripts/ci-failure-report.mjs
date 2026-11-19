@@ -1,9 +1,9 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { failedSteps, failedTests } from "./failed-tests.mjs"
-import { failedJobLogs } from "./land-report.mjs"
+import { failedJobLogs } from "./job-logs.mjs"
 import { overLimit } from "./metrics.mjs"
 
 const pullListLimit = 100
@@ -59,6 +59,15 @@ export const classesOf = (logs) => {
   return named.length > 0 ? named : ["the run left no log"]
 }
 
+const unreadLog = "the job log could not be read"
+const unnamedClasses = new Set(["the run left no log", unreadLog])
+
+export const runClasses = ({ repository, run, gh }) => {
+  const { logs, warnings } = failedJobLogs({ repository, run, gh })
+  const named = classesOf(logs)
+  return { names: named[0] === "the run left no log" && warnings.length > 0 ? [unreadLog] : named, warnings }
+}
+
 export const audit = ({ runs, logs }) => {
   const failed = runs.filter((run) => run.conclusion === "failure")
   const classes = new Map()
@@ -90,7 +99,7 @@ export const rankLosses = (rows) => {
     current.minutes += row.minutes
     classes.set(row.name, current)
   }
-  const unnamed = (row) => (row.name === "the run left no log" ? 1 : 0)
+  const unnamed = (row) => (unnamedClasses.has(row.name) ? 1 : 0)
   return [...classes.values()].sort(
     (left, right) =>
       right.minutes - left.minutes ||
@@ -344,22 +353,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   })
   const result = falseStops(pulls)
   const jobs = (args) => {
-    try {
-      return { status: 0, stdout: gh(args), stderr: "" }
-    } catch {
-      return { status: 1, stdout: "", stderr: "" }
-    }
+    const done = spawnSync("gh", args, { encoding: "utf8", env, maxBuffer: 256 * 1024 * 1024 })
+    return { status: done.status ?? 1, stdout: done.stdout ?? "", stderr: done.stderr ?? "" }
   }
   const losses = pulls.flatMap((pull) =>
     [...pull.runs, ...pull.queueRuns]
       .filter((run) => failedConclusions.has(run.conclusion))
-      .flatMap((run) =>
-        classesOf(failedJobLogs({ repository, run, gh: jobs })).map((name) => ({
-          name,
-          minutes: lostMinutes(run, pull.timeline),
-          runId: attemptId(run),
-        })),
-      ),
+      .flatMap((run) => {
+        const { names, warnings } = runClasses({ repository, run, gh: jobs })
+        for (const warning of warnings) console.error(`run ${attemptId(run)}: ${warning}`)
+        return names.map((name) => ({ name, minutes: lostMinutes(run, pull.timeline), runId: attemptId(run) }))
+      }),
   )
   const limits = JSON.parse(fs.readFileSync(path.join(path.dirname(self), "..", "metrics.json"), "utf8"))
   const merge = formatMetric("time-to-merge", median(mergeMinutes(pulls)), limits["time-to-merge"].limit)

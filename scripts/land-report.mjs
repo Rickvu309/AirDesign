@@ -1,4 +1,5 @@
 import { failedSteps, failedTests } from "./failed-tests.mjs"
+import { failedJobLogs } from "./job-logs.mjs"
 
 const queueBase = (branch) => /^gh-readonly-queue\/main\/pr-\d+-([0-9a-f]{40})$/.exec(branch)?.[1]
 
@@ -51,32 +52,13 @@ const snapshotLines = ({ repository, run, git, gh, files }) => {
   )
 }
 
-export const failedJobs = ({ repository, run, gh }) => {
-  const jobs =
-    run.attempt === undefined
-      ? `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`
-      : `repos/${repository}/actions/runs/${run.id}/attempts/${run.attempt}/jobs?per_page=100`
-  return gh([
-    "api",
-    jobs,
-    "--jq",
-    '.jobs[] | select(.conclusion == "failure" and .name != "ci") | "\\(.id)\\t\\(.name)"',
-  ])
-    .stdout.split("\n")
-    .filter((line) => line !== "")
-    .map((line) => {
-      const [id, name = ""] = line.split("\t")
-      return { name, log: gh(["api", `repos/${repository}/actions/jobs/${id}/logs`]).stdout }
-    })
-}
-
-export const failedJobLogs = (options) => failedJobs(options).map((job) => job.log)
-
-export const ciFailureLines = ({ repository, run, gh, git, logs = failedJobLogs({ repository, run, gh }) }) => {
+export const ciFailureLines = ({ repository, run, gh, git, read = failedJobLogs({ repository, run, gh }) }) => {
+  const { logs, warnings } = read
   const steps = [...new Set(logs.flatMap(failedSteps))]
   const tests = failedTests(logs.join("\n"))
   const lines = [
     `ci run ${run.id} (${run.event}) failed in ${steps.length > 0 ? steps.join(", ") : "a step that left no name"}.`,
+    ...warnings.map((warning) => `  ${warning}`),
   ]
   for (const test of tests) {
     const where = test.line === undefined ? test.file : `${test.file}:${test.line}`

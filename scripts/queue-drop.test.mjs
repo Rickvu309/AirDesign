@@ -23,7 +23,7 @@ const asked = []
 const gh = (args) => {
   asked.push(args.join(" "))
   if (args[0] === "api" && args[1].endsWith("/jobs/135322156039/logs")) return ok(fixture("job-playwright-failed.log"))
-  if (args[0] === "run" && args.includes("jobs")) return browserJob(135322156039)
+  if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100")) return browserJob(135322156039)
   if (args[0] === "api" && args[1].endsWith("/artifacts"))
     return ok("test-results-check-browser-3\nbrowser-timings-3\n")
   throw new Error(`unexpected gh ${args.join(" ")}`)
@@ -99,7 +99,7 @@ const noticeComment = async (reads) => {
     sleep: (ms) => waits.push(ms),
     gh: (args) => {
       if (args[1]?.endsWith("/jobs/135420140611/logs")) return reads[attempts++] ?? missing
-      if (args[0] === "run") return browserJob(135420140611)
+      if (args[1]?.endsWith("/jobs?per_page=100")) return browserJob(135420140611)
       if (args[1]?.endsWith("/artifacts")) return ok("test-results-check-browser-6\n")
       throw new Error(`unexpected gh ${args.join(" ")}`)
     },

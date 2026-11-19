@@ -1,5 +1,6 @@
 import { freshRunVerdict, takeFreshRun } from "./fresh-run.mjs"
-import { ciFailureLines, failedJobs } from "./land-report.mjs"
+import { failedJobLogs } from "./job-logs.mjs"
+import { ciFailureLines } from "./land-report.mjs"
 import { queueLine, readPull, removalLine } from "./merge-queue.mjs"
 
 const runsOf = ({ gh, repository, event, branch }) => {
@@ -60,9 +61,9 @@ export const followPull = async ({
       say(`follow: no failed ci run was found for pull request ${number}. Look at: gh pr checks ${number}`)
       return undefined
     }
-    const jobs = failedJobs({ repository, run, gh })
-    for (const line of ciFailureLines({ repository, run, gh, git, logs: jobs.map((job) => job.log) })) say(line)
-    return { run, jobs }
+    const read = failedJobLogs({ repository, run, gh })
+    for (const line of ciFailureLines({ repository, run, gh, git, read })) say(line)
+    return { run, jobs: read.jobs }
   }
   const ciEnded = (pull) =>
     !runsOf({ gh, repository, event: "pull_request", branch }).some(
