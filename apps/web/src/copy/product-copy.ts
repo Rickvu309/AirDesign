@@ -175,7 +175,8 @@ export const zoomCopy = {
   selection: "Zoom to selection",
   inKey: "Ctrl+=",
   outKey: "Ctrl+-",
-  fitKey: "Ctrl+0",
+  fitKey: "Shift+1",
+  hundredKey: "Shift+0",
   selectionKey: "Shift+2",
 } as const
 

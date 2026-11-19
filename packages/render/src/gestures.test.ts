@@ -64,7 +64,22 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "+", metaKey: true, shiftKey: true }, "editor")).toBe("zoom-in")
     expect(gestureFor({ ...plain, key: "=", ctrlKey: true }, "editor")).toBe("zoom-in")
     expect(gestureFor({ ...plain, key: "_", ctrlKey: true, shiftKey: true }, "editor")).toBe("zoom-out")
-    expect(gestureFor({ ...plain, key: "0", ctrlKey: true, shiftKey: true }, "editor")).toBe("zoom-fit")
+    expect(gestureFor({ ...plain, key: "0", ctrlKey: true, shiftKey: true }, "editor")).toBe("zoom-100")
+    expect(gestureFor({ ...plain, key: "+", shiftKey: true }, "editor")).toBe("zoom-in")
+    expect(gestureFor({ ...plain, key: "-" }, "editor")).toBe("zoom-out")
+  })
+
+  it("zooms to 100% with Shift+0 or command or control and 0, as Figma does", () => {
+    expect(gestureFor({ ...plain, key: ")", code: "Digit0", shiftKey: true }, "editor")).toBe("zoom-100")
+    expect(gestureFor({ ...plain, key: "=", code: "Digit0", shiftKey: true }, "editor")).toBe("zoom-100")
+    expect(gestureFor({ ...plain, key: "0", metaKey: true }, "editor")).toBe("zoom-100")
+    expect(gestureFor({ ...plain, key: "0", code: "Digit0" }, "editor")).toBeNull()
+  })
+
+  it("pans with Space alone", () => {
+    expect(gestureFor({ ...plain, key: " ", code: "Space" }, "editor")).toBe("pan")
+    expect(gestureFor({ ...plain, key: " ", code: "Space", shiftKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: " ", code: "Space", ctrlKey: true }, "editor")).toBeNull()
   })
 
   it("fits the canvas with Shift+1 and the selection with Shift+2 on any layout", () => {

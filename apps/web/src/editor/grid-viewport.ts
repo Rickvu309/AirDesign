@@ -1,6 +1,7 @@
 import type { PaintBox } from "@airdesign/render"
 import { gridElementPresses } from "./grid-number"
 import { zoomRanges } from "./canvas-zoom"
+import { wheelPixelsOf, wheelZoomFactor, type WheelLike } from "./canvas-viewport"
 import { gridCardInset, gridLineGap, gridVisualLines, gridWrapColumns } from "./grid-lines"
 
 export type GridViewport = { readonly x: number; readonly y: number; readonly scale: number }
@@ -58,30 +59,11 @@ export function gridSpacing(width: number, height: number) {
   return { column: width * 0.13, line: height * 0.57 }
 }
 
-const wheelPixels = [1, 16, 800] as const
-
-const wheelZoomStep = 10
-
-export function wheeledGrid(
-  view: GridViewport,
-  event: {
-    readonly deltaX: number
-    readonly deltaY: number
-    readonly deltaMode: number
-    readonly shiftKey: boolean
-    readonly ctrlKey: boolean
-    readonly metaKey: boolean
-  },
-  anchor: GridDelta,
-): GridViewport {
-  const unit = wheelPixels[event.deltaMode] ?? 1
-  const x = event.deltaX * unit
-  const y = event.deltaY * unit
+export function wheeledGrid(view: GridViewport, event: WheelLike, anchor: GridDelta): GridViewport {
   if (event.ctrlKey || event.metaKey) {
-    const step = Math.max(-wheelZoomStep, Math.min(wheelZoomStep, y))
-    const next = view.scale * Math.exp(-step * 0.01)
-    return zoomedGrid(view, boundedGridScale(next), anchor)
+    return zoomedGrid(view, boundedGridScale(view.scale * wheelZoomFactor(event)), anchor)
   }
+  const { x, y } = wheelPixelsOf(event)
   return pannedGrid(view, event.shiftKey && x === 0 ? { x: -y, y: 0 } : { x: -x, y: -y })
 }
 

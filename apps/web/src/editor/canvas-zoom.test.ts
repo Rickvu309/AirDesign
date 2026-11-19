@@ -81,13 +81,17 @@ describe("zoom keys", () => {
     expect(zoomKey({ ...plain, key: "+", metaKey: true, shiftKey: true })).toBe("in")
     expect(zoomKey({ ...plain, key: "-", ctrlKey: true })).toBe("out")
     expect(zoomKey({ ...plain, key: "_", metaKey: true, shiftKey: true })).toBe("out")
-    expect(zoomKey({ ...plain, key: "0", metaKey: true })).toBe("fit")
+    expect(zoomKey({ ...plain, key: "0", metaKey: true })).toBe("actual")
+    expect(zoomKey({ ...plain, key: "+", shiftKey: true })).toBe("in")
+    expect(zoomKey({ ...plain, key: "-" })).toBe("out")
+    expect(zoomKey({ ...plain, key: "-", field: true })).toBeNull()
   })
 
-  it("fits with Shift+1 and zooms to the selection with Shift+2, but not while typing", () => {
+  it("fits with Shift+1, zooms to the selection with Shift+2 and to 100% with Shift+0, but not while typing", () => {
     expect(zoomKey({ ...plain, key: "!", code: "Digit1", shiftKey: true })).toBe("fit")
     expect(zoomKey({ ...plain, key: "@", code: "Digit2", shiftKey: true })).toBe("selection")
     expect(zoomKey({ ...plain, key: "@", code: "Digit2", shiftKey: true, field: true })).toBeNull()
+    expect(zoomKey({ ...plain, key: ")", code: "Digit0", shiftKey: true })).toBe("actual")
   })
 
   it("leaves the keys to the browser inside a text field, without a modifier, or with Alt", () => {

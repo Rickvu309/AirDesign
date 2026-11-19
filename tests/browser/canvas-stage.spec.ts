@@ -39,7 +39,7 @@ test("Fit centres the slide above notes and follows their resized height", async
   await expect.poll(async () => (await gaps(page)).below).toBeGreaterThanOrEqual(40)
 })
 
-test("Zoomed slides remain reachable above the overlay with Hand in both directions", async ({ page }) => {
+test("a zoomed slide pans with Hand until 64 px of it stays in view on any side", async ({ page }) => {
   await page.goto("/")
   await newBlankDeck(page)
   await page.locator("[data-zoom-readout]").click()
@@ -64,10 +64,22 @@ test("Zoomed slides remain reachable above the overlay with Hand in both directi
     el.scrollLeft = 0
     el.scrollTop = 0
   })
-  expect((await gaps(page)).above).toBe(40)
+  expect(await reach(page)).toEqual({ left: 64, top: 64 })
   await stage.evaluate((el) => {
     el.scrollLeft = el.scrollWidth
     el.scrollTop = el.scrollHeight
   })
-  expect((await gaps(page)).below).toBeGreaterThanOrEqual(40)
+  expect(await reach(page)).toEqual({ left: -64, top: -64 })
 })
+
+async function reach(page: Page) {
+  return page.evaluate(() => {
+    const canvas = document.querySelector("[data-editor-canvas]")?.getBoundingClientRect()
+    const slide = document.querySelector("[data-slide-paint]")?.getBoundingClientRect()
+    const overlay = document.querySelector("[data-canvas-overlay]")?.getBoundingClientRect()
+    if (!canvas || !slide || !overlay) throw new Error("Canvas is not ready")
+    return slide.left > canvas.left
+      ? { left: Math.round(canvas.right - slide.left), top: Math.round(overlay.top - slide.top) }
+      : { left: Math.round(canvas.left - slide.right), top: Math.round(canvas.top - slide.bottom) }
+  })
+}

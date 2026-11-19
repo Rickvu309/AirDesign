@@ -82,27 +82,22 @@ export const gestures = [
   {
     id: "zoom-in",
     group: "view",
-    keys: [
-      { key: "=", mod: true },
-      { key: "+", mod: true },
-    ],
+    keys: [{ key: "=", mod: true }, { key: "+", mod: true }, { key: "+" }],
     where: ["editor"],
   },
   {
     id: "zoom-out",
     group: "view",
-    keys: [
-      { key: "-", mod: true },
-      { key: "_", mod: true },
-    ],
+    keys: [{ key: "-", mod: true }, { key: "_", mod: true }, { key: "-" }],
     where: ["editor"],
   },
+  { id: "zoom-fit", group: "view", keys: [{ code: "Digit1", shift: true }], where: ["editor"] },
   {
-    id: "zoom-fit",
+    id: "zoom-100",
     group: "view",
     keys: [
+      { code: "Digit0", shift: true },
       { key: "0", mod: true },
-      { code: "Digit1", shift: true },
     ],
     where: ["editor"],
   },
@@ -110,6 +105,7 @@ export const gestures = [
   { id: "design-mode", group: "view", keys: [{ key: "d", shift: true }], where: ["editor"] },
   { id: "tool-move", group: "view", keys: [{ key: "v" }], where: ["editor"] },
   { id: "tool-hand", group: "view", keys: [{ key: "h" }], where: ["editor"] },
+  { id: "pan", group: "view", keys: [{ code: "Space" }], where: ["editor"] },
   { id: "bold", group: "text", keys: [{ key: "b", mod: true }], where: ["element", "text"] },
   { id: "italic", group: "text", keys: [{ key: "i", mod: true }], where: ["element", "text"] },
   { id: "underline", group: "text", keys: [{ key: "u", mod: true }], where: ["element", "text"] },

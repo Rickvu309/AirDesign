@@ -4,6 +4,7 @@ import { canvasRoom, fitWidth, slideTop, type SlideSize } from "@/editor/canvas-
 
 export function useCanvasRoom(): {
   readonly room: SlideSize | null
+  readonly width: number
   readonly height: number
   readonly overlay: number
   readonly onOverlay: (element: HTMLElement | null) => void
@@ -11,6 +12,7 @@ export function useCanvasRoom(): {
 } {
   const [canvas, setCanvas] = useState<HTMLElement | null>(null)
   const [overlay, setOverlay] = useState<HTMLElement | null>(null)
+  const [canvasWidth, setCanvasWidth] = useState(0)
   const [height, setHeight] = useState(0)
   const [overlayHeight, setOverlayHeight] = useState(0)
   const [room, setRoom] = useState<SlideSize | null>(null)
@@ -30,10 +32,11 @@ export function useCanvasRoom(): {
         const scale = fitted ? fitWidth(next, { width, height }) / width : 1
         const top = slideTop({ height: canvas.clientHeight, overlay: bottom, slide: height * scale })
         wrapper.style.transform = `translateY(${top - wrapper.offsetTop - (height * (1 - scale)) / 2}px) scale(${scale})`
-        if (notesWidth) notesWidth.style.width = `${width * scale}px`
+        if (notesWidth) notesWidth.style.width = `${Math.min(width * scale, next.width)}px`
         return
       }
       if (wrapper) wrapper.style.transform = ""
+      setCanvasWidth(canvas.clientWidth)
       setHeight(canvas.clientHeight)
       setOverlayHeight(bottom)
       setRoom((last) => (last?.width === next.width && last.height === next.height ? last : next))
@@ -49,5 +52,5 @@ export function useCanvasRoom(): {
       canvas.removeEventListener("notes-rest", rest)
     }
   }, [canvas, overlay])
-  return { room, height, overlay: overlayHeight, onCanvas: setCanvas, onOverlay: setOverlay }
+  return { room, width: canvasWidth, height, overlay: overlayHeight, onCanvas: setCanvas, onOverlay: setOverlay }
 }

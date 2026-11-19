@@ -23,7 +23,7 @@ test("a sectioned import keeps its first-slide slide group starts in Fit, on the
     await expect(entry(page, index * 3 + 1)).toBeVisible()
   }
   const beforeFit = await boxOf(page, 6)
-  await page.keyboard.press("ControlOrMeta+0")
+  await page.keyboard.press("Shift+Digit1")
   expect(await boxOf(page, 6)).toEqual(beforeFit)
 
   const second = await context.newPage()

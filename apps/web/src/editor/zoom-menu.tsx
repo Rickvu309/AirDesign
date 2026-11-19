@@ -149,11 +149,17 @@ export function ZoomMenu({
             value="fit"
             label={zoomCopy.fit}
             shortcut={zoomCopy.fitKey}
-            keys="Control+0 Meta+0 Shift+1"
+            keys="Shift+1"
             checked={zoom === "fit"}
           />
           {zoomPresets.map((preset) => (
-            <EditorMenuRow key={preset} value={String(preset)} label={zoomToOf(preset)} checked={zoom === preset} />
+            <EditorMenuRow
+              key={preset}
+              value={String(preset)}
+              label={zoomToOf(preset)}
+              checked={zoom === preset}
+              {...(preset === 100 ? { shortcut: zoomCopy.hundredKey, keys: "Shift+0 Control+0 Meta+0" } : {})}
+            />
           ))}
         </DropdownMenuRadioGroup>
       </EditorMenuContent>

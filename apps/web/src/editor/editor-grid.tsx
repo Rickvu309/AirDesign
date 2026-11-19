@@ -185,6 +185,7 @@ export function EditorGrid({
   }
   useZoomKeys(!presenting, (key) => {
     if (key === "selection") zoomSelection()
+    else if (key === "actual") chooseZoom(100)
     else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent, zoomRanges.grid))
   })
   const spacing = gridSpacing(width, height)

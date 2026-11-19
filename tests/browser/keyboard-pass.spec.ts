@@ -59,8 +59,8 @@ async function percent(page: Page): Promise<number> {
   return Number(text.replace("%", ""))
 }
 
-test("Ctrl+= and Ctrl+- zoom the canvas and Ctrl+0 returns to Fit", async ({ page }) => {
-  covers("zoom-in", "zoom-out", "zoom-fit")
+test("Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 zooms to 100% and Shift+1 returns to Fit", async ({ page }) => {
+  covers("zoom-in", "zoom-out", "zoom-fit", "zoom-100")
   await open(page)
   const fit = await percent(page)
   await page.locator("[data-canvas-stage]").click({ position: { x: 5, y: 5 } })
@@ -72,6 +72,8 @@ test("Ctrl+= and Ctrl+- zoom the canvas and Ctrl+0 returns to Fit", async ({ pag
   await page.keyboard.press("ControlOrMeta+-")
   await expect.poll(() => percent(page)).toBe(bigger)
   await page.keyboard.press("ControlOrMeta+0")
+  await expect.poll(() => percent(page)).toBe(100)
+  await page.keyboard.press("Shift+Digit1")
   await expect.poll(() => percent(page)).toBe(fit)
   await page.locator("[data-zoom-readout]").click()
   await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toBeChecked()
@@ -93,7 +95,7 @@ test("the zoom menu opens on its percent field, then Zoom in, Zoom out, fit and 
   await expect(page.getByRole("menuitemradio")).toHaveText([
     `${zoomCopy.fit}${zoomCopy.fitKey}`,
     "Zoom to 50%",
-    "Zoom to 100%",
+    `Zoom to 100%${zoomCopy.hundredKey}`,
     "Zoom to 200%",
   ])
   await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toBeChecked()
