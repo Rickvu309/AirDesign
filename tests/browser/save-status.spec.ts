@@ -1,4 +1,6 @@
 import { expect, type Page, type Request } from "@playwright/test"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -7,7 +9,6 @@ const saved = "Saved"
 const saving = "Saving…"
 const offline = "Offline, saved on this device"
 const unreached = "Unable to reach AirDesign"
-const pastSavingDelay = 1000
 
 function saveStatus(page: Page) {
   return page.locator("[data-save-status]")
@@ -42,21 +43,23 @@ test("an edit reads Saving while its commit waits and Saved once it lands on the
   expect(statusBox?.height).toBeLessThanOrEqual(1)
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const before = await revision()
-  let held = 0
-  await page.route(
-    (url) => url.pathname === "/decks/commit",
-    async (route) => {
-      held += 1
-      await new Promise((resolve) => setTimeout(resolve, 2500))
-      await route.fallback()
-    },
-  )
-  await typeAtEnd(page, "!")
-  await expect(saveStatus(page)).toHaveText(saving)
-  expect(await revision()).toBe(before)
+  const released = Promise.withResolvers<void>()
+  const held = Promise.withResolvers<void>()
+  await page.route("**/decks/commit", async (route) => {
+    held.resolve()
+    await released.promise
+    await route.fallback()
+  })
+  try {
+    await typeAtEnd(page, "!")
+    await held.promise
+    await expect(saveStatus(page)).toHaveText(saving)
+    expect(await revision()).toBe(before)
+  } finally {
+    released.resolve()
+  }
   await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
-  expect(held).toBeGreaterThan(0)
-  expect(await revision()).toBeGreaterThan(before)
+  expect(await revision()).toBe(before + 1)
 })
 
 test("a server that cannot be reached reads the unreached words, then Saved once it answers with no new edit", async ({
@@ -195,7 +198,6 @@ test("going offline and back while a resend is on the wire reads Saved once it l
   await expect(saveStatus(page)).toHaveText(unreached)
   release()
   await expect.poll(revision).toBe(before + 1)
-  await page.waitForTimeout(pastSavingDelay)
   await expect(saveStatus(page)).toHaveText(saved)
 })
 
@@ -212,19 +214,84 @@ for (const [step, button] of [
     await forward(page, stack)
     await openClean(page)
     await expect(saveStatus(page)).toHaveText(saved)
-    let release = () => undefined as void
-    const released = new Promise<void>((resolve) => (release = resolve))
-    await page.route(
-      (url) => url.pathname === "/decks/commit",
-      async (route) => {
-        await released
-        await route.fallback()
-      },
-    )
-    await page.getByRole("button", { name: button, exact: true }).click()
-    await expect(saveStatus(page)).toHaveText(saving)
-    release()
+    const released = Promise.withResolvers<void>()
+    const held = Promise.withResolvers<void>()
+    await page.route("**/decks/commit", async (route) => {
+      held.resolve()
+      await released.promise
+      await route.fallback()
+    })
+    try {
+      await page.getByRole("button", { name: button, exact: true }).click()
+      await held.promise
+      await expect(saveStatus(page)).toHaveText(saving)
+    } finally {
+      released.resolve()
+    }
     await expect(saveStatus(page)).toHaveText(saved)
+  })
+}
+
+function addSlide(page: Page) {
+  return page.getByRole("button", { name: "Add slide", exact: true }).click()
+}
+
+function slide(page: Page, number: number, count: number) {
+  return page.getByRole("button", { name: slideListCopy.slideName(number, count), exact: true })
+}
+
+for (const [name, edit] of [
+  [
+    "typed edit",
+    async (page: Page) => {
+      await slide(page, 1, 2).click()
+      await typeAtEnd(page, "!")
+      await expect(page.getByRole("button", { name: undoCopy.undoNamed.text })).toBeEnabled()
+    },
+  ],
+  [
+    "added slide",
+    async (page: Page) => {
+      await addSlide(page)
+      await expect(slide(page, 3, 3)).toBeVisible()
+    },
+  ],
+] as const) {
+  test(`an earlier commit cannot mark a later ${name} Saved`, async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    const watching = page.waitForRequest("**/decks/watch")
+    const deck = await openClean(page)
+    await watching
+    const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+    const before = await revision()
+    const first = Promise.withResolvers<void>()
+    const second = Promise.withResolvers<void>()
+    let sent = 0
+    await page.route("**/decks/commit", async (route) => {
+      sent += 1
+      await (sent === 1 ? first.promise : second.promise)
+      await route.fallback()
+    })
+
+    try {
+      await addSlide(page)
+      await expect.poll(() => sent).toBe(1)
+      await expect(saveStatus(page)).toHaveText(saving)
+      await expect(slide(page, 2, 2)).toBeVisible()
+      await edit(page)
+      first.resolve()
+      await expect.poll(() => sent).toBe(2)
+      expect(await revision()).toBe(before + 1)
+      await expect(saveStatus(page)).toHaveText(saving)
+    } finally {
+      first.resolve()
+      second.resolve()
+    }
+
+    await expect(saveStatus(page)).toHaveText(saved)
+    expect(await revision()).toBe(before + 2)
   })
 }
 
