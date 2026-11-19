@@ -8,7 +8,8 @@ export default {
   renders: [framed.exported],
   lines(answers) {
     const { original, exported, slide } = framed
-    const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => name !== slide)
+    const touched = [slide, "[Content_Types].xml", "ppt/slides/_rels/slide1.xml.rels"]
+    const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => !touched.includes(name))
     return slideExportLines({ ...answers, original, exported, kept }).map((line) =>
       line.replace(/^slide export/, "frame"),
     )
