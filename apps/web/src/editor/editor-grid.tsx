@@ -98,9 +98,9 @@ export function EditorGrid({
   const { current, count } = strip
   const named = strip.groups ?? []
   const height = gridThumbHeight(width, strip.thumbHeight, slideThumbWidth)
+  const starts = groups.map((group) => group.start).join(",")
   const geometry = {
     groups,
-    named: named.flatMap((group) => (group.name === null ? [] : [group.start])),
     groupHandles: strip.onMoveMany !== undefined,
     width,
     height,
@@ -119,7 +119,7 @@ export function EditorGrid({
     elementsOf: () => strip.selectionBoxes?.(selection.ids),
     initialFit: zoom === "fit",
     fitting: zoom === "fit",
-    layout: `${strip.count}:${strip.gridStarts?.join(",") ?? ""}:${strip.groups?.map((group) => group.start).join(",") ?? ""}`,
+    layout: `${strip.count}:${starts}`,
   })
   function chooseZoom(next: Zoom) {
     setZoom(next)
@@ -155,7 +155,6 @@ export function EditorGrid({
   const marquee = useGridMarquee({ list, viewport, edit, strip, state, selection, select, hand, announce })
   useSlideSay(strip.say, announce)
   const order = strip.slideIds?.join(",")
-  const starts = strip.gridStarts?.join(",")
   useLayoutEffect(() => {
     if (gridTurn.current !== tools.undo?.gridTurn) {
       const index = [...selected][0] ?? current

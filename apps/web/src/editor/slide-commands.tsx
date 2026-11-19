@@ -90,7 +90,6 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
   const sequence = presentSlides(state).map((spot) => spot.id)
   return {
     count: slideCount,
-    gridStarts: groups.map((group) => group.start),
     slideIds: sequence,
     groups,
     current,

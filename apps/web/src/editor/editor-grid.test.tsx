@@ -15,7 +15,6 @@ const strip: SlideStrip = {
   onClone: () => undefined,
   onRemove: () => undefined,
   onMove: () => undefined,
-  gridStarts: [0, 2],
   thumbHeight: 101,
   thumb: (index) => <span data-painted={index} />,
 }

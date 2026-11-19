@@ -99,7 +99,6 @@ export function GridWrapped() {
         strip={{
           count: flat.length,
           current,
-          gridStarts: starts,
           groups: stripGroups,
           skipped: flat.map((id) => skipped.has(id)),
           onSelect: setCurrent,

@@ -41,7 +41,6 @@ const noGroups: readonly StripGroup[] = []
 
 export type SlideStrip = {
   readonly count: number
-  readonly gridStarts?: readonly number[]
   readonly slideIds?: readonly SlideId[]
   readonly groups?: readonly StripGroup[]
   readonly current: number
