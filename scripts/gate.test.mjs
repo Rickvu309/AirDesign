@@ -14,20 +14,35 @@ const planWith = (tests) => ({
       ? []
       : [{ kind: "unit-tests", tests, files: ["x.ts"], because: "package.json is read outside the import graph" }],
 })
-same("a diff that reaches no unit source runs no unit test", testsFor({ plan: planWith(), related: [] }), [])
-const few = ["a.test.ts", "b.test.ts"]
-same("every test file in the import graph runs", testsFor({ plan: planWith("related"), related: few }), few)
-same("Vitest reach applies to script inputs too", testsFor({ plan: planWith(), related: few }), few)
-const many = Array.from({ length: 41 }, (_, at) => `t${String(at)}.test.ts`)
+const many = Array.from({ length: 599 }, (_, at) => `t${String(at)}.test.ts`)
 same(
-  "every related file runs even when the diff reaches more than 40",
-  testsFor({ plan: planWith("related"), related: many }),
-  many,
+  "a diff reaching 599 unit files runs the changed test and names the ci remainder",
+  testsFor({ plan: planWith("related"), related: many, changed: ["t3.test.ts", "core.ts"] }),
+  { files: ["t3.test.ts"], ci: "598 more test files reach this diff" },
 )
 same(
-  "an input read outside the import graph selects the whole suite",
-  testsFor({ plan: planWith("all"), related: few, inventory: many }),
-  many,
+  "a whole-suite plan runs the changed unit test and names why ci runs the suite",
+  testsFor({
+    plan: planWith("all"),
+    related: [],
+    inventory: many,
+    changed: ["t5.test.ts", "package.json", "scripts/gate.test.mjs"],
+  }),
+  { files: ["t5.test.ts"], ci: "every unit test, because package.json is read outside the import graph" },
+)
+same("a diff with no unit reach runs no unit test", testsFor({ plan: planWith(), related: [], changed: [] }), {
+  files: [],
+  ci: undefined,
+})
+const atLimit = many.slice(0, 40)
+same("all 40 reached files run", testsFor({ plan: planWith("related"), related: atLimit, changed: ["core.ts"] }), {
+  files: atLimit,
+  ci: undefined,
+})
+same(
+  "Vitest reach applies to script inputs too",
+  testsFor({ plan: planWith(), related: atLimit, changed: ["scripts/input.mjs"] }),
+  { files: atLimit, ci: undefined },
 )
 
 same(
