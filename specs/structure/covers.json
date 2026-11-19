@@ -29,7 +29,7 @@
       "file": "packages/document/src/frame-layout.ts",
       "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow", "joinTurn", "spotNow"],
       "digest": "6ef3c774d6cb",
-      "blob": "43ebeeddf73df7d22ed9d610aed9c0f732765663"
+      "blob": "683f3bd037163c1b661a67e5321b13be30165d72"
     }
   ]
 }
