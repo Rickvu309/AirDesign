@@ -34,8 +34,8 @@
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "e777c8385834",
-      "blob": "10aabe6f7967a117eba03bec034cbd2fb27b7d2c"
+      "digest": "d414df951ae5",
+      "blob": "884f4194567de70892671caace0cc22eaaf92c3a"
     },
     {
       "file": "packages/document/src/person-undo.ts",
