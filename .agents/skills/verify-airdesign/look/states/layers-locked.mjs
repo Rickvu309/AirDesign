@@ -7,7 +7,7 @@ async function drive(kit) {
   await kit.page.locator("[data-design-mode]").click()
   const layers = kit.page.locator("[data-layers-panel]")
   const row = layers.getByRole("treeitem").first()
-  await row.click()
+  await row.waitFor()
   const lock = row.locator("[data-layer-lock]")
   if ((await lock.count()) === 0) return
   await row.hover()
