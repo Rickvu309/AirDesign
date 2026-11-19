@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { decide, openRegister } from "./decide.js"
 import { slideId } from "./element-id.js"
-import { defaultGrid1, gridRows } from "./grid-order.js"
+import { defaultGrid1, gridGroups } from "./grid-order.js"
 import { presentSlides } from "./slide-order.js"
 
 const file = Array.from({ length: 10 }, (_, i) => slideId(String(256 + i)))
 
-describe("stored grid rows", () => {
+describe("stored grid slide groups", () => {
   it("freezes the ten-slide prefix before the eleventh slide", () => {
     const result = decide(openRegister("", ""), {
       command: "slide",
@@ -14,7 +14,7 @@ describe("stored grid rows", () => {
       edit: { slide: "add", grid: 1, row: "same", id: slideId("266"), after: file[9]!, layout: file[0]! },
     })
     if (result.decision !== "apply") throw new Error(result.code)
-    expect(gridRows(result.register)).toEqual([file.slice(0, 4), file.slice(4, 8), [...file.slice(8), "266"]])
+    expect(gridGroups(result.register)).toEqual([file.slice(0, 4), file.slice(4, 8), [...file.slice(8), "266"]])
     expect(presentSlides(result.register).map((s) => s.id)).toEqual([...file, "266"])
   })
   it("freezes the version-one default fixture", () => {
@@ -49,7 +49,7 @@ function remove(register: ReturnType<typeof openRegister>, id: string, known = f
 }
 
 function rows(register: ReturnType<typeof openRegister>) {
-  return gridRows(register)
+  return gridGroups(register)
 }
 
 import { undoOf, redoOf, slideUndoable } from "./person-undo.js"
@@ -102,7 +102,7 @@ describe("grid lifecycle and conditional undo", () => {
     })
   }
 
-  it("promotes a removed head within its row and drops an empty row", () => {
+  it("promotes a removed head within its slide group and drops an empty slide group", () => {
     let state = remove(initial(), "260")
     expect(rows(state)).toEqual([file.slice(0, 4), file.slice(5, 8), file.slice(8)])
     state = remove(remove(remove(state, "261"), "262"), "263")
@@ -216,7 +216,7 @@ it("maintains source heads for keyed writers after initialization", () => {
   ])
 })
 
-it("rejects modern commands with redundant keyed placement or an unshipped row mode", () => {
+it("rejects modern commands with redundant keyed placement or an unshipped slide group mode", () => {
   const command = { slide: "add", grid: 1, row: "same", id: "266", after: "259", layout: "256" }
   expect(readSlideState({ file, order: [{ ...command, key: "a0" }] })).toBeUndefined()
   expect(readSlideState({ file, order: [{ ...command, row: "keep" }] })).toBeUndefined()
@@ -226,7 +226,7 @@ it("rejects modern commands with redundant keyed placement or an unshipped row m
   expect(readSlideState({ file, order: [{ ...command, grid: 4 }] })).toBeUndefined()
 })
 
-it("refuses a head restore that would take a foreign slide from the preceding row", () => {
+it("refuses a head restore that would take a foreign slide from the preceding slide group", () => {
   const edit = { slide: "remove", grid: 1, id: slideId("260") } as const
   const undoable = slideUndoable(initial(), file, edit)
   if (undoable === null) throw new Error("undoable")
@@ -241,7 +241,7 @@ it("refuses a head restore that would take a foreign slide from the preceding ro
   })
   expect(undoOf(foreign, undoable).ok).toBe(false)
 })
-it("restores a head while keeping a foreign insert in the same source row", () => {
+it("restores a head while keeping a foreign insert in the same source slide group", () => {
   const edit = { slide: "remove", grid: 1, id: slideId("260") } as const
   const undoable = slideUndoable(initial(), file, edit)
   if (undoable === null) throw new Error("undoable")

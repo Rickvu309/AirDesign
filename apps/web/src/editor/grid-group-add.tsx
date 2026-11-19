@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
 
-export function GridRowAdd({
-  row,
+export function GridGroupAdd({
+  group,
   width,
   height,
   gap,
@@ -12,7 +12,7 @@ export function GridRowAdd({
   last,
   onAdd,
 }: {
-  row: number
+  group: number
   width: number
   height: number
   gap: number
@@ -22,32 +22,32 @@ export function GridRowAdd({
 }) {
   const [used, setUsed] = useState(false)
   const band = last ? Math.min(gap, 48 / scale) : gap
-  const label = slideListCopy.addBelow(row)
+  const label = slideListCopy.addBelow(group)
   return (
     <div
-      data-row-insert={last ? "last" : "between"}
+      data-group-insert={last ? "last" : "between"}
       data-used={used ? "" : undefined}
       className="absolute top-full left-0"
       style={{
         width,
         height: band,
-        ...{ "--grid-row-preview-distance": `${gap + 24}px` },
+        ...{ "--grid-group-preview-distance": `${gap + 24}px` },
       }}
       onPointerLeave={() => setUsed(false)}
     >
       <div
-        data-row-preview
+        data-group-preview
         className="pointer-events-none absolute"
-        style={{ top: last ? "var(--grid-row-preview-distance)" : band / 2 }}
+        style={{ top: last ? "var(--grid-group-preview-distance)" : band / 2 }}
       >
         {last ? (
-          <GridPlaceholder width={width} height={height} scale={scale} kind="row" />
+          <GridPlaceholder width={width} height={height} scale={scale} kind="group" />
         ) : (
-          <div data-row-insertion-line style={{ width: width * scale, transform: `scale(${1 / scale})` }} />
+          <div data-group-insertion-line style={{ width: width * scale, transform: `scale(${1 / scale})` }} />
         )}
       </div>
       <GridAddButton
-        data-add-row
+        data-add-group
         aria-label={label}
         title={label}
         style={{
@@ -89,12 +89,12 @@ export function GridPlaceholder({
   width: number
   height: number
   scale: number
-  kind: "gap" | "row"
+  kind: "gap" | "group"
 }) {
   return (
     <div
       ref={fitPreview}
-      data-row-placeholder={kind === "row" ? "" : undefined}
+      data-group-placeholder={kind === "group" ? "" : undefined}
       data-gap-placeholder={kind === "gap" ? "" : undefined}
       aria-hidden="true"
       style={{

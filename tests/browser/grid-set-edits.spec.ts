@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { limits } from "../../packages/document/src/index.ts"
 import { test, type Stack } from "./api-stack"
 import { openSaved, picked, type Saved } from "./grid-reorder-deck"
-import { entry, mark, rowSizes } from "./slide-grid-deck"
+import { entry, mark, groupSizes } from "./slide-grid-deck"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 
@@ -23,12 +23,12 @@ function revisionOf(stack: Stack, { deck, cookie }: Saved) {
 }
 
 for (const key of [slideListCopy.deleteKey, "Backspace", "menu"]) {
-  test(`${key} deletes the selected slides in one server revision and one Undo restores the rows`, async ({
+  test(`${key} deletes the selected slides in one server revision and one Undo restores the slide groups`, async ({
     page,
     context,
     stack,
   }) => {
-    const saved = await openSaved(page, context, stack, 7, rowSizes(7))
+    const saved = await openSaved(page, context, stack, 7, groupSizes(7))
     const revision = revisionOf(stack, saved)
     const before = Number(await revision())
     const rows = await saved.rows()
@@ -55,7 +55,7 @@ for (const key of ["ControlOrMeta+d", "menu"]) {
     context,
     stack,
   }) => {
-    const saved = await openSaved(page, context, stack, 7, rowSizes(7))
+    const saved = await openSaved(page, context, stack, 7, groupSizes(7))
     const revision = revisionOf(stack, saved)
     const before = Number(await revision())
     const rows = await saved.rows()
@@ -86,7 +86,7 @@ for (const key of ["ControlOrMeta+d", "menu"]) {
 }
 
 test("refuses to delete the entire selected deck", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
+  const saved = await openSaved(page, context, stack, 7, groupSizes(7))
   const before = await revisionOf(stack, saved)()
   const rows = await saved.rows()
   await entry(page, 1).press("ControlOrMeta+a")
@@ -98,7 +98,7 @@ test("refuses to delete the entire selected deck", async ({ page, context, stack
 })
 
 test("refuses the whole duplicate when only one of two copies would fit", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, limits.slides - 1, rowSizes(limits.slides - 1))
+  const saved = await openSaved(page, context, stack, limits.slides - 1, groupSizes(limits.slides - 1))
   const before = await revisionOf(stack, saved)()
   const rows = await saved.rows()
   await entry(page, 1).focus()

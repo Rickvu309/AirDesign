@@ -20,7 +20,7 @@ import {
   arrowGrid,
   fittedGridCards,
   fittedGridElements,
-  fittedGridRows,
+  fittedGridGroups,
   resizedGrid,
   type GridGeometry,
   revealedGrid,
@@ -71,7 +71,7 @@ function spacePans(target: EventTarget | null, host: HTMLElement | null): boolea
   if (canvasKeyTarget(target, host)) return true
   if (!(target instanceof Element) || host === null || !host.contains(target) || typing(target)) return false
   return (
-    target.closest("[data-slide-entry], [data-row-handle]") !== null ||
+    target.closest("[data-slide-entry], [data-group-handle]") !== null ||
     target.closest("button, a[href], [role=button]") === null
   )
 }
@@ -372,7 +372,7 @@ export function useGridViewport({
 
   function reveal(target: Element) {
     const host = viewport.current
-    const card = target.closest("[data-grid-card], [data-row-handle]")
+    const card = target.closest("[data-grid-card], [data-group-handle]")
     if (host === null || card === null) return
     host.scrollLeft = 0
     host.scrollTop = 0
@@ -398,7 +398,7 @@ export function useGridViewport({
     const room = host.getBoundingClientRect()
     const next =
       indices === undefined
-        ? fittedGridRows(geometryRef.current, room)
+        ? fittedGridGroups(geometryRef.current, room)
         : fittedGridCards(geometryRef.current, indices, room)
     if (next !== null) paintFit(next, indices !== undefined)
   }
@@ -475,7 +475,7 @@ export function useGridViewport({
         if (event.target.matches("[data-slide-entry]")) {
           focused.current = Number(event.target.getAttribute("data-slide-entry")) - 1
           reveal(event.target)
-        } else if (event.target.matches("[data-row-handle]")) reveal(event.target)
+        } else if (event.target.matches("[data-group-handle]")) reveal(event.target)
       },
     },
   }

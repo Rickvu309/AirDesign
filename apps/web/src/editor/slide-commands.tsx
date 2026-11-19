@@ -29,7 +29,7 @@ export type CommandedDeck = {
 
 export function slideCommands(deck: CommandedDeck, showMatching = true): SlideStrip {
   const { id, record, settle } = deck
-  const { store, shownParts, canvases, slideCount, sections, current, setCurrent, layouts, showEdited } = deck.shown
+  const { store, shownParts, canvases, slideCount, groups, current, setCurrent, layouts, showEdited } = deck.shown
 
   let pending = Promise.resolve()
 
@@ -38,9 +38,9 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
     index: number,
     to = index,
     layoutPart?: string,
-    row: GridSide = "same",
+    placement: GridSide = "same",
   ) {
-    const anchor = row === "new" ? sequence[index] : null
+    const anchor = placement === "new" ? sequence[index] : null
     await queue(async () => {
       const opened = await connect(memoryRemote()).openDeck(id)
       if (!opened.ok) return
@@ -53,14 +53,24 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
         if (change === "add") deck.shown.saySlide.current(slideListCopy.added(currentIndex + 1))
       }
       const target =
-        row === "new"
+        placement === "new"
           ? presentSlides({
               ...opened.register,
               file: fileSlides(shownParts.current, opened.register),
             }).findIndex((slide) => slide.id === anchor)
           : index
       settle(
-        await commitSlideChange(id, shownParts.current, opened.register, change, target, painted, to, layoutPart, row),
+        await commitSlideChange(
+          id,
+          shownParts.current,
+          opened.register,
+          change,
+          target,
+          painted,
+          to,
+          layoutPart,
+          placement,
+        ),
       )
     })
   }
@@ -80,9 +90,9 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
   const sequence = presentSlides(state).map((spot) => spot.id)
   return {
     count: slideCount,
-    gridStarts: sections.map((section) => section.start),
+    gridStarts: groups.map((group) => group.start),
     slideIds: sequence,
-    sections,
+    groups,
     current,
     selectionBoxes: (ids) =>
       (canvases.current(current)?.elements ?? []).flatMap((element) => {
@@ -91,30 +101,31 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
         return box === null ? [] : [box]
       }),
     onSelect: setCurrent,
-    onAdd: (layoutPart, after = current, row = "same") => void changeSlide("add", after, after, layoutPart, row),
+    onAdd: (layoutPart, after = current, placement = "same") =>
+      void changeSlide("add", after, after, layoutPart, placement),
     layouts,
     onClone: (index) => void changeSlide("clone", index),
     onRemove: (index) => void changeSlide("remove", index),
     onMove: (from, to) => void changeSlide("move", from, to),
-    onMoveMany: (held, at, row = "same") => {
+    onMoveMany: (held, at, placement = "same") => {
       const ids = sequence.filter((_, index) => held.includes(index))
       const first = ids[0]
       if (first === undefined) return
-      const anchor = gridAnchor(sequence, held, at, row)
+      const anchor = gridAnchor(sequence, held, at, placement)
       void queue(async () => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
-        const group = {
+        const base = {
           slide: "move-many",
           grid: gridCommandVersion(opened.register),
           ids: [first, ...ids.slice(1)],
         } as const
         const edit =
-          row === "before"
+          placement === "before"
             ? anchor === null
               ? null
-              : { ...group, row, before: anchor }
-            : { ...group, row, after: anchor }
+              : { ...base, row: placement, before: anchor }
+            : { ...base, row: placement, after: anchor }
         if (edit === null) return
         settle(
           await commitSlideMove(id, file, opened.register, edit, async (currentIndex, undoable) => {

@@ -2,7 +2,7 @@ import fc from "fast-check"
 import { expect, it } from "vitest"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId, type SlideId } from "./element-id.js"
-import { gridRows } from "./grid-order.js"
+import { gridGroups } from "./grid-order.js"
 import { foldSections } from "./section-order.js"
 import { orderKeyAfter, presentSlides, foldSlides, type SlideCommand } from "./slide-order.js"
 import { slideGroups } from "./slide-groups.js"
@@ -72,7 +72,7 @@ function edit(register: Register, operation: Step, next: SlideId): SlideCommand 
   if (operation.kind === "remove") return { slide: "remove", grid, id: source.id }
   if (operation.kind === "remove-many") return { slide: "remove-many", grid, ids: [first, ...group.slice(1)] }
   if (operation.kind === "keep") {
-    const whole = gridRows(register, grid)[operation.at % gridRows(register, grid).length]!
+    const whole = gridGroups(register, grid)[operation.at % gridGroups(register, grid).length]!
     const after = operation.target % 2 === 0 || whole.includes(anchor.id) ? null : anchor.id
     return { slide: "move-many", grid, ids: whole, after, row: "keep" }
   }
@@ -106,7 +106,7 @@ it("keeps every trace a partition with unique keys, and lands an older command o
         if (switched && command.grid !== undefined && command.grid !== 3) {
           const today = decide(register, { command: "slide", file, edit: { ...command, grid: 3 } as SlideCommand })
           if (today.decision !== "apply") throw new Error(today.code)
-          expect(gridRows(answer.register)).toEqual(gridRows(today.register))
+          expect(gridGroups(answer.register)).toEqual(gridGroups(today.register))
           expect(slideGroups(answer.register)).toEqual(slideGroups(today.register))
         }
         register = answer.register
@@ -116,7 +116,7 @@ it("keeps every trace a partition with unique keys, and lands an older command o
         expect(flat).toEqual(presentSlides(register).map((spot) => spot.id))
         expect(new Set(groups.map((group) => group.key)).size).toBe(groups.length)
         if (register.order.some((row) => row.grid === 3))
-          expect(gridRows(register)).toEqual(groups.map((group) => group.slides))
+          expect(gridGroups(register)).toEqual(groups.map((group) => group.slides))
       }
     }),
     { numRuns: 300 },

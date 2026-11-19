@@ -1,4 +1,4 @@
-import { gridRows, slideId, slideUndoable, undoOf, type SlideCommand } from "@airdesign/document"
+import { gridGroups, slideId, slideUndoable, undoOf, type SlideCommand } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { newPage } from "./device.js"
@@ -15,7 +15,7 @@ afterEach(async () => {
   await deleteDatabase()
 })
 
-it("replays a whole-row move after an offline reload against the server's current row tail", async () => {
+it("replays a whole slide group move after an offline reload against the server's current slide group tail", async () => {
   const server = memoryRemote()
   const down = { ...server, commit: () => Promise.reject(new TypeError("offline")) }
   const cache = connect(down)
@@ -25,7 +25,7 @@ it("replays a whole-row move after an offline reload against the server's curren
   newPage()
   const reloaded = await connect(down).openDeck("deck")
   if (!reloaded.ok) throw new Error(reloaded.refusal)
-  expect(gridRows(reloaded.register)).toEqual(inserted)
+  expect(gridGroups(reloaded.register)).toEqual(inserted)
   expect(
     await server.commit({
       deck: "deck",
@@ -47,10 +47,10 @@ it("replays a whole-row move after an offline reload against the server's curren
   newPage()
   const confirmed = await connect({ ...server }).openDeck("deck")
   if (!confirmed.ok) throw new Error(confirmed.refusal)
-  expect(gridRows(confirmed.register)).toEqual([file.slice(4), [...file.slice(0, 4), "301"]])
+  expect(gridGroups(confirmed.register)).toEqual([file.slice(4), [...file.slice(0, 4), "301"]])
 })
 
-it("keeps a sealed whole-row-move request byte-identical after a lost answer and reload", async () => {
+it("keeps a sealed whole slide group move request byte-identical after a lost answer and reload", async () => {
   const server = memoryRemote()
   const sent: string[] = []
   let lose = true
@@ -79,10 +79,10 @@ it("keeps a sealed whole-row-move request byte-identical after a lost answer and
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
   expect(saved.revision).toBe(1)
-  expect(gridRows(saved.register)).toEqual(inserted)
+  expect(gridGroups(saved.register)).toEqual(inserted)
 })
 
-it("keeps a whole-row move and its undo through an offline reload and one flush", async () => {
+it("keeps a whole slide group move and its undo through an offline reload and one flush", async () => {
   const server = memoryRemote()
   const down = { ...server, commit: () => Promise.reject(new TypeError("offline")) }
   const cache = connect(down)
@@ -102,15 +102,15 @@ it("keeps a whole-row move and its undo through an offline reload and one flush"
   newPage()
   const reloaded = await connect(down).openDeck("deck")
   if (!reloaded.ok) throw new Error(reloaded.refusal)
-  expect(gridRows(reloaded.register)).toEqual(original)
+  expect(gridGroups(reloaded.register)).toEqual(original)
   expect(await connect(server).flush("deck")).toMatchObject({ ok: true })
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
-  expect(gridRows(saved.register)).toEqual(original)
+  expect(gridGroups(saved.register)).toEqual(original)
   expect(saved.register.order[0]).toMatchObject({ grid: 1, row: "keep" })
 })
 
-it("undoes a confirmed row move with one later server revision", async () => {
+it("undoes a confirmed slide group move with one later server revision", async () => {
   const server = memoryRemote(),
     cache = connect(server)
   const before = await cache.openDeck("deck")
@@ -131,7 +131,7 @@ it("undoes a confirmed row move with one later server revision", async () => {
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
   expect(saved.revision).toBe(2)
-  expect(gridRows(saved.register)).toEqual(original)
+  expect(gridGroups(saved.register)).toEqual(original)
 })
 
 it("keeps one move through a lost answer before an undo on the adopted server copy", async () => {
@@ -170,5 +170,5 @@ it("keeps one move through a lost answer before an undo on the adopted server co
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
   expect(saved.revision).toBe(2)
-  expect(gridRows(saved.register)).toEqual(original)
+  expect(gridGroups(saved.register)).toEqual(original)
 })

@@ -4,16 +4,16 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { test } from "./api-stack"
 import { openSaved, zoomTo } from "./grid-reorder-deck"
-import { entry, rowSizes } from "./slide-grid-deck"
+import { entry, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("gap and row-boundary adds save left layouts and unequal rows and undo restores both", async ({
+test("gap and slide group boundary adds save left layouts and unequal slide groups and undo restores both", async ({
   page,
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 10, rowSizes(10))
+  const saved = await openSaved(page, context, stack, 10, groupSizes(10))
   const original = await saved.rows()
   await zoomTo(page, 20)
   for (const number of [2, 4, 10]) {

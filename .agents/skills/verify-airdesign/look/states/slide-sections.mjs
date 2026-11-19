@@ -11,7 +11,7 @@ async function drive(kit) {
   await add.click()
   await add.click()
   await expect(kit.page.locator("[data-slide-item]")).toHaveCount(4)
-  const numbers = kit.page.locator("[data-section-head]").last()
+  const numbers = kit.page.locator("[data-group-head]").last()
   await numbers.click()
   await expect(numbers).toHaveAttribute("aria-expanded", "false")
   const first = kit.page.locator('[data-slide-entry="1"]')

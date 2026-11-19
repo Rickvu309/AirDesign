@@ -5,7 +5,7 @@ import {
   decide,
   openRegister,
   slideId,
-  gridRows,
+  gridGroups,
   readSlideState,
   slideUndoable,
   undoOf,
@@ -522,11 +522,11 @@ it("replays every bounded Grid edge through the joint fold and guarded inverses"
       ]
       const named = ["Land", "LandThree", "IndexNoSections"].includes(edge.action)
       const next = step(world, named ? actions[state.stage]! : edge.action)
-      expect(gridRows(next.register).map((row) => row.map(Number))).toEqual(expected[state.stage])
-      expect(gridRows(next.cache).map((row) => row.map(Number))).toEqual(expected[state.cacheStage])
+      expect(gridGroups(next.register).map((row) => row.map(Number))).toEqual(expected[state.stage])
+      expect(gridGroups(next.cache).map((row) => row.map(Number))).toEqual(expected[state.cacheStage])
       for (const register of [next.register, next.cache])
         if (register.order.some((command) => command.grid === 3))
-          expect(slideGroups(register).map((group) => group.slides)).toEqual(gridRows(register))
+          expect(slideGroups(register).map((group) => group.slides)).toEqual(gridGroups(register))
       edges++
       if (!worlds.has(edge.to)) {
         worlds.set(edge.to, next)

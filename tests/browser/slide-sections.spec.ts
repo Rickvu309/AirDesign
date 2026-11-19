@@ -63,11 +63,11 @@ async function sections(page: Page): Promise<readonly Section[]> {
       x: value.x - sidebar.x,
       y: value.y - sidebar.y,
     })
-    return [...document.querySelectorAll("[data-section-head]")].map((head) => {
+    return [...document.querySelectorAll("[data-group-head]")].map((head) => {
       const parts = [...head.children]
       const pill = parts[2]
       const next = head.nextElementSibling
-      const stack = next?.hasAttribute("data-section-stack") ? next : null
+      const stack = next?.hasAttribute("data-group-stack") ? next : null
       const column = stack?.firstElementChild
       return {
         head: inside(box(head)),
@@ -108,19 +108,19 @@ async function numbers(page: Page): Promise<string[]> {
 }
 
 async function headings(page: Page): Promise<string[]> {
-  return page.locator("[data-section-head]").evaluateAll((items) => items.map((item) => item.textContent ?? ""))
+  return page.locator("[data-group-head]").evaluateAll((items) => items.map((item) => item.textContent ?? ""))
 }
 
 test("a deck with sections lists each section's name above its slides and numbers the slides straight through", async ({
   page,
 }) => {
   await open(page, sectioned)
-  await expect(page.locator("[data-section-head]")).toHaveCount(2)
+  await expect(page.locator("[data-group-head]")).toHaveCount(2)
   expect(await headings(page)).toEqual(["Opening", "Numbers"])
   expect(await numbers(page)).toEqual(["1", "2"])
   const order = await page
     .locator("[data-slide-list] > *")
-    .evaluateAll((rows) => rows.map((row) => row.hasAttribute("data-section-head")))
+    .evaluateAll((rows) => rows.map((row) => row.hasAttribute("data-group-head")))
   expect(order).toEqual([true, false, true, false])
 })
 
@@ -136,7 +136,7 @@ test("a new slide joins the section of the slide it comes after, and the section
       .locator("[data-slide-list] > *")
       .evaluateAll((items) =>
         items.map((item) =>
-          item.hasAttribute("data-section-head")
+          item.hasAttribute("data-group-head")
             ? (item.textContent ?? "")
             : (item.querySelector("[data-slide-item]")?.firstElementChild?.textContent ?? ""),
         ),
@@ -157,7 +157,7 @@ test("a section collapses to its first slide with the range of its slides, opens
   await page.locator("[data-slide-entry='3']").click()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-item]")).toHaveCount(4)
-  const opening = page.locator("[data-section-head]").first()
+  const opening = page.locator("[data-group-head]").first()
   await expect(opening).toHaveAttribute("aria-expanded", "true")
   await opening.click()
   await expect(opening).toHaveAttribute("aria-expanded", "false")
@@ -174,7 +174,7 @@ test("a section collapses to its first slide with the range of its slides, opens
 
 test("a deck without sections lists its slides with no headings", async ({ page }) => {
   await open(page, clean)
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-slide-item]")).toHaveCount(1)
 })
 
@@ -188,7 +188,7 @@ test("the real filmstrip draws section headings and a collapsed section where th
   await page.getByRole("button", { name: "Add slide" }).click()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-item]")).toHaveCount(4)
-  await page.locator("[data-section-head]").last().click()
+  await page.locator("[data-group-head]").last().click()
   const real = await sections(page)
   const opened = real[0]
   const collapsed = real[1]
@@ -239,7 +239,7 @@ test("a person moves the first slide of a section into the section above and und
       .locator("[data-slide-list] > *")
       .evaluateAll((items) =>
         items.map((item) =>
-          item.hasAttribute("data-section-head")
+          item.hasAttribute("data-group-head")
             ? (item.textContent ?? "")
             : (item.querySelector("[data-slide-item]")?.firstElementChild?.textContent ?? ""),
         ),

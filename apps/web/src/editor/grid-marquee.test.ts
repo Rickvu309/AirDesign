@@ -26,7 +26,7 @@ describe("grid marquee", () => {
     expect(marqueeStarted({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true)
   })
 
-  it("hits every slide face the box crosses, across rows, in slide order", () => {
+  it("hits every slide face the box crosses, across groups, in slide order", () => {
     expect(marqueeHits({ left: 210, top: 40, right: 250, bottom: 90 }, faces)).toEqual([1, 2, 4])
     expect(marqueeHits({ left: 101, top: 51, right: 119, bottom: 79 }, faces)).toEqual([])
     expect(marqueeHits({ left: 50, top: 60, right: 60, bottom: 60 }, faces)).toEqual([])

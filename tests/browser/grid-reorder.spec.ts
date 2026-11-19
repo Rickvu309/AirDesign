@@ -2,7 +2,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { boxOf, canvas, grab, hover, openSaved, panOf, picked, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, fixtures, rowSizes } from "./slide-grid-deck"
+import { entry, fixtures, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
   await device.send("Emulation.setCPUThrottlingRate", { rate: 4 })
 })
 
-test("a dragged slide pans the canvas from the first row to the last and lands after slide 50", async ({
+test("a dragged slide pans the canvas from the first slide group to the last and lands after slide 50", async ({
   page,
   context,
   stack,
@@ -106,7 +106,7 @@ test("drops land where the bar shows at 25% and 150%, after panning, at the firs
   stack,
 }) => {
   test.setTimeout(120_000)
-  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
+  const saved = await openSaved(page, context, stack, 8, groupSizes(8))
   await zoomTo(page, 25)
   await page.mouse.move(700, 400)
   await page.mouse.wheel(120, 60)
@@ -130,7 +130,11 @@ test("drops land where the bar shows at 25% and 150%, after panning, at the firs
   await expect.poll(saved.order).toEqual(picked(saved.ids, [3, 2, 4, 5, 6, 7, 8, 1]))
 })
 
-test("a slide dropped into another section joins that row where the bar shows", async ({ page, context, stack }) => {
+test("a slide dropped into another section joins that slide group where the bar shows", async ({
+  page,
+  context,
+  stack,
+}) => {
   const saved = await openSaved(page, context, stack, join(fixtures, "sections-after.pptx"))
   await zoomTo(page, 25)
   await entry(page, 1).focus()

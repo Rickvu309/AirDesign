@@ -3,7 +3,8 @@
     "known fault": "known failure",
     "stick": "metric",
     "owner gate": "bar",
-    "speaker notes": "presenter notes"
+    "speaker notes": "presenter notes",
+    "grid row": "slide group"
   },
   "allowed": [
     {
@@ -15,6 +16,41 @@
       "file": "scripts/bar.mjs",
       "text": "\"known faults\": \"known-failures\",",
       "reason": "bar maps the old metric name to the new one"
+    },
+    {
+      "file": "packages/render/src/table-art.tsx",
+      "text": "gridRow: `${row + 1} / span ${cell.rowSpan}`,",
+      "reason": "the CSS property gridRow places a table cell"
+    },
+    {
+      "file": "packages/render/src/table-art.test.ts",
+      "text": "expect(painted?.style.gridRow).toBe(\"1 / span 2\")",
+      "reason": "the CSS property gridRow places a table cell"
+    },
+    {
+      "file": "apps/web/src/editor/grid-group.tsx",
+      "text": "<div style={{ gridColumn: offset + 1, gridRow: 1 }}>{children}</div>",
+      "reason": "the CSS property gridRow places a line of thumbnails"
+    },
+    {
+      "file": "apps/web/src/editor/grid-groups.tsx",
+      "text": "gridRow: wrapped ? `${first + 1} / span ${groupLines.length}` : first + 1,",
+      "reason": "the CSS property gridRow places a line of thumbnails"
+    },
+    {
+      "file": "apps/web/src/editor/grid-groups.tsx",
+      "text": "const place = { gridRow: index + 1, gridColumn: `1 / span ${length}` }",
+      "reason": "the CSS property gridRow places a line of thumbnails"
+    },
+    {
+      "file": "apps/web/src/editor/grid-groups.tsx",
+      "text": "gridRow: last + 1,",
+      "reason": "the CSS property gridRow places a line of thumbnails"
+    },
+    {
+      "file": "apps/web/src/editor/adjust-tone.tsx",
+      "text": "className=\"grid aspect-square touch-none cursor-crosshair grid-cols-3 grid-rows-3 place-items-center rounded-md bg-muted disabled:cursor-default disabled:opacity-50\"",
+      "reason": "the Tailwind class grid-rows-3 lays out the colour dial"
     }
   ]
 }

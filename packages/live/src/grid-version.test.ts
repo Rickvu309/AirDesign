@@ -1,4 +1,4 @@
-import { format, formatOf, gridCommandVersion, gridRows, slideGroups, slideId, stamps } from "@airdesign/document"
+import { format, formatOf, gridCommandVersion, gridGroups, slideGroups, slideId, stamps } from "@airdesign/document"
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, memoryShelf } from "./browser-fixtures.js"
@@ -38,17 +38,17 @@ it("adopts the published section starts and replays a version two journal edit o
   const device = connect(down, { shelf })
   const recovered = await device.openDeck("deck")
   if (!recovered.ok) throw new Error(recovered.refusal)
-  expect(gridRows(recovered.register)).toEqual(after)
+  expect(gridGroups(recovered.register)).toEqual(after)
   expect(recovered.pending).toMatchObject([{ format, slideEdit: edit }])
   await expect(device.flush("deck")).rejects.toThrow("offline")
   expect(await connect(server).flush("deck")).toMatchObject({ ok: true, revision: 1 })
   const saved = await server.open({ deck: "deck" })
   if (!saved.ok) throw new Error(saved.refusal)
-  expect(gridRows(saved.register)).toEqual(after)
+  expect(gridGroups(saved.register)).toEqual(after)
   newPage()
   const reloaded = await connect(down).openDeck("deck")
   if (!reloaded.ok) throw new Error(reloaded.refusal)
-  expect(gridRows(reloaded.register)).toEqual(after)
+  expect(gridGroups(reloaded.register)).toEqual(after)
 })
 
 it("opens a new import offline and publishes its section starts before sending its first version two edit", async () => {
@@ -64,7 +64,7 @@ it("opens a new import offline and publishes its section starts before sending i
   if (!opened.ok) throw new Error(opened.refusal)
   expect(opened.register.index).toBeUndefined()
   expect(await cache.rows("fresh")).toEqual([])
-  expect(gridRows({ ...opened.register, file })).toEqual([file.slice(0, 3), file.slice(3)])
+  expect(gridGroups({ ...opened.register, file })).toEqual([file.slice(0, 3), file.slice(3)])
   newPage()
   const down = connect({ ...server, open: () => Promise.reject(new TypeError("offline")) })
   expect(await down.enqueueSlide("fresh", file, edit)).toMatchObject({ ok: true })
@@ -75,7 +75,7 @@ it("opens a new import offline and publishes its section starts before sending i
   const saved = await server.open({ deck: "fresh" })
   if (!saved.ok) throw new Error(saved.refusal)
   expect(saved.register.order).toEqual([edit])
-  expect(gridRows(saved.register)).toEqual(after)
+  expect(gridGroups(saved.register)).toEqual(after)
 })
 
 it("refuses, on a tab one command stamp older, the deck a version three Grid edit reached, and keeps its Grid edit for this build to send", async () => {

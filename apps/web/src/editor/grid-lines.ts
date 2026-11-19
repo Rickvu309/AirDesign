@@ -17,11 +17,11 @@ export function gridBaseColumns(count: number): number {
 
 export function gridWrapColumns(
   count: number,
-  rows: readonly { readonly start: number; readonly end: number }[],
+  groups: readonly { readonly start: number; readonly end: number }[],
 ): number {
   const base = gridBaseColumns(count)
-  if (rows.length < 2) return base
-  const lengths = rows.map((row) => row.end - row.start)
+  if (groups.length < 2) return base
+  const lengths = groups.map((group) => group.end - group.start)
   if (lengths.every((length) => length <= base)) return base
   let columns = base
   let lines = packed(lengths, base)

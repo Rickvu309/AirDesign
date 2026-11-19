@@ -3,7 +3,7 @@ import { readDeckId } from "@airdesign/catalog"
 import {
   decide,
   elementId,
-  gridRows,
+  gridGroups,
   orderKeyBetween,
   presentSlides,
   readSlideId,
@@ -31,20 +31,20 @@ function opened(count = 2) {
   if (!result.ok) throw new Error(result.refusal)
   return result.deck
 }
-it("adds below the source row through the existing agent change and undoes the run", () => {
+it("adds below the source slide group through the existing agent change and undoes the run", () => {
   const result = changeCall("add_slide", opened(6), actor, {
     deck: "deck",
     base: 0,
     after: "257",
     layout: "256",
-    row: "new",
+    group: "new",
   })
   if (!result.ok) throw new Error(result.refusal)
-  expect(gridRows(result.deck.register)).toEqual([["256", "257", "258", "259"], ["262"], ["260", "261"]])
+  expect(gridGroups(result.deck.register)).toEqual([["256", "257", "258", "259"], ["262"], ["260", "261"]])
   expect(result.deck.register.order.at(-1)).toMatchObject({ grid: 1, row: "new", after: "257", runId: "run" })
   const undone = call("undo_run", result.deck, { actor: "person" }, { deck: "deck", runId: "run" })
   if (!undone.ok) throw new Error(undone.refusal)
-  expect(gridRows(undone.deck.register)).toEqual([
+  expect(gridGroups(undone.deck.register)).toEqual([
     ["256", "257", "258", "259"],
     ["260", "261"],
   ])
@@ -168,24 +168,24 @@ it("Undo of a run that added a slide and titled it removes the slide", () => {
   if (undone.ok) expect(presentSlides(undone.deck.register).map((row) => row.id)).toEqual(["256"])
 })
 
-it("moves a complete row in one revision through edit and undoes the run", () => {
+it("moves a complete slide group in one revision through edit and undoes the run", () => {
   const result = changeCall("move_slides", opened(6), actor, {
     deck: "deck",
     base: 0,
     slides: ["261", "260"],
     after: null,
-    row: "keep",
+    group: "keep",
   })
   if (!result.ok) throw new Error(result.refusal)
   expect(result.deck.revision).toBe(1)
   expect(result.deck.register.order).toHaveLength(1)
-  expect(gridRows(result.deck.register)).toEqual([
+  expect(gridGroups(result.deck.register)).toEqual([
     ["260", "261"],
     ["256", "257", "258", "259"],
   ])
   const undone = call("undo_run", result.deck, { actor: "person" }, { deck: "deck", runId: "run" })
   if (!undone.ok) throw new Error(undone.refusal)
-  expect(gridRows(undone.deck.register)).toEqual([
+  expect(gridGroups(undone.deck.register)).toEqual([
     ["256", "257", "258", "259"],
     ["260", "261"],
   ])
@@ -201,7 +201,7 @@ it("duplicates and deletes the selected slides through edit in one revision per 
   if (!copy.ok) throw new Error(copy.refusal)
   expect(copy.deck.revision).toBe(1)
   expect(copy.deck.register.order).toHaveLength(1)
-  expect(gridRows(copy.deck.register)).toEqual([
+  expect(gridGroups(copy.deck.register)).toEqual([
     ["256", "257", "258", "259"],
     ["260", "261", "263", "264", "262"],
   ])
@@ -209,11 +209,11 @@ it("duplicates and deletes the selected slides through edit in one revision per 
   if (!deletion.ok) throw new Error(deletion.refusal)
   expect(deletion.deck.revision).toBe(2)
   expect(deletion.deck.register.order).toHaveLength(2)
-  expect(gridRows(deletion.deck.register)).toEqual([
+  expect(gridGroups(deletion.deck.register)).toEqual([
     ["257", "258", "259"],
     ["261", "263", "264", "262"],
   ])
   const undone = call("undo_run", deletion.deck, { actor: "person" }, { deck: "deck", runId: "run" })
   if (!undone.ok) throw new Error(undone.refusal)
-  expect(gridRows(undone.deck.register)).toEqual(original)
+  expect(gridGroups(undone.deck.register)).toEqual(original)
 })

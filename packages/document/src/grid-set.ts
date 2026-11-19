@@ -1,5 +1,5 @@
 import type { SlideId } from "./element-id.js"
-import { gridCommandVersion, orderedSpots, type GridCopy, type GridRow, type GridCommand } from "./grid-order.js"
+import { gridCommandVersion, orderedSpots, type GridCopy, type GridGroup, type GridCommand } from "./grid-order.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween } from "./order-key.js"
 import { slideBirths } from "./slide-births.js"
@@ -54,7 +54,7 @@ export function cloneMany(
 
 export function changeSet(
   before: readonly FoldedSlide[],
-  rows: readonly GridRow[],
+  groups: readonly GridGroup[],
   command: SlideSet,
 ): {
   readonly spots: readonly FoldedSlide[]
@@ -65,7 +65,7 @@ export function changeSet(
   if (command.slide === "remove-many") {
     const ids = new Set(command.ids)
     const spots = before.filter((spot) => ids.has(spot.id)).map((spot) => ({ ...spot, present: false }))
-    const heads = new Set(rows.flatMap((row) => row.find((id) => !ids.has(id)) ?? []))
+    const heads = new Set(groups.flatMap((group) => group.find((id) => !ids.has(id)) ?? []))
     return { spots, heads, effects: spots.map(({ id }) => ({ slide: "remove", id, ...run })) }
   }
   const copies = new Map(command.copies.map((copy) => [copy.source, copy]))
@@ -84,5 +84,5 @@ export function changeSet(
     birth: { from: "clone" as const, source },
     present: true,
   }))
-  return { spots, heads: new Set(rows.map((row) => row[0])), effects }
+  return { spots, heads: new Set(groups.map((group) => group[0])), effects }
 }

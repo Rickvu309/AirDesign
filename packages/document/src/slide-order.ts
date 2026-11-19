@@ -143,7 +143,7 @@ export function applySlide(
   if (state.file.length > 0 && !sameIds(state.file, file)) return { ok: false, code: "stale" }
   if (command.grid === 2 && gridCommandVersion(state) === 1) return { ok: false, code: "stale" }
   if (command.grid === 3 && gridSectionStarts(state) === undefined) return { ok: false, code: "stale" }
-  if (rowPlaced(command) && state.order.some((row) => row.grid === 3)) return { ok: false, code: "stale" }
+  if (groupPlaced(command) && state.order.some((row) => row.grid === 3)) return { ok: false, code: "stale" }
   const withFile = state.file.length === 0 ? { ...state, file } : state
   const present = presentSlides(withFile)
   const ids = new Set(present.map((spot) => spot.id))
@@ -204,7 +204,7 @@ export function applySlide(
   return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
 }
 
-function rowPlaced(command: SlideCommand): boolean {
+function groupPlaced(command: SlideCommand): boolean {
   if (command.grid === undefined || command.grid === 3) return false
   if (command.slide === "add") return command.row === "new"
   return command.slide === "move-many" && command.row !== "same" && command.row !== "before" && command.after !== null

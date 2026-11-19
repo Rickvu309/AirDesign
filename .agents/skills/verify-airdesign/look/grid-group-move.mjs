@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test"
-import { openRowDeck } from "./grid-row-add.mjs"
+import { openGroupDeck } from "./grid-group-add.mjs"
 
 export const handle = (page, row = 1) => page.getByRole("button", { name: `Move slide group ${row}`, exact: true })
 export async function prepareRows(kit) {
-  const account = await openRowDeck(kit, 7)
+  const account = await openGroupDeck(kit, 7)
   const { page } = kit
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill("22")
@@ -14,10 +14,10 @@ export async function prepareRows(kit) {
   await page.mouse.down()
   await page.mouse.move(target.x + target.width * 0.9, target.y + target.height * 0.8, { steps: 8 })
   await page.mouse.up()
-  await expect(page.locator('[data-grid-row-member="0"] [data-slide-entry]')).toHaveCount(3)
+  await expect(page.locator('[data-grid-group-member="0"] [data-slide-entry]')).toHaveCount(3)
   return account
 }
-export async function rowMoveState(kit, state) {
+export async function groupMoveState(kit, state) {
   const account = await prepareRows(kit)
   const { page } = kit
   const one = await page.locator('[data-slide-entry="1"]').boundingBox()
@@ -35,9 +35,9 @@ export async function rowMoveState(kit, state) {
   await page.mouse.down()
   const last = await page.locator('[data-slide-entry="7"]').boundingBox()
   await page.mouse.move(one.x + one.width, last.y + last.height + 24, { steps: 10 })
-  await expect(page.locator("[data-drop-bar][data-row-drop]")).toBeVisible()
+  await expect(page.locator("[data-drop-bar][data-group-drop]")).toBeVisible()
   if (state === "drag") return account
   await page.mouse.up()
-  await expect(page.locator('[data-grid-row-member="0"] [data-slide-entry]')).toHaveCount(4)
+  await expect(page.locator('[data-grid-group-member="0"] [data-slide-entry]')).toHaveCount(4)
   return account
 }

@@ -166,7 +166,7 @@ function numberedRun(
   if (native !== undefined && settings.count === "all" && settings.format === null) {
     return formattedInline(bytes, native, run)
   }
-  const { number, suffix } = shownSlideNumber(settings, numbers ?? { number: 1, total: 1, rowNumber: 1 })
+  const { number, suffix } = shownSlideNumber(settings, numbers ?? { number: 1, total: 1, groupNumber: 1 })
   const properties = runProperties(bytes, origin?.format ?? (origin === undefined ? source.end : undefined), run)
   const ordinary = (text: string) => joinBytes([runOpen, properties, writtenText(bytes, undefined, text), runClose])
   if (settings.count === "row") return ordinary(number + suffix)

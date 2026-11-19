@@ -8,9 +8,9 @@ import {
   liveTarget,
   moveBelowPlace,
   previewSlot,
-  rowDrop,
+  groupDrop,
   slotUnder,
-  terminalRowBand,
+  terminalGroupBand,
 } from "@/editor/grid-drop"
 
 const card = { left: 100, width: 300 }
@@ -45,19 +45,19 @@ describe("drag preview", () => {
     expect([0, 1, 2].map((index) => previewSlot(index, 1, null))).toEqual([0, 1, 2])
   })
 
-  const rows = [{ start: 0, end: 5 }]
+  const groups = [{ start: 0, end: 5 }]
 
   it("finds the slot under the pointer, counting half of each gap to its nearer slide", () => {
-    expect(slotUnder(150, 80, slots, rows)?.index).toBe(0)
-    expect(slotUnder(310, 80, slots, rows)?.index).toBe(0)
-    expect(slotUnder(322, 80, slots, rows)?.index).toBe(1)
-    expect(slotUnder(150, 400, slots, rows)).toBeUndefined()
+    expect(slotUnder(150, 80, slots, groups)?.index).toBe(0)
+    expect(slotUnder(310, 80, slots, groups)?.index).toBe(0)
+    expect(slotUnder(322, 80, slots, groups)?.index).toBe(1)
+    expect(slotUnder(150, 400, slots, groups)).toBeUndefined()
   })
 
-  it("extends a row end through its gap and leaves the distant canvas empty", () => {
+  it("extends a group end through its gap and leaves the distant canvas empty", () => {
     const right = 4 * 332 + 300
-    expect(slotUnder(right + 20, 80, slots, rows)?.index).toBe(4)
-    expect(slotUnder(right + 40, 80, slots, rows)).toBeUndefined()
+    expect(slotUnder(right + 20, 80, slots, groups)?.index).toBe(4)
+    expect(slotUnder(right + 40, 80, slots, groups)).toBeUndefined()
   })
 })
 
@@ -86,76 +86,76 @@ describe("edge pan", () => {
   })
 })
 
-describe("moving slides between rows", () => {
-  const rows = [
+describe("moving slides between slide groups", () => {
+  const groups = [
     { start: 0, end: 4 },
     { start: 4, end: 5 },
     { start: 5, end: 8 },
   ]
 
-  it("accepts a drop that changes rows without changing slide order", () => {
-    expect(gridDrop(rows, [5], 5, "same")).toBe(5)
-    expect(gridDrop(rows, [5, 6], 5, "same")).toBe(5)
-    expect(gridDrop(rows, [5, 6, 7], 5, "same")).toBe(5)
-    expect(gridDrop(rows, [3], 4, "new")).toBe(3)
+  it("accepts a drop that changes groups without changing slide order", () => {
+    expect(gridDrop(groups, [5], 5, "same")).toBe(5)
+    expect(gridDrop(groups, [5, 6], 5, "same")).toBe(5)
+    expect(gridDrop(groups, [5, 6, 7], 5, "same")).toBe(5)
+    expect(gridDrop(groups, [3], 4, "new")).toBe(3)
   })
 
-  it("distinguishes a row start from the previous row end at the same position", () => {
-    expect(gridDrop(rows, [3], 4, "same")).toBeNull()
-    expect(gridDrop(rows, [3], 4, "before")).toBe(3)
-    expect(gridDrop(rows, [3, 4], 5, "before")).toBe(3)
-    expect(gridDrop(rows, [5, 6], 0, "before")).toBe(0)
+  it("distinguishes a group start from the previous group end at the same position", () => {
+    expect(gridDrop(groups, [3], 4, "same")).toBeNull()
+    expect(gridDrop(groups, [3], 4, "before")).toBe(3)
+    expect(gridDrop(groups, [3, 4], 5, "before")).toBe(3)
+    expect(gridDrop(groups, [5, 6], 0, "before")).toBe(0)
   })
 
-  it("uses the first unheld slide in the destination row as the anchor", () => {
-    expect(gridDrop(rows, [0, 5], 5, "before")).toBe(4)
-    expect(gridDrop(rows, [0, 4], 4, "before")).toBeNull()
+  it("uses the first unheld slide in the destination group as the anchor", () => {
+    expect(gridDrop(groups, [0, 5], 5, "before")).toBe(4)
+    expect(gridDrop(groups, [0, 4], 4, "before")).toBeNull()
   })
 
-  it("ignores a drop where the slides remain in the same row and place", () => {
-    expect(gridDrop(rows, [1], 1, "same")).toBeNull()
-    expect(gridDrop(rows, [1, 2], 3, "same")).toBeNull()
-    expect(gridDrop(rows, [5, 6, 7], 5, "keep")).toBeNull()
-    expect(gridDrop(rows, [5, 6, 7], 8, "keep")).toBeNull()
-    expect(gridDrop(rows, [4], 5, "new")).toBeNull()
+  it("ignores a drop where the slides remain in the same group and place", () => {
+    expect(gridDrop(groups, [1], 1, "same")).toBeNull()
+    expect(gridDrop(groups, [1, 2], 3, "same")).toBeNull()
+    expect(gridDrop(groups, [5, 6, 7], 5, "keep")).toBeNull()
+    expect(gridDrop(groups, [5, 6, 7], 8, "keep")).toBeNull()
+    expect(gridDrop(groups, [4], 5, "new")).toBeNull()
   })
 
-  it("lands a group together at its position in the new rows", () => {
-    expect(gridDrop(rows, [5, 6, 7], 4, "keep")).toBe(4)
-    expect(gridDrop(rows, [2, 0], 7, "same")).toBe(5)
-    expect(gridDrop(rows, [5, 0], 7, "new")).toBe(6)
+  it("lands a group together at its position in the new slide groups", () => {
+    expect(gridDrop(groups, [5, 6, 7], 4, "keep")).toBe(4)
+    expect(gridDrop(groups, [2, 0], 7, "same")).toBe(5)
+    expect(gridDrop(groups, [5, 0], 7, "new")).toBe(6)
   })
 })
 
-describe("live moves inside a row", () => {
-  const rows = [
+describe("live moves inside a slide group", () => {
+  const groups = [
     { start: 0, end: 4 },
     { start: 4, end: 8 },
   ]
 
-  it("moves the siblings aside for any slot of the dragged slide's own row, its first slot included", () => {
-    expect(liveTarget(rows, 2, 0, 0)).toBe(0)
-    expect(liveTarget(rows, 6, 4, 4)).toBe(4)
-    expect(liveTarget(rows, 0, 2, 3)).toBe(2)
+  it("moves the siblings aside for any slot of the dragged slide's own group, its first slot included", () => {
+    expect(liveTarget(groups, 2, 0, 0)).toBe(0)
+    expect(liveTarget(groups, 6, 4, 4)).toBe(4)
+    expect(liveTarget(groups, 0, 2, 3)).toBe(2)
   })
 
-  it("keeps the slides still for another row, its own row end, or the end of the row above", () => {
-    expect(liveTarget(rows, 6, 0, 0)).toBeNull()
-    expect(liveTarget(rows, 1, 3, 4)).toBeNull()
-    expect(liveTarget(rows, 5, 3, 4)).toBeNull()
-    expect(liveTarget(rows, 2, 2, 2)).toBeNull()
+  it("keeps the slides still for another group, its own group end, or the end of the group above", () => {
+    expect(liveTarget(groups, 6, 0, 0)).toBeNull()
+    expect(liveTarget(groups, 1, 3, 4)).toBeNull()
+    expect(liveTarget(groups, 5, 3, 4)).toBeNull()
+    expect(liveTarget(groups, 2, 2, 2)).toBeNull()
   })
 })
 
 describe("drop side", () => {
-  const rows = [
+  const groups = [
     { start: 0, end: 4 },
     { start: 4, end: 8 },
   ]
 
-  it("drops at a row start before its first slide", () => {
-    expect(dropAt(rows, [6], 4, 4)).toEqual({ at: 4, side: "before" })
-    expect(dropAt(rows, [6], 4, 5)).toEqual({ at: 5, side: "same" })
+  it("drops at a group start before its first slide", () => {
+    expect(dropAt(groups, [6], 4, 4)).toEqual({ at: 4, side: "before" })
+    expect(dropAt(groups, [6], 4, 5)).toEqual({ at: 5, side: "same" })
   })
 
   it("drops before a group only at its first slide, including when that group wraps", () => {
@@ -166,55 +166,55 @@ describe("drop side", () => {
     expect(liveTarget(wrapped, 2, 20, 21)).toBe(20)
   })
 
-  it("keeps a row's first slide in its row when it is dropped on its own right half", () => {
-    expect(dropAt(rows, [4], 4, 5)).toEqual({ at: 4, side: "before" })
-    expect(gridDrop(rows, [4], 4, "before")).toBeNull()
-    expect(dropAt(rows, [4, 1], 4, 5)).toEqual({ at: 4, side: "before" })
-    expect(gridDrop(rows, [4, 1], 4, "before")).toBe(3)
+  it("keeps a slide group's first slide in its group when it is dropped on its own right half", () => {
+    expect(dropAt(groups, [4], 4, 5)).toEqual({ at: 4, side: "before" })
+    expect(gridDrop(groups, [4], 4, "before")).toBeNull()
+    expect(dropAt(groups, [4, 1], 4, 5)).toEqual({ at: 4, side: "before" })
+    expect(gridDrop(groups, [4, 1], 4, "before")).toBe(3)
   })
 })
 
-describe("whole-row drops", () => {
+describe("whole slide group drops", () => {
   const bands = [
     { start: 0, end: 3, top: 100, bottom: 400 },
     { start: 3, end: 8, top: 600, bottom: 900 },
   ]
   const scale = 0.5
-  const outside = terminalRowBand / 2 / scale
+  const outside = terminalGroupBand / 2 / scale
 
-  it("puts the bar above the first row's numbers, clear of them by half the drop band", () => {
-    expect(rowDrop(bands, 60, scale)).toEqual({ at: 0, top: 100 - outside })
+  it("puts the bar above the first slide group's numbers, clear of them by half the drop band", () => {
+    expect(groupDrop(bands, 60, scale)).toEqual({ at: 0, top: 100 - outside })
   })
 
-  it("puts the bar below the last row's slides, clear of them by half the drop band", () => {
-    expect(rowDrop(bands, 950, scale)).toEqual({ at: 8, top: 900 + outside })
+  it("puts the bar below the last slide group's slides, clear of them by half the drop band", () => {
+    expect(groupDrop(bands, 950, scale)).toEqual({ at: 8, top: 900 + outside })
   })
 
-  it("puts the bar midway between two rows", () => {
-    expect(rowDrop(bands, 500, scale)).toEqual({ at: 3, top: 500 })
+  it("puts the bar midway between two slide groups", () => {
+    expect(groupDrop(bands, 500, scale)).toEqual({ at: 3, top: 500 })
   })
 
-  it("drops nowhere over a row or far from the rows", () => {
-    expect(rowDrop(bands, 200, scale)).toBeNull()
-    expect(rowDrop(bands, 100 - 2 * outside - 1, scale)).toBeNull()
-    expect(rowDrop(bands, 900 + 2 * outside + 1, scale)).toBeNull()
+  it("drops nowhere over a group or far from the slide groups", () => {
+    expect(groupDrop(bands, 200, scale)).toBeNull()
+    expect(groupDrop(bands, 100 - 2 * outside - 1, scale)).toBeNull()
+    expect(groupDrop(bands, 900 + 2 * outside + 1, scale)).toBeNull()
   })
 })
 
-describe("move to a new row below", () => {
-  const rows = [
+describe("move to a new group below", () => {
+  const groups = [
     { start: 0, end: 4 },
     { start: 4, end: 5 },
     { start: 5, end: 8 },
   ]
 
-  it("starts a new row after the slide's row", () => {
-    expect(moveBelowPlace(rows, [1], 1)).toBe(4)
-    expect(moveBelowPlace(rows, [5, 6], 5)).toBe(8)
+  it("starts a new group after the slide's slide group", () => {
+    expect(moveBelowPlace(groups, [1], 1)).toBe(4)
+    expect(moveBelowPlace(groups, [5, 6], 5)).toBe(8)
   })
 
-  it("offers nothing when the slides already make up their row alone", () => {
-    expect(moveBelowPlace(rows, [4], 4)).toBeNull()
-    expect(moveBelowPlace(rows, [5, 6, 7], 6)).toBeNull()
+  it("offers nothing when the slides already make up their group alone", () => {
+    expect(moveBelowPlace(groups, [4], 4)).toBeNull()
+    expect(moveBelowPlace(groups, [5, 6, 7], 6)).toBeNull()
   })
 })

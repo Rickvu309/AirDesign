@@ -3,8 +3,8 @@ import { currentBox, slideId, type Box, type ElementId, type Register, type Slid
 import { paintReader, readShapes, readSlides, slideNumbering, themeSwatches, type ReadShape } from "@airdesign/pptx"
 import type { ElementRecord, PaintStore } from "@airdesign/render"
 import type { SlideCanvases } from "@/canvas-slide"
-import type { StripSection } from "@/editor/slide-sidebar"
-import { stripSections } from "@/strip-sections"
+import type { StripGroup } from "@/editor/slide-sidebar"
+import { stripGroups } from "@/strip-groups"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
 import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
@@ -41,7 +41,7 @@ type PaintedSlide = {
 
 export type Painted = {
   readonly count: number
-  readonly sections: readonly StripSection[]
+  readonly groups: readonly StripGroup[]
   readonly canvases: SlideCanvases
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly movables: ReadonlyMap<ElementId, TextBox>
@@ -245,7 +245,7 @@ export function paint(
   }
   return {
     count: read.length,
-    sections: stripSections(parts, register),
+    groups: stripGroups(parts, register),
     canvases,
     boxes,
     movables,

@@ -7,7 +7,7 @@ export type GridPressed = "slide" | "element" | "editor"
 export function gridBlank(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
-    target.closest("[data-grid-card], [data-section-head], [data-add-row], [data-row-handle]") === null
+    target.closest("[data-grid-card], [data-group-head], [data-add-group], [data-group-handle]") === null
   )
 }
 

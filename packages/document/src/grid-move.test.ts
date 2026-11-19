@@ -3,7 +3,7 @@ import { answeredRegister } from "./answered-register.js"
 import { format } from "./format.js"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId } from "./element-id.js"
-import { gridRows } from "./grid-order.js"
+import { gridGroups } from "./grid-order.js"
 import { redoOf, slideUndoable, undoOf } from "./person-undo.js"
 import { readSlideState, type SlideCommand } from "./slide-order.js"
 import { foldSections } from "./section-order.js"
@@ -39,7 +39,7 @@ it("moves a non-contiguous group in presentation order in one command and one in
   if (undoable === null) throw new Error("undoable")
   const after = apply(before, edit)
   expect(after.order).toHaveLength(1)
-  expect(gridRows(after)).toEqual([
+  expect(gridGroups(after)).toEqual([
     ["2", "4"],
     ["6", "7", "8"],
     ["9", "1", "3", "5", "10"],
@@ -48,8 +48,8 @@ it("moves a non-contiguous group in presentation order in one command and one in
   if (!undone.ok) throw new Error("undo")
   expect(undone.commands).toHaveLength(1)
   const restored = turn(after, undone)
-  expect(gridRows(restored)).toEqual(gridRows(before))
-  expect(gridRows(turn(restored, redoOf(restored, undoable)))).toEqual(gridRows(after))
+  expect(gridGroups(restored)).toEqual(gridGroups(before))
+  expect(gridGroups(turn(restored, redoOf(restored, undoable)))).toEqual(gridGroups(after))
 })
 function beforeMove(ids: string[], before: string) {
   const edit = readSlideState({ file, order: [{ slide: "move-many", grid: 1, ids, row: "before", before }] })?.order[0]
@@ -57,15 +57,15 @@ function beforeMove(ids: string[], before: string) {
   return edit
 }
 
-it("prepends at the row boundary with unchanged slide order and one undo", () => {
+it("prepends at the slide group boundary with unchanged slide order and one undo", () => {
   const before = opened()
   const edit = beforeMove(["4"], "5")
   const undoable = slideUndoable(before, file, edit)
   if (undoable === null) throw new Error("undoable")
   const after = apply(before, edit)
   expect(after.order).toEqual([edit])
-  expect(gridRows(after)).toEqual([file.slice(0, 3), file.slice(3, 8), file.slice(8)])
-  expect(gridRows(turn(after, undoOf(after, undoable)))).toEqual(gridRows(before))
+  expect(gridGroups(after)).toEqual([file.slice(0, 3), file.slice(3, 8), file.slice(8)])
+  expect(gridGroups(turn(after, undoOf(after, undoable)))).toEqual(gridGroups(before))
 })
 
 it("fences a version-one before move in a server answer without an index", () => {
@@ -73,10 +73,10 @@ it("fences a version-one before move in a server answer without an index", () =>
   expect(answeredRegister(register).format).toBe(format)
 })
 
-it("prepends multiple slides in deck order after removing their empty source row", () => {
+it("prepends multiple slides in deck order after removing their empty source slide group", () => {
   const edit = beforeMove(["10", "9"], "5")
   const after = apply(opened(), edit)
-  expect(gridRows(after)).toEqual([file.slice(0, 4), [...file.slice(8), ...file.slice(4, 8)]])
+  expect(gridGroups(after)).toEqual([file.slice(0, 4), [...file.slice(8), ...file.slice(4, 8)]])
   expect(readSlideState(JSON.parse(JSON.stringify({ file, order: after.order })))).toEqual({ file, order: [edit] })
 })
 
@@ -89,22 +89,22 @@ it("refuses a held or absent before anchor and an ambiguous encoding", () => {
     expect(readSlideState({ file, order })).toBeUndefined()
 })
 
-it("extracts before resolving a new row's remaining tail and removes empty source rows", () => {
-  expect(gridRows(apply(opened(), move([8, 5, 6, 7, 4], 1, "new")))).toEqual([
+it("extracts before resolving a new slide group's remaining tail and removes empty source slide groups", () => {
+  expect(gridGroups(apply(opened(), move([8, 5, 6, 7, 4], 1, "new")))).toEqual([
     ["1", "2", "3"],
     ["4", "5", "6", "7", "8"],
     ["9", "10"],
   ])
-  expect(gridRows(apply(opened(), move([5, 6], null, "new")))).toEqual([
+  expect(gridGroups(apply(opened(), move([5, 6], null, "new")))).toEqual([
     ["5", "6"],
     ["1", "2", "3", "4"],
     ["7", "8"],
     ["9", "10"],
   ])
 })
-it("keeps one complete row and refuses a stale row or selected anchor atomically", () => {
+it("keeps one complete slide group and refuses a stale slide group or selected anchor atomically", () => {
   const edit = move([8, 6, 5, 7], 9, "keep")
-  expect(gridRows(apply(opened(), edit))).toEqual([
+  expect(gridGroups(apply(opened(), edit))).toEqual([
     ["1", "2", "3", "4"],
     ["9", "10"],
     ["5", "6", "7", "8"],
@@ -127,7 +127,7 @@ it("keeps one complete row and refuses a stale row or selected anchor atomically
     code: "dead",
   })
 })
-it("guards whole-row undo on the server after a foreign insertion", () => {
+it("guards whole slide group undo on the server after a foreign insertion", () => {
   const before = opened(),
     edit = move([5, 6, 7, 8], 9, "keep")
   const undoable = slideUndoable(before, file, edit)
@@ -159,13 +159,13 @@ it("undoes a group after an independent foreign gap insertion", () => {
     after: slideId("3"),
     layout: slideId("1"),
   })
-  expect(gridRows(turn(foreign, undoOf(foreign, undoable)))).toEqual([
+  expect(gridGroups(turn(foreign, undoOf(foreign, undoable)))).toEqual([
     ["1", "2", "3", "11", "4"],
     ["5", "6", "7", "8"],
     ["9", "10"],
   ])
 })
-it("inherits section membership when a complete row crosses a named boundary", () => {
+it("inherits section membership when a complete slide group crosses a named boundary", () => {
   const after = apply(opened(), move([1, 2, 3, 4], 9, "keep"))
   expect(
     foldSections(after, [
@@ -189,7 +189,7 @@ it("refuses invalid group encodings and leaves absent members unchanged", () => 
   })
   expect(before.order).toEqual([])
 })
-it("guards row redo against a foreign insertion in the restored source row", () => {
+it("guards slide group redo against a foreign insertion in the restored source slide group", () => {
   const before = opened(),
     edit = move([5, 6, 7, 8], null, "keep")
   const undoable = slideUndoable(before, file, edit)

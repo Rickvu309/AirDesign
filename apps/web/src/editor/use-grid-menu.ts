@@ -6,7 +6,7 @@ import { pickedSlides, type GridPick } from "@/editor/grid-selection"
 
 export function useGridMenu({
   list,
-  rows,
+  groups,
   picked,
   selected,
   step,
@@ -15,7 +15,7 @@ export function useGridMenu({
   moveSlides,
 }: {
   list: RefObject<HTMLDivElement | null>
-  rows: readonly GridRange[]
+  groups: readonly GridRange[]
   picked: GridPick
   selected: ReadonlySet<number>
   step: (next: GridStep) => void
@@ -43,7 +43,7 @@ export function useGridMenu({
       ?.focus({ preventScroll: true, focusVisible: keyboard })
   }
 
-  const below = menu === null ? null : moveBelowPlace(rows, pickedSlides(picked, menu.index), menu.index)
+  const below = menu === null ? null : moveBelowPlace(groups, pickedSlides(picked, menu.index), menu.index)
 
   function moveBelow() {
     if (menu !== null && below !== null) moveSlides(pickedSlides(picked, menu.index), below, "new")

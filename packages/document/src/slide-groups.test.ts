@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId, type SlideId } from "./element-id.js"
-import { gridRows } from "./grid-order.js"
+import { gridGroups } from "./grid-order.js"
 import { orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
 import { foldSections } from "./section-order.js"
 import { slideGroups } from "./slide-groups.js"
@@ -50,7 +50,7 @@ describe("the probe table: a sectioned deck rearranged in Grid", () => {
     ])
   })
 
-  it("puts the last Intro slide dragged to the start of the Results row into Results", () => {
+  it("puts the last Intro slide dragged to the start of the Results slide group into Results", () => {
     const moved = land(sectioned(), { slide: "move-many", grid: 2, ids: [id(258)], before: id(259), row: "before" })
     expect(groups(moved)).toEqual([
       ["f0", "Intro", 256, 257],
@@ -58,7 +58,7 @@ describe("the probe table: a sectioned deck rearranged in Grid", () => {
     ])
   })
 
-  it("puts the first Results slide dragged to the end of the Intro row into Intro", () => {
+  it("puts the first Results slide dragged to the end of the Intro slide group into Intro", () => {
     const moved = land(sectioned(), { slide: "move-many", grid: 2, ids: [id(259)], after: id(258), row: "same" })
     expect(groups(moved)).toEqual([
       ["f0", "Intro", 256, 257, 258, 259],
@@ -66,7 +66,7 @@ describe("the probe table: a sectioned deck rearranged in Grid", () => {
     ])
   })
 
-  it("puts an Intro slide dragged into the middle of the Results row into Results", () => {
+  it("puts an Intro slide dragged into the middle of the Results slide group into Results", () => {
     const moved = land(sectioned(), { slide: "move-many", grid: 2, ids: [id(257)], after: id(260), row: "same" })
     expect(groups(moved)).toEqual([
       ["f0", "Intro", 256, 258],
@@ -74,7 +74,7 @@ describe("the probe table: a sectioned deck rearranged in Grid", () => {
     ])
   })
 
-  it("makes an unnamed slide group of a slide moved to a new row", () => {
+  it("makes an unnamed slide group of a slide moved to a new slide group", () => {
     const moved = land(sectioned(), { slide: "move-many", grid: 2, ids: [id(260)], after: id(262), row: "new" })
     expect(groups(moved)).toEqual([
       ["f0", "Intro", 256, 257, 258],
@@ -83,7 +83,7 @@ describe("the probe table: a sectioned deck rearranged in Grid", () => {
     ])
   })
 
-  it("makes an unnamed slide group of a slide added in a new row below Intro", () => {
+  it("makes an unnamed slide group of a slide added in a new slide group below Intro", () => {
     const added = land(sectioned(), { slide: "add", grid: 2, row: "new", id: id(263), after: id(256), layout: id(256) })
     expect(groups(added)).toEqual([
       ["f0", "Intro", 256, 257, 258],
@@ -92,7 +92,7 @@ describe("the probe table: a sectioned deck rearranged in Grid", () => {
     ])
   })
 
-  it("keeps the Results name on the Results row moved above the Intro row", () => {
+  it("keeps the Results name on the Results slide group moved above the Intro slide group", () => {
     const results = [id(259), id(260), id(261), id(262)] as const
     const moved = land(sectioned(), { slide: "move-many", grid: 2, ids: results, after: null, row: "keep" })
     expect(groups(moved)).toEqual([
@@ -129,11 +129,11 @@ describe("older logs, as the design's section 4 table maps them", () => {
     expect(groups(opened(deck(12), []), [])).toEqual([["f0", null, ...deck(12).map(Number)]])
   })
 
-  it("dissolves the rows that only wrapped a long section", () => {
+  it("dissolves the slide groups that only wrapped a long section", () => {
     const file = deck(41)
     const starts = [file[0]!, file[1]!, file[29]!, file[39]!]
     const removed = land(opened(file, starts), { slide: "remove", grid: 2, id: file[40]! })
-    expect(gridRows(removed).map((row) => row.length)).toEqual([1, 10, 10, 8, 10, 1])
+    expect(gridGroups(removed).map((row) => row.length)).toEqual([1, 10, 10, 8, 10, 1])
     expect(slideGroups(removed).map((group) => [group.key, group.slides.length])).toEqual([
       ["f0", 1],
       ["f1", 28],
@@ -142,7 +142,7 @@ describe("older logs, as the design's section 4 table maps them", () => {
     ])
   })
 
-  it("splits a wrapped section where a person made a row, and leaves the rest of it unnamed", () => {
+  it("splits a wrapped section where a person made a slide group, and leaves the rest of it unnamed", () => {
     const file = deck(41)
     const starts = [file[0]!, file[1]!, file[29]!, file[39]!]
     const added = land(opened(file, starts), {
@@ -163,7 +163,7 @@ describe("older logs, as the design's section 4 table maps them", () => {
     ])
   })
 
-  it("dissolves default rows on a deck with no sections and keeps the rows a person made", () => {
+  it("dissolves default slide groups on a deck with no sections and keeps the slide groups a person made", () => {
     const added = land(opened(deck(6)), {
       slide: "add",
       grid: 1,
@@ -172,7 +172,7 @@ describe("older logs, as the design's section 4 table maps them", () => {
       after: id(256),
       layout: id(256),
     })
-    expect(gridRows(added).map((row) => row.map(Number))).toEqual([[256, 257, 258, 259], [300], [260, 261]])
+    expect(gridGroups(added).map((row) => row.map(Number))).toEqual([[256, 257, 258, 259], [300], [260, 261]])
     expect(groups(added, [])).toEqual([
       ["f0", null, 256, 257, 258, 259],
       ["n0", null, 300],
@@ -183,7 +183,7 @@ describe("older logs, as the design's section 4 table maps them", () => {
     ])
   })
 
-  it("makes an unnamed slide group of a default row moved whole", () => {
+  it("makes an unnamed slide group of a default slide group moved whole", () => {
     const moved = land(opened(deck(10)), {
       slide: "move-many",
       grid: 1,
@@ -197,9 +197,9 @@ describe("older logs, as the design's section 4 table maps them", () => {
     ])
   })
 
-  it("keeps a section's name on a row a person made where that section starts, and leaves the rest unnamed", () => {
+  it("keeps a section's name on a slide group a person made where that section starts, and leaves the rest unnamed", () => {
     const moved = land(sectioned(), { slide: "move-many", grid: 1, ids: [id(259)], after: id(258), row: "new" })
-    expect(gridRows(moved).map((row) => row.map(Number))).toEqual([[256, 257, 258], [259], [260, 261, 262]])
+    expect(gridGroups(moved).map((row) => row.map(Number))).toEqual([[256, 257, 258], [259], [260, 261, 262]])
     expect(groups(moved)).toEqual([
       ["f0", "Intro", 256, 257, 258],
       ["f1", "Results", 259],
@@ -207,10 +207,10 @@ describe("older logs, as the design's section 4 table maps them", () => {
     ])
   })
 
-  it("reads version one rows on a sectioned deck as today's sections split where a person made a row", () => {
+  it("reads version one slide groups on a sectioned deck as today's sections split where a person made a slide group", () => {
     const start = opened(deck(6), [id(256), id(259)])
     const added = land(start, { slide: "add", grid: 1, row: "new", id: id(300), after: id(257), layout: id(256) })
-    expect(gridRows(added).map((row) => row.map(Number))).toEqual([[256, 257, 258, 259], [300], [260, 261]])
+    expect(gridGroups(added).map((row) => row.map(Number))).toEqual([[256, 257, 258, 259], [300], [260, 261]])
     expect(groups(added)).toEqual([
       ["f0", "Intro", 256, 257, 258],
       ["f1", "Results", 259],
@@ -236,12 +236,12 @@ describe("version three commands plan against slide groups", () => {
       ["n0", null, 300],
       ["r260", null, 260, 261, 301],
     ])
-    expect(gridRows(next)).toEqual(slideGroups(next).map((group) => group.slides))
+    expect(gridGroups(next)).toEqual(slideGroups(next).map((group) => group.slides))
   })
 
-  it("dissolves default rows at the first version three command", () => {
+  it("dissolves default slide groups at the first version three command", () => {
     const next = land(opened(deck(10), []), { slide: "remove", grid: 3, id: id(257) })
-    expect(gridRows(next)).toEqual([deck(10).filter((slide) => slide !== "257")])
+    expect(gridGroups(next)).toEqual([deck(10).filter((slide) => slide !== "257")])
   })
 
   it("adds a new slide group below the whole group, not below a line", () => {

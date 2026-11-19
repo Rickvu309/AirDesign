@@ -31,7 +31,7 @@ export function GridCard({
   onClick,
   onContextMenu,
   onAdd,
-  rowEnd,
+  groupEnd,
   addBlocked,
 }: {
   index: number
@@ -54,11 +54,11 @@ export function GridCard({
   onPressed: MouseEventHandler<HTMLDivElement>
   onClick: MouseEventHandler<HTMLElement>
   onContextMenu: MouseEventHandler<HTMLDivElement>
-  rowEnd: boolean
+  groupEnd: boolean
   addBlocked: boolean
   onAdd: () => void
 }) {
-  const screen = { width: width * scale, gap: gridSpacing(width, height).row * scale }
+  const screen = { width: width * scale, gap: gridSpacing(width, height).line * scale }
   const placement = gridNumberPlacement(screen)
   return (
     <div
@@ -147,7 +147,7 @@ export function GridCard({
           width={width}
           height={height}
           scale={scale}
-          end={rowEnd}
+          end={groupEnd}
           onAdd={onAdd}
         />
       )}

@@ -14,22 +14,22 @@ export { readGridCommand } from "./grid-read.js"
 
 export type GridSide = "same" | "new"
 export type GridLayout = { readonly starts: readonly SlideId[]; readonly keys?: readonly string[] }
-export type GridRow = readonly [SlideId, ...SlideId[]]
+export type GridGroup = readonly [SlideId, ...SlideId[]]
 export type SlideStep = { readonly id: SlideId; readonly before: SlideSpot; readonly after: SlideSpot }
 export type HeadStep = { readonly id: SlideId; readonly before: boolean; readonly after: boolean }
-export type RowGuard = { readonly head: SlideId; readonly slides: readonly [SlideId, ...SlideId[]] }
+export type GroupGuard = { readonly head: SlideId; readonly slides: readonly [SlideId, ...SlideId[]] }
 export type GridTurn = {
   readonly spots: readonly SlideStep[]
   readonly heads: readonly HeadStep[]
-  readonly rows: readonly RowGuard[]
+  readonly rows: readonly GroupGuard[]
 }
 export type GridUndoable = {
   readonly file: readonly SlideId[]
   readonly grid: GridVersion
   readonly spots: readonly SlideStep[]
   readonly heads: readonly HeadStep[]
-  readonly rowsBefore: readonly RowGuard[]
-  readonly rowsAfter: readonly RowGuard[]
+  readonly groupsBefore: readonly GroupGuard[]
+  readonly groupsAfter: readonly GroupGuard[]
 }
 export type GridCopy = Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "slide" | "key" | "runId">
 
@@ -155,14 +155,14 @@ export function foldGrid(
         tags = openingTags([...heads], sectionsOf(state.file, effects, ids, sections), ids, command.grid === 2)
       initialized = true
     }
-    const rowsBefore = partition(ids, heads)
+    const groupsBefore = partition(ids, heads)
     if (command.slide === "move-many") {
-      const moved = moveGroup(before, rowsBefore, command)
+      const moved = moveGroup(before, groupsBefore, command)
       for (const spot of moved.spots) spots.set(spot.id, spot)
       heads = moved.heads
       effects.push(...moved.effects)
     } else if (command.slide === "remove-many" || command.slide === "clone-many") {
-      const changed = changeSet(before, rowsBefore, command)
+      const changed = changeSet(before, groupsBefore, command)
       for (const spot of changed.spots) spots.set(spot.id, spot)
       heads = changed.heads
       effects.push(...changed.effects)
@@ -181,19 +181,19 @@ export function foldGrid(
         else heads.delete(step.id)
       }
     } else {
-      const sourceRows = rowsBefore
+      const sourceGroups = groupsBefore
       if (initialized && (command.slide === "remove" || command.slide === "move")) {
-        const row = sourceRows.find((row) => row.includes(command.id))
-        if (row?.[0] === command.id) {
+        const group = sourceGroups.find((group) => group.includes(command.id))
+        if (group?.[0] === command.id) {
           heads.delete(command.id)
-          if (row[1] !== undefined) heads.add(row[1])
+          if (group[1] !== undefined) heads.add(group[1])
         }
       }
       const remaining = before.filter((spot) => command.slide !== "move" || spot.id !== command.id)
       const anchor =
         command.slide === "add"
           ? command.grid !== undefined && command.row === "new"
-            ? sourceRows.find((row) => row.includes(command.after))?.at(-1)
+            ? sourceGroups.find((group) => group.includes(command.after))?.at(-1)
             : command.after
           : command.slide === "clone"
             ? command.source
@@ -285,7 +285,7 @@ export function foldGrid(
                   )
                 : [],
         )
-        tags = retag(rowsBefore, tags, {
+        tags = retag(groupsBefore, tags, {
           ids: after.map((spot) => spot.id),
           heads,
           staying: (id) => !named.has(id) && was.has(id) && was.get(id) === now.get(id),
@@ -317,7 +317,7 @@ export function foldGrid(
   }
 }
 
-export function gridRows(state: SlideState, opening?: GridVersion): readonly GridRow[] {
+export function gridGroups(state: SlideState, opening?: GridVersion): readonly GridGroup[] {
   const folded = foldGrid(state, opening)
   return partition(
     orderedSpots(folded.spots).map((spot) => spot.id),
@@ -336,10 +336,11 @@ export function turnRefusal(state: SlideState, turn: GridTurn, opening: GridVers
   if (turn.heads.some((step) => !turn.spots.some((spot) => spot.id === step.id))) return "stale"
   if (turn.spots.some((step) => !spots.has(step.id) || !sits(spots.get(step.id), step.before))) return "stale"
   if (turn.heads.some((step) => heads.has(step.id) !== step.before)) return "stale"
-  const rows = gridRows(state, opening)
+  const groups = gridGroups(state, opening)
   if (
     turn.rows.some(
-      (guard) => !rows.some((row) => row[0] === guard.head && JSON.stringify(row) === JSON.stringify(guard.slides)),
+      (guard) =>
+        !groups.some((group) => group[0] === guard.head && JSON.stringify(group) === JSON.stringify(guard.slides)),
     )
   )
     return "stale"
@@ -357,22 +358,22 @@ export function turnRefusal(state: SlideState, turn: GridTurn, opening: GridVers
   if ([...heads].some((id) => !present.some((spot) => spot.id === id))) return "stale"
   const first = present[0]
   if (first !== undefined) heads.add(first.id)
-  const afterRows = partition(
+  const afterGroups = partition(
     present.map((spot) => spot.id),
     heads,
   )
-  const owner = new Map(afterRows.flatMap((row) => row.map((id) => [id, row[0]] as const)))
+  const owner = new Map(afterGroups.flatMap((group) => group.map((id) => [id, group[0]] as const)))
   const guarded = new Set(turn.spots.map((step) => step.id))
   const staying = new Set(
     turn.spots
       .filter((step) => step.before.present && step.after.present && step.before.key === step.after.key)
       .map((step) => step.id),
   )
-  for (const row of rows) {
-    for (const id of row) {
+  for (const group of groups) {
+    for (const id of group) {
       const next = owner.get(id)
-      if (guarded.has(id) || next === undefined || next === row[0]) continue
-      if (!row.some((witness) => staying.has(witness) && owner.get(witness) === next)) return "stale"
+      if (guarded.has(id) || next === undefined || next === group[0]) continue
+      if (!group.some((witness) => staying.has(witness) && owner.get(witness) === next)) return "stale"
     }
   }
   return null

@@ -22,7 +22,7 @@ import type { SelectedCopy, SlideSetChange } from "@/slide-edit"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
-import { heldSections, sectionAt } from "@/editor/collapsed-sections"
+import { heldGroups, groupAt } from "@/editor/collapsed-groups"
 import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/slide-layout"
 import { cn } from "@/lib/class-names"
@@ -35,22 +35,22 @@ const thumbWidth = slideThumbWidth
 
 const thumbCard = cn("block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
 
-export type StripSection = { readonly name: string | null; readonly start: number; readonly key: string }
+export type StripGroup = { readonly name: string | null; readonly start: number; readonly key: string }
 
-const noSections: readonly StripSection[] = []
+const noGroups: readonly StripGroup[] = []
 
 export type SlideStrip = {
   readonly count: number
   readonly gridStarts?: readonly number[]
   readonly slideIds?: readonly SlideId[]
-  readonly sections?: readonly StripSection[]
+  readonly groups?: readonly StripGroup[]
   readonly current: number
   readonly skipped?: readonly boolean[]
   readonly onSkip?: (indices: readonly number[], skipped: boolean) => void
   readonly selectionBoxes?: (ids: readonly ElementId[]) => readonly PaintBox[]
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
-  readonly onAdd?: (layoutPart?: string, after?: number, row?: GridSide) => void
+  readonly onAdd?: (layoutPart?: string, after?: number, placement?: GridSide) => void
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
@@ -59,7 +59,7 @@ export type SlideStrip = {
     indices: readonly number[],
     paint: (copies: readonly SelectedCopy[]) => void,
   ) => void
-  readonly onMoveMany?: (held: readonly number[], at: number, row?: GridMoveSide) => void
+  readonly onMoveMany?: (held: readonly number[], at: number, placement?: GridMoveSide) => void
   readonly onMove?: (from: number, to: number) => void
   readonly say?: { current: (text: string) => void }
   readonly thumbHeight: number
@@ -122,7 +122,7 @@ export function SlideSidebar({
   )
 }
 
-const stops = "[data-slide-item], [data-section-head]"
+const stops = "[data-slide-item], [data-group-head]"
 
 function stopsOf(list: HTMLElement): HTMLElement[] {
   return [...list.querySelectorAll<HTMLElement>(stops)]
@@ -158,9 +158,9 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
     following.current = false
     if (next !== document.activeElement) next.focus()
   }, [current, count])
-  const sections = strip.sections ?? noSections
+  const groups = strip.groups ?? noGroups
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
-  const collapsed = heldSections(folded, sections)
+  const collapsed = heldGroups(folded, groups)
   const [stop, setStop] = useState<string | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
   const announce = useCallback(
@@ -171,7 +171,7 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
   const [seen, setSeen] = useState(strip.current)
   if (seen !== strip.current) {
     setSeen(strip.current)
-    const key = sections[sectionAt(sections, strip.current)]?.key
+    const key = groups[groupAt(groups, strip.current)]?.key
     if (key !== undefined && folded.has(key)) setFolded(new Set([...folded].filter((each) => each !== key)))
   }
   const item = (index: number) => (
@@ -211,16 +211,16 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
     </SlideItem>
   )
   const visible = (index: number) => {
-    const at = sectionAt(sections, index)
+    const at = groupAt(groups, index)
     return at === -1 || !collapsed.has(at)
   }
   const fallback = visible(strip.current)
     ? `slide:${String(strip.current)}`
-    : `section:${String(sectionAt(sections, strip.current))}`
+    : `group:${String(groupAt(groups, strip.current))}`
   const present = (key: string) => {
     const [kind, number] = key.split(":")
     const at = Number(number)
-    if (kind === "section") return (sections[at]?.name ?? null) !== null
+    if (kind === "group") return (groups[at]?.name ?? null) !== null
     return at >= 0 && at < strip.count && visible(at)
   }
   const reachable = stop !== null && present(stop) ? stop : fallback
@@ -274,38 +274,38 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
             following.current = false
         }}
       >
-        {sections.every((section) => section.name === null)
+        {groups.every((group) => group.name === null)
           ? Array.from({ length: strip.count }, (_, index) => item(index))
-          : sections.map((section, number) => {
-              const end = sections[number + 1]?.start ?? strip.count
+          : groups.map((group, number) => {
+              const end = groups[number + 1]?.start ?? strip.count
               const open = !collapsed.has(number)
-              if (section.name === null)
+              if (group.name === null)
                 return (
-                  <Fragment key={section.key}>
+                  <Fragment key={group.key}>
                     {number === 0 ? null : <span aria-hidden="true" className="mx-3 my-1 block h-px bg-line" />}
-                    {Array.from({ length: end - section.start }, (_, offset) => item(section.start + offset))}
+                    {Array.from({ length: end - group.start }, (_, offset) => item(group.start + offset))}
                   </Fragment>
                 )
               return (
-                <SectionBlock
-                  key={section.key}
-                  name={section.name}
-                  reachable={reachable === `section:${String(number)}`}
-                  stop={`section:${String(number)}`}
+                <GroupBlock
+                  key={group.key}
+                  name={group.name}
+                  reachable={reachable === `group:${String(number)}`}
+                  stop={`group:${String(number)}`}
                   open={open}
-                  range={open ? undefined : rangeOf(section.start, end)}
-                  onToggle={() => toggle(section.key)}
+                  range={open ? undefined : rangeOf(group.start, end)}
+                  onToggle={() => toggle(group.key)}
                   stack={
                     <Filmstrip
                       className={thumbCard}
                       height={strip.thumbHeight}
-                      paint={() => strip.thumb(section.start, thumbWidth)}
+                      paint={() => strip.thumb(group.start, thumbWidth)}
                       width={thumbWidth}
                     />
                   }
                 >
-                  {Array.from({ length: end - section.start }, (_, offset) => item(section.start + offset))}
-                </SectionBlock>
+                  {Array.from({ length: end - group.start }, (_, offset) => item(group.start + offset))}
+                </GroupBlock>
               )
             })}
       </div>
@@ -317,7 +317,7 @@ function rangeOf(start: number, end: number): string {
   return end - start > 1 ? `${start + 1} to ${end}` : String(start + 1)
 }
 
-function SectionBlock({
+function GroupBlock({
   name,
   stop,
   reachable,
@@ -338,7 +338,7 @@ function SectionBlock({
 }) {
   return (
     <>
-      <SectionHead
+      <GroupHead
         name={name}
         stop={stop}
         reachable={reachable}
@@ -349,7 +349,7 @@ function SectionBlock({
       {open ? (
         children
       ) : (
-        <div className="flex pt-1 pl-[var(--space-32)]" data-section-stack>
+        <div className="flex pt-1 pl-[var(--space-32)]" data-group-stack>
           <div className="flex w-[197px] flex-col items-center">
             {stack}
             <span className="block h-1.5 w-[183px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
@@ -389,15 +389,15 @@ function SampleStrip({ run }: { run: SidebarRun }) {
         </div>
       </div>
       <div className="flex flex-col gap-1 overflow-hidden px-1.5 pb-2">
-        <SectionHead name="Opening" open />
+        <GroupHead name="Opening" open />
         {item(1)}
         {item(2)}
-        <SectionHead name="Performance" open />
+        <GroupHead name="Performance" open />
         {item(3)}
         {item(4)}
         {item(5)}
-        <SectionHead name="Outlook" range="6 to 8" />
-        <div className="flex pt-1 pl-[var(--space-32)]" data-section-stack>
+        <GroupHead name="Outlook" range="6 to 8" />
+        <div className="flex pt-1 pl-[var(--space-32)]" data-group-stack>
           <div className="flex w-[197px] flex-col items-center">
             <SlideThumb index={6} width={thumbWidth} queued={queuedFrom > 0 && 6 >= queuedFrom} />
             <span className="block h-1.5 w-[183px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
@@ -442,7 +442,7 @@ function onSlideKey(
   runSlideChange(strip, index, change, announce)
 }
 
-function SectionHead({
+function GroupHead({
   name,
   stop,
   reachable = true,
@@ -473,7 +473,7 @@ function SectionHead({
   )
   if (onToggle === undefined) {
     return (
-      <div className={look} data-section-head>
+      <div className={look} data-group-head>
         {body}
       </div>
     )
@@ -482,11 +482,11 @@ function SectionHead({
     <button
       type="button"
       aria-expanded={open}
-      aria-label={range === undefined ? name : `${name}, ${slideListCopy.sectionRange(range)}`}
+      aria-label={range === undefined ? name : `${name}, ${slideListCopy.groupRange(range)}`}
       tabIndex={reachable ? 0 : -1}
       className={cn(look, "w-full text-left")}
       {...(stop === undefined ? {} : { "data-stop": stop })}
-      data-section-head
+      data-group-head
       onClick={onToggle}
     >
       {body}

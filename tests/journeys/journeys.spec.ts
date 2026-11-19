@@ -71,7 +71,7 @@ for (const name of [
   "move-resize",
   "connected-agents",
   "slide-commands",
-  "grid-row-add",
+  "grid-group-add",
   "grid-gap-add",
   "person-undo",
   "usage-page",

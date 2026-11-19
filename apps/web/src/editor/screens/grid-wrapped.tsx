@@ -25,10 +25,10 @@ function initialGroups(): Group[] {
 
 function regrouped(
   groups: readonly Group[],
-  rows: readonly (readonly number[])[],
+  placed: readonly (readonly number[])[],
   moving: ReadonlySet<number>,
 ): Group[] {
-  const owner = new Map(rows.flatMap((row, index) => row.map((id) => [id, index] as const)))
+  const owner = new Map(placed.flatMap((ids, index) => ids.map((id) => [id, index] as const)))
   const held = new Map<number, Group>()
   const claim = (group: Group, id: number | undefined) => {
     const at = id === undefined ? undefined : owner.get(id)
@@ -40,7 +40,7 @@ function regrouped(
       group.slides.find((id) => !moving.has(id)),
     )
   for (const group of groups) if (group.slides.every((id) => moving.has(id))) claim(group, group.slides[0])
-  return rows.flatMap((slides, index) => {
+  return placed.flatMap((slides, index) => {
     const first = slides[0]
     if (first === undefined) return []
     const group = held.get(index)
@@ -54,13 +54,13 @@ function moveSlides(groups: readonly Group[], indices: readonly number[], at: nu
     const id = flat[index]
     return id === undefined ? [] : [id]
   })
-  const rows = gridMovePlacement(
+  const placed = gridMovePlacement(
     groups.map((group) => [...group.slides]),
     moving,
     gridAnchor(flat, indices, at, side),
     side,
-  ).rows
-  return regrouped(groups, rows, new Set(moving))
+  ).groups
+  return regrouped(groups, placed, new Set(moving))
 }
 
 function insertSlide(groups: readonly Group[], after: number | undefined, side: "same" | "new"): Group[] {
@@ -87,7 +87,7 @@ export function GridWrapped() {
     starts.push(cursor)
     cursor += group.slides.length
   }
-  const sections = groups.map((group, index) => ({ name: group.name, start: starts[index] ?? 0, key: group.key }))
+  const stripGroups = groups.map((group, index) => ({ name: group.name, start: starts[index] ?? 0, key: group.key }))
   return (
     <div className="h-dvh">
       <EditorGrid
@@ -100,7 +100,7 @@ export function GridWrapped() {
           count: flat.length,
           current,
           gridStarts: starts,
-          sections,
+          groups: stripGroups,
           skipped: flat.map((id) => skipped.has(id)),
           onSelect: setCurrent,
           onSkip: (indices, next) => {

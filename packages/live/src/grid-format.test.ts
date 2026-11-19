@@ -6,7 +6,7 @@ import { readStored, split } from "./deck-view.js"
 import { memoryShelf } from "./browser-fixtures.js"
 import { recoverUnsaved } from "./unsaved.js"
 
-it("refuses an unknown structural envelope before splitting confirmed or pending rows", () => {
+it("refuses an unknown structural envelope before splitting confirmed or pending slide groups", () => {
   const parsed = readDeckId("a".repeat(32))
   if (!parsed.ok) throw new Error("deck")
   const deck = parsed.deck

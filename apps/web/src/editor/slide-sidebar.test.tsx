@@ -6,7 +6,7 @@ import { SlideSidebar, type SlideStrip } from "@/editor/slide-sidebar"
 const strip: SlideStrip = {
   count: 4,
   current: 2,
-  sections: [
+  groups: [
     { name: "Opening", start: 0, key: "f0" },
     { name: "Results", start: 2, key: "f1" },
   ],
@@ -36,9 +36,9 @@ describe("slide list", () => {
     ])
   })
 
-  it("is one tab stop: only the current slide takes Tab, and the sections and other slides wait for the arrows", () => {
+  it("is one tab stop: only the current slide takes Tab, and the slide groups and other slides wait for the arrows", () => {
     const html = markup()
-    const stops = tags(html, /<button[^>]*data-(?:slide-entry|section-head)[^>]*>/g)
+    const stops = tags(html, /<button[^>]*data-(?:slide-entry|group-head)[^>]*>/g)
     const reachable = stops.filter((tag) => tag.includes('tabindex="0"'))
     expect(reachable).toHaveLength(1)
     expect(reachable[0]).toContain('data-slide-entry="3"')
@@ -46,8 +46,8 @@ describe("slide list", () => {
   })
 
   it("keeps the one tab stop on the current slide when the deck has a single section", () => {
-    const html = markup({ current: 0, sections: [{ name: "Opening", start: 0, key: "f0" }] })
-    const reachable = tags(html, /<button[^>]*data-(?:slide-entry|section-head)[^>]*>/g).filter((tag) =>
+    const html = markup({ current: 0, groups: [{ name: "Opening", start: 0, key: "f0" }] })
+    const reachable = tags(html, /<button[^>]*data-(?:slide-entry|group-head)[^>]*>/g).filter((tag) =>
       tag.includes('tabindex="0"'),
     )
     expect(reachable).toHaveLength(1)
@@ -56,7 +56,7 @@ describe("slide list", () => {
 
   it("tells a screen reader a section's name, its state and, when collapsed, its slides", () => {
     const html = markup()
-    const heads = tags(html, /<button[^>]*data-section-head[^>]*>/g)
+    const heads = tags(html, /<button[^>]*data-group-head[^>]*>/g)
     expect(heads.map((tag) => /aria-label="([^"]*)"/.exec(tag)?.[1])).toEqual(["Opening", "Results"])
     expect(heads.every((tag) => tag.includes('aria-expanded="true"'))).toBe(true)
   })

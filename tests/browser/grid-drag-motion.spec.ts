@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import { entry, manySlides, openFile, openGrid, rowSizes } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "no-preference" })
 
@@ -51,7 +51,7 @@ test("slides move aside to show where a dragged slide lands, go back when it goe
   await openFile(page, {
     name: "four.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(4, rowSizes(4)),
+    buffer: await manySlides(4, groupSizes(4)),
   })
   await openGrid(page)
   await page.locator("[data-zoom-readout]").click()
@@ -88,7 +88,7 @@ test("a drag keeps the motion setting it started with until the drop", async ({ 
   await openFile(page, {
     name: "four.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(4, rowSizes(4)),
+    buffer: await manySlides(4, groupSizes(4)),
   })
   await openGrid(page)
   const first = await boxOf(page, 1)
@@ -105,17 +105,19 @@ test("a drag keeps the motion setting it started with until the drop", async ({ 
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 1 to position 3")
 })
 
-test("a drag to the first place of its own grid row moves the slides aside with no drop bar", async ({ page }) => {
+test("a drag to the first place of its own grid slide group moves the slides aside with no drop bar", async ({
+  page,
+}) => {
   await openFile(page, {
     name: "eight.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(8, rowSizes(8)),
+    buffer: await manySlides(8, groupSizes(8)),
   })
   await openGrid(page)
-  const firstInRow = await boxOf(page, 5)
-  const step = (await boxOf(page, 6)).x - firstInRow.x
+  const firstInGroup = await boxOf(page, 5)
+  const step = (await boxOf(page, 6)).x - firstInGroup.x
   await grab(page, 7)
-  await pointAt(page, firstInRow, 0.2)
+  await pointAt(page, firstInGroup, 0.2)
   await expect.poll(() => shiftOf(page, 5)).toBeCloseTo(step, 0)
   await expect.poll(() => shiftOf(page, 6)).toBeCloseTo(step, 0)
   await expect.poll(() => shiftOf(page, 7)).toBeCloseTo(-2 * step, 0)
@@ -124,11 +126,13 @@ test("a drag to the first place of its own grid row moves the slides aside with 
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 7 to position 5")
 })
 
-test("a drag to the first place of another grid row keeps the slides still and shows the bar", async ({ page }) => {
+test("a drag to the first place of another grid slide group keeps the slides still and shows the bar", async ({
+  page,
+}) => {
   await openFile(page, {
     name: "eight.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(8, rowSizes(8)),
+    buffer: await manySlides(8, groupSizes(8)),
   })
   await openGrid(page)
   await grab(page, 3)
@@ -144,7 +148,7 @@ test("the add mark between slides appears on hover and stays still with reduced 
   await openFile(page, {
     name: "two.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(2, rowSizes(2)),
+    buffer: await manySlides(2, groupSizes(2)),
   })
   await openGrid(page)
   const plus = page.getByRole("button", { name: "Add slide after slide 1" })

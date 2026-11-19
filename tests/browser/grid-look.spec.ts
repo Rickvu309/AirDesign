@@ -12,9 +12,9 @@ async function atZoom(page: Page, percent: number) {
   await expect(page.locator("[data-zoom-readout]")).toHaveText(`${percent}%`)
 }
 
-const handle = (page: Page) => page.locator("[data-row-handle]").first()
+const handle = (page: Page) => page.locator("[data-group-handle]").first()
 const chrome = (page: Page) =>
-  page.locator('[data-grid-row-member="0"] [data-grid-card]').evaluateAll((cards) =>
+  page.locator('[data-grid-group-member="0"] [data-grid-card]').evaluateAll((cards) =>
     cards.map((card) => {
       const face = getComputedStyle(card.querySelector("[data-slide-entry]")!)
       return {
@@ -25,7 +25,7 @@ const chrome = (page: Page) =>
     }),
   )
 
-test("between-slide and row-end plus controls leave slide and row chrome at rest", async ({ page }) => {
+test("between-slide and slide group end plus controls leave slide and slide group chrome at rest", async ({ page }) => {
   await atZoom(page, 25)
   await page.mouse.move(10, 500)
   const before = await chrome(page)
@@ -38,10 +38,10 @@ test("between-slide and row-end plus controls leave slide and row chrome at rest
   }
 })
 
-test("a row shows a quiet pill until its 28 by 44 handle is hovered or focused", async ({ page }) => {
+test("a slide group shows a quiet pill until its 28 by 44 handle is hovered or focused", async ({ page }) => {
   await atZoom(page, 25)
   const grip = handle(page)
-  const mark = grip.locator("[data-row-grip]")
+  const mark = grip.locator("[data-group-grip]")
   await entry(page, 1).hover()
   await expect(grip).toHaveCSS("opacity", "1")
   await expect(mark).toHaveCSS("width", "5px")
@@ -62,7 +62,7 @@ test("a row shows a quiet pill until its 28 by 44 handle is hovered or focused",
   await expect(grip.locator("svg")).toBeVisible()
 })
 
-test("row handle previews the same halo, number and edge on every slide", async ({ page }) => {
+test("slide group handle previews the same halo, number and edge on every slide", async ({ page }) => {
   await atZoom(page, 25)
   await expect(entry(page, 1)).toHaveAttribute("data-selected")
   await entry(page, 1).hover()

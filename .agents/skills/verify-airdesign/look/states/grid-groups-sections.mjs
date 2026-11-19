@@ -10,4 +10,4 @@ async function drive(kit) {
   })
   await kit.page.getByRole("button", { name: "Grid", exact: true }).click()
 }
-export default { name: "grid-rows-sections", design: "/screens/s41-01-editor-grid-default", drive }
+export default { name: "grid-groups-sections", design: "/screens/s41-01-editor-grid-default", drive }

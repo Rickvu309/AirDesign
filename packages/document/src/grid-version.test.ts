@@ -6,7 +6,7 @@ import {
   elementId,
   format,
   gridCommandVersion,
-  gridRows,
+  gridGroups,
   openRegister,
   readSlideState,
   slideId,
@@ -29,8 +29,8 @@ it("uses section starts only after a complete index upgrade", () => {
   if (!old.ok) throw new Error(old.refusal)
   const upgraded = appendIndex(old.index, { ...page, format, sectionStarts })
   if (!upgraded.ok) throw new Error(upgraded.refusal)
-  expect(gridRows({ file, order: [], index: old.index })).toEqual([file.slice(0, 4), file.slice(4)])
-  expect(gridRows({ file, order: [], index: upgraded.index })).toEqual([file.slice(0, 3), file.slice(3)])
+  expect(gridGroups({ file, order: [], index: old.index })).toEqual([file.slice(0, 4), file.slice(4)])
+  expect(gridGroups({ file, order: [], index: upgraded.index })).toEqual([file.slice(0, 3), file.slice(3)])
 })
 
 const recorded = {
@@ -47,8 +47,8 @@ it("replays the recorded version one log unchanged when section starts arrive", 
     ["256", "258", "259"],
     ["260", "261"],
   ]
-  expect(gridRows(original)).toEqual(frozen)
-  expect(gridRows({ ...original, index: index.index })).toEqual(frozen)
+  expect(gridGroups(original)).toEqual(frozen)
+  expect(gridGroups({ ...original, index: index.index })).toEqual(frozen)
 })
 
 it("replays a recorded version two edit against the packed opening partition", () => {
@@ -61,7 +61,7 @@ it("replays a recorded version two edit against the packed opening partition", (
   if (state === undefined) throw new Error("grid command")
   const index = appendIndex(undefined, { ...page, format, sectionStarts: recorded.sectionStarts.map(slideId) })
   if (!index.ok) throw new Error(index.refusal)
-  expect(gridRows({ ...state, index: index.index })).toEqual([
+  expect(gridGroups({ ...state, index: index.index })).toEqual([
     ["256", "258"],
     ["259", "260", "261"],
   ])
@@ -95,11 +95,11 @@ it("freezes the first tagged default through both orders of a mixed-version log"
     ]
     const state = readSlideState({ ...recorded, order })
     if (state === undefined) throw new Error("grid command")
-    expect(gridRows({ ...state, index: index.index })).toEqual(frozen)
+    expect(gridGroups({ ...state, index: index.index })).toEqual(frozen)
   }
 })
 
-it("plans a Grid command against slide groups once the section starts are known, and against rows until then", () => {
+it("plans a Grid command against slide groups once the section starts are known, and against slide groups until then", () => {
   const older = { slide: "remove", grid: 2, id: file[1]! } as const
   expect(gridCommandVersion({ order: [] })).toBe(1)
   expect(gridCommandVersion({ order: [older] })).toBe(2)
@@ -125,10 +125,10 @@ it("preserves section placement from the legacy prefix and drops an emptied sect
   })
   if (legacy === undefined) throw new Error("legacy")
   const before = { ...openRegister("", ""), ...legacy, index: index.index }
-  expect(gridRows(before)).toEqual([file.slice(2)])
+  expect(gridGroups(before)).toEqual([file.slice(2)])
   const after = decide(before, { command: "slide", file, edit: { slide: "remove", grid: 2, id: file[2]! } })
   if (after.decision !== "apply") throw new Error(after.code)
-  expect(gridRows(after.register)).toEqual([file.slice(3)])
+  expect(gridGroups(after.register)).toEqual([file.slice(3)])
 })
 
 it("upgrades beside the old index and freezes the published starts across later index writes", () => {
@@ -144,12 +144,12 @@ it("upgrades beside the old index and freezes the published starts across later 
   const first = { ...page, total: 2, format, sectionStarts, elements: elements.slice(0, 1) }
   const half = appendIndex(old.index, first)
   if (!half.ok) throw new Error(half.refusal)
-  expect(gridRows({ file, order: [], index: half.index })).toEqual([file.slice(0, 4), file.slice(4)])
+  expect(gridGroups({ file, order: [], index: half.index })).toEqual([file.slice(0, 4), file.slice(4)])
   const last = { ...first, once: "second", offset: 1, elements: elements.slice(1) }
   expect(appendIndex(half.index, { ...last, sectionStarts: [file[0]!] })).toEqual({ ok: false, refusal: "present" })
   const done = appendIndex(half.index, last)
   if (!done.ok) throw new Error(done.refusal)
-  expect(gridRows({ file, order: [], index: done.index })).toEqual([file.slice(0, 3), file.slice(3)])
+  expect(gridGroups({ file, order: [], index: done.index })).toEqual([file.slice(0, 3), file.slice(3)])
   expect(appendIndex(done.index, { ...last, sectionStarts: [] })).toEqual({ ok: false, refusal: "present" })
 })
 
@@ -165,7 +165,7 @@ function sectionedGrid(sizes: readonly number[]) {
   const indexed = appendIndex(undefined, { ...opening, sectionStarts: sections.map((run) => run[0]!) })
   const unsectioned = appendIndex(undefined, { ...opening, sectionStarts: [] })
   if (!indexed.ok || !unsectioned.ok) throw new Error("index")
-  const rows = gridRows({ file, order: [], index: indexed.index })
+  const rows = gridGroups({ file, order: [], index: indexed.index })
   return { file, sections, rows, unsectioned: unsectioned.index }
 }
 
@@ -205,12 +205,12 @@ it("packs only whole sections together and leaves unsectioned grids identical to
         const included = sections.filter((section) => section.some((id) => row.includes(id)))
         if (included.length > 1) expect(row).toEqual(included.flat())
       }
-      expect(gridRows({ file, order: [], index: unsectioned })).toEqual(gridRows({ file, order: [] }))
+      expect(gridGroups({ file, order: [], index: unsectioned })).toEqual(gridGroups({ file, order: [] }))
     }),
   )
 })
 
-it("lets two tabs initialize from one section partition and resolves the second edit against the accepted rows", () => {
+it("lets two tabs initialize from one section partition and resolves the second edit against the accepted slide groups", () => {
   const opening = appendIndex(undefined, { ...page, format, sectionStarts })
   if (!opening.ok) throw new Error(opening.refusal)
   const before = { ...openRegister("", ""), file, index: opening.index }
@@ -221,8 +221,8 @@ it("lets two tabs initialize from one section partition and resolves the second 
     if (result.decision !== "apply") throw new Error(result.code)
     return result.register
   }
-  expect(gridRows(land(before, second))).toEqual([file.slice(0, 3), [second.id], file.slice(3)])
-  expect(gridRows(land(land(before, first), second))).toEqual([
+  expect(gridGroups(land(before, second))).toEqual([file.slice(0, 3), [second.id], file.slice(3)])
+  expect(gridGroups(land(land(before, first), second))).toEqual([
     [...file.slice(0, 3), first.id],
     [second.id],
     file.slice(3),

@@ -1,4 +1,4 @@
-import { format, gridRows, slideId, slideUndoable, undoOf, type SlideCommand } from "@airdesign/document"
+import { format, gridGroups, slideId, slideUndoable, undoOf, type SlideCommand } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { newPage } from "./device.js"
@@ -56,7 +56,7 @@ for (const [edit, rows] of [
     const reloaded = connect(remote)
     const pending = await reloaded.openDeck("deck")
     if (!pending.ok || undoable === null) throw new Error("pending edit")
-    expect(gridRows(pending.register)).toEqual(rows)
+    expect(gridGroups(pending.register)).toEqual(rows)
     await expect(reloaded.flush("deck")).rejects.toThrow("answer lost")
     newPage()
     const again = connect(remote)
@@ -67,7 +67,7 @@ for (const [edit, rows] of [
     if (!saved.ok) throw new Error(saved.refusal)
     expect(saved.revision).toBe(1)
     expect(saved.register.order).toEqual([edit])
-    expect(gridRows(saved.register)).toEqual(rows)
+    expect(gridGroups(saved.register)).toEqual(rows)
     const inverse = undoOf(saved.register, undoable)
     if (!inverse.ok) throw new Error("undo refused")
     expect(inverse.commands).toHaveLength(1)
@@ -78,6 +78,6 @@ for (const [edit, rows] of [
     const undone = await server.open({ deck: "deck" })
     if (!undone.ok) throw new Error(undone.refusal)
     expect(undone.revision).toBe(2)
-    expect(gridRows(undone.register)).toEqual(original)
+    expect(gridGroups(undone.register)).toEqual(original)
   })
 }

@@ -6,13 +6,13 @@ export type HeadTag = { readonly key: string | null; readonly made: boolean }
 export type Tagged = { readonly starts: readonly SlideId[]; readonly keys: readonly string[] }
 
 export function partition(ids: readonly SlideId[], starts: ReadonlySet<SlideId>): [SlideId, ...SlideId[]][] {
-  const rows: [SlideId, ...SlideId[]][] = []
+  const groups: [SlideId, ...SlideId[]][] = []
   for (const id of ids) {
-    const last = rows.at(-1)
-    if (last === undefined || starts.has(id)) rows.push([id])
+    const last = groups.at(-1)
+    if (last === undefined || starts.has(id)) groups.push([id])
     else last.push(id)
   }
-  return rows
+  return groups
 }
 
 export function sectionsOf(
@@ -94,32 +94,32 @@ function remember(memory: Map<SlideId, HeadTag>, head: SlideId, tag: HeadTag): v
 }
 
 export function retag(
-  rows: readonly (readonly SlideId[])[],
+  groups: readonly (readonly SlideId[])[],
   tags: ReadonlyMap<SlideId, HeadTag>,
   { ids, heads, staying, memory, fresh, kept, turn }: Retag,
 ): Map<SlideId, HeadTag> {
   const present = new Set(ids)
   const after = partition(ids, heads)
-  const owner = new Map(after.flatMap((row) => row.map((id) => [id, row[0]] as const)))
+  const owner = new Map(after.flatMap((group) => group.map((id) => [id, group[0]] as const)))
   const next = new Map<SlideId, HeadTag>()
   const carried = new Set<number>()
   const carry = (number: number, id: SlideId | undefined) => {
-    const tag = tags.get(rows[number]![0]!)
+    const tag = tags.get(groups[number]![0]!)
     const head = id === undefined ? undefined : owner.get(id)
     if (tag === undefined || head === undefined || next.has(head)) return
     next.set(head, tag)
     carried.add(number)
   }
-  for (const [number, row] of rows.entries()) carry(number, row.find(staying))
-  for (const [number, row] of rows.entries())
-    if (!row.some(staying))
+  for (const [number, group] of groups.entries()) carry(number, group.find(staying))
+  for (const [number, group] of groups.entries())
+    if (!group.some(staying))
       carry(
         number,
-        row.find((id) => present.has(id)),
+        group.find((id) => present.has(id)),
       )
-  for (const [number, row] of rows.entries()) {
-    const tag = tags.get(row[0]!)
-    if (tag !== undefined && !carried.has(number)) remember(memory, row[0]!, tag)
+  for (const [number, group] of groups.entries()) {
+    const tag = tags.get(group[0]!)
+    if (tag !== undefined && !carried.has(number)) remember(memory, group[0]!, tag)
   }
   const used = new Set([...next.values()].flatMap((tag) => (tag.key === null ? [] : [tag.key])))
   let count = 0

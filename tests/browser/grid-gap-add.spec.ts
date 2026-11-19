@@ -1,17 +1,17 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { entry, manySlides, openFile, openGrid, rowNumbers, rowSizes } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, groupNumbers, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 const add = (page: Page, number: number) =>
   page.getByRole("button", { name: slideListCopy.addAfter(number), exact: true })
-const rows = async (page: Page) => (await rowNumbers(page)).map((row) => row.length)
+const rows = async (page: Page) => (await groupNumbers(page)).map((row) => row.length)
 async function open(page: Page, count = 10) {
   await openFile(page, {
     name: "gap.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(count, rowSizes(count)),
+    buffer: await manySlides(count, groupSizes(count)),
   })
   await openGrid(page)
 }
@@ -36,7 +36,9 @@ test("a gap plus is centred between neighbours and adds from the left layout", a
   await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
 })
 
-test("row-end dot previews the exact cell and keeps the next unequal row intact through undo", async ({ page }) => {
+test("slide group end dot previews the exact cell and keeps the next unequal slide group intact through undo", async ({
+  page,
+}) => {
   await open(page)
   await zoom(page, 25)
   await page.locator("[data-grid-viewport]").hover()
@@ -94,7 +96,7 @@ test("gap affordances hide at small zoom during Space and Hand and during text e
   await expect(add(page, 4)).toBeHidden()
 })
 
-test("fifty slides remove every same-row insertion target", async ({ page }) => {
+test("fifty slides remove every same slide group insertion target", async ({ page }) => {
   await open(page, 50)
   await zoom(page, 25)
   await expect(page.locator("[data-add-gap]")).toHaveCount(0)
@@ -120,7 +122,7 @@ test("slide drag and canvas pan suppress additions and reduced motion has no ani
 
 test.describe("touch", () => {
   test.use({ hasTouch: true, isMobile: true })
-  test("a touch tap leaves no gap plus or row-end preview", async ({ page }) => {
+  test("a touch tap leaves no gap plus or slide group end preview", async ({ page }) => {
     await open(page)
     await zoom(page, 25)
     await entry(page, 1).tap()

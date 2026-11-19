@@ -6,7 +6,7 @@ import type { SlideStrip } from "@/editor/slide-sidebar"
 const strip: SlideStrip = {
   count: 5,
   current: 3,
-  sections: [
+  groups: [
     { name: "Opening", start: 0, key: "f0" },
     { name: "Results", start: 2, key: "f1" },
   ],
@@ -32,12 +32,12 @@ function entries(html: string): string[] {
   return [...html.matchAll(/data-slide-entry="(\d+)"/g)].map((found) => found[1] ?? "")
 }
 
-describe("grid sections", () => {
+describe("grid slide groups", () => {
   it("names each slide group for a screen reader and draws no heading", () => {
     const html = grid()
     expect(html).toContain('role="group" aria-label="Opening"')
     expect(html).toContain('role="group" aria-label="Results"')
-    expect(html).not.toContain("data-section-head")
+    expect(html).not.toContain("data-group-head")
     expect(html).not.toContain("data-group-rule")
     expect(entries(html)).toEqual(["1", "2", "3", "4", "5"])
   })
@@ -51,12 +51,12 @@ describe("grid sections", () => {
   })
 
   it("leaves a slide group without a name unlabeled", () => {
-    const sections = [
+    const named = [
       { name: "Opening", start: 0, key: "f0" },
       { name: null, start: 2, key: "n3" },
       { name: "Results", start: 3, key: "f1" },
     ]
-    const html = grid({ sections, gridStarts: [0, 2, 3] })
+    const html = grid({ groups: named, gridStarts: [0, 2, 3] })
     expect(html).toContain('role="group" aria-label="Opening"')
     expect(html).toContain('role="group" aria-label="Results"')
     const groups = [...html.matchAll(/<div[^>]*data-slide-group="(\d+)"[^>]*>/g)].map((found) => found[0])

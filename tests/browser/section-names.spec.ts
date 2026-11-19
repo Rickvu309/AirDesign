@@ -8,7 +8,7 @@ test("a long imported section name stays fully readable when expanded and collap
   await page.locator("input[type=file]").setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const name = "Part 1: Basic Principles of Heat Pump Operation"
-  const head = page.locator("button[data-section-head]").filter({ hasText: name })
+  const head = page.locator("button[data-group-head]").filter({ hasText: name })
   await expect(head).toBeVisible()
   await page.evaluate(() => document.fonts.ready)
   for (const expanded of [true, false]) {

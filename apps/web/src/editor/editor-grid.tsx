@@ -11,7 +11,7 @@ import { EditorToolbar } from "@/editor/editor-toolbar"
 import { cardPress } from "@/editor/grid-hit"
 import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
-import { moveGridRow, gridMoveMessage, useGridRowFocus } from "@/editor/grid-row-frame"
+import { moveGridGroup, gridMoveMessage, useGridGroupFocus } from "@/editor/grid-group-frame"
 import { gridAddFits } from "@/editor/grid-add-placement"
 import { gridColumnCount, gridSpacing, gridThumbHeight } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
@@ -31,8 +31,8 @@ import { pickAll, pickedSlides, pickRange } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
 import { useShownSelection } from "@/editor/use-grid-selection"
 import type { ToolPick } from "@/editor/pointer-tool"
-import { gridRows } from "@/editor/grid-section"
-import { GridRows } from "@/editor/grid-rows"
+import { gridGroups } from "@/editor/grid-group"
+import { GridGroups } from "@/editor/grid-groups"
 import { slideThumbWidth, useSlideSay, type SlideStrip } from "@/editor/slide-sidebar"
 import { insertsFirst, type ToolbarTools } from "@/editor/toolbar-tools"
 import { useZoomKeys } from "@/editor/zoom-keys"
@@ -94,14 +94,14 @@ export function EditorGrid({
   const hand = pointer?.tool === "hand"
   const fit = gridLayout(100, size ?? wideSlide, strip.count)
   const width = fit.width
-  const rows = gridRows(strip)
+  const groups = gridGroups(strip)
   const { current, count } = strip
-  const sections = strip.sections ?? []
+  const named = strip.groups ?? []
   const height = gridThumbHeight(width, strip.thumbHeight, slideThumbWidth)
   const geometry = {
-    rows,
-    sections: sections.flatMap((section) => (section.name === null ? [] : [section.start])),
-    rowHandles: strip.onMoveMany !== undefined,
+    groups,
+    named: named.flatMap((group) => (group.name === null ? [] : [group.start])),
+    groupHandles: strip.onMoveMany !== undefined,
     width,
     height,
   }
@@ -119,7 +119,7 @@ export function EditorGrid({
     elementsOf: () => strip.selectionBoxes?.(selection.ids),
     initialFit: zoom === "fit",
     fitting: zoom === "fit",
-    layout: `${strip.count}:${strip.gridStarts?.join(",") ?? ""}:${strip.sections?.map((section) => section.start).join(",") ?? ""}`,
+    layout: `${strip.count}:${strip.gridStarts?.join(",") ?? ""}:${strip.groups?.map((group) => group.start).join(",") ?? ""}`,
   })
   function chooseZoom(next: Zoom) {
     setZoom(next)
@@ -143,7 +143,7 @@ export function EditorGrid({
   })
   const slideMenu = useGridMenu({
     list,
-    rows,
+    groups,
     picked,
     selected,
     step: edit.step,
@@ -189,7 +189,7 @@ export function EditorGrid({
     else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent, zoomRanges.grid))
   })
   const spacing = gridSpacing(width, height)
-  const focusRow = useGridRowFocus(list, rows, strip.slideIds ?? [])
+  const focusGroup = useGridGroupFocus(list, groups, strip.slideIds ?? [])
   const columns = gridColumnCount(geometry)
   const layoutWidth = columns * width + (columns - 1) * spacing.column
   const drag = useGridDrag({
@@ -197,7 +197,7 @@ export function EditorGrid({
     bar,
     ghost,
     viewport: viewport.handlers.ref,
-    rows,
+    groups,
     selected: pickedSlides(picked, current),
     slideIds: strip.slideIds ?? [],
     panBy: viewport.panBy,
@@ -226,22 +226,22 @@ export function EditorGrid({
       width: width * scale,
       height: height * scale,
       columnGap: spacing.column * scale,
-      rowGap: spacing.row * scale,
+      rowGap: spacing.line * scale,
     })
 
   function moveSlides(held: readonly number[], at: number, side: GridMoveSide) {
-    const first = gridDrop(rows, held, at, side)
+    const first = gridDrop(groups, held, at, side)
     if (first === null || strip.onMoveMany === undefined) return
-    const row = side === "keep"
+    const group = side === "keep"
     following.current = true
-    if (row) focusRow(held, at)
+    if (group) focusGroup(held, at)
     strip.onMoveMany(held, at, side)
     edit.step({
       kind: "pick",
       pick:
-        row || held.length === 1 ? null : { anchor: first, slides: new Set(held.map((_, offset) => first + offset)) },
+        group || held.length === 1 ? null : { anchor: first, slides: new Set(held.map((_, offset) => first + offset)) },
     })
-    announce(gridMoveMessage(rows, held, at, row))
+    announce(gridMoveMessage(groups, held, at, group))
   }
 
   function addSlide(index: number, side: "same" | "new", keep: boolean) {
@@ -273,7 +273,7 @@ export function EditorGrid({
     if (touch) setTouch(false)
     if (
       event.target instanceof Element &&
-      event.target.closest("[data-add-row], [data-add-gap], [data-row-handle]") !== null
+      event.target.closest("[data-add-group], [data-add-gap], [data-group-handle]") !== null
     )
       return
     edit.key(event)
@@ -283,7 +283,7 @@ export function EditorGrid({
     if (!editorOwnsKey(event)) return
     if (
       event.target instanceof Element &&
-      event.target.closest("[data-grid-edit], [data-add-gap], [data-row-handle]") !== null
+      event.target.closest("[data-grid-edit], [data-add-gap], [data-group-handle]") !== null
     )
       return
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
@@ -354,7 +354,7 @@ export function EditorGrid({
       onPressed={(event) => edit.click(index, picked, event)}
       onClick={(event) => edit.pick(index, event.shiftKey, event.metaKey || event.ctrlKey, picked)}
       onContextMenu={(event) => gridContextMenu(event, index, slideMenu.open)}
-      rowEnd={rows.some((row) => row.end === index + 1)}
+      groupEnd={groups.some((group) => group.end === index + 1)}
       addBlocked={addBlocked}
       onAdd={() => addSlide(index, "same", true)}
     />
@@ -413,7 +413,7 @@ export function EditorGrid({
       {dragging === null ? null : (
         <GridDragGhost
           ref={ghost}
-          row={drag.row ? drag.held.map((index) => (size: number) => strip.thumb(index, size)) : undefined}
+          group={drag.group ? drag.held.map((index) => (size: number) => strip.thumb(index, size)) : undefined}
           count={drag.held.length}
           width={width}
           height={height}
@@ -446,7 +446,7 @@ export function EditorGrid({
         )}
         onPointerDown={marquee.press}
         onClick={(event) => {
-          if (event.target instanceof Element && event.target.closest("[data-grid-card], [data-section-head]") === null)
+          if (event.target instanceof Element && event.target.closest("[data-grid-card], [data-group-head]") === null)
             edit.clear()
         }}
         data-hover-disabled={
@@ -476,15 +476,15 @@ export function EditorGrid({
             className="pointer-events-none absolute top-0 left-0 z-10 rounded-full bg-primary"
             style={{ width: 4 / scale, borderRadius: 2 / scale }}
           />
-          <GridRows
+          <GridGroups
             geometry={geometry}
-            sections={sections}
+            named={named}
             ids={strip.slideIds}
             columns={columns}
             scale={scale}
             renderCard={card}
             addBlocked={addBlocked}
-            rowBlocked={
+            groupBlocked={
               viewport.space ||
               hand ||
               dragging !== null ||
@@ -493,7 +493,7 @@ export function EditorGrid({
               strip.onMoveMany === undefined
             }
             onGrab={(index, event) => drag.grab(index, event, true)}
-            onMove={(number, direction) => moveGridRow(rows, number, direction, moveSlides)}
+            onMove={(number, direction) => moveGridGroup(groups, number, direction, moveSlides)}
             onAdd={(index) => addSlide(index, "new", true)}
           />
         </div>

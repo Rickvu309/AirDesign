@@ -17,7 +17,7 @@ afterEach(() => {
 })
 
 describe("grid percent", () => {
-  it("uses the slide percent without changing rows or clamping to the window", () => {
+  it("uses the slide percent without changing groups or clamping to the window", () => {
     expect(gridLayout(25, wide, 50)).toEqual({ columns: 9, width: 320 })
     expect(gridLayout(50, wide, 50)).toEqual({ columns: 9, width: 640 })
     expect(gridLayout(200, wide, 50)).toEqual({ columns: 9, width: 2560 })

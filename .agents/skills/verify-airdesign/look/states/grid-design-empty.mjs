@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test"
-import { openRowDeck } from "../grid-row-add.mjs"
+import { openGroupDeck } from "../grid-group-add.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await openRowDeck(kit, 8)
+  await openGroupDeck(kit, 8)
   await page.locator('[data-slide-entry="2"]').click()
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await expect(page.locator("[data-design-panel]")).toBeVisible()

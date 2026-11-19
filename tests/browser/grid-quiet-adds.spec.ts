@@ -1,17 +1,17 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { entry, manySlides, openFile, openGrid, rowSizes } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
-const adds = "[data-add-gap], [data-add-row]"
+const adds = "[data-add-gap], [data-add-group]"
 const cards = "[data-slide-entry]"
 
 async function open(page: Page, count = 7) {
   await openFile(page, {
     name: "seven-slides.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(count, rowSizes(count)),
+    buffer: await manySlides(count, groupSizes(count)),
   })
   await openGrid(page)
 }
@@ -34,7 +34,7 @@ test("small zoom keeps all three adds out of the pointer and tab paths", async (
   await zoom(page, 15)
   await expect(page.locator("[data-gap-insert='between']")).toHaveCount(5)
   await expect(page.locator("[data-gap-insert='end']")).toHaveCount(2)
-  await expect(page.locator("[data-add-row]")).toHaveCount(2)
+  await expect(page.locator("[data-add-group]")).toHaveCount(2)
 })
 
 test("slide centres and corners keep their own hits across the zoom range", async ({ page }) => {
@@ -70,13 +70,13 @@ test("slide centres and corners keep their own hits across the zoom range", asyn
           const hit = document.elementFromPoint(face.left + dx, face.top + dy)
           return (
             hit?.closest("[data-grid-card]") !== slide.closest("[data-grid-card]") ||
-            hit?.closest("[data-add-gap], [data-add-row]") !== null
+            hit?.closest("[data-add-gap], [data-add-group]") !== null
           )
         })
         const face = slide.getBoundingClientRect()
         return {
           missed,
-          overlap: [...host.querySelectorAll("[data-add-gap], [data-add-row]")].some((button) => {
+          overlap: [...host.querySelectorAll("[data-add-gap], [data-add-group]")].some((button) => {
             const hit = button.getBoundingClientRect()
             return (
               Math.min(face.right, hit.right) - Math.max(face.left, hit.left) > 0.02 &&
@@ -94,7 +94,7 @@ test("idle Grid and an edited slide leave the add marks quiet", async ({ page })
   await open(page)
   await zoom(page, 25)
   await page.mouse.move(0, 0)
-  await expect(page.locator("[data-add-row]").first()).toHaveCSS("opacity", "0")
+  await expect(page.locator("[data-add-group]").first()).toHaveCSS("opacity", "0")
   await entry(page, 1).focus()
   await page.keyboard.press("Enter")
   const live = page.locator("[data-grid-edit]")
@@ -161,11 +161,11 @@ test("a menu, pan and slide drag block every add", async ({ page }) => {
   await page.mouse.up()
 })
 
-test("row tint clears in the first frame with slide hover", async ({ page }) => {
+test("slide group tint clears in the first frame with slide hover", async ({ page }) => {
   await open(page)
   await zoom(page, 25)
-  const grip = page.locator("[data-row-handle]").first()
-  const halo = page.locator('[data-grid-row-member="0"] [data-grid-halo]')
+  const grip = page.locator("[data-group-handle]").first()
+  const halo = page.locator('[data-grid-group-member="0"] [data-grid-halo]')
   const second = (await entry(page, 2).boundingBox())!
   const y = second.y + second.height / 2
   for (let offset = 2; offset <= 12; offset += 2) {

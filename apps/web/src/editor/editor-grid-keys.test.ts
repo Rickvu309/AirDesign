@@ -11,7 +11,7 @@ const key = (
 ) => ({ key: name, altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, ...modifiers })
 
 describe("grid keys", () => {
-  it("moves across a row with left and right, and to the slide above or below with up and down", () => {
+  it("moves across a slide group with left and right, and to the slide above or below with up and down", () => {
     expect(gridMove("ArrowRight", grid, 0)).toBe(1)
     expect(gridMove("ArrowRight", grid, 2)).toBe(3)
     expect(gridMove("ArrowRight", grid, 5)).toBe(5)
@@ -35,7 +35,7 @@ describe("grid keys", () => {
     expect(gridMove("ArrowDown", boxes, 12)).toBe(12)
   })
 
-  it("stays put when the row has nowhere above or below", () => {
+  it("stays put when the slide group has nowhere above or below", () => {
     expect(gridMove("ArrowDown", [row(0, 0), row(120, 0)], 0)).toBe(0)
     expect(gridMove("ArrowUp", [row(0, 0), row(120, 0)], 1)).toBe(1)
   })

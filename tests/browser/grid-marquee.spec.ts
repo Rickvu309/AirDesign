@@ -4,7 +4,7 @@ import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { test } from "./api-stack"
 import { blankAt, belowRight, centre, crossed, marquee, pick, selectedNumbers, type Point } from "./grid-marquee-deck"
 import { openSaved, panOf, picked, roomOf } from "./grid-reorder-deck"
-import { rowNumbers, rowSizes } from "./slide-grid-deck"
+import { groupNumbers, groupSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -16,13 +16,13 @@ async function moved(page: Page, before: Point, by: Point) {
   expect(after.y - before.y).toBeCloseTo(by.y, 1)
 }
 
-test("a drag on empty canvas selects every slide it crosses across rows, live and like a Shift-click set, and Delete removes them with one Undo", async ({
+test("a drag on empty canvas selects every slide it crosses across slide groups, live and like a Shift-click set, and Delete removes them with one Undo", async ({
   page,
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
-  expect((await rowNumbers(page)).length).toBeGreaterThan(1)
+  const saved = await openSaved(page, context, stack, 7, groupSizes(7))
+  expect((await groupNumbers(page)).length).toBeGreaterThan(1)
   await pick(page, 1)
   const said = await page.locator(announcer).textContent()
   const from = await belowRight(page, 7)
@@ -80,7 +80,7 @@ test("Shift-drag adds to the selection and a slide the drag leaves again goes ba
   context,
   stack,
 }) => {
-  await openSaved(page, context, stack, 7, rowSizes(7))
+  await openSaved(page, context, stack, 7, groupSizes(7))
   await pick(page, 1, 2)
   const from = await belowRight(page, 7)
   await page.mouse.move(from.x, from.y)
@@ -111,7 +111,7 @@ test("a press on empty canvas under the drag threshold clears the selection as a
   context,
   stack,
 }) => {
-  await openSaved(page, context, stack, 7, rowSizes(7))
+  await openSaved(page, context, stack, 7, groupSizes(7))
   await pick(page, 2, 3)
   const from = await belowRight(page, 7)
   await page.mouse.move(from.x, from.y)
@@ -128,7 +128,7 @@ test("Escape cancels the drag and restores the selection, and Space does not pan
   context,
   stack,
 }) => {
-  await openSaved(page, context, stack, 7, rowSizes(7))
+  await openSaved(page, context, stack, 7, groupSizes(7))
   await pick(page, 1, 2)
   const from = await belowRight(page, 7)
   const six = await centre(page, 6)
@@ -198,7 +198,7 @@ test("the rectangle edge-pans the canvas and stays anchored to its start in canv
   context,
   stack,
 }) => {
-  await openSaved(page, context, stack, 7, rowSizes(7))
+  await openSaved(page, context, stack, 7, groupSizes(7))
   const room = await roomOf(page)
   const from = await blankAt(page, { x: room.x + room.width - 120, y: room.y + 120 })
   const pan = await panOf(page)
@@ -224,7 +224,7 @@ test("touch, the hand tool and the middle button still pan from empty canvas wit
   context,
   stack,
 }) => {
-  await openSaved(page, context, stack, 7, rowSizes(7))
+  await openSaved(page, context, stack, 7, groupSizes(7))
   await pick(page, 3)
   const from = await belowRight(page, 7)
   const touch = await page.context().newCDPSession(page)
@@ -256,14 +256,14 @@ test("touch, the hand tool and the middle button still pan from empty canvas wit
   expect(await selectedNumbers(page)).toEqual([3])
 })
 
-test("selects tiny slides with hidden numbers in a deck with named groups and stored rows", async ({
+test("selects tiny slides with hidden numbers in a deck with named groups and stored slide groups", async ({
   page,
   context,
   stack,
 }) => {
   await openSaved(page, context, stack, 7, true)
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Opening")
-  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await page.locator("[data-grid-viewport]").evaluate((host) => {
     const box = host.getBoundingClientRect()
     const at = { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 }
