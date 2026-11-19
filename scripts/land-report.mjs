@@ -51,16 +51,26 @@ const snapshotLines = ({ repository, run, git, gh, files }) => {
   )
 }
 
-export const failedJobLogs = ({ repository, run, gh }) => {
+export const failedJobs = ({ repository, run, gh }) => {
   const jobs =
     run.attempt === undefined
       ? `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`
       : `repos/${repository}/actions/runs/${run.id}/attempts/${run.attempt}/jobs?per_page=100`
-  return gh(["api", jobs, "--jq", '.jobs[] | select(.conclusion == "failure" and .name != "ci") | .id'])
+  return gh([
+    "api",
+    jobs,
+    "--jq",
+    '.jobs[] | select(.conclusion == "failure" and .name != "ci") | "\\(.id)\\t\\(.name)"',
+  ])
     .stdout.split("\n")
-    .filter((id) => id !== "")
-    .map((id) => gh(["api", `repos/${repository}/actions/jobs/${id}/logs`]).stdout)
+    .filter((line) => line !== "")
+    .map((line) => {
+      const [id, name = ""] = line.split("\t")
+      return { name, log: gh(["api", `repos/${repository}/actions/jobs/${id}/logs`]).stdout }
+    })
 }
+
+export const failedJobLogs = (options) => failedJobs(options).map((job) => job.log)
 
 export const ciFailureLines = ({ repository, run, gh, git, logs = failedJobLogs({ repository, run, gh }) }) => {
   const steps = [...new Set(logs.flatMap(failedSteps))]
