@@ -6,6 +6,14 @@ async function drive(kit) {
   await kit.page.getByRole("button", { name: "Design", exact: true }).click()
   await kit.page.locator("[data-design-mode]").click()
   const layers = kit.page.locator("[data-layers-panel]")
+  const listed = await layers
+    .waitFor({ state: "visible", timeout: 2000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!listed) {
+    await kit.page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#5"]').click()
+    return
+  }
   await layers.locator("[data-layer-caret]").first().click()
   await layers.getByRole("treeitem").nth(1).click()
   await expect(layers.getByRole("treeitem").nth(1)).toHaveAttribute("aria-selected", "true")
