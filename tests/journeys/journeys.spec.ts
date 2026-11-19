@@ -45,6 +45,7 @@ for (const name of [
   "picture-add",
   "shape-insert",
   "element-order",
+  "layers-panel",
   "slide-background",
   "shape-fill",
   "border-style",

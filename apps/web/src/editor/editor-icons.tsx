@@ -5,6 +5,7 @@ const iconPaths = {
   chev: '<path d="m6 9 6 6 6-6"/>',
   chevr: '<path d="m9 6 6 6-6 6"/>',
   chevl: '<path d="m15 6-6 6 6 6"/>',
+  chevu: '<path d="m6 15 6-6 6 6"/>',
   slide: '<rect x="2.5" y="4" width="19" height="16" rx="1.2"/><rect x="6.5" y="8" width="11" height="8" rx="0.4"/>',
   grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
   cursor:
@@ -55,6 +56,8 @@ const iconPaths = {
   frame: '<path d="M8 3v18M16 3v18M3 8h18M3 16h18"/>',
   group: '<rect x="4" y="4" width="16" height="16" rx="1.5" stroke-dasharray="3 3"/>',
   line: '<path d="M5 19 19 5"/>',
+  flowHorizontal: '<path d="M7 7v10M12 5v14M17 8v8"/>',
+  flowVertical: '<path d="M7 7h10M5 12h14M8 17h8"/>',
   layers: '<path d="m12 3.5 8.5 4.75L12 13 3.5 8.25z"/><path d="m3.5 12.5 8.5 4.75 8.5-4.75"/>',
   styleSliders:
     '<path d="M8 3v6.5M8 14.5V21M16 3v1.5M16 9.5V21"/><circle cx="8" cy="12" r="2.5"/><circle cx="16" cy="7" r="2.5"/>',

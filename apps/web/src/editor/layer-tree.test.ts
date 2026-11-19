@@ -1,6 +1,6 @@
 import { elementId, type ElementId } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { layerDrop, layerRange, layerTree, openedFor, shownLayers, type LayerRow } from "./layer-tree"
+import { layerDrop, layerRange, layerTree, layersUnder, openedFor, shownLayers, type LayerRow } from "./layer-tree"
 
 const id = (shape: number) => elementId(`256.${String(shape)}`)
 
@@ -45,6 +45,12 @@ it("opens every group above the given layers", () => {
   const tree = layerTree([row(9), row(12, 9), row(13, 12), row(2)])
   expect([...openedFor(tree, [id(13)])].sort()).toEqual([id(12), id(9)].sort())
   expect([...openedFor(tree, [id(2)])]).toEqual([])
+})
+
+it("finds every layer inside the given layers, at any depth", () => {
+  const tree = layerTree([row(9), row(12, 9), row(13, 12), row(2)])
+  expect([...layersUnder(tree, [id(9)])].sort()).toEqual([id(12), id(13)].sort())
+  expect([...layersUnder(tree, [id(12), id(2)])]).toEqual([id(13)])
 })
 
 it("takes every shown layer between two clicked layers, in either direction", () => {

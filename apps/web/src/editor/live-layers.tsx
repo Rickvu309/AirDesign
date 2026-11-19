@@ -1,4 +1,4 @@
-import { openRegister, type ElementId } from "@airdesign/document"
+import { openRegister, readLayout, type ElementId } from "@airdesign/document"
 import type { CanvasSlide, Selection } from "@airdesign/render"
 import { useEffect, useMemo, useRef } from "react"
 import type { CommitOutcome } from "@/commit-edit"
@@ -10,6 +10,7 @@ import { LayersPanel, type LayerPick } from "@/editor/layers-panel"
 import { fieldsOf } from "@/editor/panel-fields"
 import { slideLayerRows, type LayerLook } from "@/editor/slide-layers"
 import type { ElementChange } from "@/element-edit"
+import { indexedRegister } from "@/indexed-register"
 
 export type LayeringDeck = DesignDeck & {
   readonly selection: Selection
@@ -38,12 +39,18 @@ function useSlideTree(deck: LayeringDeck): readonly Layer[] {
   return useMemo(() => {
     if (slide === undefined) return []
     const scope = deviceScope(file, register ?? openRegister("", ""))
+    const laid = register === null ? null : indexedRegister(file, register)
     const look = (node: ElementId): LayerLook => {
       const view = scope.view(node)
       if (view === undefined) return { kind: "kept" }
       const found = panelKind(view, { reads: {}, moves: false, fields: fieldsOf(parts, node) })
       const kind = found === null || found === "many" ? "kept" : found
-      return view.backdrop === undefined ? { kind } : { kind, backdrop: view.backdrop }
+      const flow = view.facts.frame === "auto" && laid !== null ? readLayout(laid, node)?.flow : undefined
+      return {
+        kind,
+        ...(view.backdrop === undefined ? {} : { backdrop: view.backdrop }),
+        ...(flow === undefined || flow === "none" ? {} : { flow }),
+      }
     }
     return layerTree(slideLayerRows(parts, slide, look))
   }, [file, parts, register, slide])

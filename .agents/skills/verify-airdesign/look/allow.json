@@ -42,6 +42,12 @@
     "reason": "A group's frame is where a person grabs the group, so it paints nothing of its own. The shapes it holds paint under it with plain fills, which the detector does not count as a sign that something is there."
   },
   {
+    "page": "layers-panel",
+    "detector": "invisible-control",
+    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"]",
+    "reason": "The frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
+  },
+  {
     "page": "grid-groups-eleven",
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",

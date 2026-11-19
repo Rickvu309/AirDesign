@@ -7,6 +7,7 @@ import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import {
   layerDrop,
   layerRange,
+  layersUnder,
   openedFor,
   shownLayers,
   type Layer,
@@ -40,6 +41,12 @@ const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
 }
 
 type Spot = { readonly target: ElementId; readonly side: LayerSide }
+
+function iconOf(layer: Layer): EditorIconName {
+  if (layer.flow === "horizontal") return "flowHorizontal"
+  if (layer.flow === "vertical") return "flowVertical"
+  return kindIcons[layer.kind]
+}
 
 function sideOf(event: DragEvent<HTMLElement>): LayerSide {
   const box = event.currentTarget.getBoundingClientRect()
@@ -121,12 +128,15 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
   const [spot, setSpot] = useState<Spot | null>(null)
   const [stop, setStop] = useState<ElementId | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
+  const [folded, setFolded] = useState(false)
+  const listId = useId()
   if (seen !== selected) {
     setSeen(selected)
     const above = [...openedFor(tree, selected)].filter((node) => !open.has(node))
     if (above.length > 0) setOpen(new Set([...open, ...above]))
   }
   const shown = shownLayers(tree, open)
+  const inside = layersUnder(tree, selected)
   const lead = selected.at(-1) ?? null
   const shownIds = shown.map((each) => each.layer.node)
   const reachable =
@@ -193,6 +203,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
   function row(each: ShownLayer, at: number) {
     const { layer, depth, open: opened, dim } = each
     const chosen = selected.includes(layer.node)
+    const within = !chosen && inside.has(layer.node)
     const editing = renaming === layer.node
     const line = spot?.target === layer.node ? spot.side : null
     return (
@@ -211,7 +222,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         {...(dim ? { "data-layer-hidden": "" } : {})}
         className={cn(
           "relative flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-[var(--shape-control)] pr-2 text-[length:var(--type-caption)] select-none",
-          chosen ? "bg-[var(--row)]" : "hover:bg-black/4",
+          chosen ? "bg-[var(--row)]" : within ? "bg-[var(--row-inside)] hover:bg-black/4" : "hover:bg-black/4",
           dim ? "text-faint" : "text-foreground",
         )}
         style={{ paddingLeft: `calc(var(--space-4) + ${String(depth)} * var(--space-16))` }}
@@ -267,11 +278,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         >
           {opened === null ? null : <EditorIcon name={opened ? "chev" : "chevr"} size={12} strokeWidth={2} />}
         </span>
-        <EditorIcon
-          name={kindIcons[layer.kind]}
-          size={14}
-          className={cn("shrink-0", dim ? "text-faint" : "text-quiet")}
-        />
+        <EditorIcon name={iconOf(layer)} size={14} className={cn("shrink-0", dim ? "text-faint" : "text-quiet")} />
         {editing ? (
           <NameEdit
             name={layer.name}
@@ -282,7 +289,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
             }}
           />
         ) : (
-          <span className={cn("min-w-0 flex-1 truncate", chosen && "font-medium")} data-layer-name>
+          <span className={cn("min-w-0 flex-1 truncate", layer.kind === "frame" && "font-medium")} data-layer-name>
             {layer.name}
           </span>
         )}
@@ -307,15 +314,28 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
       data-layers-panel
       data-keeps-selection
     >
-      <h2 className="flex h-9 shrink-0 items-center px-4 text-[length:var(--type-caption)] font-medium text-foreground">
-        {layersCopy.section}
+      <h2 className="flex shrink-0 px-1.5 pt-1.5 pb-0.5">
+        <button
+          type="button"
+          aria-expanded={!folded}
+          aria-controls={listId}
+          data-layers-fold
+          onClick={() => setFolded(!folded)}
+          className="flex h-8 flex-1 items-center rounded-[var(--shape-control)] px-2.5 text-left text-[length:var(--type-caption)] font-medium text-foreground hover:bg-black/4"
+        >
+          <span className="flex-1">{layersCopy.section}</span>
+          <EditorIcon name={folded ? "chevu" : "chev"} size={12} strokeWidth={2} className="shrink-0 text-faint" />
+        </button>
       </h2>
       <Announcer message={message} />
-      {tree.length === 0 ? (
-        <p className="px-4 pb-3 text-[length:var(--type-caption)] text-muted-foreground">{layersCopy.empty}</p>
+      {folded ? null : tree.length === 0 ? (
+        <p id={listId} className="px-4 pb-3 text-[length:var(--type-caption)] text-muted-foreground">
+          {layersCopy.empty}
+        </p>
       ) : (
         <div
           ref={list}
+          id={listId}
           role="tree"
           aria-label={layersCopy.listName}
           aria-multiselectable

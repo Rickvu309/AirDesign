@@ -1,11 +1,11 @@
 import { readElementId, type ElementId } from "@airdesign/document"
 import { readShapes, shownIdentity, type ReadShape } from "@airdesign/pptx"
 import { plainNames } from "@/design/node-names"
-import type { LayerKind, LayerRow } from "./layer-tree"
+import type { LayerFlow, LayerKind, LayerRow } from "./layer-tree"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export type LayerLook = { readonly kind: LayerKind; readonly backdrop?: ElementId }
+export type LayerLook = { readonly kind: LayerKind; readonly backdrop?: ElementId; readonly flow?: LayerFlow }
 
 const shapesRead = new WeakMap<Parts, readonly ReadShape[]>()
 
@@ -34,5 +34,6 @@ export function slideLayerRows(parts: Parts, slide: string, look: (node: Element
     name: names[at] ?? each.name,
     kind: each.look.kind,
     hidden: each.hidden,
+    ...(each.look.flow === undefined ? {} : { flow: each.look.flow }),
   }))
 }

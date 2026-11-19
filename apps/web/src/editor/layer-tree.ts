@@ -3,12 +3,15 @@ import type { PanelKind } from "@/design/panel-order"
 
 export type LayerKind = Exclude<PanelKind, "many">
 
+export type LayerFlow = "horizontal" | "vertical"
+
 export type LayerRow = {
   readonly node: ElementId
   readonly parent: ElementId | null
   readonly name: string
   readonly kind: LayerKind
   readonly hidden: boolean
+  readonly flow?: LayerFlow
 }
 
 export type Layer = LayerRow & { readonly layers: readonly Layer[] }
@@ -65,6 +68,12 @@ function pathTo(tree: readonly Layer[], node: ElementId): readonly Layer[] | nul
 
 export function openedFor(tree: readonly Layer[], nodes: readonly ElementId[]): ReadonlySet<ElementId> {
   return new Set(nodes.flatMap((node) => (pathTo(tree, node) ?? []).slice(0, -1).map((layer) => layer.node)))
+}
+
+export function layersUnder(tree: readonly Layer[], nodes: readonly ElementId[]): ReadonlySet<ElementId> {
+  const all = (layers: readonly Layer[]): readonly ElementId[] =>
+    layers.flatMap((layer) => [layer.node, ...all(layer.layers)])
+  return new Set(nodes.flatMap((node) => all((pathTo(tree, node) ?? []).at(-1)?.layers ?? [])))
 }
 
 export function layerRange(shown: readonly ShownLayer[], from: ElementId, to: ElementId): readonly ElementId[] {
