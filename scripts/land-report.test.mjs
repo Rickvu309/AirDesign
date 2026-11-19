@@ -31,6 +31,7 @@ const lines = (changedOnMain, behind = 3) => {
     },
     git: (args) => {
       gitCalls.push(args.join(" "))
+      if (args[0] === "merge-base") return ok(args[1] + "\n")
       if (args[0] === "rev-list") return ok(`${behind}\n`)
       if (args[0] === "diff") return ok(changedOnMain.join("\n") + "\n")
       if (args[0] === "cat-file") return ok("")

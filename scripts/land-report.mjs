@@ -2,8 +2,18 @@ import { failedSteps, failedTests } from "./failed-tests.mjs"
 
 const queueBase = (branch) => /^gh-readonly-queue\/main\/pr-\d+-([0-9a-f]{40})$/.exec(branch)?.[1]
 
-const mainWhenRunStarted = ({ repository, run, gh }) => {
-  if (run.event === "merge_group") return queueBase(run.branch)
+const mainWhenRunStarted = ({ repository, run, gh, git }) => {
+  if (run.event === "merge_group") {
+    const base = queueBase(run.branch)
+    if (base === undefined) return undefined
+    if (
+      git(["cat-file", "-e", `${base}^{commit}`]).status !== 0 &&
+      git(["fetch", "--no-tags", "--no-write-fetch-head", "origin", base]).status !== 0
+    )
+      return undefined
+    const shared = git(["merge-base", base, "origin/main"])
+    return shared.status === 0 ? shared.stdout.trim() : undefined
+  }
   const found = gh([
     "api",
     `repos/${repository}/commits?sha=main&until=${encodeURIComponent(run.createdAt)}&per_page=1`,
@@ -14,13 +24,14 @@ const mainWhenRunStarted = ({ repository, run, gh }) => {
 }
 
 const snapshotLines = ({ repository, run, git, gh, files }) => {
-  const then = mainWhenRunStarted({ repository, run, gh })
-  if (then === undefined || git(["cat-file", "-e", `${then}^{commit}`]).status !== 0) {
+  const then = mainWhenRunStarted({ repository, run, gh, git })
+  const count = then ? git(["rev-list", "--count", `${then}..origin/main`]) : undefined
+  if (count?.status !== 0 || !/^\d+$/.test(count.stdout.trim())) {
     return [
       "could not tell whether main has moved since this run started. Run git fetch origin main, then land --status.",
     ]
   }
-  const behind = Number(git(["rev-list", "--count", `${then}..origin/main`]).stdout.trim())
+  const behind = Number(count.stdout.trim())
   if (behind === 0)
     return [
       "main has not moved since this run started. A rerun would test the same snapshot: fix the test or the code.",
@@ -51,15 +62,15 @@ export const failedJobLogs = ({ repository, run, gh }) => {
     .map((id) => gh(["api", `repos/${repository}/actions/jobs/${id}/logs`]).stdout)
 }
 
-export const ciFailureLines = ({ repository, run, gh, git }) => {
-  const logs = failedJobLogs({ repository, run, gh })
+export const ciFailureLines = ({ repository, run, gh, git, logs = failedJobLogs({ repository, run, gh }) }) => {
   const steps = [...new Set(logs.flatMap(failedSteps))]
   const tests = failedTests(logs.join("\n"))
   const lines = [
     `ci run ${run.id} (${run.event}) failed in ${steps.length > 0 ? steps.join(", ") : "a step that left no name"}.`,
   ]
   for (const test of tests) {
-    lines.push(`  ${test.file}: ${test.name}`)
+    const where = test.line === undefined ? test.file : `${test.file}:${test.line}`
+    lines.push(`  ${where}: ${test.name}`)
     if (test.error !== "") lines.push(`    ${test.error}`)
   }
   if (tests.length === 0)
