@@ -11,7 +11,6 @@ const strip: SlideStrip = {
     { name: "Results", start: 2, key: "f1" },
   ],
   onSelect: () => undefined,
-  gridStarts: [0, 2],
   thumbHeight: 101,
   thumb: (index) => <span data-painted={index} />,
 }
@@ -56,7 +55,7 @@ describe("grid slide groups", () => {
       { name: null, start: 2, key: "n3" },
       { name: "Results", start: 3, key: "f1" },
     ]
-    const html = grid({ groups: named, gridStarts: [0, 2, 3] })
+    const html = grid({ groups: named })
     expect(html).toContain('role="group" aria-label="Opening"')
     expect(html).toContain('role="group" aria-label="Results"')
     const groups = [...html.matchAll(/<div[^>]*data-slide-group="(\d+)"[^>]*>/g)].map((found) => found[0])

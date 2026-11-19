@@ -3,7 +3,6 @@ import {
   gridBaseColumns,
   gridFrameHeight,
   gridGroupCenter,
-  gridHandleCenter,
   gridLineGap,
   gridSlideCenters,
   gridVisualLines,
@@ -22,12 +21,11 @@ const groups = (lengths: readonly number[]) => {
   return ranges
 }
 
-const track = (number: number, start: number, end: number, cards = true): GridLineTrack => ({
+const track = (number: number, start: number, end: number): GridLineTrack => ({
   number,
   start,
   end,
-  heads: cards ? [] : [start],
-  cards: cards ? Array.from({ length: end - start }, (_, offset) => start + offset) : [],
+  cards: Array.from({ length: end - start }, (_, offset) => start + offset),
 })
 
 describe("grid line layout", () => {
@@ -65,12 +63,6 @@ describe("grid line layout", () => {
     const fitted = gridVisualLines([track(0, 0, 4), track(1, 4, 8)], 8)
     expect(fitted).toEqual([track(0, 0, 4), track(1, 4, 8)])
   })
-
-  it("puts a section heading on the line that contains its first slide", () => {
-    const [first, second] = gridVisualLines([{ ...track(0, 0, 20), heads: [0, 12] }], 10)
-    expect(first?.heads).toEqual([0])
-    expect(second?.heads).toEqual([12])
-  })
 })
 
 describe("grid line spacing", () => {
@@ -91,29 +83,12 @@ describe("grid line spacing", () => {
 
 describe("grid handle position", () => {
   it("centres one line on the slide, and several lines on the midpoint of the first and last slides", () => {
-    expect(gridHandleCenter(1, 12, 100, 20)).toBe(12 + 24 + 50)
-    const centers = gridSlideCenters(
-      [
-        { cards: [0], heading: 0 },
-        { cards: [1], heading: 0 },
-        { cards: [2], heading: 0 },
-      ],
-      100,
-      [20, 20, 0],
-    )
-    expect(gridGroupCenter(centers)).toBe(gridHandleCenter(3, 0, 100, 20))
+    const centers = gridSlideCenters([{ cards: [0] }, { cards: [1] }, { cards: [2] }], 100, [20, 20, 0])
+    expect(gridGroupCenter(centers)).toBe(24 + 50 + (100 + 24 + 20))
     expect(centers[1]! - centers[0]!).toBe(100 + 24 + 20)
-    expect(gridFrameHeight([{ cards: [0], heading: 12 }], 100, [40])).toBe(12 + 100 + 24)
-    expect(
-      gridFrameHeight(
-        [
-          { cards: [0], heading: 0 },
-          { cards: [1], heading: 0 },
-          { cards: [2], heading: 0 },
-        ],
-        100,
-        [20, 20, 80],
-      ),
-    ).toBe(3 * (100 + 24) + 2 * 20)
+    expect(gridFrameHeight([{ cards: [0] }], 100, [40])).toBe(100 + 24)
+    expect(gridFrameHeight([{ cards: [0] }, { cards: [1] }, { cards: [2] }], 100, [20, 20, 80])).toBe(
+      3 * (100 + 24) + 2 * 20,
+    )
   })
 })

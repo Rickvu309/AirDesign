@@ -75,7 +75,6 @@ it("fits the occupied cards across section headers with screen-space padding", (
         { start: 0, end: 2 },
         { start: 2, end: 4 },
       ],
-      named: [0, 2],
       width: 1000,
       height: 500,
     },
@@ -186,26 +185,24 @@ describe("scale-independent group fit", () => {
   for (const count of [1, 7, 41, 50]) {
     for (const width of [1470, 1280, 1110, 920]) {
       for (const height of [759, 556]) {
-        for (const named of [[], [0, 2, 5]]) {
-          it(`fits ${count} slides with ${named.length} heads in ${width}x${height}`, () => {
-            const groups = Array.from({ length: Math.ceil(count / 4) }, (_, i) => ({
-              start: i * 4,
-              end: Math.min(count, i * 4 + 4),
-            }))
-            const geometry = { groups, named: named.filter((n) => n < count), width: 960, height: 720 }
-            const room = { width, height }
-            const fit = fittedGridGroups(geometry, room)
-            const lines = gridLayoutLines(geometry)
-            const shown = lines.reduce((total, line, index) => {
-              const size = gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index))
-              return total + size.world * fit.scale + size.fixed
-            }, 0)
-            expect(fit.y).toBeGreaterThanOrEqual(48 - 1e-8)
-            expect(fit.y + shown).toBeLessThanOrEqual(height - 48 + 1e-8)
-            expect(fit.x).toBeGreaterThanOrEqual(48 - 1e-8)
-            expect(Array.from({ length: 6 }, () => fittedGridGroups(geometry, room))).toEqual(Array(6).fill(fit))
-          })
-        }
+        it(`fits ${count} slides in ${width}x${height}`, () => {
+          const groups = Array.from({ length: Math.ceil(count / 4) }, (_, i) => ({
+            start: i * 4,
+            end: Math.min(count, i * 4 + 4),
+          }))
+          const geometry = { groups, width: 960, height: 720 }
+          const room = { width, height }
+          const fit = fittedGridGroups(geometry, room)
+          const lines = gridLayoutLines(geometry)
+          const shown = lines.reduce((total, line, index) => {
+            const size = gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index))
+            return total + size.world * fit.scale + size.fixed
+          }, 0)
+          expect(fit.y).toBeGreaterThanOrEqual(48 - 1e-8)
+          expect(fit.y + shown).toBeLessThanOrEqual(height - 48 + 1e-8)
+          expect(fit.x).toBeGreaterThanOrEqual(48 - 1e-8)
+          expect(Array.from({ length: 6 }, () => fittedGridGroups(geometry, room))).toEqual(Array(6).fill(fit))
+        })
       }
     }
   }
@@ -287,7 +284,6 @@ it("fits the rotated union in a sectioned group using the world geometry", () =>
       { start: 0, end: 2 },
       { start: 2, end: 4 },
     ],
-    named: [0, 2],
     width: 1000,
     height: 500,
   }
@@ -302,14 +298,14 @@ it("fits the rotated union in a sectioned group using the world geometry", () =>
 })
 
 it("clamps a very small element to Grid's maximum zoom", () => {
-  const geometry = { groups: [{ start: 0, end: 1 }], named: [], width: 1000, height: 500 }
+  const geometry = { groups: [{ start: 0, end: 1 }], width: 1000, height: 500 }
   const box = { x: 100, y: 50, width: 1, height: 1, rotation: 0 }
   expect(fittedGridElements(geometry, 0, [box], 1000, { width: 996, height: 696 })?.scale).toBe(4)
 })
 
 it("fits and centres the widest group including its handle and end dot", () => {
   const room = { width: 1280, height: 720 }
-  const fit = fittedGridGroups({ groups: [{ start: 0, end: 4 }], named: [], width: 1280, height: 720 }, room)
+  const fit = fittedGridGroups({ groups: [{ start: 0, end: 4 }], width: 1280, height: 720 }, room)
   const left = fit.x - 46
   const right = fit.x + (4 * 1280 + 3.5 * 166.4) * fit.scale + 4
   expect(left).toBeGreaterThanOrEqual(48 - 1e-8)
@@ -319,7 +315,7 @@ it("fits and centres the widest group including its handle and end dot", () => {
 
 it("reveals group chrome with breathing room and stays put when it already fits", () => {
   const view = { x: 0, y: 0, scale: 0.25 }
-  const geometry = { groups: [{ start: 0, end: 4 }], named: [], width: 1280, height: 720 }
+  const geometry = { groups: [{ start: 0, end: 4 }], width: 1280, height: 720 }
   const room = { left: 0, top: 0, width: 1280, height: 720 }
   const first = { left: 24, top: 24, width: 320, height: 180 }
   const bounds = gridCardBounds(geometry, 0, view.scale, first)
@@ -332,7 +328,7 @@ it("reveals group chrome with breathing room and stays put when it already fits"
 })
 
 it("fits a selected group head and tail using the stored columns and their chrome", () => {
-  const geometry = { groups: [{ start: 0, end: 4 }], named: [], width: 1280, height: 720 }
+  const geometry = { groups: [{ start: 0, end: 4 }], width: 1280, height: 720 }
   const room = { width: 1280, height: 720 }
   const view = fittedGridCards(geometry, [0, 3], room)
   const fitted = fittedGridGroups(geometry, room)
@@ -348,7 +344,7 @@ it("places later lines of one group closer together than the next group", () => 
     { start: 29, end: 39 },
     { start: 39, end: 41 },
   ]
-  const geometry = { groups, named: [], width: 960, height: 540 }
+  const geometry = { groups, width: 960, height: 540 }
   const lines = gridLayoutLines(geometry)
   expect(lines.map((line) => line.end - line.start)).toEqual([1, 10, 10, 8, 10, 2])
   const gaps = lines.map((_, index) => gridTrackGap(geometry, lines, index))
@@ -366,7 +362,6 @@ it("places later lines of one group closer together than the next group", () => 
       { start: 0, end: 4 },
       { start: 4, end: 8 },
     ],
-    named: [],
     width: 960,
     height: 540,
   }
@@ -386,7 +381,7 @@ function slideBox(slide: { width: number; height: number }) {
   return { width, height: gridThumbHeight(width, thumb, thumbWidth) }
 }
 
-function deck(slide: { width: number; height: number }, sizes: readonly number[], named: boolean): GridGeometry {
+function deck(slide: { width: number; height: number }, sizes: readonly number[]): GridGeometry {
   const box = slideBox(slide)
   let start = 0
   const groups = sizes.map((size) => {
@@ -396,7 +391,6 @@ function deck(slide: { width: number; height: number }, sizes: readonly number[]
   })
   return {
     groups,
-    named: named ? groups.map((group) => group.start) : [],
     groupHandles: true,
     width: box.width,
     height: box.height,
@@ -423,10 +417,10 @@ function screenGaps(geometry: GridGeometry, scale: number) {
 
 describe("Fit without a heading band", () => {
   it("fits the four reference decks in the 1470 by 923 grid room", () => {
-    const twelve = deck(wide, Array(12).fill(2), true)
-    const heat = deck(fourByThree, [1, 28, 10, 2], true)
-    const six = deck(wide, [3, 3], true)
-    const plain = deck(wide, [6], false)
+    const twelve = deck(wide, Array(12).fill(2))
+    const heat = deck(fourByThree, [1, 28, 10, 2])
+    const six = deck(wide, [3, 3])
+    const plain = deck(wide, [6])
     const heatScale = fittedGridGroups(heat, fitRoom).scale
     const fit = screenGaps(heat, heatScale)
     const quarter = screenGaps(heat, 0.25)
@@ -441,7 +435,7 @@ describe("Fit without a heading band", () => {
   })
 
   it("keeps wrapped lines of the heat-pump deck closer than the next group at Fit and at 25%", () => {
-    const heat = deck(fourByThree, [1, 28, 10, 2], true)
+    const heat = deck(fourByThree, [1, 28, 10, 2])
     const fit = fittedGridGroups(heat, fitRoom).scale
     for (const scale of [fit, 0.25]) {
       const gaps = screenGaps(heat, scale)

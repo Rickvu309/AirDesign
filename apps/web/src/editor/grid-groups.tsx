@@ -109,7 +109,7 @@ export function GridGroups({
         const groupFull = groupLines.reduce((total, item) => total + item.cards.length, 0) === group.end - group.start
         const key = ids?.[group.start] ?? group.start
         const name = named.find((entry) => entry.start === group.start)?.name ?? undefined
-        const measured = groupLines.map((item) => ({ cards: item.cards, heading: 0 }))
+        const measured = groupLines.map((item) => ({ cards: item.cards }))
         const gaps = groupLines.map((_, offset) => gridTrackGap(geometry, lines, first + offset))
         const centers = gridSlideCenters(measured, height, gaps)
         const spanColumns = Math.max(...groupLines.map(gridTrackColumns))
@@ -125,12 +125,8 @@ export function GridGroups({
         const hostLine = lines[first]
         const tailLine = lines[last]
         if (hostLine === undefined || tailLine === undefined) return []
-        const host = groupFull
-          ? ([...new Set([...hostLine.heads, ...hostLine.cards])].sort((a, b) => a - b)[0] ?? -1)
-          : -1
-        const owned = groupLines
-          .flatMap((line) => [...new Set([...line.heads, ...line.cards])])
-          .map((slide) => memberId(ids, slide))
+        const host = groupFull ? (hostLine.cards[0] ?? -1) : -1
+        const owned = groupLines.flatMap((line) => line.cards).map((slide) => memberId(ids, slide))
         return [
           <div
             key={`group:${key}`}
@@ -164,7 +160,7 @@ export function GridGroups({
             const length = gridTrackColumns(line)
             const place = { gridRow: index + 1, gridColumn: `1 / span ${length}` }
             const rowHeight = gridTrackSize(line, geometry, 0).world
-            const members = [...new Set([...line.heads, ...line.cards])].sort((a, b) => a - b)
+            const members = line.cards
             return members.map((slide) => (
               <div
                 key={ids?.[slide] ?? slide}

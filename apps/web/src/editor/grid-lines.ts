@@ -7,7 +7,6 @@ export type GridLineTrack = {
   readonly number: number
   readonly start: number
   readonly end: number
-  readonly heads: readonly number[]
   readonly cards: readonly number[]
 }
 
@@ -51,23 +50,18 @@ export function gridVisualLines<T extends GridLineTrack>(tracks: readonly T[], c
     const lines: T[] = []
     for (let start = track.start; start < track.end; start += columns) {
       const end = Math.min(track.end, start + columns)
-      const heads = track.heads.filter((index) => index >= start && index < end)
       const cards = track.cards.filter((index) => index >= start && index < end)
-      if (heads.length === 0 && cards.length === 0) continue
-      lines.push({ ...track, start, end, heads, cards })
+      if (cards.length === 0) continue
+      lines.push({ ...track, start, end, cards })
     }
     return lines
   })
 }
 
-export function gridHandleCenter(lines: number, heading: number, slide: number, lineGap: number): number {
-  return heading + gridCardInset + slide / 2 + ((lines - 1) * (slide + gridCardInset + lineGap)) / 2
-}
-
-type MeasuredLine = { readonly cards: readonly number[]; readonly heading: number }
+type MeasuredLine = { readonly cards: readonly number[] }
 
 function lineContent(line: MeasuredLine, slide: number): number {
-  return (line.cards.length > 0 ? slide + gridCardInset : 0) + line.heading
+  return line.cards.length > 0 ? slide + gridCardInset : 0
 }
 
 export function gridSlideCenters(lines: readonly MeasuredLine[], slide: number, gaps: readonly number[]): number[] {
@@ -76,7 +70,7 @@ export function gridSlideCenters(lines: readonly MeasuredLine[], slide: number, 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]
     if (line === undefined) continue
-    if (line.cards.length > 0) centers.push(top + line.heading + gridCardInset + slide / 2)
+    if (line.cards.length > 0) centers.push(top + gridCardInset + slide / 2)
     top += lineContent(line, slide) + (gaps[index] ?? 0)
   }
   return centers

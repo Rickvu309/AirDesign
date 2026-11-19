@@ -118,17 +118,15 @@ export function readGridViewport(raw: string | null): GridViewport | null {
 
 export type GridGeometry = {
   readonly groups: readonly { readonly start: number; readonly end: number }[]
-  readonly named: readonly number[]
   readonly groupHandles?: boolean
   readonly width: number
   readonly height: number
 }
 
-export function gridTracks({ groups, named }: GridGeometry) {
+export function gridTracks({ groups }: GridGeometry) {
   return groups.flatMap(({ start, end }, number) => {
-    const heads = named.filter((index) => index >= start && index < end)
     const cards = Array.from({ length: end - start }, (_, offset) => start + offset)
-    return cards.length === 0 ? [] : [{ start, end, number, heads, cards }]
+    return cards.length === 0 ? [] : [{ start, end, number, cards }]
   })
 }
 
@@ -157,7 +155,7 @@ export function gridTrackGap(
 }
 
 export function gridTrackColumns(track: GridTrack): number {
-  return Math.max(...track.heads, ...track.cards) - track.start + 1
+  return Math.max(...track.cards) - track.start + 1
 }
 
 export function gridTrackSize(track: GridTrack, geometry: GridGeometry, gap: number) {
