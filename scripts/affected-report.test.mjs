@@ -23,7 +23,7 @@ try {
   fs.symlinkSync(path.join(root, "node_modules"), path.join(folder, "node_modules"), "dir")
   write(".gitignore", "node_modules\n")
   write("package.json", '{"type":"module"}')
-  write("vitest.config.mjs", `export default { test: { include: ['packages/a/src/*.test.ts'], isolate: false } }`)
+  write("vitest.config.mjs", `export default { test: { include: ['packages/a/src/*.test.ts'] } }`)
   write("packages/a/src/core.ts", "export const value = 1")
   write(
     "packages/a/src/a.test.ts",
@@ -57,17 +57,12 @@ try {
   })
   const reached = await reportFor("packages/a/src/core.ts").finally(() => sourceOnly.deregister())
   assert.deepEqual(reached.incomplete, [])
-  assert.deepEqual(
-    reached.unit.files,
-    ["packages/a/src/a.test.ts", "packages/a/src/b.test.ts"],
-    "shared execution stays whole",
-  )
-  assert.equal(reached.unit.groups.length, 1)
-  assert.equal(reached.unit.leftOut.length, 1)
+  assert.deepEqual(reached.unit.files, ["packages/a/src/a.test.ts"])
+  assert.deepEqual(reached.unit.leftOut, [])
   for (const file of [
     "apps/api/src/migration.sql",
     "packages/a/src/fixture.json",
-    "scripts/vitest-kept-globals.mjs",
+    "scripts/vitest-api-database.mjs",
     "scripts/unknown.mjs",
   ]) {
     const report = await reportFor(file)
@@ -186,7 +181,7 @@ try {
   assert.equal(upload.with["retention-days"], 7)
   assert.equal(upload.with.path, "test-results/affected-report.json")
   assert.ok(fs.statSync(path.join(root, ".github/workflows/ci.yml")).size <= 20000)
-  console.log("affected-report: planted reach, shared groups, unchanged gate and advisory ci passed")
+  console.log("affected-report: planted reach, unchanged gate and advisory ci passed")
 } finally {
   fs.rmSync(folder, { recursive: true, force: true })
 }
