@@ -1,15 +1,12 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const connectionWire: TraitWire<"connection"> = {
-  description:
-    "A connector's ends, each attached to a numbered site on a shape or image of its slide, which it follows; none frees it.",
+  description: "Attach ends to numbered sites on same-slide shapes or images. none detaches.",
   fields: {
     start: {
-      description: "Where the start attaches.",
       example: { connection: { start: { shape: { node: "324.6", site: 0 } } } },
     },
     end: {
-      description: "Where the end attaches.",
       example: { connection: { end: { shape: { node: "324.15", site: 3 } } } },
     },
   },

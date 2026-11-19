@@ -32,7 +32,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Change one deck: text, boxes, looks, layers and slides, all landing or none. Read it first with airdesign_read_deck; send its revision as base and each layer's version as readAt (a change with op needs none). Each answer carries your turn's runId; call airdesign_stop_run with it when done.",
+        "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). Pass the returned runId to airdesign_stop_run when done.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
@@ -43,7 +43,7 @@ describe("projectTools", () => {
       name: "airdesign_read_deck",
       op: "read_deck",
       description:
-        "Read one deck this account owns. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. Layers give node (layer id), slide, kind, value, box and version (0 unchanged); role names a placeholder; design is one line of its look. closed: a person's newer change or another run holds it. Grouped layers refuse box changes; frame is auto or free. index is ready, pending or missing; if not ready, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
+        "Read an owned deck. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. A layer's node is its id, version 0 is unchanged, role names a placeholder, design is one line of its look, and closed means a person's newer change or another run holds it. Grouped layers refuse box changes; frame is auto or free. If index is pending or missing, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,
@@ -53,7 +53,7 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.name === "airdesign_list_decks")).toEqual({
       name: "airdesign_list_decks",
       op: "list_decks",
-      description: "List the decks this account owns, each with its id, its name, and trash when it is in Trash.",
+      description: "List owned decks with id, name, and trash when in Trash.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,

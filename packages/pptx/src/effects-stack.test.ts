@@ -1,3 +1,5 @@
+import { elementId } from "@airdesign/document"
+import { readTraits } from "./trait-read.js"
 import { expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
 import { extensionDrops, effectsUri } from "./effects-extension.js"
@@ -56,6 +58,10 @@ it("keeps three drop shadows, exports the extras as one stand-in, and reads a mo
   expect(shown?.drop1.value).toEqual({ outer })
   expect(shown?.drop2.value).toEqual({ outer })
   expect(shown?.drop1.own).toBe(true)
+  const inner = writeTrait(written, at, "effects", { inner2: { set: { inner: outer } } })
+  const reads = (parts: typeof written) => readTraits(parts).elements.get(elementId("256.4"))?.reads
+  expect(reads(inner)?.["effects.drop1"]).toEqual({ value: outer })
+  expect(reads(inner)?.["effects.inner2"]).toEqual({ value: outer })
   const before = decodeUtf8(written.get(at.part)!)
   expect(before).toContain(`uri="${effectsUri}"`)
   expect(before.split("<adf:drop ").length - 1).toBe(2)
@@ -63,6 +69,7 @@ it("keeps three drop shadows, exports the extras as one stand-in, and reads a mo
   expect(writtenStandIn(wrapped, at, png)).toBe(wrapped)
   expect(markupDocument(wrapped.get(at.part)!).wellFormed).toBe(true)
   expect(extensionDrops(wrapped, at)).toEqual([])
+  expect(reads(wrapped)?.["effects.drop2"]).toEqual({ value: outer })
   const again = shownEffects(wrapped, at)
   expect(again?.shadow.value).toEqual({ outer })
   expect(again?.drop1.value).toEqual({ outer })
@@ -89,6 +96,7 @@ it("keeps three drop shadows, exports the extras as one stand-in, and reads a mo
   const movedXml = `${xml.slice(0, atOff)}<a:off x="${String(Number(x) + 1000)}"${xml.slice(atOff + needle.length)}`
   const moved = new Map(wrapped)
   moved.set(at.part, encodeUtf8(movedXml))
+  expect(reads(moved)?.["effects.drop2"]).toBeUndefined()
   const opened = readShapes(moved).filter((shape) => shape.part === at.part)
   expect(opened.some((shape) => shape.shape === record.group)).toBe(true)
   expect(opened.some((shape) => shape.shape === record.picture)).toBe(true)

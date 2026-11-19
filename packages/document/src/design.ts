@@ -1,3 +1,4 @@
+import { dropSlots, innerSlots } from "./trait-effects.js"
 import type { ElementLink } from "./link-target.js"
 import { mappedSlots, templateColors, type Color, type MappedSlot, type TemplateColor } from "./color.js"
 import type { Box } from "./box.js"
@@ -22,6 +23,13 @@ export type Role = (typeof roles)[number]
 export const sources = ["layout", "master", "style"] as const
 export type Source = (typeof sources)[number]
 
+export const shadowSlotKeys = [
+  ...dropSlots.map((slot) => `effects.${slot}` as const),
+  ...innerSlots.map((slot) => `effects.${slot}` as const),
+] as const
+
+type ShadowSlotKey = (typeof shadowSlotKeys)[number]
+
 export const designKeys = [
   "geometry",
   "fills",
@@ -31,7 +39,9 @@ export const designKeys = [
   "border.head",
   "border.tail",
   "effects.shadow",
+  ...shadowSlotKeys.slice(0, dropSlots.length),
   "effects.innerShadow",
+  ...shadowSlotKeys.slice(dropSlots.length),
   "effects.glow",
   "effects.softEdge",
   "effects.blur",
@@ -56,15 +66,20 @@ export const designKeys = [
 ] as const
 export type DesignKey = (typeof designKeys)[number]
 
+const baseDesignKeys = designKeys.filter((key) => !shadowSlotKeys.some((slot) => slot === key))
+
 const firstKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV", "connection.start", "connection.end"]
 
-export const designOrder: readonly DesignKey[] = [...firstKeys, ...designKeys.filter((key) => !firstKeys.includes(key))]
+export const designOrder: readonly DesignKey[] = [
+  ...firstKeys,
+  ...baseDesignKeys.filter((key) => !firstKeys.includes(key)),
+]
 
 export type Shown = readonly [value: string | number | boolean, source?: Source]
 export type Design = { readonly [Key in DesignKey]?: Shown }
 
 export const designBytes = 400
-const wordBytes = 200
+export const designWordBytes = 200
 
 export const templateFonts = ["major", "minor"] as const
 export type TemplateFont = (typeof templateFonts)[number]
@@ -92,7 +107,7 @@ export type GlowRead = { readonly radius: number; readonly color: Color | null }
 export type RecolorRead = "grayscale" | { readonly dark: Color; readonly light: Color }
 export type CropRead = { readonly l: number; readonly t: number; readonly r: number; readonly b: number }
 export type BoundRead = { readonly node: string; readonly site: number }
-export type TraitReads = {
+export type TraitReads = Readonly<Partial<Record<ShadowSlotKey, Read<ShadowRead>>>> & {
   readonly geometry?: Read<string>
   readonly fills?: Read<FillRead>
   readonly "border.width"?: Read<number>
@@ -146,7 +161,7 @@ function readShown(raw: unknown): Shown | null {
   const scalar =
     typeof value === "boolean" ||
     (typeof value === "number" && Number.isFinite(value)) ||
-    (typeof value === "string" && value.length > 0 && bytesOf(value) <= wordBytes)
+    (typeof value === "string" && value.length > 0 && bytesOf(value) <= designWordBytes)
   if (!scalar) return null
   if (raw.length === 1) return [value]
   const from = named(sources, source)
@@ -155,7 +170,7 @@ function readShown(raw: unknown): Shown | null {
 
 export function readDesign(raw: unknown): Design | null {
   const row = record(raw)
-  if (row === null || bytesOf(JSON.stringify(row)) > designBytes) return null
+  if (row === null) return null
   const design: Partial<Record<DesignKey, Shown>> = {}
   for (const [key, value] of Object.entries(row)) {
     const known = named(designKeys, key)
@@ -163,7 +178,10 @@ export function readDesign(raw: unknown): Design | null {
     if (known === undefined || shown === null) return null
     design[known] = shown
   }
-  return design
+  const base = Object.fromEntries(
+    baseDesignKeys.flatMap((key) => (design[key] === undefined ? [] : [[key, design[key]]])),
+  )
+  return bytesOf(JSON.stringify(base)) > designBytes ? null : design
 }
 
 export function readKept(raw: unknown): readonly DesignKey[] | null {

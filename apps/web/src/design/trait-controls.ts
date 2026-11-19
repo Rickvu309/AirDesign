@@ -1,5 +1,5 @@
 import { slideListCopy } from "@/copy/slide-list-copy"
-import type { TraitName, WireField } from "@airdesign/document"
+import type { SlotField, TraitName, WireField } from "@airdesign/document"
 import { bodyControls } from "./trait-controls-body"
 import { borderControls } from "./trait-controls-border"
 import { boxControls } from "./trait-controls-box"
@@ -20,9 +20,11 @@ export type FieldCopy = {
   readonly reset?: string
 }
 
-export type TraitControls<T extends TraitName> = [T extends "table" ? never : WireField<T>] extends [never]
+type PanelField<T extends TraitName> = Exclude<WireField<T>, SlotField<T>>
+
+export type TraitControls<T extends TraitName> = [T extends "table" ? never : PanelField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
-  : { readonly section: string; readonly fields: { readonly [F in WireField<T>]-?: FieldCopy } }
+  : { readonly section: string; readonly fields: { readonly [F in PanelField<T>]-?: FieldCopy } }
 
 export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   identity: identityControls,

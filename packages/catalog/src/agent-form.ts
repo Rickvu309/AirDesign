@@ -6,6 +6,7 @@ import {
   bytesOf,
   designBytes,
   designOrder,
+  shadowSlotKeys,
   fadedColor,
   iconNamePattern,
   namesAlpha,
@@ -103,13 +104,22 @@ function shownOf<Key extends DesignKey>(
 
 export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed" | "link"> {
   const design: Partial<Record<DesignKey, Shown>> = {}
-  for (const key of designOrder) {
+  const stacked = shadowSlotKeys.some((slot) => read.reads[slot] !== undefined)
+  const primary = ["effects.shadow", "effects.innerShadow"] as const
+  const order = stacked
+    ? [...primary, ...designOrder.filter((key) => !primary.some((slot) => slot === key))]
+    : designOrder
+  for (const key of order) {
     const field = read.reads[key] as Read<never> | undefined
     if (field === undefined) continue
     const shown = shownOf(key, field)
     const trial = { ...design, [key]: shown }
     if (bytesOf(JSON.stringify(trial)) > designBytes) break
     design[key] = shown
+  }
+  for (const slot of shadowSlotKeys) {
+    const field = read.reads[slot]
+    if (field !== undefined) design[slot] = shownOf(slot, field)
   }
   const written: Design = design
   return {

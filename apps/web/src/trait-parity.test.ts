@@ -83,7 +83,7 @@ type Loose = {
 
 type LooseWire = {
   readonly description: string
-  readonly fields: Readonly<Record<string, { readonly description: string; readonly example: unknown }>>
+  readonly fields: Readonly<Record<string, { readonly description?: string; readonly example: unknown }>>
 }
 
 type LooseControls = {
@@ -182,7 +182,6 @@ function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: 
     ...fields.flatMap(([field, kind]) => [
       [`${trait}.${field} label`, controls.fields?.[field]?.label],
       ...(inheritable(trait, field) ? [[`${trait}.${field} reset`, controls.fields?.[field]?.reset]] : []),
-      [`${trait}.${field} description`, wire.fields?.[field]?.description],
       ...optionWords(kind.desc).map((word) => [`option ${word}`, optionCopy[word]]),
     ]),
   ]

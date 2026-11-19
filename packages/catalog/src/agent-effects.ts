@@ -1,12 +1,13 @@
-import type {
-  Design,
-  DesignKey,
-  ElementPatch,
-  FieldEdit,
-  FieldValue,
-  GlowRead,
-  ShadowRead,
-  Shown,
+import {
+  designWordBytes,
+  type Design,
+  type DesignKey,
+  type ElementPatch,
+  type FieldEdit,
+  type FieldValue,
+  type GlowRead,
+  type ShadowRead,
+  type Shown,
 } from "@airdesign/document"
 import { agentColor } from "./agent-color.js"
 
@@ -23,7 +24,8 @@ function agentShadow(shadow: ShadowRead): string {
     `distance ${String(tenths(shadow.distance / emuPerPoint))}`,
     `direction ${String(tenths(shadow.direction / anglePerDegree))}`,
   ]
-  return shadow.color === null ? parts.join(" ") : `${parts.join(" ")} ${agentColor(shadow.color)}`
+  const words = shadow.color === null ? parts.join(" ") : `${parts.join(" ")} ${agentColor(shadow.color)}`
+  return words.length <= designWordBytes ? words : `${words.slice(0, designWordBytes - 3)}...`
 }
 
 function agentGlow(glow: GlowRead): string {
@@ -44,6 +46,12 @@ const softEdgeShown = (soft: SoftEdge) => ("none" in soft ? null : tenths(soft.r
 export const effectAgents = {
   "effects.shadow": agentShadow,
   "effects.innerShadow": agentShadow,
+  "effects.drop1": agentShadow,
+  "effects.drop2": agentShadow,
+  "effects.drop3": agentShadow,
+  "effects.inner1": agentShadow,
+  "effects.inner2": agentShadow,
+  "effects.inner3": agentShadow,
   "effects.glow": agentGlow,
   "effects.softEdge": (value: number) => tenths(value / emuPerPoint),
   "effects.blur": (value: number) => tenths(value / emuPerPoint),
@@ -65,6 +73,12 @@ function folded<V>(
 export function foldEffects(design: Design, effects: ElementPatch["effects"]): Design {
   let next = folded(design, "effects.shadow", effects?.shadow, shadowShown)
   next = folded(next, "effects.innerShadow", effects?.innerShadow, innerShown)
+  next = folded(next, "effects.drop1", effects?.drop1, shadowShown)
+  next = folded(next, "effects.drop2", effects?.drop2, shadowShown)
+  next = folded(next, "effects.drop3", effects?.drop3, shadowShown)
+  next = folded(next, "effects.inner1", effects?.inner1, innerShown)
+  next = folded(next, "effects.inner2", effects?.inner2, innerShown)
+  next = folded(next, "effects.inner3", effects?.inner3, innerShown)
   next = folded(next, "effects.glow", effects?.glow, glowShown)
   next = folded(next, "effects.softEdge", effects?.softEdge, softEdgeShown)
   return folded(next, "effects.blur", effects?.blur, softEdgeShown)

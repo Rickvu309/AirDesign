@@ -1,3 +1,4 @@
+import { dropSlots } from "./trait-effects.js"
 import { placements } from "./box-align.js"
 import { textStylesOf, type TextStyle } from "./text-style.js"
 import { mergeTextStyleEdits, storedTextStyleEdits, type TextStyleEdit } from "./text-style-edit.js"
@@ -72,6 +73,7 @@ export type AddChange =
 export type ScopedElement = {
   readonly node: ElementId
   readonly facts: ElementFacts
+  readonly role?: Role
   readonly textStyles?: readonly TextStyle[]
   readonly textStyleEdits?: readonly TextStyleEdit[]
   readonly kept: readonly DesignKey[]
@@ -204,6 +206,13 @@ function siteRefusals(change: SetChange, view: ScopedElement, scope: Scope): rea
   return [{ node: view.node, trait: "connection", code: "site" }]
 }
 
+function addsExtraDrop(effects: SetChange["effects"]): boolean {
+  return dropSlots.some((slot) => {
+    const shadow = effects?.[slot]
+    return shadow !== undefined && "outer" in shadow
+  })
+}
+
 function planNode(
   change: SetChange,
   view: ScopedElement,
@@ -224,6 +233,8 @@ function planNode(
     const code = unplaced ? "kind" : refusalOf(view, trait, input)
     return code === null ? [] : [{ node: view.node, trait, code }]
   })
+  if ((view.role === "title" || view.role === "body") && addsExtraDrop(change.effects))
+    refusals.push({ node: view.node, trait: "effects", code: "kind" })
   if (refusals.length === 0) refusals.push(...siteRefusals(change, view, scope))
   const link = change.link?.target
   if (link?.kind === "slide" && scope.expand({ slide: link.slide }).length === 0)
@@ -406,6 +417,7 @@ export function registerScope(register: Register): Scope {
       return {
         node,
         facts,
+        ...(opening?.role === undefined ? {} : { role: opening.role }),
         textStyles: textStylesOf(register, shapeOf(node).slide),
         textStyleEdits: storedTextStyleEdits(body),
         kept: opening?.kept ?? [],

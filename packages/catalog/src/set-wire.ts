@@ -58,7 +58,7 @@ export function readTarget(raw: unknown): Target | null {
   return slide === undefined ? null : { role, slide }
 }
 
-function wireFields(trait: TraitName): Readonly<Record<string, { readonly description: string }>> {
+function wireFields(trait: TraitName): Readonly<Record<string, { readonly description?: string }>> {
   return traitWire[trait].fields
 }
 
@@ -188,7 +188,10 @@ function traitSchema(trait: TraitName, required: readonly string[] | null): Json
   const fields = named.map(([field, { description }]) => {
     const desc = descOf(trait, field)
     if (desc === undefined) throw new Error(`${trait}.${field}`)
-    return [field, { ...nullable(trait, field, agentSchema(desc)), description }] as const
+    return [
+      field,
+      { ...nullable(trait, field, agentSchema(desc)), ...(description === undefined ? {} : { description }) },
+    ] as const
   })
   return {
     type: "object",
@@ -206,14 +209,13 @@ export function setChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "target"],
     minProperties: 3,
-    description: "Set fields on every layer the target names, in one step the person can undo.",
+    description: "Set fields on all targets in one undo step.",
     properties: {
       op: { type: "string", const: "set" },
       target: {
         type: "string",
         pattern: targetPattern,
-        description:
-          "A layer id such as 258.7 or 258.notes, a slide id, <slide>.<role> such as 258.title, *.<role>, or deck.templateStyles.",
+        description: "Layer (258.7, 258.notes), slide ID, slide.role (258.title), *.role, or deck.templateStyles.",
       },
       opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
@@ -224,7 +226,7 @@ export function setChangeSchema(): JsonSchema {
 export function placedBoxSchema(): JsonSchema {
   return {
     ...traitSchema("box", Object.keys(boxSides)),
-    description: "Where it sits on the slide, in points. Send all four.",
+    description: "Box in points.",
   }
 }
 
@@ -239,8 +241,7 @@ export function addChangeSchema(): JsonSchema {
     type: "object",
     additionalProperties: false,
     required: ["op", "kind", "slide"],
-    description:
-      "Add a text layer, or with icon a shape whose fills hold a Lucide icon, to one slide; without box it takes the largest free area. Its id comes back in elements.",
+    description: "Add text or a Lucide icon. Omit box to use the largest free area. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },

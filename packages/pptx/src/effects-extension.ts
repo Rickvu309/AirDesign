@@ -4,7 +4,7 @@ import { colorIn } from "./color-read.js"
 import { colorXml } from "./color-xml.js"
 import type { MarkupElement } from "./element-span.js"
 import { changedPart } from "./fill-host.js"
-import { child, whole } from "./markup-held.js"
+import { child, whole, type Held } from "./markup-held.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute, paintColor, type PaintPalette } from "./paint-color.js"
 import type { PaintInner, PaintShadow } from "./paint-effects.js"
@@ -70,8 +70,7 @@ function found(parts: Parts, at: HostAt): Found | null {
   const properties = children[shape.index]?.find((each) => each.kind === propertiesKind)
   if (properties === undefined) return null
   const list = children[properties.index]?.find((each) => each.kind === "a:extLst")
-  const own =
-    list === undefined ? undefined : children[list.index]?.find((each) => paintAttribute(each, "uri") === effectsUri)
+  const own = ownExtension(children, list)
   return { bytes, children, properties, propertiesKind, list, own }
 }
 
@@ -115,6 +114,18 @@ function valuesIn(children: MarkupChildren, list: MarkupElement | undefined): Ex
     values[slot] = offset === null ? null : slot.startsWith("drop") ? { outer: offset } : { inner: offset }
   }
   return values
+}
+
+function ownExtension(children: MarkupChildren, list: MarkupElement | undefined): MarkupElement | undefined {
+  return list === undefined
+    ? undefined
+    : children[list.index]?.find((each) => paintAttribute(each, "uri") === effectsUri)
+}
+
+export function heldExtras(properties: Held | undefined): ExtraValues {
+  if (properties === undefined) return {}
+  const list = child(properties, "a:extLst")?.element
+  return valuesIn(properties.children, ownExtension(properties.children, list))
 }
 
 function readHeld(parts: Parts, at: HostAt): ExtraValues {
@@ -259,8 +270,7 @@ export function paintedExtras(
 ): { readonly drops: readonly PaintShadow[]; readonly inners: readonly PaintInner[] } {
   if (properties === undefined) return { drops: [], inners: [] }
   const list = children[properties.index]?.find((each) => each.kind === "a:extLst")
-  const own =
-    list === undefined ? undefined : children[list.index]?.find((each) => paintAttribute(each, "uri") === effectsUri)
+  const own = ownExtension(children, list)
   const root = own === undefined ? undefined : children[own.index]?.[0]
   if (root === undefined || root.kind !== "adf:effects") return { drops: [], inners: [] }
   const drops: PaintShadow[] = []

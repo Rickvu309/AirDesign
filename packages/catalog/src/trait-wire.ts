@@ -15,7 +15,7 @@ import { templateStyleWire } from "./trait-wire-template-style.js"
 import { transitionWire } from "./trait-wire-transition.js"
 
 export type FieldWire<T extends TraitName, F extends WireField<T>> = {
-  readonly description: string
+  readonly description?: string
   readonly example: { readonly [K in T]: { readonly [P in F]: WireAgent<T, F> } }
 }
 
