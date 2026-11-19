@@ -7,6 +7,8 @@ const offlineModules = ["src/thin-deck.tsx", "src/import-deck.ts", "src/decks/fi
   path.resolve(import.meta.dirname, file),
 )
 
+const homePaths = ["/", "/all", "/trash"]
+
 function preloadOfflineModules(): Plugin {
   return {
     name: "preload-offline-modules",
@@ -27,13 +29,14 @@ function preloadOfflineModules(): Plugin {
         }
         const first = reached(chunks.filter((chunk) => chunk.isEntry).map((chunk) => chunk.fileName))
         const offline = chunks.filter((chunk) => chunk.moduleIds.some((id) => offlineModules.includes(id)))
-        return [...reached(offline.map((chunk) => chunk.fileName))]
-          .filter((file) => !first.has(file))
-          .map((file) => ({
-            tag: "link",
-            attrs: { rel: "modulepreload", crossorigin: true, href: `/${file}` },
+        const files = [...reached(offline.map((chunk) => chunk.fileName))].filter((file) => !first.has(file))
+        return [
+          {
+            tag: "script",
+            children: `if (${JSON.stringify(homePaths)}.includes(location.pathname.replace(/\\/$/, "") || "/")) for (const file of ${JSON.stringify(files.map((file) => `/${file}`))}) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", crossOrigin: "", href: file }))`,
             injectTo: "head" as const,
-          }))
+          },
+        ]
       },
     },
   }
