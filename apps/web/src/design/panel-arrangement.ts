@@ -14,13 +14,13 @@ import {
   Minus,
   ArrowUpToLine,
   ArrowDownToLine,
-  Square,
-  SquareDashed,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
   type LucideIcon,
 } from "lucide-react"
 import {
+  SolidBorder,
+  DashedBorder,
   DottedBorder,
   SubtleShadow,
   MediumShadow,
@@ -180,7 +180,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   border: [
     [
       placed("border", hidden, {
-        options: { none: fillIcons.none, solid: Square, dash: SquareDashed, dot: DottedBorder },
+        options: { none: fillIcons.none, solid: SolidBorder, dash: DashedBorder, dot: DottedBorder },
       }),
     ],
     [placed("fill", above, { options: fills, form: "list" })],

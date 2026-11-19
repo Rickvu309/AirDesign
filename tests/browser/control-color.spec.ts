@@ -14,7 +14,6 @@ import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 const judged = join(process.cwd(), "tests/browser", colorPickerExport)
 const slidePart = "ppt/slides/slide1.xml"
 const deckParts = ["[Content_Types].xml", "ppt/_rels/presentation.xml.rels", "ppt/presentation.xml"]
-const hash = "#"
 const navy = "rgb(31, 78, 121)"
 
 async function nudge(page: Page, swatch: Locator): Promise<void> {
@@ -50,9 +49,9 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   let panel = await fillPanel(page, oval)
   let field = panel.getByRole("group", { name: "Color", exact: true })
   await expect(shownColor(field)).toHaveText(names.accent1)
-  await typeColor(page, shownColor(field), "1f4e79")
+  await typeColor(page, shownColor(field), colorCopy.hexName("1f4e79"))
   await expect.poll(() => filled(oval)).toBe(navy)
-  await expect(shownColor(field)).toHaveText(`${hash}1F4E79`)
+  await expect(shownColor(field)).toHaveText("1F4E79")
   await undone(page, oval, field, accent, names.accent1)
   await expect.poll(() => filled(oval)).toBe(navy)
 
@@ -60,13 +59,13 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   field = panel.getByRole("group", { name: "Color", exact: true })
   await shownColor(field).click()
   const others = picker(page).getByRole("group", { name: colorCopy.others, exact: true })
-  const used = others.getByRole("button", { name: colorCopy.hexName("1F4E79"), exact: true })
+  const used = others.getByRole("button", { name: "1F4E79", exact: true })
   await expect(used).toHaveCount(1)
   await used.click()
   await page.keyboard.press("Escape")
   await expect(shownColor(field)).toBeFocused()
   await expect.poll(() => filled(rectangle)).toBe(navy)
-  await expect(shownColor(field)).toHaveText(`${hash}1F4E79`)
+  await expect(shownColor(field)).toHaveText("1F4E79")
   await undone(page, rectangle, field, accent, names.accent1)
   await expect.poll(() => filled(rectangle)).toBe(navy)
 
@@ -80,12 +79,12 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   const tinted = await filled(rectangle)
   expect(tinted).not.toBe(accent)
   const tintHex = (await shownColor(field).innerText()).trim()
-  expect(tintHex).toMatch(/^#[0-9A-F]{6}$/)
+  expect(tintHex).toMatch(/^[0-9A-F]{6}$/)
   await shownColor(field).click()
   await picker(page).getByRole("button", { name: colorCopy.add, exact: true }).click()
   await expect(picker(page).getByRole("button", { name: tint, exact: true })).toHaveAttribute("aria-pressed", "true")
   await page.keyboard.press("Escape")
-  await undone(page, rectangle, field, navy, `${hash}1F4E79`)
+  await undone(page, rectangle, field, navy, "1F4E79")
   await expect.poll(() => filled(rectangle)).toBe(tinted)
 
   await page.reload()
@@ -148,7 +147,7 @@ for (const opacity of ["100", "10"]) {
     await expect
       .poll(() => run.evaluate((node) => getComputedStyle(node).color))
       .toBe(opacity === "100" ? "rgb(26, 26, 77)" : "rgba(26, 26, 77, 0.1)")
-    await expect(shownColor(field)).toHaveText(/^#[0-9A-F]{6}$/)
+    await expect(shownColor(field)).toHaveText(/^[0-9A-F]{6}$/)
     await page.getByRole("button", { name: "Undo text format", exact: true }).click()
     await expect.poll(() => run.evaluate((node) => getComputedStyle(node).color)).toBe(before)
   })

@@ -75,11 +75,11 @@ describe("design shown", () => {
       ],
     }
     const tinted = designShown(painted(parts, tint), 0)
-    expect(tinted?.background.name).toBe(`#${shownHex(tint, tinted?.templateColors ?? [])}`)
+    expect(tinted?.background.name).toBe(shownHex(tint, tinted?.templateColors ?? []))
     expect(tinted?.background.value).toEqual(tint)
     const navy = designShown(painted(parts, { rgb: "0F2433" }), 0)
     expect(navy?.background.css.slice(1)).toBe("0F2433")
-    expect(navy?.background.name).toBe(navy?.background.css)
+    expect(navy?.background.name).toBe("0F2433")
     expect(navy?.background.value).toEqual({ rgb: "0F2433" })
   })
 
