@@ -8,11 +8,11 @@ function source(page: string): string {
 }
 
 describe("sign-in pages", () => {
-  it.each(pages)("%s sits on the canvas in a 440 px column under a 40 px bold mark and a 26 px heading", (page) => {
+  it.each(pages)("%s sits on the canvas in a 440 px column under a 40 px mark and a 26 px heading", (page) => {
     const text = source(page)
     expect(text).toContain("bg-canvas")
     expect(text).toContain("max-w-[440px]")
-    expect(text).toContain('<AirdesignMark size={40} weight="bold" />')
+    expect(text).toContain("<AirdesignMark size={40} />")
     expect(text).toContain("text-[26px]")
   })
 

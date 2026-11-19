@@ -76,9 +76,11 @@ describe("bring your own agent card art", () => {
     expect(html).toContain(minusDisk)
   })
 
-  it("draws neither on a real account, where nothing answers them", () => {
+  it("leaves the plus tile off a real account, where nothing answers it, and keeps the minus disk that collapses the card", () => {
     const html = shell("person@example.com")
     expect(html).not.toContain(plusTile)
-    expect(html).not.toContain(minusDisk)
+    expect(html).toMatch(
+      new RegExp(`<button type="button" aria-label="Collapse"[^>]*class="[^"]*${minusDisk.replace(/[[\]]/g, "\\$&")}`),
+    )
   })
 })

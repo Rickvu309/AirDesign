@@ -1,7 +1,7 @@
 import { Filmstrip, SlideCanvas } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { DeckInitial } from "@/decks/deck-card"
-import { deviceFirstSlide, type FirstSlide } from "@/decks/first-slide"
+import type { FirstSlide } from "@/decks/first-slide"
 import { hairlineShadow } from "@/editor/editor-chrome"
 import { cn } from "@/lib/class-names"
 
@@ -20,7 +20,8 @@ function FirstSlidePaint({ deck, name, box }: { deck: string; name: string; box:
   useEffect(() => {
     let live = true
     let held: FirstSlide | null = null
-    void deviceFirstSlide(deck)
+    void import("@/decks/first-slide")
+      .then(({ deviceFirstSlide }) => deviceFirstSlide(deck))
       .catch(() => null)
       .then((painted) => {
         if (!live) {

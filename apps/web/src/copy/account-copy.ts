@@ -18,4 +18,5 @@ export const accountCopy = {
   deleteFailed: "Unable to delete your account. Check your connection and try again.",
   failed: "Unable to load your account. Check your connection and try again.",
   agentCardBody: "Connect Claude or Codex to work on your decks.",
+  agentCardCollapse: "Collapse",
 } as const

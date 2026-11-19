@@ -1,7 +1,5 @@
-import { useEffect, useState, type ComponentType } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
-import { LiveProof } from "./live-proof"
-import { ThinDeck } from "./thin-deck"
 import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
 import { AccountPage } from "./settings/account-page"
@@ -11,34 +9,9 @@ import { UsagePage } from "./settings/usage-page"
 
 import { AccountProfile } from "./settings/account-profile"
 
-type ScreenRegistry = { screens: Record<string, ComponentType> }
-
-const registries = import.meta.glob<ScreenRegistry>("./**/*-screens.tsx", { eager: true })
-
-const screens = Object.assign(
-  {},
-  ...Object.values(registries).map((registry) => registry.screens),
-) as ScreenRegistry["screens"]
-
-const screenIndexPath = "/screens"
-
-function ScreenIndex() {
-  return (
-    <main className="p-8 text-sm">
-      <ul className="flex flex-col gap-2">
-        {Object.keys(screens)
-          .sort()
-          .map((screenPath) => (
-            <li key={screenPath}>
-              <a className="text-foreground underline underline-offset-4" href={screenPath}>
-                {screenPath}
-              </a>
-            </li>
-          ))}
-      </ul>
-    </main>
-  )
-}
+const ThinDeck = lazy(() => import("./thin-deck").then((module) => ({ default: module.ThinDeck })))
+const LiveProof = lazy(() => import("./live-proof").then((module) => ({ default: module.LiveProof })))
+const ScreenRoute = lazy(() => import("./screen-routes"))
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/$/, "") || "/"
@@ -65,21 +38,26 @@ function AppRoutes() {
     return null
   }
   const deck = /^\/deck\/([A-Za-z0-9_-]{1,64})$/.exec(path)
-  if (deck?.[1] !== undefined) return <ThinDeck id={deck[1]} />
-  if (path === "/live-proof") {
-    return <LiveProof />
-  }
-  if (path === "/oauth/authorize") {
-    return <OAuthAuthorize />
-  }
-  if (path === screenIndexPath) {
-    return <ScreenIndex />
-  }
-  const Screen = screens[path]
-  if (!Screen) {
-    return <NotFoundPage kind="address" />
-  }
-  return <Screen />
+  if (deck?.[1] !== undefined)
+    return (
+      <Suspense>
+        <ThinDeck id={deck[1]} />
+      </Suspense>
+    )
+  if (path === "/live-proof")
+    return (
+      <Suspense>
+        <LiveProof />
+      </Suspense>
+    )
+  if (path === "/oauth/authorize") return <OAuthAuthorize />
+  if (path === "/screens" || path.startsWith("/screens/"))
+    return (
+      <Suspense>
+        <ScreenRoute path={path} />
+      </Suspense>
+    )
+  return <NotFoundPage kind="address" />
 }
 
 export default function App() {
