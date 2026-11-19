@@ -1,4 +1,5 @@
 import type { Box } from "./box.js"
+import { opaque } from "./color.js"
 import { decide, landedPatch, type Command, type Register } from "./decide.js"
 import type { IndexElement } from "./deck-index.js"
 import { readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
@@ -19,6 +20,7 @@ import type { ElementPatch, FieldEdit } from "./row.js"
 import { floorOf, openingElement } from "./slide-floor.js"
 import type { Framing } from "./frame-index.js"
 import { flows, layoutAligns } from "./trait-layout.js"
+import type { Alpha } from "./value-kind.js"
 
 export type Flow = (typeof flows)[number]
 export type LayoutAlign = (typeof layoutAligns)[number]
@@ -33,6 +35,7 @@ export type LayoutView = {
   readonly gap: number
   readonly padding: Sides
   readonly align: LayoutAlign
+  readonly opacity: Alpha
   readonly box: Box
   readonly children: readonly LayoutChild[]
 }
@@ -208,8 +211,9 @@ export function readLayout(register: Register, node: ElementId): LayoutView | nu
   const gap = typeof fields.gap === "number" ? fields.gap : 0
   const padding = sidesOf(fields.padding)
   const align = layoutAligns.find((each) => each === fields.align) ?? "topLeft"
+  const opacity = (typeof fields.opacity === "number" ? fields.opacity : opaque) as Alpha
   const origin = frameOrigin(register, node, made)
-  const view = { node, backdrop, flow, gap, padding, align }
+  const view = { node, backdrop, flow, gap, padding, align, opacity }
   const members = frameMembers(register, node)
   if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin) }
   return { ...view, ...laidOut(register, made, members, origin, { flow, gap, padding, align }) }

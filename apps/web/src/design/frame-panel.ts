@@ -2,16 +2,17 @@ import type { LayoutView } from "@airdesign/document"
 import type { PanelModel, PanelReads, PanelSection } from "./panel"
 import { panelOrder } from "./panel-order"
 
-const backdropSections: readonly PanelSection["trait"][] = ["fills", "opacity", "corners", "border"]
+const backdropSections: readonly PanelSection["trait"][] = ["fills", "corners", "border"]
 
 export function layoutFields(view: LayoutView | null): PanelReads["fields"] {
   if (view === null) return {}
-  const { flow, gap, padding, align } = view
+  const { flow, gap, padding, align, opacity } = view
   return {
     "layout.flow": { value: flow, own: true },
     "layout.gap": { value: gap, own: true },
     "layout.padding": { value: padding, own: true },
     "layout.align": { value: align, own: true },
+    "layout.opacity": { value: opacity, own: true },
   }
 }
 

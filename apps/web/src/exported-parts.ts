@@ -6,7 +6,7 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { exportParts, orderedParts, withMedia } from "@airdesign/pptx"
+import { exportParts, fadedFrames, orderedParts, withMedia } from "@airdesign/pptx"
 import { patchImages } from "@/patch-images"
 
 export { newSlideElement } from "@airdesign/document"
@@ -44,5 +44,5 @@ export function editedParts(base: Parts, register: Register, pictures: PictureBy
 }
 
 export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return editedParts(slideBase(parts, register, pictures), register, pictures)
+  return fadedFrames(editedParts(slideBase(parts, register, pictures), register, pictures), register)
 }

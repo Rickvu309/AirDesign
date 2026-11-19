@@ -33,22 +33,22 @@ function attributeOf(element: MarkupElement, name: string): number | null {
   return text === undefined || !/^-?\d+$/.test(text) ? null : Number(text)
 }
 
+function colorAlpha(kids: readonly MarkupElement[]): Alpha {
+  let alpha: number = opaque
+  for (const kid of kids) {
+    const value = attributeOf(kid, "val")
+    if (value === null) continue
+    if (kid.kind === "a:alpha") alpha = value
+    else if (kid.kind === "a:alphaMod") alpha = (alpha * value) / opaque
+    else if (kid.kind === "a:alphaOff") alpha += value
+  }
+  return clamped(alpha) as Alpha
+}
+
 export function fragmentAlpha(fragment: Uint8Array): Faded {
   const { elements } = requireMarkup(fragment)
   const colors = elements.filter((element) => colorKinds.includes(element.kind))
-  return agreed(
-    colors.map((color) => {
-      let alpha: number = opaque
-      for (const kid of elements.filter((each) => each.parent === color.index)) {
-        const value = attributeOf(kid, "val")
-        if (value === null) continue
-        if (kid.kind === "a:alpha") alpha = value
-        else if (kid.kind === "a:alphaMod") alpha = (alpha * value) / opaque
-        else if (kid.kind === "a:alphaOff") alpha += value
-      }
-      return clamped(alpha) as Alpha
-    }),
-  )
+  return agreed(colors.map((color) => colorAlpha(elements.filter((each) => each.parent === color.index))))
 }
 
 export function colorsOf(fill: Fill): readonly Color[] {
@@ -92,6 +92,18 @@ export function fadedBytes(fragment: Uint8Array, alpha: Alpha): Uint8Array {
     .filter((element) => colorKinds.includes(element.kind))
     .map((element) => {
       const kids = elements.filter((each) => each.parent === element.index)
+      return { start: element.start, end: element.end, next: encodeUtf8(fadedElement(fragment, element, kids, alpha)) }
+    })
+  return edits.length === 0 ? fragment : spliceBytes(fragment, edits)
+}
+
+export function scaledBytes(fragment: Uint8Array, scale: Alpha): Uint8Array {
+  const { elements } = requireMarkup(fragment)
+  const edits: ByteEdit[] = elements
+    .filter((element) => colorKinds.includes(element.kind))
+    .map((element) => {
+      const kids = elements.filter((each) => each.parent === element.index)
+      const alpha = clamped((colorAlpha(kids) * scale) / opaque) as Alpha
       return { start: element.start, end: element.end, next: encodeUtf8(fadedElement(fragment, element, kids, alpha)) }
     })
   return edits.length === 0 ? fragment : spliceBytes(fragment, edits)

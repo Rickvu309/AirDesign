@@ -64,6 +64,21 @@ it("orders an auto layout frame's slides panel as Figma does, with Fill, Border 
   expect(shadow?.change("none").target).toEqual({ node: frame.node })
 })
 
+it("fades the whole frame from its own Opacity row, which reads the frame's opacity", () => {
+  const own = panelOf(frame, {
+    reads: {},
+    moves: true,
+    fields: { ...fields, "layout.opacity": { value: 40_000, own: true } },
+  })
+  const under = panelOf(backdrop, { reads: {}, moves: false, fields })
+  const opacity = framePanel(own, under, true)
+    .sections.find(({ trait }) => trait === "opacity")
+    ?.strips.flat()[0]
+  expect(opacity?.value).toBe(40_000)
+  expect(opacity?.change(50_000).target).toEqual({ node: frame.node })
+  expect(opacity?.look.steps).toBeDefined()
+})
+
 it("titles a frame whose auto layout was removed as a frame", () => {
   expect(model(false).frame).toBe("free")
 })

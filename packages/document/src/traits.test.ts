@@ -153,8 +153,9 @@ describe("the one table of traits", () => {
       "layout.gap",
       "layout.padding",
       "layout.align",
+      "layout.opacity",
     ])
-    expect(alphaKeys).toEqual(["fills.alpha", "border.alpha", "text.alpha"])
+    expect(alphaKeys).toEqual(["fills.alpha", "border.alpha", "text.alpha", "layout.opacity"])
   })
 
   it("lets only a declared field go back to the value its layout, master or style gives", () => {

@@ -33,7 +33,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   show: ["5465b825", "fc0e1303"],
   templateStyle: ["5465b825", "fd31b1bd", "3c85bab0", "fca050fd", "9fd0fc46", "facd0a47"],
   transition: ["b27cd785"],
-  layout: ["5465b825", "8d73e44c"],
+  layout: ["5465b825", "8d73e44c", "1094f216"],
 }
 
 function canonical(value: unknown): unknown {

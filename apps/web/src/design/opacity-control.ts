@@ -40,7 +40,7 @@ export function opacitySection(view: ScopedElement, shown: PanelReads): PanelSec
     reset: null,
     change,
   })
-  const listed = view.facts.kind === "shape"
+  const listed = view.facts.kind === "shape" || view.facts.frame !== undefined
   const control = listed ? { ...resolved, look: { ...resolved.look, glyph: Opacity, steps: opacitySteps } } : resolved
   return { trait: "opacity", label: opacityCopy.section, open: true, strips: arrange("opacity", [control]) }
 }

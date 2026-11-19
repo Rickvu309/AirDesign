@@ -265,7 +265,7 @@ function planNode(
   return { node: view.node, row: { v: format, patch: patch as ElementPatch } }
 }
 
-const backdropKeys: readonly string[] = ["fills", "border", "geometry", "opacity"]
+const backdropKeys: readonly string[] = ["fills", "border", "geometry"]
 
 export function paintsBackdrop(view: ScopedElement, field: string): boolean {
   return view.backdrop !== undefined && backdropKeys.includes(field.split(".")[0] ?? "")

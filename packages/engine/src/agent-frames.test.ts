@@ -102,6 +102,13 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     expect(set(deck, "258.2", { box: { x: 0 } })).toEqual({ ok: false, refusal: "group-box" })
   })
 
+  it("fades the whole frame with opacity and reads it on the frame, leaving its backdrop's fill as it was", () => {
+    const deck = landed(set(framed(), "258.9", { opacity: 50 }))
+    expect(deck.register.elements[node(9)]?.landed.at(-1)).toMatchObject({ actor: "agent", runId: "run" })
+    expect(deck.register.elements[node(10)]?.landed ?? []).toEqual([])
+    expect(listed(deck).get("258.9")?.design).toContain("opacity 50")
+  })
+
   it("takes a child out where it shows with leave, and adds a shape to the end with join", () => {
     const before = listed(framed()).get("258.3")?.box
     const left = landed(edit(framed(), { op: "leave", elements: ["258.3"] }))
