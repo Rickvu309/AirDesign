@@ -74,6 +74,7 @@ test("every named state of the real app is reached and scanned in one stack", as
       async (unit) => {
         const context = await browser.newContext({
           baseURL: origin,
+          storageState: { cookies: [], origins: [] },
           viewport: { width: 1470, height: 923 },
           deviceScaleFactor: 2,
           reducedMotion: "reduce",
