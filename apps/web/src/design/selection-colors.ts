@@ -79,6 +79,7 @@ export function layersWithColor(sources: readonly ColorSource[], hex: string, pa
     .filter((source) => selectionColors([source], palette).some((row) => row.hex === hex))
     .map((source) => source.node)
 }
+
 export function replaceSelectionColor(
   sources: readonly ColorSource[],
   hex: string,
