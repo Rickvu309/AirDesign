@@ -341,3 +341,4 @@ _Avoid_: blank shape, missing text
 An element’s click destination, a URL or slide. Phrase links are separate.
 
 - **Fill mode**: how an image sits in its shape: Fill, Fit, Crop or Tile.
+- **Tile scale**: the size of each repeat in Tile mode as a percentage of the original image.

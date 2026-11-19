@@ -75,6 +75,8 @@ export { templateStyles, templateStyle, type TemplateStyle } from "./template-st
 export { themeCustomColors, type ThemeCustomColor } from "./template-colors.js"
 export { remixTargets } from "./template-remix.js"
 export { shownLink, type ElementLink } from "./trait-xml-link.js"
+export { rasterDimensions } from "./raster-dimensions.js"
+export { shownTileScale } from "./picture-tile.js"
 export { shownPictureMode } from "./picture-mode.js"
 export { slideTheme } from "./theme-swatches.js"
 export { masterTextStyles, readTemplateTextEdit } from "./template-text-edit.js"

@@ -183,6 +183,7 @@ export function paintCanvas(
     media.set(image.part, display.get(image.part))
     return src(image)
   }
+  if (src.dimensions !== undefined) recorded.dimensions = src.dimensions
   const file = painted.base === painted.shown ? undefined : texts()
   const shapes = [...painted.source.shapes].map(([key, shape]) => {
     const marked = refit.has(shape.id) ? { ...shape, refit: true as const } : shape

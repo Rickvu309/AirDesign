@@ -21,7 +21,7 @@ import {
   type Value,
   valueHolder,
 } from "@airdesign/document"
-import { indexPackage, paintReader, readPackage, readSlides } from "@airdesign/pptx"
+import { indexPackage, paintReader, readPackage, readSlides, shownPictureMode, shownTileScale } from "@airdesign/pptx"
 import { fillSlotFields } from "./design/fill-slots"
 import { panelOf, shownPlace } from "./design/panel"
 import { sectionInMode } from "./design/panel-order"
@@ -176,7 +176,14 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
 
 function panelControl(register: Register, at: At, trait: TraitName, field: string, parts?: Parts) {
   const view = registerScope(register).view(at.node)
-  const fields = parts === undefined ? undefined : fillSlotFields(parts, at)
+  const fields =
+    parts === undefined
+      ? undefined
+      : {
+          ...fillSlotFields(parts, at),
+          "fills.mode": { value: shownPictureMode(parts, at), own: true },
+          "fills.tileScale": { value: shownTileScale(parts, at), own: true },
+        }
   const sections =
     view === undefined
       ? undefined

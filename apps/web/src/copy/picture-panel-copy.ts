@@ -1,5 +1,6 @@
 export const picturePanelCopy = {
   mode: "Fill mode",
+  tileScale: "Tile scale",
   section: "Image",
   source: "Icon",
   recolor: "Recolor",

@@ -1,8 +1,12 @@
-import { drawablePicture, type PaintElement } from "@airdesign/pptx"
+import { drawablePicture, rasterDimensions, type PaintElement } from "@airdesign/pptx"
 
 export type PictureImage = NonNullable<PaintElement["image"]>
 
-export type PictureSource = (image: PictureImage) => string | null
+type Dimensions = { readonly width: number; readonly height: number }
+
+export type PictureSource = ((image: PictureImage) => string | null) & {
+  dimensions?(image: PictureImage): Dimensions | null
+}
 
 export type PictureSources = {
   readonly src: PictureSource
@@ -28,7 +32,7 @@ const browserAddress: PictureAddress = {
   revoke: (url) => URL.revokeObjectURL(url),
 }
 
-type Made = { readonly bytes: Uint8Array; readonly url: string }
+type Made = { readonly bytes: Uint8Array; readonly url: string; size?: Dimensions | null }
 
 function copied(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   const copy = new Uint8Array(bytes.byteLength)
@@ -48,19 +52,27 @@ export function pictureSources(
   kept: ReadonlyMap<string, Made> = new Map(),
 ): PictureSources {
   const made = new Map(kept)
+  const src: PictureSource = (image) => {
+    const known = made.get(image.part)
+    if (known !== undefined) return known.url
+    const type = image.contentType?.toLowerCase() ?? ""
+    const bytes = parts.get(image.part)
+    if (bytes === undefined) return null
+    const blob = drawable.has(type) ? new Blob([copied(bytes)], { type }) : drawnBlob(bytes)
+    if (blob === null) return null
+    const url = address.create(blob)
+    made.set(image.part, { bytes, url })
+    return url
+  }
+  src.dimensions = (image) => {
+    if (!image.tile) return null
+    const held = made.get(image.part)
+    if (held === undefined) return null
+    if (held.size === undefined) held.size = rasterDimensions(held.bytes)
+    return held.size
+  }
   return {
-    src(image) {
-      const known = made.get(image.part)
-      if (known !== undefined) return known.url
-      const type = image.contentType?.toLowerCase() ?? ""
-      const bytes = parts.get(image.part)
-      if (bytes === undefined) return null
-      const blob = drawable.has(type) ? new Blob([copied(bytes)], { type }) : drawnBlob(bytes)
-      if (blob === null) return null
-      const url = address.create(blob)
-      made.set(image.part, { bytes, url })
-      return url
-    },
+    src,
     release() {
       for (const each of made.values()) address.revoke(each.url)
       made.clear()
@@ -120,9 +132,16 @@ export function pictureFrame(
   return { x: positionX * (canvas.width - width), y: positionY * (canvas.height - height), width, height }
 }
 
-export function pictureLayer(image: PictureImage, src: string): string | null {
+export function pictureLayer(image: PictureImage, src: string, size?: Dimensions | null): string | null {
   const url = `url(${JSON.stringify(src)})`
-  if (image.tile) return `${url} 0% 0% / auto repeat`
+  if (image.tile) {
+    const scale = image.tileScale ?? { x: 1, y: 1 }
+    const tile =
+      size == null
+        ? "auto"
+        : `calc(${size.width * scale.x}px * var(--tile-slide-scale, 1)) calc(${size.height * scale.y}px * var(--tile-slide-scale, 1))`
+    return `${url} 0% 0% / ${tile} repeat`
+  }
   const across = axis(image.crop.left, image.crop.right, image.destination?.left, image.destination?.right)
   const down = axis(image.crop.top, image.crop.bottom, image.destination?.top, image.destination?.bottom)
   if (across === null || down === null) return null

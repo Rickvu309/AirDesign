@@ -250,7 +250,13 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("insets.left", inside), placed("insets.top", inside)],
     [placed("insets.right", inside), placed("insets.bottom", inside)],
   ],
-  image: [[placed("mode")], [placed("overlay"), placed("blur")], [placed("source")], [placed("recolor")]],
+  image: [
+    [placed("mode")],
+    [placed("tileScale")],
+    [placed("overlay"), placed("blur")],
+    [placed("source")],
+    [placed("recolor")],
+  ],
   crop: [
     [placed("rect", hidden)],
     [placed("rect.l", inside), placed("rect.t", inside)],

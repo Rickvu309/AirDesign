@@ -73,6 +73,7 @@ type Loose = {
       {
         file: (parts: Parts, at: At) => unknown
         shows: (value: unknown) => unknown
+        prepare?: (parts: Parts, at: At) => Parts
         inherited?: (parts: Parts, at: At) => boolean
         on?: { readonly deck: string; readonly kind: Kind; readonly node: string }
       }
@@ -105,8 +106,9 @@ async function fieldProblems(
   if (desc === undefined || sent === undefined || value === undefined) return [{ field: key, missing: "wire" }]
   const shape = probe.fields[field]
   const on = shape?.on ?? probe
-  const parts = await deckParts(on.deck)
-  const at = placed(parts, on.kind, on.node)
+  const source = await deckParts(on.deck)
+  const at = placed(source, on.kind, on.node)
+  const parts = shape?.prepare?.(source, at) ?? source
   const opening = probe.opening(parts, at)
   const edit = probe.edit(opening, field, value)
   const shown = (exported: Parts) => shape !== undefined && same(shape.file(exported, at), shape.shows(value))

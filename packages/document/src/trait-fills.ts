@@ -7,6 +7,7 @@ import {
   color,
   flag,
   fraction,
+  fractionWithin,
   list,
   mark,
   pictureSource,
@@ -115,7 +116,7 @@ export type PaintSlot = (typeof paintSlots)[number]
 
 export const fills = trait(
   "whole",
-  { version: 13, shape: "1d69c93e" },
+  { version: 14, shape: "d908b195" },
   {
     p0: slotPaint,
     p1: slotPaint,
@@ -123,6 +124,7 @@ export const fills = trait(
     p3: slotPaint,
     source: pictureSource,
     mode: choice(fillModes),
+    tileScale: fractionWithin(1000, 1_000_000),
     crop: record({ l: fraction, t: fraction, r: fraction, b: fraction }),
     recolor: recolors,
     blur: fraction,

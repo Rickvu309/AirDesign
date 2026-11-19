@@ -8,28 +8,31 @@ export const fillsWire: TraitWire<"fills"> = {
   description: "Shape fill or slide background. Image fields apply to image fills.",
   fields: {
     paint: {
-      description: `A color such as "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" for the group's fill; a gradient (pos and focus in percent, angle in degrees); a pattern preset such as "dkDnDiag" with two colors; or an image such as a Lucide icon name.`,
+      description: `Color like "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" inherits the group fill; gradient (pos and focus %, angle degrees); pattern like "dkDnDiag"; image by Lucide icon name.`,
       example: { fills: { paint: "accent2" } },
     },
     source: {
-      description: "Lucide icon name. Unknown names return suggestions.",
+      description: "Lucide icon name.",
       example: { fills: { source: "rocket" } },
     },
     mode: {
-      description:
-        "How the image sits: Fill covers, Fit contains, Crop uses crop, Tile repeats; Stretch keeps legacy distortion.",
+      description: "Fill covers, Fit contains, Crop clips, Tile repeats, Stretch distorts.",
       example: { fills: { mode: "fit" } },
     },
+    tileScale: {
+      description: "Tile size as a percent of the original image.",
+      example: { fills: { tileScale: 50 } },
+    },
     crop: {
-      description: "Percent cut from each edge. Keeps frame size.",
+      description: "Percent cut from each edge.",
       example: { fills: { crop: { l: 10, t: 0, r: 10, b: 0 } } },
     },
     recolor: {
-      description: "Grayscale or two replacement colors for dark and light tones.",
+      description: "Grayscale or duotone replacement colors.",
       example: { fills: { recolor: { duotone: { dark: "accent1", light: `#${white}` } } } },
     },
     overlay: {
-      description: "A color or gradient laid over a photo or the other paints.",
+      description: "Color or gradient over the other paints.",
       example: { fills: { overlay: `#${black} alpha 50` } },
     },
     blur: {

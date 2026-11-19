@@ -137,6 +137,11 @@ export function appearanceSections(
   const dash = controls.find((control) => control.trait === "border" && control.field === "dash")
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
   const mode = controls.find((control) => control.trait === "image" && control.field === "mode")
+  const tileScale = controls.find((control) => control.trait === "image" && control.field === "tileScale")
+  const placement =
+    mode === undefined
+      ? []
+      : [[modeList(mode)], ...present([mode.value === "tile" ? tileScale : undefined]).map((control) => [control])]
   const overlay = controls.find((control) => control.trait === "image" && control.field === "overlay")
   const blur = controls.find((control) => control.trait === "image" && control.field === "blur")
   const adjust = [overlay, blur].filter((control) => control !== undefined)
@@ -150,7 +155,7 @@ export function appearanceSections(
             trait: "pictureFill",
             label: fillCopy.section,
             open: true,
-            strips: mode === undefined ? [] : [[modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])],
+            strips: [...placement, ...(adjust.length === 0 ? [] : [adjust])],
           },
         ]
       : []
@@ -234,7 +239,7 @@ export function appearanceSections(
           .map((strip) =>
             strip.filter((control) => {
               if (shapePanel) return false
-              return control.field !== "mode" && control.field !== "overlay" && control.field !== "blur"
+              return !["mode", "tileScale", "overlay", "blur"].includes(control.field)
             }),
           )
           .filter((strip) => strip.length > 0),
@@ -243,13 +248,13 @@ export function appearanceSections(
       return {
         ...section,
         ...(shapePicture
-          ? { strips: [...section.strips, [modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])] }
+          ? { strips: [...section.strips, ...placement, ...(adjust.length === 0 ? [] : [adjust])] }
           : {}),
         ...(section.designStrips === undefined
           ? {}
           : {
               designStrips: withImageSettings(section.designStrips, [
-                [modeList(mode)],
+                ...placement,
                 ...present([blur]).map((control) => [control]),
               ]),
             }),

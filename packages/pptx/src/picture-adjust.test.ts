@@ -45,3 +45,12 @@ it("keeps an image's settings out of the file while the shape's fills hold no im
   expect(decodeUtf8(switched.get(part)!)).toContain('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></p:spPr>')
   expect(decodeUtf8(switched.get(part)!)).not.toContain("blip")
 })
+
+it("writes tile scale to both native ratios without replacing the tile's other attributes", () => {
+  const tiled = picture.replace(
+    "<a:stretch><a:fillRect/></a:stretch>",
+    '<a:tile tx="38100" sx="80000" flip="x" algn="ctr"/>',
+  )
+  const next = writeTrait(slide(tiled), at, "fills", { tileScale: { set: 25_000 } })
+  expect(decodeUtf8(next.get(part)!)).toContain('<a:tile tx="38100" sx="25000" flip="x" algn="ctr" sy="25000"/>')
+})

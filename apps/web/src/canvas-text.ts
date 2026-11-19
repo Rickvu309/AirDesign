@@ -33,7 +33,8 @@ function canvasBullet(bullet: PaintParagraph["bullet"]) {
 
 function runStyle(run: PaintRunStyle, scale: number, src: PictureSource): CanvasRunStyle {
   const url = run.picture === undefined ? null : src(run.picture)
-  const picture = run.picture === undefined || url === null ? null : pictureLayer(run.picture, url)
+  const picture =
+    run.picture === undefined || url === null ? null : pictureLayer(run.picture, url, src.dimensions?.(run.picture))
   return {
     ...(picture === null ? {} : { picture }),
     ...(run.fill === undefined || "solid" in run.fill ? {} : { fill: run.fill }),

@@ -66,7 +66,7 @@ function canvasLayer(
   }
   if (layer.kind === "gradient") return { background: cssGradient(layer.gradient) }
   const url = src(layer.image)
-  const background = url === null ? null : pictureLayer(layer.image, url)
+  const background = url === null ? null : pictureLayer(layer.image, url, src.dimensions?.(layer.image))
   return { background: background ?? unshownFill, picture: toneOf(layer.image) }
 }
 
