@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { act } from "react"
 import type { Root } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
+import { designCopy } from "@/copy/design-copy"
 import { FormatButtons } from "@/editor/format-buttons"
 
 function buttons(markup: string): string[] {
@@ -55,11 +56,12 @@ it("draws only the parts a narrow toolbar keeps, so the rest can sit in More", (
   expect(more).not.toContain("data-text-format")
 })
 
-it("shows a mixed size as an empty box that still takes a typed size", () => {
+it("shows a mixed size as Mixed in an empty box that still takes a typed size", () => {
   const shown = { bold: "off", italic: "off", underline: "off" } as const
   const markup = renderToStaticMarkup(<FormatButtons shown={shown} size="mixed" parts={["size"]} />)
   expect(markup).toContain('aria-label="Font size, mixed"')
   expect(markup).toMatch(/<input[^>]*value=""/)
+  expect(markup).toContain(`placeholder="${designCopy.mixed}"`)
   expect(markup).toContain('inputMode="decimal"')
   expect(markup).toContain("data-keeps-format")
 })

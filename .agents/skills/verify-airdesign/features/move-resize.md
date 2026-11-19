@@ -13,6 +13,7 @@ A person clicks an element on the slide to select it. A frame with four corner h
 - `kept` the server copy's last box row for the element is the moved box. With the local rows gone, reopening paints the element there.
 - `export` the exported slide carries the box as `<a:xfrm><a:off/><a:ext/></a:xfrm>`.
 - `cancel` Escape during a drag puts the box back and sends nothing.
+- `frames` a drag paints at most once a frame. The filmstrip and the Design panel keep the resting box until the drag lands; the panel's X, Y, Width and Height follow it.
 - `rotated` a rotated element can be moved but shows no corner handles.
 - `hand` pressing H switches to the hand tool, which lays an overlay over the canvas, so nothing can be selected until the pointer tool is back.
 - `fixed` an element the export cannot move (inside a group, a chart or table frame, a locked text box) shows the frame with no handles, or takes no click.
@@ -36,6 +37,7 @@ Preconditions:
 - **Nudge.** `group "Hello"` has focus after a drag. Shift+ArrowRight moves it 10 pt. Evidence `NN-nudged`.
 - **Server copy.** Poll `post(deckRoutes.open, { deck })` until the last visible `property: "box"` row of `256.2` is `{"x":1041400,"y":1371600,"cx":3657600,"cy":2743200}`.
 - **Reopen.** Delete the local edit rows from `/version`, open `/deck/<id>`. The element paints at the server's box. Evidence `NN-reloaded-from-server`.
+- **Busy drag.** `$V journey <run> busy-drag` drags six cards of a busy slide with the Design panel open. Mid-drag the filmstrip keeps them at rest (`NN-drag-held`); on release they land where the pointer left them, the filmstrip catches up (`NN-drag-landed`), the server keeps all six boxes, and one Ctrl+Z puts them back (`NN-undone`).
 - **Export.** `button "Export"`. The download's `ppt/slides/slide1.xml` carries the box's `a:xfrm` and reads `Hello`.
 
 ## Gotchas

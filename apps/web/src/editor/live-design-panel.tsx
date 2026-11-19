@@ -50,6 +50,7 @@ import { AdjustTone, type ToneControlFor } from "@/editor/adjust-tone"
 import { toneScope } from "@/editor/tone-scope"
 import { LiveSelectionColors } from "./live-selection-colors"
 import { liveSlideNumber } from "./live-slide-number"
+import { LiveBoxFields } from "./live-box-fields"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -102,7 +103,7 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const { shown } = deck
   const store = shown.store.current
   const text = store.getElement(node)?.text ?? null
-  const box = store.getBox(node)
+  const box = store.getRestingBox(node)
   const edited = shown.editParts.current
   const opening = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(node)
   if (opening === undefined) return null
@@ -170,7 +171,7 @@ function LiveElementDesign({
 }) {
   const store = deck.shown.store.current
   useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
-  useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
+  useSyncExternalStore(store.boxSubscribe(node), () => store.getRestingBox(node))
   const palette = usePalette(deck)
   const design = elementDesign(deck, node)
   if (design === null) return null
@@ -185,32 +186,40 @@ function LiveElementDesign({
   const image = painted?.image ?? (painted?.fill?.type === "picture" ? painted.fill : null)
   const src = image == null ? null : (deck.shown.pictures.current?.src(image) ?? null)
   return (
-    <ElementDesign
-      titleActions={
-        <div className="flex items-center gap-1">
-          {design.model.kind === "group" || design.model.kind === "frame" ? toneHead(deck, [node], toneFor) : null}
-          <ElementTitleActions onMatch={matchAction(deck)} model={design.model} onReplace={deck.replacePicture} />
-        </div>
-      }
-      formatting={deck.undo.formatting.current}
-      picture={src === null ? null : <PicturePreview src={src} />}
-      model={design.model}
-      afterAlignment={liveSlideNumber(deck, node, design.view.value)}
-      afterTitle={design.model.frame === "auto" ? <RemoveAutoLayout deck={deck} node={node} /> : null}
-      mode={mode}
-      selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
-      palette={palette}
-      onChange={(control, value) => {
-        const chosen = chosenFill(value, control, deck.shown.shownParts.current, deck.shown.shownRegister.current, node)
-        if ("pick" in chosen) {
-          deck.chooseFillImage?.(node)
-          return
+    <LiveBoxFields store={store} nodes={[node]}>
+      <ElementDesign
+        titleActions={
+          <div className="flex items-center gap-1">
+            {design.model.kind === "group" || design.model.kind === "frame" ? toneHead(deck, [node], toneFor) : null}
+            <ElementTitleActions onMatch={matchAction(deck)} model={design.model} onReplace={deck.replacePicture} />
+          </div>
         }
-        changeDesign(deck, () =>
-          rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, chosen.value),
-        )
-      }}
-    />
+        formatting={deck.undo.formatting.current}
+        picture={src === null ? null : <PicturePreview src={src} />}
+        model={design.model}
+        afterAlignment={liveSlideNumber(deck, node, design.view.value)}
+        afterTitle={design.model.frame === "auto" ? <RemoveAutoLayout deck={deck} node={node} /> : null}
+        mode={mode}
+        selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
+        palette={palette}
+        onChange={(control, value) => {
+          const chosen = chosenFill(
+            value,
+            control,
+            deck.shown.shownParts.current,
+            deck.shown.shownRegister.current,
+            node,
+          )
+          if ("pick" in chosen) {
+            deck.chooseFillImage?.(node)
+            return
+          }
+          changeDesign(deck, () =>
+            rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, chosen.value),
+          )
+        }}
+      />
+    </LiveBoxFields>
   )
 }
 
@@ -229,23 +238,27 @@ function editableText(views: readonly ScopedElement[]): boolean {
   return views.every((view) => takes(view.facts).includes("text.value") && !keptRefuses(view.kept, "text", "value"))
 }
 
-function useElements(store: PaintStore, nodes: Several): void {
-  const key = nodes.join(" ")
-  const subscribe = useCallback(
+function useEach(store: PaintStore, key: string, channel: "elementSubscribe" | "boxSubscribe") {
+  return useCallback(
     (listener: () => void) => {
       const stops = key
         .split(" ")
         .flatMap((raw) => readElementId(raw) ?? [])
-        .flatMap((id) => [store.elementSubscribe(id)(listener), store.boxSubscribe(id)(listener)])
+        .map((id) => store[channel](id)(listener))
       return () => {
         for (const stop of stops) stop()
       }
     },
-    [store, key],
+    [store, key, channel],
   )
-  const read = () =>
-    nodes.map((node) => JSON.stringify([store.getElement(node)?.text ?? null, store.getBox(node)])).join(" ")
-  useSyncExternalStore(subscribe, read, read)
+}
+
+function useElements(store: PaintStore, nodes: Several): void {
+  const key = nodes.join(" ")
+  const texts = () => JSON.stringify(nodes.map((node) => store.getElement(node)?.text ?? null))
+  const boxes = () => JSON.stringify(nodes.map((node) => store.getRestingBox(node)))
+  useSyncExternalStore(useEach(store, key, "elementSubscribe"), texts, texts)
+  useSyncExternalStore(useEach(store, key, "boxSubscribe"), boxes, boxes)
 }
 
 function LiveManyDesign({
@@ -280,32 +293,36 @@ function LiveManyDesign({
     />
   ) : null
   return (
-    <ElementDesign
-      model={design.model}
-      mode={mode}
-      selectionColors={<LiveSelectionColors deck={deck} nodes={nodes} />}
-      palette={palette}
-      titleActions={
-        <div className="flex items-center gap-1">
-          {toneHead(deck, nodes, toneFor)}
-          {text}
-          <ElementTitleActions onMatch={matchAction(deck)} />
-        </div>
-      }
-      onChange={(control, value) =>
-        changeDesign(deck, () => {
-          const latest = manyDesign(deck, nodes, mode)
-          if (latest === null) return []
-          if (control.trait === "corners") {
-            const corners = latest.designs.map(({ model }) =>
-              controlsOf(model.sections).find(({ trait }) => trait === "corners"),
-            )
-            return corners.every((corner) => corner !== undefined) ? corners.map((corner) => corner.change(value)) : []
-          }
-          return rebasedChange(controlsOf(latest.model.sections), control, value)
-        })
-      }
-    />
+    <LiveBoxFields store={deck.shown.store.current} nodes={nodes}>
+      <ElementDesign
+        model={design.model}
+        mode={mode}
+        selectionColors={<LiveSelectionColors deck={deck} nodes={nodes} />}
+        palette={palette}
+        titleActions={
+          <div className="flex items-center gap-1">
+            {toneHead(deck, nodes, toneFor)}
+            {text}
+            <ElementTitleActions onMatch={matchAction(deck)} />
+          </div>
+        }
+        onChange={(control, value) =>
+          changeDesign(deck, () => {
+            const latest = manyDesign(deck, nodes, mode)
+            if (latest === null) return []
+            if (control.trait === "corners") {
+              const corners = latest.designs.map(({ model }) =>
+                controlsOf(model.sections).find(({ trait }) => trait === "corners"),
+              )
+              return corners.every((corner) => corner !== undefined)
+                ? corners.map((corner) => corner.change(value))
+                : []
+            }
+            return rebasedChange(controlsOf(latest.model.sections), control, value)
+          })
+        }
+      />
+    </LiveBoxFields>
   )
 }
 

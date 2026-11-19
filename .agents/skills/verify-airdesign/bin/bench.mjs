@@ -4,6 +4,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import addText from "../bench/add-text.mjs"
 import drag from "../bench/drag.mjs"
+import dragBusy from "../bench/drag-busy.mjs"
 import { defaultDecks, importCase, judgedDecks } from "../bench/import.mjs"
 import openDeck from "../bench/open-41.mjs"
 import typeDeck from "../bench/type-41.mjs"
@@ -23,6 +24,7 @@ const defaultCases = [
   "type-41",
   "switch-41",
   "drag",
+  "drag-busy",
   "open-41",
   ...defaultDecks.map((deck) => `import-${deck}`),
 ]
@@ -40,7 +42,16 @@ function read(args) {
 }
 
 export function casesFor(given, repo) {
-  const known = [addText, typeDeck, switchDeck, drag, openDeck, openFifty, ...judgedDecks(repo).map(importCase)]
+  const known = [
+    addText,
+    typeDeck,
+    switchDeck,
+    drag,
+    dragBusy,
+    openDeck,
+    openFifty,
+    ...judgedDecks(repo).map(importCase),
+  ]
   if (given === "all") return known
   return (given?.split(",") ?? defaultCases).map((name) => {
     const found = known.find((each) => each.name === name)

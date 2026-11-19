@@ -18,6 +18,7 @@ import { cn } from "@/lib/class-names"
 import { LinkFormatting } from "@/design/controls/link"
 import type { TextFormatting } from "@airdesign/render"
 import { linkCopy } from "@/copy/link-copy"
+import { followsDrag, useLiveBoxControl } from "@/editor/live-box-fields"
 
 const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity"]
 
@@ -197,7 +198,15 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-export function ControlView({ control, palette, onChange }: ControlProps) {
+export function ControlView(props: ControlProps) {
+  return followsDrag(props.control) ? <LiveBoxControl {...props} /> : shownControl(props)
+}
+
+function LiveBoxControl(props: ControlProps) {
+  return shownControl({ ...props, control: useLiveBoxControl(props.control) })
+}
+
+function shownControl({ control, palette, onChange }: ControlProps): ReactNode {
   if (control.field.startsWith("kept."))
     return <p className="text-[length:var(--type-caption)] text-quiet">{control.label}</p>
   if (control.trait === "image" && control.field === "overlay")

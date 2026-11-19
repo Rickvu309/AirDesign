@@ -22,12 +22,17 @@ export type PaintStore = {
   readonly beginComposition: (id: ElementId) => void
   readonly endComposition: (id: ElementId, data: string) => void
   readonly getBox: (id: ElementId) => Box | null
+  readonly getRestingBox: (id: ElementId) => Box | null
   readonly placeBox: (id: ElementId, box: Box | null) => void
   readonly gripBox: (id: ElementId) => BoxGrip
   readonly boxSubscribe: (id: ElementId) => (listener: () => void) => () => void
 }
 
 const accepted: PaintResult = Object.freeze({ ok: true })
+
+function frozenBox(box: Box): Box {
+  return Object.freeze({ x: box.x, y: box.y, cx: box.cx, cy: box.cy })
+}
 
 function copyRecord(record: ElementRecord): ElementRecord {
   return Object.freeze({
@@ -132,14 +137,24 @@ export function paintStore(): PaintStore {
   function showBox(id: ElementId, box: Box | null): void {
     if (sameBox(boxes.get(id) ?? null, box)) return
     if (box === null) boxes.delete(id)
-    else boxes.set(id, Object.freeze({ x: box.x, y: box.y, cx: box.cx, cy: box.cy }))
+    else boxes.set(id, frozenBox(box))
     notify(boxListeners, id)
   }
 
   function placeBox(id: ElementId, box: Box | null): void {
     const grip = gripped.get(id)
-    if (grip === undefined) showBox(id, box)
-    else grip.held = box
+    if (grip === undefined) {
+      showBox(id, box)
+      return
+    }
+    if (sameBox(grip.held, box)) return
+    grip.held = box === null ? null : frozenBox(box)
+    notify(boxListeners, id)
+  }
+
+  function getRestingBox(id: ElementId): Box | null {
+    const grip = gripped.get(id)
+    return grip === undefined ? (boxes.get(id) ?? null) : grip.held
   }
 
   function gripBox(id: ElementId): BoxGrip {
@@ -155,7 +170,7 @@ export function paintStore(): PaintStore {
         if (gripped.get(id) === grip) showBox(id, box)
       },
       keep() {
-        ended()
+        if (ended() && !sameBox(grip.held, boxes.get(id) ?? null)) notify(boxListeners, id)
       },
       release() {
         if (ended()) showBox(id, grip.held)
@@ -216,6 +231,7 @@ export function paintStore(): PaintStore {
       for (const record of queue) commit(record)
     },
     getBox: (id) => boxes.get(id) ?? null,
+    getRestingBox,
     placeBox,
     gripBox,
     boxSubscribe: (id) => subscribeTo(boxListeners, boxSubscribeCache, id),

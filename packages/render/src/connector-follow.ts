@@ -5,6 +5,7 @@ import { paintPlace } from "./connector-drag.js"
 import type { CanvasTie } from "./element-paint.js"
 import type { PaintBox } from "./paint-box.js"
 import type { CanvasElement } from "./record.js"
+import { shownBox, type BoxRead } from "./element-view.js"
 import type { PaintStore } from "./store.js"
 
 export type Targets = { readonly start: CanvasElement | null; readonly end: CanvasElement | null }
@@ -24,11 +25,11 @@ export function placedBox(place: Place): PaintBox {
   }
 }
 
-export function liveBox(store: PaintStore, element: CanvasElement): PaintBox | null {
+export function liveBox(store: PaintStore, element: CanvasElement, read: BoxRead = shownBox): PaintBox | null {
   if (element.id === null) return element.box
-  const own = paintedAt(element.box, store.getBox(element.id))
+  const own = paintedAt(element.box, read(store, element.id))
   const group = element.group
-  return group === undefined ? own : followed(own, group.box, store.getBox(group.id), group.frame === undefined)
+  return group === undefined ? own : followed(own, group.box, read(store, group.id), group.frame === undefined)
 }
 
 function still(file: PaintBox | null, live: PaintBox | null): boolean {
@@ -71,7 +72,12 @@ function tiedIds(connector: CanvasElement, targets: Targets | undefined): readon
   )
 }
 
-export function useFollowed(store: PaintStore, connector: CanvasElement, targets: Targets | undefined): CanvasElement {
+export function useFollowed(
+  store: PaintStore,
+  connector: CanvasElement,
+  targets: Targets | undefined,
+  read: BoxRead = shownBox,
+): CanvasElement {
   const ids = tiedIds(connector, targets)
   const key = ids.join(" ")
   const subscribe = useCallback(
@@ -86,9 +92,9 @@ export function useFollowed(store: PaintStore, connector: CanvasElement, targets
     },
     [store, key],
   )
-  const read = () => ids.map((id) => JSON.stringify(store.getBox(id))).join(" ")
-  useSyncExternalStore(subscribe, read, read)
-  return targets === undefined ? connector : followedConnector(connector, targets, (each) => liveBox(store, each))
+  const boxes = () => ids.map((id) => JSON.stringify(read(store, id))).join(" ")
+  useSyncExternalStore(subscribe, boxes, boxes)
+  return targets === undefined ? connector : followedConnector(connector, targets, (each) => liveBox(store, each, read))
 }
 
 export function targetsOf(elements: readonly CanvasElement[], connector: CanvasElement): Targets | undefined {

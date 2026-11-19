@@ -19,10 +19,12 @@ import {
   type Grip,
   type Held,
   type Moved,
+  type Point,
 } from "./box-gesture.js"
 import { snappedDrag, snapTargets } from "./drag-snap.js"
 import { gestureFor } from "./gestures.js"
 import { typeHeld } from "./held-keys.js"
+import { oncePerFrame } from "./once-per-frame.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import {
   alone,
@@ -219,15 +221,20 @@ export function useMoves(
 
   function follow(pressed: Drag, document: Document) {
     const snap = snapTargets(size, store, pressed.ids)
+    const moving = oncePerFrame(({ at, free }: { readonly at: Point; readonly free: boolean }) => {
+      const now = held.current
+      if (now?.by !== "pointer") return
+      const snapped = snappedDrag(now, at, width, size, free ? null : snap)
+      guides.show(snapped.guides)
+      place(snapped.boxes)
+    })
     function move(event: globalThis.PointerEvent) {
       const now = held.current
       if (now?.by !== "pointer" || event.pointerId !== now.pointer) return
       const at = { x: event.clientX, y: event.clientY }
       if (!now.moved && !travelled(now.from, at)) return
       held.current = { ...now, moved: true }
-      const snapped = snappedDrag(now, at, width, size, event.ctrlKey ? null : snap)
-      guides.show(snapped.guides)
-      place(snapped.boxes)
+      moving.push({ at, free: event.ctrlKey })
     }
     function stop() {
       document.removeEventListener("pointermove", move)
@@ -236,11 +243,13 @@ export function useMoves(
       cancelling.current = null
     }
     function cancel() {
+      moving.drop()
       stop()
       letGo([])
     }
     function end(event: globalThis.PointerEvent) {
       if (event.pointerId !== pressed.pointer) return
+      moving.flush()
       stop()
       const now = held.current
       if (now !== null) finish(now)

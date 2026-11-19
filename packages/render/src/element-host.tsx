@@ -10,7 +10,7 @@ import {
 import type { ElementId } from "@airdesign/document"
 import { followed, ownBox } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
-import { useBox, useElement } from "./element-view.js"
+import { restingBox, shownBox, useBox, useElement, type BoxRead } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { framedOutline, Passage, type TextEditKind } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
@@ -175,12 +175,13 @@ function usePlaced(
   element: CanvasElement,
   id: ElementId,
   targets: Targets | undefined,
+  read: BoxRead = shownBox,
 ): CanvasElement {
   const group = element.group
-  const carried = useBox(store, group?.id ?? id)
-  const own = ownBox(element, useBox(store, id))
+  const carried = useBox(store, group?.id ?? id, read)
+  const own = ownBox(element, useBox(store, id, read))
   const box = group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
-  return useFollowed(store, box === element.box ? element : { ...element, box }, targets)
+  return useFollowed(store, box === element.box ? element : { ...element, box }, targets, read)
 }
 
 type QuietProps = {
@@ -197,7 +198,7 @@ function QuietElement(props: QuietProps & { readonly targets: Targets | undefine
 
 function QuietLive(props: QuietProps & { readonly id: ElementId; readonly targets: Targets | undefined }) {
   const record = useElement(props.store, props.id)
-  const element = usePlaced(props.store, props.element, props.id, props.targets)
+  const element = usePlaced(props.store, props.element, props.id, props.targets, restingBox)
   return <QuietFrame {...props} element={element} written={record?.text ?? ""} />
 }
 

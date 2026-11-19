@@ -41,6 +41,8 @@ const record = (faults, tests = 2) => {
       "pptx-check-duration": { limit: 90 },
       "time-to-merge": { limit: 45 },
       "time-to-notice": { limit: 15 },
+      "drag-frame": { limit: 20 },
+      "drag-delay": { limit: 50 },
     }),
   )
 }
@@ -103,6 +105,11 @@ if (
   reportedMetrics["time-to-notice"] !== "scripts/ci-failure-report.mjs"
 )
   throw new Error("time-to-merge and time-to-notice are medians the failure report prints")
+if (
+  reportedMetrics["drag-frame"] !== "tests/browser/drag-feel.spec.ts" ||
+  reportedMetrics["drag-delay"] !== "tests/browser/drag-feel.spec.ts"
+)
+  throw new Error("drag-frame and drag-delay are the milliseconds the drag feel check prints")
 if (!fs.readFileSync(path.join(repoRoot, "scripts/check.mjs"), "utf8").includes('timeMetric(root, "check-duration"'))
   throw new Error("scripts/check.mjs must time check-duration")
 if (

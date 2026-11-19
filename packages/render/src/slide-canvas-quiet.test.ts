@@ -89,4 +89,20 @@ describe("quiet SlideCanvas", () => {
     )
     expect(host.querySelectorAll("[data-thumb-element]")).toHaveLength(2)
   })
+  it("keeps a layer at its resting box while a gesture moves it, and shows the moved box once the gesture keeps it", async () => {
+    const store = paintStore()
+    store.publish({ id, kind: "shape", text: stored("Hello") })
+    const host = await paint({ ...wide, elements: [shape(id)] }, store)
+    const layer = () => host.querySelector<HTMLElement>(`[data-thumb-node="${id}"]`)?.style.left
+    expect(layer()).toBe("0px")
+    const grip = store.gripBox(id)
+    await act(async () => {
+      grip.place({ x: 1_219_200, y: 0, cx: 6_096_000, cy: 1_714_500 })
+    })
+    expect(layer()).toBe("0px")
+    await act(async () => {
+      grip.keep()
+    })
+    expect(layer()).toBe("18px")
+  })
 })
