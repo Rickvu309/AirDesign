@@ -18,7 +18,6 @@ export type NotesDeck = {
   readonly records: RefObject<RecordsInFlight>
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
-  readonly sending: () => void
 }
 
 export function notesShown(parts: Parts, register: Register | null): readonly ShownNotes[] {
@@ -51,7 +50,6 @@ export function useNotes(deck: NotesDeck) {
     const kept = connect(memoryRemote()).enqueue(deck.id, value, node, floor)
     void commitKept(connect, deck.id, kept, async () => {
       const from = await before
-      deck.sending()
       deck.record({
         name: "notes",
         session,

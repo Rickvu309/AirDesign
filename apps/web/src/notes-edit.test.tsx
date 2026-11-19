@@ -40,7 +40,6 @@ it("keeps the notes a person is typing when a paint shows the deck's older notes
     records: { current: recordsInFlight() },
     record: () => undefined,
     settle: () => undefined,
-    sending: () => undefined,
   }
   const held: { current: Notes | null } = { current: null }
   function Bar() {

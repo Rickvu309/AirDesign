@@ -85,11 +85,10 @@ export type TurningDeck = {
     readonly show: (notes: readonly ShownNotes[]) => void
   }
   readonly settle: (outcome: CommitOutcome) => void
-  readonly setPending: (pending: boolean) => void
 }
 
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
-  const { id, undo, shown, notesBar, settle, setPending } = deck
+  const { id, undo, shown, notesBar, settle } = deck
   const [gridFocus, setGridFocus] = useState({ turn: 0, visible: false })
   const { undoList, undoShown, show, told, typed, sessions, focused, records, turnAfter } = undo
   const { store, shownParts, structure, bound, repaint, setCurrent, showRegister } = shown
@@ -153,7 +152,6 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     setCurrent((index) => (shownSlide >= 0 ? shownSlide : Math.max(0, Math.min(index, slides.length - 1))))
     if (grid?.isConnected && (grid.contains(document.activeElement) || document.activeElement === document.body))
       setGridFocus((focus) => ({ turn: focus.turn + 1, visible }))
-    setPending(true)
   }
 
   function turn(direction: UndoDirection, visible = false) {

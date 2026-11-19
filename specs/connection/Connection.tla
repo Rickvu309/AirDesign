@@ -1,12 +1,14 @@
 ---- MODULE Connection ----
 \* How the open editor follows the network and what its save status tells the person.
 \* useDeckStatus in apps/web/src/editor/use-deck-status.ts keeps three flags: online, the browser's
-\* navigator.onLine; offline, whether the last send found no server; and pending, whether the
-\* editor asked for rows to go that have not gone. saveStatus turns them into Saved, Saving,
+\* navigator.onLine; offline, whether the last send found no server; and whether rows
+\* wait on the device. pending has one owner: watchUnsent in packages/live/src/held.ts tells the
+\* editor after every write and read of the deck's rows, so pending is rows and no send's answer
+\* writes it. saveStatus turns them into Saved, Saving,
 \* Offline or Unable to reach AirDesign. useNetwork in apps/web/src/editor/use-network.ts sets
 \* offline on the browser's offline event, sends on its online event, and runs resendPending from
 \* apps/web/src/deck-resend.ts while online, offline and pending all hold. Each send is
-\* flushPending in apps/web/src/commit-edit.ts, and settle reads its outcome into the flags.
+\* flushPending in apps/web/src/commit-edit.ts, and settle reads its outcome into offline.
 \* The device's queue is one flag, rows: some rows wait on the device or none. Every send joins
 \* one lane per deck (serial in packages/live/src/cache.ts) and the first in the lane is the only
 \* one on the wire. It carries every row the device holds when it starts. It answers sent when no
@@ -16,11 +18,9 @@
 \* resend loop that was stopped, whose answer nobody reads.
 EXTENDS Integers
 
-VARIABLES open, net, up, rows, fresh, pending, offline, lane, started, carry, loop, flips, outages,
-          edits
+VARIABLES open, net, up, rows, fresh, offline, lane, started, carry, loop, flips, outages, edits
 
-vars == <<open, net, up, rows, fresh, pending, offline, lane, started, carry, loop, flips, outages,
-          edits>>
+vars == <<open, net, up, rows, fresh, offline, lane, started, carry, loop, flips, outages, edits>>
 
 Event == 1
 Resend == 2
@@ -59,7 +59,6 @@ TypeOK ==
   /\ up \in BOOLEAN
   /\ rows \in BOOLEAN
   /\ fresh \in BOOLEAN
-  /\ pending \in BOOLEAN
   /\ offline \in BOOLEAN
   /\ lane \in 0..44444
   /\ started \in BOOLEAN
@@ -69,24 +68,24 @@ TypeOK ==
   /\ outages \in 0..1
   /\ edits \in 0..2
 
-\* The deck is open and online, with nothing waiting on the device.
+\* The deck is open and online. Rows from an earlier visit may wait on the device, and the deck's
+\* opening send (useDeckOpen's flushPending) is in the lane.
 Init ==
   /\ open = TRUE
   /\ net = TRUE
   /\ up = TRUE
-  /\ rows = FALSE
+  /\ rows \in BOOLEAN
   /\ fresh = FALSE
-  /\ pending = FALSE
   /\ offline = ~net
-  /\ lane = 0
+  /\ lane = IF rows THEN Edit ELSE 0
   /\ started = FALSE
   /\ carry = FALSE
   /\ loop = "off"
   /\ flips = 0
   /\ outages = 0
-  /\ edits = 0
+  /\ edits = IF rows THEN 1 ELSE 0
 
-Was == Unsent(open, net, offline, pending)
+Was == Unsent(open, net, offline, rows)
 
 \* The browser fires offline, and leftNetwork sets offline.
 GoOffline ==
@@ -98,7 +97,7 @@ GoOffline ==
   /\ offline' = (open \/ offline)
   /\ loop' = Looping(Was, FALSE, loop)
   /\ lane' = Stopping(Was, FALSE, loop, lane)
-  /\ UNCHANGED <<open, up, rows, fresh, pending, started, carry, outages, edits>>
+  /\ UNCHANGED <<open, up, rows, fresh, started, carry, outages, edits>>
 
 \* The browser fires online, and the open editor sends at once.
 GoOnline ==
@@ -108,8 +107,8 @@ GoOnline ==
   /\ net' = TRUE
   /\ flips' = flips + 1
   /\ lane' = IF open THEN Join(lane, Event) ELSE lane
-  /\ loop' = Looping(FALSE, Unsent(open, TRUE, offline, pending), loop)
-  /\ UNCHANGED <<open, up, rows, fresh, pending, offline, started, carry, outages, edits>>
+  /\ loop' = Looping(FALSE, Unsent(open, TRUE, offline, rows), loop)
+  /\ UNCHANGED <<open, up, rows, fresh, offline, started, carry, outages, edits>>
 
 ServerDown ==
   /\ up
@@ -117,15 +116,15 @@ ServerDown ==
   /\ edits < 2
   /\ up' = FALSE
   /\ outages' = outages + 1
-  /\ UNCHANGED <<open, net, rows, fresh, pending, offline, lane, started, carry, loop, flips, edits>>
+  /\ UNCHANGED <<open, net, rows, fresh, offline, lane, started, carry, loop, flips, edits>>
 
 ServerUp ==
   /\ ~up
   /\ up' = TRUE
-  /\ UNCHANGED <<open, net, rows, fresh, pending, offline, lane, started, carry, loop, flips, outages,
+  /\ UNCHANGED <<open, net, rows, fresh, offline, lane, started, carry, loop, flips, outages,
                  edits>>
 
-\* The person edits: the editor sets pending, the device writes a row, and its send joins the lane.
+\* The person edits: the device writes a row, and its send joins the lane.
 \* A row written while a send is on the wire is not in that send.
 EditRow ==
   /\ open
@@ -133,7 +132,6 @@ EditRow ==
   /\ edits' = edits + 1
   /\ rows' = TRUE
   /\ fresh' = (fresh \/ started)
-  /\ pending' = TRUE
   /\ lane' = Join(lane, Edit)
   /\ loop' = Looping(Was, Unsent(open, net, offline, TRUE), loop)
   /\ UNCHANGED <<open, net, up, offline, started, carry, flips, outages>>
@@ -145,7 +143,7 @@ Send ==
   /\ started' = TRUE
   /\ carry' = rows
   /\ fresh' = FALSE
-  /\ UNCHANGED <<open, net, up, rows, pending, offline, lane, loop, flips, outages, edits>>
+  /\ UNCHANGED <<open, net, up, rows, offline, lane, loop, flips, outages, edits>>
 
 \* Its answer comes and leaves the lane. Its caller settles it, unless the editor closed or the
 \* loop that sent it was stopped. The resend loop ends on any outcome but offline, and rests
@@ -157,18 +155,13 @@ Answer ==
          outcome == IF carry /\ ~reached THEN "offline" ELSE IF remaining THEN "kept" ELSE "sent"
          caller == First(lane)
          heard == (caller \in {Event, Edit} /\ open) \/ caller = Resend
-         pending2 == IF ~heard THEN pending
-                     ELSE IF outcome = "sent" THEN FALSE
-                     ELSE IF outcome = "offline" THEN TRUE
-                     ELSE pending
          offline2 == IF heard THEN outcome = "offline" ELSE offline
          loop2 == IF caller = Resend THEN (IF outcome = "offline" THEN "rest" ELSE "off") ELSE loop
-         after == Unsent(open, net, offline2, pending2)
+         after == Unsent(open, net, offline2, remaining)
      IN /\ rows' = remaining
         /\ fresh' = FALSE
         /\ started' = FALSE
         /\ carry' = FALSE
-        /\ pending' = pending2
         /\ offline' = offline2
         /\ loop' = Looping(Was, after, loop2)
         /\ lane' = Stopping(Was, after, loop2, Rest(lane))
@@ -179,7 +172,7 @@ Retry ==
   /\ loop = "rest"
   /\ loop' = "wait"
   /\ lane' = Join(lane, Resend)
-  /\ UNCHANGED <<open, net, up, rows, fresh, pending, offline, started, carry, flips, outages, edits>>
+  /\ UNCHANGED <<open, net, up, rows, fresh, offline, started, carry, flips, outages, edits>>
 
 \* The person leaves the deck while a resend loop runs. useNetwork's cleanup removes the
 \* listeners and stops the loop.
@@ -189,13 +182,13 @@ Leave ==
   /\ open' = FALSE
   /\ loop' = Looping(Was, FALSE, loop)
   /\ lane' = Stopping(Was, FALSE, loop, lane)
-  /\ UNCHANGED <<net, up, rows, fresh, pending, offline, started, carry, flips, outages, edits>>
+  /\ UNCHANGED <<net, up, rows, fresh, offline, started, carry, flips, outages, edits>>
 
 Next == GoOffline \/ GoOnline \/ ServerDown \/ ServerUp \/ EditRow \/ Send \/ Answer \/ Retry \/ Leave
 
 Spec == Init /\ [][Next]_vars /\ WF_vars(Send) /\ WF_vars(Answer) /\ WF_vars(Retry) /\ WF_vars(ServerUp)
 
-Shown == Status(net, pending, offline)
+Shown == Status(net, rows, offline)
 
 \* The browser going offline reads Offline at once, with or without rows waiting.
 TellsWhenOffline == open /\ ~net => Shown = "offline"

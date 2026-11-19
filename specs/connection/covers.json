@@ -10,8 +10,8 @@
     {
       "file": "apps/web/src/editor/use-deck-status.ts",
       "names": ["useDeckStatus", "saveStatus", "watchNetwork", "browserOnline"],
-      "digest": "10fc34f83b4f",
-      "blob": "14a75165b81fd974ba24293804f57f2b8a1facbe"
+      "digest": "477c78504b69",
+      "blob": "2d2277d9781fe23abc94c88c685973ea928b6752"
     },
     {
       "file": "apps/web/src/deck-resend.ts",

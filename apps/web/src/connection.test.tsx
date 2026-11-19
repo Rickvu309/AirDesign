@@ -21,8 +21,14 @@ const world = vi.hoisted(() => ({
   lane: [] as Send[],
   rests: [] as Rest[],
   waiting: false,
+  tell: null as ((unsent: boolean) => void) | null,
   status: null as Status | null,
 }))
+
+function deviceHolds(rows: boolean): void {
+  world.waiting = rows
+  world.tell?.(rows)
+}
 
 vi.mock("@airdesign/live", async () => {
   const actual = await vi.importActual<object>("@airdesign/live")
@@ -37,6 +43,13 @@ vi.mock("@airdesign/live", async () => {
       pending: () => Promise.resolve(world.waiting ? ["row"] : []),
     }),
     flushOriginal: () => Promise.resolve({ ok: true }),
+    watchUnsent: (_deck: string, tell: (unsent: boolean) => void) => {
+      world.tell = tell
+      tell(world.waiting)
+      return () => {
+        world.tell = null
+      }
+    },
   }
 })
 
@@ -96,7 +109,7 @@ async function specGraph(name: string, module: string): Promise<Graph> {
 }
 
 function Editor() {
-  const status = useDeckStatus()
+  const status = useDeckStatus(deck)
   useNetwork({ id: deck, ...status })
   world.status = status
   return null
@@ -104,7 +117,7 @@ function Editor() {
 
 function shownBy(v: Spec): Value {
   if (v.net !== true) return "offline"
-  if (v.pending !== true) return "saved"
+  if (v.rows !== true) return "saved"
   return v.offline === true ? "unreached" : "saving"
 }
 
@@ -140,6 +153,7 @@ async function openEditor(): Promise<World> {
   world.lane = []
   world.rests = []
   world.waiting = false
+  world.tell = null
   world.status = null
   let open = true
   const host = window.document.createElement("div")
@@ -167,8 +181,11 @@ async function openEditor(): Promise<World> {
     EditRow: () =>
       settled(() => {
         world.caller = edit
-        const { setPending, settle } = status()
-        void commitKept(connect, deck, Promise.resolve({ ok: true }), () => setPending(true)).then(settle)
+        const written = Promise.resolve().then(() => {
+          deviceHolds(true)
+          return { ok: true }
+        })
+        void commitKept(connect, deck, written).then(status().settle)
       }),
     Send: async () => {
       const first = world.lane[0]
@@ -180,7 +197,7 @@ async function openEditor(): Promise<World> {
         const first = world.lane.shift()
         if (first === undefined) throw new Error("no send in the lane")
         const answer = answerOf(source)
-        world.waiting = target.rows === true
+        deviceHolds(target.rows === true)
         if (answer === "offline") first.reject(new TypeError("Failed to fetch"))
         else first.resolve(answer === "sent" ? { ok: true } : { ok: false, refusal: "batch" })
       }),
@@ -203,7 +220,7 @@ async function openEditor(): Promise<World> {
       return {
         open,
         net: window.navigator.onLine,
-        pending: shown.pending,
+        pending: open && shown.pending,
         offline: shown.offline,
         lane: laneCode(),
         started: world.lane[0]?.started ?? false,
@@ -222,7 +239,7 @@ function modelled(v: Spec): Spec {
   return {
     open: v.open ?? false,
     net: v.net ?? false,
-    pending: v.pending ?? false,
+    pending: v.open === true && v.rows === true,
     offline: v.offline ?? false,
     lane: v.lane ?? 0,
     started: v.started ?? false,

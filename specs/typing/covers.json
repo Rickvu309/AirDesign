@@ -16,8 +16,8 @@
     {
       "file": "apps/web/src/notes-edit.ts",
       "names": ["useNotes"],
-      "digest": "ea98d4bc444a",
-      "blob": "600a232a39bda3ec4de4f8e981465a05125206d9"
+      "digest": "7efcddf41ad3",
+      "blob": "c8b26e8f0836ae7372f158ccb3d205e25360be31"
     },
     {
       "file": "apps/web/src/editor/undo-keys.ts",
@@ -40,14 +40,14 @@
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoTurn"],
-      "digest": "2db0045cadae",
-      "blob": "9929c54ffddae6c0e338b178a3a33d6ff7e3f25a"
+      "digest": "9e1bee74463f",
+      "blob": "15e5ad97ae6a4a4ed475aec09dbbd1fbec9b8a22"
     },
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "d0ec9ce6617e",
-      "blob": "fbce5e1a502788b644cb85622273dcff61889440"
+      "digest": "6025428f4045",
+      "blob": "60b9d9cf222feef45ee39ab0eec65baeac971e04"
     }
   ]
 }

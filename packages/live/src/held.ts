@@ -1,6 +1,7 @@
-import type { DeckId } from "@airdesign/catalog"
+import { readDeckId, type DeckId } from "@airdesign/catalog"
 import { newerFormat, type Register } from "@airdesign/document"
 import {
+  accountKey,
   finished,
   heldDecks,
   markNewer,
@@ -82,6 +83,36 @@ function remember(account: string, deck: string, held: Held | undefined): void {
   else heldDecks().set(scoped(account, deck), held)
 }
 
+type UnsentWatcher = (unsent: boolean) => void
+
+const unsentWatchers = new Map<string, Set<UnsentWatcher>>()
+
+function tellUnsent(account: string, deck: DeckId, held: Held): void {
+  for (const watcher of unsentWatchers.get(scoped(account, deck)) ?? []) watcher(held.pending.length > 0)
+}
+
+async function told(account: string, deck: DeckId): Promise<void> {
+  if (!unsentWatchers.has(scoped(account, deck))) return
+  const known = memory(account, deck)
+  if (known === undefined) await heldView(deck)
+  else tellUnsent(account, deck, known)
+}
+
+export function watchUnsent(deck: string, watcher: UnsentWatcher): () => void {
+  const account = accountKey()
+  const parsed = readDeckId(deck)
+  if (account === undefined || !parsed.ok) return () => undefined
+  const key = scoped(account, parsed.deck)
+  const watchers = unsentWatchers.get(key) ?? new Set<UnsentWatcher>()
+  watchers.add(watcher)
+  unsentWatchers.set(key, watchers)
+  void heldView(parsed.deck).catch(() => null)
+  return () => {
+    watchers.delete(watcher)
+    if (watchers.size === 0) unsentWatchers.delete(key)
+  }
+}
+
 export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => Change<Result>): Promise<Result> {
   const account = signedIn()
   const writing = await transaction("readwrite")
@@ -140,6 +171,7 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
   }
   if (storeNewer()) throw new Error("newer")
   if (!done) throw new Error("rows were not read")
+  await told(account, deck)
   return result as Result
 }
 
@@ -177,6 +209,7 @@ export async function dropRows(deck: DeckId, keys: readonly string[]): Promise<v
     remember(account, deck, undefined)
     throw error
   }
+  await told(account, deck)
 }
 
 function revisionOf(raw: unknown): number {
@@ -228,6 +261,7 @@ export async function adoptRows(
     throw error
   }
   if (adopted) pageAdopted().set(lane, revision)
+  await told(account, deck)
   return adopted
 }
 
@@ -284,6 +318,7 @@ export async function confirmRows(
     remember(account, deck, undefined)
     throw error
   }
+  await told(account, deck)
 }
 
 function editOf(row: PendingRow): string {
@@ -343,6 +378,7 @@ export async function setAside(deck: DeckId, rows: readonly PendingRow[], tooLar
     remember(account, deck, undefined)
     throw error
   }
+  await told(account, deck)
 }
 
 export async function takeAside(deck: DeckId): Promise<{ readonly aside: number; readonly tooLarge: number }> {
@@ -427,5 +463,6 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
   if (storeNewer()) throw new Error("newer")
   if (held === undefined) return null
   if (dropped.length > 0) await dropRows(deck, dropped)
+  else tellUnsent(account, deck, held)
   return deckView(held.register, [...held.confirmed], [...held.pending])
 }

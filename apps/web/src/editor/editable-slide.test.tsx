@@ -50,11 +50,11 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const notes = { show: nothing }
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = useUndoList()
-  const status = useDeckStatus()
-  const { settle, setPending } = status
+  const status = useDeckStatus(deck)
+  const { settle } = status
   const shown = useDeckPaint(deck, pictures, notes)
   const changeElement = async () => "kept" as const
-  useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing, setPending: nothing })
+  useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing })
   props.exposed({ shown, undo, status: saveStatus(status) })
   return editableSlide({
     id: deck,
@@ -62,7 +62,6 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
     undo,
     record: nothing,
     settle,
-    setPending,
     changeElement,
     selection: noSelection,
     select: nothing,
