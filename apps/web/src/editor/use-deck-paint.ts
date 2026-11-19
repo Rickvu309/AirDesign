@@ -73,7 +73,7 @@ export function useDeckPaint(
     setSlideCount(next.count)
     setSections(next.sections)
     void pictureTool.store.load(id, register).then((more) => {
-      if (more && structure.current === structureOf(register, bound.current)) showRegister(register)
+      if (more && structure.current === structureOf(register, bound.current)) showRegister(shownRegister.current)
     })
   }
 
