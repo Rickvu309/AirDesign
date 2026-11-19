@@ -52,6 +52,10 @@ const iconPaths = {
   match:
     '<rect x="4.5" y="4.5" width="5" height="5" rx="1"/><path d="M14.5 5.7V4.5h1.2M18.3 4.5h1.2v1.2M19.5 8.3v1.2h-1.2M15.7 9.5h-1.2V8.3M4.5 15.7v-1.2h1.2M8.3 14.5h1.2v1.2M9.5 18.3v1.2H8.3M5.7 19.5H4.5v-1.2M14.5 15.7v-1.2h1.2M18.3 14.5h1.2v1.2M19.5 18.3v1.2h-1.2M15.7 19.5h-1.2v-1.2"/>',
   swap: '<path d="m12 9.5 5.5 5.5-5.5 5.5-5.5-5.5z"/><path d="M5.5 9C7.5 4.6 13 3.4 16.6 6.4"/><path d="M17.6 3.4v3.6H14"/>',
+  frame: '<path d="M8 3v18M16 3v18M3 8h18M3 16h18"/>',
+  group: '<rect x="4" y="4" width="16" height="16" rx="1.5" stroke-dasharray="3 3"/>',
+  line: '<path d="M5 19 19 5"/>',
+  layers: '<path d="m12 3.5 8.5 4.75L12 13 3.5 8.25z"/><path d="m3.5 12.5 8.5 4.75 8.5-4.75"/>',
   styleSliders:
     '<path d="M8 3v6.5M8 14.5V21M16 3v1.5M16 9.5V21"/><circle cx="8" cy="12" r="2.5"/><circle cx="16" cy="7" r="2.5"/>',
 } as const

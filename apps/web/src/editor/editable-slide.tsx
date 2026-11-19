@@ -25,6 +25,7 @@ export type EditableDeck = DesignDeck & {
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
   readonly selection: Selection
   readonly select: (selection: Selection) => void
+  readonly hovered?: ElementId | null
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
@@ -219,6 +220,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             className="overflow-clip rounded-[2px] focus-within:overflow-visible"
             entering={entering}
             formatting={formatting.current}
+            {...(deck.hovered === undefined || deck.hovered === null ? {} : { highlights: [deck.hovered] })}
             notice={notice}
             onBoxes={(moved) => {
               clear()

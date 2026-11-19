@@ -57,6 +57,7 @@ export type EditorDeck = {
   readonly presentPaint?: (index: number, width: number, go: (index: number) => void) => ReactNode
   readonly shows?: () => readonly ShownSlide[]
   readonly morphOf?: (from: number, to: number) => LayerPairs
+  readonly layers?: ReactNode
 }
 
 export type EditorShellProps = {
@@ -77,6 +78,7 @@ export type EditorShellProps = {
   toast?: ReactNode
   overlay?: ReactNode
   formats?: FormatShown
+  layers?: ReactNode
   deck?: EditorDeck
 }
 
@@ -98,6 +100,7 @@ export function EditorShell({
   toast,
   overlay,
   formats,
+  layers,
   deck,
 }: EditorShellProps) {
   const canvas = useCanvasRoom()
@@ -234,6 +237,7 @@ export function EditorShell({
             : { strip: deck.slides, onGrid: () => openWith(() => setGridOpen(true)), save: deck.save ?? null })}
           {...(deck?.onTrash === undefined ? {} : { onTrash: deck.onTrash })}
           {...(deck?.onRename === undefined ? {} : { onRename: deck.onRename })}
+          layers={designMode?.value === "design" ? (deck?.layers ?? layers) : null}
         />
       ) : null}
       {rail === "images" ? (

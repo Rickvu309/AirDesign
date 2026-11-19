@@ -83,6 +83,7 @@ export function SlideSidebar({
   onTrash,
   onGrid,
   save = null,
+  layers = null,
 }: {
   run: SidebarRun
   title: string
@@ -91,6 +92,7 @@ export function SlideSidebar({
   onRename?: (name: string) => void
   onGrid?: () => void
   save?: SaveStatus | null
+  layers?: ReactNode
 }) {
   const onSelection = strip?.onSelection
   const current = strip?.current
@@ -117,6 +119,7 @@ export function SlideSidebar({
           <DeckStrip strip={strip} />
         </>
       )}
+      {layers}
     </aside>
   )
 }
@@ -255,7 +258,7 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
         ref={list}
         role="group"
         aria-label={slideListCopy.listName}
-        className="flex flex-col gap-1 overflow-y-auto px-1.5 py-1"
+        className="flex flex-1 flex-col gap-1 overflow-y-auto px-1.5 py-1"
         data-slide-list
         onFocus={(event: FocusEvent<HTMLDivElement>) => {
           const key = event.target.getAttribute("data-stop")
@@ -387,7 +390,7 @@ function SampleStrip({ run }: { run: SidebarRun }) {
           </Button>
         </div>
       </div>
-      <div className="flex flex-col gap-1 overflow-hidden px-1.5 pb-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden px-1.5 pb-2">
         <GroupHead name="Opening" open />
         {item(1)}
         {item(2)}
