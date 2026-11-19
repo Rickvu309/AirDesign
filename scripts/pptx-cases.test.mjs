@@ -28,6 +28,7 @@ assert.deepEqual(
     "color-transforms.mjs",
     "diagram-edits.mjs",
     "element-order.mjs",
+    "frame.mjs",
     "gradient-kept.mjs",
     "group.mjs",
     "new-slide-prompts.mjs",
