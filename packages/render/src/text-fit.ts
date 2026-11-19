@@ -148,6 +148,13 @@ function overflowOf(layer: HTMLElement, columns: number): Over | null {
   }
 }
 
+export function textHeight(layer: HTMLElement): number | null {
+  const body = layer.querySelector<HTMLElement>(":scope > [data-text-body]")
+  if (body === null) return null
+  const style = getComputedStyle(layer)
+  return lengthOf(getComputedStyle(body).height) + lengthOf(style.paddingTop) + lengthOf(style.paddingBottom)
+}
+
 export function useTextFit(
   element: CanvasElement,
   scaled: Scaled,

@@ -1,4 +1,12 @@
-import { type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type FocusEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type RefObject,
+} from "react"
 import type { ElementId } from "@airdesign/document"
 import { followed, ownBox } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
@@ -17,7 +25,7 @@ import { leadOf } from "./selection.js"
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
 import { FillLayers } from "./fill-layers.js"
 import { unshownFill } from "./unshown-fill.js"
-import { useTextFit } from "./text-fit.js"
+import { textHeight, useTextFit } from "./text-fit.js"
 import { UnshownLabel } from "./unshown-label.js"
 
 const defaultInsetX = 91_440
@@ -38,9 +46,31 @@ export type ElementPaintProps = {
   readonly scaled: Scaled
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
+  readonly onFit?: ((id: ElementId, height: number) => void) | undefined
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
   readonly targets?: Targets | undefined
+}
+
+function useFitReport(
+  layer: RefObject<HTMLDivElement | null>,
+  placed: CanvasElement,
+  scaled: Scaled,
+  report: (height: number) => void,
+) {
+  const reported = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const shown = layer.current
+    const stored = placed.box?.height
+    if (shown === null || stored === undefined || placed.inFrame !== "auto" || placed.text?.fit?.kind !== "grow") return
+    const measured = textHeight(shown)
+    const unit = scaled(1)
+    if (measured === null || unit <= 0) return
+    const height = Math.round(measured / unit)
+    if (Math.abs(height - stored) * unit < 1 || reported.current === height) return
+    reported.current = height
+    report(height)
+  })
 }
 
 function turned(box: PaintBox): string | undefined {
@@ -278,6 +308,7 @@ function PlacedText(props: {
   readonly id: ElementId
   readonly scaled: Scaled
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
+  readonly onFit?: ((id: ElementId, height: number) => void) | undefined
   readonly moves: Moves | null
   readonly unshown: boolean
   readonly drawnWhenBlank: boolean
@@ -290,6 +321,7 @@ function PlacedText(props: {
   const shown = record?.text ?? ""
   const placed = usePlaced(store, props.element, id, props.targets)
   const { element, layer } = useTextFit(placed, scaled, shown)
+  useFitReport(layer, placed, scaled, (height) => props.onFit?.(id, height))
   const text = element.text ?? noText
   const look = textLook(text, scaled)
   const typing = element.editable && onEdit !== undefined
@@ -381,8 +413,20 @@ export function ElementHost(
     readonly fallbackName: string
   },
 ) {
-  const { drawnWhenBlank, element, fallbackName, formatting, moves, onEdit, quiet, scaled, store, targets, unshown } =
-    props
+  const {
+    drawnWhenBlank,
+    element,
+    fallbackName,
+    formatting,
+    moves,
+    onEdit,
+    onFit,
+    quiet,
+    scaled,
+    store,
+    targets,
+    unshown,
+  } = props
   if (quiet) return <QuietElement element={element} scaled={scaled} store={store} targets={targets} unshown={unshown} />
   if (element.id === null) return <SheetElement element={element} scaled={scaled} unshown={unshown} />
   return (
@@ -394,6 +438,7 @@ export function ElementHost(
       id={element.id}
       moves={moves}
       onEdit={onEdit}
+      onFit={onFit}
       scaled={scaled}
       store={store}
       targets={targets}

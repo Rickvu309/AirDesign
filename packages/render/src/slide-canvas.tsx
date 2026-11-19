@@ -44,6 +44,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly quiet?: boolean
   readonly highlights?: readonly ElementId[]
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
+  readonly onFit?: (id: ElementId, height: number) => void
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
@@ -135,6 +136,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
             formatting={props.formatting}
             moves={moving}
             onEdit={props.onEdit}
+            onFit={props.onFit}
             quiet={quiet}
             scaled={scaled}
             store={props.store}
