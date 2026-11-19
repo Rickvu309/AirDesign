@@ -1,7 +1,7 @@
 import type { TransitionValue } from "@airdesign/document"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
-import { fromSide, p14Namespace, pushDir, speedOf } from "./transition-map.js"
+import { fromSide, mcNamespace, p14Namespace, p159Namespace, pushDir, speedOf } from "./transition-map.js"
 import { transitionBlocks } from "./transition-read.js"
 import type { Parts } from "./xml-codec.js"
 
@@ -17,6 +17,7 @@ function openTag(bytes: Uint8Array, element: MarkupElement): string {
 
 function effectOf(value: TransitionValue): string | null {
   if ("none" in value) return null
+  if ("smartAnimate" in value) return `<p159:morph option="byObject"/>`
   if ("dissolve" in value) return "<p:fade/>"
   if ("push" in value) return `<p:push dir="${pushDir[value.push.direction]}"/>`
   if ("moveIn" in value) return `<p:cover dir="${fromSide[value.moveIn.direction]}"/>`
@@ -24,6 +25,7 @@ function effectOf(value: TransitionValue): string | null {
 }
 
 function durationOf(value: TransitionValue): number | null {
+  if ("smartAnimate" in value) return value.smartAnimate.duration
   if ("dissolve" in value) return value.dissolve.duration
   if ("push" in value) return value.push.duration
   if ("moveIn" in value) return value.moveIn.duration
@@ -33,6 +35,7 @@ function durationOf(value: TransitionValue): number | null {
 
 function advanceOf(value: TransitionValue): { readonly click: true } | { readonly delay: number } {
   if ("none" in value) return value.none.advance
+  if ("smartAnimate" in value) return value.smartAnimate.advance
   if ("dissolve" in value) return value.dissolve.advance
   if ("push" in value) return value.push.advance
   if ("moveIn" in value) return value.moveIn.advance
@@ -46,6 +49,8 @@ function canonical(value: TransitionValue): string | null {
   if (effect === null) return delay === "" ? null : `<p:transition${delay}/>`
   const duration = durationOf(value)
   if (duration === null) throw new Error("transition")
+  if ("smartAnimate" in value)
+    return `<mc:AlternateContent xmlns:mc="${mcNamespace}"><mc:Choice xmlns:p159="${p159Namespace}" Requires="p159"><p:transition xmlns:p14="${p14Namespace}" spd="${speedOf(duration)}" p14:dur="${String(duration)}"${delay}>${effect}</p:transition></mc:Choice><mc:Fallback><p:transition spd="${speedOf(duration)}"${delay}><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>`
   return `<p:transition xmlns:p14="${p14Namespace}" spd="${speedOf(duration)}" p14:dur="${String(duration)}"${delay}>${effect}</p:transition>`
 }
 

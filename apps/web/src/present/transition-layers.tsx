@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react"
 import type { SlidePaint } from "@/present/present-stage"
+import { morphLayers } from "@/present/morph-layers"
 import type { Leaving } from "@/present/use-leaving"
 
 function play(node: HTMLElement | null, frames: readonly Keyframe[] | null, duration: number, easing: string) {
@@ -23,13 +24,19 @@ export function TransitionLayers({
 }): ReactNode {
   const incoming = useRef<HTMLDivElement>(null)
   const outgoing = useRef<HTMLDivElement>(null)
+  const above = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     if (leaving === null) return
     const { frames } = leaving
+    const settle =
+      frames.morph === true && outgoing.current !== null && incoming.current !== null && above.current !== null
+        ? morphLayers(outgoing.current, incoming.current, above.current, leaving.pairs, frames)
+        : () => undefined
     const entered = play(incoming.current, frames.incoming, frames.duration, frames.easing)
     const exited = play(outgoing.current, frames.outgoing, frames.duration, frames.easing)
     const lead = frames.incoming === null ? exited : entered
     if (lead === null) {
+      settle()
       onDone()
       return
     }
@@ -44,6 +51,7 @@ export function TransitionLayers({
       live = false
       entered?.cancel()
       exited?.cancel()
+      settle()
     }
   }, [leaving, onDone])
   return (
@@ -60,6 +68,9 @@ export function TransitionLayers({
       <div ref={incoming} className="relative size-full">
         {paint(at, width)}
       </div>
+      {leaving?.frames.morph === true ? (
+        <div ref={above} className="pointer-events-none absolute inset-0 z-20" data-present-morph />
+      ) : null}
     </>
   )
 }

@@ -1,4 +1,4 @@
-import { readShows, type SlideTransition } from "@airdesign/pptx"
+import { morphPairs, readShows, readSlides, type SlideTransition } from "@airdesign/pptx"
 
 export type ShownSlide = {
   readonly hidden: boolean
@@ -21,4 +21,20 @@ export function showsIn(
     const show = slide === undefined ? undefined : read.get(slide)
     return { hidden: show?.hidden ?? false, transition: show?.transition ?? null, advance: show?.advance ?? null }
   })
+}
+
+export function layerPairs(
+  parts: ReadonlyMap<string, Uint8Array>,
+  from: string | undefined,
+  to: string | undefined,
+): readonly (readonly [string, string])[] {
+  const slides = readSlides(parts)
+  const left = slides.find((each) => each.slide === from)
+  const right = slides.find((each) => each.slide === to)
+  const before = left === undefined ? undefined : parts.get(left.part)
+  const after = right === undefined ? undefined : parts.get(right.part)
+  if (before === undefined || after === undefined) return []
+  return morphPairs(before, after).map(
+    ([shape, match]) => [`${String(from)}.${shape}`, `${String(to)}.${match}`] as const,
+  )
 }

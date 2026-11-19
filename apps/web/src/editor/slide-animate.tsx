@@ -25,7 +25,7 @@ import {
 
 const field =
   "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white px-2.5 text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
-const styles = ["none", "dissolve", "push", "moveIn", "moveOut"] as const
+const styles = ["none", "smartAnimate", "dissolve", "push", "moveIn", "moveOut"] as const
 const sides = [
   ["left", ArrowLeft],
   ["right", ArrowRight],
@@ -133,7 +133,7 @@ export function SlideAnimate({
   const kept = !mixed && arrival.state === "kept"
   const value = !mixed && arrival.state === "value" ? arrival.value : null
   const style = mixed ? "mixed" : value === null ? "kept" : styleOf(value)
-  const directed = value !== null && style !== "none" && style !== "dissolve"
+  const directed = value !== null && style !== "none" && style !== "dissolve" && style !== "smartAnimate"
   const styleOptions: (readonly [string, string])[] = [
     ...(mixed ? [["mixed", designCopy.mixed] as const] : []),
     ...(kept ? [["kept", transitionCopy.styles.kept] as const] : []),

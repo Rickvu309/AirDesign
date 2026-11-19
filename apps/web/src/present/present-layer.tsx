@@ -56,6 +56,7 @@ export function PresentLayer({
       onPresenter={() => present.step("presenter")}
       onWake={present.wake}
       transitionOf={present.transitionOf}
+      morphOf={present.morphOf}
     />,
     document.body,
   )

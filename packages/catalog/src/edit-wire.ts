@@ -167,9 +167,7 @@ const nodeInput = z
   .regex(elementPattern)
   .transform((value) => elementId(value))
   .describe("Layer id, <slide>.<shape>, such as 258.7.")
-const readAtInput = wholeInput.describe(
-  "Version of that layer from airdesign_read_deck. 0 when that read omitted the layer.",
-)
+const readAtInput = wholeInput.describe("Version of that layer from airdesign_read_deck; 0 if that read omitted it.")
 const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
 const extentInput = z.int().min(0).max(coordinates.highest)
 const textChange = z.strictObject({

@@ -13,6 +13,7 @@ export const transitionCopy = {
   styles: {
     kept: "Kept",
     none: "None",
+    smartAnimate: "Smart animate",
     dissolve: "Dissolve",
     push: "Push",
     moveIn: "Move in",
@@ -27,6 +28,7 @@ export const transitionCopy = {
 } as const
 
 export const transitionWords = {
+  smartAnimate: transitionCopy.styles.smartAnimate,
   dissolve: transitionCopy.styles.dissolve,
   push: transitionCopy.styles.push,
   moveIn: transitionCopy.styles.moveIn,

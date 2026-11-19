@@ -6,7 +6,7 @@ import { cn } from "@/lib/class-names"
 import { focusOnOpen } from "@/present/present-focus"
 import { FittedSlide, StageButton, type SlidePaint } from "@/present/present-stage"
 import { TransitionLayers } from "@/present/transition-layers"
-import { useLeaving } from "@/present/use-leaving"
+import { useLeaving, type LayerPairs } from "@/present/use-leaving"
 
 export type PresentShowProps = {
   readonly title: string
@@ -23,6 +23,7 @@ export type PresentShowProps = {
   readonly onPresenter?: () => void
   readonly onWake?: () => void
   readonly transitionOf?: (index: number) => SlideTransition | null
+  readonly morphOf?: (from: number, to: number) => LayerPairs
 }
 
 function held(event: MouseEvent) {
@@ -111,7 +112,7 @@ function none() {
 }
 
 export function PresentShow(props: PresentShowProps) {
-  const { leaving, done } = useLeaving(props.at, props.transitionOf ?? none)
+  const { leaving, done } = useLeaving(props.at, props.transitionOf ?? none, props.morphOf)
   const onStage = props.ended ? props.onStop : props.onNext
   const said = props.ended ? presentCopy.end : presentCopy.position(props.at + 1, props.count)
   return (

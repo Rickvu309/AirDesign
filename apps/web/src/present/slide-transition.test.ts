@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { playedFrames, transitionFrames, type TransitionFrames } from "./slide-transition"
+import { layerFrames, playedFrames, transitionFrames, type TransitionFrames } from "./slide-transition"
 
 function firstIncoming(frames: TransitionFrames): Keyframe {
   const frame = frames.incoming?.[0]
@@ -71,4 +71,23 @@ it("wipes the next slide in from the side it moves away from", () => {
   expect(firstIncoming(transitionFrames({ kind: "wipe", direction: "d", duration: 500 }))).toEqual({
     clipPath: "inset(0 0 100% 0)",
   })
+})
+
+it("dissolves the slides under Smart animate while matched layers move on their own", () => {
+  expect(transitionFrames({ kind: "morph", direction: null, duration: 900 })).toEqual({
+    incoming: [{ opacity: 0 }, { opacity: 1 }],
+    outgoing: null,
+    duration: 900,
+    easing: "cubic-bezier(0.77, 0, 0.175, 1)",
+    morph: true,
+  })
+})
+
+it("moves, resizes and turns a matched layer from where it sat on the last slide", () => {
+  const before = { x: 10, y: 20, width: 100, height: 50, turn: "rotate(90deg)" }
+  const after = { x: 200, y: 100, width: 50, height: 100, turn: "" }
+  expect(layerFrames(before, after)).toEqual([
+    { transform: "translate(-165px, -105px) rotate(90deg) scale(2, 0.5)" },
+    { transform: "translate(0px, 0px) scale(1, 1)" },
+  ])
 })

@@ -1,7 +1,7 @@
 import { readSlideId, slideNode, type ElementId, type SlideId, type TransitionValue } from "@airdesign/document"
 import { readArrival, readSlides } from "@airdesign/pptx"
 
-export type ArrivalStyle = "none" | "dissolve" | "push" | "moveIn" | "moveOut"
+export type ArrivalStyle = "none" | "smartAnimate" | "dissolve" | "push" | "moveIn" | "moveOut"
 export type ArrivalSide = "left" | "right" | "top" | "bottom"
 export type ArrivalAdvance = { readonly click: true } | { readonly delay: number }
 
@@ -20,6 +20,7 @@ export function millisecondsOf(seconds: number, min: number, max: number): numbe
 
 export function styleOf(value: TransitionValue): ArrivalStyle {
   if ("none" in value) return "none"
+  if ("smartAnimate" in value) return "smartAnimate"
   if ("dissolve" in value) return "dissolve"
   if ("push" in value) return "push"
   if ("moveIn" in value) return "moveIn"
@@ -27,6 +28,7 @@ export function styleOf(value: TransitionValue): ArrivalStyle {
 }
 
 export function durationOf(value: TransitionValue): number {
+  if ("smartAnimate" in value) return value.smartAnimate.duration
   if ("dissolve" in value) return value.dissolve.duration
   if ("push" in value) return value.push.duration
   if ("moveIn" in value) return value.moveIn.duration
@@ -43,6 +45,7 @@ export function directionOf(value: TransitionValue): ArrivalSide {
 
 export function advanceOf(value: TransitionValue): ArrivalAdvance {
   if ("none" in value) return value.none.advance
+  if ("smartAnimate" in value) return value.smartAnimate.advance
   if ("dissolve" in value) return value.dissolve.advance
   if ("push" in value) return value.push.advance
   if ("moveIn" in value) return value.moveIn.advance
@@ -54,6 +57,7 @@ export function arrivalOf(style: ArrivalStyle, current: TransitionValue | null):
   const direction = current === null ? "right" : directionOf(current)
   const advance = current === null ? clicked : advanceOf(current)
   if (style === "none") return { none: { advance } }
+  if (style === "smartAnimate") return { smartAnimate: { duration, advance } }
   if (style === "dissolve") return { dissolve: { duration, advance } }
   if (style === "push") return { push: { direction, duration, advance } }
   if (style === "moveIn") return { moveIn: { direction, duration, advance } }
@@ -62,6 +66,7 @@ export function arrivalOf(style: ArrivalStyle, current: TransitionValue | null):
 
 export function withDuration(value: TransitionValue, duration: number): TransitionValue {
   const advance = advanceOf(value)
+  if ("smartAnimate" in value) return { smartAnimate: { duration, advance } }
   if ("dissolve" in value) return { dissolve: { duration, advance } }
   if ("push" in value) return { push: { direction: value.push.direction, duration, advance } }
   if ("moveIn" in value) return { moveIn: { direction: value.moveIn.direction, duration, advance } }
@@ -81,6 +86,7 @@ export function withTiming(value: TransitionValue, timing: "click" | "delay"): T
   const current = advanceOf(value)
   const advance: ArrivalAdvance = timing === "click" ? clicked : { delay: "delay" in current ? current.delay : 1000 }
   if ("none" in value) return { none: { advance } }
+  if ("smartAnimate" in value) return { smartAnimate: { duration: value.smartAnimate.duration, advance } }
   if ("dissolve" in value) return { dissolve: { duration: value.dissolve.duration, advance } }
   if ("push" in value) return { push: { direction: value.push.direction, duration: value.push.duration, advance } }
   if ("moveIn" in value)
@@ -103,6 +109,7 @@ export function currentSlide(parts: ReadonlyMap<string, Uint8Array>, index: numb
 export function withDelay(value: TransitionValue, delay: number): TransitionValue {
   const advance: ArrivalAdvance = { delay }
   if ("none" in value) return { none: { advance } }
+  if ("smartAnimate" in value) return { smartAnimate: { duration: value.smartAnimate.duration, advance } }
   if ("dissolve" in value) return { dissolve: { duration: value.dissolve.duration, advance } }
   if ("push" in value) return { push: { direction: value.push.direction, duration: value.push.duration, advance } }
   if ("moveIn" in value)

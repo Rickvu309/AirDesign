@@ -10,13 +10,14 @@ const directed = { direction: side, duration, advance }
 
 const value = union({
   none: record({ advance }),
+  smartAnimate: record(timed),
   dissolve: record(timed),
   push: record(directed),
   moveIn: record(directed),
   moveOut: record(directed),
 })
 
-export const transition = trait("own", { version: 0, shape: "b27cd785" }, { value })
+export const transition = trait("own", { version: 1, shape: "1c7d8e58" }, { value })
 
 export function readStoredTransition(raw: unknown) {
   if (raw === "kept") return "kept" as const
