@@ -7,6 +7,7 @@ import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { indexedRegister } from "@/editor/group-actions"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { slideTurnSaid } from "@/editor/slide-said"
+import { withFileFloors } from "@/deck-paint"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { structureOf } from "@/table-hook"
@@ -135,7 +136,8 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const before = slideId === null ? -1 : store.current.slides().findIndex((slide) => slide.id === slideId)
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
-    if ("slide" in undoable || "spots" in undoable || structure.current !== structureOf(next.register, bound.current))
+    const framed = withFileFloors(next.register, shownParts.current)
+    if ("slide" in undoable || "spots" in undoable || structure.current !== structureOf(framed, bound.current))
       showRegister(next.register)
     repaint.current(next.register, "person")
     const nodes = "steps" in undoable ? undoable.steps.map((step) => step.node) : []

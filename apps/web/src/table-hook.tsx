@@ -4,6 +4,17 @@ import { imageTexts } from "@/patch-images"
 
 const nothingBound: ReadonlySet<string> = new Set()
 
+function resized(register: Register): readonly (readonly [ElementId, number, number])[] {
+  return register.nodes.flatMap((node) => {
+    const body = register.elements[node]
+    const floor = body?.floorBox
+    if (body === undefined || floor === undefined) return []
+    const box = currentBox(body)
+    if (box === null || (box.cx === floor.cx && box.cy === floor.cy)) return []
+    return [[node, box.cx, box.cy]]
+  })
+}
+
 export function structureOf(register: Register | null, bound: ReadonlySet<string> = nothingBound): string {
   if (register === null) return "[]"
   const tables = register.nodes.flatMap((node) => {
@@ -16,6 +27,8 @@ export function structureOf(register: Register | null, bound: ReadonlySet<string
     const body = register.elements[node]
     return body === undefined || !bound.has(node) ? [] : [[node, currentBox(body)]]
   })
+  const sizes = resized(register)
+  if (sizes.length > 0) return JSON.stringify([register.order, tables, designed, followed, sizes])
   if (followed.length > 0) return JSON.stringify([register.order, tables, designed, followed])
   if (designed.length > 0) return JSON.stringify([register.order, tables, designed])
   return JSON.stringify(tables.length === 0 ? register.order : [register.order, tables])

@@ -6,6 +6,7 @@ import { followDeck } from "@/deck-follow"
 import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { backfillIndex } from "@/index-deck"
+import { withFileFloors } from "@/deck-paint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { structureOf } from "@/table-hook"
 import { signInAddress } from "@/thin-notice"
@@ -37,10 +38,11 @@ export function useDeckOpen(deck: OpeningDeck) {
 
   function reconcile(register: Register) {
     const before = store.current.slides().map((slide) => slide.id)
+    const framed = withFileFloors(register, shown.shownParts.current)
     if (
       (gridSectionStarts(shown.shownRegister.current ?? {}) === undefined) !==
         (gridSectionStarts(register) === undefined) ||
-      structure.current !== structureOf(register, bound.current)
+      structure.current !== structureOf(framed, bound.current)
     ) {
       showRegister(register)
       const after = store.current.slides().map((slide) => slide.id)

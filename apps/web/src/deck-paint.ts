@@ -1,7 +1,8 @@
 import { imageTexts } from "@/patch-images"
-import { slideId, type ElementId, type Register, type SlideId } from "@airdesign/document"
+import { currentBox, slideId, type Box, type ElementId, type Register, type SlideId } from "@airdesign/document"
 import {
   paintReader,
+  readShapes,
   readSlides,
   slideNumbering,
   sectionStarts,
@@ -111,6 +112,45 @@ function laidOut(register: Register | null, id: ElementId): boolean {
   return rows.some((row) => row.visible && row.v !== undefined && (row.patch.body ?? row.patch.text) !== undefined)
 }
 
+function sizeChanged(register: Register): boolean {
+  return register.nodes.some((node) => {
+    const body = register.elements[node]
+    const floor = body?.floorBox
+    if (body === undefined || floor === undefined) return false
+    const box = currentBox(body)
+    return box !== null && (box.cx !== floor.cx || box.cy !== floor.cy)
+  })
+}
+
+const rememberedFloors = new WeakMap<Parts, ReadonlyMap<string, Box>>()
+
+function fileFloors(parts: Parts): ReadonlyMap<string, Box> {
+  const remembered = rememberedFloors.get(parts)
+  if (remembered !== undefined) return remembered
+  const floors = new Map<string, Box>()
+  for (const shape of readShapes(parts)) {
+    if (shape.box !== null) floors.set(`${shape.slide}.${shape.shape}`, shape.box)
+  }
+  rememberedFloors.set(parts, floors)
+  return floors
+}
+
+export function withFileFloors(register: Register, parts: Parts): Register {
+  const missing = register.nodes.filter((node) => {
+    const body = register.elements[node]
+    return body !== undefined && body.floorBox === undefined && landedBox(register, node) !== null
+  })
+  if (missing.length === 0) return register
+  const floors = fileFloors(parts)
+  const elements = missing.reduce((elements, node) => {
+    const floor = floors.get(node)
+    const body = elements[node]
+    if (floor === undefined || body === undefined) return elements
+    return { ...elements, [node]: { ...body, floorBox: floor } }
+  }, register.elements)
+  return elements === register.elements ? register : { ...register, elements }
+}
+
 function refitted(register: Register | null, { id, file, opening }: SlideShape): boolean {
   const box = landedBox(register, id)
   const resized = box !== null && (box.cx !== opening?.cx || box.cy !== opening?.cy)
@@ -139,13 +179,16 @@ export function paint(
 ): Painted {
   const earlier = previous?.from === parts ? previous : null
   const base = sameIdentity(register === null ? parts : slideBase(parts, register, pictureBytes), earlier?.base)
+  const floored = register === null ? null : withFileFloors(register, base)
+  const cover = floored !== null && sizeChanged(floored)
   const edited =
-    register !== null &&
-    (register.order.length > 0 ||
-      tableEdited(register) ||
-      designRows(register).length > 0 ||
-      imageTexts(register).length > 0)
-      ? editedParts(base, register, pictureBytes)
+    floored !== null &&
+    (floored.order.length > 0 ||
+      tableEdited(floored) ||
+      designRows(floored).length > 0 ||
+      imageTexts(floored).length > 0 ||
+      cover)
+      ? editedParts(base, floored, pictureBytes)
       : base
   const display = sameIdentity(edited, earlier?.display)
   const read = readSlides(display)

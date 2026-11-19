@@ -5,7 +5,7 @@ import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { type TextBox } from "@/commit-edit"
-import { paint, type Painted } from "@/deck-paint"
+import { paint, withFileFloors, type Painted } from "@/deck-paint"
 import { busyElements, liveRepaint } from "@/live-repaint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { type PictureSources } from "@/picture-fill"
@@ -51,7 +51,8 @@ export function useDeckPaint(
 
   function showRegister(register: Register | null, whole?: "whole") {
     const before = whole === "whole" ? null : painted.current
-    const next = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes, before)
+    const framed = register === null ? null : withFileFloors(register, shownParts.current)
+    const next = paint(store.current, shownParts.current, framed, busy.current, pictureTool.store.bytes, before)
     painted.current = next
     boxes.current = next.boxes
     movables.current = next.movables
@@ -62,9 +63,9 @@ export function useDeckPaint(
     pictures.current?.release()
     pictures.current = next.pictures
     bound.current = boundTargets(next.display)
-    structure.current = structureOf(register, bound.current)
+    structure.current = structureOf(framed, bound.current)
     shownRegister.current = register
-    const paintChanges = liveRepaint(store.current, next.files, register, busy.current, next.numberText)
+    const paintChanges = liveRepaint(store.current, next.files, framed, busy.current, next.numberText)
     repaint.current = (changed, from) => {
       shownRegister.current = changed
       paintChanges(changed, from)
@@ -73,7 +74,7 @@ export function useDeckPaint(
     setSlideCount(next.count)
     setSections(next.sections)
     void pictureTool.store.load(id, register).then((more) => {
-      if (more && structure.current === structureOf(register, bound.current)) showRegister(shownRegister.current)
+      if (more && structure.current === structureOf(framed, bound.current)) showRegister(shownRegister.current)
     })
   }
 
