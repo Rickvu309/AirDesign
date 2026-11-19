@@ -29,9 +29,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        continue-on-error: true
-      - continue-on-error: true
-        env:
+      - env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/ci-failure-report.mjs "$GITHUB_REPOSITORY" --issue
   queue-drop:

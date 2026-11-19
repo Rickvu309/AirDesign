@@ -1,4 +1,5 @@
 import fs from "node:fs"
+import { parse } from "yaml"
 import { audit, classesIn, classesOf, failureClass, formatMetric, report } from "./ci-failure-report.mjs"
 import { alarmAction, attemptId, countIn, falseStopBudget, falseStopLine } from "./ci-failure-report.mjs"
 import { falseStops, lastMerged, lostMinutes, median, mergeMinutes, mergedLimit } from "./ci-failure-report.mjs"
@@ -434,6 +435,15 @@ same(
     { name: deckStatusClass[0], minutes: 20, runId: "3/attempts/1" },
   ]).map((row) => row.name),
   [deckStatusClass[0], "the job log could not be read"],
+)
+
+const reportWorkflow = parse(
+  fs.readFileSync(new URL("../.github/workflows/ci-failure-report.yml", import.meta.url), "utf8"),
+)
+same(
+  "a crash of the failure report shows red, never green",
+  reportWorkflow.jobs["ci-failure-report"].steps.map((step) => step["continue-on-error"]),
+  [undefined, undefined],
 )
 
 console.log("ci-failure-report tests passed")
