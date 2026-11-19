@@ -3,6 +3,9 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
+import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { openDeck, settled } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
@@ -88,3 +91,43 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
     await copyFile(file, join(process.cwd(), "tests/browser", `exported-${feature}.pptx`))
   })
 }
+
+test("double-clicking a new rectangle opens its label editor", async ({ page }) => {
+  await openDeck(page, "clean.pptx")
+  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
+  const layers = page.locator("[data-slide-paint] [data-canvas-element]")
+  const count = await layers.count()
+  await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
+  await expect(layers).toHaveCount(count + 1)
+  const rectangle = layers.last()
+  const label = rectangle.locator('[contenteditable="true"]')
+  await expect(label).not.toBeFocused()
+  await rectangle.dblclick()
+  await expect(label).toBeFocused()
+  await page.keyboard.type("Label")
+  await expect(label).toHaveText("Label")
+  await label.press("Escape")
+  await page.reload()
+  await settled(page)
+  await expect(rectangle).toContainText("Label")
+})
+
+test("Justify and Type settings keep the original text through a reload", async ({ page }) => {
+  await openDeck(page, "clean.pptx")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await page.getByRole("button", { name: designCopy.designMode, exact: true }).click()
+  await canvas(page).click({ position: { x: 4, y: 4 } })
+  const panel = page.locator("[data-design-element]")
+  await panel.getByRole("button", { name: formatCopy.align.justify, exact: true }).click()
+  await expect(canvas(page).locator("[data-paragraph]").first()).toHaveCSS("text-align", "justify")
+  await panel.getByRole("button", { name: textCopy.settings, exact: true }).click()
+  await page.getByRole("combobox", { name: textCopy.case, exact: true }).click()
+  await page.getByRole("option", { name: textWords["case.lower"], exact: true }).click()
+  const run = canvas(page).locator("[data-run]").first()
+  await expect(run).toHaveCSS("text-transform", "lowercase")
+  await expect(run).toContainText("Hello")
+  await page.reload()
+  await settled(page)
+  await expect(run).toHaveCSS("text-transform", "lowercase")
+  await expect(run).toContainText("Hello")
+})

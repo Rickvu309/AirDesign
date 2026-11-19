@@ -29,6 +29,44 @@ describe("addTextShape", () => {
     expect(addTextShape(slide, "😀", box).xml).toContain("<a:t>😀</a:t>")
   })
 
+  it("writes native justification and caps without changing the original letters", () => {
+    const part = "ppt/slides/slide1.xml"
+    const { xml, id } = addTextShape(slide, "MiXeD", box)
+    const edited = applyRoute(new Map([[part, encodeUtf8(xml)]]), {
+      name: "text",
+      part,
+      shape: String(id),
+      value: [{ from: 0, align: "justify", runs: [{ from: 0, text: "MiXeD", case: "small" }] }],
+    })
+    const output = decodeUtf8(edited.get(part) ?? new Uint8Array())
+    expect(output).toContain('algn="just"')
+    expect(output).toContain('cap="small"')
+    expect(output).toContain("<a:t>MiXeD</a:t>")
+  })
+
+  it("writes lowercase or title case as editable text across formatting boundaries", () => {
+    const part = "ppt/slides/slide1.xml"
+    const { xml, id } = addTextShape(slide, "mIxED word", box)
+    for (const [mode, expected] of [
+      ["lower", ["mix", "ed word"]],
+      ["title", ["MIx", "ED Word"]],
+    ] as const) {
+      const runs = [
+        { from: 0, text: "mIx", case: mode },
+        { from: 0, text: "ED word", case: mode, bold: true },
+      ]
+      const output = applyRoute(new Map([[part, encodeUtf8(xml)]]), {
+        name: "text",
+        part,
+        shape: String(id),
+        value: [{ from: 0, runs }],
+      })
+      const source = decodeUtf8(output.get(part) ?? new Uint8Array())
+      for (const text of expected) expect(source).toContain(`<a:t>${text}</a:t>`)
+      expect(runs.map(({ text }) => text).join("")).toBe("mIxED word")
+    }
+  })
+
   it("refuses a slide with no shape tree and a box that is not an integer", () => {
     expect(() => addTextShape("<p:sld></p:sld>", "A", box)).toThrow(/p:spTree/)
     expect(() => addTextShape(slide, "A", { ...box, cx: 1.5 })).toThrow(/emu/)
@@ -46,6 +84,20 @@ describe("addDrawnShape", () => {
     expect(arrow).toContain('<a:tailEnd type="triangle"/>')
     expect(line.indexOf("<a:prstGeom")).toBeLessThan(line.indexOf("<a:ln"))
     expect(line.indexOf(weight)).toBeLessThan(line.indexOf("</p:spPr>"))
+  })
+
+  it("writes a label into the new shape's own text body", () => {
+    const part = "ppt/slides/slide1.xml"
+    const { xml, id } = addDrawnShape(slide, "ellipse", box)
+    const labeled = applyRoute(new Map([[part, encodeUtf8(xml)]]), {
+      name: "text",
+      part,
+      shape: String(id),
+      value: [{ from: 0, runs: [{ from: 0, text: "Label" }] }],
+    })
+    expect(decodeUtf8(labeled.get(part) ?? new Uint8Array())).toMatch(
+      /<p:txBody>.*<a:t>Label<\/a:t>.*<\/p:txBody><\/p:sp>/,
+    )
   })
 
   it("leaves a rectangle to its theme outline", () => {

@@ -33,7 +33,7 @@ export function deckInserts(deck: InsertingDeck) {
   }
 
   async function changeElement(change: ElementChange): Promise<CommitOutcome | "closed"> {
-    const typed = change.change === "text" || change.change === "table" || change.change === "shape"
+    const typed = change.change === "text" || change.change === "table"
     const keys = typed ? holdKeys(document) : undefined
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) {

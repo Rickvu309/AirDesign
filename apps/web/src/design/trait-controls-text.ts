@@ -17,6 +17,7 @@ export const textControls: TraitControls<"text"> = {
     underline: { label: formatCopy.named.underline },
     align: { label: formatCopy.alignGroup },
     list: { label: textCopy.list },
+    case: { label: textCopy.case },
     strike: { label: formatCopy.named.strike },
     letterSpacing: { label: textCopy.letterSpacing },
     lineHeight: { label: textCopy.lineHeight },

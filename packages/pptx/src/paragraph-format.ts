@@ -2,7 +2,7 @@ import { spacingNames, type ParagraphAlign, type TextParagraph } from "@airdesig
 import { markupDocument, spliceBytes, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 
-const alignValue: Readonly<Record<ParagraphAlign, string>> = { left: "l", center: "ctr", right: "r" }
+const alignValue: Readonly<Record<ParagraphAlign, string>> = { left: "l", center: "ctr", right: "r", justify: "just" }
 const bulletKinds = new Set(["a:buNone", "a:buAutoNum", "a:buChar", "a:buBlip"])
 const order = [
   "a:lnSpc",

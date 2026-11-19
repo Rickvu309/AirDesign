@@ -1,4 +1,4 @@
-import { alignNames, type TextFill, type ParagraphAlign } from "@airdesign/document"
+import { alignNames, type TextCase, type TextFill, type ParagraphAlign } from "@airdesign/document"
 import { child, inside, whole, type Held } from "./markup-held.js"
 import { paintAttribute } from "./paint-color.js"
 import { paintReader } from "./paint-reader.js"
@@ -12,6 +12,7 @@ export type TextStyleValues = {
   readonly size: number
   readonly font: string
   readonly strike: boolean
+  readonly case: TextCase
   readonly letterSpacing: number
   readonly list: "none" | "bullets" | "numbers"
   readonly align: ParagraphAlign
@@ -101,6 +102,7 @@ export function shownTextStyle(parts: ReadonlyMap<string, Uint8Array>, at: TextS
     },
     size: { value: Math.round(style.size * 100), own: runs.some(attribute("sz")) },
     font: { value: style.font, own: runs.some(tagged("a:latin")) },
+    case: { value: style.caps ?? "none", own: runs.some(attribute("cap")) },
     strike: { value: style.strike, own: runs.some(attribute("strike")) },
     letterSpacing: { value: style.letterSpacing ?? 0, own: runs.some(attribute("spc")) },
     list: {

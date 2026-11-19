@@ -85,7 +85,7 @@ function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null 
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
 }
 
-function enterText(frame: HTMLElement): boolean {
+export function enterText(frame: HTMLElement): boolean {
   const text = frame.querySelector<HTMLElement>(editableText)
   if (text === null) return false
   text.focus()
@@ -98,10 +98,10 @@ function enterText(frame: HTMLElement): boolean {
   return true
 }
 
-export function enterElement(slide: HTMLElement, element: CanvasElement, typed: string): void {
+export function enterElement(slide: HTMLElement, element: CanvasElement, typed: string | null): void {
   const frame = slide.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`)
   if (frame === null) return
-  if (enterText(frame)) typeHeld(slide.ownerDocument, typed)
+  if (typed !== null && enterText(frame)) typeHeld(slide.ownerDocument, typed)
   else frame.focus()
 }
 

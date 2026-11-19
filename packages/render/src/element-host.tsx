@@ -4,6 +4,7 @@ import {
   type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   type RefObject,
 } from "react"
@@ -18,7 +19,7 @@ import { paintsFillAsSvg, ShapeArt } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
 import { ChartArt } from "./chart-art.js"
-import { canDrag, canMove, type Moves } from "./slide-moves.js"
+import { enterText, canDrag, canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { leadOf } from "./selection.js"
@@ -254,6 +255,10 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
     "aria-description": `${canDrag(element) ? "Arrow keys move. Alt and Shift with the arrow keys resize. " : ""}${element.editable ? "Enter edits the text. " : ""}Delete removes it.`,
     tabIndex: canMove(element) && !typing ? 0 : -1,
     onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
+    onDoubleClick: (event: MouseEvent<HTMLElement>) => {
+      if (typing && event.target instanceof Element && event.target.closest("[contenteditable]") === null)
+        enterText(event.currentTarget)
+    },
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
     onFocus: () => moves.select(id),
   }

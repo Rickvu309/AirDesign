@@ -22,8 +22,8 @@ const node = elementId("256.9")
 const file = ["256"]
 const box = { x: 0, y: 0, cx: 1000, cy: 500 }
 const kinds = {
-  box: { element: { node, kind: "shape", value: "", box, grouped: false }, typed: "Typed" },
-  shape: { element: { node, kind: "shape", value: null, box, grouped: false }, geometry: "ellipse", typed: null },
+  box: { element: { node, kind: "shape", value: "", box, grouped: false } },
+  shape: { element: { node, kind: "shape", value: null, box, grouped: false }, geometry: "ellipse" },
 }
 
 let kind: keyof typeof kinds = "box"
@@ -33,22 +33,14 @@ const agent = { actor: "agent", runId: "run" } as const
 const person = { actor: "person" } as const
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
 
-function typedValue(state: Spec): string {
-  return state.run === "add" || state.run === "both" ? "Typed" : (kinds[kind].typed ?? "Typed")
-}
-
-function holdsNoText(state: Spec): boolean {
-  return kinds[kind].typed === null && state.run !== "add" && state.run !== "both"
-}
-
-function batch(source: Spec, action: string): unknown {
+function batch(action: string): unknown {
   if (action === "Add") {
     const shape = kinds[kind]
     const geometry = "geometry" in shape ? { geometry: shape.geometry } : {}
     return { slide: "element-add", id: "256", element: shape.element, ...geometry, file }
   }
   if (action === "AddPicture") return { slide: "element-add", id: "256", element: picture, media, file }
-  if (action === "Type") return { node, value: typedValue(source) }
+  if (action === "Type") return { node, value: "Typed" }
   if (action === "OtherRestore") return { slide: "element-restore", id: "256", node, file }
   return { slide: "element-remove", id: "256", node, file }
 }
@@ -106,7 +98,7 @@ function writeUndone(current: Deck): Answer {
   return call("undo_run", current, person, { deck, runId: row.runId })
 }
 
-function act(current: Deck, source: Spec, action: string, undoable: Undoable | null = null): Answer {
+function act(current: Deck, action: string, undoable: Undoable | null = null): Answer {
   if (action === "Undo" || action === "Redo") return turned(current, undoable, action)
   if (action === "AgentWrite") return agentWrote(current)
   if (action === "UndoWrite") return writeUndone(current)
@@ -122,17 +114,17 @@ function act(current: Deck, source: Spec, action: string, undoable: Undoable | n
   }
   if (action === "UndoRun" || action === "UndoRunRefused")
     return call("undo_run", current, person, { deck, runId: "run" })
-  return call("commit_edits", current, person, { deck, batch: [batch(source, action)] })
+  return call("commit_edits", current, person, { deck, batch: [batch(action)] })
 }
 
 function wroteValue(): string {
   return "Aira"
 }
 
-function shown(current: Deck, state: Spec) {
+function shown(current: Deck) {
   const read = readDeckPage(current, { runId: null }).elements.find((each) => each.node === node)
   if (read === undefined) return null
-  const shows = read.value === typedValue(state) ? "typed" : read.value === wroteValue() ? "aira" : "opening"
+  const shows = read.value === "Typed" ? "typed" : read.value === wroteValue() ? "aira" : "opening"
   const rows = current.register.elements[node]?.landed ?? []
   return { added: true, shows, agent: rows.some((row) => row.actor === "agent" && row.visible) }
 }
@@ -168,7 +160,7 @@ function reached(graph: Graph, failures: string[]): Map<string, Held> {
         queue.push(edge.to)
         continue
       }
-      const answer = act(current.deck, source, edge.action, current.undoable)
+      const answer = act(current.deck, edge.action, current.undoable)
       const refused = answer === "told" || !answer.ok
       if (refused && refusedBy[edge.action] === undefined && answer !== "told") continue
       decks.set(edge.to, heldAfter(current, answer, edge.action))
@@ -176,7 +168,7 @@ function reached(graph: Graph, failures: string[]): Map<string, Held> {
     }
   }
   for (const [id, state] of graph.states) {
-    if (decks.has(id) || ((state.typed === true || state.agent !== "none") && holdsNoText(state))) continue
+    if (decks.has(id)) continue
     failures.push(`element state ${JSON.stringify(state)} was not reached`)
   }
   return decks
@@ -228,12 +220,7 @@ function replayKind(graph: Graph, failures: string[]): number {
         failures.push("element ExportElsewhere refused a deck whose pictures all uploaded")
       continue
     }
-    const answer = act(current, source, edge.action, held.undoable)
-    if ((edge.action === "Type" || edge.action === "AgentWrite") && holdsNoText(source)) {
-      if (answer === "told" || answer.ok || answer.refusal !== "kind")
-        failures.push(`element ${kind} ${edge.action} on a drawn shape was not refused kind ${JSON.stringify(source)}`)
-      continue
-    }
+    const answer = act(current, edge.action, held.undoable)
     const refusal = refusedBy[edge.action]
     if (refusal !== undefined) {
       if (answer === "told" || answer.ok || answer.refusal !== refusal) {
@@ -259,8 +246,8 @@ function replayKind(graph: Graph, failures: string[]): number {
     }
     const shows = { added: true, shows: target.shows, agent: target.agent === "before" || target.agent === "since" }
     const expected = target.added === true && target.removed !== true ? shows : null
-    if (JSON.stringify(shown(answer.deck, target)) !== JSON.stringify(expected))
-      failures.push(`element ${kind} ${edge.action} reads ${JSON.stringify(shown(answer.deck, target))}`)
+    if (JSON.stringify(shown(answer.deck)) !== JSON.stringify(expected))
+      failures.push(`element ${kind} ${edge.action} reads ${JSON.stringify(shown(answer.deck))}`)
   }
   const slide = readSlideId("256")
   if (slide === undefined) throw new Error("slide")
@@ -296,7 +283,7 @@ function replayKind(graph: Graph, failures: string[]): number {
       }
     }
     for (const action of forbidden) {
-      const answer = act(current, state, action)
+      const answer = act(current, action)
       if (answer !== "told" && answer.ok && !(action === "AgentRemove" && state.removed !== true))
         failures.push(`element ${action} lands where the spec forbids it ${JSON.stringify(state)}`)
     }

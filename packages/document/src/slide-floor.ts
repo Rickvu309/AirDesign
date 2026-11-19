@@ -28,7 +28,12 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 }
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
-  if (command.slide === "element-add") return [command.element]
+  if (command.slide === "element-add") {
+    const { element, geometry } = command
+    return geometry !== undefined && element.kind === "shape" && element.value === null
+      ? [{ ...element, value: "" }]
+      : [element]
+  }
   if (command.slide === "element-group")
     return command.backdrop === undefined ? [command.element] : [command.element, command.backdrop]
   return slideBirths(command).flatMap((birth) => birth.floor ?? [])

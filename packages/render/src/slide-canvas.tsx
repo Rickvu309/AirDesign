@@ -107,7 +107,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return
     if (host.querySelector(`[data-canvas-element="${entering.key}"]`) === null) return
     entered.current = entering.id
-    enterElement(host, entering, keys?.take() ?? "")
+    enterElement(host, entering, keys?.take() ?? null)
   }
   useLayoutEffect(enterPainted, [entering, keys])
   return (

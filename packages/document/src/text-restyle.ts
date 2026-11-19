@@ -6,7 +6,18 @@ function shownText(value: string): TextValue {
   return readTextValue(value) ?? (value === "" ? [] : [{ from: 0, runs: [{ from: 0, text: value }] }])
 }
 
-const runKeys = ["fill", "color", "size", "font", "bold", "italic", "underline", "strike", "letterSpacing"] as const
+const runKeys = [
+  "fill",
+  "color",
+  "size",
+  "font",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "case",
+  "letterSpacing",
+] as const
 const paragraphKeys = ["align", "list", "lineHeight", "spaceBefore", "spaceAfter"] as const
 
 function picked(input: Loose, keys: readonly string[]): Loose {

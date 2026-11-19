@@ -1,6 +1,7 @@
 import {
   spacingNames,
   writeTextValue,
+  type ParagraphAlign,
   type ParagraphSpacing,
   type TextParagraph,
   type TextList,
@@ -72,7 +73,7 @@ function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: numbe
 
 type ReadParagraph = {
   from: number
-  align?: "left" | "center" | "right"
+  align?: ParagraphAlign
   list?: TextList
   runs: TextRun[]
 } & ParagraphSpacing
@@ -80,7 +81,8 @@ type ReadParagraph = {
 function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadParagraph {
   let paragraph: ReadParagraph = { from, runs }
   const align = node.dataset.align
-  if (align === "left" || align === "center" || align === "right") paragraph = { ...paragraph, align }
+  if (align === "left" || align === "center" || align === "right" || align === "justify")
+    paragraph = { ...paragraph, align }
   const list = node.dataset.list
   if (list === "none" || list === "bullets" || list === "numbers") paragraph = { ...paragraph, list }
   for (const name of spacingNames) {

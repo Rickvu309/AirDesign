@@ -3,6 +3,8 @@ import {
   type ElementLink,
   readTextFill,
   type TextFill,
+  textCases,
+  type TextCase,
   formatNames,
   readColor,
   type Color,
@@ -17,6 +19,7 @@ type RunPaint = RunFormat & {
   readonly color?: Color
   readonly font?: string
   readonly letterSpacing?: number
+  readonly case?: TextCase
 }
 
 const sizeFloor = 100
@@ -72,6 +75,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
     const set = format[name]
     if (set !== undefined) span.dataset[name] = String(set)
   }
+  if (format.case !== undefined) span.dataset.case = format.case
   if (format.letterSpacing !== undefined) span.dataset.letterSpacing = String(format.letterSpacing)
   if (format.fill !== undefined) span.dataset.fill = JSON.stringify(format.fill)
   if (format.size !== undefined) span.dataset.size = String(format.size)
@@ -88,6 +92,8 @@ export function readFormat(span: HTMLElement): RunPaint {
     const set = span.dataset[name]
     if (set === "true" || set === "false") format = { ...format, [name]: set === "true" }
   }
+  const mode = textCases.find((choice) => choice === span.dataset.case)
+  if (mode !== undefined) format = { ...format, case: mode }
   const letterSpacing = span.dataset.letterSpacing
   if (letterSpacing !== undefined && integer.test(letterSpacing))
     format = { ...format, letterSpacing: Number(letterSpacing) }

@@ -311,6 +311,7 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["lineHeight", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
+    ["case"],
   ])
   const spacing = panel.sections.find((section) => section.trait === "paragraphSpacing")
   expect(spacing?.strips.map((strip) => strip.map((control) => control.field))).toEqual([["spaceBefore", "spaceAfter"]])

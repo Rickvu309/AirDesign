@@ -26,6 +26,9 @@ function settings(run: TextRun): readonly (readonly [string, string])[] {
   })
   return [
     ...formats,
+    ...(run.case === undefined
+      ? []
+      : [["cap", run.case === "all" || run.case === "small" ? run.case : "none"] as const]),
     ...(run.size === undefined ? [] : [["sz", String(run.size)] as const]),
     ...(run.letterSpacing === undefined ? [] : [["spc", String(run.letterSpacing)] as const]),
   ]

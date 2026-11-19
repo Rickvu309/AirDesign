@@ -4,6 +4,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { designCopy } from "@/copy/design-copy"
 import { colorCopy } from "@/copy/color-copy"
 import { FillDetails, UnionControl } from "@/design/controls/union"
+import { TypeSettings } from "@/design/controls/type-settings"
 import { controlViews } from "@/design/control-views"
 import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
 import type { Palette } from "@/design/color-choices"
@@ -198,6 +199,8 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
 }
 
 export function ControlView({ control, palette, onChange }: ControlProps) {
+  if (control.trait === "text" && control.field === "case")
+    return <TypeSettings control={control} palette={palette} onChange={onChange} />
   if (control.field.startsWith("kept."))
     return <p className="text-[length:var(--type-caption)] text-quiet">{control.label}</p>
   if (control.trait === "image" && control.field === "overlay")

@@ -29,6 +29,7 @@ export const textWire: TraitWire<"text"> = {
     underline: { example: { text: { underline: true } } },
     align: { example: { text: { align: "center" } } },
     list: { description: "numbers uses decimals.", example: { text: { list: "numbers" } } },
+    case: { example: { text: { case: "small" } } },
     strike: { description: "Single strikethrough.", example: { text: { strike: true } } },
     letterSpacing: {
       description: "Points. Negative tightens.",

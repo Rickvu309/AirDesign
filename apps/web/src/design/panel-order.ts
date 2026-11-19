@@ -141,6 +141,8 @@ export function panelPlaces(
 export function sectionInMode(section: PanelSection, mode: PanelMode): PanelSection {
   const { designStrips, ...shown } = section
   if (mode === "design") return designStrips === undefined ? shown : { ...shown, strips: designStrips }
+  if (section.trait === "text")
+    return { ...shown, strips: section.strips.filter((strip) => !strip.some(({ field }) => field === "case")) }
   if (section.trait !== "fills") return shown
   return {
     ...shown,

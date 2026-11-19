@@ -7,6 +7,7 @@ import {
   type ParagraphSpacing,
   type Color,
   type TextFill,
+  type TextRun,
   type RunFormat,
   type TextFormat,
 } from "@airdesign/document"
@@ -59,6 +60,7 @@ export type RunPaint = RunFormat & {
   readonly color?: Color
   readonly font?: string
   readonly letterSpacing?: number
+  readonly case?: TextRun["case"]
 }
 export type ParagraphPaint = {
   readonly align?: ParagraphAlign
@@ -119,7 +121,14 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled, colors: readonly CanvasTem
       : { background: run.picture, backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" }),
     lineHeight: singleLine,
     textRendering: "geometricPrecision",
-    textTransform: run.caps === "all" ? "uppercase" : "none",
+    textTransform:
+      run.caps === "all"
+        ? "uppercase"
+        : run.caps === "lower"
+          ? "lowercase"
+          : run.caps === "title"
+            ? "capitalize"
+            : "none",
     fontVariantCaps: run.caps === "small" ? "small-caps" : "normal",
   }
 }
@@ -257,6 +266,7 @@ function formatted(
       ? { picture }
       : {}),
     ...(format.color === undefined && fill !== undefined ? { fill } : {}),
+    ...(format.case === undefined ? {} : { caps: format.case }),
     bold: format.bold ?? style.bold,
     italic: format.italic ?? style.italic,
     strike: format.strike ?? style.strike === true,
@@ -288,7 +298,7 @@ function spaced(paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined)
 export function paragraphPaint(dataset: DOMStringMap): ParagraphPaint {
   const { align, list } = dataset
   let paint: ParagraphPaint = {
-    ...(align === "left" || align === "center" || align === "right" ? { align } : {}),
+    ...(align === "left" || align === "center" || align === "right" || align === "justify" ? { align } : {}),
     ...(list === "none" || list === "bullets" || list === "numbers" ? { list } : {}),
   }
   for (const name of spacingNames) {
@@ -438,7 +448,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     },
     fileAlign(from) {
       const align = paragraphs.get(from)?.align
-      return align === "left" || align === "center" || align === "right" ? align : null
+      return align === "left" || align === "center" || align === "right" || align === "justify" ? align : null
     },
     fileList(from) {
       const bullet = paragraphs.get(from)?.bullet

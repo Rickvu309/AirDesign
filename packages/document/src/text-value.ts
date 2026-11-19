@@ -20,7 +20,9 @@ export const schemeNames = [
   "accent5",
   "accent6",
 ] as const
-export const alignNames = ["left", "center", "right"] as const
+export const textCases = ["none", "all", "lower", "title", "small"] as const
+export type TextCase = (typeof textCases)[number]
+export const alignNames = ["left", "center", "right", "justify"] as const
 import { sizeFloor, sizeCeiling } from "./text-size.js"
 export { sizeFloor, sizeCeiling } from "./text-size.js"
 export const sizeDefault = 1800
@@ -48,6 +50,7 @@ export type TextRun = {
   readonly link?: ElementLink
   readonly font?: string
   readonly letterSpacing?: number
+  readonly case?: TextCase
 } & RunFormat
 export type ParagraphSpacing = {
   readonly lineHeight?: number
@@ -79,6 +82,7 @@ const runKeys = new Set<string>([
   "color",
   "font",
   "letterSpacing",
+  "case",
   ...formatNames,
 ])
 
@@ -161,6 +165,11 @@ function readRun(value: unknown): TextRun | null {
       return null
     read = { ...read, letterSpacing }
   }
+  if (run.case !== undefined) {
+    const mode = textCases.find((choice) => choice === run.case)
+    if (mode === undefined) return null
+    read = { ...read, case: mode }
+  }
   return read
 }
 
@@ -233,6 +242,7 @@ function writtenRun(run: TextRun): Record<string, unknown> {
   if (run.fill !== undefined) written.fill = run.fill
   if (run.color !== undefined) written.color = writtenColor(run.color)
   if (run.font !== undefined) written.font = run.font
+  if (run.case !== undefined) written.case = run.case
   if (run.letterSpacing !== undefined) written.letterSpacing = run.letterSpacing
   return written
 }

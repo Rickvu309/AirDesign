@@ -31,6 +31,7 @@ const alignIcons: Readonly<Record<ParagraphAlign, EditorIconName>> = {
   left: "alignLeft",
   center: "alignCenter",
   right: "alignRight",
+  justify: "alignJustify",
 }
 
 const looks: Readonly<Record<FormatState, string>> = {
@@ -164,7 +165,7 @@ export function FormatButtons({
   const templateColors = namedByColor(swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches)
   const value = colorShown === null || colorShown === "mixed" ? undefined : colorShown
   const bar = value === undefined ? null : `#${shownHex(value, templateColors)}`
-  const checked = alignShown === "left" || alignShown === "center" || alignShown === "right" ? alignShown : null
+  const checked = alignNames.find((name) => name === alignShown) ?? null
   const showing = (part: FormatPart) => parts.includes(part)
   return (
     <>

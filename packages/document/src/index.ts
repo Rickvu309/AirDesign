@@ -257,6 +257,8 @@ export {
   hasSlideNumber,
   openingSlideNumber,
   alignNames,
+  textCases,
+  type TextCase,
   formatNames,
   schemeNames,
   spacingNames,

@@ -59,7 +59,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call when your turn is finished, with the runId from airdesign_edit_deck, so a person's changes stop closing layers to you and other agents can change the layers your turn holds.",
+      "Finish airdesign_edit_deck's run by runId. Release its layers and stop tracking newer edits by the person.",
   },
   undo_run: { kind: "command", exposure: "web" },
   watch_deck: { kind: "stream", exposure: "web" },
@@ -70,7 +70,7 @@ export const catalog = {
     destructive: true,
     read: readAgentEdit,
     description:
-      "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). Pass the returned runId to airdesign_stop_run when done.",
+      "Edit the deck atomically. Send the read revision as base and each layer version as readAt (omit for changes with op). Finish the returned runId with airdesign_stop_run.",
   },
   list_decks: {
     kind: "query",

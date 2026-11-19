@@ -1,6 +1,8 @@
 import { textFill } from "./text-fill.js"
 import { trait } from "./trait-decl.js"
 import {
+  alignNames,
+  textCases,
   letterSpacingFloor,
   letterSpacingCeiling,
   lineHeightCeiling,
@@ -23,7 +25,7 @@ import {
 
 export const text = trait(
   "run",
-  { version: 7, shape: "aaea7ede" },
+  { version: 8, shape: "aaea7ede" },
   { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
     style: words(200),
@@ -35,8 +37,9 @@ export const text = trait(
     italic: flag,
     underline: flag,
     strike: flag,
+    case: choice(textCases),
     letterSpacing: pointsWithin(letterSpacingFloor, letterSpacingCeiling),
-    align: choice(["left", "center", "right"]),
+    align: choice(alignNames),
     list: choice(["none", "bullets", "numbers"]),
     lineHeight: fractionWithin(lineHeightFloor, lineHeightCeiling),
     spaceBefore: pointsUpTo(spaceCeiling),

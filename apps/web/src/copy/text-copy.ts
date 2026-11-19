@@ -10,6 +10,8 @@ export const textCopy = {
   sizes: "Font sizes",
   font: "Font",
   fonts: "Fonts",
+  case: "Letter case",
+  settings: "Type settings",
   letterSpacing: "Letter spacing",
   list: "List",
   lineHeight: "Line height",
@@ -19,6 +21,11 @@ export const textCopy = {
 } as const
 
 export const textWords = {
+  "case.none": "As typed",
+  "case.all": "Uppercase",
+  "case.lower": "Lowercase",
+  "case.title": "Title case",
+  "case.small": "Small caps",
   "list.none": "No list",
   bullets: "Bulleted list",
   numbers: "Numbered list",

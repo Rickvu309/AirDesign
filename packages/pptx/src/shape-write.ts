@@ -52,9 +52,9 @@ function paragraph(text: string): string {
   return xml
 }
 
-function textBody(text: string): string {
+function textBody(text: string, anchor = ""): string {
   let xml = "<p:txBody></p:txBody>"
-  xml = insertChild("p:txBody", "a:bodyPr", "<a:bodyPr/>", xml)
+  xml = insertChild("p:txBody", "a:bodyPr", `<a:bodyPr${anchor}/>`, xml)
   xml = insertChild("p:txBody", "a:lstStyle", "<a:lstStyle/>", xml)
   xml = insertChild("p:txBody", "a:p", paragraph(text), xml)
   return xml
@@ -145,7 +145,7 @@ export function addDrawnShape(
       const properties = drawnProperties(geometry, box)
       if (geometry === "line" || geometry === "straightConnector1")
         return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
-      return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}</p:sp>`
+      return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}${textBody("", ' anchor="ctr"')}</p:sp>`
     },
     id,
   )

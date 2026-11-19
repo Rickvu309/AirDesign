@@ -6,6 +6,7 @@ import type {
   Color,
   TextFill,
   TextFormat,
+  TextRun,
 } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
@@ -22,6 +23,7 @@ type ShownRun = {
   readonly underline?: boolean
   readonly strike?: boolean
   readonly letterSpacing?: number
+  readonly case?: TextRun["case"]
   readonly size?: number
   readonly fill?: TextFill
   readonly color?: Color | string | null
@@ -40,7 +42,7 @@ type ShownParagraph = {
 }
 
 function placed(align: ShownAlign | undefined): ParagraphAlign | undefined {
-  return align === "left" || align === "center" || align === "right" ? align : undefined
+  return align === "left" || align === "center" || align === "right" || align === "justify" ? align : undefined
 }
 
 function overlayOf(run: ShownRun): RunPaint {
@@ -52,6 +54,7 @@ function overlayOf(run: ShownRun): RunPaint {
     const set = run[name]
     if (set !== undefined) paint = { ...paint, [name]: set }
   }
+  if (run.case !== undefined) paint = { ...paint, case: run.case }
   if (run.letterSpacing !== undefined) paint = { ...paint, letterSpacing: run.letterSpacing }
   if (run.size !== undefined) paint = { ...paint, size: run.size }
   if (color !== undefined) paint = { ...paint, color }

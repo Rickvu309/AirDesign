@@ -35,6 +35,7 @@ export function sameFormats(left: TextRun, right: TextRun): boolean {
     JSON.stringify(left.link) === JSON.stringify(right.link) &&
     left.size === right.size &&
     left.font === right.font &&
+    left.case === right.case &&
     left.letterSpacing === right.letterSpacing &&
     JSON.stringify(left.fill) === JSON.stringify(right.fill) &&
     sameColor(left.color, right.color)

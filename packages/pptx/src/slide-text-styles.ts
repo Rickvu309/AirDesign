@@ -32,7 +32,7 @@ function fieldsOf(paragraphs: readonly Held[], local: readonly Held[]): TextStyl
   const spaceBefore = spacing("a:spcBef", false)
   const spaceAfter = spacing("a:spcAft", false)
   const align = first(paragraphs, (held) => attribute(held, "algn")) ?? "l"
-  if (lineHeight === null || spaceBefore === null || spaceAfter === null || !["l", "ctr", "r"].includes(align))
+  if (lineHeight === null || spaceBefore === null || spaceAfter === null || !["l", "ctr", "r", "just"].includes(align))
     return null
   const fill = first(runs, (held) => child(held, "a:solidFill"))
   const color = fill === undefined ? { scheme: "tx1" as const } : colorIn(fill, null)
@@ -45,7 +45,7 @@ function fieldsOf(paragraphs: readonly Held[], local: readonly Held[]): TextStyl
     bold: first(runs, (held) => boolean(held, "b")) ?? false,
     italic: first(runs, (held) => boolean(held, "i")) ?? false,
     color,
-    align: align === "ctr" ? "center" : align === "r" ? "right" : "left",
+    align: align === "just" ? "justify" : align === "ctr" ? "center" : align === "r" ? "right" : "left",
     letterSpacing: first(runs, (held) => number(held, "spc")) ?? 0,
     lineHeight,
     spaceBefore,

@@ -306,6 +306,32 @@ function keptEdits(
   return edits
 }
 
+const words = new Intl.Segmenter("en", { granularity: "word" })
+
+function cased(paragraph: TextParagraph): TextParagraph {
+  if (!paragraph.runs.some((run) => run.case === "title" || run.case === "lower")) return paragraph
+  const starts = new Set(
+    [...words.segment(paragraph.runs.map((run) => run.text).join(""))]
+      .filter((word) => word.isWordLike)
+      .map((word) => word.index),
+  )
+  let offset = 0
+  const runs = paragraph.runs.map((run) => {
+    const from = offset
+    offset += run.text.length
+    if (run.case === "lower") return { ...run, text: run.text.toLowerCase() }
+    if (run.case !== "title") return run
+    let at = from
+    let text = ""
+    for (const character of run.text) {
+      text += starts.has(at) ? character.toUpperCase() : character
+      at += character.length
+    }
+    return { ...run, text }
+  })
+  return { ...paragraph, runs }
+}
+
 export function textValueEdits(
   children: MarkupChildren,
   bytes: Uint8Array,
@@ -334,7 +360,8 @@ export function textValueEdits(
     edits.push({ start: first.start, end: first.end, next: written })
     for (const extra of dropped.slice(1)) edits.push({ start: extra.start, end: extra.end, next: emptyBytes })
   }
-  for (const [paragraph, wanted] of value.entries()) {
+  for (const [paragraph, original] of value.entries()) {
+    const wanted = cased(original)
     const source = paragraphs[wanted.from]
     if (source === undefined) throw new Error("text-paragraph")
     const again = seen.has(wanted.from)

@@ -1,3 +1,4 @@
+import type { TextCase } from "@airdesign/document"
 import type { TextFill, SchemeName } from "@airdesign/document"
 
 export type CanvasFit =
@@ -25,7 +26,7 @@ export type CanvasRunStyle = {
   readonly underline?: boolean
   readonly strike?: boolean
   readonly letterSpacing?: number
-  readonly caps?: "all" | "small" | "none"
+  readonly caps?: TextCase
   readonly baseline?: number
   readonly color: string | null
   readonly highlight?: string | null
