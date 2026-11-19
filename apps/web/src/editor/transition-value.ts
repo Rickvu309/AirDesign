@@ -1,9 +1,11 @@
 import { readSlideId, slideNode, type ElementId, type SlideId, type TransitionValue } from "@airdesign/document"
-import { readSlides } from "@airdesign/pptx"
+import { readArrival, readSlides } from "@airdesign/pptx"
 
 export type ArrivalStyle = "none" | "dissolve" | "push" | "moveIn" | "moveOut"
 export type ArrivalSide = "left" | "right" | "top" | "bottom"
 export type ArrivalAdvance = { readonly click: true } | { readonly delay: number }
+
+export type SlideArrival = ReturnType<typeof readArrival>
 
 const clicked: ArrivalAdvance = { click: true }
 
@@ -106,4 +108,28 @@ export function withDelay(value: TransitionValue, delay: number): TransitionValu
   if ("moveIn" in value)
     return { moveIn: { direction: value.moveIn.direction, duration: value.moveIn.duration, advance } }
   return { moveOut: { direction: value.moveOut.direction, duration: value.moveOut.duration, advance } }
+}
+
+export function sharedArrival(arrivals: readonly SlideArrival[]): SlideArrival | "mixed" {
+  const [first, ...rest] = arrivals
+  if (first === undefined) return { state: "kept" }
+  const word = JSON.stringify(first)
+  return rest.every((each) => JSON.stringify(each) === word) ? first : "mixed"
+}
+
+export function arrivalsAt(parts: ReadonlyMap<string, Uint8Array>, indices: readonly number[]): SlideArrival[] {
+  const slides = readSlides(parts)
+  return indices.map((index) => {
+    const found = slides[index]
+    return readArrival(found === undefined ? undefined : parts.get(found.part))
+  })
+}
+
+export function slideTargetsAt(parts: ReadonlyMap<string, Uint8Array>, indices: readonly number[]): ElementId[] {
+  const slides = readSlides(parts)
+  return indices.flatMap((index) => {
+    const found = slides[index]
+    const id = found === undefined ? undefined : readSlideId(found.slide)
+    return id === undefined ? [] : [slideNode(id, "slide")]
+  })
 }
