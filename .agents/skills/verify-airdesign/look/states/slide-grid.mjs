@@ -10,8 +10,8 @@ async function drive(kit) {
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/sections-before.pptx"))
   await kit.page.getByRole("button", { name: "Grid" }).click()
   await expect(kit.page.locator("[data-editor-grid]")).toBeVisible()
-  await expect(kit.page.getByRole("heading", { name: "Opening" })).toBeVisible()
-  await expect(kit.page.getByRole("heading", { name: "Numbers" })).toBeVisible()
+  await expect(kit.page.locator("[data-editor-grid] [data-grid-card]").first()).toBeVisible()
+  await expect(kit.page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
 }
 
 export default { name: "slide-grid", design, drive }

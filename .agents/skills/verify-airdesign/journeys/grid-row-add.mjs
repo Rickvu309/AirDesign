@@ -49,10 +49,10 @@ export default async function drive(kit) {
     "Ten slides stayed in their original slide groups. Hover saved no edit. The server stored one row:new add at version three; Undo, Redo and reload kept the same slide groups.",
   )
   const sectionAccount = await openRowDeck(kit, 6, true)
-  await expect(page.locator("[data-section-head]")).toHaveCount(2)
+  await expect(page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
   await belowRow(page).click()
   await expect.poll(() => rowNumbers(page)).toEqual([[1, 2, 3], [4], [5, 6, 7]])
-  await expect(page.locator("[data-section-head]")).toHaveCount(2)
+  await expect(page.locator("[data-editor-grid] [data-section-head]")).toHaveCount(0)
   const sectionDeck = page.url().split("/").at(-1)
   await expect
     .poll(
@@ -63,6 +63,6 @@ export default async function drive(kit) {
   await page.mouse.move(1400, 90)
   await capture("sections")
   note(
-    "A deck with Opening and Results kept two section headings after adding a slide in a new slide group, which has no heading.",
+    "A deck with Opening and Results sections showed no headings in Grid, and adding a slide in a new slide group put it between them.",
   )
 }
