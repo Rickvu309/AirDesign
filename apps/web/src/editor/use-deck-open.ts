@@ -36,6 +36,12 @@ export function useDeckOpen(deck: OpeningDeck) {
     setPaintedDeck(id)
   }
 
+  function holdsEdits(register: Register | null): boolean {
+    if (register === null) return false
+    if (register.order.length > 0) return true
+    return register.nodes.some((node) => register.elements[node]?.landed.some((row) => row.visible) === true)
+  }
+
   function reconcile(register: Register) {
     const before = store.current.slides().map((slide) => slide.id)
     const framed = withFileFloors(register, shown.shownParts.current)
@@ -75,8 +81,9 @@ export function useDeckOpen(deck: OpeningDeck) {
     void (async () => {
       const device = await deviceCopy(id, server)
       if (!live) return
-      if (device !== null) openFrom(device.stored, device.register)
-      else {
+      const keptLocally = device !== null && holdsEdits(device.register)
+      if (device !== null && keptLocally) openFrom(device.stored, device.register)
+      else if (device === null) {
         const asked = await connect(server)
           .open(id)
           .catch(() => null)
@@ -108,7 +115,7 @@ export function useDeckOpen(deck: OpeningDeck) {
         .catch(() => null)
       if (!live) return
       const register = opened?.ok === true ? opened.register : null
-      if (device === null) openFrom(stored, register)
+      if (!keptLocally) openFrom(stored, register ?? (device === null ? null : device.register))
       else if (register !== null) reconcile(register)
       const followed = followDeck(
         connect(server),

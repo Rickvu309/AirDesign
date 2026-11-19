@@ -5,7 +5,7 @@
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
       "digest": "2ef8ccfc4718",
-      "blob": "60a5037aae63cc46c70cc4a81c5519631fd50fa6"
+      "blob": "cefc9cfb911573d982efdbca42f9e9dd056369dc"
     },
     {
       "file": "packages/live/src/held.ts",
@@ -35,13 +35,13 @@
       "file": "packages/live/src/device.ts",
       "names": ["markNewer", "pageEdits", "connectDatabase", "openDatabase", "transaction"],
       "digest": "521f8dae7f3a",
-      "blob": "a0d10c009c4974da2c229fb3bcfd194de068eb64"
+      "blob": "2592c9cb0c5da6f8ed3e55972e6178255f020d78"
     },
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "d414df951ae5",
-      "blob": "884f4194567de70892671caace0cc22eaaf92c3a"
+      "digest": "e777c8385834",
+      "blob": "10aabe6f7967a117eba03bec034cbd2fb27b7d2c"
     },
     {
       "file": "apps/web/src/device-copy.ts",

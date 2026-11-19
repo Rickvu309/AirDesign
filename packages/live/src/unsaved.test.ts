@@ -4,6 +4,7 @@ import { memoryShelf, node, other } from "./browser-fixtures.js"
 import {
   holdsUnsaved,
   keepUnsaved,
+  noteBoxes,
   readUnsaved,
   recoverUnsaved,
   releaseUnsaved,
@@ -14,6 +15,21 @@ import {
 
 const account = "a".repeat(32)
 const text = (value: string, at = node) => ({ kind: "text" as const, node: at, floor: "file", value })
+
+it("notes a dragged box in the same turn, and leaves it for the next page to replay", async () => {
+  const shelf = memoryShelf()
+  const box = { x: 1, y: 2, cx: 3, cy: 4 }
+  const release = noteBoxes("deck", [{ node, floor: "file", box }], shelf, account)
+  expect(unsavedOf(shelf, account, "deck")).toMatchObject([{ kind: "box", box }])
+  const replayed: string[] = []
+  await recoverUnsaved(shelf, account, "deck", async (entry) => {
+    replayed.push(entry.id)
+  })
+  expect(replayed).toEqual([])
+  expect(unsavedOf(shelf, account, "deck")).toHaveLength(1)
+  release()
+  expect(unsavedOf(shelf, account, "deck")).toEqual([])
+})
 
 it("keeps the newest text for one element and every text for another", () => {
   const shelf = memoryShelf()
