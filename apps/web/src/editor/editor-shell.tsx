@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
@@ -7,13 +7,14 @@ import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type DesignMode, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
-import { usePointerTool } from "@/editor/pointer-tool"
+import { typing, usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToneSource } from "@/editor/tone-link"
-import type { Selection, TextFormatting } from "@airdesign/render"
+import { gestureFor, type Selection, type TextFormatting } from "@airdesign/render"
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import type { Geometry } from "@airdesign/document"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
@@ -126,6 +127,20 @@ export function EditorShell({
   usePresentKeys(strip !== undefined && !gridOpen && present.show === null, (from) =>
     present.start(from === "first" ? 0 : (strip?.current ?? 0)),
   )
+  const mode = designMode?.value
+  const changeMode = designMode?.onChange
+  useEffect(() => {
+    if (mode === undefined || changeMode === undefined || size === null || present.show !== null) return
+    function toggle(event: KeyboardEvent) {
+      if (event.repeat || event.isComposing || event.defaultPrevented || typing(event.target)) return
+      if (gestureFor(event, "editor") !== "design-mode" || !editorOwnsKey(event)) return
+      if (document.querySelector('[role="dialog"][data-open], [role="alertdialog"][data-open]') !== null) return
+      event.preventDefault()
+      changeMode?.(mode === "slides" ? "design" : "slides")
+    }
+    window.addEventListener("keydown", toggle)
+    return () => window.removeEventListener("keydown", toggle)
+  }, [mode, changeMode, size, present.show])
   const presenting =
     deck === undefined ? null : (
       <PresentLayer

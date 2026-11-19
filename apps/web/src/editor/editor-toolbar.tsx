@@ -379,6 +379,7 @@ export function EditorToolbar({
               className="size-9 rounded-lg active:translate-y-0"
               aria-label={designCopy.designMode}
               title={designCopy.designMode}
+              aria-keyshortcuts="Shift+D"
               data-design-mode
               data-keeps-selection
               aria-pressed={designMode.value === "design"}

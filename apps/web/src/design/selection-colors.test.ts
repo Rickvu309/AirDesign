@@ -1,7 +1,7 @@
 import { namedByColor } from "@/design/color-names"
 import { describe, expect, it } from "vitest"
 import { elementId } from "@airdesign/document"
-import { selectionColors, replaceSelectionColor } from "./selection-colors"
+import { selectionColors, replaceSelectionColor, layersWithColor } from "./selection-colors"
 
 const node = elementId("1.2")
 const palette = { templateColors: [], deck: [] }
@@ -24,6 +24,16 @@ const fields = {
 describe("selection colors", () => {
   it("lists distinct colors darkest first across gradients, lines and effects", () => {
     expect(selectionColors([{ node, fields }], palette).map((row) => row.hex)).toEqual(["000000", "FFFFFF"])
+  })
+  it("finds each layer once across fills, borders and effects", () => {
+    const white = elementId("1.3")
+    const black = elementId("1.4")
+    const sources = [
+      { node, fields },
+      { node: white, fields: { "fills.p0": { value: { solid: { rgb: "FFFFFF" } }, own: true } } },
+      { node: black, fields: { "text.color": { value: { rgb: "000000" }, own: true } } },
+    ]
+    expect(layersWithColor(sources, "000000", palette)).toEqual([node, black])
   })
   it("replaces every matching color while keeping other fields and each occurrence's alpha", () => {
     const sources = [

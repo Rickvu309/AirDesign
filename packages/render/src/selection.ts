@@ -1,7 +1,11 @@
 import type { ElementId } from "@airdesign/document"
 import type { CanvasSlide } from "./record.js"
 
-export type Selection = { readonly ids: readonly ElementId[]; readonly inside: ElementId | null }
+export type Selection = {
+  readonly ids: readonly ElementId[]
+  readonly inside: ElementId | null
+  readonly acrossGroups?: true
+}
 
 export const noSelection: Selection = { ids: [], inside: null }
 
@@ -52,13 +56,16 @@ export function focused(slide: CanvasSlide, selection: Selection, id: ElementId)
 export function kept(selection: Selection, slide: CanvasSlide): Selection {
   const shown = new Set(slide.elements.flatMap((each) => (each.id === null ? [] : [each.id])))
   const inside = selection.inside !== null && shown.has(selection.inside) ? selection.inside : null
-  const ids = selection.ids.filter((id) => shown.has(id) && parentOf(slide, id) === inside)
-  return ids.length === selection.ids.length && inside === selection.inside ? selection : { ids, inside }
+  const ids = selection.ids.filter(
+    (id) => shown.has(id) && (selection.acrossGroups === true || parentOf(slide, id) === inside),
+  )
+  return ids.length === selection.ids.length && inside === selection.inside ? selection : { ...selection, ids, inside }
 }
 
 export function sameSelection(one: Selection, other: Selection): boolean {
   return (
     one.inside === other.inside &&
+    one.acrossGroups === other.acrossGroups &&
     one.ids.length === other.ids.length &&
     one.ids.every((id, at) => other.ids[at] === id)
   )

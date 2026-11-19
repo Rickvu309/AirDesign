@@ -56,6 +56,7 @@ type Parts = ReadonlyMap<string, Uint8Array>
 export type DesigningDeck = DesignDeck & {
   readonly selectedSlides?: readonly number[]
   readonly selection: Selection
+  readonly select?: (selection: Selection) => void
   readonly matching?: readonly ElementId[]
   readonly selectMatching?: () => void
   readonly matchable?: boolean

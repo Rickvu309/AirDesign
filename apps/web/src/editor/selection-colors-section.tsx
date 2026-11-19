@@ -1,3 +1,4 @@
+import { Target } from "lucide-react"
 import { useId } from "react"
 import type { Color } from "@airdesign/document"
 import { Button } from "@/components/ui/button"
@@ -12,33 +13,47 @@ export function SelectionColorsSection({
   sources,
   palette,
   onPick,
+  onSelect,
 }: {
   sources: readonly ColorSource[]
   palette: Palette
   onPick: (hex: string, color: Color) => void
+  onSelect: (hex: string) => void
 }) {
   const id = useId()
   const rows = selectionColors(sources, palette)
   if (rows.length === 0) return null
   return (
     <DesignSection title={selectionColorsCopy.section}>
-      <div className="flex w-3/4 flex-col gap-2" data-selection-colors>
+      <div className="flex flex-col gap-2" data-selection-colors>
         {rows.map(({ hex, color }) => (
-          <ColorPicker
-            key={hex}
-            title={selectionColorsCopy.section}
-            value={color}
-            palette={palette}
-            onPick={(picked) => onPick(hex, picked)}
-            trigger={<Button type="button" variant="ghost" aria-labelledby={`${id}-${hex}`} className={fieldLook} />}
-          >
-            <ColorField
-              id={`${id}-${hex}`}
-              css={`#${hex}`}
-              name={shownName(color, palette.templateColors)}
-              disclosure={false}
-            />
-          </ColorPicker>
+          <div key={hex} className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-1">
+            <ColorPicker
+              title={selectionColorsCopy.section}
+              value={color}
+              palette={palette}
+              onPick={(picked) => onPick(hex, picked)}
+              trigger={<Button type="button" variant="ghost" aria-labelledby={`${id}-${hex}`} className={fieldLook} />}
+            >
+              <ColorField
+                id={`${id}-${hex}`}
+                css={`#${hex}`}
+                name={shownName(color, palette.templateColors)}
+                disclosure={false}
+              />
+            </ColorPicker>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-[var(--control-dense)] shrink-0"
+              aria-label={selectionColorsCopy.select(shownName(color, palette.templateColors))}
+              title={selectionColorsCopy.select(shownName(color, palette.templateColors))}
+              onClick={() => onSelect(hex)}
+            >
+              <Target />
+            </Button>
+          </div>
         ))}
       </div>
     </DesignSection>

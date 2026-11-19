@@ -91,6 +91,14 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "]", code: "BracketRight" }, "slides")).toBeNull()
   })
 
+  it("toggles design mode with Shift+D and keeps the slide duplicate shortcut", () => {
+    const key = { ...plain, key: "D", shiftKey: true }
+    expect(gestureFor(key, "editor")).toBe("design-mode")
+    expect(gestureFor(key, "text")).toBeNull()
+    expect(gestureFor({ ...key, ctrlKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "d", ctrlKey: true }, "slides")).toBe("slide-duplicate")
+  })
+
   it("acts only where the gesture works", () => {
     expect(gestureFor({ ...plain, key: "Delete" }, "element")).toBe("delete")
     expect(gestureFor({ ...plain, key: "Delete" }, "slides")).toBe("slide-delete")
