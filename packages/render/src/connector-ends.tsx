@@ -2,7 +2,7 @@ import { route, type Bound, type ElementId, type Place, type Spot } from "@airde
 import { useState, type CSSProperties, type PointerEvent } from "react"
 import { ownBox, travelled } from "./box-gesture.js"
 import { aimAt, endsOf, paintPlace, type Aim, type End } from "./connector-drag.js"
-import { liveBox } from "./connector-follow.js"
+import { liveBox } from "./live-box.js"
 import { useBox } from "./element-view.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import type { PaintStore } from "./store.js"

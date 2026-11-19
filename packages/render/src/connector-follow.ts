@@ -1,7 +1,8 @@
 import { outlineOf, readElementId, routed, siteTie, type ElementId, type Place, type Tie } from "@airdesign/document"
 import { useCallback, useSyncExternalStore } from "react"
-import { boxOf, followed, paintedAt, sameBox } from "./box-gesture.js"
+import { boxOf, sameBox } from "./box-gesture.js"
 import { paintPlace } from "./connector-drag.js"
+import { liveBox } from "./live-box.js"
 import type { CanvasTie } from "./element-paint.js"
 import type { PaintBox } from "./paint-box.js"
 import type { CanvasElement } from "./record.js"
@@ -23,13 +24,6 @@ export function placedBox(place: Place): PaintBox {
     flipH: place.flipH,
     flipV: place.flipV,
   }
-}
-
-export function liveBox(store: PaintStore, element: CanvasElement, read: BoxRead = shownBox): PaintBox | null {
-  if (element.id === null) return element.box
-  const own = paintedAt(element.box, read(store, element.id))
-  const group = element.group
-  return group === undefined ? own : followed(own, group.box, read(store, group.id), group.frame === undefined)
 }
 
 function still(file: PaintBox | null, live: PaintBox | null): boolean {

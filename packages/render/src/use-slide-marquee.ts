@@ -5,8 +5,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react"
-import { followed, ownBox, type Point } from "./box-gesture.js"
-import type { CanvasElement, CanvasSlide, PaintBox } from "./record.js"
+import { type Point } from "./box-gesture.js"
+import { liveBox } from "./live-box.js"
+import type { CanvasElement, CanvasSlide } from "./record.js"
 import { alone, leadOf, noSelection, type Selection } from "./selection.js"
 import { marqueeHits, marqueeMoved, marqueeRect, marqueeSelection } from "./slide-marquee.js"
 import type { PaintStore } from "./store.js"
@@ -29,14 +30,6 @@ type HeldMarquee = {
   readonly fallback: CanvasElement | undefined
   active: boolean
   cancelled: boolean
-}
-
-export function liveBoxOf(element: CanvasElement, store: PaintStore): PaintBox | null {
-  if (element.id === null) return element.box
-  const group = element.group
-  const carried = group === undefined ? null : store.getBox(group.id)
-  const own = ownBox(element, store.getBox(element.id))
-  return group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
 }
 
 export function hasOpenOverlay(doc: Document): boolean {
@@ -116,7 +109,7 @@ export function useSlideMarquee(params: {
     const emu = marqueeRect(emuPoint(current.startLocal, width, slide), emuPoint(endLocal, width, slide))
     const hits = marqueeHits(slide, emu, {
       deep: current.deep,
-      resolveBox: (element) => liveBoxOf(element, store),
+      resolveBox: (element) => liveBox(store, element),
     })
     choose(marqueeSelection(slide, current.before, hits, current.adding))
   }
