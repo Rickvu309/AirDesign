@@ -1,109 +1,14 @@
+import assert from "node:assert/strict"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
-import { apiTestFiles, isolationReasons, renderTestFiles, splitTests, splitUnitTests } from "./test-isolation.mjs"
+import { createVitest } from "vitest/node"
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const fail = (message) => {
-  console.error(message)
-  process.exit(1)
+const root = path.resolve(import.meta.dirname, "..")
+const ctx = await createVitest({ root, watch: false, run: true, reporters: [] })
+try {
+  const shared = ctx.projects.filter((project) => project.config.isolate !== true).map((project) => project.name)
+  assert.deepEqual(shared, [], "every Vitest project must isolate each test file")
+} finally {
+  await ctx.close()
 }
 
-const isolated = {
-  "a module mock": `import { vi } from "vitest"\nvi.mock("./a")\n`,
-  "an aliased vi": `import { vi as v } from "vitest"\nv.mock("./a")\n`,
-  "a namespace import": `import * as vitest from "vitest"\nvitest.vi.stubGlobal("x", 1)\n`,
-  "a default alias": `import { vi } from "vitest"\nconst mocker = vi\nmocker.spyOn(a, "b")\n`,
-  "a dynamic import": `const { vi } = await import("vitest")\nvi.useFakeTimers()\n`,
-  "a destructured member": `import { vi } from "vitest"\nconst { stubGlobal } = vi\nstubGlobal("x", 1)\n`,
-  "vi.doMock": `import { vi } from "vitest"\nvi.doMock("./a", () => ({}))\n`,
-  "vi.hoisted": `import { vi } from "vitest"\nconst h = vi.hoisted(() => 1)\n`,
-  "vi.stubEnv": `import { vi } from "vitest"\nvi.stubEnv("A", "1")\n`,
-  "vi.setSystemTime": `import { vi } from "vitest"\nvi.setSystemTime(0)\n`,
-  "vi.resetModules": `import { vi } from "vitest"\nvi.resetModules()\n`,
-  "vi.importActual": `import { vi } from "vitest"\nawait vi.importActual("./a")\n`,
-  "a computed member": `import { vi } from "vitest"\nvi["mock"]("./a")\n`,
-  "vi handed to a function": `import { vi } from "vitest"\ninstall(vi)\n`,
-  "the global vi": `vi.spyOn(console, "log")\n`,
-  "a global assigned": `globalThis.fetch = () => 1\n`,
-  "an env assigned": `process.env.A = "1"\n`,
-  "an env deleted": `delete process.env.A\n`,
-  "a global defined": `Object.defineProperty(globalThis, "x", { value: 1 })\n`,
-  "an escaped vi": `import { vi } from "vitest"\n\\u0076i.mock("./a")\n`,
-  "an escaped global": `\\u0067lobalThis.fetch = () => 1\n`,
-  "an escaped alias": `import { \\u0076i as v } from "vitest"\nv.mock("./a")\n`,
-}
-for (const [name, text] of Object.entries(isolated)) {
-  if (isolationReasons(text).length === 0) fail(`${name} would share workers`)
-}
-
-const shared = {
-  "plain tests": `import { it, expect } from "vitest"\nit("a", () => expect(1).toBe(1))\n`,
-  "a bare mock function": `import { vi } from "vitest"\nconst f = vi.fn()\nf()\nexpect(vi.mocked(f)).toBeDefined()\nawait vi.waitFor(() => 1)\n`,
-  "a mention in a string": `const s = "vi.mock(x)"\n`,
-  "a local called vi": `const other = { mock: 1 }\nconst x = other.mock\n`,
-  "a read of the environment": `const a = process.env.A\n`,
-  "a write to a local": `const local = {}\nlocal.a = 1\n`,
-}
-for (const [name, text] of Object.entries(shared)) {
-  const reasons = isolationReasons(text)
-  if (reasons.length > 0) fail(`${name} was isolated for ${reasons.join(", ")}`)
-}
-
-const { shared: sharedFiles, isolated: isolatedFiles } = splitUnitTests(root)
-if (sharedFiles.length < 50) fail(`only ${sharedFiles.length} files share workers`)
-for (const file of sharedFiles) {
-  if (isolatedFiles.includes(file)) fail(`${file} is in both groups`)
-}
-
-const config = (await import(path.join(root, "vitest.config.mts"))).default
-const projects = config.test.projects
-const included = (name) => projects.find((project) => project.test.name === name).test.include
-const asList = (list) => JSON.stringify([...list].sort())
-if (asList(included("shared")) !== asList(sharedFiles))
-  fail("vitest.config.mts does not run the shared files this scan chose")
-if (asList(included("unit")) !== asList(isolatedFiles))
-  fail("vitest.config.mts does not isolate the files this scan chose")
-if (projects.find((project) => project.test.name === "shared").test.isolate !== false)
-  fail("the shared project isolates")
-if (
-  !projects
-    .find((project) => project.test.name === "shared")
-    .test.setupFiles.includes("scripts/vitest-kept-globals.mjs")
-)
-  fail("the shared project does not put back the globals each file leaves")
-
-const renderSplit = splitTests(root, renderTestFiles(root))
-if (renderSplit.shared.length < 30) fail(`only ${renderSplit.shared.length} render files share workers`)
-if (asList(included("render-shared")) !== asList(renderSplit.shared))
-  fail("vitest.config.mts does not run the shared render files this scan chose")
-if (asList(included("render")) !== asList(renderSplit.isolated))
-  fail("vitest.config.mts does not isolate the render files this scan chose")
-const renderShared = projects.find((project) => project.test.name === "render-shared").test
-if (renderShared.isolate !== false) fail("the shared render project isolates")
-if (!renderShared.setupFiles.includes("scripts/vitest-kept-globals.mjs"))
-  fail("the shared render project does not put back the globals each file leaves")
-for (const name of ["render", "render-shared"]) {
-  const project = projects.find((candidate) => candidate.test.name === name).test
-  if (project.environment !== "jsdom") fail(`the ${name} project does not paint in jsdom`)
-  if (!project.setupFiles.includes("scripts/vitest-act-environment.mjs"))
-    fail(`the ${name} project does not tell React it runs under act`)
-}
-
-const apiSplit = splitTests(root, apiTestFiles(root))
-if (apiSplit.shared.length < 50) fail(`only ${apiSplit.shared.length} api files share workers`)
-if (asList(included("api-shared")) !== asList(apiSplit.shared))
-  fail("vitest.config.mts does not run the shared api files this scan chose")
-if (asList(included("api")) !== asList(apiSplit.isolated))
-  fail("vitest.config.mts does not isolate the api files this scan chose")
-const apiShared = projects.find((project) => project.test.name === "api-shared").test
-if (apiShared.isolate !== false) fail("the shared api project isolates")
-if (!apiShared.setupFiles.includes("scripts/vitest-kept-globals.mjs"))
-  fail("the shared api project does not put back the globals each file leaves")
-for (const name of ["api", "api-shared"]) {
-  const project = projects.find((candidate) => candidate.test.name === name).test
-  if (!project.globalSetup.includes("apps/api/src/postgres-setup.ts")) fail(`the ${name} project starts no Postgres`)
-  if (!project.setupFiles.includes("scripts/vitest-api-database.mjs"))
-    fail(`the ${name} project does not give each file its own database`)
-}
-
-console.log("test isolation tests passed")
+console.log("every Vitest project isolates each test file")

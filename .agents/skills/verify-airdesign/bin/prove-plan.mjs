@@ -9,7 +9,7 @@ export const repeatLimit = 6
 const readOutsideGraph = (file) =>
   file === "vitest.config.mts" ||
   file === "pnpm-lock.yaml" ||
-  file === "scripts/test-isolation.mjs" ||
+  file === "scripts/unit-test-files.mjs" ||
   path.basename(file) === "package.json" ||
   file.startsWith("scripts/pptx-fixtures/") ||
   (/\.(json|sql)$/.test(file) && /^(apps|packages|tests)\//.test(file))

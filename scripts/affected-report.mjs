@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 import { proofPlan } from "../.agents/skills/verify-airdesign/bin/prove-plan.mjs"
 import { readFacts } from "../.agents/skills/verify-airdesign/bin/prove.mjs"
 import { suitesFor } from "../.agents/skills/verify-airdesign/bin/suites.mjs"
-import { apiTestFiles, renderTestFiles, splitTests, unitTestFiles } from "./test-isolation.mjs"
+import { testFilesByProject } from "./unit-test-files.mjs"
 import { toolingTests } from "./tooling-tests.mjs"
 
 const sorted = (files) => [...new Set(files)].sort()
@@ -77,16 +77,6 @@ const browserTimings = (root) => {
     return {}
   }
 }
-const localInventory = (root) => {
-  const sets = [unitTestFiles(root), apiTestFiles(root), renderTestFiles(root)]
-  return {
-    files: sorted(sets.flat()),
-    groups: sets.map((files, at) => ({
-      name: ["shared", "api-shared", "render-shared"][at],
-      files: splitTests(root, files).shared,
-    })),
-  }
-}
 const vitestGraph = async (root, changed) => {
   const { createVitest } = await import("vitest/node")
   const ctx = await createVitest({ root, watch: false, run: true, reporters: [], maxWorkers: 2 })
@@ -96,16 +86,9 @@ const vitestGraph = async (root, changed) => {
     const related = (await ctx.specifications.filterTestsBySource(specs)).map((spec) =>
       path.relative(root, spec.moduleId),
     )
-    const groups = new Map()
-    for (const spec of specs) {
-      if (spec.project.config.isolate !== false) continue
-      const name = spec.project.name
-      groups.set(name, [...(groups.get(name) ?? []), path.relative(root, spec.moduleId)])
-    }
     return {
       files: sorted(specs.map((spec) => path.relative(root, spec.moduleId))),
       related: sorted(related),
-      groups: [...groups].map(([name, files]) => ({ name, files: sorted(files) })),
     }
   } finally {
     await ctx.close()
@@ -144,7 +127,9 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
     const facts = gate ? undefined : await readFacts(root, base)
     const plan = gate?.plan ?? proofPlan({ ...facts, base: report.base, head: report.head, changed })
     const step = (kind) => plan.steps.find((step) => step.kind === kind)
-    const inventory = gate ? localInventory(root) : await vitestGraph(root, changed)
+    const inventory = gate
+      ? { files: sorted(Object.values(testFilesByProject(root)).flat()) }
+      : await vitestGraph(root, changed)
     const related = gate?.related ?? inventory.related
     const legacy = gate ? undefined : await import("./gate.mjs")
     const currentGate = gate ? { files: gate.tests, ci: gate.ci } : legacy.testsFor({ plan, related, changed })
@@ -177,20 +162,9 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
           : step("unit-tests")?.tests === "all"
             ? step("unit-tests").because
             : undefined
-    let picked = broad ? "all" : sorted([...related, ...changed.filter((file) => inventory.files.includes(file))])
-    if (picked !== "all") {
-      for (const group of inventory.groups)
-        if (group.files.some((file) => picked.includes(file))) picked = sorted([...picked, ...group.files])
-    }
+    const picked = broad ? "all" : sorted([...related, ...changed.filter((file) => inventory.files.includes(file))])
     report.unit = {
-      ...family(
-        inventory.files,
-        picked,
-        broad ?? "Vitest graph, added tests and whole shared groups",
-        run,
-        cachedTimings(root),
-      ),
-      groups: inventory.groups,
+      ...family(inventory.files, picked, broad ?? "Vitest graph and added tests", run, cachedTimings(root)),
       gateRule: {
         limit: gate?.limit ?? legacy?.testLimit ?? null,
         reason: currentGate.ci ?? null,
