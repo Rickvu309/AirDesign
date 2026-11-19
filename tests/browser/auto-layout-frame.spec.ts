@@ -78,7 +78,7 @@ function status(page: Page): Locator {
 async function changedParts(original: string, saved: string): Promise<string[]> {
   const before = await partsOf(original)
   const after = await partsOf(saved)
-  expect([...after.keys()]).toEqual([...before.keys()])
+  expect([...after.keys()].filter((name) => !before.has(name))).toEqual(["ppt/tags/tag1.xml"])
   return [...before].filter(([name, bytes]) => after.get(name)?.equals(bytes) !== true).map(([name]) => name)
 }
 
@@ -127,7 +127,10 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await exportFromDialog(page)
   const download = testInfo.outputPath(frameName)
   await (await saving).saveAs(download)
-  expect(await changedParts(blank, download)).toEqual([part])
+  expect((await changedParts(blank, download)).sort()).toEqual(
+    ["[Content_Types].xml", part, "ppt/slides/_rels/slide1.xml.rels"].sort(),
+  )
+  expect((await partsOf(download)).get("ppt/tags/tag1.xml")?.toString("utf8")).toContain('name="AIRDESIGN_LAYOUT"')
   const xml = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
   expect(xml).toMatch(/<p:grpSp><p:nvGrpSpPr><p:cNvPr id="6" name="Frame 6"\/>/)
   expect(xml.indexOf('<p:cNvPr id="7" name="Backdrop 7"/>')).toBeLessThan(xml.indexOf('<p:cNvPr id="4"'))
@@ -138,6 +141,8 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect(frame(page, part, 6)).toHaveCount(1)
   await holds(shapes, laid)
+  await shapes[0]!.click()
+  await expect(page.locator("[data-design-panel]").getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
 })
 
 async function wrappedPair(page: Page, part: string): Promise<readonly Locator[]> {
