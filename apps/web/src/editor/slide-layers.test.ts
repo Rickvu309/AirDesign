@@ -52,15 +52,15 @@ it("names a layer with no name of its own by its kind, as the design panel does"
   expect(tree.map((layer) => layer.name)).toEqual(["Title 1", "Text 2", "Text 1"])
 })
 
-it("leaves out a frame's backdrop, which paints the frame's own fill", () => {
+it("leaves out a frame's backdrop, which paints the frame's own fill, and keeps its auto layout's flow", () => {
   const parts = slide(group(9, "Frame", box(10, "Backdrop") + box(11, "Item")))
   const tree = layerTree(
     slideLayerRows(parts, "256", (node) =>
-      node === elementId("256.9") ? { kind: "frame", backdrop: elementId("256.10") } : plain,
+      node === elementId("256.9") ? { kind: "frame", backdrop: elementId("256.10"), flow: "vertical" } : plain,
     ),
   )
-  expect(tree.map((layer) => [layer.name, layer.kind, layer.layers.map((each) => each.name)])).toEqual([
-    ["Frame", "frame", ["Item"]],
+  expect(tree.map((layer) => [layer.name, layer.kind, layer.flow, layer.layers.map((each) => each.name)])).toEqual([
+    ["Frame", "frame", "vertical", ["Item"]],
   ])
 })
 
