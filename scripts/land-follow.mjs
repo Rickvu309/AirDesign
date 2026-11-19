@@ -1,4 +1,5 @@
-import { ciFailureLines } from "./land-report.mjs"
+import { freshRunVerdict, takeFreshRun } from "./fresh-run.mjs"
+import { ciFailureLines, failedJobs } from "./land-report.mjs"
 import { queueLine, readPull, removalLine } from "./merge-queue.mjs"
 
 const runsOf = ({ gh, repository, event, branch }) => {
@@ -22,7 +23,8 @@ export const failedRunFor = ({ gh, repository, branch, head, number, event }) =>
 
 const summary = (pull) => {
   const { passed, running, failed } = pull.checks
-  if (running.length > 0) return `checks are running (${passed.length} passed, ${running.length} running)`
+  if (running.length > 0)
+    return `checks are running (${passed.length} passed, ${running.length} running${failed.length > 0 ? `, ${failed.length} failed` : ""})`
   if (failed.length > 0) return `checks failed: ${failed.join(", ")}`
   return `checks passed (${passed.length})`
 }
@@ -54,9 +56,43 @@ export const followPull = async ({
   }
   const report = (event, pull) => {
     const run = failedRunFor({ gh, repository, branch, head: pull.head, number, event })
-    if (run === undefined)
+    if (run === undefined) {
       say(`follow: no failed ci run was found for pull request ${number}. Look at: gh pr checks ${number}`)
-    else for (const line of ciFailureLines({ repository, run, gh, git })) say(line)
+      return undefined
+    }
+    const jobs = failedJobs({ repository, run, gh })
+    for (const line of ciFailureLines({ repository, run, gh, git, logs: jobs.map((job) => job.log) })) say(line)
+    return { run, jobs }
+  }
+  const ciEnded = (pull) =>
+    !runsOf({ gh, repository, event: "pull_request", branch }).some(
+      (run) => run.head === pull.head && run.conclusion === null,
+    )
+  const freshRun = async (event, pull, failure) => {
+    if (failure === undefined) return false
+    const verdict = freshRunVerdict({ gh, repository, number, head: pull.head, jobs: failure.jobs })
+    if (!verdict.take) {
+      say(`follow: no fresh run: ${verdict.why}.`)
+      return false
+    }
+    say(
+      `follow: ci failed only in tests this diff cannot reach. Taking the one fresh run for head ${pull.head.slice(0, 7)}.`,
+    )
+    const fault = await takeFreshRun({
+      gh,
+      read,
+      repository,
+      number,
+      run: failure.run,
+      head: pull.head,
+      tests: verdict.tests,
+      queue: event === "merge_group",
+      sleep,
+      now,
+      interval,
+    })
+    if (fault !== undefined) say(`follow: the fresh run did not start: ${fault}`)
+    return fault === undefined
   }
   for (;;) {
     const pull = readPull({ read, repository, number })
@@ -80,7 +116,14 @@ export const followPull = async ({
       }
       say("follow: dropped from the merge queue. The queue's own run failed:")
       if (removalLine(again) !== undefined) say(`follow: ${removalLine(again)}`)
-      report("merge_group", again)
+      const failure = report("merge_group", again)
+      const reason = again.removal?.reason
+      if (reason !== "failed_checks")
+        say(`follow: no fresh run: the queue recorded ${reason ?? "no reason"} for this drop, not failed_checks.`)
+      else if (await freshRun("merge_group", again, failure)) {
+        queuedSeen = false
+        continue
+      }
       say(`follow: nothing merged. Fix the failure, push, and run: pnpm land --watch`)
       return 1
     } else {
@@ -97,8 +140,8 @@ export const followPull = async ({
       )
       return 1
     }
-    if (!pull.queued && pull.checks.failed.length > 0) {
-      report("pull_request", pull)
+    if (!pull.queued && pull.checks.failed.length > 0 && pull.checks.running.length === 0 && ciEnded(pull)) {
+      if (await freshRun("pull_request", pull, report("pull_request", pull))) continue
       return 1
     }
     const green = !pull.queued && pull.checks.running.length === 0 && pull.checks.passed.length > 0
