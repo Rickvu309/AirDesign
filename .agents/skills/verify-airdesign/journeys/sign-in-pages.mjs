@@ -90,6 +90,12 @@ export default async function drive(kit) {
   await capture("signed-in-by-link")
   note(`the emailed link signed ${address} in at ${origin}/`)
 
+  await page.goto(`${siteOrigin}/sign-in?next=%2Fsettings%2Faccount`)
+  await expect(page).toHaveURL(`${origin}/settings/account`)
+  await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
+  await capture("signed-in-skips-sign-in")
+  note(`${address}, already signed in, opened ${siteOrigin}/sign-in and went straight to ${origin}/settings/account`)
+
   await page.context().clearCookies()
   await page.goto(second.link)
   await expect(page).toHaveURL(`${siteOrigin}/sign-in/expired`)

@@ -8,7 +8,7 @@ import {
   viewportHeightFindings,
   viewportReachFindings,
 } from "../site-mobile/site-rules.ts"
-import { pagesIn, serveSite, stylesOf, type ServedSite } from "./site-server.ts"
+import { pagesIn, serveSite, signedOut, stylesOf, type ServedSite } from "./site-server.ts"
 
 const paths = ["/", "/sign-in", "/sign-in/check", "/sign-in/expired", "/privacy", "/terms"]
 const phone = { width: 390, height: 844 }
@@ -24,7 +24,7 @@ test.afterAll(async () => {
   await site.close()
 })
 
-test.use({ viewport: phone, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
+test.use({ storageState: signedOut, viewport: phone, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
 
 async function open(page: Page, path: string) {
   await page.addInitScript(() => sessionStorage.setItem("airdesign.pending-sign-in-email", "a@b.com"))

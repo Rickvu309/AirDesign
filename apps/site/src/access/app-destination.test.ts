@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import { appDestination, safeNextPath } from "./app-destination"
+import { appDestination, safeNextPath, signedInDestination } from "./app-destination"
 
 const hostileValues = [
   "//",
@@ -55,6 +55,37 @@ describe("appDestination", () => {
     expect(appDestination("", "/deck/abc?x=1")).toBe("/deck/abc?x=1")
     expect(appDestination(undefined, null)).toBe("/")
   })
+})
+
+describe("signedInDestination", () => {
+  const account = `airdesign.account=${"a".repeat(32)}`
+
+  it("sends a browser that holds an account key to the app at the remembered path", () => {
+    expect(
+      signedInDestination(`theme=dark; ${account}`, "https://studio.airdesign.app", "?next=%2Fdeck%2Fabc%3Fx%3D1"),
+    ).toBe("https://studio.airdesign.app/deck/abc?x=1")
+    expect(signedInDestination(account, "https://studio.airdesign.app", "")).toBe("https://studio.airdesign.app/")
+  })
+
+  it("keeps a hostile next path on the app host", () => {
+    expect(signedInDestination(account, "https://studio.airdesign.app", "?next=//evil.example")).toBe(
+      "https://studio.airdesign.app/",
+    )
+  })
+
+  it.each(["", "airdesign.account=", "airdesign.account=not-a-key", `other.account=${"a".repeat(32)}`])(
+    "keeps the form for the cookie %j",
+    (cookie) => {
+      expect(signedInDestination(cookie, "https://studio.airdesign.app", "?next=/deck/abc")).toBeNull()
+    },
+  )
+
+  it.each(["", undefined])(
+    "keeps the form when the app origin is %j, so the page never sends itself to itself",
+    (origin) => {
+      expect(signedInDestination(account, origin, "?next=/sign-in")).toBeNull()
+    },
+  )
 })
 
 describe("the sign-in page", () => {

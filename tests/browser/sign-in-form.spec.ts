@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 import { signInCopy } from "../../apps/site/src/access/sign-in-copy.ts"
-import { serveSite, type ServedSite } from "./site-server.ts"
+import { serveSite, signedOut, type ServedSite } from "./site-server.ts"
 
 const phone = { width: 390, height: 844 }
 const desktop = { width: 1470, height: 923 }
@@ -14,6 +14,23 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await site.close()
+})
+
+test.use({ storageState: signedOut })
+
+test("a browser that is already signed in goes straight to the app at the page it asked for", async ({ page }) => {
+  await page.context().addCookies([{ name: "airdesign.account", value: "a".repeat(32), url: site.origin }])
+  await page.route(`${site.app}/**`, (route) => route.fulfill({ contentType: "text/html", body: "<p>studio</p>" }))
+  await page.goto(`${site.origin}/sign-in?next=${encodeURIComponent("/deck/abc?slide=2")}`)
+  await expect(page).toHaveURL(`${site.app}/deck/abc?slide=2`)
+  await page.goBack()
+  await expect(page).not.toHaveURL(/\/sign-in/)
+})
+
+test("a browser with no account key stays on the sign-in form", async ({ page }) => {
+  await page.goto(`${site.origin}/sign-in?next=${encodeURIComponent("/deck/abc")}`)
+  await expect(page.getByLabel("Email")).toBeVisible()
+  await expect(page).toHaveURL(`${site.origin}/sign-in?next=${encodeURIComponent("/deck/abc")}`)
 })
 
 async function answerSignIn(page: Page, path: string, status: number): Promise<unknown[]> {
