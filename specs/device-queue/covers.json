@@ -34,8 +34,8 @@
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "fbd9019ccab0",
-      "blob": "5cb9da9388fce2bddd3e505ee0633fb7f9bf3efd"
+      "digest": "d414df951ae5",
+      "blob": "884f4194567de70892671caace0cc22eaaf92c3a"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -46,8 +46,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "ee39c2c257c4",
-      "blob": "20b5a44e56a393fd00a60e3e537c169ea5caa958"
+      "digest": "f612cbab57b9",
+      "blob": "60a5037aae63cc46c70cc4a81c5519631fd50fa6"
     },
     {
       "file": "packages/live/src/held.ts",

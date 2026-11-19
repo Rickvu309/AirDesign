@@ -38,7 +38,7 @@ export function units(selected) {
   const grouped = new Map()
   const single = []
   for (const state of selected) {
-    if (state.drive) single.push({ states: [state], aira: false })
+    if (state.drive) single.push({ states: [state], aira: state.aira === true })
     else {
       const unit = grouped.get(state.journey) ?? { journey: state.journey, states: [], aira: false }
       unit.states.push(state)

@@ -174,6 +174,53 @@ it("follows slide commands and continues following the next element revision", a
   expect(await shown(cache)).toBe("After slides")
 })
 
+it("paints another writer's edit while the opening index send is still on the wire", async () => {
+  const real = memoryRemote()
+  let release = () => {}
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let indexStarted = false
+  let indexReturned = false
+  const remote: Remote = {
+    ...real,
+    index: async (body) => {
+      indexStarted = true
+      await held
+      indexReturned = true
+      return real.index!(body)
+    },
+  }
+  const cache = connect(remote)
+  await cache.openDeck("deck")
+  const importing = {
+    slides: [{ id: "258", position: 0 }],
+    elements: [{ node, kind: "shape" as const, value: "Title", box: null, grouped: false }],
+  }
+  expect(await cache.index("deck", importing)).toEqual({ ok: true })
+  const flushing = cache.flush("deck")
+  try {
+    await vi.waitFor(() => {
+      if (!indexStarted) throw new Error("index has not started")
+    })
+    let followed = false
+    const following = cache.follow("deck").then((result) => {
+      followed = true
+      return result
+    })
+    await real.commit({ deck: "deck", batch: [{ node, value: "Agent" }] })
+    await vi.waitFor(() => {
+      if (!followed) throw new Error("follow is still behind the index")
+    })
+    expect(indexReturned).toBe(false)
+    expect(await following).toMatchObject({ ok: true, changed: true })
+    expect(await shown(cache)).toBe("Agent")
+  } finally {
+    release()
+    await flushing
+  }
+})
+
 it("keeps its own slide order when follow sees the committed revision", async () => {
   const { remote, calls } = traced()
   const cache = connect(remote)
