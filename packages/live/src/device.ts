@@ -1,8 +1,10 @@
-import { readAccountCookie } from "@airdesign/catalog"
+import { readAccountCookie, type CommitResult, type DeckId } from "@airdesign/catalog"
 import { format } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
+
+type CommitRefusal = { readonly ok: false; readonly refusal: "storage" | "size" }
 
 type Page = {
   readonly factory: IDBFactory
@@ -12,6 +14,7 @@ type Page = {
   readonly edits: Map<string, string>
   readonly adopted: Map<string, number>
   readonly seen: Set<string>
+  readonly commitRefusals: Map<DeckId, CommitRefusal>
   newer?: true
 }
 
@@ -22,7 +25,14 @@ const watching = new Set<() => void>()
 function current(): Page {
   const factory = globalThis.indexedDB
   if (page === undefined || page.factory !== factory)
-    page = { factory, decks: new Map(), edits: new Map(), adopted: new Map(), seen: new Set() }
+    page = {
+      factory,
+      decks: new Map(),
+      edits: new Map(),
+      adopted: new Map(),
+      seen: new Set(),
+      commitRefusals: new Map(),
+    }
   return page
 }
 
@@ -65,6 +75,16 @@ export function pageEdits(): Map<string, string> {
 
 export function pageAdopted(): Map<string, number> {
   return current().adopted
+}
+
+export function commitRefusal(deck: DeckId): CommitRefusal | undefined {
+  return current().commitRefusals.get(deck)
+}
+
+export function keepCommitRefusal(deck: DeckId, declined: Extract<CommitResult, { ok: false }>): typeof declined {
+  const { refusal } = declined
+  if (refusal === "storage" || refusal === "size") current().commitRefusals.set(deck, { ok: false, refusal })
+  return declined
 }
 
 export function firstOnPage(key: string): boolean {

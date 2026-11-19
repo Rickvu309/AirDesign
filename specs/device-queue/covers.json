@@ -46,8 +46,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "31179b0ddd9e",
-      "blob": "88e26e89a07159016be481f5a12a9b6add9f842b"
+      "digest": "ee39c2c257c4",
+      "blob": "20b5a44e56a393fd00a60e3e537c169ea5caa958"
     },
     {
       "file": "packages/live/src/held.ts",

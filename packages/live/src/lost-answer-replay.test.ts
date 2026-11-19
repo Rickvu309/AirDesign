@@ -114,6 +114,25 @@ async function world() {
       request.answer = await server.commit(request.body)
     },
     Lose: (from) => lose(from.wire === "answered" ? lostAnswers : lostSends),
+    Refuse: async () => {
+      held().resolve(json(200, '{"ok":false,"refusal":"storage"}'))
+      wire = undefined
+      expect(await flushing).toEqual({ ok: false, refusal: "storage" })
+    },
+    FlushAfterRefusal: async () => {
+      const sent = new Promise<void>((resolve) => {
+        reached = resolve
+      })
+      flushing = cache.flush(deck)
+      await Promise.race([flushing, sent])
+      if (wire !== undefined) {
+        held().resolve(json(200, '{"ok":false,"refusal":"storage"}'))
+        wire = undefined
+        await flushing
+        throw new Error("sent the refused command again")
+      }
+      expect(await flushing).toEqual({ ok: false, refusal: "storage" })
+    },
     Answer: async () => {
       const request = held()
       if (request.answer === undefined) throw new Error("no answer")

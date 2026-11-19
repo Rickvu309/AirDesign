@@ -240,23 +240,22 @@ function slide(page: Page, number: number, count: number) {
   return page.getByRole("button", { name: slideListCopy.slideName(number, count), exact: true })
 }
 
-for (const [name, edit] of [
-  [
-    "typed edit",
-    async (page: Page) => {
-      await slide(page, 1, 2).click()
-      await typeAtEnd(page, "!")
-      await expect(page.getByRole("button", { name: undoCopy.undoNamed.text })).toBeEnabled()
-    },
-  ],
-  [
-    "added slide",
-    async (page: Page) => {
-      await addSlide(page)
-      await expect(slide(page, 3, 3)).toBeVisible()
-    },
-  ],
-] as const) {
+async function typeOnFirstSlide(page: Page) {
+  await slide(page, 1, 2).click()
+  await typeAtEnd(page, "!")
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.text })).toBeEnabled()
+}
+
+async function addThirdSlide(page: Page) {
+  await addSlide(page)
+  await expect(slide(page, 3, 3)).toBeVisible()
+}
+
+for (const { name, edit, sizeRefusal } of [
+  { name: "typed edit", edit: typeOnFirstSlide, sizeRefusal: false },
+  { name: "added slide", edit: addThirdSlide, sizeRefusal: false },
+  { name: "typed edit refused for size", edit: typeOnFirstSlide, sizeRefusal: true },
+]) {
   test(`an earlier commit cannot mark a later ${name} Saved`, async ({ page, context, stack }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
@@ -271,7 +270,12 @@ for (const [name, edit] of [
     let sent = 0
     await page.route("**/decks/commit", async (route) => {
       sent += 1
-      await (sent === 1 ? first.promise : second.promise)
+      const earlier = sent === 1
+      await (earlier ? first.promise : second.promise)
+      if (!earlier && sizeRefusal) {
+        await route.fulfill({ status: 413, json: { ok: false, refusal: "size" } })
+        return
+      }
       await route.fallback()
     })
 
@@ -284,14 +288,14 @@ for (const [name, edit] of [
       first.resolve()
       await expect.poll(() => sent).toBe(2)
       expect(await revision()).toBe(before + 1)
-      await expect(saveStatus(page)).toHaveText(saving)
+      if (!sizeRefusal) await expect(saveStatus(page)).toHaveText(saving)
     } finally {
       first.resolve()
       second.resolve()
     }
 
-    await expect(saveStatus(page)).toHaveText(saved)
-    expect(await revision()).toBe(before + 2)
+    await expect(saveStatus(page)).toHaveText(sizeRefusal ? "Unable to save" : saved)
+    expect(await revision()).toBe(before + (sizeRefusal ? 1 : 2))
   })
 }
 
@@ -317,9 +321,24 @@ for (const answer of refusals) {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
+    const indexReached = Promise.withResolvers<void>()
+    const releaseIndex = Promise.withResolvers<void>()
+    await page.route("**/decks/index", async (route) => {
+      indexReached.resolve()
+      await releaseIndex.promise
+      await route.fallback()
+    })
     const deck = await openClean(page)
     const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
     const before = await revision()
+    const watched = Promise.withResolvers<void>()
+    await page.route("**/decks/watch", async (route) => {
+      await page.unroute("**/decks/watch")
+      const watching = page.waitForRequest("**/decks/watch")
+      await route.fulfill({ json: { ok: true, deck, revision: before } })
+      await watching
+      watched.resolve()
+    })
     let sent = 0
     await page.route(
       (url) => url.pathname === "/decks/commit",
@@ -328,13 +347,17 @@ for (const answer of refusals) {
         return route.fulfill({ status: answer.status, json: { ok: false, refusal: answer.refusal } })
       },
     )
-    await typeAtEnd(page, "!")
+    try {
+      await indexReached.promise
+      await typeAtEnd(page, "!")
+      await expect(saveStatus(page)).toHaveText(saving)
+    } finally {
+      releaseIndex.resolve()
+    }
+    await watched.promise
     await expect(saveStatus(page)).toHaveText("Unable to save")
     await expect(page.getByText(answer.says)).toBeVisible()
-    const refused = sent
-    await page.waitForTimeout(2500)
-    expect(sent).toBe(refused)
-    await expect(saveStatus(page)).toHaveText("Unable to save")
+    expect(sent).toBe(1)
     expect(await revision()).toBe(before)
   })
 }

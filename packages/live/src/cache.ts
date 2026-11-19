@@ -1,5 +1,4 @@
-import { authorableValue, authorableSlide } from "@airdesign/catalog"
-import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
+import { authorableValue, authorableSlide, readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
 import {
   currentBox,
   currentValue,
@@ -22,7 +21,7 @@ import {
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { indexedGridOpening } from "./grid-opening.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
-import { accountKey, markNewer, storeNewer } from "./device.js"
+import { accountKey, commitRefusal, keepCommitRefusal, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
 import { slideBatch, slideChange, valueChange, type Enqueued } from "./deck-edit.js"
 import {
@@ -167,7 +166,7 @@ export function connect(remote: Remote, options: Options = {}) {
         sending.splice(start, rowsInBatch.length, ...rowsInBatch.map(({ once: _sealed, ...open }) => open))
         continue
       }
-      if (!result.ok) return result
+      if (!result.ok) return keepCommitRefusal(deck, result)
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }
       }
@@ -416,7 +415,7 @@ export function connect(remote: Remote, options: Options = {}) {
         if (accountKey() === undefined) return signedOut
         await recovered(parsed.deck)
         return serial(parsed.deck, async () => {
-          const result = await sendRows(parsed.deck)
+          const result = commitRefusal(parsed.deck) ?? (await sendRows(parsed.deck))
           const { aside, tooLarge } = await takeAside(parsed.deck)
           if (aside === 0) return result
           return tooLarge === 0 ? { ...result, aside } : { ...result, aside, asideTooLarge: tooLarge }

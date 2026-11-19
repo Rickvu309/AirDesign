@@ -18,7 +18,8 @@
 \* code cannot tell the two apart, so the model has one Lose for both. post in
 \* packages/live/src/remote.ts reads a 5xx answer, such as the server's own failure or a
 \* proxy's error page, and a 2xx answer cut off before its end as the same Lose. A 4xx is
-\* the server's answer.
+\* the server's answer. A terminal storage or size refusal stays with the page. The next
+\* flush returns the same refusal without sending, and reload clears the refusal.
 EXTENDS Integers
 
 VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due, mine
@@ -31,7 +32,7 @@ TypeOK ==
   /\ lands \in 0..2
   /\ landedAt \in 0..3
   /\ rev \in 0..3
-  /\ wire \in {"none", "sent", "answered"}
+  /\ wire \in {"none", "sent", "answered", "refused"}
   /\ orphan \in {"none", "sent"}
   /\ pending \in BOOLEAN
   /\ mirror \in 0..2
@@ -88,6 +89,19 @@ Lose ==
   /\ due' = TRUE
   /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other, mine>>
 
+Refuse ==
+  /\ wire = "sent"
+  /\ lands = 0
+  /\ wire' = "refused"
+  /\ due' = TRUE
+  /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other, mine>>
+
+FlushAfterRefusal ==
+  /\ wire = "refused"
+  /\ due
+  /\ due' = FALSE
+  /\ UNCHANGED <<lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, mine>>
+
 \* sendRows reads the answer (confirmRows). A revision the copy already holds means the mirror
 \* holds the command: the row goes and nothing is added. Otherwise the row becomes a confirmed
 \* row. The copy stores the revision it holds; with one page it equals known whenever an answer
@@ -143,7 +157,7 @@ Other ==
   /\ rev' = rev + 1
   /\ UNCHANGED <<lands, landedAt, wire, orphan, pending, mirror, known, reloads, due, mine>>
 
-Next == Send \/ Land \/ Lose \/ Answer \/ Reload \/ OrphanLands \/ OrphanLost \/ Adopt \/ Other
+Next == Send \/ Land \/ Lose \/ Refuse \/ FlushAfterRefusal \/ Answer \/ Reload \/ OrphanLands \/ OrphanLost \/ Adopt \/ Other
 
 \* The server answers again: a request sent again and again is not lost every time, and an
 \* answer on its way is not lost every time. A due send happens, and a page reads the deck.
@@ -176,5 +190,9 @@ OpenNeverFails == Copies <= 1 \/ ViewSkips
 \* Once the server answers again, the pending row lands and goes with no new edit. Harm if
 \* broken: an edit made while the server could not be reached stays on the device, and other
 \* devices and agents read an old deck until the person edits again.
-ResentOnceReached == <>~pending
+ResentOnceReached == pending ~> (~pending \/ wire = "refused")
+
+RefusedStaysPending == wire = "refused" => pending
+
+RefusalLastsUntilReload == [][wire = "refused" /\ wire' # "refused" => reloads' > reloads]_vars
 ====
