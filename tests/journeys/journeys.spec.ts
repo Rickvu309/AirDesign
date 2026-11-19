@@ -86,6 +86,7 @@ for (const name of [
   "connector-follow",
   "auto-layout-frame",
   "auto-layout-text",
+  "auto-layout-opacity",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
