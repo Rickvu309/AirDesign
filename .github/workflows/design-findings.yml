@@ -1,0 +1,28 @@
+name: design-findings
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  design-findings:
+    name: design-findings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        continue-on-error: true
+        with:
+          pattern: browser-timings-design-*
+          path: test-results
+          merge-multiple: true
+      - run: pnpm check --part=findings

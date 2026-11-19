@@ -50,6 +50,17 @@ export function units(selected) {
   return [...grouped.values(), ...single]
 }
 
+export function shardStates(selected, { current, total }) {
+  const loads = Array.from({ length: total }, () => 0)
+  const chosen = new Set()
+  for (const unit of units(selected).toSorted((a, b) => Number(b.aira) - Number(a.aira))) {
+    const lightest = loads.indexOf(Math.min(...loads))
+    loads[lightest] += unit.states.length
+    if (lightest === current - 1) for (const state of unit.states) chosen.add(state)
+  }
+  return selected.filter((state) => chosen.has(state))
+}
+
 export async function visit(unit, kit, reached) {
   if (unit.journey === undefined) {
     await unit.states[0].drive(kit)

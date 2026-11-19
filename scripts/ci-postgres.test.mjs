@@ -2,6 +2,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
+import { stepsOf } from "./check.mjs"
+import { checkSteps } from "./check-steps.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -19,8 +21,19 @@ const workflows = fs
 const jobs = workflows.flatMap(({ name, jobs: found }) =>
   Object.entries(found).map(([job, { steps = [] }]) => ({ name: `${name} ${job}`, steps })),
 )
-const needsPostgres = (step) =>
-  /pnpm (check --part|check:pptx|metric:paint-fidelity|test:journeys)|check-mutation\.mjs/.test(step.run ?? "")
+const partRunsTests = (part) =>
+  checkSteps
+    .stagesFor(part, true)
+    .flat()
+    .flatMap(stepsOf)
+    .some(([name]) => ["unit-tests", "script-tests", "browser-tests"].includes(name))
+const needsPostgres = (step) => {
+  const part = (step.run ?? "").match(/pnpm check --part=([\w-]+)$/)?.[1]
+  return (
+    /pnpm (check --part=\$|check:pptx|metric:paint-fidelity|test:journeys)|check-mutation\.mjs/.test(step.run ?? "") ||
+    (part !== undefined && partRunsTests(part))
+  )
+}
 const action = "./.github/actions/postgres"
 
 same(
