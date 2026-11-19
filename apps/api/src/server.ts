@@ -19,7 +19,6 @@ import {
   readAccountCookie,
   readSessionCookie,
   readTokenRequest,
-  type DeckId,
   type FormPairs,
 } from "@airdesign/catalog"
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
@@ -34,6 +33,8 @@ import { airaUsageRoute } from "./aira-usage-route.js"
 import { deckListAnswers } from "./deck-list.js"
 import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
+import { DeckFollowers } from "./deck-followers.js"
+import { heldRevision } from "./deck-watch.js"
 import { DeckListen } from "./listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./deck-answer.js"
 import type { Sender } from "./mail.js"
@@ -45,7 +46,7 @@ import type { OriginalStore } from "./original-store.js"
 import { sameSecret } from "./secrets.js"
 import { checkedResource, readUrl } from "./resource.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
-import { savedAnswers, readSaved, watchedRevision } from "./saved.js"
+import { savedAnswers } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 import { undoAnswers } from "./undo.js"
 
@@ -67,9 +68,12 @@ export type ApiOptions = {
   readonly aira?: AiraSettings
   readonly closing?: Closing
   readonly forwardSecret?: string
+  readonly measureLimit?: number
 }
 
-type ServedOptions = ApiOptions & { readonly closing: Closing }
+const measureLimit = 5_000
+
+type ServedOptions = ApiOptions & { readonly closing: Closing; readonly followers: DeckFollowers }
 
 type Context = {
   readonly options: ServedOptions
@@ -240,23 +244,6 @@ async function caller(visit: Visit): Promise<{ readonly email: string; readonly 
   return undefined
 }
 
-async function hold(
-  options: ApiOptions,
-  deck: DeckId,
-  cursor: number | null,
-  email: string,
-  signal: AbortSignal,
-): Promise<number | "owner" | "deleted" | undefined> {
-  for (;;) {
-    if (signal.aborted) return undefined
-    await options.listen.ready()
-    if (signal.aborted) return undefined
-    const revision = watchedRevision(await readSaved(options.deck, deck), email, cursor)
-    if (revision !== undefined) return revision
-    await options.listen.wait(signal)
-  }
-}
-
 function notFound(res: ServerResponse): void {
   res.writeHead(404)
   res.end()
@@ -349,7 +336,8 @@ async function watchRoute(visit: Visit): Promise<void> {
     return
   }
   const signal = gone(res)
-  const revision = await hold(options, parsed.deck, parsed.cursor, email, signal)
+  const leave = options.followers.follow(parsed.deck)
+  const revision = await heldRevision(options, parsed.deck, parsed.cursor, email, signal).finally(leave)
   if (revision === undefined || signal.aborted || res.writableEnded || res.destroyed) return
   if (revision === "owner" || revision === "deleted") {
     sendJson(res, 200, { ok: false, refusal: revision })
@@ -450,6 +438,11 @@ async function mcpRoute(visit: Visit): Promise<void> {
       hosts: options.hosts ?? localHosts,
       bodyCap: limits.body,
       fail: (error) => answerThrow(visit, name, error),
+      measures: {
+        listen: options.listen,
+        following: (deck) => options.followers.following(deck),
+        limit: options.measureLimit ?? measureLimit,
+      },
     },
     req,
     res,
@@ -562,6 +555,7 @@ export function createApi(given: ApiOptions): Server {
   const options: ServedOptions = {
     ...given,
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
+    followers: new DeckFollowers(given.now ?? Date.now),
   }
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)

@@ -23,6 +23,8 @@ export type CanvasGeometry = {
 
 export type Framing = "auto" | "free"
 
+export type Measure = "due" | "owed"
+
 export type GroupOf = { readonly id: ElementId; readonly box: PaintBox | null; readonly frame?: Framing }
 
 export type CanvasTie = { readonly node: ElementId; readonly site: number }
@@ -36,6 +38,7 @@ export type ElementPaint = {
   readonly backdrop?: true
   readonly frame?: Framing
   readonly inFrame?: Framing
+  readonly measure?: Measure
   readonly held?: number
   readonly opacity?: number
   readonly box: PaintBox | null

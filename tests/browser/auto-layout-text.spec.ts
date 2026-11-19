@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { settled } from "./design-panel"
 
@@ -61,7 +62,7 @@ async function placed(locator: Locator) {
   return box
 }
 
-test("a growing text box in an auto layout column pushes the next one down as it grows, and the export keeps both places", async ({
+test("a growing text box in an auto layout column pushes the next one down as it grows, shrinks back on Undo, and keeps both places through Redo and a reload", async ({
   page,
 }) => {
   await page.goto("/")
@@ -97,6 +98,17 @@ test("a growing text box in an auto layout column pushes the next one down as it
     .toBeLessThan(2)
   await page.keyboard.press("Escape")
   const moved = await placed(bottom)
+  await page.getByRole("button", { name: undoCopy.undoNamed.text, exact: true }).click()
+  await expect(top).not.toContainText("Another line")
+  await expect.poll(async () => Math.abs((await placed(bottom)).y - before.y)).toBeLessThan(2)
+  await expect
+    .poll(async () => {
+      const shrunk = await placed(top)
+      return Math.abs((await placed(bottom)).y - (shrunk.y + shrunk.height) - gap)
+    })
+    .toBeLessThan(2)
+  await page.getByRole("button", { name: undoCopy.redoNamed.text, exact: true }).click()
+  await expect.poll(async () => Math.abs((await placed(bottom)).y - moved.y)).toBeLessThan(2)
   await page.reload()
   await settled(page)
   await expect.poll(async () => Math.abs((await placed(bottom)).y - moved.y)).toBeLessThan(2)

@@ -29,7 +29,7 @@
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeck", "addTurn"],
       "digest": "6c5d59e34060",
-      "blob": "8a25ce370e6ea4b9a876fe66cfbf9e6dd33ac9a5"
+      "blob": "40c3d9b05884498ed45df6e9cf587457578e5960"
     },
     {
       "file": "apps/api/src/agent-turn.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/api/src/server.ts",
       "names": ["caller", "mcpRoute"],
-      "digest": "bd7bd3a67eb8",
-      "blob": "15d2aa8ae40ee31b26973ee992aa098e00c7ab9b"
+      "digest": "c374632e2208",
+      "blob": "d1f3ef948189752aafafdeccae553531ddacd846"
     },
     {
       "file": "packages/mcp/src/admit.ts",

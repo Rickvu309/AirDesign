@@ -1,4 +1,11 @@
-import { currentBox, currentValue, openingElement, type ElementId, type Register } from "@airdesign/document"
+import {
+  currentBox,
+  currentValue,
+  measureStale,
+  openingElement,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
 import { designRows } from "@/design-rows"
 import { imageTexts } from "@/patch-images"
 
@@ -27,7 +34,7 @@ export function structureOf(register: Register | null, bound: ReadonlySet<string
     const body = register.elements[node]
     return body === undefined || !bound.has(node) ? [] : [[node, currentBox(body)]]
   })
-  const sizes = resized(register)
+  const sizes = [...resized(register), ...measureStale(register)]
   if (sizes.length > 0) return JSON.stringify([register.order, tables, designed, followed, sizes])
   if (followed.length > 0) return JSON.stringify([register.order, tables, designed, followed])
   if (designed.length > 0) return JSON.stringify([register.order, tables, designed])

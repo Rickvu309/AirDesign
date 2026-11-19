@@ -11,13 +11,13 @@
       "file": "packages/document/src/decide.ts",
       "names": ["landedPatch", "shownPatch"],
       "digest": "ef74e6ff3820",
-      "blob": "2f4972c2e048809bc3a99c81c9e036e634f4146f"
+      "blob": "54402c37c2ca634c34cd8cf4212ab2ed8e7f9e93"
     },
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
       "digest": "d0038a7aaea5",
-      "blob": "dbcd07654028c0c0d7e92dcb97485c43d708b5f0"
+      "blob": "360e11ee93579b7bd2d52cb9d60cbb3fc5d0b7f8"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
       "digest": "b3eef95f3943",
-      "blob": "be2513a871371c30f59f24b63c9422d916daf18a"
+      "blob": "c53aeacbfa077037bb7b4b0fbe37006f1822de5f"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
@@ -70,8 +70,8 @@
     {
       "file": "apps/web/src/exported-parts.ts",
       "names": ["editedParts", "exportedParts"],
-      "digest": "c5701d939b9c",
-      "blob": "2d77084890464e01b7535c33c2e509d691d05229"
+      "digest": "d20a04aee6f9",
+      "blob": "f80c575699f40f4a0e8de6b26a5fed6baa47fb28"
     },
     {
       "file": "apps/web/src/deck-paint.ts",
@@ -101,7 +101,7 @@
       "file": "packages/pptx/src/alpha-codec.ts",
       "names": ["alphaKept"],
       "digest": "ce0077cf1df2",
-      "blob": "6bd25ed3c26b356851b8587c8beb1b6f6cbe9665"
+      "blob": "4ab5c3c47de1a330380aa184de3080a2bb1cda43"
     },
     {
       "file": "packages/engine/src/apply-change.ts",

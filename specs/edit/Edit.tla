@@ -20,9 +20,10 @@ VARIABLES
   beforeFrozen,
   laterFrozen,
   refused,
-  hidden
+  hidden,
+  edited
 
-vars == <<phase, personBefore, personAfter, agent, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
+vars == <<phase, personBefore, personAfter, agent, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 Version == personBefore + personAfter + agent + 2 * hidden
 
@@ -54,6 +55,7 @@ TypeOK ==
   /\ laterFrozen \in {-1, 0, 1}
   /\ refused \in {0, 1}
   /\ hidden \in {0, 1, 2}
+  /\ edited \in BOOLEAN
 
 Init ==
   /\ phase = "idle"
@@ -73,6 +75,7 @@ Init ==
   /\ laterFrozen = -1
   /\ refused = 0
   /\ hidden = 0
+  /\ edited = FALSE
 
 \* A person write has no refusal. It always changes the property.
 \* A person edit during a live run sets the guard, including after the run has landed a row.
@@ -83,7 +86,16 @@ PersonWrites ==
   /\ personAfter' = IF agent = 1 THEN personAfter + 1 ELSE personAfter
   /\ guarded' = IF phase = "running" THEN TRUE ELSE guarded
   /\ guardedAt' = IF phase = "running" /\ guarded = FALSE THEN agent ELSE guardedAt
+  /\ edited' = IF phase = "running" THEN TRUE ELSE edited
   /\ UNCHANGED <<phase, agent, readAt, agentAt, claims, sawFirst, sawSecond, atFirst, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
+
+\* The device writes the height it measured as a person row that sets only box.h. It lands like a person write but guards nothing, so the run that changed the text keeps editing.
+DeviceMeasures ==
+  /\ \/ agent = 1 /\ personAfter = 0
+     \/ agent = 0 /\ personBefore = 0
+  /\ personBefore' = IF agent = 0 THEN personBefore + 1 ELSE personBefore
+  /\ personAfter' = IF agent = 1 THEN personAfter + 1 ELSE personAfter
+  /\ UNCHANGED <<phase, agent, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 \* The run reads the current version. A person edit from before the run does not guard it.
 RunStarts ==
@@ -91,6 +103,7 @@ RunStarts ==
   /\ phase' = "running"
   /\ readAt' = Version
   /\ guarded' = FALSE
+  /\ edited' = FALSE
   /\ UNCHANGED <<personBefore, personAfter, agent, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
 
 \* Reading again names the current version, including after the first agent row. It does not clear a guard.
@@ -99,7 +112,7 @@ AgentRereads ==
   /\ agent \in {0, 1}
   /\ readAt # Version
   /\ readAt' = Version
-  /\ UNCHANGED <<phase, personBefore, personAfter, agent, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
+  /\ UNCHANGED <<phase, personBefore, personAfter, agent, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 \* The first row lands on the version the run names, while the run is open and unguarded.
 AgentWrites ==
@@ -112,7 +125,7 @@ AgentWrites ==
   /\ agentAt' = Version + 1
   /\ sawFirst' = readAt
   /\ atFirst' = Version + 1
-  /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, sawSecond, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
+  /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, sawSecond, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 \* A later row lands on a fresh read. The run may read again after its first row.
 AgentWritesAgain ==
@@ -124,7 +137,7 @@ AgentWritesAgain ==
   /\ claims' = readAt
   /\ agentAt' = Version + 1
   /\ sawSecond' = readAt
-  /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, sawFirst, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
+  /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, sawFirst, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 \* A later row lands on the claimed read when no person row has landed since the claim.
 AgentKeepsClaim ==
@@ -137,7 +150,7 @@ AgentKeepsClaim ==
   /\ agent' = 2
   /\ agentAt' = Version + 1
   /\ sawSecond' = readAt
-  /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, claims, sawFirst, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
+  /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, claims, sawFirst, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 \* A guarded run's agent edit does not land and is refused as protected, whatever its read.
 AgentRefusesProtected ==
@@ -149,7 +162,7 @@ RunStops ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ stoppedAt' = Version
-  /\ UNCHANGED <<personBefore, personAfter, agent, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, beforeFrozen, laterFrozen, refused, hidden>>
+  /\ UNCHANGED <<personBefore, personAfter, agent, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, beforeFrozen, laterFrozen, refused, hidden, edited>>
 
 \* Undo drops both agent rows of this run and leaves both person edits where they are.
 RunUndoes ==
@@ -159,7 +172,7 @@ RunUndoes ==
   /\ hidden' = agent
   /\ beforeFrozen' = personBefore
   /\ laterFrozen' = personAfter
-  /\ UNCHANGED <<personBefore, personAfter, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, refused>>
+  /\ UNCHANGED <<personBefore, personAfter, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, stoppedAt, refused, edited>>
 
 Done ==
   /\ phase = "undone"
@@ -167,12 +180,15 @@ Done ==
   /\ UNCHANGED vars
 
 Next ==
-  PersonWrites \/ RunStarts \/ AgentRereads \/ AgentWrites \/ AgentWritesAgain \/ AgentKeepsClaim \/ AgentRefusesProtected \/ RunStops \/ RunUndoes \/ Done
+  PersonWrites \/ DeviceMeasures \/ RunStarts \/ AgentRereads \/ AgentWrites \/ AgentWritesAgain \/ AgentKeepsClaim \/ AgentRefusesProtected \/ RunStops \/ RunUndoes \/ Done
 
 Spec == Init /\ [][Next]_vars
 
 \* A guarded run's agent edit is refused as protected, whatever its read.
 GuardedRunRefusesAsProtected == (phase = "running" /\ guarded) => AgentRefusal(readAt) = "protected"
+
+\* A run is guarded only by a person's own edit during it, never by a measured height alone.
+GuardedOnlyByAPersonEdit == guarded => edited
 
 \* The person write is never refused.
 PersonAlwaysLands == refused = 0
