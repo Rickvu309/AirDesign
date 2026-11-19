@@ -114,7 +114,7 @@ export function useDeckOpen(deck: OpeningDeck) {
         const indexed = await connect(memoryRemote()).openDeck(id)
         if (live && indexed.ok && gridSectionStarts(indexed.register) !== undefined) reconcile(indexed.register)
       }
-      await flushOriginal(id)
+      void flushOriginal(id)
       const ended = await followDeck(
         connect(server),
         id,
