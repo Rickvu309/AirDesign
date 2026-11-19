@@ -280,7 +280,7 @@ export function CustomColor({
             spellCheck={false}
             autoComplete="off"
             maxLength={7}
-            value={typed ?? (value === undefined ? "" : `#${hex}`)}
+            value={typed ?? (value === undefined ? "" : hex)}
             onChange={(event) => setTyped(event.target.value)}
             onBlur={(event) => {
               if (typed !== null) commitTyped(event.currentTarget.value)

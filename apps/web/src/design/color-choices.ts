@@ -92,7 +92,7 @@ export function deckChoices(palette: Palette): readonly Choice[] {
   const taken = new Set(palette.templateColors.map((swatch) => bare(swatch.css)))
   return palette.deck
     .filter((hex) => !taken.has(hex))
-    .map((hex) => ({ color: { rgb: hex }, css: `#${hex}`, name: colorCopy.hexName(hex) }))
+    .map((hex) => ({ color: { rgb: hex }, css: `#${hex}`, name: hex }))
 }
 
 export function tintChoices(templateColors: readonly Swatch[], value: Color | undefined): readonly Choice[] {
@@ -102,7 +102,7 @@ export function tintChoices(templateColors: readonly Swatch[], value: Color | un
   if (!("scheme" in plain) || plain.transforms === undefined || plain.transforms.length === 0) return shades
   if (shades.some((choice) => matches(choice.color, plain))) return shades
   const hex = shownHex(plain, templateColors)
-  return [{ color: plain, css: `#${hex}`, name: colorCopy.hexName(hex) }, ...shades]
+  return [{ color: plain, css: `#${hex}`, name: hex }, ...shades]
 }
 
 export function typedColor(text: string): Color | null {
@@ -163,5 +163,5 @@ export function shownName(value: Color, templateColors: readonly Swatch[]): stri
     const named = templateColors.find((swatch) => swatch.scheme === scheme)
     if (named !== undefined) return named.name
   }
-  return colorCopy.hexName(shownHex(value, templateColors))
+  return shownHex(value, templateColors)
 }

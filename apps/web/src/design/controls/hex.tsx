@@ -1,6 +1,5 @@
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
-import { colorCopy } from "@/copy/color-copy"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import { cn } from "@/lib/class-names"
@@ -26,7 +25,7 @@ export function HexControl({ control, palette, onChange }: ControlProps) {
             type="button"
             variant="ghost"
             aria-label={control.label}
-            title={shown === null ? control.label : `${control.label} ${colorCopy.hexName(shown)}`}
+            title={shown === null ? control.label : `${control.label} ${shown}`}
             className={cn(fieldLook, "gap-1 px-1")}
           />
         }

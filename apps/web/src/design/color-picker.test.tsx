@@ -7,8 +7,6 @@ import type { Palette } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
 import { PickerBody } from "@/design/color-picker"
 
-const hash = "#"
-
 const palette: Palette = {
   templateColors: namedByColor([
     { scheme: "dk1" as const, css: "000000" },
@@ -50,7 +48,7 @@ describe("the colour list", () => {
       colorNameCopy.numbered(colorNameCopy.black, 2),
       colorNameCopy.blue,
       colorCopy.add,
-      `${hash}C00000`,
+      "C00000",
     ])
     expect(buttons(markup).filter((button) => button.pressed === "true")).toEqual([])
     expect(markup).not.toContain(`aria-label="${colorCopy.hue}"`)
@@ -70,7 +68,7 @@ describe("the colour list", () => {
     expect(open).toContain(`aria-label="${opacityCopy.label}"`)
     expect(open).toContain(`aria-label="${colorCopy.hex}"`)
     expect(open).toContain(`aria-label="${colorCopy.opacityPercent}"`)
-    expect(open).toContain(`value="${hash}8FAADC"`)
+    expect(open).toContain(`value="8FAADC"`)
     expect(open).toContain(colorCopy.moreTints)
 
     const hexOnly = renderToStaticMarkup(
@@ -95,7 +93,7 @@ describe("the colour list", () => {
       />,
     )
     expect(pickingHex).not.toContain(colorCopy.tints)
-    expect(pickingHex).toContain(`value="${hash}1F4E79"`)
+    expect(pickingHex).toContain(`value="1F4E79"`)
   })
 
   it("offers a way to show the rest of the deck when one row of swatches is not enough", () => {
@@ -108,7 +106,7 @@ describe("the colour list", () => {
     )
     expect(markup).toContain(colorCopy.moreOthers)
     const others = markup.split(`aria-label="${colorCopy.others}"`)[1] ?? ""
-    const shown = buttons(others).filter((button) => button.name.startsWith(hash))
+    const shown = buttons(others).filter((button) => /^[0-9A-F]{6}$/.test(button.name))
     expect(shown).toHaveLength(17)
   })
 })

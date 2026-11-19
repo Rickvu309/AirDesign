@@ -174,9 +174,11 @@ describe("template color tints inside Add color", () => {
 })
 
 describe("a custom colour", () => {
-  it("reads six hex digits with or without the hash, in either case", () => {
-    expect(typedColor(`${hash}1F4E79`)).toEqual({ rgb: "1F4E79" })
-    expect(typedColor(" 1f4e79 ")).toEqual({ rgb: "1F4E79" })
+  it.each([`${hash}1f4e79`, "1F4E79", " 1f4e79 "])("accepts a typed color of %j", (text) => {
+    expect(typedColor(text)).toEqual({ rgb: "1F4E79" })
+  })
+
+  it("rejects incomplete or invalid hex", () => {
     expect(typedColor("1F4E7")).toBeNull()
     expect(typedColor("#GGGGGG")).toBeNull()
   })
@@ -207,11 +209,11 @@ describe("the shown value", () => {
         },
         templateColors,
       ),
-    ).toBe(`${hash}8FAADC`)
-    expect(shownName({ rgb: "1F4E79" }, templateColors)).toBe(`${hash}1F4E79`)
-    expect(shownName({ preset: "red" }, templateColors)).toBe(`${hash}FF0000`)
+    ).toBe("8FAADC")
+    expect(shownName({ rgb: "1F4E79" }, templateColors)).toBe("1F4E79")
+    expect(shownName({ preset: "red" }, templateColors)).toBe("FF0000")
     expect(shownName({ scheme: "accent1", transforms: [{ op: "satMod", val: 50_000 }] }, templateColors)).toMatch(
-      /^#[0-9A-F]{6}$/,
+      /^[0-9A-F]{6}$/,
     )
   })
 })

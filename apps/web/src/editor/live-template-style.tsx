@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { colorCopy } from "@/copy/color-copy"
 import { designCopy } from "@/copy/design-copy"
 import { ColorPicker } from "@/design/color-picker"
 import { namedByColor } from "@/design/color-names"
@@ -324,7 +325,7 @@ function TemplateStyleDialog({
                           variant="outline"
                           className="size-9"
                           aria-label={label}
-                          title={`${label} #${hex}`}
+                          title={`${label} ${colorCopy.hexName(hex)}`}
                           style={{ backgroundColor: `#${hex}` }}
                         />
                       }
@@ -350,7 +351,7 @@ function TemplateStyleDialog({
                         variant="outline"
                         className="size-9"
                         aria-label={color.name}
-                        title={`${color.name} #${color.color}`}
+                        title={`${color.name} ${colorCopy.hexName(color.color)}`}
                         style={{ backgroundColor: `#${color.color}` }}
                       />
                     }
