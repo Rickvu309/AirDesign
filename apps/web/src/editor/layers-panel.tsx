@@ -225,7 +225,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         className={cn(
           "group/layer relative flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-[var(--shape-control)] pr-1 text-[length:var(--type-caption)] select-none",
           chosen ? "bg-[var(--row)]" : within ? "bg-[var(--row-inside)] hover:bg-black/4" : "hover:bg-black/4",
-          dim ? "text-faint" : "text-foreground",
+          dim ? "text-quiet" : "text-foreground",
         )}
         style={{ paddingLeft: `calc(var(--space-4) + ${String(depth)} * var(--space-16))` }}
         onFocus={(event) => {
