@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "e1a4b86cc984",
-      "blob": "9c6ee8e84154e013e896901acb383dab112d5299"
+      "digest": "9f1335a4f520",
+      "blob": "acc813acea0552227c0f6c3dc79294e3702763e8"
     },
     {
       "file": "packages/document/src/group-place.ts",
