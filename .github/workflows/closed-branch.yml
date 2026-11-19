@@ -18,4 +18,12 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH" || echo "The branch $BRANCH was already gone."
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          sleep 60
+          state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .state)
+          if [ "$state" != "closed" ]; then
+            echo "Pull request #$NUMBER is $state again, so $BRANCH stays."
+            exit 0
+          fi
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH" || echo "The branch $BRANCH was already gone."

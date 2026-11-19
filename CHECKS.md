@@ -28,7 +28,7 @@ Checks block gate or CI; review needs judgment.
 | Finished worktrees and branches are swept safely | `pnpm sweep` lists merged, closed and scratch work; `--apply` removes it. `scripts/worktrees.mjs` guards live processes, dirty files and 3-hour activity; tests cover each |
 | Stashes are shared; recover only yours | `scripts/worktrees.mjs` warns on missing stash sources during `pnpm check`; read-only |
 | Killed verify runs and test clusters are removed before new ones start; live processes are kept | `leftover-runs.test.mjs` and `leftover-clusters.test.ts` |
-| The branch of a pull request closed without merging does not stay on GitHub | the `closed-branch` workflow deletes it when the pull request closes. The pull request page can restore it. It leaves `main` and `archive/` branches alone |
+| An unmerged closed pull request's branch is deleted; one reopened for its fresh run keeps it | `closed-branch` waits 60 seconds and deletes only if the pull request is still closed, never `main` or `archive/` (`closed-branch.test.mjs`, PR 953) |
 | Formatting preserves unstaged edits | `scripts/pre-commit.mjs` refuses unformatted partly staged files; `scripts/install-hooks.mjs` installs it |
 | Browser/support imports resolve, including lazy entries | `test-imports` step. Computed targets need runtime checks |
 | Cheap checks fail before taking a slot; gate takes none | `scripts/check.test.mjs`, `scripts/gate.test.mjs` |
