@@ -14,7 +14,7 @@ import type { SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
 import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
-import { backdropsOf } from "@/frame-boxes"
+import { framedOf } from "@/frame-boxes"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
@@ -37,7 +37,12 @@ export { valueStorable } from "@/slide-paint"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-type PaintedSlide = { readonly shapes: SlideShapes; readonly values: string; canvas: PaintedCanvas | null }
+type PaintedSlide = {
+  readonly shapes: SlideShapes
+  readonly values: string
+  readonly framed: string
+  canvas: PaintedCanvas | null
+}
 
 export type Painted = {
   readonly count: number
@@ -150,17 +155,18 @@ export function paint(
   const reusable = earlier !== null && sameShared(shared, earlier.shared, slideParts)
   const before = new Map(reusable ? earlier.slides.map((each) => [each.shapes.part, each]) : [])
   const repainted: SlideId[] = []
+  const framed = framedOf(register)
   const slides = read.map(({ slide, part }): PaintedSlide => {
     const old = before.get(part)
-    const same = old !== undefined && sameSlide(old.shapes, slide, base, display)
-    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display)
+    const same = old !== undefined && old.framed === framed.key && sameSlide(old.shapes, slide, base, display)
+    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display, framed.origins)
     const values = shapes.shapes
       .map(({ id, file }) => shownOf(register, id, numberText(id, shownValue(register, id, file))))
       .join("\n")
     if (same && old.values === values && old.canvas !== null && sameMedia(old.canvas, display))
-      return { shapes, values, canvas: old.canvas }
+      return { shapes, values, framed: framed.key, canvas: old.canvas }
     if (!same || old.values !== values) repainted.push(slideId(slide))
-    return { shapes, values, canvas: null }
+    return { shapes, values, framed: framed.key, canvas: null }
   })
   const boxes = new Map<ElementId, TextBox>()
   const movables = new Map<ElementId, TextBox>()
@@ -197,8 +203,7 @@ export function paint(
     const fileTexts = () => (texts ??= paintReader(changedStyleParts(base, display), { fallbackPrompt }))
     const swatches = themeSwatches(display, painted.shapes.part)
     const refit = new Set(painted.shapes.shapes.filter((shape) => refitted(register, shape)).map((shape) => shape.id))
-    const backdrops = backdropsOf(register)
-    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit, backdrops)
+    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit, framed)
     return painted.canvas.slide
   }
   return {

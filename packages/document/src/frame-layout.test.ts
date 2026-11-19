@@ -275,3 +275,30 @@ describe("frame without auto layout", () => {
     expect(readLayout(back, frame)?.children).toEqual(laid)
   })
 })
+
+describe("auto layout added back", () => {
+  it("lays a frame without auto layout out again from where its children sit, and refuses an auto layout frame", () => {
+    const before = set(wrapped(), frame, { layout: { gap: { set: 50 } } })
+    const removed = changeLayout(before, { remove: frame })
+    if (removed === null || !("rows" in removed)) throw new Error("remove")
+    const free = ran(
+      before,
+      removed.rows.map((row): Command => ({ command: "person", v: 13, patch: row.patch, node: row.node })),
+    )
+    const moved = set(free, c, { box: { x: { set: 600 }, y: { set: 0 } } })
+    const changed = changeLayout(moved, { reflow: frame })
+    if (changed === null || !("rows" in changed)) throw new Error("reflow")
+    expect(changed.rows).toEqual([
+      { node: frame, patch: { layout: { flow: { set: "horizontal" }, gap: { set: 0 }, align: { set: "topLeft" } } } },
+    ])
+    const after = ran(
+      moved,
+      changed.rows.map((row): Command => ({ command: "person", v: 13, patch: row.patch, node: row.node })),
+    )
+    expect(readLayout(after, frame)?.children.map((child) => child.box.x)).toEqual([100, 300, 400])
+    expect(changeLayout(after, { reflow: frame })).toBeNull()
+    expect(
+      changeLayout(after, { wrap: [frame], slide, node: elementId("256.30"), backdrop: elementId("256.31") }),
+    ).toBeNull()
+  })
+})

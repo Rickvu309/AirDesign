@@ -132,7 +132,37 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await holds(laid)
   await capture("reimported")
 
+  await page.goto(`/deck/${deck}`)
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  await holds(laid)
+  await element(4).click()
+  await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", frame)
+  await panel.getByRole("button", { name: frameCopy.removeAutoLayout }).click()
+  await expect(panel.getByText(frameCopy.frame, { exact: true })).toBeVisible()
+  await element(5).click()
+  await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", wrap.members[1].node)
+  const child = await center(5)
+  await page.mouse.move(child.x, child.y)
+  await page.mouse.down()
+  await page.mouse.move(child.x, child.y - 90, { steps: 8 })
+  await page.mouse.up()
+  await holds([laid[0], { ...laid[1], y: laid[1].y - 90 }])
+  await capture("child-moved-in-frame")
+  const moved = await saved()
+  const relative = moved.register.elements[wrap.members[1].node]?.landed.at(-1)?.value
+  expect(relative?.x).toBeGreaterThan(0)
+  expect(relative?.x).toBeLessThan(wrap.element.box.cx + 1)
+  await element(4).click()
+  await page.keyboard.press("Escape")
+  await element(4).click()
+  await expect(canvas.locator("[data-selection]")).toHaveAttribute("data-selection", frame)
+  await page.keyboard.press("Shift+A")
+  await expect(panel.getByText(frameCopy.autoFrame, { exact: true })).toBeVisible()
+  await holds(laid)
+  await capture("auto-layout-again")
+
   note(
-    `A rectangle and an ellipse, chosen with Shift+click, became an auto layout frame with Shift+A: the ellipse moved to sit beside the rectangle at the guessed gap, top aligned, and the panel read Auto layout frame with Remove auto layout. A solid fill landed on the frame's backdrop (shape ${backdrop}) without moving either shape; a click on the backdrop selected the frame. Remove auto layout turned the title to Frame with nothing moving, and its Undo brought auto layout back. A reload kept every place, the export ${path.basename(exported)} re-imported with the group where it was, Undo fill then Undo add auto layout put both shapes back where they started with the backdrop gone, and Redo brought the frame back laid out, before the reload.`,
+    `A rectangle and an ellipse, chosen with Shift+click, became an auto layout frame with Shift+A: the ellipse moved to sit beside the rectangle at the guessed gap, top aligned, and the panel read Auto layout frame with Remove auto layout. A solid fill landed on the frame's backdrop (shape ${backdrop}) without moving either shape; a click on the backdrop selected the frame. Remove auto layout turned the title to Frame with nothing moving, and its Undo brought auto layout back. A reload kept every place, the export ${path.basename(exported)} re-imported with the group where it was, Undo fill then Undo add auto layout put both shapes back where they started with the backdrop gone, and Redo brought the frame back laid out, before the reload. Back on the deck, Remove auto layout, a second click on the ellipse selected it inside the frame, and a drag moved it 90 px up on its own, stored relative to the frame; Shift+A on the frame laid it back in the row.`,
   )
 }

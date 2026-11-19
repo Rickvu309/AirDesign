@@ -36,7 +36,7 @@ export type DrawnSpec = {
 }
 
 export function movableRow(ctx: RowPaint): boolean {
-  return (ctx.shape?.movable ?? false) && ctx.row.group === null && ctx.row.box !== null
+  return (ctx.shape?.movable ?? false) && ctx.row.box !== null
 }
 
 type Picture = NonNullable<CanvasLayer["picture"]>

@@ -28,7 +28,7 @@ export function liveBox(store: PaintStore, element: CanvasElement): PaintBox | n
   if (element.id === null) return element.box
   const own = paintedAt(element.box, store.getBox(element.id))
   const group = element.group
-  return group === undefined ? own : followed(own, group.box, store.getBox(group.id))
+  return group === undefined ? own : followed(own, group.box, store.getBox(group.id), group.frame === undefined)
 }
 
 function still(file: PaintBox | null, live: PaintBox | null): boolean {

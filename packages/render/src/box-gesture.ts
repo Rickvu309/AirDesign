@@ -226,10 +226,15 @@ export function ownBox(element: { readonly box: PaintBox | null; readonly connec
   return element.connection === undefined ? paintedAt(element.box, box) : element.box
 }
 
-export function followed(child: PaintBox | null, group: PaintBox | null, moved: Box | null): PaintBox | null {
+export function followed(
+  child: PaintBox | null,
+  group: PaintBox | null,
+  moved: Box | null,
+  scales = true,
+): PaintBox | null {
   if (child === null || group === null || moved === null) return child
-  const scaleX = group.width === 0 ? 1 : moved.cx / group.width
-  const scaleY = group.height === 0 ? 1 : moved.cy / group.height
+  const scaleX = group.width === 0 || !scales ? 1 : moved.cx / group.width
+  const scaleY = group.height === 0 || !scales ? 1 : moved.cy / group.height
   return {
     ...child,
     x: moved.x + (child.x - group.x) * scaleX,

@@ -142,7 +142,7 @@ function usePlaced(
   const group = element.group
   const carried = useBox(store, group?.id ?? id)
   const own = ownBox(element, useBox(store, id))
-  const box = group === undefined ? own : followed(own, group.box, carried)
+  const box = group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
   return useFollowed(store, box === element.box ? element : { ...element, box }, targets)
 }
 

@@ -181,7 +181,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           id={selected.id}
           movable={canDrag(selected)}
           onPress={(event, grip) => moving.press(event, selected, grip)}
-          resizable={canDrag(selected) && onConnect === undefined}
+          resizable={canDrag(selected) && onConnect === undefined && selected.frame !== "auto"}
           scaled={scaled}
           store={props.store}
         />

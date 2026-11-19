@@ -38,6 +38,7 @@ export const step = (action, from) => {
   if (action === "RemoveAutoLayout") return "the person removes auto layout"
   if (action === "UndoRemoveAutoLayout") return "the person undoes Remove auto layout"
   if (action === "Unwrap") return "the person undoes the wrap"
+  if (action === "MoveInFrame") return "the person moves the child inside the frame without auto layout, or undoes that"
   if (action === "RunUndo" && from.touched !== true && from.own === from.inside)
     return "the run's Undo ungroups the agent's group"
   if (action === "RunUndo") return "the run's Undo refuses, since the person changed the group"

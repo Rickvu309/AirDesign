@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "0578caec8c27",
-      "blob": "4bab7bd2ad4850d5b1915dbf4bb49a5b638023e7"
+      "digest": "31bb8a54fdea",
+      "blob": "a547d2d21e20b1b96ac0ddec80368a3ce399bd4c"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
       "digest": "87d85e07729e",
-      "blob": "74ec3bd93df5a604ff2b7d5d3c8a04d39b84001b"
+      "blob": "8b5d8ac4036b16f33c1ef5f0f350f6fd91be2a4d"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
@@ -76,8 +76,8 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "17e8ad0ece73",
-      "blob": "7caf6baa9404cb6f7f958e22ef9c7117d0f2866c"
+      "digest": "5aca4ebc7ada",
+      "blob": "f12b68261d3db3516dab63a63d8f7095d3b71982"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
