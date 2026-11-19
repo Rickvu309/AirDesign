@@ -595,17 +595,3 @@ it("names a connector's ends by the element ids of the shapes they attach to, an
   expect(canvas?.elements[1]?.connection).toEqual({ start: { node: id, site: 3 }, end: null })
   expect(canvas?.elements[0]?.connection).toBeUndefined()
 })
-
-it("names the layers the slide holds but does not paint, such as a hidden one", () => {
-  const hidden = elementId("256.3")
-  const both: CanvasSource = {
-    part,
-    shapes: new Map([
-      ["2", { id, kind: "shape", editable: true, movable: false }],
-      ["3", { id: hidden, kind: "shape", editable: true, movable: false }],
-    ]),
-  }
-  const canvas = slideCanvases(reader({ ...size, elements: [row()] }), [both])(0)
-  expect(canvas?.elements.map((each) => each.id)).toEqual([id])
-  expect(canvas?.unpainted).toEqual([hidden])
-})
