@@ -7,7 +7,7 @@ import { readTable, writeTable } from "./table-write.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Fill = Exclude<FieldValue<"fills", "p0">, { readonly image: unknown }>
-type Gradient = Extract<Fill, { readonly gradient: unknown }>
+type Gradient = Extract<FieldValue<"border", "fill">, { readonly gradient: unknown }>
 
 const part = "ppt/slides/slide1.xml"
 const tile = '<a:tileRect l="-20000" t="0" r="10000" b="0"/>'

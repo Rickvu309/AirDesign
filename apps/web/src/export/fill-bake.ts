@@ -10,7 +10,9 @@ import {
   type PaintBox,
   type PaintElement,
   type PaintInner,
+  type PaintFill,
 } from "@airdesign/pptx"
+import { diamondQuarters } from "@/diamond-gradient"
 import { fillPlan, type PlanLayer } from "@/fill-plan"
 import { cssColor } from "@/paint-css"
 import type { PictureImage } from "@/picture-fill"
@@ -210,11 +212,40 @@ function gradientStyle(
   return style
 }
 
+function editorGradient(
+  ctx: OffscreenCanvasRenderingContext2D,
+  gradient: Extract<PaintFill, { type: "gradient" }>,
+  size: BakeBox,
+): boolean {
+  const shade = gradient.editor
+  if (shade === undefined) return false
+  const stops = (paint: CanvasGradient) => {
+    for (const stop of gradient.stops) paint.addColorStop(stop.position, cssColor(stop.color))
+    ctx.fillStyle = paint
+  }
+  if ("angular" in shade) {
+    const { angle, x, y } = shade.angular
+    const turn = ((angle / 60000 - 90) * Math.PI) / 180
+    stops(ctx.createConicGradient(turn, (size.width * x) / 100_000, (size.height * y) / 100_000))
+    ctx.fillRect(0, 0, size.width, size.height)
+    return true
+  }
+  ctx.save()
+  ctx.scale(size.width / 100, size.height / 100)
+  for (const area of diamondQuarters(shade.diamond)) {
+    stops(ctx.createLinearGradient(area.fromX, area.fromY, area.toX, area.toY))
+    ctx.fillRect(area.x, area.y, area.width, area.height)
+  }
+  ctx.restore()
+  return true
+}
+
 function paintGradient(
   ctx: OffscreenCanvasRenderingContext2D,
   gradient: Extract<LayerBake, { kind: "gradient" }>["gradient"],
   size: BakeBox,
 ) {
+  if (editorGradient(ctx, gradient, size)) return
   ctx.save()
   if (gradient.angle === null) {
     ctx.translate(0, size.height / 2)
@@ -365,6 +396,16 @@ function touchedShapes(register: Register): ReadonlySet<string> {
   return shapes
 }
 
+async function gradientPaper(gradient: Extract<PaintFill, { type: "gradient" }>, box: BakeBox) {
+  const { width, height } = bakePlan([], box, null)
+  const canvas = new OffscreenCanvas(width, height)
+  const ctx = canvas.getContext("2d")
+  if (ctx === null) throw new Error("picture-bake")
+  paintGradient(ctx, gradient, { width, height })
+  const blob = await canvas.convertToBlob({ type: "image/png" })
+  return new Uint8Array(await blob.arrayBuffer())
+}
+
 async function sha256(bytes: Uint8Array): Promise<string> {
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", copied(bytes)))
   return [...hash].map((byte) => byte.toString(16).padStart(2, "0")).join("")
@@ -378,15 +419,22 @@ export async function bakeFills(
   const reader = paintReader(parts)
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const slide of readSlides(parts)) {
-    for (const row of reader.slide(slide.part).elements) {
+    const paper = reader.slide(slide.part)
+    if (paper.background?.type === "gradient" && paper.background.editor !== undefined) {
+      const png = await gradientPaper(paper.background, paper)
+      next = bakedFill(next, { shape: "slide", part: slide.part, slide: slide.slide }, png, await sha256(png))
+    }
+    for (const row of paper.elements) {
       if (row.from !== "slide" || row.box === null) continue
       const stacked = row.stack !== undefined
       const extraInner = (row.effects?.inners?.length ?? 0) > 0
-      if (!stacked && !extraInner && !touchedNodes.has(`${slide.slide}.${row.shape}`)) continue
+      const custom = row.fill?.type === "gradient" && row.fill.editor !== undefined
+      if (!custom && !stacked && !extraInner && !touchedNodes.has(`${slide.slide}.${row.shape}`)) continue
       if (row.box.width <= 0 || row.box.height <= 0) throw new Error("picture-bake")
       const png = await raster(row, row.box, parts)
       const at = { slide: slide.slide, part: slide.part, shape: row.shape }
-      next = stacked || extraInner ? bakedFill(next, at, png, await sha256(png)) : installedPicture(next, at, png)
+      next =
+        stacked || extraInner || custom ? bakedFill(next, at, png, await sha256(png)) : installedPicture(next, at, png)
       if (extraInner) next = clearedInners(next, at)
     }
   }

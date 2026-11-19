@@ -68,6 +68,18 @@ describe("a tool's input schema says each repeated subschema once", () => {
     expect(inlinedSchema(sharedSchemas(schema))).toEqual(schema)
   })
 
+  it("shares a small subschema only where its references take fewer bytes than its copies", () => {
+    const percent = { type: "number", minimum: 0, maximum: 100 }
+    const fields = (names: readonly string[]) => Object.fromEntries(names.map((name) => [name, percent]))
+    const twice = { type: "object", properties: fields(["x", "y"]) }
+    expect(sharedSchemas(twice)).toBe(twice)
+    const often = { type: "object", properties: fields(["l", "t", "r", "b", "x", "y"]) }
+    const shared = sharedSchemas(often)
+    expect(references(shared)).toHaveLength(6)
+    expect(JSON.stringify(shared).length).toBeLessThan(JSON.stringify(often).length)
+    expect(inlinedSchema(shared)).toEqual(often)
+  })
+
   it("leaves a schema with nothing repeated as it is, and never shares a properties map", () => {
     const schema = { type: "object", properties: { one: color } }
     expect(sharedSchemas(schema)).toBe(schema)

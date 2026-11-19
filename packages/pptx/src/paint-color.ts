@@ -1,4 +1,5 @@
 import { gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "@airdesign/document"
+import type { EditorShade } from "./editor-gradient.js"
 import type { MarkupElement } from "./element-span.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { PaintImage } from "./paint-image.js"
@@ -18,6 +19,7 @@ export type PaintFill =
       stops: readonly { position: number; color: PaintColor }[]
       angle: number | null
       path: PaintGradientPath | null
+      editor?: EditorShade
     }
   | { type: "pattern"; preset: string; foreground: PaintColor; background: PaintColor }
   | ({ type: "picture" } & PaintImage)

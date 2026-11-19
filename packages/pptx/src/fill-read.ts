@@ -1,4 +1,5 @@
 import { patternPresets, type Color, type FieldValue } from "@airdesign/document"
+import { editorShade, type EditorShade } from "./editor-gradient.js"
 import { colorIn, fillIn } from "./color-read.js"
 import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { child, flag, inside, whole, type Held } from "./markup-held.js"
@@ -18,6 +19,9 @@ export type ShownFill = { readonly value: Fill | null; readonly own: boolean }
 export type FillAt = { readonly part: string; readonly shape: string }
 
 type Gradient = Extract<Fill, { readonly gradient: unknown }>["gradient"]
+
+type NativeGradient = Omit<Gradient, "shade"> & { readonly shade: Exclude<Gradient["shade"], EditorShade> }
+type NativeFill = Exclude<Fill, { gradient: unknown }> | { readonly gradient: NativeGradient }
 
 const pathKinds = ["circle", "rect", "shape"] as const
 const fullAngle = 21_600_000
@@ -40,7 +44,7 @@ function stopsOf(held: Held, placed: Color | null): Gradient["stops"] | null {
   return kept.length !== stops.length || kept.length < 2 || kept.length > 10 ? null : kept
 }
 
-function shadeOf(held: Held): Gradient["shade"] | null {
+function shadeOf(held: Held): NativeGradient["shade"] | null {
   const linear = child(held, "a:lin")
   const path = child(held, "a:path")
   if (path !== undefined) {
@@ -55,9 +59,9 @@ function shadeOf(held: Held): Gradient["shade"] | null {
   return { linear: { angle, scaled: linear === undefined ? false : (flag(linear.element, "scaled") ?? false) } }
 }
 
-function gradientOf(held: Held, placed: Color | null): Fill | null {
+function gradientOf(held: Held, placed: Color | null, editor: boolean): Fill | null {
   const stops = stopsOf(held, placed)
-  const shade = shadeOf(held)
+  const shade = (editor ? editorShade(held.element) : null) ?? shadeOf(held)
   if (stops === null || shade === null) return null
   return { gradient: { stops, shade, rotateWithShape: flag(held.element, "rotWithShape") ?? false } }
 }
@@ -69,7 +73,9 @@ function patternOf(held: Held, placed: Color | null): Fill | null {
   return preset === undefined || fg === null || bg === null ? null : { pattern: { preset, fg, bg } }
 }
 
-export function fillValueOf(held: Held, placed: Color | null): Fill | null {
+export function fillValueOf(held: Held, placed: Color | null): NativeFill | null
+export function fillValueOf(held: Held, placed: Color | null, editor: true): Fill | null
+export function fillValueOf(held: Held, placed: Color | null, editor = false): Fill | null {
   switch (held.element.kind) {
     case "a:noFill":
       return { none: true }
@@ -80,7 +86,7 @@ export function fillValueOf(held: Held, placed: Color | null): Fill | null {
       return color === null ? null : { solid: color }
     }
     case "a:gradFill":
-      return gradientOf(held, placed)
+      return gradientOf(held, placed, editor)
     case "a:pattFill":
       return patternOf(held, placed)
   }
@@ -134,7 +140,7 @@ export function shownFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): S
   const filled = owners.findIndex((owner) => fillIn(propertiesOf(owner)) !== undefined)
   const held = fillIn(propertiesOf(owners[filled] ?? owners[0]!))
   if (held !== undefined && held.element.kind === "a:blipFill") return { value: { image: true }, own: filled === 0 }
-  if (held !== undefined) return { value: fillValueOf(held, null), own: filled === 0 }
+  if (held !== undefined) return { value: fillValueOf(held, null, true), own: filled === 0 }
   const style = styleReference(owners, chain.theme)
   if (style === "none") return { value: { none: true }, own: false }
   const value = style.entry === undefined ? null : fillValueOf(style.entry, colorIn(style.reference, null))
@@ -206,7 +212,7 @@ export function ownBackground(parts: ReadonlyMap<string, Uint8Array>, part: stri
   const properties = child(child(child({ element: root, children: sheet.children }, "p:cSld"), "p:bg"), "p:bgPr")
   const held = fillIn(properties)
   if (held?.element.kind === "a:blipFill") return { image: true }
-  return held === undefined ? null : fillValueOf(held, null)
+  return held === undefined ? null : fillValueOf(held, null, true)
 }
 
 export function shownBackground(parts: ReadonlyMap<string, Uint8Array>, part: string): ShownFill | null {
@@ -222,7 +228,7 @@ export function shownBackground(parts: ReadonlyMap<string, Uint8Array>, part: st
     const held = fillIn(child(background, "p:bgPr"))
     const own = level === sheet
     if (held !== undefined)
-      return { value: held.element.kind === "a:blipFill" ? { image: true } : fillValueOf(held, null), own }
+      return { value: held.element.kind === "a:blipFill" ? { image: true } : fillValueOf(held, null, true), own }
     const reference = child(background, "p:bgRef")
     const index = reference === undefined ? 0 : (whole(reference.element, "idx") ?? 0)
     const entry = backgroundFills(theme)[index - backgroundIndex]
