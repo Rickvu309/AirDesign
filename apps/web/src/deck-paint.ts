@@ -14,6 +14,7 @@ import type { SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
 import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
+import { backdropsOf } from "@/frame-boxes"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
@@ -196,7 +197,8 @@ export function paint(
     const fileTexts = () => (texts ??= paintReader(changedStyleParts(base, display), { fallbackPrompt }))
     const swatches = themeSwatches(display, painted.shapes.part)
     const refit = new Set(painted.shapes.shapes.filter((shape) => refitted(register, shape)).map((shape) => shape.id))
-    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit)
+    const backdrops = backdropsOf(register)
+    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit, backdrops)
     return painted.canvas.slide
   }
   return {

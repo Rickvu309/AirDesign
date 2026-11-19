@@ -23,6 +23,8 @@ export type UndoName =
   | "back"
   | "group"
   | "ungroup"
+  | "add-auto-layout"
+  | "remove-auto-layout"
   | "template"
   | "transition"
   | "background"
@@ -77,6 +79,8 @@ export const undoCopy = {
     back: "Undo send to back",
     group: "Undo group",
     ungroup: "Undo ungroup",
+    "add-auto-layout": "Undo add auto layout",
+    "remove-auto-layout": "Undo remove auto layout",
     template: "Undo template style",
     transition: "Undo transition",
     background: "Undo background color",
@@ -128,6 +132,8 @@ export const undoCopy = {
     back: "Redo send to back",
     group: "Redo group",
     ungroup: "Redo ungroup",
+    "add-auto-layout": "Redo add auto layout",
+    "remove-auto-layout": "Redo remove auto layout",
     template: "Redo template style",
     transition: "Redo transition",
     background: "Redo background color",

@@ -10,7 +10,7 @@ const keysFor = {
   "element-remove": ["slide", "id", "node", "file"],
   "element-restore": ["slide", "id", "node", "file"],
   "element-order": ["slide", "id", "node", "before", "among", "file"],
-  "element-group": ["slide", "id", "element", "members", "file"],
+  "element-group": ["slide", "id", "element", "members", "backdrop", "file"],
   "element-ungroup": ["slide", "id", "node", "file"],
   "element-regroup": ["slide", "id", "node", "file"],
   remove: ["slide", "id", "file"],
@@ -82,7 +82,8 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
     return { slide: "element-order", id: edit.id, node: edit.node, before: edit.before, among: edit.among }
   }
   if (edit.slide === "element-group") {
-    return { slide: "element-group", id: edit.id, element: edit.element, members: edit.members }
+    const backdrop = edit.backdrop === undefined ? {} : { backdrop: edit.backdrop }
+    return { slide: "element-group", id: edit.id, element: edit.element, members: edit.members, ...backdrop }
   }
   if (edit.slide === "element-ungroup") return { slide: "element-ungroup", id: edit.id, node: edit.node }
   if (edit.slide === "element-regroup") return { slide: "element-regroup", id: edit.id, node: edit.node }

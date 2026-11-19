@@ -84,6 +84,7 @@ for (const name of [
   "slide-charts",
   "signed-out-deck",
   "connector-follow",
+  "auto-layout-frame",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

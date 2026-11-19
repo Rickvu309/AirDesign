@@ -5,6 +5,7 @@ import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
 import { groupedNow } from "./element-group.js"
+import { frameNow, framedNow } from "./frame-layout.js"
 import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import {
@@ -320,7 +321,15 @@ export function elementFacts(register: Register, node: ElementId): ElementFacts 
   const kind = slideKind(node)
   if (kind !== null) return { kind, text: kind === "notes", grouped: false, animated: false }
   const opening = openingElement(register, node)
-  return opening === undefined ? undefined : { ...indexFacts(opening, false), grouped: groupedNow(register, node) }
+  if (opening === undefined) return undefined
+  const frame = frameNow(register, node)
+  const framed = framedNow(register, node)
+  return {
+    ...indexFacts(opening, false),
+    grouped: groupedNow(register, node),
+    ...(frame === null ? {} : { frame }),
+    ...(framed === null ? {} : { framed }),
+  }
 }
 
 export type Missing = {

@@ -162,7 +162,7 @@ export type FieldProbe<T extends TraitName, F extends Shown<T>> = {
   readonly on?: { readonly deck: string; readonly kind: Kind; readonly node: string }
 } & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
 
-export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
+export type Probe<T extends TraitName> = [T extends "layout" ? never : FieldName<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
   : {
       readonly deck: string

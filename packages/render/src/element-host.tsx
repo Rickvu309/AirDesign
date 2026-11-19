@@ -100,6 +100,7 @@ function grabbed(element: CanvasElement): boolean {
 
 function takesPointer(element: CanvasElement, text: string, moving: boolean, drawnWhenBlank: boolean): boolean {
   const movable = moving && grabbed(element)
+  if (element.backdrop === true) return movable
   if (!element.editable && !movable) return false
   const drawn = movable && drawnWhenBlank
   return drawn || element.placeholder || element.filled || element.box === null || !isBlank(text)

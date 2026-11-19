@@ -22,6 +22,7 @@ export type ElementGroup = {
   readonly id: SlideId
   readonly element: IndexElement
   readonly members: readonly Member[]
+  readonly backdrop?: IndexElement
 }
 
 export type ElementUngroup = { readonly slide: "element-ungroup"; readonly id: SlideId; readonly node: ElementId }
@@ -80,6 +81,7 @@ function foldTree(state: Indexed): Tree {
     if (command.slide === "element-group") {
       const node = command.element.node
       parent.set(node, null)
+      if (command.backdrop !== undefined) parent.set(command.backdrop.node, node)
       for (const member of command.members) parent.set(member.node, node)
       made.set(node, command)
       dissolved.delete(node)
@@ -138,6 +140,11 @@ export function madeGroup(state: Indexed, node: ElementId): ElementGroup | undef
   return treeOf(state).made.get(node)
 }
 
+export function frameBackdrop(state: Indexed, node: ElementId): ElementId | null {
+  const backdrop = madeGroup(state, node)?.backdrop?.node
+  return backdrop === undefined || groupDissolved(state, node) || elementGone(state, node) ? null : backdrop
+}
+
 export function groupFrame(state: Indexed, node: ElementId): Box | null {
   const made = madeGroup(state, node)
   if (made !== undefined) return made.element.box
@@ -186,7 +193,33 @@ function sameBox(left: Box | null, right: Box): boolean {
   return left !== null && left.x === right.x && left.y === right.y && left.cx === right.cx && left.cy === right.cy
 }
 
-function freshGroup(element: IndexElement, id: SlideId): boolean {
+function onlyLayout(element: IndexElement, framed: boolean): boolean {
+  const opening = element.opening
+  if (opening === undefined) return true
+  return framed && Object.keys(opening).every((trait) => trait === "layout")
+}
+
+function freshBackdrop(backdrop: IndexElement, element: IndexElement): boolean {
+  const number = Number(shapeOf(backdrop.node).shape)
+  return (
+    shapeOf(backdrop.node).slide === shapeOf(element.node).slide &&
+    Number.isInteger(number) &&
+    number > 1 &&
+    number <= highestShape &&
+    backdrop.node !== element.node &&
+    backdrop.kind === "shape" &&
+    backdrop.value === null &&
+    !backdrop.grouped &&
+    backdrop.group === undefined &&
+    backdrop.frame === undefined &&
+    backdrop.role === undefined &&
+    backdrop.opening === undefined &&
+    element.box !== null &&
+    sameBox(backdrop.box, element.box)
+  )
+}
+
+function freshGroup(element: IndexElement, id: SlideId, framed: boolean): boolean {
   const number = Number(shapeOf(element.node).shape)
   return (
     shapeOf(element.node).slide === id &&
@@ -199,7 +232,7 @@ function freshGroup(element: IndexElement, id: SlideId): boolean {
     element.group === undefined &&
     element.frame === undefined &&
     element.role === undefined &&
-    element.opening === undefined
+    onlyLayout(element, framed)
   )
 }
 
@@ -213,9 +246,12 @@ function memberRefusal(state: Indexed, id: SlideId, node: ElementId): SlideRefus
 }
 
 function madeRefusal(state: Indexed, command: ElementGroup): SlideRefusal | null {
-  const { element, members } = command
-  if (!freshGroup(element, command.id)) return "dead"
-  if (openingElement(state, element.node) !== undefined || elementGone(state, element.node)) return "present"
+  const { element, members, backdrop } = command
+  if (!freshGroup(element, command.id, backdrop !== undefined)) return "dead"
+  if (backdrop !== undefined && !freshBackdrop(backdrop, element)) return "dead"
+  if (members.length < (backdrop === undefined ? 2 : 1)) return "dead"
+  for (const fresh of backdrop === undefined ? [element] : [element, backdrop])
+    if (openingElement(state, fresh.node) !== undefined || elementGone(state, fresh.node)) return "present"
   for (const member of members) {
     const refusal = memberRefusal(state, command.id, member.node)
     if (refusal !== null) return refusal
@@ -235,7 +271,9 @@ function ungroupRefusal(state: Indexed, command: ElementUngroup): SlideRefusal |
 
 function regroupRefusal(state: Indexed, command: ElementRegroup): SlideRefusal | null {
   if (!groupDissolved(state, command.node)) return "dead"
+  const backdrop = madeGroup(state, command.node)?.backdrop?.node
   for (const child of formerChildren(state, command.node)) {
+    if (child === backdrop) continue
     if (elementGone(state, child)) return "dead"
     if (groupedNow(state, child)) return "group-box"
   }
@@ -280,15 +318,23 @@ export function readGroupCommand(raw: Record<string, unknown>, id: SlideId): Gro
   if (raw.slide === "element-group") {
     const element = readFloor([raw.element], id)?.[0]
     if (element === undefined || !Array.isArray(raw.members)) return undefined
-    if (raw.members.length < 2 || raw.members.length > limits.batch) return undefined
+    const backdrop = raw.backdrop === undefined ? undefined : readFloor([raw.backdrop], id)?.[0]
+    if (raw.backdrop !== undefined && backdrop === undefined) return undefined
+    const fewest = backdrop === undefined ? 2 : 1
+    if (raw.members.length < fewest || raw.members.length > limits.batch) return undefined
     const members: Member[] = []
     for (const item of raw.members) {
       const member = readMember(item, id)
-      if (member === undefined || member.node === element.node || members.some((kept) => kept.node === member.node))
+      if (
+        member === undefined ||
+        member.node === element.node ||
+        member.node === backdrop?.node ||
+        members.some((kept) => kept.node === member.node)
+      )
         return undefined
       members.push(member)
     }
-    return { slide: "element-group", id, element, members }
+    return { slide: "element-group", id, element, members, ...(backdrop === undefined ? {} : { backdrop }) }
   }
   const node = readElementId(raw.node)
   if (node === undefined || shapeOf(node).slide !== id) return undefined

@@ -56,7 +56,8 @@ export function paintElements(
     const painted = painters[kind]({ row, shape, key, src })
     if (painted === null) continue
     const diagram = row.diagram === undefined ? {} : { diagram: diagramOf(row.diagram, key, src) }
-    elements.push([{ ...painted, ...diagram, ...carried, ...connectionOf(row, source) }, row])
+    const backdrop = shape?.backdrop === true ? { backdrop: true as const } : {}
+    elements.push([{ ...painted, ...diagram, ...carried, ...backdrop, ...connectionOf(row, source) }, row])
   }
   return withHeld(elements, rows)
 }

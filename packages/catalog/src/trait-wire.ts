@@ -18,7 +18,7 @@ export type FieldWire<T extends TraitName, F extends WireField<T>> = {
   readonly example: { readonly [K in T]: { readonly [P in F]: WireAgent<T, F> } }
 }
 
-export type TraitWire<T extends TraitName> = [T extends "table" ? never : WireField<T>] extends [never]
+export type TraitWire<T extends TraitName> = [T extends "table" | "layout" ? never : WireField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
   : {
       readonly description: string
@@ -37,6 +37,7 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   text: textWire,
   connection: connectionWire,
   table: { fields: {} },
+  layout: { fields: {} },
   notes: notesWire,
   templateStyle: templateStyleWire,
   show: {

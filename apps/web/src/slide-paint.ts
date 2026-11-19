@@ -168,6 +168,7 @@ export function paintCanvas(
   display: Parts,
   swatches: readonly CanvasTemplateColor[],
   refit: ReadonlySet<ElementId>,
+  backdrops: ReadonlySet<ElementId> = new Set(),
 ): PaintedCanvas {
   const media = new Map<string, Uint8Array | undefined>()
   const recorded: PictureSource = (image) => {
@@ -175,9 +176,11 @@ export function paintCanvas(
     return src(image)
   }
   const file = painted.base === painted.shown ? undefined : texts()
-  const shapes = [...painted.source.shapes].map(([key, shape]) =>
-    refit.has(shape.id) ? ([key, { ...shape, refit: true }] as const) : ([key, shape] as const),
-  )
-  const source = refit.size === 0 ? painted.source : { ...painted.source, shapes: new Map(shapes) }
+  const shapes = [...painted.source.shapes].map(([key, shape]) => {
+    const marked = refit.has(shape.id) ? { ...shape, refit: true as const } : shape
+    return [key, backdrops.has(shape.id) ? { ...marked, backdrop: true as const } : marked] as const
+  })
+  const source =
+    refit.size === 0 && backdrops.size === 0 ? painted.source : { ...painted.source, shapes: new Map(shapes) }
   return { slide: slideCanvas(reader, source, recorded, file, swatches), media }
 }

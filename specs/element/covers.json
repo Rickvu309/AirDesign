@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "9f825c5c4fa1",
-      "blob": "bce99b712f01e65fa51876f6e460e503a2ecf2a8"
+      "digest": "65c2b56994b6",
+      "blob": "ddb0f75e10f1f44d415939b4cdbdc22c32c4cc85"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -21,7 +21,7 @@
         "stillShows"
       ],
       "digest": "a76a1cb764ab",
-      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
+      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -51,19 +51,19 @@
       "file": "packages/document/src/decide.ts",
       "names": ["decide"],
       "digest": "3f5fe5d94e9d",
-      "blob": "0825150679cd602dbbab24193c9ce422efc11eef"
+      "blob": "2f4972c2e048809bc3a99c81c9e036e634f4146f"
     },
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "784eb7d2f03d",
-      "blob": "107b9d51bdf7dbde9b9d4994ae0b638f1fc5c178"
+      "digest": "e883a9ae8da9",
+      "blob": "490897f886cf1a9212527e4fe3d8ff69804ddd19"
     },
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
-      "digest": "e6de0b2cd8e7",
-      "blob": "79255e0a6f60005f4282e3a5abbe391f18da50af"
+      "digest": "10a97358995f",
+      "blob": "0dd6cb77bf3d2c2df1a1404f0541b3dfd8b7351b"
     }
   ]
 }

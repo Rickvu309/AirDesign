@@ -7,6 +7,7 @@ import { effects } from "./trait-effects.js"
 import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
 import { identity } from "./trait-identity.js"
+import { layout } from "./trait-layout.js"
 import { link } from "./trait-link.js"
 import { notes } from "./trait-notes.js"
 import { show } from "./trait-show.js"
@@ -32,6 +33,7 @@ export const traits = {
   templateStyle,
   show,
   transition,
+  layout,
 } as const
 
 export type TraitName = keyof typeof traits
@@ -73,7 +75,7 @@ export const kindTraits = {
   notes: ["notes"],
   shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link"],
   connector: ["identity", "box", "geometry", "border", "effects", "connection"],
-  group: ["identity", "box", "effects"],
+  group: ["identity", "box", "effects", "layout"],
   table: ["identity", "box", "table"],
   row: [],
   cell: [],

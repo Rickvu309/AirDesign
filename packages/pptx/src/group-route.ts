@@ -3,6 +3,7 @@ import {
   groupCommand,
   groupNode,
   landedPatch,
+  madeGroup,
   shapeOf,
   throughGroup,
   type DeckIndex,
@@ -17,6 +18,7 @@ import { arrangeSlide } from "./element-stack-route.js"
 import { regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
 import { requireMarkup } from "./part-markup.js"
+import { removeShape } from "./slide-route.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -95,10 +97,11 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
     if (command.slide === "element-group") {
       const { element } = command
       if (element.box === null) throw new Error("box")
+      const backdrop = command.backdrop === undefined ? undefined : Number(shapeOf(command.backdrop.node).shape)
       next = withPart(
         next,
         part,
-        wrapGroup(bytesOf(next, part), Number(shapeOf(element.node).shape), element.box, members),
+        wrapGroup(bytesOf(next, part), Number(shapeOf(element.node).shape), element.box, members, backdrop),
       )
       for (const member of command.members) {
         const shape = shapeOf(member.node).shape
@@ -114,11 +117,19 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
       next = withPart(next, part, regroupSaved(bytesOf(next, part), kept))
       continue
     }
+    const backdrop = madeGroup(prefix, command.node)?.backdrop?.node
     const rows = rowsOf(state, command.node)
-    if (rows !== undefined) next = writeTrait(next, where(shape), "box", rows)
+    if (rows !== undefined && backdrop === undefined) next = writeTrait(next, where(shape), "box", rows)
     const unwrapped = unwrapGroup(bytesOf(next, part), shape)
-    saved.set(shape, unwrapped.saved)
     next = withPart(next, part, unwrapped.bytes)
+    if (backdrop !== undefined) {
+      const dropped = shapeOf(backdrop).shape
+      const children = unwrapped.saved.children.filter((child) => child !== dropped)
+      saved.set(shape, { ...unwrapped.saved, children })
+      next = withPart(next, part, removeShape(bytesOf(next, part), dropped))
+      continue
+    }
+    saved.set(shape, unwrapped.saved)
     const { frame, place } = unwrapped
     if (frame === null || place === null) continue
     for (const child of unwrapped.children) {

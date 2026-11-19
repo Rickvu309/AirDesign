@@ -34,6 +34,8 @@ const iconPaths = {
   italic: '<path d="M19 4h-9M14 20H5M15 4 9 20"/>',
   underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/>',
   minus: '<path d="M5 12h14"/>',
+  unframe:
+    '<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M11 4h2M11 20h2M4 11v2M20 11v2M7 17 17 7"/>',
   play: '<path d="M7 4.8v14.4a.8.8 0 0 0 1.2.7l11.5-7.2a.8.8 0 0 0 0-1.4L8.2 4.1a.8.8 0 0 0-1.2.7z"/>',
   presenter: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 8h6M7 11h4"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',

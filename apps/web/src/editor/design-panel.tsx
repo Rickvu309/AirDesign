@@ -40,11 +40,22 @@ export function DesignPanel() {
   )
 }
 
-export function DesignHead({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
+export function DesignHead({
+  children,
+  actions,
+  ruled = true,
+}: {
+  children: ReactNode
+  actions?: ReactNode
+  ruled?: boolean
+}) {
   return (
     <div
       data-design-head
-      className="flex h-[var(--panel-head-height)] shrink-0 items-center justify-between gap-2 border-b border-line px-4"
+      className={cn(
+        "flex h-[var(--panel-head-height)] shrink-0 items-center justify-between gap-2 px-4",
+        ruled ? "border-b border-line" : null,
+      )}
     >
       <span className="text-[length:var(--panel-title-size)] font-medium text-foreground">{children}</span>
       {actions}
@@ -250,7 +261,8 @@ export function SectionStrips({
   )
 }
 
-function panelTitle({ kind, nodes, sections }: PanelModel): string {
+function panelTitle({ kind, nodes, sections, frame }: PanelModel): string {
+  if (kind === "frame" && frame === "auto") return designCopy.autoFrame
   if (kind === "shape") {
     const shape = sections
       .flatMap((section) => section.strips.flat())
@@ -319,7 +331,9 @@ export function ElementDesign({
       >
         {sections.every((section) => section === "selectionColors" || section.label !== null) ? (
           <>
-            <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
+            <DesignHead actions={titleActions} ruled={afterTitle === null}>
+              {panelTitle(model)}
+            </DesignHead>
             {afterAlignment}
             {afterTitle}
           </>
@@ -349,7 +363,9 @@ export function ElementDesign({
                 <DesignSection title={null}>
                   <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
                 </DesignSection>
-                <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
+                <DesignHead actions={titleActions} ruled={afterTitle === null}>
+                  {panelTitle(model)}
+                </DesignHead>
                 {afterAlignment}
                 {afterTitle}
               </div>

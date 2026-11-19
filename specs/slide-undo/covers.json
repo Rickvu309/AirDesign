@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoSlides", "undoOf", "undoableAt", "turnCommands", "fencedSince"],
-      "digest": "44f78f21ec1f",
-      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
+      "digest": "b6da5d9ef2a1",
+      "blob": "627f08600ca81cec8aefdcb441585971938dc345"
     },
     {
       "file": "packages/engine/src/call.ts",

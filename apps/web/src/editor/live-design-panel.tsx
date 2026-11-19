@@ -3,6 +3,7 @@ import {
   keptRefuses,
   openRegister,
   readElementId,
+  readLayout,
   readTableValue,
   shapeOf,
   takes,
@@ -12,28 +13,10 @@ import {
   type ScopedElement,
   type TraitReads,
 } from "@airdesign/document"
-import {
-  paintReader,
-  readSlides,
-  readTraits,
-  shownAlphas,
-  shownCrop,
-  shownEffects,
-  shownBody,
-  shownConnection,
-  shownLink,
-  shownGeometry,
-  shownIdentity,
-  shownPictureMode,
-  shownImage,
-  shownBorder,
-  shownTextStyle,
-  shownTurn,
-  type DeckTraits,
-} from "@airdesign/pptx"
+import { paintReader, readSlides, readTraits, type DeckTraits } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
-import { keptPanelField } from "@/editor/kept-panel-field"
 import { LiveTemplateStyle } from "@/editor/live-template-style"
+import { fieldsOf } from "@/editor/panel-fields"
 import { TemplateTextStyleHost } from "@/editor/text-style-dialog"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -45,20 +28,14 @@ import { resolveControl } from "@/design/panel-arrangement"
 import { fillIcons } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
-import {
-  panelOf,
-  panelOfMany,
-  type PanelModel,
-  type PanelReads,
-  type PanelControl,
-  type PanelSection,
-} from "@/design/panel"
+import { panelOf, panelOfMany, type PanelModel, type PanelControl, type PanelSection } from "@/design/panel"
 import { panelPlaces, type PanelMode } from "@/design/panel-order"
 import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
 import { rebasedChange } from "@/design/rebase"
 import { chosenFill } from "@/design/fill-image"
-import { fillSlotFields } from "@/design/fill-slots"
 import { deviceScope } from "@/design/trait-edit"
+import { framePanel } from "@/design/frame-panel"
+import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
 import { SlideSurface } from "@/editor/slide-design-tabs"
 import { colorsIn } from "./deck-colors"
@@ -104,80 +81,22 @@ function fontsOf(parts: Parts, node: ElementId) {
   return traits?.palettes[traits.slides.get(shapeOf(node).slide) ?? 0]?.fonts ?? {}
 }
 
-const shownFields = new WeakMap<Parts, Map<ElementId, PanelReads["fields"]>>()
-
-export function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
-  const read = shownFields.get(parts) ?? new Map<ElementId, PanelReads["fields"]>()
-  shownFields.set(parts, read)
-  if (!read.has(node)) read.set(node, fieldsRead(parts, node))
-  return read.get(node)
-}
-
-function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
-  const { slide, shape } = shapeOf(node)
-  const part = readSlides(parts).find((each) => each.slide === slide)?.part
-  if (part === undefined) return {}
-  const at = { slide, part, shape }
-  try {
-    const geometry = shownGeometry(parts, at)
-    const turn = shownTurn(parts, at)
-    const border = Object.entries(shownBorder(parts, at) ?? {}).map(([field, shown]) => [`border.${field}`, shown])
-    const body = Object.entries(shownBody(parts, at) ?? {}).map(([field, shown]) => [`body.${field}`, shown])
-    const text = Object.entries(shownTextStyle(parts, at) ?? {}).map(([field, shown]) => [`text.${field}`, shown])
-    const alphas = Object.entries(shownAlphas(parts, at)).map(([trait, value]) => [
-      `${trait}.alpha`,
-      { value, own: true },
-    ])
-    const effects = Object.entries(shownEffects(parts, at) ?? {}).map(([field, shown]) => [`effects.${field}`, shown])
-    const image = shownImage(parts, at)
-    const crop = shownCrop(parts, at)
-    const link = shownLink(parts, at)
-    const connection = shownConnection(parts, at)
-    const identity = Object.entries(shownIdentity(parts, at) ?? {}).map(([field, value]) => [
-      `identity.${field}`,
-      { value, own: true },
-    ])
-    return {
-      "link.target": { value: link, own: true },
-      ...(image === null
-        ? {}
-        : {
-            "fills.mode": { value: shownPictureMode(parts, at), own: true },
-            "fills.source": { value: image.source, own: true },
-            "fills.recolor": { value: image.recolor, own: true },
-            "fills.blur": { value: image.blur === null ? null : Math.min(image.blur, 100_000), own: true },
-          }),
-      ...(crop === null ? {} : { "fills.crop": { value: crop, own: true } }),
-      ...(connection === null
-        ? {}
-        : {
-            "connection.start": { value: connection.start, own: true },
-            "connection.end": { value: connection.end, own: true },
-          }),
-      ...Object.fromEntries(identity),
-      ...fillSlotFields(parts, at),
-      ...(geometry === null ? {} : { "geometry.shape": geometry }),
-      "box.rot": { value: turn.rot, own: true },
-      "box.flipH": { value: turn.flipH, own: true },
-      "box.flipV": { value: turn.flipV, own: true },
-      ...Object.fromEntries(border),
-      ...Object.fromEntries(body),
-      ...Object.fromEntries(text),
-      ...Object.fromEntries(alphas),
-      ...Object.fromEntries(effects),
-      ...keptPanelField(parts, at),
-    }
-  } catch {
-    return {}
-  }
-}
-
 export function templateColorsAt(parts: Parts, index: number): readonly Swatch[] {
   const part = readSlides(parts)[index]?.part
   return part === undefined ? [] : templateColorsOf(parts, part)
 }
 
 function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement; model: PanelModel } | null {
+  const design = nodeDesign(deck, node)
+  const register = deck.shown.shownRegister.current
+  if (design === null || design.model.kind !== "frame" || register === null) return design
+  const layout = readLayout(register, node)
+  const backdrop = layout === null ? null : nodeDesign(deck, layout.backdrop)
+  if (layout === null || backdrop === null) return design
+  return { view: design.view, model: framePanel(design.model, backdrop.model, layout.flow !== "none") }
+}
+
+function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement; model: PanelModel } | null {
   const { shown } = deck
   const store = shown.store.current
   const text = store.getElement(node)?.text ?? null
@@ -270,6 +189,7 @@ function LiveElementDesign({
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
       afterAlignment={liveSlideNumber(deck, node, design.view.value)}
+      afterTitle={design.model.frame === "auto" ? <RemoveAutoLayout deck={deck} node={node} /> : null}
       mode={mode}
       selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
       palette={palette}

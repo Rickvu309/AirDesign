@@ -1,9 +1,10 @@
-import type { Bound, ElementId, Place, SetChange } from "@airdesign/document"
+import type { Bound, ElementId, Place, PlacedRow, Register, SetChange } from "@airdesign/document"
 import { connect } from "@airdesign/live"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { designCopy } from "@/copy/design-copy"
-import { applyChange, valueFits, type ChangingDeck } from "@/design/trait-edit"
+import { applyChange, applyRows, valueFits, type ChangingDeck } from "@/design/trait-edit"
+import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import { fileTableValue } from "@/table-edit"
@@ -61,6 +62,22 @@ export function changeDesign(
   deck.undo.turnAfter(async () => {
     if (await applyChange(changingDeck(deck, session), change())) {
       afterPaint?.()
+      void flushPending(connect, deck.id).then(deck.settle)
+      return
+    }
+    toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
+    deck.settle("refused")
+  })
+}
+
+export function changeRows(
+  deck: DesignDeck,
+  plan: (register: Register) => readonly PlacedRow[] | null,
+  name: UndoName,
+) {
+  const session = deck.undo.focused.current
+  deck.undo.turnAfter(async () => {
+    if (await applyRows(changingDeck(deck, session), plan, name)) {
       void flushPending(connect, deck.id).then(deck.settle)
       return
     }

@@ -306,6 +306,7 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
       },
     },
   },
+  layout: { fields: {} },
   table: {
     deck: "table-added.pptx",
     kind: "table",

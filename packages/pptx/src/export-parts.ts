@@ -2,7 +2,9 @@ import {
   elementGone,
   floorNodes,
   landedPatch,
+  layoutNodes,
   netPatch,
+  readLayout,
   newSlideElement,
   rowOf,
   shapeOf,
@@ -23,6 +25,7 @@ import {
   type SlideNumbers,
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
+import { placeFrame } from "./group-write.js"
 import { dropUnusedTemplates } from "./template-drop.js"
 import { slidePart } from "./package-address.js"
 import { partBytes } from "./part-markup.js"
@@ -170,6 +173,27 @@ function writtenElement(
   return next
 }
 
+function boxFields(box: { readonly x: number; readonly y: number; readonly cx: number; readonly cy: number }) {
+  return { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } }
+}
+
+function laidOutFrames(parts: Parts, register: Register): Parts {
+  let next = parts
+  for (const node of layoutNodes(register)) {
+    const view = readLayout(register, node)
+    const slide = shapeOf(node).slide
+    const part = slidePart(next, slide)
+    if (view === null || part === null || slideGone(register, slide)) continue
+    const bytes = partBytes(next, part)
+    const placed = new Map(next)
+    placed.set(part, placeFrame(bytes, shapeOf(node).shape, view.box))
+    next = writeTrait(placed, { slide, part, shape: shapeOf(view.backdrop).shape }, "box", boxFields(view.box))
+    for (const child of view.children)
+      next = writeTrait(next, { slide, part, shape: shapeOf(child.node).shape }, "box", boxFields(child.box))
+  }
+  return next
+}
+
 export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
   const numbers = slideNumbering(parts, register)
@@ -200,5 +224,5 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
           ? writtenSlide(next, node, body, opening)
           : writtenElement(next, shapes, node, body, opening, media, numbers)
   }
-  return dropUnusedTemplates(routedParts(parts, next), register)
+  return dropUnusedTemplates(routedParts(parts, laidOutFrames(next, register)), register)
 }

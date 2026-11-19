@@ -1,7 +1,7 @@
 import { readTableValue, type SlideCommand, type TraitName, type Value } from "@airdesign/document"
 
 export function authorableTrait(trait: TraitName): boolean {
-  return trait !== "table"
+  return trait !== "table" && trait !== "layout"
 }
 
 export function authorableValue(edit: Value): boolean {

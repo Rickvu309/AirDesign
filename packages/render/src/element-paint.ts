@@ -31,6 +31,7 @@ export type ElementPaint = {
   readonly key: string
   readonly id: ElementId | null
   readonly group?: GroupOf
+  readonly backdrop?: true
   readonly held?: number
   readonly box: PaintBox | null
   readonly editable: boolean

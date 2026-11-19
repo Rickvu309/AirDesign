@@ -73,11 +73,11 @@ Software that works on a person's decks over MCP, such as Claude or Codex. A per
 _Avoid_: bot, integration, app
 
 **Aira**:
-The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text, icons and diagrams, groups and ungroups layers, attaches connectors and deletes layers.
+The agent built into AirDesign. It reads a deck, changes what the design panel can, adds, duplicates, deletes and reorders slides, sets a slide's background, adds text, icons and diagrams, groups and ungroups, attaches connectors and deletes layers.
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and template style. Shared fields set every selected layer in one undo step. The title shows how many are selected. Multi-edit text replaces the words of several selected text layers in one undo step.
+The panel beside a slide that sets the selection's appearance and geometry, or with no selection the slide background and template style. Shared fields set every selected layer in one undo step; the title counts them. Multi-edit text replaces the words of several text layers in one undo step.
 _Avoid_: inspector, properties, format pane
 
 **Mixed**:
@@ -147,19 +147,31 @@ How solid a layer is, in percent: one value that fades its fill, border, text an
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
-Two or more layers of one slide that move and resize as one. A person selects them with Shift+click or Ctrl+click (Cmd+click on a Mac) and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit: `group` takes two or more layer ids of one slide, `ungroup` takes one or more group ids, and nothing moves. The first click on a layer of a group selects the group, the next selects that layer.
+Two or more layers of one slide that move and resize as one: Group or Ctrl+G, and Ungroup or Ctrl+Shift+G leaves each where it showed. An agent sends `group` with two or more layer ids of one slide, or `ungroup` with group ids. The first click on a layer of a group selects the group, the next that layer.
 _Avoid_: bundle, combine, merge, set
 
+**frame**:
+A group with its own fill, opacity, corners, border and shadow; all but the shadow sit on its backdrop.
+_Avoid_: container
+
+**auto layout**:
+A frame's rule that lays its children out in order, in a row or column, a gap apart inside its padding, aligned across, and makes the frame hug them. Shift+A wraps the selection; Remove auto layout keeps each child where it is.
+_Avoid_: stack
+
+**backdrop**:
+A frame's bottom layer, a rectangle with its fill, border and corners, never selected alone. Ungroup drops it.
+_Avoid_: background (slide fills)
+
 **selection**:
-The layers a person selects on the slide or inside one group. Click selects one. Shift+click or Ctrl+click (Cmd+click on a Mac) adds or removes one. One has handles. Several have a ring each and one frame. Drag, arrows and Delete act on all as one undo step. An agent's delete drops that layer from the selection.
+The layers a person selects on the slide or inside one group. Click selects one; Shift+click or Ctrl+click (Cmd+click on a Mac) adds or removes one. One has handles, several a ring each inside one outline. Drag, arrows and Delete act on all as one undo step. An agent's delete drops that layer.
 _Avoid_: chosen, picked, active element
 
 **connector**:
-A line whose ends can attach to sites on the shapes and images of its slide, so it follows them while they move, resize or turn. A person drags an end onto a site, or to any other point on the slide to free it, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and an elbow bends where PowerPoint would bend it. None frees an end. An attached connector moves only by its ends. The code calls a connector's ends its `connection`.
+A line whose ends can attach to sites on its slide's shapes and images, so it follows them as they move, resize or turn. A person drags an end onto a site, or elsewhere to free it, or picks shape and site in the Connector section; an agent sends `connection` in its `set`. It keeps its line form, straight, elbow or curved, bending where PowerPoint would. None frees an end. An attached connector moves only by its ends, its `connection` in code.
 _Avoid_: link, edge, arrow (an arrow is a line's end)
 
 **site**:
-A numbered point on a shape or image where a connector's end attaches, numbered as PowerPoint numbers them: a rectangle has 0 at the top, 1 left, 2 bottom and 3 right. The design panel names a site by the side it sits on, Top, Left, Bottom or Right, or Top left and the like at a corner, and Point and its number when two sites would share a name. A shape's sites show as dots while a person drags a connector's end over it. PowerPoint calls them connection points.
+A numbered point on a shape or image where a connector's end attaches, numbered as PowerPoint does: a rectangle has 0 at the top, 1 left, 2 bottom, 3 right. The design panel names it by side or corner (Top, Top left), or Point and its number when two would share a name. Sites show as dots while a connector's end is dragged over a shape. PowerPoint says connection points.
 _Avoid_: anchor, port, handle
 
 **diagram**:
@@ -215,7 +227,7 @@ One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none,
 _Avoid_: fill kind, layer (a layer is a thing on a slide)
 
 **border**:
-The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, stored as the trait `border`. The design panel's Border section shows none, solid, dashed and dotted, then Color and Border width; design mode shows the paint as a word list, every setting, and the arrowheads only on an open shape. A deck, device or agent that still says `line` is read as border. PowerPoint writes `a:ln`.
+The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, the trait `border`. The Border section shows none, solid, dashed and dotted, then Color and Border width; design mode adds the paint as a word list, every setting, and arrowheads on an open shape. An old `line` is read as border. PowerPoint writes `a:ln`.
 _Avoid_: line (as a trait or a panel section), stroke, outline
 
 **line**:
@@ -257,7 +269,7 @@ A number that goes up when a stored shape changes. Each trait has one, with a ha
 _Avoid_: schema version, migration number
 
 **kept**:
-What the editor leaves exactly as the file has it. An element of kind `kept`, such as a diagram or an embedded object, takes only a name, alt text, hidden, a move and a delete. An element's `kept` list names design fields the editor cannot express, such as a custom shape or an effect graph, and a `set` on one is refused with `kept`.
+What the editor leaves exactly as the file has it. A `kept` element, such as a diagram or an embedded object, takes only a name, alt text, hidden, a move and a delete. An element's `kept` list names design fields the editor cannot express, such as a custom shape, and a `set` on one is refused with `kept`.
 _Avoid_: locked, frozen, protected, preserved
 
 **opening**:

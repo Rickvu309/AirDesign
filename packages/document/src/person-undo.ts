@@ -7,7 +7,7 @@ import { elementCommand, elementGone, type ElementCommand, type ElementOrder } f
 import { elementStacks, sitsBefore } from "./element-stack.js"
 import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./element-group.js"
 import { rowsKept } from "./group-place.js"
-import { ungroupTurn } from "./group-turn.js"
+import { regroupTurn, ungroupTurn } from "./group-turn.js"
 import type { OrderKey } from "./order-key.js"
 import { openingElement } from "./slide-floor.js"
 import { readTextValue } from "./text-value.js"
@@ -162,7 +162,7 @@ function holderOf(register: Register, step: NodeStep): ValueHolder {
 function stepCommands(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Command[] | null {
   const to = from === "before" ? "after" : "before"
   const commands: Command[] = []
-  for (const step of steps) {
+  for (const step of from === "after" ? steps.toReversed() : steps) {
     const body = register.nodes.includes(step.node) ? register.elements[step.node] : undefined
     const holder = holderOf(register, step)
     const values = formatOne(step[to], holder) ?? [{ v: format, patch: step[to] }]
@@ -246,11 +246,8 @@ function turnCommands(
   }
   if ("group" in undoable) {
     if (groupFormed(register, undoable.group) !== undoable[from] || undoable[from] === undoable[to]) return null
-    if (undoable[to]) {
-      const edit: SlideCommand = { slide: "element-regroup", id: undoable.slide, node: undoable.group }
-      return landing(register, { command: "slide", file, edit })
-    }
-    return ungroupTurn(register, file, undoable.slide, undoable.group)
+    if (undoable[to]) return regroupTurn(register, file, undoable.slide, undoable.group)
+    return ungroupTurn(register, file, undoable.slide, undoable.group, from === "after" ? "made" : "laid")
   }
   const spot = foldSlides({ ...register, file }).find((spot) => spot.id === undoable.slide)
   if (

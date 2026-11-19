@@ -1,7 +1,17 @@
 import { paintSlots, type ScopedElement } from "@airdesign/document"
 import type { PanelReads, PanelSection, SectionName } from "./panel"
 
-export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "table" | "chart" | "kept" | "many"
+export type PanelKind =
+  | "text"
+  | "shape"
+  | "picture"
+  | "connector"
+  | "group"
+  | "frame"
+  | "table"
+  | "chart"
+  | "kept"
+  | "many"
 
 export type PanelMode = "slides" | "design"
 
@@ -83,6 +93,18 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     design("selectionColors", true),
   ],
   group: [slides("alignment"), slides("selectionColors"), design("box"), design("effects"), design("identity")],
+  frame: [
+    slides("alignment"),
+    slides("fills"),
+    slides("opacity"),
+    slides("corners"),
+    slides("border"),
+    slides("shadow"),
+    slides("selectionColors"),
+    design("box"),
+    design("effects"),
+    design("identity"),
+  ],
   table: [slides("alignment"), design("box"), design("identity"), design("selectionColors", true)],
   chart: [slides("alignment"), design("box"), design("identity"), design("selectionColors", true)],
   kept: [design("identity", true), design("selectionColors", true)],
@@ -161,6 +183,7 @@ function imaged(shown: PanelReads): boolean {
 
 export function panelKind(view: ScopedElement, shown: PanelReads): PanelKind | null {
   const { kind, text } = view.facts
+  if (view.facts.frame !== undefined) return "frame"
   if (kind === "shape" && !text && imaged(shown)) return "picture"
   if (kind === "shape") return text && !drawn(shown) ? "text" : "shape"
   return panelKinds.includes(kind) ? (kind as PanelKind) : null
