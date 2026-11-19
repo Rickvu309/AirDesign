@@ -243,7 +243,7 @@ export type PanelReads = {
 
 function directions(trait: TraitName, field: string, desc: Desc): Desc {
   if (trait !== "layout" || field !== "flow" || desc.kind !== "choice") return desc
-  return { ...desc, options: desc.options.filter((option) => option !== "none") }
+  return { ...desc, options: desc.options.filter((option) => option !== "none").reverse() }
 }
 
 function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {

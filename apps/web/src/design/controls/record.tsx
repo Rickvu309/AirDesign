@@ -1,3 +1,4 @@
+import { PaddingControl } from "@/design/controls/padding"
 import type { Desc } from "@airdesign/document"
 import { arrange } from "@/design/panel-arrangement"
 import { partControl, type ControlProps } from "@/design/panel"
@@ -8,7 +9,10 @@ function cleared(fields: readonly (readonly [string, Desc])[], changed: string):
   )
 }
 
-export function RecordControl({ control, palette, onChange, inner }: ControlProps) {
+export function RecordControl(props: ControlProps) {
+  const { control, palette, onChange, inner } = props
+  if (control.trait === "layout" && control.field === "padding") return <PaddingControl {...props} />
+
   const fields = control.desc.kind === "record" ? Object.entries(control.desc.fields) : []
   const held =
     typeof control.value === "object" && control.value !== null

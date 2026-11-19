@@ -211,6 +211,8 @@ export function ControlView({ control, palette, onChange }: ControlProps) {
 }
 
 function stripColumns(strip: readonly PanelControl[]): string {
+  if (strip[0]?.trait === "layout" && strip[0].field !== "padding")
+    return `repeat(${strip.length}, minmax(0, 1fr)) var(--control-dense)`
   if (strip.some((control) => control.field.startsWith("remove.")))
     return strip.map((control) => (control.field.startsWith("remove.") ? "24px" : "minmax(0, 1fr)")).join(" ")
   if (strip.every((control) => control.kind === "action"))
