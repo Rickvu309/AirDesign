@@ -11,7 +11,7 @@ import {
   type Point,
   type SlideSize,
 } from "./box-gesture.js"
-import type { CanvasSlide } from "./record.js"
+import type { CanvasElement, CanvasSlide } from "./record.js"
 import {
   around,
   boundsOf,
@@ -42,6 +42,12 @@ function lineage(parents: ReadonlyMap<ElementId, ElementId | null>, id: ElementI
   return chain
 }
 
+export function paintedBounds(element: CanvasElement, store: PaintStore): Bounds | null {
+  if (element.id === null) return null
+  const painted = ownBox(element, store.getBox(element.id))
+  return painted === null ? null : boundsOf(boxOf(painted), painted.rotation)
+}
+
 export function snapTargets(slide: CanvasSlide, store: PaintStore, moving: readonly ElementId[]): DragSnap {
   const parents = new Map(
     slide.elements.flatMap((each): [ElementId, ElementId | null][] =>
@@ -54,8 +60,8 @@ export function snapTargets(slide: CanvasSlide, store: PaintStore, moving: reado
     const id = each.id
     if (id === null || held.has(id) || holding.has(id)) return []
     if (lineage(parents, id).some((parent) => held.has(parent))) return []
-    const painted = ownBox(each, store.getBox(id))
-    return painted === null ? [] : [boundsOf(boxOf(painted), painted.rotation)]
+    const bounds = paintedBounds(each, store)
+    return bounds === null ? [] : [bounds]
   })
   const turns = new Map(
     slide.elements.flatMap((each): [ElementId, number][] =>

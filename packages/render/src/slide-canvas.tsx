@@ -11,6 +11,7 @@ import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.j
 import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { GuideLayer } from "./guide-layer.js"
+import { useMeasuring } from "./measuring.js"
 import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import { leadOf, type Selection } from "./selection.js"
 import type { CanvasSlide } from "./record.js"
@@ -89,6 +90,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   const selected = lead === null ? undefined : slide.elements.find((each) => each.id === lead)
   const onConnect = selected?.kind === "connector" ? props.onConnect : undefined
   const surface = useRef<HTMLDivElement>(null)
+  useMeasuring(surface, slide, props.store, ids, moving?.guides)
   const entered = useRef<ElementId | null>(null)
   const keys = props.entering?.keys
   const entering = slide.elements.find((each) => each.id !== null && each.id === props.entering?.id)
