@@ -59,15 +59,21 @@ function useFitReport(
   report: (height: number) => void,
 ) {
   const reported = useRef<number | null>(null)
+  const answered = useRef(false)
   useLayoutEffect(() => {
     const shown = layer.current
     const stored = placed.box?.height
-    if (shown === null || stored === undefined || placed.inFrame !== "auto" || placed.text?.fit?.kind !== "grow") return
-    const measured = textHeight(shown)
+    const owed = placed.measure === "owed"
+    if (!owed) answered.current = false
+    if (shown === null || stored === undefined || placed.inFrame !== "auto") return
+    const grows = placed.text?.fit?.kind === "grow"
+    const measured = grows ? textHeight(shown, placed.measure !== undefined) : null
     const unit = scaled(1)
-    if (measured === null || unit <= 0) return
-    const height = Math.round(measured / unit)
-    if (Math.abs(height - stored) * unit < 1 || reported.current === height) return
+    if (unit <= 0 || (grows && measured === null)) return
+    const height = measured === null ? stored : Math.round(measured / unit)
+    const answers = owed && !answered.current
+    if (!answers && (Math.abs(height - stored) * unit < 1 || reported.current === height)) return
+    answered.current = owed
     reported.current = height
     report(height)
   })

@@ -12,7 +12,8 @@ import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
 import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
-import { storedBox } from "@/frame-boxes"
+import { framedOf, storedBox } from "@/frame-boxes"
+import { MeasuredSlides, owingSlides } from "@/editor/measured-slides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
@@ -100,6 +101,9 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     const row = { v: format, patch: { box: { h: { set: height } } } }
     if (!(await connect(memoryRemote()).enqueueRow(id, row, node, floor)).ok) return
     await deck.shown.showEdited(current)
+    const shownRegister = deck.shown.shownRegister.current
+    if (shownRegister !== null)
+      store.current.placeBox(node, landedBox(indexedRegister(deck.shown.shownParts.current, shownRegister), node))
     settle(await flushPending(connect, id))
   }
 
@@ -181,7 +185,23 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     return changeElement({ change: "order", node, move })
   }
 
-  return (width) => {
+  function measured(width: number) {
+    const shownRegister = deck.shown.shownRegister.current
+    const owed = framedOf(
+      shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister),
+    ).owed
+    return (
+      <MeasuredSlides
+        slides={owingSlides(store.current, owed, current)}
+        canvases={canvases.current}
+        store={store.current}
+        width={width}
+        onFit={(node, height) => void fitted(node, height)}
+      />
+    )
+  }
+
+  function slideAt(width: number) {
     const canvas = canvases.current(current)
     return canvas === null ? (
       <div />
@@ -244,4 +264,11 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       </ArrangeMenu>
     )
   }
+
+  return (width) => (
+    <>
+      {slideAt(width)}
+      {measured(width)}
+    </>
+  )
 }

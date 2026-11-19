@@ -1,5 +1,5 @@
 import type { ElementId, Kind } from "@airdesign/document"
-import type { CanvasSlide, Framing } from "@airdesign/render"
+import type { CanvasSlide, Framing, Measure } from "@airdesign/render"
 
 export type CanvasShape = {
   readonly id: ElementId
@@ -10,6 +10,7 @@ export type CanvasShape = {
   readonly backdrop?: true
   readonly frame?: Framing
   readonly inFrame?: Framing
+  readonly measure?: Measure
   readonly opacity?: number
 }
 

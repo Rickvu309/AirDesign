@@ -4,7 +4,7 @@ export { Filmstrip } from "./filmstrip.js"
 export { replaceSelection, textValue } from "./paragraph-edit.js"
 export { Passage } from "./passage.js"
 export type { CanvasChart } from "./chart-record.js"
-export type { Framing, GroupOf } from "./element-paint.js"
+export type { Framing, GroupOf, Measure } from "./element-paint.js"
 export type { CanvasLayer } from "./fill-layers.js"
 export {
   type CanvasEffects,

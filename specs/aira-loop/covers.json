@@ -10,8 +10,8 @@
     {
       "file": "apps/web/src/aira-panel.tsx",
       "names": ["AiraPanel"],
-      "digest": "8942ced653c2",
-      "blob": "3e41529e03dde183ddf93456c1634f4a0e48ce6d"
+      "digest": "7aa24c96f8c9",
+      "blob": "62f863a80d4effde344e4fd84ee0128aad7c9fc7"
     },
     {
       "file": "apps/api/src/aira-route.ts",
@@ -28,8 +28,8 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "c44daa888486",
-      "blob": "325a95cd9c0ea771da13000cd306d13d7764a4bf"
+      "digest": "ac73e3611c9d",
+      "blob": "49386cda45a22a0ce5a1ad57fff9c9d3c582da4d"
     }
   ]
 }

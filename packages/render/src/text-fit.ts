@@ -148,11 +148,15 @@ function overflowOf(layer: HTMLElement, columns: number): Over | null {
   }
 }
 
-export function textHeight(layer: HTMLElement): number | null {
+export function textHeight(layer: HTMLElement, shrinks: boolean): number | null {
   const body = layer.querySelector<HTMLElement>(":scope > [data-text-body]")
   if (body === null) return null
+  const kept = body.style.minHeight
+  if (shrinks) body.style.minHeight = "0px"
+  const height = lengthOf(getComputedStyle(body).height)
+  if (shrinks) body.style.minHeight = kept
   const style = getComputedStyle(layer)
-  return lengthOf(getComputedStyle(body).height) + lengthOf(style.paddingTop) + lengthOf(style.paddingBottom)
+  return height + lengthOf(style.paddingTop) + lengthOf(style.paddingBottom)
 }
 
 export function useTextFit(

@@ -6,6 +6,7 @@ import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
 import { groupedNow } from "./element-group.js"
 import { frameNow, framedNow } from "./frame-layout.js"
+import { heightOnly } from "./frame-measure.js"
 import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import {
@@ -199,8 +200,8 @@ function place(register: Register, id: ElementId, body: NodeRegister): Decision 
   return apply({ ...register, elements: { ...register.elements, [id]: body } }, body.route)
 }
 
-function personEdit(register: NodeRegister, edit: Value): NodeRegister {
-  const guarded = register.phase === "running" ? true : register.guarded
+function personEdit(register: NodeRegister, edit: Value, measure: boolean): NodeRegister {
+  const guarded = register.phase === "running" && !measure ? true : register.guarded
   const landed = [...register.landed, { actor: "person" as const, ...storedValue(edit), visible: true }]
   return { ...register, landed, version: version(register) + 1, guarded }
 }
@@ -398,7 +399,7 @@ function editNode(register: Register, id: ElementId, command: Command): Decision
     throw new Error("missing node")
   }
   if (command.command === "person") {
-    return place(register, id, personEdit(current, command))
+    return place(register, id, personEdit(current, command, heightOnly(command)))
   }
   const edited =
     command.command === "agent"

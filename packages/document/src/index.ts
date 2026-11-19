@@ -209,6 +209,7 @@ export { groupCommand, groupedNow, groupFormed, groupNode, madeGroup, type Membe
 export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
+export { measureDue, measureOwed, measureStale } from "./frame-measure.js"
 export { regroupTurn, ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,

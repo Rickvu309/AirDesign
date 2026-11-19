@@ -29,6 +29,7 @@ export const step = (action, from) => {
     return "the person edits [after undo]"
   }
   if (action === "PersonWrites") return "the person edits"
+  if (action === "DeviceMeasures") return "the device writes the height it measured"
   if (action === "RunStarts") return "the run reads the property"
   if (action === "AgentWrites") return "the agent writes"
   if (action === "AgentWritesAgain") return "the agent writes the fresh row"

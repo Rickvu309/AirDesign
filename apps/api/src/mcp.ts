@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { notifyKey, readDeckId, readNamedDeck } from "@airdesign/catalog"
+import { measureOwed } from "@airdesign/document"
 import { openDeck, ownedDecks, type Deck } from "@airdesign/engine"
 import {
   afterWrite,
@@ -20,6 +21,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server"
 import { storedTurns } from "./agent-turn.js"
 import { admitCaller, refundCaller } from "./caller-log.js"
 import { readOwnedDecks } from "./deck-list.js"
+import type { DeckListen } from "./listen.js"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved, readStoredOnce, uniqueOnce, writeRevision } from "./saved.js"
 
@@ -33,6 +35,33 @@ export type McpHost = {
   readonly hosts: readonly string[]
   readonly bodyCap: number
   readonly fail: (error: unknown) => void
+  readonly measures?: Measures
+}
+
+export type Measures = {
+  readonly listen: Pick<DeckListen, "wait" | "ready">
+  readonly following: (deck: string) => boolean
+  readonly limit: number
+}
+
+type Saved = Awaited<ReturnType<typeof readSaved>>
+
+function owes(saved: Saved): boolean {
+  return saved !== undefined && saved.register !== null && measureOwed(saved.register).length > 0
+}
+
+async function measuredSaved(db: Sql, deck: string, measures: Measures | undefined): Promise<Saved> {
+  const first = await readSaved(db, deck)
+  if (measures === undefined || !owes(first) || !measures.following(deck)) return first
+  const until = AbortSignal.timeout(measures.limit)
+  let saved = first
+  while (owes(saved) && !until.aborted) {
+    const woken = measures.listen.wait(until)
+    await measures.listen.ready()
+    saved = await readSaved(db, deck)
+    if (owes(saved)) await woken
+  }
+  return owes(saved) ? await readSaved(db, deck) : saved
 }
 
 function mcpRequest(req: IncomingMessage, body: Buffer) {
@@ -77,7 +106,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       let saved: Awaited<ReturnType<typeof readSaved>>
       try {
         await turns.load(named.deck)
-        saved = await readSaved(host.deck, named.deck)
+        saved = await measuredSaved(host.deck, named.deck, host.measures)
       } catch {
         return { ok: false, refusal: "store" }
       }

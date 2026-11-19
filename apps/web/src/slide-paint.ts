@@ -189,7 +189,13 @@ export function paintCanvas(
     const frame = framed?.frames.get(shape.id)
     if (framed?.backdrops.has(shape.id) === true) return [key, { ...marked, backdrop: true as const }] as const
     const inFrame = framed?.children.get(shape.id)
-    if (inFrame !== undefined) return [key, { ...marked, inFrame }] as const
+    const measure =
+      framed?.owed.has(shape.id) === true
+        ? { measure: "owed" as const }
+        : framed?.due.has(shape.id) === true
+          ? { measure: "due" as const }
+          : {}
+    if (inFrame !== undefined) return [key, { ...marked, inFrame, ...measure }] as const
     const opacity = framed?.opacities.get(shape.id)
     const faded = opacity === undefined ? {} : { opacity }
     return [key, frame === undefined ? marked : { ...marked, frame, ...faded }] as const

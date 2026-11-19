@@ -42,6 +42,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly width: number
   readonly className?: string
   readonly quiet?: boolean
+  readonly measuring?: boolean
   readonly highlights?: readonly ElementId[]
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
   readonly onFit?: (id: ElementId, height: number) => void
@@ -112,7 +113,11 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   return (
     <div
       ref={surface}
-      {...(quiet ? { "data-thumb-paint": true } : { "data-slide-paint": true })}
+      {...(quiet
+        ? { "data-thumb-paint": true }
+        : props.measuring === true
+          ? { "data-measure-paint": true }
+          : { "data-slide-paint": true })}
       className={props.className}
       style={{
         position: "relative",

@@ -6,7 +6,7 @@ import { onceMeta, readDeckId, readDeckIndex, type AgentOp, type DeckId } from "
 import { elementId, foldSlides, readSlideId, type Register } from "@airdesign/document"
 
 import { indexSaved } from "./index-saved.js"
-import { serveMcp } from "./mcp.js"
+import { serveMcp, type Measures } from "./mcp.js"
 import type { Sql } from "./pool.js"
 import { openSaved } from "./saved.js"
 
@@ -19,6 +19,7 @@ export type Owned = {
   readonly deck: DeckId
   readonly email: string
   readonly agentKey?: string
+  readonly measures?: Measures
 }
 
 export type Gate = "turn" | "deck" | "write" | "save"
@@ -141,6 +142,7 @@ export async function mcpSteps(open: typeof createServer): Promise<McpSteps> {
           fail: (error) => {
             res.writeHead(500).end(String(error))
           },
+          ...(owned.measures === undefined ? {} : { measures: owned.measures }),
         },
         req,
         res,

@@ -87,6 +87,7 @@ for (const name of [
   "auto-layout-frame",
   "auto-layout-text",
   "auto-layout-opacity",
+  "auto-layout-measure",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
