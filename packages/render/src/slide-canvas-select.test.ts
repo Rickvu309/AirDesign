@@ -82,6 +82,7 @@ async function mount(
     elements?: readonly CanvasElement[]
     inStage?: boolean
     ownsKey?: (event: KeyboardEvent | React.KeyboardEvent) => boolean
+    onUngroup?: (id: ElementId) => void
     onRender?: () => void
   } = {},
 ) {
@@ -111,6 +112,7 @@ async function mount(
       boxes.push(...moved.map(({ id, box }): [ElementId, Box] => [id, box])),
     onSelection: (next: Selection) => selections.push(next),
     ...(options.ownsKey === undefined ? {} : { ownsKey: options.ownsKey }),
+    ...(options.onUngroup === undefined ? {} : { onUngroup: options.onUngroup }),
   })
   const wrapped =
     options.onRender === undefined
@@ -348,6 +350,16 @@ describe("SlideCanvas groups, deep select, keyboard traversal and hover", () => 
       editable.dispatchEvent(tabEvent)
     })
     expect(tabEvent.defaultPrevented).toBe(false)
+  })
+
+  it("asks ownsKey only for the selection keys, so Ctrl+Shift+G still ungroups while a popover is open", async () => {
+    const ungrouped: ElementId[] = []
+    const { host } = await mount({ ownsKey: () => false, onUngroup: (id) => ungrouped.push(id) })
+    await pointer(frameOf(host, child1), "pointerdown", 550, 150)
+    await pointer(document, "pointerup", 550, 150)
+    expect(chosenIds(host)).toEqual([group])
+    await key(frameOf(host, group), "G", { code: "KeyG", ctrlKey: true, shiftKey: true })
+    expect(ungrouped).toEqual([group])
   })
 
   it("paints a hover outline without re-rendering elements, switching to deep leaf while Cmd/Ctrl is held", async () => {

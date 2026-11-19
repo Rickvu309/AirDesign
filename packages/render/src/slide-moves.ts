@@ -411,10 +411,13 @@ export function useMoves(
     }
   }
 
+  function owns(event: KeyboardEvent<HTMLElement>): boolean {
+    return picking?.ownsKey === undefined || picking.ownsKey(event)
+  }
+
   function key(event: KeyboardEvent<HTMLElement>, element: CanvasElement) {
     const id = element.id
     if (id === null || event.nativeEvent.isComposing) return
-    if (picking?.ownsKey !== undefined && !picking.ownsKey(event)) return
     const frame = event.currentTarget
     const onFrame = event.target === frame
     const gesture = gestureFor(event, onFrame ? "element" : "text")
@@ -425,10 +428,11 @@ export function useMoves(
       else if (!onFrame) frame.focus()
       else {
         const parent = parentSelection(size, latest.current)
-        if (parent !== null) {
+        if (parent === null) frame.closest<HTMLElement>(slidePaint)?.focus()
+        else if (owns(event)) {
           choose(parent)
           focusSelection(frame, parent)
-        } else frame.closest<HTMLElement>(slidePaint)?.focus()
+        }
       }
       return
     }
@@ -437,7 +441,7 @@ export function useMoves(
     if (gesture === "select-parent") {
       if (now !== null) return
       const parent = parentSelection(size, latest.current)
-      if (parent !== null) {
+      if (parent !== null && owns(event)) {
         event.preventDefault()
         choose(parent)
         focusSelection(frame, parent)
@@ -447,7 +451,7 @@ export function useMoves(
     if (gesture === "select-next") {
       if (now !== null) return
       const next = siblingSelection(size, latest.current, event.shiftKey ? -1 : 1)
-      if (next !== null) {
+      if (next !== null && owns(event)) {
         event.preventDefault()
         choose(next)
         focusSelection(frame, next)
@@ -477,6 +481,7 @@ export function useMoves(
       if (now !== null) return
       const children = childrenSelection(size, latest.current)
       if (children !== null) {
+        if (!owns(event)) return
         event.preventDefault()
         choose(children)
         focusSelection(frame, children)

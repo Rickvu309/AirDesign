@@ -250,7 +250,7 @@ test("typing and a nudge on a new slide paint before the network and stay when i
   await expect(added).toHaveText("Offline line")
 })
 
-test("text inside a group on a duplicated slide picks its group first, then shows no handles and does not move", async ({
+test("text inside a group on a duplicated slide picks its group first, a double-click steps in with no handles, and it does not move", async ({
   page,
 }) => {
   await page.goto("/")
@@ -266,9 +266,10 @@ test("text inside a group on a duplicated slide picks its group first, then show
   await text.click()
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
   await expect(page.locator("[data-slide-paint] [data-grip]")).not.toHaveCount(0)
-  await text.click()
-  await expect(text).toBeFocused()
+  await text.dblclick()
   await expect(page.locator("[data-slide-paint] [data-grip]")).toHaveCount(0)
+  await page.keyboard.press("Enter")
+  await expect(text).toBeFocused()
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowRight")
   await page.keyboard.press("ArrowDown")
