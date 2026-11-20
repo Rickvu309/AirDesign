@@ -107,7 +107,7 @@ export function deckInserts(deck: InsertingDeck) {
     for (const layer of copy.layers) media.push((await keptImages(layer)) ?? [])
     const { edits, refused } = pastedAdds(shownParts.current, opened.register, copy, places, media)
     for (const refusal of refused)
-      toast.error(elementCopy.pasteRefusedTitle, {
+      toast.refusal(elementCopy.pasteRefusedTitle, {
         id: `paste-refused-${refusal}`,
         description: elementCopy.pasteElsewhereBody[refusal],
       })

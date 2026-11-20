@@ -112,7 +112,7 @@ it("puts a new text box clear of the boxes the slide paints, and not on top of t
   expect(box.y + box.cy).toBeLessThanOrEqual(size.height)
 })
 
-it("says why it cannot delete an animated shape, a group and a shape inside one, and nothing for a plain shape", () => {
+it("says why it cannot delete an animated shape and a shape inside a group, and nothing for a plain shape or a group", () => {
   const register = openRegister("", "")
   const animated = onSlide(
     xml(
@@ -134,7 +134,7 @@ it("says why it cannot delete an animated shape, a group and a shape inside one,
         .replace("</p:spTree>", "</p:grpSp></p:spTree>"),
     ),
   )
-  expect(removalRefusal(grouped, register, elementId("256.9"))).toBe("group")
+  expect(removalRefusal(grouped, register, elementId("256.9"))).toBeNull()
   expect(removalRefusal(grouped, register, elementId("256.3"))).toBe("group")
   expect(removalRefusal(grouped, register, elementId("256.2"))).toBeNull()
   expect(removalRefusal(grouped, register, elementId("256.77"))).toBeNull()
@@ -220,4 +220,24 @@ it("puts a new shape clear of a line the slide paints", () => {
   const { x, y, cx, cy } = added.element.box
   const clear = x + cx <= line.x || x >= line.x + line.width || y + cy <= line.y || y >= line.y + line.height
   expect(clear).toBe(true)
+})
+
+it("deletes a group with the layers inside it in one edit, and its restore brings them all back, as Figma does", () => {
+  const grouped = onSlide(
+    xml(
+      twoBoxSlide
+        .replace(
+          '<p:sp><p:nvSpPr><p:cNvPr id="3"',
+          '<p:grpSp><p:nvGrpSpPr><p:cNvPr id="9" name="Matrix"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="3"',
+        )
+        .replace("</p:spTree>", "</p:grpSp></p:spTree>"),
+    ),
+  )
+  const register = openRegister("", "")
+  const removed = removals(grouped, register, [elementId("256.9")])
+  expect(removed).toEqual({ edits: [{ slide: "element-remove", id: "256", node: "256.9" }], refused: [] })
+  const gone = removed.edits.reduce(landed, register)
+  expect(readShapes(exportedParts(grouped, gone)).map((shape) => shape.shape)).toEqual(["2"])
+  const back = landed(gone, { slide: "element-restore", id: file[0]!, node: elementId("256.9") })
+  expect(readShapes(exportedParts(grouped, back)).map((shape) => shape.shape)).toEqual(["2", "9", "3"])
 })

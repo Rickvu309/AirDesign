@@ -98,7 +98,17 @@ function filedBackdrops(index: DeckIndex): ReadonlyMap<ElementId, ElementId> {
   return found
 }
 
+function inRemovedGroup(state: Indexed, node: ElementId): boolean {
+  for (let above = groupParent(state, node); typeof above === "string"; above = groupParent(state, above))
+    if (removedNow(state, above)) return true
+  return false
+}
+
 export function elementGone(state: SlideState, node: ElementId): boolean {
+  return ownGone(state, node) || inRemovedGroup(state, node)
+}
+
+function ownGone(state: SlideState, node: ElementId): boolean {
   let gone = false
   let frame: ElementId | null = state.index === undefined ? null : (filedBackdrops(state.index).get(node) ?? null)
   for (const command of state.order) {
@@ -251,6 +261,13 @@ function copied(state: Indexed, node: ElementId): boolean {
   )
 }
 
+function animatedWithin(state: Indexed, slide: SlideId, node: ElementId): boolean {
+  const animated = slideMeasure(state, slide)?.animated ?? []
+  const within = (each: ElementId): boolean =>
+    animated.includes(shapeOf(each).shape) || groupChildren(state, each).some(within)
+  return within(node)
+}
+
 export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, ElementOrder>): Refusal | null {
   if (command.slide === "element-clone") return cloneRefusal(state, command)
   const node = command.slide === "element-add" ? command.element.node : command.node
@@ -271,13 +288,13 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   if (copied(state, node)) return null
-  const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
+  const animated = animatedWithin(state, command.id, node)
   if (groupEmptied(state, node)) return animated ? "locked" : null
   const parent = groupParent(state, node)
   const backdrop = parent === null || parent === undefined ? null : frameBackdrop(state, parent)
   const grouped = groupedNow(state, node) && (backdrop === null || backdrop === node)
   if (removable({ ...indexFacts(opening, animated), grouped })) return null
-  if (grouped || opening.kind === "group") return "group-box"
+  if (grouped) return "group-box"
   return animated ? "locked" : "kind"
 }
 

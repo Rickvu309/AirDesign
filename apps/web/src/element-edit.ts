@@ -25,7 +25,7 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { applyRoute, freeShapeId, paintKind, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
+import { applyRoute, freeShapeId, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
 import { boxOf, type Copied, type Moved, type PaintBox } from "@airdesign/render"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
@@ -78,7 +78,7 @@ export function removalRefusal(parts: Parts, register: Register, node: ElementId
   const found = readShapes(base).find((each) => each.slide === slide && each.shape === shape)
   if (found === undefined) return null
   const framed = framedOf(indexedRegister(parts, register)).children.has(node)
-  if ((found.grouped === true && !framed) || paintKind(found.kind) === "group") return "group"
+  if (found.grouped === true && !framed) return "group"
   try {
     applyRoute(base, { name: "remove", part: found.part, shape })
     return null
@@ -204,7 +204,7 @@ async function commitRemovals(
 ): Promise<CommitOutcome> {
   const { edits, refused } = removals(parts, register, nodes)
   for (const refusal of refused)
-    toast.error(elementCopy.removeRefusedTitle, {
+    toast.refusal(elementCopy.removeRefusedTitle, {
       id: `remove-refused-${refusal}`,
       description: elementCopy.removeRefusedBody[refusal],
     })
@@ -260,7 +260,7 @@ export async function replacedUndoable(
   if (replacing.length === 0) return elementsUndoable(register, file, added)
   const { edits, refused } = removals(parts, register, replacing)
   for (const refusal of refused)
-    toast.error(elementCopy.removeRefusedTitle, {
+    toast.refusal(elementCopy.removeRefusedTitle, {
       id: `remove-refused-${refusal}`,
       description: elementCopy.removeRefusedBody[refusal],
     })
@@ -280,7 +280,7 @@ export async function commitCopies(
 ): Promise<{ readonly copies: readonly Copied[]; readonly flushed: Promise<CommitOutcome> }> {
   const { edits, refused } = copyCommands(parts, register, copies)
   for (const refusal of refused)
-    toast.error(title, { id: `copy-refused-${refusal}`, description: elementCopy.copyRefusedBody[refusal] })
+    toast.refusal(title, { id: `copy-refused-${refusal}`, description: elementCopy.copyRefusedBody[refusal] })
   const file = fileSlides(parts, register)
   const went: ElementClone[] = []
   for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) went.push(edit)

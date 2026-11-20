@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, landedPatch, writeTextValue, type Kind } from "@airdesign/document"
+import { elementGone, elementId, landedPatch, writeTextValue, type IndexElement, type Kind } from "@airdesign/document"
 import { indexDeck, openDeck } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
@@ -20,10 +20,22 @@ const rows: readonly (readonly [string, Kind, string | null])[] = [
   ["256.9", "connector", null],
 ]
 
-function session(): Session {
+const insideGroup: readonly IndexElement[] = [
+  { node: elementId("256.10"), kind: "shape", value: title, box, grouped: true, group: elementId("256.7") },
+  { node: elementId("256.11"), kind: "shape", value: null, box, grouped: true, group: elementId("256.7") },
+]
+
+function session(inside: readonly IndexElement[] = []): Session {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error("deck")
-  const elements = rows.map(([node, kind, value]) => ({ node: elementId(node), kind, value, box, grouped: false }))
+  const listed = rows.map(([node, kind, value]): IndexElement => ({
+    node: elementId(node),
+    kind,
+    value,
+    box,
+    grouped: false,
+  }))
+  const elements = [...listed, ...inside]
   const indexed = indexDeck(
     openDeck(id.deck),
     { actor: "person" },
@@ -32,7 +44,7 @@ function session(): Session {
       once: "index",
       offset: 0,
       total: elements.length,
-      slides: [{ id: "256", position: 0, size, free: 10, animated: [], layout: [] }],
+      slides: [{ id: "256", position: 0, size, free: 12, animated: [], layout: [] }],
       elements,
     },
   )
@@ -114,17 +126,25 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     expect(held.deck.register.elements[elementId("256.2")]).toBeUndefined()
   })
 
-  it("says a group cannot be deleted without telling the agent to edit text it does not have", async () => {
-    const held = session()
+  it("deletes a group with the layers inside it, as a person's Delete does", async () => {
+    const held = session(insideGroup)
     await withClient(held, async (client) => {
-      const refused = await client.callTool({
+      const removed = await client.callTool({
         name: "airdesign_edit_deck",
         arguments: { deck: "deck", base: 0, changes: [{ op: "delete", node: "256.7" }] },
       })
-      expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "group-box" })
-      const words = said(refused)
-      expect(words).toContain("Layer 256.7 is a group, and deleting a group is not supported yet. Leave it")
-      expect(words).not.toContain("Layer 256.7 is inside a group")
+      expect(removed.structuredContent).toMatchObject({ ok: true })
+      for (const node of ["256.7", "256.10", "256.11"])
+        expect(elementGone(held.deck.register, elementId(node))).toBe(true)
+      const inside = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: held.deck.revision, changes: [{ op: "delete", node: "256.10" }] },
+      })
+      expect(said(inside)).toContain("Layer 256.10 was already deleted")
+      const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+      const listed = JSON.stringify(read.structuredContent)
+      for (const node of ["256.7", "256.10", "256.11"]) expect(listed).not.toContain(`"${node}"`)
+      expect(listed).toContain('"256.2"')
     })
   })
 

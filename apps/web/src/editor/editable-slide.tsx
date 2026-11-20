@@ -339,7 +339,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
             const { shownParts, displayParts } = deck.shown
             const made = layerCopyOf(id, shownParts.current, displayParts.current, register, shownBoxes(ids))
             for (const refusal of made.refused)
-              toast.error(elementCopy.clipRefusedTitle, {
+              toast.refusal(elementCopy.clipRefusedTitle, {
                 id: `clip-refused-${refusal}`,
                 description: elementCopy.copyRefusedBody[refusal],
               })

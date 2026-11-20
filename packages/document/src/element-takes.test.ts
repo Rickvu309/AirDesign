@@ -133,13 +133,13 @@ describe("the server admits only the edits the device can write onto an element 
     expect(personEdit("256.2", "Typed")).toBe("apply")
   })
 
-  it("refuses a delete the person's own Delete refuses: a group, a grouped element, an animated one", () => {
+  it("refuses a delete the person's own Delete refuses: a grouped element and an animated one, and deletes a group", () => {
     expect(rows.filter(([node]) => !node.endsWith(".notes")).map(([node]) => [node, removal(node)])).toEqual([
       ["256.2", "apply"],
       ["256.3", "apply"],
       ["256.4", "apply"],
       ["256.5", "apply"],
-      ["256.6", "group-box"],
+      ["256.6", "apply"],
       ["256.7", "group-box"],
       ["256.8", "apply"],
       ["256.9", "apply"],
@@ -223,7 +223,7 @@ describe("the server admits only the edits the device can write onto an element 
   it("lets a person delete what the person's own Delete deletes", () => {
     const facts = { text: true, grouped: false, animated: false }
     const removes = kinds.filter((kind) => removable({ ...facts, kind }))
-    expect(removes).toEqual(["shape", "connector", "table", "chart", "kept"])
+    expect(removes).toEqual(["shape", "connector", "group", "table", "chart", "kept"])
     expect(removable({ ...facts, kind: "shape", grouped: true })).toBe(false)
     expect(removable({ ...facts, kind: "shape", text: false, animated: true })).toBe(false)
   })

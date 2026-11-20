@@ -26,6 +26,16 @@ it("keeps a recovery error dismissible even when a caller asks for a short lifet
   })
 })
 
+it("closes a refusal the person cannot act on after Figma's 3 seconds, and still lets them close it sooner", () => {
+  const id = toast.refusal(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody.animated })
+  expect(
+    sonner
+      .getHistory()
+      .filter((entry): entry is ToastT => !("dismiss" in entry))
+      .find((entry) => entry.id === id),
+  ).toMatchObject({ type: "error", duration: 3000, closeButton: true, dismissible: true })
+})
+
 it("keeps custom action notices available with a named close control", () => {
   const id = toast.notice(() => createElement("button", null, "Undo"), { duration: 9000 })
   const entry = sonner

@@ -179,10 +179,10 @@ describe("element order", () => {
     expect(readSlideState({ file, order: [{ ...row, geometry: "star" }] })).toBeUndefined()
   })
 
-  it("removes an indexed element but refuses a group, a grouped element and an element the index lacks", () => {
+  it("removes an indexed element and a group, but refuses a grouped element and an element the index lacks", () => {
     const remove = (id: string) => slide(indexed, { slide: "element-remove", id: file[0]!, node: elementId(id) })
     expect(remove("256.2").decision).toBe("apply")
-    expect(remove("256.4")).toEqual({ decision: "refuse", code: "group-box" })
+    expect(remove("256.4").decision).toBe("apply")
     expect(remove("256.5")).toEqual({ decision: "refuse", code: "group-box" })
     expect(remove("256.7")).toEqual({ decision: "refuse", code: "dead" })
   })
@@ -202,6 +202,56 @@ describe("element order", () => {
     expect(remove("256.2")).toEqual({ decision: "refuse", code: "locked" })
     expect(remove("256.5")).toEqual({ decision: "refuse", code: "group-box" })
     expect(slide(indexed, { slide: "element-remove", id: file[0]!, node: elementId("256.2") }).decision).toBe("apply")
+  })
+
+  describe("a group's delete, as Figma removes a node with all its children", () => {
+    const nested: Register = {
+      ...openRegister("", ""),
+      index: {
+        total: 5,
+        slides: [
+          { id: "256", position: 0, size: { width: 9, height: 9 }, free: 8 },
+          { id: "257", position: 1 },
+        ],
+        elements: [
+          { node: elementId("256.2"), kind: "shape", value: "Title", box, grouped: false },
+          { node: elementId("256.4"), kind: "group", value: null, box, grouped: false },
+          { node: elementId("256.5"), kind: "shape", value: "Cell", box, grouped: true, group: elementId("256.4") },
+          { node: elementId("256.6"), kind: "group", value: null, box, grouped: true, group: elementId("256.4") },
+          { node: elementId("256.7"), kind: "shape", value: "Label", box, grouped: true, group: elementId("256.6") },
+        ],
+        pages: [{ once: "page", offset: 0, count: 5 }],
+      },
+    }
+    const remove = { slide: "element-remove", id: file[0]!, node: elementId("256.4") } as const
+
+    it("takes every layer inside the group with it, and its restore brings them all back", () => {
+      const removed = applied(nested, remove)
+      for (const each of ["256.4", "256.5", "256.6", "256.7"]) expect(elementGone(removed, elementId(each))).toBe(true)
+      expect(elementGone(removed, elementId("256.2"))).toBe(false)
+      const opened = decide(removed, { command: "add", node: elementId("256.7"), floor: "Label", route: "" })
+      if (opened.decision !== "apply") throw new Error(opened.code)
+      const typed = decide(opened.register, { command: "person", node: elementId("256.7"), value: "Typed" })
+      expect(typed).toEqual({ decision: "refuse", code: "dead" })
+      const restored = applied(removed, { slide: "element-restore", id: file[0]!, node: elementId("256.4") })
+      for (const each of ["256.4", "256.5", "256.6", "256.7"])
+        expect(elementGone(restored, elementId(each))).toBe(false)
+    })
+
+    it("refuses a group that holds an animated layer, and still refuses a layer inside a group", () => {
+      const animated: Register = {
+        ...nested,
+        index: {
+          ...nested.index!,
+          slides: [
+            { id: "256", position: 0, size: { width: 9, height: 9 }, free: 8, animated: ["7"] },
+            { id: "257", position: 1 },
+          ],
+        },
+      }
+      expect(slide(animated, remove)).toEqual({ decision: "refuse", code: "locked" })
+      expect(slide(nested, { ...remove, node: elementId("256.6") })).toEqual({ decision: "refuse", code: "group-box" })
+    })
   })
 
   it("refuses an element command on a removed slide", () => {
