@@ -1,5 +1,6 @@
 import {
   fitNewBox,
+  iconWeights,
   limits,
   nextElementId,
   readSlideId,
@@ -140,7 +141,7 @@ export async function commitIcon(
   at: PictureAt,
   paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  const made = await iconBytes(name)
+  const made = await iconBytes({ name, weight: iconWeights.lucide })
   if (made === null) return "refused"
   for (const [part, bytes] of made) at.keep(part, bytes)
   const opened = await connect(memoryRemote()).openDeck(deckId)

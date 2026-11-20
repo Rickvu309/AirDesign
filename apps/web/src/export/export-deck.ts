@@ -7,7 +7,7 @@ import { bakeFills } from "@/export/fill-bake"
 import { bakeMasks } from "@/export/mask-bake"
 import { maskPicture } from "@/export/mask-picture"
 import { bakeShadows } from "@/export/shadow-bake"
-import { exportablePictures, type PictureStore } from "@/picture-tool"
+import { exportablePictures, PicturesUploading, withIcons, type PictureStore } from "@/picture-tool"
 
 export type ExportRequest = {
   readonly slides?: readonly number[]
@@ -32,7 +32,7 @@ async function written(file: Uint8Array, edited: () => Promise<ReadonlyMap<strin
   try {
     return await exportPackage(file, await edited())
   } catch (error) {
-    throw new ExportStopped("write", { cause: error })
+    throw error instanceof PicturesUploading ? error : new ExportStopped("write", { cause: error })
   }
 }
 
@@ -49,9 +49,11 @@ export async function exportDeck(
   if (stored === null || typeof stored === "string") throw new ExportStopped("file")
   const opened = await connect(memoryRemote()).openDeck(id)
   if (!opened.ok) throw new ExportStopped("edits")
-  const held = await exportablePictures(pictures, id, opened.register)
+  await exportablePictures(pictures, id, opened.register)
   const bytes = await written(stored.file, async () => {
-    const chosen = chosenParts(stored.parts, opened.register, slides, held)
+    const chosen = await withIcons(pictures, id, opened.register, (held) =>
+      chosenParts(stored.parts, opened.register, slides, held),
+    )
     const masked = await bakeMasks(chosen, maskPicture())
     return bakeShadows(await bakeFills(masked, opened.register))
   })

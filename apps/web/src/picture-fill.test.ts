@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest"
+import { iconParts } from "@airdesign/pptx"
+import { iconMarkup } from "./icon-fallback"
 import { pictureLayer, pictureSources, type PictureImage } from "./picture-fill"
 
 const whole = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -78,6 +80,23 @@ describe("pictureSources", () => {
     expect(await made[0]?.text()).toContain('d="M10 10L60 10L60 40L10 40Z"')
     expect(parts.get("ppt/media/image9.emf")).toBe(emf)
     expect([...emf]).toEqual([...rectangleEmf()])
+  })
+
+  it("paints an icon at a weight the device has not drawn yet from the same icon at another weight, so it never blinks", async () => {
+    const made: Blob[] = []
+    const rocket = iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]])
+    const parts = new Map([[iconParts("rocket").svg, new TextEncoder().encode(rocket)]])
+    const sources = pictureSources(parts, {
+      create: (blob) => {
+        made.push(blob)
+        return `blob:${made.length}`
+      },
+      revoke: () => undefined,
+    })
+    const thin = iconParts("rocket", 150).svg
+    expect(sources.src(image({ part: thin, contentType: "image/svg+xml" }))).toBe("blob:1")
+    expect(await made[0]?.text()).toBe(iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]], 150))
+    expect(sources.src(image({ part: iconParts("star", 150).svg, contentType: "image/svg+xml" }))).toBeNull()
   })
 
   it("makes no address for a part the deck does not hold", () => {

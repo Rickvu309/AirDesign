@@ -44,7 +44,15 @@ export { fileSlideGroups } from "./slide-group-write.js"
 export { requireMarkup } from "./part-markup.js"
 export { shapeSiblings } from "./element-stack-route.js"
 export { deckLayouts } from "./deck-layouts.js"
-export { addedPicturePart, iconParts, installedPicture, withMedia } from "./picture-write.js"
+export {
+  addedPicturePart,
+  iconOfPart,
+  iconParts,
+  installedPicture,
+  unheldIcons,
+  withMedia,
+  type IconRef,
+} from "./picture-write.js"
 export { shownCrop, shownIdentity, shownImage } from "./picture-read.js"
 export { drawablePicture } from "./picture-drawable.js"
 export { boundTargets } from "./connector-route.js"

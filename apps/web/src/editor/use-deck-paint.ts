@@ -122,7 +122,7 @@ export function useDeckPaint(
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
     setSections(next.groups)
-    void pictureTool.store.load(id, register).then((more) => {
+    void pictureTool.store.load(id, register, next.display).then((more) => {
       if (more && structure.current === structureOf(framed, bound.current)) showRegister(shownRegister.current)
     })
   }

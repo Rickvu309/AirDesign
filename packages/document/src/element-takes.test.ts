@@ -156,7 +156,15 @@ describe("the server admits only the edits the device can write onto an element 
       (field) => `border.${field}`,
     )
     const slots = ["fills.p0", "fills.p1", "fills.p2", "fills.p3"]
-    const image = ["fills.source", "fills.mode", "fills.tileScale", "fills.crop", "fills.recolor", "fills.blur"]
+    const image = [
+      "fills.source",
+      "fills.weight",
+      "fills.mode",
+      "fills.tileScale",
+      "fills.crop",
+      "fills.recolor",
+      "fills.blur",
+    ]
     const fill = [...slots, ...image, "fills.alpha"]
     const body = ["insets", "anchor", "wrap", "autofit", "vertical", "columns"].map((field) => `body.${field}`)
     const text = [...body, "text.value", "text.alpha", "link.target"]

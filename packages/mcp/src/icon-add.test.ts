@@ -43,7 +43,7 @@ async function withClient(held: Session, use: (client: Client) => Promise<void>)
 }
 
 describe("an agent places a Lucide icon by name", () => {
-  it("adds a one-inch shape whose opening fills hold the icon, then sets its alt text", async () => {
+  it("adds a one-inch shape whose opening fills hold the icon, then sets its alt text and line weight", async () => {
     const held = session()
     await withClient(held, async (client) => {
       const added = await client.callTool({
@@ -68,14 +68,17 @@ describe("an agent places a Lucide icon by name", () => {
         arguments: {
           deck: "deck",
           base: held.deck.revision,
-          changes: [{ op: "set", target: "256.5", identity: { alt: "A rocket lifting off" } }],
+          changes: [{ op: "set", target: "256.5", identity: { alt: "A rocket lifting off" }, fills: { weight: 1.5 } }],
         },
       })
       expect(alt.isError).not.toBe(true)
+      expect(held.deck.register.elements[elementId("256.5")]?.landed.at(-1)).toMatchObject({
+        patch: { fills: { weight: { set: 150 } } },
+      })
       const read = readDeckPage(held.deck, { runId: "run", slide: "256" })
       expect(read.elements.find((element) => element.node === "256.5")).toMatchObject({
         kind: "shape",
-        design: "fills image · fills.source rocket · identity.alt A rocket lifting off",
+        design: "fills image · fills.source rocket · fills.weight 1.5 · identity.alt A rocket lifting off",
       })
     })
   })

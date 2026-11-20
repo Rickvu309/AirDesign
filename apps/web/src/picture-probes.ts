@@ -40,6 +40,14 @@ function imageProbe(file: (parts: Parts, at: At) => unknown) {
 export const imageProbes = {
   mode: imageProbe((parts, at) => shownPictureMode(parts, at)),
   source: imageProbe((parts, at) => shownImage(parts, at)?.source),
+  weight: {
+    ...imageProbe((parts, at) => shownImage(parts, at)?.weight),
+    prepare: (parts: Parts, at: At) => {
+      const icon = agentRegister(indexed(parts), at, { fills: { source: "rocket" } })
+      if (icon === null) throw new Error("weight-probe")
+      return exportParts(parts, icon)
+    },
+  },
   tileScale: {
     ...imageProbe(shownTileScale),
     prepare: (parts: Parts, at: At) => {

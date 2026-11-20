@@ -1,4 +1,5 @@
 import { drawablePicture, rasterDimensions, type PaintElement } from "@airdesign/pptx"
+import { reweighedIcon } from "@/icon-weight"
 
 export type PictureImage = NonNullable<PaintElement["image"]>
 
@@ -56,7 +57,7 @@ export function pictureSources(
     const known = made.get(image.part)
     if (known !== undefined) return known.url
     const type = image.contentType?.toLowerCase() ?? ""
-    const bytes = parts.get(image.part)
+    const bytes = parts.get(image.part) ?? reweighedIcon(image.part, parts)
     if (bytes === undefined) return null
     const blob = drawable.has(type) ? new Blob([copied(bytes)], { type }) : drawnBlob(bytes)
     if (blob === null) return null

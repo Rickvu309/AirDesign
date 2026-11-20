@@ -1,4 +1,4 @@
-import { assetIcon, type Media } from "@airdesign/document"
+import { assetIcon, iconWeights, type Media } from "@airdesign/document"
 import { fillWritten } from "./blip-edit.js"
 import { spliceBytes, markupDocument, type MarkupElement } from "./element-span.js"
 import type { ElementAt } from "./xml-codec.js"
@@ -12,8 +12,12 @@ import { rasterDimensions } from "./raster-dimensions.js"
 export type AddedPicture = {
   readonly id: number
   readonly box: ShapeBox
-  readonly source: { readonly media: Media; readonly bytes: Uint8Array | undefined } | { readonly icon: string }
+  readonly source: { readonly media: Media; readonly bytes: Uint8Array | undefined } | IconSource
 }
+
+export type IconSource = { readonly icon: string; readonly weight?: number }
+
+export type IconRef = { readonly name: string; readonly weight: number }
 
 const imageType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 const relationshipsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -36,13 +40,24 @@ export function addedPicturePart(part: string): boolean {
   return part.startsWith(addedPrefix) || part.startsWith(iconPrefix)
 }
 
-export function iconParts(name: string): { readonly svg: string; readonly png: string } {
-  return { svg: `${iconPrefix}${name}.svg`, png: `${iconPrefix}${name}.png` }
+export function iconParts(
+  name: string,
+  weight: number = iconWeights.lucide,
+): { readonly svg: string; readonly png: string } {
+  const stem = weight === iconWeights.lucide ? `${iconPrefix}${name}` : `${iconPrefix}${name}.w${String(weight)}`
+  return { svg: `${stem}.svg`, png: `${stem}.png` }
 }
 
-export function iconOfPart(part: string): string | null {
-  const name = part.startsWith(iconPrefix) && part.endsWith(".svg") ? part.slice(iconPrefix.length, -".svg".length) : ""
-  return assetIcon(name)
+const iconPart = /^ppt\/media\/icon-([a-z0-9-]+)(?:\.w([0-9]{1,4}))?\.(?:svg|png)$/
+
+export function iconOfPart(part: string): IconRef | null {
+  const found = iconPart.exec(part)
+  const name = found?.[1] === undefined ? null : assetIcon(found[1])
+  if (found === null || name === null) return null
+  const weight = found[2] === undefined ? iconWeights.lucide : Number(found[2])
+  const named = iconParts(name, weight)
+  const kept = weight >= iconWeights.lightest && weight <= iconWeights.heaviest
+  return kept && (named.svg === part || named.png === part) ? { name, weight } : null
 }
 
 export function mediaName(parts: ReadonlyMap<string, Uint8Array>, media: Media, bytes: Uint8Array | undefined): string {
@@ -119,7 +134,7 @@ export function linkedSource(
   source: AddedPicture["source"],
 ): LinkedSource {
   if ("icon" in source) {
-    const named = iconParts(source.icon)
+    const named = iconParts(source.icon, source.weight)
     mediaTyped(parts, "png", "image/png")
     mediaTyped(parts, "svg", "image/svg+xml")
     return { embed: imageLink(parts, slide, named.png), svg: imageLink(parts, slide, named.svg) }
@@ -191,11 +206,8 @@ export function addPicture(
   return next
 }
 
-export function withMedia(
-  parts: ReadonlyMap<string, Uint8Array>,
-  bytes: (part: string) => Uint8Array | undefined,
-): ReadonlyMap<string, Uint8Array> {
-  let next: Map<string, Uint8Array> | null = null
+function unheldPictures(parts: ReadonlyMap<string, Uint8Array>): readonly string[] {
+  const unheld = new Set<string>()
   for (const [name, rels] of parts) {
     if (!name.endsWith(".rels")) continue
     const source = name.replace(/_rels\/([^/]+)\.rels$/, "$1")
@@ -203,11 +215,31 @@ export function withMedia(
       const target = element.kind === "Relationship" ? value(element, "Target") : null
       if (target === null || value(element, "TargetMode") === "External") continue
       const part = partOf(source, target)
-      const held = addedPicturePart(part) && !parts.has(part) ? bytes(part) : undefined
-      if (held === undefined) continue
-      next ??= new Map(parts)
-      next.set(part, held)
+      if (addedPicturePart(part) && !parts.has(part)) unheld.add(part)
     }
   }
+  return [...unheld]
+}
+
+export function withMedia(
+  parts: ReadonlyMap<string, Uint8Array>,
+  bytes: (part: string) => Uint8Array | undefined,
+): ReadonlyMap<string, Uint8Array> {
+  let next: Map<string, Uint8Array> | null = null
+  for (const part of unheldPictures(parts)) {
+    const held = bytes(part)
+    if (held === undefined) continue
+    next ??= new Map(parts)
+    next.set(part, held)
+  }
   return next ?? parts
+}
+
+export function unheldIcons(parts: ReadonlyMap<string, Uint8Array>): readonly IconRef[] {
+  const icons = new Map<string, IconRef>()
+  for (const part of unheldPictures(parts)) {
+    const icon = iconOfPart(part)
+    if (icon !== null) icons.set(iconParts(icon.name, icon.weight).svg, icon)
+  }
+  return [...icons.values()]
 }

@@ -86,6 +86,8 @@ type Placed = {
 }
 
 type Strip = readonly Placed[]
+
+export const iconWeightSteps = [1, 1.5, 2, 2.5, 3] as const
 const above: NameLook = { show: "above" }
 const hidden: NameLook = { show: "hidden" }
 const inside: NameLook = { show: "inside" }
@@ -260,6 +262,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   image: [
     [placed("mode")],
     [placed("tileScale")],
+    [placed("weight", above, { glyph: Minus, steps: iconWeightSteps, unit: "" })],
     [placed("overlay"), placed("blur")],
     [placed("source")],
     [placed("recolor")],

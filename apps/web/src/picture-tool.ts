@@ -6,9 +6,11 @@ import { iconBytes, missingIcons } from "@/icon-fallback"
 import { readPicture, type PictureFile, type PictureRefusal } from "@/picture-add"
 import type { ThinNotice } from "@/thin-notice"
 
+type Parts = ReadonlyMap<string, Uint8Array>
+
 export type PictureStore = {
   readonly bytes: PictureBytes
-  load(deck: string, register: Register | null): Promise<boolean>
+  load(deck: string, register: Register | null, painted?: Parts): Promise<boolean>
   keep(sha256: string, bytes: Uint8Array): void
 }
 
@@ -19,10 +21,10 @@ export class PicturesUploading extends Error {
   }
 }
 
-async function loadIcons(register: Register, bytes: Map<string, Uint8Array>, made: typeof iconBytes): Promise<boolean> {
+async function loadIcons(painted: Parts, bytes: Map<string, Uint8Array>, made: typeof iconBytes): Promise<boolean> {
   let more = false
-  for (const name of missingIcons(register, bytes)) {
-    const found = await made(name)
+  for (const icon of missingIcons(painted, bytes)) {
+    const found = await made(icon)
     for (const [part, each] of found ?? []) bytes.set(part, each)
     more ||= found !== null
   }
@@ -33,9 +35,9 @@ export function pictureStore(read: typeof readMedia = readMedia, made: typeof ic
   const bytes = new Map<string, Uint8Array>()
   return {
     bytes,
-    async load(deck, register) {
-      if (register === null) return false
-      const icons = await loadIcons(register, bytes, made)
+    async load(deck, register, painted) {
+      const icons = painted === undefined ? false : await loadIcons(painted, bytes, made)
+      if (register === null) return icons
       const missing = missingPictures(register, bytes)
       if (missing.length === 0) return icons
       const found = await read(deck, missing)
@@ -50,9 +52,21 @@ export function pictureStore(read: typeof readMedia = readMedia, made: typeof ic
 
 export async function exportablePictures(store: PictureStore, deck: string, register: Register): Promise<PictureBytes> {
   await store.load(deck, register)
-  if (missingPictures(register, store.bytes).length > 0 || missingIcons(register, store.bytes).length > 0)
-    throw new PicturesUploading()
+  if (missingPictures(register, store.bytes).length > 0) throw new PicturesUploading()
   return store.bytes
+}
+
+export async function withIcons(
+  store: PictureStore,
+  deck: string,
+  register: Register,
+  painted: (bytes: PictureBytes) => Parts,
+): Promise<Parts> {
+  const first = painted(store.bytes)
+  if (!(await store.load(deck, register, first))) return first
+  const next = painted(store.bytes)
+  if (missingIcons(next, store.bytes).length > 0) throw new PicturesUploading()
+  return next
 }
 
 function pictureFile(list: FileList | null | undefined): File | null {

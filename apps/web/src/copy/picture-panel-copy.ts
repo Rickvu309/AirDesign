@@ -3,6 +3,7 @@ export const picturePanelCopy = {
   tileScale: "Tile scale",
   section: "Image",
   source: "Icon",
+  weight: "Weight",
   recolor: "Recolor",
   overlay: "Overlay",
   blur: "Blur",

@@ -3,6 +3,7 @@ import { readLinkTarget } from "@airdesign/document"
 import {
   alphaOf,
   assetIcon,
+  iconWeights,
   bytesOf,
   designBytes,
   designOrder,
@@ -87,6 +88,7 @@ const agent: Agent = {
   "box.flipH": (value) => value,
   "box.flipV": (value) => value,
   "fills.source": (value) => value,
+  "fills.weight": (value) => tenths(value / hundredthsPerPoint),
   "fills.recolor": agentRecolor,
   "fills.crop": agentCrop,
   ...identityAgents,
@@ -235,6 +237,9 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "body.autofit", patch.body?.autofit, (value) => (value === "none" ? null : value))
   next = folded(next, "body.vertical", patch.body?.vertical, (value) => (value === "horz" ? null : value))
   next = folded(next, "fills.source", patch.fills?.source, (value) => assetIcon(value))
+  next = folded(next, "fills.weight", patch.fills?.weight, (value) =>
+    value === iconWeights.lucide ? null : tenths(value / hundredthsPerPoint),
+  )
   next = folded(next, "fills.recolor", patch.fills?.recolor, recolorShown)
   next = folded(next, "fills.crop", patch.fills?.crop, (value) =>
     value.l + value.t + value.r + value.b === 0 ? null : agentCrop(value),

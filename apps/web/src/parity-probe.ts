@@ -21,7 +21,15 @@ import {
   type Value,
   valueHolder,
 } from "@airdesign/document"
-import { indexPackage, paintReader, readPackage, readSlides, shownPictureMode, shownTileScale } from "@airdesign/pptx"
+import {
+  indexPackage,
+  paintReader,
+  readPackage,
+  readSlides,
+  shownImage,
+  shownPictureMode,
+  shownTileScale,
+} from "@airdesign/pptx"
 import { fillSlotFields } from "./design/fill-slots"
 import { panelOf, shownPlace } from "./design/panel"
 import { sectionInMode } from "./design/panel-order"
@@ -183,6 +191,7 @@ function panelControl(register: Register, at: At, trait: TraitName, field: strin
           ...fillSlotFields(parts, at),
           "fills.mode": { value: shownPictureMode(parts, at), own: true },
           "fills.tileScale": { value: shownTileScale(parts, at), own: true },
+          "fills.weight": { value: shownImage(parts, at)?.weight ?? null, own: true },
         }
   const sections =
     view === undefined
