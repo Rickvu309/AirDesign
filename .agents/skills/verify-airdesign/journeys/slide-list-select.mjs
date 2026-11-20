@@ -11,10 +11,10 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
     ((await post(deckRoutes.open, { deck }, cookie)).json.register.order ?? []).map((row) => row.slide)
   const titles = async () =>
     Promise.all(
-      (await entries.all()).map(async (entry) => (await entry.innerText()).match(/Point \d of the story/)?.[0] ?? ""),
+      (await entries.all()).map(async (entry) => (await entry.innerText()).match(/Chapter \d of the story/)?.[0] ?? ""),
     )
   const selected = page.locator("[data-slide-list] [data-slide-entry][data-selected]")
-  const named = (...numbers) => numbers.map((number) => `Point ${String(number)} of the story`)
+  const named = (...numbers) => numbers.map((number) => `Chapter ${String(number)} of the story`)
 
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await selectTwoToFour(page)

@@ -20,7 +20,7 @@ export async function openSaved(
   stack: Stack,
   file: number | string,
   sections: boolean | readonly number[] = false,
-  view: "grid" | "list" = "grid",
+  inList = false,
 ): Promise<Saved> {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
@@ -47,7 +47,7 @@ export async function openSaved(
   }
   const count = await page.locator("[data-slide-entry]").count()
   await expect.poll(async () => (await order()).length, { timeout: 15_000 }).toBe(count)
-  if (view === "list") return { deck, cookie, ids: await order(), order, rows }
+  if (inList) return { deck, cookie, ids: await order(), order, rows }
   await openGrid(page)
   await expect
     .poll(() =>

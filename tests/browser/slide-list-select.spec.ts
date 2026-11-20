@@ -21,7 +21,7 @@ test("Shift selects a range and Ctrl or Cmd adds or removes one slide, and a pla
   context,
   stack,
 }) => {
-  await openSaved(page, context, stack, 6, false, "list")
+  await openSaved(page, context, stack, 6, false, true)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await selectTwoToFour(page)
   await expect(entry(page, 3)).toHaveAccessibleName(slideListCopy.selectedName(3, 6))
@@ -36,7 +36,7 @@ test("Shift selects a range and Ctrl or Cmd adds or removes one slide, and a pla
 })
 
 test("Delete removes every selected slide and one Undo brings them back", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 6, false, "list")
+  const saved = await openSaved(page, context, stack, 6, false, true)
   await selectTwoToFour(page)
   await page.keyboard.press("Delete")
   await expect.poll(saved.order).toEqual(picked(saved.ids, [1, 5, 6]))
@@ -50,7 +50,7 @@ test("Ctrl+D duplicates the selected slides and selects the copies, and Alt+Down
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 6, false, "list")
+  const saved = await openSaved(page, context, stack, 6, false, true)
   await selectTwoToFour(page)
   await page.keyboard.press("ControlOrMeta+d")
   await expect.poll(async () => (await saved.order()).length).toBe(9)
@@ -68,7 +68,7 @@ test("the menu on a selected slide acts on the set, and dragging a selected slid
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 6, false, "list")
+  const saved = await openSaved(page, context, stack, 6, false, true)
   await selectTwoToFour(page)
   await entry(page, 3).click({ button: "right" })
   const menu = page.getByRole("menu")
@@ -82,7 +82,7 @@ test("the menu on a selected slide acts on the set, and dragging a selected slid
 })
 
 test("a selected set dropped on a slide in another slide group joins that group", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 6, [3, 3], "list")
+  const saved = await openSaved(page, context, stack, 6, [3, 3], true)
   await entry(page, 1).click()
   await entry(page, 2).click({ modifiers: [shortcutCopy.chord.other.shift] })
   await entry(page, 1).dragTo(entry(page, 5))
