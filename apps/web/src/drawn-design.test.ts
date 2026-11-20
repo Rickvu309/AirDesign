@@ -30,7 +30,7 @@ describe("a drawn layer's design", () => {
       index: { format: 2, total: index.elements.length, slides: index.slides, elements: index.elements, pages: [] },
     }
     const node = elementId(`${slide}.9`)
-    for (const geometry of presets) {
+    for (const geometry of new Set([...presets, ...lineGeometries])) {
       const line = lineGeometries.includes(geometry)
       const box = { x: 914_400, y: 914_400, cx: 1_828_800, cy: line ? 0 : 914_400 }
       const element = { node, kind: line ? "connector" : "shape", value: null, box, grouped: false } as const

@@ -90,7 +90,7 @@ function addedNode(register: Register): ElementId | undefined {
   return last?.slide === "element-add" ? last.element.node : undefined
 }
 
-type ShapeAdd = Exclude<WireAdd, { readonly kind: "line" | "arrow" }>
+type ShapeAdd = Exclude<WireAdd, { readonly kind: "line" | "arrow" | "elbow" }>
 
 function applyTableAdd(deck: Deck, change: Extract<WireAdd, { kind: "table" }>, runId: string, base: number): Applied {
   const table = readTableValue(change.table.value)

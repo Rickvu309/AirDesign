@@ -78,6 +78,7 @@ const drawnGeometries: readonly Geometry[] = [
   "ellipse",
   "line",
   "straightConnector1",
+  "bentConnector3",
   "diamond",
   "triangle",
   "star5",

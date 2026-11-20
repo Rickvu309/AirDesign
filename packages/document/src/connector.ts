@@ -42,6 +42,8 @@ const elbows: Readonly<Record<string, Elbow>> = {
 
 export const elbowClearance = 228_600
 
+const pointWide = 12_700
+
 const turn = Math.PI / 10_800_000
 const quarter = 5_400_000
 const half = 50_000
@@ -188,5 +190,9 @@ export function routed(
   const ways = { start: start?.way ?? null, end: end?.way ?? null }
   const rot = elbowTurn(connector, elbow, from, to, ways.start, ways.end)
   const place = route({ ...connector, rot }, from, to)
-  return { place, adjust: elbow.adjusts.length === 0 ? adjust : elbowAdjust(place, elbow, ways.start, ways.end) }
+  if (elbow.adjusts.length === 0) return { place, adjust }
+  const bent = elbowAdjust(place, elbow, ways.start, ways.end)
+  if (place.box.cx > 0 || Object.values(bent).every((value) => value === half)) return { place, adjust: bent }
+  const wide = { ...place, box: { ...place.box, x: place.box.x - pointWide / 2, cx: pointWide } }
+  return { place: wide, adjust: elbowAdjust(wide, elbow, ways.start, ways.end) }
 }

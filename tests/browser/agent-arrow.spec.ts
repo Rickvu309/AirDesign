@@ -67,3 +67,46 @@ test("an agent adds an arrow from the rectangle to the oval, which the person se
   expect(changed.map(([name]) => name)).toEqual([slidePart])
   await copyFile(file, judged)
 })
+
+const elbowName = "exported-agent-elbow.pptx"
+const under = '<a:stCxn id="4" idx="2"/><a:endCxn id="5" idx="4"/>'
+
+test("an agent adds an elbow under the rectangle and the oval, bottom site to bottom site, and the export keeps it bound @export", async ({
+  page,
+  context,
+  stack,
+  decks,
+}, testInfo) => {
+  const judged = join(process.cwd(), "tests/browser", elbowName)
+  await rm(judged, { force: true })
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await decks.open(original)
+  await expect.poll(async () => (await stack.callTool("airdesign_read_deck", { deck }, cookie)).index).toBe("ready")
+  const read = await stack.callTool("airdesign_read_deck", { deck }, cookie)
+  const slide = String((read.slides as readonly { readonly id: string }[])[0]?.id)
+  const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
+  const connection = {
+    start: { shape: { node: `${slide}.4`, site: 2 } },
+    end: { shape: { node: `${slide}.5`, site: 4 } },
+  }
+  const change = { op: "add", kind: "elbow", slide, connection }
+  const added = await stack.callTool("airdesign_edit_deck", { deck, base, changes: [change] }, cookie)
+  expect(added).toMatchObject({ ok: true, elements: [{ node: `${slide}.7` }] })
+  const elbow = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#7"]`)
+  await expect(elbow.locator("[data-canvas-line]")).toBeVisible()
+
+  const file = testInfo.outputPath(elbowName)
+  const saving = page.waitForEvent("download")
+  await exportFromDialog(page)
+  await (await saving).saveAs(file)
+  const before = await partsOf(original)
+  const saved = await partsOf(file)
+  const xml = saved.get(slidePart)?.toString("utf8") ?? ""
+  expect(xml).toContain(under)
+  expect(xml).toContain('<a:prstGeom prst="bentConnector3">')
+  const changed = [...before].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true)
+  expect(changed.map(([name]) => name)).toEqual([slidePart])
+  await copyFile(file, judged)
+})

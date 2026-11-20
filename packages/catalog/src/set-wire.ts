@@ -34,7 +34,7 @@ const ownKinds = slideKinds.join("|")
 const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
-const addable = ["shape", "line", "arrow", "table"] as const
+const addable = ["shape", "line", "arrow", "elbow", "table"] as const
 const oldAddable = ["picture"]
 const boxSides = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
@@ -162,7 +162,7 @@ function attached(end: unknown): boolean {
   return plainObject(end) && plainObject(end.shape)
 }
 
-function readLineAdd(raw: Inputs, kind: "line" | "arrow", slide: SlideId): Read<WireAdd> {
+function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: SlideId): Read<WireAdd> {
   if (raw.text !== undefined) return refused("text")
   if (raw.icon !== undefined) return refused("icon")
   const box = raw.box === undefined ? undefined : readLineBox(raw.box)
@@ -209,7 +209,7 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   if (extra !== undefined) return refused(extra)
   if (kind === "table") return addedTable(raw, slide)
   if (raw.table !== undefined) return refused("table")
-  if (kind === "line" || kind === "arrow") return readLineAdd(raw, kind, slide)
+  if (kind === "line" || kind === "arrow" || kind === "elbow") return readLineAdd(raw, kind, slide)
   if (raw.connection !== undefined) return refused("connection")
   if (old && raw.icon === undefined) return refused("icon")
   if (raw.icon !== undefined && raw.text !== undefined) return refused("text")
@@ -295,7 +295,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add text, a Lucide icon, a line, an arrow or a table. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
+      "Add text, a Lucide icon, a line, an arrow, an elbow line or a table. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },

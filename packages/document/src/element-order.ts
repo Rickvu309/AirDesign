@@ -14,11 +14,13 @@ import { frameBackdrop, groupChildren, groupedNow, groupEmptied, groupParent, pl
 import type { Kind } from "./kinds.js"
 import { pastedFits, pastedNodes, readPasted, type PastedLayers } from "./pasted-layers.js"
 
-export const geometries = presets
+const connectorGeometries = ["bentConnector3"] as const
 
-export type Geometry = Preset
+export type Geometry = Preset | (typeof connectorGeometries)[number]
 
-export const lineGeometries: readonly Geometry[] = ["line", "straightConnector1"]
+export const geometries: readonly Geometry[] = [...presets, ...connectorGeometries]
+
+export const lineGeometries: readonly Geometry[] = ["line", "straightConnector1", ...connectorGeometries]
 
 export type ElementAdd = {
   readonly slide: "element-add"

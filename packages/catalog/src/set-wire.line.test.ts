@@ -9,10 +9,14 @@ describe("readAddChange reads a new line or arrow on one slide", () => {
     end: { shape: { node: elementId("258.3"), site: 1 } },
   }
 
-  it("reads an arrow whose ends attach to two shapes with no box, and a line with a box zero points high", () => {
+  it("reads an arrow and an elbow whose ends attach to two shapes with no box, and a line with a box zero points high", () => {
     expect(readAddChange({ op: "add", kind: "arrow", slide: "258", connection: ends })).toEqual({
       ok: true,
       change: { op: "add", kind: "arrow", slide: slideId("258"), connection: bound },
+    })
+    expect(readAddChange({ op: "add", kind: "elbow", slide: "258", connection: ends })).toEqual({
+      ok: true,
+      change: { op: "add", kind: "elbow", slide: slideId("258"), connection: bound },
     })
     expect(readAddChange({ op: "add", kind: "line", slide: "258", box: { x: 72, y: 72, w: 144, h: 0 } })).toEqual({
       ok: true,

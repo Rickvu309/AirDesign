@@ -74,7 +74,7 @@ export type AddChange =
   | { readonly kind: "shape"; readonly slide: SlideId; readonly box?: Box; readonly text?: TraitInput<"text"> }
   | { readonly kind: "shape"; readonly slide: SlideId; readonly box?: Box; readonly icon: string }
   | {
-      readonly kind: "line" | "arrow"
+      readonly kind: "line" | "arrow" | "elbow"
       readonly slide: SlideId
       readonly box?: Box
       readonly connection?: TraitInput<"connection">
