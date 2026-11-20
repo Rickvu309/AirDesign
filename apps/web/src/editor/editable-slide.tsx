@@ -70,6 +70,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
   const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
   const onBoxes = boxMoves(deck)
+  const { cropping, setCropping } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
   async function textBefore(target: ElementId): Promise<string> {
@@ -315,6 +316,8 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
               clear()
               changeDesign(deck, () => endChange(node, end, to))
             }}
+            cropping={cropping}
+            onCropping={setCropping}
             onCrop={(node, cropped) => {
               clear()
               changeDesign(deck, () => canvasCropChange(node, cropped))

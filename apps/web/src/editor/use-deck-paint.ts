@@ -67,6 +67,7 @@ export function useDeckPaint(
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const displayed = useRef(partsWatch())
   const [entering, setEntering] = useState<Entering | null>(null)
+  const [cropping, setCropping] = useState<ElementId | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
   const [groups, setSections] = useState<readonly StripGroup[]>([])
@@ -152,6 +153,8 @@ export function useDeckPaint(
     repaint,
     entering,
     setEntering,
+    cropping,
+    setCropping,
     slideCount,
     layouts,
     groups,

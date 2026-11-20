@@ -14,6 +14,7 @@ export type { CanvasChart } from "./chart-record.js"
 export type { CanvasCrop, Framing, GroupOf, Measure } from "./element-paint.js"
 export type { Cropped } from "./crop-frame.js"
 export type { FitSize } from "./text-hug.js"
+export { placedFrame } from "./crop-drag.js"
 export type { CanvasLayer } from "./fill-layers.js"
 export {
   type CanvasBullet,

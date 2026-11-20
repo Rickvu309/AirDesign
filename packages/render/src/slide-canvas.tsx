@@ -88,6 +88,8 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onPlainFrame?: (ids: readonly ElementId[]) => void
   readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
   readonly onCrop?: (id: ElementId, cropped: Cropped) => void
+  readonly cropping?: ElementId | null
+  readonly onCropping?: (id: ElementId | null) => void
   readonly notice?: string
   readonly entering?: Entering | null
   readonly formatting?: TextFormatting
@@ -135,7 +137,9 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     },
     props.onDuplicate,
   )
-  const [cropping, setCropping] = useState<ElementId | null>(null)
+  const [ownCropping, setOwnCropping] = useState<ElementId | null>(null)
+  const cropping = props.onCropping === undefined ? ownCropping : (props.cropping ?? null)
+  const setCropping = props.onCropping ?? setOwnCropping
   const onCrop = props.onCrop
   const moving =
     props.onBoxes === undefined
