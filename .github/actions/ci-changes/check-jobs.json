@@ -15,35 +15,19 @@
   },
   {
     "part": "browser",
-    "shard": "1/8"
+    "shard": "1/4"
   },
   {
     "part": "browser",
-    "shard": "2/8"
+    "shard": "2/4"
   },
   {
     "part": "browser",
-    "shard": "3/8"
+    "shard": "3/4"
   },
   {
     "part": "browser",
-    "shard": "4/8"
-  },
-  {
-    "part": "browser",
-    "shard": "5/8"
-  },
-  {
-    "part": "browser",
-    "shard": "6/8"
-  },
-  {
-    "part": "browser",
-    "shard": "7/8"
-  },
-  {
-    "part": "browser",
-    "shard": "8/8"
+    "shard": "4/4"
   },
   {
     "part": "pptx"

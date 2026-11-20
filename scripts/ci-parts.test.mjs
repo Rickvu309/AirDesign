@@ -27,21 +27,9 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 const checkJobsFile = workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs-file"]
 const entries = JSON.parse(fs.readFileSync(path.join(root, checkJobsFile), "utf8"))
 same(
-  "the check job runs the source, scripts and pptx parts and the browser tests in eight shards beside the design shards",
+  "the check job runs the source, scripts and pptx parts and the browser tests in four shards beside the design shards",
   entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
-  [
-    "source",
-    "scripts",
-    "browser 1/8",
-    "browser 2/8",
-    "browser 3/8",
-    "browser 4/8",
-    "browser 5/8",
-    "browser 6/8",
-    "browser 7/8",
-    "browser 8/8",
-    "pptx",
-  ],
+  ["source", "scripts", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
 )
 same(
   "pnpm check gets the shard of its browser part",
