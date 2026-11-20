@@ -62,6 +62,7 @@ export const designKeys = [
   "identity.alt",
   "identity.hidden",
   "identity.locked",
+  "identity.mask",
   "connection.start",
   "connection.end",
 ] as const
@@ -138,6 +139,7 @@ export type TraitReads = Readonly<Partial<Record<ShadowSlotKey, Read<ShadowRead>
   readonly "identity.alt"?: Read<string>
   readonly "identity.hidden"?: Read<boolean>
   readonly "identity.locked"?: Read<boolean>
+  readonly "identity.mask"?: Read<boolean>
   readonly "connection.start"?: Read<BoundRead>
   readonly "connection.end"?: Read<BoundRead>
 }

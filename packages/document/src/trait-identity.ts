@@ -6,11 +6,12 @@ export const altBytes = 4000
 
 export const identity = trait(
   "own",
-  { version: 2, shape: "37951917" },
+  { version: 3, shape: "07b1daf1" },
   {
     name: words(nameBytes),
     alt: words(altBytes),
     hidden: flag,
     locked: flag,
+    mask: flag,
   },
 )

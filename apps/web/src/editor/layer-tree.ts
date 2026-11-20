@@ -12,10 +12,11 @@ export type LayerRow = {
   readonly kind: LayerKind
   readonly hidden: boolean
   readonly locked: boolean
+  readonly mask?: true
   readonly flow?: LayerFlow
 }
 
-export type Layer = LayerRow & { readonly layers: readonly Layer[] }
+export type Layer = LayerRow & { readonly layers: readonly Layer[]; readonly masked?: true }
 
 export type ShownLayer = {
   readonly layer: Layer
@@ -42,8 +43,15 @@ export function layerTree(rows: readonly LayerRow[]): readonly Layer[] {
     const parent = row.parent !== null && known.has(row.parent) ? row.parent : null
     under.set(parent, [...(under.get(parent) ?? []), { ...row, parent }])
   }
-  const level = (parent: ElementId | null): readonly Layer[] =>
-    (under.get(parent) ?? []).toReversed().map((row) => ({ ...row, layers: level(row.node) }))
+  const level = (parent: ElementId | null): readonly Layer[] => {
+    let masking = false
+    const back = (under.get(parent) ?? []).map((row): Layer => {
+      const masked = masking && row.mask !== true
+      if (row.mask === true && !row.hidden) masking = true
+      return { ...row, layers: level(row.node), ...(masked ? { masked: true as const } : {}) }
+    })
+    return back.toReversed()
+  }
   return level(null)
 }
 

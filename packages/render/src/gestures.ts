@@ -210,6 +210,15 @@ export const gestures = [
     where: ["element"],
   },
   { id: "frame", group: "arrange", keys: [{ code: "KeyG", mod: true, alt: true }], where: ["element"] },
+  {
+    id: "mask",
+    group: "arrange",
+    keys: [
+      { code: "KeyM", mod: true, alt: true },
+      { code: "KeyM", meta: true, ctrl: true },
+    ],
+    where: ["editor"],
+  },
   { id: "auto-layout", group: "arrange", keys: [{ code: "KeyA", shift: true }], where: ["element"] },
   {
     id: "remove-auto-layout",
@@ -389,11 +398,13 @@ function printed(key: string): boolean {
 function chorded(keys: Keys, event: KeyLike): boolean {
   const mod = event.metaKey || event.ctrlKey
   const held =
-    keys.ctrl === true
-      ? event.ctrlKey && !event.metaKey
-      : keys.meta === true
-        ? event.metaKey && !event.ctrlKey
-        : mod === (keys.mod === true)
+    keys.ctrl === true && keys.meta === true
+      ? event.ctrlKey && event.metaKey
+      : keys.ctrl === true
+        ? event.ctrlKey && !event.metaKey
+        : keys.meta === true
+          ? event.metaKey && !event.ctrlKey
+          : mod === (keys.mod === true)
   return held && event.altKey === (keys.alt === true)
 }
 

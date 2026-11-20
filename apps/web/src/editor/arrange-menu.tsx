@@ -12,6 +12,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { arrangeCopy, arrangeMoves, groupCopy } from "@/copy/arrange-copy"
+import { maskAction } from "@/editor/mask-action"
 
 type MenuEvent = MouseEvent<HTMLDivElement> & { preventBaseUIHandler?: () => void }
 
@@ -41,6 +42,7 @@ export function ArrangeMenu(props: {
   readonly parts: ReadonlyMap<string, Uint8Array>
   readonly onOrder: (node: ElementId, move: StackMove) => Promise<CommitOutcome | "closed">
   readonly onGroup: (change: GroupChange) => Promise<CommitOutcome | "closed">
+  readonly onMask: (node: ElementId) => void
   readonly children: (band: {
     readonly notice: string
     readonly order: (node: ElementId, move: StackMove) => void
@@ -52,6 +54,9 @@ export function ArrangeMenu(props: {
   const [node, setNode] = useState<ElementId | null>(null)
   const [among, setAmong] = useState<readonly ElementId[] | null>(null)
   const unit = node === null ? null : unitOf(props.slide, node)
+  const masking = maskAction(props.selection.ids, props.slide.elements)
+  const released =
+    masking?.kind === "toggle" && props.slide.elements.some((each) => each.id === masking.node && each.mask === true)
 
   function clear() {
     setNotice("")
@@ -132,6 +137,17 @@ export function ArrangeMenu(props: {
         >
           <span>{groupCopy.label.ungroup}</span>
           <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut.ungroup}</span>
+        </ContextMenuItem>
+        <ContextMenuItem
+          data-group-action="mask"
+          disabled={masking === null}
+          onClick={() => {
+            if (masking?.kind === "group") group(masking.change)
+            if (masking?.kind === "toggle") props.onMask(masking.node)
+          }}
+        >
+          <span>{released ? groupCopy.release : groupCopy.label.mask}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut.mask}</span>
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

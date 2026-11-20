@@ -32,6 +32,7 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import { effectAgents, foldEffects } from "./agent-effects.js"
+import { foldIdentity, identityAgents } from "./agent-identity.js"
 import { fontReferences } from "./template-font.js"
 import { agentColor, agentPercent, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
@@ -88,9 +89,7 @@ const agent: Agent = {
   "fills.source": (value) => value,
   "fills.recolor": agentRecolor,
   "fills.crop": agentCrop,
-  "identity.alt": (value) => value,
-  "identity.hidden": (value) => value,
-  "identity.locked": (value) => value,
+  ...identityAgents,
   "connection.start": agentBound,
   "connection.end": agentBound,
 }
@@ -212,13 +211,6 @@ type Recolor = FieldValue<"fills", "recolor">
 const recolorShown = (recolor: Recolor) =>
   "none" in recolor ? null : agentRecolor("grayscale" in recolor ? "grayscale" : recolor.duotone)
 
-const altLength = 60
-
-function altShown(alt: string): string {
-  const trimmed = alt.trim()
-  return trimmed.length > altLength ? `${trimmed.slice(0, altLength - 1)}…` : trimmed
-}
-
 function dashShown(value: Exclude<FieldValue<"border", "dash">, string>): string {
   return value.custom.flatMap(({ dash, gap }) => [dash / 1000, gap / 1000]).join(", ")
 }
@@ -247,9 +239,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "fills.crop", patch.fills?.crop, (value) =>
     value.l + value.t + value.r + value.b === 0 ? null : agentCrop(value),
   )
-  next = folded(next, "identity.alt", patch.identity?.alt, (value) => (value.trim() === "" ? null : altShown(value)))
-  next = folded(next, "identity.hidden", patch.identity?.hidden, (value) => (value ? true : null))
-  next = folded(next, "identity.locked", patch.identity?.locked, (value) => (value ? true : null))
+  next = foldIdentity(next, patch.identity)
   next = folded(next, "connection.start", patch.connection?.start, endShown)
   next = folded(next, "connection.end", patch.connection?.end, endShown)
   next = faded(next, before, "fills", patch.fills?.p0, patch.fills?.alpha)

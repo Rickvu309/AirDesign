@@ -8,5 +8,6 @@ export const identityControls: TraitControls<"identity"> = {
     alt: { label: identityCopy.alt },
     hidden: { label: identityCopy.hidden },
     locked: { label: identityCopy.locked },
+    mask: { label: identityCopy.mask },
   },
 }

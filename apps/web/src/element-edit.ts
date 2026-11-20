@@ -178,7 +178,8 @@ export async function commitElement(
     change.change === "group" ||
     change.change === "ungroup" ||
     change.change === "frame" ||
-    change.change === "plain-frame"
+    change.change === "plain-frame" ||
+    change.change === "mask"
   )
     return commitGroup(deckId, parts, register, change, paint)
   if (change.change === "remove") return commitRemovals(deckId, parts, register, change.nodes, paint)

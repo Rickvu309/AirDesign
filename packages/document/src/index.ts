@@ -368,3 +368,4 @@ export {
   type SlideNumber,
   type SlideNumbers,
 } from "./slide-number.js"
+export { maskTurn } from "./mask-turn.js"

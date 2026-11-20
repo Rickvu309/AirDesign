@@ -55,8 +55,12 @@ describe("useLayerKeys", () => {
     let renames = 0
     let canRename = true
     const flags: string[] = []
+    let masks = 0
     function Harness() {
       useLayerKeys(true, {
+        onMask: () => {
+          masks += 1
+        },
         onFlag: (flag) => flags.push(flag),
         onRename: () => {
           if (!canRename) return false
@@ -95,12 +99,17 @@ describe("useLayerKeys", () => {
     const hide = keydown(window, "H", { code: "KeyH", ctrlKey: true, shiftKey: true })
     expect(hide.defaultPrevented).toBe(true)
     expect(flags).toEqual(["hidden"])
+    expect(keydown(window, "µ", { code: "KeyM", ctrlKey: true, altKey: true }).defaultPrevented).toBe(true)
+    expect(keydown(window, "m", { code: "KeyM", ctrlKey: true, metaKey: true }).defaultPrevented).toBe(true)
+    expect(keydown(input, "m", { code: "KeyM", ctrlKey: true, altKey: true }).defaultPrevented).toBe(false)
+    expect(masks).toBe(2)
   })
 
   it("ignores Cmd or Ctrl+R while a dialog, grid view, or inert presentation is open", async () => {
     let renames = 0
     function Harness() {
       useLayerKeys(true, {
+        onMask: () => undefined,
         onFlag: () => undefined,
         onRename: () => {
           renames += 1

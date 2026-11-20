@@ -28,7 +28,26 @@ export const arrangeCopy = {
 export const arrangeMoves = ["front", "forward", "backward", "back"] as const satisfies readonly StackMove[]
 
 export const groupCopy = {
-  label: { group: "Group", ungroup: "Ungroup", "plain-frame": "Frame selection", frame: "Add auto layout" },
-  said: { group: "Grouped", ungroup: "Ungrouped", "plain-frame": "Framed", frame: "Added auto layout" },
-  shortcut: { group: "Ctrl+G", ungroup: "Ctrl+Shift+G", "plain-frame": "Ctrl+Alt+G", frame: "Shift+A" },
+  label: {
+    group: "Group",
+    ungroup: "Ungroup",
+    "plain-frame": "Frame selection",
+    frame: "Add auto layout",
+    mask: "Use as mask",
+  },
+  said: {
+    group: "Grouped",
+    ungroup: "Ungrouped",
+    "plain-frame": "Framed",
+    frame: "Added auto layout",
+    mask: "Used as mask",
+  },
+  shortcut: {
+    group: "Ctrl+G",
+    ungroup: "Ctrl+Shift+G",
+    "plain-frame": "Ctrl+Alt+G",
+    frame: "Shift+A",
+    mask: "Ctrl+Alt+M",
+  },
+  release: "Remove mask",
 } as const

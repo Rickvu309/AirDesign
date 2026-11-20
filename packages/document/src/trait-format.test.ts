@@ -4,7 +4,7 @@ import { traitNames, traits, type TraitName } from "./traits.js"
 
 const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   link: ["5465b825", "58c5d32c"],
-  identity: ["5465b825", "5ca2d09f", "37951917"],
+  identity: ["5465b825", "5ca2d09f", "37951917", "07b1daf1"],
   box: ["f180e7a7", "4f9a7811"],
   geometry: ["5465b825", "bd526818"],
   fills: [

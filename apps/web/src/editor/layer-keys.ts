@@ -9,6 +9,7 @@ const flagOfGesture = { hide: "hidden", lock: "locked" } as const satisfies Read
 export type LayerKeyActions = {
   readonly onFlag: (flag: LayerFlag) => void
   readonly onRename: () => boolean
+  readonly onMask: () => void
 }
 
 function editorOpen(): boolean {
@@ -32,6 +33,12 @@ export function useLayerKeys(working: boolean, actions: LayerKeyActions) {
         if (!editorOwnsKey(event)) return
         event.preventDefault()
         latest.current.onFlag(flagOfGesture[gesture])
+        return
+      }
+      if (gesture === "mask") {
+        if (!editorOpen() || !editorOwnsKey(event)) return
+        event.preventDefault()
+        latest.current.onMask()
         return
       }
       if (gesture !== "rename") return

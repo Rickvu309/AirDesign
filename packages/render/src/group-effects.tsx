@@ -19,18 +19,36 @@ export function paintsGroupEffects(element: CanvasElement): boolean {
   return element.kind === "group" && element.box !== null && (filtered(element) || element.opacity !== undefined)
 }
 
+function spanOf(elements: readonly CanvasElement[], at: number): number {
+  const element = elements[at]
+  if (element === undefined) return 0
+  return 1 + Math.min(element.held ?? 0, elements.length - at - 1)
+}
+
 export function layered(
   elements: readonly CanvasElement[],
   paint: (element: CanvasElement) => ReactNode,
   hold: (group: CanvasElement, members: readonly ReactNode[]) => ReactNode,
+  clip: (mask: CanvasElement, masked: readonly ReactNode[]) => ReactNode = (_mask, masked) => masked,
 ): readonly ReactNode[] {
   const nodes: ReactNode[] = []
   for (let at = 0; at < elements.length;) {
     const element = elements[at]!
+    const span = spanOf(elements, at)
     nodes.push(paint(element))
-    const held = paintsGroupEffects(element) ? Math.min(element.held ?? 0, elements.length - at - 1) : 0
-    if (held > 0) nodes.push(hold(element, layered(elements.slice(at + 1, at + 1 + held), paint, hold)))
-    at += 1 + held
+    if (element.mask === true) {
+      let end = at + span
+      while (end < elements.length && elements[end]?.mask !== true) end += spanOf(elements, end)
+      if (end > at + span) nodes.push(clip(element, layered(elements.slice(at + span, end), paint, hold, clip)))
+      at = end
+      continue
+    }
+    if (span > 1) {
+      const members = layered(elements.slice(at + 1, at + span), paint, hold, clip)
+      if (paintsGroupEffects(element)) nodes.push(hold(element, members))
+      else nodes.push(...members)
+    }
+    at += span
   }
   return nodes
 }

@@ -50,6 +50,7 @@ export type UndoName =
   | "alt-text"
   | "hide"
   | "lock"
+  | "mask"
   | "cell-fill"
   | "border"
   | "add-row"
@@ -114,6 +115,7 @@ export const undoCopy = {
     "alt-text": "Undo alt text",
     hide: "Undo hide",
     lock: "Undo lock",
+    mask: "Undo use as mask",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
     "add-column": "Undo add column",
@@ -173,6 +175,7 @@ export const undoCopy = {
     "alt-text": "Redo alt text",
     hide: "Redo hide",
     lock: "Redo lock",
+    mask: "Redo use as mask",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
     "add-column": "Redo add column",

@@ -174,9 +174,10 @@ describe("the server admits only the edits the device can write onto an element 
       "effects.inner3",
     ]
     const named = ["identity.name", "identity.alt", "identity.hidden", "identity.locked"]
-    expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...border, ...effects, ...text])
+    const masked = [...named, "identity.mask"]
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...masked, ...drawn, ...fill, ...border, ...effects, ...text])
     expect(takes({ ...facts, kind: "shape", text: false })).toEqual([
-      ...named,
+      ...masked,
       ...drawn,
       ...fill,
       ...border,
@@ -203,7 +204,7 @@ describe("the server admits only the edits the device can write onto an element 
     ])
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
     expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([
-      ...named,
+      ...masked,
       ...box,
       "geometry.shape",
       ...fill,

@@ -7,6 +7,7 @@ import type { End } from "./connector-drag.js"
 import { targetsOf } from "./connector-follow.js"
 import { PaintedElement } from "./element-kind.js"
 import { GroupEffects, layered } from "./group-effects.js"
+import { MaskClip } from "./mask-clip.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
@@ -244,6 +245,11 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           <GroupEffects key={`${group.key} effects`} element={group} scaled={scaled}>
             {members}
           </GroupEffects>
+        ),
+        (mask, masked) => (
+          <MaskClip key={`${mask.key} mask`} element={mask} quiet={quiet} scaled={scaled} store={props.store}>
+            {masked}
+          </MaskClip>
         ),
       )}
       {moving === null ? null : (

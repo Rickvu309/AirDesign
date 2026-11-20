@@ -1,6 +1,6 @@
 import { deckName } from "@airdesign/catalog"
 import { connect, putParts, queueOriginal } from "@airdesign/live"
-import { readPackage } from "@airdesign/pptx"
+import { openedMasks, readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
 import { indexedParts } from "@/index-deck"
 import type { ImportFailureReason } from "@/copy/import-failure-words"
@@ -36,7 +36,8 @@ export async function importDeck(file: File): Promise<ImportResult> {
   const read = await readPackage(bytes)
   if (!read.ok) return { ok: false, reason: read.reason === "limit" ? read.limit : read.reason }
   const name = deckName(file.name)
-  const id = await saveDeck(read.parts, bytes, name)
+  const parts = openedMasks(read.parts)
+  const id = await saveDeck(parts, bytes, name)
   if (id === null) return { ok: false, reason: "save" }
-  return { ok: true, deck: { id, name, parts: read.parts, file: bytes } }
+  return { ok: true, deck: { id, name, parts, file: bytes } }
 }

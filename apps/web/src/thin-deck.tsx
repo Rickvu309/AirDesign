@@ -29,6 +29,7 @@ import { LiveLayers } from "@/editor/live-layers"
 import type { RenameRequest } from "@/editor/layers-panel"
 import { useLayerKeys } from "@/editor/layer-keys"
 import { toggleLayerFlag } from "@/editor/layer-flags"
+import { maskAction } from "@/editor/mask-action"
 import { toneLink } from "@/editor/tone-link"
 import { toneScope } from "@/editor/tone-scope"
 import { useSettled } from "@airdesign/render"
@@ -75,6 +76,11 @@ export function ThinDeck({ id }: { id: string }) {
   useLayerKeys(deck.paintedDeck === id, {
     onFlag: (flag) => toggleLayerFlag(deck, deck.selection.ids, flag),
     onRename: startLayerRename,
+    onMask: () => {
+      const action = maskAction(deck.selection.ids, currentCanvas?.elements ?? [])
+      if (action?.kind === "toggle") toggleLayerFlag(deck, [action.node], "mask")
+      if (action?.kind === "group") void deck.inserts.changeElement(action.change)
+    },
   })
 
   if (newer) {

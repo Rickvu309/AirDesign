@@ -20,9 +20,13 @@ const sized: readonly FieldKey[] = ["box.w", "box.h"]
 
 const chosenStyle: FieldKey = "templateStyle.id"
 
+const masks: FieldKey = "identity.mask"
+
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
-  table: turns,
-  chart: turns,
+  table: [...turns, masks],
+  chart: [...turns, masks],
+  connector: [masks],
+  group: [masks],
   slide: [
     "fills.mode",
     "fills.tileScale",
@@ -33,7 +37,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
     ...fieldKeys("templateStyle").filter((field) => field !== chosenStyle),
   ],
   deck: [chosenStyle],
-  kept: ["identity.name", "identity.alt", "identity.hidden", "identity.locked"],
+  kept: ["identity.name", "identity.alt", "identity.hidden", "identity.locked", masks],
 }
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]

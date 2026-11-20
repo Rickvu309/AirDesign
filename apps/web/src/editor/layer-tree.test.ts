@@ -103,3 +103,20 @@ it("refuses a drop that changes nothing or puts a group inside itself", () => {
   expect(place(9, 4, "above")).toBeNull()
   expect(place(9, 9, "inside")).toBeNull()
 })
+
+it("marks the layers above a mask in its group as masked, up to the next mask, as Figma's layers panel does", () => {
+  const masked = (shape: number, parent: number) => ({ ...row(shape, parent), mask: true as const })
+  const tree = layerTree([row(9), masked(3, 9), row(4, 9), masked(5, 9), row(6, 9), row(7)])
+  expect(tree[1]?.layers.map((layer) => [layer.node, layer.mask === true, layer.masked === true])).toEqual([
+    [id(6), false, true],
+    [id(5), true, false],
+    [id(4), false, true],
+    [id(3), true, false],
+  ])
+  expect(tree[0]?.masked).toBeUndefined()
+})
+
+it("masks nothing above a hidden mask", () => {
+  const tree = layerTree([row(9), { ...row(3, 9, true), mask: true }, row(4, 9)])
+  expect(tree[0]?.layers[0]?.masked).toBeUndefined()
+})

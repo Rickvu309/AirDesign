@@ -3,6 +3,8 @@ import { exportPackage } from "@airdesign/pptx"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
 import { bakeFills } from "@/export/fill-bake"
+import { bakeMasks } from "@/export/mask-bake"
+import { maskPicture } from "@/export/mask-picture"
 import { bakeShadows } from "@/export/shadow-bake"
 import { exportablePictures, type PictureStore } from "@/picture-tool"
 
@@ -28,7 +30,8 @@ export async function exportDeck(
   if (!opened.ok) throw new Error("register")
   const held = await exportablePictures(pictures, id, opened.register)
   const chosen = chosenParts(stored.parts, opened.register, slides, held)
-  const baked = await bakeFills(chosen, opened.register)
+  const masked = await bakeMasks(chosen, maskPicture())
+  const baked = await bakeFills(masked, opened.register)
   const bytes = await exportPackage(stored.file, await bakeShadows(baked))
   if (request?.signal?.aborted === true) return
   const copy = new Uint8Array(bytes.byteLength)

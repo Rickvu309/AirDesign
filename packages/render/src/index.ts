@@ -43,4 +43,4 @@ export {
   type Pointing,
 } from "./gestures.js"
 export { leadOf, noSelection, type Selection } from "./selection.js"
-export { fontsFor, waitForFonts } from "./font-load.js"
+export { fontsFor, installedFaces, waitForFonts } from "./font-load.js"
