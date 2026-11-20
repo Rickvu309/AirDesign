@@ -18,6 +18,9 @@ import {
   type SlideId,
 } from "./element-id.js"
 import { frameBackdrop, groupParent } from "./element-group.js"
+import type { Place } from "./group-place.js"
+import { followsGroups, shownPlace, storedPlace } from "./group-space.js"
+import { boxFields, type Spot } from "./change-box.js"
 import { framedNow, readLayout } from "./frame-layout.js"
 import { elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
@@ -84,6 +87,7 @@ export type ScopedElement = {
   readonly parent?: ElementId | null
   readonly backdrop?: ElementId
   readonly origin?: Box
+  readonly shown?: Place
 }
 
 export type Scope = {
@@ -91,6 +95,7 @@ export type Scope = {
   readonly view: (node: ElementId) => ScopedElement | undefined
   readonly size: (slide: SlideId) => SlideSize | null
   readonly templateStyles?: readonly string[]
+  readonly stored?: (node: ElementId, shown: Place) => Place | null
 }
 
 export type PlanRefusal = "kind" | "group-box" | "kept" | "site" | "indexing" | "dead"
@@ -145,26 +150,12 @@ function refusalOf(view: ScopedElement, trait: TraitName, input: Loose): PlanRef
   return Object.keys(input).some((key) => keptRefuses(view.kept, trait, key)) ? "kept" : null
 }
 
-function wholeBox(box: Box | null): Loose {
-  return box === null ? {} : { x: box.x, y: box.y, w: box.cx, h: box.cy }
-}
-
-type Spot = { readonly x: number; readonly y: number }
-
-function framedFields(view: ScopedElement, fields: Loose): Loose {
-  const origin = view.origin
-  if (origin === undefined || typeof fields.x !== "number" || typeof fields.y !== "number") return fields
-  return { ...fields, x: fields.x - origin.x, y: fields.y - origin.y }
-}
-
 function traitPatch(
   trait: TraitName,
   input: Loose,
+  fields: Loose,
   view: ScopedElement,
-  spot: Spot | undefined,
 ): Readonly<Record<string, FieldEdit<unknown>>> {
-  const box = view.box ?? (spot === undefined ? null : (view.placed ?? null))
-  const fields = trait === "box" ? framedFields(view, { ...wholeBox(box), ...input, ...spot }) : input
   const edits: Record<string, FieldEdit<unknown>> = {}
   for (const [key, value] of Object.entries(fields))
     if (!inputOf(trait, key)) edits[key] = value === null ? "inherit" : { set: value }
@@ -230,7 +221,8 @@ function planNode(
   )
   const refusals: ChangeRefusal[] = named.flatMap(([trait, input]) => {
     const unplaced = trait === "box" && moves(input) && spot === undefined && refusalOf(view, trait, input) === null
-    const code = unplaced ? "kind" : refusalOf(view, trait, input)
+    const lost = trait === "box" && view.facts.grouped && view.facts.framed === undefined && view.shown === undefined
+    const code = lost ? "group-box" : unplaced ? "kind" : refusalOf(view, trait, input)
     return code === null ? [] : [{ node: view.node, trait, code }]
   })
   if ((view.role === "title" || view.role === "body") && addsExtraDrop(change.effects))
@@ -251,8 +243,11 @@ function planNode(
     refusals.push({ node: view.node, trait: "text", code: "dead" })
   if (change.opacity !== undefined) refusals.push(...opacityRefusals(view))
   if (refusals.length > 0) return refusals
+  const boxInput = named.find(([trait]) => trait === "box")?.[1]
+  const placed = boxInput === undefined ? null : boxFields(view, boxInput, spot, scope)
+  if (boxInput !== undefined && placed === null) return [{ node: view.node, trait: "box", code: "group-box" }]
   const patch: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = Object.fromEntries(
-    named.map(([trait, input]) => [trait, traitPatch(trait, input, view, spot)]),
+    named.map(([trait, input]) => [trait, traitPatch(trait, input, trait === "box" ? (placed ?? input) : input, view)]),
   )
   const opacity = change.opacity
   if (opacity !== undefined)
@@ -404,6 +399,7 @@ function framedBox(register: Register, node: ElementId): { readonly box: Box; re
 
 export function registerScope(register: Register): Scope {
   return {
+    stored: (node, shown) => storedPlace(register, node, shown),
     expand: (target) => expanded(register, target),
     templateStyles: register.index?.templateStyles?.map((style) => style.id) ?? [],
     size: (slide) => sizeOf(register, slide),
@@ -414,6 +410,7 @@ export function registerScope(register: Register): Scope {
       if (facts === undefined) return undefined
       const body = register.nodes.includes(node) ? register.elements[node] : undefined
       const framed = framedBox(register, node)
+      const shown = followsGroups(register, node) ? shownPlace(register, node) : null
       return {
         node,
         facts,
@@ -422,8 +419,9 @@ export function registerScope(register: Register): Scope {
         textStyleEdits: storedTextStyleEdits(body),
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
-        box: framed?.box ?? (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
+        box: shown?.box ?? framed?.box ?? (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
         ...(framed === null ? {} : { origin: framed.origin }),
+        ...(shown === null ? {} : { shown }),
         ...(opening?.placed === undefined ? {} : { placed: opening.placed }),
         outline: outlineNow(body === undefined ? undefined : landedPatch(body, "text").geometry, opening),
         parent: groupParent(register, node) ?? null,

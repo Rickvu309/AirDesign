@@ -43,7 +43,7 @@ describe("projectTools", () => {
       name: "airdesign_read_deck",
       op: "read_deck",
       description:
-        "Read an owned deck. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. A layer's node is its id, version 0 is unchanged, role names a placeholder, design is one line of its look, and closed means a person's newer change or another run holds it. Grouped layers refuse box changes; frame is auto or free. If index is pending or missing, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
+        "Read an owned deck. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. A layer's node is its id, version 0 is unchanged, role names a placeholder, design is one line of its look, and closed means a person's newer change or another run holds it. A grouped layer's box is where it sits on the slide, and its group fits its layers; frame is auto or free. If index is pending or missing, the owner must open the deck in AirDesign. Send slide or cursor to read the rest.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,

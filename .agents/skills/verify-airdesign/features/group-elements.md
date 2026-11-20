@@ -7,6 +7,7 @@ On an open deck, Shift+click adds an element to the selection, and Group (in the
 - `group` Shift+click or Ctrl+click adds elements to the selection; each selected one shows a thin ring and one frame goes around them all. Group in the menu or Ctrl+G sends one `element-group` slide command whose new group's child frame equals its own box, so nothing moves. The status reads `Grouped`.
 - `group-move` the group is one movable element: a drag on any of its elements or on its selection frame moves all of them while the pointer moves, and lands one box row on the group. `Undo move` takes it back.
 - `ungroup` Ungroup or Ctrl+Shift+G sends `element-ungroup` and a box row for each element, mapped through the group's offset, scale, turn and flips, so nothing moves. `Undo ungroup` puts the same group back; the export then writes the file's group byte for byte.
+- `group-transform` a layer picked inside a group by double-click or Ctrl+click shows resize and rotate handles, and moves, resizes and turns where it shows on the slide; its box is stored in its group's space, and each group above it fits its layers. An agent's `set` with `box` on a grouped layer does the same.
 - `agent-group` an agent sends `{op: "group", elements: [...]}` or `{op: "ungroup", elements: [...]}` in `airdesign_edit_deck`; the new group's id comes back in elements. The panel's Undo for the run turns the group back.
 
 ## How to get to it (user POV)
@@ -26,7 +27,8 @@ Preconditions:
 - **Move, ungroup, undo.** A drag on the rectangle moves both by 120 px (`NN-group-moved`); `Undo move` and `Redo move`; Ctrl+Shift+G (`NN-ungrouped`); `Undo ungroup` ends the order with `element-regroup`.
 - **Reload, export, reimport.** Evidence `group-elements.pptx` and `NN-reimported`: the moved group paints where it was.
 - **Agent.** After an ungroup, the replayed stream `group.sse` calls `airdesign_edit_deck` with `op: "group"` (`NN-agent-grouped`); the panel's Undo ends the order with `element-ungroup` (`NN-agent-group-undone`).
-- **States for look.** `group-menu`, `grouped`.
+- **Inside groups.** `$V journey <run> group-transform` opens `nested-groups.pptx` (a group scaled 2x holding one turned 30° and flipped). Ctrl+click on the Leaf shows its grips (`NN-group-layer-selected`); a drag, a right-grip resize and a corner turn each land one person row on the Leaf (`NN-group-layer-moved`, `NN-group-layer-resized`, `NN-group-layer-turned`); Twin, Beside and Loose stay put; the outer group's frame holds the Leaf (`NN-group-fits`); the export `group-transform.pptx` changes only the Leaf's and its groups' `a:xfrm`.
+- **States for look.** `group-menu`, `grouped`, `group-layer-selected`, `group-layer-moved`, `group-layer-turned`, `group-fits`.
 
 ## Gotchas
 

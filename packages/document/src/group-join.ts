@@ -42,7 +42,10 @@ function boxIn(register: Register, frame: ElementId | null, box: Box): Box | nul
 function spotRows(register: Register, node: ElementId, spot: Spot): readonly PlacedRow[] {
   const { box } = spot
   if (spot.frame === null) return [boxRow(node, box)]
-  if (plainGroup(register, spot.frame)) return []
+  if (plainGroup(register, spot.frame)) {
+    const inside = boxIn(register, spot.frame, box)
+    return inside === null ? [] : [boxRow(node, inside)]
+  }
   const view = readLayout(register, spot.frame)
   if (view === null || view.flow !== "none") return []
   return [{ node, patch: { box: { x: { set: box.x - view.box.x }, y: { set: box.y - view.box.y } } } }]

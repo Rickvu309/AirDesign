@@ -59,22 +59,23 @@ const elements: readonly CanvasElement[] = [
 
 type Told = { boxes: [ElementId, Box][]; grouped: (readonly ElementId[])[]; ungrouped: ElementId[] }
 
-async function mounted() {
+async function mounted(shown: readonly CanvasElement[] = elements) {
   const store = paintStore()
-  for (const each of elements)
+  for (const each of shown)
     if (each.id !== null) store.publish({ id: each.id, kind: each.kind === "picture" ? "shape" : each.kind, text: "" })
   const told: Told = { boxes: [], grouped: [], ungrouped: [] }
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements }
+  const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements: shown }
   await act(async () => {
     root.render(
       createElement(SlideCanvas, {
         store,
         slide,
         width: 1200,
+        onRotate: () => undefined,
         onBoxes: (moved: readonly { id: ElementId; box: Box }[]) =>
           told.boxes.push(...moved.map(({ id, box }): [ElementId, Box] => [id, box])),
         onGroup: (ids: readonly ElementId[]) => told.grouped.push(ids),
@@ -82,7 +83,7 @@ async function mounted() {
       }),
     )
   })
-  return { host, told }
+  return { host, told, store }
 }
 
 function frameOf(host: HTMLElement, id: ElementId): HTMLElement {
@@ -155,6 +156,36 @@ describe("SlideCanvas groups", () => {
     expect(child.style.left).toBe("400px")
     await pointer(host.ownerDocument, "pointerup", 300, 200)
     expect(told.boxes).toEqual([[group, { x: 2_540_000, y: 1_524_000, cx: 3_048_000, cy: 1_524_000 }]])
+  })
+
+  it("shows handles on a layer stepped into, and moves that layer alone", async () => {
+    const free = elements.map((each) => (each.group === undefined ? each : { ...each, movable: true }))
+    const { host, told } = await mounted(free)
+    await act(async () => {
+      frameOf(host, first).dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }))
+    })
+    expect(selected(host)).toBe(first)
+    const grips = [...host.querySelectorAll("[data-grip]")].map((each) => each.getAttribute("data-grip"))
+    expect(grips).toEqual(expect.arrayContaining(["top-left", "right", "rotate-top-left"]))
+    await pointer(frameOf(host, first), "pointerdown", 200, 200)
+    await pointer(host.ownerDocument, "pointermove", 250, 200)
+    await pointer(host.ownerDocument, "pointermove", 300, 200)
+    expect(frameOf(host, first).style.left).toBe("250px")
+    await pointer(host.ownerDocument, "pointerup", 300, 200)
+    expect(told.boxes).toEqual([[first, { x: 2_540_000, y: 1_524_000, cx: 1_524_000, cy: 1_524_000 }]])
+    expect(frameOf(host, second).style.left).toBe("300px")
+  })
+
+  it("shows a moved layer of a moved group once, at its own landed place", async () => {
+    const free = elements.map((each) => (each.group === undefined ? each : { ...each, movable: true }))
+    const { host, store } = await mounted(free)
+    const shift = 1_016_000
+    await act(async () => {
+      store.placeBox(first, { x: 1_524_000 + shift, y: 1_524_000, cx: 1_524_000, cy: 1_524_000 })
+      store.placeBox(group, { x: 1_524_000 + shift, y: 1_524_000, cx: 3_048_000, cy: 1_524_000 })
+    })
+    expect(frameOf(host, first).style.left).toBe("250px")
+    expect(frameOf(host, second).style.left).toBe("400px")
   })
 
   it("adds to the selection with Shift, outlines each element, and groups them with Ctrl+G", async () => {

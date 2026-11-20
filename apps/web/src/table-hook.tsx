@@ -1,6 +1,7 @@
 import {
   currentBox,
   currentValue,
+  groupedNow,
   measureStale,
   openingElement,
   type ElementId,
@@ -22,6 +23,10 @@ function resized(register: Register): readonly (readonly [ElementId, number, num
   })
 }
 
+function inGroupOrGroup(register: Register, node: ElementId): boolean {
+  return groupedNow(register, node) || openingElement(register, node)?.kind === "group"
+}
+
 export function structureOf(register: Register | null, bound: ReadonlySet<string> = nothingBound): string {
   if (register === null) return "[]"
   const tables = register.nodes.flatMap((node) => {
@@ -32,7 +37,8 @@ export function structureOf(register: Register | null, bound: ReadonlySet<string
   const designed = [...designRows(register), ...imageTexts(register)]
   const followed = register.nodes.flatMap((node) => {
     const body = register.elements[node]
-    return body === undefined || !bound.has(node) ? [] : [[node, currentBox(body)]]
+    const placedByPaint = bound.has(node) || inGroupOrGroup(register, node)
+    return body === undefined || !placedByPaint ? [] : [[node, currentBox(body)]]
   })
   const sizes = [...resized(register), ...measureStale(register)]
   if (sizes.length > 0) return JSON.stringify([register.order, tables, designed, followed, sizes])

@@ -147,7 +147,7 @@ How solid a layer is, in percent: one value that fades its fill, border, text an
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
-Two or more layers of one slide that move and resize as one: Group or Ctrl+G, and Ungroup or Ctrl+Shift+G leaves each where it showed. An agent sends `group` with two or more layer ids of one slide, or `ungroup` with group ids. Click selects the group, double-click steps in, and Cmd/Ctrl+click deep-selects.
+Layers of one slide that move as one: Group or Ctrl+G, an agent's `group`; Ungroup, Ctrl+Shift+G or `ungroup` leaves each where it showed. Click picks the group; double-click or Cmd/Ctrl+click picks a layer in it, which moves, resizes and turns by its place on the slide as the group's box fits its layers.
 _Avoid_: bundle, combine, merge, set
 
 **frame**:

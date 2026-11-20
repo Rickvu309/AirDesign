@@ -219,8 +219,9 @@ export {
   type Member,
 } from "./element-group.js"
 export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
+export { followsGroups, rebased, rebasedGroups, shownPlace, storedPlace } from "./group-space.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
-export { fittedBox } from "./group-space.js"
+export { fittedPlace } from "./group-space.js"
 export { spotNow } from "./group-join.js"
 export { plainFrameTurn } from "./plain-frame.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"

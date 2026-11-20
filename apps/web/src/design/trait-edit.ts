@@ -24,9 +24,10 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { indexPackage, type ReadShape } from "@airdesign/pptx"
+import type { ReadShape } from "@airdesign/pptx"
 import { textValue } from "@airdesign/render"
 import type { UndoName } from "@/copy/undo-copy"
+import { designedParts } from "@/index-deck"
 import { valueStorable } from "@/slide-paint"
 import { tableEditName } from "@/table-edit"
 import type { UndoEntry } from "@/undo-list"
@@ -36,10 +37,10 @@ type Parts = ReadonlyMap<string, Uint8Array>
 
 type Loose = Readonly<Record<string, Readonly<Record<string, FieldEdit<unknown>>> | undefined>>
 
-const openings = new WeakMap<Parts, ReturnType<typeof indexPackage>>()
+const openings = new WeakMap<Parts, ReturnType<typeof designedParts>>()
 
 function indexed(parts: Parts, register: Register): Register {
-  const opening = openings.get(parts) ?? indexPackage(parts)
+  const opening = openings.get(parts) ?? designedParts(parts)
   openings.set(parts, opening)
   const stored = register.index?.templateStyles
   const fresh = opening.templateStyles ?? []

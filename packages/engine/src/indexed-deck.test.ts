@@ -49,7 +49,7 @@ describe("index access and group boxes", () => {
   it("refuses an agent upload", () => {
     expect(indexDeck(initial, { actor: "agent", runId: "run" }, page)).toEqual({ ok: false, refusal: "field" })
   })
-  it("refuses box edits to group children but keeps text editable", () => {
+  it("keeps a group child's box and its text editable", () => {
     const indexed = indexDeck(
       initial,
       { actor: "person" },
@@ -62,8 +62,8 @@ describe("index access and group boxes", () => {
         indexed.deck,
         { actor: "person" },
         { deck: initial.id, batch: [{ node, property: "box", value: box }] },
-      ),
-    ).toEqual({ ok: false, refusal: "group-box" })
+      ).ok,
+    ).toBe(true)
     expect(
       call("commit_edits", indexed.deck, { actor: "person" }, { deck: initial.id, batch: [{ node, value: "After" }] })
         .ok,

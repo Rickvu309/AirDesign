@@ -2,6 +2,7 @@ import { applyAgentChange, openedRegister } from "./apply-change.js"
 import { applyDiagram } from "./agent-diagram.js"
 import { applyGroup } from "./agent-groups.js"
 import { deleteElement } from "./agent-elements.js"
+import { inGroupSpace } from "./grouped-box.js"
 import { agentSlide } from "./agent-slides.js"
 import {
   bytesOf,
@@ -141,7 +142,9 @@ function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: strin
     register = opened.register
     const next = register.bytes + bytes
     if (next >= limits.bytes) return refused("limit")
-    const decision = decide(register, agentCommand(edit, runId))
+    const placed = inGroupSpace(register, edit)
+    if (placed === null) return refused("group-box")
+    const decision = decide(register, agentCommand(placed, runId))
     if (decision.decision === "refuse") return refused(decision.code)
     register = { ...decision.register, bytes: next }
   }

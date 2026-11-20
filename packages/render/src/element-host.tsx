@@ -11,7 +11,7 @@ import {
   type RefObject,
 } from "react"
 import type { ElementId } from "@airdesign/document"
-import { followed, ownBox } from "./box-gesture.js"
+import { memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
@@ -182,8 +182,7 @@ function usePlaced(
 ): CanvasElement {
   const group = element.group
   const carried = useBox(store, group?.id ?? id, read)
-  const own = ownBox(element, useBox(store, id, read), useRotation(store, id))
-  const box = group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
+  const box = memberAt(element, useBox(store, id, read), useRotation(store, id), carried)
   return useFollowed(store, box === element.box ? element : { ...element, box }, targets, read)
 }
 

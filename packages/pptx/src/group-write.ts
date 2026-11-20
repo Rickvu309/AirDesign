@@ -1,4 +1,4 @@
-import { fittedBox, type Place } from "@airdesign/document"
+import { fittedPlace, type Place } from "@airdesign/document"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { requireMarkup } from "./part-markup.js"
@@ -266,11 +266,11 @@ export function fitGroup(bytes: Uint8Array, shape: string, frame: ShapeBox): Uin
   const group = shapeById(elements, shape)
   if (group.kind !== "p:grpSp") throw new Error("p:grpSp")
   const xfrm = transformOf(children, group)
-  const place = xfrm === undefined ? null : boxAt(children, xfrm, "a:off", "a:ext")
+  const place = placeOfShape(children, group)
   const space = xfrm === undefined ? null : boxAt(children, xfrm, "a:chOff", "a:chExt")
   const first = xfrm === undefined ? undefined : children[xfrm.index]?.[0]
   if (xfrm === undefined || place === null || space === null || first === undefined) throw new Error("a:xfrm")
-  const box = fittedBox(place, space, frame)
+  const { box } = fittedPlace(place, space, frame)
   const next = encodeUtf8(
     `<a:off x="${box.x}" y="${box.y}"/><a:ext cx="${box.cx}" cy="${box.cy}"/>` +
       `<a:chOff x="${frame.x}" y="${frame.y}"/><a:chExt cx="${frame.cx}" cy="${frame.cy}"/>`,

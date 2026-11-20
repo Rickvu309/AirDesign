@@ -3,6 +3,7 @@ import type { ElementId, SlideId } from "./element-id.js"
 import { format } from "./format.js"
 import { refrozenRows } from "./frame-layout.js"
 import { ungroupRows, type Freed, type PlacedRow } from "./group-place.js"
+import { regroupedRows } from "./group-space.js"
 
 function opened(register: Register, node: ElementId): Register | null {
   if (register.nodes.includes(node)) return register
@@ -50,6 +51,6 @@ export function regroupTurn(
   const regroup: Command = { command: "slide", file, edit: { slide: "element-regroup", id: slide, node } }
   const formed = landed(register, [regroup])
   if (formed === null) return null
-  const commands = [regroup, ...personRows(refrozenRows(formed, node))]
+  const commands = [regroup, ...personRows([...refrozenRows(formed, node), ...regroupedRows(register, formed, node)])]
   return landed(register, commands) === null ? null : commands
 }

@@ -140,7 +140,7 @@ it("leads a connector with its border and the shapes it joins", () => {
   ])
 })
 
-it.fails("keeps Position and size for a shape inside a group", () => {
+it("keeps Position and size for a shape inside a group", () => {
   const child = { ...textBox, facts: { ...textBox.facts, grouped: true } }
   expect(sections(child, {}).map(([trait]) => trait)).toContain("box")
 })

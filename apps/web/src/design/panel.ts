@@ -24,6 +24,7 @@ import { pictureCopy } from "@/copy/picture-copy"
 import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
+import { boxSides } from "./box-held"
 import { cropChange } from "./crop-change"
 import { fillsList } from "./fills-list"
 import { fillsHeld, overlayChange, overlayHeld, ownHeld, shownFills, type Held } from "./fills-held"
@@ -196,6 +197,7 @@ function sectionLabel(trait: SectionName, labels: Labels): string {
 }
 
 function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads): Held {
+  if (trait === "box" && view.shown !== undefined) return ownHeld(boxSides(view, shown.reads)[field])
   if (trait === "fills" && field === "paint") return fillsHeld(shown)
   if (trait === "fills" && field === "overlay") return overlayHeld(shown)
   const read = shown.fields?.[`${trait}.${field}`]
@@ -206,19 +208,7 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
   }
   if (read !== undefined)
     return { value: read.value ?? undefined, mixed: false, inherited: !read.own && read.value !== null }
-  if (trait === "box") {
-    const box = view.box
-    const sides: Readonly<Record<string, unknown>> = {
-      x: box?.x,
-      y: box?.y,
-      w: box?.cx,
-      h: box?.cy,
-      rot: reads["box.rot"]?.value ?? 0,
-      flipH: reads["box.flipH"]?.value ?? false,
-      flipV: reads["box.flipV"]?.value ?? false,
-    }
-    return ownHeld(sides[field])
-  }
+  if (trait === "box") return ownHeld(boxSides(view, reads)[field])
   if (trait === "geometry" || trait === "templateStyle" || trait === "connection") return ownHeld(undefined)
   return ownHeld(field === "value" ? (view.value ?? "") : undefined)
 }

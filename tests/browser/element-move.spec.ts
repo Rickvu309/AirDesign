@@ -217,7 +217,7 @@ test("a move made offline is kept on the device and sent when the page comes bac
   expect(sent).toEqual([{ node: "256.2", property: "box", value: moved, floor: expect.any(String) }])
 })
 
-test("a first press on text inside a group picks the group, and a double-click steps into it with no handles or move", async ({
+test("a first press on text inside a group picks the group, and a double-click steps into it with handles that move it", async ({
   page,
 }) => {
   covers("step-in")
@@ -229,13 +229,13 @@ test("a first press on text inside a group picks the group, and a double-click s
   await expect(page.locator("[data-selection]")).toHaveCount(1)
   await expect(page.locator("[data-grip]")).not.toHaveCount(0)
   await text.dblclick()
-  await expect(page.locator("[data-grip]")).toHaveCount(0)
+  await expect(page.locator("[data-grip]")).not.toHaveCount(0)
   await page.keyboard.press("Enter")
   await expect(text).toBeFocused()
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowRight")
   await page.keyboard.press("ArrowDown")
-  expect(await boxRows(page)).toEqual([])
+  await expect.poll(async () => (await boxRows(page)).length).toBeGreaterThan(0)
 })
 
 test("Tab reaches the slide number, which can move, and then cycles to the empty unfilled box frame", async ({

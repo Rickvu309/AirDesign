@@ -19,7 +19,7 @@ export function paintGroup(row: PaintElement, source: CanvasSource, key: string)
     kind: "group",
     box: row.box,
     editable: false,
-    movable: shape.movable && row.group === null,
+    movable: shape.movable && (row.group === null || shape.inFrame === undefined),
     ...(shape.frame === undefined ? {} : { frame: shape.frame }),
     ...(shape.opacity === undefined ? {} : { opacity: shape.opacity }),
     placeholder: false,

@@ -1,5 +1,13 @@
 import { imageTexts } from "@/patch-images"
-import { currentBox, slideId, type Box, type ElementId, type Register, type SlideId } from "@airdesign/document"
+import {
+  currentBox,
+  rebasedGroups,
+  slideId,
+  type Box,
+  type ElementId,
+  type Register,
+  type SlideId,
+} from "@airdesign/document"
 import { paintReader, readShapes, readSlides, slideNumbering, themeSwatches, type ReadShape } from "@airdesign/pptx"
 import type { ElementRecord, PaintStore } from "@airdesign/render"
 import type { SlideCanvases } from "@/canvas-slide"
@@ -9,6 +17,7 @@ import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
 import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
 import { framedOf } from "@/frame-boxes"
+import { movableInGroups } from "@/group-boxes"
 import { indexedRegister } from "@/indexed-register"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
@@ -181,7 +190,8 @@ export function paint(
       tableEdited(floored) ||
       designRows(floored).length > 0 ||
       imageTexts(floored).length > 0 ||
-      cover)
+      cover ||
+      rebasedGroups(indexedRegister(parts, floored)).length > 0)
       ? editedParts(base, indexedRegister(parts, floored), pictureBytes)
       : base
   const display = sameIdentity(edited, earlier?.display)
@@ -194,17 +204,20 @@ export function paint(
   const repainted: SlideId[] = []
   const laid = register === null ? null : indexedRegister(parts, register)
   const framed = framedOf(laid)
+  const inGroups = movableInGroups(laid)
+  const placed = { has: (id: ElementId) => framed.children.has(id) || inGroups.has(id) }
+  const placedKey = `${framed.key}|${[...inGroups].join(",")}`
   const slides = read.map(({ slide, part }): PaintedSlide => {
     const old = before.get(part)
-    const same = old !== undefined && old.framed === framed.key && sameSlide(old.shapes, slide, base, display)
-    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display, framed.children)
+    const same = old !== undefined && old.framed === placedKey && sameSlide(old.shapes, slide, base, display)
+    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display, placed)
     const values = shapes.shapes
       .map(({ id, file }) => shownOf(laid, id, numberText(id, shownValue(register, id, file))))
       .join("\n")
     if (same && old.values === values && old.canvas !== null && sameMedia(old.canvas, display))
-      return { shapes, values, framed: framed.key, canvas: old.canvas }
+      return { shapes, values, framed: placedKey, canvas: old.canvas }
     if (!same || old.values !== values) repainted.push(slideId(slide))
-    return { shapes, values, framed: framed.key, canvas: null }
+    return { shapes, values, framed: placedKey, canvas: null }
   })
   const boxes = new Map<ElementId, TextBox>()
   const movables = new Map<ElementId, TextBox>()

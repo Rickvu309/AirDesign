@@ -77,7 +77,7 @@ TypeOK ==
   /\ seen \in 0..3
   /\ childMoved \in {0, 1}
   /\ touched \in BOOLEAN
-  /\ groupKind \in {"none", "group", "move", "child", "ungroup", "regroup", "runUndo", "refused", "frame", "member"}
+  /\ groupKind \in {"none", "group", "move", "ungroup", "regroup", "runUndo", "refused", "frame", "member"}
   /\ framed \in BOOLEAN
   /\ auto \in BOOLEAN
   /\ pad \in {0, 1}
@@ -250,7 +250,7 @@ MoveChild ==
   /\ own' = own + 1
   /\ seen' = seen + 1
   /\ childMoved' = 1
-  /\ groupKind' = "child"
+  /\ groupKind' = "move"
   /\ UNCHANGED <<grouped, maker, offset, inside, touched>>
   /\ UNCHANGED frame
   /\ UNCHANGED old
@@ -262,8 +262,34 @@ UndoMoveChild ==
   /\ own' = own - 1
   /\ seen' = seen - 1
   /\ childMoved' = 0
-  /\ groupKind' = "child"
+  /\ groupKind' = "move"
   /\ UNCHANGED <<grouped, maker, offset, inside, touched>>
+  /\ UNCHANGED frame
+  /\ UNCHANGED old
+
+MoveInGroup ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ ~framed /\ member
+  /\ maker = "person" /\ own = 0 /\ inside = 0 /\ childMoved = 0 /\ offset = 0
+  /\ inside' = inside + 1
+  /\ seen' = seen + 1
+  /\ touched' = TRUE
+  /\ groupKind' = "move"
+  /\ UNCHANGED <<grouped, maker, offset, own, childMoved>>
+  /\ UNCHANGED frame
+  /\ UNCHANGED old
+
+UndoMoveInGroup ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ ~framed /\ member
+  /\ inside = own + 1
+  /\ inside' = own
+  /\ seen' = seen - 1
+  /\ touched' = TRUE
+  /\ groupKind' = "move"
+  /\ UNCHANGED <<grouped, maker, offset, own, childMoved>>
   /\ UNCHANGED frame
   /\ UNCHANGED old
 
@@ -286,7 +312,8 @@ Regroup ==
   /\ grouped' = "formed"
   /\ groupKind' = "regroup"
   /\ backdrop' = framed
-  /\ UNCHANGED <<maker, offset, inside, own, seen, childMoved, touched, framed, auto, pad, member>>
+  /\ inside' = IF framed THEN inside ELSE own - offset
+  /\ UNCHANGED <<maker, offset, own, seen, childMoved, touched, framed, auto, pad, member>>
   /\ UNCHANGED old
 
 Wrap ==
@@ -342,7 +369,7 @@ MoveInFrame ==
   /\ framed /\ ~auto /\ member
   /\ pad' = 1 - pad
   /\ seen' = seen + (1 - 2 * pad)
-  /\ groupKind' = "child"
+  /\ groupKind' = "move"
   /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, backdrop, member>>
   /\ UNCHANGED old
 
@@ -375,7 +402,7 @@ UndoLeave ==
   /\ groupKind = "member"
   /\ member' = TRUE
   /\ seen' = inside + offset + pad
-  /\ groupKind' = IF framed THEN "child" ELSE "group"
+  /\ groupKind' = IF framed THEN "move" ELSE "group"
   /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, pad, backdrop>>
   /\ UNCHANGED old
 
@@ -418,6 +445,8 @@ Next ==
   \/ UndoMoveGroup
   \/ MoveChild
   \/ UndoMoveChild
+  \/ MoveInGroup
+  \/ UndoMoveInGroup
   \/ Ungroup
   \/ Regroup
   \/ RunUndo

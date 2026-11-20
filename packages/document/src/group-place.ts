@@ -74,6 +74,16 @@ function designed(opening: IndexElement | undefined, key: "box.rot" | "box.flipH
   return opening?.design?.[key]?.[0]
 }
 
+export function openingPlace(opening: IndexElement | undefined): Place | null {
+  if (opening?.box === null || opening?.box === undefined) return null
+  return {
+    box: opening.box,
+    rot: turnOf(undefined, opening),
+    flipH: flipOf(undefined, opening, "box.flipH"),
+    flipV: flipOf(undefined, opening, "box.flipV"),
+  }
+}
+
 function turnOf(edit: FieldEdit<unknown> | undefined, opening: IndexElement | undefined): number {
   if (typeof edit === "object" && typeof edit.set === "number") return edit.set
   const read = designed(opening, "box.rot")
@@ -93,6 +103,8 @@ export function placeOf(register: Register, node: ElementId): Place | null {
   const opening = openingElement(register, node)
   const parent = groupParent(register, node)
   if (parent !== null) {
+    const plain = parent !== undefined && frameBackdrop(register, parent) === null
+    if (plain && heldSides(register, node).size > 0) return rowPlace(register, node)
     const member =
       parent === undefined
         ? undefined
@@ -100,14 +112,7 @@ export function placeOf(register: Register, node: ElementId): Place | null {
           frameMembers(register, parent).find((m) => m.node === node) ??
           frameSource(register, parent)?.members.find((m) => m.node === node) ??
           madeGroup(register, parent)?.members.find((m) => m.node === node))
-    if (member !== undefined) return memberPlace(member)
-    if (opening?.box === null || opening?.box === undefined) return null
-    return {
-      box: opening.box,
-      rot: turnOf(undefined, opening),
-      flipH: flipOf(undefined, opening, "box.flipH"),
-      flipV: flipOf(undefined, opening, "box.flipV"),
-    }
+    return member === undefined ? openingPlace(opening) : memberPlace(member)
   }
   return rowPlace(register, node)
 }
@@ -167,7 +172,12 @@ function sides(place: Place): Readonly<Record<string, number | boolean>> {
   }
 }
 
-function boxEdits(own: Place, mapped: Place, held: ReadonlySet<string>, taken: readonly FieldKey[]): ElementPatch {
+export function boxEdits(
+  own: Place,
+  mapped: Place,
+  held: ReadonlySet<string>,
+  taken: readonly FieldKey[],
+): ElementPatch {
   const before = sides(own)
   const box = Object.fromEntries(
     Object.entries(sides(mapped))
@@ -179,7 +189,7 @@ function boxEdits(own: Place, mapped: Place, held: ReadonlySet<string>, taken: r
   return Object.keys(box).length === 0 ? {} : { box }
 }
 
-function heldSides(register: Register, node: ElementId): ReadonlySet<string> {
+export function heldSides(register: Register, node: ElementId): ReadonlySet<string> {
   const body = Object.hasOwn(register.elements, node) ? register.elements[node] : undefined
   const edits = body === undefined ? {} : (landedPatch(body, "text").box ?? {})
   return new Set(Object.entries(edits).flatMap(([field, edit]) => (typeof edit === "object" ? [field] : [])))
