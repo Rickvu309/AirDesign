@@ -5,6 +5,7 @@ import { checkSteps } from "./check-steps.mjs"
 
 for (const server of [config.webServer].flat()) {
   assert.match(server.command, /^node tests\/browser\/font-preview\.mjs \d+$/)
+  assert.equal(server.reuseExistingServer, false)
   assert.equal(server.stdout, "pipe", "Playwright must print the preview server's stdout")
   assert.equal(server.stderr, "pipe", "Playwright must print the preview server's stderr")
 }

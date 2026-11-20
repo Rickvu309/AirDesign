@@ -1,14 +1,12 @@
-import { createRequire } from "node:module"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { fontMiddleware, LocalOriginalStore } from "../../apps/api/dist/index.js"
+import { previewPortLine } from "./preview-port.ts"
+import { startPreview } from "./preview-server.mjs"
 
-const root = fileURLToPath(new URL("../../apps/web", import.meta.url))
-const require = createRequire(new URL("../../apps/web/package.json", import.meta.url))
-const { preview } = await import(pathToFileURL(require.resolve("vite")).href)
 const fonts = fontMiddleware(new LocalOriginalStore())
-await preview({
-  root,
-  preview: { host: "127.0.0.1", port: Number(process.argv[2]), strictPort: true },
+const { port } = await startPreview({
+  root: fileURLToPath(new URL("../../apps/web", import.meta.url)),
+  start: Number(process.argv[2]),
   plugins: [
     {
       name: "font-source",
@@ -18,3 +16,4 @@ await preview({
     },
   ],
 })
+console.log(previewPortLine(port))
