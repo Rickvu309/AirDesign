@@ -1,6 +1,6 @@
 # Check words
 
-The words for how a change is checked, measured, proven and named. Use one word per idea: the bold term, never its Avoid terms.
+The words for how a change is checked, measured, proven and named. Use one word for each idea: the bold term, never its Avoid terms.
 
 ## What runs
 
