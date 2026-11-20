@@ -55,9 +55,14 @@ export function useUndoList() {
     show(recorded(undoList.current, entry), null)
   }
 
-  function turnAfter(work: () => Promise<void>) {
+  function turnAfter<Result>(work: () => Promise<Result>): Promise<Result> {
     typed.current = null
-    turning.current = turning.current.then(work)
+    const turn = turning.current.then(work)
+    turning.current = turn.then(
+      () => undefined,
+      () => undefined,
+    )
+    return turn
   }
 
   return {

@@ -113,3 +113,17 @@ it("clears the notice that an undo could not apply when the next step is recorde
   await recorded(seen, typedEntry(1, "", "T"))
   expect(seen.undo?.told).toBeNull()
 })
+
+it("runs the next turn after one fails, and hands the failure to the caller of the failed turn", async () => {
+  const seen = await deck()
+  const undo = seen.undo
+  if (undo === null) throw new Error("not rendered")
+  const failed = undo.turnAfter(() => Promise.reject(new Error("device write failed")))
+  let ran = false
+  const next = undo.turnAfter(async () => {
+    ran = true
+  })
+  await expect(failed).rejects.toThrow("device write failed")
+  await next
+  expect(ran).toBe(true)
+})
