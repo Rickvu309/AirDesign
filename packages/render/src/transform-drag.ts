@@ -312,7 +312,7 @@ export function watchPointerDrag(options: {
       modifiers,
       centerScreen: now.centerScreen,
     }
-    applyResult(snappedTransform(input, evaluateTransform(input), modifiers.ctrlKey ? null : options.snap))
+    applyResult(snappedTransform(input, evaluateTransform, modifiers.ctrlKey ? null : options.snap))
   }
 
   const painting = oncePerFrame(({ at, modifiers }: { readonly at: Point; readonly modifiers: TransformModifiers }) => {

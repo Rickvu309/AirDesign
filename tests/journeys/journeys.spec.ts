@@ -72,6 +72,7 @@ for (const name of [
   "move-resize",
   "navigate-zoom-pan",
   "snap-drag",
+  "snap-resize",
   "busy-drag",
   "canvas-select",
   "transform-canvas",

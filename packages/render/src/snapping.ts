@@ -6,8 +6,6 @@ export type Axis = "x" | "y"
 
 export type Line = "start" | "middle" | "end"
 
-export type Side = "start" | "end"
-
 export type SnapGuide = {
   readonly kind: "snap"
   readonly axis: Axis
@@ -97,11 +95,6 @@ function moved(box: Bounds, axis: Axis, by: number): Bounds {
   return axis === "x"
     ? { ...box, left: box.left + by, right: box.right + by }
     : { ...box, top: box.top + by, bottom: box.bottom + by }
-}
-
-function sideMoved(box: Bounds, axis: Axis, side: Side, by: number): Bounds {
-  if (axis === "x") return side === "start" ? { ...box, left: box.left + by } : { ...box, right: box.right + by }
-  return side === "start" ? { ...box, top: box.top + by } : { ...box, bottom: box.bottom + by }
 }
 
 function goalsOf(targets: SnapTargets, axis: Axis): readonly number[] {
@@ -257,38 +250,23 @@ export function snapMove(box: Bounds, targets: SnapTargets, reach: number): Snap
   return { box: snapped, guides: guidesAt(snapped, targets, everyLine) }
 }
 
-function ratioFollowed(box: Bounds, start: Bounds, snappedAxis: Axis, sides: Readonly<Record<Axis, Side>>): Bounds {
-  const width = start.right - start.left
-  const height = start.bottom - start.top
-  if (width <= 0 || height <= 0) return box
-  const other = crossOf(snappedAxis)
-  const length =
-    snappedAxis === "x"
-      ? Math.round(((box.right - box.left) * height) / width)
-      : Math.round(((box.bottom - box.top) * width) / height)
-  const span = spanOf(box, other)
-  const next = sides[other] === "start" ? span.end - length - span.start : span.start + length - span.end
-  return sideMoved(box, other, sides[other], next)
+export type LineSnap = { readonly line: Line; readonly offset: number }
+
+export function lineAt(box: Bounds, axis: Axis, line: Line): number {
+  return lineOf(spanOf(box, axis), line)
 }
 
-export function snapResize(
+export function nearestLine(
   box: Bounds,
-  sides: Readonly<Record<Axis, Side>>,
   targets: SnapTargets,
+  axis: Axis,
+  watched: readonly Line[],
   reach: number,
-  keepRatio: boolean,
-): Snapped {
-  const offsetX = nearest(lineOffsets(box, targets, "x", [sides.x]), reach)
-  const offsetY = nearest(lineOffsets(box, targets, "y", [sides.y]), reach)
-  const watched: Watched = { x: [sides.x], y: [sides.y], spacing: false }
-  if (!keepRatio) {
-    const snapped = sideMoved(sideMoved(box, "x", sides.x, offsetX ?? 0), "y", sides.y, offsetY ?? 0)
-    return { box: snapped, guides: guidesAt(snapped, targets, watched) }
+): LineSnap | null {
+  let best: LineSnap | null = null
+  for (const line of watched) {
+    const offset = nearest(lineOffsets(box, targets, axis, [line]), reach)
+    if (offset !== null && (best === null || Math.abs(offset) < Math.abs(best.offset))) best = { line, offset }
   }
-  const useX = offsetX !== null && (offsetY === null || Math.abs(offsetX) <= Math.abs(offsetY))
-  const axis: Axis = useX ? "x" : "y"
-  const offset = useX ? offsetX : offsetY
-  if (offset === null) return { box, guides: guidesAt(box, targets, watched) }
-  const snapped = ratioFollowed(sideMoved(box, axis, sides[axis], offset), box, axis, sides)
-  return { box: snapped, guides: guidesAt(snapped, targets, watched) }
+  return best
 }

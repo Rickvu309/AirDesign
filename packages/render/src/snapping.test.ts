@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { boundsOf, reachOf, snapMove, snapReach, snapResize, type Bounds, type SnapTargets } from "./snapping.js"
+import { boundsOf, nearestLine, reachOf, snapMove, snapReach, type Bounds, type SnapTargets } from "./snapping.js"
 
 const slide: Bounds = { left: 0, top: 0, right: 2000, bottom: 1000 }
 
@@ -109,23 +109,15 @@ describe("reachOf", () => {
   })
 })
 
-describe("snapResize", () => {
-  it("snaps only the edges the handle moves, and draws their guides", () => {
-    const snapped = snapResize(at(100, 100, 296, 203), { x: "end", y: "end" }, targets(at(400, 300)), 5, false)
-    expect(snapped.box).toEqual(at(100, 100, 300, 200))
-    expect(snapped.guides).toEqual([
-      { kind: "snap", axis: "x", at: 400, from: 100, to: 400, marks: [100, 300, 400] },
-      { kind: "snap", axis: "y", at: 300, from: 100, to: 500, marks: [100, 400, 500] },
-    ])
+describe("nearestLine", () => {
+  it("names the watched line nearest a target and how far it has to go", () => {
+    const box = at(100, 100, 296, 203)
+    expect(nearestLine(box, targets(at(400, 300)), "x", ["end"], 5)).toEqual({ line: "end", offset: 4 })
+    expect(nearestLine(box, targets(at(400, 300)), "y", ["start", "end"], 5)).toEqual({ line: "end", offset: -3 })
   })
 
-  it("leaves the far edges in place when the top-left handle snaps", () => {
-    const snapped = snapResize(at(503, 98, 197, 302), { x: "start", y: "start" }, targets(at(400, 0)), 5, false)
-    expect(snapped.box).toEqual({ left: 500, top: 100, right: 700, bottom: 400 })
-  })
-
-  it("keeps the ratio by snapping the nearer edge and following with the other", () => {
-    const snapped = snapResize(at(100, 100, 298, 149), { x: "end", y: "end" }, targets(at(400, 600)), 5, true)
-    expect(snapped.box).toEqual(at(100, 100, 300, 150))
+  it("watches only the lines it is given", () => {
+    expect(nearestLine(at(503, 100), targets(at(400, 0)), "x", ["end"], 5)).toBeNull()
+    expect(nearestLine(at(503, 100), targets(at(400, 0)), "x", ["start"], 5)).toEqual({ line: "start", offset: -3 })
   })
 })
