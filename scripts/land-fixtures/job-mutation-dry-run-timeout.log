@@ -1,0 +1,20 @@
+2026-11-20T04:43:06.5213230Z mutating 1 changed: packages/document/src/index.ts
+2026-11-20T04:48:12.4912805Z 04:48:12 (2397) ERROR DryRunExecutor Initial test run timed out!
+2026-11-20T04:48:12.4916852Z 04:48:12 (2397) ERROR Stryker Unexpected error occurred while running Stryker Error: Something went wrong in the initial test run
+2026-11-20T04:48:12.4918544Z     at DryRunExecutor.validateResultCompleted (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:76:15)
+2026-11-20T04:48:12.4922925Z     at DryRunExecutor.executeDryRun (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:100:14)
+2026-11-20T04:48:12.4924127Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-11-20T04:48:12.4925038Z     at async WorkItem.execute (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/concurrent/pool.js:34:28)
+2026-11-20T04:48:12.4926524Z     at async file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/concurrent/pool.js:71:13
+2026-11-20T04:48:12.8122023Z node:internal/modules/run_main:107
+2026-11-20T04:48:12.8122773Z     triggerUncaughtException(
+2026-11-20T04:48:12.8123598Z     ^
+2026-11-20T04:48:12.8123765Z 
+2026-11-20T04:48:12.8124040Z Error: Something went wrong in the initial test run
+2026-11-20T04:48:12.8125443Z     at DryRunExecutor.validateResultCompleted (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:76:15)
+2026-11-20T04:48:12.8128390Z     at DryRunExecutor.executeDryRun (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:100:14)
+2026-11-20T04:48:12.8129773Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-11-20T04:48:12.8131109Z     at async WorkItem.execute (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/concurrent/pool.js:34:28)
+2026-11-20T04:48:12.8132835Z     at async file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/concurrent/pool.js:71:13
+2026-11-20T04:48:12.8133660Z 
+2026-11-20T04:48:12.8133780Z Node.js v24.22.2

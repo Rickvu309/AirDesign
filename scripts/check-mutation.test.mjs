@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process"
-import { changedSources, linkedPaths, survivorLines, totalLine } from "./check-mutation.mjs"
+import { changedSources, holdsNoCode, linkedPaths, survivorLines, totalLine } from "./check-mutation.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -38,6 +38,16 @@ same("another extension is not chosen", changedSources("M\tpackages/theme/src/to
 same("a module script in src is not chosen", changedSources("M\tpackages/document/src/run.mts\n"), [])
 same("a folder that only starts like a root is not chosen", changedSources("M\tapps/api-old/src/deck.ts\n"), [])
 same("no change chooses nothing", changedSources(""), [])
+
+same("a file of re-exports holds no code", holdsNoCode('export * from "./a"\nexport type { B } from "./b"\n'), true)
+same(
+  "a re-export list over many lines holds no code",
+  holdsNoCode('export {\n  elementId,\n  slideId,\n} from "./ids"\nexport type {\n  Slide,\n} from "./slide"\n'),
+  true,
+)
+same("a function holds code", holdsNoCode('export const timeoutMs = 30000\nexport * from "./a"\n'), false)
+same("an import with an export holds code", holdsNoCode('import { a } from "./a"\nexport { a }\n'), false)
+same("an empty file holds no code", holdsNoCode(""), true)
 
 const at = (fileName, line, status, mutatorName, column = 1) => ({
   fileName,
