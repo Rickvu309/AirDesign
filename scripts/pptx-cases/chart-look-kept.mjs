@@ -80,6 +80,34 @@ const censusRowEdits = [
   },
 ]
 
+const officeKeyEdits = [
+  {
+    at: 0,
+    change: (chart) => ({
+      ...chart,
+      valueTitle: "Revenue ($M)",
+      categoryTitle: "Region",
+      series: chart.series.map((series, at) =>
+        at === 0 ? { ...series, colors: [{ rgb: "BFBFBF" }, { rgb: "1F4E79" }, { rgb: "BFBFBF" }] } : series,
+      ),
+    }),
+  },
+  { at: 1, change: (chart) => ({ ...chart, valueTitle: "Margin (%)" }) },
+]
+
+const censusKeyEdits = [
+  {
+    at: 0,
+    change: (chart) => ({
+      ...chart,
+      series: chart.series.map((series) => ({
+        ...series,
+        colors: chart.categories.map((_, at) => (at === 0 ? { rgb: "1F4E79" } : { scheme: `accent${at + 1}` })),
+      })),
+    }),
+  },
+]
+
 const frameLook = [
   ["chart frame and font", (xml) => xml.slice(xml.indexOf("</c:chart>"))],
   ["category axis", (xml) => /<c:catAx>.*?<\/c:catAx>/su.exec(xml)?.[0] ?? ""],
@@ -91,6 +119,8 @@ const decks = [
   { name: "written-chart-look-census.pptx", original: census, edits: censusEdits, look: [...frameLook, sliceLook] },
   { name: "written-chart-rows-office.pptx", original: office, edits: officeRowEdits, look: frameLook, books: true },
   { name: "written-chart-rows-census.pptx", original: census, edits: censusRowEdits, look: frameLook, books: true },
+  { name: "written-chart-keys-office.pptx", original: office, edits: officeKeyEdits, look: frameLook.slice(0, 1) },
+  { name: "written-chart-keys-census.pptx", original: census, edits: censusKeyEdits, look: frameLook },
 ]
 const written = new Map()
 let canonical = (value) => JSON.stringify(value)

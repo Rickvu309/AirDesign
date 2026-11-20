@@ -34,7 +34,7 @@ async function deckChart(deck: string, shapeAt = 0) {
     const changed = [...next.keys()].filter((name) => next.get(name) !== read.parts.get(name))
     return { before: decodeUtf8(read.parts.get(chartPart)!), after: decodeUtf8(next.get(chartPart)!), next, changed }
   }
-  return { chart, chartPart, edit }
+  return { chart, chartPart, edit, parts: read.parts, shape }
 }
 
 const office = () => deckChart("office-chart.pptx")
@@ -173,4 +173,35 @@ it("centres a new title where the old one had a place of its own", async () => {
   expect(title(after)).not.toContain("<c:layout>")
   expect(title(after)).toContain('<a:defRPr sz="1862" b="0"')
   expect(after.replace(title(after), "")).toBe(before.replace(title(before), ""))
+})
+
+it("recolours one imported slice and keeps its border", async () => {
+  const pie = await deckChart("census-updating-spm.pptx")
+  const [series] = pie.chart.series
+  if (series === undefined) throw new Error("series")
+  const colors = pie.chart.categories.map((_, at) =>
+    at === 0 ? { rgb: "1F4E79" } : { scheme: `accent${String(at + 1)}` },
+  )
+  const { before, after, next } = pie.edit({ series: [{ ...series, colors } as typeof series] })
+  const slice = '<c:dPt><c:idx val="0"/><c:bubble3D val="0"/><c:spPr><a:solidFill>'
+  expect(after).toBe(before.replace(`${slice}<a:schemeClr val="accent1"/>`, `${slice}<a:srgbClr val="1F4E79"/>`))
+  expect(chartValueOf(next.get(pie.chartPart)!)?.series[0]?.colors?.[0]).toEqual({ rgb: "1F4E79" })
+})
+
+it("adds axis titles in the axis's own font and colour, rewords them, and removes them back to the file's bytes", async () => {
+  const { chart, edit, chartPart, parts, shape } = await office()
+  const added = edit({ valueTitle: "Revenue ($M)", categoryTitle: "Region" })
+  const value = /<c:valAx>.*?<\/c:valAx>/u.exec(added.after)?.[0] ?? ""
+  expect(value).toContain("</c:majorGridlines><c:title>")
+  expect(value).toContain('<a:bodyPr rot="-5400000" vert="horz"/>')
+  expect(/<c:title>.*?<\/c:title>/u.exec(value)?.[0]).toContain('sz="1197"')
+  expect(/<c:title>.*?<\/c:title>/u.exec(value)?.[0]).toContain('<a:latin typeface="Georgia"/>')
+  expect(/<c:catAx>.*?<\/c:catAx>/u.exec(added.after)?.[0]).toContain('<c:axPos val="b"/><c:title>')
+  const read = chartValueOf(added.next.get(chartPart)!)
+  expect([read?.valueTitle, read?.categoryTitle]).toEqual(["Revenue ($M)", "Region"])
+  const titled = { ...chart, valueTitle: "Revenue ($M)", categoryTitle: "Region" }
+  const reworded = writeChart(added.next, shape.part, shape.shape, { ...titled, valueTitle: "Sales ($M)" })
+  expect(decodeUtf8(reworded.get(chartPart)!)).toBe(added.after.replace("Revenue ($M)", "Sales ($M)"))
+  const cleared = writeChart(added.next, shape.part, shape.shape, chart)
+  expect(decodeUtf8(cleared.get(chartPart)!)).toBe(decodeUtf8(parts.get(chartPart)!))
 })

@@ -72,4 +72,26 @@ describe("chart value", () => {
     expect(read({ title: "x".repeat(chartLimits.title + 1) })).toBeNull()
     expect(read({ series: [{ name: "2025", values: [1, 2, 3], color: { rgb: "blue" } }] })).toBeNull()
   })
+
+  it("reads back a colour for each slice or bar, and the axis titles", () => {
+    const pie: ChartValue = {
+      kind: "pie",
+      categories: ["North", "South", "East"],
+      series: [
+        {
+          name: "Share",
+          values: [0.5, 0.3, 0.2],
+          colors: [{ rgb: "1F4E79" }, { scheme: "accent2" }, { rgb: "BFBFBF" }],
+        },
+      ],
+    }
+    expect(readChartValue(writeChartValue(pie))).toEqual(pie)
+    const titled: ChartValue = { ...revenue, valueTitle: "Revenue ($M)", categoryTitle: "Quarter" }
+    expect(readChartValue(writeChartValue(titled))).toEqual(titled)
+    const read = (value: object) => readChartValue(JSON.stringify({ ...revenue, ...value }))
+    expect(read({ series: [{ name: "2025", values: [1, 2, 3], colors: [{ rgb: "1F4E79" }] }] })).toBeNull()
+    expect(read({ series: [{ name: "2025", values: [1, 2, 3], colors: [{ rgb: "blue" }, null, null] }] })).toBeNull()
+    expect(read({ valueTitle: "x".repeat(chartLimits.title + 1) })).toBeNull()
+    expect(read({ categoryTitle: 4 })).toBeNull()
+  })
 })

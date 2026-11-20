@@ -10,7 +10,12 @@ export const chartGap = 80
 export type ChartKind = (typeof chartKinds)[number]
 export type ChartLegend = (typeof chartLegends)[number]
 export type ChartFormat = (typeof chartFormats)[number]
-export type ChartSeries = { readonly name: string; readonly values: readonly number[]; readonly color?: Color }
+export type ChartSeries = {
+  readonly name: string
+  readonly values: readonly number[]
+  readonly color?: Color
+  readonly colors?: readonly Color[]
+}
 export type ChartValue = {
   readonly kind: ChartKind
   readonly categories: readonly string[]
@@ -21,9 +26,11 @@ export type ChartValue = {
   readonly gridlines?: boolean
   readonly gap?: number
   readonly legend?: ChartLegend
+  readonly valueTitle?: string
+  readonly categoryTitle?: string
 }
 
-const settingKeys = ["title", "labels", "axis", "gridlines", "gap", "legend"] as const
+const settingKeys = ["title", "labels", "axis", "gridlines", "gap", "legend", "valueTitle", "categoryTitle"] as const
 const chartKeys = ["kind", "categories", "series", ...settingKeys]
 
 function knownKeys(value: Readonly<Record<string, unknown>>, required: readonly string[], known: readonly string[]) {
@@ -35,16 +42,29 @@ function label(raw: unknown): raw is string {
   return typeof raw === "string" && raw.length <= chartLimits.label
 }
 
+function readColors(raw: unknown, count: number): readonly Color[] | undefined | null {
+  if (raw === undefined) return undefined
+  if (!Array.isArray(raw) || raw.length !== count) return null
+  const colors = raw.map((each: unknown) => readColor(each))
+  return colors.every((color): color is Color => color !== null && color !== undefined) ? colors : null
+}
+
 function readSeries(raw: unknown, count: number): ChartSeries | null {
   const series = record(raw)
-  if (series === null || !knownKeys(series, ["name", "values"], ["name", "values", "color"]) || !label(series.name))
-    return null
+  const known = ["name", "values", "color", "colors"]
+  if (series === null || !knownKeys(series, ["name", "values"], known) || !label(series.name)) return null
   const { values } = series
   if (!Array.isArray(values) || values.length !== count) return null
   if (!values.every((value) => typeof value === "number" && Number.isFinite(value))) return null
   const color = readColor(series.color)
-  if (color === null) return null
-  return color === undefined ? { name: series.name, values } : { name: series.name, values, color }
+  const colors = readColors(series.colors, count)
+  if (color === null || colors === null) return null
+  return {
+    name: series.name,
+    values,
+    ...(color === undefined ? {} : { color }),
+    ...(colors === undefined ? {} : { colors }),
+  }
 }
 
 function optional<T>(raw: unknown, valid: (value: unknown) => value is T): T | undefined | null {
@@ -69,6 +89,8 @@ function readSettings(chart: Readonly<Record<string, unknown>>): Settings | null
     gridlines: optional(chart.gridlines, isFlag),
     gap: optional(chart.gap, isGap),
     legend: optional(chart.legend, isLegend),
+    valueTitle: optional(chart.valueTitle, isTitle),
+    categoryTitle: optional(chart.categoryTitle, isTitle),
   }
   if (Object.values(read).includes(null)) return null
   return Object.fromEntries(Object.entries(read).filter(([, value]) => value !== undefined)) as Settings
@@ -105,13 +127,20 @@ export function writeChartValue(value: ChartValue): string {
   return JSON.stringify({
     kind: value.kind,
     categories: value.categories,
-    series: value.series.map((each) =>
-      each.color === undefined
-        ? { name: each.name, values: each.values }
-        : { name: each.name, values: each.values, color: writtenColor(each.color) },
-    ),
+    series: value.series.map((each) => ({
+      name: each.name,
+      values: each.values,
+      ...(each.color === undefined ? {} : { color: writtenColor(each.color) }),
+      ...(each.colors === undefined ? {} : { colors: each.colors.map(writtenColor) }),
+    })),
     ...settings,
   })
+}
+
+const chartAccents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
+
+export function chartAccent(at: number): Color {
+  return { scheme: chartAccents[at % chartAccents.length] ?? "accent1" }
 }
 
 export function chartLegend(chart: ChartValue): Exclude<ChartLegend, "none"> | null {

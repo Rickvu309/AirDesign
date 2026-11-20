@@ -1,12 +1,16 @@
 import {
+  chartAccent,
   chartKinds,
   chartLimits,
   readChartValue,
   shapeOf,
   slideId,
   writeChartValue,
+  sameColor,
   type ChartKind,
+  type ChartSeries,
   type ChartValue,
+  type Color,
   type ElementId,
 } from "@airdesign/document"
 import { Minus, Plus } from "lucide-react"
@@ -27,6 +31,7 @@ const fieldLook =
 export function ChartField(props: {
   readonly label: string
   readonly value: string
+  readonly hint?: string
   readonly numeric?: boolean
   readonly onCommit: (text: string) => void
 }) {
@@ -42,6 +47,7 @@ export function ChartField(props: {
     <Input
       data-focus-ring
       aria-label={props.label}
+      placeholder={props.hint}
       value={draft ?? props.value}
       inputMode={props.numeric === true ? "decimal" : undefined}
       onChange={(event) => setDraft(event.currentTarget.value)}
@@ -109,20 +115,43 @@ function withValue(chart: ChartValue, row: number, column: number, value: number
   }
 }
 
+function pointColors(chart: ChartValue, series: ChartSeries, at: number): readonly Color[] | undefined {
+  if (chart.kind === "pie" && at === 0) return series.colors ?? chart.categories.map((_, point) => chartAccent(point))
+  return series.colors
+}
+
+function withColors(series: ChartSeries, colors: readonly Color[] | undefined, pie: boolean): ChartSeries {
+  const { colors: _, ...rest } = series
+  const automatic = pie && colors?.every((color, point) => sameColor(color, chartAccent(point))) === true
+  return colors === undefined || automatic ? rest : { ...rest, colors }
+}
+
 function withoutRow(chart: ChartValue, row: number): ChartValue {
   const kept = (_: unknown, at: number) => at !== row
   return {
     ...chart,
     categories: chart.categories.filter(kept),
-    series: chart.series.map((series) => ({ ...series, values: series.values.filter(kept) })),
+    series: chart.series.map((series, at) =>
+      withColors(
+        { ...series, values: series.values.filter(kept) },
+        pointColors(chart, series, at)?.filter(kept),
+        chart.kind === "pie",
+      ),
+    ),
   }
 }
 
 function withRow(chart: ChartValue): ChartValue {
+  const count = chart.categories.length
+  const added = (series: ChartSeries, at: number) =>
+    chart.kind === "pie" ? chartAccent(count) : (series.color ?? chartAccent(at))
   return {
     ...chart,
-    categories: [...chart.categories, chartCopy.category(chart.categories.length + 1)],
-    series: chart.series.map((series) => ({ ...series, values: [...series.values, 0] })),
+    categories: [...chart.categories, chartCopy.category(count + 1)],
+    series: chart.series.map((series, at) => {
+      const colors = series.colors === undefined ? undefined : [...series.colors, added(series, at)]
+      return withColors({ ...series, values: [...series.values, 0] }, colors, chart.kind === "pie")
+    }),
   }
 }
 
