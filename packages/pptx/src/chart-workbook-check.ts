@@ -10,7 +10,11 @@ type Read = {
   readonly children: MarkupChildren
 }
 type Cell = string | number
-type Book = { readonly cell: (sheet: string, reference: string) => Cell | null | undefined }
+type Table = { readonly sheet: string; readonly markup: Read }
+export type Book = {
+  readonly cell: (sheet: string, reference: string) => Cell | null | undefined
+  readonly tables: readonly Table[]
+}
 
 const chartPart = /^ppt\/charts\/[^/]+\.xml$/
 const formulaPattern = /^(?:'((?:[^']|'')+)'|([^'![\]]+))!\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?$/
@@ -110,7 +114,7 @@ function sheetCells(markup: Read | null, strings: readonly string[]): ReadonlyMa
   return cells
 }
 
-function openBook(bytes: Uint8Array): Book | null {
+export function openBook(bytes: Uint8Array): Book | null {
   const files = unzipped(bytes)
   if (files === null) return null
   const office = [...targets(read(files.get("_rels/.rels")), "").values()].find((row) =>
@@ -129,7 +133,16 @@ function openBook(bytes: Uint8Array): Book | null {
     if (name !== undefined && target !== undefined) sheets.set(name, target)
   }
   const cached = new Map<string, ReadonlyMap<string, Cell>>()
+  const tables = [...sheets].flatMap(([sheet, part]) =>
+    [...targets(read(files.get(relsOf(part))), part).values()]
+      .filter((row) => row.type.endsWith("/table"))
+      .flatMap((row) => {
+        const markup = read(files.get(row.part))
+        return markup === null ? [] : [{ sheet, markup }]
+      }),
+  )
   return {
+    tables,
     cell(sheet, reference) {
       const part = sheets.get(sheet)
       if (part === undefined) return undefined
@@ -143,13 +156,13 @@ function openBook(bytes: Uint8Array): Book | null {
   }
 }
 
-function columnNumber(name: string): number {
+export function columnNumber(name: string): number {
   let number = 0
   for (const letter of name) number = number * 26 + (letter.charCodeAt(0) - 64)
   return number
 }
 
-function columnLetters(number: number): string {
+export function columnLetters(number: number): string {
   let rest = number
   let name = ""
   while (rest > 0) {
@@ -178,7 +191,7 @@ export function spanOf(formula: string): Span | null {
   return { sheet, cells }
 }
 
-function sameValue(cell: Cell | null, cache: string, numeric: boolean): boolean {
+export function sameValue(cell: Cell | null, cache: string, numeric: boolean): boolean {
   if (cell === null) return cache === ""
   const wanted = Number(cache)
   if (typeof cell === "number") {
@@ -216,6 +229,33 @@ function formulaErrors(chart: Read, part: string, book: Book, formula: MarkupEle
   return errors
 }
 
+const tableRange = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/
+
+function tableErrors(book: Book, workbook: string): readonly string[] {
+  return book.tables.flatMap(({ sheet, markup }) => {
+    const root = markup.elements.find((element) => element.parent < 0)
+    const found = root === undefined ? null : tableRange.exec(own(root, "ref") ?? "")
+    if (root === undefined || found === null) return []
+    const name = own(root, "displayName") ?? own(root, "name") ?? ""
+    const where = `Chart workbook: /${workbook} table ${name}`
+    const [, from = "", top = "", to = ""] = found
+    const left = columnNumber(from)
+    const width = columnNumber(to) - left + 1
+    const columns = kids(markup, kids(markup, root, "tableColumns")[0], "tableColumn")
+    if (columns.length !== width) return [`${where} spans ${String(width)} columns, it lists ${String(columns.length)}`]
+    if (own(root, "headerRowCount") === "0") return []
+    return columns.flatMap((column, at) => {
+      const reference = `${columnLetters(left + at)}${top}`
+      const cell = book.cell(sheet, reference)
+      const header = cell === null || cell === undefined ? "" : String(cell)
+      const named = own(column, "name") ?? ""
+      return named === header
+        ? []
+        : [`${where} column ${String(at + 1)} is named ${named}, its header cell ${reference} holds ${header}`]
+    })
+  })
+}
+
 function chartErrors(parts: Parts, part: string, bytes: Uint8Array): readonly string[] {
   const chart = read(bytes)
   const external = chart?.elements.find((element) => element.kind === "c:externalData")
@@ -227,9 +267,12 @@ function chartErrors(parts: Parts, part: string, bytes: Uint8Array): readonly st
   if (workbook === undefined) return [`Chart workbook: /${part} links /${link.part}, which is missing`]
   const book = openBook(workbook)
   if (book === null) return [`Chart workbook: /${link.part} does not open as a workbook`]
-  return chart.elements
-    .filter((element) => element.kind === "c:f")
-    .flatMap((formula) => formulaErrors(chart, part, book, formula))
+  return [
+    ...chart.elements
+      .filter((element) => element.kind === "c:f")
+      .flatMap((formula) => formulaErrors(chart, part, book, formula)),
+    ...tableErrors(book, link.part),
+  ]
 }
 
 export function chartWorkbookErrors(parts: Parts): readonly string[] {

@@ -169,7 +169,7 @@ assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
 assert.deepEqual(caseWritten(entries).slice(0, 3), [
   "written-chart-look-office.pptx",
   "written-chart-look-census.pptx",
-  "written-frame-group.pptx",
+  "written-chart-rows-office.pptx",
 ])
 
 const out = scenario({})

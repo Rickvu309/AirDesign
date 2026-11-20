@@ -6,8 +6,6 @@ const decoder = new TextDecoder()
 
 const office = "office-chart.pptx"
 const census = "census-updating-spm.pptx"
-const writtenOffice = "written-chart-look-office.pptx"
-const writtenCensus = "written-chart-look-census.pptx"
 
 const officeEdits = [
   {
@@ -39,10 +37,60 @@ const censusEdits = [
   { at: 2, change: ({ labels: _, ...chart }) => ({ ...chart, legend: "right" }) },
 ]
 
-const keptLook = [
+const kept = (values, at) => values.filter((_, index) => index !== at)
+
+const officeRowEdits = [
+  {
+    at: 0,
+    change: (chart) => ({
+      ...chart,
+      categories: [...chart.categories, "East"],
+      series: [
+        ...chart.series.map((series, at) => ({ ...series, values: [...series.values, at === 0 ? 3.1 : 2.2] })),
+        { name: "2026", values: [5, 4.5, 3.9, 4.2] },
+      ],
+    }),
+  },
+  {
+    at: 1,
+    change: (chart) => ({
+      ...chart,
+      categories: kept(chart.categories, 1),
+      series: chart.series.slice(0, 1).map((series) => ({ ...series, values: kept(series.values, 1) })),
+    }),
+  },
+]
+
+const censusRowEdits = [
+  {
+    at: 0,
+    change: (chart) => ({
+      ...chart,
+      categories: [...chart.categories, "Moved away"],
+      series: chart.series.map((series) => ({ ...series, values: [...series.values, 0.02] })),
+    }),
+  },
+  {
+    at: 2,
+    change: (chart) => ({
+      ...chart,
+      categories: kept(chart.categories, 0),
+      series: chart.series.map((series) => ({ ...series, values: kept(series.values, 0) })),
+    }),
+  },
+]
+
+const frameLook = [
   ["chart frame and font", (xml) => xml.slice(xml.indexOf("</c:chart>"))],
   ["category axis", (xml) => /<c:catAx>.*?<\/c:catAx>/su.exec(xml)?.[0] ?? ""],
-  ["slice looks", (xml) => (xml.match(/<c:dPt>.*?<\/c:dPt>/gsu) ?? []).join("")],
+]
+const sliceLook = ["slice looks", (xml) => (xml.match(/<c:dPt>.*?<\/c:dPt>/gsu) ?? []).join("")]
+
+const decks = [
+  { name: "written-chart-look-office.pptx", original: office, edits: officeEdits, look: [...frameLook, sliceLook] },
+  { name: "written-chart-look-census.pptx", original: census, edits: censusEdits, look: [...frameLook, sliceLook] },
+  { name: "written-chart-rows-office.pptx", original: office, edits: officeRowEdits, look: frameLook, books: true },
+  { name: "written-chart-rows-census.pptx", original: census, edits: censusRowEdits, look: frameLook, books: true },
 ]
 const written = new Map()
 let canonical = (value) => JSON.stringify(value)
@@ -85,20 +133,27 @@ function edited(pptx, document, deck, edits, name) {
   return pptx.exportParts(deck, register)
 }
 
-function lookLines(pptx, before, after, name) {
+function workbookOf(deck, chartPart) {
+  const rels = decoder.decode(deck.get(chartPart.replace(/charts\/(chart\d+\.xml)$/u, "charts/_rels/$1.rels")))
+  const target = /Target="\.\.\/embeddings\/([^"]+\.xlsx)"/u.exec(rels)?.[1]
+  return target === undefined ? null : `ppt/embeddings/${target}`
+}
+
+function lookLines(pptx, before, after, deck) {
   const lines = []
-  for (const { chartPart, value } of written.get(name) ?? []) {
+  for (const { chartPart, value } of written.get(deck.name) ?? []) {
     const [was, now] = [decoder.decode(before.get(chartPart)), decoder.decode(after.get(chartPart))]
     const read = pptx.chartValueOf(after.get(chartPart))
     if (read === null || canonical(read) !== canonical(value))
       lines.push(`chart look ${chartPart} reads back as ${JSON.stringify(read)}`)
-    for (const [part, of] of keptLook)
+    for (const [part, of] of deck.look)
       if (of(was) !== of(now)) lines.push(`chart look ${chartPart} changed the deck's ${part}`)
   }
   const workbooks = [...after.keys()].filter(
     (part) => part.startsWith("ppt/embeddings/") && !Buffer.from(after.get(part)).equals(Buffer.from(before.get(part))),
   )
-  if (workbooks.length > 0) lines.push(`chart look rewrote ${workbooks.join(", ")} for a change of look alone`)
+  if (deck.books !== true && workbooks.length > 0)
+    lines.push(`chart look rewrote ${workbooks.join(", ")} for a change of look alone`)
   lines.push(...pptx.chartWorkbookErrors(after).map((error) => `chart look ${error}`))
   return lines
 }
@@ -106,44 +161,36 @@ function lookLines(pptx, before, after, name) {
 export default {
   covers: ["chart.value"],
   originals: [office, census],
-  written: [writtenOffice, writtenCensus],
+  written: decks.map((deck) => deck.name),
   async write({ pptx, parts }) {
     const document = await import(documentBuild.href)
     canonical = document.writeChartValue
-    return [
-      {
-        name: writtenOffice,
-        original: office,
-        parts: edited(pptx, document, parts.get(office), officeEdits, writtenOffice),
-      },
-      {
-        name: writtenCensus,
-        original: census,
-        parts: edited(pptx, document, parts.get(census), censusEdits, writtenCensus),
-      },
-    ]
+    return decks.map((deck) => ({
+      name: deck.name,
+      original: deck.original,
+      parts: edited(pptx, document, parts.get(deck.original), deck.edits, deck.name),
+    }))
   },
   lines(answers) {
     const { pptx, parts } = answers
     const lines = []
-    for (const [original, exported] of [
-      [office, writtenOffice],
-      [census, writtenCensus],
-    ]) {
-      const before = parts.get(original)
-      const after = parts.get(exported)
+    for (const deck of decks) {
+      const before = parts.get(deck.original)
+      const after = parts.get(deck.name)
       if (before === undefined || after === undefined) {
-        lines.push(`chart look ${exported} not written`)
+        lines.push(`chart look ${deck.name} not written`)
         continue
       }
-      const touched = new Set((written.get(exported) ?? []).map((row) => row.chartPart))
+      const charts = (written.get(deck.name) ?? []).map((row) => row.chartPart)
+      const books = deck.books === true ? charts.map((part) => workbookOf(before, part)) : []
+      const touched = new Set([...charts, ...books])
       const kept = [...before.keys()].filter((part) => !touched.has(part))
       lines.push(
-        ...slideExportLines({ ...answers, original, exported, kept }).map((line) =>
-          line.replace(/^slide export/, `chart look ${exported}`),
+        ...slideExportLines({ ...answers, original: deck.original, exported: deck.name, kept }).map((line) =>
+          line.replace(/^slide export/, `chart look ${deck.name}`),
         ),
       )
-      lines.push(...lookLines(pptx, before, after, exported))
+      lines.push(...lookLines(pptx, before, after, deck))
     }
     return lines
   },

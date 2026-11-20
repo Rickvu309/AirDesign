@@ -1,9 +1,14 @@
 import { openingChart } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { addChart } from "./chart-write.js"
-import { chartWorkbookErrors } from "./chart-workbook-check.js"
+import { chartWorkbookErrors, unzipped } from "./chart-workbook-check.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { storedZip } from "./stored-zip.js"
+
+declare const process: {
+  cwd(): string
+  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
+}
 
 const slide = "ppt/slides/slide1.xml"
 const chart = "ppt/charts/chart1.xml"
@@ -59,4 +64,31 @@ it("leaves a chart with literal values or no embedded workbook alone", () => {
   edited(parts, chart, '<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>', "")
   edited(parts, chart, "<c:v>4.6</c:v>", "<c:v>9.9</c:v>")
   expect(chartWorkbookErrors(parts)).toEqual([])
+})
+
+it("names a workbook table whose columns do not match its range or its header cells", async () => {
+  const { readPackage } = await import("./index.js")
+  const file = process
+    .getBuiltinModule("node:fs")
+    .readFileSync(`${process.cwd()}/scripts/pptx-fixtures/office-chart.pptx`)
+  const read = await readPackage(file)
+  if (!read.ok) throw new Error("office chart")
+  const parts = new Map(read.parts)
+  expect(chartWorkbookErrors(parts)).toEqual([])
+  const book = "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx"
+  const files = unzipped(parts.get(book)!)!
+  const table = "xl/tables/table1.xml"
+  const changed = (from: string, to: string) =>
+    storedZip(
+      [...files].map(([name, bytes]) => [
+        name,
+        name === table ? encodeUtf8(decodeUtf8(bytes).replace(from, to)) : bytes,
+      ]),
+    )
+  parts.set(book, changed('name="2025"', 'name="2026"'))
+  expect(chartWorkbookErrors(parts)).toEqual([
+    `Chart workbook: /${book} table Table1 column 3 is named 2026, its header cell C1 holds 2025`,
+  ])
+  parts.set(book, changed('ref="A1:C4" totalsRowShown', 'ref="A1:D4" totalsRowShown'))
+  expect(chartWorkbookErrors(parts)).toEqual([`Chart workbook: /${book} table Table1 spans 4 columns, it lists 3`])
 })
