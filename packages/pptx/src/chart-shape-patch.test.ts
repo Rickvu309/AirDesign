@@ -136,3 +136,17 @@ it("gives a new pie slice the next colour with the slices' own border, and keeps
   expect(removed.after).toContain('<c:dLbl><c:idx val="0"/>')
   expect(chartWorkbookErrors(removed.next)).toEqual([])
 })
+
+it("adds a line series with its neighbours' stroke width and cap, in its own colour", async () => {
+  const { chart, edit } = await deckChart("office-chart.pptx", 1)
+  const grown: ChartValue = { ...chart, series: [...chart.series, { name: "2026", values: [3, 3.6, 2.9] }] }
+  const { read, after, next } = edit(grown)
+  expect(read).toEqual(grown)
+  const added = /<c:ser><c:idx val="2"\/>.*?<\/c:ser>/u.exec(after)?.[0] ?? ""
+  expect(added).toContain(
+    '<a:ln w="28575" cap="rnd"><a:solidFill><a:schemeClr val="accent3"/></a:solidFill><a:round/></a:ln>',
+  )
+  expect(added).toContain('<c:marker><c:symbol val="none"/></c:marker>')
+  expect(added).toContain('<c:smooth val="0"/>')
+  expect(chartWorkbookErrors(next)).toEqual([])
+})
