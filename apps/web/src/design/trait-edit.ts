@@ -131,6 +131,7 @@ const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
   body: "text-box",
   geometry: "shape",
   connection: "connector",
+  layout: "auto-layout",
 }
 
 const identityNames: Readonly<Record<string, UndoName>> = {
