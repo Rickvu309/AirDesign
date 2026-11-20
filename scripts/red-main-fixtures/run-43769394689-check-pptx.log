@@ -1,0 +1,72 @@
+2026-11-15T22:30:21.3790074Z judge break  owned part shared              caught    3 of 3 samples caught
+2026-11-15T22:30:21.3790977Z judge break  image content type removed     caught    3 of 3 samples caught
+2026-11-15T22:30:21.3792284Z judge valid  text replaced                  accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.3793269Z judge valid  shape moved                    accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.3794279Z judge valid  shape resized                  accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.3795325Z judge valid  text shape added               accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.3796253Z judge valid  shape renamed                  accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.3797159Z judge valid  untouched deck                 accepted  4 of 4 samples accepted
+2026-11-15T22:30:21.5840123Z judge proof fresh seed 1875355272, replay with JUDGE_SEED=1875355272 pnpm check:pptx
+2026-11-15T22:30:21.5842011Z judge break  dangling relationship          caught    3 of 3 samples caught
+2026-11-15T22:30:21.5843343Z judge break  wrong child order              caught    3 of 3 samples caught
+2026-11-15T22:30:21.5844402Z judge break  slide content type removed     caught    3 of 3 samples caught
+2026-11-15T22:30:21.5845487Z judge break  duplicate shape id             caught    3 of 3 samples caught
+2026-11-15T22:30:21.5846646Z judge break  chart data-label range         missed    0 of 3 samples caught
+2026-11-15T22:30:21.5848114Z judge break  control character in text      caught    3 of 3 samples caught
+2026-11-15T22:30:21.5849445Z judge break  unescaped ampersand in text    caught    3 of 3 samples caught
+2026-11-15T22:30:21.5850615Z judge break  slide id without relationship  caught    3 of 3 samples caught
+2026-11-15T22:30:21.5851851Z judge break  relationship id used twice     caught    3 of 3 samples caught
+2026-11-15T22:30:21.5853089Z judge break  owned part shared              caught    3 of 3 samples caught
+2026-11-15T22:30:21.5854174Z judge break  image content type removed     caught    3 of 3 samples caught
+2026-11-15T22:30:21.5855257Z judge valid  text replaced                  accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.5856319Z judge valid  shape moved                    accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.5857342Z judge valid  shape resized                  accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.5858657Z judge valid  text shape added               accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.5859726Z judge valid  shape renamed                  accepted  3 of 3 samples accepted
+2026-11-15T22:30:21.5860763Z judge valid  untouched deck                 accepted  4 of 4 samples accepted
+2026-11-15T22:30:21.5862150Z browser export spec failed; browser export spec wrote no tests/browser/exported-table-resized.pptx
+2026-11-15T22:30:21.5864470Z 1) tests/browser/gesture-size.spec.ts:82:1 › a table resizes by its corner and by Width, scales its columns and rows, and exports at the size kept @export 
+2026-11-15T22:30:21.5865459Z 
+2026-11-15T22:30:21.5865848Z     Error: expect(received).toEqual(expected) // deep equality
+2026-11-15T22:30:21.5866304Z 
+2026-11-15T22:30:21.5866685Z     Expected: {"cx": 7924800, "cy": 1417320, "x": 2438400, "y": 5135880}
+2026-11-15T22:30:21.5867286Z     Received: null
+2026-11-15T22:30:21.5867525Z 
+2026-11-15T22:30:21.5867721Z     Call Log:
+2026-11-15T22:30:21.5868534Z     - Timeout 5000ms exceeded while waiting on the predicate
+2026-11-15T22:30:21.5869407Z 
+2026-11-15T22:30:21.5869588Z       111 |   })
+2026-11-15T22:30:21.5870370Z       112 |   const dragged: Box = { ...start, cx: 7_315_200 + emu(40), cy: 1_112_520 + emu(20) }
+2026-11-15T22:30:21.5871387Z     > 113 |   await expect.poll(() => lastBox(page)).toEqual(dragged)
+2026-11-15T22:30:21.5872155Z           |                                          ^
+2026-11-15T22:30:21.5872775Z       114 |   await width.fill("432")
+2026-11-15T22:30:21.5873377Z       115 |   await width.press("Enter")
+2026-11-15T22:30:21.5874259Z       116 |   await expect.poll(() => lastBox(page)).toEqual({ ...dragged, cx: 5_486_400 })
+2026-11-15T22:30:21.5875439Z         at /home/runner/work/AirDesign/AirDesign/tests/browser/gesture-size.spec.ts:113:42
+2026-11-15T22:30:21.5876349Z 
+2026-11-15T22:30:21.5877241Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-15T22:30:21.5878723Z     test-results/gesture-size-a-table-resiz-0e16f-rts-at-the-size-kept-export/test-failed-1.png
+2026-11-15T22:30:21.5880082Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-15T22:30:21.5880917Z judge proof planted 156 samples in 1.8 seconds
+2026-11-15T22:30:21.6134284Z metric pptx-check-duration  now 132.7  limit 90
+2026-11-15T22:30:21.6135363Z pptx-check-duration is 132.7 and its limit is 90. Make it faster.
+2026-11-15T22:30:22.1161403Z 2 corpus decks judged, 0 misses, 0 fail this run
+2026-11-15T22:30:22.1563694Z phase build           0.0 to    0.2 seconds
+2026-11-15T22:30:22.1564951Z phase browser         0.2 to   96.4 seconds
+2026-11-15T22:30:22.1565646Z phase render          0.4 to  112.8 seconds
+2026-11-15T22:30:22.1566317Z phase validate        0.4 to   98.3 seconds
+2026-11-15T22:30:22.1567025Z phase prep            0.4 to   20.6 seconds
+2026-11-15T22:30:22.1567681Z phase validate        3.0 to   98.3 seconds
+2026-11-15T22:30:22.1568871Z phase validate        8.5 to   98.3 seconds
+2026-11-15T22:30:22.1569922Z phase validate       10.6 to   98.3 seconds
+2026-11-15T22:30:22.1570917Z phase validate       13.0 to  102.2 seconds
+2026-11-15T22:30:22.1571599Z phase validate       18.5 to  103.0 seconds
+2026-11-15T22:30:22.1572273Z phase validate       18.8 to   98.3 seconds
+2026-11-15T22:30:22.1572938Z phase validate       20.6 to  108.8 seconds
+2026-11-15T22:30:22.1573552Z phase render         96.4 to  132.2 seconds
+2026-11-15T22:30:22.1574136Z phase judging       132.2 to  132.7 seconds
+2026-11-15T22:30:22.1574717Z phase routes        132.7 to  133.2 seconds
+2026-11-15T22:30:22.1876357Z 1 pptx checks failed
+2026-11-15T22:30:22.1877441Z 31 route writes passed
+2026-11-15T22:30:22.2841072Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-15T22:30:22.2879793Z ##[error]Process completed with exit code 1.

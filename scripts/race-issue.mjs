@@ -51,7 +51,7 @@ const raceComment = ({ excerpt, commit, seen }) =>
 
 const said = (answer) => (answer.stderr || answer.stdout).trim()
 
-const openIssues = ({ gh, repository }) => {
+export const openIssues = ({ gh, repository }) => {
   const listed = gh([
     "issue",
     "list",

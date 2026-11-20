@@ -1,0 +1,46 @@
+name: red-main-revert
+
+on:
+  workflow_run:
+    workflows:
+      - ci
+    types:
+      - completed
+    branches:
+      - main
+      - red-main/revert-*
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: red-main-revert
+  cancel-in-progress: false
+
+jobs:
+  red-main-revert:
+    name: red-main-revert
+    if: github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RED_MAIN_TOKEN: ${{ secrets.RED_MAIN_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          GIT_AUTHOR_NAME: Quan Vu
+          GIT_AUTHOR_EMAIL: 193299474+quanvu309@users.noreply.github.com
+          GIT_COMMITTER_NAME: Quan Vu
+          GIT_COMMITTER_EMAIL: 193299474+quanvu309@users.noreply.github.com
+        run: node scripts/red-main-revert.mjs
