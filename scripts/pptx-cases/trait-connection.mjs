@@ -113,17 +113,23 @@ function underLines(answers, decode) {
   const rectangle = placeOf(after, "4")
   const oval = placeOf(after, "5")
   const ends = endsOf(placeOf(after, "7"))
-  if (!near(ends.start, { x: rectangle.x + rectangle.cx / 2, y: rectangle.y + rectangle.cy }, halfPoint))
-    lines.push("agent elbow left its start more than half a point off the rectangle's bottom site")
-  if (!near(ends.end, { x: oval.x + oval.cx / 2, y: oval.y + oval.cy }, halfPoint))
-    lines.push("agent elbow left its end more than half a point off the oval's bottom site")
+  const elbow = placeOf(after, "7")
+  const pointWideU = Math.min(elbow.cx, elbow.cy) === pointWide
+  const within = pointWideU ? halfPoint : 1
+  const off = pointWideU ? "more than half a point (a U at one height is one point wide)" : "more than 1 EMU"
+  if (!near(ends.start, { x: rectangle.x + rectangle.cx / 2, y: rectangle.y + rectangle.cy }, within))
+    lines.push(`agent elbow left its start ${off} off the rectangle's bottom site`)
+  if (!near(ends.end, { x: oval.x + oval.cx / 2, y: oval.y + oval.cy }, within))
+    lines.push(`agent elbow left its end ${off} off the oval's bottom site`)
   return lines
 }
 
-const halfPoint = 6350
+const pointWide = 12700
+const halfPoint = pointWide / 2
 
 function near(left, right, within = 1) {
-  return Math.round(Math.abs(left.x - right.x)) <= within && Math.round(Math.abs(left.y - right.y)) <= within
+  const gap = (from, to) => (within === 1 ? Math.abs(from - to) : Math.round(Math.abs(from - to)))
+  return gap(left.x, right.x) <= within && gap(left.y, right.y) <= within
 }
 
 export default {
