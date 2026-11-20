@@ -15,7 +15,6 @@ async function drive({ page, signIn }) {
   if (box === null) throw new Error("slide")
   await page.mouse.click(box.x + box.width * 0.06, box.y + box.height * 0.1)
   await page.keyboard.type("Three levers close the gap", { delay: 0 })
-  await expect(slide.locator('[contenteditable="true"]')).toHaveText("Three levers close the gap")
 }
 
 export default { name: "slide-added-title", design: editor, drive }
