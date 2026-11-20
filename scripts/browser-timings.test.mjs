@@ -38,7 +38,7 @@ test('passes', async () => {
   test.info().annotations.push({ type: 'metric', description: 'metric demo-time  now 3  limit 2' })
   test.info().annotations.push({ type: 'warning', description: 'demo-time is 3 and its limit is 2. Make it faster.' })
 })
-test('also passes', async () => {})
+test('also passes', { tag: '@export' }, async () => { await new Promise((done) => setTimeout(done, 150)) })
 test('still passes', async () => {})
 test.skip('skips', async () => {})
 `,
@@ -101,6 +101,24 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
     assert.equal(test.retry, 0)
     assert.ok(test.title.length > 0)
   }
+  const record = path.join(folder, "spec-seconds.json")
+  const recorded = { seconds: { "a.spec.ts": 9999, "gone.spec.ts": 1 }, export: { "gone.spec.ts": 1 } }
+  fs.writeFileSync(record, JSON.stringify(recorded))
+  const runAlone = (args) =>
+    spawnSync(process.execPath, [path.join(root, "node_modules/@playwright/test/cli.js"), "test", ...args], {
+      cwd: folder,
+      encoding: "utf8",
+      env: { ...process.env, CI: "", GITHUB_ACTIONS: "", GITHUB_STEP_SUMMARY: "" },
+    })
+  const narrowed = runAlone(["a.spec.ts", "--grep", "passes"])
+  assert.equal(narrowed.status, 0, narrowed.stdout + narrowed.stderr)
+  assert.deepEqual(JSON.parse(fs.readFileSync(record, "utf8")), recorded, "a narrowed run leaves the record alone")
+  const whole = runAlone(["a.spec.ts"])
+  assert.equal(whole.status, 0, whole.stdout + whole.stderr)
+  const written = JSON.parse(fs.readFileSync(record, "utf8"))
+  assert.deepEqual(Object.keys(written.seconds), ["a.spec.ts"], "a gone file leaves the record")
+  assert.ok(written.seconds["a.spec.ts"] < 9999, "a file that ran whole and far from its record is measured again")
+  assert.ok(written.export["a.spec.ts"] >= 0.1, "the seconds of its export tests are kept apart")
   console.log("browser-timings: passing, failing and skipped tests retain timings and metrics across shards")
 } finally {
   fs.rmSync(folder, { recursive: true, force: true })

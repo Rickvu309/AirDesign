@@ -1,6 +1,8 @@
 import os from "node:os"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { smallLaneCommand } from "./machine-lock.mjs"
+import { readSpecSeconds, specFiles, specFolder, weightedShares } from "./spec-seconds.mjs"
 
 export const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-results")
 export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
@@ -9,17 +11,30 @@ export const designShardVariable = "AIRDESIGN_DESIGN_SHARD"
 export const statesPerDesignShard = 200
 export const designShardCount = (states) => Math.max(1, Math.ceil(states / statesPerDesignShard))
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const exceptDesignScans = designScans.map((file) => path.basename(file).replaceAll(".", "\\.")).join("|")
+
+export const browserShares = (folder, total) =>
+  weightedShares({
+    keys: specFiles(folder).filter((name) => !designScans.includes(`${specFolder}/${name}`)),
+    seconds: readSpecSeconds(folder).seconds,
+    total,
+  })
+
+const browserShare = (shard) => {
+  const share = browserShares(root, shard.total).shares[shard.current - 1]
+  if (share.length === 0)
+    throw new Error(`browser shard ${shard.current}/${shard.total} has no spec file. Use fewer shards.`)
+  return share.map((name) => `${specFolder}/${name.replaceAll(".", "\\.")}$`)
+}
 
 const browserArgs = (part, shard) =>
   part === "design"
     ? designScans
     : part === "browser"
-      ? [
-          "--grep-invert",
-          exceptDesignScans,
-          ...(shard === undefined ? [] : [`--shard=${shard.current}/${shard.total}`]),
-        ]
+      ? shard === undefined
+        ? ["--grep-invert", exceptDesignScans]
+        : browserShare(shard)
       : []
 
 const designShardEnv = (part, shard) =>

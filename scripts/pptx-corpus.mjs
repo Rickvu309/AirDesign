@@ -4,6 +4,7 @@ import path from "node:path"
 import { replay, settleRun } from "./judge-proof.mjs"
 import { againSuffix, renderName } from "./pptx-render.mjs"
 import { scoreWrittenRoute } from "./pptx-route-judge.mjs"
+import { specFolder, unrecordedSeconds, weightedShares } from "./spec-seconds.mjs"
 
 export const rotatingDecks = 2
 
@@ -77,17 +78,60 @@ export const rendersOf = ({ cases, added }) => [
   ...new Set([...cases.flatMap((row) => [row.before, afterRender(row)]), ...added]),
 ]
 
-export const corpusPartition = ({ argv, listed, every, fixed }) => {
+const corpusShard = (argv) => {
   const shard = argv.filter((arg) => arg.startsWith("--shard="))
   if (shard.length > 1 || (shard.length > 0 && (!argv.includes("--corpus") || !/^--shard=[12]\/2$/.test(shard[0])))) {
     throw new Error("Use --corpus --shard=1/2 or --corpus --shard=2/2")
   }
+  return shard.length === 0 ? undefined : Number(shard[0].slice("--shard=".length, -"/2".length))
+}
+
+export const corpusPartition = ({ argv, listed, every, fixed }) => {
+  const shard = corpusShard(argv)
   const routes = [...new Set([...fixed, ...every])]
-  const fixedWork = shard[0] !== "--shard=2/2"
+  const fixedWork = shard !== 2
   return {
     fixedWork,
-    routeDecks: shard.length === 0 ? routes : routes.filter((name) => listed.includes(name) !== fixedWork),
+    routeDecks: shard === undefined ? routes : routes.filter((name) => listed.includes(name) !== fixedWork),
   }
+}
+
+const specGroups = (entries) => {
+  const groups = []
+  for (const entry of entries.filter((each) => (each.specs ?? []).length > 0)) {
+    const joined = groups.filter((group) => group.specs.some((spec) => entry.specs.includes(spec)))
+    const merged = {
+      specs: [...new Set([...joined.flatMap((group) => group.specs), ...entry.specs])].sort(),
+      entries: [...joined.flatMap((group) => group.entries), entry],
+    }
+    groups.splice(0, groups.length, ...groups.filter((group) => !joined.includes(group)), merged)
+  }
+  return groups.map((group) => ({ ...group, key: group.specs.join(" ") }))
+}
+
+export const corpusCaseShares = ({ entries, seconds }) => {
+  const weigh = unrecordedSeconds(seconds)
+  const groups = specGroups(entries)
+  const { shares, loads } = weightedShares({
+    keys: groups.map((group) => group.key),
+    seconds: Object.fromEntries(
+      groups.map((group) => [
+        group.key,
+        group.specs.reduce((sum, spec) => sum + weigh(spec.slice(`${specFolder}/`.length)), 0),
+      ]),
+    ),
+    total: 2,
+  })
+  const inShare = (share) => groups.filter((group) => share.includes(group.key)).flatMap((group) => group.entries)
+  const written = entries.filter((entry) => (entry.specs ?? []).length === 0)
+  return { shares: [[...written, ...inShare(shares[0])], inShare(shares[1])], loads }
+}
+
+export const corpusCases = ({ argv, entries, seconds }) => {
+  const shard = corpusShard(argv)
+  if (shard === undefined) return entries
+  const chosen = new Set(corpusCaseShares({ entries, seconds }).shares[shard - 1])
+  return entries.filter((entry) => chosen.has(entry))
 }
 
 export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, browser, size = rotatingDecks }) => {

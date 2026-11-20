@@ -39,10 +39,12 @@ import {
   afterRender,
   checkFails,
   committedArgs,
+  corpusCases,
   corpusDecision,
   corpusInputs,
   corpusPartition,
   corpusResult,
+  rendersOf,
 } from "./pptx-corpus.mjs"
 import {
   committedBlobs,
@@ -59,6 +61,7 @@ import { cloneEditsLines, writeCloneEdits } from "./clone-edits.mjs"
 import { corpusEditLines, writeCorpusEdits } from "./corpus-edits.mjs"
 import { storedZip } from "./stored-zip.mjs"
 import { sectionProofDeck, sectionProofLines, sectionWarnLines, writeSectionProof } from "./section-list.mjs"
+import { readSpecSeconds } from "./spec-seconds.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -70,7 +73,11 @@ const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
 const inputs = corpusInputs(root)
 const { fixedWork } = corpusPartition({ argv: process.argv, ...inputs })
-const entries = fixedWork ? await loadCases(root) : []
+const entries = corpusCases({
+  argv: process.argv,
+  entries: await loadCases(root),
+  seconds: readSpecSeconds(root).export,
+})
 const exportNames = caseExports(entries)
 const exportPath = (name) => path.join(root, "tests/browser", name)
 
@@ -121,26 +128,28 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
 
 await phases.time("build", () => run("pnpm", ["--filter", "@airdesign/pptx", "build"]))
 let specOutput = ""
-const browserSpec = fixedWork
-  ? freshBrowserExport({
-      file: exportPath(exportNames[0]),
-      also: exportNames.slice(1).map(exportPath),
-      run: () =>
-        phases.time("browser", async () => {
-          specOutput = await run("pnpm", [
-            "exec",
-            "playwright",
-            "test",
-            "--reporter=list",
-            ...browserExportArgs(entries),
-          ])
-        }),
-    })
-  : Promise.resolve({ ok: true, seconds: 0 })
+const browserSpec =
+  exportNames.length > 0
+    ? freshBrowserExport({
+        file: exportPath(exportNames[0]),
+        also: exportNames.slice(1).map(exportPath),
+        run: () =>
+          phases.time("browser", async () => {
+            specOutput = await run("pnpm", [
+              "exec",
+              "playwright",
+              "test",
+              "--reporter=list",
+              ...browserExportArgs(entries),
+            ])
+          }),
+      })
+    : Promise.resolve({ ok: true, seconds: 0 })
 const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browserSpec })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
-const cases = fixedWork ? JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8")) : []
-const names = [...new Set([...cases.flatMap((row) => [row.before, row.after]), ...caseOriginals(entries)])]
+const staticCases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
+const cases = fixedWork ? [...staticCases] : []
+const names = [...new Set([...staticCases.flatMap((row) => [row.before, row.after]), ...caseOriginals(entries)])]
 const browserExports = new Map(exportNames.map((name) => [name, exportPath(name)]))
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
@@ -199,9 +208,7 @@ const freshFails = freshMissFails({
   mergeBase: () => gitAnswer(["merge-base", "HEAD", "origin/main"]),
   changedSince: (base) => gitAnswer(changedSinceArgs(base))?.split("\n"),
 })
-const cleanDecks = fixedWork
-  ? ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
-  : []
+const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
 const validations = []
 const validate = (files) => {
   const done = phases.time("validate", () => validatorLists(files))
@@ -281,9 +288,14 @@ console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
 for (const line of playwrightTestLines(specOutput)) console.log(line)
 if (spec.ok) {
   for (const name of exportNames) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
+  const queued = new Set(decision.renders)
   for (const entry of entries) {
     cases.push(...(entry.cases ?? []))
-    waiting.push(...(entry.renders ?? []))
+    for (const render of [...(entry.renders ?? []), ...rendersOf({ cases: entry.cases ?? [], added: [] })]) {
+      if (queued.has(render)) continue
+      queued.add(render)
+      waiting.push(render)
+    }
   }
   validate(validatorFiles({ names: exportNames, fixturePath, others: [] }))
 }
