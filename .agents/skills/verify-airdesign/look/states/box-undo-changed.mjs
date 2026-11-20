@@ -5,6 +5,8 @@ import { editor } from "../editor-screen.mjs"
 import { openDeck } from "../open-deck.mjs"
 import { placeText } from "../../bin/text-place.mjs"
 
+const drafted = (element) => element.value.includes('"text":"Draft"')
+
 async function drive(kit) {
   const { cookie } = await kit.signIn()
   async function tool(name, args) {
@@ -35,10 +37,10 @@ async function drive(kit) {
   await expect
     .poll(async () => {
       read = await tool("airdesign_read_deck", { deck, slide: "256" })
-      return read.index === "ready" && read.elements.some((each) => each.node !== "256.2")
+      return read.index === "ready" && read.elements.some(drafted)
     })
     .toBe(true)
-  const added = read.elements.find((each) => each.node !== "256.2")
+  const added = read.elements.find(drafted)
   const value = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Written by an agent" }] }])
   const changes = [{ node: added.node, readAt: added.version, value }]
   expect(await tool("airdesign_edit_deck", { deck, base: read.revision, changes })).toMatchObject({ ok: true })
