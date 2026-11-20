@@ -69,7 +69,7 @@ export type TextLook = {
 
 export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
 const pageColor = "black"
-const singleLineHeight = 1.2
+export const singleLineHeight = 1.2
 const shiftedShare = 0.58
 const noLine = "0"
 const loneRun = -1

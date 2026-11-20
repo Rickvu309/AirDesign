@@ -13,6 +13,7 @@ export const textCopy = {
   letterSpacing: "Letter spacing",
   list: "List",
   lineHeight: "Line height",
+  auto: "Auto",
   paragraphSpacing: "Paragraph spacing",
   spaceBefore: "Space before",
   spaceAfter: "Space after",
