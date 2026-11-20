@@ -156,11 +156,18 @@ if (checkSlots({}, 48, 47 * gib) !== 3) fail("48 cores and 47 GB did not run thr
 if (checkSlots({ AIRDESIGN_CHECK_SLOTS: "2" }, 48, 47 * gib) !== 2) fail("the owner's slot count was ignored")
 if (checkSlots({ AIRDESIGN_CHECK_SLOTS: "zero" }, 8, 16 * gib) !== 1) fail("a bad slot count was not ignored")
 
-const pairOne = waiter("check", "full", { slots: 2 })
-const pairTwo = waiter("check", "full", { slots: 2 })
+const trees = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-trees-"))
+const tree = (name) => {
+  const root = path.join(trees, name)
+  fs.mkdirSync(path.join(root, "apps"), { recursive: true })
+  fs.writeFileSync(path.join(root, ".git"), "gitdir: elsewhere\n")
+  return root
+}
+const pairOne = waiter("check", "full", { slots: 2, cwd: tree("pair-one") })
+const pairTwo = waiter("check", "full", { slots: 2, cwd: tree("pair-two") })
 await pairOne.until(started, "the first of two slots did not start")
 await pairTwo.until(started, "a second free slot kept a check waiting")
-const pairThird = waiter("check", "full", { slots: 2 })
+const pairThird = waiter("check", "full", { slots: 2, cwd: tree("pair-third") })
 await pairThird.until(placed(1), "a third check with two slots did not say it is number 1 in line")
 await settle()
 if (started(pairThird.seen)) fail("three checks held two slots")
@@ -183,13 +190,6 @@ await busyOne.closed
 await busyTwo.until(started, "a freed first slot did not start the next check on a busy machine")
 busyTwo.finish()
 await busyTwo.closed
-const trees = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-trees-"))
-const tree = (name) => {
-  const root = path.join(trees, name)
-  fs.mkdirSync(path.join(root, "apps"), { recursive: true })
-  fs.writeFileSync(path.join(root, ".git"), "gitdir: elsewhere\n")
-  return root
-}
 const one = tree("one")
 const two = tree("two")
 const exited = (seen) => /^exit \d+$/m.test(seen.err)
