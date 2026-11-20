@@ -110,8 +110,8 @@ export function ConnectorEnds(props: {
       document.removeEventListener("pointermove", move)
       document.removeEventListener("pointerup", up)
       document.removeEventListener("pointercancel", lost)
-      document.removeEventListener("keydown", keyed, true)
-      document.removeEventListener("keyup", keyed, true)
+      document.removeEventListener("keydown", keyed)
+      document.removeEventListener("keyup", keyed)
       cancelling.current = null
       guides?.show([])
       setAiming(null)
@@ -126,12 +126,6 @@ export function ConnectorEnds(props: {
     }
 
     function keyed(next: globalThis.KeyboardEvent) {
-      if (next.type === "keydown" && next.key === "Escape") {
-        next.preventDefault()
-        next.stopPropagation()
-        stop()
-        return
-      }
       if (next.key !== "Shift" && next.key !== "Control") return
       lastModifiers = { shiftKey: next.shiftKey, ctrlKey: next.ctrlKey }
       if (!moved) return
@@ -165,8 +159,8 @@ export function ConnectorEnds(props: {
     document.addEventListener("pointermove", move)
     document.addEventListener("pointerup", up)
     document.addEventListener("pointercancel", lost)
-    document.addEventListener("keydown", keyed, true)
-    document.addEventListener("keyup", keyed, true)
+    document.addEventListener("keydown", keyed)
+    document.addEventListener("keyup", keyed)
     setAiming({ end, from, at: spots[end], aim: null })
   }
 

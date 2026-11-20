@@ -365,20 +365,6 @@ describe("snapping and Shift angle lock on line and arrow ends", () => {
     ])
   })
 
-  it("cancels an end drag on Escape, clears guides, and keeps the line selected", async () => {
-    const { host, bound } = await mounted(ruleElements)
-    const end = await chosen(host)
-    await pointer(end, "pointerdown", pixels(2_500_000), pixels(4_500_000))
-    await pointer(end.ownerDocument, "pointermove", pixels(8_030_000), pixels(4_525_000))
-    expect(guideLines(host)).toEqual(["snap x 800", "snap y 450"])
-    await keyEvent(end.ownerDocument, "keydown", "Escape")
-    expect(host.querySelector("[data-guides]")).toBeNull()
-    expect(host.querySelector("[data-connector-aim]")).toBeNull()
-    expect(host.querySelectorAll("[data-connector-end]")).toHaveLength(2)
-    await pointer(end.ownerDocument, "pointerup", pixels(8_030_000), pixels(4_525_000))
-    expect(bound).toEqual([])
-  })
-
   it("snaps a whole free line with the existing move snapping when dragged by its body", async () => {
     const { host, moved } = await mounted(ruleElements)
     const frame = host.querySelector<HTMLElement>(`[data-canvas-element="ppt/slides/slide1.xml#${line}"]`)
