@@ -84,6 +84,7 @@ for (const name of [
   "snap-drag",
   "snap-resize",
   "line-end-snap",
+  "text-tool-place",
   "layer-duplicate",
   "layer-clipboard",
   "busy-drag",

@@ -7,6 +7,7 @@ import { holdWriteOf, holdWrites, readwrites, releaseWrite, writeHeld } from "./
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { decksOn } from "./deck-test"
 import { placeText } from "./text-place"
+import { openGrid } from "./slide-grid-deck"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const title = "ppt/slides/slide1.xml#2"
@@ -98,7 +99,9 @@ test("an undo of an added text box an agent wrote in changes nothing, says so an
   await forward(page, stack)
   const deck = await decks.open()
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await placeText(page, { x: 0.2, y: 0.8 })
+  await openGrid(page)
+  await page.locator("[data-editor-grid] [data-grid-card]").first().locator("[data-slide-number]").click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(2)
   await page.keyboard.press("Escape")
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()

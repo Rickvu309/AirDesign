@@ -10,6 +10,7 @@ import {
   type LayerPaste,
   type Moved,
   type Selection,
+  type TextPlace,
   type Turned,
 } from "@airdesign/render"
 import type { ReactNode } from "react"
@@ -60,13 +61,22 @@ export type EditableDeck = DesignDeck &
     readonly selection: Selection
     readonly select: (selection: Selection) => void
     readonly hovered?: ElementId | null
+    readonly placedText?: PlacedTextActions
   }
+
+type PlacedTextActions = {
+  readonly typed: (node: ElementId, value: string) => Promise<boolean>
+  readonly stored: (node: ElementId) => Promise<boolean>
+  readonly left: (node: ElementId) => void
+}
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
 
 const noGuidesShown: GuidesShown = { rulers: false, layoutGuides: true }
 
-export function editableSlide(deck: EditableDeck): (width: number, shown?: GuidesShown) => ReactNode {
+export function editableSlide(
+  deck: EditableDeck,
+): (width: number, shown?: GuidesShown, onPlaceText?: (place: TextPlace) => void) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
   const onBoxes = boxMoves(deck)
@@ -81,7 +91,10 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
 
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
     const release = records.current.hold()
-    return editText(target, value, name, release).finally(release)
+    const placed = deck.placedText?.typed(target, value) ?? Promise.resolve(true)
+    return placed
+      .then((stored): Promise<CommitOutcome> | "empty" => (stored ? editText(target, value, name, release) : "empty"))
+      .finally(release)
   }
 
   async function editText(
@@ -138,6 +151,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
   }
 
   async function fitted(node: ElementId, size: FitSize) {
+    if (!(await (deck.placedText?.stored(node) ?? true))) return
     const floor = boxes.current.get(node)?.file ?? movables.current.get(node)?.file ?? ""
     const width = size.width === undefined ? {} : { w: { set: size.width } }
     const row = { v: format, patch: { box: { ...width, h: { set: size.height } } } }
@@ -262,7 +276,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     )
   }
 
-  function slideAt(width: number, shown: GuidesShown) {
+  function slideAt(width: number, shown: GuidesShown, onPlaceText: ((place: TextPlace) => void) | undefined) {
     const painted = canvases.current(current)
     const canvas = painted === null ? null : guidedCanvas(painted, deck.shown.displayParts.current, current, shown)
     return canvas === null ? (
@@ -310,6 +324,8 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
             onOrder={order}
             ownsKey={editorOwnsKey}
             {...(clipboard === undefined ? {} : { clipboard })}
+            {...(onPlaceText === undefined ? {} : { onPlaceText })}
+            {...(deck.placedText === undefined ? {} : { onLeaveText: deck.placedText.left })}
             selection={selection}
             onSelection={select}
             onConnect={(node, end, to) => {
@@ -358,9 +374,9 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     )
   }
 
-  return (width, shown = noGuidesShown) => (
+  return (width, shown = noGuidesShown, onPlaceText) => (
     <>
-      {slideAt(width, shown)}
+      {slideAt(width, shown, onPlaceText)}
       {measured(width)}
     </>
   )

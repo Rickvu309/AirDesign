@@ -28,8 +28,9 @@ async function drive(kit) {
   const texts = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
   await placeText(kit.page)
   await expect(texts).toHaveCount(2)
+  await kit.page.keyboard.type("Draft")
   await kit.page.keyboard.press("Escape")
-  await expect(kit.page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()
+  await expect(kit.page.getByRole("button", { name: undoCopy.undoNamed.text })).toBeEnabled()
   let read = await tool("airdesign_read_deck", { deck, slide: "256" })
   await expect
     .poll(async () => {
@@ -44,7 +45,7 @@ async function drive(kit) {
   await expect(texts.last()).toHaveText("Written by an agent")
   await kit.page.keyboard.press("ControlOrMeta+z")
   const refused = kit.page.getByText("Unable to undo. This changed after your edit, so it stays as it is.")
-  await expect(refused.or(kit.page.getByRole("button", { name: undoCopy.redoNamed["add-box"] }))).toBeVisible()
+  await expect(refused.or(kit.page.getByRole("button", { name: undoCopy.redoNamed.text }))).toBeVisible()
 }
 
 export default { name: "box-undo-changed", design: editor, drive }

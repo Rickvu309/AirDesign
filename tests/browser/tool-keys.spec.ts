@@ -27,6 +27,7 @@ test("T arms the Text tool and a click places text, R, O, L, Shift+L and Shift+C
   await page.locator("[data-text-placing]").click({ position: { x: 200, y: 300 } })
   await expect(page.locator("[data-text-placing]")).toHaveCount(0)
   await expect(slide.locator('[contenteditable="true"]:focus')).toHaveCount(1)
+  await page.keyboard.type("Note")
   expect(await layers.count()).toBe(initial + 1)
   for (const [step, key] of ["r", "o", "l", "Shift+L"].entries()) {
     await slide.click({ position: { x: 4, y: 4 } })

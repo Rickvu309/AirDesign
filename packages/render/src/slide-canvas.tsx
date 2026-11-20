@@ -23,6 +23,9 @@ import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.j
 import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { GuideLayer } from "./guide-layer.js"
+import { TextPlacing, type TextPlace } from "./text-placing.js"
+import { useTextLeave } from "./text-leave.js"
+import { useSlideFocusKept } from "./slide-focus-kept.js"
 import { LayoutGuidePaint } from "./layout-guide-paint.js"
 import { useMeasuring } from "./measuring.js"
 import { useMoves } from "./slide-moves.js"
@@ -96,6 +99,8 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly slideName?: string
   readonly ownsKey?: OwnsKey
   readonly clipboard?: LayerClipboard
+  readonly onPlaceText?: (place: TextPlace) => void
+  readonly onLeaveText?: (id: ElementId) => void
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
@@ -218,7 +223,9 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     frame?.focus({ preventScroll: true })
   }
   useMeasuring(surface, slide, props.store, ids, moving?.guides)
-  const entered = useRef<ElementId | null>(null)
+  useTextLeave(surface, slide, props.onLeaveText)
+  useSlideFocusKept(surface, slide, moving !== null, moves.selection.ids.length)
+  const entered = useRef<Entering | null>(null)
   const keys = props.entering?.keys
   const entering = slide.elements.find((each) => each.id !== null && each.id === props.entering?.id)
   const named = useRef<{ frames: Named; part: string | null }>({ frames: new Map(), part: null })
@@ -234,9 +241,10 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   }, [slide, slide.part, say, props.slideName])
   function enterPainted() {
     const host = surface.current
-    if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return
+    const asked = props.entering ?? null
+    if (entering?.id === undefined || entering.id === null || host === null || entered.current === asked) return
     if (host.querySelector(`[data-canvas-element="${entering.key}"]`) === null) return
-    entered.current = entering.id
+    entered.current = asked
     enterElement(host, entering, keys?.take() ?? "", props.entering?.selects === true)
   }
   useLayoutEffect(enterPainted, [entering, keys])
@@ -389,6 +397,15 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           slide={slide}
           store={props.store}
           width={width}
+        />
+      )}
+      {moving === null || props.onPlaceText === undefined ? null : (
+        <TextPlacing
+          slide={slide}
+          store={props.store}
+          width={width}
+          guides={moving.guides}
+          onPlace={props.onPlaceText}
         />
       )}
       {moving === null ? null : <GuideLayer board={moving.guides} scaled={scaled} />}

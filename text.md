@@ -28,8 +28,12 @@ How a text layer's box follows its words, with Figma's three names. **Auto width
 _Avoid_: autosize, shrink-wrap
 
 **Text tool**:
-The tool T or Add text arms, as Figma's Text tool. A click on the slide places Auto width text with its top left at the click, a drag of three pixels or more draws a Fixed size box, and either goes back to Move. Esc or V puts the tool down. In grid view Add text still adds text to the chosen slide at once. Resizing a text layer's box by hand makes it Fixed size, in the same undo step, as Figma does.
+The tool T or Add text arms, as Figma's Text tool. A click on the slide places Auto width text with its top left at the click, a drag of three pixels or more draws a Fixed size box, and either goes back to Move. Esc or V puts the tool down. A drag snaps both corners as a resize does, with red guides along the box's edges, and Control turns it off; a click lands where it is. In grid view Add text still adds text to the chosen slide at once. Resizing a text layer's box by hand makes it Fixed size, in the same undo step, as Figma does.
 _Avoid_: text box tool, insert text
+
+**placed text**:
+Text the Text tool placed that has no characters yet. It lives only in the open tab: no undo step, no stored edit, nothing sent. Its first character stores the add, in one undo step, and the typing after it is the next step. When editing ends with no characters, by Escape or a click away from its words, it is removed and focus stays on the slide, as Figma and PowerPoint remove an empty text box. A click into a panel that keeps the selection does not end editing.
+_Avoid_: draft text, pending text
 
 **text layer inset**:
 The room between a text layer's box and its words. Text a person or an agent adds in AirDesign has none, as a Figma text layer has no padding, and its file writes `lIns="0" tIns="0" rIns="0" bIns="0"` so PowerPoint does not add its 7.2 pt and 3.6 pt. Imported text keeps its own inset.

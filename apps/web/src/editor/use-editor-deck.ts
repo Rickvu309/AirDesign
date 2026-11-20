@@ -127,6 +127,7 @@ export function useEditorDeck(id: string) {
     notesBar,
     shown,
     inserts,
+    placedText: inserts.placedText,
     changeElement,
     duplicateLayers,
     pasteLayers,

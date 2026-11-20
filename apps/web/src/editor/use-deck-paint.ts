@@ -16,6 +16,7 @@ import { type PictureSources } from "@/picture-fill"
 import { type PictureStore } from "@/picture-tool"
 import { layoutChoices } from "@/slide-layout"
 import { structureOf } from "@/table-hook"
+import { placedOn, type PlacedText } from "@/editor/placed-text"
 
 export type DeckPaint = ReturnType<typeof useDeckPaint>
 
@@ -64,6 +65,7 @@ export function useDeckPaint(
   const structure = useRef("")
   const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
+  const placed = useRef<PlacedText | null>(null)
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const displayed = useRef(partsWatch())
   const [entering, setEntering] = useState<Entering | null>(null)
@@ -94,7 +96,8 @@ export function useDeckPaint(
     setCurrent(0)
   }
 
-  function showRegister(register: Register | null, whole?: "whole") {
+  function showRegister(saved: Register | null, whole?: "whole") {
+    const register = saved === null ? null : placedOn(saved, placed.current)
     const before = whole === "whole" ? null : painted.current
     const framed = register === null ? null : withFileFloors(register, shownParts.current)
     const next = paint(store.current, shownParts.current, framed, busy.current, pictureTool.store.bytes, before)
@@ -142,6 +145,7 @@ export function useDeckPaint(
     shapes,
     shownParts,
     shownRegister,
+    placed,
     editParts,
     displayParts,
     displayed: displayed.current,

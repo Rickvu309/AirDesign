@@ -1,0 +1,116 @@
+import { decide, elementId, openRegister, type Register, type SlideCommand, type SlideId } from "@airdesign/document"
+import { expect, it } from "vitest"
+import { hasWords, placedOn, placingText, type PlacedText } from "./placed-text"
+import { onSlide, twoBoxSlide, xml } from "@/slide-fixtures"
+import type { UndoEntry } from "@/undo-list"
+
+const room = { width: 12_192_000, height: 6_858_000 }
+const words = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Hi" }] }])
+const empty = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "" }] }])
+
+function placingDeck() {
+  const parts = onSlide(xml(twoBoxSlide))
+  const stored: SlideCommand[] = []
+  const recorded: UndoEntry[] = []
+  const shown: Register[] = []
+  const entered: string[] = []
+  let saved = 0
+  let stops = 0
+  let register = openRegister("", "")
+  const held: { current: PlacedText | null } = { current: null }
+  const link = {
+    openDeck: async () => ({ ok: true as const, register }),
+    enqueueSlide: async (_deck: string, file: readonly SlideId[], edit: SlideCommand) => {
+      const decision = decide(register, { command: "slide", file, edit })
+      if (decision.decision !== "apply") return { ok: false }
+      register = decision.register
+      stored.push(edit)
+      return { ok: true }
+    },
+  }
+  const placing = placingText(
+    {
+      id: "deck-one",
+      held,
+      parts: () => parts,
+      room: () => room,
+      index: () => 0,
+      showSaved: async () => {
+        saved += 1
+        shown.push(placedOn(register, held.current))
+      },
+      enter: (node) => entered.push(node),
+      record: (entry) => recorded.push(entry),
+    },
+    link,
+  )
+  const keys = { stop: () => (stops += 1), take: () => "" }
+  return { placing, keys, stored, recorded, shown, entered, held, saved: () => saved, stops: () => stops }
+}
+
+it("paints and enters text placed with the Text tool without storing an add or an undo step", async () => {
+  const deck = placingDeck()
+  await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  expect(deck.stored).toEqual([])
+  expect(deck.recorded).toEqual([])
+  expect(deck.entered).toEqual(["256.4"])
+  expect(deck.shown.at(-1)?.order).toContainEqual(expect.objectContaining({ slide: "element-add" }))
+})
+
+it("drops placed text left with no words: nothing stored, no undo step, and the saved slide painted again", async () => {
+  const deck = placingDeck()
+  await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  expect(await deck.placing.typed(elementId("256.4"), empty)).toBe(false)
+  deck.placing.left(elementId("256.4"))
+  expect(deck.held.current).toBeNull()
+  expect(deck.saved()).toBe(2)
+  expect(deck.shown.at(-1)?.order).toEqual([])
+  expect(deck.stored).toEqual([])
+  expect(deck.recorded).toEqual([])
+})
+
+it("stores the add with its first words in one undo step, once, however many keys arrive before it lands", async () => {
+  const deck = placingDeck()
+  await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  const node = deck.held.current?.node
+  if (node === undefined) throw new Error("not placed")
+  const first = deck.placing.typed(node, words)
+  const second = deck.placing.typed(node, words)
+  expect(await first).toBe(true)
+  expect(await second).toBe(true)
+  expect(deck.stored).toEqual([
+    expect.objectContaining({ slide: "element-add", element: expect.objectContaining({ node, value: "" }) }),
+  ])
+  expect(deck.recorded.map((entry) => entry.name)).toEqual(["add-box"])
+  expect(await deck.placing.typed(node, words)).toBe(true)
+  deck.placing.left(node)
+  expect(deck.saved()).toBe(1)
+})
+
+it("lets edits of any other text through at once", async () => {
+  const deck = placingDeck()
+  expect(await deck.placing.typed(elementId("256.2"), words)).toBe(true)
+})
+
+it("counts a text with any character as words and an empty one as none", () => {
+  expect(hasWords(words)).toBe(true)
+  expect(hasWords(empty)).toBe(false)
+  expect(
+    hasWords(
+      JSON.stringify([
+        { from: 0, runs: [] },
+        { from: 0, runs: [{ from: 0, text: "" }] },
+      ]),
+    ),
+  ).toBe(false)
+})
+
+it("keeps placed text painted through a repaint from the saved register, and lets it go once stored or left", async () => {
+  const deck = placingDeck()
+  await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  const saved = openRegister("", "")
+  const adds = (register: Register) => register.order.filter((command) => command.slide === "element-add").length
+  expect(adds(placedOn(saved, deck.held.current))).toBe(1)
+  deck.placing.left(elementId("256.4"))
+  expect(adds(placedOn(saved, deck.held.current))).toBe(0)
+})
