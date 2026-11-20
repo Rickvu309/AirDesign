@@ -30,6 +30,7 @@ Preconditions:
 
 - **Grid slide group.** `$V journey <run> grid-group-add` imports ten slides, previews without saving, adds an interior slide group, reads the server’s semantic anchor and folded slide groups, undoes, redoes and reloads. It then adds a slide group in a deck with named PowerPoint sections and checks that the section markers remain separate.
 - **Run it.** `$V journey <run> slide-commands`. Prints `"passed":true`.
+- **Several slides in the list.** `$V journey <run> slide-list-select`. Shift-click selects a range, Ctrl/Cmd-click adds or removes one slide, and Design says how many are selected. Ctrl/Cmd+D, Delete, Undo, the slide menu and a drag act on the whole set through the same set commands as Grid. Evidence `NN-three-selected`, `NN-middle-taken-out`, `NN-set-duplicated`, `NN-set-deleted`, `NN-set-dragged`, `NN-reloaded`.
 - **Add and type.** `New deck` > `Blank deck`, click `Add slide`, type `Second slide` in the new title. Evidence `NN-added-and-typed`.
 - **Duplicate.** Click entry 2, press Ctrl/Cmd+D. Three entries; entry 3 reads `Second slide`. Evidence `NN-duplicated`.
 - **Move.** Click entry 3, Alt+ArrowUp; then click entry 2, Alt+ArrowUp. Entry 1 reads `Second slide`. Evidence `NN-moved-to-top`.

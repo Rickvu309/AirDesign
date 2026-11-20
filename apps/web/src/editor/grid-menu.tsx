@@ -10,7 +10,12 @@ export type MenuAnchor = { readonly getBoundingClientRect: () => DOMRect }
 
 export type GridMenu = { readonly index: number; readonly anchor: MenuAnchor; readonly pointer: boolean }
 
-const gridChange: Record<SlideKey, GridCommand> = { clone: "clone", remove: "remove", up: "earlier", down: "later" }
+export const gridChange: Record<SlideKey, GridCommand> = {
+  clone: "clone",
+  remove: "remove",
+  up: "earlier",
+  down: "later",
+}
 
 export function pointAt(x: number, y: number): MenuAnchor {
   return { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) }

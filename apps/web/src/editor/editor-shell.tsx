@@ -153,7 +153,9 @@ export function EditorShell({
   const watched = deck?.displayed
   const version = watched?.version ?? unchanged
   useSyncExternalStore(watched?.subscribe ?? unwatched, version, version)
-  const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
+  const listShown = rail === "slides" && !bare && !listHidden
+  const sideContent =
+    typeof side === "function" ? side(gridOpen || (listShown && deck !== undefined) ? selectedSlides : 1) : side
   const pointer = usePointerTool(deck !== undefined, !gridOpen)
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
@@ -311,8 +313,9 @@ export function EditorShell({
   }
   return withShortcuts(
     <div className="relative flex h-full min-h-0" inert={present.show !== null}>
-      {rail === "slides" && !bare && !listHidden ? (
+      {listShown ? (
         <SlideSidebar
+          onSlideSelection={setSelectedSlides}
           run={run}
           title={title}
           {...(deck === undefined

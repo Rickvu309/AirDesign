@@ -26,6 +26,17 @@ import { heldGroups, groupAt } from "@/editor/collapsed-groups"
 import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/slide-layout"
 import { cn } from "@/lib/class-names"
+import { gridMoveAt } from "@/editor/editor-grid-keys"
+import { gridGroups } from "@/editor/grid-group"
+import { gridDrop } from "@/editor/grid-drop"
+import { gridMoveMessage } from "@/editor/grid-group-frame"
+import { gridChange } from "@/editor/grid-menu"
+import type { GridPick } from "@/editor/grid-selection"
+import { gridSlideActions } from "@/editor/grid-slide-actions"
+import { heldSlides, livePick, pressedPick, setDropPlace, type SlidePress } from "@/editor/slide-list-pick"
+import type { SlideMenuSet } from "@/editor/slide-menu"
+
+const setDirection: Readonly<Record<"up" | "down", "earlier" | "later">> = { up: "earlier", down: "later" }
 
 export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
 
@@ -84,6 +95,7 @@ export function SlideSidebar({
   onGrid,
   save = null,
   layers = null,
+  onSlideSelection,
 }: {
   run: SidebarRun
   title: string
@@ -93,12 +105,8 @@ export function SlideSidebar({
   onGrid?: () => void
   save?: SaveStatus | null
   layers?: ReactNode
+  onSlideSelection?: (count: number) => void
 }) {
-  const onSelection = strip?.onSelection
-  const current = strip?.current
-  useLayoutEffect(() => {
-    if (current !== undefined) onSelection?.([current])
-  }, [onSelection, current])
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
       {strip === undefined ? (
@@ -116,7 +124,7 @@ export function SlideSidebar({
             {...(onRename === undefined ? {} : { onRename })}
             {...(onTrash === undefined ? {} : { onTrash })}
           />
-          <DeckStrip strip={strip} />
+          <DeckStrip strip={strip} onSlideSelection={onSlideSelection} />
         </>
       )}
       {layers}
@@ -136,20 +144,27 @@ function rovedTo(key: string, count: number, at: number): number {
   return key === "Home" ? 0 : count - 1
 }
 
-function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip) {
+function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip, drop: () => void) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
   if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
   const all = stopsOf(event.currentTarget)
   const at = all.findIndex((each) => each === document.activeElement)
   if (at === -1) return
   event.preventDefault()
+  drop()
   const target = all[rovedTo(event.key, all.length, at)]
   target?.focus()
   const entry = target?.getAttribute("data-slide-entry")
   if (entry !== null && entry !== undefined) strip.onSelect(Number(entry) - 1)
 }
 
-function DeckStrip({ strip }: { strip: SlideStrip }) {
+function DeckStrip({
+  strip,
+  onSlideSelection,
+}: {
+  strip: SlideStrip
+  onSlideSelection: ((count: number) => void) | undefined
+}) {
   const list = useRef<HTMLDivElement>(null)
   const following = useRef(false)
   const { current, count } = strip
@@ -170,6 +185,54 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
     [],
   )
   useSlideSay(strip.say, announce)
+  const [picked, setPicked] = useState<GridPick>(null)
+  const live = livePick(picked, strip.current, strip.count, strip.slideIds)
+  const held = heldSlides(live, strip.current)
+  const heldKey = held.join(",")
+  const onSelection = strip.onSelection
+  useLayoutEffect(() => {
+    const slides = heldKey.split(",").map(Number)
+    onSelection?.(slides)
+    onSlideSelection?.(slides.length)
+  }, [onSelection, onSlideSelection, heldKey])
+  const press = (index: number, how: SlidePress) => {
+    const next = pressedPick(live, index, strip.current, how)
+    setPicked(next.pick)
+    if (next.pick !== null && how !== "menu") announce(slideListCopy.selected(next.pick.slides.size))
+    strip.onSelect(next.current)
+  }
+  const moveSlides = (moved: readonly number[], at: number, side: GridMoveSide) => {
+    const groupRanges = gridGroups(strip)
+    const first = gridDrop(groupRanges, moved, at, side)
+    if (first === null || strip.onMoveMany === undefined) return
+    following.current = true
+    strip.onMoveMany(moved, at, side)
+    setPicked(moved.length > 1 ? { anchor: first, slides: new Set(moved.map((_, offset) => first + offset)) } : null)
+    announce(gridMoveMessage(groupRanges, moved, at, false))
+  }
+  const actOnSet = gridSlideActions(strip, live, {
+    follow: () => {
+      following.current = true
+    },
+    pick: setPicked,
+    open: strip.onSelect,
+    moveSlides,
+    announce,
+  })
+  const inSet = (index: number) => live?.slides.has(index) === true
+  const setChange = (index: number): ((change: SlideKey) => void) | null =>
+    inSet(index) ? (change) => actOnSet(gridChange[change], index) : null
+  const menuSet: SlideMenuSet | undefined =
+    live === null
+      ? undefined
+      : {
+          size: held.length,
+          skipped: held.every((index) => strip.skipped?.[index] === true),
+          allowed: (change) => {
+            if (change === "clone" || change === "remove") return strip.onChangeSet !== undefined
+            return strip.onMoveMany !== undefined && gridMoveAt(held, strip.count, setDirection[change]) !== null
+          },
+        }
   const [seen, setSeen] = useState(strip.current)
   if (seen !== strip.current) {
     setSeen(strip.current)
@@ -182,14 +245,20 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       index={index + 1}
       count={strip.count}
       active={index === strip.current}
+      picked={inSet(index)}
+      menuSet={inSet(index) ? menuSet : undefined}
       skipped={strip.skipped?.[index] === true}
-      onSkip={strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.([index], skipped)}
+      onSkip={
+        strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.(inSet(index) ? held : [index], skipped)
+      }
       reachable={reachable === `slide:${String(index)}`}
-      onSelect={() => strip.onSelect(index)}
-      onKeyDown={(event) => onSlideKey(strip, index, event, announce)}
+      onSelect={(how) => press(index, how)}
+      onKeyDown={(event) => onSlideKey(strip, index, event, announce, setChange(index))}
       onChoose={(change) => {
         following.current = true
-        runSlideChange(strip, index, change, announce)
+        const onSet = setChange(index)
+        if (onSet === null) runSlideChange(strip, index, change, announce)
+        else onSet(change)
       }}
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", String(index))
@@ -200,6 +269,11 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
         event.preventDefault()
         const from = Number(event.dataTransfer.getData("text/plain"))
         if (!Number.isInteger(from) || from === index) return
+        if (inSet(from) && strip.onMoveMany !== undefined) {
+          const at = setDropPlace(held, index)
+          if (at !== null) moveSlides(held, at, "same")
+          return
+        }
         announce(slideListCopy.moved(from + 1, index + 1))
         strip.onMove?.(from, index)
       }}
@@ -264,7 +338,7 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
           const key = event.target.getAttribute("data-stop")
           if (key !== null) setStop(key)
         }}
-        onKeyDown={(event) => onListKey(event, strip)}
+        onKeyDown={(event) => onListKey(event, strip, () => setPicked(null))}
         onKeyDownCapture={(event) => {
           if (slideKey(event) !== null) following.current = true
         }}
@@ -437,11 +511,13 @@ function onSlideKey(
   index: number,
   event: KeyboardEvent<HTMLButtonElement>,
   announce: (text: string) => void,
+  onSet: ((change: SlideKey) => void) | null,
 ): void {
   const change = slideKey(event)
   if (change === null) return
   event.preventDefault()
-  runSlideChange(strip, index, change, announce)
+  if (onSet === null) runSlideChange(strip, index, change, announce)
+  else onSet(change)
 }
 
 function GroupHead({

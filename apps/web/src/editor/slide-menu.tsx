@@ -15,6 +15,12 @@ const keys: Record<SlideKey, { readonly label: string; readonly shown: string; r
 
 const order: readonly SlideKey[] = ["clone", "remove", "up", "down"]
 
+export type SlideMenuSet = {
+  readonly size: number
+  readonly allowed: (change: SlideKey) => boolean
+  readonly skipped: boolean
+}
+
 export function slideChangeAllowed(change: SlideKey, index: number, count: number): boolean {
   if (change === "clone") return true
   if (change === "remove") return count > 1
@@ -31,6 +37,7 @@ export const SlideMenu = memo(function SlideMenu({
   onChoose,
   skipped,
   onSkip,
+  set,
 }: {
   anchor: RefObject<HTMLButtonElement | null>
   index: number
@@ -40,6 +47,7 @@ export const SlideMenu = memo(function SlideMenu({
   onChoose: (change: SlideKey) => void
   skipped: boolean
   onSkip: ((skipped: boolean) => void) | undefined
+  set?: SlideMenuSet | undefined
 }) {
   useEffect(() => {
     if (!open) return
@@ -68,8 +76,24 @@ export const SlideMenu = memo(function SlideMenu({
         sideOffset={8}
         className="flex w-[188px] min-w-0 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
       >
-        <SlideMenuRows index={index} count={count} onChoose={onChoose} />
-        {onSkip === undefined ? null : <SlideSkipItem skipped={skipped} onSkip={onSkip} />}
+        {set === undefined ? (
+          <SlideMenuRows index={index} count={count} onChoose={onChoose} />
+        ) : (
+          <SlideMenuRows
+            index={index}
+            count={count}
+            onChoose={onChoose}
+            allowed={set.allowed}
+            labels={slideListCopy.setActions(set.size)}
+          />
+        )}
+        {onSkip === undefined ? null : (
+          <SlideSkipItem
+            skipped={set?.skipped ?? skipped}
+            onSkip={onSkip}
+            {...(set === undefined ? {} : { count: set.size })}
+          />
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
