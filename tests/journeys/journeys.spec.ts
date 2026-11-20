@@ -106,6 +106,7 @@ for (const name of [
   "auto-layout-text",
   "auto-layout-opacity",
   "auto-layout-measure",
+  "auto-layout-nested",
   "group-transform",
   "mask-group",
   "eyedropper",

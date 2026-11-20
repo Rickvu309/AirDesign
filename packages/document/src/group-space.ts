@@ -83,7 +83,8 @@ function frameAbove(register: Register, node: ElementId): ElementId | null {
 }
 
 function laidPlace(register: Register, node: ElementId, frame: ElementId, settled: boolean): Place | null {
-  if (groupParent(register, frame) !== null) return null
+  const above = groupParent(register, frame)
+  if (above !== null && (above === undefined || frameBackdrop(register, above) === null)) return null
   const view = settled ? readLayout(register, frame) : unsettledLayout(register, frame)
   const box = view?.children.find((child) => child.node === node)?.box
   const own = placeOf(register, node)

@@ -1,4 +1,13 @@
-import { layoutNodes, opaque, readLayout, shapeOf, type Alpha, type Register } from "@airdesign/document"
+import {
+  layoutNodes,
+  opaque,
+  readLayout,
+  shapeOf,
+  type Alpha,
+  type ElementId,
+  type LayoutView,
+  type Register,
+} from "@airdesign/document"
 import { scaledBytes } from "./alpha-codec.js"
 import type { MarkupElement } from "./element-span.js"
 import { changedPart } from "./fill-host.js"
@@ -46,6 +55,16 @@ function fadedLayer(parts: Parts, at: ElementAt, scale: Alpha): Parts {
   return next
 }
 
+function layersIn(register: Register, view: LayoutView): readonly ElementId[] {
+  return [
+    view.backdrop,
+    ...view.children.flatMap((child) => {
+      const inner = readLayout(register, child.node)
+      return inner === null ? [child.node] : layersIn(register, inner)
+    }),
+  ]
+}
+
 export function fadedFrames(parts: Parts, opened: Register): Parts {
   const register = withFiledFrames(parts, opened)
   let next = parts
@@ -54,7 +73,7 @@ export function fadedFrames(parts: Parts, opened: Register): Parts {
     const slide = shapeOf(node).slide
     const part = slidePart(next, slide)
     if (view === null || view.opacity >= opaque || part === null) continue
-    for (const layer of [view.backdrop, ...view.children.map((child) => child.node)])
+    for (const layer of layersIn(register, view))
       next = fadedLayer(next, { slide, part, shape: shapeOf(layer).shape }, view.opacity)
   }
   return next

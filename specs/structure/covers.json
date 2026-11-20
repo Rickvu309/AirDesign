@@ -10,8 +10,8 @@
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "245b1b88be6c",
-      "blob": "ad18e25defd96e960670fe0f0b63dfa00f69b8db"
+      "digest": "641e0e7f06d3",
+      "blob": "8a1260f6c01085bbce2dde39f632415c3692d8e9"
     },
     {
       "file": "packages/document/src/group-turn.ts",
@@ -22,8 +22,8 @@
     {
       "file": "packages/document/src/group-space.ts",
       "names": ["*"],
-      "digest": "ccaf930c7377",
-      "blob": "f18fec4d6178143a00a6f5878fe5f8e1580667aa"
+      "digest": "89121de0848a",
+      "blob": "191f20ded49f52710bb84ba5cfcf979f99a47ecf"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -34,26 +34,26 @@
     {
       "file": "packages/document/src/frame-layout.ts",
       "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow"],
-      "digest": "0b355dec5f85",
-      "blob": "d41c8c4509816d102dd937957777b9adb9ee91d9"
+      "digest": "538acca21493",
+      "blob": "c95ccc9a7f577f5bdc4ec1bdb1b02eb97b1f231b"
     },
     {
       "file": "packages/document/src/group-join.ts",
       "names": ["joinTurn", "joinEdit", "spotNow", "placedRows", "removedGroups", "emptiedGroups"],
       "digest": "d938e08b16f5",
-      "blob": "37c122202b5dd5821932f35244caeb3aa79ff07f"
+      "blob": "e5b62f5a24129f0cda646950e5af702aaea0f034"
     },
     {
       "file": "packages/document/src/group-refusal.ts",
       "names": ["*"],
-      "digest": "2cb78b1f9616",
-      "blob": "2c9892f127ee151339c4ba3470e813a09b8ad33b"
+      "digest": "7b9029d6cfca",
+      "blob": "b4c4e63834e0d3659fedd793502ec64e6a6b8c75"
     },
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal"],
       "digest": "936c7ff661c1",
-      "blob": "07df989cc3224e57318febf56ee7662b7144b243"
+      "blob": "d79e04c9a08861c0b02821d69d75497af76d1f96"
     }
   ]
 }

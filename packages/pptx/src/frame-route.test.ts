@@ -251,3 +251,76 @@ describe("auto layout frame in PowerPoint", () => {
     expect(reread(scaled)?.framing).toBeUndefined()
   })
 })
+
+describe("a frame inside an auto layout frame in PowerPoint", () => {
+  function nested(): Register {
+    const inner = gapped(wrapped(opened), 50000)
+    const changed = changeLayout(inner, { wrap: [node(20), node(4)], slide, node: node(22), backdrop: node(23) })
+    if (changed === null || !("slide" in changed)) throw new Error("wrap")
+    const outer = ran(inner, [slideCommand(changed.slide)])
+    return ran(outer, [{ command: "person", v: 13, patch: { layout: { gap: { set: 20000 } } }, node: node(22) }])
+  }
+
+  it("writes the inner frame's group inside the outer one, each child where the two layouts put it", () => {
+    const shown = exported(nested())
+    expect(painted(shown, 4)).toMatchObject({ x: 50000, y: 50000, width: 10000, height: 10000 })
+    expect(painted(shown, 21)).toMatchObject({ x: 80000, y: 50000, width: 350000, height: 100000 })
+    expect(painted(shown, 3)).toMatchObject({ x: 80000, y: 50000, width: 200000, height: 100000 })
+    expect(painted(shown, 5)).toMatchObject({ x: 330000, y: 50000, width: 100000, height: 100000 })
+    expect(painted(shown, 23)).toMatchObject({ x: 50000, y: 50000, width: 380000, height: 100000 })
+    const groups = readShapes(shown).filter((each) => ["4", "20", "21", "3", "5", "23"].includes(each.shape))
+    expect(groups.map((each) => [each.shape, each.group ?? null])).toEqual([
+      ["23", "22"],
+      ["4", "22"],
+      ["20", "22"],
+      ["21", "20"],
+      ["3", "20"],
+      ["5", "20"],
+    ])
+  })
+
+  it("reads both frames back from their tags, and gives the same bytes back untouched", () => {
+    const shown = exported(nested())
+    const reread = indexPackage(shown).elements
+    expect(reread.find((element) => element.node === node(22))?.framing).toEqual({
+      backdrop: node(23),
+      children: [node(4), node(20)],
+      layout: { flow: "horizontal", gap: 20000, padding: [0, 0, 0, 0], align: "topLeft" },
+    })
+    expect(reread.find((element) => element.node === node(20))?.framing).toEqual({
+      backdrop: node(21),
+      children: [node(3), node(5)],
+      layout: { flow: "horizontal", gap: 50000, padding: [0, 0, 0, 0], align: "topLeft" },
+    })
+    expect(
+      exportParts(shown, { ...openRegister("", ""), index: { ...indexPackage(shown), total: 0, pages: [] } }),
+    ).toBe(shown)
+  })
+
+  it("writes a shape dropped into the inner frame at its place in the inner row", () => {
+    const element = {
+      node: node(30),
+      kind: "shape" as const,
+      value: "",
+      box: { x: 2_000_000, y: 2_000_000, cx: 100000, cy: 100000 },
+      grouped: false,
+    }
+    const before = ran(nested(), [slideCommand({ slide: "element-add", id: slide, element })])
+    const join = changeLayout(before, { place: node(30), box: { x: 250000, y: 60000, cx: 100000, cy: 100000 }, file })
+    if (join === null || !("turn" in join)) throw new Error("join")
+    expect(join.turn[0]).toMatchObject({
+      command: "slide",
+      edit: { slide: "element-join", frame: node(20), before: node(5) },
+    })
+    const shown = exported(ran(before, join.turn))
+    expect(painted(shown, 3)).toMatchObject({ x: 80000, y: 50000 })
+    expect(painted(shown, 30)).toMatchObject({ x: 330000, y: 50000, width: 100000, height: 100000 })
+    expect(painted(shown, 5)).toMatchObject({ x: 480000, y: 50000 })
+  })
+
+  it("moves the outer frame's next child when the inner frame's gap grows", () => {
+    const shown = exported(gapped(nested(), 150000))
+    expect(painted(shown, 5).x).toBe(430000)
+    expect(painted(shown, 23).width).toBe(480000)
+  })
+})
