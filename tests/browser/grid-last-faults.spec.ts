@@ -110,7 +110,7 @@ for (const target of ["element", "slide"] as const) {
 test("five slide Undos and Redos focus the restored selection", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, 7, groupSizes(7))
   const before = await saved.rows()
-  const start = await revision(stack, saved)
+  const [first, second, third, fourth] = saved.ids
   await entry(page, 1).focus()
   await page.keyboard.press("Tab")
   await expect(addAfter(page)).toBeFocused()
@@ -123,16 +123,21 @@ test("five slide Undos and Redos focus the restored selection", async ({ page, c
   await page.keyboard.press("Shift+ArrowRight")
   await page.keyboard.press("Shift+ArrowRight")
   await page.keyboard.press("Alt+ArrowDown")
-  await expect.poll(() => revision(stack, saved)).toBe(start + 3)
+  await expect
+    .poll(saved.rows)
+    .toEqual([[third, first, expect.any(String), second, fourth], [expect.any(String)], ...before.slice(1)])
+  const moved = await saved.rows()
   await page.keyboard.press("ControlOrMeta+d")
   await expect(cards(page)).toHaveCount(12)
+  await expect.poll(saved.order).toHaveLength(12)
   await page.keyboard.press("Delete")
   await expect(cards(page)).toHaveCount(9)
-  await expect.poll(() => revision(stack, saved)).toBe(start + 5)
+  await expect.poll(saved.rows).toEqual(moved)
+  const start = await revision(stack, saved)
   const misplaced = []
   for (const [index, count] of [12, 9, 9, 8, 7, 8, 9, 9, 12, 9].entries()) {
     await page.keyboard.press(index < 5 ? "ControlOrMeta+z" : "ControlOrMeta+Shift+z")
-    await expect.poll(() => revision(stack, saved)).toBe(start + 6 + index)
+    await expect.poll(() => revision(stack, saved)).toBe(start + index + 1)
     await expect(cards(page)).toHaveCount(count)
     if (index === 4) expect(await saved.rows()).toEqual(before)
     const focus = await focusMeasure(page)
