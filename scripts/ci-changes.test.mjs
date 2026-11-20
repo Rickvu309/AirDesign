@@ -137,7 +137,16 @@ try {
     same(
       `${file} runs the full browser matrix`,
       jobsOf(shared).filter((job) => job.startsWith("browser")),
-      ["browser 1/6", "browser 2/6", "browser 3/6", "browser 4/6", "browser 5/6", "browser 6/6"],
+      [
+        "browser 1/8",
+        "browser 2/8",
+        "browser 3/8",
+        "browser 4/8",
+        "browser 5/8",
+        "browser 6/8",
+        "browser 7/8",
+        "browser 8/8",
+      ],
     )
     same(`${file} also reaches PowerPoint`, [shared.pptx, shared.corpus], ["true", "true"])
   }
