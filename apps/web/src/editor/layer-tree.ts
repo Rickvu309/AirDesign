@@ -26,10 +26,13 @@ export type ShownLayer = {
 
 export type LayerSide = "above" | "below"
 
-export type LayerDrop = {
+export type LayerZone = LayerSide | "inside"
+
+export type LayerPlace = {
   readonly node: ElementId
+  readonly parent: ElementId | null
   readonly before: ElementId | null
-  readonly among: readonly ElementId[]
+  readonly mark: readonly [row: ElementId, zone: LayerZone, depth: number]
 }
 
 export function layerTree(rows: readonly LayerRow[]): readonly Layer[] {
@@ -85,24 +88,69 @@ export function layerRange(shown: readonly ShownLayer[], from: ElementId, to: El
   return ids.slice(Math.min(start, end), Math.max(start, end) + 1)
 }
 
-function siblingsOf(tree: readonly Layer[], node: ElementId): readonly Layer[] | null {
-  const path = pathTo(tree, node)
-  if (path === null) return null
-  return path.length === 1 ? tree : (path.at(-2)?.layers ?? null)
+function layerOf(tree: readonly Layer[], node: ElementId): Layer | null {
+  return pathTo(tree, node)?.at(-1) ?? null
 }
 
-export function layerDrop(
+function layersIn(tree: readonly Layer[], parent: ElementId | null): readonly Layer[] {
+  return parent === null ? tree : (layerOf(tree, parent)?.layers ?? [])
+}
+
+export function holdsLayers(layer: Layer): boolean {
+  return layer.kind === "group" || layer.kind === "frame"
+}
+
+function siblingsBut(tree: readonly Layer[], parent: ElementId | null, node: ElementId): readonly ElementId[] {
+  return layersIn(tree, parent)
+    .map((layer) => layer.node)
+    .filter((each) => each !== node)
+}
+
+type Spot = { readonly parent: ElementId | null; readonly before: ElementId | null }
+
+function levelUnder(shown: readonly ShownLayer[], at: number, depth: number | undefined): number {
+  const here = shown[at]?.depth ?? 0
+  const next = shown[at + 1]?.depth ?? 0
+  if (depth === undefined || next >= here) return here
+  return Math.min(here, Math.max(next, depth))
+}
+
+export function layerPlace(
   tree: readonly Layer[],
+  shown: readonly ShownLayer[],
   node: ElementId,
   target: ElementId,
-  side: LayerSide,
-): LayerDrop | null {
-  const siblings = siblingsOf(tree, node)
-  if (node === target || siblings === null || !siblings.some((layer) => layer.node === target)) return null
-  const among = siblings.map((layer) => layer.node).toReversed()
-  const rest = among.filter((each) => each !== node)
-  const at = rest.indexOf(target) + (side === "above" ? 1 : 0)
-  const before = rest[at] ?? null
-  const now = among[among.indexOf(node) + 1] ?? null
-  return before === now ? null : { node, before, among }
+  zone: LayerZone,
+  depth?: number,
+): LayerPlace | null {
+  const path = pathTo(tree, target)
+  const at = shown.findIndex((each) => each.layer.node === target)
+  const row = shown[at]
+  if (path === null || row === undefined || path.some((layer) => layer.node === node)) return null
+  const spot = (): { readonly place: Spot; readonly level: number } | null => {
+    if (zone === "inside")
+      return holdsLayers(row.layer) ? { place: { parent: target, before: null }, level: row.depth } : null
+    if (zone === "above") {
+      const front = siblingsBut(tree, row.layer.parent, node)
+      return { place: { parent: row.layer.parent, before: front[front.indexOf(target) - 1] ?? null }, level: row.depth }
+    }
+    if (row.open === true) return { place: { parent: target, before: null }, level: row.depth + 1 }
+    const level = levelUnder(shown, at, depth)
+    const anchor = path[path.length - 1 - (row.depth - level)]
+    if (anchor === undefined) return null
+    return { place: { parent: anchor.parent, before: anchor.node }, level }
+  }
+  const found = spot()
+  if (found === null) return null
+  const { parent, before } = found.place
+  const now = layerOf(tree, node)
+  if (now === null) return null
+  if (now.parent === parent && frontOf(tree, node) === before) return null
+  return { node, parent, before, mark: [target, zone, found.level] }
+}
+
+function frontOf(tree: readonly Layer[], node: ElementId): ElementId | null {
+  const parent = layerOf(tree, node)?.parent ?? null
+  const siblings = layersIn(tree, parent).map((layer) => layer.node)
+  return siblings[siblings.indexOf(node) - 1] ?? null
 }

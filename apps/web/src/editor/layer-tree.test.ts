@@ -1,6 +1,15 @@
-import { elementId, type ElementId } from "@airdesign/document"
+import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { layerDrop, layerRange, layerTree, layersUnder, openedFor, shownLayers, type LayerRow } from "./layer-tree"
+import {
+  layerPlace,
+  layerRange,
+  layerTree,
+  layersUnder,
+  openedFor,
+  shownLayers,
+  type LayerRow,
+  type LayerZone,
+} from "./layer-tree"
 
 const id = (shape: number) => elementId(`256.${String(shape)}`)
 
@@ -61,20 +70,36 @@ it("takes every shown layer between two clicked layers, in either direction", ()
   expect(layerRange(shown, id(77), id(3))).toEqual([id(3)])
 })
 
-it("turns a drop above or below a sibling into the layer it now sits before, back first", () => {
-  const tree = layerTree([row(2), row(3), row(4)])
-  const among: readonly ElementId[] = [id(2), id(3), id(4)]
-  expect(layerDrop(tree, id(2), id(4), "above")).toEqual({ node: id(2), before: null, among })
-  expect(layerDrop(tree, id(4), id(2), "below")).toEqual({ node: id(4), before: id(2), among })
-  expect(layerDrop(tree, id(2), id(4), "below")).toEqual({ node: id(2), before: id(4), among })
-  expect(layerDrop(tree, id(4), id(3), "above")).toBeNull()
-  expect(layerDrop(tree, id(2), id(3), "below")).toBeNull()
-  expect(layerDrop(tree, id(3), id(3), "above")).toBeNull()
+const group = (shape: number, parent: number | null = null): LayerRow => ({ ...row(shape, parent), kind: "group" })
+
+const nested = layerTree([row(2), group(9), row(3, 9), row(4, 9), row(5)])
+const opened = shownLayers(nested, new Set([id(9)]))
+const place = (node: number, target: number, zone: LayerZone, depth?: number) =>
+  layerPlace(nested, opened, id(node), id(target), zone, depth)
+
+it("turns a drop above or below a layer into its new parent and the layer it sits behind", () => {
+  expect(place(2, 5, "above")).toEqual({ node: id(2), parent: null, before: null, mark: [id(5), "above", 0] })
+  expect(place(5, 2, "below")).toEqual({ node: id(5), parent: null, before: id(2), mark: [id(2), "below", 0] })
+  expect(place(2, 3, "above")).toEqual({ node: id(2), parent: id(9), before: id(4), mark: [id(3), "above", 1] })
+  expect(place(4, 5, "above")).toEqual({ node: id(4), parent: null, before: null, mark: [id(5), "above", 0] })
 })
 
-it("refuses a drop onto a layer with another parent", () => {
-  const tree = layerTree(rows)
-  expect(layerDrop(tree, id(2), id(3), "above")).toBeNull()
-  expect(layerDrop(tree, id(3), id(4), "below")).toBeNull()
-  expect(layerDrop(tree, id(3), id(4), "above")).toEqual({ node: id(3), before: null, among: [id(3), id(4)] })
+it("drops into a group on its row's middle, or just under its open row, at the front of its layers", () => {
+  expect(place(2, 9, "inside")).toEqual({ node: id(2), parent: id(9), before: null, mark: [id(9), "inside", 0] })
+  expect(place(5, 9, "below")).toEqual({ node: id(5), parent: id(9), before: null, mark: [id(9), "below", 1] })
+  expect(place(5, 2, "inside")).toBeNull()
+})
+
+it("lets the pointer's indent choose the level under the last layer of a group", () => {
+  expect(place(5, 3, "below", 0)).toEqual({ node: id(5), parent: null, before: id(9), mark: [id(3), "below", 0] })
+  expect(place(5, 3, "below", 1)).toEqual({ node: id(5), parent: id(9), before: id(3), mark: [id(3), "below", 1] })
+  expect(place(5, 3, "below", 7)).toEqual(place(5, 3, "below", 1))
+  expect(place(5, 4, "below", 0)).toEqual({ node: id(5), parent: id(9), before: id(4), mark: [id(4), "below", 1] })
+})
+
+it("refuses a drop that changes nothing or puts a group inside itself", () => {
+  expect(place(5, 9, "above")).toBeNull()
+  expect(place(3, 4, "below")).toBeNull()
+  expect(place(9, 4, "above")).toBeNull()
+  expect(place(9, 9, "inside")).toBeNull()
 })
