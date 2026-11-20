@@ -15,6 +15,7 @@ export type UndoName =
   | "delete-element"
   | "duplicate-layer"
   | "paste-layer"
+  | "replace-layer"
   | "cut-layer"
   | "new"
   | "duplicate"
@@ -83,6 +84,7 @@ export const undoCopy = {
     "delete-element": "Undo delete layer",
     "duplicate-layer": "Undo duplicate layer",
     "paste-layer": "Undo paste",
+    "replace-layer": "Undo paste to replace",
     "cut-layer": "Undo cut",
     new: "Undo new slide",
     duplicate: "Undo duplicate slide",
@@ -148,6 +150,7 @@ export const undoCopy = {
     "delete-element": "Redo delete layer",
     "duplicate-layer": "Redo duplicate layer",
     "paste-layer": "Redo paste",
+    "replace-layer": "Redo paste to replace",
     "cut-layer": "Redo cut",
     new: "Redo new slide",
     duplicate: "Redo duplicate slide",

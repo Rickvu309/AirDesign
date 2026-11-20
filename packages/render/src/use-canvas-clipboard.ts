@@ -6,7 +6,7 @@ import type { CanvasSlide } from "./record.js"
 import type { Selection } from "./selection.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 
-export type PasteMode = "paste" | "over"
+export type PasteMode = "paste" | "over" | "replace"
 
 export type LayerPaste = {
   readonly mode: PasteMode
@@ -18,11 +18,15 @@ export type LayerPaste = {
 export type LayerClipboard = {
   readonly copy: (ids: readonly ElementId[], data: DataTransfer, cut: boolean) => boolean
   readonly paste: (paste: LayerPaste) => Promise<readonly Copied[]> | null
+  readonly picture: (ids: readonly ElementId[]) => Promise<Blob>
 }
 
 const typingInto = 'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
 
-const keyedModes = new Map<string, PasteMode>([["paste-over", "over"]])
+const keyedModes = new Map<string, PasteMode>([
+  ["paste-over", "over"],
+  ["paste-replace", "replace"],
+])
 
 function clipped(element: Element): boolean {
   const { overflowX, overflowY } = getComputedStyle(element)
@@ -93,8 +97,21 @@ export function useCanvasClipboard(options: {
       if (event.defaultPrevented || !owned(event.target, latest.current.surface.current)) return
       if (pasted("paste", event.clipboardData)) event.preventDefault()
     }
+    function pictured(event: KeyboardEvent) {
+      const { surface, selection, ownsKey, clipboard } = latest.current
+      const ids = selection.current.ids
+      if (clipboard === undefined || ids.length === 0 || !owned(event.target, surface.current)) return
+      if (ownsKey?.(event) === false) return
+      event.preventDefault()
+      const picture = clipboard.picture(ids)
+      void navigator.clipboard.write([new ClipboardItem({ "image/png": picture })]).catch(() => undefined)
+    }
     function keyed(event: KeyboardEvent) {
       if (event.defaultPrevented || event.repeat || event.isComposing) return
+      if (gestureFor(event, "editor") === "copy-png") {
+        pictured(event)
+        return
+      }
       const mode = keyedModes.get(gestureFor(event, "editor") ?? "")
       if (mode === undefined || !owned(event.target, latest.current.surface.current)) return
       if (latest.current.ownsKey?.(event) === false) return

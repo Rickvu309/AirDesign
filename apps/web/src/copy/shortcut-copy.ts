@@ -72,6 +72,8 @@ export const shortcutCopy = {
     cut: "Cut",
     paste: "Paste",
     "paste-over": "Paste over selection",
+    "paste-replace": "Paste to replace",
+    "copy-png": "Copy as PNG",
     "copy-properties": "Copy properties",
     "paste-properties": "Paste properties",
     redo: "Redo",

@@ -80,7 +80,7 @@ export function slideIdAt(parts: Parts, register: Register, index: number): Slid
 }
 
 export type PastePlace = {
-  readonly mode: PasteMode
+  readonly mode: Exclude<PasteMode, "replace">
   readonly onto: SlideId
   readonly slide: { readonly width: number; readonly height: number }
   readonly view: Box | null
@@ -116,52 +116,59 @@ export function pastedAdds(
   parts: Parts,
   register: Register,
   copy: LayerCopy,
-  place: PastePlace,
+  places: readonly PastePlace[],
   media: readonly (readonly Media[])[],
 ): { readonly edits: readonly Added[]; readonly refused: readonly ElsewhereRefusal[] } {
   const base = slideBase(parts, register)
-  const found = readSlides(base).find((each) => each.slide === place.onto)
-  if (found === undefined) return { edits: [], refused: [] }
   const file = fileSlides(parts, register)
-  const { dx, dy } = offsetOf(copy, place)
   let current = indexedRegister(parts, register)
   const edits: Added[] = []
   const refused: ElsewhereRefusal[] = []
-  for (const [at, layer] of copy.layers.entries()) {
-    const [top, ...inside] = layer.rows
-    const reason = layer.carried === undefined ? "carried" : laidOut.test(layer.carried.markup) ? "layout" : null
-    if (reason !== null || top === undefined || layer.carried === undefined) {
-      if (reason !== null && !refused.includes(reason)) refused.push(reason)
-      continue
+  for (const place of places) {
+    const found = readSlides(base).find((each) => each.slide === place.onto)
+    if (found === undefined) continue
+    const { dx, dy } = offsetOf(copy, place)
+    for (const [at, layer] of copy.layers.entries()) {
+      const [top, ...inside] = layer.rows
+      const reason = layer.carried === undefined ? "carried" : laidOut.test(layer.carried.markup) ? "layout" : null
+      if (reason !== null || top === undefined || layer.carried === undefined) {
+        if (reason !== null && !refused.includes(reason)) refused.push(reason)
+        continue
+      }
+      const first = Number(shapeOf(nextElementId(current, place.onto, freeShapeId(base, found.part))).shape)
+      const nodes = new Map(
+        layer.rows.map((row, index) => [row.element.node, elementId(`${place.onto}.${String(first + index)}`)]),
+      )
+      const node = nodes.get(top.element.node)
+      if (node === undefined) continue
+      const box = { ...layer.box, x: layer.box.x + dx, y: layer.box.y + dy }
+      const layers = inside.flatMap((row) => {
+        const own = nodes.get(row.element.node)
+        const group = row.element.group === undefined ? undefined : nodes.get(row.element.group)
+        return own === undefined || group === undefined
+          ? []
+          : [{ shape: shapeOf(row.source).shape, element: pastedRow(row.element, own, group) }]
+      })
+      const pasted = {
+        markup: layer.carried.markup,
+        shape: shapeOf(layer.source).shape,
+        media: media[at] ?? [],
+        layers,
+      }
+      const edit: Added = {
+        slide: "element-add",
+        id: place.onto,
+        element: { ...pastedRow(top.element, node, undefined), box },
+        pasted,
+      }
+      const decision = decide(current, { command: "slide", file, edit })
+      if (decision.decision !== "apply") {
+        if (!refused.includes("carried")) refused.push("carried")
+        continue
+      }
+      current = decision.register
+      edits.push(edit)
     }
-    const first = Number(shapeOf(nextElementId(current, place.onto, freeShapeId(base, found.part))).shape)
-    const nodes = new Map(
-      layer.rows.map((row, index) => [row.element.node, elementId(`${place.onto}.${String(first + index)}`)]),
-    )
-    const node = nodes.get(top.element.node)
-    if (node === undefined) continue
-    const box = { ...layer.box, x: layer.box.x + dx, y: layer.box.y + dy }
-    const layers = inside.flatMap((row) => {
-      const own = nodes.get(row.element.node)
-      const group = row.element.group === undefined ? undefined : nodes.get(row.element.group)
-      return own === undefined || group === undefined
-        ? []
-        : [{ shape: shapeOf(row.source).shape, element: pastedRow(row.element, own, group) }]
-    })
-    const pasted = { markup: layer.carried.markup, shape: shapeOf(layer.source).shape, media: media[at] ?? [], layers }
-    const edit: Added = {
-      slide: "element-add",
-      id: place.onto,
-      element: { ...pastedRow(top.element, node, undefined), box },
-      pasted,
-    }
-    const decision = decide(current, { command: "slide", file, edit })
-    if (decision.decision !== "apply") {
-      if (!refused.includes("carried")) refused.push("carried")
-      continue
-    }
-    current = decision.register
-    edits.push(edit)
   }
   return { edits, refused }
 }

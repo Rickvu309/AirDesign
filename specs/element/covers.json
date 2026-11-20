@@ -5,7 +5,7 @@
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
       "digest": "43e55daec8b2",
-      "blob": "54b361e48f69504229b8b043b3bb0d1f004af053"
+      "blob": "07df989cc3224e57318febf56ee7662b7144b243"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "35b925ab04bf",
-      "blob": "f53394fc17a3f1606438a2547bd6d01d8f714cdf"
+      "digest": "6ea273889d8f",
+      "blob": "1bc3a969227ae25178a432df77cc909c43bc947c"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -56,8 +56,8 @@
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "e883a9ae8da9",
-      "blob": "0ceea0cb84d9cce66f5bdf3b8757982ed3e22942"
+      "digest": "dc84073273ca",
+      "blob": "21817a0a497ad24a36d72ec2172088f77d51c4c7"
     },
     {
       "file": "packages/document/src/element-takes.ts",

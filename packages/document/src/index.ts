@@ -330,6 +330,7 @@ export { slidesKept } from "./slide-kept.js"
 export { ownFloor } from "./own-floor.js"
 export {
   elementsUndoable,
+  swapUndoable,
   redoOf,
   slideUndoable,
   undoOf,
