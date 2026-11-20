@@ -1,0 +1,215 @@
+{
+  "contexts": [
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136375824921,
+      "name": "Analyze (actions)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136375838659,
+      "name": "bar",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": true
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136375936718,
+      "name": "changes",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136375825508,
+      "name": "Analyze (csharp)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136375825487,
+      "name": "Analyze (javascript-typescript)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136375937457,
+      "name": "mutation",
+      "conclusion": null,
+      "status": "IN_PROGRESS",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012968,
+      "name": "check (source)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012989,
+      "name": "check (scripts)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012855,
+      "name": "check (design 1/2)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012897,
+      "name": "check (design 2/2)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012870,
+      "name": "check (browser 1/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012954,
+      "name": "check (browser 2/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012951,
+      "name": "check (browser 3/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012955,
+      "name": "check (browser 4/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376013356,
+      "name": "check (browser 5/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376013056,
+      "name": "check (browser 6/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376013026,
+      "name": "check (browser 7/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012921,
+      "name": "check (browser 8/8)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012991,
+      "name": "check (pptx)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012794,
+      "name": "corpus (1/2)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376012752,
+      "name": "corpus (2/2)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376013686,
+      "name": "journeys / journeys (1/2)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376013529,
+      "name": "journeys / journeys (2/2)",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136379426296,
+      "name": "design-findings / design-findings",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136379426660,
+      "name": "ci",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": true
+    },
+    {
+      "__typename": "CheckRun",
+      "databaseId": 136376142247,
+      "name": "CodeQL",
+      "conclusion": "SUCCESS",
+      "status": "COMPLETED",
+      "isRequired": false
+    }
+  ],
+  "refUpdateRule": {
+    "requiredStatusCheckContexts": ["ci", "bar"]
+  }
+}

@@ -2,9 +2,28 @@ import { fixture, mainRules, ok, same } from "./land-harness.mjs"
 import { followPull } from "./land-follow.mjs"
 
 const repository = "Rickvu309/AirDesign"
-const passed = [{ __typename: "CheckRun", name: "check (side)", conclusion: "SUCCESS", status: "COMPLETED" }]
-const running = [{ __typename: "CheckRun", name: "check (side)", conclusion: null, status: "IN_PROGRESS" }]
-const failed = [{ __typename: "CheckRun", name: "check (side)", conclusion: "FAILURE", status: "COMPLETED" }]
+const passed = [{ __typename: "CheckRun", name: "ci", conclusion: "SUCCESS", status: "COMPLETED" }]
+const suite = (run) => ({ workflowRun: { databaseId: run, workflow: { databaseId: 409934807 } } })
+const running = [
+  {
+    __typename: "CheckRun",
+    databaseId: 2,
+    name: "changes",
+    conclusion: null,
+    status: "IN_PROGRESS",
+    checkSuite: suite(43646212622),
+  },
+]
+const failed = [
+  {
+    __typename: "CheckRun",
+    databaseId: 1,
+    name: "ci",
+    conclusion: "FAILURE",
+    status: "COMPLETED",
+    checkSuite: suite(43643100126),
+  },
+]
 
 const answer = ({ contexts = passed, merged = false, entry = null, armed = true, timeline = [], state } = {}) =>
   JSON.stringify({

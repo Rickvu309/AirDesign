@@ -97,11 +97,16 @@ export const freshRunVerdict = ({ gh, repository, number, head, jobs }) => {
 
 const startLimitMs = 180000
 
-const awaitNewRun = async ({ read, repository, number, sleep, now, interval }) => {
+const newerRunStarted = ({ pull, run }) => {
+  const failed = pull.runs.find((each) => each.id === run.id)
+  return pull.runs.some((each) => each.id > run.id && (failed === undefined || each.workflow === failed.workflow))
+}
+
+const awaitNewRun = async ({ read, repository, number, run, sleep, now, interval }) => {
   const started = now()
   for (;;) {
     const pull = readPull({ read, repository, number })
-    if (pull.state !== "CLOSED" && pull.checks.running.length > 0) return pull
+    if (pull.state !== "CLOSED" && newerRunStarted({ pull, run })) return pull
     if (now() - started >= startLimitMs) return undefined
     await sleep(interval)
   }
@@ -131,7 +136,7 @@ export const takeFreshRun = async ({
     const reopened = gh(["pr", "reopen", String(number)])
     if (reopened.status !== 0)
       return `gh pr reopen failed: ${reopened.stderr.trim()}. Reopen it: gh pr reopen ${number}`
-    const started = await awaitNewRun({ read, repository, number, sleep, now, interval })
+    const started = await awaitNewRun({ read, repository, number, run, sleep, now, interval })
     if (started === undefined)
       return `no ci run started within ${startLimitMs / 60000} minutes of the reopen. Look at: gh pr checks ${number}`
     if (!started.hasQueue) return undefined

@@ -50,11 +50,19 @@ same("unread files are unsure, so inside", outsideTheDiff({ jobs: [browserJob], 
 same("no failed job read is unsure, so inside", outsideTheDiff({ jobs: [], files: [] }).outside, false)
 
 const head = "aaaa1111"
+const suite = (run) => ({ workflowRun: { databaseId: run, workflow: { databaseId: 409934807 } } })
 const failed = [
-  { __typename: "CheckRun", databaseId: 1, name: "check (browser 2/4)", conclusion: "FAILURE", status: "COMPLETED" },
+  {
+    __typename: "CheckRun",
+    databaseId: 1,
+    name: "ci",
+    conclusion: "FAILURE",
+    status: "COMPLETED",
+    checkSuite: suite(77),
+  },
 ]
 const fresh = [
-  { __typename: "CheckRun", databaseId: 2, name: "check (browser 2/4)", conclusion: null, status: "QUEUED" },
+  { __typename: "CheckRun", databaseId: 2, name: "changes", conclusion: null, status: "QUEUED", checkSuite: suite(78) },
 ]
 const pullAnswer = ({
   contexts = failed,
