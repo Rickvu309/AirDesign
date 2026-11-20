@@ -70,7 +70,7 @@ test("Smart animate exports as PowerPoint's Morph and moves the layer two slides
   expect(saved).toContain('<mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback>')
   await copyFile(download, judged)
 
-  await entry(page, 1).focus()
+  await entry(page, 1).click()
   await page.keyboard.press(duplicate)
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
   const title = page.locator("[data-slide-paint] [data-canvas-element]").first()
