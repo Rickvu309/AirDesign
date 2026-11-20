@@ -4,8 +4,10 @@ import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 import { openDeck } from "../open-deck.mjs"
 import { placeText } from "../../bin/text-place.mjs"
+import { shapeFrame } from "./two-selected.mjs"
 
-const drafted = (element) => element.value.includes('"text":"Draft"')
+const agentText = "Written by an agent"
+const drafted = (element) => element.value?.includes('"text":"Draft"')
 
 async function drive(kit) {
   const { cookie } = await kit.signIn()
@@ -33,7 +35,7 @@ async function drive(kit) {
   await kit.page.keyboard.type("Draft")
   await kit.page.keyboard.press("Escape")
   await expect(kit.page.getByRole("button", { name: undoCopy.undoNamed.text })).toBeEnabled()
-  let read = await tool("airdesign_read_deck", { deck, slide: "256" })
+  let read
   await expect
     .poll(async () => {
       read = await tool("airdesign_read_deck", { deck, slide: "256" })
@@ -41,13 +43,14 @@ async function drive(kit) {
     })
     .toBe(true)
   const added = read.elements.find(drafted)
-  const value = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Written by an agent" }] }])
+  const value = JSON.stringify([{ from: 0, runs: [{ from: 0, text: agentText }] }])
   const changes = [{ node: added.node, readAt: added.version, value }]
   expect(await tool("airdesign_edit_deck", { deck, base: read.revision, changes })).toMatchObject({ ok: true })
-  await expect(texts.last()).toHaveText("Written by an agent")
+  const painted = shapeFrame(kit.page, added.node).locator('[contenteditable="true"]')
+  await expect(painted).toHaveText(agentText)
   await kit.page.keyboard.press("ControlOrMeta+z")
-  const refused = kit.page.getByText("Unable to undo. This changed after your edit, so it stays as it is.")
-  await expect(refused.or(kit.page.getByRole("button", { name: undoCopy.redoNamed.text }))).toBeVisible()
+  await expect(kit.page.getByText(undoCopy.undoChanged, { exact: true })).toBeVisible()
+  await expect(painted).toHaveText(agentText)
 }
 
 export default { name: "box-undo-changed", design: editor, drive }

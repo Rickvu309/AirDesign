@@ -2,6 +2,19 @@ import { readdirSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { matching, shardStates, states, sweep, sweepLanes, units } from "./states.mjs"
 
+const canvasSelection = /\.locator\(["']\[data-slide-paint\] \[data-selection\]["']\)$/
+
+function oneSelectionWaits(source) {
+  const selectionNames = new Set(
+    [...source.matchAll(/\bconst (\w+) = ([^\n]+)/g)]
+      .filter(([, , value]) => canvasSelection.test(value))
+      .map(([, name]) => name),
+  )
+  return [...source.matchAll(/\bexpect\(([^\n]+)\)\.toHaveCount\(1\)/g)].filter(
+    ([, target]) => selectionNames.has(target) || canvasSelection.test(target),
+  )
+}
+
 describe("states", () => {
   it("names each state once and points each journey state at a capture its journey makes", () => {
     expect(new Set(states.map((state) => state.name)).size).toBe(states.length)
@@ -15,6 +28,16 @@ describe("states", () => {
   it("reads one state from each file in states/, named after its file and sorted by name", () => {
     const files = readdirSync(new URL("./states/", import.meta.url)).sort()
     expect(states.map((state) => `${state.name}.mjs`)).toEqual(files)
+  })
+
+  it("waits for the new layer when a state already saw one canvas selection", () => {
+    for (const { name } of states) {
+      const source = readFileSync(new URL(`./states/${name}.mjs`, import.meta.url), "utf8")
+      expect(
+        oneSelectionWaits(source).length,
+        `${name}.mjs counts one canvas selection again. Wait for the new layer with toHaveAttribute("data-selection", expectedNode).`,
+      ).toBeLessThanOrEqual(1)
+    }
   })
 
   it("selects states with a star", () => {
