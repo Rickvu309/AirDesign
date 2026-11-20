@@ -40,6 +40,7 @@ assert.deepEqual(
     "layer-lock.mjs",
     "layer-paste-decks.mjs",
     "layer-paste.mjs",
+    "layout-guides.mjs",
     "mask-cropped.mjs",
     "mask.mjs",
     "new-slide-prompts.mjs",

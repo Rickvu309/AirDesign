@@ -36,6 +36,7 @@ import { useToolKeys } from "@/editor/tool-keys"
 import { useChromeKeys } from "@/editor/chrome-keys"
 import type { PartsWatch } from "@/editor/use-deck-paint"
 import { useKeptView } from "@/editor/kept-view"
+import type { GuidesShown } from "@/editor/slide-guides"
 import { ShortcutsPanel } from "@/editor/shortcuts-panel"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -57,7 +58,7 @@ export type EditorDeck = {
   readonly id?: string
   readonly slides: SlideStrip
   readonly size: SlideSize | null
-  readonly slide: (width: number, rulers?: boolean) => ReactNode
+  readonly slide: (width: number, shown?: GuidesShown) => ReactNode
   readonly rulers?: () => ReactNode
   readonly displayed?: Pick<PartsWatch, "subscribe" | "version">
   readonly onExport: (request?: ExportRequest) => Promise<void> | void
@@ -137,7 +138,8 @@ export function EditorShell({
   const [bare, setBare] = useState(false)
   const [listHidden, setListHidden] = useState(false)
   const [rulers, setRulers] = useKeptView("rulers")
-  const watched = rulers ? deck?.displayed : undefined
+  const [layoutGuides, setLayoutGuides] = useKeptView("layoutGuides")
+  const watched = deck?.displayed
   const version = watched?.version ?? unchanged
   useSyncExternalStore(watched?.subscribe ?? unwatched, version, version)
   const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
@@ -173,6 +175,7 @@ export function EditorShell({
     onHideAll: () => setBare((now) => !now),
     onSlideList: () => setListHidden((now) => !now),
     onRulers: () => setRulers(!rulers),
+    onLayoutGuides: () => setLayoutGuides(!layoutGuides),
   })
   useShortcutsKey(deck !== undefined && present.show === null, () => setShortcutsOpen((open) => !open))
   function withShortcuts(editor: ReactNode) {
@@ -355,7 +358,7 @@ export function EditorShell({
             {deck === undefined ? (
               <RevenueSlide width={width} working={working} selected={run === "compose"} />
             ) : (
-              deck.slide(width, rulers)
+              deck.slide(width, { rulers, layoutGuides })
             )}
           </div>
         </CanvasStage>
@@ -399,7 +402,12 @@ export function EditorShell({
                 zoom={zoom}
                 percent={zoomPercent(width, size)}
                 onZoom={zoomTo}
-                {...(deck.rulers === undefined ? {} : { rulers: { shown: rulers, onChange: setRulers } })}
+                {...(deck.rulers === undefined
+                  ? {}
+                  : {
+                      rulers: { shown: rulers, onChange: setRulers },
+                      layoutGuides: { shown: layoutGuides, onChange: setLayoutGuides },
+                    })}
                 {...(deck.selection === undefined || deck.selection.ids.length === 0
                   ? {}
                   : { onSelection: zoomToSelection })}

@@ -157,6 +157,7 @@ describe("the one table of traits", () => {
       "show.skipped",
       "transition.value",
       "guides.ruler",
+      "guides.layout",
       "layout.flow",
       "layout.gap",
       "layout.padding",

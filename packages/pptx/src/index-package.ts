@@ -17,6 +17,7 @@ import { slideTheme } from "./theme-swatches.js"
 import { readNotes } from "./notes-body.js"
 import { readArrival } from "./transition-read.js"
 import { readSlideGuides } from "./guide-list.js"
+import { readLayoutGuideList } from "./layout-guide-list.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
 import { slideSkipped } from "./slide-show.js"
@@ -58,7 +59,11 @@ function indexedTransition(bytes: Uint8Array | undefined) {
 
 function indexedGuides(parts: ReadonlyMap<string, Uint8Array>, part: string) {
   const guides = readSlideGuides(parts, part)
-  return guides.length === 0 ? {} : { guides }
+  const layoutGuides = readLayoutGuideList(parts, part)
+  return {
+    ...(guides.length === 0 ? {} : { guides }),
+    ...(layoutGuides.length === 0 ? {} : { layoutGuides }),
+  }
 }
 
 function valueOf(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {

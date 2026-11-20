@@ -1,44 +1,19 @@
 import { readGuideList, type Guide } from "@airdesign/document"
-import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { markupDocument, type MarkupElement } from "./element-span.js"
 import { presentationPart } from "./package-address.js"
-import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { partBytes, requireMarkup } from "./part-markup.js"
+import { attr, childrenOf, extensionOf, guidesNamespace, localName, writeSlideExtension } from "./slide-extension.js"
 import { relatedPart } from "./slide-placeholders.js"
 import { whole, type TraitXml } from "./xml-codec.js"
+import { layoutGuidesXml } from "./layout-guide-list.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
 export const guidesUri = "{B7EA18BA-A583-420B-AA80-A42F3E0419E5}"
-export const guidesNamespace = "https://airdesign.app/2026/guides"
 
 const deckGuidesUri = "{EFAFB233-063F-42B5-8137-9DF3F51BA10A}"
 const layoutGuidesUri = "{DCECCB84-F9BA-43D5-87BE-67443E8EF086}"
 const masterGuidesUri = "{27BBF7A9-308A-43DC-89C8-2F10F3537804}"
 const emuPerEighth = 1587.5
-
-function attr(element: MarkupElement, name: string): string | undefined {
-  return element.attributes.find((attribute) => attribute.name === name)?.value
-}
-
-function localName(kind: string): string {
-  const colon = kind.indexOf(":")
-  return colon < 0 ? kind : kind.slice(colon + 1)
-}
-
-function childrenOf(elements: readonly MarkupElement[], parent: MarkupElement): readonly MarkupElement[] {
-  return elements.filter((element) => element.parent === parent.index)
-}
-
-function rootExtensions(elements: readonly MarkupElement[]): readonly MarkupElement[] {
-  const root = elements[0]
-  if (root === undefined) return []
-  const list = childrenOf(elements, root).find((element) => element.kind === "p:extLst")
-  return list === undefined ? [] : childrenOf(elements, list).filter((element) => element.kind === "p:ext")
-}
-
-function extensionOf(elements: readonly MarkupElement[], uri: string): MarkupElement | undefined {
-  return rootExtensions(elements).find((element) => attr(element, "uri") === uri)
-}
 
 function powerpointGuide(element: MarkupElement): Guide | null {
   const pos = attr(element, "pos") ?? "0"
@@ -99,37 +74,9 @@ export function readSlideGuides(parts: Parts, part: string): readonly Guide[] {
   ])
 }
 
-function extensionXml(guides: readonly Guide[]): string {
-  const lines = guides.map((guide) => `<ag:guide axis="${guide.axis}" offset="${String(guide.offset)}"/>`).join("")
-  return `<p:ext uri="${guidesUri}"><ag:guides xmlns:ag="${guidesNamespace}">${lines}</ag:guides></p:ext>`
-}
-
-function openTag(bytes: Uint8Array, element: MarkupElement): string {
-  return decodeUtf8(bytes.subarray(element.start, element.openEnd - 2)).trimEnd()
-}
-
 export function writeSlideGuides(parts: Parts, part: string, guides: readonly Guide[]): Parts {
-  const bytes = partBytes(parts, part)
-  const { elements } = requireMarkup(bytes)
-  const root = elements[0]
-  if (root?.kind !== "p:sld") throw new Error("slide-guides")
-  const xml = extensionXml(guides)
-  const list = childrenOf(elements, root).find((element) => element.kind === "p:extLst")
-  const held = extensionOf(elements, guidesUri)
-  let edit: ByteEdit
-  if (held !== undefined) edit = { start: held.start, end: held.end, next: encodeUtf8(xml) }
-  else if (list !== undefined && !list.selfClosing)
-    edit = { start: list.closeStart, end: list.closeStart, next: encodeUtf8(xml) }
-  else if (list !== undefined)
-    edit = { start: list.start, end: list.end, next: encodeUtf8(`<p:extLst>${xml}</p:extLst>`) }
-  else if (root.selfClosing)
-    edit = {
-      start: root.start,
-      end: root.end,
-      next: encodeUtf8(`${openTag(bytes, root)}><p:extLst>${xml}</p:extLst></p:sld>`),
-    }
-  else edit = { start: root.closeStart, end: root.closeStart, next: encodeUtf8(`<p:extLst>${xml}</p:extLst>`) }
-  return new Map(parts).set(part, spliceBytes(bytes, [edit]))
+  const lines = guides.map((guide) => `<ag:guide axis="${guide.axis}" offset="${String(guide.offset)}"/>`).join("")
+  return writeSlideExtension(parts, part, guidesUri, `<ag:guides xmlns:ag="${guidesNamespace}">${lines}</ag:guides>`)
 }
 
 export const guidesXml: TraitXml<"guides"> = {
@@ -139,5 +86,6 @@ export const guidesXml: TraitXml<"guides"> = {
       read: (parts, at) => readSlideGuides(parts, at.part),
       write: (parts, at, value) => writeSlideGuides(parts, at.part, value),
     }),
+    layout: layoutGuidesXml,
   },
 }

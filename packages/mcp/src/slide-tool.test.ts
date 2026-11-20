@@ -5,6 +5,8 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
 import { createServer, emptyLog, memoryTurns, type Session } from "./index.js"
 
+const guideRed = "FF0000"
+
 function session(): Session {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error("deck")
@@ -323,11 +325,32 @@ it("sets a slide's guides in points through MCP and keeps them in EMU on the sli
         ],
       },
     })
+    const layout = {
+      pattern: "columns",
+      count: 12,
+      align: "stretch",
+      size: 0,
+      offset: 36,
+      gutter: 12,
+      color: `#${guideRed}`,
+      opacity: 10,
+      shown: true,
+    }
+    const laid = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: held.deck.revision,
+        changes: [{ op: "set", target: "256", guides: { layout: [layout] } }],
+      },
+    })
+    expect(laid.isError).not.toBe(true)
     const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
     expect(read.structuredContent).toMatchObject({
       slides: [
         {
           id: "256",
+          layoutGuides: [{ ...layout, offset: 457_200, gutter: 152_400, color: guideRed }],
           guides: [
             { axis: "x", offset: 457_200 },
             { axis: "y", offset: 3_429_000 },

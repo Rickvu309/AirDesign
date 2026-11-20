@@ -32,6 +32,7 @@ export const shortcutCopy = {
     "edit-text": "Edit text, or select the layers inside",
     delete: "Delete",
     rulers: "Show or hide rulers",
+    "layout-guides": "Show or hide layout guides",
     "guide-add": "Add a guide",
     "guide-duplicate": "Duplicate a guide",
     move: "Move",

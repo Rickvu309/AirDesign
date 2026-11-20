@@ -66,12 +66,26 @@ describe("deck index", () => {
           free: 3,
           animated: [],
           guides: [{ axis: "x" as const, offset: 457200 }],
+          layoutGuides: [
+            {
+              pattern: "grid" as const,
+              count: 5,
+              align: "stretch" as const,
+              size: 127000,
+              offset: 0,
+              gutter: 254000,
+              color: "FF0000",
+              opacity: 10,
+              shown: true,
+            },
+          ],
         },
       ],
     }
     expect(readIndexPage(measured)).toEqual(measured)
     for (const slide of [
       { guides: [{ axis: "z", offset: 1 }] },
+      { layoutGuides: [{ pattern: "grid" }] },
       { guides: "x" },
       { size: { width: 0, height: 5 } },
       { size: { width: 5 } },
@@ -277,7 +291,7 @@ describe("index format", () => {
 
   it("keeps the recorded index keys and the stamp that introduced them", () => {
     const recorded = {
-      stamp: 21,
+      stamp: 22,
       keys: {
         page: [
           "format",
@@ -304,6 +318,7 @@ describe("index format", () => {
           "skipped",
           "transition",
           "guides",
+          "layoutGuides",
         ],
         element: [
           "node",

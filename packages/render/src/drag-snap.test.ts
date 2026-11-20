@@ -78,4 +78,21 @@ describe("snapTargets", () => {
     )
     expect(targets.guides).toEqual({ x: [914_400, -12_700], y: [457_200] })
   })
+
+  it("adds the column edges of a slide's layout guides, hidden or not", () => {
+    const tone = { color: "FF0000", opacity: 10, shown: false }
+    const targets = snapTargets(
+      {
+        width: 1000,
+        height: 600,
+        background: null,
+        elements: [],
+        layoutHidden: true,
+        layoutGuides: [{ pattern: "columns", count: 2, align: "stretch", size: 0, offset: 0, gutter: 100, ...tone }],
+      },
+      paintStore(),
+      [],
+    )
+    expect(targets.guides).toEqual({ x: [0, 450, 550, 1000], y: [] })
+  })
 })

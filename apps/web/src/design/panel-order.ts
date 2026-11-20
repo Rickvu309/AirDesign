@@ -15,7 +15,7 @@ export type PanelKind =
 
 export type PanelMode = "slides" | "design"
 
-type PanelSectionName = SectionName | "selectionColors" | "templateStyle" | "background"
+type PanelSectionName = SectionName | "selectionColors" | "templateStyle" | "background" | "layoutGuides"
 
 export type Place = {
   readonly section: PanelSectionName
@@ -125,7 +125,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     design("box"),
     design("effects"),
   ],
-  slide: [slides("templateStyle"), slides("background"), slides("selectionColors")],
+  slide: [slides("templateStyle"), slides("background"), slides("selectionColors"), design("layoutGuides", true)],
 }
 
 export function panelPlaces(

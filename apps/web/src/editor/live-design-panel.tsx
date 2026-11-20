@@ -40,6 +40,7 @@ import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
 import { ResizeToFit } from "@/editor/resize-to-fit"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
 import { SlideSurface, SlidesSurface, type SlideTab } from "@/editor/slide-design-tabs"
+import { LiveLayoutGuides } from "@/editor/live-layout-guides"
 import { colorsIn } from "./deck-colors"
 import { nodeChoices } from "./node-choices"
 import { placeholderRole } from "./placeholder-role"
@@ -428,6 +429,10 @@ function SlideChrome({ deck, mode, toneFor }: { deck: DesigningDeck; mode: Panel
       />,
     ],
     ["selectionColors", <LiveSelectionColors deck={deck} nodes={[]} />],
+    [
+      "layoutGuides",
+      <LiveLayoutGuides deck={deck} palette={{ templateColors: view.templateColors, deck: colorsIn(parts) }} />,
+    ],
   ])
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
