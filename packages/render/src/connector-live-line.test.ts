@@ -15,6 +15,7 @@ it("moves the line itself under a dragged end, in its own stroke, and shows it r
   await pointer(end, "pointerdown", pixels(2_500_000), pixels(4_500_000))
   await pointer(end.ownerDocument, "pointermove", pixels(2_500_000), pixels(1_500_000))
   expect(resting?.style.visibility).toBe("hidden")
+  expect(host.querySelector<HTMLElement>(`[data-selection="${line}"]`)?.style.visibility).toBe("hidden")
   const live = host.querySelector<HTMLElement>("[data-connector-aim]")
   expect(live?.getAttribute("data-ends")).toBe(
     `${String(pixels(500_000))} ${String(pixels(4_500_000))} ${String(pixels(2_500_000))} ${String(pixels(1_500_000))}`,
@@ -25,4 +26,5 @@ it("moves the line itself under a dragged end, in its own stroke, and shows it r
   await pointer(end.ownerDocument, "pointerup", pixels(2_500_000), pixels(1_500_000))
   expect(host.querySelector("[data-connector-aim]")).toBeNull()
   expect(resting?.style.visibility).toBe("")
+  expect(host.querySelector<HTMLElement>(`[data-selection="${line}"]`)?.style.visibility).toBe("")
 })
