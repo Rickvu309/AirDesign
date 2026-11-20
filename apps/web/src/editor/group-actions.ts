@@ -20,7 +20,7 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { freeShapeId, readSlides } from "@airdesign/pptx"
+import { freeShapeId, readShapes, readSlides, shapeKind } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideBase } from "@/exported-parts"
 import { indexedRegister } from "@/indexed-register"
@@ -33,7 +33,7 @@ export type GroupChange =
   | { readonly change: "ungroup"; readonly node: ElementId }
   | { readonly change: "frame"; readonly nodes: readonly ElementId[] }
   | { readonly change: "plain-frame"; readonly nodes: readonly ElementId[] }
-  | { readonly change: "mask"; readonly nodes: readonly ElementId[]; readonly mask: ElementId }
+  | { readonly change: "mask"; readonly nodes: readonly ElementId[] }
 
 function reflowRows(register: Register, nodes: readonly ElementId[]): readonly Command[] | null {
   const [frame] = nodes
@@ -49,6 +49,15 @@ function rowSteps(register: Register, commands: readonly Command[]): readonly No
     const before = beforeOf(body === undefined ? {} : landedPatch(body, "text"), command.patch)
     return [{ node: command.node, before, after: command.patch }]
   })
+}
+
+function backLayer(base: Parts, part: string, nodes: readonly ElementId[]): ElementId | null {
+  const order = readShapes(base).filter((shape) => shape.part === part)
+  const placed = nodes.map((node) => ({ node, at: order.findIndex((shape) => shape.shape === shapeOf(node).shape) }))
+  if (placed.some((each) => each.at < 0)) return null
+  const back = placed.toSorted((left, right) => left.at - right.at)[0]
+  const shape = back === undefined ? undefined : order[back.at]
+  return back === undefined || shape === undefined || shapeKind(shape) !== "shape" ? null : back.node
 }
 
 type Planned = { readonly commands: readonly Command[]; readonly undoable: Undoable | null }
@@ -79,7 +88,10 @@ function groupTurn(parts: Parts, register: Register, change: GroupChange): reado
   const reflowed = change.change === "frame" && change.nodes.length === 1 ? reflowRows(register, change.nodes) : null
   if (reflowed !== null) return reflowed
   const node = nextElementId(register, slide, freeShapeId(base, found.part))
-  if (change.change === "mask") return maskTurn(register, file, slide, node, change.nodes, change.mask)
+  if (change.change === "mask") {
+    const mask = backLayer(base, found.part, change.nodes)
+    return mask === null ? null : maskTurn(register, file, slide, node, change.nodes, mask)
+  }
   if (change.change === "group") {
     const command = groupOf(register, slide, node, change.nodes)
     return command === null ? null : [{ command: "slide", file, edit: command }]

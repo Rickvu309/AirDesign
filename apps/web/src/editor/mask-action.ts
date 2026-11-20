@@ -15,5 +15,5 @@ export function maskAction(ids: readonly ElementId[], elements: readonly CanvasE
   const element = back === undefined ? undefined : elements[order.get(back) ?? -1]
   if (back === undefined || element === undefined || !maskable.has(element.kind)) return null
   if (ids.length === 1) return { kind: "toggle", node: back }
-  return { kind: "group", change: { change: "mask", nodes: ids, mask: back } }
+  return { kind: "group", change: { change: "mask", nodes: ids } }
 }

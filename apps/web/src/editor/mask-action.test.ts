@@ -22,10 +22,10 @@ function element(id: string, kind: CanvasElement["kind"]): CanvasElement {
 const elements = [element("256.2", "shape"), element("256.3", "picture"), element("256.4", "group")]
 const ids = (...names: string[]): readonly ElementId[] => names.map(elementId)
 
-it("makes the back layer of the selection the mask of a new group, as Figma's Use as mask", () => {
+it("masks a selection of several layers as a new group, leaving the stored order to pick the mask", () => {
   expect(maskAction(ids("256.3", "256.2"), elements)).toEqual({
     kind: "group",
-    change: { change: "mask", nodes: ids("256.3", "256.2"), mask: elementId("256.2") },
+    change: { change: "mask", nodes: ids("256.3", "256.2") },
   })
 })
 
