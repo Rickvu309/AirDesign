@@ -1,5 +1,5 @@
 import { gestureFor } from "@airdesign/render"
-import { useEffect, useRef } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import type { LayerFlag } from "@/editor/layer-flags"
 import { typing } from "@/editor/pointer-tool"
@@ -21,7 +21,7 @@ function editorOpen(): boolean {
 
 export function useLayerKeys(working: boolean, actions: LayerKeyActions) {
   const latest = useRef(actions)
-  useEffect(() => {
+  useLayoutEffect(() => {
     latest.current = actions
   })
   useEffect(() => {

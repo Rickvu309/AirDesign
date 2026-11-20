@@ -1,5 +1,5 @@
 import { elementId, type ElementId, type StackMove } from "@airdesign/document"
-import { act, createElement } from "react"
+import { act, createElement, useLayoutEffect } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import { useLayerKeys } from "@/editor/layer-keys"
@@ -51,6 +51,30 @@ function keydown(target: EventTarget, key: string, init: KeyboardEventInit = {})
 }
 
 describe("useLayerKeys", () => {
+  it("masks the selection from the commit that just painted it", async () => {
+    const circle = elementId("256.5")
+    const picture = elementId("256.4")
+    const masks: (readonly ElementId[])[] = []
+    function Harness({ selected }: { readonly selected: readonly ElementId[] }) {
+      useLayerKeys(true, {
+        onMask: () => masks.push(selected),
+        onFlag: () => undefined,
+        onRename: () => false,
+      })
+      useLayoutEffect(() => {
+        if (selected.length === 2) keydown(window, "m", { code: "KeyM", ctrlKey: true, altKey: true })
+      }, [selected])
+      return null
+    }
+    const host = document.createElement("div")
+    document.body.append(host)
+    const root = createRoot(host)
+    hosts.push({ host, root })
+    await act(async () => root.render(createElement(Harness, { selected: [circle] })))
+    await act(async () => root.render(createElement(Harness, { selected: [circle, picture] })))
+    expect(masks).toEqual([[circle, picture]])
+  })
+
   it("intercepts Cmd or Ctrl+R only when a layer can rename, leaving reload alone when nothing is selected", async () => {
     let renames = 0
     let canRename = true
