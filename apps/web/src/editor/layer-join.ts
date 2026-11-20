@@ -3,12 +3,11 @@ import {
   readSlideId,
   shapeOf,
   spotNow,
+  type Command,
   type ElementId,
   type Register,
   type Undoable,
 } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { indexedRegister } from "@/indexed-register"
 import { fileSlides } from "@/slide-edit"
 
@@ -38,28 +37,16 @@ export function layerJoins(parts: Parts, register: Register, node: ElementId, pa
   return joinTurn(parts, indexedRegister(parts, register), node, parent, null) !== null
 }
 
-export async function commitJoin(
-  deckId: string,
+export function joinPlanned(
   parts: Parts,
   register: Register,
   change: LayerJoin,
-  paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
-): Promise<CommitOutcome> {
+): { readonly commands: readonly Command[]; readonly undoable: Undoable } | null {
   const indexed = indexedRegister(parts, register)
   const slide = readSlideId(shapeOf(change.node).slide)
   const was = spotNow(indexed, change.node)
   const joined = joinTurn(parts, indexed, change.node, change.parent, change.before)
-  if (slide === undefined || was === null || joined === null) return "refused"
-  const link = connect(memoryRemote())
-  for (const command of joined.turn) {
-    const kept =
-      command.command === "slide"
-        ? await link.enqueueSlide(deckId, command.file, command.edit)
-        : command.command === "person" && command.node !== undefined && command.v !== undefined
-          ? await link.enqueueRow(deckId, { v: command.v, patch: command.patch }, command.node, "")
-          : { ok: false }
-    if (!kept.ok) return "refused"
-  }
+  if (slide === undefined || was === null || joined === null) return null
   const undoable: Undoable = {
     joined: change.node,
     slide,
@@ -67,6 +54,5 @@ export async function commitJoin(
     before: { ...was, before: change.from },
     after: { frame: change.parent, before: change.before, box: was.box },
   }
-  await paint(null, undoable)
-  return flushPending(connect, deckId)
+  return { commands: joined.turn, undoable }
 }

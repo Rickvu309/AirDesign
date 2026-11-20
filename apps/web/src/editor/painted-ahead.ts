@@ -9,12 +9,21 @@ export type PaintAhead = {
 type AheadCanvas = {
   readonly shown: () => Register | null
   readonly keep: (register: Register) => void
-  readonly show: (register: Register) => void
+  readonly show: (register: Register, nodes: readonly ElementId[]) => void
+}
+
+function decided(register: Register, command: Command): Register {
+  const decision = decide(register, command)
+  return decision.decision === "apply" ? decision.register : register
 }
 
 function applied(register: Register, command: Command): Register {
-  const decision = decide(register, command)
-  return decision.decision === "apply" ? decision.register : register
+  const node = command.command === "person" ? command.node : undefined
+  const opened =
+    node === undefined || register.nodes.includes(node)
+      ? register
+      : decided(register, { command: "add", node, floor: "", route: register.route })
+  return decided(opened, command)
 }
 
 function played(register: Register, edits: readonly (readonly Command[])[]): Register {
@@ -37,7 +46,10 @@ export function paintingAhead(canvas: AheadCanvas): PaintAhead {
     paint(commands) {
       const written = hold(commands)
       const shown = canvas.shown()
-      if (shown !== null) canvas.show(shown)
+      const nodes = commands.flatMap((command) =>
+        command.command === "person" && command.node !== undefined ? [command.node] : [],
+      )
+      if (shown !== null) canvas.show(shown, nodes)
       return written
     },
   }

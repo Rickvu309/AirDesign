@@ -11,19 +11,19 @@
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack"],
       "digest": "0579be2b2d4a",
-      "blob": "c095ea7d2c0a3bf7b17095b7f465c42d66fe1b79"
+      "blob": "4a0559876f5e8a36b75aae2e4562a3e34be29c31"
     },
     {
       "file": "apps/web/src/element-edit.ts",
-      "names": ["removals", "commitElement"],
-      "digest": "f67a27d08b55",
-      "blob": "3804dd4a92c9da74423614c7689fc59eab04b466"
+      "names": ["removals", "removalPlan", "planElement", "storePlan"],
+      "digest": "e58946f31bf4",
+      "blob": "37b5fd8098d7368bb6197a282b86ccb62a671af5"
     },
     {
       "file": "packages/render/src/slide-moves.ts",
       "names": ["useMoves"],
-      "digest": "719aa002c682",
-      "blob": "1994c94c1219288645cbc9cbde26b1e0962b4007"
+      "digest": "c85ba8699ae6",
+      "blob": "04c5f6e718b0eedd00576daab47ba82d9151fb61"
     }
   ]
 }

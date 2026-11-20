@@ -24,9 +24,6 @@ export type PlacedText = {
 }
 
 export type PlacingLink = {
-  readonly openDeck: (
-    deck: string,
-  ) => Promise<{ readonly ok: true; readonly register: Register } | { readonly ok: false }>
   readonly enqueueSlide: (
     deck: string,
     file: readonly SlideId[],
@@ -40,6 +37,8 @@ export type PlacingDeck = {
   readonly parts: () => Parts
   readonly room: () => SlideRoom | null
   readonly index: () => number
+  readonly painted: () => Register | null
+  readonly show: () => void
   readonly showSaved: () => Promise<void>
   readonly enter: (node: ElementId, keys: HeldKeys) => void
   readonly record: (entry: UndoEntry) => void
@@ -60,32 +59,30 @@ export function hasWords(value: string): boolean {
 export function placingText(deck: PlacingDeck, link: PlacingLink) {
   const { id, held } = deck
 
-  function place(place: TextPlace, keys: HeldKeys): Promise<void> {
-    return deck.lane(async () => {
-      const room = deck.room()
-      const opened = room === null ? null : await link.openDeck(id)
-      const parts = deck.parts()
-      if (opened?.ok !== true || room === null) {
-        keys.stop()
-        return
-      }
-      const shown = placedOn(opened.register, held.current)
-      const add = elementCommand(parts, shown, { change: "text", index: deck.index(), size: room, place })
-      if (add?.slide !== "element-add") {
-        keys.stop()
-        return
-      }
-      const file = fileSlides(parts, shown)
-      if (decide(shown, { command: "slide", file, edit: add }).decision !== "apply") {
-        keys.stop()
-        return
-      }
-      const node = add.element.node
-      const placed = { node, file, add, undoable: slideUndoable(shown, file, add), kept: null }
-      held.current = [...held.current, placed]
-      await deck.showSaved()
-      deck.enter(node, keys)
-    })
+  function place(place: TextPlace, keys: HeldKeys): void {
+    const room = deck.room()
+    const painted = deck.painted()
+    const parts = deck.parts()
+    if (painted === null || room === null) {
+      keys.stop()
+      return
+    }
+    const shown = placedOn(painted, held.current)
+    const add = elementCommand(parts, shown, { change: "text", index: deck.index(), size: room, place })
+    if (add?.slide !== "element-add") {
+      keys.stop()
+      return
+    }
+    const file = fileSlides(parts, shown)
+    if (decide(shown, { command: "slide", file, edit: add }).decision !== "apply") {
+      keys.stop()
+      return
+    }
+    const node = add.element.node
+    const placed = { node, file, add, undoable: slideUndoable(shown, file, add), kept: null }
+    held.current = [...held.current, placed]
+    deck.show()
+    deck.enter(node, keys)
   }
 
   async function keep(placed: PlacedText): Promise<boolean> {

@@ -10,8 +10,8 @@
     {
       "file": "apps/web/src/live-repaint.ts",
       "names": ["liveRepaint", "busyElements"],
-      "digest": "6b7b6da9a562",
-      "blob": "e86efbe7a3bdd50859a13be4e48587290068740f"
+      "digest": "981bf1036798",
+      "blob": "b01a5a9a41cc32c2f044211e86018ead35a0b7c0"
     },
     {
       "file": "apps/web/src/notes-edit.ts",

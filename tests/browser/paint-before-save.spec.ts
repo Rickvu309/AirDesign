@@ -62,3 +62,50 @@ test("a font size set in the Design panel paints while the device is still stori
   await expect(words).toHaveText("Hello there")
   await expect.poll(() => fontSize(words)).toBe(grown)
 })
+
+async function pictureWords() {
+  return (await import("../../apps/web/src/copy/picture-copy.ts")).pictureCopy
+}
+
+test("text, a shape, an icon and a copy paint while the device is still storing earlier edits, and are kept", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const pictureCopy = await pictureWords()
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await decksOn(page).open()
+  const paint = page.locator("[data-slide-paint]").first()
+  const layers = paint.locator("[data-canvas-element]")
+  const slide = await paint.boundingBox()
+  if (slide === null) throw new Error("slide")
+  await paint.click({ position: { x: 4, y: 4 } })
+  await expect(layers).toHaveCount(1)
+
+  const release = await holdDeviceStore(page)
+  await page.keyboard.press("t")
+  await page.mouse.click(slide.x + 120, slide.y + slide.height - 120)
+  await expect(paint.locator('[contenteditable="true"]:focus')).toHaveCount(1, { timeout: 1000 })
+  await page.keyboard.type("Jan")
+  await page.keyboard.press("Escape")
+  await page.keyboard.press("Escape")
+  await page.keyboard.press("r")
+  await page.keyboard.press("Enter")
+  await expect(layers).toHaveCount(3, { timeout: 1000 })
+  await page.getByRole("button", { name: pictureCopy.addIcon, exact: true }).click()
+  const tool = page.locator("[data-icon-tool]")
+  await tool.getByRole("searchbox", { name: pictureCopy.search }).fill("rocket")
+  await tool.getByRole("button", { name: "rocket", exact: true }).click()
+  await expect(layers).toHaveCount(4, { timeout: 1000 })
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect(layers).toHaveCount(5, { timeout: 1000 })
+  await release()
+
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed["duplicate-layer"], exact: true })).toBeEnabled()
+  await page.reload()
+  expect(await decksOn(page).ready()).toBe(deck)
+  await expect(layers).toHaveCount(5)
+  await expect(paint.locator('[contenteditable="true"]').filter({ hasText: /^Jan$/ })).toHaveCount(1)
+})

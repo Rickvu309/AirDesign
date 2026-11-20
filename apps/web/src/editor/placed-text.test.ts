@@ -20,9 +20,14 @@ function placingDeck(lane = storeLane()) {
   let saved = 0
   let stops = 0
   let register = openRegister("", "")
+  const ahead: SlideCommand[] = []
+  const painted = () =>
+    ahead.reduce((shown, edit) => {
+      const decision = decide(shown, { command: "slide", file: fileSlides(parts, shown), edit })
+      return decision.decision === "apply" ? decision.register : shown
+    }, register)
   const held: { current: readonly PlacedText[] } = { current: [] }
   const link = {
-    openDeck: async () => ({ ok: true as const, register }),
     enqueueSlide: async (_deck: string, file: readonly SlideId[], edit: SlideCommand) => {
       const decision = decide(register, { command: "slide", file, edit })
       if (decision.decision !== "apply") return { ok: false }
@@ -38,6 +43,8 @@ function placingDeck(lane = storeLane()) {
       parts: () => parts,
       room: () => room,
       index: () => 0,
+      painted,
+      show: () => shown.push(placedOn(painted(), held.current)),
       showSaved: async () => {
         saved += 1
         shown.push(placedOn(register, held.current))
@@ -49,7 +56,22 @@ function placingDeck(lane = storeLane()) {
     link,
   )
   const keys = { stop: () => (stops += 1), take: () => "" }
-  return { placing, keys, stored, recorded, shown, entered, held, link, parts, saved: () => saved, stops: () => stops }
+  return {
+    placing,
+    keys,
+    stored,
+    recorded,
+    shown,
+    entered,
+    held,
+    link,
+    parts,
+    ahead,
+    painted,
+    device: () => register,
+    saved: () => saved,
+    stops: () => stops,
+  }
 }
 
 it("paints and enters text placed with the Text tool without storing an add or an undo step", async () => {
@@ -67,7 +89,7 @@ it("drops placed text left with no words: nothing stored, no undo step, and the 
   expect(await deck.placing.typed(elementId("256.4"), empty)).toBe(false)
   deck.placing.left(elementId("256.4"))
   expect(deck.held.current).toEqual([])
-  expect(deck.saved()).toBe(2)
+  expect(deck.saved()).toBe(1)
   expect(deck.shown.at(-1)?.order).toEqual([])
   expect(deck.stored).toEqual([])
   expect(deck.recorded).toEqual([])
@@ -88,7 +110,7 @@ it("stores the add with its first words in one undo step, once, however many key
   expect(deck.recorded.map((entry) => entry.name)).toEqual(["add-box"])
   expect(await deck.placing.typed(node, words)).toBe(true)
   deck.placing.left(node)
-  expect(deck.saved()).toBe(1)
+  expect(deck.saved()).toBe(0)
 })
 
 it("lets edits of any other text through at once", async () => {
@@ -119,24 +141,16 @@ it("keeps placed text painted through a repaint from the saved register, and let
   expect(adds(placedOn(saved, deck.held.current))).toBe(0)
 })
 
-it("gives text placed while an earlier insert is still being stored its own element, so both adds are kept", async () => {
-  const lane = storeLane()
-  const deck = placingDeck(lane)
-  let store = () => undefined as void
-  const square = lane(async (stored) => {
-    const opened = await deck.link.openDeck()
-    await new Promise<void>((done) => (store = done))
-    const add = elementCommand(deck.parts, opened.register, { change: "shape", geometry: "rect", index: 0, size: room })
-    if (add === null) throw new Error("no square")
-    await deck.link.enqueueSlide("deck-one", fileSlides(deck.parts, opened.register), add)
-    stored()
-  })
-  const placed = deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
-  await new Promise((later) => setTimeout(later, 0))
-  store()
-  await Promise.all([square, placed])
+it("gives text placed after an insert painted ahead of the device its own element, so both adds are kept", async () => {
+  const deck = placingDeck()
+  const square = elementCommand(deck.parts, deck.painted(), { change: "shape", geometry: "rect", index: 0, size: room })
+  if (square === null) throw new Error("no square")
+  deck.ahead.push(square)
+  deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
   const node = deck.held.current[0]?.node
   if (node === undefined) throw new Error("not placed")
+  expect(String(node)).toBe("256.5")
+  await deck.link.enqueueSlide("deck-one", fileSlides(deck.parts, deck.device()), square)
   expect(await deck.placing.typed(node, words)).toBe(true)
   expect(deck.stored.map((edit) => (edit.slide === "element-add" ? String(edit.element.node) : edit.slide))).toEqual([
     "256.4",
@@ -144,24 +158,27 @@ it("gives text placed while an earlier insert is still being stored its own elem
   ])
 })
 
-it("gives each text placed while the device is still storing its own element, and keeps the words typed in each", async () => {
+it("gives each text placed while the device is still storing its own element at once, and keeps the words typed in each", async () => {
   const lane = storeLane()
   const deck = placingDeck(lane)
   let release = () => undefined as void
   const busy = lane(() => new Promise<void>((done) => (release = done)))
-  const first = deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
-  const second = deck.placing.place({ x: 3_048_000, y: 762_000 }, deck.keys)
-  await new Promise((later) => setTimeout(later, 0))
-  release()
-  await Promise.all([busy, first, second])
+  deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  deck.placing.place({ x: 3_048_000, y: 762_000 }, deck.keys)
   expect(deck.entered).toEqual(["256.4", "256.5"])
   const painted = deck.shown.at(-1)?.order.filter((command) => command.slide === "element-add") ?? []
   expect(painted.map((command) => (command.slide === "element-add" ? String(command.element.node) : ""))).toEqual([
     "256.4",
     "256.5",
   ])
-  expect(await deck.placing.typed(elementId("256.4"), words)).toBe(true)
-  expect(await deck.placing.typed(elementId("256.5"), words)).toBe(true)
+  const first = deck.placing.typed(elementId("256.4"), words)
+  const second = deck.placing.typed(elementId("256.5"), words)
+  await new Promise((later) => setTimeout(later, 0))
+  expect(deck.stored).toEqual([])
+  release()
+  await busy
+  expect(await first).toBe(true)
+  expect(await second).toBe(true)
   expect(deck.stored.map((edit) => (edit.slide === "element-add" ? String(edit.element.node) : edit.slide))).toEqual([
     "256.4",
     "256.5",
@@ -173,8 +190,7 @@ it("gives each text placed while the device is still storing its own element, an
 it("keeps placed text's element when an insert read with the held placements is stored before its first words", async () => {
   const deck = placingDeck()
   await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
-  const opened = await deck.link.openDeck()
-  const seen = placedOn(opened.register, deck.held.current)
+  const seen = placedOn(deck.device(), deck.held.current)
   const square = elementCommand(deck.parts, seen, { change: "shape", geometry: "rect", index: 0, size: room })
   if (square === null) throw new Error("no square")
   expect((await deck.link.enqueueSlide("deck-one", fileSlides(deck.parts, seen), square)).ok).toBe(true)

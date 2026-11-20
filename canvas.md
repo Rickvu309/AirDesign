@@ -37,5 +37,5 @@ The height a table row shows on the canvas: its own height, or more while its te
 _Avoid_: auto row height, row fit
 
 **painted ahead**:
-An edit the canvas shows before the device stored it. The editor keeps these edits in the order the person made them and lays them over every deck it paints from the device, and drops each one once the device wrote its rows. Typing, every Design panel change and a drag's boxes paint ahead, so an edit never waits for an earlier save to paint, and an edit made straight after one plans against what the person sees; the save order stays the order of the edits.
+An edit the canvas shows before the device stored it. The editor keeps these edits in the order the person made them and lays them over every deck it paints from the device, and drops each one once the device wrote its rows. Typing, every Design panel change, a drag's boxes, text the Text tool places, and every inserted, removed, grouped or duplicated layer paint ahead, so an edit never waits for an earlier save to paint; the save order stays the order of the edits.
 _Avoid_: optimistic update, preview, pending paint
