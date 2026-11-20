@@ -167,7 +167,7 @@ function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
 
-const imageFields: readonly string[] = ["mode", "tileScale", "source", "weight", "recolor", "overlay", "blur"]
+const imageFields: readonly string[] = ["mode", "tileScale", "source", "weight", "color", "recolor", "overlay", "blur"]
 
 export function shownPlace(trait: TraitName, field: string): { readonly trait: SectionName; readonly field: string } {
   if (trait === "geometry" && field === "corners") return { trait: "corners", field }

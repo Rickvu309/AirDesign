@@ -1,6 +1,8 @@
 import {
+  colorPaint,
   mappedSlots,
   templateColors,
+  type Color,
   type TemplateStyle as IndexedTemplate,
   type MappedSlot,
   type TemplateColor,
@@ -82,4 +84,13 @@ export function templateStyles(parts: Parts): readonly IndexedTemplate[] {
     styles.push({ id, name, palette: { slots, map, fonts } })
   }
   return styles
+}
+
+export function slideColorHex(parts: Parts, slide: string, color: Color): string | null {
+  const theme = slideTheme(parts, slide)
+  const palette = templateStyles(parts).find((style) => style.id === theme)?.palette
+  if (palette === undefined) return null
+  const mapped: Readonly<Record<string, TemplateColor | undefined>> = palette.map
+  const slots: Readonly<Record<string, string | undefined>> = palette.slots
+  return colorPaint(color, (scheme) => slots[mapped[scheme] ?? scheme] ?? null)?.hex.toUpperCase() ?? null
 }

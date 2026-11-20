@@ -263,7 +263,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   image: [
     [placed("mode")],
     [placed("tileScale")],
-    [placed("weight", above, { glyph: Minus, steps: iconWeightSteps, unit: "" })],
+    [placed("color"), placed("weight", above, { glyph: Minus, steps: iconWeightSteps, unit: "" })],
     [placed("overlay"), placed("blur")],
     [placed("source")],
     [placed("recolor")],

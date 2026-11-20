@@ -138,15 +138,21 @@ export function appearanceSections(
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
   const mode = controls.find((control) => control.trait === "image" && control.field === "mode")
   const tileScale = controls.find((control) => control.trait === "image" && control.field === "tileScale")
-  const weight = controls.find(
-    (control) => control.trait === "image" && control.field === "weight" && typeof control.value === "number",
+  const iconControls = present(
+    ["color", "weight"].map((field) =>
+      controls.find(
+        (control) =>
+          control.trait === "image" && control.field === field && control.value !== null && control.value !== undefined,
+      ),
+    ),
   )
   const placement =
     mode === undefined
       ? []
       : [
           [modeList(mode)],
-          ...present([mode.value === "tile" ? tileScale : undefined, weight]).map((control) => [control]),
+          ...present([mode.value === "tile" ? tileScale : undefined]).map((control) => [control]),
+          ...(iconControls.length === 0 ? [] : [iconControls]),
         ]
   const overlay = controls.find((control) => control.trait === "image" && control.field === "overlay")
   const blur = controls.find((control) => control.trait === "image" && control.field === "blur")
@@ -245,7 +251,7 @@ export function appearanceSections(
           .map((strip) =>
             strip.filter((control) => {
               if (shapePanel) return false
-              return !["mode", "tileScale", "weight", "overlay", "blur"].includes(control.field)
+              return !["mode", "tileScale", "weight", "color", "overlay", "blur"].includes(control.field)
             }),
           )
           .filter((strip) => strip.length > 0),

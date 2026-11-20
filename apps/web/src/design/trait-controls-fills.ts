@@ -10,6 +10,7 @@ export const fillsControls: TraitControls<"fills"> = {
     tileScale: { label: pictureCopy.tileScale },
     source: { label: pictureCopy.source },
     weight: { label: pictureCopy.weight },
+    color: { label: pictureCopy.color },
     crop: { label: pictureCopy.crop },
     recolor: { label: pictureCopy.recolor },
     overlay: { label: pictureCopy.overlay },

@@ -97,6 +97,8 @@ export const fillModes = ["fill", "fit", "crop", "tile", "stretch"] as const
 
 export const iconWeights = { lightest: 50, lucide: 200, heaviest: 300 } as const
 
+export const iconTextColor = { scheme: "tx1" } as const
+
 const iconWeight = pointsWithin(iconWeights.lightest, iconWeights.heaviest)
 
 const shownPaint = union({ ...fillCases, image: mark, group: mark }, "solid")
@@ -121,7 +123,7 @@ export type PaintSlot = (typeof paintSlots)[number]
 
 export const fills = trait(
   "whole",
-  { version: 15, shape: "58bfc1f7" },
+  { version: 16, shape: "1b9de803" },
   {
     p0: slotPaint,
     p1: slotPaint,
@@ -129,6 +131,7 @@ export const fills = trait(
     p3: slotPaint,
     source: pictureSource,
     weight: iconWeight,
+    color,
     mode: choice(fillModes),
     tileScale: fractionWithin(1000, 1_000_000),
     crop: record({ l: fraction, t: fraction, r: fraction, b: fraction }),

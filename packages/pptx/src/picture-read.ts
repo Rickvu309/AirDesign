@@ -7,7 +7,7 @@ import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./b
 import { colorsIn } from "./color-read.js"
 import { decodedXmlText, type MarkupElement } from "./element-span.js"
 import { whole, type Held } from "./markup-held.js"
-import { iconOfPart, type IconRef } from "./picture-write.js"
+import { iconInk, iconOfPart, type IconColor, type IconRef } from "./picture-write.js"
 import { requireMarkup } from "./part-markup.js"
 import type { Drawn, Sheet } from "./paint-sheet.js"
 import type { MarkupChildren } from "./text-value-route.js"
@@ -20,6 +20,7 @@ export type CropRect = FieldValue<"fills", "crop">
 export type ShownImage = {
   readonly source: string | null
   readonly weight: number | null
+  readonly color: Color | null
   readonly alpha: number
   readonly recolor: Recolor
   readonly blur: number | null
@@ -44,6 +45,18 @@ export function iconOf(parts: Parts, part: string, children: MarkupChildren, bli
   const id = svgEmbed(children, blip)
   const target = id === null ? null : linkTarget(parts, part, id)
   return target === null ? null : iconOfPart(target)
+}
+
+export function iconColorOf(color: IconColor): Color {
+  if (color.scheme === undefined) return { rgb: color.hex }
+  return { scheme: color.scheme, ...(color.transforms === undefined ? {} : { transforms: color.transforms }) }
+}
+
+export function shownIcon(parts: Parts, at: ElementAt): IconRef | null {
+  const found = pictureAt(parts, at)
+  const blip = found?.blip
+  if (found === null || blip === undefined || embedded(blip) === null) return null
+  return iconOf(parts, at.part, found.children, blip)
 }
 
 export function heldIcon(parts: Parts, part: string, held: Held): IconRef | null {
@@ -99,6 +112,7 @@ export function shownImage(parts: Parts, at: ElementAt): ShownImage | null {
   return {
     source: icon?.name ?? null,
     weight: icon?.weight ?? null,
+    color: icon === null ? null : iconColorOf(icon.color),
     alpha,
     recolor,
     blur: blipBlur(found, blip),
@@ -149,6 +163,7 @@ export type PictureReads = {
   fills?: { readonly value: "image" }
   "fills.source"?: { readonly value: string }
   "fills.weight"?: { readonly value: number }
+  "fills.color"?: { readonly value: Color }
   "fills.mode"?: { readonly value: string }
   "fills.recolor"?: { readonly value: RecolorRead }
   "fills.crop"?: { readonly value: CropRead }
@@ -170,6 +185,8 @@ export function pictureReads(parts: Parts, sheet: Sheet, item: Drawn): PictureRe
   const icon = iconOf(parts, sheet.part, sheet.children, blip)
   if (icon !== null) reads["fills.source"] = { value: icon.name }
   if (icon !== null && icon.weight !== iconWeights.lucide) reads["fills.weight"] = { value: icon.weight }
+  if (icon !== null && (icon.color.hex !== iconInk.hex || icon.color.scheme !== undefined))
+    reads["fills.color"] = { value: iconColorOf(icon.color) }
   const found = { bytes: sheet.bytes, elements: sheet.elements, children: sheet.children, fill, blip }
   const mode = fillMode(found)
   if (mode !== "stretch") reads["fills.mode"] = { value: mode }

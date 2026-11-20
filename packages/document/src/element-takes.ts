@@ -29,6 +29,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   group: [masks],
   slide: [
     "fills.weight",
+    "fills.color",
     "fills.mode",
     "fills.tileScale",
     "fills.crop",

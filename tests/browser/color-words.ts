@@ -29,3 +29,9 @@ export async function toolbarWords(fixture: string, slide = 0): Promise<Record<s
   const part = readSlides(parts)[slide]?.part ?? null
   return Object.fromEntries(namedByColor(themeSwatches(parts, part)).map((swatch) => [swatch.scheme, swatch.name]))
 }
+
+export async function templateHex(fixture: string, slot: string): Promise<string> {
+  const { readParts, readSlides, slideColorHex } = await import("../../packages/pptx/dist/index.js")
+  const parts = await readParts(await readFile(join(process.cwd(), "scripts/pptx-fixtures", fixture)))
+  return slideColorHex(parts, readSlides(parts)[0]?.part ?? "", { scheme: slot }) ?? ""
+}

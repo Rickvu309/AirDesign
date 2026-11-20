@@ -2,8 +2,6 @@ import { linkSchema } from "./link-schema.js"
 import { readLinkTarget } from "@airdesign/document"
 import {
   alphaOf,
-  assetIcon,
-  iconWeights,
   bytesOf,
   designBytes,
   designOrder,
@@ -25,9 +23,7 @@ import {
   type FillRead,
   type IndexElement,
   type Read,
-  type CropRead,
   type BoundRead,
-  type RecolorRead,
   type Shown,
   type TemplateFont,
   type TraitReads,
@@ -35,8 +31,9 @@ import {
 import { cornersAgents, foldCorners, type Size } from "./agent-corners.js"
 import { effectAgents, foldEffects } from "./agent-effects.js"
 import { foldIdentity, identityAgents } from "./agent-identity.js"
+import { foldImage, imageAgents } from "./agent-image.js"
 import { fontReferences } from "./template-font.js"
-import { agentColor, agentPercent, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
+import { agentColor, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
 import { storableText } from "./storable-text.js"
 
@@ -55,16 +52,8 @@ function agentFill(fill: FillRead): string {
   return `pattern ${fill.pattern}`
 }
 
-function agentRecolor(recolor: RecolorRead): string {
-  return recolor === "grayscale" ? recolor : `duotone ${agentColor(recolor.dark)}, ${agentColor(recolor.light)}`
-}
-
 function agentBound(bound: BoundRead): string {
   return `${bound.node} site ${String(bound.site)}`
-}
-
-function agentCrop(crop: CropRead): string {
-  return `l ${agentPercent(crop.l)} t ${agentPercent(crop.t)} r ${agentPercent(crop.r)} b ${agentPercent(crop.b)}`
 }
 
 type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>["value"]) => Shown[0] }
@@ -89,11 +78,7 @@ const agent: Agent = {
   "box.rot": (value) => tenths(value / anglePerDegree),
   "box.flipH": (value) => value,
   "box.flipV": (value) => value,
-  "fills.source": (value) => value,
-  "fills.weight": (value) => tenths(value / hundredthsPerPoint),
-  "fills.mode": (value) => value,
-  "fills.recolor": agentRecolor,
-  "fills.crop": agentCrop,
+  ...imageAgents,
   ...identityAgents,
   "connection.start": agentBound,
   "connection.end": agentBound,
@@ -211,11 +196,6 @@ type End = FieldValue<"connection", "start">
 
 const endShown = (end: End) => ("none" in end ? null : agentBound(end.shape))
 
-type Recolor = FieldValue<"fills", "recolor">
-
-const recolorShown = (recolor: Recolor) =>
-  "none" in recolor ? null : agentRecolor("grayscale" in recolor ? "grayscale" : recolor.duotone)
-
 function dashShown(value: Exclude<FieldValue<"border", "dash">, string>): string {
   return value.custom.flatMap(({ dash, gap }) => [dash / 1000, gap / 1000]).join(", ")
 }
@@ -240,15 +220,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch, box?
   next = folded(next, "body.anchor", patch.body?.anchor, (value) => (value === "t" ? null : value))
   next = folded(next, "body.autofit", patch.body?.autofit, (value) => (value === "none" ? null : value))
   next = folded(next, "body.vertical", patch.body?.vertical, (value) => (value === "horz" ? null : value))
-  next = folded(next, "fills.source", patch.fills?.source, (value) => assetIcon(value))
-  next = folded(next, "fills.weight", patch.fills?.weight, (value) =>
-    value === iconWeights.lucide ? null : tenths(value / hundredthsPerPoint),
-  )
-  next = folded(next, "fills.mode", patch.fills?.mode, (value) => (value === "stretch" ? null : value))
-  next = folded(next, "fills.recolor", patch.fills?.recolor, recolorShown)
-  next = folded(next, "fills.crop", patch.fills?.crop, (value) =>
-    value.l + value.t + value.r + value.b === 0 ? null : agentCrop(value),
-  )
+  next = foldImage(next, patch.fills)
   next = foldIdentity(next, patch.identity)
   next = folded(next, "connection.start", patch.connection?.start, endShown)
   next = folded(next, "connection.end", patch.connection?.end, endShown)

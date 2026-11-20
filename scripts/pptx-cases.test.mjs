@@ -36,6 +36,7 @@ assert.deepEqual(
     "group-join.mjs",
     "group-transform.mjs",
     "group.mjs",
+    "icon-color.mjs",
     "icon-weight.mjs",
     "layer-duplicate.mjs",
     "layer-join.mjs",

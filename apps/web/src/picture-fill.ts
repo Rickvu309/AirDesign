@@ -1,5 +1,5 @@
 import { drawablePicture, iconOfPart, rasterDimensions, type PaintElement } from "@airdesign/pptx"
-import { reweighedIcon } from "@/icon-weight"
+import { redrawnIcon } from "@/icon-redraw"
 
 export type PictureImage = NonNullable<PaintElement["image"]>
 
@@ -63,7 +63,7 @@ export function pictureSources(
     const known = made.get(image.part)
     if (known !== undefined) return known.url
     const type = image.contentType?.toLowerCase() ?? ""
-    const bytes = parts.get(image.part) ?? reweighedIcon(image.part, parts)
+    const bytes = parts.get(image.part) ?? redrawnIcon(image.part, parts)
     if (bytes === undefined) return null
     if (iconOfPart(image.part) !== null && type === "image/svg+xml") {
       const url = iconAddress(bytes)

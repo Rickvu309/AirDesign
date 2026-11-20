@@ -197,6 +197,7 @@ const settingsXml = {
     tileScale: tileScaleXml,
     source: imageFieldsXml.source,
     weight: imageFieldsXml.weight,
+    color: imageFieldsXml.color,
     alpha: whole({
       read: (parts, at) => {
         const shown = fillAlpha(parts, at)
@@ -269,6 +270,7 @@ export const fillsXml: TraitXml<"fills"> = {
       write: (parts, at, value) => writtenFills(parts, at, { source: { set: value } }),
     }),
     weight: settingsXml.fields.weight,
+    color: settingsXml.fields.color,
     mode: settingsXml.fields.mode,
     tileScale: settingsXml.fields.tileScale,
     crop: settingsXml.fields.crop,
