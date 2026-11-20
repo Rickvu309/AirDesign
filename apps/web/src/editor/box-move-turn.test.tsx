@@ -1,6 +1,7 @@
 import {
   decide,
   elementId,
+  groupOf,
   openRegister,
   placeOf,
   plainFrameTurn,
@@ -38,6 +39,7 @@ const slide = slideId("256")
 const wide = elementId("256.3")
 const small = elementId("256.4")
 const frame = elementId("256.20")
+const farNudge = 127_000
 const backdrop = elementId("256.21")
 const shape = (id: number, x: number, cx: number) =>
   `<p:sp><p:nvSpPr><p:cNvPr id="${String(id)}" name="s${String(id)}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${String(x)}" y="100000"/><a:ext cx="${String(cx)}" cy="40000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:sp>`
@@ -102,18 +104,36 @@ function Deck(props: { readonly selected: Selection; readonly exposed: (deck: Ex
   })(800)
 }
 
+function grouped(): Register {
+  const register = opened()
+  const made = groupOf(register, slide, frame, [wide, small])
+  if (made === null) throw new Error("group")
+  return applied(register, { command: "slide", file: [slide], edit: made })
+}
+
 async function boxDeck(start: Register, node: ElementId, inside: ElementId | null) {
   let register = start
   const sends: (() => void)[] = []
+  const held: { stores: number; at: number | null; release: (() => void) | null } = {
+    stores: 0,
+    at: null,
+    release: null,
+  }
+  const stored = async () => {
+    held.stores += 1
+    if (held.stores === held.at) await new Promise<void>((resolve) => (held.release = resolve))
+  }
   device.link = {
     openDeck: async () => ({ ok: true, register }),
-    enqueueBox(_deck: string, box: Box, target: ElementId) {
+    async enqueueBox(_deck: string, box: Box, target: ElementId) {
+      await stored()
       register = applied(register, { command: "person", node: target, property: "box", value: box })
-      return Promise.resolve({ ok: true, painted: box })
+      return { ok: true, painted: box }
     },
-    enqueueRow(_deck: string, row: Row, target: ElementId) {
+    async enqueueRow(_deck: string, row: Row, target: ElementId) {
+      await stored()
       register = applied(register, { command: "person", node: target, v: row.v, patch: row.patch })
-      return Promise.resolve({ ok: true, painted: row })
+      return { ok: true, painted: row }
     },
     enqueueSlide(_deck: string, file: readonly ReturnType<typeof slideId>[], edit: SlideCommand) {
       register = applied(register, { command: "slide", file, edit })
@@ -152,6 +172,7 @@ async function boxDeck(start: Register, node: ElementId, inside: ElementId | nul
     register: () => register,
     exposed: () => exposed.current ?? now,
     sends,
+    held,
     nudge: (key: string, far = false) => {
       const keys = { bubbles: true, cancelable: true, key, shiftKey: far }
       element.dispatchEvent(new KeyboardEvent("keydown", keys))
@@ -216,4 +237,24 @@ it("lets the next turn run while the server has not answered a nudge that takes 
   expect(moving.exposed().undo.undoList.current.undo.map((entry) => entry.name)).toEqual(["move"])
   expect(moving.sends.length).toBeGreaterThan(0)
   expect(next).toBe(true)
+})
+
+it("keeps every nudge of a layer in a group when a nudge's store ends after the next nudges moved it", async () => {
+  const start = grouped()
+  const moving = await boxDeck(start, small, frame)
+  const before = boxOn(start, small)
+  if (before === null) throw new Error("box")
+  moving.held.at = 2
+  await act(async () => {
+    for (let step = 0; step < 3; step += 1) moving.nudge("ArrowRight", true)
+    for (let tick = 0; tick < 20 && moving.held.release === null; tick += 1)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  await act(async () => {
+    moving.nudge("ArrowRight", true)
+    moving.held.release?.()
+    await moving.exposed().undo.turning.current
+    for (let tick = 0; tick < 20; tick += 1) await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  expect(boxOn(moving.register(), small)?.x).toBe(before.x + 4 * farNudge)
 })

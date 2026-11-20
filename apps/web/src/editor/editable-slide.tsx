@@ -2,6 +2,7 @@ import { format, type ElementId, type Register, type StackMove } from "@airdesig
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import {
   boxOf,
+  sameBox,
   SlideCanvas,
   type Copied,
   type FitSize,
@@ -222,7 +223,8 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
     if (grouped.length > 0) {
       await deck.shown.showEdited(current)
-      for (const each of grouped) store.current.placeBox(each.id, null)
+      for (const each of grouped)
+        if (sameBox(store.current.getBox(each.id), each.box)) store.current.placeBox(each.id, null)
     }
     return stored
   }
