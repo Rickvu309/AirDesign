@@ -57,3 +57,39 @@ export function scaledGrid(bytes: Uint8Array, shape: string, from: FrameSize): U
   const edits = [...scaled(grid.widths, "w", from.cx, to.cx), ...scaled(grid.rows, "h", from.cy, to.cy)]
   return edits.length === 0 ? bytes : spliceBytes(bytes, edits)
 }
+
+function shared(
+  elements: readonly MarkupElement[],
+  name: string,
+  weights: readonly number[],
+  total: number,
+): ByteEdit[] {
+  const sum = weights.reduce((all, weight) => all + weight, 0)
+  if (weights.length !== elements.length || sum <= 0) throw new Error(name)
+  let before = 0
+  let placed = 0
+  return elements.flatMap((element, at) => {
+    before += weights[at] ?? 0
+    const reached = Math.round((before * total) / sum)
+    const size = reached - placed
+    placed = reached
+    const value = element.attributes.find((item) => item.name === name)
+    if (value === undefined || sizeOf(element, name) === size) return []
+    return [{ start: value.valueStart, end: value.valueEnd, next: encodeUtf8(String(size)) }]
+  })
+}
+
+export function sizedGrid(
+  bytes: Uint8Array,
+  shape: string,
+  widths: readonly number[] | undefined,
+  heights: readonly number[] | undefined,
+): Uint8Array {
+  const grid = gridOf(bytes, shape)
+  const frame = sizedOf(grid, shape)
+  const edits = [
+    ...(widths === undefined ? [] : shared(grid.widths, "w", widths, frame.cx)),
+    ...(heights === undefined ? [] : shared(grid.rows, "h", heights, frame.cy)),
+  ]
+  return edits.length === 0 ? bytes : spliceBytes(bytes, edits)
+}

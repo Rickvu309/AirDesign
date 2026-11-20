@@ -27,6 +27,7 @@ import { commitEdit, cornersPatch, flushPending, storeBoxes, type BoxCommit, typ
 import { latestFit } from "@/editor/latest-fit"
 import { resizedCorners } from "@/resized-corners"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { tableCopy } from "@/copy/table-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { toggleLayerFlag } from "@/editor/layer-flags"
 import { valueFits } from "@/design/trait-edit"
@@ -468,6 +469,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
             {...(deck.tables === undefined
               ? {}
               : {
+                  tableWords: tableCopy,
                   onTable: (target: ElementId, change: TableChange) =>
                     deck.tables?.change(target, change, (value, name) =>
                       holding([target], () => onEdit(target, value, name)),

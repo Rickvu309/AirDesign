@@ -99,3 +99,21 @@ describe("cell fills and borders", () => {
     expect(read[1]?.[0]).toEqual({ fill: null, borders: {} })
   })
 })
+
+describe("column widths and row heights", () => {
+  const sizes = (xml: string, tag: string, name: string) =>
+    [...xml.matchAll(new RegExp(`<${tag} ${name}="(\\d+)"`, "g"))].map((match) => Number(match[1]))
+
+  it("shares the frame's width among the columns and its height among the rows, as the value weighs them", () => {
+    const xml = written({ change: "widths", widths: [1, 1, 2] }, { change: "heights", heights: [1, 3] })
+    expect(sizes(xml, "a:gridCol", "w")).toEqual([75, 75, 150])
+    expect(sizes(xml, "a:tr", "h")).toEqual([50, 150])
+    expect(xml).toContain('<a:ext cx="300" cy="200"/>')
+  })
+
+  it("keeps a new column's share beside its neighbour's", () => {
+    const xml = written({ change: "widths", widths: [1, 1, 2] }, { change: "column", column: 2, place: "after" })
+    expect(sizes(xml, "a:gridCol", "w")).toEqual([67, 66, 134, 133])
+    expect(xml).toContain('<a:ext cx="400" cy="200"/>')
+  })
+})

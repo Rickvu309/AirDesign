@@ -13,6 +13,7 @@ import {
   type CellFill,
   type CellRange,
 } from "./table-cells.js"
+import { droppedSize, placedSize, readSize, readSizes } from "./table-sizes.js"
 import { readParagraphs, type TextValue } from "./text-value.js"
 
 export type TableRow = {
@@ -20,8 +21,13 @@ export type TableRow = {
   readonly cells: readonly TextValue[]
   readonly fills?: readonly (CellFill | null)[]
   readonly borders?: readonly (Borders | null)[]
+  readonly height?: number
 }
-export type TableValue = { readonly rows: readonly TableRow[]; readonly columns?: readonly number[] }
+export type TableValue = {
+  readonly rows: readonly TableRow[]
+  readonly columns?: readonly number[]
+  readonly widths?: readonly number[]
+}
 
 export type TableChange =
   | { readonly change: "cell"; readonly row: number; readonly column: number; readonly text: string }
@@ -31,10 +37,12 @@ export type TableChange =
   | { readonly change: "remove-column"; readonly column: number }
   | { readonly change: "fill"; readonly cells: CellRange; readonly fill: CellFill }
   | { readonly change: "border"; readonly cells: CellRange; readonly sides: BorderSides; readonly border: Border }
+  | { readonly change: "widths"; readonly widths: readonly number[] }
+  | { readonly change: "heights"; readonly heights: readonly number[] }
 
 const emptyCell: TextValue = [{ from: 0, runs: [] }]
 
-const rowKeys = ["from", "cells", "fills", "borders"]
+const rowKeys = ["from", "cells", "fills", "borders", "height"]
 
 function readRow(raw: unknown): TableRow | null {
   const row = record(raw)
@@ -51,8 +59,15 @@ function readRow(raw: unknown): TableRow | null {
   }
   const fills = row.fills === undefined ? undefined : readCellList(row.fills, cells.length, readCellFill)
   const borders = row.borders === undefined ? undefined : readCellList(row.borders, cells.length, readBorders)
-  if (fills === null || borders === null) return null
-  return { from, cells, ...(fills === undefined ? {} : { fills }), ...(borders === undefined ? {} : { borders }) }
+  const height = readSize(row.height)
+  if (fills === null || borders === null || height === null) return null
+  return {
+    from,
+    cells,
+    ...(fills === undefined ? {} : { fills }),
+    ...(borders === undefined ? {} : { borders }),
+    ...(height === undefined ? {} : { height }),
+  }
 }
 
 function writtenRow(row: TableRow): TableRow {
@@ -63,6 +78,7 @@ function writtenRow(row: TableRow): TableRow {
     cells: row.cells,
     ...(fills === undefined ? {} : { fills }),
     ...(borders === undefined ? {} : { borders }),
+    ...(row.height === undefined ? {} : { height: row.height }),
   }
 }
 
@@ -70,7 +86,7 @@ function withCells(row: TableRow, change: <T>(items: readonly T[], blank: T) => 
   const fills = row.fills === undefined ? undefined : change(row.fills, null)
   const borders = row.borders === undefined ? undefined : change(row.borders, null)
   return writtenRow({
-    from: row.from,
+    ...row,
     cells: change(row.cells, emptyCell),
     ...(fills === undefined ? {} : { fills }),
     ...(borders === undefined ? {} : { borders }),
@@ -94,8 +110,13 @@ export function tableColumns(value: TableValue): readonly number[] {
   return value.columns ?? (value.rows[0]?.cells ?? []).map((_, at) => at)
 }
 
-function tableOf(rows: readonly TableRow[], columns: readonly number[]): TableValue {
-  return columns.every((from, at) => from === at) ? { rows } : { rows, columns }
+function tableOf(
+  rows: readonly TableRow[],
+  columns: readonly number[],
+  widths: readonly number[] | undefined,
+): TableValue {
+  const sized = widths === undefined ? {} : { widths }
+  return columns.every((from, at) => from === at) ? { rows, ...sized } : { rows, columns, ...sized }
 }
 
 export function readTableValue(value: string): TableValue | null {
@@ -106,7 +127,7 @@ export function readTableValue(value: string): TableValue | null {
     return null
   }
   const table = record(parsed)
-  const keys = table !== null && "columns" in table ? ["rows", "columns"] : ["rows"]
+  const keys = ["rows", "columns", "widths"].filter((key) => key === "rows" || (table !== null && key in table))
   if (table === null || !onlyKeys(table, keys) || !Array.isArray(table.rows)) return null
   if (table.rows.length < 1 || table.rows.length > limits.tableRows) return null
   const rows: TableRow[] = []
@@ -120,15 +141,14 @@ export function readTableValue(value: string): TableValue | null {
     }
     rows.push(row)
   }
-  if (table.columns === undefined) return { rows }
-  const columns = sources(table.columns, rows[0]?.cells.length ?? 0)
-  return columns === null ? null : tableOf(rows, columns)
+  const count = rows[0]?.cells.length ?? 0
+  const widths = table.widths === undefined ? undefined : readSizes(table.widths, count)
+  const columns = table.columns === undefined ? rows[0]?.cells.map((_, at) => at) : sources(table.columns, count)
+  return columns === null || columns === undefined || widths === null ? null : tableOf(rows, columns, widths)
 }
 
 export function writeTableValue(value: TableValue): string {
-  const rows = value.rows.map(writtenRow)
-  const columns = tableColumns(value)
-  return JSON.stringify(columns.every((from, at) => from === at) ? { rows } : { rows, columns })
+  return JSON.stringify(tableOf(value.rows.map(writtenRow), tableColumns(value), value.widths))
 }
 
 const openingRowHeight = 370_840
@@ -189,7 +209,7 @@ function changedCells(
       const held = borders[spot.column] ?? {}
       borders[spot.column] = { ...held, [spot.side]: { ...held[spot.side], ...change.border } }
     }
-  const next = tableOf(rows.map(writtenRow), tableColumns(value))
+  const next = tableOf(rows.map(writtenRow), tableColumns(value), value.widths)
   return writeTableValue(next) === writeTableValue(value) ? value : next
 }
 
@@ -205,6 +225,7 @@ function changedColumns(
     return tableOf(
       value.rows.map((row) => withCells(row, (items) => items.filter(kept))),
       columns.filter(kept),
+      droppedSize(value.widths, change.column),
     )
   }
   if (columns.length >= limits.tableColumns) return null
@@ -213,12 +234,28 @@ function changedColumns(
   return tableOf(
     value.rows.map((row) => withCells(row, placed)),
     placed(columns, -1),
+    placedSize(value.widths, at, change.column),
   )
+}
+
+function resized(value: TableValue, change: Extract<TableChange, { readonly change: "widths" | "heights" }>) {
+  if (change.change === "widths") {
+    const widths = readSizes(change.widths, cellCount(value))
+    if (widths === null) return null
+    const same = JSON.stringify(widths) === JSON.stringify(value.widths)
+    return same ? value : tableOf(value.rows, tableColumns(value), widths)
+  }
+  const heights = readSizes(change.heights, value.rows.length)
+  if (heights === null) return null
+  if (value.rows.every((row, at) => row.height === heights[at])) return value
+  const rows = value.rows.map((row, at) => ({ ...row, height: heights[at] ?? 0 }))
+  return tableOf(rows, tableColumns(value), value.widths)
 }
 
 export function changedTable(value: TableValue, change: TableChange): TableValue | null {
   if (change.change === "column" || change.change === "remove-column") return changedColumns(value, change)
   if (change.change === "fill" || change.change === "border") return changedCells(value, change)
+  if (change.change === "widths" || change.change === "heights") return resized(value, change)
   const row = value.rows[change.row]
   if (row === undefined) return null
   if (change.change === "cell") {
@@ -229,6 +266,7 @@ export function changedTable(value: TableValue, change: TableChange): TableValue
     return tableOf(
       value.rows.map((each, at) => (at === change.row ? { ...each, cells } : each)),
       tableColumns(value),
+      value.widths,
     )
   }
   if (change.change === "remove-row") {
@@ -236,12 +274,17 @@ export function changedTable(value: TableValue, change: TableChange): TableValue
     return tableOf(
       value.rows.filter((_, at) => at !== change.row),
       tableColumns(value),
+      value.widths,
     )
   }
   if (value.rows.length >= limits.tableRows) return null
   const at = change.place === "above" ? change.row : change.row + 1
-  const added = { from: -1, cells: row.cells.map(() => emptyCell) }
-  return tableOf([...value.rows.slice(0, at), added, ...value.rows.slice(at)], tableColumns(value))
+  const added = {
+    from: -1,
+    cells: row.cells.map(() => emptyCell),
+    ...(row.height === undefined ? {} : { height: row.height }),
+  }
+  return tableOf([...value.rows.slice(0, at), added, ...value.rows.slice(at)], tableColumns(value), value.widths)
 }
 
 export function openedTable(value: string | null): boolean {

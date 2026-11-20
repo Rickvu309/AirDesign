@@ -4,6 +4,7 @@ export const tableExportName = "exported-table.pptx"
 export const tableCellsExportName = "exported-table-cells.pptx"
 export const tableResizedExportName = "exported-table-resized.pptx"
 export const tableReadableExportName = "exported-table-readable.pptx"
+export const tableRowsColumnsExportName = "exported-table-rows-columns.pptx"
 
 const original = "blank.pptx"
 const cellsOriginal = "table-added.pptx"
@@ -72,6 +73,22 @@ function styledLines(exported, name) {
   return lines
 }
 
+function shapedLines(pptx, exported) {
+  const name = "table rows and columns export"
+  const found = onlyTable(pptx, exported, name)
+  if (found.table === undefined) return found.lines
+  const xml = new TextDecoder().decode(exported.get(found.table.part))
+  const widths = [...xml.matchAll(/<a:gridCol w="(\d+)"/g)].map((match) => Number(match[1]))
+  const rows = [...xml.matchAll(/<a:tr h="(\d+)"/g)].length
+  const lines = []
+  if (widths.length !== 3 || rows !== 3)
+    lines.push(`${name} has ${widths.length} columns and ${rows} rows, not 3 and 3`)
+  if (widths.reduce((sum, width) => sum + width, 0) !== found.table.box?.cx)
+    lines.push(`${name} columns do not add up to the frame`)
+  if (!((widths[0] ?? 0) > (widths[1] ?? 0))) lines.push(`${name} first column did not take width from the second`)
+  return lines
+}
+
 function sizedLines(pptx, exported) {
   const found = onlyTable(pptx, exported, "table resize export")
   if (found.table === undefined) return found.lines
@@ -90,8 +107,15 @@ export default {
     "tests/browser/table-cells.spec.ts",
     "tests/browser/gesture-size.spec.ts",
     "tests/browser/table-readable.spec.ts",
+    "tests/browser/table-rows-columns.spec.ts",
   ],
-  exports: [tableExportName, tableCellsExportName, tableResizedExportName, tableReadableExportName],
+  exports: [
+    tableExportName,
+    tableCellsExportName,
+    tableResizedExportName,
+    tableReadableExportName,
+    tableRowsColumnsExportName,
+  ],
   originals: [cellsOriginal],
   covers: ["table.value"],
   lines(answers) {
@@ -114,6 +138,10 @@ export default {
     lines.push(...sizedLines(pptx, parts.get(tableResizedExportName)))
     lines.push(...keptLines(answers, original, tableReadableExportName, "table readable export", styledParts))
     lines.push(...styledLines(parts.get(tableReadableExportName), "table readable export"))
+    lines.push(
+      ...keptLines(answers, original, tableRowsColumnsExportName, "table rows and columns export", styledParts),
+    )
+    lines.push(...shapedLines(pptx, parts.get(tableRowsColumnsExportName)))
     return lines
   },
 }

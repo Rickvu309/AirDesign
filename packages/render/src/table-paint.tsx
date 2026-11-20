@@ -2,7 +2,7 @@ import { cellText, readTableValue, type ElementId, type TableChange, type TableV
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
-import { refusedInput } from "./passage.js"
+import { framedOutline, refusedInput } from "./passage.js"
 import type { CanvasElement, CanvasTable, CanvasText } from "./record.js"
 import { SheetText } from "./sheet-text.js"
 import type { Moves } from "./slide-moves.js"
@@ -10,6 +10,16 @@ import type { PaintStore } from "./store.js"
 import { elementFrame, type ElementPaintProps } from "./element-host.js"
 import { cellTextFrame, TableArt, type Cell } from "./table-art.js"
 import { textLook, type Scaled } from "./text-look.js"
+import { leadOf } from "./selection.js"
+import {
+  cellHandles,
+  edgeBars,
+  sizedTable,
+  type TableHandles,
+  type TablePick,
+  type TableSizing,
+  type TableWords,
+} from "./table-handles.js"
 
 const typingOutline = "inset 0 0 0 2px var(--ring)"
 
@@ -152,9 +162,13 @@ function TableEdit(props: {
   readonly scaled: Scaled
   readonly moves: Moves
   readonly onTable: (id: ElementId, change: TableChange) => void
+  readonly words: TableWords | undefined
 }) {
-  const { element, id, moves, onTable, scaled, table } = props
+  const { element, id, moves, onTable, scaled, table, words } = props
   const [active, setActive] = useState<Spot | null>(null)
+  const [picked, setPicked] = useState<TablePick | null>(null)
+  const [sizing, setSizing] = useState<TableSizing | null>(null)
+  const shown = sizedTable(table, sizing)
   const stored = storedCells(useElement(props.store, id)?.text, table)
   const pending = useRef<Spot | null>(null)
   const frame = useRef<HTMLDivElement>(null)
@@ -188,11 +202,28 @@ function TableEdit(props: {
     change({ change: "row", row: spot.row, place: "below" })
   }
 
+  const selected = moves.selection.ids.length === 1 && leadOf(moves.selection) === id
+  const fits = picked === null || picked.at < (picked.kind === "row" ? table.rows.length : table.columns.length)
+  const handles: TableHandles | null =
+    !selected || words === undefined
+      ? null
+      : {
+          table: shown,
+          box,
+          scaled,
+          words,
+          picked: fits ? picked : null,
+          onPick: setPicked,
+          onSizing: setSizing,
+          change,
+          leave: () => frame.current?.querySelector<HTMLElement>("[data-canvas-table]")?.focus(),
+        }
+
   const editor = (cell: Cell, at: number, column: number) => {
     const spot = { row: at, column }
     const here = spotKey(spot)
     const kept = stored === null || stored === "moving" ? undefined : stored.rows[at]?.cells[column]
-    return (
+    const text = (
       <CellText
         active={active !== null && spotKey(active) === here}
         cell={cell}
@@ -208,6 +239,12 @@ function TableEdit(props: {
         spot={spot}
         steady={stored !== "moving"}
       />
+    )
+    return (
+      <>
+        {text}
+        {handles === null ? null : cellHandles(at, column, handles)}
+      </>
     )
   }
 
@@ -233,9 +270,12 @@ function TableEdit(props: {
           pointerEvents: "auto",
           cursor: "move",
           touchAction: "none",
+          ...framedOutline,
         }}
-        table={table}
-      />
+        table={shown}
+      >
+        {handles === null ? null : edgeBars(handles)}
+      </TableArt>
     </div>
   )
 }
@@ -266,13 +306,14 @@ function TableObject(
         pointerEvents: "auto",
         cursor: "move",
         touchAction: "none",
+        ...framedOutline,
       }}
     />
   )
 }
 
 export function TablePaint(props: ElementPaintProps) {
-  const { element, moves, onTable, scaled } = props
+  const { element, moves, onTable, scaled, tableWords } = props
   if (element.table === undefined) return null
   if (element.id !== null && element.editable && moves !== null && onTable !== undefined)
     return (
@@ -284,6 +325,7 @@ export function TablePaint(props: ElementPaintProps) {
         scaled={scaled}
         store={props.store}
         table={element.table}
+        words={tableWords}
       />
     )
   if (element.id !== null && moves !== null)

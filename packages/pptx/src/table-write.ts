@@ -6,6 +6,7 @@ import { themeSlot, type TemplateColor } from "./cell-text.js"
 import { cellEdits, cellRead, type CellRead } from "./table-cells.js"
 import { slidePalette } from "./trait-read.js"
 import { cellsOf, gridOf, type Grid } from "./table-grid.js"
+import { sizedGrid } from "./table-size.js"
 import { shapeTextValue, textValueEdits } from "./text-value-route.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -103,8 +104,12 @@ export function writeTable(parts: Parts, part: string, shape: string, value: Tab
     return slots
   }
   const formatted = cellEdits(edits.length === 0 ? grid : gridOf(typed, shape), typed, value.rows, theme)
-  if (edits.length === 0 && formatted === null) return next
+  const heights = value.rows.every((row) => row.height !== undefined)
+    ? value.rows.map((row) => row.height ?? 0)
+    : undefined
+  const sized = sizedGrid(formatted ?? typed, shape, value.widths, heights)
+  if (edits.length === 0 && formatted === null && sized === typed) return next
   const written = new Map(next)
-  written.set(part, formatted ?? typed)
+  written.set(part, sized)
   return written
 }

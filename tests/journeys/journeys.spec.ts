@@ -56,6 +56,7 @@ for (const name of [
   "corners",
   "opacity",
   "table-fill",
+  "table-rows-columns",
   "text-type",
   "text-fields",
   "text-fill-image",

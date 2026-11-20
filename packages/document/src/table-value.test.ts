@@ -165,3 +165,44 @@ describe("cell fills and borders", () => {
     expect(typed?.rows[0]?.cells[0]).toEqual([{ from: 0, runs: [{ from: 0, text: "New", bold: true, size: 2400 }] }])
   })
 })
+
+describe("column widths and row heights", () => {
+  const sized: TableValue = {
+    rows: [
+      { from: 0, cells: [empty, empty, empty], height: 400_000 },
+      { from: 1, cells: [empty, empty, empty], height: 300_000 },
+    ],
+    widths: [1_000_000, 2_000_000, 3_000_000],
+  }
+
+  it("reads and writes a width per column and a height per row, and refuses a width list of the wrong length", () => {
+    expect(readTableValue(writeTableValue(sized))).toEqual(sized)
+    const cell = JSON.stringify(empty)
+    expect(readTableValue(`{"rows":[{"from":0,"cells":[${cell}]}],"widths":[1,2]}`)).toBeNull()
+    expect(readTableValue(`{"rows":[{"from":0,"cells":[${cell}]}],"widths":[0]}`)).toBeNull()
+    expect(readTableValue(`{"rows":[{"from":0,"cells":[${cell}],"height":-1}]}`)).toBeNull()
+    expect(readTableValue(`{"rows":[{"from":0,"cells":[${cell}],"height":1.5}]}`)).toBeNull()
+  })
+
+  it("sets every column's width or every row's height at once", () => {
+    const wider = changedTable(sized, { change: "widths", widths: [1_500_000, 1_500_000, 3_000_000] })!
+    expect(wider.widths).toEqual([1_500_000, 1_500_000, 3_000_000])
+    const taller = changedTable(sized, { change: "heights", heights: [500_000, 200_000] })!
+    expect(taller.rows.map((row) => row.height)).toEqual([500_000, 200_000])
+    expect(changedTable(sized, { change: "widths", widths: [1, 2] })).toBeNull()
+    expect(changedTable(sized, { change: "widths", widths: [0, 1, 1] })).toBeNull()
+    expect(changedTable(sized, { change: "heights", heights: [1] })).toBeNull()
+    expect(changedTable(sized, { change: "widths", widths: sized.widths! })).toBe(sized)
+  })
+
+  it("gives a new column its neighbour's width and a new row its neighbour's height, and drops a removed one's", () => {
+    const column = changedTable(sized, { change: "column", column: 1, place: "after" })!
+    expect(column.widths).toEqual([1_000_000, 2_000_000, 2_000_000, 3_000_000])
+    expect(changedTable(column, { change: "remove-column", column: 0 })!.widths).toEqual([
+      2_000_000, 2_000_000, 3_000_000,
+    ])
+    const row = changedTable(sized, { change: "row", row: 0, place: "below" })!
+    expect(row.rows.map((each) => each.height)).toEqual([400_000, 400_000, 300_000])
+    expect(changedTable(openingTable(2, 2), { change: "column", column: 0, place: "after" })!.widths).toBeUndefined()
+  })
+})

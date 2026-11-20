@@ -9,7 +9,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
-import { keptCorners, type ElementId, type TableChange } from "@airdesign/document"
+import { keptCorners, type ElementId } from "@airdesign/document"
 import { boxOf, memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
@@ -37,6 +37,7 @@ import { presetTextArea, type TextArea } from "./preset-path.js"
 import { tidy } from "./effect-art.js"
 import type { FitSize } from "./text-hug.js"
 import { UnshownLabel } from "./unshown-label.js"
+import type { TableEditing } from "./table-handles.js"
 
 const defaultInsetX = 91_440
 const defaultInsetY = 45_720
@@ -57,11 +58,10 @@ export type ElementPaintProps = {
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
   readonly onFit?: ((id: ElementId, size: FitSize) => void) | undefined
-  readonly onTable?: ((id: ElementId, change: TableChange) => void) | undefined
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
   readonly targets?: Targets | undefined
-}
+} & TableEditing
 
 function turned(box: PaintBox): string | undefined {
   const turns: string[] = []
