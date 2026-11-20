@@ -23,6 +23,7 @@ import { chartCopy } from "@/copy/chart-copy"
 import { changeDesign, fileChartFormatsOf, fileValue, type DesignDeck } from "@/design/design-change"
 import { gridFormat, gridNumber, gridParse } from "@/editor/chart-grid-number"
 import { pastedChart, withColors, withRow, withSeries } from "@/editor/chart-grid-paste"
+import { chartKindEdited, totalToggled, totalsWithoutRow } from "@/editor/chart-setting-edit"
 import { chartKindIcons } from "@/editor/chart-tool"
 import { DesignSection } from "@/editor/design-panel"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -144,6 +145,7 @@ function withoutRow(chart: ChartValue, row: number): ChartValue {
   const kept = (_: unknown, at: number) => at !== row
   return {
     ...chart,
+    ...(chart.totals === undefined ? {} : { totals: totalsWithoutRow(chart.totals, row) }),
     categories: chart.categories.filter(kept),
     series: chart.series.map((series, at) =>
       withColors(
@@ -177,7 +179,8 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
   if (chart === null) return null
   const own = fileChartFormatsOf(props.deck.shown, props.node)
   const formats = chart.series.map((_, column) => gridFormat(own[column] ?? own[0], chart))
-  const many = chart.kind !== "pie"
+  const many = chart.kind !== "pie" && chart.kind !== "waterfall"
+  const bridge = chart.kind === "waterfall"
   const columns = chart.series.length
   const pasteAt = (row: number, column: number) => (cells: CellTexts) =>
     save((fresh) =>
@@ -185,6 +188,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
         gridParse(text, formats[series] ?? formats[0] ?? "General"),
       ),
     )
+  const totals = new Set(chart.totals ?? [])
   return (
     <div data-chart-data>
       <DesignSection title={chartCopy.data}>
@@ -205,7 +209,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
                 aria-label={chartCopy.types[kind]}
                 title={chartCopy.types[kind]}
                 onClick={() => {
-                  if (!chosen) save((fresh) => ({ ...fresh, kind }))
+                  if (!chosen) save((fresh) => chartKindEdited(fresh, kind))
                 }}
                 className={cn(
                   "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-0 active:translate-y-0",
@@ -222,7 +226,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
         <div
           className="grid items-start gap-1"
           style={{
-            gridTemplateColumns: `minmax(3.5rem, 1.4fr) repeat(${String(columns)}, minmax(3rem, 1fr)) 1.75rem`,
+            gridTemplateColumns: `minmax(3.5rem, 1.4fr) repeat(${String(columns)}, minmax(3rem, 1fr))${bridge ? " 2.25rem" : ""} 1.75rem`,
           }}
         >
           <span />
@@ -241,6 +245,11 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
               />
             </div>
           ))}
+          {bridge ? (
+            <span className="flex h-[var(--control-dense)] items-center justify-center text-[length:var(--type-caption)] text-quiet">
+              {chartCopy.total}
+            </span>
+          ) : null}
           {many && columns < chartLimits.series ? (
             <IconButton label={chartCopy.addSeries} add onClick={() => save(withSeries)} />
           ) : (
@@ -273,6 +282,23 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
                 }}
               />
             )),
+            ...(bridge
+              ? [
+                  <label
+                    key={`total ${String(row)}`}
+                    className="flex h-[var(--control-dense)] items-center justify-center"
+                  >
+                    <input
+                      type="checkbox"
+                      data-focus-ring
+                      aria-label={chartCopy.totalRow(row + 1)}
+                      checked={totals.has(row)}
+                      onChange={() => save((fresh) => totalToggled(fresh, row))}
+                      className="size-3.5 accent-[var(--primary)]"
+                    />
+                  </label>,
+                ]
+              : []),
             chart.categories.length > 1 ? (
               <IconButton
                 key={`remove ${String(row)}`}

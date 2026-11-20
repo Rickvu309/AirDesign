@@ -1,4 +1,4 @@
-import type { MarkupElement } from "./element-span.js"
+import { decodedXmlText, type MarkupElement } from "./element-span.js"
 import { paintAttribute } from "./paint-color.js"
 import type { ChartMarkup, PaintChartLook } from "./chart-markup.js"
 import { chartNumber } from "./chart-number.js"
@@ -60,7 +60,8 @@ function ownFormat(markup: ChartMarkup, holder: MarkupElement | undefined): stri
   const format = markup.child(holder, "c:numFmt")
   if (format === undefined) return null
   const linked = paintAttribute(format, "sourceLinked")
-  return linked === "1" || linked === "true" ? null : paintAttribute(format, "formatCode")
+  const code = paintAttribute(format, "formatCode")
+  return linked === "1" || linked === "true" || code === null ? null : decodedXmlText(code)
 }
 
 function rangedText(markup: ChartMarkup, holder: MarkupElement): boolean {

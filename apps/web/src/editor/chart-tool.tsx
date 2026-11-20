@@ -12,6 +12,7 @@ export const chartKindIcons: Readonly<Record<ChartKind, EditorIconName>> = {
   stacked: "chartStacked",
   stacked100: "chartStacked100",
   horizontal: "chartHorizontal",
+  waterfall: "chartWaterfall",
   line: "chartLine",
   pie: "chartPie",
 }

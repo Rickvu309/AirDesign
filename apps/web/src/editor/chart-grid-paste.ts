@@ -2,6 +2,7 @@ import {
   chartAccent,
   chartLimits,
   sameColor,
+  waterfallColor,
   type CellTexts,
   type ChartSeries,
   type ChartValue,
@@ -20,7 +21,11 @@ export function withColors(series: ChartSeries, colors: readonly Color[] | undef
 export function withRow(chart: ChartValue): ChartValue {
   const count = chart.categories.length
   const added = (series: ChartSeries, at: number) =>
-    chart.kind === "pie" ? chartAccent(count) : (series.color ?? chartAccent(at))
+    chart.kind === "pie"
+      ? chartAccent(count)
+      : chart.kind === "waterfall"
+        ? waterfallColor("increase")
+        : (series.color ?? chartAccent(at))
   return {
     ...chart,
     categories: [...chart.categories, chartCopy.category(count + 1)],
@@ -51,7 +56,7 @@ export function pastedChart(
 ): ChartValue {
   const across = Math.max(0, ...cells.map((row) => row.length))
   const rows = Math.min(at.row + cells.length, chartLimits.categories)
-  const most = chart.kind === "pie" ? 1 : chartLimits.series
+  const most = chart.kind === "pie" || chart.kind === "waterfall" ? 1 : chartLimits.series
   const series = Math.min(at.column - 1 + across, most)
   let next = chart
   while (next.categories.length < rows) next = withRow(next)

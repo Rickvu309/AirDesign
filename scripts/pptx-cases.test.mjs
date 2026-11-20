@@ -28,6 +28,7 @@ assert.deepEqual(
     "chart-look-kept.mjs",
     "chart-settings.mjs",
     "chart-types.mjs",
+    "chart-waterfall.mjs",
     "color-picker.mjs",
     "color-transforms.mjs",
     "diagram-edits.mjs",

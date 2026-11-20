@@ -1,4 +1,11 @@
-import { chartLimits, openingChart, readChartValue, writeChartValue, type ChartValue } from "@airdesign/document"
+import {
+  chartLimits,
+  openingChart,
+  readChartValue,
+  waterfallColor,
+  writeChartValue,
+  type ChartValue,
+} from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { pastedChart } from "@/editor/chart-grid-paste"
 
@@ -52,5 +59,29 @@ describe("cells pasted into a chart's Data grid", () => {
     expect(tall.categories).toHaveLength(chartLimits.categories)
     expect(tall.categories[0]).toHaveLength(chartLimits.label)
     expect(readChartValue(writeChartValue(tall))).not.toBeNull()
+  })
+})
+
+describe("cells pasted into a waterfall's Data grid", () => {
+  it("fills its one series, keeps its totals, and gives a new coloured bar the increase colour", () => {
+    const bridge = openingChart("waterfall")
+    const coloured: ChartValue = {
+      ...bridge,
+      series: bridge.series.map((series) => ({ ...series, colors: series.values.map(() => ({ rgb: "1F3A5F" })) })),
+    }
+    const next = pastedChart(
+      coloured,
+      { row: 5, column: 0 },
+      [
+        ["FY25", "130", "9"],
+        ["FY26", "4", "7"],
+      ],
+      number,
+    )
+    expect(next.series).toHaveLength(1)
+    expect(next.series[0]?.values).toEqual([100, 12, 18, 9, -14, 130, 4])
+    expect(next.totals).toEqual([0, 5])
+    expect(next.series[0]?.colors?.at(-1)).toEqual(waterfallColor("increase"))
+    expect(readChartValue(writeChartValue(next))).toEqual(next)
   })
 })

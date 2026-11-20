@@ -1,4 +1,5 @@
 import type { ChartValue } from "@airdesign/document"
+import { waterfallSeries } from "./chart-waterfall.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { xmlText } from "./shape-write.js"
 import { storedZip } from "./stored-zip.js"
@@ -34,12 +35,21 @@ function span(column: number, count: number): string {
   return count === 1 ? first : `${first}:${cell(column, firstDataRow + count - 1)}`
 }
 
+export type ChartTable = {
+  readonly categories: readonly string[]
+  readonly series: readonly { readonly name: string; readonly values: readonly (number | null)[] }[]
+}
+
+export function chartTable(chart: ChartValue): ChartTable {
+  return chart.kind === "waterfall" ? { categories: chart.categories, series: waterfallSeries(chart) } : chart
+}
+
 export type ChartFormulas = {
   readonly categories: string
   readonly series: readonly { readonly name: string; readonly values: string }[]
 }
 
-export function chartFormulas(chart: ChartValue): ChartFormulas {
+export function chartFormulas(chart: ChartTable): ChartFormulas {
   const count = chart.categories.length
   return {
     categories: `${workbookSheet}!${span(0, count)}`,
@@ -50,7 +60,7 @@ export function chartFormulas(chart: ChartValue): ChartFormulas {
   }
 }
 
-function sharedStrings(chart: ChartValue): ReadonlyMap<string, number> {
+function sharedStrings(chart: ChartTable): ReadonlyMap<string, number> {
   const strings = new Map<string, number>()
   for (const text of [...chart.series.map((series) => series.name), ...chart.categories])
     if (!strings.has(text)) strings.set(text, strings.size)
@@ -61,14 +71,17 @@ function textCell(reference: string, strings: ReadonlyMap<string, number>, text:
   return `<c r="${reference}" t="s"><v>${String(strings.get(text) ?? 0)}</v></c>`
 }
 
-function sheetXml(chart: ChartValue, strings: ReadonlyMap<string, number>): string {
+function sheetXml(chart: ChartTable, strings: ReadonlyMap<string, number>): string {
   const header = chart.series
     .map((series, at) => textCell(`${columnName(at + 1)}${String(headerRow)}`, strings, series.name))
     .join("")
   const rows = chart.categories.map((category, point) => {
     const row = firstDataRow + point
     const values = chart.series
-      .map((series, at) => `<c r="${columnName(at + 1)}${String(row)}"><v>${String(series.values[point] ?? 0)}</v></c>`)
+      .map((series, at) => {
+        const value = series.values[point]
+        return value === null ? "" : `<c r="${columnName(at + 1)}${String(row)}"><v>${String(value ?? 0)}</v></c>`
+      })
       .join("")
     return `<row r="${String(row)}">${textCell(`A${String(row)}`, strings, category)}${values}</row>`
   })
@@ -76,7 +89,7 @@ function sheetXml(chart: ChartValue, strings: ReadonlyMap<string, number>): stri
   return `${declaration}<worksheet xmlns="${main}" xmlns:r="${officeRelationships}"><dimension ref="A1:${last}"/><sheetData><row r="${String(headerRow)}">${header}</row>${rows.join("")}</sheetData></worksheet>`
 }
 
-function stringsXml(chart: ChartValue, strings: ReadonlyMap<string, number>): string {
+function stringsXml(chart: ChartTable, strings: ReadonlyMap<string, number>): string {
   const items = [...strings.keys()].map((text) => `<si><t xml:space="preserve">${xmlText(text)}</t></si>`).join("")
   const used = String(chart.series.length + chart.categories.length)
   return `${declaration}<sst xmlns="${main}" count="${used}" uniqueCount="${String(strings.size)}">${items}</sst>`
@@ -95,7 +108,8 @@ function relationships(rows: readonly (readonly [string, string])[]): string {
 
 const contentTypesXml = `${declaration}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="${spreadsheetType}.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${spreadsheetType}.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="${spreadsheetType}.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="${spreadsheetType}.sharedStrings+xml"/></Types>`
 
-export function chartWorkbook(chart: ChartValue): Uint8Array {
+export function chartWorkbook(value: ChartValue): Uint8Array {
+  const chart = chartTable(value)
   const strings = sharedStrings(chart)
   const files: [string, string][] = [
     ["[Content_Types].xml", contentTypesXml],

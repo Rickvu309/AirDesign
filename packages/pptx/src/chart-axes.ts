@@ -1,4 +1,4 @@
-import type { MarkupElement } from "./element-span.js"
+import { decodedXmlText, type MarkupElement } from "./element-span.js"
 import { paintAttribute } from "./paint-color.js"
 import type { ChartMarkup, PaintChartLine, PaintChartLook, PaintChartTitle } from "./chart-markup.js"
 import { chartLook } from "./chart-labels.js"
@@ -122,7 +122,7 @@ export function chartAxes(
     ? source.grouping === "percentStacked"
       ? percentCode
       : source.format
-    : (paintAttribute(format, "formatCode") ?? "General")
+    : decodedXmlText(paintAttribute(format, "formatCode") ?? "General")
   const ticks = chartSteps(scale).map((value) => ({ value, text: chartNumber(value, code) }))
   if (ticks.some((tick) => tick.text === null)) return null
   return {

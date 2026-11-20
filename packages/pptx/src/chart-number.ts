@@ -4,7 +4,7 @@ const plainCharacters = new Set("$-+/():!^&'~{}<>= ")
 const digitCharacters = new Set("0#?,.")
 const colorTag = /^(black|blue|cyan|green|magenta|red|white|yellow|color\d{1,2})$/i
 const currencyTag = /^\$([^-]*)(-[\da-f]+)?$/i
-const generalCode = /^general$/i
+const generalWord = /general/i
 const generalDigits = 10
 const largestFixed = 1e21
 
@@ -98,13 +98,28 @@ function written(value: number, tokens: readonly Token[]): string | null {
   return words(tokens.slice(0, first)) + number + words(tokens.slice(last + 1))
 }
 
+function wordsOf(tokens: readonly Token[] | null): string | null {
+  if (tokens === null || !tokens.every((token) => token.kind === "text")) return null
+  return tokens.map((token) => (token.kind === "text" ? token.text : "")).join("")
+}
+
+function generalAround(section: string): readonly [string, string] | null {
+  const word = generalWord.exec(section)
+  if (word === null) return null
+  const before = wordsOf(tokensOf(section.slice(0, word.index)))
+  const after = wordsOf(tokensOf(section.slice(word.index + word[0].length)))
+  return before === null || after === null ? null : [before, after]
+}
+
 export function chartNumber(value: number, code: string): string | null {
   const sections = sectionsOf(code)
   const negative = value < 0
   const own = negative && sections.length > 1
   const chosen = own ? sections[1] : value === 0 && sections.length > 2 ? sections[2] : sections[0]
   const sign = negative && !own ? "-" : ""
-  if (chosen === undefined || generalCode.test(chosen.trim())) return sign + general(Math.abs(value))
+  if (chosen === undefined) return sign + general(Math.abs(value))
+  const around = generalAround(chosen)
+  if (around !== null) return sign + around[0] + general(Math.abs(value)) + around[1]
   const tokens = tokensOf(chosen)
   if (tokens === null) return null
   const body = written(Math.abs(value), tokens)

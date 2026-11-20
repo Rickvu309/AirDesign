@@ -19,7 +19,9 @@ import type { DesignDeck } from "@/design/design-change"
 import type { PanelControl } from "@/design/panel"
 import { resolveControl } from "@/design/panel-arrangement"
 import { ChartField, useHeldChart } from "@/editor/chart-data-section"
-import { chartSettingEdited, seriesColor, sliceColor, titled } from "@/editor/chart-setting-edit"
+import { chartSettingEdited, roleColor, seriesColor, sliceColor, titled } from "@/editor/chart-setting-edit"
+
+const waterfallRoles = ["increase", "decrease", "total"] as const
 import { ControlView, DesignSection, SectionStrips } from "@/editor/design-panel"
 
 const colorDesc: Desc = { kind: "color" }
@@ -59,6 +61,10 @@ function formatControl(labels: ChartFormat): PanelControl {
 }
 
 function colorStrips(chart: ChartValue): readonly (readonly PanelControl[])[] {
+  if (chart.kind === "waterfall")
+    return waterfallRoles.map((role) => [
+      control(`role.${role}`, chartCopy.roles[role], colorDesc, roleColor(chart, role)),
+    ])
   if (chart.kind === "pie")
     return chart.categories.map((category, at) => [
       control(`slice.${String(at)}`, category.trim(), colorDesc, sliceColor(chart, at)),

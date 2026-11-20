@@ -298,6 +298,8 @@ export {
   chartLimits,
   openingChart,
   readChartValue,
+  waterfallBars,
+  waterfallColor,
   writeChartValue,
   type ChartBarKind,
   type ChartFormat,
@@ -305,6 +307,7 @@ export {
   type ChartLegend,
   type ChartSeries,
   type ChartValue,
+  type WaterfallRole,
 } from "./chart-value.js"
 export {
   alphaOf,

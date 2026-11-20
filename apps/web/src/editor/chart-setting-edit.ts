@@ -1,4 +1,15 @@
-import { chartLimits, type ChartFormat, type ChartLegend, type ChartValue, type Color } from "@airdesign/document"
+import {
+  chartLimits,
+  sameColor,
+  waterfallBars,
+  waterfallColor,
+  type ChartFormat,
+  type ChartKind,
+  type ChartLegend,
+  type ChartValue,
+  type Color,
+  type WaterfallRole,
+} from "@airdesign/document"
 
 const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
 const labelsFormat: ChartFormat = "General"
@@ -17,7 +28,48 @@ export function titled(chart: ChartValue, key: "title" | "valueTitle" | "categor
   return title === "" ? rest : { ...rest, [key]: title }
 }
 
+export function chartKindEdited(chart: ChartValue, kind: ChartKind): ChartValue {
+  const { totals: _, ...rest } = chart
+  return kind === "waterfall" ? { ...chart, kind } : { ...rest, kind }
+}
+
+export function totalToggled(chart: ChartValue, row: number): ChartValue {
+  const totals = chart.totals ?? []
+  const next = totals.includes(row) ? totals.filter((at) => at !== row) : [...totals, row]
+  return { ...chart, totals: [...next].sort((left, right) => left - right) }
+}
+
+export function totalsWithoutRow(totals: readonly number[], row: number): readonly number[] {
+  return totals.flatMap((at) => (at === row ? [] : [at > row ? at - 1 : at]))
+}
+
+function barColors(chart: ChartValue): readonly Color[] {
+  return waterfallBars(chart).map((bar, at) => chart.series[0]?.colors?.[at] ?? waterfallColor(bar.role))
+}
+
+export function roleColor(chart: ChartValue, role: WaterfallRole): Color {
+  const colors = barColors(chart)
+  const at = waterfallBars(chart).findIndex((bar) => bar.role === role)
+  return colors[at] ?? waterfallColor(role)
+}
+
+function roleColored(chart: ChartValue, role: WaterfallRole, chosen: Color): ChartValue {
+  const bars = waterfallBars(chart)
+  const colors = barColors(chart).map((color, at) => (bars[at]?.role === role ? chosen : color))
+  const automatic = colors.every((color, at) => sameColor(color, waterfallColor(bars[at]?.role ?? "total")))
+  return {
+    ...chart,
+    series: chart.series.map((series, index) => {
+      if (index > 0) return series
+      const { colors: _, ...rest } = series
+      return automatic ? rest : { ...rest, colors }
+    }),
+  }
+}
+
 export function chartSettingEdited(chart: ChartValue, field: string, chosen: unknown): ChartValue {
+  if (field.startsWith("role."))
+    return roleColored(chart, field.slice("role.".length) as WaterfallRole, chosen as Color)
   if (field === "legend") return { ...chart, legend: chosen as ChartLegend }
   if (field === "labels") {
     const { labels: _, ...rest } = chart
