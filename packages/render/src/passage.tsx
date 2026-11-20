@@ -7,7 +7,7 @@ import {
   type TextRun,
   type TextValue,
 } from "@airdesign/document"
-import { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import type { ElementId } from "@airdesign/document"
 import { formatTarget, type FormatEdit } from "./passage-format.js"
 import { readFormat, writeFormat } from "./run-format-node.js"
@@ -248,7 +248,8 @@ export function Passage(props: {
   const text = record === null ? "" : record.text
   const box = useRef<HTMLDivElement>(null)
   const composing = useRef(false)
-  const reported = useRef(writeTextValue(textValue(text)))
+  const [opened] = useState(() => writeTextValue(textValue(text)))
+  const reported = useRef(opened)
   const pending = useRef<string[]>([])
   useLayoutEffect(() => {
     const shown = box.current
@@ -268,7 +269,7 @@ export function Passage(props: {
   useLayoutEffect(() => {
     const shown = box.current
     if (shown !== null && look !== undefined && !composing.current) restyle(shown, look)
-  })
+  }, [look])
   function report(value: string, kind: TextEditKind = "text") {
     if (value === reported.current) return
     reported.current = value

@@ -120,6 +120,29 @@ describe("SlideCanvas snapping", () => {
     expect(boxes).toEqual([[moving, { x: 390 * perPixel, y: 300 * perPixel, cx: 120 * perPixel, cy: 60 * perPixel }]])
   })
 
+  it("adds and removes no page nodes while a guide it has shown comes and goes during a drag", async () => {
+    const { host } = await mounted()
+    await pointer(found(host, movingFrame), "pointerdown", 500, 330)
+    await pointer(host.ownerDocument, "pointermove", 443, 330)
+    const inserted: string[] = []
+    const watch = new MutationObserver((list) => {
+      for (const each of list)
+        for (const node of [...each.addedNodes, ...each.removedNodes]) inserted.push(node.nodeName)
+    })
+    watch.observe(host, { childList: true, subtree: true })
+    const seen: (readonly string[])[] = []
+    for (const x of [470, 443, 470]) {
+      await pointer(host.ownerDocument, "pointermove", x, 330)
+      seen.push(guideLines(host))
+    }
+    inserted.push(...watch.takeRecords().flatMap((each) => [...each.addedNodes].map((node) => node.nodeName)))
+    watch.disconnect()
+    expect(seen).toEqual([[], ["snap x 390"], []])
+    expect(inserted).toEqual([])
+    await pointer(host.ownerDocument, "pointerup", 470, 330)
+    expect(host.querySelector("[data-guides]")).toBeNull()
+  })
+
   it("drags with no snapping and no guides while Control is held", async () => {
     const { host, boxes } = await mounted()
     await pointer(found(host, movingFrame), "pointerdown", 500, 330)

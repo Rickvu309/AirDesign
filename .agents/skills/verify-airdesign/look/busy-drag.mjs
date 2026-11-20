@@ -33,6 +33,7 @@ export async function openBusyDeck(kit) {
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await busyDeck(),
   })
+  await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
   return page.url().split("/").at(-1)
 }
 

@@ -32,7 +32,7 @@ export function useHoverOutline(params: {
 
   function hide() {
     const box = mark.current
-    if (box === null) return
+    if (box === null || (box.hidden && box.dataset.hoverOutline === "")) return
     box.hidden = true
     box.dataset.hoverOutline = ""
   }

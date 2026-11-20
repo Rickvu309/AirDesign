@@ -23,6 +23,7 @@ async function openBusy(page: Page): Promise<void> {
   })
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
+  await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
 }
 
 function frame(page: Page, shape: number) {
@@ -85,7 +86,7 @@ async function report(feel: Feel): Promise<void> {
   }
 }
 
-test("a drag of six cards on a busy slide paints once a frame, leaves the filmstrip and Design panel until it lands, and undoes in one step", async ({
+test("a drag of six cards on a busy slide paints and styles once a frame, leaves their text, the filmstrip and the Design panel until it lands, and undoes in one step", async ({
   page,
 }) => {
   await openBusy(page)
@@ -99,6 +100,8 @@ test("a drag of six cards on a busy slide paints once a frame, leaves the filmst
   await report(feel)
   expect(feel.placements, "the dragged card paints at most once a frame").toBeLessThanOrEqual(2 * feel.frames)
   expect(feel.layouts, "no layout read forces a second layout in a frame").toBeLessThanOrEqual(feel.frames + 2)
+  expect(feel.styles, "no write between frames forces a second style pass").toBeLessThanOrEqual(feel.frames + 2)
+  expect(feel.restyled, "the cards' text keeps its style while they move").toBe(0)
   expect(feel.thumbnails, "the filmstrip waits for the drag to land").toBe(0)
   expect(feel.panel, "the Design panel shows Mixed X and Y and waits for the drag to land").toBe(0)
   const landed = await corners(page)
