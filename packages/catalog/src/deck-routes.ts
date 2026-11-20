@@ -16,7 +16,18 @@ import {
   type DeckId,
 } from "./wire.js"
 
-const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "indexing", "kept", "site"] as const
+const callRefusals = [
+  ...refusals,
+  "field",
+  "deck",
+  "batch",
+  "base",
+  "payload",
+  "indexing",
+  "kept",
+  "site",
+  "image",
+] as const
 
 const editRefusals = [...callRefusals, "text-from", "owner", "deleted", "store", "held"] as const
 

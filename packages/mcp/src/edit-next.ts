@@ -35,6 +35,8 @@ export const editNext = {
   indexing:
     "The deck is still being indexed by the open AirDesign editor, and nothing landed. Call airdesign_read_deck until it reports index ready, then send this call again.",
   store: "The deck could not be reached, and nothing landed. Try again later.",
+  image:
+    "An image this call names could not be used, and nothing landed. Each line below says why. Send an https address of a PNG, JPEG or GIF under 10 MB and 40 megapixels, or leave that image out.",
 } as const satisfies Record<EditCode, string>
 
 export const editCodes = Object.keys(editNext) as EditCode[]

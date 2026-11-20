@@ -16,11 +16,12 @@ import {
   version,
   writeTableValue,
   type ElementId,
+  type Media,
   type Register,
   type Row,
   type SetChange,
 } from "@airdesign/document"
-import { addIcon, addTable, addTextBox } from "./agent-elements.js"
+import { addIcon, addPicture, addTable, addTextBox } from "./agent-elements.js"
 import { readFresh } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
@@ -110,9 +111,20 @@ function withAdded(register: Register, runId: string, inputs: Omit<SetChange, "t
   return applySet(started.register, { target: { node }, ...inputs }, runId)
 }
 
-function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number): Applied {
+export type PlacedImage = { readonly media: Media; readonly width: number; readonly height: number }
+
+export type ImageLookup = (address: string) => PlacedImage | undefined
+
+export const noImages: ImageLookup = () => undefined
+
+function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, images: ImageLookup): Applied {
   if (change.kind === "table") return applyTableAdd(deck, change, runId, base)
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
+  if ("image" in change) {
+    const image = images(change.image)
+    if (image === undefined) return { ok: false, refusal: "image" }
+    return addPicture({ deck: deck.id, base }, deck, change.slide, image, change.box, runId)
+  }
   const value = change.text?.value
   const opening = typeof value === "string" && openingSlideNumber(value) ? value : ""
   const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId, opening)
@@ -120,7 +132,13 @@ function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number): Ap
   return withAdded(added.register, runId, { text: change.text })
 }
 
-export function applyAgentChange(deck: Deck, change: WireSet | ShapeAdd, runId: string, base: number): Applied {
+export function applyAgentChange(
+  deck: Deck,
+  change: WireSet | ShapeAdd,
+  runId: string,
+  base: number,
+  images: ImageLookup = noImages,
+): Applied {
   if (!readFresh(deck, runId, base)) return { ok: false, refusal: "stale" }
-  return change.op === "set" ? applySet(deck.register, change, runId) : applyAdd(deck, change, runId, base)
+  return change.op === "set" ? applySet(deck.register, change, runId) : applyAdd(deck, change, runId, base, images)
 }

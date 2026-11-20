@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { notifyKey, readDeckId, readNamedDeck } from "@airdesign/catalog"
+import { notifyKey, readDeckId, readNamedDeck, type DeckId } from "@airdesign/catalog"
 import { measureOwed } from "@airdesign/document"
 import { openDeck, ownedDecks, type Deck } from "@airdesign/engine"
 import {
@@ -10,6 +10,9 @@ import {
   dropGoneTurn,
   editRefusal,
   emptyLog,
+  imageAddresses,
+  imagesPerCall,
+  type NamedImage,
   type Host,
   type Lost,
   type Session,
@@ -19,6 +22,9 @@ import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcon
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import { storedTurns } from "./agent-turn.js"
+import { fetchImage, type ImageNet } from "./image-fetch.js"
+import { keepMedia } from "./media.js"
+import type { OriginalStore } from "./original-store.js"
 import { admitCaller, refundCaller } from "./caller-log.js"
 import { readOwnedDecks } from "./deck-list.js"
 import type { DeckListen } from "./listen.js"
@@ -36,6 +42,7 @@ export type McpHost = {
   readonly bodyCap: number
   readonly fail: (error: unknown) => void
   readonly measures?: Measures
+  readonly images?: { readonly store: OriginalStore | undefined; readonly net: ImageNet }
 }
 
 export type Measures = {
@@ -62,6 +69,31 @@ async function measuredSaved(db: Sql, deck: string, measures: Measures | undefin
     if (owes(saved)) await woken
   }
   return owes(saved) ? await readSaved(db, deck) : saved
+}
+
+async function namedImage(host: McpHost, deck: DeckId, address: string): Promise<NamedImage> {
+  if (host.images === undefined) return { ok: false, refusal: "unreachable" }
+  const fetched = await fetchImage(address, host.images.net)
+  if (!fetched.ok) return fetched
+  try {
+    const kept = await keepMedia(host.deck, deck, fetched.bytes, host.email, host.images.store)
+    if (!kept.ok) return { ok: false, refusal: kept.refusal === "limit" ? "full" : "store" }
+    const media = { sha256: kept.sha256, type: fetched.type }
+    return { ok: true, media, width: fetched.width, height: fetched.height }
+  } catch {
+    return { ok: false, refusal: "store" }
+  }
+}
+
+async function fetchedImages(host: McpHost, session: Session, deck: DeckId, raw: unknown): Promise<void> {
+  const named = new Map(session.images ?? [])
+  const wanted = imageAddresses(raw).filter((address) => !named.has(address))
+  const fetched = await Promise.all(
+    wanted.slice(0, imagesPerCall).map(async (address) => [address, await namedImage(host, deck, address)] as const),
+  )
+  for (const [address, image] of fetched) named.set(address, image)
+  for (const address of wanted.slice(imagesPerCall)) named.set(address, { ok: false, refusal: "many" })
+  session.images = named
 }
 
 function mcpRequest(req: IncomingMessage, body: Buffer) {
@@ -121,6 +153,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       storedIndex = access.saved.storedIndex
       session.deck = loaded
       dropGoneTurn(session, seen)
+      if (name === "airdesign_edit_deck") await fetchedImages(host, session, named.deck, raw)
       if (session.once === undefined) return { ok: true }
       let prior: Awaited<ReturnType<typeof readStoredOnce>>
       try {

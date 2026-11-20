@@ -26,7 +26,7 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("closing layers")
-    expect(tools.every((tool) => tool.openWorldHint === false)).toBe(true)
+    expect(tools.filter((tool) => tool.openWorldHint).map((tool) => tool.name)).toEqual(["airdesign_edit_deck"])
     const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
     expect(edit).toEqual({
       name: "airdesign_edit_deck",
@@ -37,7 +37,7 @@ describe("projectTools", () => {
       readOnlyHint: false,
       destructiveHint: true,
       idempotentHint: false,
-      openWorldHint: false,
+      openWorldHint: true,
     })
     expect(tools.find((tool) => tool.name === "airdesign_read_deck")).toEqual({
       name: "airdesign_read_deck",

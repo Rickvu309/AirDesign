@@ -2,7 +2,11 @@ import {
   fitNewBox,
   iconWeights,
   limits,
+  mediaSize,
+  mediaTypeOf,
+  overPixelLimit,
   nextElementId,
+  pictureSize,
   readSlideId,
   slideUndoable,
   type Box,
@@ -38,34 +42,15 @@ export type PictureFile = {
   readonly height: number
 }
 
-const emuPerPixel = 9525
-const margin = 0.9
-
-const signatures: readonly (readonly [MediaType, readonly number[]])[] = [
-  ["image/png", [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
-  ["image/jpeg", [0xff, 0xd8, 0xff]],
-  ["image/gif", [0x47, 0x49, 0x46, 0x38]],
-]
-
-export function pictureType(bytes: Uint8Array): MediaType | null {
-  for (const [type, signature] of signatures) {
-    if (signature.every((byte, at) => bytes[at] === byte)) return type
-  }
-  return null
-}
-
 export function pictureRefusal(bytes: Uint8Array): PictureRefusal | null {
-  if (pictureType(bytes) === null) return "type"
-  return bytes.byteLength >= limits.media ? "size" : null
+  if (mediaTypeOf(bytes) === null) return "type"
+  if (bytes.byteLength >= limits.media) return "size"
+  const size = mediaSize(bytes)
+  return size !== null && overPixelLimit(size) ? "size" : null
 }
 
 export function placedPicture(natural: { readonly width: number; readonly height: number }, slide: SlideRoom): Box {
-  const width = Math.max(1, natural.width) * emuPerPixel
-  const height = Math.max(1, natural.height) * emuPerPixel
-  const scale = Math.min(1, (slide.width * margin) / width, (slide.height * margin) / height)
-  const cx = Math.max(1, Math.round(width * scale))
-  const cy = Math.max(1, Math.round(height * scale))
-  return fitNewBox(slide, takenBoxes(slide), { cx, cy })
+  return fitNewBox(slide, takenBoxes(slide), pictureSize(natural, slide))
 }
 
 export type AddedSource = { readonly media: Media } | { readonly icon: string }
@@ -97,7 +82,7 @@ export function placedIcon(slide: SlideRoom): Box {
 export async function readPicture(file: Blob): Promise<PictureFile | PictureRefusal> {
   const bytes = new Uint8Array(await file.arrayBuffer())
   const refusal = pictureRefusal(bytes)
-  const type = pictureType(bytes)
+  const type = mediaTypeOf(bytes)
   if (refusal !== null || type === null) return refusal ?? "type"
   try {
     const image = await createImageBitmap(new Blob([bytes], { type }))

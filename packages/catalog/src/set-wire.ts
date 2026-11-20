@@ -156,7 +156,13 @@ function readLineBox(raw: unknown): Box | null {
   return box !== null && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0 ? box : null
 }
 
-const addKeys = ["op", "kind", "slide", "box", "text", "icon", "connection", "table"]
+const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table"]
+
+export const imageAddressLength = 2048
+
+const imageAddressPattern = "^https://\\S+$"
+
+const imageAddress = new RegExp(imageAddressPattern)
 
 function attached(end: unknown): boolean {
   return plainObject(end) && plainObject(end.shape)
@@ -165,6 +171,7 @@ function attached(end: unknown): boolean {
 function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: SlideId): Read<WireAdd> {
   if (raw.text !== undefined) return refused("text")
   if (raw.icon !== undefined) return refused("icon")
+  if (raw.image !== undefined) return refused("image")
   const box = raw.box === undefined ? undefined : readLineBox(raw.box)
   if (box === null) return refused("box")
   const connection = raw.connection === undefined ? undefined : readTrait("connection", raw.connection)
@@ -184,7 +191,7 @@ function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: Slide
 }
 
 function addedTable(raw: Inputs, slide: SlideId): Read<WireAdd> {
-  const extra = ["text", "icon", "connection"].find((key) => raw[key] !== undefined)
+  const extra = ["text", "icon", "image", "connection"].find((key) => raw[key] !== undefined)
   if (extra !== undefined) return refused(extra)
   const table = readTrait("table", raw.table)
   if (!table.ok || typeof table.change.value !== "string" || readTableValue(table.change.value) === null)
@@ -213,9 +220,16 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   if (raw.connection !== undefined) return refused("connection")
   if (old && raw.icon === undefined) return refused("icon")
   if (raw.icon !== undefined && raw.text !== undefined) return refused("text")
+  if (raw.image !== undefined && (raw.icon !== undefined || raw.text !== undefined)) return refused("image")
   const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
   if (box === null) return refused("box")
   const placed = box === undefined ? {} : { box }
+  if (raw.image !== undefined) {
+    const image = raw.image
+    if (typeof image !== "string" || image.length > imageAddressLength || !imageAddress.test(image))
+      return refused("image")
+    return { ok: true, change: { op: "add", kind: "shape", slide, ...placed, image } }
+  }
   if (raw.icon !== undefined) {
     const icon = readAgent(traits.fills.fields.source.desc, raw.icon)
     if (!icon.ok || typeof icon.value !== "string") return refused("icon")
@@ -295,7 +309,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add text, a Lucide icon, a line, an arrow, an elbow line or a table. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
+      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line or a table. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
@@ -305,6 +319,12 @@ export function addChangeSchema(): JsonSchema {
       icon: {
         ...agentSchema(traits.fills.fields.source.desc),
         description: "An icon name such as rocket, in place of text.",
+      },
+      image: {
+        type: "string",
+        pattern: imageAddressPattern,
+        maxLength: imageAddressLength,
+        description: "https address of a PNG, JPEG or GIF, fetched once; placed whole inside box.",
       },
       connection: traitSchema("connection", null),
       table: traitSchema("table", null),

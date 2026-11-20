@@ -1,4 +1,4 @@
-import { applyAgentChange, openedRegister } from "./apply-change.js"
+import { applyAgentChange, noImages, openedRegister, type ImageLookup } from "./apply-change.js"
 import { applyDiagram } from "./agent-diagram.js"
 import { addLine, drawsLine } from "./agent-line.js"
 import { applyGroup } from "./agent-groups.js"
@@ -125,7 +125,13 @@ function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]):
   return landed(deck, measured ? measuredFrom(deck, register) : register)
 }
 
-function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: string, base: number): CallResult {
+function applyAgentEdits(
+  deck: Deck,
+  edits: readonly AgentChange[],
+  runId: string,
+  base: number,
+  images: ImageLookup,
+): CallResult {
   let register = deck.register
   for (const edit of edits) {
     if ("op" in edit) {
@@ -140,7 +146,7 @@ function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: strin
               : edit.op === "set" || edit.op === "add"
                 ? drawsLine(edit)
                   ? addLine(current, edit, runId, base)
-                  : applyAgentChange(current, edit, runId, base)
+                  : applyAgentChange(current, edit, runId, base, images)
                 : agentSlide(current, edit, runId, base)
       if (!applied.ok) return refused(applied.refusal)
       register = applied.register
@@ -312,8 +318,20 @@ function callEndRun(deck: Deck, caller: Caller, raw: unknown, end: typeof stopRu
 }
 
 export function call(op: "start_run", deck: Deck, caller: Caller, raw: unknown): StartResult
-export function call(op: Exclude<CommandOp, "start_run">, deck: Deck, caller: Caller, raw: unknown): CallResult
-export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): CallResult | StartResult {
+export function call(
+  op: Exclude<CommandOp, "start_run">,
+  deck: Deck,
+  caller: Caller,
+  raw: unknown,
+  images?: ImageLookup,
+): CallResult
+export function call(
+  op: CommandOp,
+  deck: Deck,
+  caller: Caller,
+  raw: unknown,
+  images: ImageLookup = noImages,
+): CallResult | StartResult {
   if (op === "start_run") return callStartRun(deck, caller, raw)
   if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
   if (op === "stop_run") {
@@ -331,5 +349,5 @@ export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): C
   const parsed = readAgentEdit(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   if (parsed.deck !== deck.id) return refused("deck")
-  return applyAgentEdits(deck, parsed.changes, caller.runId, parsed.base)
+  return applyAgentEdits(deck, parsed.changes, caller.runId, parsed.base, images)
 }

@@ -5,7 +5,7 @@ import { rasterDimensions } from "./raster-dimensions.js"
 it("reads PNG, GIF and JPEG dimensions without decoding pixels", () => {
   const png = new Uint8Array(24)
   const view = new DataView(png.buffer)
-  view.setUint32(0, 0x89504e47)
+  png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
   view.setUint32(16, 200)
   view.setUint32(20, 100)
   expect(rasterDimensions(png)).toEqual({ width: 200, height: 100 })

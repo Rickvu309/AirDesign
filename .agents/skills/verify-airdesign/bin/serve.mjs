@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url"
 import { randomBytes } from "node:crypto"
 import { countedTransport } from "./aira-counts.mjs"
 import { scriptedAira } from "./scripted-aira.mjs"
+import { verifyImages } from "./verify-images.mjs"
 import { fakeOrigins, moveLocation, siteFile, withAppOrigin } from "./site.mjs"
 
 const types = {
@@ -94,6 +95,9 @@ export async function serve(
   const { Replay } = await load("aira-replay.js")
   const { airaModel, airaEffort } = await load("aira.js")
   const { anthropicTransport } = await load("anthropic-transport.js")
+  const imageNet = existsSync(path.join(apiDist, "image-fetch.js"))
+    ? verifyImages(repo, (await load("image-fetch.js")).nodeNet)
+    : undefined
   const cluster = await startEmptyCluster()
   const role = (name) => `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
   const environment = {
@@ -149,6 +153,7 @@ export async function serve(
     resource: "https://mcp.example.test/mcp",
     commit: state.commit,
     originals,
+    ...(imageNet === undefined ? {} : { imageNet }),
     send: async (mail) => {
       appendFileSync(mailFile, `${JSON.stringify(mail)}\n`)
     },

@@ -94,3 +94,17 @@ expectAccepts(
 expectAccepts("a literal dynamic import stays", source, `export const pg = await import("pg")\n`, rule)
 expectAccepts("another package stays out of scope", "apps/web/src/second.ts", named, rule)
 expectAccepts("a test file is out of scope", "apps/api/src/second.test.ts", named, rule)
+
+expectAccepts(
+  "the agent image fetch may send a request",
+  "apps/api/src/image-fetch.ts",
+  `import { request } from "node:https"\nexport const get = (url) => request(url)\n`,
+  rule,
+)
+expectRejects(
+  "the agent image fetch may not open a server",
+  "apps/api/src/image-fetch.ts",
+  `import { createServer } from "node:https"\nexport const open = () => createServer()\n`,
+  rule,
+  message,
+)

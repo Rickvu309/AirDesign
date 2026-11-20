@@ -8,6 +8,7 @@ export { admit, emptyLog, refund, type Admission, type CallerLog, type LimitKind
 export { callTool, type AgentCaller, type Session, type ToolResult } from "./call-tool.js"
 export { editLanded, editRefusal } from "./edit-answer.js"
 export { editNext, runNext, type EditCode } from "./edit-next.js"
+export { imageAddresses, imagesPerCall, type ImageRefusal, type NamedImage } from "./named-image.js"
 export { kindInstructions } from "./kind-refusal.js"
 export { afterWrite, agentCaller } from "./run.js"
 export { dropGoneTurn, liveTurn, memoryTurns, settleTurn, type Turn, type Turns } from "./turn.js"
