@@ -211,3 +211,26 @@ export function chartValueOf(bytes: Uint8Array): ChartValue | null {
   if ([...labels, ...series.map((each) => each.name)].some((text) => text.length > chartLimits.label)) return null
   return { kind, categories: labels, series, ...settingsOf(read, { chart, plot, group }, { kind, series }, first) }
 }
+
+export function chartFormatsOf(bytes: Uint8Array): readonly string[] | null {
+  let elements: readonly MarkupElement[]
+  try {
+    const document = markupDocument(bytes)
+    if (!document.wellFormed) return null
+    elements = document.elements
+  } catch {
+    return null
+  }
+  const read: Read = { bytes, children: markupChildren(elements) }
+  const root = elements.find((element) => element.parent < 0)
+  const group = plainGroup(read, kid(read, kid(read, root, "c:chart"), "c:plotArea"))
+  if (group === null) return null
+  const listed = [...kids(read, group, "c:ser")].sort(
+    (left, right) => Number(value(read, left, "c:order") ?? "0") - Number(value(read, right, "c:order") ?? "0"),
+  )
+  return listed.map((series) => {
+    const cache = kid(read, kid(read, kid(read, series, "c:val"), "c:numRef"), "c:numCache")
+    const code = holderText(read.bytes, kid(read, cache, "c:formatCode"))
+    return code === "" ? "General" : code
+  })
+}

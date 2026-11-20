@@ -13,11 +13,16 @@ import { Minus, Plus } from "lucide-react"
 import { useState, useSyncExternalStore, type KeyboardEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { chartCopy } from "@/copy/chart-copy"
-import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
+import { changeDesign, fileChartFormatsOf, fileValue, type DesignDeck } from "@/design/design-change"
+import { gridFormat, gridNumber, gridParse } from "@/editor/chart-grid-number"
 import { DesignSection } from "@/editor/design-panel"
 import { cn } from "@/lib/class-names"
 import { heldChart } from "@/live-repaint"
+
+const fieldLook =
+  "min-w-0 rounded-[var(--shape-control)] bg-white px-1.5 text-[length:var(--type-caption)] text-foreground md:text-[length:var(--type-caption)]"
 
 export function ChartField(props: {
   readonly label: string
@@ -42,10 +47,37 @@ export function ChartField(props: {
       onChange={(event) => setDraft(event.currentTarget.value)}
       onBlur={commit}
       onKeyDown={key}
-      className={cn(
-        "h-[var(--control-dense)] min-w-0 rounded-[var(--shape-control)] bg-white px-1.5 text-[length:var(--type-caption)] text-foreground md:text-[length:var(--type-caption)]",
-        props.numeric === true && "text-right",
-      )}
+      className={cn("h-[var(--control-dense)]", fieldLook, props.numeric === true && "text-right")}
+    />
+  )
+}
+
+function ChartLabelField(props: {
+  readonly label: string
+  readonly value: string
+  readonly onCommit: (text: string) => void
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const commit = () => {
+    if (draft !== null && draft !== props.value) props.onCommit(draft)
+    setDraft(null)
+  }
+  const key = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter") return
+    event.preventDefault()
+    event.currentTarget.blur()
+  }
+  return (
+    <Textarea
+      data-focus-ring
+      data-chart-label
+      rows={1}
+      aria-label={props.label}
+      value={draft ?? props.value}
+      onChange={(event) => setDraft(event.currentTarget.value.replaceAll("\n", " "))}
+      onBlur={commit}
+      onKeyDown={key}
+      className={cn("min-h-[var(--control-dense)] resize-none py-1 leading-snug", fieldLook)}
     />
   )
 }
@@ -114,6 +146,8 @@ export function useHeldChart(deck: DesignDeck, node: ElementId): { chart: ChartV
 export function ChartDataSection(props: { readonly deck: DesignDeck; readonly node: ElementId }) {
   const { chart, save } = useHeldChart(props.deck, props.node)
   if (chart === null) return null
+  const own = fileChartFormatsOf(props.deck.shown, props.node)
+  const formats = chart.series.map((_, column) => gridFormat(own[column] ?? own[0], chart))
   const many = chart.kind !== "pie"
   const columns = chart.series.length
   return (
@@ -149,9 +183,9 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
           })}
         </div>
         <div
-          className="grid items-center gap-1"
+          className="grid items-start gap-1"
           style={{
-            gridTemplateColumns: `minmax(2.5rem, 0.8fr) repeat(${String(columns)}, minmax(2.5rem, 1fr)) 1.75rem`,
+            gridTemplateColumns: `minmax(3.5rem, 1.4fr) repeat(${String(columns)}, minmax(3rem, 1fr)) 1.75rem`,
           }}
         >
           <span />
@@ -187,7 +221,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
             <span />
           )}
           {chart.categories.map((category, row) => [
-            <ChartField
+            <ChartLabelField
               key={`label ${String(row)}`}
               label={chartCopy.category(row + 1)}
               value={category}
@@ -202,11 +236,11 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
               <ChartField
                 key={`value ${String(row)} ${String(column)}`}
                 label={chartCopy.value(row + 1, column + 1)}
-                value={String(series.values[row] ?? 0)}
+                value={gridNumber(series.values[row] ?? 0, formats[column] ?? "General")}
                 numeric
                 onCommit={(text) => {
-                  const value = Number(text)
-                  if (text.trim() !== "" && Number.isFinite(value))
+                  const value = gridParse(text, formats[column] ?? "General")
+                  if (value !== null && value !== series.values[row])
                     save((fresh) => withValue(fresh, row, column, value))
                 }}
               />
