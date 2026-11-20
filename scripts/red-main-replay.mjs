@@ -71,7 +71,6 @@ export const mainWith = (window, runs) => [
   [/^gh run list/, () => ok(asRuns(runs))],
   [/^git diff --name-only/, (args) => ok(filesBetween(window.commits)(args.at(-2), args.at(-1)).join("\n"))],
   [/^gh issue list/, () => ok("[]")],
-  [/^gh api graphql/, () => ok(JSON.stringify({ data: { search: { nodes: [] } } }))],
   [
     /^gh api repos\/Rickvu309\/AirDesign\/commits\/\w+\/pulls/,
     () => ok(JSON.stringify([{ number: 499, body: culpritBody("No visible change: only the exporter changes.") }])),

@@ -250,7 +250,6 @@ export const land = async (ctx) => {
       record: ({ test, excerpt }) =>
         recordRace({
           gh,
-          git,
           repository,
           test,
           excerpt,

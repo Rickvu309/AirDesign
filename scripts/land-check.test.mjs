@@ -194,8 +194,6 @@ const issues = () => {
   const gh = (args, input) => {
     calls.push({ args, input })
     if (args[0] === "issue" && args[1] === "list") return { status: 0, stdout: JSON.stringify(open), stderr: "" }
-    if (args[0] === "api" && args[1] === "graphql")
-      return { status: 0, stdout: JSON.stringify({ data: { search: { nodes: [] } } }), stderr: "" }
     if (args[0] === "issue" && args[1] === "create") {
       const number = 990 + open.length
       open.push({ number, title: args[args.indexOf("--title") + 1], url: `${issueUrl.slice(0, -3)}${number}` })
@@ -245,9 +243,7 @@ lined.open.push({ number: 1074, title: "Race: tests/journeys/journeys.spec.ts:11
 recordRace({ ...seen("d"), gh: lined.gh, test: maskGroup, excerpt: "" })
 same(
   "a race filed under its old line takes the comment when the test moved from :114 to :116",
-  lined.calls
-    .filter((call) => call.args[0] === "issue" && call.args[1] !== "list")
-    .map((call) => call.args.slice(0, 3).join(" ")),
+  lined.calls.filter((call) => call.args[1] !== "list").map((call) => call.args.slice(0, 3).join(" ")),
   ["issue comment 1074"],
 )
 const shifted = issues()
@@ -255,7 +251,7 @@ recordRace({ ...seen("e"), gh: shifted.gh, test: { ...maskGroup, line: 114 } })
 recordRace({ ...seen("f"), gh: shifted.gh, test: maskGroup })
 same(
   "the mask-group race at :114 and then at :116 is one issue",
-  shifted.calls.filter((call) => call.args[0] === "issue" && call.args[1] !== "list").map((call) => call.args[1]),
+  shifted.calls.filter((call) => call.args[1] !== "list").map((call) => call.args[1]),
   ["create", "comment"],
 )
 

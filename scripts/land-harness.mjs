@@ -128,7 +128,6 @@ export const harness = (options = {}) => {
     log.push(`gh ${command.join(" ")}`)
     if (command[0] === "repo") return ok("Rickvu309/AirDesign\n")
     if (command[0] === "issue" && command[1] === "list") return issues
-    if (command[0] === "api" && command[1] === "graphql") return ok(JSON.stringify({ data: { search: { nodes: [] } } }))
     if (command[0] === "issue" && command[1] === "create") {
       raised.push({ title: command[command.indexOf("--title") + 1], body: input })
       return ok("https://github.com/Rickvu309/AirDesign/issues/990\n")

@@ -74,103 +74,7 @@ export const openIssues = ({ gh, repository }) => {
   }
 }
 
-const closedRaceQuery = `query($search: String!) {
-  search(query: $search, type: ISSUE, first: 100) {
-    nodes {
-      ... on Issue {
-        number
-        title
-        url
-        closedByPullRequestsReferences(first: 10, includeClosedPrs: true) {
-          nodes { number state mergedAt mergeCommit { oid } }
-        }
-      }
-    }
-  }
-}`
-
-export const fixesOf = ({ gh, repository, test }) => {
-  const listed = gh([
-    "api",
-    "graphql",
-    "-f",
-    `query=${closedRaceQuery}`,
-    "-f",
-    `search=repo:${repository} is:issue is:closed in:title "Race:" "${test.file}"`,
-  ])
-  if (listed.status !== 0) return { why: `the closed issues could not be read: ${said(listed)}` }
-  try {
-    const nodes = JSON.parse(listed.stdout).data.search.nodes
-    const fixes = nodes
-      .filter((issue) => issue.title !== undefined && raceKey(issue.title) === raceKey(raceTitle(test)))
-      .flatMap((issue) =>
-        (issue.closedByPullRequestsReferences?.nodes ?? [])
-          .filter((pull) => pull.state === "MERGED" && pull.mergeCommit?.oid)
-          .map((pull) => ({ issue, pull: pull.number, merge: pull.mergeCommit.oid, mergedAt: pull.mergedAt })),
-      )
-    return { fixes: fixes.sort((a, b) => b.mergedAt.localeCompare(a.mergedAt)) }
-  } catch {
-    return { why: "the closed issues could not be read: gh answered no JSON" }
-  }
-}
-
-const hasFix = ({ gh, git, repository, commit, merge }) => {
-  const local = git?.(["merge-base", "--is-ancestor", merge, commit])
-  if (local?.status === 0) return { has: true }
-  if (local?.status === 1) return { has: false }
-  const compared = gh(["api", `repos/${repository}/compare/${merge}...${commit}`, "--jq", ".status"])
-  if (compared.status !== 0)
-    return { why: `could not tell whether ${commit} has the fix in ${merge}: ${said(compared)}` }
-  return { has: ["ahead", "identical"].includes(compared.stdout.trim()) }
-}
-
-const predatesFixComment = ({ excerpt, commit, seen, fix }) =>
-  [
-    agentHeader,
-    "",
-    `Failed ${seen}, at commit ${commit}. That failure predates the fix: #${fix.pull} merged as ${fix.merge.slice(0, 7)}, and ${commit.slice(0, 7)} does not contain it. Nothing was filed.`,
-    "",
-    ...output(excerpt),
-  ].join("\n")
-
-const fixDidNotHoldComment = ({ excerpt, commit, seen, fix }) =>
-  [
-    agentHeader,
-    "",
-    `Failed ${seen}, at commit ${commit}, which contains the fix: #${fix.pull} merged as ${fix.merge.slice(0, 7)}. The fix did not hold, so this issue is open again.`,
-    "",
-    ...output(excerpt),
-  ].join("\n")
-
-const commentOn = ({ gh, repository, number, body, url }) => {
-  const commented = gh(["issue", "comment", String(number), "--repo", repository, "--body-file", "-"], body)
-  return commented.status === 0 ? { url } : { why: `gh issue comment failed: ${said(commented)}` }
-}
-
-const afterFix = ({ gh, git, repository, fix, excerpt, commit, seen }) => {
-  const judged = hasFix({ gh, git, repository, commit, merge: fix.merge })
-  if (judged.why !== undefined) return judged
-  if (!judged.has) {
-    return commentOn({
-      gh,
-      repository,
-      number: fix.issue.number,
-      url: fix.issue.url,
-      body: predatesFixComment({ excerpt, commit, seen, fix }),
-    })
-  }
-  const reopened = gh(["issue", "reopen", String(fix.issue.number), "--repo", repository])
-  if (reopened.status !== 0) return { why: `gh issue reopen failed: ${said(reopened)}` }
-  return commentOn({
-    gh,
-    repository,
-    number: fix.issue.number,
-    url: fix.issue.url,
-    body: fixDidNotHoldComment({ excerpt, commit, seen, fix }),
-  })
-}
-
-export const keepIssue = ({ gh, repository, title, body, comment, beforeCreate }) => {
+export const keepIssue = ({ gh, repository, title, body, comment }) => {
   const issues = openIssues({ gh, repository })
   if (issues.why !== undefined) return issues
   const known = issues.open.find((issue) => raceKey(issue.title) === raceKey(title))
@@ -178,27 +82,17 @@ export const keepIssue = ({ gh, repository, title, body, comment, beforeCreate }
     const commented = gh(["issue", "comment", String(known.number), "--repo", repository, "--body-file", "-"], comment)
     return commented.status === 0 ? { url: known.url } : { why: `gh issue comment failed: ${said(commented)}` }
   }
-  const earlier = beforeCreate?.()
-  if (earlier !== undefined) return earlier
   const created = gh(["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body)
   return created.status === 0
     ? { url: created.stdout.trim().split("\n").at(-1) }
     : { why: `gh issue create failed: ${said(created)}` }
 }
 
-const fixOfTest = ({ gh, git, repository, test, excerpt, commit, seen }) => {
-  const closed = fixesOf({ gh, repository, test })
-  if (closed.why !== undefined) return closed
-  if (closed.fixes.length === 0) return undefined
-  return afterFix({ gh, git, repository, fix: closed.fixes[0], excerpt, commit, seen })
-}
-
-export const recordRace = ({ gh, git, repository, test, excerpt, commit, seen }) =>
+export const recordRace = ({ gh, repository, test, excerpt, commit, seen }) =>
   keepIssue({
     gh,
     repository,
     title: raceTitle(test),
     body: raceBody({ test, excerpt, commit, seen }),
     comment: raceComment({ excerpt, commit, seen }),
-    beforeCreate: () => fixOfTest({ gh, git, repository, test, excerpt, commit, seen }),
   })
