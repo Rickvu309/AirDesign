@@ -14,6 +14,11 @@ export const succeeds = (result, what) => {
   return result.stdout
 }
 
+export const changedOnBranch = (git) => {
+  const listed = git(["diff", "--name-only", "origin/main...HEAD"])
+  return listed.status === 0 ? listed.stdout.split("\n").filter((file) => file !== "") : []
+}
+
 export const currentBranch = (git) =>
   succeeds(git(["rev-parse", "--abbrev-ref", "HEAD"]), "could not read the branch").trim()
 

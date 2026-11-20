@@ -1,6 +1,7 @@
 import { freshRunMark, outsideTheDiff } from "./fresh-run.mjs"
 import { followPull } from "./land-follow.mjs"
 import { fixture, ok, same } from "./land-harness.mjs"
+import { forceTheGap } from "./race-issue.mjs"
 
 const browserLog = fixture("job-playwright-failed.log")
 const unitLog = fixture("vitest-failed.log")
@@ -91,9 +92,11 @@ const follow = async ({
   files = "apps/web/src/editor/save.ts\n",
   job = browserJob,
   runs = [prRun],
+  issues = ok("[]"),
 }) => {
   const asked = []
   const said = []
+  const raised = []
   let at = 0
   let clock = 0
   const code = await followPull({
@@ -101,9 +104,14 @@ const follow = async ({
     branch: "fix",
     repository: "Rickvu309/AirDesign",
     read: () => reads[Math.min(at++, reads.length - 1)],
-    gh: (args) => {
+    gh: (args, input) => {
       const call = args.join(" ")
       asked.push(call)
+      if (call.startsWith("issue list")) return issues
+      if (call.startsWith("issue create")) {
+        raised.push({ title: args[args.indexOf("--title") + 1], body: input })
+        return ok("https://github.com/Rickvu309/AirDesign/issues/990\n")
+      }
       if (call.includes("/actions/workflows/ci.yml/runs")) return ok(JSON.stringify(runs))
       if (call.includes("/jobs?per_page=100")) return ok(JSON.stringify([{ id: 5, name: job.name }]))
       if (call.includes("/jobs/5/logs")) return ok(job.log)
@@ -122,7 +130,7 @@ const follow = async ({
     limitMs: 3600000,
   })
   const posted = asked.filter((call) => call.startsWith("api -X POST repos/Rickvu309/AirDesign/issues/394/comments"))
-  return { code, said, asked, posted }
+  return { code, said, asked, posted, raised }
 }
 
 const taken = await follow({
@@ -140,6 +148,43 @@ same(
   [true, true, true],
 )
 same(
+  "before the fresh run, the save-status race is recorded as an issue with the run, the head and the failure output",
+  taken.raised.map((issue) => [
+    issue.title,
+    issue.body.split(/\s/).some((word) => word === "https://github.com/Rickvu309/AirDesign/actions/runs/77"),
+    issue.body.includes(head),
+    issue.body.includes('Received: "Saved"'),
+  ]),
+  [
+    [
+      "Race: tests/browser/save-status.spec.ts:206 › an added slide reads Saving while its commit waits and Saved once the server takes it",
+      true,
+      true,
+      true,
+    ],
+  ],
+)
+same(
+  "the comment links the race's issue",
+  taken.posted[0]
+    .split("\n")
+    .some((line) => line === "Each one is a race, recorded in https://github.com/Rickvu309/AirDesign/issues/990."),
+  true,
+)
+same(
+  "the issue is opened before the pull request is closed",
+  taken.asked.findIndex((call) => call.startsWith("issue create")) <
+    taken.asked.findIndex((call) => call.startsWith("pr close")),
+  true,
+)
+const unrecorded = await follow({ reads: [pullAnswer()], issues: { status: 1, stdout: "", stderr: "HTTP 503" } })
+same("a race that cannot be recorded takes no fresh run", [unrecorded.code, unrecorded.posted.length], [1, 0])
+same(
+  "and says why",
+  unrecorded.said.some((line) => line.includes("no fresh run") && line.includes("HTTP 503")),
+  true,
+)
+same(
   "the pull request is closed, reopened and armed again, never rerun",
   taken.asked.filter((call) => /^pr (close|reopen|merge)|^run rerun|\/rerun/.test(call)),
   ["pr close 394", "pr reopen 394", "pr merge 394 --auto --rebase"],
@@ -152,6 +197,12 @@ same("and says why", second.said.includes("follow: no fresh run: the one fresh r
 
 const inside = await follow({ reads: [pullAnswer()], files: "tests/browser/save-status.spec.ts\n" })
 same("a failure inside the diff is refused", [inside.code, inside.posted.length], [1, 0])
+same("and opens no issue, since the pull request owns the race", inside.raised, [])
+same(
+  "and says to force the gap",
+  inside.said.some((line) => line.includes(forceTheGap)),
+  true,
+)
 
 const unit = await follow({ reads: [pullAnswer()], job: { name: "check (source)", log: unitLog } })
 same("a step that is not a browser step is refused", [unit.code, unit.posted.length], [1, 0])

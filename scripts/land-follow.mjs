@@ -1,7 +1,8 @@
-import { freshRunVerdict, takeFreshRun } from "./fresh-run.mjs"
+import { freshRunVerdict, recordRaces, takeFreshRun } from "./fresh-run.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { ciFailureLines } from "./land-report.mjs"
 import { queueLine, readPull, removalLine } from "./merge-queue.mjs"
+import { forceTheGap } from "./race-issue.mjs"
 
 const runsOf = ({ gh, repository, event, branch }) => {
   const fields =
@@ -73,9 +74,22 @@ export const followPull = async ({
     if (failure === undefined) return false
     const verdict = freshRunVerdict({ gh, repository, number, head: pull.head, jobs: failure.jobs })
     if (!verdict.take) {
-      say(`follow: no fresh run: ${verdict.why}.`)
+      say(`follow: no fresh run: ${verdict.why}.${verdict.owned ? ` ${forceTheGap}` : ""}`)
       return false
     }
+    const races = recordRaces({
+      gh,
+      repository,
+      run: failure.run,
+      head: pull.head,
+      tests: verdict.tests,
+      jobs: failure.jobs,
+    })
+    if (races.why !== undefined) {
+      say(`follow: no fresh run: the race could not be recorded as an issue: ${races.why}.`)
+      return false
+    }
+    for (const url of races.urls) say(`follow: the race is recorded in ${url}.`)
     say(
       `follow: ci failed only in tests this diff cannot reach. Taking the one fresh run for head ${pull.head.slice(0, 7)}.`,
     )
@@ -87,6 +101,7 @@ export const followPull = async ({
       run: failure.run,
       head: pull.head,
       tests: verdict.tests,
+      races: races.urls,
       queue: event === "merge_group",
       sleep,
       now,

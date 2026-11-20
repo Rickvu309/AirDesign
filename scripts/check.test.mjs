@@ -96,7 +96,7 @@ if (!onCi({ CI: "true" }) || !onCi({ CI: "1" }) || onCi({}) || onCi({ CI: "false
 
 if (!mayPush([], true)) throw new Error("a passing check may push")
 if (!mayPush(["unit-tests"], true) || !mayPush(["browser-tests", "unit-tests"], true)) {
-  throw new Error("a load timeout in unit-tests or browser-tests must leave the judgment to ci")
+  throw new Error("a timeout in unit-tests or browser-tests must leave the judgment to ci")
 }
 for (const name of [
   "format",
@@ -109,7 +109,7 @@ for (const name of [
   "lint-rules",
   "model-check",
 ]) {
-  if (mayPush([name], true)) throw new Error(`${name} does not depend on load and must stop a push`)
+  if (mayPush([name], true)) throw new Error(`${name} is not a test step and must stop a push`)
   if (mayPush(["unit-tests", name], true)) throw new Error(`${name} failing next to unit-tests must still stop a push`)
 }
 if (mayPush([], false)) throw new Error("a check that stopped early saw too little to allow a push")
@@ -158,7 +158,7 @@ if (ranWhen("all", false).includes("design-findings"))
 
 if (!stampable([], true)) throw new Error("a passing check must stamp the commit")
 if (stampable(["unit-tests"], true)) {
-  throw new Error("a failed test must not stamp the commit: only pnpm land stamps it, after the file passes alone")
+  throw new Error("a failed test must not stamp the commit: only pnpm land stamps it, after it judges the file alone")
 }
 if (stampable(["browser-tests", "unit-tests"], true))
   throw new Error("a failed unit-tests step next to browser-tests must not stamp the commit")

@@ -67,6 +67,8 @@ export const harness = (options = {}) => {
     staleLog = "",
     checkRuns = [{ status: 0, output: "ok lint 1s\n" }],
     alone = { status: 0, output: "" },
+    changed = "",
+    issues = ok("[]"),
     pushed = ok(),
     merges = [ok()],
     reads = [pullAnswer({ armed: true }), pullAnswer({ merged: true })],
@@ -97,7 +99,8 @@ export const harness = (options = {}) => {
           : ok(`${mark} HEAD\nx\n`)
     if (name === "push") return pushed
     if (name === "cat-file") return ok()
-    if (name === "diff") return ok(command.includes("--raw") ? staleDiff : "")
+    if (name === "diff")
+      return ok(command.includes("--raw") ? staleDiff : command.includes("origin/main...HEAD") ? changed : "")
     if (name === "merge-base") return ok("base\n")
     if (name === "log" && command.includes("--merges"))
       return ok(mergeSubjects.map((subject, at) => `${String(at + 1).repeat(40)}\0${subject}\n`).join(""))
@@ -106,9 +109,15 @@ export const harness = (options = {}) => {
     throw new Error(`unexpected ${command.join(" ")}`)
   }
   const edits = []
+  const raised = []
   const gh = (command, input) => {
     log.push(`gh ${command.join(" ")}`)
     if (command[0] === "repo") return ok("Rickvu309/AirDesign\n")
+    if (command[0] === "issue" && command[1] === "list") return issues
+    if (command[0] === "issue" && command[1] === "create") {
+      raised.push({ title: command[command.indexOf("--title") + 1], body: input })
+      return ok("https://github.com/Rickvu309/AirDesign/issues/990\n")
+    }
     if (command[0] === "api" && command.includes("PATCH")) {
       edits.push({ path: command.find((word) => word.startsWith("repos/")), fields: JSON.parse(input) })
       return ok("{}")
@@ -152,5 +161,5 @@ export const harness = (options = {}) => {
     if (handEdit !== undefined) throw new Error(`land told the agent to run gh by hand: ${handEdit}`)
     return code
   }
-  return { context, log, said, edits, run }
+  return { context, log, said, edits, raised, run }
 }

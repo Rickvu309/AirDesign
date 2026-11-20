@@ -11,11 +11,20 @@ import { barSigned, commentsArgs, commentsFrom, countersignFor, verifierSteps } 
 import { readWithRetry } from "./github-read.mjs"
 import { judgeCheck } from "./land-check.mjs"
 import { followPull } from "./land-follow.mjs"
-import { behindMain, conflictsWithMain, currentBranch, dirtyFiles, runner, succeeds } from "./land-git.mjs"
+import {
+  behindMain,
+  changedOnBranch,
+  conflictsWithMain,
+  currentBranch,
+  dirtyFiles,
+  runner,
+  succeeds,
+} from "./land-git.mjs"
 import { statusLines } from "./land-status.mjs"
 import { mergesSince, rebuildBranch, rebuildLine } from "./linear-branch.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
+import { recordRace } from "./race-issue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { branchBodyFaults } from "./pr-body.mjs"
 import { baseFault } from "./pull-base.mjs"
@@ -230,7 +239,22 @@ export const land = async (ctx) => {
     if (early !== undefined) stop("markers", early)
     line("markers", "no conflict marker in the commit")
     line("gate", "running pnpm gate: the cheap checks, then the build and the tests this diff reaches")
-    const verdict = await judgeCheck({ ...(await ctx.check()), rerun: ctx.rerun, say: (text) => line("gate", text) })
+    const commit = succeeds(git(["rev-parse", "HEAD"]), "could not read HEAD").trim()
+    const verdict = await judgeCheck({
+      ...(await ctx.check()),
+      rerun: ctx.rerun,
+      changed: changedOnBranch(git),
+      record: ({ test, excerpt }) =>
+        recordRace({
+          gh,
+          repository,
+          test,
+          excerpt,
+          commit,
+          seen: `in pnpm gate on branch ${branch} and passed when pnpm land ran its file alone`,
+        }),
+      say: (text) => line("gate", text),
+    })
     if (!verdict.passed) stop("gate", verdict.how)
     ctx.stamp()
     line("gate", `${verdict.how}; the commit is stamped for the push guard, and ci runs every step of pnpm check`)

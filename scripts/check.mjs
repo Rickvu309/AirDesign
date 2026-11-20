@@ -210,7 +210,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (failed.length > 0) console.error("Only the browser tests failed here, so ci judges them on GitHub.")
   } else if (checkedTree !== undefined && checkSteps.mayPush(failed, ranSteps)) {
     console.error(
-      `NOT checked: the ${failed.find(checkSteps.rerunsAlone) ?? failed[0]} step failed, so this commit is not stamped and the push guard will refuse it. Run pnpm land --check: it reruns each failed test file alone, tells load from a fault, and stamps the commit only when every file passes alone.`,
+      `NOT checked: the ${failed.find(checkSteps.rerunsAlone) ?? failed[0]} step failed, so this commit is not stamped and the push guard will refuse it. Run pnpm land --check: it reruns each failed test file alone. A file that fails alone too is a fault. A file that passes alone has a race: inside your diff it stops the push, and outside it the race is recorded as a GitHub issue before the commit is stamped.`,
     )
   }
   if (failed.length > 0) {
