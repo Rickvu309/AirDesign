@@ -11,7 +11,7 @@ describe("addTextShape", () => {
     const written = addTextShape(slide, "Tiếng Việt & < >", box)
     const xml = written.xml
     expect(written.id).toBe(2)
-    expect(xml).toContain(`<p:cNvPr id="2" name="Shape 2"/>`)
+    expect(xml).toContain(`<p:cNvPr id="2" name="Text"/>`)
     expect(xml).toContain(`<p:cNvPr id="1" name=""/>`)
     expect(xml).toContain("<a:t>Tiếng Việt &amp; &lt; &gt;</a:t>")
     expect(xml.indexOf("<a:pPr")).toBeLessThan(xml.indexOf("<a:r>"))
@@ -24,7 +24,7 @@ describe("addTextShape", () => {
     expect(xml.indexOf("<p:sp>")).toBeLessThan(xml.lastIndexOf("</p:spTree>"))
     const again = addTextShape(xml, "B", box)
     expect(again.id).toBe(3)
-    expect(again.xml).toContain(`<p:cNvPr id="3" name="Shape 3"/>`)
+    expect(again.xml).toContain(`<p:cNvPr id="3" name="Text"/>`)
     expect(again.xml.indexOf(`id="2"`)).toBeLessThan(again.xml.indexOf(`id="3"`))
     expect(addTextShape(slide, "😀", box).xml).toContain("<a:t>😀</a:t>")
   })

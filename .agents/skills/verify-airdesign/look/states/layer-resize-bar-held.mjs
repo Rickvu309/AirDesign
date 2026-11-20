@@ -1,0 +1,24 @@
+import path from "node:path"
+import { expect } from "@playwright/test"
+import { editor } from "../editor-screen.mjs"
+import { openDeck } from "../open-deck.mjs"
+
+const shape = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]'
+
+async function drive(kit) {
+  const { page } = kit
+  await kit.signIn()
+  await page.goto("/")
+  await openDeck(page, path.join(kit.repo, "scripts/pptx-fixtures/shapes-added.pptx"))
+  await page.locator(shape).click()
+  const top = await page.locator('[data-slide-paint] [data-selection] [data-grip="top"]').boundingBox()
+  const grip = await page.locator('[data-slide-paint] [data-selection] [data-grip="bottom"]').boundingBox()
+  if (grip === null || top === null) throw new Error("no edge grips")
+  const from = { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 }
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(from.x, top.y + top.height / 2 + 5, { steps: 12 })
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
+}
+
+export default { name: "layer-resize-bar-held", design: editor, drive }

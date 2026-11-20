@@ -1,5 +1,6 @@
-import { minimumSide } from "./box-gesture.js"
 import type { PaintBox } from "./paint-box.js"
+
+const smallestCrop = 228_600
 
 export type Area = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
 
@@ -52,7 +53,7 @@ function edges(
   before: boolean,
   after: boolean,
 ): { readonly at: number; readonly size: number } {
-  const least = Math.min(minimumSide, size)
+  const least = Math.min(smallestCrop, size)
   const end = start + size
   const from = before ? clamp(start + delta, imageStart, end - least) : start
   const to = after ? clamp(end + delta, from + least, imageStart + imageSize) : end

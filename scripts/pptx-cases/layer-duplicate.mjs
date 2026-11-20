@@ -7,7 +7,9 @@ const text = (bytes) => new TextDecoder().decode(bytes)
 const placedAt = '<a:off x="457200" y="457200"/>'
 
 function copied(piece, id, x, y) {
-  return piece.replace('<p:cNvPr id="2" ', `<p:cNvPr id="${id}" `).replace(placedAt, `<a:off x="${x}" y="${y}"/>`)
+  return piece
+    .replace(/<p:cNvPr id="2" name="([^"]*) 2"/, `<p:cNvPr id="${id}" name="$1 ${id}"`)
+    .replace(placedAt, `<a:off x="${x}" y="${y}"/>`)
 }
 
 export default {

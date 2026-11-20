@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   emuOf,
   largeNudgeStep,
-  minimumSide,
+  keptOnSlide,
   frameOf,
   movedBox,
   movedBoxes,
@@ -44,16 +44,16 @@ describe("movedBox", () => {
   it("stops while a quarter inch of the box is still on the slide past the left and top edges", () => {
     expect(movedBox(start, -20_000_000, -20_000_000, wide)).toEqual({
       ...start,
-      x: minimumSide - start.cx,
-      y: minimumSide - start.cy,
+      x: keptOnSlide - start.cx,
+      y: keptOnSlide - start.cy,
     })
   })
 
   it("stops while a quarter inch of the box is still on the slide past the right and bottom edges", () => {
     expect(movedBox(start, 20_000_000, 20_000_000, wide)).toEqual({
       ...start,
-      x: wide.width - minimumSide,
-      y: wide.height - minimumSide,
+      x: wide.width - keptOnSlide,
+      y: wide.height - keptOnSlide,
     })
   })
 
@@ -86,7 +86,7 @@ describe("nudgedBox", () => {
   })
 
   it("stops at the same slide edge as a drag", () => {
-    const edge = { ...start, x: wide.width - minimumSide }
+    const edge = { ...start, x: wide.width - keptOnSlide }
     expect(nudgedBox(edge, "ArrowRight", true, wide)).toEqual(edge)
   })
 })

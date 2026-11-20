@@ -17,7 +17,7 @@ import {
   type SlideState,
   type TraitPatch,
 } from "@airdesign/document"
-import { arrangeSlide } from "./element-stack-route.js"
+import { arrangeSlide, raisedToTop } from "./element-stack-route.js"
 import { joinShape, regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
 import { pasteShape } from "./shape-paste.js"
@@ -137,13 +137,20 @@ export function groupsReplayed(
   const saved = new Map<string, SavedGroup>()
   const passed = new Set<string>()
   let next = parts
+  let pastedOnTop = false
   for (let at = 0; at < upTo; at += 1) {
     const command = state.order[at]
+    if (command?.slide === "element-add" && command.id === from && pastedOnTop) {
+      next = raisedToTop(next, minted, shapeOf(command.element.node).shape)
+      continue
+    }
     if (command?.slide === "element-clone" && command.id === from) {
       const part = slidePart(next, minted)
       if (part === null) throw new Error("slide")
-      if (shapeOf(command.source).slide !== from) next = pastedLayers(next, minted, part, command, pasted, at)
-      else if (holds(bytesOf(next, part), [shapeOf(command.source).shape]))
+      if (shapeOf(command.source).slide !== from) {
+        next = pastedLayers(next, minted, part, command, pasted, at)
+        pastedOnTop = true
+      } else if (holds(bytesOf(next, part), [shapeOf(command.source).shape]))
         next = clonedLayers(next, minted, part, command)
       continue
     }

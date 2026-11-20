@@ -1,4 +1,5 @@
 import { routeHosts as hosts } from "./route-hosts.js"
+import { cloneFault } from "./route-clone-proof.js"
 import { commonPrefix } from "./byte-prefix.js"
 import { beforeAll, describe, expect, it } from "vitest"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
@@ -286,34 +287,6 @@ function expectAddedText(before: Parts, after: Parts, edit: Extract<Edit, { read
   )
 }
 
-function expectClone(old: Uint8Array, next: Uint8Array, shapeId: string) {
-  const elements = markup(old)
-  const found = shapeById(elements, shapeId)
-  const end = found.end + next.length - old.length
-  expectBytes(spliceBytes(next, [{ start: found.end, end, next: emptyBytes }]), old)
-  const piece = next.slice(found.end, end)
-  const source = old.slice(found.start, found.end)
-  const marks = markup(piece).filter((element) => element.kind === "p:cNvPr")
-  const sourceMarks = markup(source).filter((element) => element.kind === "p:cNvPr")
-  expect(marks).toHaveLength(sourceMarks.length)
-  const restored: ByteEdit[] = marks.map((mark, index) => {
-    const id = required(
-      mark.attributes.find((item) => item.name === "id"),
-      "id",
-    )
-    return {
-      start: id.valueStart,
-      end: id.valueEnd,
-      next: encodeUtf8(required(sourceMarks[index]?.id ?? undefined, "p:cNvPr")),
-    }
-  })
-  expectBytes(spliceBytes(piece, restored), source)
-  const used = new Set(shapeIds(elements))
-  const fresh = marks.map((mark) => mark.id)
-  expect(new Set(fresh).size).toBe(fresh.length)
-  expect(fresh.filter((id) => used.has(id))).toEqual([])
-}
-
 function expectSlideAdded(before: Parts, after: Parts, sourceId: string, copy: boolean) {
   const oldPresentation = partOf(before, presentationPart)
   const nextPresentation = partOf(after, presentationPart)
@@ -430,7 +403,7 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
       return
     }
     case "spTree.clone":
-      expectClone(oldSlide, nextSlide, edit.shape)
+      expect(cloneFault(oldSlide, nextSlide, edit.shape)).toBeNull()
       return
     case "graphicFrame.addTable":
       expectAppendedShape(oldSlide, nextSlide, "p:graphicFrame")

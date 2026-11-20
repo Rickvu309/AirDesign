@@ -4,6 +4,7 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { insertAt, partBytes, requireMarkup, rootClose } from "./part-markup.js"
 import { xmlAttribute } from "./shape-write.js"
 import { nextShapeId } from "./shape-id.js"
+import { copyNamed } from "./shape-route.js"
 import { isShapeTag, shapeById } from "./shape-tree.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -219,7 +220,9 @@ export function pasteShape(parts: Parts, part: string, pasted: PastedShape): Par
     edits.push({ start: at, end: at, next: encodeUtf8(named) })
   }
   relinked.write()
-  return inserted(next, part, target, spliceBytes(piece, edits))
+  const top = copies.get(pasted.shape)
+  const placed = spliceBytes(piece, edits)
+  return inserted(next, part, target, top === undefined ? placed : copyNamed(placed, top))
 }
 
 export type PastedMarkup = Placing & { readonly markup: string; readonly linked: readonly string[] }

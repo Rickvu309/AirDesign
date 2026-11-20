@@ -17,7 +17,7 @@ export type Moved = { readonly id: ElementId; readonly box: Box }
 export type SlideSize = { readonly width: number; readonly height: number }
 
 export const corners: readonly Corner[] = ["top-left", "top-right", "bottom-left", "bottom-right"]
-export const minimumSide = 228_600
+export const keptOnSlide = 228_600
 export const nudgeStep = 12_700
 export const largeNudgeStep = 127_000
 export const dragThreshold = 3
@@ -33,7 +33,7 @@ function within(value: number, lowest: number, highest: number): number {
 }
 
 function placed(start: number, next: number, size: number, extent: number): number {
-  const kept = Math.min(minimumSide, size)
+  const kept = Math.min(keptOnSlide, size)
   return within(next, Math.min(kept - size, start), Math.max(extent - kept, start))
 }
 

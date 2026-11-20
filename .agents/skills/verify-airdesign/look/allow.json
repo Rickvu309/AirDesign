@@ -1,5 +1,11 @@
 [
   {
+    "page": "*",
+    "detector": "truncated-text",
+    "selector": "[data-layer-row] > span",
+    "reason": "A layer row is one line in the fixed-width Layers panel. A text layer is named by its words, as in Figma, so a long one is cut with an ellipsis as Figma cuts it; the full name shows when the row is renamed."
+  },
+  {
     "page": "/screens/s43-*",
     "detector": "stacked-frames",
     "selector": "span[class*='shadow-[0_0_0_2px_var(--ring)]']",

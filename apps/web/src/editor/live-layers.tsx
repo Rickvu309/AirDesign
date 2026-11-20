@@ -1,6 +1,7 @@
-import { openRegister, readLayout, type ElementId } from "@airdesign/document"
-import { boxOf, type CanvasSlide, type Copied, type Moved, type Selection } from "@airdesign/render"
-import { useEffect, useMemo, useRef } from "react"
+import { openRegister, readLayout, shapeOf, type ElementId } from "@airdesign/document"
+import { textLayerName, textNamedNow } from "@airdesign/pptx"
+import { boxOf, type CanvasSlide, type PaintStore, type Copied, type Moved, type Selection } from "@airdesign/render"
+import { useEffect, useMemo, useReducer, useRef } from "react"
 import type { CommitOutcome } from "@/commit-edit"
 import { changeDesign, type DesignDeck } from "@/design/design-change"
 import { panelKind } from "@/design/panel-order"
@@ -44,12 +45,36 @@ function layerSelection(slide: CanvasSlide | null, nodes: readonly ElementId[]):
     : { ids: nodes, inside: null, acrossGroups: true }
 }
 
+function useTypedNames(store: PaintStore, nodes: readonly ElementId[]): ReadonlyMap<ElementId, string> {
+  const [version, typed] = useReducer((count: number) => count + 1, 0)
+  const key = nodes.join(" ")
+  useEffect(() => {
+    const stops = nodes.map((node) => store.elementSubscribe(node)(typed))
+    return () => {
+      for (const stop of stops) stop()
+    }
+  }, [store, key])
+  return useMemo(() => {
+    const names = new Map<ElementId, string>()
+    for (const node of nodes) {
+      const text = store.getElement(node)?.text
+      if (text !== undefined) names.set(node, textLayerName(text))
+    }
+    return names
+  }, [store, key, version])
+}
+
 function useSlideTree(deck: LayeringDeck): readonly Layer[] {
   const { shown } = deck
   const file = shown.shownParts.current
   const parts = shown.displayParts.current
   const register = shown.shownRegister.current
   const slide = shown.store.current.slides()[shown.current]?.id
+  const textNamed = useMemo(
+    () => (register === null ? [] : [...textNamedNow(register)].filter((node) => shapeOf(node).slide === slide)),
+    [register, slide],
+  )
+  const typed = useTypedNames(shown.store.current, textNamed)
   return useMemo(() => {
     if (slide === undefined) return []
     const scope = deviceScope(file, register ?? openRegister("", ""))
@@ -60,14 +85,16 @@ function useSlideTree(deck: LayeringDeck): readonly Layer[] {
       const found = panelKind(view, { reads: {}, moves: false, fields: fieldsOf(parts, node) })
       const kind = found === null || found === "many" ? "kept" : found
       const flow = view.facts.frame === "auto" && laid !== null ? readLayout(laid, node)?.flow : undefined
+      const name = typed.get(node)
       return {
         kind,
+        ...(name === undefined ? {} : { name }),
         ...(view.backdrop === undefined ? {} : { backdrop: view.backdrop }),
         ...(flow === undefined || flow === "none" ? {} : { flow }),
       }
     }
     return layerTree(slideLayerRows(parts, slide, look))
-  }, [file, parts, register, slide])
+  }, [file, parts, register, slide, typed])
 }
 
 export function LiveLayers({

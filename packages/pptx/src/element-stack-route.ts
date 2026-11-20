@@ -1,4 +1,11 @@
-import { elementStacks, readElementId, shapeOf, type ElementId, type ElementStack } from "@airdesign/document"
+import {
+  elementStacks,
+  readElementId,
+  readSlideId,
+  shapeOf,
+  type ElementId,
+  type ElementStack,
+} from "@airdesign/document"
 
 import type { MarkupElement } from "./element-span.js"
 import { slidePart } from "./package-address.js"
@@ -134,4 +141,12 @@ export function shapeSiblings(parts: ReadonlyMap<string, Uint8Array>, node: Elem
 
 export function stacksOf(state: Parameters<typeof elementStacks>[0], slide: string): readonly ElementStack[] {
   return elementStacks(state).filter((stack) => stack.slide === slide)
+}
+
+export function raisedToTop(parts: ReadonlyMap<string, Uint8Array>, slide: string, shape: string) {
+  const node = readElementId(`${slide}.${shape}`)
+  const id = readSlideId(slide)
+  const among = node === undefined ? null : shapeSiblings(parts, node)
+  if (node === undefined || id === undefined || among === null || among.at(-1) === node) return parts
+  return arrangeSlide(parts, slide, [{ slide: id, ids: [...among.filter((each) => each !== node), node] }])
 }
