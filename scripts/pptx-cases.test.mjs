@@ -24,6 +24,7 @@ assert.deepEqual(
     "blank.mjs",
     "box.mjs",
     "chart-edits.mjs",
+    "chart-settings.mjs",
     "color-picker.mjs",
     "color-transforms.mjs",
     "diagram-edits.mjs",

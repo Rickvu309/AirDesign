@@ -1,7 +1,8 @@
-import { openingChart, type ChartValue } from "@airdesign/document"
+import { openingChart, writeChartValue, type ChartValue } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { addChart, writeChart } from "./chart-write.js"
 import { chartWorkbookErrors } from "./chart-workbook-check.js"
+import { chartXml } from "./trait-xml-chart.js"
 import { partData, readContainer } from "./package-container.js"
 import { decodeUtf8 } from "./package-bytes.js"
 import { paintReader, readPackage, readShapes } from "./index.js"
@@ -123,4 +124,53 @@ it("rewrites the embedded workbook with the chart's new data and keeps its one p
     ["South & East", "40"],
   ])
   expect(decodeUtf8(next.get("ppt/charts/_rels/chart1.xml.rels")!).match(/<Relationship /g)).toHaveLength(1)
+})
+
+it("reads a chart's value back from the file, so a chart made here opens again with its numbers and settings", async () => {
+  const parts = new Map(await blank())
+  const styled: ChartValue = {
+    ...openingChart("bar"),
+    title: "Revenue by quarter",
+    labels: "#,##0.0",
+    axis: false,
+    gap: 50,
+  }
+  addChart(parts, { part: slide, id: 9, ...box, chart: styled })
+  const value = chartXml.fields.value
+  if (value.at !== "whole") throw new Error("chart value")
+  expect(value.codec.read(parts, { slide: "256", part: slide, shape: "9" })).toBe(writeChartValue(styled))
+  expect(value.codec.read(parts, { slide: "256", part: slide, shape: "2" })).toBeNull()
+})
+
+it("paints a consulting chart's title, labels, hidden value axis, no gridlines, gap, colours and legend", async () => {
+  const parts = new Map(await blank())
+  addChart(parts, {
+    part: slide,
+    id: 9,
+    ...box,
+    chart: {
+      kind: "bar",
+      categories: ["FY24", "FY25"],
+      series: [
+        { name: "Core", values: [41.25, 46.5], color: { rgb: "1F4E79" } },
+        { name: "New", values: [3, 7] },
+      ],
+      title: "New products add growth",
+      labels: "#,##0.0",
+      axis: false,
+      gridlines: false,
+      gap: 40,
+      legend: "top",
+    },
+  })
+  const chart = painted(parts)
+  expect(chart?.title?.text).toBe("New products add growth")
+  expect(chart?.title?.look.bold).toBe(true)
+  expect(chart?.series[0]?.labels.map((label) => label?.text)).toEqual(["41.3", "46.5"])
+  expect(chart?.series[0]?.labels[0]?.position).toBe("outsideEnd")
+  expect(chart?.valueAxis?.shown).toBe(false)
+  expect(chart?.valueAxis?.gridlines).toBeNull()
+  expect(chart?.gap).toBe(0.4)
+  expect(chart?.series[0]?.points[0]?.fill).toMatchObject({ hex: "1F4E79" })
+  expect(chart?.legend?.position).toBe("top")
 })

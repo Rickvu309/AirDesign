@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import type { Palette } from "@/design/color-choices"
 import type { DesignDeck } from "@/design/design-change"
 import { ChartDataSection } from "@/editor/chart-data-section"
+import { ChartSettingsSection } from "@/editor/chart-settings-section"
 import { TableCellsSection, type TableCells } from "@/editor/table-cells-section"
 
 export function kindSection(props: {
@@ -13,7 +14,15 @@ export function kindSection(props: {
   readonly palette: Palette
 }): { readonly children?: ReactNode } {
   const { deck, node, value } = props
-  if (props.kind === "chart") return { children: <ChartDataSection deck={deck} node={node} /> }
+  if (props.kind === "chart")
+    return {
+      children: (
+        <>
+          <ChartDataSection deck={deck} node={node} />
+          <ChartSettingsSection deck={deck} node={node} palette={props.palette} />
+        </>
+      ),
+    }
   if (props.kind !== "table") return {}
   return {
     children: (
