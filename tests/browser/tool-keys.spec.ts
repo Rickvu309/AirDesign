@@ -30,10 +30,21 @@ test("T, R, O, L, Shift+L and Shift+Ctrl+K add a text box, shapes and an image f
     await page.keyboard.press(key)
     await expect(layers).toHaveCount(initial + step + 2)
   }
+  const browser = await page.context().newCDPSession(page)
+  await browser.send("Page.enable")
+  const chooser = new Promise<number | undefined>((opened) => {
+    browser.once("Page.fileChooserOpened", ({ backendNodeId }) => opened(backendNodeId))
+  })
+  await browser.send("Page.setInterceptFileChooserDialog", { enabled: true })
   await slide.click({ position: { x: 4, y: 4 } })
-  const chooser = page.waitForEvent("filechooser")
   await page.keyboard.press("ControlOrMeta+Shift+K")
-  await (await chooser).setFiles(join(process.cwd(), "scripts/pptx-fixtures/picture.png"))
+  const backendNodeId = await chooser
+  expect(backendNodeId).toBeDefined()
+  await browser.send("DOM.setFileInputFiles", {
+    backendNodeId,
+    files: [join(process.cwd(), "scripts/pptx-fixtures/picture.png")],
+  })
+  await browser.detach()
   await expect(layers).toHaveCount(initial + 6)
 })
 
