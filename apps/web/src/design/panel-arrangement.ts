@@ -106,6 +106,7 @@ const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter",
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   layout: [
     [placed("flow", above, { options: { vertical: VerticalFlow, horizontal: HorizontalFlow } })],
+    [placed("width", above, { form: "list" }), placed("height", above, { form: "list" })],
     [
       placed("align", above, { form: "grid", glyph: HorizontalLayoutAlignment }),
       placed("gap", above, { glyph: HorizontalGap, unit: "" }),

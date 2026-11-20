@@ -1,4 +1,4 @@
-import type { Box, ElementId, Register } from "@airdesign/document"
+import { resizedSides, type Box, type ElementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import type { Moved, PaintStore } from "@airdesign/render"
 import { cornersPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
@@ -57,7 +57,7 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: reado
       async (kept) => {
         const opened = await opening
         const beforeRegister = opened.ok ? indexedRegister(shownParts.current, opened.register) : framing
-        const steps = boxes.flatMap(({ box, element, corners, sizing }) => {
+        const steps = boxes.flatMap(({ box, element, corners, sizing, sides }) => {
           const target = element.id
           if (!kept.includes(target)) return []
           const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
@@ -75,8 +75,8 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: reado
                   name,
                   step: {
                     node: target,
-                    before: cornersPatch(before, corners?.before, sizing?.before),
-                    after: cornersPatch(box, corners?.after, sizing?.after),
+                    before: cornersPatch(before, corners?.before, sizing?.before, sides?.before),
+                    after: cornersPatch(box, corners?.after, sizing?.after, sides?.after),
                   },
                 },
               ]
@@ -118,7 +118,10 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: reado
       const shown = painted?.find((each) => each.id === target)
       const corners = resizedCorners(shown, box)
       const sizing = resizedSizing(shown, box)
-      return element === undefined ? [] : [{ box: stored, element, ...corners, ...sizing }]
+      const sides = framing === null ? null : resizedSides(framing, target, stored)
+      return element === undefined
+        ? []
+        : [{ box: stored, element, ...corners, ...sizing, ...(sides === null ? {} : { sides }) }]
     })
     const release = noteBoxes(
       id,
