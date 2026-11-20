@@ -34,6 +34,7 @@ const judgeNames = [
 const nameOf = (file) => file.slice(file.lastIndexOf("/") + 1)
 
 const kinds = [
+  ["other", (file) => file.endsWith(".rule.md")],
   ["test", (file) => testFile.test(file)],
   ["case", (file) => file.startsWith("scripts/pptx-cases/")],
   ["fixture", (file) => /(?:^|\/)[a-z-]*fixtures\//.test(file)],

@@ -73,6 +73,7 @@ const preflight = [
   "commit-authors",
   "package-boundaries",
   "unused-exports",
+  "rule-rows",
 ]
 const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],

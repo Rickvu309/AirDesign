@@ -36,6 +36,11 @@ same(
   "this pull request changes tests/browser/fixtures.ts",
 )
 same(
+  "a rule file beside a browser test is a doc, so the failure stays outside the diff",
+  outsideTheDiff({ jobs: [browserJob], files: ["tests/browser/context-pool.rule.md"] }).outside,
+  true,
+)
+same(
   "a job that names no failed test is unsure, so inside",
   outsideTheDiff({ jobs: [{ name: "corpus", log: "failed: browser-tests\n" }], files: [] }).outside,
   false,

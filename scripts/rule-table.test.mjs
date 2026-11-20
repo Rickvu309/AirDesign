@@ -16,13 +16,14 @@ const same = (name, actual, expected) => {
 const agents = read("AGENTS.md")
 const table = read("CHECKS.md")
 
-same("AGENTS.md names the file that holds the rule table", agents.includes("`CHECKS.md`"), true)
+same("AGENTS.md names the file that holds the rules review holds", agents.includes("`CHECKS.md`"), true)
+same("AGENTS.md names the command that prints every rule", agents.includes("`pnpm rules`"), true)
 same("AGENTS.md no longer holds the rule table", agents.includes("| Rule | Enforced by |"), false)
 same("the rule table sits in CHECKS.md", table.includes("| Rule | Enforced by |"), true)
 same("the file-size check covers CHECKS.md", authored("CHECKS.md"), true)
 same("a change to CHECKS.md alone changes no check", judges("CHECKS.md"), false)
-same("the file-size check covers CHECK-QUEUE.md", authored("CHECK-QUEUE.md"), true)
-same("CHECKS.md is under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit, true)
+same("a rule file changes no check", judges("scripts/rule-rows.rule.md"), false)
+same("CHECKS.md stays far under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit / 4, true)
 same(
   "AGENTS.md stays short enough to read whole on every turn",
   tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.4,

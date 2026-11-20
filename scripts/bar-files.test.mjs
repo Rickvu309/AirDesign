@@ -71,6 +71,13 @@ same(
   quiet,
 )
 same(
+  "a rule file beside its check changes no check",
+  judged({
+    listed: [added("scripts/rule-rows.rule.md"), added("tooling/oxlint-plugin-airdesign/rules/no-raw.rule.md")],
+  }),
+  quiet,
+)
+same(
   "PR 912 changes the rule docs only",
   judged({ listed: [modified("AGENTS.md"), modified("CHECKS.md"), modified("COMMANDS.md")] }),
   quiet,
