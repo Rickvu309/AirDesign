@@ -14,6 +14,9 @@ export type ThinNotice =
   | "unreached"
   | "import-failed"
   | "export-failed"
+  | "export-file-missing"
+  | "export-edits-unread"
+  | "export-edit-unwritten"
   | "picture-uploading"
   | "picture-type"
   | "picture-size"
@@ -25,6 +28,12 @@ export type ThinNotice =
   | "storage-failed"
   | "too-large"
   | "newer"
+
+const exportStopText: Partial<Record<ThinNotice, string>> = {
+  "export-file-missing": productCopy.exportFileMissing,
+  "export-edits-unread": productCopy.exportEditsUnread,
+  "export-edit-unwritten": productCopy.exportEditUnwritten,
+}
 
 const noticeId = "thin-notice"
 const noticeWidth = "24rem"
@@ -190,6 +199,7 @@ function NoticeContent({
       />
     )
   }
-  const text = notice === "picture-uploading" ? pictureCopy.exportWaiting : productCopy.exportFailed
+  const text =
+    notice === "picture-uploading" ? pictureCopy.exportWaiting : (exportStopText[notice] ?? productCopy.exportFailed)
   return <FailureNotice error text={text} action={exportCopy.tryAgain} onAct={() => onTryAgain(notice)} />
 }

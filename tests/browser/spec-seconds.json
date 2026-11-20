@@ -68,6 +68,7 @@
     "design-names.spec.ts": 11.4,
     "design-recovery.spec.ts": 1.6,
     "device-account.spec.ts": 3,
+    "device-files.spec.ts": 10,
     "diagram-export.spec.ts": 3.4,
     "drag-feel.spec.ts": 3.6,
     "editor-design-shortcuts.spec.ts": 2.8,

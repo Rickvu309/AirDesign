@@ -5,7 +5,7 @@ import { openRegister } from "../../packages/document/src/index.ts"
 import { stored } from "./device-store"
 import { partsOf, zip } from "./thin-deck-parts.ts"
 import { expectNoSample } from "./no-sample"
-import { exportFromDialog, savedExport } from "./export-dialog.ts"
+import { savedExport } from "./export-dialog.ts"
 import { decksOn, readyMark, test } from "./deck-test"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -616,7 +616,6 @@ test("one slide shows at a time", async ({ page }, testInfo) => {
 
 const offlineWords = "You're offline. Edits are saved on this device."
 const openFailedWords = "Unable to open this deck"
-const exportFailedWords = "Unable to export. Your deck is unchanged."
 
 test("an edit made offline shows the offline words and they go when a commit answers", async ({ page, context }) => {
   let answering = false
@@ -709,22 +708,6 @@ test("a deck the device and the server do not have says it cannot open, and its 
   await page.getByRole("button", { name: "Go to your decks" }).click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.locator("input[type=file]")).toHaveCount(1)
-})
-
-test("an export whose stored parts are gone shows the export words and downloads nothing", async ({ page }) => {
-  await open(page, fixture)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  await page.evaluate(async () => {
-    const root = await navigator.storage.getDirectory()
-    for await (const name of root.keys()) await root.removeEntry(name, { recursive: true })
-  })
-  let downloads = 0
-  page.on("download", () => {
-    downloads += 1
-  })
-  await exportFromDialog(page)
-  await expect(page.getByText(exportFailedWords)).toBeVisible()
-  expect(downloads).toBe(0)
 })
 
 test("a refused session keeps the edit and sends the person to sign in", async ({ page }) => {

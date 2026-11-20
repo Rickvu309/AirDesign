@@ -312,7 +312,8 @@ export function installParts(): Map<string, Uint8Array> {
       return {
         async getFileHandle(name: string, options?: { create?: boolean }) {
           if (!files.has(name)) {
-            if (!options?.create) throw new Error("missing")
+            if (!options?.create)
+              throw new DOMException("A requested file or directory could not be found", "NotFoundError")
             files.set(name, new Uint8Array())
           }
           return {
