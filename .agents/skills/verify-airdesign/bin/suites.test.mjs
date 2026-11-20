@@ -41,10 +41,8 @@ describe("suitesFor", () => {
 })
 
 describe("pptxPaths", () => {
-  it("reads the paths the pptx job of ci watches", () => {
-    const workflow =
-      "        run: git diff --quiet $BASE HEAD -- packages/pptx scripts/pptx-check.mjs && echo changed=0"
-    expect(pptxPaths(workflow)).toEqual(["packages/pptx", "scripts/pptx-check.mjs"])
+  it("reads the paths ci watches for the pptx job and the corpus", () => {
+    expect(pptxPaths("packages/pptx\nscripts/pptx-check.mjs\n")).toEqual(["packages/pptx", "scripts/pptx-check.mjs"])
   })
 })
 
