@@ -1,10 +1,10 @@
-import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { contentTypesPart, partOf, relativeTarget, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { insertAt, partBytes, requireMarkup, rootClose } from "./part-markup.js"
 import { xmlAttribute } from "./shape-write.js"
 import { nextShapeId } from "./shape-id.js"
-import { shapeById } from "./shape-tree.js"
+import { isShapeTag, shapeById } from "./shape-tree.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -129,7 +129,9 @@ function carriedPart(next: Map<string, Uint8Array>, source: Parts, part: string)
   next.set(contentTypesPart, insertAt(types, rootClose(requireMarkup(types), "Types", "types"), encodeUtf8(row)))
 }
 
-function renumbering(piece: readonly MarkupElement[], pasted: PastedShape, free: number): ReadonlyMap<string, string> {
+type Placing = { readonly shape: string; readonly id: number; readonly ids: ReadonlyMap<string, number> }
+
+function renumbering(piece: readonly MarkupElement[], pasted: Placing, free: number): ReadonlyMap<string, string> {
   const copies = new Map<string, string>()
   let next = Math.max(free, pasted.id + 1, ...[...pasted.ids.values()].map((each) => each + 1))
   for (const mark of piece) {
@@ -148,6 +150,38 @@ function idEdit(element: MarkupElement, copy: string | undefined): ByteEdit | nu
     : { start: id.valueStart, end: id.valueEnd, next: encodeUtf8(copy) }
 }
 
+type Relink = (value: string) => string | null
+
+function placedEdits(marks: readonly MarkupElement[], copies: ReadonlyMap<string, string>, relink: Relink) {
+  const edits: ByteEdit[] = []
+  for (const element of marks) {
+    if (element.kind === "p:cNvPr") {
+      const edit = idEdit(element, element.id === null ? undefined : copies.get(element.id))
+      if (edit !== null) edits.push(edit)
+      continue
+    }
+    if (connectionEnds.has(element.kind)) {
+      const edit = idEdit(element, copies.get(valueOf(element, "id") ?? ""))
+      edits.push(edit ?? { start: element.start, end: element.end, next: new Uint8Array() })
+      continue
+    }
+    for (const item of element.attributes) {
+      if (!item.name.startsWith("r:")) continue
+      const id = relink(item.value)
+      if (id === null) return null
+      edits.push({ start: item.valueStart, end: item.valueEnd, next: encodeUtf8(id) })
+    }
+  }
+  return edits
+}
+
+function inserted(parts: Map<string, Uint8Array>, part: string, target: Uint8Array, piece: Uint8Array): Parts {
+  const tree = requireMarkup(target).elements.find((element) => element.kind === "p:spTree")
+  if (tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
+  parts.set(part, insertAt(target, tree.closeStart, piece))
+  return parts
+}
+
 export function pasteShape(parts: Parts, part: string, pasted: PastedShape): Parts {
   const sourceBytes = partBytes(pasted.source, pasted.from)
   const sourceDocument = requireMarkup(sourceBytes)
@@ -160,27 +194,12 @@ export function pasteShape(parts: Parts, part: string, pasted: PastedShape): Par
   const next = new Map(parts)
   const relinked = linking(next, part)
   const links = new Map(linksOf(pasted.source, pasted.from).map((link) => [link.id, link]))
-  const edits: ByteEdit[] = []
-  for (const element of marks) {
-    if (element.kind === "p:cNvPr") {
-      const edit = idEdit(element, element.id === null ? undefined : copies.get(element.id))
-      if (edit !== null) edits.push(edit)
-      continue
-    }
-    if (connectionEnds.has(element.kind)) {
-      const copy = copies.get(valueOf(element, "id") ?? "")
-      const edit = idEdit(element, copy)
-      edits.push(edit ?? { start: element.start, end: element.end, next: new Uint8Array() })
-      continue
-    }
-    for (const item of element.attributes) {
-      if (!item.name.startsWith("r:")) continue
-      const link = links.get(item.value)
-      if (link === undefined) throw new Error("rels")
-      const id = relinked.linked(link, pasted.from, pasted.source)
-      edits.push({ start: item.valueStart, end: item.valueEnd, next: encodeUtf8(id) })
-    }
-  }
+  const edits = placedEdits(marks, copies, (value) => {
+    const link = links.get(value)
+    if (link === undefined) throw new Error("rels")
+    return relinked.linked(link, pasted.from, pasted.source)
+  })
+  if (edits === null) throw new Error("rels")
   const root = marks.find((element) => element.parent < 0)
   if (root === undefined) throw new Error("shape")
   const sourceNames = declarations(sourceDocument.elements.find((element) => element.parent < 0))
@@ -196,8 +215,21 @@ export function pasteShape(parts: Parts, part: string, pasted: PastedShape): Par
     edits.push({ start: at, end: at, next: encodeUtf8(named) })
   }
   relinked.write()
-  const tree = targetDocument.elements.find((element) => element.kind === "p:spTree")
-  if (tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
-  next.set(part, insertAt(target, tree.closeStart, spliceBytes(piece, edits)))
-  return next
+  return inserted(next, part, target, spliceBytes(piece, edits))
+}
+
+export type PastedMarkup = Placing & { readonly markup: string; readonly linked: readonly string[] }
+
+export function pasteMarkup(parts: Parts, part: string, pasted: PastedMarkup): Parts | null {
+  const piece = encodeUtf8(pasted.markup)
+  const document = markupDocument(piece)
+  const root = document.elements.find((element) => element.parent < 0)
+  if (!document.wellFormed || root === undefined || !isShapeTag(root.kind)) return null
+  const target = partBytes(parts, part)
+  const copies = renumbering(document.elements, pasted, nextShapeId(decodeUtf8(target)))
+  const edits = placedEdits(document.elements, copies, (value) => {
+    const at = /^pasted([0-9]{1,2})$/.exec(value)?.[1]
+    return at === undefined ? null : (pasted.linked[Number(at)] ?? null)
+  })
+  return edits === null ? null : inserted(new Map(parts), part, target, spliceBytes(piece, edits))
 }

@@ -96,7 +96,7 @@ export function useEditorDeck(id: string) {
   function chooseFillImage(node: ElementId) {
     pickPicture((file) => placeImage(node, file, true))
   }
-  const { changeElement, duplicateLayers, pasteLayers, cutLayers } = inserts
+  const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, cutLayers } = inserts
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
   return {
     ...status,
@@ -121,6 +121,7 @@ export function useEditorDeck(id: string) {
     changeElement,
     duplicateLayers,
     pasteLayers,
+    pasteFromDeck,
     cutLayers,
     exported,
   }

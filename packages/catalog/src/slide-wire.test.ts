@@ -118,6 +118,20 @@ it("reads a person's copy of a layer on a commit, onto its own slide or another,
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [clone] })).toEqual(field)
 })
 
+it("carries a layer pasted from another deck, with its markup and its images' hashes", () => {
+  const element = { node: "256.9", kind: "shape", value: null, box: { x: 0, y: 0, cx: 10, cy: 10 }, grouped: false }
+  const media = [{ sha256: "c".repeat(64), type: "image/png" }]
+  const pasted = { markup: '<p:pic><a:blip r:embed="pasted0"/></p:pic>', shape: "4", media, layers: [] }
+  const add = { slide: "element-add", id: "256", element, pasted, file: ["256"] }
+  const read = readCommit({ deck: "deck", batch: [add] })
+  if (!read.ok) throw new Error(read.refusal)
+  expect(read.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-add", id: "256", element, pasted },
+  ])
+  expect(readCommit({ deck: "deck", batch: [{ ...add, pasted: { ...pasted, markup: "<p:sld/>" } }] })).toEqual(field)
+  expect(readAgentEdit({ deck: "deck", base: 0, changes: [add] })).toEqual(field)
+})
+
 it("carries an added photo's hash and media type through commit_edits, never its bytes, and an old tab's picture as a shape", () => {
   const element = { node: "256.9", kind: "shape", value: null, box: { x: 0, y: 0, cx: 10, cy: 10 }, grouped: false }
   const media = { sha256: "b".repeat(64), type: "image/jpeg" }

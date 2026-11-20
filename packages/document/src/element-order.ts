@@ -1,4 +1,4 @@
-import { assetIcon, mediaTypes, type Media } from "./asset-ref.js"
+import { assetIcon, readMedia, type Media } from "./asset-ref.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { limits } from "./limits.js"
@@ -12,6 +12,7 @@ import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
 import { frameBackdrop, groupChildren, groupedNow, groupEmptied, groupParent, plainGroup } from "./element-group.js"
 import type { Kind } from "./kinds.js"
+import { pastedFits, pastedNodes, readPasted, type PastedLayers } from "./pasted-layers.js"
 
 export const geometries = presets
 
@@ -25,6 +26,7 @@ export type ElementAdd = {
   readonly element: IndexElement
   readonly media?: Media
   readonly geometry?: Geometry
+  readonly pasted?: PastedLayers
 }
 
 export type ElementRemove = {
@@ -103,6 +105,7 @@ export function elementGone(state: SlideState, node: ElementId): boolean {
     if (command.slide === "element-group" && command.backdrop?.node === node) frame = command.element.node
     if (command.slide === "element-clone" && command.layers?.some((layer) => layer.element.node === node))
       frame = command.element.node
+    if (command.slide === "element-add" && pastedNodes(command.pasted).includes(node)) frame = command.element.node
     const named = "node" in command && (command.node === node || command.node === frame)
     if ((command.slide === "element-remove" || command.slide === "element-ungroup") && named) gone = true
     if ((command.slide === "element-restore" || command.slide === "element-regroup") && named) gone = false
@@ -122,6 +125,8 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
       next = Math.max(next, shapeNumber(command.element.node) + 1)
     if (command.slide === "element-clone")
       for (const layer of command.layers ?? []) next = Math.max(next, shapeNumber(layer.element.node) + 1)
+    if (command.slide === "element-add")
+      for (const layer of pastedNodes(command.pasted)) next = Math.max(next, shapeNumber(layer) + 1)
     if (command.slide === "element-group" && command.backdrop !== undefined)
       next = Math.max(next, shapeNumber(command.backdrop.node) + 1)
     if (command.slide === "element-remove" || command.slide === "element-restore")
@@ -144,8 +149,10 @@ function drawable(element: IndexElement, geometry: Geometry): boolean {
 }
 
 function addable(command: ElementAdd): boolean {
-  const { element, media, geometry } = command
+  const { element, media, geometry, pasted } = command
   if (!freshShape(element)) return false
+  if (pasted !== undefined)
+    return media === undefined && geometry === undefined && pastedFits(element, pasted, command.id)
   if (geometry !== undefined) return media === undefined && drawable(element, geometry)
   if (element.kind === "table") return media === undefined && openedTable(element.value)
   if (element.kind !== "shape") return false
@@ -162,17 +169,11 @@ export function openingIcon(element: IndexElement): string | null {
 export function addedPictures(state: SlideState): readonly Media[] {
   const found = new Map<string, Media>()
   for (const command of state.order) {
-    if (command.slide === "element-add" && command.media !== undefined) found.set(command.media.sha256, command.media)
+    if (command.slide !== "element-add") continue
+    for (const media of [...(command.media === undefined ? [] : [command.media]), ...(command.pasted?.media ?? [])])
+      found.set(media.sha256, media)
   }
   return [...found.values()]
-}
-
-function readMedia(raw: unknown): Media | undefined {
-  const row = record(raw)
-  if (row === null || !onlyKeys(row, ["sha256", "type"])) return undefined
-  if (typeof row.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(row.sha256)) return undefined
-  const type = mediaTypes.find((each) => each === row.type)
-  return type === undefined ? undefined : { sha256: row.sha256, type }
 }
 
 function indexComplete(state: Indexed): boolean {
@@ -227,8 +228,12 @@ export function cloneRefusal(state: Indexed, command: ElementClone): CloneRefusa
   return layersRefusal(state, command)
 }
 
-function cloned(state: Indexed, node: ElementId): boolean {
-  return state.order.some((command) => command.slide === "element-clone" && command.element.node === node)
+function copied(state: Indexed, node: ElementId): boolean {
+  return state.order.some(
+    (command) =>
+      (command.slide === "element-clone" || (command.slide === "element-add" && command.pasted !== undefined)) &&
+      command.element.node === node,
+  )
 }
 
 export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, ElementOrder>): Refusal | null {
@@ -237,7 +242,8 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   if (shapeOf(node).slide !== command.id) return "dead"
   const opening = openingElement(state, node)
   if (command.slide === "element-add") {
-    if (opening !== undefined || elementGone(state, node)) return "present"
+    const taken = (each: ElementId) => openingElement(state, each) !== undefined || elementGone(state, each)
+    if (opening !== undefined || elementGone(state, node) || pastedNodes(command.pasted).some(taken)) return "present"
     if (hasSlideNumber(command.element.value)) {
       const numbered = (element: IndexElement) =>
         shapeOf(element.node).slide === command.id && hasSlideNumber(element.value) && !elementGone(state, element.node)
@@ -249,7 +255,7 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   if (command.slide === "element-restore") return removedNow(state, node) ? null : "dead"
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
-  if (cloned(state, node)) return null
+  if (copied(state, node)) return null
   const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
   if (groupEmptied(state, node)) return animated ? "locked" : null
   const parent = groupParent(state, node)
@@ -286,6 +292,11 @@ export function readElementCommand(raw: Record<string, unknown>, id: SlideId): E
   if (raw.slide === "element-add") {
     const element = readFloor([raw.element], id)?.[0]
     if (element === undefined) return undefined
+    if (raw.pasted !== undefined) {
+      const pasted = readPasted(raw.pasted, id)
+      if (pasted === undefined || raw.media !== undefined || raw.geometry !== undefined) return undefined
+      return { slide: "element-add", id, element, pasted }
+    }
     if (raw.geometry !== undefined) {
       const geometry = geometries.find((each) => each === raw.geometry)
       return geometry === undefined || raw.media !== undefined

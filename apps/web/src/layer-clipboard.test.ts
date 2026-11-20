@@ -33,6 +33,20 @@ describe("layer clipboard", () => {
     expect(readLayerCopy(layerCopyHtml(copy))).toEqual(copy)
   })
 
+  it("reads back a layer's markup and its images, for a paste in another deck", () => {
+    const carried = {
+      markup: '<p:pic><a:blip r:embed="pasted0"/></p:pic>',
+      images: [{ type: "image/png" as const, data: "iVBORw0KGgo=" }],
+    }
+    const held: LayerCopy = { ...copy, layers: [{ ...copy.layers[0]!, carried }] }
+    expect(readLayerCopy(layerCopyHtml(held))).toEqual(held)
+    const odd = {
+      ...held,
+      layers: [{ ...held.layers[0]!, carried: { ...carried, images: [{ type: "image/bmp", data: "" }] } }],
+    }
+    expect(readLayerCopy(layerCopyHtml(odd as LayerCopy))).toBeNull()
+  })
+
   it("gives other apps the layers' text", () => {
     expect(layerText(copy)).toBe("Q3 <revenue> & costs\nSecond line")
     expect(layerCopyHtml(copy)).toContain(">Q3 &lt;revenue&gt; &amp; costs<br>Second line</div>")

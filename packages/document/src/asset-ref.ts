@@ -1,3 +1,5 @@
+import { onlyKeys, record } from "./plain-object.js"
+
 export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
 
 export type MediaType = (typeof mediaTypes)[number]
@@ -25,4 +27,12 @@ export function readAsset(raw: unknown): string | null {
 
 export function assetIcon(ref: string): string | null {
   return ref.length <= iconLength && iconName.test(ref) ? ref : null
+}
+
+export function readMedia(raw: unknown): Media | undefined {
+  const row = record(raw)
+  if (row === null || !onlyKeys(row, ["sha256", "type"])) return undefined
+  if (typeof row.sha256 !== "string" || !sha.test(row.sha256)) return undefined
+  const type = mediaTypes.find((each) => each === row.type)
+  return type === undefined ? undefined : { sha256: row.sha256, type }
 }

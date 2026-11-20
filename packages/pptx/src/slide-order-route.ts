@@ -15,7 +15,9 @@ import {
   type ElementCommand,
   type Geometry,
   type IndexElement,
+  type Box,
   type Media,
+  type PastedLayers,
   type SlideCommand,
   type SlideId,
   type SlideState,
@@ -24,7 +26,9 @@ import {
 import { deckLayouts } from "./deck-layouts.js"
 import { slideAddresses, slidePart } from "./package-address.js"
 import { withFileSections, writeSlideGroups } from "./slide-group-write.js"
-import { addPicture } from "./picture-write.js"
+import { addPicture, linkedSource } from "./picture-write.js"
+import { pasteMarkup } from "./shape-paste.js"
+import { writeTrait } from "./trait-xml.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
 import { applyRoute } from "./slide-route.js"
@@ -62,6 +66,7 @@ type Shown = {
   readonly element?: IndexElement
   readonly media?: Media | undefined
   readonly geometry?: Geometry | undefined
+  readonly pasted?: PastedLayers | undefined
   readonly source?: string
 }
 
@@ -72,8 +77,8 @@ function pendingAfter(pending: Pending, command: ElementCommand): void {
   const shapes = pending.get(command.id) ?? new Map<string, Shown>()
   pending.set(command.id, shapes)
   if (command.slide === "element-add") {
-    const { element, media, geometry } = command
-    const shown = { start: false, now: true, element, media, geometry }
+    const { element, media, geometry, pasted } = command
+    const shown = { start: false, now: true, element, media, geometry, pasted }
     shapes.set(shapeOf(command.element.node).shape, shown)
     return
   }
@@ -100,6 +105,7 @@ function elementAdded(
   const id = Number(shape)
   if (shown.source !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.clone", part, shape: shown.source, id })
+  if (shown.pasted !== undefined) return pastedLayers(parts, part, id, box, shown.pasted, media)
   if (shown.media !== undefined)
     return addPicture(parts, part, { id, box, source: { media: shown.media, bytes: media(shown.media.sha256) } })
   const icon = element.kind === "shape" && element.value === null ? openingIcon(element) : null
@@ -132,6 +138,23 @@ function elementAdded(
     rows: table.rows.length,
     columns,
   })
+}
+
+function pastedLayers(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  id: number,
+  box: Box,
+  pasted: PastedLayers,
+  media: MediaBytes,
+): ReadonlyMap<string, Uint8Array> {
+  const next = new Map(parts)
+  const linked = pasted.media.map((each) => linkedSource(next, part, { media: each, bytes: media(each.sha256) }).embed)
+  const ids = new Map(pasted.layers.map((layer) => [layer.shape, Number(shapeOf(layer.element.node).shape)]))
+  const placed = pasteMarkup(next, part, { markup: pasted.markup, shape: pasted.shape, id, ids, linked })
+  if (placed === null) return parts
+  const at = { slide: "", part, shape: String(id) }
+  return writeTrait(placed, at, "box", { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } })
 }
 
 function elementsShown(

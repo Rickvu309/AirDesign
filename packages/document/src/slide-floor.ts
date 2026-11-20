@@ -28,7 +28,8 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 }
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
-  if (command.slide === "element-add") return [command.element]
+  if (command.slide === "element-add")
+    return [command.element, ...(command.pasted?.layers ?? []).map((layer) => layer.element)]
   if (command.slide === "element-clone")
     return [command.element, ...(command.layers ?? []).map((layer) => layer.element)]
   if (command.slide === "element-group")

@@ -1,7 +1,11 @@
-import { type ElementId, type Geometry, type Undoable } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
+import { elementsUndoable, type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
+import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { holdKeys, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
-import type { CommitOutcome } from "@/commit-edit"
+import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { toast } from "@/components/ui/toast"
+import { bytesOf64, type CopiedLayer, type LayerCopy } from "@/layer-clipboard"
+import { pastedAdds, type PastePlace } from "@/layer-paste"
+import { fileSlides } from "@/slide-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { elementCopy } from "@/copy/element-copy"
@@ -74,6 +78,40 @@ export function deckInserts(deck: InsertingDeck) {
     return copyLayers(copies, "paste-layer", elementCopy.pasteRefusedTitle)
   }
 
+  async function keptImages(layer: CopiedLayer): Promise<readonly Media[] | null> {
+    const kept: Media[] = []
+    for (const image of layer.carried?.images ?? []) {
+      const bytes = bytesOf64(image.data)
+      if (bytes === null) return null
+      const sha256 = await keepMedia(id, bytes)
+      pictureTool.store.keep(sha256, bytes)
+      kept.push({ sha256, type: image.type })
+    }
+    return kept
+  }
+
+  async function pasteFromDeck(copy: LayerCopy, place: PastePlace): Promise<readonly Copied[]> {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) return []
+    const media: (readonly Media[])[] = []
+    for (const layer of copy.layers) media.push((await keptImages(layer)) ?? [])
+    const { edits, refused } = pastedAdds(shownParts.current, opened.register, copy, place, media)
+    for (const refusal of refused)
+      toast.error(elementCopy.pasteRefusedTitle, {
+        id: `paste-refused-${refusal}`,
+        description: elementCopy.pasteElsewhereBody[refusal],
+      })
+    const file = fileSlides(shownParts.current, opened.register)
+    const went = []
+    for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(id, file, edit)).ok) went.push(edit)
+    if (went.length === 0) return []
+    const undoable = elementsUndoable(opened.register, file, went)
+    if (undoable !== null) record({ name: "paste-layer", undoable })
+    await showEdited(current)
+    void flushMedia(id).then(() => flushPending(connect, id).then(settle))
+    return edits.map((edit) => ({ copy: edit.element.node, source: edit.element.node }))
+  }
+
   function cutLayers(nodes: readonly ElementId[]) {
     return changeElement({ change: "remove", nodes }, "cut-layer")
   }
@@ -106,6 +144,7 @@ export function deckInserts(deck: InsertingDeck) {
     changeElement,
     duplicateLayers,
     pasteLayers,
+    pasteFromDeck,
     cutLayers,
     addText,
     addShape,

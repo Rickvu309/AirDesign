@@ -1,25 +1,50 @@
 import {
   cloneOf,
+  decide,
+  elementId,
   nextElementId,
   readSlideId,
   shapeOf,
   type Box,
+  type ElementId,
+  type IndexElement,
+  type Media,
   type Register,
+  type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { freeShapeId, readSlides } from "@airdesign/pptx"
+import { carriedShape, freeShapeId, readSlides } from "@airdesign/pptx"
 import { pastedOffset, pastedOver, type Moved, type PasteMode } from "@airdesign/render"
-import type { CopyRefusal } from "@/copy/element-copy"
+import type { CopyRefusal, ElsewhereRefusal } from "@/copy/element-copy"
 import type { CopyAsked } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
 import { indexedRegister } from "@/indexed-register"
-import type { CopiedLayer, LayerCopy } from "@/layer-clipboard"
+import { base64Of, type CarriedLayer, type CopiedLayer, type LayerCopy } from "@/layer-clipboard"
+import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
 export type CopyMade = { readonly copy: LayerCopy | null; readonly refused: readonly CopyRefusal[] }
 
-export function layerCopyOf(deck: string, parts: Parts, register: Register, layers: readonly Moved[]): CopyMade {
+function carriedOf(display: Parts, part: string, id: ElementId, framed: boolean): CarriedLayer | undefined {
+  if (framed) return undefined
+  try {
+    const carried = carriedShape(display, part, shapeOf(id).shape)
+    if (carried === null) return undefined
+    const images = carried.images.map((image) => ({ type: image.type, data: base64Of(image.bytes) }))
+    return { markup: carried.markup, images }
+  } catch {
+    return undefined
+  }
+}
+
+export function layerCopyOf(
+  deck: string,
+  parts: Parts,
+  display: Parts,
+  register: Register,
+  layers: readonly Moved[],
+): CopyMade {
   const base = slideBase(parts, register)
   const slides = readSlides(base)
   const indexed = indexedRegister(parts, register)
@@ -37,7 +62,14 @@ export function layerCopyOf(deck: string, parts: Parts, register: Register, laye
     }
     slide = own
     const { element, layers: inside } = made.command
-    copied.push({ source: id, box, rows: [{ source: id, element }, ...(inside ?? [])] })
+    const rows = [{ source: id, element }, ...(inside ?? [])]
+    const carried = carriedOf(
+      display,
+      found.part,
+      id,
+      rows.some((row) => row.element.framing !== undefined),
+    )
+    copied.push({ source: id, box, rows, ...(carried === undefined ? {} : { carried }) })
   }
   return { copy: slide === undefined ? null : { deck, slide, layers: copied }, refused }
 }
@@ -55,14 +87,81 @@ export type PastePlace = {
   readonly selected: readonly Box[]
 }
 
-export function pastedCopies(copy: LayerCopy, place: PastePlace): readonly CopyAsked[] {
+function offsetOf(copy: LayerCopy, place: PastePlace) {
   const boxes = copy.layers.map((layer) => layer.box)
   const over = place.mode === "over" && place.selected.length > 0
-  const { dx, dy } = over ? pastedOver(boxes, place.selected) : pastedOffset(boxes, place.slide, place.view)
+  return over ? pastedOver(boxes, place.selected) : pastedOffset(boxes, place.slide, place.view)
+}
+
+export function pastedCopies(copy: LayerCopy, place: PastePlace): readonly CopyAsked[] {
+  const { dx, dy } = offsetOf(copy, place)
   return copy.layers.map((layer) => ({
     id: layer.source,
     box: { ...layer.box, x: layer.box.x + dx, y: layer.box.y + dy },
     onto: place.onto,
     rows: new Map(layer.rows.map((row) => [row.source, row.element])),
   }))
+}
+
+type Added = Extract<SlideCommand, { readonly slide: "element-add" }>
+
+const laidOut = /<p:ph[\s/>]/
+
+function pastedRow(row: IndexElement, node: ElementId, group: ElementId | undefined): IndexElement {
+  const { node: _node, kind, value, box } = row
+  return { node, kind, value, box, grouped: group !== undefined, ...(group === undefined ? {} : { group }) }
+}
+
+export function pastedAdds(
+  parts: Parts,
+  register: Register,
+  copy: LayerCopy,
+  place: PastePlace,
+  media: readonly (readonly Media[])[],
+): { readonly edits: readonly Added[]; readonly refused: readonly ElsewhereRefusal[] } {
+  const base = slideBase(parts, register)
+  const found = readSlides(base).find((each) => each.slide === place.onto)
+  if (found === undefined) return { edits: [], refused: [] }
+  const file = fileSlides(parts, register)
+  const { dx, dy } = offsetOf(copy, place)
+  let current = indexedRegister(parts, register)
+  const edits: Added[] = []
+  const refused: ElsewhereRefusal[] = []
+  for (const [at, layer] of copy.layers.entries()) {
+    const [top, ...inside] = layer.rows
+    const reason = layer.carried === undefined ? "carried" : laidOut.test(layer.carried.markup) ? "layout" : null
+    if (reason !== null || top === undefined || layer.carried === undefined) {
+      if (reason !== null && !refused.includes(reason)) refused.push(reason)
+      continue
+    }
+    const first = Number(shapeOf(nextElementId(current, place.onto, freeShapeId(base, found.part))).shape)
+    const nodes = new Map(
+      layer.rows.map((row, index) => [row.element.node, elementId(`${place.onto}.${String(first + index)}`)]),
+    )
+    const node = nodes.get(top.element.node)
+    if (node === undefined) continue
+    const box = { ...layer.box, x: layer.box.x + dx, y: layer.box.y + dy }
+    const layers = inside.flatMap((row) => {
+      const own = nodes.get(row.element.node)
+      const group = row.element.group === undefined ? undefined : nodes.get(row.element.group)
+      return own === undefined || group === undefined
+        ? []
+        : [{ shape: shapeOf(row.source).shape, element: pastedRow(row.element, own, group) }]
+    })
+    const pasted = { markup: layer.carried.markup, shape: shapeOf(layer.source).shape, media: media[at] ?? [], layers }
+    const edit: Added = {
+      slide: "element-add",
+      id: place.onto,
+      element: { ...pastedRow(top.element, node, undefined), box },
+      pasted,
+    }
+    const decision = decide(current, { command: "slide", file, edit })
+    if (decision.decision !== "apply") {
+      if (!refused.includes("carried")) refused.push("carried")
+      continue
+    }
+    current = decision.register
+    edits.push(edit)
+  }
+  return { edits, refused }
 }
