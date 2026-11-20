@@ -167,6 +167,42 @@ describe("a Fill picture's cover", () => {
   })
 })
 
+describe("a picture switched to Crop", () => {
+  const crop = { fills: { mode: { set: "crop" } } } as const
+
+  it("starts from the part a Fill picture shows, so the image keeps its proportions", () => {
+    const next = writeTrait(pack(filled), at, "fills", crop.fills)
+    expect(xml(next)).toContain(`<a:srcRect t="25000" b="25000"/><a:stretch><a:fillRect/></a:stretch>`)
+    expect(shownPictureMode(next, at)).toBe("crop")
+  })
+
+  it("keeps an off-centre Fill's pan as its crop", () => {
+    const placed = picture("4", `<a:stretch><a:fillRect l="-80000" t="0" r="-20000" b="0"/></a:stretch>`)
+    const next = writeTrait(pack(placed), at, "fills", crop.fills)
+    expect(xml(next)).toContain(`<a:srcRect l="40000" r="10000"/><a:stretch><a:fillRect/></a:stretch>`)
+  })
+
+  it.each([
+    ["fit", `<a:stretch><a:fillRect l="25000" t="0" r="25000" b="0"/></a:stretch>`],
+    ["stretch", `<a:stretch><a:fillRect/></a:stretch>`],
+    ["tile", `<a:tile tx="0" ty="0" sx="100000" sy="100000" algn="tl"/>`],
+  ] as const)("covers the frame from a %s picture instead of stretching the image", (_mode, placement) => {
+    const next = writeTrait(pack(picture("4", placement)), at, "fills", crop.fills)
+    expect(xml(next)).toContain(`<a:srcRect t="25000" b="25000"/><a:stretch><a:fillRect/></a:stretch>`)
+  })
+
+  it("keeps the crop a Crop picture already has", () => {
+    const placement = `<a:srcRect l="10000" t="0" r="10000" b="0"/><a:stretch><a:fillRect/></a:stretch>`
+    const parts = pack(picture("4", placement))
+    expect(xml(writeTrait(parts, at, "fills", crop.fills))).toContain(placement)
+  })
+
+  it("leaves the whole image when its bytes are missing", () => {
+    const next = writeTrait(pack(picture("4", `<a:stretch><a:fillRect/></a:stretch>`), null), at, "fills", crop.fills)
+    expect(xml(next)).toContain(`<a:srcRect/><a:stretch><a:fillRect/></a:stretch>`)
+  })
+})
+
 async function deck(name: string): Promise<Map<string, Uint8Array>> {
   const fs = process.getBuiltinModule("node:fs")
   return new Map(await readParts(new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))))
