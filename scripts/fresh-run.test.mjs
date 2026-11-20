@@ -125,6 +125,7 @@ const follow = async ({
       const call = args.join(" ")
       asked.push(call)
       if (call.startsWith("issue list")) return issues
+      if (call.startsWith("api graphql")) return ok(JSON.stringify({ data: { search: { nodes: [] } } }))
       if (call.startsWith("issue create")) {
         raised.push({ title: args[args.indexOf("--title") + 1], body: input })
         return ok("https://github.com/Rickvu309/AirDesign/issues/990\n")
