@@ -171,6 +171,7 @@ export function elementFrame(
     pointerEvents: pointer ? "auto" : "none",
     ...(background === null || paintsFillAsSvg(element, scaled) ? {} : { background }),
     ...(split ? { overflow: "hidden" } : {}),
+    ...(element.mask === true ? { opacity: 0 } : {}),
   }
 }
 

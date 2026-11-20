@@ -18,6 +18,7 @@ import { commitPlace } from "@/editor/group-actions"
 import { commitBoxes, commitEdit, flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
+import { toggleLayerFlag } from "@/editor/layer-flags"
 import { valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
@@ -354,6 +355,7 @@ export function editableSlide(deck: EditableDeck): (width: number, rulers?: bool
         selection={selection}
         onOrder={orderElement}
         onGroup={changeElement}
+        onMask={(node) => toggleLayerFlag(deck, [node], "mask")}
       >
         {({ notice, order, group, clear }) => (
           <SlideCanvas

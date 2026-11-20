@@ -45,6 +45,7 @@ export type ElementPaint = {
   readonly editable: boolean
   readonly movable?: boolean
   readonly locked?: true
+  readonly mask?: true
   readonly placeholder: boolean
   readonly prompt?: string | null
   readonly unshownText?: string

@@ -4,4 +4,5 @@ export const identityCopy = {
   alt: "Alt text",
   hidden: "Hide on slide",
   locked: "Lock on slide",
+  mask: "Use as mask",
 } as const

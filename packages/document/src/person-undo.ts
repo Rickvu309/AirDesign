@@ -60,6 +60,7 @@ export type Undoable =
       readonly file: readonly SlideId[]
       readonly before: boolean
       readonly after: boolean
+      readonly rows?: readonly NodeStep[]
     }
   | {
       readonly joined: ElementId
@@ -269,8 +270,14 @@ function turnCommands(
   }
   if ("group" in undoable) {
     if (groupFormed(register, undoable.group) !== undoable[from] || undoable[from] === undoable[to]) return null
-    if (undoable[to]) return regroupTurn(register, file, undoable.slide, undoable.group)
-    return ungroupTurn(register, file, undoable.slide, undoable.group, from === "after" ? "made" : "laid")
+    const rows = stepCommands(register, undoable.rows ?? [], from)
+    if (rows === null) return null
+    if (undoable[to]) {
+      const regroup = regroupTurn(register, file, undoable.slide, undoable.group)
+      return regroup === null ? null : applying(register, [...regroup, ...rows])
+    }
+    const ungroup = ungroupTurn(register, file, undoable.slide, undoable.group, from === "after" ? "made" : "laid")
+    return ungroup === null ? null : applying(register, [...rows, ...ungroup])
   }
   const spot = foldSlides({ ...register, file }).find((spot) => spot.id === undoable.slide)
   if (

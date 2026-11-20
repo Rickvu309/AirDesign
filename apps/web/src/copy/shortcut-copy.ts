@@ -53,6 +53,7 @@ export const shortcutCopy = {
     group: "Group",
     ungroup: "Ungroup",
     frame: "Frame selection",
+    mask: "Use as mask",
     "auto-layout": "Add auto layout",
     "remove-auto-layout": "Remove auto layout",
     "align-left": "Align left",

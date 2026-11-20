@@ -138,6 +138,7 @@ const identityNames: Readonly<Record<string, UndoName>> = {
   alt: "alt-text",
   hidden: "hide",
   locked: "lock",
+  mask: "mask",
 }
 
 function faded(row: Row): boolean {

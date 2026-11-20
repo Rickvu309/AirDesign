@@ -74,12 +74,13 @@ export function paintElements(
     if (painted === null) continue
     const diagram = row.diagram === undefined ? {} : { diagram: diagramOf(row.diagram, key, src) }
     const backdrop = shape?.backdrop === true ? { backdrop: true as const } : {}
+    const mask = row.from === "slide" && row.mask === true ? { mask: true as const } : {}
     const inFrame =
       shape?.inFrame === undefined
         ? {}
         : { inFrame: shape.inFrame, ...(shape.measure === undefined ? {} : { measure: shape.measure }) }
     elements.push([
-      { ...painted, ...diagram, ...carried, ...backdrop, ...inFrame, ...connectionOf(row, source), ...lock },
+      { ...painted, ...diagram, ...carried, ...backdrop, ...mask, ...inFrame, ...connectionOf(row, source), ...lock },
       row,
     ])
   }

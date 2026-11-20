@@ -39,6 +39,8 @@ assert.deepEqual(
     "layer-join.mjs",
     "layer-lock.mjs",
     "layer-paste.mjs",
+    "mask-cropped.mjs",
+    "mask.mjs",
     "new-slide-prompts.mjs",
     "notes.mjs",
     "paragraphs.mjs",

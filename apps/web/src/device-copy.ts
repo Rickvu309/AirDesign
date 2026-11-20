@@ -9,7 +9,7 @@ import {
   putParts,
   type Remote,
 } from "@airdesign/live"
-import { readPackage } from "@airdesign/pptx"
+import { openedMasks, readPackage } from "@airdesign/pptx"
 import type { Register } from "@airdesign/document"
 
 async function listedName(deck: string): Promise<string | undefined> {
@@ -38,7 +38,7 @@ export async function deckParts(deck: string) {
   if (!read.ok) return null
   const name = await listedName(deck)
   const saved = await putParts(deck, {
-    parts: read.parts,
+    parts: openedMasks(read.parts),
     file: original.file,
     ...(name === undefined ? {} : { name }),
   })

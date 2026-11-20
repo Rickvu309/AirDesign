@@ -73,6 +73,7 @@ const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
 }
 
 function iconOf(layer: Layer): EditorIconName {
+  if (layer.mask === true) return "mask"
   if (layer.flow === "horizontal") return "flowHorizontal"
   if (layer.flow === "vertical") return "flowVertical"
   return kindIcons[layer.kind]
@@ -369,7 +370,14 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         >
           {opened === null ? null : <EditorIcon name={opened ? "chev" : "chevr"} size={12} strokeWidth={2} />}
         </span>
-        <EditorIcon name={iconOf(layer)} size={14} className={cn("shrink-0", dim ? "text-faint" : "text-quiet")} />
+        {layer.masked === true ? (
+          <span data-layer-masked="" className="-mr-1 flex shrink-0 text-faint">
+            <EditorIcon name="masked" size={12} strokeWidth={2} />
+          </span>
+        ) : null}
+        <span data-layer-mask={layer.mask === true ? "" : undefined} className="flex shrink-0">
+          <EditorIcon name={iconOf(layer)} size={14} className={cn("shrink-0", dim ? "text-faint" : "text-quiet")} />
+        </span>
         {editing ? (
           <LayerNameField
             name={layer.name}

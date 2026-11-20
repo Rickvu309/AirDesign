@@ -1,5 +1,6 @@
 import type { Color, CropRead, FieldValue, RecolorRead } from "@airdesign/document"
 import { shownLocked } from "./shape-locks.js"
+import { shownMask } from "./mask-extension.js"
 import { blurPercent } from "./picture-adjust.js"
 import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./blip-edit.js"
 import { colorsIn } from "./color-read.js"
@@ -28,6 +29,7 @@ export type ShownIdentity = {
   readonly alt: string
   readonly hidden: boolean
   readonly locked: boolean
+  readonly mask: boolean
 }
 
 const opaque = 100_000
@@ -133,6 +135,7 @@ export function shownIdentity(parts: Parts, at: ElementAt): ShownIdentity | null
     alt: text(element, "descr"),
     hidden: hidden === "1" || hidden === "true",
     locked: shownLocked(parts, at) === true,
+    mask: shownMask(parts, at) === true,
   }
 }
 

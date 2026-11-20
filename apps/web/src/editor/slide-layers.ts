@@ -31,6 +31,7 @@ export function slideLayerRows(parts: Parts, slide: string, look: (node: Element
         name: identity?.name ?? "",
         hidden: identity?.hidden === true,
         locked: identity?.locked === true,
+        mask: identity?.mask === true,
       },
     ]
   })
@@ -44,6 +45,7 @@ export function slideLayerRows(parts: Parts, slide: string, look: (node: Element
     kind: each.look.kind,
     hidden: each.hidden,
     locked: each.locked,
+    ...(each.mask ? { mask: true as const } : {}),
     ...(each.look.flow === undefined ? {} : { flow: each.look.flow }),
   }))
 }

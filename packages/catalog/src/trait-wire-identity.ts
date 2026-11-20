@@ -1,7 +1,7 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const identityWire: TraitWire<"identity"> = {
-  description: "Its name, whether it shows, and its lock.",
+  description: "Its name, whether it shows, its lock and mask.",
   fields: {
     name: { description: "Its name in PowerPoint's Selection Pane.", example: { identity: { name: "Launch icon" } } },
     alt: {
@@ -10,5 +10,9 @@ export const identityWire: TraitWire<"identity"> = {
     },
     hidden: { description: "true hides it on the slide.", example: { identity: { hidden: true } } },
     locked: { description: "true locks it on the slide.", example: { identity: { locked: true } } },
+    mask: {
+      description: "true clips the layers above it in its group to its shape; it does not paint.",
+      example: { identity: { mask: true } },
+    },
   },
 }

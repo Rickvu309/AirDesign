@@ -55,6 +55,8 @@ const iconPaths = {
   swap: '<path d="m12 9.5 5.5 5.5-5.5 5.5-5.5-5.5z"/><path d="M5.5 9C7.5 4.6 13 3.4 16.6 6.4"/><path d="M17.6 3.4v3.6H14"/>',
   frame: '<path d="M8 3v18M16 3v18M3 8h18M3 16h18"/>',
   group: '<rect x="4" y="4" width="16" height="16" rx="1.5" stroke-dasharray="3 3"/>',
+  mask: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><circle cx="12" cy="12" r="5"/><path d="M12 7a5 5 0 0 0 0 10z" fill="currentColor"/>',
+  masked: '<path d="M12 20V5M7.5 9.5 12 5l4.5 4.5"/>',
   line: '<path d="M5 19 19 5"/>',
   flowHorizontal: '<path d="M7 7v10M12 5v14M17 8v8"/>',
   flowVertical: '<path d="M7 7h10M5 12h14M8 17h8"/>',

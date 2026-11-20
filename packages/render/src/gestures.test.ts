@@ -110,6 +110,14 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "G", code: "KeyG", metaKey: true, shiftKey: true }, "element")).toBe("ungroup")
   })
 
+  it("uses a layer as a mask with Ctrl+Alt+M, Cmd+Option+M or Figma's Control+Command+M, and leaves Ctrl+M alone", () => {
+    const press = { key: "m", code: "KeyM", metaKey: false, ctrlKey: false, altKey: false, shiftKey: false }
+    expect(gestureFor({ ...press, ctrlKey: true, altKey: true }, "editor")).toBe("mask")
+    expect(gestureFor({ ...press, metaKey: true, altKey: true }, "editor")).toBe("mask")
+    expect(gestureFor({ ...press, metaKey: true, ctrlKey: true }, "editor")).toBe("mask")
+    expect(gestureFor({ ...press, ctrlKey: true }, "editor")).toBeNull()
+  })
+
   it("frames the selection with Ctrl+Alt+G or Cmd+Option+G and renames with Cmd or Ctrl+R", () => {
     expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "element")).toBe("frame")
     expect(gestureFor({ ...plain, key: "©", code: "KeyG", metaKey: true, altKey: true }, "element")).toBe("frame")

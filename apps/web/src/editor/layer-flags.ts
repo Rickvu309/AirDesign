@@ -4,7 +4,7 @@ import { fieldsOf } from "@/editor/panel-fields"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export type LayerFlag = "hidden" | "locked"
+export type LayerFlag = "hidden" | "locked" | "mask"
 
 function flagNow(parts: Parts, node: ElementId, flag: LayerFlag): boolean {
   return fieldsOf(parts, node)?.[`identity.${flag}`]?.value === true

@@ -34,7 +34,24 @@ function manifest(raw: unknown): raw is Manifest {
   )
 }
 
+export type InstalledFace = {
+  readonly family: string
+  readonly url: string
+  readonly style: string
+  readonly weight: string
+}
+
+const installed = new WeakMap<Document, InstalledFace[]>()
+
+export function installedFaces(doc: Document): readonly InstalledFace[] {
+  return installed.get(doc) ?? []
+}
+
 async function installFonts(doc: Document, family: Manifest): Promise<void> {
+  const kept = installed.get(doc) ?? []
+  installed.set(doc, kept)
+  for (const file of family.faces)
+    kept.push({ family: family.family, url: file.url, style: file.style, weight: file.weight })
   const faces = await Promise.all(
     family.faces.map(async (file) => {
       const face = new FontFace(family.family, `url("${file.url}")`, { style: file.style, weight: file.weight })

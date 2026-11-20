@@ -4,6 +4,7 @@ import { partBytes, requireMarkup } from "./part-markup.js"
 import { nonVisualOf, shownIdentity, type ShownIdentity } from "./picture-read.js"
 import { attributeEdit } from "./markup-attribute.js"
 import { lockedWritten, shownLocked } from "./shape-locks.js"
+import { maskWritten, shownMask } from "./mask-extension.js"
 import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
 function written<V>(name: string, text: (value: V) => string | null) {
@@ -31,5 +32,6 @@ export const identityXml: TraitXml<"identity"> = {
     alt: whole({ read: shown("alt"), write: written("descr", (value: string) => (value === "" ? null : value)) }),
     hidden: whole({ read: shown("hidden"), write: written("hidden", (value: boolean) => (value ? "1" : null)) }),
     locked: whole({ read: shownLocked, write: lockedWritten }),
+    mask: whole({ read: shownMask, write: maskWritten }),
   },
 }

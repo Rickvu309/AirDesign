@@ -124,7 +124,7 @@ test("a rectangle moves in front of an ellipse, and back, and the export changes
   await overlap(page)
   await paintFront(page, 5, 4)
   await openBack(page)
-  await expect(page.getByRole("menuitem")).toHaveCount(8)
+  await expect(page.getByRole("menuitem")).toHaveCount(9)
   await expect(item(page, "Bring to front")).toBeEnabled()
   await expect(item(page, "Bring forward")).toBeEnabled()
   await expect(item(page, "Send backward")).toBeEnabled()
