@@ -13,11 +13,12 @@ export const no = (stderr = "", status = 1) => ({ status, stdout: "", stderr })
 const mark = "<".repeat(7)
 export const migrationsOf = (...hashes) => JSON.stringify(hashes.map((sha256, at) => ({ id: at + 1, sha256 })))
 
-export const mainRules = (queue = true) => ({
+export const mainRules = (queue = true, required = ["ci"]) => ({
+  refUpdateRule: { requiredStatusCheckContexts: required },
   rules: { nodes: queue ? [{ type: "MERGE_QUEUE", repositoryRuleset: { enforcement: "ACTIVE" } }] : [] },
 })
 
-const checkRun = [{ __typename: "CheckRun", name: "check (source)", conclusion: null, status: "IN_PROGRESS" }]
+const checkRun = [{ __typename: "CheckRun", name: "ci", conclusion: null, status: "IN_PROGRESS" }]
 
 export const pullAnswer = ({
   armed = false,
@@ -28,6 +29,7 @@ export const pullAnswer = ({
   timeline = [],
   queue = true,
   head = "aaaa1111",
+  required = ["ci"],
 } = {}) =>
   JSON.stringify({
     data: {
@@ -46,7 +48,7 @@ export const pullAnswer = ({
           timelineItems: { nodes: timeline },
         },
         mergeQueue: queue ? { entries: { nodes: [] } } : null,
-        ref: mainRules(queue),
+        ref: mainRules(queue, required),
       },
     },
   })

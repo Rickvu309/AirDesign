@@ -10,9 +10,9 @@ const same = (what, actual, expected) => {
 const fixture = (name) => fs.readFileSync(new URL(`./land-fixtures/${name}`, import.meta.url), "utf8")
 const ok = (stdout) => ({ status: 0, stdout, stderr: "" })
 
-const pass = [{ __typename: "CheckRun", name: "check (source)", conclusion: "SUCCESS", status: "COMPLETED" }]
-const running = [{ __typename: "CheckRun", name: "check (source)", conclusion: null, status: "IN_PROGRESS" }]
-const fail = [{ __typename: "CheckRun", name: "check (source)", conclusion: "FAILURE", status: "COMPLETED" }]
+const pass = [{ __typename: "CheckRun", name: "ci", conclusion: "SUCCESS", status: "COMPLETED" }]
+const running = [{ __typename: "CheckRun", name: "ci", conclusion: null, status: "IN_PROGRESS" }]
+const fail = [{ __typename: "CheckRun", name: "ci", conclusion: "FAILURE", status: "COMPLETED" }]
 
 const answer = ({
   armed = true,
@@ -84,7 +84,7 @@ const merged = await follow({
 })
 same("a pull request that merges ends the follow with 0", merged.code, 0)
 same("each state is said once, in order", merged.said, [
-  "follow: checks are running (0 passed, 1 running); auto-merge is armed, and the queue takes it when checks pass",
+  "follow: required checks are running: ci; auto-merge is armed, and the queue takes it when checks pass",
   "follow: in the merge queue at position 2",
   "follow: in the merge queue at position 1",
   "follow: merged. pull request 394 is on main.",

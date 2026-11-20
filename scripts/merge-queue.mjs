@@ -1,4 +1,4 @@
-const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} timelineItems(last:30,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT,HEAD_REF_FORCE_PUSHED_EVENT,PULL_REQUEST_COMMIT]){nodes{__typename ... on RemovedFromMergeQueueEvent{createdAt reason}}} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{databaseId name conclusion status} ... on StatusContext{context state}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}} ref(qualifiedName:"refs/heads/main"){rules(first:50){nodes{type repositoryRuleset{enforcement}}}}}}`
+const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} timelineItems(last:30,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT,HEAD_REF_FORCE_PUSHED_EVENT,PULL_REQUEST_COMMIT]){nodes{__typename ... on RemovedFromMergeQueueEvent{createdAt reason}}} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{databaseId name conclusion status isRequired(pullRequestNumber:$number) checkSuite{workflowRun{databaseId workflow{databaseId}}}} ... on StatusContext{context state isRequired(pullRequestNumber:$number)}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}} ref(qualifiedName:"refs/heads/main"){refUpdateRule{requiredStatusCheckContexts} rules(first:50){nodes{type repositoryRuleset{enforcement}}}}}}`
 
 export const pullArgs = (repository, number) => {
   const [owner, name] = repository.split("/")
@@ -18,26 +18,69 @@ export const pullArgs = (repository, number) => {
 
 const passedConclusions = new Set(["SUCCESS", "SKIPPED", "NEUTRAL"])
 
+const nameOf = (context) => (context.__typename === "CheckRun" ? context.name : context.context)
+
 const newestPerName = (contexts) => {
   const newest = new Map()
   for (const context of contexts) {
-    const name = context.__typename === "CheckRun" ? context.name : context.context
+    const name = nameOf(context)
     const held = newest.get(name)
     if (held === undefined || (context.databaseId ?? 0) >= (held.databaseId ?? 0)) newest.set(name, context)
   }
   return newest
 }
 
-const sortChecks = (contexts) => {
-  const checks = { passed: [], failed: [], running: [] }
-  for (const [name, context] of newestPerName(contexts)) {
-    const run = context.__typename === "CheckRun"
-    if (run ? context.status !== "COMPLETED" : ["PENDING", "EXPECTED"].includes(context.state))
-      checks.running.push(name)
-    else if (run ? passedConclusions.has(context.conclusion) : context.state === "SUCCESS") checks.passed.push(name)
-    else checks.failed.push(name)
+const stateOf = (context) => {
+  const run = context.__typename === "CheckRun"
+  if (run ? context.status !== "COMPLETED" : ["PENDING", "EXPECTED"].includes(context.state)) return "running"
+  return (run ? passedConclusions.has(context.conclusion) : context.state === "SUCCESS") ? "passed" : "failed"
+}
+
+const runOf = (context) => context.checkSuite?.workflowRun?.databaseId
+const workflowOf = (context) => context.checkSuite?.workflowRun?.workflow?.databaseId
+
+const replacedByNewerRun = (context, newest) =>
+  runOf(context) !== undefined &&
+  [...newest.values()].some(
+    (other) =>
+      stateOf(other) === "running" && workflowOf(other) === workflowOf(context) && runOf(other) > runOf(context),
+  )
+
+const split = (names, states) => ({
+  passed: names.filter((name) => states.get(name) === "passed"),
+  failed: names.filter((name) => states.get(name) === "failed"),
+  running: names.filter((name) => states.get(name) === "running"),
+})
+
+const sortChecks = (contexts, requiredNames = []) => {
+  const newest = newestPerName(contexts)
+  const states = new Map()
+  for (const [name, context] of newest) {
+    const state = stateOf(context)
+    states.set(name, state === "failed" && replacedByNewerRun(context, newest) ? "running" : state)
   }
-  return checks
+  const required = new Set(requiredNames)
+  for (const [name, context] of newest) if (context.isRequired === true) required.add(name)
+  for (const name of required) if (!states.has(name)) states.set(name, "running")
+  const names = [...states.keys()].sort()
+  const runs = new Map()
+  for (const context of newest.values())
+    if (runOf(context) !== undefined) runs.set(runOf(context), { id: runOf(context), workflow: workflowOf(context) })
+  return {
+    runs: [...runs.values()],
+    checks: split(
+      names.filter((name) => newest.has(name)),
+      states,
+    ),
+    required: split(
+      names.filter((name) => required.has(name)),
+      states,
+    ),
+    advisory: split(
+      names.filter((name) => !required.has(name)),
+      states,
+    ),
+  }
 }
 
 const latestRemoval = (items) => {
@@ -66,7 +109,7 @@ export const parsePull = (text) => {
     queued: pullRequest.mergeQueueEntry !== null,
     position: pullRequest.mergeQueueEntry?.position,
     armed: pullRequest.autoMergeRequest !== null,
-    checks: sortChecks(rollup?.contexts.nodes ?? []),
+    ...sortChecks(rollup?.contexts.nodes ?? [], ref?.refUpdateRule?.requiredStatusCheckContexts ?? []),
     removal: latestRemoval(pullRequest.timelineItems.nodes),
     queue: (mergeQueue?.entries.nodes ?? []).map((entry) => entry.pullRequest.number),
     hasQueue: mergeQueue !== null && mergeQueue !== undefined && queueRuleActive(ref),

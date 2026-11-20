@@ -17,20 +17,39 @@ const runsOf = ({ gh, repository, event, branch }) => {
   return answer.status === 0 ? JSON.parse(answer.stdout || "[]") : []
 }
 
+const hasFailedJob = ({ gh, repository, run }) => {
+  const answer = gh([
+    "api",
+    `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`,
+    "--jq",
+    '[.jobs[] | select(.conclusion == "failure") | {id, name}]',
+  ])
+  return answer.status === 0 && JSON.parse(answer.stdout || "[]").length > 0
+}
+
 export const failedRunFor = ({ gh, repository, branch, head, number, event }) =>
-  runsOf({ gh, repository, event, branch }).find(
-    (run) =>
-      run.conclusion === "failure" &&
-      (event === "merge_group" ? run.branch.startsWith(`gh-readonly-queue/main/pr-${number}-`) : run.head === head),
+  runsOf({ gh, repository, event, branch }).find((run) =>
+    event === "merge_group"
+      ? run.conclusion === "failure" && run.branch.startsWith(`gh-readonly-queue/main/pr-${number}-`)
+      : run.head === head &&
+        (run.conclusion === "failure" || (run.conclusion === null && hasFailedJob({ gh, repository, run }))),
   )
 
-const summary = (pull) => {
-  const { passed, running, failed } = pull.checks
+const requiredLine = ({ passed, running, failed }) => {
+  if (passed.length + running.length + failed.length === 0)
+    return "GitHub names no required check on main, so land merges nothing on this"
+  if (failed.length > 0) return `required checks failed: ${failed.join(", ")}`
   if (running.length > 0)
-    return `checks are running (${passed.length} passed, ${running.length} running${failed.length > 0 ? `, ${failed.length} failed` : ""})`
-  if (failed.length > 0) return `checks failed: ${failed.join(", ")}`
-  return `checks passed (${passed.length})`
+    return `required checks are running: ${running.join(", ")}${passed.length > 0 ? ` (${passed.length} passed: ${passed.join(", ")})` : ""}`
+  return `required checks passed (${passed.join(", ")})`
 }
+
+const advisoryLine = ({ running, failed }) => {
+  const unfinished = [...running.map((name) => `${name} still running`), ...failed.map((name) => `${name} failed`)]
+  return unfinished.length === 0 ? "" : `; not required, blocks nothing: ${unfinished.sort().join(", ")}`
+}
+
+const summary = (pull) => `${requiredLine(pull.required)}${advisoryLine(pull.advisory)}`
 
 const minutes = (milliseconds) => Math.round(milliseconds / 60000)
 
@@ -105,10 +124,6 @@ export const followPull = async ({
     say(`follow: the run on the green main did not start: ${fault}`)
     return "stop"
   }
-  const ciEnded = (pull) =>
-    !runsOf({ gh, repository, event: "pull_request", branch }).some(
-      (run) => run.head === pull.head && run.conclusion === null,
-    )
   const freshRun = async (event, pull, failure) => {
     if (failure === undefined) return false
     const verdict = freshRunVerdict({ gh, repository, number, head: pull.head, jobs: failure.jobs })
@@ -216,7 +231,7 @@ export const followPull = async ({
       )
       return 1
     }
-    if (!pull.queued && pull.checks.failed.length > 0 && pull.checks.running.length === 0 && ciEnded(pull)) {
+    if (!pull.queued && pull.required.failed.length > 0) {
       const failure = failedRun("pull_request", pull)
       const turn = await mainsTurn("pull_request", pull, failure)
       if (turn === "continue") continue
@@ -224,8 +239,12 @@ export const followPull = async ({
       if (await freshRun("pull_request", pull, report(failure))) continue
       return 1
     }
-    const green = !pull.queued && pull.checks.running.length === 0 && pull.checks.passed.length > 0
-    if (green && !pull.hasQueue && merge !== undefined && pull.checks.failed.length === 0) return await merge(pull)
+    const green =
+      !pull.queued &&
+      pull.required.running.length === 0 &&
+      pull.required.failed.length === 0 &&
+      pull.required.passed.length > 0
+    if (green && !pull.hasQueue && merge !== undefined) return await merge(pull)
     greenSince = green ? (greenSince ?? now()) : undefined
     if (green && now() - greenSince >= graceMs) {
       say(

@@ -5,7 +5,12 @@ import { baseFault } from "./pull-base.mjs"
 import { queueLine, removalLine } from "./merge-queue.mjs"
 
 const checksLine = ({ passed, running, failed }) =>
-  `${passed.length} passed, ${running.length} running, ${failed.length} failed${failed.length > 0 ? ` (${failed.join(", ")})` : ""}`
+  `${passed.length} passed, ${running.length} running, ${failed.length} failed`
+
+const unfinishedLine = ({ running, failed }) => {
+  const named = [...running.map((name) => `${name} still running`), ...failed.map((name) => `${name} failed`)]
+  return named.length === 0 ? "" : ` (${named.sort().join(", ")})`
+}
 
 export const statusLines = ({ number, branch, repository, pull, git, gh, ref = "HEAD" }) => {
   const lines = [
@@ -20,7 +25,8 @@ export const statusLines = ({ number, branch, repository, pull, git, gh, ref = "
       : `conflicts   with origin/main in ${conflicts.join(", ")}. Rebase: git fetch origin main && git rebase origin/main`,
   )
   lines.push(`behind      ${behindMain(git, ref)} commits behind origin/main`)
-  lines.push(`checks      ${checksLine(pull.checks)}`)
+  lines.push(`checks      required: ${checksLine(pull.required)}${unfinishedLine(pull.required)}`)
+  lines.push(`            not required: ${checksLine(pull.advisory)}${unfinishedLine(pull.advisory)}`)
   lines.push(`queue       ${queueLine(pull)}`)
   if (removalLine(pull) !== undefined) lines.push(`removed     ${removalLine(pull)}`)
   const failed = failedRunFor({ gh, repository, branch, head: pull.head, number, event: "pull_request" })

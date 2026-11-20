@@ -1,6 +1,6 @@
 import { harness, no, pullAnswer, same } from "./land-harness.mjs"
 
-const passed = [{ __typename: "CheckRun", name: "check (source)", conclusion: "SUCCESS", status: "COMPLETED" }]
+const passed = [{ __typename: "CheckRun", name: "ci", conclusion: "SUCCESS", status: "COMPLETED" }]
 const clashLines = [
   "cd01ecb4 merged with origin/main 2a7448aa fails copy-in-tests, build in 64 s.",
   "  build: src/copy/shortcut-copy.ts(18,3): error TS2739",

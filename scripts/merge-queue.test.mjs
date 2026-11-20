@@ -301,7 +301,9 @@ same(
   "the one query reads the rules on main beside the queue",
   pullArgs("Rickvu309/AirDesign", 394)
     .at(-1)
-    .includes('ref(qualifiedName:"refs/heads/main"){rules(first:50){nodes{type repositoryRuleset{enforcement}}}}'),
+    .includes(
+      'ref(qualifiedName:"refs/heads/main"){refUpdateRule{requiredStatusCheckContexts} rules(first:50){nodes{type repositoryRuleset{enforcement}}}}',
+    ),
   true,
 )
 same(
