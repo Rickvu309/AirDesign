@@ -1,7 +1,8 @@
-import { memo, useLayoutEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react"
+import { Fragment, memo, useLayoutEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react"
 import type { ElementId, StackMove } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
+import { CopiedLayer } from "./copied-layer.js"
 import type { End } from "./connector-drag.js"
 import { targetsOf } from "./connector-follow.js"
 import { PaintedElement } from "./element-kind.js"
@@ -13,6 +14,7 @@ import { slideBackground } from "./slide-background.js"
 import { GuideLayer } from "./guide-layer.js"
 import { useMeasuring } from "./measuring.js"
 import { useMoves } from "./slide-moves.js"
+import type { Duplicate } from "./use-layer-copies.js"
 import { enterElement } from "./text-entry.js"
 import { leadOf, type Selection } from "./selection.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
@@ -57,6 +59,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRotate?: (turned: readonly Turned[]) => void
   readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
+  readonly onDuplicate?: Duplicate
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
   readonly selection?: Selection
@@ -110,6 +113,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       ...(props.onRotate === undefined ? {} : { onRotate: props.onRotate }),
       ...(props.onFlip === undefined ? {} : { onFlip: props.onFlip }),
     },
+    props.onDuplicate,
   )
   const moving = props.onBoxes === undefined ? null : moves
   const marquee = useSlideMarquee({
@@ -197,20 +201,33 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       {layered(
         slide.elements,
         (element) => (
-          <PaintedElement
-            key={element.key}
-            onPaint={element === entering ? enterPainted : undefined}
-            element={element}
-            slideHeight={slide.height}
-            formatting={props.formatting}
-            moves={moving}
-            onEdit={props.onEdit}
-            onFit={props.onFit}
-            quiet={quiet}
-            scaled={scaled}
-            store={props.store}
-            targets={targetsOf(slide.elements, element)}
-          />
+          <Fragment key={element.key}>
+            {moving === null || props.onDuplicate === undefined ? null : (
+              <CopiedLayer
+                board={moving.copies}
+                element={element}
+                moves={null}
+                quiet
+                scaled={scaled}
+                slideHeight={slide.height}
+                store={props.store}
+                targets={targetsOf(slide.elements, element)}
+              />
+            )}
+            <PaintedElement
+              onPaint={element === entering ? enterPainted : undefined}
+              element={element}
+              slideHeight={slide.height}
+              formatting={props.formatting}
+              moves={moving}
+              onEdit={props.onEdit}
+              onFit={props.onFit}
+              quiet={quiet}
+              scaled={scaled}
+              store={props.store}
+              targets={targetsOf(slide.elements, element)}
+            />
+          </Fragment>
         ),
         (group, members) => (
           <GroupEffects key={`${group.key} effects`} element={group} scaled={scaled}>

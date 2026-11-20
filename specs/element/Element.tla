@@ -1,7 +1,7 @@
 ---- MODULE Element ----
-\* A person adds one text box or picture, or removes it. Their undo puts back whether it shows, only while their own edit still shows, and someone else may remove or bring it back in between.
+\* A person adds one text box or picture, or a copy of another layer, or removes it. Their undo puts back whether it shows, only while their own edit still shows, and someone else may remove or bring it back in between.
 \* Someone types in the text box, and another agent's run writes in it once, which the person may undo. A person's undo or redo that would take the box away lands only while the box shows what the person's edit left, so it never hides an agent's text written since.
-\* An agent's run adds the box or removes it. The run's Undo puts the box back as it was before the run, all or nothing, and is refused once anyone but the run removed or brought back the box since, the run's own Undo among them, so it lands once.
+\* An agent's run adds the box, or a copy, or removes it. The run's Undo puts the box back as it was before the run, all or nothing, and is refused once anyone but the run removed or brought back the box since, the run's own Undo among them, so it lands once.
 \* A picture's bytes upload after its add, and another device exports the deck only once every added picture's bytes are there.
 EXTENDS Naturals
 

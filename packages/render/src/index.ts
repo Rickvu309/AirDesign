@@ -1,4 +1,5 @@
 export { boxOf, ownBox, sameBox, type Moved } from "./box-gesture.js"
+export type { Copied } from "./layer-copies.js"
 export type { Turned } from "./transform-drag.js"
 export type { FlippedLayer } from "./transform-math.js"
 export { ElementView, OpenSlide, useElement } from "./element-view.js"

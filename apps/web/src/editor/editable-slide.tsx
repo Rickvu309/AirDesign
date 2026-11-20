@@ -1,6 +1,6 @@
 import { boxPatch, format, type ElementId, type SetChange, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
-import { SlideCanvas, type FlippedLayer, type Moved, type Selection, type Turned } from "@airdesign/render"
+import { SlideCanvas, type Copied, type FlippedLayer, type Moved, type Selection, type Turned } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
@@ -24,6 +24,7 @@ import { boxName } from "@/undo-names"
 
 export type EditableDeck = DesignDeck & {
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
+  readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
   readonly selection: Selection
   readonly select: (selection: Selection) => void
   readonly hovered?: ElementId | null
@@ -291,6 +292,14 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               clear()
               onFlip(flipped)
             }}
+            {...(deck.duplicateLayers === undefined
+              ? {}
+              : {
+                  onDuplicate: (copies: readonly Moved[]) => {
+                    clear()
+                    return deck.duplicateLayers?.(copies) ?? Promise.resolve([])
+                  },
+                })}
             onOrder={order}
             ownsKey={editorOwnsKey}
             selection={selection}

@@ -1,11 +1,14 @@
 import type { WireGroup } from "@airdesign/catalog"
 import {
   changeLayout,
+  cloneOf,
+  currentBox,
   decide,
   elementId,
   format,
   groupOf,
   nextElementId,
+  openingElement,
   readSlideId,
   shapeOf,
   slideMeasure,
@@ -114,7 +117,27 @@ function ungrouped(deck: Deck, group: ElementId, runId: string, base: number): A
   return { ok: true, register }
 }
 
+function duplicated(deck: Deck, elements: readonly ElementId[], runId: string, base: number): Applied {
+  let register = deck.register
+  for (const source of elements) {
+    const slide = readSlideId(shapeOf(source).slide)
+    const opened = ready({ deck: deck.id, base }, deck, slide, runId)
+    if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
+    const measure = slide === undefined ? undefined : slideMeasure(register, slide)
+    const body = register.elements[source]
+    const box = (body === undefined ? null : currentBox(body)) ?? openingElement(register, source)?.box ?? null
+    if (slide === undefined || measure === undefined || box === null) return dead
+    const cloned = cloneOf(register, source, nextElementId(register, slide, measure.free), box)
+    if (!cloned.ok) return { ok: false, refusal: cloned.refusal }
+    const landed = decided(register, opened.file, { ...cloned.command, runId }, runId)
+    if (!landed.ok) return landed
+    register = landed.register
+  }
+  return { ok: true, register }
+}
+
 export function applyGroup(deck: Deck, change: WireGroup, runId: string, base: number): Applied {
+  if (change.op === "duplicate") return duplicated(deck, change.elements, runId, base)
   if (change.op === "group") return grouped(deck, change.elements, runId, base)
   if (change.op === "frame") return framed(deck, change.elements, runId, base)
   const [first, ...rest] = change.elements

@@ -1,10 +1,10 @@
 import { type ElementId, type Geometry, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { holdKeys, type HeldKeys } from "@airdesign/render"
+import { holdKeys, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
-import { commitElement, type ElementChange } from "@/element-edit"
+import { commitCopies, commitElement, type ElementChange } from "@/element-edit"
 import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
@@ -52,6 +52,17 @@ export function deckInserts(deck: InsertingDeck) {
     return outcome
   }
 
+  async function duplicateLayers(copies: readonly Moved[]): Promise<readonly Copied[]> {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) return []
+    const made = await commitCopies(id, shownParts.current, opened.register, copies, async (undoable) => {
+      if (undoable !== null) record({ name: "duplicate-layer", undoable })
+      await showEdited(current)
+    })
+    void made.flushed.then(settle)
+    return made.copies
+  }
+
   function addText() {
     const size = canvases.current(current)
     if (size !== null) void changeElement({ change: "text", index: current, size })
@@ -76,5 +87,13 @@ export function deckInserts(deck: InsertingDeck) {
     settle(await commitIcon(id, shownParts.current, name, at, recordAdded("add-icon")))
   }
 
-  return { changeElement, addText, addShape, addPicture, addIcon, addSlideNumber: () => void addSlideNumbers(deck) }
+  return {
+    changeElement,
+    duplicateLayers,
+    addText,
+    addShape,
+    addPicture,
+    addIcon,
+    addSlideNumber: () => void addSlideNumbers(deck),
+  }
 }

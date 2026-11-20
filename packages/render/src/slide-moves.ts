@@ -50,6 +50,8 @@ import {
 import { hudChannel, type HudChannel } from "./transform-hud.js"
 import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
+import { useLayerCopies, type Duplicate } from "./use-layer-copies.js"
+import type { CopyBoard } from "./layer-copies.js"
 
 export type { Grouping } from "./arrange-keys.js"
 
@@ -71,6 +73,7 @@ export type Moves = {
   readonly choose: (next: Selection) => void
   readonly isDragging: () => boolean
   readonly hud: HudChannel
+  readonly copies: CopyBoard
   readonly message: string
   readonly say: (message: string) => void
   readonly select: (id: ElementId) => void
@@ -110,6 +113,7 @@ export function useMoves(
   picking?: Picking,
   grouping?: Grouping,
   transforms?: TransformActions,
+  onDuplicate?: Duplicate,
 ): Moves {
   const [own, setOwn] = useState<Selection>(noSelection)
   const given = picking?.selection ?? own
@@ -131,6 +135,7 @@ export function useMoves(
   const [turning] = useState(rotationGrips)
   const cancelling = useRef<(() => void) | null>(null)
   const pressedFrame = useRef<HTMLElement | null>(null)
+  const copies = useLayerCopies({ store, slide: size, choose, focus: focusSelection, say: setMessage, onDuplicate })
   useEffect(() => () => letGo([]), [])
   useLayoutEffect(() => {
     const now = held.current
@@ -189,6 +194,7 @@ export function useMoves(
   function letGo(changed: readonly ElementId[]) {
     const wasHeld = held.current !== null
     held.current = null
+    copies.board.show([])
     guides.show([])
     hud.write(null)
     for (const [id, grip] of grips.current) {
@@ -205,6 +211,13 @@ export function useMoves(
       const turned = finishedTurns(done.layers, store)
       letGo(turned.map((each) => each.id))
       if (turned.length > 0) transforms?.onRotate?.(turned)
+      return
+    }
+    if (done.by === "pointer" && done.moved && copies.copying()) {
+      const kept = [...grips.current.values()]
+      grips.current = new Map()
+      letGo([])
+      copies.land(done.starts, kept, pressedFrame.current)
       return
     }
     const moved = done.ids.flatMap((id): Moved[] => {
@@ -233,6 +246,7 @@ export function useMoves(
 
   function follow(pressed: PointerDrag, document: Document, initialModifiers: TransformModifiers) {
     hold(pressed)
+    const snap = snapTargets(size, store, pressed.ids)
     cancelling.current = watchPointerDrag({
       document,
       pointer: pressed.pointer,
@@ -240,7 +254,8 @@ export function useMoves(
       initialModifiers,
       width,
       slide: size,
-      snap: snapTargets(size, store, pressed.ids),
+      snap,
+      ...copies.dragging(snap, pressed.starts),
       current: () => (held.current?.by === "pointer" ? held.current : null),
       markMoved: (now) => {
         const active = { ...now, moved: true }
@@ -443,6 +458,10 @@ export function useMoves(
       transforms.onFlip(flips)
       return
     }
+    if (gesture === "duplicate") {
+      if (now === null && owns(event) && copies.duplicate(startsOf(movingWith(id)), frame)) event.preventDefault()
+      return
+    }
     if (now === null && handleArrangeKey(event, gesture, element, id, latest.current.ids, grouping, onOrder)) return
     if (gesture === "edit-text") {
       if (now !== null) return
@@ -532,6 +551,7 @@ export function useMoves(
     choose,
     isDragging: () => held.current !== null,
     hud,
+    copies: copies.board,
     message,
     say: setMessage,
     select,

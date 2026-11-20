@@ -31,6 +31,7 @@ assert.deepEqual(
     "frame.mjs",
     "gradient-kept.mjs",
     "group.mjs",
+    "layer-duplicate.mjs",
     "layer-join.mjs",
     "layer-lock.mjs",
     "new-slide-prompts.mjs",

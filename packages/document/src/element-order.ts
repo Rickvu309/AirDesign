@@ -10,6 +10,7 @@ import { hasSlideNumber, openingSlideNumber } from "./text-value.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
 import { frameBackdrop, groupedNow, groupParent } from "./element-group.js"
+import type { Kind } from "./kinds.js"
 
 export const geometries = presets
 
@@ -45,11 +46,21 @@ export type ElementOrder = {
   readonly among: readonly ElementId[]
 }
 
-export type ElementCommand = ElementAdd | ElementRemove | ElementRestore | ElementOrder
+export type ElementClone = {
+  readonly slide: "element-clone"
+  readonly id: SlideId
+  readonly source: ElementId
+  readonly element: IndexElement
+}
+
+export type ElementCommand = ElementAdd | ElementClone | ElementRemove | ElementRestore | ElementOrder
+
+export const clonedKinds: readonly Kind[] = ["shape", "connector"]
 
 export function elementCommand(command: { readonly slide: string }): command is ElementCommand {
   return (
     command.slide === "element-add" ||
+    command.slide === "element-clone" ||
     command.slide === "element-remove" ||
     command.slide === "element-restore" ||
     command.slide === "element-order"
@@ -101,7 +112,7 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
   let next = free
   for (const command of state.order) {
     if (!("id" in command) || command.id !== slide) continue
-    if (command.slide === "element-add" || command.slide === "element-group")
+    if (command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group")
       next = Math.max(next, shapeNumber(command.element.node) + 1)
     if (command.slide === "element-group" && command.backdrop !== undefined)
       next = Math.max(next, shapeNumber(command.backdrop.node) + 1)
@@ -160,10 +171,25 @@ function indexComplete(state: Indexed): boolean {
   return state.index !== undefined && state.index.total === state.index.elements.length
 }
 
-export function elementRefusal(
-  state: Indexed,
-  command: Exclude<ElementCommand, ElementOrder>,
-): "dead" | "present" | "group-box" | "locked" | "kind" | null {
+type Refusal = "dead" | "present" | "group-box" | "locked" | "kind"
+
+export type CloneRefusal = Exclude<Refusal, "locked">
+
+export function cloneRefusal(state: Indexed, command: ElementClone): CloneRefusal | null {
+  const { element, source } = command
+  if (shapeOf(element.node).slide !== command.id || shapeOf(source).slide !== command.id) return "dead"
+  if (openingElement(state, element.node) !== undefined || elementGone(state, element.node)) return "present"
+  if (!freshShape(element) || elementGone(state, source)) return "dead"
+  if (hasSlideNumber(element.value)) return "present"
+  if (!clonedKinds.includes(element.kind)) return "kind"
+  const opening = openingElement(state, source)
+  if (opening === undefined) return indexComplete(state) ? "dead" : null
+  if (opening.kind !== element.kind) return "kind"
+  return groupedNow(state, source) ? "group-box" : null
+}
+
+export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, ElementOrder>): Refusal | null {
+  if (command.slide === "element-clone") return cloneRefusal(state, command)
   const node = command.slide === "element-add" ? command.element.node : command.node
   if (shapeOf(node).slide !== command.id) return "dead"
   const opening = openingElement(state, node)
@@ -190,6 +216,12 @@ export function elementRefusal(
 }
 
 export function readElementCommand(raw: Record<string, unknown>, id: SlideId): ElementCommand | undefined {
+  if (raw.slide === "element-clone") {
+    const element = readFloor([raw.element], id)?.[0]
+    const source = readElementId(raw.source)
+    if (element === undefined || source === undefined || shapeOf(source).slide !== id) return undefined
+    return { slide: "element-clone", id, source, element }
+  }
   if (raw.slide === "element-add") {
     const element = readFloor([raw.element], id)?.[0]
     if (element === undefined) return undefined

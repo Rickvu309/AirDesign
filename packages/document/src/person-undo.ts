@@ -111,7 +111,11 @@ function stillShows(register: Register, node: ElementId, shown: ElementPatch): b
 }
 
 function elementOf(edit: ElementEdit): ElementId {
-  return edit.slide === "element-add" ? edit.element.node : edit.node
+  return edit.slide === "element-add" || edit.slide === "element-clone" ? edit.element.node : edit.node
+}
+
+function born(edit: ElementEdit): boolean {
+  return edit.slide === "element-add" || edit.slide === "element-clone"
 }
 
 function stackUndoable(edit: ElementOrder, file: readonly SlideId[]): Undoable | null {
@@ -157,7 +161,7 @@ export function elementsUndoable(
     const decision = decide(current, { command: "slide", file, edit })
     if (decision.decision !== "apply") continue
     const node = elementOf(edit)
-    const before: boolean = edit.slide !== "element-add" && !elementGone(current, node)
+    const before: boolean = !born(edit) && !elementGone(current, node)
     first ??= { edit, before, after: !elementGone(decision.register, node) }
     nodes.push(node)
     current = decision.register
@@ -330,7 +334,7 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
   if (edit.slide === "element-order") return stackUndoable(edit, register.file)
   if (elementCommand(edit)) {
     const node = elementOf(edit)
-    if (edit.slide === "element-add" && personEdited(register, node)) return null
+    if (born(edit) && personEdited(register, node)) return null
     const turnsNode = (row: SlideCommand) =>
       (row.slide === "element-remove" || row.slide === "element-restore") && row.node === node
     if (fencedSince(register, at, edit, turnsNode)) return null
@@ -340,7 +344,7 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
       elements: [{ node, shown: shownWith(register, node, {}) }],
       slide: edit.id,
       file: register.file,
-      before: edit.slide !== "element-add" && !elementGone({ ...register, order: before }, node),
+      before: !born(edit) && !elementGone({ ...register, order: before }, node),
       after: !elementGone({ ...register, order: upTo }, node),
     }
   }

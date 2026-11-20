@@ -109,6 +109,16 @@ export const gestures = [
   { id: "delete", group: "select", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["element"] },
   { id: "move", group: "move", keys: [], pointing: [{ on: "element", drag: true }], where: ["slide"] },
   {
+    id: "duplicate-drag",
+    group: "move",
+    keys: [],
+    pointing: [
+      { on: "element", drag: true, alt: true },
+      { on: "element", drag: true, alt: true, shift: true },
+    ],
+    where: ["slide"],
+  },
+  {
     id: "snap-off",
     group: "move",
     keys: [],
@@ -166,6 +176,7 @@ export const gestures = [
     ],
     where: ["element"],
   },
+  { id: "duplicate", group: "arrange", keys: [{ code: "KeyD", mod: true }], where: ["element"] },
   { id: "group", group: "arrange", keys: [{ code: "KeyG", mod: true }], where: ["element"] },
   { id: "ungroup", group: "arrange", keys: [{ code: "KeyG", mod: true, shift: true }], where: ["element"] },
   { id: "frame", group: "arrange", keys: [{ code: "KeyG", mod: true, alt: true }], where: ["element"] },

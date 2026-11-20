@@ -1,7 +1,7 @@
 import { limits, readElementId, type ElementId } from "@airdesign/document"
 import type { JsonSchema } from "./agent-form.js"
 
-export const groupOps = ["group", "ungroup", "frame", "join", "leave"] as const
+export const groupOps = ["group", "ungroup", "frame", "join", "leave", "duplicate"] as const
 
 export type WireGroup = { readonly op: (typeof groupOps)[number]; readonly elements: readonly ElementId[] }
 
@@ -37,7 +37,7 @@ export function groupChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "elements"],
     description:
-      "group: two or more layers of one slide; frame: the same, as an auto layout frame; ungroup: groups back into parts; join: elements[0] is a group or frame, the rest join it; leave: children back to the slide. New ids come back in elements.",
+      "group: two or more layers of one slide; frame: the same, as an auto layout frame; ungroup: back into parts; join: elements[0] is a group or frame, the rest join it; leave: children back to the slide; duplicate: copies each layer just above it. New ids come back in elements.",
     properties: {
       op: { type: "string", enum: groupOps },
       elements: {

@@ -97,6 +97,14 @@ function fold(state: Indexed): Chain[] {
       }
       continue
     }
+    if (command.slide === "element-clone") {
+      for (const chain of chains) {
+        const at = chain.ids.indexOf(command.source)
+        if (chain.slide !== command.id || at < 0 || chain.ids.includes(command.element.node)) continue
+        chain.ids = [...chain.ids.slice(0, at + 1), command.element.node, ...chain.ids.slice(at + 1)]
+      }
+      continue
+    }
     if (command.slide === "element-remove") {
       for (const chain of chains) {
         const at = chain.ids.indexOf(command.node)

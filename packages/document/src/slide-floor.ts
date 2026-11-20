@@ -28,7 +28,7 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 }
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
-  if (command.slide === "element-add") return [command.element]
+  if (command.slide === "element-add" || command.slide === "element-clone") return [command.element]
   if (command.slide === "element-group")
     return command.backdrop === undefined ? [command.element] : [command.element, command.backdrop]
   return slideBirths(command).flatMap((birth) => birth.floor ?? [])
@@ -46,7 +46,7 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   const slide = shapeOf(node).slide
   for (const command of state.order) {
     const onSlide =
-      command.slide === "element-add" || command.slide === "element-group"
+      command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group"
         ? command.id === slide
         : slideBirths(command).some((birth) => birth.id === slide)
     if (!onSlide) continue
@@ -61,6 +61,8 @@ export function newSlideElement(state: Floored | null, node: ElementId): IndexEl
   const slide = shapeOf(node).slide
   const born = state.order.some((command) => slideBirths(command).some((birth) => birth.id === slide))
   if (born) return openingElement(state, node)
+  const cloned = state.order.find((command) => command.slide === "element-clone" && command.element.node === node)
+  if (cloned?.slide === "element-clone") return cloned.element
   const added = state.order.find((command) => command.slide === "element-add" && command.element.node === node)
   if (added?.slide !== "element-add") return undefined
   return hasSlideNumber(added.element.value) ? added.element : undefined

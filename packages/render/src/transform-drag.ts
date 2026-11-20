@@ -289,6 +289,8 @@ export function watchPointerDrag(options: {
   readonly width: number
   readonly slide: SlideSize
   readonly snap: DragSnap
+  readonly copySnap?: DragSnap
+  readonly onCopying?: (copying: boolean) => void
   readonly current: () => PointerDrag | null
   readonly markMoved: (now: PointerDrag) => PointerDrag
   readonly applyResult: (result: SnappedResult) => void
@@ -312,7 +314,10 @@ export function watchPointerDrag(options: {
       modifiers,
       centerScreen: now.centerScreen,
     }
-    applyResult(snappedTransform(input, evaluateTransform, modifiers.ctrlKey ? null : options.snap))
+    const copying = now.grip === "move" && modifiers.altKey && options.copySnap !== undefined
+    options.onCopying?.(copying)
+    const snap = copying ? (options.copySnap ?? options.snap) : options.snap
+    applyResult(snappedTransform(input, evaluateTransform, modifiers.ctrlKey ? null : snap))
   }
 
   const painting = oncePerFrame(({ at, modifiers }: { readonly at: Point; readonly modifiers: TransformModifiers }) => {

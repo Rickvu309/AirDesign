@@ -194,12 +194,14 @@ export { siteCount, siteSpot, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"
+export { cloneOf } from "./element-clone.js"
 export {
   addedPictures,
   elementCommand,
   elementGone,
   nextElementId,
   openingIcon,
+  type ElementClone,
   type ElementCommand,
   type Geometry,
   lineGeometries,
