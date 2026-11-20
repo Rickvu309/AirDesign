@@ -8,7 +8,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react"
-import type { CellRange, ElementId, StackMove, TableChange } from "@airdesign/document"
+import type { Box, CellRange, ElementId, StackMove, TableChange } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import { CopiedLayer } from "./copied-layer.js"
@@ -80,6 +80,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRotate?: (turned: readonly Turned[]) => void
   readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
+  readonly onRelayout?: (boxes: ReadonlyMap<ElementId, Box>) => ReadonlyMap<ElementId, Box> | null
   readonly onDuplicate?: Duplicate
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
@@ -139,6 +140,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     {
       ...(props.onRotate === undefined ? {} : { onRotate: props.onRotate }),
       ...(props.onFlip === undefined ? {} : { onFlip: props.onFlip }),
+      ...(props.onRelayout === undefined ? {} : { relayout: props.onRelayout }),
     },
     props.onDuplicate,
   )

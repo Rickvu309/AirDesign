@@ -9,5 +9,6 @@ export function liveBox(store: PaintStore, element: CanvasElement, read: BoxRead
   const group = element.group
   const carried = group === undefined ? null : read(store, group.id)
   const nested = (element.nestedIn ?? []).map((holder) => read(store, holder.id))
-  return memberAt(element, read(store, element.id), store.getRotation(element.id), carried, nested)
+  const laid = read === shownBox ? store.getLaid(element.id) : null
+  return memberAt(element, read(store, element.id), store.getRotation(element.id), carried, nested, laid)
 }

@@ -79,7 +79,7 @@ export function editableSlide(
 ): (width: number, shown?: GuidesShown, onPlaceText?: (place: TextPlace) => void) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
-  const onBoxes = boxMoves(deck)
+  const { onBoxes, relayout } = boxMoves(deck)
   const { cropping, setCropping } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
@@ -309,6 +309,7 @@ export function editableSlide(
               clear()
               onRotate(turned)
             }}
+            onRelayout={relayout}
             onFlip={(flipped) => {
               clear()
               onFlip(flipped)

@@ -158,11 +158,16 @@ export function useMoves(
   }
 
   function place(boxes: ReadonlyMap<ElementId, Box>) {
-    for (const [id, box] of boxes) grips.current.get(id)?.place(box)
+    const now = held.current
+    const resizing = now?.by === "pointer" && now.grip !== "move" && !isRotateGrip(now.grip)
+    const laid = resizing ? (transforms?.relayout?.(boxes) ?? null) : null
+    for (const [id, box] of boxes) grips.current.get(id)?.place(laid?.get(id) ?? box)
+    if (laid !== null) store.lay(new Map([...laid].filter(([id]) => !boxes.has(id))))
   }
 
   function letGo(changed: readonly ElementId[]) {
     const wasHeld = held.current !== null
+    if (changed.length === 0 && store.laidNow() !== null) store.lay(null)
     held.current = null
     copies.board.show([])
     guides.show([])

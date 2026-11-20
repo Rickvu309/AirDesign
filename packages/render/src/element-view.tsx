@@ -17,6 +17,15 @@ export const shownBox: BoxRead = (store, id) => store.getBox(id)
 
 export const restingBox: BoxRead = (store, id) => store.getRestingBox(id)
 
+export function useLaid(store: PaintStore, id: ElementId, read: BoxRead = shownBox): Box | null {
+  const laid = useSyncExternalStore(
+    store.boxSubscribe(id),
+    () => store.getLaid(id),
+    () => store.getLaid(id),
+  )
+  return read === shownBox ? laid : null
+}
+
 export function useBox(store: PaintStore, id: ElementId, read: BoxRead = shownBox): Box | null {
   return useSyncExternalStore(
     store.boxSubscribe(id),
