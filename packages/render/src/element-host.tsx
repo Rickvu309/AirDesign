@@ -313,7 +313,8 @@ function formatReach(
         return
       }
       event.preventDefault()
-      runTextKey(formatting, text)
+      const onFrame = event.target === event.currentTarget
+      runTextKey(formatting, text, onFrame && moves !== null ? moves.latest.current.ids : [])
     },
   }
 }

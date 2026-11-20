@@ -44,6 +44,7 @@ import { showText, shownValue } from "@/live-repaint"
 import { shownTable } from "@/table-hook"
 import { tableCanvas, type TableCanvasDeck } from "@/editor/table-canvas"
 import type { UndoName } from "@/copy/undo-copy"
+import type { Typing } from "@/undo-list"
 
 export type EditableDeck = DesignDeck &
   TableCanvasDeck & {
@@ -73,6 +74,8 @@ type PlacedTextActions = {
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
 
+const togetherSessions = new WeakMap<object, number>()
+
 const noGuidesShown: GuidesShown = { rulers: false, layoutGuides: true }
 
 export function editableSlide(
@@ -92,10 +95,29 @@ export function editableSlide(
 
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
     const release = records.current.hold()
+    const together = formatting.current.together()
     const placed = deck.placedText?.typed(target, value) ?? Promise.resolve(true)
     return placed
-      .then((stored): Promise<CommitOutcome> | "empty" => (stored ? editText(target, value, name, release) : "empty"))
+      .then((stored): Promise<CommitOutcome> | "empty" =>
+        stored ? editText(target, value, name, release, together) : "empty",
+      )
       .finally(release)
+  }
+
+  function sessionOf(target: ElementId, name: UndoName, together: object | null): Typing {
+    if (together !== null) {
+      typed.current = null
+      const shared = togetherSessions.get(together) ?? (sessions.current += 1)
+      togetherSessions.set(together, shared)
+      return { node: target, session: shared, before: textBefore(target) }
+    }
+    if (name !== "text" || typed.current?.node !== target) {
+      sessions.current += 1
+      typed.current = { node: target, session: sessions.current, before: textBefore(target) }
+    }
+    const opened = typed.current
+    if (name !== "text") typed.current = null
+    return opened
   }
 
   async function editText(
@@ -103,13 +125,9 @@ export function editableSlide(
     value: string,
     name: UndoName,
     release: () => void,
+    together: object | null = null,
   ): Promise<CommitOutcome> {
-    if (name !== "text" || typed.current?.node !== target) {
-      sessions.current += 1
-      typed.current = { node: target, session: sessions.current, before: textBefore(target) }
-    }
-    const { session, before: started } = typed.current
-    if (name !== "text") typed.current = null
+    const { session, before: started } = sessionOf(target, name, together)
     const box = boxes.current.get(target)
     if (box === undefined) return "refused"
     const file = box.file

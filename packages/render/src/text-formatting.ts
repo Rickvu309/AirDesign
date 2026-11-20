@@ -57,6 +57,8 @@ export type TextFormatting = {
   readonly fontStyle: () => FontStyle | "mixed" | null
   readonly weightTo: (style: FontStyle) => void
   readonly swatches: () => readonly CanvasTemplateColor[]
+  readonly across: (ids: readonly ElementId[], key: TextKey) => boolean
+  readonly together: () => object | null
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void
 }
@@ -92,7 +94,8 @@ export function textKeyOf(event: KeyLike): TextKey | null {
   return gesture === null ? null : (textKeys[gesture] ?? null)
 }
 
-export function runTextKey(formatting: TextFormatting, key: TextKey) {
+export function runTextKey(formatting: TextFormatting, key: TextKey, selected: readonly ElementId[] = []) {
+  if (selected.length > 1 && formatting.across(selected, key)) return
   if ("toggle" in key) formatting.toggle(key.toggle)
   else if ("resize" in key) formatting.resize(key.resize)
   else if ("place" in key) formatting.place(key.place)
@@ -100,11 +103,28 @@ export function runTextKey(formatting: TextFormatting, key: TextKey) {
   else formatting.bullets()
 }
 
+function runAcross(found: readonly FormatTarget[], key: TextKey) {
+  if ("toggle" in key) {
+    const allOn = found.every((each) => each.state(key.toggle, false) === "on")
+    for (const each of found) if (allOn || each.state(key.toggle, false) !== "on") each.apply(key.toggle, false)
+  } else if ("bullets" in key) {
+    const allOn = found.every((each) => each.bullet(false) === "on")
+    for (const each of found) if (allOn || each.bullet(false) !== "on") each.bullets(false)
+  } else {
+    for (const each of found) {
+      if ("resize" in key) each.resize(key.resize, false)
+      else if ("place" in key) each.place(key.place, false)
+      else each.weight(key.weight, false)
+    }
+  }
+}
+
 export function textFormatting(fresh: () => void = () => undefined): TextFormatting {
   const targets = new Map<ElementId, FormatTarget>()
   const listeners = new Set<() => void>()
   let aimed: ElementId | null = null
   let returnTo: HTMLElement | null = null
+  let together: object | null = null
   const changed = () => {
     for (const listener of listeners) listener()
   }
@@ -214,6 +234,24 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     swatches() {
       return target()?.swatches() ?? []
     },
+    across(ids, key) {
+      const found = ids.flatMap((id) => {
+        const each = targets.get(id)
+        return each === undefined ? [] : [each]
+      })
+      if (found.length === 0) return false
+      fresh()
+      together = {}
+      try {
+        runAcross(found, key)
+      } finally {
+        together = null
+      }
+      fresh()
+      changed()
+      return true
+    },
+    together: () => together,
     changed,
     subscribe(listener) {
       listeners.add(listener)
