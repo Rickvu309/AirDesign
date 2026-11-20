@@ -13,7 +13,7 @@ export async function namedSlides(page, count) {
     await placeText(page)
     const title = page.locator('[data-slide-paint] [contenteditable="true"]').first()
     await expect(title).toBeFocused()
-    await title.pressSequentially(`Point ${String(number)} of the story`, { delay: 0 })
+    await title.pressSequentially(`Chapter ${String(number)} of the story`, { delay: 0 })
     await page.keyboard.press("Escape")
     await page.keyboard.press("Escape")
   }
