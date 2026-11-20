@@ -1,0 +1,43 @@
+[
+  {
+    "part": "source"
+  },
+  {
+    "part": "scripts"
+  },
+  {
+    "part": "design",
+    "shard": "1/2"
+  },
+  {
+    "part": "design",
+    "shard": "2/2"
+  },
+  {
+    "part": "browser",
+    "shard": "1/6"
+  },
+  {
+    "part": "browser",
+    "shard": "2/6"
+  },
+  {
+    "part": "browser",
+    "shard": "3/6"
+  },
+  {
+    "part": "browser",
+    "shard": "4/6"
+  },
+  {
+    "part": "browser",
+    "shard": "5/6"
+  },
+  {
+    "part": "browser",
+    "shard": "6/6"
+  },
+  {
+    "part": "pptx"
+  }
+]
