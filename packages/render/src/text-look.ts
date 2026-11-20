@@ -11,6 +11,7 @@ import {
 } from "@airdesign/document"
 import type { CSSProperties } from "react"
 import { bulletLabel } from "./bullet-label.js"
+import { leveledBullet, numberSource, templated } from "./template-bullet.js"
 import { bodyLook } from "./text-body-look.js"
 import type { FileWeight } from "./run-weight.js"
 import { readFormat } from "./run-format-node.js"
@@ -66,7 +67,7 @@ export type TextLook = {
   fileAlign(paragraph: number): ParagraphAlign | null
   fileList(paragraph: number): TextList
   fileLevel(paragraph: number): number
-  fileNumber(paragraph: number): ListSource
+  fileNumber(paragraph: number, level?: number): ListSource
   fileWeight(paragraph: number, run: number): FileWeight
   fonts(): Readonly<Record<string, string>>
   swatches(): readonly CanvasTemplateColor[]
@@ -279,6 +280,7 @@ function spaced(text: CanvasText, paragraph: CanvasParagraph, overlay: Paragraph
   const { lineHeight, lineHeightPoints, spaceBefore, spaceAfter, level } = overlay
   return {
     ...paragraph,
+    ...(level === undefined ? {} : { bullet: leveledBullet(text, paragraph, level) }),
     ...(level === undefined && overlay.list !== "bullets" && overlay.list !== "numbers"
       ? {}
       : levelIndent(text, level ?? paragraph.level ?? 0, overlay.list ?? listOf(paragraph))),
@@ -295,6 +297,7 @@ function paragraphOverlay(
   overlay: ParagraphPaint | undefined,
   source: CanvasRunStyle,
   scaled: Scaled,
+  leveled: boolean,
 ): Look {
   const font = paragraph.bullet?.font ?? source.font
   const color = paragraph.bullet?.color ?? source.color
@@ -311,7 +314,7 @@ function paragraphOverlay(
   const filedNumber = paragraph.bullet != null && "autoNumber" in paragraph.bullet ? paragraph.bullet : null
   if (overlay?.list === "numbers" || (overlay?.list === undefined && filedNumber !== null)) {
     const scheme =
-      overlay?.level !== undefined
+      overlay?.level !== undefined && !leveled
         ? levelNumbering(overlay.level)
         : overlay?.list === "numbers" || filedNumber === null
           ? "arabicPeriod"
@@ -371,7 +374,14 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       )
       const shown = spaced(text, paragraph, overlay)
       const style = edged(
-        paragraphOverlay(paragraphStyle(shown, filled, scaled), shown, overlay, source, scaled),
+        paragraphOverlay(
+          paragraphStyle(shown, filled, scaled),
+          shown,
+          overlay,
+          source,
+          scaled,
+          templated(text, paragraph),
+        ),
         text.edgeSpacing === true ? null : edges,
         from,
       )
@@ -420,12 +430,8 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       return { typeface: style?.font ?? null, bold: style?.bold === true, italic: style?.italic === true }
     },
     fonts: () => text.fonts ?? {},
-    fileNumber(from) {
-      const paragraph = paragraphs.get(from)
-      const bullet = paragraph?.bullet
-      return bullet != null && "autoNumber" in bullet
-        ? { level: paragraph?.level ?? 0, scheme: bullet.autoNumber, start: bullet.start ?? bullet.number }
-        : { level: paragraph?.level ?? 0, scheme: null }
+    fileNumber(from, level) {
+      return numberSource(text, paragraphs.get(from), level)
     },
     swatches: () => colors,
   }

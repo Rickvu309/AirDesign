@@ -1,6 +1,7 @@
 import {
   boldWeight,
   fontFamily,
+  resolveFont,
   listedStyles,
   namedFace,
   plainStyles,
@@ -24,6 +25,14 @@ function stylesOf(family: string | undefined, current: FontStyle | undefined, sh
 
 function sameStyle(left: FontStyle, right: FontStyle): boolean {
   return left.weight === right.weight && left.italic === right.italic
+}
+
+function facesUnknown(family: string, shown: PanelReads): boolean {
+  return resolveFont(family)?.family.toLowerCase() === family.toLowerCase() && shown.faces?.(family) === undefined
+}
+
+function holds(family: string, current: FontStyle, shown: PanelReads): boolean {
+  return stylesOf(family, undefined, shown).some((style) => sameStyle(style, current))
 }
 
 export function typographyControls(
@@ -83,10 +92,17 @@ export function typographyControls(
         return {
           ...control,
           value: named?.family ?? typeface,
+          faceFallback: () =>
+            named === undefined ||
+            current === undefined ||
+            facesUnknown(named.family, shown) ||
+            holds(named.family, current, shown)
+              ? null
+              : named.family,
           change: (value: unknown) => {
             if (typeof value !== "string" || current === undefined || namedFace(value) !== undefined)
               return control.change(value)
-            const kept = stylesOf(value, undefined, shown).some((style) => sameStyle(style, current))
+            const kept = facesUnknown(value, shown) || holds(value, current, shown)
             const wanted = kept ? current : { weight: regularWeight, italic: false }
             const emboldened = wanted.weight === boldWeight
             const face = styleTypeface(value, wanted.weight)

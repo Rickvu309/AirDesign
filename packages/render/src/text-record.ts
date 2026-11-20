@@ -43,6 +43,7 @@ export type CanvasParagraph = {
   readonly spaceBefore?: CanvasSpacing | null
   readonly spaceAfter?: CanvasSpacing | null
   readonly bullet?: CanvasBullet | null
+  readonly ownBullet?: true
   readonly runs: readonly CanvasRun[]
   readonly endStyle: CanvasRunStyle
 }
@@ -50,6 +51,7 @@ export type CanvasParagraph = {
 export type CanvasText = {
   readonly fonts?: Readonly<Record<string, string>>
   readonly templateIndents?: readonly (ListIndent | null)[]
+  readonly templateBullets?: readonly (CanvasBullet | null)[]
   readonly colors?: readonly CanvasTemplateColor[]
   readonly paragraphs: readonly CanvasParagraph[]
   readonly anchor: "top" | "middle" | "bottom"

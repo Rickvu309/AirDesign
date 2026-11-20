@@ -22,6 +22,7 @@ import {
   type TextValue,
 } from "@airdesign/document"
 import { fontsFor } from "./font-load.js"
+import { styledRun, weightState } from "./run-style.js"
 import { weightedRun } from "./run-weight.js"
 import type { TextFormatting } from "./text-formatting.js"
 import type { TextLook } from "./text-look.js"
@@ -47,7 +48,9 @@ export function formatTarget(
   let kept: TextRange | null = null
   const keep = () => {
     const carets = formats.current?.read(shown).carets ?? null
-    if (carets !== null) kept = carets
+    if (carets === null || JSON.stringify(carets) === JSON.stringify(kept)) return
+    kept = carets
+    formatting.changed()
   }
   const range = (editing: boolean) => (!editing || kept === null || collapsed(kept) ? null : kept)
   const look = (): TextLook | undefined => formats.current?.look
@@ -144,6 +147,21 @@ export function formatTarget(
       }
       const next = applyRuns(read.value, range(editing), (paragraph, run) =>
         weightedRun(run, shownLook.fileWeight(paragraph.from, run.from), step, faces, shownLook.fonts()),
+      )
+      commit(read.value, next, editing)
+    },
+    fontStyle(editing) {
+      const read = readNow()
+      const shownLook = look()
+      if (read === null || shownLook === undefined) return null
+      return weightState(read.value, range(editing), (from, run) => shownLook.fileWeight(from, run), shownLook.fonts())
+    },
+    weightTo(style, editing) {
+      const read = readNow()
+      const shownLook = look()
+      if (read === null || shownLook === undefined) return
+      const next = applyRuns(read.value, range(editing), (paragraph, run) =>
+        styledRun(run, shownLook.fileWeight(paragraph.from, run.from), style, shownLook.fonts()),
       )
       commit(read.value, next, editing)
     },

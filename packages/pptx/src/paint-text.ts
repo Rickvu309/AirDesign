@@ -9,6 +9,14 @@ import { paintChild } from "./paint-fill.js"
 import { defaultColor, highlightOf, linkColor } from "./text-color.js"
 import { sourceBody, type MarkupChildren, type SourceParagraph } from "./text-value-route.js"
 import { templateIndents } from "./template-indent.js"
+import {
+  bulletCounter,
+  bulletOf,
+  ownsBullet,
+  templateBullets,
+  type BulletCount,
+  type PaintBullet,
+} from "./paint-bullet.js"
 import { aligns, anchors, caps } from "./paint-text-words.js"
 
 export type PaintRunStyle = {
@@ -33,12 +41,6 @@ export type PaintRun = PaintRunStyle & {
   text: string
 }
 
-type BulletLook = { font: string | null; color: PaintColor | null; size: number | null }
-
-export type PaintBullet =
-  | ({ char: string } & BulletLook)
-  | ({ autoNumber: string; start: number; number: number } & BulletLook)
-
 export type PaintSpacing = { percent: number } | { points: number }
 
 export type PaintParagraph = {
@@ -51,6 +53,7 @@ export type PaintParagraph = {
   spaceBefore: PaintSpacing | null
   spaceAfter: PaintSpacing | null
   bullet: PaintBullet | null
+  ownBullet?: true
   runs: readonly PaintRun[]
   endStyle: PaintRunStyle
 }
@@ -58,6 +61,7 @@ export type PaintParagraph = {
 export type PaintText = {
   readonly fonts?: Readonly<Record<string, string>>
   readonly templateIndents?: readonly (ListIndent | null)[]
+  readonly templateBullets?: readonly (PaintBullet | null)[]
   paragraphs: readonly PaintParagraph[]
   anchor: "top" | "middle" | "bottom"
   insets: { left: number; top: number; right: number; bottom: number }
@@ -111,16 +115,10 @@ type FontReference = {
   readonly italic?: boolean
 }
 
-type Counted = { readonly scheme: string; readonly start: number; readonly number: number }
-
 const defaultSize = 18
 const lastLevel = 8
 const titleTypes = new Set(["title", "ctrTitle"])
 const bodyTypes = new Set(["body", "subTitle", "obj"])
-const bulletKinds = new Set(["a:buNone", "a:buChar", "a:buAutoNum", "a:buBlip"])
-const bulletFontKinds = new Set(["a:buFont", "a:buFontTx"])
-const bulletColorKinds = new Set(["a:buClr", "a:buClrTx"])
-const bulletSizeKinds = new Set(["a:buSzPct", "a:buSzPts", "a:buSzTx"])
 const fontReference = /^\+m[jn]-(lt|ea|cs)$/
 
 const inside = (holder: PaintTextHolder): readonly MarkupElement[] => holder.children[holder.element.index] ?? []
@@ -267,67 +265,6 @@ const spacing = (layer: PaintTextHolder, kind: string): PaintSpacing | undefined
   return points === undefined ? undefined : { points: points / 100 }
 }
 
-const bulletPart = <T>(
-  layers: readonly PaintTextHolder[],
-  kinds: ReadonlySet<string>,
-  read: (part: PaintTextHolder) => T | undefined,
-): T | undefined =>
-  first(layers, (layer) => {
-    const element = inside(layer).find((item) => kinds.has(item.kind))
-    return element === undefined ? undefined : read({ element, children: layer.children })
-  })
-
-const bulletFont = (part: PaintTextHolder, scope: PaintTextScope): string | null =>
-  part.element.kind === "a:buFont" ? (typeface(part.element, scope) ?? null) : null
-
-const bulletColor = (part: PaintTextHolder, scope: PaintTextScope): PaintColor | null => {
-  const color = part.element.kind === "a:buClr" ? inside(part)[0] : undefined
-  return color === undefined ? null : paintColor(color, part.children, scope.palette)
-}
-
-const bulletSize = (part: PaintTextHolder): number | null =>
-  part.element.kind === "a:buSzPct" ? (fraction(part, "val") ?? null) : null
-
-const counter = (): ((level: number, scheme: string | null, start: number) => number) => {
-  const counts = new Map<number, Counted>()
-  return (level, scheme, start) => {
-    for (const known of counts.keys()) if (known > level) counts.delete(known)
-    if (scheme === null) {
-      counts.delete(level)
-      return 0
-    }
-    const previous = counts.get(level)
-    const number = previous?.scheme === scheme && previous.start === start ? previous.number + 1 : start
-    counts.set(level, { scheme, start, number })
-    return number
-  }
-}
-
-const bulletOf = (
-  layers: readonly PaintTextHolder[],
-  level: number,
-  count: ReturnType<typeof counter>,
-  scope: PaintTextScope,
-): PaintBullet | null => {
-  const part = bulletPart(layers, bulletKinds, (found) => {
-    if (found.element.kind === "a:buChar" && paintAttribute(found.element, "char") === null) return undefined
-    if (found.element.kind === "a:buAutoNum" && paintAttribute(found.element, "type") === null) return undefined
-    return found
-  })
-  const scheme = part?.element.kind === "a:buAutoNum" ? paintAttribute(part.element, "type") : null
-  const start = part === undefined ? 1 : (whole(part, "startAt") ?? 1)
-  const number = count(level, scheme, start)
-  if (part === undefined || (scheme === null && part.element.kind !== "a:buChar")) return null
-  const look = {
-    font: bulletPart(layers, bulletFontKinds, (found) => bulletFont(found, scope)) ?? null,
-    color: bulletPart(layers, bulletColorKinds, (found) => bulletColor(found, scope)) ?? null,
-    size: bulletPart(layers, bulletSizeKinds, bulletSize) ?? null,
-  }
-  return scheme === null
-    ? { char: paintAttribute(part.element, "char") ?? "", ...look }
-    : { autoNumber: scheme, start, number, ...look }
-}
-
 const bodyOf = (shape: PaintTextHolder): PaintTextHolder | undefined =>
   held(shape, "p:txBody") ?? held(shape, "a:txBody")
 
@@ -424,7 +361,7 @@ const textParagraph = (
   source: SourceParagraph,
   from: number,
   levelsAt: (properties: PaintTextHolder | undefined, level: number) => Levels,
-  count: ReturnType<typeof counter>,
+  count: BulletCount,
   reference: FontReference,
   scope: PaintTextScope,
 ): PaintParagraph => {
@@ -444,6 +381,7 @@ const textParagraph = (
     spaceBefore: first(layers, (layer) => spacing(layer, "a:spcBef")) ?? null,
     spaceAfter: first(layers, (layer) => spacing(layer, "a:spcAft")) ?? null,
     bullet: bulletOf(layers, level, count, scope),
+    ...(ownsBullet(properties) ? { ownBullet: true } : {}),
     runs: source.inlines.map((inline, run) => ({
       from: run,
       kind: inline.element.kind === "a:br" ? "break" : inline.element.kind === "a:fld" ? "field" : "text",
@@ -474,11 +412,12 @@ const resolvedText = (shape: PaintTextShape, source: readonly SourceParagraph[],
       farRuns: lists.farRuns,
     }
   }
-  const count = counter()
+  const count = bulletCounter()
   const reference = { ...referenceOf(shape, scope), ...shape.style }
   return {
     fonts: Object.fromEntries(scope.fonts),
     ...templateIndents(shape.placeholder, present([...nearLists, templateStyle])),
+    ...templateBullets(shape.placeholder, (level) => levelsAt(undefined, level).paragraph, scope),
     paragraphs: source.map((paragraph, from) =>
       textParagraph(shape, paragraph, from, levelsAt, count, reference, scope),
     ),
@@ -491,4 +430,5 @@ export const paintText = (shape: PaintTextShape, scope: () => PaintTextScope): P
   return source === null || source.length === 0 ? null : resolvedText(shape, source, scope())
 }
 
+export type { PaintBullet } from "./paint-bullet.js"
 export { paintTextMapping, paintTextScope } from "./paint-text-scope.js"

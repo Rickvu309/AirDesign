@@ -15,7 +15,7 @@ export type TextStyleValues = {
   readonly letterSpacing: number
   readonly list: "none" | "bullets" | "numbers"
   readonly align: ParagraphAlign
-  readonly lineHeight: number
+  readonly lineHeight: number | { readonly points: number }
   readonly spaceBefore: number
   readonly spaceAfter: number
 }
@@ -39,9 +39,9 @@ function styleOf(paragraph: PaintParagraph): PaintRunStyle {
   return paragraph.runs.find((run) => run.kind === "text" && run.text !== "") ?? paragraph.endStyle
 }
 
-function percentOf(spacing: PaintSpacing | null): number | null {
+function lineHeightOf(spacing: PaintSpacing | null): TextStyleValues["lineHeight"] {
   if (spacing === null) return 100_000
-  return "percent" in spacing ? Math.round(spacing.percent * 100_000) : null
+  return "percent" in spacing ? Math.round(spacing.percent * 100_000) : { points: Math.round(spacing.points * 100) }
 }
 
 function pointsOf(spacing: PaintSpacing | null): number | null {
@@ -110,7 +110,7 @@ export function shownTextStyle(parts: ReadonlyMap<string, Uint8Array>, at: TextS
       ),
     },
     align: { value: alignOf(paragraph.align), own: paragraphs.some(attribute("algn")) },
-    lineHeight: { value: percentOf(paragraph.lineHeight), own: paragraphs.some(tagged("a:lnSpc")) },
+    lineHeight: { value: lineHeightOf(paragraph.lineHeight), own: paragraphs.some(tagged("a:lnSpc")) },
     spaceBefore: { value: pointsOf(paragraph.spaceBefore), own: paragraphs.some(tagged("a:spcBef")) },
     spaceAfter: { value: pointsOf(paragraph.spaceAfter), own: paragraphs.some(tagged("a:spcAft")) },
   }

@@ -162,5 +162,28 @@ it("keeps the weight when the new family has it and falls back to Regular when i
   const unloaded = font([{ from: 0, text: "A", font: "Inter SemiBold" }], (family) =>
     family === "Inter" ? served.inter : undefined,
   )
-  expect(unloaded?.change("Montserrat").text).toEqual({ font: "Montserrat" })
+  expect(unloaded?.change("Montserrat").text).toEqual({ font: "Montserrat SemiBold" })
+  expect(unloaded?.change("Arial").text).toEqual({ font: "Arial" })
+  expect(unloaded?.faceFallback?.()).toBeNull()
+})
+
+it("falls back to Regular once a family's faces load without the weight it was given", () => {
+  const faces = (family: string) =>
+    family === "Abel"
+      ? [{ style: "normal", weight: "400" }]
+      : family === "Montserrat"
+        ? [{ style: "normal", weight: "100 900" }]
+        : undefined
+  const font = (typeface: string) =>
+    panelOf(
+      { ...shape, value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "A", font: typeface }] }]) },
+      { reads: {}, moves: true, faces },
+    )
+      .sections.find((section) => section.trait === "text")
+      ?.strips.flat()
+      .find((control) => control.field === "font")
+  expect(font("Abel SemiBold")?.faceFallback?.()).toBe("Abel")
+  expect(font("Abel SemiBold")?.change("Abel").text).toEqual({ font: "Abel" })
+  expect(font("Montserrat SemiBold")?.faceFallback?.()).toBeNull()
+  expect(font("Inter SemiBold")?.faceFallback?.()).toBeNull()
 })

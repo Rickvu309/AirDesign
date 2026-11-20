@@ -90,6 +90,7 @@ export type PanelControl = {
   readonly parent?: unknown
   readonly slides?: readonly string[]
   readonly nodes?: readonly NodeChoice[]
+  readonly faceFallback?: () => string | null
   readonly change: (value: unknown) => SetChange
 }
 

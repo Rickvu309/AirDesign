@@ -2,6 +2,7 @@ import { textCopy } from "@/copy/text-copy"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { fontNames } from "@airdesign/fonts"
 import { servedFaces } from "@/design/served-faces"
+import { useFaceFallback } from "@/design/face-fallback"
 import {
   bytesOf,
   cellText,
@@ -71,12 +72,15 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
   const shown = typeof control.value === "string" ? control.value : ""
   const [draft, setDraft] = useState<string | null>(null)
   const { problemId, problem, correction } = useTextProblem((draft ?? shown).trim(), max)
+  const awaitFaces = useFaceFallback(control, onChange)
 
   function commit(words: string) {
     if (problem !== null) return
     setDraft(null)
     const typed = words.trim()
-    if (typed !== "" && (typed !== shown || control.inherited)) onChange(typed)
+    if (typed === "" || (typed === shown && !control.inherited)) return
+    if (font) awaitFaces(typed)
+    onChange(typed)
   }
 
   return (
