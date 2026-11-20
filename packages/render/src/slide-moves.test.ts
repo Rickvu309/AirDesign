@@ -49,16 +49,15 @@ function query(host: HTMLElement, selector: string): HTMLElement {
   return found
 }
 
-it("keeps the selection while focus is in a part that keeps it, and tells every change of selection", async () => {
+it("keeps the selection when focus moves to any button outside the canvas, as Figma does, and tells every change of selection", async () => {
   const told: (ElementId | null)[] = []
   const host = await mounted((selection) => told.push(leadOf(selection)))
-  const panel = document.createElement("div")
-  panel.dataset.keepsSelection = ""
-  const inside = document.createElement("button")
-  panel.append(inside)
-  document.body.append(panel)
+  const exporting = document.createElement("button")
+  document.body.append(exporting)
   await act(async () => query(host, `[data-canvas-element="${element.key}"]`).focus())
-  await act(async () => inside.focus())
+  await act(async () => exporting.focus())
+  expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
+  await act(async () => exporting.blur())
   expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
   await act(async () => {
     query(host, "[data-slide-paint]").dispatchEvent(
@@ -67,5 +66,5 @@ it("keeps the selection while focus is in a part that keeps it, and tells every 
   })
   expect(host.querySelector("[data-selection]")).toBeNull()
   expect(told).toEqual([id, null])
-  panel.remove()
+  exporting.remove()
 })

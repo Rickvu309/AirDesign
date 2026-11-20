@@ -68,7 +68,6 @@ export type Picking = {
 type ActiveHold = PointerDrag | Nudge
 
 const slidePaint = "[data-slide-paint]"
-const keepsSelection = "[data-keeps-selection]"
 
 function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null {
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
@@ -493,12 +492,9 @@ export function useMoves(
     onFocus(event: FocusEvent<HTMLDivElement>) {
       if (event.target === event.currentTarget) choose(noSelection)
     },
-    onBlur(event: FocusEvent<HTMLDivElement>) {
+    onBlur() {
       const now = held.current
       if (now?.by === "keys") finish(now)
-      const next = event.relatedTarget
-      if (next instanceof Element && next.closest(keepsSelection) !== null) return
-      if (!(next instanceof Node) || !event.currentTarget.contains(next)) choose(noSelection)
     },
     onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
       const next = keyedSelection(size, noSelection, gestureFor(event, "slide"))
