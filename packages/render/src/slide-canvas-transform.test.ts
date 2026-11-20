@@ -6,7 +6,6 @@ import {
   paintStore,
   SlideCanvas,
   type CanvasElement,
-  type CanvasSlide,
   type FlippedLayer,
   type PaintBox,
   type PaintStore,
@@ -62,6 +61,7 @@ type Mounted = {
   readonly boxes: (readonly [ElementId, Box][])[]
   readonly turns: (readonly Turned[])[]
   readonly flips: (readonly FlippedLayer[])[]
+  readonly repaint: (elements: readonly CanvasElement[]) => Promise<void>
 }
 
 async function mounted(
@@ -81,22 +81,23 @@ async function mounted(
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const slide: CanvasSlide = { ...wide, elements }
-  await act(async () => {
-    root.render(
-      createElement(SlideCanvas, {
-        store,
-        slide,
-        width: 800,
-        ...(editing ? { onEdit: () => undefined } : {}),
-        onBoxes: (moved) => boxes.push(moved.map((each) => [each.id, each.box])),
-        onRotate: (turned) => turns.push(turned),
-        onFlip: (flipped) => flips.push(flipped),
-        ...(onRelayout === undefined ? {} : { onRelayout }),
-      }),
-    )
-  })
-  return { host, store, boxes, turns, flips }
+  const paint = (shown: readonly CanvasElement[]) =>
+    act(async () => {
+      root.render(
+        createElement(SlideCanvas, {
+          store,
+          slide: { ...wide, elements: shown },
+          width: 800,
+          ...(editing ? { onEdit: () => undefined } : {}),
+          onBoxes: (moved) => boxes.push(moved.map((each) => [each.id, each.box])),
+          onRotate: (turned) => turns.push(turned),
+          onFlip: (flipped) => flips.push(flipped),
+          ...(onRelayout === undefined ? {} : { onRelayout }),
+        }),
+      )
+    })
+  await paint(elements)
+  return { host, store, boxes, turns, flips, repaint: paint }
 }
 
 function frameOf(host: HTMLElement, named: ElementId = id): HTMLElement {
@@ -176,6 +177,39 @@ describe("SlideCanvas transform gestures", () => {
     expect(store.getLaid(sibling)).toEqual({ x: 1, y: 2, cx: 3, cy: 4 })
     await keyEvent(frameOf(host), "keydown", { key: "Escape" })
     expect(store.laidNow()).toBeNull()
+  })
+
+  it("lays the frame out again when the slide repaints mid-drag, so a text layer's new height moves the next layer", async () => {
+    const asked: number[] = []
+    let height = 4
+    const relayout = () => {
+      asked.push(height)
+      return new Map([[elementId("256.9"), { x: 1, y: 2, cx: 3, cy: height }]])
+    }
+    const { host, store, repaint } = await mounted([element(id)], false, relayout)
+    await pointer(frameOf(host), "pointerdown", 150, 150)
+    await pointer(host.ownerDocument, "pointerup", 150, 150)
+    await pointer(grip(host, "right"), "pointerdown", 300, 150)
+    await pointer(host.ownerDocument, "pointermove", 350, 150)
+    height = 9
+    await repaint([element(id)])
+    expect(asked.at(-1)).toBe(9)
+    expect(store.getLaid(elementId("256.9"))).toMatchObject({ cy: 9 })
+    await pointer(host.ownerDocument, "pointerup", 350, 150)
+  })
+
+  it("shows the size the live layout gives the dragged frame in the resize pill", async () => {
+    const relayout = (boxes: ReadonlyMap<ElementId, Box>) => {
+      const dragged = boxes.get(id)
+      return dragged === undefined ? null : new Map([[id, { ...dragged, cy: dragged.cy + 381_000 }]])
+    }
+    const { host } = await mounted([element(id)], false, relayout)
+    await pointer(frameOf(host), "pointerdown", 150, 150)
+    await pointer(host.ownerDocument, "pointerup", 150, 150)
+    await pointer(grip(host, "right"), "pointerdown", 300, 150)
+    await pointer(host.ownerDocument, "pointermove", 350, 150)
+    expect(host.querySelector("[data-transform-hud='resize']")?.textContent).toBe("300 × 150")
+    await pointer(host.ownerDocument, "pointerup", 350, 150)
   })
 
   it("updates Shift and Alt modifiers dynamically mid-drag during resize", async () => {

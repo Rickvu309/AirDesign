@@ -39,6 +39,8 @@ test("a filling layer and a centred row reflow while the frame's side handle is 
   await panel.getByRole("combobox", { name: frameCopy.width, exact: true }).click()
   await page.getByRole("option", { name: layoutWords["width.fill"], exact: true }).click()
   await expect.poll(async () => near(right(await boxOf(oval)), right(await boxOf(fill)))).toBe(true)
+  await expect(page.getByRole("option")).toHaveCount(0)
+  await oval.click()
   await page.keyboard.press("Escape")
   await expect(page.locator("[data-slide-paint] [data-selection]")).not.toHaveAttribute("data-selection", /\.5$/)
   const squareAt = await boxOf(square)

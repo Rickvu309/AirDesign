@@ -100,6 +100,7 @@
     "frame-live-reflow.spec.ts": 5,
     "frame-opacity.spec.ts": 2.2,
     "frame-sizing.spec.ts": 5,
+    "frame-text-fill.spec.ts": 7,
     "frame-wrap-inside.spec.ts": 5.7,
     "gesture-arrange.spec.ts": 1.6,
     "gesture-move.spec.ts": 1.9,
