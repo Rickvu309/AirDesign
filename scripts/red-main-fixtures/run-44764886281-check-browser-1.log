@@ -1,0 +1,52 @@
+2026-11-20T15:37:02.3013690Z 
+2026-11-20T15:37:02.3014723Z Running 136 tests using 2 workers
+2026-11-20T15:37:02.3015222Z 
+2026-11-20T15:37:02.8161357Z [1/136] tests/browser/notice-motion.spec.ts:65:1 › the offline notice slides in and leaves by the top edge
+2026-11-20T15:37:02.8344781Z [2/136] tests/browser/agent-text-box.spec.ts:23:1 › an agent sets a text box's autofit, anchor and font, which the person sees and the export keeps @export
+2026-11-20T15:37:11.8037357Z [3/136] tests/browser/notice-motion.spec.ts:87:1 › the offline notice shows at rest with reduced motion
+2026-11-20T15:37:13.0718703Z [4/136] tests/browser/autofit-paint.spec.ts:126:1 › the canvas anchors text in columns, keeps the fit a file stored until its text changes and grows a box to fit as its file says, and a person chooses each autofit through Undo, a reload, the export and a new import @export
+2026-11-20T15:37:13.4817950Z [5/136] tests/browser/notice-motion.spec.ts:93:1 › the notice after an undo that changed nothing shows at once
+2026-11-20T15:37:20.8282805Z   1) tests/browser/notice-motion.spec.ts:93:1 › the notice after an undo that changed nothing shows at once 
+2026-11-20T15:37:20.8284435Z 
+2026-11-20T15:37:20.8285020Z     Error: expect(locator).toHaveText(expected) failed
+2026-11-20T15:37:20.8285651Z 
+2026-11-20T15:37:20.8286170Z     Locator:  locator('[data-slide-paint] [contenteditable="true"]')
+2026-11-20T15:37:20.8287023Z     Expected: "Agent"
+2026-11-20T15:37:20.8287656Z     Received: "Mine"
+2026-11-20T15:37:20.8288234Z     Timeout:  5000ms
+2026-11-20T15:37:20.8288641Z 
+2026-11-20T15:37:20.8288935Z     Call log:
+2026-11-20T15:37:20.8290138Z       - Expect "toHaveText" locator('[data-slide-paint] [contenteditable="true"]') with timeout 5000ms
+2026-11-20T15:37:20.8291542Z       - waiting for locator('[data-slide-paint] [contenteditable="true"]')
+2026-11-20T15:37:20.8292934Z         14 × locator resolved to <div data-text-body="" contenteditable="true">…</div>
+2026-11-20T15:37:20.8293906Z            - unexpected value "Mine"
+2026-11-20T15:37:20.8294468Z 
+2026-11-20T15:37:20.8294722Z 
+2026-11-20T15:37:20.8295032Z       114 |   )
+2026-11-20T15:37:20.8295720Z       115 |   expect(changed).toMatchObject({ ok: true })
+2026-11-20T15:37:20.8296538Z     > 116 |   await expect(text).toHaveText("Agent")
+2026-11-20T15:37:20.8297261Z           |                      ^
+2026-11-20T15:37:20.8298027Z       117 |   await page.keyboard.press("ControlOrMeta+z")
+2026-11-20T15:37:20.8299084Z       118 |   await expect(noticeOf(page, undoChangedWords)).toBeVisible()
+2026-11-20T15:37:20.8300452Z       119 |   expect(await transitionOf(page, undoChangedWords)).toBe("none")
+2026-11-20T15:37:20.8301708Z         at /home/runner/work/AirDesign/AirDesign/tests/browser/notice-motion.spec.ts:116:22
+2026-11-20T15:37:20.8302521Z 
+2026-11-20T15:37:20.8303585Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-20T15:37:20.8304933Z     test-results/notice-motion-the-notice-a-8a9b7-anged-nothing-shows-at-once/test-failed-1.png
+2026-11-20T15:37:20.8306941Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-20T15:37:20.8307529Z 
+2026-11-20T15:37:20.8308380Z     attachment #2: requests (text/plain) ───────────────────────────────────────────────────────────
+2026-11-20T15:37:20.8310369Z     test-results/notice-motion-the-notice-a-8a9b7-anged-nothing-shows-at-once/attachments/requests-85c291db1bcbf5e4ec47b8f1f0c2dc405556685d.txt
+2026-11-20T15:37:20.8312285Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-20T15:37:20.8312865Z 
+2026-11-20T15:37:20.8313652Z     Error Context: test-results/notice-motion-the-notice-a-8a9b7-anged-nothing-shows-at-once/error-context.md
+2026-11-20T15:40:01.8240404Z [135/136] tests/browser/thin-deck.spec.ts:724:1 › a file the device store refuses shows the failed import on the deck home
+2026-11-20T15:40:03.6692831Z [136/136] tests/browser/typing-renders.spec.ts:43:1 › the editor stops rendering within a second of the last key typed fast into a two-column box with the Design panel open
+2026-11-20T15:40:15.0200853Z   1 failed
+2026-11-20T15:40:15.0202960Z     tests/browser/notice-motion.spec.ts:93:1 › the notice after an undo that changed nothing shows at once 
+2026-11-20T15:40:15.0203932Z   135 passed (3.3m)
+2026-11-20T15:40:15.0493075Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-20T15:40:15.0517174Z fail browser-tests 200.1s
+2026-11-20T15:40:15.1138154Z metric check-duration  now 211.9  limit 40
+2026-11-20T15:40:15.1141208Z check-duration is 211.9 and its limit is 40. Make it faster.
+2026-11-20T15:40:15.1141740Z failed: browser-tests

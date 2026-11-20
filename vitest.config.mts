@@ -1,11 +1,14 @@
+import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { defineConfig } from "vitest/config"
+import { commitVariable } from "./scripts/property-seed.mjs"
 import { sourceOnly } from "./scripts/source-only.mjs"
 import LongestFirst from "./scripts/vitest-longest-first.mjs"
 import { testFilesByProject } from "./scripts/unit-test-files.mjs"
 
 const root = import.meta.dirname
 const testFiles = testFilesByProject(root)
+const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout?.trim() ?? ""
 
 const alias = [
   {
@@ -32,6 +35,7 @@ export default defineConfig({
     isolate: true,
     sequence: { sequencer: LongestFirst },
     allowOnly: !process.env.CI,
+    env: commit === "" ? {} : { [commitVariable]: commit },
     setupFiles: ["scripts/vitest-clean-environment.mjs", "scripts/vitest-assertions.mjs"],
     reporters: ["default", "scripts/vitest-metrics.mjs"],
     projects: [

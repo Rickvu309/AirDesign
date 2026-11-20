@@ -58,6 +58,14 @@ _Avoid_: soft fail, advisory, non-blocking
 A test that fails beside other work and passes on its own. It has found a fault in the test or the code it covers, and the fix forces the gap: a delay that makes the old code fail every time.
 _Avoid_: flake, flaky test, machine load
 
+**green rerun**:
+One failed test of a red push run on `main`, run again alone at the last green commit, the parent of the first red commit, with the fast-check seed and path the red log printed. The revert bot reverts for a unit, script or confirmed browser test only when it passes its green rerun.
+_Avoid_: parent replay, bisect, retry
+
+**old fault**:
+A fault a test finds that the last green commit has too, shown by a green rerun that fails the same way. No commit after that green one caused it, so the bot reverts nothing and files an `Old fault:` issue.
+_Avoid_: old bug, pre-existing bug, known bug
+
 **false stop**:
 A failed run on a pull request that merged with the same content.
 _Avoid_: flake, spurious failure

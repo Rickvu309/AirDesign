@@ -642,6 +642,45 @@
         "tests/element-replay.ts",
         "tests/journeys/journeys.spec.ts"
       ]
+    },
+    "f5d76511041572d19949cf08bcda3572898ece39": {
+      "title": "Size a new icon from the text on its slide",
+      "files": [
+        ".agents/skills/verify-airdesign/features/design-panel.md",
+        "apps/web/src/picture-add.ts",
+        "packages/document/src/icon-size.test.ts",
+        "packages/document/src/icon-size.ts",
+        "packages/document/src/index.ts",
+        "packages/engine/src/agent-elements.ts",
+        "packages/mcp/src/icon-add.test.ts",
+        "picture-fill.md",
+        "tests/browser/icon-size.spec.ts",
+        "tests/browser/spec-seconds.json"
+      ]
+    },
+    "ee5ab7748b4f858c90cbd015c213e3aa78e8e15b": {
+      "title": "Wrap children of a frame in a frame inside it with Shift+A",
+      "files": [
+        ".agents/skills/verify-airdesign-formal/checks-structure.md",
+        ".agents/skills/verify-airdesign/features/auto-layout-frame.md",
+        ".agents/skills/verify-airdesign/look/allow.json",
+        ".agents/skills/verify-airdesign/look/states/frame-wrapped-inside.mjs",
+        "apps/web/src/editor/group-actions.test.ts",
+        "apps/web/src/editor/group-actions.ts",
+        "packages/document/src/element-group.ts",
+        "packages/document/src/frame-layout.test.ts",
+        "packages/document/src/frame-layout.ts",
+        "packages/document/src/frame-wrap-inside.test.ts",
+        "packages/document/src/group-place.ts",
+        "packages/document/src/group-refusal.ts",
+        "packages/document/src/layout-guess.ts",
+        "packages/engine/src/agent-frames.test.ts",
+        "packages/engine/src/agent-groups.ts",
+        "packages/pptx/src/frame-route.test.ts",
+        "specs/structure/covers.json",
+        "tests/browser/frame-wrap-inside.spec.ts",
+        "tests/browser/spec-seconds.json"
+      ]
     }
   },
   "windows": [
@@ -788,6 +827,23 @@
         {
           "id": 44747533661,
           "sha": "bd49ce37e6ae2241a04fb67df70f6fc991461b65",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "commits": ["f5d76511041572d19949cf08bcda3572898ece39", "ee5ab7748b4f858c90cbd015c213e3aa78e8e15b"],
+      "runs": [
+        {
+          "id": 44764886281,
+          "sha": "ee5ab7748b4f858c90cbd015c213e3aa78e8e15b",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "id": 44763468365,
+          "sha": "f5d76511041572d19949cf08bcda3572898ece39",
           "status": "completed",
           "conclusion": "success"
         }

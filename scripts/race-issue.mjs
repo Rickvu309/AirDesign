@@ -10,11 +10,11 @@ const excerptLimit = 60
 const failureHeader = /^\s*(?:\d+\) \S+\.spec\.\w+:\d+:\d+ › | FAIL\s)/
 const excerptEnd = /^\s*\[\d+\/\d+\]|⎯{3,}|^\s+\d+ (?:failed|passed|flaky)/
 
-const testId = (test) => `${test.file}${test.line === undefined ? "" : `:${test.line}`} › ${test.name}`
+export const testId = (test) => `${test.file}${test.line === undefined ? "" : `:${test.line}`} › ${test.name}`
 
 export const raceTitle = (test) => `Race: ${test.file} › ${test.name}`.slice(0, titleLimit)
 
-export const raceKey = (title) => title.replace(/^(Race: \S+?):\d+ › /, "$1 › ").slice(0, titleLimit - 10)
+export const raceKey = (title) => title.replace(/^((?:Race|Old fault): \S+?):\d+ › /, "$1 › ").slice(0, titleLimit - 10)
 
 const isHeaderOf = (line, test) =>
   failureHeader.test(line) &&
@@ -35,7 +35,7 @@ export const failureExcerpt = (log, test) => {
   return kept.join("\n")
 }
 
-const output = (excerpt) => ["~~~text", excerpt, "~~~"]
+export const output = (excerpt) => ["~~~text", excerpt, "~~~"]
 
 const raceBody = ({ test, excerpt, commit, seen }) =>
   [
@@ -74,23 +74,25 @@ export const openIssues = ({ gh, repository }) => {
   }
 }
 
-export const recordRace = ({ gh, repository, test, excerpt, commit, seen }) => {
-  const title = raceTitle(test)
+export const keepIssue = ({ gh, repository, title, body, comment }) => {
   const issues = openIssues({ gh, repository })
   if (issues.why !== undefined) return issues
   const known = issues.open.find((issue) => raceKey(issue.title) === raceKey(title))
   if (known !== undefined) {
-    const commented = gh(
-      ["issue", "comment", String(known.number), "--repo", repository, "--body-file", "-"],
-      raceComment({ excerpt, commit, seen }),
-    )
+    const commented = gh(["issue", "comment", String(known.number), "--repo", repository, "--body-file", "-"], comment)
     return commented.status === 0 ? { url: known.url } : { why: `gh issue comment failed: ${said(commented)}` }
   }
-  const created = gh(
-    ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"],
-    raceBody({ test, excerpt, commit, seen }),
-  )
+  const created = gh(["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body)
   return created.status === 0
     ? { url: created.stdout.trim().split("\n").at(-1) }
     : { why: `gh issue create failed: ${said(created)}` }
 }
+
+export const recordRace = ({ gh, repository, test, excerpt, commit, seen }) =>
+  keepIssue({
+    gh,
+    repository,
+    title: raceTitle(test),
+    body: raceBody({ test, excerpt, commit, seen }),
+    comment: raceComment({ excerpt, commit, seen }),
+  })

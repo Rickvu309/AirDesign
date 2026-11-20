@@ -1,14 +1,18 @@
 import { failedScripts, failedSteps, failedTests, plainLog } from "./failed-tests.mjs"
-import { raceKey, raceTitle } from "./race-issue.mjs"
+import { propertyReplay } from "./property-seed.mjs"
+import { failureExcerpt, raceKey, raceTitle } from "./race-issue.mjs"
 
 const redConclusions = new Set(["failure", "timed_out", "startup_failure"])
 const testSteps = new Set(["unit-tests", "script-tests", "browser-tests", "test", "tooling", "browser"])
 const browserTest = /^tests\/(?:browser|journeys)\//
 const pptxFailed = /^(\d+) pptx checks failed$/m
 
-const jobFailures = (job) => {
+export const jobFailures = (job) => {
   const plain = plainLog(job.log)
-  const tests = [...failedTests(job.log), ...failedScripts(job.log)]
+  const tests = [...failedTests(job.log), ...failedScripts(job.log)].map((test) => {
+    const replay = propertyReplay(failureExcerpt(job.log, test))
+    return replay === undefined ? test : { ...test, replay }
+  })
   const pptx = pptxFailed.exec(plain)
   if (pptx !== null) {
     const onlyTheSpec =
@@ -49,24 +53,66 @@ const testVerdict = ({ test, files, races, earlier }) => {
   }
 }
 
-export const judgeRun = ({ jobs, warnings = [], files, races, earlier = new Set() }) => {
+const short = (sha) => sha.slice(0, 9)
+const rerunsAtGreen = (each) => each.verdict === "real" && (each.repeated === true || !browserTest.test(each.test.file))
+const sameSeed = (test) => (test.replay === undefined ? "" : ", with the same seed and path")
+
+const afterRerun = (each, rerun) => {
+  const outcome = rerun(each.test)
+  if (outcome.result === "fails")
+    return {
+      ...each,
+      verdict: "old",
+      rerun: outcome,
+      why: `it fails the same way at the last green commit ${short(outcome.at)} too${sameSeed(each.test)}, so no commit after it caused this`,
+    }
+  if (outcome.result === "passes")
+    return {
+      ...each,
+      rerun: outcome,
+      why: `${each.why}, and it passes at the last green commit ${short(outcome.at)}${sameSeed(each.test)}`,
+    }
+  return {
+    ...each,
+    verdict: "unknown",
+    rerun: outcome,
+    why: `the bot could not tell whether it fails at the last green commit too: ${outcome.why}`,
+  }
+}
+
+const rerunEach = ({ judged, checks, rerun }) => {
+  const certain = checks.length > 0 || judged.some((each) => each.verdict === "real" && !rerunsAtGreen(each))
+  return rerun === undefined || certain
+    ? judged
+    : judged.map((each) => (rerunsAtGreen(each) ? afterRerun(each, rerun) : each))
+}
+
+export const judgeRun = ({ jobs, warnings = [], files, races, earlier = new Set(), rerun }) => {
   if (jobs.length === 0)
     return { verdict: "unknown", why: warnings[0] ?? "no failed job was found", tests: [], checks: [] }
   const read = jobs.map(jobFailures)
   const raceKeys = new Set([...races].map(raceKey))
   const checks = read.flatMap((each) => each.checks)
   const seenTitles = new Set()
-  const tests = read
+  const judged = read
     .flatMap((each) => each.tests)
     .filter((test) => !seenTitles.has(raceTitle(test)) && seenTitles.add(raceTitle(test)))
     .map((test) => testVerdict({ test, files, races: raceKeys, earlier }))
-  const unnamed = [...read.flatMap((each) => each.unnamed ?? []), ...warnings]
+  const tests = rerunEach({ judged, checks, rerun })
+  const unnamed = [
+    ...read.flatMap((each) => each.unnamed ?? []),
+    ...warnings,
+    ...tests.filter((each) => each.verdict === "unknown").map((each) => `${each.title}: ${each.why}`),
+  ]
   if (checks.length > 0 || tests.some((each) => each.verdict === "real")) return { verdict: "real", tests, checks }
   if (unnamed.length > 0) return { verdict: "unknown", why: unnamed[0], tests, checks }
-  return { verdict: tests.some((each) => each.verdict === "suspect") ? "suspect" : "race", tests, checks }
+  if (tests.some((each) => each.verdict === "suspect")) return { verdict: "suspect", tests, checks }
+  return { verdict: tests.some((each) => each.verdict === "old") ? "old" : "race", tests, checks }
 }
 
-const judgeStreak = ({ streak, green, jobsOf, filesBetween, races }) => {
+const rerunAt = (rerun, at) => (rerun === undefined ? undefined : (test) => rerun({ at, test }))
+
+const judgeStreak = ({ streak, green, jobsOf, filesBetween, races, rerun }) => {
   const firstSeen = new Map()
   const judged = []
   for (const [index, run] of streak.entries()) {
@@ -77,6 +123,7 @@ const judgeStreak = ({ streak, green, jobsOf, filesBetween, races }) => {
       files: filesBetween(before.sha, run.sha),
       races,
       earlier: new Set(firstSeen.keys()),
+      rerun: rerunAt(rerun, green.sha),
     })
     judged.push({ run, index, ...judgment })
     for (const each of judgment.tests) if (!firstSeen.has(each.title)) firstSeen.set(each.title, index)
@@ -95,7 +142,7 @@ const racesIn = (judged) => {
     )
 }
 
-export const decide = ({ runs, commits, jobsOf, filesBetween, races }) => {
+export const decide = ({ runs, commits, jobsOf, filesBetween, races, rerun }) => {
   const at = new Map(commits.map((sha, index) => [sha, index]))
   const latest = new Map()
   for (const run of runs.filter((each) => at.has(each.sha)))
@@ -105,7 +152,7 @@ export const decide = ({ runs, commits, jobsOf, filesBetween, races }) => {
   if (greenAt === -1) return { action: "hold", why: "no ci run on main in reach passed", judged: [] }
   const green = ordered[greenAt]
   const streak = ordered.slice(greenAt + 1)
-  const { judged, firstSeen } = judgeStreak({ streak, green, jobsOf, filesBetween, races })
+  const { judged, firstSeen } = judgeStreak({ streak, green, jobsOf, filesBetween, races, rerun })
   if (judged.length === 0) {
     const greenBefore = ordered.findLastIndex((run, index) => index < greenAt && run.conclusion === "success")
     const ended =
@@ -117,6 +164,7 @@ export const decide = ({ runs, commits, jobsOf, filesBetween, races }) => {
             jobsOf,
             filesBetween,
             races,
+            rerun,
           }).judged
     return { action: "green", green, judged, races: racesIn(ended) }
   }
