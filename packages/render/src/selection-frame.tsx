@@ -3,6 +3,7 @@ import { useMemo, useSyncExternalStore, type PointerEvent } from "react"
 import { boxOf, followed, ownBox } from "./box-gesture.js"
 import { useBox, useRotation } from "./element-view.js"
 import { liveBox } from "./live-box.js"
+import { grownTable, useRows } from "./table-rows.js"
 import type { CanvasElement, PaintBox } from "./record.js"
 import type { PaintStore } from "./store.js"
 import type { Scaled } from "./text-look.js"
@@ -13,7 +14,9 @@ function useLiveBox(store: PaintStore, id: ElementId, element: CanvasElement): P
   const group = element.group
   const carried = useBox(store, group?.id ?? id)
   const own = ownBox(element, useBox(store, id), useRotation(store, id))
-  return group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
+  const rows = useRows(store, id)
+  const box = group === undefined ? own : followed(own, group.box, carried, group.frame === undefined)
+  return box === null || element.table === undefined ? box : grownTable(box, rows)
 }
 
 export function SelectionFrame(props: {

@@ -37,7 +37,7 @@ export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
 export type { TextPlace } from "./text-placing.js"
 export { CanvasRulers } from "./canvas-rulers.js"
 export type { GuideEdit } from "./guide-edit.js"
-export { paintStore, type MeasuredFit, type PaintStore } from "./store.js"
+export { paintStore, type MeasuredFit, type MeasuredRows, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"
 export {
   arrowOf,

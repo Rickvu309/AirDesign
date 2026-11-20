@@ -38,7 +38,8 @@ export function useExport(deck: ExportingDeck) {
   const { id, records, pictureTool, paint, setFailure } = deck
   async function onExport(request?: ExportRequest) {
     try {
-      await exportDeck(id, records.current.landed(), pictureTool.store, request, paint.current.fits())
+      const painted = { fits: paint.current.fits(), rows: paint.current.rows() }
+      await exportDeck(id, records.current.landed(), pictureTool.store, request, painted)
       setFailure(null)
     } catch (error) {
       setFailure(exportFailure(error))

@@ -39,6 +39,7 @@ export type TableHandles = {
   readonly region: CellRange | null
   readonly onPick: (kind: TablePick["kind"], at: number | null, extend: boolean) => void
   readonly onSizing: (sizing: TableSizing | null) => void
+  readonly floors: () => readonly number[] | null
   readonly change: (change: TableChange) => void
   readonly leave: () => void
 }
@@ -91,17 +92,23 @@ function Plus(props: { readonly style: CSSProperties; readonly label: string; re
   )
 }
 
-function moved(sizes: readonly number[], at: number, by: number, least: number): readonly number[] {
-  const first = sizes[at] ?? 0
-  const second = sizes[at + 1] ?? 0
-  const shift = Math.max(least - first, Math.min(second - least, by))
+type Lows = readonly [number, number]
+
+function moved(sizes: readonly number[], at: number, by: number, lows: Lows): readonly number[] {
+  const first = Math.max(sizes[at] ?? 0, lows[0])
+  const second = Math.max(sizes[at + 1] ?? 0, lows[1])
+  const shift = Math.max(lows[0] - first, Math.min(second - lows[1], by))
   return sizes.map((size, index) => (index === at ? first + shift : index === at + 1 ? second - shift : size))
 }
 
 function Border(props: { readonly kind: "row" | "column"; readonly at: number; readonly handles: TableHandles }) {
   const { kind, at, handles } = props
   const { table, box, scaled } = handles
-  const [start, setStart] = useState<{ readonly from: number; readonly sizes: readonly number[] } | null>(null)
+  const [start, setStart] = useState<{
+    readonly from: number
+    readonly sizes: readonly number[]
+    readonly lows: Lows
+  } | null>(null)
   const [last, setLast] = useState<readonly number[] | null>(null)
   const sizes = kind === "column" ? table.columns : table.rows.map((row) => row.height)
   const total =
@@ -122,11 +129,13 @@ function Border(props: { readonly kind: "row" | "column"; readonly at: number; r
         event.stopPropagation()
         event.preventDefault()
         event.currentTarget.setPointerCapture?.(event.pointerId)
-        setStart({ from: spot(event), sizes })
+        const floors = kind === "row" ? handles.floors() : null
+        const low = (index: number) => Math.max(least, Math.ceil((floors?.[index] ?? 0) * perPixel))
+        setStart({ from: spot(event), sizes, lows: [low(at), low(at + 1)] })
       }}
       onPointerMove={(event) => {
         if (start === null) return
-        const next = moved(start.sizes, at, Math.round((spot(event) - start.from) * perPixel), least)
+        const next = moved(start.sizes, at, Math.round((spot(event) - start.from) * perPixel), start.lows)
         setLast(next)
         handles.onSizing({ kind, sizes: next })
       }}

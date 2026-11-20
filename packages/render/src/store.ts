@@ -2,6 +2,7 @@ import { kinds, overLimit } from "@airdesign/document"
 import type { Box, ElementId, SlideId } from "@airdesign/document"
 import { sameBox } from "./box-gesture.js"
 import type { ElementRecord, SlideRecord } from "./record.js"
+import { sameRows, type MeasuredRows } from "./table-rows.js"
 
 export type PaintResult = { readonly ok: true } | { readonly ok: false; readonly code: "limit" | "absent" | "kind" }
 
@@ -20,6 +21,8 @@ export type RotationGrip = {
 export type MeasuredFit = { readonly written: string; readonly scale: number; readonly reduction: number }
 
 export type FitPainter = "canvas" | "thumbnail"
+
+export type { MeasuredRows } from "./table-rows.js"
 
 export type PaintStore = {
   readonly getElement: (id: ElementId) => ElementRecord | null
@@ -45,6 +48,9 @@ export type PaintStore = {
   readonly placeFit: (id: ElementId, fit: MeasuredFit, painter: FitPainter) => void
   readonly getFit: (id: ElementId) => MeasuredFit | null
   readonly fits: () => ReadonlyMap<ElementId, MeasuredFit>
+  readonly placeRows: (id: ElementId, rows: MeasuredRows | null) => void
+  readonly getRows: (id: ElementId) => MeasuredRows | null
+  readonly rows: () => ReadonlyMap<ElementId, MeasuredRows>
 }
 
 const accepted: PaintResult = Object.freeze({ ok: true })
@@ -136,6 +142,7 @@ export function paintStore(): PaintStore {
   const composing = new Set<ElementId>()
   const held = new Map<ElementId, ElementRecord[]>()
   const measured = new Map<ElementId, MeasuredFit & { readonly painter: FitPainter }>()
+  const paintedRows = new Map<ElementId, MeasuredRows>()
   let slideList: readonly SlideRecord[] = Object.freeze([])
   let slidesById = new Map<SlideId, SlideRecord>()
 
@@ -319,5 +326,13 @@ export function paintStore(): PaintStore {
           { written: kept.written, scale: kept.scale, reduction: kept.reduction },
         ]),
       ),
+    placeRows: (id, rows) => {
+      if (sameRows(paintedRows.get(id) ?? null, rows)) return
+      if (rows === null) paintedRows.delete(id)
+      else paintedRows.set(id, rows)
+      notify(boxListeners, id)
+    },
+    getRows: (id) => paintedRows.get(id) ?? null,
+    rows: () => new Map(paintedRows),
   }
 }
