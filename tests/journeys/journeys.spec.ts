@@ -136,6 +136,7 @@ test.describe("recorded Aira", () => {
     "connector-diagram",
     "line-add",
     "chart-insert",
+    "chart-place",
     "table-insert",
     "agent-bench-recorded",
   ]) {

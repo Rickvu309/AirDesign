@@ -86,6 +86,7 @@ export {
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
 export { fitNewBox, fittedInside, pictureSize, placeNewBox } from "./box-placement.js"
+export { placeChart, type PlacedChart } from "./chart-placement.js"
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
 export type { AddChange } from "./add-change.js"
 export {

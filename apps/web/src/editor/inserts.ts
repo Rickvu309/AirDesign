@@ -1,6 +1,6 @@
 import { type ChartKind, type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
-import { holdKeys, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
+import { holdKeys, type CanvasSlide, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { toast } from "@/components/ui/toast"
 import { bytesOf64, type CopiedLayer, type LayerCopy } from "@/layer-clipboard"
@@ -38,13 +38,13 @@ export type InsertingDeck = {
 
 export function deckInserts(deck: InsertingDeck) {
   const { id, pictureTool, record, settle, lane } = deck
-  const { shownParts, canvases, current, setEntering, showEdited } = deck.shown
+  const { shownParts, canvases, current, setEntering, showEdited, store } = deck.shown
   const placedText = placingText(
     {
       id,
       held: deck.shown.placed,
       parts: () => shownParts.current,
-      room: () => canvases.current(current),
+      room: () => roomAt(current),
       index: () => current,
       showSaved: () => showEdited(current),
       enter: (node, keys) => setEntering({ id: node, keys }),
@@ -52,6 +52,18 @@ export function deckInserts(deck: InsertingDeck) {
     },
     connect(memoryRemote()),
   )
+
+  function roomAt(index: number): CanvasSlide | null {
+    const room = canvases.current(index)
+    if (room === null) return null
+    const elements = room.elements.map((element) => {
+      const resting = element.id === null ? null : store.current.getRestingBox(element.id)
+      return resting === null || element.box === null
+        ? element
+        : { ...element, box: { ...element.box, x: resting.x, y: resting.y, width: resting.cx, height: resting.cy } }
+    })
+    return { ...room, elements }
+  }
 
   function recordAdded(name: UndoName, keys?: HeldKeys, selects = false) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
@@ -163,34 +175,34 @@ export function deckInserts(deck: InsertingDeck) {
       void placedText.place(place, holdKeys(document))
       return
     }
-    const size = canvases.current(current)
+    const size = roomAt(current)
     if (size !== null) void changeElement({ change: "text", index: current, size })
   }
 
   function addTable(size: TableSize) {
-    const room = canvases.current(current)
+    const room = roomAt(current)
     if (room !== null) void changeElement({ change: "table", index: current, size: room, ...size })
   }
 
   function addChart(kind: ChartKind) {
-    const room = canvases.current(current)
+    const room = roomAt(current)
     if (room !== null) void changeElement({ change: "chart", kind, index: current, size: room })
   }
 
   function addShape(geometry: Geometry) {
-    const size = canvases.current(current)
+    const size = roomAt(current)
     if (size !== null) void changeElement({ change: "shape", geometry, index: current, size })
   }
 
   async function addPicture(picture: PictureFile) {
-    const slide = canvases.current(current)
+    const slide = roomAt(current)
     if (slide === null) return
     const at = { index: current, slide, keep: pictureTool.store.keep }
     settle(await commitPicture(id, shownParts.current, picture, at, recordAdded("add-picture")))
   }
 
   async function addIcon(name: string) {
-    const slide = canvases.current(current)
+    const slide = roomAt(current)
     if (slide === null) return
     const at = { index: current, slide, keep: pictureTool.store.keep }
     settle(await commitIcon(id, shownParts.current, name, at, recordAdded("add-icon")))
