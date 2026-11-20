@@ -3,7 +3,6 @@ import {
   useMemo,
   useRef,
   type CSSProperties,
-  type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -37,7 +36,8 @@ import { useShrinkKept } from "./shrink-kept.js"
 import { anchored, flowModes } from "./text-body-look.js"
 import { textLook, type Scaled, type TextLook } from "./text-look.js"
 import { leadOf } from "./selection.js"
-import { keepsFormat, runTextKey, textKeyOf, type TextFormatting } from "./text-formatting.js"
+import { formatReach } from "./format-reach.js"
+import type { TextFormatting } from "./text-formatting.js"
 import { FillLayers } from "./fill-layers.js"
 import { unshownFill } from "./unshown-fill.js"
 import { useTextFit } from "./text-fit.js"
@@ -284,38 +284,6 @@ function reach(element: CanvasElement, id: ElementId, name: string, moves: Moves
     onDoubleClick: (event: MouseEvent<HTMLElement>) => moves.doubleClick(event, element),
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
     onFocus: () => moves.select(id),
-  }
-}
-
-function formatReach(
-  formatting: TextFormatting | undefined,
-  id: ElementId,
-  moves: Moves | null,
-  element: CanvasElement,
-  wordless: boolean,
-) {
-  if (formatting === undefined) return {}
-  return {
-    onFocus: (event: FocusEvent<HTMLElement>) => {
-      moves?.select(id)
-      const aimed = event.target instanceof HTMLElement && !(wordless && event.target === event.currentTarget)
-      if (aimed && event.target instanceof HTMLElement) formatting.aim(id, event.target)
-    },
-    onBlur: (event: FocusEvent<HTMLElement>) => {
-      const next = event.relatedTarget
-      if (next instanceof Element && (event.currentTarget.contains(next) || next.closest(keepsFormat) !== null)) return
-      formatting.aim(null)
-    },
-    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-      const text = textKeyOf(event)
-      if (text === null) {
-        moves?.key(event, element)
-        return
-      }
-      event.preventDefault()
-      const onFrame = event.target === event.currentTarget
-      runTextKey(formatting, text, onFrame && moves !== null ? moves.latest.current.ids : [])
-    },
   }
 }
 
