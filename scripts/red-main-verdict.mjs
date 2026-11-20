@@ -7,7 +7,7 @@ const testSteps = new Set(["unit-tests", "script-tests", "browser-tests", "test"
 const browserTest = /^tests\/(?:browser|journeys)\//
 const browserHarness = (file) =>
   !file.endsWith(ruleFileSuffix) &&
-  ((browserTest.test(file) && !/\.spec\.\w+$/.test(file)) || /^playwright[\w.]*\.config\.ts$/.test(file))
+  ((browserTest.test(file) && !/\.spec\.\w+$/.test(file)) || /^playwright[\w.]*\.config\.m?ts$/.test(file))
 const pptxFailed = /^(\d+) pptx checks failed$/m
 
 const jobFailures = (job) => {

@@ -27,7 +27,7 @@
     "prove": "node .agents/skills/verify-airdesign/bin/verify-airdesign.mjs prove",
     "test:browser": "if [ \"${AIRDESIGN_WEB_BUILT:-}\" != 1 ]; then pnpm build:browser; fi && playwright test",
     "test:production": "playwright test -c playwright.production.config.ts",
-    "test:journeys": "pnpm --workspace-concurrency=1 --filter @airdesign/api --filter web build && playwright test -c playwright.journeys.config.ts",
+    "test:journeys": "pnpm --workspace-concurrency=1 --filter @airdesign/api --filter web build && playwright test -c playwright.journeys.config.mts",
     "metric:paint-fidelity": "bash scripts/pptx-tools.sh node scripts/paint-fidelity-run.mjs",
     "build:browser": "pnpm --workspace-concurrency=1 --filter @airdesign/api --filter web build",
     "build": "pnpm -r --if-present run build"

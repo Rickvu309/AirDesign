@@ -39,6 +39,7 @@ const toy = {
     "scripts/pptx-check.mjs": ["@airdesign/pptx"],
     "tests/journeys/journeys.spec.ts": ["gone:scripts/stored-zip"],
   },
+  journeyNames: ["account-name", "theme"],
   pptxPaths: ["packages/pptx", "packages/document", "scripts/pptx-check.mjs"],
 }
 
@@ -132,6 +133,26 @@ same(
   on(map([".agents/skills/verify-airdesign/journeys/account-name.mjs"])),
   ["source", "journeys"],
 )
+same(
+  "select the changed journeys even when design also walks one of them",
+  map([
+    ".agents/skills/verify-airdesign/journeys/theme.mjs",
+    ".agents/skills/verify-airdesign/journeys/account-name.mjs",
+  ]).journeyNames,
+  ["account-name", "theme"],
+)
+for (const file of [
+  "apps/web/src/editor.tsx",
+  "apps/site/src/pages/index.astro",
+  "tests/journeys/launch.ts",
+  ".agents/skills/verify-airdesign/journeys/deleted.mjs",
+]) {
+  same(
+    `a change to ${file} alongside a journey keeps every journey`,
+    map([file, ".agents/skills/verify-airdesign/journeys/theme.mjs"]).journeyNames,
+    "all",
+  )
+}
 same("tests/journeys runs journeys", on(map(["tests/journeys/journeys.spec.ts"])), ["source", "journeys"])
 same(
   "a TLA+ spec runs model-check and the replay tests in tests/, and no browser part",
@@ -307,9 +328,21 @@ same(
     pptx: "false",
     corpus: "false",
     "model-check": "false",
+    "journey-names": "",
     "unit-tests": "[]",
     check: JSON.stringify([{ part: "source" }, { part: "browser", browserSpecs: ["tests/browser/home.spec.ts"] }]),
   },
+)
+const connectorJourney = ".agents/skills/verify-airdesign/journeys/connector-follow.mjs"
+same(
+  "the workflow gets the connector journey and the agent bench that reaches its look states, while design still runs",
+  [said(["--paths", listedIn([connectorJourney])])["journey-names"], real([connectorJourney]).parts.design],
+  ['["agent-bench-recorded","connector-follow"]', true],
+)
+same(
+  "an account journey change selects that journey and the agent bench that walks it",
+  real([".agents/skills/verify-airdesign/journeys/account-name.mjs"]).journeyNames,
+  ["account-name", "agent-bench-recorded"],
 )
 same(
   "a docs change keeps only the source job",

@@ -3,7 +3,7 @@ import { enqueue, readPull } from "./merge-queue.mjs"
 import { agentHeader, failureExcerpt, raceTitle, recordRace } from "./race-issue.mjs"
 import { ruleFileSuffix } from "./rules.mjs"
 export const browserStep = "browser-tests"
-const browserTestPaths = [/^tests\/browser\//, /^tests\/journeys\//, /^playwright[\w.]*\.config\.ts$/]
+const browserTestPaths = [/^tests\/browser\//, /^tests\/journeys\//, /^playwright[\w.]*\.config\.m?ts$/]
 
 export const freshRunMark = (head) => `This is the one fresh run for head ${head}.`
 
