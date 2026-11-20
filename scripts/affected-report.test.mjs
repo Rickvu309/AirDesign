@@ -39,6 +39,7 @@ try {
   write("apps/api/package.json", "{}")
   write("apps/web/src/editor/screen.ts", 'export const screen = "/screens/s1-test"')
   write(".github/workflows/ci.yml", "jobs: {}")
+  write(".github/actions/pptx-changed/paths.txt", "packages/pptx\n")
   git("init", "-q")
   git("add", ".")
   git("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "Create fixture")
