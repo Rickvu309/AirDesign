@@ -88,7 +88,9 @@ function addedNode(register: Register): ElementId | undefined {
   return last?.slide === "element-add" ? last.element.node : undefined
 }
 
-function applyAdd(deck: Deck, change: WireAdd, runId: string, base: number): Applied {
+type ShapeAdd = Exclude<WireAdd, { readonly kind: "line" | "arrow" }>
+
+function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number): Applied {
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   const value = change.text?.value
   const opening = typeof value === "string" && openingSlideNumber(value) ? value : ""
@@ -103,7 +105,7 @@ function applyAdd(deck: Deck, change: WireAdd, runId: string, base: number): App
   return applySet(started.register, { target: { node }, text: change.text }, runId)
 }
 
-export function applyAgentChange(deck: Deck, change: WireSet | WireAdd, runId: string, base: number): Applied {
+export function applyAgentChange(deck: Deck, change: WireSet | ShapeAdd, runId: string, base: number): Applied {
   if (!readFresh(deck, runId, base)) return { ok: false, refusal: "stale" }
   return change.op === "set" ? applySet(deck.register, change, runId) : applyAdd(deck, change, runId, base)
 }

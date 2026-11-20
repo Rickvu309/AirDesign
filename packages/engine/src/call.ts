@@ -1,5 +1,6 @@
 import { applyAgentChange, openedRegister } from "./apply-change.js"
 import { applyDiagram } from "./agent-diagram.js"
+import { addLine, drawsLine } from "./agent-line.js"
 import { applyGroup } from "./agent-groups.js"
 import { deleteElement } from "./agent-elements.js"
 import { inGroupSpace } from "./grouped-box.js"
@@ -128,7 +129,9 @@ function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: strin
             : edit.op === "delete"
               ? deleteElement(current, edit, runId, base)
               : edit.op === "set" || edit.op === "add"
-                ? applyAgentChange(current, edit, runId, base)
+                ? drawsLine(edit)
+                  ? addLine(current, edit, runId, base)
+                  : applyAgentChange(current, edit, runId, base)
                 : agentSlide(current, edit, runId, base)
       if (!applied.ok) return refused(applied.refusal)
       register = applied.register
