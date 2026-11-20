@@ -37,7 +37,7 @@ export const designCopy = {
   autoFrame: frameCopy.autoFrame,
   removeAutoLayout: frameCopy.removeAutoLayout,
   resizeToFit: frameCopy.resizeToFit,
-  square: "Square",
+  square: "Rectangle",
   fillDetails: "Fill details",
   nothing: "Nothing on this layer can be changed here yet.",
   refused: "Unable to make that change. Select the layer and try again, or reload the deck if it keeps happening.",

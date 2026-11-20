@@ -67,3 +67,10 @@ it("leaves out a frame's backdrop, which paints the frame's own fill, and keeps 
 it("lists only the layers of the slide it is asked for", () => {
   expect(slideLayerRows(slide(box(2, "Title")), "999", () => plain)).toEqual([])
 })
+
+it("names a text layer by the text it shows now when the panel passes that name, as Figma does while typing", () => {
+  const parts = slide(box(2, "Title 1") + box(3, "Text"))
+  const typed = { kind: "text", name: "Market grows 12% a year" } as const
+  const tree = layerTree(slideLayerRows(parts, "256", (node) => (node === elementId("256.3") ? typed : plain)))
+  expect(tree.map((layer) => layer.name)).toEqual(["Market grows 12% a year", "Title 1"])
+})

@@ -3,6 +3,7 @@ import { insertChild } from "./child-order.js"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId, shapeIdsIn } from "./shape-id.js"
+import { newShapeName, newTextName } from "./layer-names.js"
 
 export type ShapeBox = {
   readonly x: number
@@ -108,7 +109,7 @@ export function addTextShape(
   return appendShape(
     slideXml,
     (idText) =>
-      `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text, align)}</p:sp>`,
+      `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="${newTextName}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text, align)}</p:sp>`,
     id,
   )
 }
@@ -121,14 +122,6 @@ const lineStyle =
 
 const shapeText =
   '<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody>'
-
-const drawnNames: Readonly<Partial<Record<Geometry, string>>> = {
-  rect: "Rectangle",
-  ellipse: "Oval",
-  line: "Straight Connector",
-  straightConnector1: "Straight Arrow Connector",
-  bentConnector3: "Elbow Connector",
-}
 
 const lineWeight = 28575
 const lineStroke = `<a:ln w="${String(lineWeight)}"/>`
@@ -149,7 +142,7 @@ export function addDrawnShape(
   return appendShape(
     slideXml,
     (idText) => {
-      const name = `<p:cNvPr id="${idText}" name="${drawnNames[geometry] ?? "Shape"} ${idText}"/>`
+      const name = `<p:cNvPr id="${idText}" name="${newShapeName(geometry, idText)}"/>`
       const properties = drawnProperties(geometry, box)
       if (lineGeometries.includes(geometry))
         return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`

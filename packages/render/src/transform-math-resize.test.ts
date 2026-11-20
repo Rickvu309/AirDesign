@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { minimumSide, nudgeStep, type Corner } from "./box-gesture.js"
+import { nudgeStep, type Corner } from "./box-gesture.js"
 import { resizeBox, resizedByKey } from "./transform-math.js"
 
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
@@ -26,28 +26,23 @@ describe("resizeBox by a corner", () => {
       cx: start.cx - 2_743_200,
       cy: start.cy - 914_400,
     })
-    expect(resizeBox(start, "top-left", 20_000_000, 20_000_000, proportional).cy).toBe(minimumSide)
+    expect(resizeBox(start, "top-left", 20_000_000, 20_000_000, proportional).cy).toBe(0)
   })
 
-  it("stops at a quarter inch on each side and keeps the opposite corner", () => {
+  it("stops at zero on each side and keeps the opposite corner", () => {
     const shrunk = resizeBox(start, "top-left", 20_000_000, 20_000_000, free)
-    expect(shrunk).toEqual({
-      x: start.x + start.cx - minimumSide,
-      y: start.y + start.cy - minimumSide,
-      cx: minimumSide,
-      cy: minimumSide,
-    })
+    expect(shrunk).toEqual({ x: start.x + start.cx, y: start.y + start.cy, cx: 0, cy: 0 })
   })
 
   it("never turns a box inside out", () => {
     expect(resizeBox(start, "bottom-right", -20_000_000, -20_000_000, free)).toEqual({
       ...start,
-      cx: minimumSide,
-      cy: minimumSide,
+      cx: 0,
+      cy: 0,
     })
   })
 
-  it("lets a side already under a quarter inch grow but not shrink", () => {
+  it("lets a line with no height grow one but never go below zero", () => {
     const line = { x: 0, y: 0, cx: 3_000_000, cy: 0 }
     expect(resizeBox(line, "bottom-right", 0, -5_000, free)).toEqual(line)
     expect(resizeBox(line, "bottom-right", 0, 5_000, free)).toEqual({ ...line, cy: 5_000 })
@@ -103,9 +98,9 @@ describe("resizeBox on a turned box", () => {
     },
   )
 
-  it("keeps the opposite corner on screen when a turned box stops at a quarter inch", () => {
+  it("keeps the opposite corner on screen when a turned box stops at zero", () => {
     const box = resizeBox(start, "top-left", 20_000_000, 20_000_000, free, 30)
-    expect([box.cx, box.cy]).toEqual([minimumSide, minimumSide])
+    expect([box.cx, box.cy]).toEqual([0, 0])
     const kept = onScreen(start, "bottom-right", 30)
     const now = onScreen(box, "bottom-right", 30)
     expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)

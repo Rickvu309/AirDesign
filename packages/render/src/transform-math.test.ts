@@ -6,7 +6,6 @@ import {
   flipSelection,
   formatAngleLabel,
   formatSizeLabel,
-  minimumSide,
   resizeBox,
   resizeCursor,
   resizeSelection,
@@ -69,21 +68,17 @@ describe("resizeBox", () => {
     expect(resizeBox(base, edge, dx, dy, free)).toEqual(expected)
   })
 
-  it("clamps edge and corner resizes at minimumSide without moving the opposite edge", () => {
-    expect(resizeBox(base, "left", 10_000_000, 0, free)).toEqual({
-      x: base.x + base.cx - minimumSide,
-      y: base.y,
-      cx: minimumSide,
-      cy: base.cy,
-    })
-    expect(resizeBox(base, "top", 0, 10_000_000, free)).toEqual({
-      x: base.x,
-      y: base.y + base.cy - minimumSide,
-      cx: base.cx,
-      cy: minimumSide,
-    })
-    expect(resizeBox(base, "right", -10_000_000, 0, free)).toEqual({ ...base, cx: minimumSide })
-    expect(resizeBox(base, "bottom", 0, -10_000_000, free)).toEqual({ ...base, cy: minimumSide })
+  it("resizes an edge down to a 4 pt accent bar, as Figma does", () => {
+    const bar = 50_800
+    expect(resizeBox(base, "bottom", 0, bar - base.cy, free)).toEqual({ ...base, cy: bar })
+    expect(resizeBox(base, "top", 0, base.cy - bar, free)).toEqual({ ...base, y: base.y + base.cy - bar, cy: bar })
+  })
+
+  it("stops an edge or corner resize at zero without moving the opposite edge", () => {
+    expect(resizeBox(base, "left", 10_000_000, 0, free)).toEqual({ x: base.x + base.cx, y: base.y, cx: 0, cy: base.cy })
+    expect(resizeBox(base, "top", 0, 10_000_000, free)).toEqual({ x: base.x, y: base.y + base.cy, cx: base.cx, cy: 0 })
+    expect(resizeBox(base, "right", -10_000_000, 0, free)).toEqual({ ...base, cx: 0 })
+    expect(resizeBox(base, "bottom", 0, -10_000_000, free)).toEqual({ ...base, cy: 0 })
   })
 
   it("keeps aspect ratio with Shift on corners and pins the opposite corner", () => {
@@ -262,12 +257,12 @@ describe("selectionFrame and resizeSelection", () => {
     expect(firstBox?.cy).toBe(2_000_000)
   })
 
-  it("never shrinks any member of a multi-selection below minimumSide", () => {
+  it("shrinks every member of a multi-selection down to zero and never below", () => {
     const result = resizeSelection(layers(), "bottom-right", -10_000_000, -10_000_000, free)
-    expect(result.boxes.get(first)?.cx).toBeGreaterThanOrEqual(minimumSide)
-    expect(result.boxes.get(first)?.cy).toBeGreaterThanOrEqual(minimumSide)
-    expect(result.boxes.get(second)?.cx).toBeGreaterThanOrEqual(minimumSide)
-    expect(result.boxes.get(second)?.cy).toBeGreaterThanOrEqual(minimumSide)
+    for (const member of [first, second]) {
+      expect(result.boxes.get(member)?.cx).toBe(0)
+      expect(result.boxes.get(member)?.cy).toBe(0)
+    }
   })
 })
 

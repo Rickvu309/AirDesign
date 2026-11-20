@@ -1,6 +1,7 @@
 import { spliceBytes } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { insertAt, moveBytes, requireMarkup } from "./part-markup.js"
+import { copyName } from "./layer-names.js"
 import { nextShapeId } from "./shape-id.js"
 import { shapeById } from "./shape-tree.js"
 
@@ -11,6 +12,14 @@ function replaceShapeId(piece: Uint8Array, from: string, to: string): Uint8Array
   const id = mark.attributes.find((item) => item.name === "id")
   if (id === undefined) throw new Error("shape")
   return spliceBytes(piece, [{ start: id.valueStart, end: id.valueEnd, next: encodeUtf8(to) }])
+}
+
+export function copyNamed(piece: Uint8Array, shape: string): Uint8Array {
+  const mark = requireMarkup(piece).elements.find((element) => element.kind === "p:cNvPr" && element.id === shape)
+  const name = mark?.attributes.find((item) => item.name === "name")
+  if (name === undefined || copyName(name.value, shape) === name.value) return piece
+  const next = encodeUtf8(copyName(name.value, shape))
+  return spliceBytes(piece, [{ start: name.valueStart, end: name.valueEnd, next }])
 }
 
 export function orderShape(bytes: Uint8Array, shape: string, before: string): Uint8Array {
@@ -54,5 +63,7 @@ export function cloneShape(
     copies.set(mark.id, String(copy))
     if (given === undefined) next += 1
   }
-  return insertAt(bytes, found.end, reconnected(piece, copies))
+  const top = copies.get(shape)
+  const renamed = top === undefined ? piece : copyNamed(piece, top)
+  return insertAt(bytes, found.end, reconnected(renamed, copies))
 }

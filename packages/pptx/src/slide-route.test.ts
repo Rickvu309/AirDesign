@@ -135,7 +135,7 @@ describe("applyRoute", () => {
     const added = writeRoute(before, { name: "add", part, text: "New", x: 0, y: 0, cx: 914400, cy: 457200 })
     expect(added.id).toBe("3")
     expect(added.parts.get(kept)).toBe(before.get(kept))
-    expect(xml(added.parts)).toContain(`<p:cNvPr id="3" name="Shape 3"/>`)
+    expect(xml(added.parts)).toContain(`<p:cNvPr id="3" name="Text"/>`)
     expect(xml(added.parts)).toContain("<a:t>New</a:t>")
     expect(xml(added.parts).indexOf("<a:pPr")).toBeLessThan(xml(added.parts).indexOf("<a:t>New</a:t>"))
     const back = applyRoute(added.parts, { name: "remove", part, shape: "3" })

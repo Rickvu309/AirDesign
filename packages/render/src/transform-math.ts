@@ -1,8 +1,8 @@
 import type { Box, ElementId } from "@airdesign/document"
-import { minimumSide, nudgeStep, type Corner, type Point } from "./box-gesture.js"
+import { nudgeStep, type Corner, type Point } from "./box-gesture.js"
 import { arrowOf } from "./gestures.js"
 
-export { minimumSide, type Corner, type Point } from "./box-gesture.js"
+export { type Corner, type Point } from "./box-gesture.js"
 
 export type Edge = "top" | "right" | "bottom" | "left"
 
@@ -108,7 +108,7 @@ function gripSigns(grip: ResizeGrip): { readonly sx: -1 | 0 | 1; readonly sy: -1
 }
 
 function clampedSide(size: number, delta: number): number {
-  return Math.max(size + delta, Math.min(minimumSide, size))
+  return Math.max(size + delta, 0)
 }
 
 function constrainedSize(
@@ -119,12 +119,11 @@ function constrainedSize(
   sy: -1 | 0 | 1,
 ): { readonly cx: number; readonly cy: number } {
   if (start.cx <= 0 || start.cy <= 0) return { cx: freeCx, cy: freeCy }
-  const smallest = Math.min(1, minimumSide / Math.min(start.cx, start.cy))
   const across = freeCx / start.cx
   const down = freeCy / start.cy
   const chosen =
     sx !== 0 && sy !== 0 ? (Math.abs(across - 1) >= Math.abs(down - 1) ? across : down) : sx !== 0 ? across : down
-  const scale = Math.max(chosen, smallest)
+  const scale = Math.max(chosen, 0)
   return { cx: Math.round(start.cx * scale), cy: Math.round(start.cy * scale) }
 }
 
@@ -204,8 +203,8 @@ export function resizeSelection(
   for (const [id, { box, rotation }] of starts) {
     const angle = normalizeDegrees(rotation)
     if (angle === 0) {
-      const cx = Math.max(Math.round(box.cx * scaleX), Math.min(minimumSide, box.cx))
-      const cy = Math.max(Math.round(box.cy * scaleY), Math.min(minimumSide, box.cy))
+      const cx = Math.max(Math.round(box.cx * scaleX), 0)
+      const cy = Math.max(Math.round(box.cy * scaleY), 0)
       const x = Math.round(nextFrame.x + (box.x - startFrame.x) * scaleX)
       const y = Math.round(nextFrame.y + (box.y - startFrame.y) * scaleY)
       boxes.set(id, { x, y, cx, cy })
@@ -216,8 +215,8 @@ export function resizeSelection(
     const sin = Math.sin(radians)
     const localScaleX = Math.hypot(cos * scaleX, sin * scaleY)
     const localScaleY = Math.hypot(-sin * scaleX, cos * scaleY)
-    const cx = Math.max(Math.round(box.cx * localScaleX), Math.min(minimumSide, box.cx))
-    const cy = Math.max(Math.round(box.cy * localScaleY), Math.min(minimumSide, box.cy))
+    const cx = Math.round(box.cx * localScaleX)
+    const cy = Math.round(box.cy * localScaleY)
     const midX = nextFrame.x + (box.x + box.cx / 2 - startFrame.x) * scaleX
     const midY = nextFrame.y + (box.y + box.cy / 2 - startFrame.y) * scaleY
     boxes.set(id, { x: Math.round(midX - cx / 2), y: Math.round(midY - cy / 2), cx, cy })

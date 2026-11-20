@@ -5,7 +5,12 @@ import type { LayerFlow, LayerKind, LayerRow } from "./layer-tree"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export type LayerLook = { readonly kind: LayerKind; readonly backdrop?: ElementId; readonly flow?: LayerFlow }
+export type LayerLook = {
+  readonly kind: LayerKind
+  readonly backdrop?: ElementId
+  readonly flow?: LayerFlow
+  readonly name?: string
+}
 
 const shapesRead = new WeakMap<Parts, readonly ReadShape[]>()
 
@@ -23,12 +28,13 @@ export function slideLayerRows(parts: Parts, slide: string, look: (node: Element
     if (node === undefined) return []
     const parent = shape.group === undefined ? null : (readElementId(`${slide}.${shape.group}`) ?? null)
     const identity = shownIdentity(parts, { slide, part: shape.part, shape: shape.shape })
+    const seen = look(node)
     return [
       {
         node,
         parent,
-        look: look(node),
-        name: identity?.name ?? "",
+        look: seen,
+        name: seen.name ?? identity?.name ?? "",
         hidden: identity?.hidden === true,
         locked: identity?.locked === true,
         mask: identity?.mask === true,

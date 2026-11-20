@@ -28,6 +28,7 @@ import {
   type SlideNumbers,
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
+import { textLayerName, textNamedLayers } from "./layer-names.js"
 import { childSpace, fitGroup, placeFrame, shapePlace } from "./group-write.js"
 import { markFrame } from "./frame-tag.js"
 import { withFiledFrames } from "./filed-frames.js"
@@ -142,6 +143,7 @@ function writtenElement(
   opening: IndexElement | undefined,
   media: ElementAt["media"],
   numbering: ReadonlyMap<string, SlideNumbers>,
+  textNamed: boolean,
 ): Parts {
   const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === node)
   const shape = named.length === 1 ? named[0] : undefined
@@ -169,6 +171,7 @@ function writtenElement(
     written.set(trait, kept)
   }
   if (shape === undefined) return parts
+  if (textNamed) namedByText(written)
   const numbers = numbering.get(shape.slide)
   const at = {
     slide: shape.slide,
@@ -181,6 +184,13 @@ function writtenElement(
   let next = parts
   for (const [trait, fields] of written) next = writeTrait(next, at, trait, fields)
   return next
+}
+
+function namedByText(written: Map<TraitName, Fields>): void {
+  const identity = written.get("identity") ?? {}
+  const value = written.get("text")?.value
+  if (identity.name !== undefined || typeof value !== "object" || typeof value.set !== "string") return
+  written.set("identity", { ...identity, name: { set: textLayerName(value.set) } })
 }
 
 function boxFields(box: { readonly x: number; readonly y: number; readonly cx: number; readonly cy: number }) {
@@ -238,6 +248,7 @@ function laidOutFrames(parts: Parts, register: Register): Parts {
 export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
   const numbers = slideNumbering(parts)
+  const textNamed = textNamedLayers(register)
   let next = writtenTheme(
     parts,
     register.nodes.includes(templateStylesNode) ? register.elements[templateStylesNode] : undefined,
@@ -263,7 +274,7 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
         ? writtenNotes(next, node, body, opening)
         : kind === "slide"
           ? writtenSlide(next, node, body, opening)
-          : writtenElement(next, shapes, node, body, opening, media, numbers)
+          : writtenElement(next, shapes, node, body, opening, media, numbers, textNamed.has(node))
   }
   const followed = followedGroups(next, register)
   return dropUnusedTemplates(routedParts(parts, laidOutFrames(followed, withFiledFrames(parts, register))), register)

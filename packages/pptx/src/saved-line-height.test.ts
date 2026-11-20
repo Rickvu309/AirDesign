@@ -10,7 +10,7 @@ import {
 import { expect, it } from "vitest"
 import { exportPackage } from "./export-package.js"
 import { exportParts } from "./export-parts.js"
-import { decodeUtf8 } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { orderedParts } from "./slide-order-route.js"
 
@@ -37,23 +37,34 @@ function stored(): Register {
   return read.value
 }
 
-async function exported(register: Register): Promise<Uint8Array> {
-  const parts = await readParts(original)
-  return exportPackage(
-    original,
-    exportParts(
-      orderedParts(parts, register, () => undefined),
-      register,
-    ),
+async function exportedParts(register: Register): Promise<ReadonlyMap<string, Uint8Array>> {
+  return exportParts(
+    orderedParts(await readParts(original), register, () => undefined),
+    register,
   )
+}
+
+async function exported(register: Register): Promise<Uint8Array> {
+  return exportPackage(original, await exportedParts(register))
+}
+
+function namedAsThatBuild(parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string, Uint8Array> {
+  const renamed = new Map(parts)
+  for (const part of ["ppt/slides/slide1.xml", "ppt/slides/slide2.xml"]) {
+    const slide = decodeUtf8(parts.get(part) ?? new Uint8Array())
+    expect(slide).toContain('<p:cNvPr id="6" name="Added by an agent"/>')
+    renamed.set(part, encodeUtf8(slide.replace('name="Added by an agent"', 'name="Shape 6"')))
+  }
+  return renamed
 }
 
 function sha256(bytes: Uint8Array): string {
   return process.getBuiltinModule("node:crypto").createHash("sha256").update(bytes).digest("hex")
 }
 
-it("exports a deck the build before line height stored to the same bytes that build exported", async () => {
-  expect(sha256(await exported(stored()))).toBe(saved.exported)
+it("exports a deck the build before line height stored to the bytes that build exported, its new text layer now named by its text", async () => {
+  const parts = namedAsThatBuild(await exportedParts(stored()))
+  expect(sha256(await exportPackage(original, parts))).toBe(saved.exported)
 })
 
 it("writes a line height set on that deck now as PowerPoint's percent line spacing", async () => {
