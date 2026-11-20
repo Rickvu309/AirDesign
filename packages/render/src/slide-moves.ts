@@ -14,6 +14,7 @@ import { handleArrangeKey, type Grouping } from "./arrange-keys.js"
 import { boxOf, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gesture.js"
 import { snapTargets } from "./drag-snap.js"
 import { gestureFor, releases } from "./gestures.js"
+import { transformByKey, transformsByKey } from "./transform-keys.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import { editingText, enterText } from "./text-entry.js"
 import {
@@ -39,7 +40,6 @@ import { rotationGrips } from "./rotation-grips.js"
 import type { BoxGrip, PaintStore } from "./store.js"
 import {
   finishedTurns,
-  flipsBy,
   modifiersOf,
   pointerDragOf,
   watchPointerDrag,
@@ -454,11 +454,8 @@ export function useMoves(
       }
       return
     }
-    if (gesture === "flip-horizontal" || gesture === "flip-vertical") {
-      const flips = now === null ? flipsBy(size, store, movingWith(id), gesture) : []
-      if (flips.length === 0 || transforms?.onFlip === undefined) return
-      event.preventDefault()
-      transforms.onFlip(flips)
+    if (transformsByKey(gesture)) {
+      if (now === null) transformByKey(event, gesture, { slide: size, store, ids: movingWith(id) }, transforms)
       return
     }
     if (gesture === "duplicate") {

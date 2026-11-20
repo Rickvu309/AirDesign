@@ -163,6 +163,17 @@ export const gestures = [
     keys: arrows.map((key) => ({ key, alt: true, shift: true }) as const),
     where: ["element"],
   },
+  {
+    id: "rotate-keys",
+    group: "size",
+    keys: [
+      { key: "ArrowUp", mod: true, alt: true },
+      { key: "ArrowDown", mod: true, alt: true },
+      { key: "ArrowUp", mod: true, alt: true, shift: true },
+      { key: "ArrowDown", mod: true, alt: true, shift: true },
+    ],
+    where: ["element"],
+  },
   { id: "flip-horizontal", group: "size", keys: [{ code: "KeyH", shift: true }], where: ["element"] },
   { id: "flip-vertical", group: "size", keys: [{ code: "KeyV", shift: true }], where: ["element"] },
   { id: "forward", group: "arrange", keys: [{ code: "BracketRight", mod: true }], where: ["element"] },
@@ -216,6 +227,8 @@ export const gestures = [
   { id: "hide", group: "arrange", keys: [{ code: "KeyH", mod: true, shift: true }], where: ["editor"] },
   { id: "lock", group: "arrange", keys: [{ code: "KeyL", mod: true, shift: true }], where: ["editor"] },
   { id: "undo", group: "history", keys: [{ key: "z", mod: true }], where: ["editor"] },
+  { id: "copy-properties", group: "history", keys: [{ code: "KeyC", mod: true, alt: true }], where: ["editor"] },
+  { id: "paste-properties", group: "history", keys: [{ code: "KeyV", mod: true, alt: true }], where: ["editor"] },
   {
     id: "redo",
     group: "history",
@@ -258,6 +271,8 @@ export const gestures = [
   { id: "tool-arrow", group: "tools", keys: [{ code: "KeyL", shift: true }], where: ["editor"] },
   { id: "place-image", group: "tools", keys: [{ code: "KeyK", mod: true, shift: true }], where: ["editor"] },
   { id: "layers-panel", group: "view", keys: [{ code: "Digit1", alt: true }], where: ["editor"] },
+  { id: "hide-ui", group: "view", keys: [{ code: "Backslash", mod: true }], where: ["editor"] },
+  { id: "slide-list", group: "view", keys: [{ code: "Backslash", mod: true, shift: true }], where: ["editor"] },
   { id: "export", group: "view", keys: [{ code: "KeyE", mod: true, shift: true }], where: ["editor"] },
   { id: "pan", group: "view", keys: [{ code: "Space" }], where: ["editor"] },
   { id: "pan-arrows", group: "view", keys: arrows.map((key) => ({ key })), where: ["grid"] },
@@ -337,6 +352,25 @@ export const gestures = [
   { id: "show-stop", group: "present", keys: [{ key: "Escape" }], where: ["show"] },
   { id: "show-presenter", group: "present", keys: [{ key: "p" }], where: ["show"] },
   { id: "opacity", group: "arrange", keys: digits.map((key) => ({ key })), where: ["element"] },
+  {
+    id: "remove-fill",
+    group: "arrange",
+    keys: [
+      { code: "Slash", alt: true },
+      { code: "Comma", alt: true },
+    ],
+    where: ["element"],
+  },
+  {
+    id: "remove-border",
+    group: "arrange",
+    keys: [
+      { code: "Slash", shift: true },
+      { code: "Comma", shift: true },
+    ],
+    where: ["element"],
+  },
+  { id: "numbers", group: "text", keys: [{ code: "Digit7", mod: true, shift: true }], where: ["element"] },
 ] as const satisfies readonly GestureRow[]
 
 export type GestureId = (typeof gestures)[number]["id"]
