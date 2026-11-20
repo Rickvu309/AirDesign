@@ -16,9 +16,11 @@ async function drive(kit) {
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   const surface = page.locator("[data-slide-paint]")
   await surface.focus()
-  await page.context().grantPermissions(["clipboard-read", "clipboard-write"])
-  await page.evaluate((text) => navigator.clipboard.writeText(text), sheet)
-  await page.keyboard.press("ControlOrMeta+KeyV")
+  await surface.evaluate((node, text) => {
+    const data = new DataTransfer()
+    data.setData("text/plain", text)
+    node.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }))
+  }, sheet)
   await page.waitForTimeout(800)
 }
 

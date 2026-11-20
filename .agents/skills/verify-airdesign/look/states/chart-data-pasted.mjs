@@ -20,9 +20,11 @@ async function drive(kit) {
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   const label = page.locator("[data-chart-data]").getByRole("textbox", { name: chartCopy.category(1), exact: true })
   await label.focus()
-  await page.context().grantPermissions(["clipboard-read", "clipboard-write"])
-  await page.evaluate((text) => navigator.clipboard.writeText(text), block)
-  await page.keyboard.press("ControlOrMeta+KeyV")
+  await label.evaluate((node, text) => {
+    const data = new DataTransfer()
+    data.setData("text/plain", text)
+    node.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }))
+  }, block)
   await label.blur()
   await page.waitForTimeout(800)
 }
