@@ -17,6 +17,10 @@ export type RotationGrip = {
   readonly release: () => void
 }
 
+export type MeasuredFit = { readonly written: string; readonly scale: number; readonly reduction: number }
+
+export type FitPainter = "canvas" | "thumbnail"
+
 export type PaintStore = {
   readonly getElement: (id: ElementId) => ElementRecord | null
   readonly publish: (record: ElementRecord) => PaintResult
@@ -35,6 +39,9 @@ export type PaintStore = {
   readonly placeRotation: (id: ElementId, rotation: number | null) => void
   readonly gripRotation: (id: ElementId) => RotationGrip
   readonly boxSubscribe: (id: ElementId) => (listener: () => void) => () => void
+  readonly placeFit: (id: ElementId, fit: MeasuredFit, painter: FitPainter) => void
+  readonly getFit: (id: ElementId) => MeasuredFit | null
+  readonly fits: () => ReadonlyMap<ElementId, MeasuredFit>
 }
 
 const accepted: PaintResult = Object.freeze({ ok: true })
@@ -124,6 +131,7 @@ export function paintStore(): PaintStore {
   const grippedRotations = new Map<ElementId, { held: number | null }>()
   const composing = new Set<ElementId>()
   const held = new Map<ElementId, ElementRecord[]>()
+  const measured = new Map<ElementId, MeasuredFit & { readonly painter: FitPainter }>()
   let slideList: readonly SlideRecord[] = Object.freeze([])
   let slidesById = new Map<SlideId, SlideRecord>()
 
@@ -284,5 +292,21 @@ export function paintStore(): PaintStore {
     placeRotation,
     gripRotation,
     boxSubscribe: (id) => subscribeTo(boxListeners, boxSubscribeCache, id),
+    placeFit: (id, fit, painter) => {
+      const kept = measured.get(id)
+      if (painter === "thumbnail" && kept?.painter === "canvas" && kept.written === fit.written) return
+      measured.set(id, { ...fit, painter })
+    },
+    getFit: (id) => {
+      const kept = measured.get(id)
+      return kept === undefined ? null : { written: kept.written, scale: kept.scale, reduction: kept.reduction }
+    },
+    fits: () =>
+      new Map(
+        [...measured].map(([id, kept]) => [
+          id,
+          { written: kept.written, scale: kept.scale, reduction: kept.reduction },
+        ]),
+      ),
   }
 }

@@ -1,9 +1,12 @@
+import type { ElementId } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { exportPackage } from "@airdesign/pptx"
+import type { MeasuredFit } from "@airdesign/render"
 import { deckParts } from "@/device-copy"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
 import { bakeFills } from "@/export/fill-bake"
+import { bakeFits } from "@/export/fit-bake"
 import { bakeMasks } from "@/export/mask-bake"
 import { maskPicture } from "@/export/mask-picture"
 import { bakeShadows } from "@/export/shadow-bake"
@@ -41,6 +44,7 @@ export async function exportDeck(
   ready: Promise<void>,
   pictures: PictureStore,
   request?: ExportRequest,
+  fits: ReadonlyMap<ElementId, MeasuredFit> = new Map(),
 ): Promise<void> {
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
@@ -51,9 +55,10 @@ export async function exportDeck(
   if (!opened.ok) throw new ExportStopped("edits")
   await exportablePictures(pictures, id, opened.register)
   const bytes = await written(stored.file, async () => {
-    const chosen = await withIcons(pictures, id, opened.register, (held) =>
+    const icons = await withIcons(pictures, id, opened.register, (held) =>
       chosenParts(stored.parts, opened.register, slides, held),
     )
+    const chosen = bakeFits(icons, opened.register, fits)
     const masked = await bakeMasks(chosen, maskPicture())
     return bakeShadows(await bakeFills(masked, opened.register))
   })

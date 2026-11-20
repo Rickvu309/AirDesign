@@ -1,3 +1,4 @@
+import type { PaintStore } from "@airdesign/render"
 import type { DeckFailure } from "@/editor/use-deck-status"
 import { exportDeck, ExportStopped, type ExportRequest, type ExportStop } from "@/export/export-deck"
 import { PicturesUploading, type PictureStore } from "@/picture-tool"
@@ -8,6 +9,7 @@ export type ExportingDeck = {
   readonly id: string
   readonly records: { readonly current: RecordsInFlight }
   readonly pictureTool: { readonly store: PictureStore }
+  readonly paint: { readonly current: PaintStore }
   readonly setFailure: (failure: DeckFailure | null) => void
 }
 
@@ -33,10 +35,10 @@ export function exportFailure(error: unknown): DeckFailure {
 }
 
 export function useExport(deck: ExportingDeck) {
-  const { id, records, pictureTool, setFailure } = deck
+  const { id, records, pictureTool, paint, setFailure } = deck
   async function onExport(request?: ExportRequest) {
     try {
-      await exportDeck(id, records.current.landed(), pictureTool.store, request)
+      await exportDeck(id, records.current.landed(), pictureTool.store, request, paint.current.fits())
       setFailure(null)
     } catch (error) {
       setFailure(exportFailure(error))
