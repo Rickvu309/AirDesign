@@ -31,6 +31,8 @@ import { keepsFormat, runTextKey, textKeyOf, type TextFormatting } from "./text-
 import { FillLayers } from "./fill-layers.js"
 import { unshownFill } from "./unshown-fill.js"
 import { textHeight, useTextFit } from "./text-fit.js"
+import { presetTextArea, type TextArea } from "./preset-path.js"
+import { tidy } from "./effect-art.js"
 import { UnshownLabel } from "./unshown-label.js"
 
 const defaultInsetX = 91_440
@@ -104,16 +106,36 @@ function placement(box: PaintBox | null, scaled: Scaled): CSSProperties {
   }
 }
 
-export function textLayer(box: PaintBox | null, text: CanvasText, scaled: Scaled): CSSProperties {
+type TextHost = Pick<CanvasElement, "box" | "geometry">
+
+function textPadding(element: TextHost, text: CanvasText, scaled: Scaled): TextArea {
+  const { box, geometry } = element
+  const area =
+    box === null || geometry === undefined
+      ? null
+      : presetTextArea(geometry.preset, scaled(box.width), scaled(box.height), geometry.adjusts)
   const mirrored = box !== null && box.flipH !== box.flipV
-  const { bottom, left, right, top } = text.insets
+  const left = area === null ? 0 : mirrored ? area.right : area.left
+  const right = area === null ? 0 : mirrored ? area.left : area.right
+  return {
+    left: scaled(text.insets.left) + left,
+    top: scaled(text.insets.top) + (area?.top ?? 0),
+    right: scaled(text.insets.right) + right,
+    bottom: scaled(text.insets.bottom) + (area?.bottom ?? 0),
+  }
+}
+
+export function textLayer(element: TextHost, text: CanvasText, scaled: Scaled): CSSProperties {
+  const { box } = element
+  const mirrored = box !== null && box.flipH !== box.flipV
+  const { bottom, left, right, top } = textPadding(element, text, scaled)
   return {
     position: "relative",
     display: "flex",
     flexDirection: "column",
     justifyContent: anchored[text.anchor],
     height: "100%",
-    padding: `${scaled(top)}px ${scaled(right)}px ${scaled(bottom)}px ${scaled(left)}px`,
+    padding: `${tidy(top)}px ${tidy(right)}px ${tidy(bottom)}px ${tidy(left)}px`,
     ...flowModes[text.flow ?? "horz"],
     ...(mirrored ? { transform: "scaleX(-1)" } : {}),
   }
@@ -222,7 +244,7 @@ function QuietFrame(props: QuietProps & { readonly written: string }) {
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described={false} scaled={scaled} />
       {text === null ? null : (
-        <div ref={layer} style={textLayer(element.box, text, scaled)}>
+        <div ref={layer} style={textLayer(element, text, scaled)}>
           {element.id === null ? (
             <SheetText look={textLook(text, scaled)} text={text} />
           ) : (
@@ -246,7 +268,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
       {text === null ? null : (
-        <div ref={layer} style={textLayer(element.box, text, scaled)}>
+        <div ref={layer} style={textLayer(element, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
         </div>
       )}
@@ -364,17 +386,14 @@ const LayerArt = memo(function LayerArt(props: {
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
-      <div ref={layer} style={textLayer(element.box, text, scaled)}>
+      <div ref={layer} style={textLayer(element, text, scaled)}>
         {prompt === undefined ? null : (
           <div
             aria-hidden="true"
             data-placeholder-prompt={prompt}
             style={{
               position: "absolute",
-              left: scaled(text.insets.left),
-              top: scaled(text.insets.top),
-              right: scaled(text.insets.right),
-              bottom: scaled(text.insets.bottom),
+              ...textPadding(element, text, scaled),
               display: "flex",
               flexDirection: "column",
               justifyContent: anchored[text.anchor],

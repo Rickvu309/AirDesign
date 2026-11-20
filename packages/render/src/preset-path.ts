@@ -42,6 +42,49 @@ export function presetOutline(
   }
 }
 
+const ellipseArea: PresetRule = {
+  area: "il it ir ib",
+  adjusts: [],
+  guides: [
+    "idx cos wd2 2700000",
+    "idy sin hd2 2700000",
+    "il +- hc 0 idx",
+    "ir +- hc idx 0",
+    "it +- vc 0 idy",
+    "ib +- vc idy 0",
+  ],
+  paths: [],
+}
+
+export type TextArea = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
+
+export function presetTextArea(
+  name: string,
+  width: number,
+  height: number,
+  adjusts: Readonly<Record<string, number>> = {},
+): TextArea | null {
+  const rule = name === "ellipse" ? ellipseArea : Object.hasOwn(presets, name) ? presets[name] : undefined
+  const [left, top, right, bottom] = rule?.area?.split(" ") ?? []
+  if (rule === undefined || left === undefined || top === undefined || right === undefined || bottom === undefined)
+    return null
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null
+  try {
+    const value = presetGuides(rule, width, height, adjusts)
+    const [leftMargin, rightMargin] = margins(value(left), value(right), width)
+    const [topMargin, bottomMargin] = margins(value(top), value(bottom), height)
+    return { left: leftMargin, top: topMargin, right: rightMargin, bottom: bottomMargin }
+  } catch {
+    return null
+  }
+}
+
+function margins(from: number, to: number, length: number): readonly [number, number] {
+  const start = Math.max(0, Math.min(from, length))
+  const end = Math.max(0, Math.min(to, length))
+  return [Math.min(start, end), length - Math.max(start, end)]
+}
+
 const nativeOpen = new Set(["line", "straightConnector1"])
 
 export function openPreset(name: string): boolean {

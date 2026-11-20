@@ -10,7 +10,7 @@ function DiagramShape(props: { readonly shape: CanvasElement; readonly scaled: S
     <div data-diagram-shape={shape.key} style={elementFrame(shape, scaled, false, false)}>
       <ShapeArt element={shape} scaled={scaled} />
       {shape.text === null ? null : (
-        <div style={textLayer(shape.box, shape.text, scaled)}>
+        <div style={textLayer(shape, shape.text, scaled)}>
           <SheetText look={textLook(shape.text, scaled)} text={shape.text} />
         </div>
       )}

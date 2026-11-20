@@ -55,19 +55,23 @@ it("paints the same preset path in a quiet thumbnail without an interactive hit 
   expect(host.querySelector<HTMLElement>("[data-thumb-paint] > div")?.style.pointerEvents).toBe("none")
 })
 
-it("keeps a preset's text in the rectangle's unchanged text layer", async () => {
+it("lays a preset's text inside PowerPoint's text area for it, mirrored with the shape", async () => {
   const text = {
     paragraphs: [],
     anchor: "middle",
     insets: { left: 3, top: 5, right: 7, bottom: 11 },
     wrap: true,
   } as const
-  const preset = await canvas([{ ...shape, text }])
+  const layer = (host: HTMLElement) => host.querySelector<HTMLElement>("[data-canvas-element] > div")?.style
+  const upright = { ...shape.box!, flipH: false }
+  expect(layer(await canvas([{ ...shape, text, box: upright }]))?.padding).toBe("60px 64px 72px 6px")
+  expect(layer(await canvas([{ ...shape, text }]))?.padding).toBe("60px 14px 72px 56px")
+  expect(layer(await canvas([{ ...shape, text, box: { ...upright, flipV: true } }]))?.padding).toBe(
+    "60px 14px 72px 56px",
+  )
   const rectangle = await canvas([{ ...shape, text, geometry: { preset: "rect", adjusts: {} } }])
-  const layer = (host: HTMLElement) => host.querySelector("[data-canvas-element] > div")?.getAttribute("style")
-  expect(layer(preset)).toBe(layer(rectangle))
-  expect(layer(preset)).toContain("padding: 10px 14px 22px 6px")
-  expect(layer(preset)).toContain("justify-content: center")
+  expect(layer(rectangle)?.padding).toBe("10px 14px 22px 6px")
+  expect(layer(rectangle)?.justifyContent).toBe("center")
 })
 
 it("paints a preset's fill and stroke as paths, retaining its placement", async () => {

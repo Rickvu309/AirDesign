@@ -2,6 +2,7 @@ import type { PresetRule } from "./preset-rule.js"
 
 export const presetArrows: Readonly<Record<string, PresetRule>> = {
   rightArrow: {
+    area: "l y1 x2 y2",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 100000 w ss",
@@ -24,6 +25,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   leftArrow: {
+    area: "x1 y1 r y2",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 100000 w ss",
@@ -46,6 +48,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   upArrow: {
+    area: "x1 y1 x2 b",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 100000 h ss",
@@ -68,6 +71,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   downArrow: {
+    area: "x1 t x2 y2",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 100000 h ss",
@@ -90,6 +94,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   leftRightArrow: {
+    area: "x1 y1 x4 y2",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 50000 w ss",
@@ -113,6 +118,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   leftRightArrowCallout: {
+    area: "x2 t x3 b",
     adjusts: ["adj1 val 25000", "adj2 val 25000", "adj3 val 25000", "adj4 val 48123"],
     guides: [
       "maxAdj2 */ 50000 h ss",
@@ -145,6 +151,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   upDownArrow: {
+    area: "x1 y1 x2 y4",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 50000 h ss",
@@ -165,6 +172,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
     ],
   },
   notchedRightArrow: {
+    area: "x1 y1 x3 y2",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj2 */ 100000 w ss",
