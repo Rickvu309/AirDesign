@@ -163,7 +163,7 @@ A frame's bottom layer, a rectangle with its fill, border and corners, never sel
 _Avoid_: background (slide fills)
 
 **selection**:
-The layers a person selects on a slide. Click selects one, Shift+click adds or removes, and dragging a [marquee](select.md) selects touched layers. One has handles, several a ring inside one outline. Drag, arrows and Delete act as one undo step. An agent's delete drops that layer.
+The layers a person selects on a slide. Click selects one, Shift+click adds or removes, and dragging a [marquee](select.md) selects touched layers. One has handles, several a ring inside one outline. Drag, arrows and Delete act as one undo step.
 _Avoid_: chosen, picked, active element
 
 **connector**:
