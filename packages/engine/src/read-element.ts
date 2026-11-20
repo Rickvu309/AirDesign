@@ -1,7 +1,9 @@
 import { foldDesign, printDesign, shownDesign, templateFontDesign } from "@airdesign/catalog"
 import {
+  addedGeometry,
   currentBox,
   currentValue,
+  drawnDesign,
   followedPlace,
   groupedNow,
   history,
@@ -29,7 +31,9 @@ function closedTo(body: NodeRegister, runId: string | null): boolean {
 
 function foldedElement(register: Register, node: ElementId): IndexElement | undefined {
   const opening = openingElement(register, node)
-  return opening === undefined ? undefined : { ...opening, grouped: groupedNow(register, node) }
+  if (opening === undefined) return undefined
+  const drawn = opening.design === undefined ? addedGeometry(register, node) : null
+  return { ...opening, grouped: groupedNow(register, node), ...(drawn === null ? {} : { design: drawnDesign(drawn) }) }
 }
 
 function shownValue(value: string | null): string | null {
