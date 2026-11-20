@@ -123,6 +123,7 @@ test("a shape added while placed text waits for the device takes its own element
   await page.keyboard.type("Jan")
   await page.keyboard.press("Escape")
   await page.keyboard.press("r")
+  await page.keyboard.press("Enter")
   await release()
 
   const typed = texts.filter({ hasText: /^Jan$/ })
