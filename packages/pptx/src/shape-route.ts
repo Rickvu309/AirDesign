@@ -63,7 +63,6 @@ export function cloneShape(
     copies.set(mark.id, String(copy))
     if (given === undefined) next += 1
   }
-  const top = copies.get(shape)
-  const renamed = top === undefined ? piece : copyNamed(piece, top)
+  const renamed = [...copies.values()].reduce(copyNamed, piece)
   return insertAt(bytes, found.end, reconnected(renamed, copies))
 }

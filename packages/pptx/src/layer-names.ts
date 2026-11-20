@@ -54,7 +54,10 @@ export function textNamedLayers(register: Register): ReadonlySet<ElementId> {
       if (plain && element.kind === "shape" && element.value !== null && !hasSlideNumber(element.value))
         named.add(element.node)
     }
-    if (command.slide === "element-clone" && named.has(command.source)) named.add(command.element.node)
+    if (command.slide === "element-clone") {
+      if (named.has(command.source)) named.add(command.element.node)
+      for (const layer of command.layers ?? []) if (named.has(layer.source)) named.add(layer.element.node)
+    }
     for (const birth of slideBirths(command)) {
       if (birth.slide !== "clone") continue
       for (const element of birth.floor ?? [])

@@ -12,6 +12,7 @@ import {
 import { readParts, readShapes, shownIdentity, textNamedNow } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { copyCommands, elementCommand } from "./element-edit"
+import { groupCommands } from "./editor/group-actions"
 import { exportedParts } from "./exported-parts"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -131,4 +132,27 @@ it("gives a copy whose name ends in a number its own number, and keeps a copied 
     "256.6": "Other label",
     "256.7": "Rectangle 7",
   })
+})
+
+it("names the text layers in a copied group by their text", async () => {
+  const parts = await fixture("clean.pptx")
+  let register = openRegister("", "")
+  for (const change of [
+    { change: "shape", geometry: "ellipse", index: 0, size },
+    { change: "text", index: 0, size },
+  ] as const)
+    register = applied(register, { command: "slide", file, edit: made(elementCommand(parts, register, change)) })
+  register = typed(register, "256.4", "Market context and sizing")
+  for (const command of groupCommands(parts, register, {
+    change: "group",
+    nodes: [elementId("256.3"), elementId("256.4")],
+  }) ?? [])
+    register = applied(register, command)
+  const group = elementId("256.5")
+  const box = { x: 10, y: 200, cx: 300, cy: 40 }
+  for (const edit of copyCommands(parts, register, [{ id: group, box }]).edits)
+    register = applied(register, { command: "slide", file, edit })
+  const copied = Object.entries(names(parts, register)).filter(([node]) => !["256.3", "256.4", "256.5"].includes(node))
+  expect(copied.map(([, name]) => name)).toContain("Market context and sizing")
+  expect(copied.map(([, name]) => name)).not.toContain("Text")
 })
