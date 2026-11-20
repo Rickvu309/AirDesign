@@ -14,7 +14,9 @@ async function blankDeck(page: Page): Promise<void> {
   await decksOn(page).blank()
 }
 
-test("keys typed at once after Add text box land in the new box, before and after it paints", async ({ page }) => {
+test("keys typed at once after placing text land in it, while the device holds its writes and after", async ({
+  page,
+}) => {
   await blankDeck(page)
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(0)
@@ -22,7 +24,8 @@ test("keys typed at once after Add text box land in the new box, before and afte
   await placeText(page)
   await page.keyboard.type("Big tx", { delay: 0 })
   await page.keyboard.press("Backspace")
-  await expect(texts).toHaveCount(0)
+  await expect(texts).toHaveCount(1)
+  await expect(texts.last()).toHaveText("Big t")
   await openDevice(page)
   await page.keyboard.type("itle", { delay: 0 })
   await expect(texts).toHaveCount(1)

@@ -211,7 +211,13 @@ test("going offline and back while a resend is on the wire reads Saved once it l
 
 for (const [step, add] of [
   ["an added slide", (page: Page) => page.getByRole("button", { name: "Add slide", exact: true }).click()],
-  ["an added text box", (page: Page) => placeText(page)],
+  [
+    "an added text box",
+    async (page: Page) => {
+      await placeText(page)
+      await page.keyboard.type("A")
+    },
+  ],
 ] as const) {
   test(`${step} reads Saving while its commit waits and Saved once the server takes it`, async ({
     page,

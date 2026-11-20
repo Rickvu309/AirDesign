@@ -1,4 +1,4 @@
-export { boxOf, dragThreshold, ownBox, sameBox, type Moved } from "./box-gesture.js"
+export { boxOf, ownBox, sameBox, type Moved } from "./box-gesture.js"
 export type { Copied } from "./layer-copies.js"
 export { pastedOffset, pastedOver } from "./paste-place.js"
 export type { LayerClipboard, LayerPaste, PasteMode } from "./use-canvas-clipboard.js"
@@ -34,6 +34,7 @@ export {
 export { holdKeys, type HeldKeys } from "./held-keys.js"
 export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
+export type { TextPlace } from "./text-placing.js"
 export { CanvasRulers } from "./canvas-rulers.js"
 export type { GuideEdit } from "./guide-edit.js"
 export { paintStore, type MeasuredFit, type PaintStore } from "./store.js"

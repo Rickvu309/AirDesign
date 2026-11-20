@@ -36,7 +36,6 @@ import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useShortcutsKey } from "@/editor/shortcuts-key"
 import { useToolKeys } from "@/editor/tool-keys"
-import { TextPlacing } from "@/editor/text-placing"
 import type { TextPlace } from "@/element-edit"
 import { useChromeKeys } from "@/editor/chrome-keys"
 import type { PartsWatch } from "@/editor/use-deck-paint"
@@ -65,7 +64,7 @@ export type EditorDeck = {
   readonly id?: string
   readonly slides: SlideStrip
   readonly size: SlideSize | null
-  readonly slide: (width: number, shown?: GuidesShown) => ReactNode
+  readonly slide: (width: number, shown?: GuidesShown, onPlaceText?: (place: TextPlace) => void) => ReactNode
   readonly rulers?: () => ReactNode
   readonly displayed?: Pick<PartsWatch, "subscribe" | "version">
   readonly onExport: (request?: ExportRequest) => Promise<void> | void
@@ -374,16 +373,16 @@ export function EditorShell({
             {deck === undefined ? (
               <RevenueSlide width={width} working={working} selected={run === "compose"} />
             ) : (
-              deck.slide(width, { rulers, layoutGuides })
-            )}
-            {deck?.onText === undefined || size === null || pointer.tool !== "text" ? null : (
-              <TextPlacing
-                slide={size}
-                onPlace={(place) => {
-                  pointer.pick("move")
-                  deck.onText?.(place)
-                }}
-              />
+              deck.slide(
+                width,
+                { rulers, layoutGuides },
+                deck.onText === undefined || pointer.tool !== "text"
+                  ? undefined
+                  : (place) => {
+                      pointer.pick("move")
+                      deck.onText?.(place)
+                    },
+              )
             )}
           </div>
         </CanvasStage>

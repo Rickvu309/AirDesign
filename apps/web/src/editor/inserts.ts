@@ -22,6 +22,7 @@ import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
+import { placingText } from "@/editor/placed-text"
 
 import { addSlideNumbers } from "./slide-number-actions"
 
@@ -36,6 +37,19 @@ export type InsertingDeck = {
 export function deckInserts(deck: InsertingDeck) {
   const { id, pictureTool, record, settle } = deck
   const { shownParts, canvases, current, setEntering, showEdited } = deck.shown
+  const placedText = placingText(
+    {
+      id,
+      held: deck.shown.placed,
+      parts: () => shownParts.current,
+      room: () => canvases.current(current),
+      index: () => current,
+      showSaved: () => showEdited(current),
+      enter: (node, keys) => setEntering({ id: node, keys }),
+      record,
+    },
+    connect(memoryRemote()),
+  )
 
   function recordAdded(name: UndoName, keys?: HeldKeys, selects = false) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
@@ -137,9 +151,12 @@ export function deckInserts(deck: InsertingDeck) {
   }
 
   function addText(place?: TextPlace) {
+    if (place !== undefined) {
+      void placedText.place(place, holdKeys(document))
+      return
+    }
     const size = canvases.current(current)
-    if (size !== null)
-      void changeElement({ change: "text", index: current, size, ...(place === undefined ? {} : { place }) })
+    if (size !== null) void changeElement({ change: "text", index: current, size })
   }
 
   function addTable(size: TableSize) {
@@ -178,6 +195,7 @@ export function deckInserts(deck: InsertingDeck) {
     pasteFromDeck,
     cutLayers,
     addText,
+    placedText,
     addTable,
     addChart,
     addShape,
