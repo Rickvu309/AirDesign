@@ -253,9 +253,26 @@ describe("the connector deck's two elbows", () => {
       const place = deckPlace(parts, id)
       expect(routed(place, "bentConnector3", { adj1: deckAdjust(parts, id) }, start, end)).toEqual({
         place,
+        preset: "bentConnector3",
         adjust: { adj1: deckAdjust(parts, id) },
       })
     }
+  })
+
+  it("go around in five segments once Build moves behind Plan, and the export names that elbow", async () => {
+    const { parts, slide } = await connectorDeck()
+    const build = elementId(`${slide}.3`)
+    const behind = { x: { set: 0 }, y: { set: 4_572_000 } }
+    const exported = exportParts(parts, landed(parts, [[build, { box: behind }]]))
+    const xml = decodeUtf8(exported.get(deckPart) ?? new Uint8Array())
+    const between = xml.slice(xml.indexOf('<p:cNvPr id="4"'), xml.indexOf("</p:cxnSp>", xml.indexOf('<p:cNvPr id="4"')))
+    expect(between).toContain('<a:prstGeom prst="bentConnector5">')
+    const moved = deckPlace(exported, "3")
+    const plan = deckPlace(exported, "2")
+    expect(connectorEnds(deckPlace(exported, "4"))).toEqual({
+      start: siteTie(plan, rounded, 3)?.spot,
+      end: siteTie(moved, rounded, 1)?.spot,
+    })
   })
 
   it("follow Build down: the bend between the two stays midway and the bend under both moves with the drop", async () => {

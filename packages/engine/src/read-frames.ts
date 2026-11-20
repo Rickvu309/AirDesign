@@ -40,7 +40,7 @@ export function readFrames(register: Register): ReadFrames {
     const shown =
       boxes.has(node) || !followsGroups(register, node)
         ? null
-        : (followedPlace(register, node) ?? shownPlace(register, node))
+        : (followedPlace(register, node)?.place ?? shownPlace(register, node))
     if (shown !== null) boxes.set(node, shown.box)
   }
   const found = { boxes, frames, backdrops }

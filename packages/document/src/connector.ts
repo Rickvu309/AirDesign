@@ -10,7 +10,11 @@ export type Bound = { readonly node: ElementId; readonly site: number }
 
 export type Tie = { readonly spot: Spot; readonly way: Spot }
 
-export type Routed = { readonly place: Place; readonly adjust: Readonly<Record<string, number>> }
+export type Routed = {
+  readonly place: Place
+  readonly preset: string
+  readonly adjust: Readonly<Record<string, number>>
+}
 
 type Elbow = { readonly segments: number; readonly adjusts: readonly string[] }
 
@@ -174,6 +178,24 @@ function elbowAdjust(place: Place, elbow: Elbow, start: Spot | null, end: Spot |
   return Object.fromEntries(elbow.adjusts.map((name, at) => [name, chosen[at] ?? half]))
 }
 
+function dot(left: Spot, right: Spot): number {
+  return left.x * right.x + left.y * right.y
+}
+
+function segments(from: Spot, to: Spot, start: Spot, end: Spot): number {
+  const gap = { x: to.x - from.x, y: to.y - from.y }
+  const meeting = dot(start, end)
+  if (meeting === 0) return dot(gap, start) > 0 && dot(gap, end) < 0 ? 2 : 4
+  if (meeting > 0) return 3
+  return dot(gap, start) > 0 ? 3 : 5
+}
+
+function counted(preset: string, from: Spot, to: Spot, start: Tie | null, end: Tie | null): string {
+  if (start === null || end === null) return preset
+  const chosen = `${preset.slice(0, -1)}${String(segments(from, to, start.way, end.way))}`
+  return Object.hasOwn(elbows, chosen) ? chosen : preset
+}
+
 export function routed(
   connector: Place,
   preset: string,
@@ -185,14 +207,17 @@ export function routed(
   const ends = connectorEnds(connector)
   const from = start?.spot ?? ends.start
   const to = end?.spot ?? ends.end
-  const elbow = elbows[preset]
-  if (elbow === undefined) return { place: route(connector, from, to), adjust }
+  if (elbows[preset] === undefined) return { place: route(connector, from, to), preset, adjust }
+  const shape = counted(preset, from, to, start, end)
+  const elbow = elbows[shape]
+  if (elbow === undefined) return null
   const ways = { start: start?.way ?? null, end: end?.way ?? null }
   const rot = elbowTurn(connector, elbow, from, to, ways.start, ways.end)
   const place = route({ ...connector, rot }, from, to)
-  if (elbow.adjusts.length === 0) return { place, adjust }
+  if (elbow.adjusts.length === 0) return { place, preset: shape, adjust: shape === preset ? adjust : {} }
   const bent = elbowAdjust(place, elbow, ways.start, ways.end)
-  if (place.box.cx > 0 || Object.values(bent).every((value) => value === half)) return { place, adjust: bent }
+  if (place.box.cx > 0 || Object.values(bent).every((value) => value === half))
+    return { place, preset: shape, adjust: bent }
   const wide = { ...place, box: { ...place.box, x: place.box.x - pointWide / 2, cx: pointWide } }
-  return { place: wide, adjust: elbowAdjust(wide, elbow, ways.start, ways.end) }
+  return { place: wide, preset: shape, adjust: elbowAdjust(wide, elbow, ways.start, ways.end) }
 }

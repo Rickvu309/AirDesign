@@ -1,6 +1,6 @@
 import { registerScope, type ScopedElement } from "./change.js"
 import { drawnShape } from "./element-outline.js"
-import { outlineOf, routed, routedPresets, siteKinds, siteTie, type Bound, type Tie } from "./connector.js"
+import { outlineOf, routed, routedPresets, siteKinds, siteTie, type Bound, type Routed, type Tie } from "./connector.js"
 import { landedPatch, type Register } from "./decide.js"
 import { addedGeometry } from "./element-order.js"
 import { readElementId, shapeOf, type ElementId } from "./element-id.js"
@@ -58,7 +58,7 @@ function tieOf(register: Register, view: ScopedElement, target: ScopedElement | 
   return outline === null || spot === null ? null : siteTie(spot, outline, end.site)
 }
 
-export function followedPlace(register: Register, node: ElementId): Place | null {
+export function followedPlace(register: Register, node: ElementId): Routed | null {
   if (openingElement(register, node)?.kind !== "connector") return null
   const shaped = shapeAt(register, node, true)
   if (shaped === null || !routedPresets.includes(shaped.preset)) return null
@@ -77,5 +77,5 @@ export function followedPlace(register: Register, node: ElementId): Place | null
   const place = moved ? readPlace(register, node) : null
   if (place === null) return null
   const ties = ends.map((end, at): Tie | null => tieOf(register, view, targets[at], end))
-  return routed(place, shaped.preset, shaped.adjust, ties[0] ?? null, ties[1] ?? null)?.place ?? null
+  return routed(place, shaped.preset, shaped.adjust, ties[0] ?? null, ties[1] ?? null)
 }

@@ -160,7 +160,7 @@ function routedSlide(file: Parts, parts: Parts, slide: string, part: string, byt
     const end = siteOf(now, connector, connector.end)
     const route = routed(connector.place, connector.preset, connector.adjust, start, end)
     if (route === null) continue
-    const { place, adjust } = route
+    const { place, preset, adjust } = route
     const { box } = place
     const at = { slide, part, shape: id }
     next = writeTrait(next, at, "box", {
@@ -172,8 +172,8 @@ function routedSlide(file: Parts, parts: Parts, slide: string, part: string, byt
       flipH: { set: place.flipH },
       flipV: { set: place.flipV },
     })
-    if (bent(connector.adjust, adjust))
-      next = writtenMarkup(next, at, presetMarkup(connector.preset, Object.keys(adjust), adjust))
+    if (preset !== connector.preset || bent(connector.adjust, adjust))
+      next = writtenMarkup(next, at, presetMarkup(preset, Object.keys(adjust), adjust))
   }
   return next
 }

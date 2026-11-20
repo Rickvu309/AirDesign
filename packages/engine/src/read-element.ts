@@ -18,7 +18,7 @@ import {
   type IndexElement,
   type NodeRegister,
   type Palette,
-  type Place,
+  type Routed,
   type Register,
 } from "@airdesign/document"
 import type { ReadElement } from "./read-deck.js"
@@ -40,8 +40,8 @@ function shownValue(value: string | null): string | null {
   return value === null ? null : withCurrentKeys(value)
 }
 
-function turnOf(place: Place) {
-  return { rot: { set: place.rot }, flipH: { set: place.flipH }, flipV: { set: place.flipV } }
+function turnOf({ place }: Routed) {
+  return { box: { rot: { set: place.rot }, flipH: { set: place.flipH }, flipV: { set: place.flipV } } }
 }
 
 function elementOf(
@@ -50,9 +50,9 @@ function elementOf(
   runId: string | null,
   fonts: NonNullable<Palette["fonts"]>,
   indexed: IndexElement | undefined,
-  followed: Place | null,
+  followed: Routed | null,
 ): ReadElement {
-  const box = followed?.box ?? (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
+  const box = followed?.place.box ?? (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
   const own = slideKind(node) === "slide"
   const held = {
     node,
@@ -70,8 +70,9 @@ function elementOf(
   const typed = edited ? shownDesign(indexed?.design ?? {}, currentValue(body)) : indexed?.design
   const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
   const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
-  const turned = followed === null ? [] : [{ v: 1, patch: { box: turnOf(followed) } }]
-  const design = foldDesign(typed, netPatch([...opening, ...rows, ...turned]))
+  const turned = followed === null ? [] : [{ v: 1, patch: turnOf(followed) }]
+  const folded = foldDesign(typed, netPatch([...opening, ...rows, ...turned]))
+  const design = followed === null ? folded : { ...folded, geometry: [followed.preset] as const }
   const line = design === undefined ? "" : printDesign(templateFontDesign(design, fonts))
   const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target
   const link = typeof linkEdit === "object" ? linkEdit.set : indexed?.link

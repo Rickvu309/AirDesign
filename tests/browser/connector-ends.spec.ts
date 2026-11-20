@@ -1,4 +1,5 @@
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
@@ -240,4 +241,22 @@ test("an elbow connector follows Build through a corner resize and a turn in the
   await page.getByRole("button", { name: "Undo rotate", exact: true }).click()
   await expect.poll(() => placement(under)).toEqual(resized)
   await page.context().setOffline(false)
+})
+
+function segments(path: string): number {
+  return path.match(/L/g)?.length ?? 0
+}
+
+test("an elbow goes around in five segments while a person drags Build behind Plan, and keeps them after the drop", async ({
+  page,
+}) => {
+  await openDeck(page, "connectors.pptx")
+  const between = frame(page, "4", deckSlide)
+  expect(segments(await outline(between))).toBe(3)
+  await dragBy(page, frame(page, "3", deckSlide), -340, 40)
+  await expect.poll(async () => segments(await outline(between))).toBe(5)
+  await page.mouse.up()
+  await expect.poll(async () => segments(await outline(between))).toBe(5)
+  await page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true }).click()
+  await expect.poll(async () => segments(await outline(between))).toBe(3)
 })
