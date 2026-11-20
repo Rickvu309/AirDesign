@@ -108,6 +108,39 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await capture("back-to-fit")
   note(`Shift+1 went back to zoom to fit, ${fit}%, the slide ${before.width} px wide again`)
 
+  const safariPrevented = await page.evaluate((point) => {
+    const target = document.elementFromPoint(point.x, point.y)
+    const make = (type, scale) =>
+      Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
+        scale,
+        clientX: point.x,
+        clientY: point.y,
+      })
+    const events = [
+      make("gesturestart", 1),
+      make("gesturechange", 1.25),
+      make("gesturechange", 1.6),
+      make("gestureend", 1.6),
+    ]
+    for (const event of events) target.dispatchEvent(event)
+    return events.map((event) => event.defaultPrevented)
+  }, cursor)
+  expect(safariPrevented).toEqual([true, true, true, true])
+  const pinched = await slideBox(page)
+  const pinchDrift = {
+    x: pinched.x + middle.x * pinched.width - cursor.x,
+    y: pinched.y + middle.y * pinched.height - cursor.y,
+  }
+  expect(Math.abs(pinched.width - before.width * 1.6)).toBeLessThanOrEqual(1)
+  expect(Math.abs(pinchDrift.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(pinchDrift.y)).toBeLessThanOrEqual(1)
+  await capture("safari-pinch")
+  note(
+    `Safari gesture events zoomed ${fit}% to ${await percent(page)}% about the cursor (drift ${pinchDrift.x.toFixed(2)}, ${pinchDrift.y.toFixed(2)} px) and prevented page zoom`,
+  )
+  await page.keyboard.press("Shift+Digit1")
+  await expect.poll(() => percent(page)).toBe(fit)
+
   await zoomWheel(page, cursor, 3)
   await expect.poll(() => percent(page)).toBeGreaterThan(fit)
   const slide = await slideBox(page)
