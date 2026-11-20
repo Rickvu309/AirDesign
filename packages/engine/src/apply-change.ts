@@ -1,4 +1,4 @@
-import { webImage, type CallRefusal, type WireAdd, type WireRunElement, type WireSet } from "@airdesign/catalog"
+import type { CallRefusal, WireAdd, WireRunElement, WireSet } from "@airdesign/catalog"
 import {
   decide,
   openingSlideNumber,
@@ -117,28 +117,6 @@ export type ImageLookup = (address: string) => PlacedImage | undefined
 
 export const noImages: ImageLookup = () => undefined
 
-function mediaRef(value: unknown, images: ImageLookup): unknown {
-  if (typeof value !== "string" || !webImage(value)) return value
-  const found = images(value)
-  return found === undefined ? null : `${found.media.type}:${found.media.sha256}`
-}
-
-function withMedia<Change extends SetChange>(change: Change, images: ImageLookup): Change | null {
-  const fills = change.fills
-  if (fills === undefined || fills === null) return change
-  const source = mediaRef(fills.source, images)
-  const paint = fills.paint
-  const image =
-    typeof paint === "object" && paint !== null && "image" in paint ? mediaRef(paint.image, images) : undefined
-  if (source === null || image === null) return null
-  const next = {
-    ...fills,
-    ...(fills.source === undefined ? {} : { source }),
-    ...(image === undefined ? {} : { paint: { image } }),
-  }
-  return { ...change, fills: next } as Change
-}
-
 function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, images: ImageLookup): Applied {
   if (change.kind === "table") return applyTableAdd(deck, change, runId, base)
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
@@ -162,7 +140,5 @@ export function applyAgentChange(
   images: ImageLookup = noImages,
 ): Applied {
   if (!readFresh(deck, runId, base)) return { ok: false, refusal: "stale" }
-  if (change.op !== "set") return applyAdd(deck, change, runId, base, images)
-  const sourced = withMedia(change, images)
-  return sourced === null ? { ok: false, refusal: "image" } : applySet(deck.register, sourced, runId)
+  return change.op === "set" ? applySet(deck.register, change, runId) : applyAdd(deck, change, runId, base, images)
 }

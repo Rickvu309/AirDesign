@@ -1,4 +1,4 @@
-import { readAgentEdit, webImage, type AgentChange } from "@airdesign/catalog"
+import type { AgentChange } from "@airdesign/catalog"
 import type { ImageLookup, PlacedImage } from "@airdesign/engine"
 
 export type ImageRefusal =
@@ -34,33 +34,28 @@ const imageReasons = {
 
 const unfetched = "it was not fetched on this connection."
 
-function changeAddresses(change: AgentChange): readonly string[] {
-  if (!("op" in change)) return []
-  if (change.op === "add") return "image" in change ? [change.image] : []
-  if (change.op !== "set") return []
-  const fills = change.fills
-  const paint = fills?.paint
-  const named = [
-    fills?.source,
-    typeof paint === "object" && paint !== null && "image" in paint ? paint.image : undefined,
-  ]
-  return named.filter((value): value is string => typeof value === "string" && webImage(value))
-}
-
 export function imageAddresses(raw: unknown): readonly string[] {
-  const parsed = readAgentEdit(raw)
-  return parsed.ok ? [...new Set(parsed.changes.flatMap(changeAddresses))] : []
+  const changes = typeof raw === "object" && raw !== null ? (raw as { readonly changes?: unknown }).changes : undefined
+  if (!Array.isArray(changes)) return []
+  return [
+    ...new Set(
+      changes.flatMap((change: unknown) => {
+        if (typeof change !== "object" || change === null) return []
+        const { op, image } = change as { readonly op?: unknown; readonly image?: unknown }
+        return op === "add" && typeof image === "string" ? [image] : []
+      }),
+    ),
+  ]
 }
 
 export function imageProblem(changes: readonly AgentChange[], images: NamedImages | undefined): string | undefined {
-  const lines = changes.flatMap((change, at) =>
-    changeAddresses(change).flatMap((address) => {
-      const found = images?.get(address)
-      if (found?.ok === true) return []
-      const reason = found === undefined ? unfetched : imageReasons[found.refusal]
-      return [`Change ${String(at + 1)}: ${JSON.stringify(address)} was not used because ${reason}`]
-    }),
-  )
+  const lines = changes.flatMap((change, at) => {
+    if (!("op" in change) || change.op !== "add" || !("image" in change)) return []
+    const found = images?.get(change.image)
+    if (found?.ok === true) return []
+    const reason = found === undefined ? unfetched : imageReasons[found.refusal]
+    return [`Change ${String(at + 1)}: ${JSON.stringify(change.image)} was not used because ${reason}`]
+  })
   return lines.length === 0 ? undefined : lines.join("\n")
 }
 

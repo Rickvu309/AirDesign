@@ -35,7 +35,6 @@ import { foldImage, imageAgents } from "./agent-image.js"
 import { fontReferences } from "./template-font.js"
 import { agentColor, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
-import { imageAddressLength, pictureSourcePattern, webImage } from "./image-address.js"
 import { storableText } from "./storable-text.js"
 
 const emuPerPoint = 12_700
@@ -325,9 +324,7 @@ export function agentSchema(desc: Desc): JsonSchema {
     case "words":
       return { type: "string", maxLength: desc.max }
     case "asset":
-      return desc.media === true
-        ? { type: "string", pattern: pictureSourcePattern, maxLength: imageAddressLength }
-        : { type: "string", pattern: iconNamePattern }
+      return { type: "string", pattern: iconNamePattern }
     case "link":
       return linkSchema
     case "text":
@@ -446,7 +443,7 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
     case "words":
       return readString(raw, (text) => storableText(text) && bytesOf(text) <= desc.max)
     case "asset":
-      return readString(raw, (text) => knownIcon(text) || (desc.media === true && webImage(text)))
+      return readString(raw, knownIcon)
     case "text":
     case "table":
       return readString(raw, storableText)

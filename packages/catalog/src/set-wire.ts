@@ -1,5 +1,4 @@
 import {
-  iconNamePattern,
   inheritable,
   presetAdjusts,
   readElementId,
@@ -18,8 +17,6 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
-import { knownIcon } from "./icon-names.js"
-import { imageAddressLength, imageAddressPattern, webImage } from "./image-address.js"
 import { canonicalFields, canonicalTraits } from "./field-alias.js"
 import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
@@ -161,6 +158,12 @@ function readLineBox(raw: unknown): Box | null {
 
 const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table"]
 
+export const imageAddressLength = 2048
+
+const imageAddressPattern = "^https://\\S+$"
+
+const imageAddress = new RegExp(imageAddressPattern)
+
 function attached(end: unknown): boolean {
   return plainObject(end) && plainObject(end.shape)
 }
@@ -223,12 +226,13 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   const placed = box === undefined ? {} : { box }
   if (raw.image !== undefined) {
     const image = raw.image
-    if (typeof image !== "string" || !webImage(image)) return refused("image")
+    if (typeof image !== "string" || image.length > imageAddressLength || !imageAddress.test(image))
+      return refused("image")
     return { ok: true, change: { op: "add", kind: "shape", slide, ...placed, image } }
   }
   if (raw.icon !== undefined) {
     const icon = readAgent(traits.fills.fields.source.desc, raw.icon)
-    if (!icon.ok || typeof icon.value !== "string" || !knownIcon(icon.value)) return refused("icon")
+    if (!icon.ok || typeof icon.value !== "string") return refused("icon")
     return { ok: true, change: { op: "add", kind: "shape", slide, ...placed, icon: icon.value } }
   }
   const text = raw.text === undefined ? undefined : readTrait("text", raw.text)
@@ -313,8 +317,7 @@ export function addChangeSchema(): JsonSchema {
       box: placedBoxSchema(),
       text: traitSchema("text", null),
       icon: {
-        type: "string",
-        pattern: iconNamePattern,
+        ...agentSchema(traits.fills.fields.source.desc),
         description: "An icon name such as rocket, in place of text.",
       },
       image: {

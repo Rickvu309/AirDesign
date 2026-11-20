@@ -106,33 +106,3 @@ describe("an agent adds an image from the web", () => {
     expect(text(answer)).toContain("Change 1: image is missing or has the wrong form.")
   })
 })
-
-describe("an agent sets an image from the web on a layer it already has", () => {
-  it("lands the stored file as the layer's image source, for fills.source and for an image paint", async () => {
-    const held = session(new Map([[logo, { ok: true, media, width: 400, height: 100 }]]))
-    const answer = await edited(held, [
-      { op: "set", target: "256.2", fills: { paint: { image: logo } } },
-      { op: "set", target: "256.2", fills: { source: logo } },
-    ])
-    expect(answer.isError).not.toBe(true)
-    const landed = held.deck.register.elements[elementId("256.2")]?.landed ?? []
-    const fills = landed.map((row) => ("patch" in row ? row.patch.fills : undefined))
-    const ref = `image/png:${media.sha256}`
-    expect(fills).toContainEqual(expect.objectContaining({ source: { set: ref } }))
-    expect(fills.filter((each) => each?.source !== undefined)).toHaveLength(2)
-    expect(JSON.stringify(held.deck.register)).not.toContain("https://")
-  })
-
-  it("refuses a set whose address could not be fetched and says why", async () => {
-    const held = session(new Map([[logo, { ok: false, refusal: "type" }]]))
-    const answer = await edited(held, [{ op: "set", target: "256.2", fills: { source: logo } }])
-    expect(answer.isError).toBe(true)
-    expect(text(answer)).toContain(`Change 1: "${logo}" was not used because the file is not a PNG, JPEG or GIF`)
-  })
-
-  it("keeps add's icon to Lucide names", async () => {
-    const answer = await edited(session(new Map()), [{ op: "add", kind: "shape", slide: "256", icon: logo }])
-    expect(answer.isError).toBe(true)
-    expect(text(answer)).toContain("Change 1: icon is missing or has the wrong form.")
-  })
-})
