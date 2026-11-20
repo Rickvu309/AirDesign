@@ -18,6 +18,7 @@ export type Pointing = {
   readonly ctrl?: true
   readonly alt?: true
   readonly double?: true
+  readonly hover?: true
 }
 
 export type GestureRow = {
@@ -100,7 +101,7 @@ export const gestures = [
     id: "measure",
     group: "select",
     keys: [],
-    pointing: [{ on: "element", drag: false, alt: true }],
+    pointing: [{ on: "element", drag: false, alt: true, hover: true }],
     where: ["slide"],
   },
   { id: "deselect", group: "select", keys: [{ key: "Escape" }], where: ["element", "text"] },
@@ -196,7 +197,7 @@ export const gestures = [
   },
   { id: "zoom-fit", group: "view", keys: [{ code: "Digit1", shift: true }], where: ["editor"] },
   {
-    id: "zoom-100",
+    id: "zoom-actual",
     group: "view",
     keys: [
       { code: "Digit0", shift: true },
@@ -210,6 +211,12 @@ export const gestures = [
   { id: "tool-hand", group: "view", keys: [{ key: "h" }], where: ["editor"] },
   { id: "pan", group: "view", keys: [{ code: "Space" }], where: ["editor"] },
   { id: "pan-arrows", group: "view", keys: arrows.map((key) => ({ key })), where: ["grid"] },
+  {
+    id: "shortcuts",
+    group: "view",
+    keys: [{ key: "?", ctrl: true, shift: true }],
+    where: ["editor"],
+  },
   { id: "bold", group: "text", keys: [{ key: "b", mod: true }], where: ["element", "text"] },
   { id: "italic", group: "text", keys: [{ key: "i", mod: true }], where: ["element", "text"] },
   { id: "underline", group: "text", keys: [{ key: "u", mod: true }], where: ["element", "text"] },

@@ -60,7 +60,7 @@ async function percent(page: Page): Promise<number> {
 }
 
 test("Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 zooms to 100% and Shift+1 returns to Fit", async ({ page }) => {
-  covers("zoom-in", "zoom-out", "zoom-fit", "zoom-100")
+  covers("zoom-in", "zoom-out", "zoom-fit", "zoom-actual")
   await open(page)
   const fit = await percent(page)
   await page.locator("[data-canvas-stage]").click({ position: { x: 5, y: 5 } })

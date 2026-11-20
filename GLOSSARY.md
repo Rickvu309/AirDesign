@@ -301,7 +301,7 @@ The change that puts a new element on one slide: a text layer, or with `icon` a 
 _Avoid_: insert, create, new
 
 **gesture**:
-One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works: Shift+click adds an element to the selection, Ctrl+G groups the selection.
+One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works. Ctrl+G groups. The Keyboard shortcuts panel, Ctrl+Shift+?, lists them.
 _Avoid_: shortcut (a shortcut is a gesture's keys), hotkey, command
 
 ## Findings

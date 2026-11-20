@@ -42,6 +42,7 @@
   --panel-head-height: 49px;
   --panel-segment-radius: 6px;
   --panel-alignment-height: 56px;
+  --shortcuts-panel-height: 280px;
   --field-edge: #d7d7d6;
   --pressed: var(--blue-tint);
   --tint-text: color-mix(in oklch, var(--primary-strong), var(--navy) 30%);
