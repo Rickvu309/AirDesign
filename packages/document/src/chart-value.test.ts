@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest"
-import { chartLimits, openingChart, readChartValue, writeChartValue, type ChartValue } from "./index.js"
+import {
+  chartFormats,
+  chartLegends,
+  chartLimits,
+  openingChart,
+  readChartValue,
+  writeChartValue,
+  type ChartValue,
+} from "./index.js"
 
 describe("chart value", () => {
   const revenue: ChartValue = {
@@ -32,5 +40,36 @@ describe("chart value", () => {
     expect(read({ ...revenue, categories: Array.from({ length: chartLimits.categories + 1 }, () => "x") })).toBeNull()
     expect(read({ ...revenue, extra: 1 })).toBeNull()
     expect(readChartValue("not json")).toBeNull()
+  })
+
+  it("reads back a consulting chart's title, data labels, axis, gridlines, gap, series colours and legend", () => {
+    const styled: ChartValue = {
+      ...revenue,
+      series: [
+        { name: "2025", values: [4.1, 4.6, 5], color: { rgb: "1F4E79" } },
+        { name: "2026", values: [4.4, 5.1, 5.7], color: { scheme: "accent2" } },
+      ],
+      title: "Revenue grows 12% a year",
+      labels: "#,##0.0",
+      axis: false,
+      gridlines: false,
+      gap: 50,
+      legend: "top",
+    }
+    expect(readChartValue(writeChartValue(styled))).toEqual(styled)
+    expect(chartFormats).toContain("0%")
+    expect(chartLegends).toEqual(["bottom", "top", "right", "left", "none"])
+  })
+
+  it("refuses a setting a PowerPoint chart cannot hold", () => {
+    const read = (value: object) => readChartValue(JSON.stringify({ ...revenue, ...value }))
+    expect(read({ labels: "0.000 widgets" })).toBeNull()
+    expect(read({ gap: -1 })).toBeNull()
+    expect(read({ gap: chartLimits.gap + 1 })).toBeNull()
+    expect(read({ gap: 12.5 })).toBeNull()
+    expect(read({ legend: "middle" })).toBeNull()
+    expect(read({ axis: "no" })).toBeNull()
+    expect(read({ title: "x".repeat(chartLimits.title + 1) })).toBeNull()
+    expect(read({ series: [{ name: "2025", values: [1, 2, 3], color: { rgb: "blue" } }] })).toBeNull()
   })
 })

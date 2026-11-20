@@ -19,7 +19,7 @@ import { DesignSection } from "@/editor/design-panel"
 import { cn } from "@/lib/class-names"
 import { heldChart } from "@/live-repaint"
 
-function Field(props: {
+export function ChartField(props: {
   readonly label: string
   readonly value: string
   readonly numeric?: boolean
@@ -94,19 +94,26 @@ function withRow(chart: ChartValue): ChartValue {
   }
 }
 
-export function ChartDataSection(props: { readonly deck: DesignDeck; readonly node: ElementId }) {
-  const { deck, node } = props
+export type ChartEdit = (edit: (fresh: ChartValue) => ChartValue) => void
+
+export function useHeldChart(deck: DesignDeck, node: ElementId): { chart: ChartValue | null; save: ChartEdit } {
   const { shown } = deck
   const held = () => heldChart(shown.shownRegister.current, node)
   const shownValue = useSyncExternalStore(shown.store.current.slideSubscribe(slideId(shapeOf(node).slide)), held)
   const chart = shownValue === null ? null : readChartValue(shownValue)
-  if (chart === null) return null
-  const save = (edit: (fresh: ChartValue) => ChartValue) =>
+  const save: ChartEdit = (edit) =>
     changeDesign(deck, () => {
       const before = held()
       const fresh = (before === null ? null : readChartValue(before)) ?? chart
+      if (fresh === null) return []
       return { target: { node }, chart: { value: writeChartValue(edit(fresh)) } }
     })
+  return { chart, save }
+}
+
+export function ChartDataSection(props: { readonly deck: DesignDeck; readonly node: ElementId }) {
+  const { chart, save } = useHeldChart(props.deck, props.node)
+  if (chart === null) return null
   const many = chart.kind !== "pie"
   const columns = chart.series.length
   return (
@@ -150,7 +157,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
           <span />
           {chart.series.map((series, column) => (
             <div key={`name ${String(column)}`} className="flex min-w-0 items-center">
-              <Field
+              <ChartField
                 label={chartCopy.series(column + 1)}
                 value={series.name}
                 onCommit={(name) =>
@@ -180,7 +187,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
             <span />
           )}
           {chart.categories.map((category, row) => [
-            <Field
+            <ChartField
               key={`label ${String(row)}`}
               label={chartCopy.category(row + 1)}
               value={category}
@@ -192,7 +199,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
               }
             />,
             ...chart.series.map((series, column) => (
-              <Field
+              <ChartField
                 key={`value ${String(row)} ${String(column)}`}
                 label={chartCopy.value(row + 1, column + 1)}
                 value={String(series.values[row] ?? 0)}
