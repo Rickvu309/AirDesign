@@ -89,7 +89,7 @@ PersonWrites ==
   /\ edited' = IF phase = "running" THEN TRUE ELSE edited
   /\ UNCHANGED <<phase, agent, readAt, agentAt, claims, sawFirst, sawSecond, atFirst, stoppedAt, beforeFrozen, laterFrozen, refused, hidden>>
 
-\* The device writes the height it measured as a person row that sets only box.h. It lands like a person write but guards nothing, so the run that changed the text keeps editing.
+\* The device writes the size it measured from the text as a person row that sets only box.h, or box.w and box.h. It lands like a person write but guards nothing, so the run that changed the text keeps editing.
 DeviceMeasures ==
   /\ \/ agent = 1 /\ personAfter = 0
      \/ agent = 0 /\ personBefore = 0

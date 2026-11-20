@@ -44,19 +44,21 @@ export function xmlText(value: string): string {
   return text
 }
 
-function paragraph(text: string): string {
+export type NewTextAlign = "left" | "center"
+
+function paragraph(text: string, align: NewTextAlign): string {
   let xml = "<a:p></a:p>"
-  xml = insertChild("a:p", "a:pPr", `<a:pPr algn="ctr"/>`, xml)
+  if (align === "center") xml = insertChild("a:p", "a:pPr", `<a:pPr algn="ctr"/>`, xml)
   xml = insertChild("a:p", "a:r", `<a:r><a:t>${xmlText(text)}</a:t></a:r>`, xml)
   xml = insertChild("a:p", "a:endParaRPr", `<a:endParaRPr lang="en-US"/>`, xml)
   return xml
 }
 
-function textBody(text: string): string {
+function textBody(text: string, align: NewTextAlign): string {
   let xml = "<p:txBody></p:txBody>"
   xml = insertChild("p:txBody", "a:bodyPr", "<a:bodyPr/>", xml)
   xml = insertChild("p:txBody", "a:lstStyle", "<a:lstStyle/>", xml)
-  xml = insertChild("p:txBody", "a:p", paragraph(text), xml)
+  xml = insertChild("p:txBody", "a:p", paragraph(text, align), xml)
   return xml
 }
 
@@ -101,11 +103,12 @@ export function addTextShape(
   text: string,
   box: ShapeBox,
   id?: number,
+  align: NewTextAlign = "center",
 ): { readonly xml: string; readonly id: number } {
   return appendShape(
     slideXml,
     (idText) =>
-      `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`,
+      `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text, align)}</p:sp>`,
     id,
   )
 }

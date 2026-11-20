@@ -1,13 +1,7 @@
 import type { Landed, Register } from "./decide.js"
 import type { ElementId } from "./element-id.js"
 import { layoutNodes, readLayout } from "./frame-layout.js"
-import type { Value } from "./value.js"
-
-export function heightOnly(edit: Value): boolean {
-  if (edit.v === undefined) return false
-  const traits = Object.keys(edit.patch)
-  return traits.length === 1 && traits[0] === "box" && Object.keys(edit.patch.box ?? {}).join() === "h"
-}
+import { hugsText } from "./text-resizing.js"
 
 function heightSet(row: Landed): boolean {
   return row.v === undefined ? row.property === "box" : row.patch.box?.h !== undefined
@@ -40,12 +34,18 @@ function autoChildren(register: Register): readonly ElementId[] {
   })
 }
 
+function measured(register: Register): readonly ElementId[] {
+  const children = autoChildren(register)
+  const hugging = register.nodes.filter((node) => !children.includes(node) && hugsText(register, node))
+  return [...children, ...hugging]
+}
+
 export function measureOwed(register: Register): readonly ElementId[] {
-  return autoChildren(register).filter((node) => unmeasured(register, node, true))
+  return measured(register).filter((node) => unmeasured(register, node, true))
 }
 
 export function measureStale(register: Register): readonly ElementId[] {
-  return autoChildren(register).filter((node) => unmeasured(register, node, false))
+  return measured(register).filter((node) => unmeasured(register, node, false))
 }
 
 export function measureDue(register: Register): readonly ElementId[] {

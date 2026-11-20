@@ -199,9 +199,9 @@ export function paintCanvas(
     if (inFrame !== undefined) return [key, { ...marked, inFrame, ...measure }] as const
     const opacity = framed?.opacities.get(shape.id)
     const faded = opacity === undefined ? {} : { opacity }
-    return [key, frame === undefined ? marked : { ...marked, frame, ...faded }] as const
+    return [key, frame === undefined ? { ...marked, ...measure } : { ...marked, frame, ...faded }] as const
   })
-  const plain = refit.size === 0 && (framed === undefined || framed.frames.size === 0)
+  const plain = refit.size === 0 && (framed === undefined || (framed.frames.size === 0 && framed.owed.size === 0))
   const source = plain ? painted.source : { ...painted.source, shapes: new Map(shapes) }
   return { slide: slideCanvas(reader, source, recorded, file, swatches), media }
 }

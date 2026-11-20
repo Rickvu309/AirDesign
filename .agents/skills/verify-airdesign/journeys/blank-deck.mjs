@@ -8,7 +8,7 @@ const typed = "My first deck"
 
 function textsIn(register) {
   return Object.values(register?.elements ?? {}).flatMap((element) => {
-    const last = element.landed.filter((landed) => landed.visible).at(-1)
+    const last = element.landed.filter((landed) => landed.visible && typeof landed.value === "string").at(-1)
     return last === undefined
       ? []
       : [

@@ -11,7 +11,7 @@ One run edits one element while a person edits it too.
 - `PersonAlwaysLands`: a person's edit to a present element is never refused. Harm if broken: a person's typing is lost.
 - `AgentSawCurrent`: every agent row was written on the version it read, or on its own run's claim. Harm: an agent overwrites text it never saw.
 - `ProtectedFromRun` and `GuardedRunRefusesAsProtected`: once a person edits during a run, no later agent row of that run lands, and the refusal is `person-protected` whatever the read. Harm: the agent writes over a person mid-edit.
-- `GuardedOnlyByAPersonEdit`: a run is guarded only by a person's own edit. `DeviceMeasures`, the device writing a measured height as a person row that sets only `box.h` (`heightOnly` in `packages/document/src/frame-measure.ts`), lands like a person write but guards nothing. Harm if broken: after the open tab measures a frame child the agent just edited, the agent's next edit of that child is refused `person-protected`.
+- `GuardedOnlyByAPersonEdit`: a run is guarded only by a person's own edit. `DeviceMeasures`, the device writing the size it measured from the text as a person row that sets only `box.h`, or `box.w` and `box.h` (`measuredOnly` in `packages/document/src/measured-row.ts`), lands like a person write but guards nothing. Harm if broken: after the open tab measures a frame child or text that hugs its text the agent just edited, the agent's next edit of it is refused `person-protected`.
 - `StopFences`: after Stop, no agent row of that run lands. Harm: a stopped agent keeps writing.
 - `UndoRevertsOnlyTheRun`: run Undo hides only that run's rows and keeps every person edit. Harm: Undo erases a person's work.
 

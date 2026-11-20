@@ -156,10 +156,19 @@ export function withFileFloors(register: Register, parts: Parts): Register {
   return elements === register.elements ? register : { ...register, elements }
 }
 
+function addedLayer(register: Register | null, id: ElementId): boolean {
+  return (
+    register?.order.some(
+      (command) => command.slide === "element-add" && command.element.node === id && command.pasted === undefined,
+    ) === true
+  )
+}
+
 function refitted(register: Register | null, { id, file, opening }: SlideShape): boolean {
   const box = landedBox(register, id)
   const resized = box !== null && (box.cx !== opening?.cx || box.cy !== opening?.cy)
-  if (resized || laidOut(register, id) || newSlideElement(register, id) !== undefined) return true
+  if (resized || laidOut(register, id) || newSlideElement(register, id) !== undefined || addedLayer(register, id))
+    return true
   return shownValue(register, id, file) !== file
 }
 

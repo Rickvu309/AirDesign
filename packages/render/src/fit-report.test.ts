@@ -41,7 +41,7 @@ describe("the device's answer to a measure an agent's edit owes", () => {
             store,
             slide: { width: 9_144_000, height: 5_143_500, background: null, elements: [child(measure)] },
             width: 960,
-            onFit: (_: unknown, height: number) => fits.push(height),
+            onFit: (_: unknown, size: { readonly height: number }) => fits.push(size.height),
           }),
         ),
       )

@@ -555,8 +555,8 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
   })
 })
 
-it("asks the canvas to grow a box whose file resizes it to fit, and to fit nothing when the file says none", () => {
-  expect(painted({ text: { ...text, fit: "grow" } }).text?.fit).toEqual({ kind: "grow" })
+it("asks the canvas to keep a box whose file resizes it to fit as the file stores it until it is edited, and to fit nothing when the file says none", () => {
+  expect(painted({ text: { ...text, fit: "grow" } }).text?.fit).toEqual({ kind: "grow", held: true })
   expect(painted({ text: { ...text, fit: "none" } }).text).not.toHaveProperty("fit")
 })
 

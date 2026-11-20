@@ -3,6 +3,7 @@ import {
   elementId,
   openRegister,
   slideId,
+  textOpening,
   type Geometry,
   type Register,
   type SlideCommand,
@@ -24,20 +25,28 @@ function landed(register: Register, edit: SlideCommand | null): Register {
   return decision.register
 }
 
-it("centres a new text box on the slide under the next free id, and never reuses a removed one", () => {
+it("starts a new auto width text layer, one line high and one line wide, at the top left of the free room a text box takes, under the next free id, and never reuses a removed one", () => {
   const parts = onSlide(xml(twoBoxSlide))
-  const added = elementCommand(parts, openRegister("", ""), { change: "text", index: 0, size })
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const added = elementCommand(parts, openRegister("", ""), { change: "text", index: 0, size: slide })
   expect(added).toEqual({
     slide: "element-add",
     id: "256",
-    element: { node: "256.4", kind: "shape", value: "", box: { x: 300, y: 220, cx: 400, cy: 60 }, grouped: false },
+    element: {
+      node: "256.4",
+      kind: "shape",
+      value: "",
+      box: { x: 3_657_600, y: 3_017_520, cx: 274_320, cy: 274_320 },
+      grouped: false,
+      opening: textOpening("auto-width"),
+    },
   })
   const removed = landed(landed(openRegister("", ""), added), {
     slide: "element-remove",
     id: file[0]!,
     node: elementId("256.4"),
   })
-  expect(elementCommand(parts, removed, { change: "text", index: 0, size })).toMatchObject({
+  expect(elementCommand(parts, removed, { change: "text", index: 0, size: slide })).toMatchObject({
     element: { node: "256.5" },
   })
 })
@@ -90,8 +99,9 @@ it("exports a slide whose typed element was then removed", () => {
 
 it("puts a new text box clear of the boxes the slide paints, and not on top of the box before it", () => {
   const parts = onSlide(xml(twoBoxSlide))
-  const title = { x: 100, y: 50, cx: 800, cy: 150 }
-  const subtitle = { x: 100, y: 220, cx: 800, cy: 120 }
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const title = { x: 487_680, y: 685_800, cx: 11_216_640, cy: 1_371_600 }
+  const subtitle = { x: 487_680, y: 2_286_000, cx: 11_216_640, cy: 1_828_800 }
   const elements = [title, subtitle].map((box) => ({
     box: {
       x: box.x,
@@ -103,13 +113,13 @@ it("puts a new text box clear of the boxes the slide paints, and not on top of t
       flipV: false,
     } satisfies PaintBox,
   }))
-  const first = elementCommand(parts, openRegister("", ""), { change: "text", index: 0, size: { ...size, elements } })
+  const first = elementCommand(parts, openRegister("", ""), { change: "text", index: 0, size: { ...slide, elements } })
   if (first?.slide !== "element-add") throw new Error("no add")
   const box = first.element.box
   expect(box).not.toBeNull()
   if (box === null) return
   expect(box.y).toBeGreaterThanOrEqual(subtitle.y + subtitle.cy)
-  expect(box.y + box.cy).toBeLessThanOrEqual(size.height)
+  expect(box.y + box.cy).toBeLessThanOrEqual(slide.height)
 })
 
 it("says why it cannot delete an animated shape and a shape inside a group, and nothing for a plain shape or a group", () => {
@@ -240,4 +250,19 @@ it("deletes a group with the layers inside it in one edit, and its restore bring
   expect(readShapes(exportedParts(grouped, gone)).map((shape) => shape.shape)).toEqual(["2"])
   const back = landed(gone, { slide: "element-restore", id: file[0]!, node: elementId("256.9") })
   expect(readShapes(exportedParts(grouped, back)).map((shape) => shape.shape)).toEqual(["2", "9", "3"])
+})
+
+it("writes a new text layer with no inset, as an auto width box that hugs its text, left aligned", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const added = elementCommand(parts, openRegister("", ""), {
+    change: "text",
+    index: 0,
+    size: { width: 12_192_000, height: 6_858_000 },
+  })
+  const slide = new TextDecoder().decode(
+    exportedParts(parts, landed(openRegister("", ""), added)).get("ppt/slides/slide1.xml"),
+  )
+  const shape = slide.slice(slide.indexOf('<p:cNvPr id="4"'))
+  expect(shape).toContain('<a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" wrap="none"><a:spAutoFit/></a:bodyPr>')
+  expect(shape).not.toContain("algn=")
 })

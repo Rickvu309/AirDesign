@@ -1,6 +1,7 @@
 import { gridUndoable } from "./grid-undo.js"
 import type { GridUndoable, GridTurn } from "./grid-order.js"
 import { decide, landedPatch, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
+import { measuredOnly, personWrote } from "./measured-row.js"
 import { readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
@@ -108,7 +109,9 @@ function shownWith(register: Register, node: ElementId, landed: ElementPatch): E
 
 function shownOn(register: Register, node: ElementId): ElementPatch {
   const body = register.elements[node]
-  return shownWith(register, node, body === undefined ? {} : landedPatch(body, valueHolder(register, node, "person")))
+  if (body === undefined) return shownWith(register, node, {})
+  const written = { ...body, landed: body.landed.filter((row) => !measuredOnly(row)) }
+  return shownWith(register, node, landedPatch(written, valueHolder(register, node, "person")))
 }
 
 function stillShows(register: Register, node: ElementId, shown: ElementPatch): boolean {
@@ -354,7 +357,7 @@ export function redoOf(register: Register, undoable: Undoable): Turns {
 }
 
 function personEdited(register: Register, node: ElementId): boolean {
-  return register.elements[node]?.landed.some((row) => row.actor === "person" && row.visible) === true
+  return register.elements[node]?.landed.some(personWrote) === true
 }
 
 function fencedSince(

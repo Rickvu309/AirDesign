@@ -1,5 +1,5 @@
 import type { ElementId } from "@airdesign/document"
-import { SlideCanvas, type PaintStore } from "@airdesign/render"
+import { SlideCanvas, type FitSize, type PaintStore } from "@airdesign/render"
 import type { SlideCanvases } from "@/canvas-source"
 
 export function owingSlides(store: PaintStore, owed: ReadonlySet<ElementId>, shown: number): readonly number[] {
@@ -14,7 +14,7 @@ export function MeasuredSlides(props: {
   readonly canvases: SlideCanvases
   readonly store: PaintStore
   readonly width: number
-  readonly onFit: (node: ElementId, height: number) => void
+  readonly onFit: (node: ElementId, size: FitSize) => void
 }) {
   if (props.slides.length === 0) return null
   return (

@@ -11,6 +11,7 @@ import {
   boxOf,
   SlideCanvas,
   type Copied,
+  type FitSize,
   type FlippedLayer,
   type LayerClipboard,
   type LayerPaste,
@@ -23,6 +24,7 @@ import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { commitPlace } from "@/editor/group-actions"
 import { commitEdit, cornersPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
+import { latestFit } from "@/editor/latest-fit"
 import { resizedCorners } from "@/resized-corners"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
@@ -137,13 +139,15 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     return outcome
   }
 
-  async function fitted(node: ElementId, height: number) {
+  async function fitted(node: ElementId, size: FitSize) {
     const floor = boxes.current.get(node)?.file ?? movables.current.get(node)?.file ?? ""
-    const row = { v: format, patch: { box: { h: { set: height } } } }
+    const width = size.width === undefined ? {} : { w: { set: size.width } }
+    const row = { v: format, patch: { box: { ...width, h: { set: size.height } } } }
+    const latest = latestFit(store.current, node)
     if (!(await connect(memoryRemote()).enqueueRow(id, row, node, floor)).ok) return
     await deck.shown.showEdited(current)
     const shownRegister = deck.shown.shownRegister.current
-    if (shownRegister !== null)
+    if (shownRegister !== null && latest())
       store.current.placeBox(node, landedBox(indexedRegister(deck.shown.shownParts.current, shownRegister), node))
     settle(await flushPending(connect, id))
   }
@@ -377,7 +381,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
         canvases={canvases.current}
         store={store.current}
         width={width}
-        onFit={(node, height) => void fitted(node, height)}
+        onFit={(node, size) => void fitted(node, size)}
       />
     )
   }
@@ -456,7 +460,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
               clear()
               void holding(targets, () => changeElement({ change: "remove", nodes: targets }))
             }}
-            onFit={(node, height) => void fitted(node, height)}
+            onFit={(node, size) => void fitted(node, size)}
             onEdit={(target, value, kind) => {
               clear()
               void holding([target], () => onEdit(target, value, kind))

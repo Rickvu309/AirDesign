@@ -20,7 +20,7 @@ async function typeAtEnd(page: Page, text: string): Promise<void> {
 
 function lastText(register: SavedRegister): string | undefined {
   const values = Object.values(register.elements).flatMap((element) => {
-    const last = element.landed.filter((landed) => landed.visible).at(-1)
+    const last = element.landed.filter((landed) => landed.visible && typeof landed.value === "string").at(-1)
     return last === undefined ? [] : [last.value]
   })
   const value = values.at(-1)
