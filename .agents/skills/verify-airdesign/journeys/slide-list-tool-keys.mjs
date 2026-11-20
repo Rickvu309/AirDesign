@@ -37,9 +37,12 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   for (const [step, key] of ["r", "o", "l"].entries()) {
     await page.locator('[data-slide-entry="2"]').click()
     await page.keyboard.press(key)
+    await page.keyboard.press("Enter")
     await expect(layers).toHaveCount(step + 2)
   }
   await capture("shapes-from-slide-list")
   await expect.poll(adds).toBe(4)
-  note("R, O and L pressed after a click in the slide list each added one shape; the server holds 4 element-adds")
+  note(
+    "R, O and L pressed after a click in the slide list each armed a shape tool that Enter placed; the server holds 4 element-adds",
+  )
 }

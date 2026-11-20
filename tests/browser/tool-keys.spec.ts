@@ -83,7 +83,7 @@ test("a digit sets the selected layer's opacity in tens, and two quick digits se
   await expect(field).toHaveValue(/^70/)
 })
 
-test("after Add slide or a click in the slide list, T arms the Text tool and R, O and L add shapes", async ({
+test("after Add slide or a click in the slide list, T arms the Text tool and R, O and L arm shape tools", async ({
   page,
 }) => {
   covers("tool-text", "tool-rectangle", "tool-ellipse", "tool-line")
@@ -103,6 +103,7 @@ test("after Add slide or a click in the slide list, T arms the Text tool and R, 
   for (const [step, key] of ["r", "o", "l"].entries()) {
     await page.locator("[data-slide-list] [data-slide-entry][aria-current]").click()
     await page.keyboard.press(key)
+    await page.keyboard.press("Enter")
     await expect(layers).toHaveCount(step + 2)
   }
 })
