@@ -28,6 +28,7 @@ async function drive(kit) {
   await page.keyboard.press("ControlOrMeta+KeyG")
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", "256.4")
   await page.keyboard.press("ControlOrMeta+KeyD")
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", "256.5")
   for (let step = 0; step < 20; step += 1) await page.keyboard.press("Shift+ArrowDown")
   await expect(page.locator(label)).toHaveCount(1)
 }
