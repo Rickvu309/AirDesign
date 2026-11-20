@@ -75,6 +75,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/editor/use-grid-marquee.ts": ["Escape"],
   "apps/web/src/editor/zoom-menu.tsx": ["ArrowDown", "ArrowUp", ...field, "Tab"],
   "apps/web/src/present/use-present.ts": [" ", "Enter", "Tab"],
+  "packages/render/src/connector-ends.tsx": ["Control", "Shift"],
   "packages/render/src/held-keys.ts": ["Backspace", ...field, "Tab"],
   "packages/render/src/measuring.ts": ["Alt"],
   "packages/render/src/passage.tsx": ["Backspace", "Delete", "Enter"],
