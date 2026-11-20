@@ -518,6 +518,130 @@
         "tests/browser/control-length.spec.ts",
         "tests/browser/control-percent.spec.ts"
       ]
+    },
+    "bd49ce37e6ae2241a04fb67df70f6fc991461b65": {
+      "title": "Delete a group with its layers, and close a refusal notice after 3 s",
+      "files": [
+        ".agents/skills/verify-airdesign/look/states/group-deleted.mjs",
+        "apps/web/src/components/ui/toast.rule.md",
+        "apps/web/src/components/ui/toast.test.tsx",
+        "apps/web/src/components/ui/toast.tsx",
+        "apps/web/src/copy/element-copy.ts",
+        "apps/web/src/editor/editable-slide.tsx",
+        "apps/web/src/editor/inserts.ts",
+        "apps/web/src/element-edit.test.ts",
+        "apps/web/src/element-edit.ts",
+        "packages/catalog/src/slide-change-wire.ts",
+        "packages/document/src/element-order.test.ts",
+        "packages/document/src/element-order.ts",
+        "packages/document/src/element-takes.test.ts",
+        "packages/document/src/element-takes.ts",
+        "packages/engine/src/read-deck.ts",
+        "packages/mcp/src/change-detail.ts",
+        "packages/mcp/src/edit-tool.kind.test.ts",
+        "tests/browser/group-delete.spec.ts",
+        "tests/browser/spec-seconds.json"
+      ]
+    },
+    "9362c745a24ae82aeafd416e2d26b782bc1b04b2": {
+      "title": "Open a deck whose device files are gone, and say why an export stopped",
+      "files": [
+        ".agents/skills/verify-airdesign/look/states/export-file-missing.mjs",
+        "apps/web/src/copy/product-copy.ts",
+        "apps/web/src/editor/use-deck-status.ts",
+        "apps/web/src/editor/use-export.test.ts",
+        "apps/web/src/editor/use-export.ts",
+        "apps/web/src/export/export-deck.ts",
+        "apps/web/src/thin-notice.tsx",
+        "packages/live/src/browser-fixtures.ts",
+        "packages/live/src/part.test.ts",
+        "packages/live/src/part.ts",
+        "tests/browser/device-files.spec.ts",
+        "tests/browser/spec-seconds.json",
+        "tests/browser/thin-deck.spec.ts"
+      ]
+    },
+    "3cab36dee3708df9d5312aa0ce1cc375dd9b9f2f": {
+      "title": "Insert a table and type in its cells, and let agents add and fill tables",
+      "files": [
+        ".agents/skills/verify-airdesign-formal/checks-element.md",
+        ".agents/skills/verify-airdesign/features/README.md",
+        ".agents/skills/verify-airdesign/features/tables.md",
+        ".agents/skills/verify-airdesign/journeys/table-fill.mjs",
+        ".agents/skills/verify-airdesign/journeys/table-insert.mjs",
+        ".agents/skills/verify-airdesign/look/states/table-picker.mjs",
+        ".agents/skills/verify-airdesign/look/states/table-typing.mjs",
+        "apps/api/src/aira-streams/add-table.sse",
+        "apps/api/src/aira-streams/tabled.sse",
+        "apps/web/src/control-kinds.test.ts",
+        "apps/web/src/copy/shortcut-copy.ts",
+        "apps/web/src/copy/table-copy.ts",
+        "apps/web/src/corpus-edits.ts",
+        "apps/web/src/design/panel-arrangement.ts",
+        "apps/web/src/design/panel-order.test.ts",
+        "apps/web/src/design/panel.ts",
+        "apps/web/src/editor/editable-slide.tsx",
+        "apps/web/src/editor/editor-routes.ts",
+        "apps/web/src/editor/editor-screens.tsx",
+        "apps/web/src/editor/editor-shell.test.tsx",
+        "apps/web/src/editor/editor-shell.tsx",
+        "apps/web/src/editor/editor-toolbar.tsx",
+        "apps/web/src/editor/inserts.ts",
+        "apps/web/src/editor/screens/slide-views.tsx",
+        "apps/web/src/editor/table-size.ts",
+        "apps/web/src/editor/table-tool.test.tsx",
+        "apps/web/src/editor/table-tool.tsx",
+        "apps/web/src/editor/tool-keys.ts",
+        "apps/web/src/editor/toolbar-fold.test.ts",
+        "apps/web/src/editor/toolbar-fold.ts",
+        "apps/web/src/editor/toolbar-tools.test.ts",
+        "apps/web/src/editor/toolbar-tools.ts",
+        "apps/web/src/editor/use-editor-deck.ts",
+        "apps/web/src/element-edit.ts",
+        "apps/web/src/gesture-keys.test.ts",
+        "apps/web/src/table-hook.tsx",
+        "apps/web/src/thin-deck.tsx",
+        "apps/web/src/trait-parity.test.ts",
+        "packages/catalog/src/authoring.ts",
+        "packages/catalog/src/edit-wire.ts",
+        "packages/catalog/src/index.ts",
+        "packages/catalog/src/set-wire.ts",
+        "packages/catalog/src/slide-wire.test.ts",
+        "packages/catalog/src/slide-wire.ts",
+        "packages/catalog/src/table-authoring.test.ts",
+        "packages/catalog/src/trait-wire-table.ts",
+        "packages/catalog/src/trait-wire.ts",
+        "packages/document/src/change.ts",
+        "packages/document/src/index.ts",
+        "packages/document/src/table-value.ts",
+        "packages/engine/src/agent-elements.ts",
+        "packages/engine/src/agent-line.ts",
+        "packages/engine/src/apply-change.test.ts",
+        "packages/engine/src/apply-change.ts",
+        "packages/engine/src/call.table.test.ts",
+        "packages/live/src/cache.table.test.ts",
+        "packages/live/src/cache.ts",
+        "packages/mcp/src/edit-tool.kind.test.ts",
+        "packages/mcp/src/kind-instructions.test.ts",
+        "packages/mcp/src/kind-refusal.ts",
+        "packages/mcp/src/kind-sentences.test.ts",
+        "packages/render/src/element-host.tsx",
+        "packages/render/src/gestures.ts",
+        "packages/render/src/slide-canvas.tsx",
+        "packages/render/src/table-paint.test.ts",
+        "packages/render/src/table-paint.tsx",
+        "packages/render/src/text-entry.ts",
+        "specs/element/covers.json",
+        "tests/browser/editor-tools.spec.ts",
+        "tests/browser/imported-table.spec.ts",
+        "tests/browser/table-cells.spec.ts",
+        "tests/browser/table-edits.spec.ts",
+        "tests/browser/table-readable.spec.ts",
+        "tests/browser/table-tool.spec.ts",
+        "tests/browser/type-at-once.spec.ts",
+        "tests/element-replay.ts",
+        "tests/journeys/journeys.spec.ts"
+      ]
     }
   },
   "windows": [
@@ -637,6 +761,33 @@
         {
           "id": 43776898897,
           "sha": "19f54bc73147a5b80a17f7beed79fd9b394661c2",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "commits": [
+        "bd49ce37e6ae2241a04fb67df70f6fc991461b65",
+        "9362c745a24ae82aeafd416e2d26b782bc1b04b2",
+        "3cab36dee3708df9d5312aa0ce1cc375dd9b9f2f"
+      ],
+      "runs": [
+        {
+          "id": 44749476203,
+          "sha": "3cab36dee3708df9d5312aa0ce1cc375dd9b9f2f",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 44748130700,
+          "sha": "9362c745a24ae82aeafd416e2d26b782bc1b04b2",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "id": 44747533661,
+          "sha": "bd49ce37e6ae2241a04fb67df70f6fc991461b65",
           "status": "completed",
           "conclusion": "success"
         }

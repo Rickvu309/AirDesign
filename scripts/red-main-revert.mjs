@@ -57,6 +57,69 @@ const newerGreen = ({ runs, commits, target }) => {
   return runs.find((run) => run.conclusion === "success" && from !== -1 && commits.indexOf(run.sha) > from)
 }
 
+const short = (sha) => sha.slice(0, 7)
+
+const revertCiPassed = ({ repository, io, branch, head }) => {
+  const listed = io.gh([
+    "run",
+    "list",
+    "--repo",
+    repository,
+    "--workflow",
+    "ci.yml",
+    "--branch",
+    branch,
+    "--limit",
+    "20",
+    "--json",
+    "databaseId,headSha,status,conclusion",
+  ])
+  const runs = listed.status === 0 ? JSON.parse(listed.stdout || "[]") : []
+  const [latest] = runs.filter((run) => run.headSha === head).sort((left, right) => right.databaseId - left.databaseId)
+  return latest?.status === "completed" && latest.conclusion === "success"
+}
+
+const mergeRevert = ({ repository, io, number, head, target, why }) => {
+  if (io.owner === undefined) return { failed: true, why: "RED_MAIN_TOKEN is missing" }
+  const merged = io.owner([
+    "pr",
+    "merge",
+    String(number),
+    "--repo",
+    repository,
+    "--rebase",
+    "--match-head-commit",
+    head,
+  ])
+  const queued =
+    merged.status === 0
+      ? merged
+      : io.owner([
+          "pr",
+          "merge",
+          String(number),
+          "--repo",
+          repository,
+          "--auto",
+          "--rebase",
+          "--match-head-commit",
+          head,
+        ])
+  if (queued.status !== 0) {
+    io.redMain(`${agentHeader}\n\nThe revert of ${target} passed ci, and merging it failed: ${queued.stderr.trim()}`)
+    return { failed: true }
+  }
+  io.redMain(`${agentHeader}\n\n${why}, so the bot merged the revert of ${target}.`)
+  return { failed: false }
+}
+
+const confirmation = (repository, decision) => {
+  const tests = decision.judgment.tests.filter((each) => each.repeated).map((each) => each.title.replace(/^Race: /, ""))
+  return tests.length === 0
+    ? `ci on main is red for certain in run ${runUrl(repository, decision.judgment.run.id)}, and the revert passed ci while main was still red`
+    : `${tests.join(", ")} failed on main in run ${runUrl(repository, decision.run.id)} and again in run ${runUrl(repository, decision.judgment.run.id)}, and the revert passed ci while main was still red`
+}
+
 const openRevert = ({ repository, io, decision, event, say, drill }) => {
   const target = drill?.sha ?? decision.target
   const branch = drill ? drillBranch(drill) : revertBranch(target)
@@ -87,12 +150,23 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
     "--state",
     "all",
     "--json",
-    "number,state,url",
+    "number,state,url,headRefOid",
   ])
   const [pull] = known.status === 0 ? JSON.parse(known.stdout || "[]") : []
   if (drill && (known.status !== 0 || pull !== undefined))
     return fail(`could not establish that ${branch} has no pull request: ${pull?.url ?? known.stderr.trim()}`)
-  if (pull?.state === "OPEN") return say(`the revert of ${target} is open: ${pull.url}`)
+  if (pull?.state === "OPEN") {
+    if (decision.action !== "revert" || !revertCiPassed({ repository, io, branch, head: pull.headRefOid }))
+      return say(`the revert of ${target} is open: ${pull.url}`)
+    return mergeRevert({
+      repository,
+      io,
+      number: pull.number,
+      head: pull.headRefOid,
+      target,
+      why: confirmation(repository, decision),
+    })
+  }
   if (pull !== undefined) {
     io.redMain(
       `${agentHeader}\n\nci is still red on main in run ${runUrl(repository, event.id)}. The revert of ${target} is ${pull.state.toLowerCase()} (${pull.url}), so the bot opens no other: fix forward.`,
@@ -165,8 +239,11 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
       `body=${countersignBody({ head, verdict: "right", reason: `an exact revert of ${target}${drill ? " for the red-main drill" : ", which turned ci on main red"} that puts back the bar main had before that commit` })}`,
     ])
   if (drill) return { failed: false, url, head, branch }
+  const from = `${target}${culprit === undefined ? "" : ` from #${culprit.number}`}`
   io.redMain(
-    `${agentHeader}\n\nci failed on main in run ${runUrl(repository, decision.run.id)}. The first red commit is ${target}${culprit === undefined ? "" : ` from #${culprit.number}`}. The bot opened ${url} on branch ${branch} to revert it, and merges it once its ci passes while main is still red.`,
+    decision.action === "suspect"
+      ? `${agentHeader}\n\nci failed on main in run ${runUrl(repository, decision.run.id)}, only in browser tests that the first red commit ${from} reaches through app code. One red may be a race, so the bot opened ${url} on branch ${branch} to revert it, and merges it only once a later push run on main fails the same test. If a later push run passes first, it closes the revert and records the race.`
+      : `${agentHeader}\n\nci failed on main in run ${runUrl(repository, decision.run.id)}. The first red commit is ${from}. The bot opened ${url} on branch ${branch} to revert it, and merges it once its ci passes while main is still red.`,
   )
   return { failed: false }
 }
@@ -184,7 +261,7 @@ const recordRun = ({ repository, io, judged, event }) => {
     .jobs.map((job) => job.log)
     .join("\n")
   const urls = []
-  for (const each of judged.tests) {
+  for (const each of judged.tests.filter((test) => test.verdict === "race")) {
     const kept = recordRace({
       gh: io.gh,
       repository,
@@ -210,15 +287,40 @@ const recordRun = ({ repository, io, judged, event }) => {
 const closePull = ({ repository, io, number, comment }) =>
   io.gh(["pr", "close", String(number), "--repo", repository, "--comment", `${agentHeader}\n\n${comment}`])
 
-const closeRevert = ({ repository, io, number, green }) =>
+const closeRevert = ({ repository, io, number, green, raceUrls = [] }) =>
   closePull({
     repository,
     io,
     number,
-    comment: `ci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before this revert landed. Someone fixed forward, so the bot closes it.`,
+    comment:
+      raceUrls.length === 0
+        ? `ci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before this revert landed. Someone fixed forward, so the bot closes it.`
+        : `ci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before any later push run failed the same test again. The failure was a race, recorded in ${raceUrls.join(", ")}, so the bot closes this revert of a good commit.`,
   })
 
-const closeFixedForward = ({ repository, io, state, green }) => {
+const recordEndedRaces = ({ repository, io, races, green }) => {
+  const urls = []
+  for (const each of races) {
+    const log = io
+      .jobsOf(each.run)
+      .jobs.map((job) => job.log)
+      .join("\n")
+    const kept = recordRace({
+      gh: io.gh,
+      repository,
+      test: each.test,
+      excerpt: testExcerpt(log, each.test),
+      commit: each.run.sha,
+      seen: `on main in ci run ${runUrl(repository, each.run.id)}, where ${each.why}, and the next push run on main passed at ${short(green.sha)} in ${runUrl(repository, green.id)}`,
+    })
+    if (kept.why !== undefined) return { why: kept.why, urls }
+    urls.push(kept.url)
+  }
+  return { urls: [...new Set(urls)] }
+}
+
+const closeFixedForward = ({ repository, io, state, green, races }) => {
+  const recorded = recordEndedRaces({ repository, io, races, green })
   const listed = io.gh([
     "pr",
     "list",
@@ -235,9 +337,14 @@ const closeFixedForward = ({ repository, io, state, green }) => {
   for (const pull of pulls.filter((each) => each.headRefName.startsWith(branchPrefix) && !each.isCrossRepository)) {
     const target = pull.headRefName.slice(branchPrefix.length)
     if (newerGreen({ runs: [green], commits: state.commits, target }) !== undefined)
-      closeRevert({ repository, io, number: pull.number, green })
+      closeRevert({ repository, io, number: pull.number, green, raceUrls: recorded.urls })
   }
-  return { failed: false }
+  if (recorded.why === undefined) return { failed: false }
+  io.redMain(
+    `${agentHeader}\n\nci passed on main at ${short(green.sha)} after a failure the bot judged a race, and the race could not be recorded: ${recorded.why}`,
+    true,
+  )
+  return { failed: true }
 }
 
 const followRevert = ({ repository, io, event, say }) => {
@@ -277,22 +384,32 @@ const followRevert = ({ repository, io, event, say }) => {
     closeRevert({ repository, io, number, green })
     return { failed: false }
   }
-  if (io.owner === undefined) {
-    say("RED_MAIN_TOKEN is missing")
-    return { failed: true }
+  const decision = decide({ ...state, jobsOf: io.jobsOf, filesBetween: filesBetween(io) })
+  if (decision.action !== "revert" || decision.target !== target) {
+    io.gh([
+      "pr",
+      "comment",
+      number,
+      "--repo",
+      repository,
+      "--body",
+      `${agentHeader}\n\nci passed on this revert in ${runUrl(repository, event.id)}. Main is not yet red for certain at this commit, so the bot leaves it open: it merges it once a later push run on main fails the same test, and closes it if a push run on main passes first.`,
+    ])
+    return say(`the revert of ${target} waits for a second red on main`)
   }
-  const merged = io.owner(["pr", "merge", number, "--repo", repository, "--rebase", "--match-head-commit", event.sha])
-  const queued =
-    merged.status === 0
-      ? merged
-      : io.owner(["pr", "merge", number, "--repo", repository, "--auto", "--rebase", "--match-head-commit", event.sha])
-  if (queued.status !== 0) {
-    io.redMain(`${agentHeader}\n\nThe revert of ${target} passed ci, and merging it failed: ${queued.stderr.trim()}`)
-    return { failed: true }
-  }
-  io.redMain(`${agentHeader}\n\nThe revert of ${target} passed ci while main was still red, so the bot merged it.`)
-  return { failed: false }
+  const merged = mergeRevert({
+    repository,
+    io,
+    number,
+    head: event.sha,
+    target,
+    why: confirmation(repository, decision),
+  })
+  if (merged.why !== undefined) say(merged.why)
+  return { failed: merged.failed }
 }
+
+const filesBetween = (io) => (from, to) => lines(io.git(["diff", "--name-only", from, to]))
 
 export const redMainBot = async ({ repository, event, io }) => {
   const said = []
@@ -308,25 +425,25 @@ export const redMainBot = async ({ repository, event, io }) => {
     const close = (comment) => closePull({ repository, io, number: pull.url, comment })
     return { said, ...(await finishDrill({ repository, io, pull, close, say })) }
   }
+  const bot = { ...io, jobsOf: (run) => cleanRead(io.jobsOf(run)) }
   if (event.event === "pull_request") {
     if (!event.branch.startsWith(branchPrefix)) return say("not a revert branch")
-    return { said, ...followRevert({ repository, io, event, say }) }
+    return { said, ...followRevert({ repository, io: bot, event, say }) }
   }
-  const jobsOf = (run) => cleanRead(io.jobsOf(run))
-  const bot = { ...io, jobsOf }
   const state = mainState({ repository, io })
   if (state.why !== undefined) return { said, failed: true, why: state.why }
-  const decision = decide({
-    ...state,
-    jobsOf,
-    filesBetween: (from, to) => lines(io.git(["diff", "--name-only", from, to])),
-  })
+  const decision = decide({ ...state, jobsOf: bot.jobsOf, filesBetween: filesBetween(io) })
   if (decision.action === "green")
-    return { said, ...closeFixedForward({ repository, io, state, green: decision.green }) }
+    return { said, ...closeFixedForward({ repository, io: bot, state, green: decision.green, races: decision.races }) }
   if (decision.action === "wait") return say(`waiting for ci run ${decision.run.id} on ${decision.run.sha}`)
   if (decision.action === "revert") return { said, ...openRevert({ repository, io: bot, decision, event, say }) }
   const judged = decision.judged.find((each) => each.run.id === event.id)
-  return { said, ...recordRun({ repository, io: bot, judged, event }) }
+  const recorded = ["race", "unknown"].includes(judged?.verdict)
+    ? recordRun({ repository, io: bot, judged, event })
+    : { failed: false }
+  if (decision.action !== "suspect") return { said, ...recorded }
+  const opened = openRevert({ repository, io: bot, decision, event, say })
+  return { said, failed: recorded.failed || opened.failed }
 }
 
 const self = fileURLToPath(import.meta.url)

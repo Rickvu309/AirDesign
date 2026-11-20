@@ -1,0 +1,71 @@
+2026-11-20T13:55:45.4304800Z [84/119] tests/browser/late-font-edits.spec.ts:71:1 › a person's typing stays on a slide whose font arrives while they type
+2026-11-20T13:55:47.7809838Z [85/119] tests/browser/late-font-edits.spec.ts:99:1 › Aira's edit paints on a slide whose font arrives after the edit
+2026-11-20T13:55:48.5451468Z   1) tests/browser/tool-keys.spec.ts:13:1 › T, R, O, L, Shift+L and Shift+Ctrl+K add a text box, shapes and an image from the slide, and not from a button 
+2026-11-20T13:55:48.5452119Z 
+2026-11-20T13:55:48.5452285Z     Test timeout of 30000ms exceeded.
+2026-11-20T13:55:48.5452491Z 
+2026-11-20T13:55:48.5452721Z     Error: page.waitForEvent: Test timeout of 30000ms exceeded.
+2026-11-20T13:55:48.5453480Z     =========================== logs ===========================
+2026-11-20T13:55:48.5453881Z     waiting for event "filechooser"
+2026-11-20T13:55:48.5454255Z     ============================================================
+2026-11-20T13:55:48.5454490Z 
+2026-11-20T13:55:48.5454585Z       32 |   }
+2026-11-20T13:55:48.5454915Z       33 |   await slide.click({ position: { x: 4, y: 4 } })
+2026-11-20T13:55:48.5455345Z     > 34 |   const chooser = page.waitForEvent("filechooser")
+2026-11-20T13:55:48.5455729Z          |                        ^
+2026-11-20T13:55:48.5456130Z       35 |   await page.keyboard.press("ControlOrMeta+Shift+K")
+2026-11-20T13:55:48.5457198Z       36 |   await (await chooser).setFiles(join(process.cwd(), "scripts/pptx-fixtures/picture.png"))
+2026-11-20T13:55:48.5457778Z       37 |   await expect(layers).toHaveCount(initial + 6)
+2026-11-20T13:55:48.5458315Z         at /home/runner/work/AirDesign/AirDesign/tests/browser/tool-keys.spec.ts:34:24
+2026-11-20T13:55:48.5458672Z 
+2026-11-20T13:55:48.5459169Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-20T13:55:48.5459908Z     test-results/tool-keys-T-R-O-L-Shift-L--9318d-slide-and-not-from-a-button/test-failed-1.png
+2026-11-20T13:55:48.5460699Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-20T13:55:48.5461014Z 
+2026-11-20T13:55:48.5461435Z     Error Context: test-results/tool-keys-T-R-O-L-Shift-L--9318d-slide-and-not-from-a-button/error-context.md
+2026-11-20T13:55:48.5461903Z 
+2026-11-20T13:55:48.5461909Z 
+2026-11-20T13:55:49.0625355Z [86/119] tests/browser/tool-keys.spec.ts:40:1 › Alt+1 opens the layers in design mode, and Shift+Ctrl+E opens Export
+2026-11-20T13:55:49.7590716Z [87/119] tests/browser/real-save.spec.ts:9:1 › home import exposes every untouched text box on slide one to the agent API
+2026-11-20T13:55:50.7401790Z [88/119] tests/browser/tool-keys.spec.ts:52:1 › a digit sets the selected layer's opacity in tens, and two quick digits set it exactly
+2026-11-20T13:55:51.1475754Z [89/119] tests/browser/real-save.spec.ts:126:1 › home import through the first typed edit opens the deck exactly once
+2026-11-20T13:55:53.2404039Z [90/119] tests/browser/save-status.spec.ts:32:1 › an edit reads Saving while its commit waits and Saved once it lands on the server
+2026-11-20T13:55:53.6266205Z [91/119] tests/browser/real-save.spec.ts:140:1 › a first typed edit that lands before the server answers the open still opens the deck exactly once
+2026-11-20T13:55:56.6135545Z [92/119] tests/browser/real-save.spec.ts:169:1 › opening an existing deck from the deck list through the first typed edit opens it exactly once
+2026-11-20T13:55:59.9875435Z [93/119] tests/browser/save-status.spec.ts:67:1 › a server that cannot be reached reads the unreached words, then Saved once it answers with no new edit
+2026-11-20T13:56:01.9705664Z [94/119] tests/browser/real-save.spec.ts:191:1 › an edit made while the server cannot be reached lands once it answers again, with no new edit
+2026-11-20T13:56:02.7791492Z [95/119] tests/browser/save-status.spec.ts:95:3 › an error page from the proxy reads the unreached words, then Saved once the server answers with no new edit
+2026-11-20T13:56:05.1530928Z [96/119] tests/browser/save-status.spec.ts:95:3 › the server's own failure reads the unreached words, then Saved once the server answers with no new edit
+2026-11-20T13:56:07.2367098Z [97/119] tests/browser/save-status.spec.ts:119:1 › an edit that landed but whose answer came back cut off lands once when it is sent again
+2026-11-20T13:56:07.5715913Z [98/119] tests/browser/real-save.spec.ts:217:1 › a typed edit lands in Postgres and comes back from the server
+2026-11-20T13:56:09.7797068Z [99/119] tests/browser/save-status.spec.ts:157:1 › going offline reads Offline before any edit, and Saved again when the browser is back
+2026-11-20T13:56:10.8662075Z [100/119] tests/browser/real-save.spec.ts:245:1 › a second account opening the deck is refused owner
+2026-11-20T13:56:11.3776309Z [101/119] tests/browser/save-status.spec.ts:173:1 › going offline and back while a resend is on the wire reads Saved once it lands
+2026-11-20T13:56:13.5105514Z [102/119] tests/browser/real-save.spec.ts:257:1 › a deck deleted on the server closes the editor, takes no edit and does not come back after a reload
+2026-11-20T13:56:14.8612713Z [103/119] tests/browser/save-status.spec.ts:215:3 › an added slide reads Saving while its commit waits and Saved once the server takes it
+2026-11-20T13:56:16.4484966Z [104/119] tests/browser/save-status.spec.ts:215:3 › an added text box reads Saving while its commit waits and Saved once the server takes it
+2026-11-20T13:56:17.1065886Z [105/119] tests/browser/real-save.spec.ts:281:1 › a new slide whose commit answer was lost still opens after the reloads that follow, and lands once
+2026-11-20T13:56:17.9815484Z [106/119] tests/browser/save-status.spec.ts:267:3 › an earlier commit cannot mark a later typed edit Saved
+2026-11-20T13:56:19.8915366Z [107/119] tests/browser/save-status.spec.ts:267:3 › an earlier commit cannot mark a later added slide Saved
+2026-11-20T13:56:20.4726139Z [108/119] tests/browser/slide-follow.spec.ts:87:1 › a cleared browser rebuilds a duplicate from the server's snapshot, not from the source's later text
+2026-11-20T13:56:21.6193521Z [109/119] tests/browser/save-status.spec.ts:267:3 › an earlier commit cannot mark a later typed edit refused for size Saved
+2026-11-20T13:56:23.5935787Z [110/119] tests/browser/save-status.spec.ts:310:1 › a deck reopened with an edit still on the device reads Saving until that edit lands
+2026-11-20T13:56:24.4252939Z [111/119] tests/browser/slide-follow.spec.ts:135:1 › an agent's edit of a cloned slide and of an added slide paints in the open editor
+2026-11-20T13:56:25.9684633Z [112/119] tests/browser/save-status.spec.ts:364:3 › a commit the server refuses with storage says why it is not saved and is not sent again
+2026-11-20T13:56:27.6095663Z [113/119] tests/browser/usage.spec.ts:12:1 › the usage ring shows before any ask, stays current, and See all opens the Usage page
+2026-11-20T13:56:28.1491214Z [114/119] tests/browser/save-status.spec.ts:364:3 › a commit the server refuses with size says why it is not saved and is not sent again
+2026-11-20T13:56:29.6825541Z [115/119] tests/browser/usage.spec.ts:54:1 › the account menu opens Usage, and its tabs move between Usage and Agents
+2026-11-20T13:56:30.2701720Z [116/119] tests/browser/save-status.spec.ts:417:1 › a commit answered newer shows that AirDesign has a new version with Reload, and sends nothing more
+2026-11-20T13:56:30.8981131Z [117/119] tests/browser/usage.spec.ts:81:1 › the Usage page says when it cannot load and tries again, and sends a signed-out person to sign in
+2026-11-20T13:56:31.7984799Z [118/119] tests/browser/usage.spec.ts:109:1 › a long email stays inside the sidebar with its menu arrow, and the full address is its title
+2026-11-20T13:56:32.3620676Z [119/119] tests/browser/usage.spec.ts:131:1 › the Usage page shows a loading label while usage is loading and respects reduced motion
+2026-11-20T13:56:33.1164260Z   1 failed
+2026-11-20T13:56:33.1165507Z     tests/browser/tool-keys.spec.ts:13:1 › T, R, O, L, Shift+L and Shift+Ctrl+K add a text box, shapes and an image from the slide, and not from a button 
+2026-11-20T13:56:33.1166323Z   118 passed (3.1m)
+2026-11-20T13:56:33.1422043Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-20T13:56:33.1443368Z fail browser-tests 187.2s
+2026-11-20T13:56:33.2002748Z metric check-duration  now 198.9  limit 40
+2026-11-20T13:56:33.2005231Z check-duration is 198.9 and its limit is 40. Make it faster.
+2026-11-20T13:56:33.2005938Z failed: browser-tests
+2026-11-20T13:56:33.2079722Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-20T13:56:33.2117462Z ##[error]Process completed with exit code 1.

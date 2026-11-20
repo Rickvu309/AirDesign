@@ -1,54 +1,36 @@
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
-import { failureLines } from "./land-report.mjs"
 import { bodyFaults } from "./pr-body.mjs"
 import { agentHeader } from "./race-issue.mjs"
+import {
+  culpritBody,
+  culpritNumber,
+  decideIn,
+  failureReads,
+  history,
+  io,
+  logs,
+  mainUpTo,
+  ok,
+  pullOf,
+  recorder,
+  repository,
+  root,
+  said,
+  same,
+  short,
+  upTo,
+} from "./red-main-replay.mjs"
 import { redMainBot, revertBranch } from "./red-main-revert.mjs"
 import { revertPull } from "./red-main-revert-report.mjs"
 import { decide, judgeRun } from "./red-main-verdict.mjs"
 import { titleVerdict } from "./title.mjs"
 
-const same = (what, actual, expected) => {
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error(`${what}\n${JSON.stringify(actual, null, 1)}\n${JSON.stringify(expected, null, 1)}`)
-  }
-}
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const fixture = (name) => fs.readFileSync(path.join(root, "scripts/red-main-fixtures", name), "utf8")
-const history = JSON.parse(fixture("history.json"))
-const repository = "Rickvu309/AirDesign"
-const culpritNumber = 499
-const ok = (stdout = "") => ({ status: 0, stdout, stderr: "" })
-const no = (stderr = "") => ({ status: 1, stdout: "", stderr })
-
-const logs = {
-  43661138626: [{ name: "corpus", log: fixture("run-43661138626-corpus.log") }],
-  43769394689: [{ name: "check (pptx)", log: fixture("run-43769394689-check-pptx.log") }],
-  43769961904: [{ name: "check (main)", log: fixture("run-43769961904-check-main.log") }],
-  43778249943: [{ name: "corpus", log: fixture("run-43778249943-corpus.log") }],
-}
-const jobsOf = (run) => ({
-  jobs: logs[run.id] ?? [],
-  logs: (logs[run.id] ?? []).map((job) => job.log),
-  warnings: [],
-})
-const filesBetween = (commits) => (from, to) => [
-  ...new Set(
-    commits.slice(commits.indexOf(from) + 1, commits.indexOf(to) + 1).flatMap((sha) => history.commits[sha].files),
-  ),
-]
-const upTo = (window, sha) => {
-  const at = window.commits.findIndex((each) => each.startsWith(sha))
-  return window.runs.filter((run) => window.commits.indexOf(run.sha) <= at)
-}
-const decideIn = (window, sha, races = new Set(), runs = upTo(window, sha)) =>
-  decide({ runs, commits: window.commits, jobsOf, filesBetween: filesBetween(window.commits), races })
-const short = (sha) => sha?.slice(0, 7)
-
 const [real, insideFlake, flake] = history.windows
 const gestureSize =
+  "Race: tests/browser/gesture-size.spec.ts › a table resizes by its corner and by Width, scales its columns and rows, and exports at the size kept @export"
+const gestureSizeAtLine =
   "Race: tests/browser/gesture-size.spec.ts:82 › a table resizes by its corner and by Width, scales its columns and rows, and exports at the size kept @export"
 
 const first = decideIn(real, "dc8e42a")
@@ -67,17 +49,28 @@ same("the fix forward at 702c51c turns the streak green", decideIn(real, "702c51
 
 const second = decideIn(flake, "a56ac0a")
 same(
-  "replay of run 43778249943: the gesture-size failure is outside what a93ba32..a56ac0a change, so it is a race and nothing is reverted",
-  [second.action, second.judged.at(-1).verdict, second.judged.at(-1).tests.map((each) => [each.title, each.why])],
+  "replay of run 43778249943: no commit in a93ba32..a56ac0a changes gesture-size.spec.ts, so its failure is a suspect and the revert waits for a second red",
   [
-    "hold",
-    "race",
-    [[gestureSize, "no commit it tests changes tests/browser/gesture-size.spec.ts or the browser harness"]],
+    second.action,
+    short(second.target),
+    second.judged.at(-1).verdict,
+    second.judged.at(-1).tests.map((each) => [each.title, each.why]),
+  ],
+  [
+    "suspect",
+    "a93ba32",
+    "suspect",
+    [
+      [
+        gestureSize,
+        "no commit it tests changes tests/browser/gesture-size.spec.ts, so it reaches the test only through app code",
+      ],
+    ],
   ],
 )
 same(
-  "a failure in a test with an open Race: issue is that race",
-  decideIn(flake, "a56ac0a", new Set([gestureSize]))
+  "a failure in a test with an open Race: issue is that race, even when the issue's title still holds a line number",
+  decideIn(flake, "a56ac0a", new Set([gestureSizeAtLine]))
     .judged.at(-1)
     .tests.map((each) => each.why),
   ["an open issue already names this race"],
@@ -136,8 +129,6 @@ const waiting = decide({
 })
 same("a red run waits while the run before it still runs", [waiting.action, waiting.run.id], ["wait", 2])
 
-const culpritBody = (section) =>
-  `## Summary\n\nSets type.\n\n## Before / after\n\n${section}\n\n## Merge Danger\n\n**Door:** two-way.\n`
 const pull = revertPull({
   repository,
   target: first.target,
@@ -222,48 +213,6 @@ same(
   true,
 )
 
-const said = []
-const failureReads = []
-const recorder = (answers) => {
-  const calls = []
-  const answer = (who) => (args, input) => {
-    calls.push({ who, args, input })
-    for (const [pattern, reply] of answers) if (pattern.test(`${who} ${args.join(" ")}`)) return reply(args, input)
-    return ok()
-  }
-  return { calls, gh: answer("gh"), owner: answer("owner"), git: answer("git") }
-}
-const asRuns = (runs) =>
-  JSON.stringify(
-    runs.map((run) => ({ databaseId: run.id, headSha: run.sha, status: run.status, conclusion: run.conclusion })),
-  )
-const mainUpTo = (window, sha) => [
-  [/^git rev-list --first-parent/, () => ok([...window.commits].reverse().join("\n"))],
-  [/^gh run list/, () => ok(asRuns(upTo(window, sha)))],
-  [/^git diff --name-only/, (args) => ok(filesBetween(window.commits)(args.at(-2), args.at(-1)).join("\n"))],
-  [/^gh issue list/, () => ok("[]")],
-  [
-    /^gh api repos\/Rickvu309\/AirDesign\/commits\/\w+\/pulls/,
-    () => ok(JSON.stringify([{ number: 499, body: culpritBody("No visible change: only the exporter changes.") }])),
-  ],
-  [/^git log -1 --format=%s/, () => ok(history.commits[first.target].title)],
-]
-const io = (fake) => ({
-  gh: fake.gh,
-  owner: fake.owner,
-  git: fake.git,
-  jobsOf,
-  redMain: (body) => {
-    said.push(body)
-    return ok()
-  },
-  lowersTheBar: () => false,
-  failure: (run, read) => {
-    failureReads.push({ run, read })
-    return failureLines({ repository, run, gh: () => ok(""), read }).lines
-  },
-})
-
 const opened = recorder([...mainUpTo(real, "dc8e42a"), [/^owner pr list/, () => ok("[]")]])
 await redMainBot({
   repository,
@@ -318,14 +267,13 @@ await redMainBot({
   io: io(raced),
 })
 same(
-  "the flaky replay records the race and opens no revert",
+  "the flaky replay opens the revert of the suspect and records no race yet",
   [
-    raced.calls.filter((call) => call.args[0] === "issue" && call.args[1] === "create").map((call) => call.args[5]),
-    raced.calls.some((call) => call.who === "owner"),
+    raced.calls.filter((call) => call.args[0] === "issue" && call.args[1] === "create").length,
+    raced.calls.filter((call) => call.who === "owner").map((call) => call.args.slice(0, 2).join(" ")),
   ],
-  [[gestureSize], false],
+  [0, ["pr list", "pr create"]],
 )
-same("the main is red issue links the race", said.at(-1).includes("issues/1300"), true)
 
 const revertRun = (conclusion) => ({
   id: 9,
@@ -334,10 +282,6 @@ const revertRun = (conclusion) => ({
   sha: "f".repeat(40),
   conclusion,
 })
-const pullOf = [
-  /^gh pr list --repo \S+ --head/,
-  () => ok(JSON.stringify([{ number: 1200, headRefOid: "f".repeat(40), isCrossRepository: false }])),
-]
 const stillRed = recorder([...mainUpTo(real, "9089b2f"), pullOf])
 await redMainBot({ repository, event: revertRun("success"), io: io(stillRed) })
 same(
