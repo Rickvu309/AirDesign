@@ -1,4 +1,4 @@
-import { decide, openRegister, slideId, type Command, type Register } from "@airdesign/document"
+import { decide, format, openRegister, slideId, type Command, type Register } from "@airdesign/document"
 import { indexPackage } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { elementCommand } from "@/element-edit"
@@ -139,4 +139,33 @@ it("refuses a mask whose back layer in the stored order is a group", () => {
   expect(groupCommands(parts, register, { change: "mask", nodes: ["256.6", "256.2"] as never })?.[1]).toMatchObject({
     node: "256.2",
   })
+})
+
+it("groups a typed auto-width text at the width its words fit, not the box it was placed with", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const { slides, elements } = indexPackage(parts)
+  let register: Register = {
+    ...openRegister("", ""),
+    index: { total: elements.length, slides, elements, pages: [{ once: "page", offset: 0, count: elements.length }] },
+  }
+  const shape = elementCommand(parts, register, { change: "shape", geometry: "ellipse", index: 0, size })
+  if (shape?.slide !== "element-add") throw new Error("add")
+  register = ran(register, [{ command: "slide", file, edit: shape }])
+  const place = { x: 400_000, y: 400_000 }
+  const text = elementCommand(parts, register, { change: "text", index: 0, size, place })
+  if (text?.slide !== "element-add") throw new Error("add")
+  const label = text.element.node
+  const words = '[{"from":0,"runs":[{"from":0,"text":"Market context and sizing"}]}]'
+  register = ran(register, [
+    { command: "slide", file, edit: text },
+    { command: "add", node: label, floor: "", route: register.route },
+    { command: "person", node: label, value: words },
+    { command: "person", node: label, v: format, patch: { box: { w: { set: 3_200_400 }, h: { set: 274_154 } } } },
+  ])
+  const grouped = groupCommands(parts, register, { change: "group", nodes: [shape.element.node, label] })
+  const edit = grouped?.[0]?.command === "slide" ? grouped[0].edit : null
+  if (edit?.slide !== "element-group") throw new Error("group")
+  expect(edit.members.find((member) => member.node === label)?.box.cx).toBe(3_200_400)
+  const bounds = edit.element.box
+  expect(bounds === null ? 0 : bounds.x + bounds.cx).toBeGreaterThanOrEqual(place.x + 3_200_400)
 })
