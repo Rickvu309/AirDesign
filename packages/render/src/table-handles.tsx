@@ -1,4 +1,4 @@
-import type { ElementId, TableChange } from "@airdesign/document"
+import type { CellRange, ElementId, TableChange } from "@airdesign/document"
 import { useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react"
 import type { CanvasTable } from "./record.js"
 import type { Scaled } from "./text-look.js"
@@ -15,6 +15,7 @@ export type TableWords = {
 export type TableEditing = {
   readonly onTable?: ((id: ElementId, change: TableChange) => void) | undefined
   readonly tableWords?: TableWords | undefined
+  readonly onCells?: ((id: ElementId, cells: CellRange | null) => void) | undefined
 }
 
 export type TablePick = { readonly kind: "row" | "column"; readonly at: number }

@@ -1,11 +1,4 @@
-import {
-  format,
-  type ElementId,
-  type Register,
-  type SetChange,
-  type StackMove,
-  type TableChange,
-} from "@airdesign/document"
+import { format, type ElementId, type Register, type SetChange, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import {
   boxOf,
@@ -27,7 +20,6 @@ import { commitEdit, cornersPatch, flushPending, storeBoxes, type BoxCommit, typ
 import { latestFit } from "@/editor/latest-fit"
 import { resizedCorners } from "@/resized-corners"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { tableCopy } from "@/copy/table-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { toggleLayerFlag } from "@/editor/layer-flags"
 import { valueFits } from "@/design/trait-edit"
@@ -47,25 +39,29 @@ import { guidedCanvas, type GuidesShown } from "@/editor/slide-guides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
-import { shownTable, type useTables } from "@/table-hook"
+import { shownTable } from "@/table-hook"
+import { tableCanvas, type TableCanvasDeck } from "@/editor/table-canvas"
 import type { UndoName } from "@/copy/undo-copy"
 import { boxName } from "@/undo-names"
 
-export type EditableDeck = DesignDeck & {
-  readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
-  readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
-  readonly pasteLayers?: (copies: readonly CopyAsked[], replacing?: readonly ElementId[]) => Promise<readonly Copied[]>
-  readonly pasteFromDeck?: (
-    copy: LayerCopy,
-    places: readonly PastePlace[],
-    replacing?: readonly ElementId[],
-  ) => Promise<readonly Copied[]>
-  readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
-  readonly selection: Selection
-  readonly select: (selection: Selection) => void
-  readonly hovered?: ElementId | null
-  readonly tables?: ReturnType<typeof useTables>
-}
+export type EditableDeck = DesignDeck &
+  TableCanvasDeck & {
+    readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
+    readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
+    readonly pasteLayers?: (
+      copies: readonly CopyAsked[],
+      replacing?: readonly ElementId[],
+    ) => Promise<readonly Copied[]>
+    readonly pasteFromDeck?: (
+      copy: LayerCopy,
+      places: readonly PastePlace[],
+      replacing?: readonly ElementId[],
+    ) => Promise<readonly Copied[]>
+    readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
+    readonly selection: Selection
+    readonly select: (selection: Selection) => void
+    readonly hovered?: ElementId | null
+  }
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
 
@@ -466,15 +462,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
               clear()
               void holding([target], () => onEdit(target, value, kind))
             }}
-            {...(deck.tables === undefined
-              ? {}
-              : {
-                  tableWords: tableCopy,
-                  onTable: (target: ElementId, change: TableChange) =>
-                    deck.tables?.change(target, change, (value, name) =>
-                      holding([target], () => onEdit(target, value, name)),
-                    ),
-                })}
+            {...tableCanvas(deck, (target, value, name) => holding([target], () => onEdit(target, value, name)))}
             slide={canvas}
             slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
             store={store.current}

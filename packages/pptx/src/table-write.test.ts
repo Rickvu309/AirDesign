@@ -117,3 +117,19 @@ describe("column widths and row heights", () => {
     expect(xml).toContain('<a:ext cx="400" cy="200"/>')
   })
 })
+
+describe("cell text style", () => {
+  it("writes bold, size, colour and alignment into the styled cells' runs and paragraphs only", () => {
+    const xml = written({
+      change: "style",
+      cells: { rows: [0, 0], columns: [0, 0] },
+      style: { bold: true, size: 1400, color: { scheme: "accent1" }, align: "center" },
+    })
+    const [first, second] = [...xml.matchAll(/<a:tc>.*?<\/a:tc>/g)].map((match) => match[0])
+    expect(first).toContain('algn="ctr"')
+    expect(first).toMatch(/<a:rPr[^>]*\bb="1"/)
+    expect(first).toMatch(/<a:rPr[^>]*\bsz="1400"/)
+    expect(first).toContain('<a:schemeClr val="accent1"/>')
+    expect(second).not.toContain('b="1"')
+  })
+})
