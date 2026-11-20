@@ -45,6 +45,7 @@ export const shortcutCopy = {
     "rotate-keys": "Rotate 1°, or 15° with Shift",
     "flip-horizontal": "Flip horizontal",
     "flip-vertical": "Flip vertical",
+    "resize-to-fit": "Resize to fit",
     forward: "Bring forward",
     backward: "Send backward",
     front: "Bring to front",

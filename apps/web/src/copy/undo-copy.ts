@@ -30,6 +30,7 @@ export type UndoName =
   | "frame"
   | "add-auto-layout"
   | "remove-auto-layout"
+  | "resize-to-fit"
   | "template"
   | "transition"
   | "add-guide"
@@ -95,6 +96,7 @@ export const undoCopy = {
     frame: "Undo frame selection",
     "add-auto-layout": "Undo add auto layout",
     "remove-auto-layout": "Undo remove auto layout",
+    "resize-to-fit": "Undo resize to fit",
     template: "Undo template style",
     transition: "Undo transition",
     "add-guide": "Undo add guide",
@@ -157,6 +159,7 @@ export const undoCopy = {
     frame: "Redo frame selection",
     "add-auto-layout": "Redo add auto layout",
     "remove-auto-layout": "Redo remove auto layout",
+    "resize-to-fit": "Redo resize to fit",
     template: "Redo template style",
     transition: "Redo transition",
     "add-guide": "Redo add guide",

@@ -79,6 +79,7 @@ export function changeRows(
 ) {
   const session = deck.undo.focused.current
   deck.undo.turnAfter(async () => {
+    await deck.undo.records.current.landed()
     if (await applyRows(changingDeck(deck, session), plan, name)) {
       void flushPending(connect, deck.id).then(deck.settle)
       return

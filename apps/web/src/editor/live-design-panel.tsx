@@ -37,6 +37,7 @@ import { deviceScope } from "@/design/trait-edit"
 import { framePanel, layoutFields } from "@/design/frame-panel"
 import { indexedRegister } from "@/indexed-register"
 import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
+import { ResizeToFit } from "@/editor/resize-to-fit"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
 import { SlideSurface, SlidesSurface, type SlideTab } from "@/editor/slide-design-tabs"
 import { colorsIn } from "./deck-colors"
@@ -208,7 +209,13 @@ function LiveElementDesign({
         picture={src === null ? null : <PicturePreview src={src} />}
         model={design.model}
         afterAlignment={liveSlideNumber(deck, node, design.view.value)}
-        afterTitle={design.model.frame === "auto" ? <RemoveAutoLayout deck={deck} node={node} /> : null}
+        afterTitle={
+          design.model.frame === "auto" ? (
+            <RemoveAutoLayout deck={deck} node={node} />
+          ) : design.model.frame === "free" ? (
+            <ResizeToFit deck={deck} node={node} />
+          ) : null
+        }
         mode={mode}
         selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
         palette={palette}

@@ -74,13 +74,13 @@ export function commitEdit(
 
 export type BoxCommit = { readonly box: Box; readonly element: TextBox }
 
-export async function commitBoxes(
+export async function storeBoxes(
   open: (remote: Remote) => BoxLink,
   deckId: string,
   boxes: readonly BoxCommit[],
   paint: (kept: readonly ElementId[]) => Promise<void> | void,
   refused: (node: ElementId) => Promise<void> | void,
-): Promise<CommitOutcome> {
+): Promise<CommitOutcome | "stored"> {
   const kept: ElementId[] = []
   let refusal: CommitOutcome = "refused"
   for (const { box, element } of boxes) {
@@ -93,7 +93,18 @@ export async function commitBoxes(
   }
   if (kept.length === 0) return refusal
   await paint(kept)
-  return flushPending(open, deckId)
+  return "stored"
+}
+
+export async function commitBoxes(
+  open: (remote: Remote) => BoxLink,
+  deckId: string,
+  boxes: readonly BoxCommit[],
+  paint: (kept: readonly ElementId[]) => Promise<void> | void,
+  refused: (node: ElementId) => Promise<void> | void,
+): Promise<CommitOutcome> {
+  const stored = await storeBoxes(open, deckId, boxes, paint, refused)
+  return stored === "stored" ? flushPending(open, deckId) : stored
 }
 
 export async function commitKept(

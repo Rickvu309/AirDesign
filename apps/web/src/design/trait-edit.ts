@@ -253,7 +253,8 @@ export async function applyRows(
     const opened = await live.openDeck(deck.id)
     const register = opened.ok ? indexed(deck.parts(), opened.register) : null
     const rows = register === null ? null : plan(register)
-    if (register === null || rows === null || rows.length === 0) return false
+    if (register === null || rows === null) return false
+    if (rows.length === 0) return true
     const steps: NodeStep[] = []
     for (const { node, patch } of rows) {
       const before = landedBefore(register, node, patch)

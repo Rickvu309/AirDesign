@@ -101,6 +101,7 @@ for (const name of [
   "auto-layout-measure",
   "group-transform",
   "eyedropper",
+  "resize-to-fit",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

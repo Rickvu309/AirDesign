@@ -231,6 +231,7 @@ export {
 export { groupOf, openingPlace, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
 export { followsGroups, rebased, rebasedGroups, shownPlace, storedPlace } from "./group-space.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
+export { fitFrameRows, fitFramesRows } from "./frame-fit.js"
 export { fittedPlace } from "./group-space.js"
 export { spotNow } from "./group-join.js"
 export { plainFrameTurn } from "./plain-frame.js"
