@@ -20,6 +20,7 @@ import {
 import { arrangeSlide } from "./element-stack-route.js"
 import { joinShape, regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
+import { pasteShape } from "./shape-paste.js"
 import { applyStructuralRoute } from "./structural-route.js"
 import { requireMarkup } from "./part-markup.js"
 import { removeShape } from "./slide-route.js"
@@ -74,12 +75,44 @@ function holds(bytes: Uint8Array, shapes: readonly string[]): boolean {
   return shapes.every((shape) => elements.some((mark) => mark.kind === "p:cNvPr" && mark.id === shape))
 }
 
+export type PasteSource = (command: ElementClone, at: number) => { readonly parts: Parts; readonly part: string }
+
+function layerIds(command: ElementClone): readonly (readonly [string, number])[] {
+  return (command.layers ?? []).map(
+    ({ source, element }) => [shapeOf(source).shape, Number(shapeOf(element.node).shape)] as const,
+  )
+}
+
 function clonedLayers(parts: Parts, minted: string, part: string, command: ElementClone): Parts {
-  const layers = command.layers ?? []
-  const ids = layers.map(({ source, element }) => [shapeOf(source).shape, Number(shapeOf(element.node).shape)] as const)
+  const ids = layerIds(command)
   const copy = Number(shapeOf(command.element.node).shape)
   const source = shapeOf(command.source).shape
-  let next: Parts = applyStructuralRoute(parts, { name: "spTree.clone", part, shape: source, id: copy, ids })
+  return placedLayers(
+    applyStructuralRoute(parts, { name: "spTree.clone", part, shape: source, id: copy, ids }),
+    minted,
+    part,
+    command,
+  )
+}
+
+function pastedLayers(
+  parts: Parts,
+  minted: string,
+  part: string,
+  command: ElementClone,
+  from: PasteSource,
+  at: number,
+) {
+  const source = from(command, at)
+  const shape = shapeOf(command.source).shape
+  const id = Number(shapeOf(command.element.node).shape)
+  const pasted = { source: source.parts, from: source.part, shape, id, ids: new Map(layerIds(command)) }
+  return placedLayers(pasteShape(parts, part, pasted), minted, part, command)
+}
+
+function placedLayers(parts: Parts, minted: string, part: string, command: ElementClone): Parts {
+  const layers = command.layers ?? []
+  let next = parts
   const grouped = command.element.grouped ? [command.element] : []
   for (const element of [...grouped, ...layers.map((layer) => layer.element)]) {
     const place = openingPlace(element)
@@ -89,7 +122,18 @@ function clonedLayers(parts: Parts, minted: string, part: string, command: Eleme
   return next
 }
 
-export function groupsReplayed(parts: Parts, minted: string, from: SlideId, state: GroupedState, upTo: number): Parts {
+function noPaste(): never {
+  throw new Error("slide")
+}
+
+export function groupsReplayed(
+  parts: Parts,
+  minted: string,
+  from: SlideId,
+  state: GroupedState,
+  upTo: number,
+  pasted: PasteSource = noPaste,
+): Parts {
   const saved = new Map<string, SavedGroup>()
   const passed = new Set<string>()
   let next = parts
@@ -98,7 +142,9 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
     if (command?.slide === "element-clone" && command.id === from) {
       const part = slidePart(next, minted)
       if (part === null) throw new Error("slide")
-      if (holds(bytesOf(next, part), [shapeOf(command.source).shape])) next = clonedLayers(next, minted, part, command)
+      if (shapeOf(command.source).slide !== from) next = pastedLayers(next, minted, part, command, pasted, at)
+      else if (holds(bytesOf(next, part), [shapeOf(command.source).shape]))
+        next = clonedLayers(next, minted, part, command)
       continue
     }
     if (command === undefined || !groupCommand(command) || command.id !== from) continue

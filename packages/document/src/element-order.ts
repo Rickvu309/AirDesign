@@ -193,7 +193,6 @@ function freshCopy(state: Indexed, element: IndexElement, id: SlideId): CloneRef
 }
 
 function copiedFrom(state: Indexed, source: ElementId, element: IndexElement): CloneRefusal | null {
-  if (elementGone(state, source) || shapeOf(source).slide !== shapeOf(element.node).slide) return "dead"
   const opening = openingElement(state, source)
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   return opening.kind === element.kind ? null : "kind"
@@ -202,6 +201,7 @@ function copiedFrom(state: Indexed, source: ElementId, element: IndexElement): C
 function layersRefusal(state: Indexed, command: ElementClone): CloneRefusal | null {
   const copies = new Map<ElementId, ElementId>([[command.source, command.element.node]])
   for (const layer of command.layers ?? []) {
+    if (shapeOf(layer.source).slide !== shapeOf(command.source).slide) return "dead"
     const parent = groupParent(state, layer.source)
     const above = typeof parent === "string" ? copies.get(parent) : undefined
     if (above === undefined || copies.has(layer.source) || layer.element.group !== above) return "dead"
@@ -217,10 +217,9 @@ function layersRefusal(state: Indexed, command: ElementClone): CloneRefusal | nu
 
 export function cloneRefusal(state: Indexed, command: ElementClone): CloneRefusal | null {
   const { element, source } = command
-  if (shapeOf(source).slide !== command.id) return "dead"
   const fresh = freshCopy(state, element, command.id) ?? copiedFrom(state, source, element)
   if (fresh !== null) return fresh
-  const parent = groupParent(state, source)
+  const parent = shapeOf(source).slide === command.id ? groupParent(state, source) : null
   if (parent === undefined) return indexComplete(state) ? "dead" : null
   if (parent !== null && (!plainGroup(state, parent) || element.group !== parent || !element.grouped))
     return "group-box"
@@ -261,7 +260,7 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   return animated ? "locked" : "kind"
 }
 
-function readLayers(raw: unknown, id: SlideId): readonly ClonedLayer[] | undefined {
+function readLayers(raw: unknown, id: SlideId, from: string): readonly ClonedLayer[] | undefined {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > limits.elements) return undefined
   const layers: ClonedLayer[] = []
   for (const item of raw) {
@@ -269,7 +268,7 @@ function readLayers(raw: unknown, id: SlideId): readonly ClonedLayer[] | undefin
     if (row === null || !onlyKeys(row, ["source", "element"])) return undefined
     const source = readElementId(row.source)
     const element = readFloor([row.element], id)?.[0]
-    if (source === undefined || element === undefined || shapeOf(source).slide !== id) return undefined
+    if (source === undefined || element === undefined || shapeOf(source).slide !== from) return undefined
     layers.push({ source, element })
   }
   return layers
@@ -279,9 +278,9 @@ export function readElementCommand(raw: Record<string, unknown>, id: SlideId): E
   if (raw.slide === "element-clone") {
     const element = readFloor([raw.element], id)?.[0]
     const source = readElementId(raw.source)
-    if (element === undefined || source === undefined || shapeOf(source).slide !== id) return undefined
+    if (element === undefined || source === undefined) return undefined
     if (raw.layers === undefined) return { slide: "element-clone", id, source, element }
-    const layers = readLayers(raw.layers, id)
+    const layers = readLayers(raw.layers, id, shapeOf(source).slide)
     return layers === undefined ? undefined : { slide: "element-clone", id, source, element, layers }
   }
   if (raw.slide === "element-add") {

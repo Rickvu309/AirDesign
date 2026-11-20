@@ -70,5 +70,11 @@
     "detector": "overflowing-text",
     "selector": "[data-slide-paint]",
     "reason": "The state drags six cards onto the cards below them, so their text paints over those cards' text on the slide, as the drag asks."
+  },
+  {
+    "page": "layer-pasted*",
+    "detector": "overflowing-text",
+    "selector": "[data-slide-paint]",
+    "reason": "The state pastes slide 1's rectangle onto slide 2 at its own place, on top of the slide's layers as a paste lands, so it covers the two text lines under it, as the paste asks."
   }
 ]

@@ -15,6 +15,7 @@ import { boxOf, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gestu
 import { snapTargets } from "./drag-snap.js"
 import { gestureFor, releases } from "./gestures.js"
 import { transformByKey, transformsByKey } from "./transform-keys.js"
+import { canDrag, canMove } from "./layer-movable.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import { editingText, enterText } from "./text-entry.js"
 import {
@@ -52,7 +53,7 @@ import { hudChannel, type HudChannel } from "./transform-hud.js"
 import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 import { useLayerCopies, type Duplicate } from "./use-layer-copies.js"
-import type { CopyBoard } from "./layer-copies.js"
+import type { Copied, CopyBoard } from "./layer-copies.js"
 
 export type { Grouping } from "./arrange-keys.js"
 
@@ -75,6 +76,7 @@ export type Moves = {
   readonly isDragging: () => boolean
   readonly hud: HudChannel
   readonly copies: CopyBoard
+  readonly paste: (made: Promise<readonly Copied[]>, from: HTMLElement | null) => void
   readonly message: string
   readonly say: (message: string) => void
   readonly select: (id: ElementId) => void
@@ -92,14 +94,6 @@ export type Moves = {
 
 const slidePaint = "[data-slide-paint]"
 const keepsSelection = "[data-keeps-selection]"
-
-export function canMove(element: CanvasElement): boolean {
-  return element.id !== null && element.movable === true && element.box !== null
-}
-
-export function canDrag(element: CanvasElement): boolean {
-  return canMove(element) && element.connection === undefined
-}
 
 function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null {
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
@@ -559,6 +553,7 @@ export function useMoves(
     isDragging: () => held.current !== null,
     hud,
     copies: copies.board,
+    paste: copies.paste,
     message,
     say: setMessage,
     select,

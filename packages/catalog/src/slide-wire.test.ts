@@ -92,7 +92,7 @@ it("reads an added text box and a removed element on a person's commit and refus
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [remove] })).toEqual(field)
 })
 
-it("reads a person's copy of a layer on a commit, never from an agent's edit, and refuses a copy across slides", () => {
+it("reads a person's copy of a layer on a commit, onto its own slide or another, never from an agent's edit", () => {
   const element = { node: "256.9", kind: "shape", value: "Hi", box: { x: 1, y: 2, cx: 3, cy: 4 }, grouped: false }
   const clone = { slide: "element-clone", id: "256", source: "256.2", element, file: ["256", "257"] }
   const read = readCommit({ deck: "deck", batch: [clone] })
@@ -100,7 +100,18 @@ it("reads a person's copy of a layer on a commit, never from an agent's edit, an
   expect(read.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
     { slide: "element-clone", id: "256", source: "256.2", element },
   ])
-  expect(readCommit({ deck: "deck", batch: [{ ...clone, source: "257.2" }] })).toEqual(field)
+  const pasted = readCommit({ deck: "deck", batch: [{ ...clone, source: "257.2" }] })
+  if (!pasted.ok) throw new Error(pasted.refusal)
+  expect(pasted.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-clone", id: "256", source: "257.2", element },
+  ])
+  const inside = { ...element, node: "256.10", grouped: true, group: "256.9" }
+  const layers = [{ source: "257.3", element: inside }]
+  const grouped = readCommit({ deck: "deck", batch: [{ ...clone, source: "257.2", layers }] })
+  if (!grouped.ok) throw new Error(grouped.refusal)
+  expect(grouped.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-clone", id: "256", source: "257.2", element, layers },
+  ])
   expect(readCommit({ deck: "deck", batch: [{ ...clone, element: { ...element, node: "257.9" } }] })).toEqual(field)
   expect(readCommit({ deck: "deck", batch: [{ ...clone, element: { ...element, kind: "table" } }] })).toEqual(field)
   expect(readCommit({ deck: "deck", batch: [{ ...clone, key: "a" }] })).toEqual(field)

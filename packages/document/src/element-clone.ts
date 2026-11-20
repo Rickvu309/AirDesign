@@ -25,7 +25,34 @@ export type Cloned =
   | { readonly ok: true; readonly command: ElementClone }
   | { readonly ok: false; readonly refusal: CloneRefusal }
 
-type Copying = { readonly register: Register; readonly next: () => ElementId; readonly layers: ClonedLayer[] }
+export type CopiedRows = ReadonlyMap<ElementId, IndexElement>
+
+type Copying = {
+  readonly register: Register
+  readonly rows: CopiedRows
+  readonly across: boolean
+  readonly next: () => ElementId
+  readonly layers: ClonedLayer[]
+}
+
+function unconnected(row: IndexElement): IndexElement {
+  const { connection: _connection, ...opening } = row.opening ?? {}
+  const { "connection.start": _start, "connection.end": _end, ...design } = row.design ?? {}
+  const { opening: _opening, design: _design, ...kept } = row
+  return {
+    ...kept,
+    ...(Object.keys(opening).length === 0 ? {} : { opening }),
+    ...(Object.keys(design).length === 0 ? {} : { design }),
+  }
+}
+
+function rowOf(copying: Copying, source: ElementId): IndexElement | undefined {
+  const copied = copying.rows.get(source)
+  const row = copied === undefined ? shownRow(copying.register, source) : copied
+  if (row === undefined) return undefined
+  const { group: _group, frame: _frame, framing: _framing, ...kept } = row
+  return copying.across ? unconnected(kept) : copied === undefined ? row : kept
+}
 
 const turnsPerDegree = 60_000
 
@@ -46,7 +73,7 @@ function shifted(box: Box, by: { readonly x: number; readonly y: number }): Box 
 }
 
 function copied(copying: Copying, source: ElementId, parent: ElementId, place: Place, extra: Partial<IndexElement>) {
-  const row = shownRow(copying.register, source)
+  const row = rowOf(copying, source)
   if (row === undefined) return null
   const node = copying.next()
   const element: IndexElement = { ...turned(row, place), node, box: place.box, grouped: true, group: parent, ...extra }
@@ -77,7 +104,7 @@ type Offset = { readonly x: number; readonly y: number }
 
 function copiedFrame(copying: Copying, frame: ElementId, view: LayoutView, copy: Copy): IndexElement | null {
   const { register } = copying
-  const row = shownRow(register, frame)
+  const row = rowOf(copying, frame)
   if (row === undefined) return null
   const slot = copying.layers.length
   const flat = { rot: 0, flipH: false, flipV: false }
@@ -124,12 +151,20 @@ function idsAfter(node: ElementId): () => ElementId {
   }
 }
 
-export function cloneOf(register: Register, source: ElementId, node: ElementId, shown: Box): Cloned {
-  const id = readSlideId(shapeOf(source).slide)
-  const row = shownRow(register, source)
-  if (id === undefined || row === undefined || elementGone(register, source)) return { ok: false, refusal: "dead" }
-  const parent = groupParent(register, source) ?? null
-  const copying: Copying = { register, next: idsAfter(node), layers: [] }
+export function cloneOf(
+  register: Register,
+  source: ElementId,
+  node: ElementId,
+  shown: Box,
+  rows: CopiedRows = new Map(),
+): Cloned {
+  const id = readSlideId(shapeOf(node).slide)
+  const across = shapeOf(source).slide !== shapeOf(node).slide
+  const copying: Copying = { register, rows, across, next: idsAfter(node), layers: [] }
+  const row = rowOf(copying, source)
+  const gone = !rows.has(source) && elementGone(register, source)
+  if (id === undefined || row === undefined || gone) return { ok: false, refusal: "dead" }
+  const parent = across ? null : (groupParent(register, source) ?? null)
   const view = readLayout(register, source)
   const by = view === null ? null : { x: shown.x - view.box.x, y: shown.y - view.box.y }
   const element =

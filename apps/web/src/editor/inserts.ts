@@ -4,7 +4,8 @@ import { holdKeys, type Copied, type HeldKeys, type Moved } from "@airdesign/ren
 import type { CommitOutcome } from "@/commit-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
-import { commitCopies, commitElement, type ElementChange } from "@/element-edit"
+import { elementCopy } from "@/copy/element-copy"
+import { commitCopies, commitElement, type CopyAsked, type ElementChange } from "@/element-edit"
 import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
@@ -32,7 +33,7 @@ export function deckInserts(deck: InsertingDeck) {
     }
   }
 
-  async function changeElement(change: ElementChange): Promise<CommitOutcome | "closed"> {
+  async function changeElement(change: ElementChange, named?: UndoName): Promise<CommitOutcome | "closed"> {
     const typed = change.change === "text" || change.change === "table" || change.change === "shape"
     const keys = typed ? holdKeys(document) : undefined
     const opened = await connect(memoryRemote()).openDeck(id)
@@ -41,26 +42,40 @@ export function deckInserts(deck: InsertingDeck) {
       return "closed"
     }
     const name =
-      change.change !== "order"
+      named ??
+      (change.change !== "order"
         ? elementNames[change.change]
         : typeof change.move === "string"
           ? stackNames[change.move]
-          : "layer-order"
+          : "layer-order")
     const outcome = await commitElement(id, shownParts.current, opened.register, change, recordAdded(name, keys))
     if (outcome === "refused") keys?.stop()
     settle(outcome)
     return outcome
   }
 
-  async function duplicateLayers(copies: readonly Moved[]): Promise<readonly Copied[]> {
+  async function copyLayers(copies: readonly CopyAsked[], name: UndoName, title?: string): Promise<readonly Copied[]> {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return []
-    const made = await commitCopies(id, shownParts.current, opened.register, copies, async (undoable) => {
-      if (undoable !== null) record({ name: "duplicate-layer", undoable })
+    const paint = async (undoable: Undoable | null) => {
+      if (undoable !== null) record({ name, undoable })
       await showEdited(current)
-    })
+    }
+    const made = await commitCopies(id, shownParts.current, opened.register, copies, paint, title)
     void made.flushed.then(settle)
     return made.copies
+  }
+
+  function duplicateLayers(copies: readonly Moved[]): Promise<readonly Copied[]> {
+    return copyLayers(copies, "duplicate-layer")
+  }
+
+  function pasteLayers(copies: readonly CopyAsked[]): Promise<readonly Copied[]> {
+    return copyLayers(copies, "paste-layer", elementCopy.pasteRefusedTitle)
+  }
+
+  function cutLayers(nodes: readonly ElementId[]) {
+    return changeElement({ change: "remove", nodes }, "cut-layer")
   }
 
   function addText() {
@@ -90,6 +105,8 @@ export function deckInserts(deck: InsertingDeck) {
   return {
     changeElement,
     duplicateLayers,
+    pasteLayers,
+    cutLayers,
     addText,
     addShape,
     addPicture,

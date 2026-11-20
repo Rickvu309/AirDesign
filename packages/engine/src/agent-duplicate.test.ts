@@ -45,7 +45,10 @@ function indexed(): Deck {
   const index: DeckIndex = {
     format: 2,
     total: elements.length,
-    slides: [{ id: "258", position: 0, size, free: 9 }],
+    slides: [
+      { id: "258", position: 0, size, free: 9 },
+      { id: "259", position: 1, size, free: 3 },
+    ],
     elements,
     pages: [],
   }
@@ -92,6 +95,34 @@ describe("an agent duplicates layers through edit_deck", () => {
     ])
     const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
     for (const copy of [9, 10, 11, 12]) expect(elementGone(undone.register, node(copy))).toBe(true)
+  })
+
+  it("pastes layers onto another slide at the place it names, keeping their offsets to each other", () => {
+    const deck = landed(
+      edit(indexed(), { op: "duplicate", elements: ["258.2", "258.3"], slide: "259", x: 1000, y: 2000 }),
+    )
+    expect(deck.register.order).toMatchObject([
+      { runId: "run", id: "259", source: "258.2", element: { node: "259.3", box: { x: 1000, y: 2000 } } },
+      { runId: "run", id: "259", source: "258.3", element: { node: "259.4", box: { x: 1300, y: 2200 } } },
+    ])
+  })
+
+  it("pastes a layer onto another slide at its own place when no place is named", () => {
+    const deck = landed(edit(indexed(), { op: "duplicate", elements: ["258.5"], slide: "259" }))
+    expect(deck.register.order).toMatchObject([
+      { id: "259", source: "258.5", element: { node: "259.3", grouped: false } },
+    ])
+    expect(openingElement(deck.register, elementId("259.3"))?.group).toBeUndefined()
+  })
+
+  it("refuses a slide or a place on a change that is not a duplicate, and a place without both sides", () => {
+    const refusal = (change: object) => {
+      const result = edit(indexed(), change)
+      return result.ok ? "landed" : result.refusal
+    }
+    expect(refusal({ op: "group", elements: ["258.2", "258.3"], slide: "259" })).toBe("field")
+    expect(refusal({ op: "duplicate", elements: ["258.2"], x: 10 })).toBe("field")
+    expect(refusal({ op: "duplicate", elements: ["258.2"], slide: "999" })).not.toBe("landed")
   })
 
   it("refuses a layer it cannot find, and changes nothing", () => {
