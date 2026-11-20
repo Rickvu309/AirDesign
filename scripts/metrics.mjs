@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { changesFrom } from "./check-steps.mjs"
 import { importParse } from "./import-parse.mjs"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
@@ -71,6 +72,13 @@ export const measures = {
 
 export const measuredLive = new Set(["known-failures", "long-titles", "slides-repainted"])
 
+export const readFromUnitRun = new Set(["known-failures", "slides-repainted"])
+
+export const measuredHere = (env) =>
+  changesFrom(env).unitTests === "all"
+    ? measures
+    : Object.fromEntries(Object.entries(measures).filter(([name]) => !readFromUnitRun.has(name)))
+
 export const timedMetrics = {
   "check-duration": "scripts/check.mjs",
   "gate-duration": "scripts/gate.mjs",
@@ -138,7 +146,7 @@ export const readMetrics = async (root, measuring = measures) => {
     else drift.push(`${name} is timed by ${runner} and has no limit in metrics.json.`)
   }
   for (const [name, metric] of Object.entries(recorded)) {
-    if (name in measuring || name in timedMetrics || name in timedOnCi || name in reportedMetrics || name in judgedBy)
+    if (name in measures || name in timedMetrics || name in timedOnCi || name in reportedMetrics || name in judgedBy)
       continue
     if ("limit" in metric) drift.push(`${name} has a limit in metrics.json and no runner times it.`)
     else drift.push(`${name} is in metrics.json and nothing measures it.`)
@@ -155,11 +163,16 @@ export const metricLines = (rows) => {
 
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
-  const { rows, drift } = await readMetrics(path.resolve(path.dirname(self), "..")).catch((error) => {
+  const measuring = measuredHere(process.env)
+  const { rows, drift } = await readMetrics(path.resolve(path.dirname(self), ".."), measuring).catch((error) => {
     console.error(error.message)
     process.exit(1)
   })
   for (const line of metricLines(rows)) console.log(line)
+  if (measuring !== measures)
+    console.log(
+      `${[...readFromUnitRun].join(" and ")} read the whole unit run, and this run ran only the unit tests its change reaches, so main's full run measures them.`,
+    )
   for (const line of drift) console.log(line)
   if (drift.length > 0) process.exit(1)
 }

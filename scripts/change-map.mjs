@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 export const ciParts = ["source", "scripts", "design", "browser", "journeys", "pptx", "corpus", "model-check"]
 
@@ -259,6 +260,8 @@ const readImports = (root, files, packages) => {
   return imports
 }
 
+export const pptxPathsFile = ".github/actions/ci-changes/pptx-paths.txt"
+
 export const readChangeGraph = (root) => {
   const files = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" })
     .split("\n")
@@ -267,9 +270,50 @@ export const readChangeGraph = (root) => {
   return {
     packages,
     imports: readImports(root, files, packages),
-    pptxPaths: fs
-      .readFileSync(path.join(root, ".github/actions/pptx-changed/paths.txt"), "utf8")
-      .split("\n")
-      .filter(Boolean),
+    pptxPaths: fs.readFileSync(path.join(root, pptxPathsFile), "utf8").split("\n").filter(Boolean),
   }
+}
+
+export const checkJobsFor = (result, jobs) => jobs.filter((job) => result.parts[job.part] === true)
+
+export const githubOutput = (result, jobs) => [
+  ...ciParts.map((part) => `${part}=${String(result.parts[part])}`),
+  `unit-tests=${result.unitTests === "all" ? "all" : JSON.stringify(result.unitTests)}`,
+  `check=${JSON.stringify(checkJobsFor(result, jobs))}`,
+]
+
+export const decisionLines = (result) =>
+  result.everything
+    ? [`every part runs: ${result.because}`]
+    : [
+        ...ciParts.map((part) =>
+          result.parts[part] ? `${part} runs, for ${result.because[part]}` : `${part} skips: nothing it judges changed`,
+        ),
+        `unit tests: ${result.unitTests.length === 0 ? "none" : result.unitTests.join(" ")}`,
+      ]
+
+const flagValue = (argv, flag) => {
+  const at = argv.indexOf(flag)
+  return at === -1 ? undefined : argv[at + 1]
+}
+
+export const decide = (argv, root) => {
+  const jobs = JSON.parse(flagValue(argv, "--jobs") ?? "[]")
+  const listed = flagValue(argv, "--paths")
+  let result
+  try {
+    const changed = listed === undefined ? null : fs.readFileSync(listed, "utf8").split("\n").filter(Boolean)
+    result = changeMap(changed, argv.includes("--full") ? { packages: [], imports: {} } : readChangeGraph(root), {
+      full: argv.includes("--full"),
+    })
+  } catch (error) {
+    result = runEverything(`the map failed: ${error.message}`)
+  }
+  return { lines: githubOutput(result, jobs), said: decisionLines(result) }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const { lines, said } = decide(process.argv.slice(2), process.cwd())
+  for (const line of said) console.error(line)
+  for (const line of lines) console.log(line)
 }

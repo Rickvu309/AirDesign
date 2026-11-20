@@ -1,0 +1,51 @@
+name: ci-changes
+description: Says which ci parts this change can affect, read by scripts/change-map.mjs. A pull request maps its own diff, and every other event runs every part.
+inputs:
+  check-jobs:
+    description: Every check job as a JSON list of matrix entries, each with its part.
+    required: true
+outputs:
+  source:
+    value: ${{ steps.map.outputs.source }}
+  scripts:
+    value: ${{ steps.map.outputs.scripts }}
+  design:
+    value: ${{ steps.map.outputs.design }}
+  browser:
+    value: ${{ steps.map.outputs.browser }}
+  journeys:
+    value: ${{ steps.map.outputs.journeys }}
+  pptx:
+    value: ${{ steps.map.outputs.pptx }}
+  corpus:
+    value: ${{ steps.map.outputs.corpus }}
+  model-check:
+    value: ${{ steps.map.outputs.model-check }}
+  unit-tests:
+    description: The unit test folders the source part runs, as a JSON list, or all.
+    value: ${{ steps.map.outputs.unit-tests }}
+  check:
+    description: The check jobs whose part runs, as a JSON list of matrix entries.
+    value: ${{ steps.map.outputs.check }}
+runs:
+  using: composite
+  steps:
+    - id: map
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        CHECK_JOBS: ${{ inputs.check-jobs }}
+      run: |
+        set -uo pipefail
+        decide() {
+          node scripts/change-map.mjs --jobs "$CHECK_JOBS" "$@" | tee -a "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
+        }
+        if [ "$EVENT_NAME" != pull_request ]; then
+          decide --full
+        fi
+        if git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed-paths"; then
+          decide --paths "$RUNNER_TEMP/changed-paths"
+        fi
+        echo "The diff against HEAD^1 could not be read, so every part runs." >&2
+        decide

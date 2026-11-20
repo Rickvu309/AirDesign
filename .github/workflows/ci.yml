@@ -17,29 +17,42 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      source: ${{ steps.map.outputs.source }}
+      scripts: ${{ steps.map.outputs.scripts }}
+      design: ${{ steps.map.outputs.design }}
+      browser: ${{ steps.map.outputs.browser }}
+      journeys: ${{ steps.map.outputs.journeys }}
+      pptx: ${{ steps.map.outputs.pptx }}
+      corpus: ${{ steps.map.outputs.corpus }}
+      model-check: ${{ steps.map.outputs.model-check }}
+      unit-tests: ${{ steps.map.outputs.unit-tests }}
+      check: ${{ steps.map.outputs.check }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 2
+      - id: map
+        uses: ./.github/actions/ci-changes
+        with:
+          check-jobs: >-
+            [{"part":"source"},{"part":"scripts"},{"part":"design","shard":"1/2"},{"part":"design","shard":"2/2"},
+            {"part":"browser","shard":"1/4"},{"part":"browser","shard":"2/4"},{"part":"browser","shard":"3/4"},
+            {"part":"browser","shard":"4/4"},{"part":"pptx"}]
   check:
     name: check (${{ matrix.part }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.check != '[]' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - part: source
-          - part: scripts
-          - part: design
-            shard: 1/2
-          - part: design
-            shard: 2/2
-          - part: browser
-            shard: 1/4
-          - part: browser
-            shard: 2/4
-          - part: browser
-            shard: 3/4
-          - part: browser
-            shard: 4/4
-          - part: pptx
+        include: ${{ fromJSON(needs.changes.outputs.check) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -91,6 +104,9 @@ jobs:
         uses: ./.github/actions/postgres
       - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
+        env:
+          AIRDESIGN_UNIT_TESTS: ${{ needs.changes.outputs.unit-tests }}
+          AIRDESIGN_MODEL_CHECK: ${{ needs.changes.outputs.model-check }}
       - if: always() && steps.work.outputs.needed == 'true' && (matrix.part == 'source' || matrix.part == 'browser' || matrix.part == 'design')
         continue-on-error: true
         uses: ./.github/actions/affected-report
@@ -131,47 +147,42 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        id: pptx
-        uses: ./.github/actions/pptx-changed
-        with:
-          base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         id: pptx-tools
         with:
           path: ~/.cache/pptx-tools
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         id: runner-image
         run: echo "key=pptx-renders-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: ${{ steps.runner-image.outputs.key }}
           restore-keys: pptx-renders-
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-validations
           key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
           restore-keys: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         run: pnpm --filter '!@airdesign/site' -r --if-present run build
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         run: pnpm check:pptx
         env:
           AIRDESIGN_WEB_BUILT: "1"
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: ${{ steps.runner-image.outputs.key }}
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:
@@ -198,28 +209,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh
   design-findings:
-    needs: check
-    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    needs: [changes, check]
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.design != 'false' }}
     uses: ./.github/workflows/design-findings.yml
-  changes:
-    name: changes
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      pptx: ${{ steps.pptx.outputs.changed }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-      - id: pptx
-        uses: ./.github/actions/pptx-changed
-        with:
-          base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
   corpus:
     name: corpus (${{ matrix.shard }}/2)
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.pptx == '1') }}
+    if: ${{ !cancelled() && needs.changes.outputs.corpus != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -332,7 +328,8 @@ jobs:
         run: bash scripts/red-main.sh
   journeys:
     name: journeys
-    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    needs: changes
+    if: ${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.journeys != 'false' }}
     uses: ./.github/workflows/journeys.yml
   ci:
     name: ci
@@ -348,11 +345,18 @@ jobs:
             echo "::error title=ci was rerun::A failed ci run is never rerun. Push a fix, or run \`pnpm land\` again so the merge queue builds a fresh run."
             exit 1
           fi
-      - run: |
-          test "${{ needs.check.result }}" = success
-          test "${{ needs.changes.result }}" = success || test "${{ needs.changes.result }}" = skipped
-          test "${{ needs.corpus.result }}" = success || test "${{ needs.corpus.result }}" = skipped
-          test "${{ needs.journeys.result }}" = success || test "${{ needs.journeys.result }}" = skipped
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e --arg event "$EVENT_NAME" '.changes.outputs as $said
+            | (try ($said.check | fromjson) catch null) as $ran
+            | .changes.result == "success" and ($ran | type) == "array"
+            and all("source", "scripts", "design", "browser", "pptx"; . as $p | $said[$p] == "false" or any($ran[]; .part == $p))
+            and all(to_entries[]; .value.result == "success" or .value.result == "skipped"
+              and (.key == "check" and $ran == [] or .key == "corpus" and $said.corpus == "false"
+                or .key == "journeys" and ($said.journeys == "false" or $event == "push")))' > /dev/null
       - if: github.event_name == 'push'
         continue-on-error: true
         env:

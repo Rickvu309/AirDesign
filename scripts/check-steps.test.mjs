@@ -3,7 +3,7 @@ import fs from "node:fs"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
 import { stepsOf } from "./check.mjs"
-import { checkSteps, defineCheckSteps } from "./check-steps.mjs"
+import { changesFrom, checkSteps, defineCheckSteps, everyChange, unitTestsIn } from "./check-steps.mjs"
 import { ruleFiles } from "./rules.mjs"
 
 const row = { name: "planted", kind: "rule", command: "node" }
@@ -81,7 +81,8 @@ assert.throws(
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
 const workflow = parse(read(".github/workflows/ci.yml"))
 const question = parse(read(".github/actions/queued/action.yml")).runs.steps[0]
-const matrixParts = [...new Set(workflow.jobs.check.strategy.matrix.include.map(({ part }) => part))]
+const checkJobs = JSON.parse(workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs"])
+const matrixParts = [...new Set(checkJobs.map(({ part }) => part))]
 const calledParts = fs
   .readdirSync(new URL("../.github/workflows/", import.meta.url))
   .flatMap((file) => [...read(`.github/workflows/${file}`).matchAll(/pnpm check --part=([\w-]+)$/gm)])
@@ -121,3 +122,62 @@ for (const file of ["CHECKS.md", "COMMANDS.md", ...ruleFiles(fileURLToPath(new U
     `${file} names declared steps and parts`,
   )
 }
+
+assert.deepEqual(
+  ["", "all", "[", "{}", '[""]', "[1]", undefined].map(
+    (value) => changesFrom({ AIRDESIGN_UNIT_TESTS: value }).unitTests,
+  ),
+  Array(7).fill("all"),
+  "a missing or unreadable unit test list runs every unit test",
+)
+assert.deepEqual(changesFrom({ AIRDESIGN_UNIT_TESTS: '["apps/web/"]' }).unitTests, ["apps/web/"])
+assert.deepEqual(changesFrom({ AIRDESIGN_UNIT_TESTS: "[]" }).unitTests, [])
+assert.deepEqual(
+  ["", "true", undefined, "false"].map((value) => changesFrom({ AIRDESIGN_MODEL_CHECK: value }).modelCheck),
+  [true, true, true, false],
+  "only a model check changes said false skips the specs",
+)
+assert.deepEqual(changesFrom({}), everyChange)
+assert.deepEqual(
+  unitTestsIn(
+    ["tests/", "packages/oauth/"],
+    [
+      "apps/web/tests/a.test.ts",
+      "packages/oauth/src/grant.test.ts",
+      "packages/oauth-extra/src/b.test.ts",
+      "tests/edit-replay.test.ts",
+    ],
+  ),
+  ["packages/oauth/src/grant.test.ts", "tests/edit-replay.test.ts"],
+  "a folder holds only the files under it, matched from the start of the path",
+)
+const sourceSteps = (changes) =>
+  checkSteps
+    .stagesFor("source", true, undefined, changes)
+    .flat()
+    .flatMap(stepsOf)
+    .filter(([name]) => name === "unit-tests" || name === "model-check")
+    .map(([name, , args]) => [name, args.slice(2)])
+assert.deepEqual(
+  sourceSteps(everyChange),
+  [
+    ["unit-tests", []],
+    ["model-check", []],
+  ],
+  "a run of everything runs the whole unit suite and the model check",
+)
+const oauthTests = unitTestsIn(["packages/oauth/"])
+assert.ok(oauthTests.length > 0)
+assert.deepEqual(
+  sourceSteps({ unitTests: ["packages/oauth/"], modelCheck: false }),
+  [["unit-tests", oauthTests]],
+  "the source part runs only the unit test files in the folders changes chose, and no model check when changes said false",
+)
+assert.deepEqual(
+  sourceSteps({ unitTests: [], modelCheck: true }),
+  [["model-check", []]],
+  "a change no unit test folder reaches runs no unit test",
+)
+assert.throws(() => defineCheckSteps([{ ...row, narrow: "yes" }]), {
+  message: "planted: make narrow a function on a step outside the preflight and the lanes.",
+})

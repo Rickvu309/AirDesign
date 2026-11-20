@@ -3,6 +3,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { smallLaneCommand } from "./machine-lock.mjs"
 import { readSpecSeconds, specFiles, specFolder, weightedShares } from "./spec-seconds.mjs"
+import { testFilesByProject } from "./unit-test-files.mjs"
 
 export const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-results")
 export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
@@ -39,6 +40,35 @@ const browserArgs = (part, shard) =>
 
 const designShardEnv = (part, shard) =>
   part === "design" && shard !== undefined ? { [designShardVariable]: `${shard.current}/${shard.total}` } : undefined
+
+const listOf = (value) => {
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) && parsed.every((entry) => typeof entry === "string" && entry !== "") ? parsed : "all"
+  } catch {
+    return "all"
+  }
+}
+
+export const changesFrom = (env) => ({
+  unitTests: listOf(env.AIRDESIGN_UNIT_TESTS ?? ""),
+  modelCheck: env.AIRDESIGN_MODEL_CHECK !== "false",
+})
+
+export const everyChange = { unitTests: "all", modelCheck: true }
+
+export const unitTestsIn = (folders, files = Object.values(testFilesByProject(root)).flat().sort()) =>
+  folders === "all" ? files : files.filter((file) => folders.some((folder) => file.startsWith(folder)))
+
+const changedUnitTests = ({ unitTests }, step) => {
+  if (unitTests === "all") return step
+  const files = unitTestsIn(unitTests)
+  if (files.length === 0) return undefined
+  const [name, command, args, ...env] = step
+  return [name, command, [...args, ...files], ...env]
+}
+
+const changedSpecs = ({ modelCheck }, step) => (modelCheck ? step : undefined)
 
 const gateTests = ({ tests }, [name, command, , env]) =>
   tests?.length
@@ -101,6 +131,7 @@ const rows = [
     args: ["node_modules/vitest/vitest.mjs", "run"],
     env: { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache },
     gate: { order: 2, select: gateTests },
+    narrow: changedUnitTests,
     localLimit: 720,
     judgedOnCi: true,
     rerunAlone: true,
@@ -197,6 +228,7 @@ const rows = [
     command: "pnpm",
     args: ["check:specs"],
     env: { AIRDESIGN_SPEC_CACHE: specCache },
+    narrow: changedSpecs,
     showOnSuccess: true,
   },
   { name: "spec-coverage", kind: "rule", command: "node", args: ["scripts/spec-replays.mjs"], verdict: "warn" },
@@ -292,11 +324,12 @@ const tuple = ({ name, command, args = [], env, partArgs, partEnv }, part, shard
 
 const wrapStage = (steps) => (steps.length === 0 ? [] : [steps])
 
-const stageFor = (rows, part, shard) => {
+const stageFor = (rows, part, shard, changes) => {
   const lanes = new Map()
   const entries = []
   for (const row of rows) {
-    const step = tuple(row, part, shard)
+    const step = row.narrow === undefined ? tuple(row, part, shard) : row.narrow(changes, tuple(row, part, shard))
+    if (step === undefined) continue
     if (row.lane === undefined) {
       entries.push(step)
     } else {
@@ -356,6 +389,8 @@ const validate = (rows) => {
       rerun = row
     }
     if (row.stampOnFailure && !row.judgedOnCi) refuse("set judgedOnCi to allow a stamp after failure")
+    if (row.narrow !== undefined && (typeof row.narrow !== "function" || preflight || lane !== undefined))
+      refuse("make narrow a function on a step outside the preflight and the lanes")
   }
   return rerun
 }
@@ -368,7 +403,7 @@ export const defineCheckSteps = (rows) => {
   const runsOn = (name, ci) => byName.get(name)?.where !== (ci ? "local" : "ci")
   return {
     parts: () => [...parts],
-    stagesFor: (part, ci = onCi(process.env), shard) => {
+    stagesFor: (part, ci = onCi(process.env), shard, changes = everyChange) => {
       const chosen = rows.filter(
         (row) => runsOn(row.name, ci) && (part === "all" || row.part === "all" || partsOf(row).includes(part)),
       )
@@ -377,11 +412,13 @@ export const defineCheckSteps = (rows) => {
           chosen.filter((row) => row.after === undefined),
           part,
           shard,
+          changes,
         ),
         stageFor(
           chosen.filter((row) => row.after === "work"),
           part,
           shard,
+          changes,
         ),
       ].filter((stage) => stage.length > 0)
     },

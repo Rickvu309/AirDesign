@@ -41,4 +41,4 @@ $V suites --run      # run them in order under the machine lock, with Chromium's
 $V suites --run browser-tests -- tests/browser/home.spec.ts:12   # one suite, one test
 ```
 
-`--run` writes `suites.md` under `~/tmp/verify-airdesign/suites-<time>/` with each suite's result, time and the load it ran under. When a suite fails it lists the failed tests and prints the command that reruns only them. A failure that passes in that rerun is still real: it has found a race, so force the gap and fix it. The rules read `apps/web` and `apps/api`'s workspace dependencies and the pptx path list in `.github/actions/pptx-changed/paths.txt`, so they follow the repo.
+`--run` writes `suites.md` under `~/tmp/verify-airdesign/suites-<time>/` with each suite's result, time and the load it ran under. When a suite fails it lists the failed tests and prints the command that reruns only them. A failure that passes in that rerun is still real: it has found a race, so force the gap and fix it. The rules read `apps/web` and `apps/api`'s workspace dependencies and the pptx path list in `.github/actions/ci-changes/pptx-paths.txt`, so they follow the repo.

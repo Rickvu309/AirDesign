@@ -1,7 +1,8 @@
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { changeMap, ciParts, readChangeGraph } from "./change-map.mjs"
+import { changeMap, ciParts, decide, readChangeGraph } from "./change-map.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -121,7 +122,7 @@ same(
   ],
 )
 same(
-  "pptx and corpus follow .github/actions/pptx-changed/paths.txt, the one list the pptx job reads",
+  "pptx and corpus follow .github/actions/ci-changes/pptx-paths.txt, the one list",
   [on(map(["scripts/pptx-check.mjs"])), on(map(["packages/oauth/src/grant.ts"])).includes("pptx")],
   [["source", "scripts", "pptx", "corpus"], false],
 )
@@ -176,9 +177,9 @@ same(
   [],
 )
 same(
-  "the real pptx list is the one in .github/actions/pptx-changed/paths.txt",
+  "the real pptx list is the one in .github/actions/ci-changes/pptx-paths.txt",
   graph.pptxPaths,
-  fs.readFileSync(path.join(root, ".github/actions/pptx-changed/paths.txt"), "utf8").split("\n").filter(Boolean),
+  fs.readFileSync(path.join(root, ".github/actions/ci-changes/pptx-paths.txt"), "utf8").split("\n").filter(Boolean),
 )
 same(
   "in the repo, a look state reaches design, since design-states loads the look scan",
@@ -193,3 +194,52 @@ same(
 same("in the repo, a vitest setup file runs everything", real(["scripts/vitest-metrics.mjs"]).everything, true)
 same("in the repo, the PR body check is a script alone", on(real(["scripts/pr-body.mjs"])), ["source", "scripts"])
 same("in the repo, the oauth package runs no pptx part", real(["packages/oauth/src/index.ts"]).parts.pptx, false)
+
+const jobs = JSON.stringify([{ part: "source" }, { part: "browser", shard: "1/2" }, { part: "browser", shard: "2/2" }])
+const said = (argv) =>
+  Object.fromEntries(decide(["--jobs", jobs, ...argv], root).lines.map((line) => line.split(/=(.*)/s)))
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-change-map-"))
+process.on("exit", () => fs.rmSync(scratch, { recursive: true, force: true }))
+const listedIn = (paths) => {
+  const file = path.join(scratch, `paths-${String(paths.length)}-${path.basename(paths[0] ?? "none")}`)
+  fs.writeFileSync(file, `${paths.join("\n")}\n`)
+  return file
+}
+same(
+  "the command prints one line per part, the unit test folders as JSON, and the check jobs whose part runs",
+  said(["--paths", listedIn(["tests/browser/home.spec.ts"])]),
+  {
+    source: "true",
+    scripts: "false",
+    design: "false",
+    browser: "true",
+    journeys: "false",
+    pptx: "true",
+    corpus: "true",
+    "model-check": "false",
+    "unit-tests": "[]",
+    check: jobs,
+  },
+)
+same(
+  "a docs change keeps only the source job",
+  said(["--paths", listedIn(["GLOSSARY.md"])]).check,
+  JSON.stringify([{ part: "source" }]),
+)
+for (const [name, argv] of [
+  ["no list of paths, which is what an unreadable diff gives", []],
+  ["--full", ["--full", "--paths", listedIn(["GLOSSARY.md"])]],
+  ["a list that cannot be read", ["--paths", "/nowhere/paths"]],
+]) {
+  const out = said(argv)
+  same(
+    `${name} runs every part, every job and every unit test`,
+    [ciParts.every((part) => out[part] === "true"), out.check, out["unit-tests"]],
+    [true, jobs, "all"],
+  )
+}
+same(
+  "the reason for running everything is printed for the log",
+  decide(["--jobs", jobs, "--paths", "/nowhere/paths"], root).said[0].startsWith("every part runs: the map failed:"),
+  true,
+)

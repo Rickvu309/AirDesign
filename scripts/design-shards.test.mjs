@@ -21,7 +21,9 @@ const stateCount = fs
   .readdirSync(path.join(root, ".agents/skills/verify-airdesign/look/states"))
   .filter((file) => file.endsWith(".mjs")).length
 const designShards = designShardCount(stateCount)
-const designEntries = workflow.jobs.check.strategy.matrix.include.filter((entry) => entry.part === "design")
+const designEntries = JSON.parse(
+  workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs"],
+).filter((entry) => entry.part === "design")
 same("a design shard is sized from the count of states", [1, 200, 201, 400, 401].map(designShardCount), [1, 1, 2, 2, 3])
 same(
   `the design scans run in one check job per ${statesPerDesignShard} states, ${designShards} for ${stateCount} states`,
@@ -58,9 +60,13 @@ same(
 
 const caller = workflow.jobs["design-findings"]
 same(
-  "design-findings waits for every design shard, on pull requests, where the design scans run",
+  "design-findings waits for every design shard, on pull requests whose change reaches the design scans",
   [caller?.needs, caller?.if, caller?.uses],
-  ["check", "${{ !cancelled() && github.event_name == 'pull_request' }}", "./.github/workflows/design-findings.yml"],
+  [
+    ["changes", "check"],
+    "${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.design != 'false' }}",
+    "./.github/workflows/design-findings.yml",
+  ],
 )
 const called = parse(fs.readFileSync(path.join(root, ".github/workflows/design-findings.yml"), "utf8"))
 same("design-findings runs only when ci calls it", Object.keys(called.on), ["workflow_call"])

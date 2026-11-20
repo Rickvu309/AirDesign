@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { measures, overLimit, readMetrics as readEvery, reportedMetrics, timeMetric } from "./metrics.mjs"
+import { measuredHere, measures, overLimit, readMetrics as readEvery, reportedMetrics, timeMetric } from "./metrics.mjs"
 import { timedMetrics, timedOnCi } from "./metrics.mjs"
 
 const offline = Object.fromEntries(Object.entries(measures).filter(([name]) => name !== "import-parse"))
@@ -319,5 +319,18 @@ if (!withList.drift.includes("corpus-size is 3 and metrics.json says 1. Record 3
   throw new Error(`a longer corpus list must ask for a record\n${withList.drift.join("\n")}`)
 }
 fs.rmSync(path.join(root, "scripts/pptx-fixtures/corpus.json"))
+
+if (measuredHere({}) !== measures || measuredHere({ AIRDESIGN_UNIT_TESTS: "all" }) !== measures)
+  throw new Error("a run of every unit test must measure every metric")
+const narrowed = Object.fromEntries(
+  Object.entries(measuredHere({ AIRDESIGN_UNIT_TESTS: '["packages/oauth/"]' })).filter(([name]) => name in offline),
+)
+fs.rmSync(path.join(root, "node_modules/.cache/vitest-metrics.json"))
+const fromNarrowRun = await readEvery(root, narrowed)
+const names = fromNarrowRun.rows.map((row) => row.name)
+if (names.includes("known-failures") || names.includes("slides-repainted"))
+  throw new Error("a run of only the unit tests its change reaches must not read the whole unit run")
+if (fromNarrowRun.drift.some((line) => /known-failures|slides-repainted/.test(line)))
+  throw new Error(`a narrowed run must not call the unit run's metrics unmeasured\n${fromNarrowRun.drift.join("\n")}`)
 
 console.log("metrics tests passed")

@@ -24,7 +24,7 @@ const steps = check.steps
 const text = (step) => `${step.run ?? ""} ${step.uses ?? ""} ${JSON.stringify(step.with ?? {})}`
 const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}'`)
 
-const entries = check.strategy.matrix.include
+const entries = JSON.parse(workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs"])
 same(
   "the check job runs the source, scripts and pptx parts and the browser tests in four shards beside the design shards",
   entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
@@ -83,6 +83,11 @@ same(
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
 same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "changes", "corpus", "journeys"])
+same(
+  "the check jobs are the ones changes keeps",
+  check.strategy.matrix.include,
+  "${{ fromJSON(needs.changes.outputs.check) }}",
+)
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
@@ -106,9 +111,9 @@ const pptxCheck = steps.filter((step) => step.run === "pnpm check:pptx")
 same("one step runs the PowerPoint check", pptxCheck.length, 1)
 same("the PowerPoint check runs in the pptx part", onlyOn(pptxCheck[0], "pptx"), true)
 same(
-  "the PowerPoint check runs only when its inputs changed",
-  pptxCheck[0].if.includes("steps.pptx.outputs.changed != '0'"),
-  true,
+  "the PowerPoint check is a check job of its own, which changes keeps only when its inputs changed",
+  entries.filter((entry) => entry.part === "pptx"),
+  [{ part: "pptx" }],
 )
 
 const pptxSteps = steps.filter((step) => /pptx/.test(`${step.id ?? ""} ${text(step)}`))
@@ -126,13 +131,12 @@ const ciSteps = workflow.jobs.ci.steps
 
 const corpus = workflow.jobs.corpus
 same(
-  "the corpus job runs in the merge queue and on main, and on a pull request that changed what it judges",
+  "the corpus job runs unless changes said nothing it judges changed, and changes runs it in the merge queue and on main",
   corpus.if,
-  "${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.pptx == '1') }}",
+  "${{ !cancelled() && needs.changes.outputs.corpus != 'false' }}",
 )
 same("corpus uses two independent runners", corpus.strategy, { "fail-fast": false, matrix: { shard: [1, 2] } })
 const rerunGuard = ciSteps[0]
-const verdict = ciSteps[1].run
 const runsGuard = (attempt) =>
   spawnSync("bash", ["-e", "-c", rerunGuard.run], { encoding: "utf8", env: { ...process.env, RUN_ATTEMPT: attempt } })
 same("the rerun guard reads the run attempt", rerunGuard.env, { RUN_ATTEMPT: "${{ github.run_attempt }}" })
@@ -145,25 +149,7 @@ same(
 )
 same("a later rerun fails the rerun guard too", runsGuard("10").status, 1)
 same("the rerun guard runs on every event and before every other ci step", workflow.jobs.ci.if, "${{ always() }}")
-const passes = (check, corpusResult, journeysResult = "skipped", changesResult = "success") =>
-  spawnSync("bash", [
-    "-e",
-    "-c",
-    verdict
-      .replaceAll("${{ needs.check.result }}", check)
-      .replaceAll("${{ needs.changes.result }}", changesResult)
-      .replaceAll("${{ needs.corpus.result }}", corpusResult)
-      .replaceAll("${{ needs.journeys.result }}", journeysResult),
-  ]).status === 0
-same("ci passes when every part passed and the corpus passed", passes("success", "success"), true)
-same(
-  "ci passes on a pull request that changed nothing the corpus judges, where the corpus is skipped",
-  passes("success", "skipped"),
-  true,
-)
-same("ci fails when the corpus failed", passes("success", "failure"), false)
-same("ci fails when the corpus was cancelled", passes("success", "cancelled"), false)
-same("ci fails when a part failed", passes("failure", "success"), false)
+same("the verdict is the second ci step, after the rerun guard", ciSteps[1].env?.RESULTS, "${{ toJSON(needs) }}")
 same(
   "only a failure on main opens the main is red issue",
   corpus.steps.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
@@ -172,14 +158,11 @@ same(
 
 const journeys = workflow.jobs.journeys
 same(
-  "journeys run on pull requests and in the merge queue",
+  "journeys run on pull requests and in the merge queue, unless changes said nothing they walk changed",
   journeys.if,
-  "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
+  "${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.journeys != 'false' }}",
 )
 same("ci calls the reusable journeys workflow", journeys.uses, "./.github/workflows/journeys.yml")
-same("ci passes when the journeys passed in the queue", passes("success", "success", "success"), true)
-same("ci fails when a journey failed in the queue", passes("success", "success", "failure"), false)
-same("ci fails when the journeys were cancelled", passes("success", "success", "cancelled"), false)
 const journeysFile = parse(fs.readFileSync(path.join(root, ".github/workflows/journeys.yml"), "utf8"))
 same("the journeys workflow can be called from ci", "workflow_call" in journeysFile.on, true)
 same("journeys no longer run on push", "push" in journeysFile.on, false)
@@ -406,7 +389,7 @@ same(
 )
 same(
   "ci has no paint job or verdict",
-  [workflow.jobs["paint-fidelity"], verdict.includes("paint-fidelity")],
+  [workflow.jobs["paint-fidelity"], ciSteps[1].run.includes("paint-fidelity")],
   [undefined, false],
 )
 const paintPath = path.join(root, ".github/workflows/paint-fidelity.yml")

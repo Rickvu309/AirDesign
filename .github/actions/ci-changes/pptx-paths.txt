@@ -33,4 +33,4 @@ scripts/pptx-corpus.mjs
 scripts/metrics.mjs
 metrics.json
 .github/workflows/ci.yml
-.github/actions/pptx-changed
+.github/actions/ci-changes
