@@ -37,7 +37,7 @@ export function groupChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "elements"],
     description:
-      "group: two or more layers of one slide; frame: the same, as an auto layout frame; ungroup: groups back into parts; join: elements[0] is a frame, the rest join its end; leave: children back to the slide. New ids come back in elements.",
+      "group: two or more layers of one slide; frame: the same, as an auto layout frame; ungroup: groups back into parts; join: elements[0] is a group or frame, the rest join it; leave: children back to the slide. New ids come back in elements.",
     properties: {
       op: { type: "string", enum: groupOps },
       elements: {

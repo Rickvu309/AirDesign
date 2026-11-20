@@ -10,6 +10,7 @@ import {
   groupChildren,
   groupFrame,
   groupParent,
+  joinedMember,
   madeGroup,
   type ElementGroup,
   type Member,
@@ -95,7 +96,8 @@ export function placeOf(register: Register, node: ElementId): Place | null {
     const member =
       parent === undefined
         ? undefined
-        : (frameMembers(register, parent).find((m) => m.node === node) ??
+        : (joinedMember(register, node) ??
+          frameMembers(register, parent).find((m) => m.node === node) ??
           frameSource(register, parent)?.members.find((m) => m.node === node) ??
           madeGroup(register, parent)?.members.find((m) => m.node === node))
     if (member !== undefined) return memberPlace(member)
