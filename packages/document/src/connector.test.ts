@@ -132,6 +132,18 @@ describe("an elbow connector's route", () => {
     expect(Math.abs(ends.end.x - 4_500_000) + Math.abs(ends.end.y - 2_000_000)).toBeLessThanOrEqual(6_350)
   })
 
+  it("puts both ends of an elbow from a site to that same site on the site, a point with its bend midway", () => {
+    const dot = { box: { x: 0, y: 0, cx: 2, cy: 2 }, ...upright }
+    const top = tie(dot, 0)
+    expect(top.spot).toEqual({ x: 1, y: 0 })
+    const route = routed(elbow, "bentConnector3", {}, top, top)
+    if (route === null) throw new Error("no route")
+    expect(route.place.box).toEqual({ x: 1, y: 0, cx: 0, cy: 0 })
+    expect(route.adjust).toEqual({ adj1: 50_000 })
+    expect(connectorEnds(route.place)).toEqual({ start: { x: 1, y: 0 }, end: { x: 1, y: 0 } })
+    expect(routed(route.place, route.preset, route.adjust, top, top)).toEqual(route)
+  })
+
   it("turns a quarter when it leaves a bottom site for a top site, with PowerPoint's turn and flips", () => {
     const top = square(1_000_000, 1_000_000)
     const below = square(3_000_000, 4_000_000)
