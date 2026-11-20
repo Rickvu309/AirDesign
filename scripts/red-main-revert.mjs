@@ -1,137 +1,27 @@
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { beforeAfterSection, hasBeforeAfter, noVisibleChange, seen } from "./before-after.mjs"
 import { readLocal, verdict } from "./bar.mjs"
 import { countersignBody } from "./countersign.mjs"
-import { plainLog } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { failureLines } from "./land-report.mjs"
-import { agentHeader, failureExcerpt, openIssues, recordRace } from "./race-issue.mjs"
+import { agentHeader, openIssues, recordRace } from "./race-issue.mjs"
 import { decide } from "./red-main-verdict.mjs"
-import { titleFaults } from "./title.mjs"
+import { cleanRead, revertPull, runUrl, testExcerpt } from "./red-main-revert-report.mjs"
+import { drillBranch, finishDrill, removeDrillBranch } from "./red-main-drill.mjs"
 
 export const branchPrefix = "red-main/revert-"
 export const revertBranch = (sha) => `${branchPrefix}${sha}`
 
-const runnerPath = /\/home\/runner\/work\/[^/\s]+\/[^/\s]+\//g
-const excerptLimit = 2
-const runUrl = (repository, id) => `https://github.com/${repository}/actions/runs/${id}`
-const short = (sha) => sha.slice(0, 7)
-const checkProgress = /^(?:judge (?:break|valid|proof)|phase) /
-
-const withoutProgress = (log) =>
-  log
-    .split("\n")
-    .filter((line) => !checkProgress.test(plainLog(line)))
-    .join("\n")
-
-const cleanRead = (read) => ({
-  ...read,
-  jobs: read.jobs.map((job) => ({ ...job, log: withoutProgress(job.log) })),
-  logs: read.logs.map(withoutProgress),
-})
-
-const beforeAttachment = (excerpt) => {
-  const kept = []
-  for (const line of excerpt.split("\n")) {
-    if (/^\s*attachment #/.test(line)) break
-    kept.push(line)
-  }
-  while (kept.at(-1)?.trim() === "") kept.pop()
-  return kept.join("\n")
-}
-
 const lines = (answer) => (answer.status === 0 ? answer.stdout.split("\n").filter((line) => line !== "") : [])
-const pullTitle = (target, title) => {
-  const quoted = `Revert "${title}"`
-  return titleFaults(quoted).length === 0 ? quoted : `Revert ${short(target)}, which turned main red`
-}
 
-const beforeAfter = ({ repository, named, culprit, changedFiles }) => {
-  if (hasBeforeAfter(culprit, repository) && noVisibleChange(culprit) === undefined) {
-    const images = (beforeAfterSection(culprit) ?? "")
-      .split("\n")
-      .filter((line) => /!\[[^\]]*\]\(https:\/\/github\.com\//.test(line))
-    return ["## Before / after", "", `This puts back the before side of ${named}'s image:`, "", ...images, ""]
-  }
-  const unseen = noVisibleChange(culprit)
-  if (unseen !== undefined)
-    return ["## Before / after", "", `No visible change: this reverts ${named}, whose body says: ${unseen}`, ""]
-  if (!changedFiles.some(seen)) return []
-  return ["## Before / after", "", `This puts back what main showed before ${named}, whose body has no image.`, ""]
-}
-
-export const revertPull = ({
-  repository,
-  target,
-  title,
-  number,
-  culprit = "",
-  decision,
-  failure,
-  changedFiles,
-  jobs,
-}) => {
-  const named = number === undefined ? `commit \`${short(target)}\`` : `#${number}`
-  const real = decision.judged.at(-1)
-  const whys = [
-    ...real.checks.map((check) => `${check} failed, and a failed check is never a race`),
-    ...real.tests
-      .filter((each) => each.verdict === "real")
-      .map((each) => `${each.title.replace(/^Race: /, "")}: ${each.why}`),
-  ]
-  const log = jobs.map((job) => withoutProgress(job.log)).join("\n")
-  const excerpts = real.tests
-    .filter((each) => each.verdict === "real")
-    .slice(0, excerptLimit)
-    .flatMap((each) => ["~~~text", beforeAttachment(failureExcerpt(log, each.test)).replace(runnerPath, ""), "~~~", ""])
-  const pullTitleText = pullTitle(target, title)
-  const body = [
-    agentHeader,
-    "",
-    "## Summary",
-    "",
-    `ci failed on main, and the first red commit is \`${short(target)}\` from ${named}, "${title}". This reverts it so main goes green again. The red-main bot merges this pull request once its ci passes while main is still red. It closes it instead if main goes green first, because someone fixed forward.`,
-    "",
-    `- First red run: ${runUrl(repository, decision.run.id)} at \`${short(decision.run.sha)}\``,
-    `- Last green run: ${runUrl(repository, decision.green.id)} at \`${short(decision.green.sha)}\``,
-    "",
-    "## Evidence",
-    "",
-    `Failed jobs: ${jobs.map((job) => job.name).join(", ")}.`,
-    "",
-    "~~~text",
-    ...failure.map((line) => line.replace(runnerPath, "")),
-    "~~~",
-    "",
-    "Why this is not a race:",
-    "",
-    ...whys.map((why) => `- ${why}`),
-    "",
-    ...excerpts,
-    ...beforeAfter({ repository, named, culprit, changedFiles }),
-    "## Merge Danger",
-    "",
-    `**Door:** two-way. ${named} lands again once it passes against this failure.`,
-    "",
-    `**Blast Radius:** what ${named} changed. It leaves main until it lands again.`,
-    "",
-  ].join("\n")
-  const message = [
-    pullTitleText,
-    "",
-    `This reverts commit ${target}, the first red commit on main in ci run ${runUrl(repository, decision.run.id)}.`,
-    "",
-    ...changedFiles.map((file) => `Reverts: ${file}`),
-    "",
-  ].join("\n")
-  return { title: pullTitleText, body, message }
+const mainCommits = (io) => {
+  const fetched = io.git(["fetch", "--no-tags", "origin", "main"])
+  return fetched.status === 0 ? lines(io.git(["rev-list", "--first-parent", "-n", "300", "origin/main"])).reverse() : []
 }
 
 const mainState = ({ repository, io }) => {
-  io.git(["fetch", "--no-tags", "origin", "main"])
-  const commits = lines(io.git(["rev-list", "--first-parent", "-n", "300", "origin/main"])).reverse()
+  const commits = mainCommits(io)
   const listed = io.gh([
     "run",
     "list",
@@ -167,17 +57,20 @@ const newerGreen = ({ runs, commits, target }) => {
   return runs.find((run) => run.conclusion === "success" && from !== -1 && commits.indexOf(run.sha) > from)
 }
 
-const openRevert = ({ repository, io, decision, event, say }) => {
-  const { target } = decision
-  const branch = revertBranch(target)
+const openRevert = ({ repository, io, decision, event, say, drill }) => {
+  const target = drill?.sha ?? decision.target
+  const branch = drill ? drillBranch(drill) : revertBranch(target)
   const title = io.git(["log", "-1", "--format=%s", target]).stdout.trim()
+  const fail = (line) => ({ ...say(line), failed: true })
   if (/^Revert\b/.test(title)) {
+    if (drill) return fail(`the drill target ${target} is itself a revert`)
     io.redMain(
       `${agentHeader}\n\nci is red on main, and the first red commit ${target} is itself a revert. The bot reverts no revert: fix forward. ${runUrl(repository, decision.run.id)}`,
     )
     return { failed: false }
   }
   if (io.owner === undefined) {
+    if (drill) return fail("RED_MAIN_TOKEN is missing")
     io.redMain(
       `${agentHeader}\n\nci is red on main, and the first red commit is ${target}. The bot opened no revert: the RED_MAIN_TOKEN secret is missing, and a pull request opened with the workflow's own token runs no checks. ${runUrl(repository, decision.run.id)}`,
     )
@@ -197,6 +90,8 @@ const openRevert = ({ repository, io, decision, event, say }) => {
     "number,state,url",
   ])
   const [pull] = known.status === 0 ? JSON.parse(known.stdout || "[]") : []
+  if (drill && (known.status !== 0 || pull !== undefined))
+    return fail(`could not establish that ${branch} has no pull request: ${pull?.url ?? known.stderr.trim()}`)
   if (pull?.state === "OPEN") return say(`the revert of ${target} is open: ${pull.url}`)
   if (pull !== undefined) {
     io.redMain(
@@ -207,7 +102,7 @@ const openRevert = ({ repository, io, decision, event, say }) => {
   const culprits = io.gh(["api", `repos/${repository}/commits/${target}/pulls`, "--jq", "[.[] | {number, body}]"])
   const [culprit] = culprits.status === 0 ? JSON.parse(culprits.stdout || "[]") : []
   const changedFiles = lines(io.git(["show", "--name-only", "--format=", target]))
-  const read = io.jobsOf(decision.run)
+  const read = drill ? { jobs: [] } : io.jobsOf(decision.run)
   const pullText = revertPull({
     repository,
     target,
@@ -215,13 +110,16 @@ const openRevert = ({ repository, io, decision, event, say }) => {
     number: culprit?.number,
     culprit: culprit?.body ?? "",
     decision,
-    failure: io.failure(decision.run, read),
+    failure: drill ? [] : io.failure(decision.run, read),
     changedFiles,
     jobs: read.jobs,
+    drill,
   })
-  io.git(["checkout", "-B", branch, "origin/main"])
+  const checkedOut = io.git(["checkout", "-B", branch, "origin/main"])
+  if (checkedOut.status !== 0) return fail(`could not check out ${branch}: ${checkedOut.stderr.trim()}`)
   if (io.git(["revert", "--no-commit", target]).status !== 0) {
     io.git(["revert", "--abort"])
+    if (drill) return fail(`the drill could not revert ${target} on main`)
     io.redMain(
       `${agentHeader}\n\nci is red on main, and the first red commit is ${target}. Its revert conflicts with what main holds now, so the bot opened none: fix forward. ${runUrl(repository, decision.run.id)}`,
     )
@@ -255,6 +153,7 @@ const openRevert = ({ repository, io, decision, event, say }) => {
   )
   if (created.status !== 0) {
     say(`gh pr create failed: ${created.stderr.trim()}`)
+    if (drill) removeDrillBranch({ io, branch, head, say })
     return { failed: true }
   }
   const url = created.stdout.trim().split("\n").at(-1)
@@ -263,8 +162,9 @@ const openRevert = ({ repository, io, decision, event, say }) => {
       "api",
       `repos/${repository}/issues/${url.split("/").at(-1)}/comments`,
       "-f",
-      `body=${countersignBody({ head, verdict: "right", reason: `an exact revert of ${target}, which turned ci on main red; it puts back the bar main had before that commit` })}`,
+      `body=${countersignBody({ head, verdict: "right", reason: `an exact revert of ${target}${drill ? " for the red-main drill" : ", which turned ci on main red"} that puts back the bar main had before that commit` })}`,
     ])
+  if (drill) return { failed: false, url, head, branch }
   io.redMain(
     `${agentHeader}\n\nci failed on main in run ${runUrl(repository, decision.run.id)}. The first red commit is ${target}${culprit === undefined ? "" : ` from #${culprit.number}`}. The bot opened ${url} on branch ${branch} to revert it, and merges it once its ci passes while main is still red.`,
   )
@@ -289,7 +189,7 @@ const recordRun = ({ repository, io, judged, event }) => {
       gh: io.gh,
       repository,
       test: each.test,
-      excerpt: beforeAttachment(failureExcerpt(log, each.test)).replace(runnerPath, ""),
+      excerpt: testExcerpt(log, each.test),
       commit: event.sha,
       seen: `on main in ci run ${runUrl(repository, event.id)}, where ${each.why}`,
     })
@@ -307,16 +207,16 @@ const recordRun = ({ repository, io, judged, event }) => {
   return { failed: false }
 }
 
+const closePull = ({ repository, io, number, comment }) =>
+  io.gh(["pr", "close", String(number), "--repo", repository, "--comment", `${agentHeader}\n\n${comment}`])
+
 const closeRevert = ({ repository, io, number, green }) =>
-  io.gh([
-    "pr",
-    "close",
-    String(number),
-    "--repo",
+  closePull({
     repository,
-    "--comment",
-    `${agentHeader}\n\nci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before this revert landed. Someone fixed forward, so the bot closes it.`,
-  ])
+    io,
+    number,
+    comment: `ci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before this revert landed. Someone fixed forward, so the bot closes it.`,
+  })
 
 const closeFixedForward = ({ repository, io, state, green }) => {
   const listed = io.gh([
@@ -400,6 +300,14 @@ export const redMainBot = async ({ repository, event, io }) => {
     said.push(line)
     return { failed: false, said }
   }
+  if (event.event === "workflow_dispatch") {
+    if (!/^[0-9a-f]{40}$/.test(event.sha) || !mainCommits(io).includes(event.sha))
+      return { ...say("drill_sha must be a full SHA in main's last 300 first-parent commits"), failed: true }
+    const pull = openRevert({ repository, io, event, say, drill: event })
+    if (pull.failed) return { said, failed: true }
+    const close = (comment) => closePull({ repository, io, number: pull.url, comment })
+    return { said, ...(await finishDrill({ repository, io, pull, close, say })) }
+  }
   if (event.event === "pull_request") {
     if (!event.branch.startsWith(branchPrefix)) return say("not a revert branch")
     return { said, ...followRevert({ repository, io, event, say }) }
@@ -443,19 +351,27 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       const read = readLocal(root)
       return read.why !== undefined || verdict(read).lowers
     },
-    redMain: (body) =>
+    redMain: (body, existingOnly = false) =>
       spawnSync("bash", [path.join(root, "scripts/red-main.sh")], {
-        env: { ...process.env, RED_BODY: body },
+        env: { ...process.env, RED_BODY: body, RED_EXISTING_ONLY: existingOnly ? "1" : "" },
         stdio: "inherit",
       }),
   }
-  const event = {
-    id: Number(process.env.RUN_ID),
-    event: process.env.RUN_EVENT,
-    branch: process.env.RUN_BRANCH,
-    sha: process.env.RUN_SHA,
-    conclusion: process.env.RUN_CONCLUSION,
-  }
+  const event =
+    process.env.GITHUB_EVENT_NAME === "workflow_dispatch"
+      ? {
+          event: "workflow_dispatch",
+          id: Number(process.env.GITHUB_RUN_ID),
+          attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+          sha: process.env.DRILL_SHA,
+        }
+      : {
+          id: Number(process.env.RUN_ID),
+          event: process.env.RUN_EVENT,
+          branch: process.env.RUN_BRANCH,
+          sha: process.env.RUN_SHA,
+          conclusion: process.env.RUN_CONCLUSION,
+        }
   const result = await redMainBot({ repository, event, io })
   for (const line of [...(result.said ?? []), ...(result.why === undefined ? [] : [result.why])]) console.log(line)
   if (result.failed) process.exit(1)

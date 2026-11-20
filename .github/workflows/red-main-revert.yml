@@ -1,6 +1,12 @@
 name: red-main-revert
 
 on:
+  workflow_dispatch:
+    inputs:
+      drill_sha:
+        description: Full SHA of a recent commit on main to revert in a drill
+        required: true
+        type: string
   workflow_run:
     workflows:
       - ci
@@ -17,13 +23,15 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: red-main-revert
+  group: ${{ github.event_name == 'workflow_dispatch' && format('red-main-drill-{0}', github.run_id) || 'red-main-revert' }}
   cancel-in-progress: false
 
 jobs:
   red-main-revert:
     name: red-main-revert
-    if: github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'pull_request'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -34,6 +42,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
           RED_MAIN_TOKEN: ${{ secrets.RED_MAIN_TOKEN }}
+          DRILL_SHA: ${{ inputs.drill_sha }}
           RUN_ID: ${{ github.event.workflow_run.id }}
           RUN_EVENT: ${{ github.event.workflow_run.event }}
           RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}

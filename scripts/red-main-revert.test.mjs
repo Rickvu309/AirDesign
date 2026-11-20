@@ -1,13 +1,12 @@
-import { spawnSync } from "node:child_process"
 import fs from "node:fs"
-import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
 import { failureLines } from "./land-report.mjs"
 import { bodyFaults } from "./pr-body.mjs"
 import { agentHeader } from "./race-issue.mjs"
-import { redMainBot, revertBranch, revertPull } from "./red-main-revert.mjs"
+import { redMainBot, revertBranch } from "./red-main-revert.mjs"
+import { revertPull } from "./red-main-revert-report.mjs"
 import { decide, judgeRun } from "./red-main-verdict.mjs"
 import { titleVerdict } from "./title.mjs"
 
@@ -254,7 +253,10 @@ const io = (fake) => ({
   owner: fake.owner,
   git: fake.git,
   jobsOf,
-  redMain: (body) => said.push(body),
+  redMain: (body) => {
+    said.push(body)
+    return ok()
+  },
   lowersTheBar: () => false,
   failure: (run, read) => {
     failureReads.push({ run, read })
@@ -403,7 +405,69 @@ same(
   [false, true],
 )
 
+const drill = { event: "workflow_dispatch", sha: first.target, id: 9, attempt: 1 }
+const drillHead = "f".repeat(40)
+const drillBranch = `red-main/drill-${first.target}-9-1`
+const drillUrl = `https://github.com/${repository}/pull/1200`
+const drillRun = async (status) => {
+  const fake = recorder([
+    [/^git rev-parse HEAD/, () => ok(drillHead)],
+    [/^owner pr create/, () => ok(drillUrl)],
+    [
+      /^gh run list .*--branch red-main\/drill-/,
+      () => ok(JSON.stringify([{ headSha: drillHead, status, url: "run" }])),
+    ],
+    ...mainUpTo(real, "702c51c"),
+  ])
+  const result = await redMainBot({ repository, event: drill, io: { ...io(fake), sleep: async () => {} } })
+  return { result, calls: fake.calls }
+}
+const drilled = await drillRun("in_progress")
+const drillBody = drilled.calls.find((call) => call.who === "owner" && call.args[1] === "create")?.input ?? ""
+same(
+  "the drill opens the bot's marked PR as the owner",
+  [
+    drilled.result.failed,
+    drillBody.startsWith(agentHeader),
+    drillBody.includes("Drill:"),
+    bodyFaults(drillBody, { repository }),
+  ],
+  [false, true, true, []],
+)
+same(
+  "ci and bar start before close and delete",
+  drilled.calls
+    .filter(({ args }) => args.includes(drillBranch) || args[1] === "close")
+    .map(({ args }) =>
+      args.includes("--workflow") ? args[args.indexOf("--workflow") + 1] : args.slice(0, 2).join(" "),
+    ),
+  ["pr list", "checkout -B", "pr create", "ci.yml", "bar.yml", "pr close", "push origin"],
+)
+same("the drill records its cleanup on the red-main issue", said.at(-1).includes(`Deleted branch ${drillBranch}`), true)
+same(
+  "a drill branch cannot be followed into a merge",
+  (await redMainBot({ repository, event: { ...revertRun("success"), branch: drillBranch }, io: {} })).said,
+  ["not a revert branch"],
+)
+same(
+  "a SHA outside main cannot be drilled",
+  (await redMainBot({ repository, event: { ...drill, sha: drillHead }, io: recorder(mainUpTo(real, "702c51c")) }))
+    .failed,
+  true,
+)
+const timedOut = await drillRun("queued")
+same(
+  "a drill with unstarted checks fails and cleans up",
+  [
+    timedOut.result.failed,
+    timedOut.calls.some(({ args }) => args[1] === "close"),
+    timedOut.calls.some(({ args }) => args.includes("--delete")),
+  ],
+  [true, true, true],
+)
+
 const workflow = parse(fs.readFileSync(path.join(root, ".github/workflows/red-main-revert.yml"), "utf8"))
+same("dispatch requires a drill SHA", workflow.on.workflow_dispatch?.inputs.drill_sha.required, true)
 same("the bot runs when ci completes on main or on a revert branch", workflow.on.workflow_run, {
   workflows: ["ci"],
   types: ["completed"],
@@ -426,38 +490,8 @@ same(
   steps.filter((step) => JSON.stringify(step).includes("secrets.")).map((step) => step.run),
   ["node scripts/red-main-revert.mjs"],
 )
-same("bot runs never overlap", workflow.concurrency, { group: "red-main-revert", "cancel-in-progress": false })
-
-const fakeBin = fs.mkdtempSync(path.join(os.tmpdir(), "red-main-"))
-fs.writeFileSync(
-  path.join(fakeBin, "gh"),
-  '#!/bin/bash\necho "gh $*" >> "$LOG"\nif [ "$1 $2" = "issue list" ]; then echo 575; else cat >> "$LOG"; fi\n',
-  { mode: 0o755 },
-)
-const redMainSays = (body) => {
-  const log = path.join(fakeBin, `log-${body.length}`)
-  spawnSync("bash", [path.join(root, "scripts/red-main.sh")], {
-    input: "",
-    env: {
-      PATH: `${fakeBin}:${process.env.PATH}`,
-      LOG: log,
-      GITHUB_SHA: "abcdef1234",
-      GITHUB_SERVER_URL: "https://github.com",
-      GITHUB_REPOSITORY: repository,
-      GITHUB_RUN_ID: "9",
-      RED_BODY: body,
-    },
-  })
-  return fs.readFileSync(log, "utf8").split("\n").slice(1).join("\n")
-}
-same(
-  "red-main.sh still says which run failed when given no body",
-  redMainSays(""),
-  `gh issue comment 575 --repo ${repository} --body-file -\nci failed on main at abcdef1. https://github.com/${repository}/actions/runs/9`,
-)
-same(
-  "red-main.sh comments the bot's text as written",
-  redMainSays("the bot opened pull 1200 for $HOME"),
-  `gh issue comment 575 --repo ${repository} --body-file -\nthe bot opened pull 1200 for $HOME`,
-)
-fs.rmSync(fakeBin, { recursive: true, force: true })
+same("drill runs have their own group, and real revert runs still serialize", workflow.concurrency, {
+  group:
+    "${{ github.event_name == 'workflow_dispatch' && format('red-main-drill-{0}', github.run_id) || 'red-main-revert' }}",
+  "cancel-in-progress": false,
+})

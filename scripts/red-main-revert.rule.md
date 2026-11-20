@@ -9,3 +9,11 @@
 - The revert is a pull request opened as the owner with `RED_MAIN_TOKEN`, so `ci` and `bar` judge it like any other. Its body starts with the agent line, names the failed jobs and tests from `failureLines`, links the red run and the last green one, and names the reverted pull request. When `bar` would call it lowering the bar, the bot countersigns it, because it puts back the bar `main` had before that commit.
 - The bot merges the revert when its `ci` passes and no push run after the reverted commit has passed. It closes the revert when one has: someone fixed forward. It never reruns `ci`, reverts a revert, or opens a second revert of one commit.
 - Each verdict is a comment on the `main is red` issue through `scripts/red-main.sh`.
+
+## Drill the live revert path
+
+Run `gh workflow run red-main-revert.yml -f drill_sha=<full-sha>` and follow the dispatch with `gh run watch <run-id>`. Pick a small docs-only commit from the last 300 first-parent commits on `main` whose changes still apply in reverse.
+
+The drill uses the same revert, push and PR creation code with `RED_MAIN_TOKEN`. The agent line and drill marker identify the PR. Each run gets its own `red-main/drill-<sha>-<run-id>-<attempt>` branch, outside the automatic merge trigger. The workflow waits for both `ci` and `bar` to start on the PR's head, then closes the PR and deletes the branch. If a check fails to start within five minutes, it still cleans up and reports failure.
+
+Verify the PR author, the two workflow links, the closed PR and the deleted branch. The bot comments on the open `main is red` issue. If there is no open issue, it records the result in the workflow log and creates no issue.
