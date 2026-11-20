@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto"
-import { Client } from "pg"
+import { Client, DatabaseError } from "pg"
 import { describe, expect, it } from "vitest"
 
-import { inDatabase, postgresInfo } from "./harness.js"
+import { inDatabase, postgresInfo, unmigratedDatabase } from "./harness.js"
 
 async function marked(url: string, mark: string): Promise<number | null> {
   const client = new Client({ connectionString: url, application_name: "isolation-reader" })
@@ -18,7 +18,7 @@ async function marked(url: string, mark: string): Promise<number | null> {
     ])
     return Number(found.rows[0]?.count)
   } catch (error) {
-    if ((error as { code?: string }).code === "57P01") return null
+    if (error instanceof DatabaseError && (error.code === "57P01" || error.code === "42P01")) return null
     throw error
   } finally {
     await client.end().catch(() => undefined)
@@ -26,6 +26,15 @@ async function marked(url: string, mark: string): Promise<number | null> {
 }
 
 describe("test databases", () => {
+  it("can check for leaked accounts while another database is still empty", async () => {
+    const empty = await unmigratedDatabase()
+    try {
+      expect(await marked(empty.admin, "isolation")).toBeNull()
+    } finally {
+      await empty.drop()
+    }
+  })
+
   it("shows a test file only the rows it wrote", async () => {
     const info = await postgresInfo()
     const own = new URL(info.admin).pathname.slice(1)

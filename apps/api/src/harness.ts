@@ -42,10 +42,24 @@ export function sharedCluster(): Promise<PostgresInfo> {
   return cluster
 }
 
+async function createFileDatabase(cluster: PostgresInfo, template: string): Promise<string> {
+  const database = `file_${String(process.pid)}_${randomBytes(6).toString("hex")}`
+  await onCluster(cluster, `create database ${database} template ${template}`)
+  return database
+}
+
+export async function unmigratedDatabase(): Promise<{ readonly admin: string; readonly drop: () => Promise<void> }> {
+  const cluster = await sharedCluster()
+  const database = await createFileDatabase(cluster, "template0")
+  return {
+    admin: inDatabase(cluster.admin, database),
+    drop: () => onCluster(cluster, `drop database ${database}`),
+  }
+}
+
 async function ownDatabase(): Promise<PostgresInfo> {
   const template = await sharedCluster()
-  const database = `file_${String(process.pid)}_${randomBytes(6).toString("hex")}`
-  await onCluster(template, `create database ${database} template ${databaseOf(template.admin)}`)
+  const database = await createFileDatabase(template, databaseOf(template.admin))
   return {
     admin: inDatabase(template.admin, database),
     session: inDatabase(template.session, database),
