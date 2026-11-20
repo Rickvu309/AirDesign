@@ -4,13 +4,12 @@ import { encodeUtf8 } from "./package-bytes.js"
 import { shownCrop, type CropRect } from "./picture-read.js"
 import { whole, type ElementAt, type Parts } from "./xml-codec.js"
 
-import { writtenPictureMode } from "./picture-mode.js"
+import { srcRectXml, writtenPictureMode } from "./picture-mode.js"
 
 const sides = ["l", "t", "r", "b"] as const
 
 function rectXml(rect: CropRect): string {
-  const named = sides.filter((side) => rect[side] !== 0).map((side) => ` ${side}="${String(rect[side])}"`)
-  return named.length === 0 ? "" : `<a:srcRect${named.join("")}/>`
+  return sides.some((side) => rect[side] !== 0) ? srcRectXml(rect) : ""
 }
 
 function writtenCrop(parts: Parts, at: ElementAt, rect: CropRect): Parts {

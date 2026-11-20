@@ -69,7 +69,7 @@ export function writtenPictureMode(parts: Parts, at: ElementAt, mode: Mode): Par
     const rect =
       mode === "crop"
         ? crop === undefined
-          ? "<a:srcRect/>"
+          ? srcRectXml(coverCrop(parts, at, found))
           : decodeUtf8(current.bytes.subarray(crop.start, crop.end))
         : ""
     return spliceBytes(current.bytes, [
@@ -80,6 +80,43 @@ export function writtenPictureMode(parts: Parts, at: ElementAt, mode: Mode): Par
       },
     ])
   })
+}
+
+type Sides = { readonly l: number; readonly t: number; readonly r: number; readonly b: number }
+
+const cropSides = ["l", "t", "r", "b"] as const
+
+export function srcRectXml(rect: Sides | null): string {
+  const named = rect === null ? [] : cropSides.filter((side) => rect[side] !== 0)
+  return `<a:srcRect${named.map((side) => ` ${side}="${String(rect?.[side])}"`).join("")}/>`
+}
+
+function coverCrop(parts: Parts, at: ElementAt, found: PictureFill): Sides | null {
+  const rect = fillRectOf(found)
+  const held = rect === null ? null : sidesOf(rect)
+  const shown =
+    held !== null && shownPictureMode(parts, at) === "fill" && cropSides.every((side) => held[side] <= 0)
+      ? held
+      : coverOf(parts, at, found)
+  if (shown === null) return null
+  const across = 100_000 - shown.l - shown.r
+  const down = 100_000 - shown.t - shown.b
+  const cut = (side: number, span: number) => {
+    const share = Math.round((-side * 100_000) / span)
+    return share === 0 ? 0 : share
+  }
+  return { l: cut(shown.l, across), t: cut(shown.t, down), r: cut(shown.r, across), b: cut(shown.b, down) }
+}
+
+function coverOf(parts: Parts, at: ElementAt, found: PictureFill): Sides | null {
+  const image = imageOf(parts, at, found)
+  const box = shownBox(found)
+  return image === null || box === null ? null : picturePlacement("fill", image, box)
+}
+
+function sidesOf(rect: MarkupElement): Sides {
+  const side = (name: (typeof cropSides)[number]) => Number(paintAttribute(rect, name) ?? 0)
+  return { l: side("l"), t: side("t"), r: side("r"), b: side("b") }
 }
 
 export function coverOnResize(before: Parts, after: Parts, at: ElementAt): Parts {
@@ -240,7 +277,7 @@ function fillRectOf(found: PictureFill): MarkupElement | null {
   return found.children[stretch.index]?.find((item) => item.kind === "a:fillRect") ?? null
 }
 
-function sameSides(rect: MarkupElement, placed: { l: number; t: number; r: number; b: number }): boolean {
-  const side = (name: "l" | "t" | "r" | "b") => Number(paintAttribute(rect, name) ?? 0)
-  return side("l") === placed.l && side("t") === placed.t && side("r") === placed.r && side("b") === placed.b
+function sameSides(rect: MarkupElement, placed: Sides): boolean {
+  const held = sidesOf(rect)
+  return cropSides.every((side) => held[side] === placed[side])
 }
