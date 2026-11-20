@@ -2,7 +2,8 @@ import type { Box } from "./box.js"
 import type { Scope, ScopedElement, SetChange } from "./change.js"
 import type { Register } from "./decide.js"
 import type { ElementId } from "./element-id.js"
-import { readLayout, type Sizing } from "./frame-layout.js"
+import { groupParent } from "./element-group.js"
+import { readLayout, type LayoutChild, type Sizing } from "./frame-layout.js"
 import type { FieldEdit } from "./row.js"
 
 export type Hugged = { readonly box: Box; readonly width: Sizing; readonly height: Sizing }
@@ -28,21 +29,35 @@ export function fixedSides(
   }
 }
 
+function slotOf(register: Register, node: ElementId): LayoutChild | undefined {
+  const holder = groupParent(register, node)
+  const view = holder === null || holder === undefined ? null : readLayout(register, holder)
+  return view === null || view.flow === "none" ? undefined : view.children.find((child) => child.node === node)
+}
+
+export function placedByFrame(register: Register, node: ElementId): boolean {
+  return slotOf(register, node) !== undefined
+}
+
 export function resizedSides(
   register: Register,
   node: ElementId,
   size: { readonly cx: number; readonly cy: number },
 ): { readonly before: Sides; readonly after: Sides } | null {
-  const view = readLayout(register, node)
-  if (view === null || view.flow === "none") return null
-  const after = fixedSides(view, size)
-  if (after.width === undefined && after.height === undefined) return null
+  const own = readLayout(register, node)
+  const hugging = own !== null && own.flow !== "none" ? own : null
+  const slot = slotOf(register, node)
+  const box = slot?.box ?? hugging?.box
+  if (box === undefined) return null
+  const sizingOf = (side: "width" | "height"): Sizing =>
+    slot?.fill?.[side] === true ? "fill" : (hugging?.[side] ?? "fixed")
+  const changed = (side: "width" | "height") =>
+    sizingOf(side) !== "fixed" && (side === "width" ? size.cx !== box.cx : size.cy !== box.cy)
+  const sides = (["width", "height"] as const).filter(changed)
+  if (sides.length === 0) return null
   return {
-    before: {
-      ...(after.width === undefined ? {} : { width: view.width }),
-      ...(after.height === undefined ? {} : { height: view.height }),
-    },
-    after,
+    before: Object.fromEntries(sides.map((side) => [side, sizingOf(side)])),
+    after: Object.fromEntries(sides.map((side) => [side, "fixed"])),
   }
 }
 

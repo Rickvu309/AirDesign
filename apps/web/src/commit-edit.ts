@@ -96,17 +96,20 @@ export type BoxCommit = {
   readonly corners?: { readonly before: CornersShape; readonly after: CornersShape }
   readonly sizing?: { readonly before: TextSizing; readonly after: TextSizing }
   readonly sides?: { readonly before: Sides; readonly after: Sides }
+  readonly laidOut?: true
 }
 
-export function cornersPatch(
+export function commitPatch(
   box: Box,
-  shape: CornersShape | undefined,
-  sizing?: TextSizing,
-  sides: Sides = {},
+  commit: Omit<BoxCommit, "box" | "element">,
+  side: "before" | "after",
 ): ElementPatch {
-  const sized = { ...boxPatch(box), ...sidesPatch(sides) }
-  const corners = shape === undefined ? sized : { ...sized, geometry: { shape: { set: shape } } }
-  return sizing === undefined ? corners : { ...corners, body: sizing }
+  const placed = commit.laidOut === true ? { box: { w: { set: box.cx }, h: { set: box.cy } } } : boxPatch(box)
+  const sized = { ...placed, ...sidesPatch(commit.sides?.[side] ?? {}) }
+  const shape = commit.corners?.[side]
+  const cornered = shape === undefined ? sized : { ...sized, geometry: { shape: { set: shape } } }
+  const text = commit.sizing?.[side]
+  return text === undefined ? cornered : { ...cornered, body: text }
 }
 
 export async function storeBoxes(
@@ -118,17 +121,13 @@ export async function storeBoxes(
 ): Promise<CommitOutcome | "stored"> {
   const kept: ElementId[] = []
   let refusal: CommitOutcome = "refused"
-  for (const { box, element, corners, sizing, sides } of boxes) {
+  for (const commit of boxes) {
+    const { box, element } = commit
     const link = open(memoryRemote())
-    const result =
-      corners === undefined && sizing === undefined && sides === undefined
-        ? await link.enqueueBox(deckId, box, element.id, element.file)
-        : await link.enqueueRow(
-            deckId,
-            { v: format, patch: cornersPatch(box, corners?.after, sizing?.after, sides?.after) },
-            element.id,
-            element.file,
-          )
+    const plain = Object.keys(commit).every((key) => key === "box" || key === "element")
+    const result = plain
+      ? await link.enqueueBox(deckId, box, element.id, element.file)
+      : await link.enqueueRow(deckId, { v: format, patch: commitPatch(box, commit, "after") }, element.id, element.file)
     if (result.ok) kept.push(element.id)
     else {
       if (result.refusal === "size") refusal = "too-large"

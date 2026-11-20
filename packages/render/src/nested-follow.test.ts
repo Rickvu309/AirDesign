@@ -82,4 +82,12 @@ describe("an auto layout frame while a side handle resizes it", () => {
     store.lay(null)
     expect(liveBox(store, child)).toMatchObject({ x: 80, y: 100, width: 80, height: 60 })
   })
+
+  it("paints the backdrop at the frame's box when a layer grew the frame and its group paint is older", () => {
+    const store = paintStore()
+    const grown = { x: 100, y: 100, cx: 280, cy: 60 }
+    store.placeBox(outer, grown)
+    store.placeBox(inner, grown)
+    expect(liveBox(store, backdrop)).toMatchObject({ x: 100, y: 100, width: 280, height: 60 })
+  })
 })

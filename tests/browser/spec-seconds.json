@@ -91,6 +91,7 @@
     "fills-stack.spec.ts": 6.7,
     "font-notice.spec.ts": 2.1,
     "font-widths.spec.ts": 0.3,
+    "frame-child-resize.spec.ts": 6,
     "frame-fill.spec.ts": 5,
     "frame-group-move.spec.ts": 0,
     "frame-live-reflow.spec.ts": 5,
