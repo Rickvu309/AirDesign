@@ -24,6 +24,7 @@ import {
   type Place,
   type PlacedRow,
 } from "./group-place.js"
+import { readLayout, unsettledLayout } from "./frame-layout.js"
 import { openingElement } from "./slide-floor.js"
 
 export function fittedPlace(place: Place, frame: Box, fitted: Box): Place {
@@ -75,18 +76,35 @@ export function intoGroup(shown: Place, group: Place, frame: Box): Place {
   }
 }
 
-function frameAbove(register: Register, node: ElementId): boolean {
+function frameAbove(register: Register, node: ElementId): ElementId | null {
   const parent = groupParent(register, node)
-  return typeof parent === "string" && frameBackdrop(register, parent) !== null
+  return typeof parent === "string" && frameBackdrop(register, parent) !== null ? parent : null
+}
+
+function laidPlace(register: Register, node: ElementId, frame: ElementId, settled: boolean): Place | null {
+  if (groupParent(register, frame) !== null) return null
+  const view = settled ? readLayout(register, frame) : unsettledLayout(register, frame)
+  const box = view?.children.find((child) => child.node === node)?.box
+  const own = placeOf(register, node)
+  return box === undefined || own === null ? null : { ...own, box }
 }
 
 function spaceOf(register: Register, group: ElementId): Space | null {
-  if (frameBackdrop(register, group) !== null || frameAbove(register, group)) return null
   const frame = groupFrame(register, group)
-  const place = placeOf(register, group)
-  if (frame === null || place === null) return null
+  if (frame === null || frameBackdrop(register, group) !== null) return null
+  const holder = frameAbove(register, group)
+  const place = holder === null ? placeOf(register, group) : laidPlace(register, group, holder, false)
+  if (place === null) return null
   if ((place.box.cx === 0 && frame.cx !== 0) || (place.box.cy === 0 && frame.cy !== 0)) return null
   return { place, frame }
+}
+
+function shownSpace(register: Register, group: ElementId): Space | null {
+  const holder = frameAbove(register, group)
+  if (holder === null || frameBackdrop(register, group) !== null) return spaceOf(register, group)
+  const place = laidPlace(register, group, holder, true)
+  const frame = rebased(register, group)?.frame ?? groupFrame(register, group)
+  return place === null || frame === null ? null : { place, frame }
 }
 
 function boxMoved(register: Register, node: ElementId): boolean {
@@ -132,7 +150,8 @@ function chainOf(register: Register, node: ElementId): readonly Space[] | null {
   const chain: Space[] = []
   for (let parent = groupParent(register, node); parent !== null; parent = groupParent(register, parent)) {
     if (parent === undefined || chain.length > 64) return null
-    const space = spaceOf(register, parent)
+    if (frameBackdrop(register, parent) !== null) return groupParent(register, parent) === null ? chain : null
+    const space = shownSpace(register, parent)
     if (space === null) return null
     chain.push(space)
   }
@@ -147,7 +166,11 @@ export function followsGroups(register: Register, node: ElementId): boolean {
 
 export function shownPlace(register: Register, node: ElementId): Place | null {
   const chain = chainOf(register, node)
-  let place = rebased(register, node)?.place ?? placeOf(register, node)
+  const holder = frameAbove(register, node)
+  let place =
+    holder === null
+      ? (rebased(register, node)?.place ?? placeOf(register, node))
+      : laidPlace(register, node, holder, true)
   if (chain === null || place === null) return null
   for (const space of chain) place = throughGroup(place, space.place, space.frame)
   return place
@@ -175,7 +198,7 @@ function unrebased(shown: Place, own: Rebased, space: Space): Place {
 function spacesFrom(register: Register, parent: ElementId | null | undefined): readonly Space[] | null {
   if (parent === undefined) return null
   if (parent === null) return []
-  const own = spaceOf(register, parent)
+  const own = shownSpace(register, parent)
   const above = chainOf(register, parent)
   return own === null || above === null ? null : [own, ...above]
 }

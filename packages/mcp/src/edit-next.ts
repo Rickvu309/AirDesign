@@ -15,7 +15,7 @@ export const editNext = {
   limit: `The value is over ${valueBytes} bytes, or the deck is at its size, layer or slide limit. Send a shorter value, or tell the person the deck is full.`,
   dead: "The deck has no layer with this id. Check the layer id.",
   "group-box":
-    "This layer is inside a group, and nothing landed. Ungroup that group first to group or delete this layer on its own, or to move a layer whose group sits in a frame.",
+    "This layer is inside a group, and nothing landed. Ungroup that group first to group or delete this layer on its own, or to move a layer of a frame that sits in a group.",
   present: "This layer is already in the deck. Check the layer id.",
   kind: "A layer this call names cannot take this edit, and nothing landed. Each line below names the change, what its layer takes, and what to send instead. Fix every line, then send the whole call again.",
   locked:

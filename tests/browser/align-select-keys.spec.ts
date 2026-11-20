@@ -94,6 +94,7 @@ test("Alt+Shift+A removes the auto layout Shift+A added", async ({ page }) => {
   await expect.poll(() => selectedCount(page)).toBe(2)
   await page.keyboard.press("Shift+A")
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-auto-layout"], exact: true })).toBeVisible()
+  await expect.poll(() => selectedCount(page)).toBe(1)
   await page.keyboard.press("Alt+Shift+A")
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["remove-auto-layout"], exact: true })).toBeVisible()
 })

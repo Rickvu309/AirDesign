@@ -22,8 +22,8 @@
     {
       "file": "packages/document/src/group-space.ts",
       "names": ["*"],
-      "digest": "ff2d7e30c4b2",
-      "blob": "276381f470125eaf99070023f63bf6c5b126ced6"
+      "digest": "ccaf930c7377",
+      "blob": "f18fec4d6178143a00a6f5878fe5f8e1580667aa"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -34,8 +34,8 @@
     {
       "file": "packages/document/src/frame-layout.ts",
       "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow"],
-      "digest": "d72d46b5dd6e",
-      "blob": "dc782c9467960945a19de74636faa30ff5125e98"
+      "digest": "0b355dec5f85",
+      "blob": "d41c8c4509816d102dd937957777b9adb9ee91d9"
     },
     {
       "file": "packages/document/src/group-join.ts",
