@@ -8,6 +8,7 @@ import { changeDesign } from "@/design/design-change"
 import { selectionMatches } from "@/editor/matching-layers"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deckInserts } from "@/editor/inserts"
+import { storeLane } from "@/editor/store-lane"
 import { useDeckPaint } from "@/editor/use-deck-paint"
 import { saveStatus, useDeckStatus } from "@/editor/use-deck-status"
 import { useDeckTitle } from "@/editor/use-deck-title"
@@ -71,7 +72,8 @@ export function useEditorDeck(id: string) {
 
   useMatchingShortcut(selection.ids.length > 0 ? selectMatching : undefined)
 
-  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle })
+  const [lane] = useState(storeLane)
+  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, lane })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
   function placeImage(node: ElementId, file: File, paint: boolean) {
     pictureTool.pick(file, async (picture) => {

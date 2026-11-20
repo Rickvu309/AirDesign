@@ -7,6 +7,7 @@ import { bytesOf64, type CopiedLayer, type LayerCopy } from "@/layer-clipboard"
 import { pastedAdds, type PastePlace } from "@/layer-paste"
 import { fileSlides } from "@/slide-edit"
 import type { UndoName } from "@/copy/undo-copy"
+import type { StoreLane } from "@/editor/store-lane"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { elementCopy } from "@/copy/element-copy"
 import {
@@ -28,13 +29,14 @@ import { addSlideNumbers } from "./slide-number-actions"
 export type InsertingDeck = {
   readonly id: string
   readonly shown: DeckPaint
+  readonly lane: StoreLane
   readonly pictureTool: { readonly store: PictureStore }
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
 }
 
 export function deckInserts(deck: InsertingDeck) {
-  const { id, pictureTool, record, settle } = deck
+  const { id, pictureTool, record, settle, lane } = deck
   const { shownParts, canvases, current, setEntering, showEdited } = deck.shown
 
   function recordAdded(name: UndoName, keys?: HeldKeys, selects = false) {
@@ -46,26 +48,32 @@ export function deckInserts(deck: InsertingDeck) {
     }
   }
 
-  async function changeElement(change: ElementChange, named?: UndoName): Promise<CommitOutcome | "closed"> {
+  function changeElement(change: ElementChange, named?: UndoName): Promise<CommitOutcome | "closed"> {
     const typed = change.change === "text" || change.change === "table" || change.change === "shape"
     const keys = typed ? holdKeys(document) : undefined
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) {
-      keys?.stop()
-      return "closed"
-    }
-    const name =
-      named ??
-      (change.change !== "order"
-        ? elementNames[change.change]
-        : typeof change.move === "string"
-          ? stackNames[change.move]
-          : "layer-order")
-    const added = recordAdded(name, keys, change.change === "shape")
-    const outcome = await commitElement(id, shownParts.current, opened.register, change, added)
-    if (outcome === "refused") keys?.stop()
-    settle(outcome)
-    return outcome
+    return lane(async (stored) => {
+      const opened = await connect(memoryRemote()).openDeck(id)
+      if (!opened.ok) {
+        keys?.stop()
+        return "closed"
+      }
+      const name =
+        named ??
+        (change.change !== "order"
+          ? elementNames[change.change]
+          : typeof change.move === "string"
+            ? stackNames[change.move]
+            : "layer-order")
+      const shown = recordAdded(name, keys, change.change === "shape")
+      const added: typeof shown = (node, undoable) => {
+        stored()
+        return shown(node, undoable)
+      }
+      const outcome = await commitElement(id, shownParts.current, opened.register, change, added)
+      if (outcome === "refused") keys?.stop()
+      settle(outcome)
+      return outcome
+    })
   }
 
   async function copyLayers(

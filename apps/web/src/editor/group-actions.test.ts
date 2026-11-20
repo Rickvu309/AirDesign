@@ -102,3 +102,41 @@ it("adds a layer after ungrouping the slide's top group without reusing the grou
   expect(edit).toMatchObject({ slide: "element-add", element: { node: "256.6" } })
   expect(decide(ungrouped, { command: "slide", file, edit }).decision).toBe("apply")
 })
+
+it("masks with the back layer of the stored order, so a Send to back that has not repainted yet still decides the mask", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const { slides, elements } = indexPackage(parts)
+  let register: Register = {
+    ...openRegister("", ""),
+    index: { total: elements.length, slides, elements, pages: [{ once: "page", offset: 0, count: elements.length }] },
+  }
+  for (const geometry of ["rect", "ellipse"] as const) {
+    const edit = elementCommand(parts, register, { change: "shape", geometry, index: 0, size })
+    if (edit === null) throw new Error("add")
+    register = ran(register, [{ command: "slide", file, edit }])
+  }
+  const back = elementCommand(parts, register, { change: "order", node: "256.5" as never, move: "back" })
+  if (back === null) throw new Error("order")
+  register = ran(register, [{ command: "slide", file, edit: back }])
+  const masked = groupCommands(parts, register, { change: "mask", nodes: ["256.4", "256.5"] as never })
+  expect(masked?.[0]).toMatchObject({
+    edit: { slide: "element-group", members: [{ node: "256.5" }, { node: "256.4" }] },
+  })
+  expect(masked?.[1]).toMatchObject({ command: "person", node: "256.5", patch: { identity: { mask: { set: true } } } })
+})
+
+it("refuses a mask whose back layer in the stored order is a group", () => {
+  const parts = onSlide(xml(groupOnTopSlide))
+  const { slides, elements } = indexPackage(parts)
+  let register: Register = {
+    ...openRegister("", ""),
+    index: { total: elements.length, slides, elements, pages: [{ once: "page", offset: 0, count: elements.length }] },
+  }
+  const edit = elementCommand(parts, register, { change: "shape", geometry: "ellipse", index: 0, size })
+  if (edit === null) throw new Error("add")
+  register = ran(register, [{ command: "slide", file, edit }])
+  expect(groupCommands(parts, register, { change: "mask", nodes: ["256.6", "256.5"] as never })).toBeNull()
+  expect(groupCommands(parts, register, { change: "mask", nodes: ["256.6", "256.2"] as never })?.[1]).toMatchObject({
+    node: "256.2",
+  })
+})
