@@ -1,4 +1,4 @@
-import { editorOwnsKey } from "@/editor/editor-key-ownership"
+import { editorOwnsKey, toolKeyPlace } from "@/editor/editor-key-ownership"
 import { gestureFor } from "@airdesign/render"
 import { useEffect, useState } from "react"
 
@@ -17,9 +17,10 @@ export function onLayers(target: EventTarget | null): boolean {
 
 function toolForKey(event: KeyboardEvent, placesText: boolean): PointerTool | null {
   if (typing(event.target)) return null
+  const place = toolKeyPlace(event.target)
+  if (place !== null && gestureFor(event, place) === "tool-text") return placesText ? "text" : null
   const gesture = gestureFor(event, "editor")
   if (gesture === "tool-move") return "move"
-  if (gesture === "tool-text") return placesText && onLayers(event.target) ? "text" : null
   return gesture === "tool-hand" ? "hand" : null
 }
 

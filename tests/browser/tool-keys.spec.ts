@@ -80,3 +80,27 @@ test("a digit sets the selected layer's opacity in tens, and two quick digits se
   await page.keyboard.press("7")
   await expect(field).toHaveValue(/^70/)
 })
+
+test("after Add slide or a click in the slide list, T arms the Text tool and R, O and L add shapes", async ({
+  page,
+}) => {
+  covers("tool-text", "tool-rectangle", "tool-ellipse", "tool-line")
+  await openDeck(page, "clean.pptx")
+  const slide = page.locator("[data-slide-paint]")
+  const layers = slide.locator("[data-canvas-element]")
+  await page.getByRole("button", { name: "Add slide", exact: true }).click()
+  await expect(page.locator("[data-slide-list] [data-slide-entry]:focus")).toHaveCount(1)
+  await expect(layers).toHaveCount(0)
+  await page.keyboard.press("t")
+  await expect(page.locator("[data-text-placing]")).toHaveCount(1)
+  await page.locator("[data-text-placing]").click({ position: { x: 120, y: 80 } })
+  await expect(slide.locator('[contenteditable="true"]:focus')).toHaveCount(1)
+  await page.keyboard.type("Three levers close the gap")
+  await expect(slide.locator('[contenteditable="true"]:focus')).toHaveText("Three levers close the gap")
+  await expect(layers).toHaveCount(1)
+  for (const [step, key] of ["r", "o", "l"].entries()) {
+    await page.locator("[data-slide-list] [data-slide-entry][aria-current]").click()
+    await page.keyboard.press(key)
+    await expect(layers).toHaveCount(step + 2)
+  }
+})

@@ -7,19 +7,20 @@ it("keeps every part in the row while nothing folds", () => {
   expect(toolbarFold(all, 0)).toEqual({ row: all, more: [] })
 })
 
-it("folds the insert tools before the text controls, keeping the row's order in More", () => {
+it("folds the text controls before any insert tool, so Table, Chart and Icon stay in the row while text is selected", () => {
   expect(toolbarFold(all, 4)).toEqual({
-    row: ["number", "text", "shape", "styles", "size", "color", "align", "bullets"],
-    more: ["table", "chart", "image", "icon"],
+    row: [...insertParts, "styles"],
+    more: ["size", "color", "align", "bullets"],
   })
-  expect(toolbarFold(all, 9)).toEqual({
-    row: ["styles", "size", "color"],
-    more: ["number", "text", "shape", "table", "chart", "image", "icon", "align", "bullets"],
-  })
+  expect(toolbarFold(all, 5)).toEqual({ row: insertParts, more: formatParts })
 })
 
-it("folds bold, italic and underline last", () => {
-  expect(toolbarFold(all, all.length - 1).row).toEqual(["styles"])
+it("folds the insert tools only once every text control is in More, Add text box last", () => {
+  expect(toolbarFold(all, 9)).toEqual({
+    row: ["number", "text", "shape"],
+    more: ["table", "chart", "image", "icon", ...formatParts],
+  })
+  expect(toolbarFold(all, all.length - 1).row).toEqual(["text"])
   expect(toolbarFold(all, all.length + 4)).toEqual({ row: [], more: all })
 })
 
@@ -31,8 +32,8 @@ it("counts only the parts that show", () => {
 })
 
 it("folds the slide number before Add text box", () => {
-  expect(toolbarFold(all, 6)).toEqual({
-    row: ["text", "styles", "size", "color", "align", "bullets"],
+  expect(toolbarFold(insertParts, 6)).toEqual({
+    row: ["text"],
     more: ["number", "shape", "table", "chart", "image", "icon"],
   })
 })
@@ -40,5 +41,5 @@ it("folds the slide number before Add text box", () => {
 it("folds Actions before every other part, so the tools a person already reaches keep their place", () => {
   const withActions = [...insertParts, ...formatParts, ...actionParts]
   expect(toolbarFold(withActions, 1)).toEqual({ row: all, more: ["actions"] })
-  expect(toolbarFold(withActions, 2).more).toEqual(["icon", "actions"])
+  expect(toolbarFold(withActions, 2).more).toEqual(["bullets", "actions"])
 })

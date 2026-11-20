@@ -183,6 +183,23 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "d", ctrlKey: true }, "element")).toBeNull()
   })
 
+  it("arms the one-key tools from the slide list, as on the canvas, and keeps the slide keys there", () => {
+    const tool = (key: string, code: string, shiftKey = false) =>
+      gestureFor({ ...plain, key, code, shiftKey }, "slides")
+    expect([
+      tool("t", "KeyT"),
+      tool("T", "KeyT", true),
+      tool("r", "KeyR"),
+      tool("o", "KeyO"),
+      tool("l", "KeyL"),
+      tool("L", "KeyL", true),
+    ]).toEqual(["tool-text", "tool-table", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow"])
+    expect(gestureFor({ ...plain, key: "K", code: "KeyK", ctrlKey: true, shiftKey: true }, "slides")).toBe(
+      "place-image",
+    )
+    expect(gestureFor({ ...plain, key: "d", code: "KeyD", ctrlKey: true }, "slides")).toBe("slide-duplicate")
+  })
+
   it("takes Figma's align keys by where the letter sits, so Option on a Mac still aligns", () => {
     const align = (code: string) => gestureFor({ ...plain, key: "å", code, altKey: true }, "editor")
     expect(["KeyA", "KeyH", "KeyD", "KeyW", "KeyV", "KeyS"].map(align)).toEqual([

@@ -6,6 +6,12 @@ const pickerSlots = ["select-content", "popover-content", "dropdown-menu-content
 const pickers = pickerSlots.map((slot) => `[data-slot="${slot}"]`).join(", ")
 const openPickers = pickerSlots.map((slot) => `[data-slot="${slot}"][data-open]`).join(", ")
 
+export function toolKeyPlace(target: EventTarget | null): "editor" | "slides" | null {
+  if (!(target instanceof Element)) return null
+  if (target.closest("[data-slide-paint], [data-layers-panel]") !== null) return "editor"
+  return target.closest("[data-slide-list]") !== null ? "slides" : null
+}
+
 export function editorOwnsKey(event: KeyboardEvent | ReactKeyboardEvent): boolean {
   const overlays = [
     ...document.querySelectorAll<HTMLElement>('[role="menu"][data-open], [data-slot="popover-content"][data-open]'),
