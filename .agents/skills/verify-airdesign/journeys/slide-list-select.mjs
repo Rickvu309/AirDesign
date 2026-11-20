@@ -12,20 +12,23 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
     Promise.all(
       (await entries.all()).map(async (entry) => (await entry.innerText()).match(/Slide \d title/)?.[0] ?? ""),
     )
+  const selected = page.locator("[data-slide-list] [data-slide-entry][data-selected]")
   const named = (...numbers) => numbers.map((number) => `Slide ${String(number)} title`)
 
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await selectTwoToFour(page)
+  await expect(selected).toHaveCount(3)
   await expect(page.locator("[data-design-panel]").first()).toContainText("3 slides selected")
   await capture("three-selected")
   await entryOf(page, 3).click({ modifiers: ["ControlOrMeta"] })
-  await expect(page.locator("[data-slide-list] [data-slide-entry][data-selected]")).toHaveCount(2)
+  await expect(selected).toHaveCount(2)
   await capture("middle-taken-out")
   note(
     "Shift-click on slide 4 after slide 2 selected slides 2 to 4; Ctrl/Cmd-click took slide 3 out; Design said 3 slides selected",
   )
 
   await selectTwoToFour(page)
+  await expect(selected).toHaveCount(3)
   await page.keyboard.press("ControlOrMeta+d")
   await expect(entries).toHaveCount(8)
   await capture("set-duplicated")
@@ -33,6 +36,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(entries).toHaveCount(5)
 
   await selectTwoToFour(page)
+  await expect(selected).toHaveCount(3)
   await page.keyboard.press("Delete")
   await expect(entries).toHaveCount(2)
   await expect.poll(titles).toEqual(named(1, 5))

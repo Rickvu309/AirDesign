@@ -26,5 +26,4 @@ export function entryOf(page, number) {
 export async function selectTwoToFour(page) {
   await entryOf(page, 2).click()
   await entryOf(page, 4).click({ modifiers: ["Shift"] })
-  await expect(page.locator("[data-slide-list] [data-slide-entry][data-selected]")).toHaveCount(3)
 }
