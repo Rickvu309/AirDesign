@@ -1,18 +1,13 @@
 import type { DeckId } from "@airdesign/catalog"
-import { foldDesign, printDesign, readDeckId, shownDesign, templateFontDesign } from "@airdesign/catalog"
+import { readDeckId } from "@airdesign/catalog"
 import {
   slideGroups,
   bytesOf,
   readSlideId,
   foldSlides,
   presentSlides,
-  currentBox,
-  currentValue,
   floorNodes,
-  groupedNow,
-  history,
   landedPatch,
-  netPatch,
   openingElement,
   readElementId,
   shapeOf,
@@ -24,14 +19,10 @@ import {
   templateStyleNode,
   templateColors,
   textStylesOf,
-  version,
-  withCurrentKeys,
   type Box,
   type ElementLink,
   type ElementId,
-  type NodeRegister,
   type Register,
-  type IndexElement,
   type IndexSlide,
   type Kind,
   type Palette,
@@ -41,6 +32,7 @@ import {
 } from "@airdesign/document"
 
 import type { Deck } from "./call.js"
+import { readElement } from "./read-element.js"
 import { framedElement, readFrames } from "./read-frames.js"
 import { slideArrangement } from "./slide-arrangement-read.js"
 
@@ -134,60 +126,6 @@ function byId(left: string, right: string): number {
   if (left < right) return -1
   if (left > right) return 1
   return 0
-}
-
-function closedTo(body: NodeRegister, runId: string | null): boolean {
-  if (body.phase !== "running" || body.runId === null) return false
-  if (body.guarded) return true
-  return body.runId !== runId
-}
-
-function foldedElement(register: Register, node: ElementId): IndexElement | undefined {
-  const opening = openingElement(register, node)
-  return opening === undefined ? undefined : { ...opening, grouped: groupedNow(register, node) }
-}
-
-function shownValue(value: string | null): string | null {
-  return value === null ? null : withCurrentKeys(value)
-}
-
-function elementOf(
-  node: ElementId,
-  body: NodeRegister | undefined,
-  runId: string | null,
-  fonts: NonNullable<Palette["fonts"]>,
-  indexed?: IndexElement,
-): ReadElement {
-  const box = (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
-  const own = slideKind(node) === "slide"
-  const held = {
-    node,
-    slide: shapeOf(node).slide,
-    value: shownValue(own || body === undefined ? (indexed?.value ?? null) : currentValue(body)),
-    version: body === undefined ? 0 : version(body),
-    ...(indexed === undefined
-      ? own
-        ? { kind: "slide" as const }
-        : {}
-      : { kind: indexed.kind, grouped: indexed.grouped }),
-  }
-  const withBox = box === null && indexed === undefined ? held : { ...held, box }
-  const edited = body !== undefined && history(body).length > 0
-  const typed = edited ? shownDesign(indexed?.design ?? {}, currentValue(body)) : indexed?.design
-  const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
-  const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
-  const design = foldDesign(typed, netPatch([...opening, ...rows]))
-  const line = design === undefined ? "" : printDesign(templateFontDesign(design, fonts))
-  const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target
-  const link = typeof linkEdit === "object" ? linkEdit.set : indexed?.link
-  const designed = {
-    ...(link === undefined ? {} : { link }),
-    ...withBox,
-    ...(indexed?.role === undefined ? {} : { role: indexed.role }),
-    ...(line === "" ? {} : { design: line }),
-  }
-  if (body === undefined || !closedTo(body, runId)) return designed
-  return { ...designed, closed: true }
 }
 
 const sortedNodes = new WeakMap<Register, readonly ElementId[]>()
@@ -493,14 +431,7 @@ export function readDeckPage(
       return !goneSlides.has(slide) && (query.slide === undefined || slide === query.slide)
     },
     (node) => {
-      const shown = (each: ElementId) =>
-        elementOf(
-          each,
-          deck.register.elements[each],
-          query.runId,
-          fontsOf(shapeOf(each).slide),
-          foldedElement(deck.register, each),
-        )
+      const shown = (each: ElementId) => readElement(deck.register, each, query.runId, fontsOf(shapeOf(each).slide))
       return framedElement(shown(node), framed, shown)
     },
   )

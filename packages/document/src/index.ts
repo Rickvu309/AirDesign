@@ -199,6 +199,7 @@ export {
   type Outline,
   type Tie,
 } from "./connector.js"
+export { followedPlace } from "./connector-place.js"
 export { siteCount, siteSpot, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
