@@ -1,5 +1,5 @@
 import { Fragment, memo, useLayoutEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react"
-import type { ElementId, StackMove } from "@airdesign/document"
+import type { ElementId, StackMove, TableChange } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import { CopiedLayer } from "./copied-layer.js"
@@ -59,6 +59,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly highlights?: readonly ElementId[]
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
   readonly onFit?: (id: ElementId, height: number) => void
+  readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRotate?: (turned: readonly Turned[]) => void
   readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
@@ -235,6 +236,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
               moves={moving}
               onEdit={props.onEdit}
               onFit={props.onFit}
+              onTable={props.onTable}
               quiet={quiet}
               scaled={scaled}
               store={props.store}

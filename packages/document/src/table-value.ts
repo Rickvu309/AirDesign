@@ -131,6 +131,13 @@ export function writeTableValue(value: TableValue): string {
   return JSON.stringify(columns.every((from, at) => from === at) ? { rows } : { rows, columns })
 }
 
+const openingRowHeight = 370_840
+const openingWidthShare = 0.6
+
+export function openingTableSize(slideWidth: number, rows: number): { readonly cx: number; readonly cy: number } {
+  return { cx: Math.round(slideWidth * openingWidthShare), cy: rows * openingRowHeight }
+}
+
 export function openingTable(rows: number, columns: number): TableValue {
   return {
     rows: Array.from({ length: rows }, (_, from) => ({

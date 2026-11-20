@@ -11,12 +11,13 @@ it("tells the agent a photo is a shape whose fills hold an image, and how to add
   expect(instructions).toContain("fades the layer's fill, border, text and image together")
 })
 
-it("gives the run format of a JSON text value, how a connector's ends attach", () => {
+it("gives the run format of a JSON text value, the form of a table value and how to add one, and how a connector's ends attach", () => {
   const instructions = kindInstructions()
   expect(instructions).toContain("A run may set bold, italic, underline or strike to true or false")
   expect(instructions).toContain("size in hundredths of a point from 100 to 400000")
   expect(instructions).toContain("align to left, center or right, and list to none, bullets or numbers")
-  expect(instructions).not.toContain("A JSON table value is")
+  expect(instructions).toContain("A JSON table value is {rows: [{from, cells, fills, borders}]}")
+  expect(instructions).toContain('Add a table with { "op": "add", "kind": "table"')
   expect(instructions).toContain('attaches each end with { "shape": { "node": ..., "site": ... } }')
   expect(instructions).toContain(
     "join, head, tail), effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur), connection (start, end) and opacity.",

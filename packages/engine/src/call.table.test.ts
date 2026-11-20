@@ -47,18 +47,19 @@ function saved(value: string): Deck {
   return { ...deck, register: edited.register }
 }
 
-it("refuses new table creation and edits while keeping saved tables removable as objects", () => {
-  expect(
+it("takes a person's new table and cell edits, and removes the table as one layer", () => {
+  const inserted = landed(
     call("commit_edits", opened(), person, {
       deck: "deck",
       batch: [{ slide: "element-add", id: "256", element, file }],
     }),
-  ).toMatchObject({ ok: false })
+  )
+  expect(readDeckPage(inserted, { runId: null }).elements).toMatchObject([{ node, kind: "table", value: opening }])
   const typed = changedTable(openingTable(3, 3), { change: "cell", row: 0, column: 0, text: "Region" })!
   const grown = writeTableValue(changedTable(typed, { change: "row", row: 0, place: "below" })!)
   const added = saved(grown)
   expect(call("commit_edits", added, person, { deck: "deck", batch: [{ node, value: opening }] })).toMatchObject({
-    ok: false,
+    ok: true,
   })
   const shown = readDeckPage(added, { runId: null }).elements
   expect(shown).toMatchObject([{ node, kind: "table", box: element.box }])

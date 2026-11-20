@@ -6,17 +6,22 @@ import {
   floorNodes,
   nextElementId,
   openingElement,
+  openingTable,
+  openingTableSize,
   placeNewBox,
   presentSlides,
   readSlideId,
   shapeOf,
   slideMeasure,
+  tableColumns,
+  writeTableValue,
   type Box,
   type ElementId,
   type IndexElement,
   type Register,
   type SlideCommand,
   type SlideId,
+  type TableValue,
 } from "@airdesign/document"
 import { readFresh, runFence } from "./agent-slides.js"
 import type { Deck } from "./call.js"
@@ -109,6 +114,30 @@ export function addTextBox(
   const box = wanted ?? placeNewBox(measure.size ?? { width: 0, height: 0 }, takenBoxes(register, slide))
   const node = nextElementId(register, slide, measure.free)
   const element = { node, kind: "shape", value, box, grouped: false } as const
+  return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
+}
+
+export function addTable(
+  head: Head,
+  deck: Deck,
+  slide: SlideId,
+  table: TableValue,
+  wanted: Box | undefined,
+  runId: string,
+): Built {
+  const register = deck.register
+  const opened = ready(head, deck, slide, runId)
+  if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
+  const measure = slideMeasure(register, slide)
+  if (measure === undefined || (wanted === undefined && measure.size === undefined)) {
+    return { ok: false, refusal: "dead" }
+  }
+  const size = measure.size ?? { width: 0, height: 0 }
+  const rows = table.rows.length
+  const box = wanted ?? placeNewBox(size, takenBoxes(register, slide), openingTableSize(size.width, rows))
+  const node = nextElementId(register, slide, measure.free)
+  const value = writeTableValue(openingTable(rows, tableColumns(table).length))
+  const element = { node, kind: "table", value, box, grouped: false } as const
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 

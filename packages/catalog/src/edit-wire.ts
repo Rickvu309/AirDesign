@@ -1,4 +1,3 @@
-import { authorableValue } from "./authoring.js"
 import {
   coordinates,
   elementId,
@@ -101,8 +100,7 @@ function readRowEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit 
   const read = readRow({ v: body.v, patch: body.patch }, "text")
   const node = readElementId(body.node)
   const floor = readFloor(body)
-  if (!read.ok || !authorableValue(read.value) || read.value.v < 2 || node === undefined || floor === null)
-    return fieldRefusal
+  if (!read.ok || read.value.v < 2 || node === undefined || floor === null) return fieldRefusal
   const edit = { v: read.value.v, patch: read.value.patch, node }
   return { ok: true, edit: floor === undefined ? edit : { ...edit, floor } }
 }
@@ -114,7 +112,7 @@ export function readEdit(raw: unknown): { ok: true; edit: WireEdit } | FieldRefu
   if (Object.hasOwn(body, "property")) return readBoxEdit(body)
   if (!knownKeys(body, ["value", "node", "floor"]) || !storableText(body.value)) return fieldRefusal
   const node = readElementId(body.node)
-  if (node === undefined || !authorableValue({ value: body.value })) return fieldRefusal
+  if (node === undefined) return fieldRefusal
   const floor = readFloor(body)
   if (floor === null) return fieldRefusal
   if (floor === undefined) return { ok: true, edit: { value: body.value, node } }
@@ -171,9 +169,7 @@ const readAtInput = wholeInput.describe("Version of that layer from airdesign_re
 const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
 const extentInput = z.int().min(0).max(coordinates.highest)
 const textChange = z.strictObject({
-  value: textInput
-    .refine((value) => authorableValue({ value }))
-    .describe("Text to write: plain text, or a JSON text value when the file's text is one."),
+  value: textInput.describe("Text to write: plain text, or a JSON text value when the file's text is one."),
   node: nodeInput,
   readAt: readAtInput,
   floor: textInput.exactOptional().describe("Opening text of the layer."),

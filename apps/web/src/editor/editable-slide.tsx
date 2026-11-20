@@ -1,4 +1,11 @@
-import { format, type ElementId, type Register, type SetChange, type StackMove } from "@airdesign/document"
+import {
+  format,
+  type ElementId,
+  type Register,
+  type SetChange,
+  type StackMove,
+  type TableChange,
+} from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import {
   boxOf,
@@ -37,7 +44,7 @@ import { guidedCanvas, type GuidesShown } from "@/editor/slide-guides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
-import { shownTable } from "@/table-hook"
+import { shownTable, type useTables } from "@/table-hook"
 import type { UndoName } from "@/copy/undo-copy"
 import { boxName } from "@/undo-names"
 
@@ -54,6 +61,7 @@ export type EditableDeck = DesignDeck & {
   readonly selection: Selection
   readonly select: (selection: Selection) => void
   readonly hovered?: ElementId | null
+  readonly tables?: ReturnType<typeof useTables>
 }
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
@@ -453,6 +461,14 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
               clear()
               void holding([target], () => onEdit(target, value, kind))
             }}
+            {...(deck.tables === undefined
+              ? {}
+              : {
+                  onTable: (target: ElementId, change: TableChange) =>
+                    deck.tables?.change(target, change, (value, name) =>
+                      holding([target], () => onEdit(target, value, name)),
+                    ),
+                })}
             slide={canvas}
             slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
             store={store.current}

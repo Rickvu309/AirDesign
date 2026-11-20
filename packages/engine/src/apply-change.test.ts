@@ -7,6 +7,7 @@ import {
   elementId,
   format,
   openingTable,
+  readTableValue,
   readTextValue,
   writeTableValue,
   writeTextValue,
@@ -214,7 +215,7 @@ describe("edit_deck refuses a set change it cannot land, and lands nothing", () 
     })
   })
 
-  it("refuses an agent's new table cell edits", () => {
+  it("lands an agent's table cell fills as the table's value", () => {
     const opening = writeTableValue(openingTable(2, 2))
     const table = element("259.3", { kind: "table", value: opening, role: "table" })
     const deck = started(indexed({ elements: [...elements, table], total: elements.length + 1 }), "259.3")
@@ -225,8 +226,8 @@ describe("edit_deck refuses a set change it cannot land, and lands nothing", () 
       fill: accent,
     })
     const value = writeTableValue(filled!)
-    expect(edit(deck, { op: "set", target: "259.3", table: { value } })).toMatchObject({ ok: false })
-    expect(currentValue(nodeBody(deck.register, elementId("259.3")))).toBe(opening)
+    const filledDeck = landed(edit(deck, { op: "set", target: "259.3", table: { value } }))
+    expect(currentValue(nodeBody(filledDeck.register, elementId("259.3")))).toBe(value)
   })
 })
 
@@ -258,6 +259,49 @@ describe("edit_deck adds a text box from an add change", () => {
     const deck = landed(edit(indexed(), { op: "add", kind: "shape", slide: "259" }))
     expect(deck.register.order.at(-1)).toMatchObject({ slide: "element-add", element: { node: "259.9" } })
     expect(edit(indexed(), { op: "add", kind: "shape", slide: "300" })).toEqual({ ok: false, refusal: "dead" })
+  })
+})
+
+describe("edit_deck adds a table from an add change", () => {
+  const typed = (rows: readonly (readonly string[])[]) =>
+    writeTableValue({
+      rows: rows.map((cells, from) => ({
+        from,
+        cells: cells.map((text) => [{ from: 0, runs: [{ from: -1, text }] }]),
+      })),
+    })
+
+  it("adds an empty table of the value's rows and columns under the run, then writes its cells", () => {
+    const value = typed([
+      ["Region", "Revenue", "Growth"],
+      ["Europe", "4.2", "12%"],
+    ])
+    const deck = landed(
+      edit(indexed(), {
+        op: "add",
+        kind: "table",
+        slide: "258",
+        box: { x: 72, y: 36, w: 432, h: 72 },
+        table: { value },
+      }),
+    )
+    const added = deck.register.order.at(-1)
+    expect(added).toMatchObject({
+      slide: "element-add",
+      runId: "run",
+      element: { node: "258.9", kind: "table", value: writeTableValue(openingTable(2, 3)) },
+    })
+    expect(readTableValue(currentValue(nodeBody(deck.register, elementId("258.9"))))).toEqual(readTableValue(value))
+    const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
+    expect(elementGone(undone.register, elementId("258.9"))).toBe(true)
+  })
+
+  it("places a table with no box in the largest free area at a row height per row", () => {
+    const value = typed([["A"], ["B"], ["C"]])
+    const deck = landed(edit(indexed(), { op: "add", kind: "table", slide: "259", table: { value } }))
+    const added = deck.register.order.at(-1)
+    if (added?.slide !== "element-add") throw new Error("not added")
+    expect(added.element.box?.cy).toBe(3 * 370_840)
   })
 })
 

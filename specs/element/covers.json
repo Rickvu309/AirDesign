@@ -54,6 +54,12 @@
       "blob": "54402c37c2ca634c34cd8cf4212ab2ed8e7f9e93"
     },
     {
+      "file": "packages/document/src/table-value.ts",
+      "names": ["changedTable", "openedTable"],
+      "digest": "16b881133851",
+      "blob": "268cdaf398e75b714aa3966fbaad14e612da7116"
+    },
+    {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
       "digest": "dc84073273ca",

@@ -1,4 +1,4 @@
-import { decide, elementId, readTextValue, writeTextValue, type TextValue, type Command } from "@airdesign/document"
+import { readTextValue, writeTextValue, type TextValue } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { readShapes, readSlides } from "@airdesign/pptx"
 import { replaceSelection } from "@airdesign/render"
@@ -21,7 +21,6 @@ import { slideBase } from "@/exported-parts"
 import { indexedParts } from "@/index-deck"
 import { pictureCommand } from "@/picture-add"
 import { slideRels } from "@/slide-paint"
-import { fileSlides } from "@/slide-edit"
 import { fileTableValue, tableEditable, tableValue } from "@/table-edit"
 
 export type CorpusEdit = {
@@ -60,20 +59,10 @@ function eachPanel(parts: Parts, deck: Deck, rows: readonly Held[], change: Para
   return rows.reduce((next, row) => panelChange(parts, next, row, change), deck)
 }
 
-function savedTable(deck: Deck, commands: readonly Command[]): Deck {
-  const register = commands.reduce((current, command) => {
-    const next = decide(current, command)
-    if (next.decision !== "apply") throw new Error(`saved table ${next.code}`)
-    return next.register
-  }, deck.register)
-  return { ...deck, register }
-}
-
-function replayedTable(parts: Parts, deck: Deck, index: number): Deck {
+function addedTable(parts: Parts, deck: Deck, index: number): Deck {
   const room = slideRoom(parts)
   const edit = elementCommand(parts, deck.register, { change: "table", index, rows: 3, columns: 3, size: room })
-  if (edit === null) throw new Error("no saved table")
-  return savedTable(deck, [{ command: "slide", file: fileSlides(parts, deck.register), edit }])
+  return commit(deck, [slideWire(parts, deck.register, edit)])
 }
 
 function addedPicture(parts: Parts, deck: Deck, index: number): Deck {
@@ -110,7 +99,7 @@ function session(parts: Parts, deck: Deck): Deck {
   if (copy !== undefined && target.part === slidePart(parts, 0)) {
     next = commit(next, [{ node: `${copy}.${shape ?? ""}`, value: target.typed, floor: target.floor }])
   }
-  next = addedPicture(parts, next, 2)
+  next = addedPicture(parts, addedTable(parts, next, 2), 2)
   next = notesOn(parts, notesOn(parts, next, 1, "Notes on the copy"), 2, "Notes on the new slide")
   next = commit(next, [moved(target, 254_000, 1)])
   next = panelChange(parts, next, target, { text: { size: 20 } })
@@ -215,8 +204,8 @@ export const corpusEdits: readonly CorpusEdit[] = [
     touches: (parts) => [slidePart(parts, 0)],
   },
   {
-    name: "replay-table-add",
-    run: (parts, deck) => replayedTable(parts, deck, 0),
+    name: "add-table",
+    run: (parts, deck) => addedTable(parts, deck, 0),
     touches: (parts) => [slidePart(parts, 0), "ppt/tableStyles.xml"],
   },
   {
@@ -239,7 +228,7 @@ export const corpusEdits: readonly CorpusEdit[] = [
     touches: (parts) => [slidePart(parts, 0), slideRels(slidePart(parts, 0)), "[Content_Types].xml"],
   },
   {
-    name: "replay-table-edits",
+    name: "type-in-tables",
     run: (parts, deck) =>
       existingTables(parts).reduce((next, shape) => {
         const value = tableChanges.reduce<string | null>(
@@ -247,11 +236,8 @@ export const corpusEdits: readonly CorpusEdit[] = [
           null,
         )
         if (value === null) return next
-        const node = elementId(`${shape.slide}.${shape.shape}`)
-        return savedTable(next, [
-          { command: "add", node, floor: fileTableValue(parts, shape) ?? "", route: "" },
-          { command: "person", node, value },
-        ])
+        const node = `${shape.slide}.${shape.shape}`
+        return commit(next, [{ node, value, floor: fileTableValue(parts, shape) ?? "" }])
       }, deck),
     touches: (parts) => [...new Set(existingTables(parts).map((shape) => shape.part))],
   },
@@ -336,6 +322,6 @@ export const corpusEdits: readonly CorpusEdit[] = [
   {
     name: "session",
     run: session,
-    touches: (parts) => [...listed, textTarget(parts).part],
+    touches: (parts) => [...listed, textTarget(parts).part, "ppt/tableStyles.xml"],
   },
 ]

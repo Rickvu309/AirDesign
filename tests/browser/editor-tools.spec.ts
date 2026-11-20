@@ -48,16 +48,13 @@ async function zoomTo(page: Page, step: number | "fit"): Promise<void> {
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("Grid and Shapes are enabled, table insertion is absent, and every shape in the tray is on", async ({
-  page,
-  decks,
-}) => {
+test("Grid, Shapes and Insert table are enabled, and every shape in the tray is on", async ({ page, decks }) => {
   await decks.open()
   await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add text", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Shapes", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: (await pictureWords()).add, exact: true })).toBeEnabled()
-  await expect(page.getByRole("button", { name: "Insert table", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Insert table", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Actions", exact: true })).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Move", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Move", exact: true })).toHaveAttribute("aria-pressed", "true")

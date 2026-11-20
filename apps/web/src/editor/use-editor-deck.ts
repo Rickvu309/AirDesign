@@ -16,6 +16,7 @@ import { useUndoList } from "@/editor/use-undo"
 import { useNotes } from "@/notes-edit"
 import { pickPicture } from "@/editor/picture-picker"
 import { usePictureStore, usePictureTool } from "@/picture-tool"
+import { useTables } from "@/table-hook"
 
 export type EditorDeck = ReturnType<typeof useEditorDeck>
 
@@ -97,6 +98,7 @@ export function useEditorDeck(id: string) {
     pickPicture((file) => placeImage(node, file, true))
   }
   const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, cutLayers } = inserts
+  const tables = useTables(shown)
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
   return {
     ...status,
@@ -123,6 +125,7 @@ export function useEditorDeck(id: string) {
     pasteLayers,
     pasteFromDeck,
     cutLayers,
+    tables,
     exported,
   }
 }

@@ -9,7 +9,14 @@ import { fileSlides } from "@/slide-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { elementCopy } from "@/copy/element-copy"
-import { commitCopies, commitElement, replacedUndoable, type CopyAsked, type ElementChange } from "@/element-edit"
+import {
+  commitCopies,
+  commitElement,
+  replacedUndoable,
+  type CopyAsked,
+  type ElementChange,
+  type TableSize,
+} from "@/element-edit"
 import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
@@ -131,6 +138,11 @@ export function deckInserts(deck: InsertingDeck) {
     if (size !== null) void changeElement({ change: "text", index: current, size })
   }
 
+  function addTable(size: TableSize) {
+    const room = canvases.current(current)
+    if (room !== null) void changeElement({ change: "table", index: current, size: room, ...size })
+  }
+
   function addShape(geometry: Geometry) {
     const size = canvases.current(current)
     if (size !== null) void changeElement({ change: "shape", geometry, index: current, size })
@@ -157,6 +169,7 @@ export function deckInserts(deck: InsertingDeck) {
     pasteFromDeck,
     cutLayers,
     addText,
+    addTable,
     addShape,
     addPicture,
     addIcon,

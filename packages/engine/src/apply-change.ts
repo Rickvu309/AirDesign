@@ -5,6 +5,7 @@ import {
   limits,
   openingElement,
   planChange,
+  readTableValue,
   shapeOf,
   slideKind,
   slideBirths,
@@ -13,12 +14,13 @@ import {
   templateStyleIndex,
   valueBytes,
   version,
+  writeTableValue,
   type ElementId,
   type Register,
   type Row,
   type SetChange,
 } from "@airdesign/document"
-import { addIcon, addTextBox } from "./agent-elements.js"
+import { addIcon, addTable, addTextBox } from "./agent-elements.js"
 import { readFresh } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
@@ -90,19 +92,32 @@ function addedNode(register: Register): ElementId | undefined {
 
 type ShapeAdd = Exclude<WireAdd, { readonly kind: "line" | "arrow" }>
 
+function applyTableAdd(deck: Deck, change: Extract<WireAdd, { kind: "table" }>, runId: string, base: number): Applied {
+  const table = readTableValue(change.table.value)
+  if (table === null) return { ok: false, refusal: "field" }
+  const shaped = writeTableValue({ rows: table.rows.map((row, from) => ({ ...row, from })) })
+  const added = addTable({ deck: deck.id, base }, deck, change.slide, table, change.box, runId)
+  return added.ok ? withAdded(added.register, runId, { table: { value: shaped } }) : added
+}
+
+function withAdded(register: Register, runId: string, inputs: Omit<SetChange, "target">): Applied {
+  const node = addedNode(register)
+  if (node === undefined) return { ok: true, register }
+  const opened = openedRegister(register, { node })
+  if (!opened.ok) return opened
+  const started = decide(opened.register, { command: "start", runId, node })
+  if (started.decision === "refuse") return { ok: false, refusal: started.code }
+  return applySet(started.register, { target: { node }, ...inputs }, runId)
+}
+
 function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number): Applied {
+  if (change.kind === "table") return applyTableAdd(deck, change, runId, base)
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   const value = change.text?.value
   const opening = typeof value === "string" && openingSlideNumber(value) ? value : ""
   const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId, opening)
-  if (!added.ok) return added
-  const node = addedNode(added.register)
-  if (change.text === undefined || node === undefined) return added
-  const opened = openedRegister(added.register, { node })
-  if (!opened.ok) return opened
-  const started = decide(opened.register, { command: "start", runId, node })
-  if (started.decision === "refuse") return { ok: false, refusal: started.code }
-  return applySet(started.register, { target: { node }, text: change.text }, runId)
+  if (!added.ok || change.text === undefined) return added
+  return withAdded(added.register, runId, { text: change.text })
 }
 
 export function applyAgentChange(deck: Deck, change: WireSet | ShapeAdd, runId: string, base: number): Applied {

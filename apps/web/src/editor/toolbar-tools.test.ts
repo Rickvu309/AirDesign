@@ -7,16 +7,29 @@ describe("toolbar tools", () => {
     const tools: ToolbarTools = {
       panel: "agent",
       onText: () => calls.push("text"),
+      onTable: (size) => calls.push(`table ${String(size.rows)}x${String(size.columns)}`),
       onPicture: (file) => calls.push(`picture ${file.name}`),
       onShape: (geometry) => calls.push(`shape ${geometry}`),
       onIcon: (name) => calls.push(`icon ${name}`),
     }
     const first = insertsFirst(tools, () => calls.push("first"))
     first.onText?.()
+    first.onTable?.({ rows: 2, columns: 3 })
     first.onPicture?.(new File([], "logo.png"))
     first.onShape?.("rect")
     first.onIcon?.("rocket")
-    expect(calls).toEqual(["first", "text", "first", "picture logo.png", "first", "shape rect", "first", "icon rocket"])
+    expect(calls).toEqual([
+      "first",
+      "text",
+      "first",
+      "table 2x3",
+      "first",
+      "picture logo.png",
+      "first",
+      "shape rect",
+      "first",
+      "icon rocket",
+    ])
     expect(first.panel).toBe("agent")
   })
 

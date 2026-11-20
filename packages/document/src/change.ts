@@ -79,6 +79,7 @@ export type AddChange =
       readonly box?: Box
       readonly connection?: TraitInput<"connection">
     }
+  | { readonly kind: "table"; readonly slide: SlideId; readonly box?: Box; readonly table: { readonly value: string } }
 
 export type ScopedElement = {
   readonly node: ElementId

@@ -25,8 +25,15 @@ function caretAt(text: HTMLElement, at: Point | undefined): Range {
   return range
 }
 
+function textUnder(frame: HTMLElement, at: Point | undefined): HTMLElement | null {
+  const found = at === undefined ? null : frame.ownerDocument.elementFromPoint?.(at.x, at.y)
+  const under = found instanceof HTMLElement && frame.contains(found) ? found : null
+  const named = under?.closest<HTMLElement>(editableText) ?? under?.querySelector<HTMLElement>(editableText) ?? null
+  return named !== null && frame.contains(named) ? named : frame.querySelector<HTMLElement>(editableText)
+}
+
 export function enterText(frame: HTMLElement, at?: Point): boolean {
-  const text = frame.querySelector<HTMLElement>(editableText)
+  const text = textUnder(frame, at)
   if (text === null) return false
   text.focus()
   const caret = text.ownerDocument.getSelection()

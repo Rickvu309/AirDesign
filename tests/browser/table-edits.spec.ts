@@ -15,7 +15,6 @@ test("preserves a previously edited typed table through reload and native export
   const original = await historicalTable(page, "typed")
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toContainText("Region")
-  await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
   await page.reload()
   await decks.ready()
   await expect(table).toContainText("Region")

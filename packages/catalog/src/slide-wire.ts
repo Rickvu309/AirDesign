@@ -1,4 +1,3 @@
-import { authorableSlide } from "./authoring.js"
 import { readSlideState, type SlideCommand, type SlideId } from "@airdesign/document"
 
 import { fieldRefusal, knownKeys, recordOf, type FieldRefusal } from "./wire.js"
@@ -66,7 +65,7 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
   if (keys === undefined || !knownKeys(body, keys)) return fieldRefusal
   const state = readSlideState({ file: body.file, order: [body] })
   const edit = state?.order[0]
-  if (state === undefined || edit === undefined || !authorableSlide(edit)) return fieldRefusal
+  if (state === undefined || edit === undefined) return fieldRefusal
   return { ok: true, edit: { ...edit, file: state.file } }
 }
 

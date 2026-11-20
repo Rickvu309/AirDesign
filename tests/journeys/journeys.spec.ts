@@ -130,6 +130,7 @@ test.describe("recorded Aira", () => {
     "auto-layout-agent",
     "connector-diagram",
     "line-add",
+    "table-insert",
     "agent-bench-recorded",
   ]) {
     test(name, async ({ page, context }) => {
