@@ -89,6 +89,7 @@ const agent: Agent = {
   "box.flipV": (value) => value,
   "fills.source": (value) => value,
   "fills.weight": (value) => tenths(value / hundredthsPerPoint),
+  "fills.mode": (value) => value,
   "fills.recolor": agentRecolor,
   "fills.crop": agentCrop,
   ...identityAgents,
@@ -240,6 +241,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "fills.weight", patch.fills?.weight, (value) =>
     value === iconWeights.lucide ? null : tenths(value / hundredthsPerPoint),
   )
+  next = folded(next, "fills.mode", patch.fills?.mode, (value) => (value === "stretch" ? null : value))
   next = folded(next, "fills.recolor", patch.fills?.recolor, recolorShown)
   next = folded(next, "fills.crop", patch.fills?.crop, (value) =>
     value.l + value.t + value.r + value.b === 0 ? null : agentCrop(value),

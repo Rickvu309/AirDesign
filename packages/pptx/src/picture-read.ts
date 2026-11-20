@@ -1,3 +1,4 @@
+import { fillMode } from "./picture-mode.js"
 import { iconWeights, type Color, type CropRead, type FieldValue, type RecolorRead } from "@airdesign/document"
 import { shownLocked } from "./shape-locks.js"
 import { shownMask } from "./mask-extension.js"
@@ -148,6 +149,7 @@ export type PictureReads = {
   fills?: { readonly value: "image" }
   "fills.source"?: { readonly value: string }
   "fills.weight"?: { readonly value: number }
+  "fills.mode"?: { readonly value: string }
   "fills.recolor"?: { readonly value: RecolorRead }
   "fills.crop"?: { readonly value: CropRead }
   "identity.alt"?: { readonly value: string }
@@ -169,6 +171,8 @@ export function pictureReads(parts: Parts, sheet: Sheet, item: Drawn): PictureRe
   if (icon !== null) reads["fills.source"] = { value: icon.name }
   if (icon !== null && icon.weight !== iconWeights.lucide) reads["fills.weight"] = { value: icon.weight }
   const found = { bytes: sheet.bytes, elements: sheet.elements, children: sheet.children, fill, blip }
+  const mode = fillMode(found)
+  if (mode !== "stretch") reads["fills.mode"] = { value: mode }
   const recolor = recolorOf(found, blip)
   if (recolor !== null && "grayscale" in recolor) reads["fills.recolor"] = { value: "grayscale" }
   if (recolor !== null && "duotone" in recolor) reads["fills.recolor"] = { value: recolor.duotone }
