@@ -1,5 +1,12 @@
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { controlHandsKeysBack, editorOwnsKey, handOf, leavesPicker, pickerHandsKeysBack } from "./editor-key-ownership"
+import {
+  controlHandsKeysBack,
+  editorOwnsKey,
+  handOf,
+  leavesPicker,
+  pickerHandsKeysBack,
+  toolKeyPlace,
+} from "./editor-key-ownership"
 
 let window: Window & typeof globalThis
 
@@ -146,4 +153,22 @@ it("reads the hand that last worked a picker, and Escape or a held key alone doe
   expect(handOf(key("Enter"), "pointer")).toBe("keys")
   expect(handOf(key("Escape"), "pointer")).toBe("pointer")
   expect(handOf(key("Shift"), "pointer")).toBe("pointer")
+})
+
+it("gives the one-key tools to the slide, the layers and the slide list, and not to a button elsewhere", () => {
+  window.document.body.innerHTML = [
+    '<div data-slide-paint><div id="layer"></div></div>',
+    '<div data-layers-panel><button id="row"></button></div>',
+    '<div data-slide-list><button id="slide"></button></div>',
+    '<button id="present"></button>',
+  ].join("")
+  const at = (id: string) => window.document.getElementById(id)
+  expect([at("layer"), at("row"), at("slide"), at("present"), window.document.body, null].map(toolKeyPlace)).toEqual([
+    "editor",
+    "editor",
+    "slides",
+    null,
+    null,
+    null,
+  ])
 })

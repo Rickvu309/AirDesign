@@ -85,6 +85,7 @@ for (const name of [
   "snap-resize",
   "line-end-snap",
   "text-tool-place",
+  "slide-list-tool-keys",
   "emptied-text",
   "layer-duplicate",
   "layer-clipboard",

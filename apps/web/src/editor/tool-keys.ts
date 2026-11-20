@@ -1,9 +1,9 @@
 import type { Geometry } from "@airdesign/document"
 import { gestureFor, type GestureId } from "@airdesign/render"
 import { useEffect, useRef } from "react"
-import { editorOwnsKey } from "@/editor/editor-key-ownership"
+import { editorOwnsKey, toolKeyPlace } from "@/editor/editor-key-ownership"
 import { pickPicture } from "@/editor/picture-picker"
-import { onLayers, typing } from "@/editor/pointer-tool"
+import { typing } from "@/editor/pointer-tool"
 
 export type ToolKeyActions = {
   readonly onTablePicker: (() => void) | undefined
@@ -36,8 +36,9 @@ export function useToolKeys(working: boolean, actions: ToolKeyActions) {
     if (!working) return
     function listen(event: KeyboardEvent) {
       if (event.repeat || event.isComposing || event.defaultPrevented || typing(event.target)) return
-      if (!onLayers(event.target)) return
-      const run = toolRun(gestureFor(event, "editor"), latest.current)
+      const place = toolKeyPlace(event.target)
+      if (place === null) return
+      const run = toolRun(gestureFor(event, place), latest.current)
       if (run === undefined || !editorOwnsKey(event)) return
       event.preventDefault()
       run()

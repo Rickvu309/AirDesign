@@ -14,6 +14,11 @@ export type ToolbarPart = InsertPart | FormatPart | ActionPart
 
 export const foldOrder: readonly ToolbarPart[] = [
   "actions",
+  "bullets",
+  "align",
+  "color",
+  "size",
+  "styles",
   "icon",
   "chart",
   "table",
@@ -21,11 +26,6 @@ export const foldOrder: readonly ToolbarPart[] = [
   "shape",
   "number",
   "text",
-  "bullets",
-  "align",
-  "color",
-  "size",
-  "styles",
 ]
 
 export type ToolbarFold = { readonly row: readonly ToolbarPart[]; readonly more: readonly ToolbarPart[] }
