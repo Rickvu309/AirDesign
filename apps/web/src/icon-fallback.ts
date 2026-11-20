@@ -48,6 +48,14 @@ export async function iconSvg(name: string): Promise<string | null> {
   return data === undefined ? null : iconMarkup(data.node)
 }
 
+const pngAddress = "data:image/png;base64,"
+
+function dataBytes(address: string): Uint8Array {
+  if (!address.startsWith(pngAddress)) throw new Error("icon-png")
+  const encoded = atob(address.slice(pngAddress.length))
+  return Uint8Array.from(encoded, (each) => each.charCodeAt(0))
+}
+
 export async function iconPng(svg: string, side = fallbackSide): Promise<Uint8Array> {
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }))
   try {
@@ -58,9 +66,7 @@ export async function iconPng(svg: string, side = fallbackSide): Promise<Uint8Ar
     canvas.width = side
     canvas.height = side
     canvas.getContext("2d")?.drawImage(image, 0, 0, side, side)
-    const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/png"))
-    if (blob === null) throw new Error("icon-png")
-    return new Uint8Array(await blob.arrayBuffer())
+    return dataBytes(canvas.toDataURL("image/png"))
   } finally {
     URL.revokeObjectURL(url)
   }
