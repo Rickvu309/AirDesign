@@ -109,7 +109,7 @@ export function slideShapes(
   part: string,
   base: Parts,
   display: Parts,
-  placed: { readonly has: (id: ElementId) => boolean } = new Set(),
+  placed: { readonly has: (id: ElementId) => boolean; readonly charted?: (id: ElementId) => boolean } = new Set(),
 ): SlideShapes {
   const baseBytes = base.get(part)
   const shownBytes = display.get(part)
@@ -128,7 +128,8 @@ export function slideShapes(
     shapes.push({ id, shape: shown, kind: paintKind(shown.kind), file, opening: shape.box })
     if (holding === null || seen.get(id) !== 1) continue
     const table = shape.contentKind === "table" && tableEditable(holding, shape)
-    if (table || boxStorable(holding, shape, placed.has(id))) movables.set(id, { id, file })
+    const chart = shape.contentKind === "chart" && placed.charted?.(id) === true
+    if (table || chart || boxStorable(holding, shape, placed.has(id))) movables.set(id, { id, file })
     const numbered = [...shape.text, ...shown.text].some((each) =>
       each.runs.some((run) => run.slideNumber !== undefined),
     )

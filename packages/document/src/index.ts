@@ -87,13 +87,13 @@ export {
 export { coordinates, readBox, type Box } from "./box.js"
 export { fitNewBox, fittedInside, pictureSize, placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
+export type { AddChange } from "./add-change.js"
 export {
   namedFields,
   paintsBackdrop,
   planChange,
   registerScope,
   writtenField,
-  type AddChange,
   type Scope,
   type ScopedElement,
   type SetChange,
@@ -283,6 +283,16 @@ export {
   type CellRange,
   type TableSide,
 } from "./table-cells.js"
+export {
+  chartKinds,
+  chartLimits,
+  openingChart,
+  readChartValue,
+  writeChartValue,
+  type ChartKind,
+  type ChartSeries,
+  type ChartValue,
+} from "./chart-value.js"
 export {
   alphaOf,
   bareTransforms,

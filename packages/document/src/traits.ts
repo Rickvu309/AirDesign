@@ -13,6 +13,7 @@ import { link } from "./trait-link.js"
 import { notes } from "./trait-notes.js"
 import { show } from "./trait-show.js"
 import { table } from "./trait-table.js"
+import { chart } from "./trait-chart.js"
 import { text } from "./trait-text.js"
 import { templateStyle } from "./trait-template-style.js"
 import { transition } from "./trait-transition.js"
@@ -30,6 +31,7 @@ export const traits = {
   text,
   connection,
   table,
+  chart,
   notes,
   templateStyle,
   show,
@@ -83,7 +85,7 @@ export const kindTraits = {
   table: ["identity", "box", "table"],
   row: [],
   cell: [],
-  chart: ["identity", "box"],
+  chart: ["identity", "box", "chart"],
   kept: ["identity"],
 } as const satisfies { readonly [K in Kind]: readonly TraitName[] }
 

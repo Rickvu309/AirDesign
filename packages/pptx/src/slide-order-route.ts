@@ -7,6 +7,7 @@ import {
   openingIcon,
   presentSlides,
   readSlideId,
+  readChartValue,
   readTableValue,
   hasSlideNumber,
   plainSlideNumber,
@@ -28,6 +29,7 @@ import { slideAddresses, slidePart } from "./package-address.js"
 import { withFileSections, writeSlideGroups } from "./slide-group-write.js"
 import { addPicture, linkedSource } from "./picture-write.js"
 import { openedIcon } from "./trait-xml-image.js"
+import { addChart } from "./chart-write.js"
 import { pasteMarkup } from "./shape-paste.js"
 import { writeTrait } from "./trait-xml.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
@@ -124,6 +126,7 @@ function elementAdded(
     return addPicture(parts, part, { id, box, source: openedIcon(parts, part, icon, element.opening?.fills) })
   if (shown.geometry !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
+  if (element.kind === "chart") return chartAdded(parts, part, id, box, element.value)
   if (element.kind !== "table") {
     const align = element.opening?.body === undefined ? {} : { align: "left" as const }
     const added = openedBody(
@@ -156,6 +159,20 @@ function elementAdded(
     rows: table.rows.length,
     columns,
   })
+}
+
+function chartAdded(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  id: number,
+  box: Box,
+  value: string | null,
+): ReadonlyMap<string, Uint8Array> {
+  const chart = value === null ? null : readChartValue(value)
+  if (chart === null) throw new Error("c:chart")
+  const next = new Map(parts)
+  addChart(next, { part, id, ...box, chart })
+  return next
 }
 
 function pastedLayers(

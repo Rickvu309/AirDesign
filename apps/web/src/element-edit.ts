@@ -4,8 +4,11 @@ import {
   elementsUndoable,
   lineGeometries,
   nextElementId,
+  openingChart,
   openingTable,
   openingTableSize,
+  writeChartValue,
+  type ChartKind,
   placeNewBox,
   writeTableValue,
   readSlideId,
@@ -43,6 +46,7 @@ type Parts = ReadonlyMap<string, Uint8Array>
 
 const textLine = 274_320
 const shapeShare = 0.2
+const chartShare = 0.5
 const lineShare = 0.3
 
 export type SlideRoom = {
@@ -58,6 +62,7 @@ export type LayerSpot = { readonly before: ElementId | null }
 export type ElementChange =
   | { readonly change: "text"; readonly index: number; readonly size: SlideRoom }
   | ({ readonly change: "table"; readonly index: number; readonly size: SlideRoom } & TableSize)
+  | { readonly change: "chart"; readonly kind: ChartKind; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "remove"; readonly nodes: readonly ElementId[] }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove | LayerSpot }
@@ -155,6 +160,12 @@ export function elementCommand(
     const box = placeNewBox(change.size, taken, openingTableSize(change.size.width, change.rows))
     const value = writeTableValue(openingTable(change.rows, change.columns))
     return { slide: "element-add", id: slide.id, element: { node, kind: "table", value, box, grouped: false } }
+  }
+  if (change.change === "chart") {
+    const wanted = { cx: Math.round(change.size.width * chartShare), cy: Math.round(change.size.height * chartShare) }
+    const box = placeNewBox(change.size, taken, wanted)
+    const value = writeChartValue(openingChart(change.kind))
+    return { slide: "element-add", id: slide.id, element: { node, kind: "chart", value, box, grouped: false } }
   }
   if (change.change === "shape") {
     const line = lineGeometries.includes(change.geometry)

@@ -69,6 +69,7 @@ assert.deepEqual(
     "text.mjs",
     "trait-body.mjs",
     "trait-border.mjs",
+    "trait-chart.mjs",
     "trait-connection.mjs",
     "trait-effects.mjs",
     "trait-fill.mjs",

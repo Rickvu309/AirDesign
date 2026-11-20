@@ -55,7 +55,7 @@ export function takes(facts: ElementFacts): readonly FieldKey[] {
   return fields.filter(
     (field) =>
       !(unwritten[facts.kind]?.includes(field) ?? false) &&
-      (facts.text || !(textFields.includes(field) || field.startsWith("body."))),
+      (facts.text || !(textFields.includes(field) || field.startsWith("body.") || field === "chart.value")),
   )
 }
 

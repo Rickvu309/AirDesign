@@ -4,6 +4,7 @@ import {
   presetAdjusts,
   readElementId,
   readSlideId,
+  readChartValue,
   readTableValue,
   roles,
   slideKinds,
@@ -37,7 +38,7 @@ const ownKinds = slideKinds.join("|")
 const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
-const addable = ["shape", "line", "arrow", "elbow", "table"] as const
+const addable = ["shape", "line", "arrow", "elbow", "table", "chart"] as const
 const oldAddable = ["picture"]
 const boxSides = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
@@ -159,7 +160,7 @@ function readLineBox(raw: unknown): Box | null {
   return box !== null && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0 ? box : null
 }
 
-const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table"]
+const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table", "chart"]
 
 function attached(end: unknown): boolean {
   return plainObject(end) && plainObject(end.shape)
@@ -184,6 +185,21 @@ function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: Slide
       ...(box === undefined ? {} : { box }),
       ...(ends === undefined ? {} : { connection: ends }),
     } as WireAdd,
+  }
+}
+
+function addedChart(raw: Inputs, slide: SlideId): Read<WireAdd> {
+  const extra = ["text", "icon", "image", "connection", "table"].find((key) => raw[key] !== undefined)
+  if (extra !== undefined) return refused(extra)
+  const chart = readTrait("chart", raw.chart)
+  if (!chart.ok || typeof chart.change.value !== "string" || readChartValue(chart.change.value) === null)
+    return refused("chart")
+  const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
+  if (box === null) return refused("box")
+  const value = chart.change.value
+  return {
+    ok: true,
+    change: { op: "add", kind: "chart", slide, ...(box === undefined ? {} : { box }), chart: { value } },
   }
 }
 
@@ -212,6 +228,8 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   const extra = Object.keys(raw).find((key) => !addKeys.includes(key))
   if (extra !== undefined) return refused(extra)
   if (kind === "table") return addedTable(raw, slide)
+  if (kind === "chart") return addedChart(raw, slide)
+  if (raw.chart !== undefined) return refused("chart")
   if (raw.table !== undefined) return refused("table")
   if (kind === "line" || kind === "arrow" || kind === "elbow") return readLineAdd(raw, kind, slide)
   if (raw.connection !== undefined) return refused("connection")
@@ -305,7 +323,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line or a table. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
+      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line, a table or a chart. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
@@ -325,6 +343,7 @@ export function addChangeSchema(): JsonSchema {
       },
       connection: traitSchema("connection", null),
       table: traitSchema("table", null),
+      chart: traitSchema("chart", null),
     },
   }
 }

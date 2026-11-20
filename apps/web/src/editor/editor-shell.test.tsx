@@ -83,7 +83,7 @@ describe("editor shell", () => {
     expect(markup.match(/data-slide-entry=/g)).toHaveLength(2)
     expect(markup.match(/<aside/g)).toHaveLength(2)
     for (const word of sampleWords) expect(markup).not.toContain(word)
-    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "image", "icon", "Undo", "Redo"])
+    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "chart", "image", "icon", "Undo", "Redo"])
   })
 
   it("names the edit the undo and redo buttons turn back once there is one", () => {
@@ -91,7 +91,7 @@ describe("editor shell", () => {
     const markup = renderToStaticMarkup(<EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, undo }} />)
     expect(markup).toContain('aria-label="Undo move"')
     expect(markup).toContain('aria-label="Redo delete slide"')
-    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "image", "icon"])
+    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "chart", "image", "icon"])
   })
 
   it("turns on the text box tool alone when the deck can add a text box", () => {
@@ -99,7 +99,7 @@ describe("editor shell", () => {
       <EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, onText: () => undefined }} />,
     )
     expect(markup).toContain('aria-label="Add text"')
-    expect(disabledLabels(markup)).toEqual(["shape", "table", "image", "icon", "Undo", "Redo"])
+    expect(disabledLabels(markup)).toEqual(["shape", "table", "chart", "image", "icon", "Undo", "Redo"])
   })
 
   it("turns on the picture tool when the deck can add a picture, with no file input left in the page", () => {
@@ -112,7 +112,7 @@ describe("editor shell", () => {
     )
     expect(markup).toContain('aria-label="Add image"')
     expect(markup).not.toContain('type="file"')
-    expect(disabledLabels(markup)).toEqual(["shape", "table", "icon", "Undo", "Redo"])
+    expect(disabledLabels(markup)).toEqual(["shape", "table", "chart", "icon", "Undo", "Redo"])
   })
 
   it("turns on the icon tool when the deck can add an icon", () => {
@@ -120,7 +120,7 @@ describe("editor shell", () => {
       <EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, onIcon: () => undefined }} />,
     )
     expect(markup).toContain('aria-label="Add icon"')
-    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "image", "Undo", "Redo"])
+    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "chart", "image", "Undo", "Redo"])
   })
 
   it("turns on the table tool when the deck can add a table", () => {
@@ -128,7 +128,15 @@ describe("editor shell", () => {
       <EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, onTable: () => undefined }} />,
     )
     expect(markup).toContain('aria-label="Insert table"')
-    expect(disabledLabels(markup)).toEqual(["text", "shape", "image", "icon", "Undo", "Redo"])
+    expect(disabledLabels(markup)).toEqual(["text", "shape", "chart", "image", "icon", "Undo", "Redo"])
+  })
+
+  it("turns on the chart tool when the deck can add a chart", () => {
+    const markup = renderToStaticMarkup(
+      <EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, onChart: () => undefined }} />,
+    )
+    expect(markup).toContain('aria-label="Insert chart"')
+    expect(disabledLabels(markup)).toEqual(["text", "shape", "table", "image", "icon", "Undo", "Redo"])
   })
 
   it("turns on the shape tool when the deck can add a shape", () => {
@@ -140,7 +148,7 @@ describe("editor shell", () => {
       />,
     )
     expect(markup).toContain('aria-label="Shapes"')
-    expect(disabledLabels(markup)).toEqual(["table", "image", "icon", "Undo", "Redo"])
+    expect(disabledLabels(markup)).toEqual(["table", "chart", "image", "icon", "Undo", "Redo"])
   })
 
   it("gallery screen keeps its copy", () => {

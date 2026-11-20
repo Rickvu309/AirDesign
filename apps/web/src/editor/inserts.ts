@@ -1,4 +1,4 @@
-import { type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
+import { type ChartKind, type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { holdKeys, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
@@ -143,6 +143,11 @@ export function deckInserts(deck: InsertingDeck) {
     if (room !== null) void changeElement({ change: "table", index: current, size: room, ...size })
   }
 
+  function addChart(kind: ChartKind) {
+    const room = canvases.current(current)
+    if (room !== null) void changeElement({ change: "chart", kind, index: current, size: room })
+  }
+
   function addShape(geometry: Geometry) {
     const size = canvases.current(current)
     if (size !== null) void changeElement({ change: "shape", geometry, index: current, size })
@@ -170,6 +175,7 @@ export function deckInserts(deck: InsertingDeck) {
     cutLayers,
     addText,
     addTable,
+    addChart,
     addShape,
     addPicture,
     addIcon,

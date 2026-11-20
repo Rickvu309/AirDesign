@@ -310,3 +310,22 @@ it("paints that cover when the device register kept the box and lost the opening
     ?.elements.find((element) => element.id === picture)
   expect(painted?.fill).toContain("50% 0% / 225% 100%")
 })
+
+it("offers a chart made in AirDesign to move and select", () => {
+  const store = paintStore()
+  const busy = busyElements()
+  const register = changed(openRegister("", "clean"), { change: "chart", kind: "bar", index: 1, size: room })
+  const painted = paint(store, parts, register, busy)
+  const [add] = register.order
+  const node = add !== undefined && "element" in add ? add.element.node : null
+  expect(node).not.toBeNull()
+  expect(painted.movables.has(elementId(node ?? ""))).toBe(true)
+  const value = add !== undefined && "element" in add ? (add.element.value ?? "") : ""
+  const chart = { value: { set: value.replace("Series 1", "Revenue") } }
+  const added = decide(register, { command: "add", node: elementId(node ?? ""), floor: "", route: register.route })
+  if (added.decision === "refuse") throw new Error(added.code)
+  const edited = decide(added.register, { command: "person", node: elementId(node ?? ""), v: format, patch: { chart } })
+  if (edited.decision === "refuse") throw new Error(edited.code)
+  paint(store, parts, edited.register, busy, new Map(), painted)
+  expect(store.getElement(elementId(node ?? ""))?.text).toBe("")
+}, 120_000)

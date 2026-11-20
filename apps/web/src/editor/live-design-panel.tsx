@@ -55,7 +55,9 @@ import { liveSlideNumber } from "./live-slide-number"
 import { LiveBoxFields } from "./live-box-fields"
 import { servedFaces, useServedFaces } from "@/design/served-faces"
 import { controlsOf, perDesignChanges } from "@/editor/per-design-change"
-import { TableCellsSection, type TableCells } from "@/editor/table-cells-section"
+import type { TableCells } from "@/editor/table-cells-section"
+import { kindSection } from "@/editor/kind-section"
+import { heldChart } from "@/live-repaint"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -114,7 +116,9 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const opening = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(node)
   if (opening === undefined) return null
   const held = opening.value ?? fileValue(shown, node)
-  const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
+  const kept = opening.facts.kind === "table" && readTableValue(text ?? "") === null
+  const value =
+    opening.facts.kind === "chart" ? heldChart(shown.shownRegister.current, node) : kept ? held : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
   const register = shown.shownRegister.current
   const layout =
@@ -219,19 +223,7 @@ function LiveElementDesign({
         mode={mode}
         selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
         palette={palette}
-        {...(design.model.kind === "table"
-          ? {
-              children: (
-                <TableCellsSection
-                  deck={deck}
-                  node={node}
-                  value={design.view.value}
-                  picked={deck.tableCells}
-                  palette={palette}
-                />
-              ),
-            }
-          : {})}
+        {...kindSection({ deck, node, kind: design.model.kind, value: design.view.value, palette })}
         onChange={(control, value) => {
           const chosen = chosenFill(
             value,

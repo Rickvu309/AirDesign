@@ -1,0 +1,15 @@
+export const chartCopy = {
+  tool: "Insert chart",
+  kinds: { bar: "Bar chart", line: "Line chart", pie: "Pie chart" },
+  type: "Chart type",
+  types: { bar: "Bar", line: "Line", pie: "Pie" },
+  data: "Data",
+  category: (row: number) => `Label ${String(row)}`,
+  series: (column: number) => `Series ${String(column)} name`,
+  seriesName: (column: number) => `Series ${String(column)}`,
+  value: (row: number, column: number) => `Row ${String(row)}, series ${String(column)}`,
+  addRow: "Add row",
+  addSeries: "Add series",
+  removeRow: (row: number) => `Remove row ${String(row)}`,
+  removeSeries: (column: number) => `Remove series ${String(column)}`,
+} as const

@@ -146,7 +146,11 @@ function writtenElement(
   const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === node)
   const shape = named.length === 1 ? named[0] : undefined
   const rows = body === undefined ? {} : landedPatch(body, shape?.contentKind === "table" ? "table" : "text")
-  const facts = shape && { kind: shapeKind(shape), text: shape.text.length > 0, grouped: shape.grouped === true }
+  const facts = shape && {
+    kind: shapeKind(shape),
+    text: shape.text.length > 0 || shape.contentKind === "chart",
+    grouped: shape.grouped === true,
+  }
   const taken = facts === undefined ? null : takes({ ...facts, animated: false })
   const opened = shape === undefined || shape.locked ? {} : openingPatch(opening)
   const written = new Map<TraitName, Fields>()

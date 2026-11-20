@@ -284,6 +284,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("end.shape.site", above, { kind: "site" })],
   ],
   table: [[placed("value")]],
+  chart: [[placed("value", hidden, { control: "canvas" })]],
   notes: [[placed("value", hidden)]],
   templateStyle: [
     [{ field: "id", name: { show: "hidden" } }],
@@ -334,7 +335,7 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
 }
 
 export function panelTrait(trait: TraitName): boolean {
-  return trait !== "table"
+  return trait !== "table" && trait !== "chart"
 }
 
 export function canvasControl(trait: SectionName, field: string): boolean {
@@ -421,6 +422,7 @@ export function controlOf(desc: Desc): ControlKind | null {
     case "named":
       return "adjust"
     case "table":
+    case "chart":
       return null
     case "asset":
       return "asset"

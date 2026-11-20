@@ -21,7 +21,7 @@ import {
   type Row,
   type SetChange,
 } from "@airdesign/document"
-import { addIcon, addPicture, addTable, addTextBox } from "./agent-elements.js"
+import { addChartLayer, addIcon, addPicture, addTable, addTextBox } from "./agent-elements.js"
 import { readFresh } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
@@ -141,6 +141,8 @@ function withMedia<Change extends SetChange>(change: Change, images: ImageLookup
 
 function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, images: ImageLookup): Applied {
   if (change.kind === "table") return applyTableAdd(deck, change, runId, base)
+  if (change.kind === "chart")
+    return addChartLayer({ deck: deck.id, base }, deck, change.slide, change.chart.value, change.box, runId)
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   if ("image" in change) {
     const image = images(change.image)
