@@ -1,4 +1,4 @@
-import { elementsUndoable, type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
+import { type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { holdKeys, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
@@ -9,7 +9,7 @@ import { fileSlides } from "@/slide-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { elementCopy } from "@/copy/element-copy"
-import { commitCopies, commitElement, type CopyAsked, type ElementChange } from "@/element-edit"
+import { commitCopies, commitElement, replacedUndoable, type CopyAsked, type ElementChange } from "@/element-edit"
 import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
@@ -58,14 +58,19 @@ export function deckInserts(deck: InsertingDeck) {
     return outcome
   }
 
-  async function copyLayers(copies: readonly CopyAsked[], name: UndoName, title?: string): Promise<readonly Copied[]> {
+  async function copyLayers(
+    copies: readonly CopyAsked[],
+    name: UndoName,
+    title?: string,
+    replacing: readonly ElementId[] = [],
+  ): Promise<readonly Copied[]> {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return []
     const paint = async (undoable: Undoable | null) => {
       if (undoable !== null) record({ name, undoable })
       await showEdited(current)
     }
-    const made = await commitCopies(id, shownParts.current, opened.register, copies, paint, title)
+    const made = await commitCopies(id, shownParts.current, opened.register, copies, paint, title, replacing)
     void made.flushed.then(settle)
     return made.copies
   }
@@ -74,8 +79,9 @@ export function deckInserts(deck: InsertingDeck) {
     return copyLayers(copies, "duplicate-layer")
   }
 
-  function pasteLayers(copies: readonly CopyAsked[]): Promise<readonly Copied[]> {
-    return copyLayers(copies, "paste-layer", elementCopy.pasteRefusedTitle)
+  function pasteLayers(copies: readonly CopyAsked[], replacing: readonly ElementId[] = []): Promise<readonly Copied[]> {
+    const name = replacing.length === 0 ? "paste-layer" : "replace-layer"
+    return copyLayers(copies, name, elementCopy.pasteRefusedTitle, replacing)
   }
 
   async function keptImages(layer: CopiedLayer): Promise<readonly Media[] | null> {
@@ -90,12 +96,16 @@ export function deckInserts(deck: InsertingDeck) {
     return kept
   }
 
-  async function pasteFromDeck(copy: LayerCopy, place: PastePlace): Promise<readonly Copied[]> {
+  async function pasteFromDeck(
+    copy: LayerCopy,
+    places: readonly PastePlace[],
+    replacing: readonly ElementId[] = [],
+  ): Promise<readonly Copied[]> {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return []
     const media: (readonly Media[])[] = []
     for (const layer of copy.layers) media.push((await keptImages(layer)) ?? [])
-    const { edits, refused } = pastedAdds(shownParts.current, opened.register, copy, place, media)
+    const { edits, refused } = pastedAdds(shownParts.current, opened.register, copy, places, media)
     for (const refusal of refused)
       toast.error(elementCopy.pasteRefusedTitle, {
         id: `paste-refused-${refusal}`,
@@ -105,8 +115,8 @@ export function deckInserts(deck: InsertingDeck) {
     const went = []
     for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(id, file, edit)).ok) went.push(edit)
     if (went.length === 0) return []
-    const undoable = elementsUndoable(opened.register, file, went)
-    if (undoable !== null) record({ name: "paste-layer", undoable })
+    const undoable = await replacedUndoable(id, shownParts.current, opened.register, went, replacing)
+    if (undoable !== null) record({ name: replacing.length === 0 ? "paste-layer" : "replace-layer", undoable })
     await showEdited(current)
     void flushMedia(id).then(() => flushPending(connect, id).then(settle))
     return edits.map((edit) => ({ copy: edit.element.node, source: edit.element.node }))

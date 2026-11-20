@@ -28,8 +28,8 @@
     {
       "file": "packages/render/src/passage.tsx",
       "names": ["Passage"],
-      "digest": "5dab169ac15c",
-      "blob": "f831697cad14ddb42e3f1cabc780d7885dbca21b"
+      "digest": "066b5bc0a211",
+      "blob": "cd04b34424bd2f7ca40ecc4115babf45e49a4a35"
     },
     {
       "file": "apps/web/src/editor/notes-bar.tsx",
@@ -46,8 +46,8 @@
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "fef44b1beae6",
-      "blob": "49d8640132ebc13d0708f533d1f6e2903b121d86"
+      "digest": "b43467e60bee",
+      "blob": "acc618a33812a18e5ed99e8deb56ad520b1b6523"
     },
     {
       "file": "packages/live/src/held.ts",

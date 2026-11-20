@@ -125,9 +125,22 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "editor")).toBeNull()
     expect(gestureFor({ ...plain, key: "r", code: "KeyR", ctrlKey: true }, "editor")).toBe("rename")
     expect(gestureFor({ ...plain, key: "r", code: "KeyR", metaKey: true }, "editor")).toBe("rename")
-    expect(gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, shiftKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, shiftKey: true }, "editor")).toBe(
+      "paste-replace",
+    )
     expect(gestureFor({ ...plain, key: "r", code: "KeyR", ctrlKey: true, altKey: true }, "editor")).toBeNull()
     expect(gestureFor({ ...plain, key: "r", code: "KeyR", ctrlKey: true }, "text")).toBeNull()
+  })
+
+  it("copies, cuts and pastes layers with Figma's keys", () => {
+    const keyed = (code: string, shiftKey = false) =>
+      gestureFor({ ...plain, key: "", code, ctrlKey: true, shiftKey }, "editor")
+    expect([keyed("KeyC"), keyed("KeyX"), keyed("KeyV")]).toEqual(["copy", "cut", "paste"])
+    expect([keyed("KeyV", true), keyed("KeyR", true), keyed("KeyC", true)]).toEqual([
+      "paste-over",
+      "paste-replace",
+      "copy-png",
+    ])
   })
 
   it("moves a slide earlier or later with command or control and a bracket", () => {
@@ -232,6 +245,8 @@ describe("gestureFor", () => {
     ).toBe("resize-to-fit")
     expect(gestureFor({ ...plain, key: "r", code: "KeyR", metaKey: true }, "editor")).toBe("rename")
     expect(gestureFor({ ...plain, key: "®", code: "KeyR", metaKey: true, altKey: true }, "element")).toBe("text-right")
-    expect(gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, shiftKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, shiftKey: true }, "editor")).toBe(
+      "paste-replace",
+    )
   })
 })

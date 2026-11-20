@@ -41,7 +41,12 @@ export type Undoable =
   | GridUndoable
   | { readonly steps: readonly NodeStep[] }
   | {
-      readonly elements: readonly { readonly node: ElementId; readonly shown: ElementPatch }[]
+      readonly elements: readonly {
+        readonly node: ElementId
+        readonly shown: ElementPatch
+        readonly before?: boolean
+        readonly after?: boolean
+      }[]
       readonly slide: SlideId
       readonly file: readonly SlideId[]
       readonly before: boolean
@@ -149,6 +154,26 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
   return gridUndoable(register, decision.register, file, edit)
 }
 
+export function swapUndoable(
+  register: Register,
+  file: readonly SlideId[],
+  added: readonly ElementEdit[],
+  removed: readonly ElementEdit[],
+): Undoable | null {
+  const born = elementsUndoable(register, file, added)
+  if (born === null || !("elements" in born)) return null
+  let current = register
+  for (const edit of added) {
+    const decision = decide(current, { command: "slide", file, edit })
+    if (decision.decision === "apply") current = decision.register
+  }
+  const gone = elementsUndoable(current, file, removed)
+  if (gone === null || !("elements" in gone)) return born
+  const turned = (undoable: typeof born) =>
+    undoable.elements.map((each) => ({ ...each, before: undoable.before, after: undoable.after }))
+  return { ...born, elements: [...turned(born), ...turned(gone)] }
+}
+
 export function elementsUndoable(
   register: Register,
   file: readonly SlideId[],
@@ -203,18 +228,22 @@ function applying(register: Register, commands: readonly Command[] | null): read
 
 function elementsTurn(register: Register, undoable: ElementsUndoable, from: "before" | "after"): Turns {
   const to = from === "before" ? "after" : "before"
-  if (undoable[from] === undoable[to]) return changed
-  const turning = undoable.elements.filter((each) => elementGone(register, each.node) !== undoable[from])
+  type Turned = ElementsUndoable["elements"][number]
+  const was = (each: Turned) => each[from] ?? undoable[from]
+  const becomes = (each: Turned) => each[to] ?? undoable[to]
+  const turning = undoable.elements.filter(
+    (each) => was(each) !== becomes(each) && elementGone(register, each.node) !== was(each),
+  )
   if (turning.length === 0) return changed
-  if (!undoable[to] && turning.some((each) => !stillShows(register, each.node, each.shown))) return changed
+  if (turning.some((each) => !becomes(each) && !stillShows(register, each.node, each.shown))) return changed
   const file = register.file.length > 0 ? register.file : undoable.file
   const commands = applying(
     register,
-    turning.map(({ node }): Command => {
-      const id = readSlideId(shapeOf(node).slide) ?? undoable.slide
-      const edit: SlideCommand = undoable[to]
-        ? { slide: "element-restore", id, node }
-        : { slide: "element-remove", id, node }
+    turning.map((each): Command => {
+      const id = readSlideId(shapeOf(each.node).slide) ?? undoable.slide
+      const edit: SlideCommand = becomes(each)
+        ? { slide: "element-restore", id, node: each.node }
+        : { slide: "element-remove", id, node: each.node }
       return { command: "slide", file, edit }
     }),
   )

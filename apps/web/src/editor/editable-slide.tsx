@@ -27,6 +27,7 @@ import { elementCopy } from "@/copy/element-copy"
 import type { CopyAsked, ElementChange } from "@/element-edit"
 import { readClipboardCopy, readLayerCopy, writeLayerCopy, type LayerCopy } from "@/layer-clipboard"
 import { layerCopyOf, pastedCopies, slideIdAt, type PastePlace } from "@/layer-paste"
+import { layersPng } from "@/layers-png"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { framedOf, storedBox } from "@/frame-boxes"
 import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
@@ -42,8 +43,12 @@ import { boxName } from "@/undo-names"
 export type EditableDeck = DesignDeck & {
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
   readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
-  readonly pasteLayers?: (copies: readonly CopyAsked[]) => Promise<readonly Copied[]>
-  readonly pasteFromDeck?: (copy: LayerCopy, place: PastePlace) => Promise<readonly Copied[]>
+  readonly pasteLayers?: (copies: readonly CopyAsked[], replacing?: readonly ElementId[]) => Promise<readonly Copied[]>
+  readonly pasteFromDeck?: (
+    copy: LayerCopy,
+    places: readonly PastePlace[],
+    replacing?: readonly ElementId[],
+  ) => Promise<readonly Copied[]>
   readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
   readonly selection: Selection
   readonly select: (selection: Selection) => void
@@ -293,10 +298,17 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     if (copy === null || pasteLayers === undefined || register === null || canvas === null) return Promise.resolve([])
     const onto = slideIdAt(deck.shown.shownParts.current, register, current)
     if (onto === null) return Promise.resolve([])
-    const selected = shownBoxes(paste.selection).map((each) => each.box)
-    const place = { mode: paste.mode, onto, slide: canvas, view: paste.view, selected }
-    if (copy.deck !== id) return deck.pasteFromDeck?.(copy, place) ?? Promise.resolve([])
-    return pasteLayers(pastedCopies(copy, place))
+    const shown = shownBoxes(paste.selection)
+    const replacing = paste.mode === "replace" ? shown.map((each) => each.id) : []
+    if (paste.mode === "replace" && replacing.length === 0) return Promise.resolve([])
+    const groups = paste.mode === "replace" ? shown.map((each) => [each.box]) : [shown.map((each) => each.box)]
+    const mode = paste.mode === "replace" ? "over" : paste.mode
+    const places = groups.map((selected) => ({ mode, onto, slide: canvas, view: paste.view, selected }))
+    if (copy.deck !== id) return deck.pasteFromDeck?.(copy, places, replacing) ?? Promise.resolve([])
+    return pasteLayers(
+      places.flatMap((place) => pastedCopies(copy, place)),
+      replacing,
+    )
   }
 
   const clipboard: LayerClipboard | undefined =
@@ -320,6 +332,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
             if (cut && deck.cutLayers !== undefined) void holding(sources, () => deck.cutLayers?.(sources) ?? noCut)
             return true
           },
+          picture: (ids) => layersPng(deck.shown.displayParts.current, current, ids),
           paste(paste) {
             if (paste.data === null) return readClipboardCopy().then((copy) => pasted(copy, paste))
             const copy = readLayerCopy(paste.data.getData("text/html"))

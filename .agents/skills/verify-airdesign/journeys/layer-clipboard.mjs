@@ -76,6 +76,22 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await capture("paste-undone")
   note("Undo cut brings 257.10 back, and one Undo paste takes it away again; 257.9 stays")
 
+  const replaced = shape(second, 5)
+  const [x, y] = await placed(replaced)
+  await replaced.click()
+  await page.keyboard.press("ControlOrMeta+Shift+KeyR")
+  await expect(replaced).toHaveCount(0)
+  await expect(shape(second, 11)).toBeVisible()
+  expect((await placed(shape(second, 11))).slice(0, 2)).toEqual([x, y])
+  await capture("pasted-to-replace")
+  note(
+    `Ctrl+Shift+R with the text "2400" selected removes it and pastes 257.11 with its top left on the text's, ${x}, ${y}`,
+  )
+  await page.getByRole("button", { name: undoCopy.undoNamed["replace-layer"], exact: true }).click()
+  await expect(replaced).toBeVisible()
+  await expect(shape(second, 11)).toHaveCount(0)
+  note("one Undo paste to replace brings the text back and takes the copy away")
+
   await page.goto(".")
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/picture-png.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)

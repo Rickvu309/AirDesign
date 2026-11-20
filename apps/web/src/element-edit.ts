@@ -11,6 +11,7 @@ import {
   shapeOf,
   slideUndoable,
   stackTarget,
+  swapUndoable,
   type CopiedRows,
   type ElementClone,
   type ElementCommand,
@@ -246,6 +247,28 @@ export function copyCommands(
   return { edits, refused }
 }
 
+type Born = ElementClone | Extract<ElementCommand, { readonly slide: "element-add" }>
+
+export async function replacedUndoable(
+  deckId: string,
+  parts: Parts,
+  register: Register,
+  added: readonly Born[],
+  replacing: readonly ElementId[],
+): Promise<Undoable | null> {
+  const file = fileSlides(parts, register)
+  if (replacing.length === 0) return elementsUndoable(register, file, added)
+  const { edits, refused } = removals(parts, register, replacing)
+  for (const refusal of refused)
+    toast.error(elementCopy.removeRefusedTitle, {
+      id: `remove-refused-${refusal}`,
+      description: elementCopy.removeRefusedBody[refusal],
+    })
+  const gone: Removal[] = []
+  for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) gone.push(edit)
+  return swapUndoable(register, file, added, gone)
+}
+
 export async function commitCopies(
   deckId: string,
   parts: Parts,
@@ -253,6 +276,7 @@ export async function commitCopies(
   copies: readonly CopyAsked[],
   paint: (undoable: Undoable | null) => Promise<void>,
   title: string = elementCopy.copyRefusedTitle,
+  replacing: readonly ElementId[] = [],
 ): Promise<{ readonly copies: readonly Copied[]; readonly flushed: Promise<CommitOutcome> }> {
   const { edits, refused } = copyCommands(parts, register, copies)
   for (const refusal of refused)
@@ -261,7 +285,7 @@ export async function commitCopies(
   const went: ElementClone[] = []
   for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) went.push(edit)
   if (went.length === 0) return { copies: [], flushed: Promise.resolve("refused") }
-  await paint(elementsUndoable(register, file, went))
+  await paint(await replacedUndoable(deckId, parts, register, went, replacing))
   const made = went.map((edit) => ({ copy: edit.element.node, source: edit.source }))
   return { copies: made, flushed: flushPending(connect, deckId) }
 }
