@@ -180,6 +180,17 @@ export function addedPictures(state: SlideState): readonly Media[] {
   return [...found.values()]
 }
 
+export function addedGeometry(state: SlideState, node: ElementId): Geometry | null {
+  for (const command of state.order) {
+    if (command.slide === "element-add" && command.element.node === node) return command.geometry ?? null
+    if (command.slide !== "element-clone") continue
+    if (command.element.node === node) return addedGeometry(state, command.source)
+    const layer = command.layers?.find((each) => each.element.node === node)
+    if (layer !== undefined) return addedGeometry(state, layer.source)
+  }
+  return null
+}
+
 function indexComplete(state: Indexed): boolean {
   return state.index !== undefined && state.index.total === state.index.elements.length
 }

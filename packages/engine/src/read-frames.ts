@@ -1,5 +1,6 @@
 import {
   floorNodes,
+  followedPlace,
   followsGroups,
   layoutNodes,
   opaque,
@@ -36,7 +37,10 @@ export function readFrames(register: Register): ReadFrames {
     for (const child of view.children) boxes.set(child.node, child.box)
   }
   for (const node of [...(register.index?.elements.map((element) => element.node) ?? []), ...floorNodes(register)]) {
-    const shown = boxes.has(node) || !followsGroups(register, node) ? null : shownPlace(register, node)
+    const shown =
+      boxes.has(node) || !followsGroups(register, node)
+        ? null
+        : (followedPlace(register, node) ?? shownPlace(register, node))
     if (shown !== null) boxes.set(node, shown.box)
   }
   const found = { boxes, frames, backdrops }

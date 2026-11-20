@@ -3,9 +3,10 @@ import { placements } from "./box-align.js"
 import { textStylesOf, type TextStyle } from "./text-style.js"
 import { mergeTextStyleEdits, storedTextStyleEdits, type TextStyleEdit } from "./text-style-edit.js"
 import type { Box } from "./box.js"
-import { outlineOf, siteKinds, type Outline } from "./connector.js"
+import { siteKinds, type Outline } from "./connector.js"
 import { currentBox, currentValue, elementFacts, landedPatch, type Register } from "./decide.js"
 import type { SlideSize } from "./deck-index.js"
+import { outlineNow } from "./element-outline.js"
 import type { DesignKey, Role } from "./design.js"
 import {
   shapeOf,
@@ -22,7 +23,7 @@ import type { Place } from "./group-place.js"
 import { followsGroups, shownPlace, storedPlace } from "./group-space.js"
 import { boxFields, type Spot } from "./change-box.js"
 import { framedNow, readLayout } from "./frame-layout.js"
-import { elementGone } from "./element-order.js"
+import { addedGeometry, elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
 import type { ElementPatch, FieldEdit, Row } from "./row.js"
@@ -368,22 +369,6 @@ function sizeOf(register: Register, slide: SlideId): SlideSize | null {
   return slides.find((each) => each.id === slide)?.size ?? slides.find((each) => each.size !== undefined)?.size ?? null
 }
 
-type Shaped = { readonly preset: string; readonly adjust: Readonly<Record<string, number>> }
-
-function outlineNow(
-  rows: Readonly<Record<string, FieldEdit<unknown>>> | undefined,
-  opening: ReturnType<typeof openingElement>,
-): Outline | null {
-  const edit = rows?.shape
-  if (typeof edit === "object" && edit !== null && "set" in edit) {
-    const shaped = edit.set as Shaped
-    return outlineOf(shaped.preset, shaped.adjust)
-  }
-  if (opening?.kept?.includes("geometry") === true) return null
-  const named = opening?.design?.geometry?.[0]
-  return outlineOf(typeof named === "string" ? named : null, {})
-}
-
 function backdropOf(register: Register, node: ElementId): { readonly backdrop?: ElementId } {
   const backdrop = frameBackdrop(register, node)
   return backdrop === null ? {} : { backdrop }
@@ -423,7 +408,11 @@ export function registerScope(register: Register): Scope {
         ...(framed === null ? {} : { origin: framed.origin }),
         ...(shown === null ? {} : { shown }),
         ...(opening?.placed === undefined ? {} : { placed: opening.placed }),
-        outline: outlineNow(body === undefined ? undefined : landedPatch(body, "text").geometry, opening),
+        outline: outlineNow(
+          body === undefined ? undefined : landedPatch(body, "text").geometry,
+          opening,
+          addedGeometry(register, node),
+        ),
         parent: groupParent(register, node) ?? null,
         ...(facts.frame === undefined ? {} : backdropOf(register, node)),
       }
