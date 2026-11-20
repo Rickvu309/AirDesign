@@ -103,7 +103,10 @@ export function LiveLayers({
         onHover,
         onRename: (node, name) => changeDesign(deck, () => ({ target: { node }, identity: { name } })),
         onOrder: (node, before) => void deck.changeElement({ change: "order", node, move: { before } }),
-        onMove: (node, parent, before, from) => void deck.changeElement({ change: "join", node, parent, before, from }),
+        onMove: (node, parent, before, from) =>
+          void deck.changeElement({ change: "join", node, parent, before, from }).then((outcome) => {
+            if (!["refused", "closed", "too-large"].includes(outcome)) deck.select({ ids: [node], inside: parent })
+          }),
         joins: (node, parent) => {
           const register = deck.shown.shownRegister.current
           return register !== null && layerJoins(deck.shown.shownParts.current, register, node, parent)

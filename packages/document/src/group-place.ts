@@ -51,7 +51,7 @@ export function throughGroup(child: Place, group: Place, frame: Box): Place {
   }
 }
 
-function memberPlace(member: Member): Place {
+export function memberPlace(member: Member): Place {
   return {
     box: member.box,
     rot: member.rot ?? 0,
@@ -117,7 +117,7 @@ export function placeOf(register: Register, node: ElementId): Place | null {
   return rowPlace(register, node)
 }
 
-function rowPlace(register: Register, node: ElementId): Place | null {
+export function rowPlace(register: Register, node: ElementId): Place | null {
   const opening = openingElement(register, node)
   const body = Object.hasOwn(register.elements, node) ? register.elements[node] : undefined
   const box = (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null

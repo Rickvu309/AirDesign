@@ -1,11 +1,23 @@
 import type { Box } from "./box.js"
 import { decide, type Command, type Register } from "./decide.js"
 import { readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
-import { groupFlow, groupFrame, groupParent, plainGroup, type ElementJoin } from "./element-group.js"
+import {
+  frameBackdrop,
+  groupChildren,
+  groupDissolved,
+  groupFlow,
+  groupParent,
+  plainGroup,
+  type ElementJoin,
+} from "./element-group.js"
+import { elementGone } from "./element-order.js"
+import { takes } from "./element-takes.js"
 import { layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 import { format } from "./format.js"
-import { memberOf, placeOf, type PlacedRow } from "./group-place.js"
-import { fittedBox, groupSpace, intoSpace, outOfSpace } from "./group-space.js"
+import { memberOf, memberPlace, placeOf, rowPlace, type Place, type PlacedRow } from "./group-place.js"
+import { shownPlace, slideAligned, storedPlaceIn } from "./group-space.js"
+import type { ElementPatch } from "./row.js"
+import { openingElement } from "./slide-floor.js"
 
 export type Spot = { readonly frame: ElementId | null; readonly before: ElementId | null; readonly box: Box }
 
@@ -13,51 +25,114 @@ function personRows(rows: readonly PlacedRow[]): readonly Command[] {
   return rows.map((row): Command => ({ command: "person", v: format, patch: row.patch, node: row.node }))
 }
 
-function landedTurn(register: Register, commands: readonly Command[]): boolean {
+function landed(register: Register, commands: readonly Command[]): Register | null {
   let current = register
   for (const command of commands) {
     const node = command.command === "person" ? command.node : undefined
     if (node !== undefined && !current.nodes.includes(node)) {
       const opened = decide(current, { command: "add", node, floor: current.floor, route: current.route })
-      if (opened.decision !== "apply") return false
+      if (opened.decision !== "apply") return null
       current = opened.register
     }
     const decision = decide(current, command)
-    if (decision.decision !== "apply") return false
+    if (decision.decision !== "apply") return null
     current = decision.register
   }
-  return true
+  return current
 }
 
-function boxRow(node: ElementId, box: Box): PlacedRow {
-  return { node, patch: { box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } } } }
+function framedIn(register: Register, node: ElementId): boolean {
+  const parent = groupParent(register, node)
+  return typeof parent === "string" && frameBackdrop(register, parent) !== null
 }
 
-function boxIn(register: Register, frame: ElementId | null, box: Box): Box | null {
-  if (frame === null || !plainGroup(register, frame)) return box
-  const space = groupSpace(register, frame)
-  return space === null ? null : intoSpace(box, space)
+function placeOnSlide(register: Register, node: ElementId): Place | null {
+  return shownPlace(register, node) ?? (framedIn(register, node) ? placeOf(register, node) : null)
 }
 
-function spotRows(register: Register, node: ElementId, spot: Spot): readonly PlacedRow[] {
-  const { box } = spot
-  if (spot.frame === null) return [boxRow(node, box)]
-  if (plainGroup(register, spot.frame)) {
-    const inside = boxIn(register, spot.frame, box)
-    return inside === null ? [] : [boxRow(node, inside)]
-  }
-  const view = readLayout(register, spot.frame)
-  if (view === null || view.flow !== "none") return []
-  return [{ node, patch: { box: { x: { set: box.x - view.box.x }, y: { set: box.y - view.box.y } } } }]
+function joinedPlace(register: Register, node: ElementId, spot: Spot): Place | null {
+  const shown = placeOnSlide(register, node)
+  if (shown === null) return null
+  const wanted = { ...shown, box: spot.box }
+  if (spot.frame !== null && !plainGroup(register, spot.frame)) return wanted
+  if (spot.frame !== null && frameBackdrop(register, node) !== null && !slideAligned(register, spot.frame)) return null
+  return storedPlaceIn(register, node, spot.frame, wanted)
 }
 
 export function joinEdit(register: Register, node: ElementId, spot: Spot): ElementJoin | null {
   const slide = readSlideId(shapeOf(node).slide)
-  const place = placeOf(register, node)
-  const box = boxIn(register, spot.frame, spot.box)
-  if (slide === undefined || place === null || box === null) return null
-  const member = memberOf(node, { ...place, box })
-  return { slide: "element-join", id: slide, member, frame: spot.frame, before: spot.before }
+  const place = joinedPlace(register, node, spot)
+  if (slide === undefined || place === null) return null
+  return { slide: "element-join", id: slide, member: memberOf(node, place), frame: spot.frame, before: spot.before }
+}
+
+function placedRows(register: Register, node: ElementId, place: Place): readonly PlacedRow[] | null {
+  const opening = openingElement(register, node)
+  const now = rowPlace(register, node)
+  if (opening === undefined || now === null) return null
+  const taken = takes({ kind: opening.kind, text: opening.value !== null, grouped: true, animated: false })
+  const { x, y, cx, cy } = place.box
+  const box: Record<string, { readonly set: number | boolean }> = {
+    x: { set: x },
+    y: { set: y },
+    w: { set: cx },
+    h: { set: cy },
+  }
+  const turns = { rot: [place.rot, now.rot], flipH: [place.flipH, now.flipH], flipV: [place.flipV, now.flipV] }
+  for (const [field, [wanted, held]] of Object.entries(turns)) {
+    if (wanted === held || wanted === undefined) continue
+    if (!taken.some((key) => key === `box.${field}`)) return null
+    box[field] = { set: wanted }
+  }
+  const patch: ElementPatch = { box }
+  return [{ node, patch }]
+}
+
+function spotRows(register: Register, node: ElementId, spot: Spot, place: Place): readonly PlacedRow[] | null {
+  if (spot.frame === null || plainGroup(register, spot.frame)) return placedRows(register, node, place)
+  const view = readLayout(register, spot.frame)
+  if (view === null || view.flow !== "none") return []
+  return [{ node, patch: { box: { x: { set: spot.box.x - view.box.x }, y: { set: spot.box.y - view.box.y } } } }]
+}
+
+function removedGroups(register: Register, frame: ElementId | null): readonly ElementId[] {
+  const gone: ElementId[] = []
+  for (
+    let group: ElementId | null | undefined = frame;
+    typeof group === "string";
+    group = groupParent(register, group)
+  ) {
+    if (!elementGone(register, group) || groupDissolved(register, group)) break
+    gone.push(group)
+  }
+  return gone.toReversed()
+}
+
+function emptiedGroups(register: Register, left: ElementId | null | undefined): readonly ElementId[] {
+  const emptied: ElementId[] = []
+  for (
+    let group = left;
+    typeof group === "string" && plainGroup(register, group);
+    group = groupParent(register, group)
+  ) {
+    const holds = groupChildren(register, group).some(
+      (child) => !elementGone(register, child) && !emptied.includes(child),
+    )
+    if (holds) break
+    emptied.push(group)
+  }
+  return emptied
+}
+
+function slideCommands(
+  file: readonly SlideId[],
+  slide: "element-remove" | "element-restore",
+  groups: readonly ElementId[],
+): readonly Command[] {
+  return groups.flatMap((node): Command[] => {
+    const id = readSlideId(shapeOf(node).slide)
+    return id === undefined ? [] : [{ command: "slide", file, edit: { slide, id, node } }]
+  })
 }
 
 export function joinTurn(
@@ -66,31 +141,23 @@ export function joinTurn(
   node: ElementId,
   spot: Spot,
 ): readonly Command[] | null {
-  const edit = joinEdit(register, node, spot)
-  if (edit === null) return null
-  const joined = decide(register, { command: "slide", file, edit })
+  const restores = slideCommands(file, "element-restore", removedGroups(register, spot.frame))
+  const opened = landed(register, restores)
+  const edit = opened === null ? null : joinEdit(opened, node, spot)
+  if (opened === null || edit === null) return null
+  const joined = decide(opened, { command: "slide", file, edit })
   if (joined.decision !== "apply") return null
-  const fitted = fittedRows(register, joined.register, [groupParent(register, node), spot.frame])
+  const left = groupParent(opened, node)
+  const emptied = emptiedGroups(joined.register, left)
+  const placed = spotRows(opened, node, spot, memberPlace(edit.member))
+  if (placed === null) return null
   const commands = [
+    ...restores,
     { command: "slide" as const, file, edit },
-    ...personRows([...spotRows(register, node, spot), ...fitted]),
+    ...personRows(placed),
+    ...slideCommands(file, "element-remove", emptied),
   ]
-  return landedTurn(register, commands) ? commands : null
-}
-
-function fittedRows(
-  register: Register,
-  joined: Register,
-  groups: readonly (ElementId | null | undefined)[],
-): readonly PlacedRow[] {
-  return [...new Set(groups)].flatMap((group): PlacedRow[] => {
-    if (typeof group !== "string" || !plainGroup(joined, group)) return []
-    const place = placeOf(register, group)
-    const frame = groupFrame(register, group)
-    const fitted = groupFrame(joined, group)
-    if (place === null || frame === null || fitted === null) return []
-    return [boxRow(group, fittedBox(place.box, frame, fitted))]
-  })
+  return landed(register, commands) === null ? null : commands
 }
 
 function centre(box: Box): { readonly x: number; readonly y: number } {
@@ -110,15 +177,14 @@ function nextInFlow(view: LayoutView, node: ElementId, box: Box): ElementId | nu
 export function spotNow(register: Register, node: ElementId): Spot | null {
   const parent = groupParent(register, node)
   if (typeof parent === "string" && plainGroup(register, parent)) {
-    const space = groupSpace(register, parent)
-    const place = placeOf(register, node)
-    if (space === null || place === null) return null
+    const shown = shownPlace(register, node)
+    if (shown === null) return null
     const flow = groupFlow(register, parent)
-    return { frame: parent, before: flow[flow.indexOf(node) + 1] ?? null, box: outOfSpace(place.box, space) }
+    return { frame: parent, before: flow[flow.indexOf(node) + 1] ?? null, box: shown.box }
   }
   const laid = parent === null || parent === undefined ? undefined : readLayout(register, parent)
   if (laid === null || laid === undefined) {
-    const place = placeOf(register, node)
+    const place = shownPlace(register, node)
     return parent === null && place !== null ? { frame: null, before: null, box: place.box } : null
   }
   const at = laid.children.findIndex((child) => child.node === node)

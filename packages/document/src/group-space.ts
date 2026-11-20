@@ -7,7 +7,9 @@ import {
   groupChildren,
   groupFrame,
   groupParent,
+  groupRejoined,
   madeGroup,
+  rejoinedGroups,
   type Member,
 } from "./element-group.js"
 import { elementGone } from "./element-order.js"
@@ -24,54 +26,8 @@ import {
 } from "./group-place.js"
 import { openingElement } from "./slide-floor.js"
 
-export type GroupSpace = { readonly sx: number; readonly sy: number; readonly dx: number; readonly dy: number }
-
-const slideSpace: GroupSpace = { sx: 1, sy: 1, dx: 0, dy: 0 }
-
-export function groupSpace(register: Register, node: ElementId | null): GroupSpace | null {
-  if (node === null) return slideSpace
-  const above = groupParent(register, node)
-  const outer = above === undefined ? null : groupSpace(register, above)
-  if (outer === null || frameBackdrop(register, node) !== null) return outer
-  if (above !== null) return null
-  const place = placeOf(register, node)
-  const frame = groupFrame(register, node)
-  if (place === null || frame === null || place.rot !== 0 || place.flipH || place.flipV) return null
-  if (frame.cx === 0 || frame.cy === 0) return null
-  const sx = place.box.cx / frame.cx
-  const sy = place.box.cy / frame.cy
-  return {
-    sx: outer.sx * sx,
-    sy: outer.sy * sy,
-    dx: outer.sx * (place.box.x - frame.x * sx) + outer.dx,
-    dy: outer.sy * (place.box.y - frame.y * sy) + outer.dy,
-  }
-}
-
-export function intoSpace(box: Box, space: GroupSpace): Box {
-  return {
-    x: Math.round((box.x - space.dx) / space.sx),
-    y: Math.round((box.y - space.dy) / space.sy),
-    cx: Math.round(box.cx / space.sx),
-    cy: Math.round(box.cy / space.sy),
-  }
-}
-
-export function outOfSpace(box: Box, space: GroupSpace): Box {
-  return {
-    x: Math.round(box.x * space.sx + space.dx),
-    y: Math.round(box.y * space.sy + space.dy),
-    cx: Math.round(box.cx * space.sx),
-    cy: Math.round(box.cy * space.sy),
-  }
-}
-
 export function fittedPlace(place: Place, frame: Box, fitted: Box): Place {
   return throughGroup({ box: fitted, rot: 0, flipH: false, flipV: false }, place, frame)
-}
-
-export function fittedBox(place: Box, frame: Box, fitted: Box): Box {
-  return fittedPlace({ box: place, rot: 0, flipH: false, flipV: false }, frame, fitted).box
 }
 
 export type Rebased = { readonly place: Place; readonly frame: Box }
@@ -159,8 +115,10 @@ export function rebased(register: Register, group: ElementId): Rebased | null {
 function rebasedNow(register: Register, group: ElementId): Rebased | null {
   const space = spaceOf(register, group)
   if (space === null || elementGone(register, group)) return null
-  const children = groupChildren(register, group).filter((child) => !elementGone(register, child))
-  if (!children.some((child) => boxMoved(register, child) || rebased(register, child) !== null)) return null
+  const all = groupChildren(register, group)
+  const children = all.filter((child) => !elementGone(register, child))
+  const changed = children.length < all.length || groupRejoined(register, group)
+  if (!changed && !children.some((child) => boxMoved(register, child) || rebased(register, child) !== null)) return null
   const members = children.flatMap((child) => {
     const place = rebased(register, child)?.place ?? placeOf(register, child)
     return place === null ? [] : [memberOf(child, place)]
@@ -214,8 +172,35 @@ function unrebased(shown: Place, own: Rebased, space: Space): Place {
   }
 }
 
+function spacesFrom(register: Register, parent: ElementId | null | undefined): readonly Space[] | null {
+  if (parent === undefined) return null
+  if (parent === null) return []
+  const own = spaceOf(register, parent)
+  const above = chainOf(register, parent)
+  return own === null || above === null ? null : [own, ...above]
+}
+
+export function slideAligned(register: Register, group: ElementId): boolean {
+  const spaces = spacesFrom(register, group)
+  const same = (left: Box, right: Box) =>
+    (["x", "y", "cx", "cy"] as const).every((side) => Math.abs(left[side] - right[side]) <= 1)
+  return (
+    spaces !== null &&
+    spaces.every(({ place, frame }) => place.rot === 0 && !place.flipH && !place.flipV && same(place.box, frame))
+  )
+}
+
 export function storedPlace(register: Register, node: ElementId, shown: Place): Place | null {
-  const chain = chainOf(register, node)
+  return storedPlaceIn(register, node, groupParent(register, node), shown)
+}
+
+export function storedPlaceIn(
+  register: Register,
+  node: ElementId,
+  parent: ElementId | null | undefined,
+  shown: Place,
+): Place | null {
+  const chain = spacesFrom(register, parent)
   if (chain === null) return null
   let place = shown
   for (const space of chain.toReversed()) place = intoGroup(place, space.place, space.frame)
@@ -253,8 +238,9 @@ export type RebasedGroup = Rebased & { readonly node: ElementId }
 export function rebasedGroups(register: Register): readonly RebasedGroup[] {
   const seen = new Set<ElementId>()
   const found: RebasedGroup[] = []
-  for (const node of register.nodes) {
-    for (let parent = groupParent(register, node); typeof parent === "string"; parent = groupParent(register, parent)) {
+  const starts = [...register.nodes.map((node) => groupParent(register, node)), ...rejoinedGroups(register)]
+  for (const start of starts) {
+    for (let parent = start; typeof parent === "string"; parent = groupParent(register, parent)) {
       if (seen.has(parent)) break
       seen.add(parent)
       const own = rebased(register, parent)

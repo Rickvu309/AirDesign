@@ -9,7 +9,7 @@ In design mode the left sidebar shows Layers under the slide list: the current s
 - `layers-locked` the row's padlock and Ctrl+Shift+L lock or unlock the selection as the `identity.locked` field, exported as PowerPoint's shape locks. A locked layer takes no pointer on the slide, so a click passes through it; it stays selectable in the panel.
 - `layer-shortcuts` Ctrl+Alt+G (Cmd+Option+G) wraps the selection in a plain frame (`layout.flow = "none"`, no reflow) and adds Frame selection to the right-click menu; Cmd/Ctrl+R opens Design mode and focuses the selected layer's inline rename input without reloading the page (leaving reload alone when nothing is selected); `]` and `[` (and Mac Cmd+Option+]/[, Windows Ctrl+Shift+]/[) send to front/back and Cmd/Ctrl+]/[ move forward/backward on both the slide and focused layer rows.
 - A frame's backdrop is not listed: it paints the frame's own fill.
-- A drag onto a layer with another parent shows no drop line and changes nothing.
+- A drag into or out of a group or frame (`tests/browser/layers-drag.spec.ts`, `layers-drag-nested.spec.ts`) is the agent's `join` or `leave`. It keeps the layer where it shows through scaled, turned, flipped and nested groups, and every group above fits its layers. A group whose last layer leaves deletes itself, and Undo brings both back. A frame joins a group whose space is the slide's; a group that scales, turns or flips its layers shows no drop line for a frame. Look states `layers-drop-inside`, `layers-drop-turned`, `layers-group-emptied`.
 
 ## How to get to it (user POV)
 
@@ -36,4 +36,4 @@ Preconditions:
 
 - `blank.pptx` holds a title and a subtitle placeholder, so the panel lists four layers; the journey reads the first two rows.
 - The thumbnail marks its layers with `data-thumb-element`, not `data-canvas-element`.
-- Reorder by drag stays among siblings. Moving a layer into or out of a group or frame is not built.
+- `nested-groups.pptx` holds Scaled (2× its child space) with Turned (30°, flipped) inside it; open both carets before dragging into Turned.

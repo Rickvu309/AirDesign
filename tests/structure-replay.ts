@@ -49,6 +49,8 @@ const frameActions = [
   "Leave",
   "LeaveGroup",
   "UndoLeave",
+  "EmptyGroup",
+  "UndoEmpty",
 ]
 type Told = (source: Spec, target: Spec, action: string) => string
 
@@ -72,6 +74,8 @@ const treeActions = [
   "Leave",
   "LeaveGroup",
   "UndoLeave",
+  "EmptyGroup",
+  "UndoEmpty",
 ]
 
 function same(left: unknown, right: unknown): boolean {
@@ -293,7 +297,15 @@ function framed(register: Register, action: string, removal: Undoable | undefine
     const next = ran(register, changed.turn)
     return next === null ? null : { register: next, removal: { joined: child, slide, file, before, after } }
   }
-  if (action === "UndoLeave") {
+  if (action === "EmptyGroup") {
+    const before = spotNow(register, sibling)
+    const changed = changeLayout(register, { move: sibling, frame: null, file })
+    if (before === null || changed === null || !("turn" in changed)) return null
+    const after = { frame: null, before: null, box: before.box }
+    const next = ran(register, changed.turn)
+    return next === null ? null : { register: next, removal: { joined: sibling, slide, file, before, after } }
+  }
+  if (action === "UndoLeave" || action === "UndoEmpty") {
     const undone = removal === undefined ? null : undoOf(register, removal)
     const next = undone === null || !undone.ok ? null : ran(register, undone.commands)
     return next === null ? null : { register: next }
@@ -356,10 +368,22 @@ function slideX(register: Register): number | null {
   return frame === null || outer === null ? null : throughGroup(own, outer, frame).box.x
 }
 
+function removed(register: Register): boolean {
+  return register.order.reduce(
+    (gone, command) =>
+      "node" in command && command.node === group
+        ? command.slide === "element-remove" || (command.slide !== "element-restore" && gone)
+        : gone,
+    false,
+  )
+}
+
 function picture(register: Register) {
   return {
     formed: groupFormed(register, group),
+    emptied: removed(register),
     grouped: groupedNow(register, child),
+    held: groupedNow(register, sibling),
     x: slideX(register),
     backdrop: madeGroup(register, group)?.backdrop !== undefined && !elementGone(register, backdrop),
     auto: readLayout(register, group)?.flow === "horizontal",
@@ -405,7 +429,9 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
       const after = next === "refused" ? register : next
       const expected = {
         formed: text(target, "grouped") === "formed",
+        emptied: text(target, "grouped") === "emptied",
         grouped: text(target, "grouped") === "formed" && flag(target, "member"),
+        held: text(target, "grouped") === "formed",
         x: step + step * shownOf(target),
         backdrop: flag(target, "backdrop"),
         auto: text(target, "grouped") === "formed" && flag(target, "framed") && flag(target, "auto"),
@@ -420,7 +446,7 @@ function replayTree(graph: Graph, told: Told, failures: string[]): number {
       if (!registers.has(edge.to)) {
         registers.set(edge.to, after)
         const removal = stepped?.removal ?? removals.get(edge.from)
-        const spent = edge.action === "UndoRemoveAutoLayout" || edge.action === "UndoLeave"
+        const spent = ["UndoRemoveAutoLayout", "UndoLeave", "UndoEmpty"].includes(edge.action)
         if (removal !== undefined && !spent) removals.set(edge.to, removal)
         waiting.push(edge.to)
       }

@@ -90,6 +90,18 @@ describe("undo list", () => {
     expect(deck.sent).toEqual(["text Old", "text New"])
   })
 
+  it("reads a layer's drag into or out of a group on the deck's index, as it does a group's", async () => {
+    const deck = deckLink(edited())
+    const spot = { frame: null, before: null, box: { x: 0, y: 0, cx: 10, cy: 10 } }
+    const undoable: Undoable = { joined: node, slide: slideId("256"), file, before: spot, after: spot }
+    const read: Register[] = []
+    await turnBack(deck.link, "deck", recorded(emptyUndo, { name: "layer-order", undoable }), "undo", (register) => {
+      read.push(register)
+      return register
+    })
+    expect(read).toHaveLength(1)
+  })
+
   it("drops an edit someone changed after and sends nothing", async () => {
     const deck = deckLink(edited())
     deck.write({ command: "person", value: "Aira", node })

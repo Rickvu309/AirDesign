@@ -69,7 +69,7 @@ TypeOK ==
   /\ phase \in {"idle", "running", "stopped", "undone"}
   /\ runId \in {"s", "t"}
   /\ readId \in {"s", "t"}
-  /\ grouped \in {"none", "formed", "dissolved"}
+  /\ grouped \in {"none", "formed", "dissolved", "emptied"}
   /\ maker \in {"none", "person", "agent"}
   /\ offset \in {0, 1}
   /\ inside \in 0..2
@@ -77,7 +77,7 @@ TypeOK ==
   /\ seen \in 0..3
   /\ childMoved \in {0, 1}
   /\ touched \in BOOLEAN
-  /\ groupKind \in {"none", "group", "move", "ungroup", "regroup", "runUndo", "refused", "frame", "member"}
+  /\ groupKind \in {"none", "group", "move", "ungroup", "regroup", "runUndo", "refused", "frame", "member", "empty"}
   /\ framed \in BOOLEAN
   /\ auto \in BOOLEAN
   /\ pad \in {0, 1}
@@ -244,7 +244,7 @@ UndoMoveGroup ==
 
 MoveChild ==
   /\ Quiet
-  /\ grouped # "formed"
+  /\ grouped \in {"none", "dissolved"}
   /\ childMoved = 0
   /\ own < 3
   /\ own' = own + 1
@@ -257,7 +257,7 @@ MoveChild ==
 
 UndoMoveChild ==
   /\ Quiet
-  /\ grouped # "formed"
+  /\ grouped \in {"none", "dissolved"}
   /\ childMoved = 1
   /\ own' = own - 1
   /\ seen' = seen - 1
@@ -395,6 +395,23 @@ LeaveGroup ==
   /\ UNCHANGED <<grouped, maker, offset, inside, seen, childMoved, touched, framed, auto, pad, backdrop>>
   /\ UNCHANGED old
 
+EmptyGroup ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ ~framed /\ ~member /\ groupKind = "member"
+  /\ grouped' = "emptied"
+  /\ groupKind' = "empty"
+  /\ UNCHANGED <<maker, offset, inside, own, seen, childMoved, touched, framed, auto, pad, backdrop, member>>
+  /\ UNCHANGED old
+
+UndoEmpty ==
+  /\ Quiet
+  /\ grouped = "emptied"
+  /\ grouped' = "formed"
+  /\ groupKind' = "member"
+  /\ UNCHANGED <<maker, offset, inside, own, seen, childMoved, touched, framed, auto, pad, backdrop, member>>
+  /\ UNCHANGED old
+
 UndoLeave ==
   /\ Quiet
   /\ grouped = "formed"
@@ -458,6 +475,8 @@ Next ==
   \/ Leave
   \/ LeaveGroup
   \/ UndoLeave
+  \/ EmptyGroup
+  \/ UndoEmpty
   \/ Unwrap
 
 Spec == Init /\ [][Next]_vars
@@ -490,6 +509,8 @@ ChildrenKeepPlace == Shown = seen
 RunUndoTurnsBackGroup == groupKind = "runUndo" => grouped = "dissolved" /\ maker = "none"
 
 LeftChildStaysOut == ~member => grouped # "none"
+
+EmptiedGroupHoldsNoLayer == grouped = "emptied" => ~member /\ ~framed /\ ~backdrop
 
 BackdropOnlyInFrame == backdrop <=> (grouped = "formed" /\ framed)
 

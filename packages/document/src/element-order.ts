@@ -9,7 +9,7 @@ import type { SlideState } from "./slide-order.js"
 import { hasSlideNumber, openingSlideNumber } from "./text-value.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
-import { frameBackdrop, groupedNow, groupParent } from "./element-group.js"
+import { frameBackdrop, groupedNow, groupEmptied, groupParent } from "./element-group.js"
 import type { Kind } from "./kinds.js"
 
 export const geometries = presets
@@ -207,6 +207,7 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
+  if (groupEmptied(state, node)) return animated ? "locked" : null
   const parent = groupParent(state, node)
   const backdrop = parent === null || parent === undefined ? null : frameBackdrop(state, parent)
   const grouped = groupedNow(state, node) && (backdrop === null || backdrop === node)

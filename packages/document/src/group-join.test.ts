@@ -7,6 +7,8 @@ import {
   groupFrame,
   openRegister,
   placeOf,
+  rebased,
+  shownPlace,
   slideId,
   throughGroup,
   undoOf,
@@ -100,8 +102,8 @@ describe("a layer joins and leaves a plain group", () => {
     const after = ran(indexed, turn)
     expect(groupedNow(after, a)).toBe(true)
     expect(placeOf(after, a)?.box).toEqual({ x: -450, y: -450, cx: 100, cy: 50 })
-    expect(groupFrame(after, g)).toEqual({ x: -450, y: -450, cx: 650, cy: 550 })
-    expect(placeOf(after, g)?.box).toEqual({ x: 100, y: 100, cx: 1300, cy: 1100 })
+    expect(rebased(after, g)?.frame).toEqual({ x: -450, y: -450, cx: 650, cy: 550 })
+    expect(shownPlace(after, g)?.box).toEqual({ x: 100, y: 100, cx: 1300, cy: 1100 })
     expect(onSlide(after, a)?.box).toEqual({ x: 100, y: 100, cx: 200, cy: 100 })
     expect(onSlide(after, first)?.box).toEqual({ x: 1000, y: 1000, cx: 200, cy: 200 })
   })
@@ -123,16 +125,12 @@ describe("a layer joins and leaves a plain group", () => {
     const after = ran(indexed, turn)
     expect(groupedNow(after, first)).toBe(false)
     expect(placeOf(after, first)?.box).toEqual({ x: 1000, y: 1000, cx: 200, cy: 200 })
-    expect(groupFrame(after, g)).toEqual({ x: 100, y: 0, cx: 100, cy: 100 })
-    expect(placeOf(after, g)?.box).toEqual({ x: 1200, y: 1000, cx: 200, cy: 200 })
+    expect(rebased(after, g)?.frame).toEqual({ x: 100, y: 0, cx: 100, cy: 100 })
+    expect(shownPlace(after, g)?.box).toEqual({ x: 1200, y: 1000, cx: 200, cy: 200 })
     expect(onSlide(after, second)?.box).toEqual({ x: 1200, y: 1000, cx: 200, cy: 200 })
   })
 
-  it("refuses to take the last layer out of a group, to join a turned group, and to join a group into itself", () => {
-    const turn = joined(indexed, first, null)
-    if (turn === null) throw new Error("leave")
-    expect(joined(ran(indexed, turn), second, null)).toBeNull()
-    expect(joined(indexed, a, turned)).toBeNull()
+  it("refuses to join a group into itself", () => {
     expect(joined(indexed, g, g)).toBeNull()
   })
 
