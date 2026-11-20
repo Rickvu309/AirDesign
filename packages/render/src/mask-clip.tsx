@@ -1,7 +1,7 @@
 import type { ElementId } from "@airdesign/document"
-import { useId, type ReactNode } from "react"
+import { useId, useMemo, type ReactNode } from "react"
 import { memberAt } from "./box-gesture.js"
-import { restingBox, shownBox, useBox, useRotation } from "./element-view.js"
+import { restingBox, shownBox, useBox, useBoxes, useRotation } from "./element-view.js"
 import type { PaintBox } from "./paint-box.js"
 import type { CanvasElement } from "./record.js"
 import { shapePaths } from "./shape-art.js"
@@ -79,7 +79,9 @@ function LiveClip(props: ClipProps & { readonly node: ElementId }) {
   const own = useBox(store, node, read)
   const rotation = useRotation(store, node)
   const carried = useBox(store, element.group?.id ?? node, read)
-  return <PlacedClip {...props} box={memberAt(element, own, rotation, carried)} />
+  const holders = useMemo(() => element.nestedIn?.map((holder) => holder.id) ?? [], [element.nestedIn])
+  const nested = useBoxes(store, holders, read)
+  return <PlacedClip {...props} box={memberAt(element, own, rotation, carried, nested)} />
 }
 
 function PlacedClip(props: ClipProps & { readonly box: PaintBox | null }) {

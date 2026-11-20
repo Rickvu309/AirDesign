@@ -8,7 +8,6 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
-  type RefObject,
 } from "react"
 import { handleArrangeKey, type Grouping } from "./arrange-keys.js"
 import { boxOf, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gesture.js"
@@ -36,7 +35,7 @@ import {
   unitOf,
   type Selection,
 } from "./selection.js"
-import { guideBoard, type GuideBoard } from "./guide-layer.js"
+import { guideBoard } from "./guide-layer.js"
 import { rotationGrips } from "./rotation-grips.js"
 import type { BoxGrip, PaintStore } from "./store.js"
 import {
@@ -49,11 +48,11 @@ import {
   type TransformActions,
   type TransformModifiers,
 } from "./transform-drag.js"
-import { hudChannel, type HudChannel } from "./transform-hud.js"
+import { hudChannel } from "./transform-hud.js"
 import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 import { useLayerCopies, type Duplicate } from "./use-layer-copies.js"
-import type { Copied, CopyBoard } from "./layer-copies.js"
+import type { Moves } from "./moves.js"
 
 export type { Grouping } from "./arrange-keys.js"
 
@@ -67,30 +66,6 @@ export type Picking = {
 }
 
 type ActiveHold = PointerDrag | Nudge
-
-export type Moves = {
-  readonly selection: Selection
-  readonly guides: GuideBoard
-  readonly latest: RefObject<Selection>
-  readonly choose: (next: Selection) => void
-  readonly isDragging: () => boolean
-  readonly hud: HudChannel
-  readonly copies: CopyBoard
-  readonly paste: (made: Promise<readonly Copied[]>, from: HTMLElement | null) => void
-  readonly message: string
-  readonly say: (message: string) => void
-  readonly select: (id: ElementId) => void
-  readonly press: (event: PointerEvent<HTMLElement>, element: CanvasElement, grip: TransformGrip) => void
-  readonly doubleClick: (event: MouseEvent<HTMLElement>, element: CanvasElement) => void
-  readonly key: (event: KeyboardEvent<HTMLElement>, element: CanvasElement) => void
-  readonly slide: {
-    readonly onPointerDown: (event: PointerEvent<HTMLDivElement>) => void
-    readonly onFocus: (event: FocusEvent<HTMLDivElement>) => void
-    readonly onBlur: (event: FocusEvent<HTMLDivElement>) => void
-    readonly onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
-    readonly onKeyUp: (event: KeyboardEvent<HTMLDivElement>) => void
-  }
-}
 
 const slidePaint = "[data-slide-paint]"
 const keepsSelection = "[data-keeps-selection]"
@@ -349,7 +324,7 @@ export function useMoves(
     if (id === null || event.button !== 0 || held.current !== null) return
     const mod = event.metaKey || event.ctrlKey
     if (grip === "move" && element.backdrop === true) {
-      const owner = elementOf(element.group?.id)
+      const owner = elementOf(unitOf(size, latest.current, id))
       if (owner === undefined) return
       if (mod && !event.shiftKey && picking?.onBackdropMarquee !== undefined) {
         picking.onBackdropMarquee(event, owner)

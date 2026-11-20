@@ -52,6 +52,39 @@ export function groupsOf(rows: readonly PaintElement[], source: CanvasSource): R
   return tops
 }
 
+export function holdersOf(
+  rows: readonly PaintElement[],
+  source: CanvasSource,
+): ReadonlyMap<string, readonly GroupOf[]> {
+  const above = new Map<string, string | null>()
+  const boxes = new Map<string, PaintElement["box"]>()
+  for (const row of rows) {
+    if (row.from !== "slide") continue
+    above.set(row.shape, row.group)
+    if (row.kind === "p:grpSp") boxes.set(row.shape, row.box)
+  }
+  const nested = new Map<string, readonly GroupOf[]>()
+  for (const row of rows) {
+    if (row.from !== "slide" || row.group === null) continue
+    const holders: GroupOf[] = []
+    const seen = new Set<string>()
+    for (let at = row.group; !seen.has(at);) {
+      seen.add(at)
+      const next = above.get(at) ?? null
+      const owner = source.shapes.get(at)
+      if (next === null || owner === undefined) break
+      holders.push({
+        id: owner.id,
+        box: boxes.get(at) ?? null,
+        ...(owner.frame === undefined ? {} : { frame: owner.frame }),
+      })
+      at = next
+    }
+    if (holders.length > 0) nested.set(row.shape, holders)
+  }
+  return nested
+}
+
 export function withHeld(
   painted: readonly (readonly [CanvasElement, PaintElement])[],
   rows: readonly PaintElement[],

@@ -8,5 +8,6 @@ export function liveBox(store: PaintStore, element: CanvasElement, read: BoxRead
   if (element.id === null) return element.box
   const group = element.group
   const carried = group === undefined ? null : read(store, group.id)
-  return memberAt(element, read(store, element.id), store.getRotation(element.id), carried)
+  const nested = (element.nestedIn ?? []).map((holder) => read(store, holder.id))
+  return memberAt(element, read(store, element.id), store.getRotation(element.id), carried, nested)
 }

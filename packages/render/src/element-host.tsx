@@ -12,7 +12,7 @@ import {
 import { keptCorners, type ElementId } from "@airdesign/document"
 import { boxOf, memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
-import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
+import { restingBox, shownBox, useBox, useBoxes, useElement, useRotation, type BoxRead } from "./element-view.js"
 import { textValue } from "./paragraph-edit.js"
 import { isBlank, nameOf } from "./text-lines.js"
 import { framedOutline, Passage, type TextEditKind } from "./passage.js"
@@ -22,7 +22,7 @@ import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
 import { ChartArt } from "./chart-art.js"
 import { canDrag, canMove } from "./layer-movable.js"
-import type { Moves } from "./slide-moves.js"
+import type { Moves } from "./moves.js"
 import type { PaintStore } from "./store.js"
 import { useShrinkKept } from "./shrink-kept.js"
 import { anchored, flowModes } from "./text-body-look.js"
@@ -159,6 +159,12 @@ export function elementFrame(
   }
 }
 
+const noHolders: readonly ElementId[] = []
+
+function holdersOf(element: CanvasElement): readonly ElementId[] {
+  return element.nestedIn?.map((holder) => holder.id) ?? noHolders
+}
+
 function usePlaced(
   store: PaintStore,
   element: CanvasElement,
@@ -168,8 +174,9 @@ function usePlaced(
 ): CanvasElement {
   const group = element.group
   const carried = useBox(store, group?.id ?? id, read)
+  const nested = useBoxes(store, holdersOf(element), read)
   const own = useBox(store, id, read)
-  const box = memberAt(element, own, useRotation(store, id), carried)
+  const box = memberAt(element, own, useRotation(store, id), carried, nested)
   const placed = box === element.box ? element : own === null ? { ...element, box } : roundedAt(element, box)
   return useFollowed(store, placed, targets, read)
 }

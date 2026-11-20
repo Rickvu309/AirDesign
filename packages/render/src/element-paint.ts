@@ -35,6 +35,8 @@ export type ElementPaint = {
   readonly key: string
   readonly id: ElementId | null
   readonly group?: GroupOf
+  readonly parent?: ElementId
+  readonly nestedIn?: readonly GroupOf[]
   readonly backdrop?: true
   readonly frame?: Framing
   readonly inFrame?: Framing
