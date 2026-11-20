@@ -14,7 +14,6 @@ import {
   type ElementId,
   type ScopedElement,
   type SetChange,
-  type TextValue,
   type TraitName,
   type TraitReads,
 } from "@airdesign/document"
@@ -29,6 +28,8 @@ import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { boxSides } from "./box-held"
 import { cropChange } from "./crop-change"
+import { lineHeightChange } from "./line-height-change"
+import { textShown } from "./text-shown"
 import { fillsList } from "./fills-list"
 import { fillsHeld, overlayChange, overlayHeld, ownHeld, shownFills, type Held } from "./fills-held"
 import { appearanceSections } from "./appearance-presets"
@@ -143,8 +144,6 @@ type Labels = {
   readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
 }
 
-const paragraphKeys = ["align", "list", "lineHeight", "spaceBefore", "spaceAfter"] as const
-
 function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined): Held {
   if (read !== undefined)
     return { value: read.value ?? undefined, mixed: false, inherited: !read.own && read.value !== null }
@@ -157,32 +156,6 @@ function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined
   if (key === "letterSpacing") return ownHeld(0)
   const off = key === "bold" || key === "italic" || key === "underline" || key === "strike"
   return ownHeld(off ? false : undefined)
-}
-
-function agreed(values: readonly unknown[], fallback: Held): Held {
-  const [first, ...rest] = values.map((value) => value ?? fallback.value)
-  const mixed = rest.some((each) => JSON.stringify(each) !== JSON.stringify(first))
-  const inherited = fallback.inherited && values.every((value) => value === undefined)
-  return { value: mixed ? undefined : first, mixed, inherited: inherited && !mixed }
-}
-
-function textShown(text: TextValue, key: string, fallback: Held): Held {
-  if ((paragraphKeys as readonly string[]).includes(key)) {
-    return agreed(
-      text.map((paragraph) => (paragraph as Readonly<Record<string, unknown>>)[key]),
-      fallback,
-    )
-  }
-  const runs = text.flatMap((paragraph) => paragraph.runs).filter((run) => run.text !== "")
-  if (runs.length === 0) return fallback
-  return agreed(
-    runs.map((run) =>
-      key === "fill"
-        ? (run.fill ?? (run.color === undefined ? undefined : { solid: run.color }))
-        : (run as Readonly<Record<string, unknown>>)[key],
-    ),
-    fallback,
-  )
 }
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
@@ -285,13 +258,15 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const change =
         trait === "fills" && field === "overlay"
           ? overlayChange(view, shown)
-          : key === "fills.crop" && taken.includes("box.w")
-            ? cropChange(view, held.value)
-            : (value: unknown) =>
-                ({
-                  target: { node: view.node },
-                  [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
-                }) as SetChange
+          : trait === "text" && field === "lineHeight"
+            ? lineHeightChange(view)
+            : key === "fills.crop" && taken.includes("box.w")
+              ? cropChange(view, held.value)
+              : (value: unknown) =>
+                  ({
+                    target: { node: view.node },
+                    [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
+                  }) as SetChange
       const desc = directions(
         trait,
         field,

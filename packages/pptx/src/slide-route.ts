@@ -1,9 +1,11 @@
 import { owns, shapeById } from "./shape-tree.js"
-import type { SlideNumbers, TextValue } from "@airdesign/document"
+import type { ListIndent, SlideNumbers, TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { attachedConnections, shapeAnimated } from "./shape-id.js"
+import { PaintPartError, paintReader } from "./paint-reader.js"
+import type { TemplateIndent } from "./paragraph-format.js"
 import { addTextShape } from "./shape-write.js"
 import {
   markupChildren,
@@ -172,14 +174,48 @@ export function removeShape(bytes: Uint8Array, id: string): Uint8Array {
   )
 }
 
-function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name: "add" }>): Uint8Array {
+function paintedIndents(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  shape: string,
+): readonly (ListIndent | null)[] | undefined {
+  try {
+    const found = paintReader(parts)
+      .slide(part)
+      .elements.find((element) => element.from === "slide" && element.shape === shape)
+    return found?.text?.templateIndents
+  } catch (error) {
+    if (error instanceof PaintPartError) return undefined
+    throw error
+  }
+}
+
+function templateOf(parts: ReadonlyMap<string, Uint8Array>, part: string, shape: string): TemplateIndent {
+  let painted: { readonly indents: readonly (ListIndent | null)[] | undefined } | null = null
+  return (level) => {
+    painted ??= { indents: paintedIndents(parts, part, shape) }
+    return painted.indents?.[level] ?? null
+  }
+}
+
+function editPart(
+  bytes: Uint8Array,
+  route: Exclude<SlideRoute, { readonly name: "add" }>,
+  parts: ReadonlyMap<string, Uint8Array>,
+): Uint8Array {
   switch (route.name) {
     case "text": {
       const target = textTarget(bytes, route.shape)
       return spliceBytes(
         bytes,
-        textValueEdits(target.children, bytes, target.shape, route.value, route.numbers, (paragraph, run) =>
-          fieldId(route.part, route.shape, paragraph, run),
+        textValueEdits(
+          target.children,
+          bytes,
+          target.shape,
+          route.value,
+          route.numbers,
+          (paragraph, run) => fieldId(route.part, route.shape, paragraph, run),
+          templateOf(parts, route.part, route.shape),
         ),
       )
     }
@@ -235,7 +271,7 @@ export function writeRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideR
     next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)
     return { parts: next, id: String(written.id) }
   }
-  const nextBytes = editPart(current, route)
+  const nextBytes = editPart(current, route, parts)
   const next = new Map(parts)
   next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)
   return { parts: next, id: null }

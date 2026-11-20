@@ -28,7 +28,7 @@ import { resolveControl } from "@/design/panel-arrangement"
 import { fillIcons } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
-import { panelOf, panelOfMany, type PanelModel, type PanelControl, type PanelSection } from "@/design/panel"
+import { panelOf, panelOfMany, type PanelModel, type PanelControl } from "@/design/panel"
 import { panelPlaces, type PanelMode } from "@/design/panel-order"
 import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
 import { rebasedChange } from "@/design/rebase"
@@ -54,6 +54,7 @@ import { LiveSelectionColors } from "./live-selection-colors"
 import { liveSlideNumber } from "./live-slide-number"
 import { LiveBoxFields } from "./live-box-fields"
 import { servedFaces, useServedFaces } from "@/design/served-faces"
+import { controlsOf, perDesignChanges } from "@/editor/per-design-change"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -138,10 +139,6 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
       : {}),
   })
   return { view, model }
-}
-
-function controlsOf(sections: readonly PanelSection[] | undefined): readonly PanelControl[] {
-  return (sections ?? []).flatMap((section) => section.strips.flat())
 }
 
 export function selectedDesign(deck: DesigningDeck): { model: PanelModel; controls: readonly PanelControl[] } | null {
@@ -328,15 +325,10 @@ function LiveManyDesign({
           changeDesign(deck, () => {
             const latest = manyDesign(deck, nodes, mode)
             if (latest === null) return []
-            if (control.trait === "corners") {
-              const corners = latest.designs.map(({ model }) =>
-                controlsOf(model.sections).find(({ trait }) => trait === "corners"),
-              )
-              return corners.every((corner) => corner !== undefined)
-                ? corners.map((corner) => corner.change(value))
-                : []
-            }
-            return rebasedChange(controlsOf(latest.model.sections), control, value)
+            return (
+              perDesignChanges(latest.designs, control, value) ??
+              rebasedChange(controlsOf(latest.model.sections), control, value)
+            )
           })
         }
       />

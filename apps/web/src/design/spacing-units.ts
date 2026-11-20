@@ -11,6 +11,6 @@ export function spacingUnits(
   if (trait !== "text") return {}
   const points = (typeof size === "number" ? size : defaultSize) / 100
   if (field === "letterSpacing") return { numberScale: points / 100, typed: { points: 100 / points } }
-  if (field === "lineHeight") return { typed: { auto: 100, points: 100 / (singleLineHeight * points) } }
+  if (field === "lineHeight") return { typed: { auto: 100, points: 100 / (singleLineHeight * points), fixed: true } }
   return {}
 }

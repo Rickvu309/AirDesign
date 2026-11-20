@@ -1,4 +1,4 @@
-import { elementId, writeTextValue, type ScopedElement } from "@airdesign/document"
+import { elementId, readTextValue, writeTextValue, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { panelOf } from "./panel"
 
@@ -24,4 +24,26 @@ it("gives line height an Auto, PowerPoint's single line, and reads typed points 
 
 it("reads typed letter spacing points as a share of the type size", () => {
   expect(control("letterSpacing")?.typed?.points).toBeCloseTo(5, 6)
+})
+
+it("shows a fixed line height in points and sets one through the text, keeping each paragraph", () => {
+  const fixed: ScopedElement = {
+    ...shape,
+    value: writeTextValue([
+      { from: 0, lineHeightPoints: 2400, runs: [{ from: 0, text: "A", size: 2000 }] },
+      { from: 1, lineHeightPoints: 2400, runs: [{ from: 0, text: "B" }] },
+    ]),
+  }
+  const field = panelOf(fixed, { reads: {}, moves: true })
+    .sections.flatMap((section) => section.strips.flat())
+    .find((each) => each.trait === "text" && each.field === "lineHeight")
+  expect(field?.value).toEqual({ points: 2400 })
+  expect(field?.typed?.fixed).toBe(true)
+  const change = field?.change({ points: 1800 })
+  expect(change?.target).toEqual({ node: shape.node })
+  expect(readTextValue(String(change?.text?.value))).toEqual([
+    { from: 0, lineHeightPoints: 1800, runs: [{ from: 0, text: "A", size: 2000 }] },
+    { from: 1, lineHeightPoints: 1800, runs: [{ from: 0, text: "B" }] },
+  ])
+  expect(field?.change(150_000).text).toEqual({ lineHeight: 150_000 })
 })

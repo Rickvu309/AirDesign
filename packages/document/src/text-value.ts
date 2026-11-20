@@ -33,6 +33,7 @@ export const lastListLevel = 8
 export const lineHeightFloor = 10_000
 export const lineHeightCeiling = 1_000_000
 export const spaceCeiling = 158_400
+export const lineHeightPointsFloor = 100
 
 export type TextFormat = (typeof formatNames)[number]
 export type SchemeName = (typeof schemeNames)[number]
@@ -52,6 +53,7 @@ export type TextRun = {
 } & RunFormat
 export type ParagraphSpacing = {
   readonly lineHeight?: number
+  readonly lineHeightPoints?: number
   readonly spaceBefore?: number
   readonly spaceAfter?: number
 }
@@ -64,9 +66,10 @@ export type TextParagraph = {
 } & ParagraphSpacing
 export type TextValue = readonly TextParagraph[]
 
-export const spacingNames = ["lineHeight", "spaceBefore", "spaceAfter"] as const
+export const spacingNames = ["lineHeight", "lineHeightPoints", "spaceBefore", "spaceAfter"] as const
 const spacingRange: Readonly<Record<(typeof spacingNames)[number], readonly [number, number]>> = {
   lineHeight: [lineHeightFloor, lineHeightCeiling],
+  lineHeightPoints: [lineHeightPointsFloor, spaceCeiling],
   spaceBefore: [0, spaceCeiling],
   spaceAfter: [0, spaceCeiling],
 }
@@ -117,7 +120,7 @@ function readSpacing(paragraph: Readonly<Record<string, unknown>>): ParagraphSpa
     if (typeof value !== "number" || !Number.isInteger(value) || value < low || value > high) return null
     read = { ...read, [name]: value }
   }
-  return read
+  return read.lineHeight !== undefined && read.lineHeightPoints !== undefined ? null : read
 }
 
 function readRun(value: unknown): TextRun | null {

@@ -218,6 +218,24 @@ it("paints a list item a person indents at its level's indent before the file ha
   expect(block.style.getPropertyValue("--bullet")).toBe('"•"')
 })
 
+it("paints an item a person indents in a placeholder at its template's indent for that level", () => {
+  const templateIndents = [null, null, { marginLeft: 1_143_000, indent: -228_600 }]
+  const { block } = painted({ ...paragraph(), templateIndents }, "Item", { level: "2" })
+  expect(Number.parseFloat(block.style.paddingLeft)).toBeCloseTo(scaled(1_143_000), 4)
+  expect(Number.parseFloat(block.style.textIndent)).toBeCloseTo(scaled(-228_600), 4)
+  expect(Number.parseFloat(block.style.getPropertyValue("--bullet-hang"))).toBeCloseTo(scaled(228_600), 4)
+  const untemplated = painted({ ...paragraph(), templateIndents }, "Item", { level: "1" }).block
+  expect(Number.parseFloat(untemplated.style.paddingLeft)).toBeCloseTo(scaled(742_950), 4)
+})
+
+it("paints a fixed line height a person typed at its points whatever the type size", () => {
+  const fixed = { lineHeightPoints: "2400" }
+  const small = painted(paragraph(), "Item", fixed).run
+  const large = painted(paragraph({ runs: [{ from: 0, text: "Item", ...run, size: font * 4 }] }), "Item", fixed).run
+  expect(Number.parseFloat(small.style.lineHeight)).toBeCloseTo(scaled(2400 * 127), 4)
+  expect(Number.parseFloat(large.style.lineHeight)).toBeCloseTo(scaled(2400 * 127), 4)
+})
+
 it("numbers an indented item with its level's letters and roman numerals", () => {
   const numbered = { autoNumber: "arabicPeriod", number: 1, font: null, color: null, size: null }
   const second = painted(paragraph({ bullet: numbered }), "Item", { level: "1" }).block

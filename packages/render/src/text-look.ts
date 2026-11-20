@@ -3,6 +3,7 @@ import { fontFamily } from "@airdesign/fonts"
 import {
   levelNumbering,
   listIndent,
+  type ListIndent,
   type ParagraphAlign,
   type TextList,
   type Color,
@@ -266,15 +267,20 @@ function listOf(paragraph: CanvasParagraph): TextList {
   return bullet == null ? "none" : "char" in bullet ? "bullets" : "numbers"
 }
 
-function spaced(paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): CanvasParagraph {
+function levelIndent(text: CanvasText, level: number, list: TextList): ListIndent {
+  return text.templateIndents?.[level] ?? listIndent(level, list)
+}
+
+function spaced(text: CanvasText, paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): CanvasParagraph {
   if (overlay === undefined) return paragraph
-  const { lineHeight, spaceBefore, spaceAfter, level } = overlay
+  const { lineHeight, lineHeightPoints, spaceBefore, spaceAfter, level } = overlay
   return {
     ...paragraph,
     ...(level === undefined && overlay.list !== "bullets" && overlay.list !== "numbers"
       ? {}
-      : listIndent(level ?? paragraph.level ?? 0, overlay.list ?? listOf(paragraph))),
+      : levelIndent(text, level ?? paragraph.level ?? 0, overlay.list ?? listOf(paragraph))),
     ...(lineHeight === undefined ? {} : { lineHeight: { percent: lineHeight / wholePercent } }),
+    ...(lineHeightPoints === undefined ? {} : { lineHeight: { length: lineHeightPoints * emuPerHundredth } }),
     ...(spaceBefore === undefined ? {} : { spaceBefore: { length: spaceBefore * emuPerHundredth } }),
     ...(spaceAfter === undefined ? {} : { spaceAfter: { length: spaceAfter * emuPerHundredth } }),
   }
@@ -389,7 +395,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
         scale,
         text.fonts ?? {},
       )
-      const shown = spaced(paragraph, overlay)
+      const shown = spaced(text, paragraph, overlay)
       const style = edged(
         paragraphOverlay(paragraphStyle(shown, filled, scaled), shown, overlay, source, scaled),
         text.edgeSpacing === true ? null : edges,
@@ -402,7 +408,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     run(from, run, format = {}, overlay) {
       const found = paragraphs.get(from)
       if (found === undefined) return { lineHeight: singleLine }
-      const paragraph = spaced(found, overlay)
+      const paragraph = spaced(text, found, overlay)
       const style = formatted(fileStyle(paragraph, run), format, colors, scale, text.fonts ?? {})
       const lineHeight = lineHeights(paragraph.lineHeight, scaled, true).run
       const drawn = marks(style, scaled)

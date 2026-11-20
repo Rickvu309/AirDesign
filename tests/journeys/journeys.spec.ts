@@ -63,6 +63,7 @@ for (const name of [
   "text-weight-faces",
   "text-list-levels",
   "text-spacing-units",
+  "text-template-indent",
   "dynamic-fonts",
   "picture-icon",
   "theme",

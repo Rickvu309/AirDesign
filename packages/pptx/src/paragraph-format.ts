@@ -2,6 +2,7 @@ import {
   levelNumbering,
   listIndent,
   spacingNames,
+  type ListIndent,
   type ParagraphAlign,
   type TextList,
   type TextParagraph,
@@ -33,11 +34,13 @@ const order = [
 const emptyBytes = new Uint8Array(0)
 const spacingXml: Readonly<Record<(typeof spacingNames)[number], (value: number) => string>> = {
   lineHeight: (value) => `<a:lnSpc><a:spcPct val="${value}"/></a:lnSpc>`,
+  lineHeightPoints: (value) => `<a:lnSpc><a:spcPts val="${value}"/></a:lnSpc>`,
   spaceBefore: (value) => `<a:spcBef><a:spcPts val="${value}"/></a:spcBef>`,
   spaceAfter: (value) => `<a:spcAft><a:spcPts val="${value}"/></a:spcAft>`,
 }
 const spacingTags: Readonly<Record<(typeof spacingNames)[number], string>> = {
   lineHeight: "a:lnSpc",
+  lineHeightPoints: "a:lnSpc",
   spaceBefore: "a:spcBef",
   spaceAfter: "a:spcAft",
 }
@@ -70,22 +73,37 @@ function spacings(paragraph: TextParagraph): string {
     .join("")
 }
 
-function levelAttributes(level: number, list: TextList): readonly (readonly [string, string | null])[] {
+export type TemplateIndent = (level: number) => ListIndent | null
+
+export const noTemplate: TemplateIndent = () => null
+
+function levelAttributes(
+  level: number,
+  list: TextList,
+  template: TemplateIndent,
+): readonly (readonly [string, string | null])[] {
+  const lvl = level === 0 ? null : String(level)
+  if (template(level) !== null)
+    return [
+      ["marL", null],
+      ["lvl", lvl],
+      ["indent", null],
+    ]
   const { marginLeft, indent } = listIndent(level, list)
   return [
     ["marL", String(marginLeft)],
-    ["lvl", level === 0 ? null : String(level)],
+    ["lvl", lvl],
     ["indent", String(indent)],
   ]
 }
 
 const listed = (list: TextList | undefined) => list === "bullets" || list === "numbers"
 
-function created(paragraph: TextParagraph): Uint8Array {
+function created(paragraph: TextParagraph, template: TemplateIndent): Uint8Array {
   const level =
     paragraph.level === undefined && !listed(paragraph.list)
       ? ""
-      : levelAttributes(paragraph.level ?? 0, paragraph.list ?? "none")
+      : levelAttributes(paragraph.level ?? 0, paragraph.list ?? "none", template)
           .flatMap(([name, value]) => (value === null ? [] : [` ${name}="${value}"`]))
           .join("")
   const align = paragraph.align === undefined ? "" : ` algn="${alignValue[paragraph.align]}"`
@@ -134,10 +152,15 @@ function heldLevel(slice: Uint8Array): number {
   return Number.isInteger(level) && level >= 0 ? level : 0
 }
 
-function levelBytes(slice: Uint8Array, level: number, list: TextList | undefined): Uint8Array {
+function levelBytes(
+  slice: Uint8Array,
+  level: number,
+  list: TextList | undefined,
+  template: TemplateIndent,
+): Uint8Array {
   const held = list ?? heldList(slice)
   let next = slice
-  for (const [name, value] of levelAttributes(level, held)) next = attributeBytes(next, name, value)
+  for (const [name, value] of levelAttributes(level, held, template)) next = attributeBytes(next, name, value)
   return held === "numbers" && list === undefined ? listBytes(next, "numbers", level) : next
 }
 
@@ -189,6 +212,7 @@ export function paragraphBytes(
   bytes: Uint8Array,
   properties: MarkupElement | undefined,
   paragraph: TextParagraph,
+  template: TemplateIndent = noTemplate,
 ): Uint8Array | null {
   const spaced = spacingNames.filter((name) => paragraph[name] !== undefined)
   if (
@@ -198,10 +222,10 @@ export function paragraphBytes(
     spaced.length === 0
   )
     return null
-  if (properties === undefined) return created(paragraph)
+  if (properties === undefined) return created(paragraph, template)
   let slice = bytes.subarray(properties.start, properties.end)
   if (paragraph.level !== undefined || listed(paragraph.list))
-    slice = levelBytes(slice, paragraph.level ?? heldLevel(slice), paragraph.list)
+    slice = levelBytes(slice, paragraph.level ?? heldLevel(slice), paragraph.list, template)
   if (paragraph.align !== undefined) slice = alignBytes(slice, paragraph.align)
   for (const name of spaced) {
     const tag = spacingTags[name]

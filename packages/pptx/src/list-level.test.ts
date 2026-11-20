@@ -81,3 +81,13 @@ it("hangs a list a person turns on at its level, as PowerPoint does in a text bo
     ),
   )
 })
+
+it("writes a fixed line height as PowerPoint's exact spacing in points", () => {
+  const spaced = '<a:pPr><a:lnSpc><a:spcPct val="150000"/></a:lnSpc></a:pPr>'
+  expect(written(paragraph(spaced, "One"), [item(0, "One", { lineHeightPoints: 2400 })])).toBe(
+    slide(paragraph('<a:pPr><a:lnSpc><a:spcPts val="2400"/></a:lnSpc></a:pPr>', "One")),
+  )
+  expect(written(paragraph("", "One"), [item(0, "One", { lineHeightPoints: 1800 })])).toBe(
+    slide(paragraph('<a:pPr><a:lnSpc><a:spcPts val="1800"/></a:lnSpc></a:pPr>', "One")),
+  )
+})
