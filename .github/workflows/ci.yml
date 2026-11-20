@@ -46,8 +46,11 @@ jobs:
         with:
           check-jobs: >-
             [{"part":"source"},{"part":"scripts"},{"part":"design","shard":"1/2"},{"part":"design","shard":"2/2"},
-            {"part":"browser","shard":"1/4"},{"part":"browser","shard":"2/4"},{"part":"browser","shard":"3/4"},
-            {"part":"browser","shard":"4/4"},{"part":"pptx"}]
+            {"part":"browser","shard":"1/4"},
+            {"part":"browser","shard":"2/4"},
+            {"part":"browser","shard":"3/4"},
+            {"part":"browser","shard":"4/4"},
+            {"part":"pptx"}]
   check:
     name: check (${{ matrix.part }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
     needs: changes
