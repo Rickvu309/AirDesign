@@ -214,11 +214,16 @@ same("the changes job runs on every event", changes.if, undefined)
 same("the changes job reads the merge commit and its first parent", changes.steps[0].with, { "fetch-depth": 2 })
 same("the changes job uses the one action", mapStep.uses, "./.github/actions/ci-changes")
 same(
-  "the changes job hands out each part, the unit test folders, the check jobs and whether a queue run passed",
+  "the changes job hands out each part, the journey names, the unit test folders, the check jobs and whether a queue run passed",
   Object.keys(changes.outputs),
-  [...ciParts, "unit-tests", "check", "queued"],
+  [...ciParts, "journey-names", "unit-tests", "check", "queued"],
 )
-same("the action exposes the same outputs", Object.keys(action.outputs), [...ciParts, "unit-tests", "check"])
+same("the action exposes the same outputs", Object.keys(action.outputs), [
+  ...ciParts,
+  "journey-names",
+  "unit-tests",
+  "check",
+])
 same("no step reads the old pptx-changed action", JSON.stringify(workflow).includes("pptx-changed"), false)
 same("the workflow keeps no second copy of a path list", JSON.stringify(workflow).includes("git diff --quiet"), false)
 

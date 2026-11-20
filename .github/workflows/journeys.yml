@@ -3,6 +3,10 @@ name: journeys
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      journey-names:
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -12,7 +16,58 @@ concurrency:
 
 jobs:
   journeys:
-    name: journeys
+    name: journeys (${{ matrix.shard }}/${{ matrix.total }}, sample ${{ matrix.trial }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          [
+            { "trial": 1, "total": 2, "shard": 1 },
+            { "trial": 1, "total": 2, "shard": 2 },
+            { "trial": 1, "total": 3, "shard": 1 },
+            { "trial": 1, "total": 3, "shard": 2 },
+            { "trial": 1, "total": 3, "shard": 3 },
+            { "trial": 1, "total": 4, "shard": 1 },
+            { "trial": 1, "total": 4, "shard": 2 },
+            { "trial": 1, "total": 4, "shard": 3 },
+            { "trial": 1, "total": 4, "shard": 4 },
+            { "trial": 2, "total": 2, "shard": 1 },
+            { "trial": 2, "total": 2, "shard": 2 },
+            { "trial": 2, "total": 3, "shard": 1 },
+            { "trial": 2, "total": 3, "shard": 2 },
+            { "trial": 2, "total": 3, "shard": 3 },
+            { "trial": 2, "total": 4, "shard": 1 },
+            { "trial": 2, "total": 4, "shard": 2 },
+            { "trial": 2, "total": 4, "shard": 3 },
+            { "trial": 2, "total": 4, "shard": 4 },
+            { "trial": 3, "total": 2, "shard": 1 },
+            { "trial": 3, "total": 2, "shard": 2 },
+            { "trial": 3, "total": 3, "shard": 1 },
+            { "trial": 3, "total": 3, "shard": 2 },
+            { "trial": 3, "total": 3, "shard": 3 },
+            { "trial": 3, "total": 4, "shard": 1 },
+            { "trial": 3, "total": 4, "shard": 2 },
+            { "trial": 3, "total": 4, "shard": 3 },
+            { "trial": 3, "total": 4, "shard": 4 },
+            { "trial": 4, "total": 2, "shard": 1 },
+            { "trial": 4, "total": 2, "shard": 2 },
+            { "trial": 4, "total": 3, "shard": 1 },
+            { "trial": 4, "total": 3, "shard": 2 },
+            { "trial": 4, "total": 3, "shard": 3 },
+            { "trial": 4, "total": 4, "shard": 1 },
+            { "trial": 4, "total": 4, "shard": 2 },
+            { "trial": 4, "total": 4, "shard": 3 },
+            { "trial": 4, "total": 4, "shard": 4 },
+            { "trial": 5, "total": 2, "shard": 1 },
+            { "trial": 5, "total": 2, "shard": 2 },
+            { "trial": 5, "total": 3, "shard": 1 },
+            { "trial": 5, "total": 3, "shard": 2 },
+            { "trial": 5, "total": 3, "shard": 3 },
+            { "trial": 5, "total": 4, "shard": 1 },
+            { "trial": 5, "total": 4, "shard": 2 },
+            { "trial": 5, "total": 4, "shard": 3 },
+            { "trial": 5, "total": 4, "shard": 4 },
+          ]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -33,29 +88,20 @@ jobs:
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --only-shell chromium
       - uses: ./.github/actions/postgres
-      - name: Sample runner load
-        run: |
-          nproc
-          uptime
-          vmstat 5 > "$RUNNER_TEMP/journeys-load.txt" &
-          (
-            while sleep 5; do
-              date -Is
-              ps -eo comm,time --sort=-time | head -20
-            done
-          ) > "$RUNNER_TEMP/journeys-processes.txt" &
       - run: pnpm test:journeys
         env:
+          JOURNEYS_CHANGED: ${{ inputs.journey-names }}
+          JOURNEYS_SHARD: ${{ matrix.shard }}/${{ matrix.total }}
           JOURNEYS_REPORT: ${{ runner.temp }}/journeys.json
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: journeys-benchmark
-          path: ${{ runner.temp }}/journeys*
+          name: journeys-benchmark-${{ matrix.total }}-${{ matrix.trial }}-${{ matrix.shard }}
+          path: ${{ runner.temp }}/journeys.json
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: test-results-journeys
+          name: test-results-journeys-${{ matrix.total }}-${{ matrix.trial }}-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
           if-no-files-found: ignore

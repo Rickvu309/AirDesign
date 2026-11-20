@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { journeyFolder, journeyNameOf } from "../tests/journeys/journey-shards.mjs"
 import { browserJobs, browserReach, browserSpec, designScans, inBrowser } from "./browser-change-map.mjs"
 import { browserExportTag } from "./pptx-cases.mjs"
 import { readersOf, scriptTestReads } from "./script-test-reads.mjs"
@@ -43,9 +44,8 @@ const partsOfFile = (file) => {
   if (file.startsWith("unit:")) return [file]
   if (file.startsWith("gone:")) return []
   if (file === "playwright.config.ts") return ["browser", "design"]
-  if (file === "playwright.journeys.config.ts") return ["journeys"]
-  if (file.startsWith("tests/journeys/") || file.startsWith(".agents/skills/verify-airdesign/journeys/"))
-    return ["journeys"]
+  if (file === "playwright.journeys.config.mts") return ["journeys"]
+  if (file.startsWith("tests/journeys/") || file.startsWith(journeyFolder)) return ["journeys"]
   if (designScans.includes(file)) return ["design"]
   if (browserSpec(file)) return ["browser"]
   if (inBrowser(file)) return ["browser", "design"]
@@ -104,6 +104,7 @@ const runEverything = (because) => ({
   unitTests: "all",
   packages: "all",
   browserSpecs: "all",
+  journeyNames: "all",
 })
 
 export const changeMap = (changed, graph, { full = false } = {}) => {
@@ -114,6 +115,9 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
   const setup = setupFiles(graph)
   const browser = browserReach(graph, walk)
   const selected = new Set()
+  const knownJourneys = new Set(graph.journeyNames)
+  const selectedJourneys = new Set()
+  let canNarrowJourneys = true
   let canNarrowBrowser = true
   const parts = new Map()
   const packages = new Set()
@@ -161,12 +165,21 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     const start = nodeOf(file, graph.packages)
     if (start === file && partsOfFile(file).length === 0 && !(file in graph.imports))
       return runEverything(`no part owns ${file}`)
+    const directJourney =
+      file.startsWith(journeyFolder) && knownJourneys.has(journeyNameOf(file.slice(journeyFolder.length)))
+    if (file.startsWith("apps/")) canNarrowJourneys = false
     const reached = new Set([start, gone].flatMap((from) => [...walk(from, (at) => importers.get(at) ?? [])]))
     for (const node of reached) {
       if (narrowed && inBrowser(node) && !browserSpec(node)) continue
       const pkg = byName.get(node)
       if (pkg) packages.add(pkg.name)
-      for (const part of pkg ? partsOfPackage(pkg) : partsOfFile(node)) turnOn(part, file)
+      const owned = pkg ? partsOfPackage(pkg) : partsOfFile(node)
+      if (owned.includes("journeys")) {
+        const name = node.startsWith(journeyFolder) && journeyNameOf(node.slice(journeyFolder.length))
+        if (directJourney && knownJourneys.has(name)) selectedJourneys.add(name)
+        else canNarrowJourneys = false
+      }
+      for (const part of owned) turnOn(part, file)
     }
   }
   return {
@@ -180,6 +193,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     packages: [...packages].sort(),
     browserSpecs: canNarrowBrowser ? [...selected].sort() : "all",
     browserSeconds: graph.browserSeconds,
+    journeyNames: canNarrowJourneys ? [...selectedJourneys].sort() : "all",
   }
 }
 
@@ -216,6 +230,7 @@ const quotedPath = /["'`]((?:\.{1,2}\/)*[\w@.-]+(?:\/[\w@.-]+)*\/?)["'`]/g
 const loadedModule = /(?:join|resolve|pathToFileURL|new URL)\([^()"'`]*?["'`]([^"'`]+\.(?:mjs|js|ts|tsx|mts))["'`]/g
 const importSyntax = /(?:from|import)\s*\(?\s*["'`]([^"'`]+)["'`]/g
 const relative = /^\.{1,2}\//
+const listsJourneyNames = (file, quoted) => file === "tests/journeys/journey-shards.mjs" && quoted === journeyFolder
 
 const specifiers = (file, source) => [
   ...[...source.matchAll(importSyntax)].map((match) => match[1]),
@@ -223,7 +238,11 @@ const specifiers = (file, source) => [
   ...[...source.matchAll(quotedPath)]
     .map((match) => match[1])
     .filter(
-      (quoted) => quoted.includes("/") && (rootConfig.test(file) || inBrowser(file) || !/\.[a-z]+$/.test(quoted)),
+      (quoted) =>
+        quoted.includes("/") &&
+        quoted !== "./" &&
+        !listsJourneyNames(file, quoted) &&
+        (rootConfig.test(file) || inBrowser(file) || !/\.[a-z]+$/.test(quoted)),
     ),
 ]
 
@@ -311,6 +330,10 @@ export const readChangeGraph = (root) => {
   }
   return {
     browserSpecs,
+    journeyNames: files
+      .filter((file) => file.startsWith(journeyFolder))
+      .map((file) => journeyNameOf(file.slice(journeyFolder.length)))
+      .filter(Boolean),
     browserSeconds: readSpecSeconds(root).seconds,
     exportSpecs: [...exportSpecs],
     packages,
@@ -332,6 +355,7 @@ export const checkJobsFor = (result, jobs) => {
 
 export const githubOutput = (result, jobs) => [
   ...ciParts.map((part) => `${part}=${String(result.parts[part])}`),
+  `journey-names=${result.journeyNames === "all" || result.journeyNames.length === 0 ? "" : JSON.stringify(result.journeyNames)}`,
   `unit-tests=${result.unitTests === "all" ? "all" : JSON.stringify(result.unitTests)}`,
   `check=${JSON.stringify(checkJobsFor(result, jobs))}`,
 ]
@@ -345,6 +369,9 @@ export const decisionLines = (result) =>
         ),
         ...(result.browserSpecs.length > 0 && result.browserSpecs !== "all"
           ? [`browser specs: ${result.browserSpecs.join(" ")}`]
+          : []),
+        ...(result.journeyNames !== "all" && result.journeyNames.length > 0
+          ? [`journeys: ${result.journeyNames.join(" ")}`]
           : []),
         `unit tests: ${result.unitTests.length === 0 ? "none" : result.unitTests.join(" ")}`,
       ]
