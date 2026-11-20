@@ -319,6 +319,25 @@ describe("edit_deck adds a chart from an add change", () => {
     const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
     expect(elementGone(undone.register, elementId("258.9"))).toBe(true)
   })
+
+  it("splits the slide with the first chart when a second chart comes with no box, so neither overlaps", () => {
+    const value = writeChartValue(openingChart("bar"))
+    const once = landed(edit(indexed(), { op: "add", kind: "chart", slide: "259", chart: { value } }))
+    const twice = landed(edit(once, { op: "add", kind: "chart", slide: "259", chart: { value } }))
+    const placed = (node: string) => {
+      const added = twice.register.order.find((row) => row.slide === "element-add" && row.element.node === node)
+      if (added?.slide !== "element-add" || added.element.box === null) throw new Error(node)
+      const body = twice.register.elements[elementId(node)]
+      return (body === undefined ? null : currentBox(body)) ?? added.element.box
+    }
+    const [first, second] = [placed("259.9"), placed("259.10")]
+    const apart = first.x + first.cx <= second.x || second.x + second.cx <= first.x
+    expect(apart).toBe(true)
+    expect(Math.abs(first.cx - second.cx)).toBeLessThanOrEqual(1)
+    expect([first, second].every((each) => each.x >= 0 && each.x + each.cx <= size.width)).toBe(true)
+    const undone = landed(call("undo_run", twice, person, { deck: "deck", runId: "run" }))
+    expect(["259.9", "259.10"].every((node) => elementGone(undone.register, elementId(node)))).toBe(true)
+  })
 })
 
 for (const text of [{ strike: true }, { letterSpacing: -0.64 }, { list: "numbers" }]) {

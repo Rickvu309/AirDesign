@@ -289,3 +289,19 @@ it("starts a clicked text layer at the point as auto width, and a dragged one as
     element: { box: { x: 1_000_000, y: 2_000_000, cx: 3_000_000, cy: 500_000 }, opening: textOpening("fixed") },
   })
 })
+
+it("puts a person's new chart in the free half beside a chart on the left, rather than over it", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const left = { x: 487_680, y: 1_714_500, width: 5_400_000, height: 3_429_000 }
+  const added = elementCommand(parts, openRegister("", ""), {
+    change: "chart",
+    kind: "bar",
+    index: 0,
+    size: { ...slide, elements: [{ box: left as PaintBox }] },
+  })
+  const box = added !== null && "element" in added ? added.element.box : null
+  if (box === null || box === undefined) throw new Error("no chart")
+  expect(box.x).toBeGreaterThanOrEqual(left.x + left.width)
+  expect(box.x + box.cx).toBeLessThanOrEqual(slide.width)
+})

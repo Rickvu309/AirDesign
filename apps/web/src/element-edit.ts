@@ -9,6 +9,7 @@ import {
   openingTableSize,
   writeChartValue,
   type ChartKind,
+  placeChart,
   placeNewBox,
   writeTableValue,
   readSlideId,
@@ -165,7 +166,7 @@ export function elementCommand(
   }
   if (change.change === "chart") {
     const wanted = { cx: Math.round(change.size.width * chartShare), cy: Math.round(change.size.height * chartShare) }
-    const box = placeNewBox(change.size, taken, wanted)
+    const { box } = placeChart(change.size, taken, [], wanted)
     const value = writeChartValue(openingChart(change.kind))
     return { slide: "element-add", id: slide.id, element: { node, kind: "chart", value, box, grouped: false } }
   }
