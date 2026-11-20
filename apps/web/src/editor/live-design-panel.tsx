@@ -34,7 +34,7 @@ import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change
 import { rebasedChange } from "@/design/rebase"
 import { chosenFill } from "@/design/fill-image"
 import { deviceScope } from "@/design/trait-edit"
-import { framePanel, layoutFields } from "@/design/frame-panel"
+import { framePanel, sizedFields } from "@/design/frame-panel"
 import { indexedRegister } from "@/indexed-register"
 import { RemoveAutoLayout } from "@/editor/remove-auto-layout"
 import { ResizeToFit } from "@/editor/resize-to-fit"
@@ -121,10 +121,7 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
     opening.facts.kind === "chart" ? heldChart(shown.shownRegister.current, node) : kept ? held : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
   const register = shown.shownRegister.current
-  const layout =
-    opening.facts.frame === undefined || register === null
-      ? null
-      : readLayout(indexedRegister(shown.shownParts.current, register), node)
+  const laid = register === null ? null : indexedRegister(shown.shownParts.current, register)
   const role = placeholderRole(shown.displayParts.current, node)
   const model = panelOf(view, {
     fonts: fontsOf(shown.displayParts.current, node),
@@ -132,7 +129,7 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
     slides: readSlides(shown.displayParts.current).map((each) => each.slide),
-    fields: { ...fieldsOf(shown.displayParts.current, node), ...layoutFields(layout) },
+    fields: { ...fieldsOf(shown.displayParts.current, node), ...sizedFields(laid, opening) },
     ...(role === undefined ? {} : { role }),
     ...(view.facts.kind === "connector"
       ? {

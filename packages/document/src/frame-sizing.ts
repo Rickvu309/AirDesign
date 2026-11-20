@@ -1,4 +1,5 @@
 import type { Box } from "./box.js"
+import type { Scope, ScopedElement, SetChange } from "./change.js"
 import type { Register } from "./decide.js"
 import type { ElementId } from "./element-id.js"
 import { readLayout, type Sizing } from "./frame-layout.js"
@@ -71,4 +72,30 @@ export function sizedPatch(hugged: Hugged | undefined, patch: Patch): Patch {
     ...(fixed === undefined ? {} : { layout }),
     ...(Object.keys(kept).length === 0 ? {} : { box: { ...box, ...kept } }),
   }
+}
+
+function filledSides(layout: unknown, holder: Hugged | undefined): Sides {
+  if (holder === undefined || typeof layout !== "object" || layout === null) return {}
+  const asked: Readonly<Record<string, unknown>> = { ...layout }
+  return {
+    ...(asked.width === "fill" && holder.width === "hug" ? { width: "fixed" } : {}),
+    ...(asked.height === "fill" && holder.height === "hug" ? { height: "fixed" } : {}),
+  }
+}
+
+export function holdersFixed(
+  change: SetChange,
+  views: readonly ScopedElement[],
+  scope: Scope,
+): readonly (readonly [SetChange, ScopedElement])[] {
+  const holders = new Map<ElementId, ScopedElement>()
+  for (const view of views) {
+    const holder = view.parent == null ? undefined : scope.view(view.parent)
+    if (holder !== undefined) holders.set(holder.node, holder)
+  }
+  return [...holders.values()].flatMap((holder) => {
+    const fixing = filledSides(change.layout, holder.hugged)
+    if (fixing.width === undefined && fixing.height === undefined) return []
+    return [[{ target: { node: holder.node }, layout: fixing } as SetChange, holder] as const]
+  })
 }

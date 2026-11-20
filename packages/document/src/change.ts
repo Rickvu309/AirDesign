@@ -24,7 +24,7 @@ import { followsGroups, shownPlace, storedPlace } from "./group-space.js"
 import { boxFields, type Spot } from "./change-box.js"
 import { cornersOf, cornersRefusals, roundedPatch } from "./change-corners.js"
 import { framedNow, readLayout } from "./frame-layout.js"
-import { huggedOf, sizedPatch, type Hugged } from "./frame-sizing.js"
+import { holdersFixed, huggedOf, sizedPatch, type Hugged } from "./frame-sizing.js"
 import { addedGeometry, elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
@@ -306,6 +306,11 @@ export function planChange(change: SetChange, scope: Scope): PlannedChange {
       if ("row" in planned) rows.push(planned)
       else refusals.push(...planned)
     }
+  }
+  for (const [part, holder] of holdersFixed(change, views, scope)) {
+    const planned = planNode(part, holder, undefined, scope)
+    if ("row" in planned) rows.push(planned)
+    else refusals.push(...planned)
   }
   return refusals.length > 0 ? { ok: false, refusals } : { ok: true, rows }
 }

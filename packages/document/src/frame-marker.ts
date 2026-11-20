@@ -1,6 +1,6 @@
 import type { Box } from "./box.js"
 import { shapeOf, type ElementId } from "./element-id.js"
-import type { Framing, FramingLayout } from "./frame-index.js"
+import type { Framing, FramingFill, FramingLayout } from "./frame-index.js"
 import type { LayoutView } from "./frame-layout.js"
 import { flows, layoutAligns } from "./trait-layout.js"
 
@@ -28,6 +28,23 @@ function seal(box: Box, children: readonly { readonly node: ElementId; readonly 
   return hash.toString(16).padStart(8, "0")
 }
 
+function fillsText(children: LayoutView["children"]): readonly string[] {
+  const filled = children.flatMap(({ node, fill }) =>
+    fill === undefined ? [] : [`${shapeOf(node).shape}:${fill.width ? "w" : ""}${fill.height ? "h" : ""}`],
+  )
+  return filled.length === 0 ? [] : [`l=${filled.join(",")}`]
+}
+
+function fillsOf(text: string | undefined, children: readonly ElementId[]): readonly FramingFill[] {
+  const named = new Map(children.map((child) => [shapeOf(child).shape, child]))
+  return (text ?? "").split(",").flatMap((item) => {
+    const [shape, sides] = item.split(":")
+    const node = shape === undefined ? undefined : named.get(shape)
+    if (node === undefined || sides === undefined || !/^w?h?$/.test(sides) || sides === "") return []
+    return [{ node, width: sides.includes("w"), height: sides.includes("h") }]
+  })
+}
+
 export function layoutMarker(view: LayoutView): string {
   const { left, top, right, bottom } = view.padding
   return [
@@ -40,6 +57,7 @@ export function layoutMarker(view: LayoutView): string {
     ...(view.width === "fixed" ? ["w=f"] : []),
     ...(view.height === "fixed" ? ["h=f"] : []),
     `c=${view.children.map((child) => shapeOf(child.node).shape).join(",")}`,
+    ...fillsText(view.children),
     `s=${seal(view.box, view.children)}`,
   ].join(";")
 }
@@ -88,7 +106,11 @@ export function layoutFromFile(marker: string | null, seen: SeenGroup): Framing 
   }))
   const written = named.flatMap((shape) => placed.filter((child) => shapeOf(child.node).shape === shape))
   const kept = written.length === placed.length && seal(seen.box, written) === fields.get("s")
-  if (kept) return { backdrop: backdrop.node, children: written.map((child) => child.node), layout }
+  if (kept) {
+    const children = written.map((child) => child.node)
+    const fills = fillsOf(fields.get("l"), children)
+    return { backdrop: backdrop.node, children, layout, ...(fills.length === 0 ? {} : { fills }) }
+  }
   return {
     backdrop: backdrop.node,
     children: placed.map((child) => child.node),

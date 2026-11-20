@@ -1,5 +1,6 @@
 import { elementId, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
+import { frameCopy } from "@/copy/frame-copy"
 import { framePanel } from "./frame-panel"
 import { panelOf } from "./panel"
 import { panelPlaces } from "./panel-order"
@@ -14,7 +15,7 @@ const frame: ScopedElement = {
 
 const backdrop: ScopedElement = {
   node: elementId("258.21"),
-  facts: { kind: "shape", text: false, grouped: true, animated: false, framed: "auto" },
+  facts: { kind: "shape", text: false, grouped: true, animated: false, framed: "auto", backdrop: true },
   kept: [],
   value: null,
   box: { x: 0, y: 0, cx: 914_400, cy: 457_200 },
@@ -81,4 +82,46 @@ it("fades the whole frame from its own Opacity row, which reads the frame's opac
 
 it("titles a frame whose auto layout was removed as a frame", () => {
   expect(model(false).frame).toBe("free")
+})
+
+const sizing = (model: ReturnType<typeof panelOf>) => {
+  const section = model.sections.find(({ trait }) => trait === "layout")
+  const choices = section?.strips
+    .flat()
+    .filter(({ field }) => field === "width" || field === "height")
+    .map((control) => [control.field, control.desc.kind === "choice" ? control.desc.options : [], control.value])
+  return { label: section?.label, choices }
+}
+
+it("gives a layer in an auto layout frame a Resizing section with Width and Height, Fixed or Fill container", () => {
+  const child: ScopedElement = {
+    ...backdrop,
+    node: elementId("258.3"),
+    parent: frame.node,
+    facts: { kind: "shape", text: false, grouped: true, animated: false, framed: "auto" },
+  }
+  const fill = { "layout.width": { value: "fill", own: true }, "layout.height": { value: "fixed", own: true } }
+  expect(sizing(panelOf(child, { reads: {}, moves: true, fields: { ...fields, ...fill } }))).toEqual({
+    label: frameCopy.resizing,
+    choices: [
+      ["width", ["fixed", "fill"], "fill"],
+      ["height", ["fixed", "fill"], "fixed"],
+    ],
+  })
+})
+
+it("offers Hug contents, Fixed and Fill container to a frame inside an auto layout frame, and no Fill to a frame on the slide", () => {
+  const inner: ScopedElement = { ...frame, facts: { ...frame.facts, grouped: true, framed: "auto" } }
+  const hugging = { "layout.width": { value: "hug", own: true }, "layout.height": { value: "hug", own: true } }
+  expect(sizing(panelOf(inner, { reads: {}, moves: true, fields: { ...fields, ...hugging } })).choices).toEqual([
+    ["width", ["hug", "fixed", "fill"], "hug"],
+    ["height", ["hug", "fixed", "fill"], "hug"],
+  ])
+  expect(sizing(panelOf(frame, { reads: {}, moves: true, fields: { ...fields, ...hugging } }))).toEqual({
+    label: frameCopy.autoLayout,
+    choices: [
+      ["width", ["hug", "fixed"], "hug"],
+      ["height", ["hug", "fixed"], "hug"],
+    ],
+  })
 })
