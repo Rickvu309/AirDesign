@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { test } from "./api-stack"
@@ -11,7 +12,7 @@ const selected = (page: Page) => page.locator("[data-slide-list] [data-slide-ent
 
 async function selectTwoToFour(page: Page) {
   await entry(page, 2).click()
-  await entry(page, 4).click({ modifiers: ["Shift"] })
+  await entry(page, 4).click({ modifiers: [shortcutCopy.chord.other.shift] })
   await expect(selected(page)).toHaveCount(3)
 }
 
@@ -56,7 +57,7 @@ test("Ctrl+D duplicates the selected slides and selects the copies, and Alt+Down
   await expect(selected(page)).toHaveCount(3)
   await expect(entry(page, 5)).toHaveAttribute("data-selected")
   await entry(page, 2).click()
-  await entry(page, 3).click({ modifiers: ["Shift"] })
+  await entry(page, 3).click({ modifiers: [shortcutCopy.chord.other.shift] })
   await page.keyboard.press("Alt+ArrowDown")
   const order = await saved.order()
   await expect.poll(saved.order).toEqual([order[0], order[3], order[1], order[2], ...order.slice(4)])
@@ -83,7 +84,7 @@ test("the menu on a selected slide acts on the set, and dragging a selected slid
 test("a selected set dropped on a slide in another slide group joins that group", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, 6, [3, 3], "list")
   await entry(page, 1).click()
-  await entry(page, 2).click({ modifiers: ["Shift"] })
+  await entry(page, 2).click({ modifiers: [shortcutCopy.chord.other.shift] })
   await entry(page, 1).dragTo(entry(page, 5))
   await expect.poll(saved.order).toEqual(picked(saved.ids, [3, 4, 5, 1, 2, 6]))
   await expect.poll(saved.rows).toEqual([picked(saved.ids, [3]), picked(saved.ids, [4, 5, 1, 2, 6])])

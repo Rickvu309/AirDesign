@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import { newBlankDeck } from "../bin/new-deck.mjs"
+import { shortcutCopy } from "../bin/product-copy.mjs"
 import { placeText } from "../bin/text-place.mjs"
 
 export async function namedSlides(page, count) {
@@ -12,7 +13,7 @@ export async function namedSlides(page, count) {
     await placeText(page)
     const title = page.locator('[data-slide-paint] [contenteditable="true"]').first()
     await expect(title).toBeFocused()
-    await title.pressSequentially(`Slide ${String(number)} title`, { delay: 0 })
+    await title.pressSequentially(`Point ${String(number)} of the story`, { delay: 0 })
     await page.keyboard.press("Escape")
     await page.keyboard.press("Escape")
   }
@@ -25,5 +26,5 @@ export function entryOf(page, number) {
 
 export async function selectTwoToFour(page) {
   await entryOf(page, 2).click()
-  await entryOf(page, 4).click({ modifiers: ["Shift"] })
+  await entryOf(page, 4).click({ modifiers: [shortcutCopy.chord.other.shift] })
 }
