@@ -14,6 +14,7 @@ export type { CanvasChart } from "./chart-record.js"
 export type { Framing, GroupOf, Measure } from "./element-paint.js"
 export type { CanvasLayer } from "./fill-layers.js"
 export {
+  type CanvasBullet,
   type CanvasEffects,
   type CanvasElement,
   type CanvasLine,

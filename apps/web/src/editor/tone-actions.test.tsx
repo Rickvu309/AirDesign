@@ -51,6 +51,8 @@ const target: Target = {
   bullet: () => "off",
   bullets: () => undefined,
   weight: () => undefined,
+  fontStyle: () => null,
+  weightTo: () => undefined,
   swatches: () => [],
 }
 

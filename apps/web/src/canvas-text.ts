@@ -1,5 +1,5 @@
 import type { PaintParagraph, PaintRunStyle, PaintText } from "@airdesign/pptx"
-import type { CanvasParagraph, CanvasRunStyle, CanvasText } from "@airdesign/render"
+import type { CanvasBullet, CanvasParagraph, CanvasRunStyle, CanvasText } from "@airdesign/render"
 import type { PictureSource } from "@/picture-fill"
 import { pictureLayer } from "@/picture-fill"
 import { cssColor } from "@/paint-css"
@@ -19,7 +19,7 @@ function reducedLines(spacing: Spacing, reduction: number) {
   return "percent" in spacing ? { percent: spacing.percent - reduction } : spacingOf(spacing)
 }
 
-function canvasBullet(bullet: PaintParagraph["bullet"]) {
+function canvasBullet(bullet: PaintParagraph["bullet"]): CanvasBullet | null {
   if (bullet === null) return null
   const look = {
     font: bullet.font,
@@ -69,6 +69,7 @@ function canvasParagraph(
     spaceBefore: spacingOf(paragraph.spaceBefore),
     spaceAfter: spacingOf(paragraph.spaceAfter),
     bullet: canvasBullet(paragraph.bullet),
+    ...(paragraph.ownBullet === true ? { ownBullet: true } : {}),
     runs: paragraph.runs.map((run) => ({ from: run.from, text: run.text, ...runStyle(run, scale, src) })),
     endStyle: runStyle(paragraph.endStyle, scale, src),
   }
@@ -85,6 +86,7 @@ export function canvasText(text: PaintText | null, src: PictureSource = () => nu
     ...fitOf(text),
     ...(text.fonts === undefined ? {} : { fonts: text.fonts }),
     ...(text.templateIndents === undefined ? {} : { templateIndents: text.templateIndents }),
+    ...(text.templateBullets === undefined ? {} : { templateBullets: text.templateBullets.map(canvasBullet) }),
     paragraphs: text.paragraphs.map((paragraph) =>
       canvasParagraph(paragraph, text.fontScale, text.spacingReduction, src),
     ),

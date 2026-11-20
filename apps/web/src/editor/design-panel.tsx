@@ -16,6 +16,7 @@ import { EditorIcon } from "@/editor/editor-icons"
 import { optionWord } from "@/copy/option-copy"
 import { cn } from "@/lib/class-names"
 import { LinkFormatting } from "@/design/controls/link"
+import { isWeight, selectedWeight, useSelectedWeight, weightPicked } from "@/design/selected-weight"
 import type { TextFormatting } from "@airdesign/render"
 import { linkCopy } from "@/copy/link-copy"
 import { followsDrag, useLiveBoxControl } from "@/editor/live-box-fields"
@@ -293,9 +294,9 @@ function panelTitle({ kind, nodes, sections, frame }: PanelModel): string {
 }
 
 export function ElementDesign({
-  model,
+  model: whole,
   palette,
-  onChange,
+  onChange: changeWhole,
   picture = null,
   titleActions,
   afterTitle = null,
@@ -318,6 +319,12 @@ export function ElementDesign({
   onChange: (control: PanelControl, value: unknown) => void
 }) {
   const folds = useFolds()
+  const selected = useSelectedWeight(formatting, whole.node)
+  const model = selectedWeight(whole, selected)
+  const onChange = (control: PanelControl, value: unknown) => {
+    if (selected !== null && isWeight(control) && weightPicked(formatting, value)) return
+    changeWhole(control, value)
+  }
   const { kind } = model
   const fill = model.sections
     .find((section) => section.trait === "fills")

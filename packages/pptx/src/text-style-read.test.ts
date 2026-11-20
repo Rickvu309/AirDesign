@@ -61,4 +61,9 @@ describe("shownTextStyle", () => {
       spaceAfter: { value: 0, own: false },
     })
   })
+
+  it("reads a fixed line height the file holds in points as points", async () => {
+    const parts = await deck("corpus/nasa-cots-parts-nesc.pptx")
+    expect(shownTextStyle(parts, at(parts, 7, "4"))?.lineHeight).toEqual({ value: { points: 1240 }, own: true })
+  })
 })

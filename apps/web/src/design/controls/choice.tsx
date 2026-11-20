@@ -1,7 +1,8 @@
 import { AlignmentGrid } from "@/design/controls/alignment-grid"
 import { controlLabel } from "@/design/controls/control-label"
 import { designCopy } from "@/copy/design-copy"
-import { useId } from "react"
+import { useContext, useId, useRef } from "react"
+import { LinkFormatting } from "@/design/controls/link"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { optionWord } from "@/copy/option-copy"
@@ -15,14 +16,19 @@ function ChoiceList({
   options,
 }: ControlProps & { label: string; options: readonly string[] }) {
   const value = !control.mixed && typeof control.value === "string" ? control.value : null
+  const trigger = useRef<HTMLButtonElement>(null)
+  const formatting = useContext(LinkFormatting)
   return (
     <Select
       value={value}
-      onValueChange={(next) => {
-        if (typeof next === "string" && next !== value && options.includes(next)) onChange(next)
+      onValueChange={(next, details) => {
+        const typedElsewhere =
+          details.reason === "none" && trigger.current?.ownerDocument.activeElement !== trigger.current
+        if (!typedElsewhere && typeof next === "string" && next !== value && options.includes(next)) onChange(next)
       }}
     >
       <SelectTrigger
+        ref={trigger}
         aria-labelledby={label}
         className={cn(
           "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)] data-[size=default]:h-[var(--control-dense)]",
@@ -40,7 +46,16 @@ function ChoiceList({
           }}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent
+        data-keeps-format
+        data-keeps-selection
+        finalFocus={() => {
+          const text = formatting?.typingIn()
+          if (text == null) return true
+          setTimeout(() => text.focus({ preventScroll: true }))
+          return false
+        }}
+      >
         {options.map((option) => (
           <SelectItem key={option} value={option}>
             {control.choices?.find((choice) => choice.value === option)?.label ?? optionWord(control.field, option)}

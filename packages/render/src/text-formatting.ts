@@ -8,6 +8,7 @@ import type {
   SizeStep,
   TextFormat,
 } from "@airdesign/document"
+import type { FontStyle } from "@airdesign/fonts"
 import { gestureFor, type GestureId, type KeyLike } from "./gestures.js"
 import type { CanvasTemplateColor } from "./record.js"
 
@@ -28,6 +29,8 @@ export type FormatTarget = {
   readonly bullet: (editing: boolean) => FormatState
   readonly bullets: (editing: boolean) => void
   readonly weight: (step: 1 | -1, editing: boolean) => void
+  readonly fontStyle: (editing: boolean) => FontStyle | "mixed" | null
+  readonly weightTo: (style: FontStyle, editing: boolean) => void
   readonly swatches: () => readonly CanvasTemplateColor[]
 }
 
@@ -38,6 +41,7 @@ export type TextFormatting = {
   readonly register: (id: ElementId, target: FormatTarget) => () => void
   readonly aim: (id: ElementId | null, focused?: HTMLElement) => void
   readonly aimed: () => ElementId | null
+  readonly typingIn: () => HTMLElement | null
   readonly state: (format: TextFormat) => FormatState | null
   readonly toggle: (format: TextFormat) => void
   readonly size: () => number | "mixed" | null
@@ -50,6 +54,8 @@ export type TextFormatting = {
   readonly bullet: () => FormatState | null
   readonly bullets: () => void
   readonly weight: (step: 1 | -1) => void
+  readonly fontStyle: () => FontStyle | "mixed" | null
+  readonly weightTo: (style: FontStyle) => void
   readonly swatches: () => readonly CanvasTemplateColor[]
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void
@@ -141,6 +147,10 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     aimed() {
       return aimed
     },
+    typingIn() {
+      const found = target()
+      return found !== undefined && editing(found) ? returnTo : null
+    },
     link() {
       const found = target()
       return found === undefined ? null : found.link(editing(found))
@@ -192,6 +202,13 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     },
     weight(step) {
       act((found, on) => found.weight(step, on))
+    },
+    fontStyle() {
+      const found = target()
+      return found === undefined ? null : found.fontStyle(editing(found))
+    },
+    weightTo(style) {
+      act((found, on) => found.weightTo(style, on))
     },
     swatches() {
       return target()?.swatches() ?? []

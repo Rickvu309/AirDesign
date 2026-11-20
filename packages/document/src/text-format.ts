@@ -155,7 +155,7 @@ export function applyRuns(
   })
 }
 
-function coveredRuns(
+export function coveredRuns(
   value: TextValue,
   range: TextRange | null,
 ): readonly { readonly paragraph: TextParagraph; readonly run: TextRun }[] {
