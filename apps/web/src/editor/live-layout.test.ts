@@ -11,7 +11,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { relaidBoxes } from "./live-layout"
+import { draggedSize, relaidBoxes } from "./live-layout"
 
 const slide = slideId("256")
 const a = elementId("256.2")
@@ -97,5 +97,14 @@ describe("the live layout of an auto layout frame while a side handle resizes it
   it("lays nothing for a layer outside an auto layout frame", () => {
     const loose = { box: { x: 0, y: 0, cx: 50 * point, cy: 10 * point }, element: { id: a, file: "" } }
     expect(relaidBoxes(indexed, [loose])).toBeNull()
+  })
+
+  it("keeps the frame's current height while a side handle drags only its width, so a growing text does not fix it", () => {
+    const start = { x: 0, y: 0, cx: 100, cy: 40 }
+    const grown = { x: 0, y: 0, cx: 100, cy: 70 }
+    expect(draggedSize({ ...start, cx: 60 }, grown, "right")).toEqual({ x: 0, y: 0, cx: 60, cy: 70 })
+    expect(draggedSize({ ...start, cy: 50 }, grown, "bottom")).toEqual({ x: 0, y: 0, cx: 100, cy: 50 })
+    expect(draggedSize({ ...start, cx: 60, cy: 50 }, grown, "bottom-right")).toEqual({ x: 0, y: 0, cx: 60, cy: 50 })
+    expect(draggedSize({ ...start, cx: 60 }, undefined, "right")).toEqual({ ...start, cx: 60 })
   })
 })

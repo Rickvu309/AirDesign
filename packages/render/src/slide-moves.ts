@@ -48,7 +48,7 @@ import {
   type TransformActions,
   type TransformModifiers,
 } from "./transform-drag.js"
-import { hudChannel } from "./transform-hud.js"
+import { hudChannel, type TransformHudState } from "./transform-hud.js"
 import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 import { useLayerCopies, type Duplicate } from "./use-layer-copies.js"
@@ -102,6 +102,8 @@ export function useMoves(
   const keyed = useRef({ verb: "", label: "" })
   const held = useRef<ActiveHold | null>(null)
   const grips = useRef(new Map<ElementId, BoxGrip>())
+  const placedLast = useRef<ReadonlyMap<ElementId, Box> | null>(null)
+  const hudLast = useRef<TransformHudState | null>(null)
   const [turning] = useState(rotationGrips)
   const cancelling = useRef<(() => void) | null>(null)
   const pressedFrame = useRef<HTMLElement | null>(null)
@@ -150,6 +152,11 @@ export function useMoves(
     return store.getBox(element.id) ?? (element.box === null ? null : boxOf(element.box))
   }
 
+  useLayoutEffect(() => {
+    const boxes = placedLast.current
+    if (boxes !== null && held.current !== null && store.laidNow() !== null) place(boxes)
+  }, [size])
+
   function hold(next: ActiveHold) {
     held.current = next
     grips.current = new Map(next.ids.map((id) => [id, store.gripBox(id)]))
@@ -158,15 +165,22 @@ export function useMoves(
   }
 
   function place(boxes: ReadonlyMap<ElementId, Box>) {
+    placedLast.current = boxes
     const now = held.current
     const resizing = now?.by === "pointer" && now.grip !== "move" && !isRotateGrip(now.grip)
-    const laid = resizing ? (transforms?.relayout?.(boxes) ?? null) : null
+    const laid = resizing ? (transforms?.relayout?.(boxes, now.grip) ?? null) : null
     for (const [id, box] of boxes) grips.current.get(id)?.place(laid?.get(id) ?? box)
     if (laid !== null) store.lay(new Map([...laid].filter(([id]) => !boxes.has(id))))
+    const [only] = boxes.keys()
+    const shown = boxes.size === 1 && only !== undefined ? laid?.get(only) : undefined
+    const last = hudLast.current
+    if (last?.kind === "resize" && shown !== undefined) hud.write({ ...last, frame: shown })
   }
 
   function letGo(changed: readonly ElementId[]) {
     const wasHeld = held.current !== null
+    placedLast.current = null
+    hudLast.current = null
     if (changed.length === 0 && store.laidNow() !== null) store.lay(null)
     held.current = null
     copies.board.show([])
@@ -238,10 +252,11 @@ export function useMoves(
         return active
       },
       applyResult: (result) => {
+        hudLast.current = result.hud
+        hud.write(result.hud)
         place(result.boxes)
         for (const [id, rotation] of result.rotations) turning.place(id, rotation)
         guides.show(result.guides)
-        hud.write(result.hud)
       },
       onFinish: (now) => {
         finish(now)

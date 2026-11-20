@@ -43,7 +43,7 @@ import { useHoverOutline } from "./use-hover-outline.js"
 import { useSlideMarquee, type OwnsKey } from "./use-slide-marquee.js"
 import { canResizeElement, canRotateElement, type Turned } from "./transform-drag.js"
 import { TransformHud } from "./transform-hud.js"
-import type { FlippedLayer } from "./transform-math.js"
+import type { FlippedLayer, TransformGrip } from "./transform-math.js"
 import type { FitSize } from "./text-hug.js"
 
 const defaultTextSize = 203_200
@@ -80,7 +80,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRotate?: (turned: readonly Turned[]) => void
   readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
-  readonly onRelayout?: (boxes: ReadonlyMap<ElementId, Box>) => ReadonlyMap<ElementId, Box> | null
+  readonly onRelayout?: (boxes: ReadonlyMap<ElementId, Box>, grip: TransformGrip) => ReadonlyMap<ElementId, Box> | null
   readonly onDuplicate?: Duplicate
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void

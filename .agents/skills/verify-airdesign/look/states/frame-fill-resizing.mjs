@@ -17,6 +17,8 @@ async function drive(kit) {
   await expect(selection).toHaveAttribute("data-selection", /\.5$/)
   await page.locator("[data-design-panel]").getByRole("combobox", { name: frameCopy.width, exact: true }).click()
   await page.getByRole("option", { name: layoutWords["width.fill"], exact: true }).click()
+  await expect(page.getByRole("option")).toHaveCount(0)
+  await page.locator(element(5)).click()
   await page.keyboard.press("Escape")
   await expect(selection).not.toHaveAttribute("data-selection", /\.5$/)
   const grip = await page.locator("[data-selection] [data-grip='right']").boundingBox()

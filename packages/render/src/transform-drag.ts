@@ -25,7 +25,7 @@ import {
 export type TransformActions = {
   readonly onRotate?: (turned: readonly Turned[]) => void
   readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
-  readonly relayout?: (boxes: ReadonlyMap<ElementId, Box>) => ReadonlyMap<ElementId, Box> | null
+  readonly relayout?: (boxes: ReadonlyMap<ElementId, Box>, grip: TransformGrip) => ReadonlyMap<ElementId, Box> | null
 }
 
 export type TransformModifiers = {

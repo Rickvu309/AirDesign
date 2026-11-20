@@ -6,13 +6,13 @@ import type { DesignDeck } from "@/design/design-change"
 import { deviceRegister } from "@/device-copy"
 import { commitPlace } from "@/editor/group-actions"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
-import { storedBox } from "@/frame-boxes"
+import { laidBox, storedBox } from "@/frame-boxes"
 import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
 import { indexedRegister } from "@/indexed-register"
 import { resizedCorners } from "@/resized-corners"
 import { resizedSizing } from "@/resized-sizing"
 import { boxName } from "@/undo-names"
-import { relaidBoxes } from "@/editor/live-layout"
+import { draggedSize, relaidBoxes } from "@/editor/live-layout"
 
 type RestBox = (target: ElementId, box: Box | null) => void
 
@@ -20,7 +20,7 @@ const movesInFlight = new WeakMap<PaintStore, Map<ElementId, Box>>()
 
 type BoxMoves = {
   readonly onBoxes: (moved: readonly Moved[]) => Promise<void>
-  readonly relayout: (boxes: ReadonlyMap<ElementId, Box>) => ReadonlyMap<ElementId, Box> | null
+  readonly relayout: (boxes: ReadonlyMap<ElementId, Box>, grip: string) => ReadonlyMap<ElementId, Box> | null
 }
 
 export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
@@ -160,15 +160,11 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
     })
   }
 
-  function relayout(boxes: ReadonlyMap<ElementId, Box>): ReadonlyMap<ElementId, Box> | null {
+  function relayout(boxes: ReadonlyMap<ElementId, Box>, grip: string): ReadonlyMap<ElementId, Box> | null {
     const framing = framingNow()
-    return relaidBoxes(
-      framing,
-      commitsOf(
-        framing,
-        [...boxes].map(([target, box]) => ({ id: target, box })),
-      ),
-    )
+    const now = (target: ElementId) => (framing === null ? undefined : laidBox(framing, target))
+    const moved = [...boxes].map(([target, box]) => ({ id: target, box: draggedSize(box, now(target), grip) }))
+    return relaidBoxes(framing, commitsOf(framing, moved))
   }
 
   return { onBoxes, relayout }

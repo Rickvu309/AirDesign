@@ -50,3 +50,10 @@ export function relaidBoxes(
   for (const top of tops) collect(register, top, laid)
   return laid
 }
+
+export function draggedSize(box: Box, now: Box | undefined, grip: string): Box {
+  if (now === undefined) return box
+  const width = grip.includes("left") || grip.includes("right")
+  const height = grip.includes("top") || grip.includes("bottom")
+  return { ...box, cx: width ? box.cx : now.cx, cy: height ? box.cy : now.cy }
+}
