@@ -42,6 +42,7 @@ import {
 
 import type { Deck } from "./call.js"
 import { framedElement, readFrames } from "./read-frames.js"
+import { slideArrangement } from "./slide-arrangement-read.js"
 
 export const readTokens = 8000
 
@@ -72,7 +73,7 @@ export type ReadDeckAnswer = {
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<
     IndexSlide,
-    "id" | "position" | "palette" | "templateStyle" | "textStyles" | "skipped" | "transition"
+    "id" | "position" | "palette" | "templateStyle" | "textStyles" | "skipped" | "transition" | "guides"
   >[]
   readonly templateStyles?: readonly ReadTemplateStyle[]
   readonly palettes?: readonly Palette[]
@@ -410,9 +411,6 @@ export function readDeckPage(
     }
     const templateStyle =
       typeof rows === "object" ? rows.set : typeof source === "object" ? source.set : importedStyle(id)
-    const transitionEdit = body === undefined ? undefined : landedPatch(body, "text").transition?.value
-    const indexedTransition = index?.slides.find((source) => source.id === id)?.transition
-    const transition = typeof transitionEdit === "object" ? transitionEdit.set : indexedTransition
     return {
       id,
       position,
@@ -420,7 +418,10 @@ export function readDeckPage(
       ...styles,
       ...(palette === undefined || palette === 0 ? {} : { palette }),
       ...(templateStyle === undefined ? {} : { templateStyle }),
-      ...(transition === undefined ? {} : { transition }),
+      ...slideArrangement(
+        body,
+        index?.slides.find((source) => source.id === id),
+      ),
     }
   }
   const styled = styledHead(index?.palettes, styleFields(deck.register))

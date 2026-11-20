@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
@@ -34,6 +34,8 @@ import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useShortcutsKey } from "@/editor/shortcuts-key"
 import { useToolKeys } from "@/editor/tool-keys"
 import { useChromeKeys } from "@/editor/chrome-keys"
+import type { PartsWatch } from "@/editor/use-deck-paint"
+import { useKeptView } from "@/editor/kept-view"
 import { ShortcutsPanel } from "@/editor/shortcuts-panel"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -48,11 +50,16 @@ import { usePresent } from "@/present/use-present"
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
+const unwatched = () => () => undefined
+const unchanged = () => 0
+
 export type EditorDeck = {
   readonly id?: string
   readonly slides: SlideStrip
   readonly size: SlideSize | null
-  readonly slide: (width: number) => ReactNode
+  readonly slide: (width: number, rulers?: boolean) => ReactNode
+  readonly rulers?: () => ReactNode
+  readonly displayed?: Pick<PartsWatch, "subscribe" | "version">
   readonly onExport: (request?: ExportRequest) => Promise<void> | void
   readonly undo: UndoButtonsState
   readonly selection?: Selection
@@ -129,6 +136,10 @@ export function EditorShell({
   const [shortcutsOpen, setShortcutsOpen] = useState(shortcutsShown)
   const [bare, setBare] = useState(false)
   const [listHidden, setListHidden] = useState(false)
+  const [rulers, setRulers] = useKeptView("rulers")
+  const watched = rulers ? deck?.displayed : undefined
+  const version = watched?.version ?? unchanged
+  useSyncExternalStore(watched?.subscribe ?? unwatched, version, version)
   const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
@@ -161,6 +172,7 @@ export function EditorShell({
   useChromeKeys(deck !== undefined && !gridOpen && present.show === null, {
     onHideAll: () => setBare((now) => !now),
     onSlideList: () => setListHidden((now) => !now),
+    onRulers: () => setRulers(!rulers),
   })
   useShortcutsKey(deck !== undefined && present.show === null, () => setShortcutsOpen((open) => !open))
   function withShortcuts(editor: ReactNode) {
@@ -322,6 +334,7 @@ export function EditorShell({
           canvasHeight={canvas.height}
           overlay={canvas.overlay}
           view={view}
+          {...(rulers && deck?.rulers !== undefined ? { rulers: deck.rulers() } : {})}
           {...(size === null
             ? {}
             : {
@@ -342,7 +355,7 @@ export function EditorShell({
             {deck === undefined ? (
               <RevenueSlide width={width} working={working} selected={run === "compose"} />
             ) : (
-              deck.slide(width)
+              deck.slide(width, rulers)
             )}
           </div>
         </CanvasStage>
@@ -386,6 +399,7 @@ export function EditorShell({
                 zoom={zoom}
                 percent={zoomPercent(width, size)}
                 onZoom={zoomTo}
+                {...(deck.rulers === undefined ? {} : { rulers: { shown: rulers, onChange: setRulers } })}
                 {...(deck.selection === undefined || deck.selection.ids.length === 0
                   ? {}
                   : { onSelection: zoomToSelection })}

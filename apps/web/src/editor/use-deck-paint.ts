@@ -17,6 +17,30 @@ import { structureOf } from "@/table-hook"
 
 export type DeckPaint = ReturnType<typeof useDeckPaint>
 
+export type PartsWatch = {
+  readonly subscribe: (listener: () => void) => () => void
+  readonly version: () => number
+  readonly changed: () => void
+}
+
+function partsWatch(): PartsWatch {
+  const listeners = new Set<() => void>()
+  let version = 0
+  return {
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+    version: () => version,
+    changed() {
+      version += 1
+      for (const listener of Array.from(listeners)) listener()
+    },
+  }
+}
+
 export function useDeckPaint(
   id: string,
   pictureTool: { readonly store: PictureStore },
@@ -37,6 +61,7 @@ export function useDeckPaint(
   const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
+  const displayed = useRef(partsWatch())
   const [entering, setEntering] = useState<Entering | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
@@ -60,7 +85,10 @@ export function useDeckPaint(
     movables.current = next.movables
     shapes.current = next.shapes
     editParts.current = next.base
-    displayParts.current = next.display
+    if (displayParts.current !== next.display) {
+      displayParts.current = next.display
+      displayed.current.changed()
+    }
     canvases.current = next.canvases
     pictures.current?.release()
     pictures.current = next.pictures
@@ -97,6 +125,7 @@ export function useDeckPaint(
     shownRegister,
     editParts,
     displayParts,
+    displayed: displayed.current,
     canvases,
     pictures,
     busy,

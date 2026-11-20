@@ -291,3 +291,61 @@ it("sets two slides' skip state in one MCP edit and reports both on read", async
     await server.close()
   }
 })
+
+it("sets a slide's guides in points through MCP and keeps them in EMU on the slide", async () => {
+  const held = session()
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const guides = [
+      { axis: "x", offset: 36 },
+      { axis: "y", offset: 270 },
+    ]
+    const changed = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: held.deck.revision,
+        changes: [{ op: "set", target: "256", guides: { ruler: guides } }],
+      },
+    })
+    expect(changed.isError).not.toBe(true)
+    const body = held.deck.register.elements[elementId("256.slide")]
+    if (body === undefined) throw new Error("slide")
+    expect(landedPatch(body, "text").guides).toEqual({
+      ruler: {
+        set: [
+          { axis: "x", offset: 457_200 },
+          { axis: "y", offset: 3_429_000 },
+        ],
+      },
+    })
+    const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+    expect(read.structuredContent).toMatchObject({
+      slides: [
+        {
+          id: "256",
+          guides: [
+            { axis: "x", offset: 457_200 },
+            { axis: "y", offset: 3_429_000 },
+          ],
+        },
+      ],
+    })
+    const refused = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: held.deck.revision,
+        changes: [{ op: "set", target: "256.2", guides: { ruler: guides } }],
+      },
+    })
+    expect(refused.isError).toBe(true)
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})

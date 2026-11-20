@@ -1,4 +1,4 @@
-import { readArrival, readShows, shownLink } from "@airdesign/pptx"
+import { readArrival, readShows, readSlideGuides, shownLink } from "@airdesign/pptx"
 import {
   changeFills,
   format,
@@ -149,6 +149,14 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
         shows: (value) => value,
       },
     },
+  },
+  guides: {
+    deck: "census-updating-spm.pptx",
+    kind: "slide",
+    node: "302.slide",
+    opening: () => ({ v: format, patch: { guides: { ruler: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { guides: { ruler: { set: value } } } }),
+    fields: { ruler: { file: (parts, at) => readSlideGuides(parts, at.part), shows: (value) => value } },
   },
   geometry: {
     deck: "clean.pptx",

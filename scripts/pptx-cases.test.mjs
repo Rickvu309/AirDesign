@@ -47,6 +47,7 @@ assert.deepEqual(
     "shapes.mjs",
     "slide-background.mjs",
     "slide-edits.mjs",
+    "slide-guides.mjs",
     "slide-hidden.mjs",
     "slide-skip.mjs",
     "slide-subset.mjs",

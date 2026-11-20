@@ -31,6 +31,9 @@ export const shortcutCopy = {
     deselect: "Clear the selection",
     "edit-text": "Edit text, or select the layers inside",
     delete: "Delete",
+    rulers: "Show or hide rulers",
+    "guide-add": "Add a guide",
+    "guide-duplicate": "Duplicate a guide",
     move: "Move",
     "duplicate-drag": "Duplicate while dragging",
     "snap-off": "Move without snapping",
@@ -135,6 +138,8 @@ export const shortcutCopy = {
     edge: "an edge",
     rotate: "outside a corner",
     slide: "on empty space",
+    ruler: "from a ruler",
+    guide: "a guide",
   },
   chord: {
     mac: { ctrl: "⌃", alt: "⌥", shift: "⇧", mod: "⌘", meta: "⌘" },

@@ -148,6 +148,7 @@ export {
   readFloor,
 } from "./slide-floor.js"
 export { type TransitionValue } from "./trait-transition.js"
+export { readGuideList, type Guide } from "./trait-guides.js"
 export { widestEffect } from "./trait-effects.js"
 export {
   changeEffects,

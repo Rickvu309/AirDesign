@@ -197,6 +197,16 @@
   --guide-label-offset: 6px;
   --guide-label-text: #ffffff;
   --guide-dash: 3 3;
+  --ruler-size: 20px;
+  --ruler-surface: var(--background);
+  --ruler-edge: var(--line);
+  --ruler-tick: var(--faint);
+  --ruler-text: var(--quiet);
+  --ruler-text-size: 10px;
+  --ruler-selection: var(--primary-15);
+  --ruler-selection-text: var(--primary-strong);
+  --ruler-guide: var(--snap-guide);
+  --ruler-guide-reach: 5px;
   --slide-marquee-edge: var(--ring);
   --slide-marquee-fill: color-mix(in oklch, var(--slide-marquee-edge) 10%, transparent);
   --slide-marquee-width: 1px;

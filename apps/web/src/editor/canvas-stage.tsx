@@ -24,6 +24,7 @@ export function CanvasStage({
   limits,
   onZoom,
   view,
+  rulers,
   children,
 }: {
   fit?: boolean
@@ -37,6 +38,7 @@ export function CanvasStage({
   limits?: WidthLimits
   onZoom?: (width: number) => void
   view?: RefObject<CanvasView | null>
+  rulers?: ReactNode
   children: ReactNode
 }) {
   const root = useRef<HTMLDivElement>(null)
@@ -87,6 +89,7 @@ export function CanvasStage({
       <div ref={stage} className="absolute inset-0 overflow-auto" data-canvas-stage data-canvas-fit={fit}>
         <div
           ref={content}
+          data-canvas-content
           className="flex w-max min-w-full flex-col items-center"
           style={{
             paddingInline: padding?.inline ?? canvasInset.side,
@@ -97,6 +100,7 @@ export function CanvasStage({
           {children}
         </div>
       </div>
+      {rulers}
       {hand || gestures.space || gestures.panning ? (
         <div
           className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"

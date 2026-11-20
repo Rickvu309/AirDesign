@@ -200,6 +200,7 @@ describe("the server admits only the edits the device can write onto an element 
       "templateStyle.id",
       "show.skipped",
       "transition.value",
+      "guides.ruler",
     ])
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
     expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([

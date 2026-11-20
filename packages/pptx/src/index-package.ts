@@ -16,6 +16,7 @@ import { templateStyles } from "./template-style.js"
 import { slideTheme } from "./theme-swatches.js"
 import { readNotes } from "./notes-body.js"
 import { readArrival } from "./transition-read.js"
+import { readSlideGuides } from "./guide-list.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
 import { slideSkipped } from "./slide-show.js"
@@ -53,6 +54,11 @@ function indexedTransition(bytes: Uint8Array | undefined) {
   if (arrival.state === "kept") return { transition: "kept" as const }
   if ("none" in arrival.value && "click" in arrival.value.none.advance) return {}
   return { transition: arrival.value }
+}
+
+function indexedGuides(parts: ReadonlyMap<string, Uint8Array>, part: string) {
+  const guides = readSlideGuides(parts, part)
+  return guides.length === 0 ? {} : { guides }
 }
 
 function valueOf(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
@@ -94,6 +100,7 @@ export function indexPackage(
       ...(slideSkipped(elements[0]) ? { skipped: true as const } : {}),
       animated: animatedShapeIds(elements),
       ...indexedTransition(bytes),
+      ...indexedGuides(parts, part),
     }
   })
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))

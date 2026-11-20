@@ -6,6 +6,7 @@ import { connectionWire } from "./trait-wire-connection.js"
 import { effectsWire } from "./trait-wire-effects.js"
 import { fillsWire } from "./trait-wire-fills.js"
 import { geometryWire } from "./trait-wire-geometry.js"
+import { guidesWire } from "./trait-wire-guides.js"
 import { identityWire } from "./trait-wire-identity.js"
 import { layoutWire } from "./trait-wire-layout.js"
 import { linkWire } from "./trait-wire-link.js"
@@ -46,4 +47,5 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
     fields: { skipped: { description: "Skip in Present.", example: { show: { skipped: true } } } },
   },
   transition: transitionWire,
+  guides: guidesWire,
 }

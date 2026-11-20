@@ -121,3 +121,18 @@ describe("nearestLine", () => {
     expect(nearestLine(at(503, 100), targets(at(400, 0)), "x", ["start"], 5)).toEqual({ line: "start", offset: -3 })
   })
 })
+
+describe("guides", () => {
+  const guided = (x: readonly number[], y: readonly number[]): SnapTargets => ({ layers: [], slide, guides: { x, y } })
+
+  it("snaps a layer's edges and centre onto a guide on its own axis, drawing no snap guide over it", () => {
+    expect(snapMove(at(612, 300), guided([610], []), 5)).toEqual({ box: at(610, 300), guides: [] })
+    expect(snapMove(at(612, 300), guided([], [610]), 5).box).toEqual(at(612, 300))
+    expect(snapMove(at(300, 657), guided([], [710]), 5).box).toEqual(at(300, 660))
+    expect(snapMove(at(300, 657), guided([], [758]), 5).box).toEqual(at(300, 658))
+  })
+
+  it("lets a resize find a guide as it finds a layer's edge", () => {
+    expect(nearestLine(at(300, 300), guided([403], []), "x", ["end"], 5)).toEqual({ line: "end", offset: 3 })
+  })
+})

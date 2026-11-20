@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react"
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuRadioItem,
@@ -68,6 +69,40 @@ export function EditorMenuRow({
         </span>
       )}
     </DropdownMenuRadioItem>
+  )
+}
+
+export function EditorMenuCheck({
+  label,
+  checked,
+  shortcut,
+  keys,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  shortcut?: string
+  keys?: string
+  onChange: (checked: boolean) => void
+}) {
+  return (
+    <DropdownMenuCheckboxItem
+      checked={checked}
+      onCheckedChange={onChange}
+      closeOnClick
+      {...(keys === undefined ? {} : { "aria-keyshortcuts": keys })}
+      className={cn(menuRow, "[&>[data-slot=dropdown-menu-checkbox-item-indicator]]:hidden")}
+    >
+      <span className="flex size-4 items-center justify-center">
+        {checked ? <EditorIcon name="check" size={14} className="size-3.5" /> : null}
+      </span>
+      <span className="flex-1">{label}</span>
+      {shortcut === undefined ? null : (
+        <span aria-hidden={keys !== undefined} className="text-xs text-[var(--shortcut)]">
+          {shortcut}
+        </span>
+      )}
+    </DropdownMenuCheckboxItem>
   )
 }
 

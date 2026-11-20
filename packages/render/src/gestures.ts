@@ -1,4 +1,4 @@
-export type Where = "slide" | "element" | "text" | "slides" | "grid" | "editor" | "show"
+export type Where = "slide" | "element" | "guide" | "text" | "slides" | "grid" | "editor" | "show"
 
 type Chord = {
   readonly mod?: true
@@ -11,7 +11,7 @@ type Chord = {
 export type Keys = Chord & ({ readonly key: string } | { readonly code: string })
 
 export type Pointing = {
-  readonly on: "element" | "corner" | "edge" | "rotate" | "slide"
+  readonly on: "element" | "corner" | "edge" | "rotate" | "slide" | "ruler" | "guide"
   readonly drag: boolean
   readonly shift?: true
   readonly mod?: true
@@ -115,9 +115,9 @@ export const gestures = [
     pointing: [{ on: "element", drag: false, alt: true, hover: true }],
     where: ["slide"],
   },
-  { id: "deselect", group: "select", keys: [{ key: "Escape" }], where: ["element", "text"] },
+  { id: "deselect", group: "select", keys: [{ key: "Escape" }], where: ["element", "text", "guide"] },
   { id: "edit-text", group: "select", keys: [{ key: "Enter" }], where: ["element"] },
-  { id: "delete", group: "select", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["element"] },
+  { id: "delete", group: "select", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["element", "guide"] },
   { id: "move", group: "move", keys: [], pointing: [{ on: "element", drag: true }], where: ["slide"] },
   {
     id: "duplicate-drag",
@@ -266,6 +266,15 @@ export const gestures = [
   },
   { id: "zoom-selection", group: "view", keys: [{ code: "Digit2", shift: true }], where: ["editor"] },
   { id: "design-mode", group: "view", keys: [{ key: "d", shift: true }], where: ["editor"] },
+  { id: "rulers", group: "view", keys: [{ key: "r", shift: true }], where: ["editor"] },
+  { id: "guide-add", group: "view", keys: [], pointing: [{ on: "ruler", drag: true }], where: ["editor"] },
+  {
+    id: "guide-duplicate",
+    group: "view",
+    keys: [],
+    pointing: [{ on: "guide", drag: true, alt: true }],
+    where: ["editor"],
+  },
   { id: "tool-move", group: "tools", keys: [{ key: "v" }], where: ["editor"] },
   { id: "tool-hand", group: "tools", keys: [{ key: "h" }], where: ["editor"] },
   { id: "tool-text", group: "tools", keys: [{ key: "t" }], where: ["editor"] },
