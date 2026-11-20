@@ -6,6 +6,7 @@ import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import {
   frameBackdrop,
   frameMembers,
+  groupFrame,
   groupBounds,
   groupParent,
   frameSource,
@@ -16,6 +17,7 @@ import {
 } from "./element-group.js"
 import { memberOf, placeOf, type PlacedRow } from "./group-place.js"
 import { dropSpot, joinTurn, spotNow } from "./group-join.js"
+import { rebased } from "./group-space.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { floorOf, openingElement } from "./slide-floor.js"
 import type { Framing } from "./frame-index.js"
@@ -126,8 +128,12 @@ function boxNow(register: Register, node: ElementId, fallback: Box): Box {
   }
 }
 
-function childBox(register: Register, member: Member): Box {
-  const own = boxNow(register, member.node, member.box)
+type Settled = (node: ElementId) => Box | null
+
+const unsettled: Settled = () => null
+
+function childBox(register: Register, member: Member, settled: Settled): Box {
+  const own = settled(member.node) ?? boxNow(register, member.node, member.box)
   return { ...member.box, cx: own.cx, cy: own.cy }
 }
 
@@ -144,6 +150,7 @@ function laidOut(
   made: FrameSource,
   members: readonly Member[],
   origin: Box,
+  settled: Settled,
   fields: {
     readonly flow: Exclude<Flow, "none">
     readonly gap: number
@@ -154,7 +161,7 @@ function laidOut(
   const horizontal = fields.flow === "horizontal"
   const shown = members.filter((member) => !hiddenNow(register, member.node))
   const slots = shown.map((member) => {
-    const box = childBox(register, member)
+    const box = childBox(register, member, settled)
     const bounds = groupBounds([{ ...member, box }])
     return { member, box, bounds }
   })
@@ -176,7 +183,7 @@ function laidOut(
   }
   const opened = made.box
   for (const member of members.filter((each) => !shown.includes(each))) {
-    const box = childBox(register, member)
+    const box = childBox(register, member, settled)
     children.push({
       node: member.node,
       box: { ...box, x: origin.x + box.x - opened.x, y: origin.y + box.y - opened.y },
@@ -199,15 +206,27 @@ function heldFree(
   made: FrameSource,
   members: readonly Member[],
   origin: Box,
+  settled: Settled,
 ): readonly LayoutChild[] {
   const opened = made.box
   return members.map((member) => {
+    const fitted = settled(member.node)
+    if (fitted !== null) return { node: member.node, box: fitted }
     const box = boxNow(register, member.node, { ...member.box, x: member.box.x - opened.x, y: member.box.y - opened.y })
     return { node: member.node, box: { ...box, x: origin.x + box.x, y: origin.y + box.y } }
   })
 }
 
-export function readLayout(register: Register, node: ElementId): LayoutView | null {
+export function unsettledLayout(register: Register, node: ElementId): LayoutView | null {
+  return readLayout(register, node, unsettled)
+}
+
+export function readLayout(
+  register: Register,
+  node: ElementId,
+  settled: Settled = (child) =>
+    groupFrame(register, child) === null ? null : (rebased(register, child)?.place.box ?? null),
+): LayoutView | null {
   const backdrop = frameBackdrop(register, node)
   const made = frameSource(register, node)
   if (backdrop === null || made === null) return null
@@ -220,8 +239,8 @@ export function readLayout(register: Register, node: ElementId): LayoutView | nu
   const origin = frameOrigin(register, node, made)
   const view = { node, backdrop, flow, gap, padding, align, opacity }
   const members = frameMembers(register, node)
-  if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin) }
-  return { ...view, ...laidOut(register, made, members, origin, { flow, gap, padding, align }) }
+  if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin, settled) }
+  return { ...view, ...laidOut(register, made, members, origin, settled, { flow, gap, padding, align }) }
 }
 
 export function layoutNodes(register: Register): readonly ElementId[] {

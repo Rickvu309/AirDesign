@@ -231,13 +231,10 @@ describe("a layer inside a group", () => {
     near(storedPlace(turned, first, shownPlace(turned, first)!), { ...flat(square(0, 0)), rot: 900_000 })
   })
 
-  it("refuses a box change where the group's place is unknown or a frame holds the group", () => {
+  it("refuses a box change where the group's place is unknown, and moves a layer whose group a frame holds", () => {
     const refused = (node: typeof group) => plan({ target: { node }, box: { x: 1 } })
     expect(refused(lost)).toEqual({ ok: false, refusals: [{ node: lost, trait: "box", code: "group-box" }] })
-    expect(refused(framedLeaf)).toEqual({
-      ok: false,
-      refusals: [{ node: framedLeaf, trait: "box", code: "group-box" }],
-    })
+    expect(shownPlace(planned({ target: { node: framedLeaf }, box: { x: 3000 } }), framedLeaf)?.box.x).toBe(3000)
   })
 
   it("ungroups a moved layer where it shows, and puts it back inside its group on undo", () => {
