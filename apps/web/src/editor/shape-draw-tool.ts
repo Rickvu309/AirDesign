@@ -1,5 +1,5 @@
 import { lineGeometries, type Geometry } from "@airdesign/document"
-import type { ShapeDrawing, ShapeDrawn, ShapeLook } from "@airdesign/render"
+import { gestureFor, type ShapeDrawing, type ShapeDrawn, type ShapeLook } from "@airdesign/render"
 import { useEffect } from "react"
 import { typing, type ToolPick } from "@/editor/pointer-tool"
 
@@ -29,8 +29,7 @@ export function useArmedShapeEnter(pointer: ToolPick, onShape: ShapeAdd | undefi
     if (armed === null || onShape === undefined) return
     const shape = armed
     function placed(event: KeyboardEvent) {
-      const plain = !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey
-      if (event.key !== "Enter" || !plain || event.isComposing || typing(event.target)) return
+      if (gestureFor(event, "armed") !== "place-shape" || event.isComposing || typing(event.target)) return
       event.preventDefault()
       event.stopPropagation()
       pick("move")

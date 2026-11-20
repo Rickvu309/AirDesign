@@ -93,6 +93,7 @@ export const shortcutCopy = {
     "tool-ellipse": "Add an ellipse",
     "tool-line": "Add a line",
     "tool-arrow": "Add an arrow",
+    "place-shape": "Place the shape the tool holds",
     "place-image": "Add an image",
     "tool-eyedropper": "Eyedropper",
     "layers-panel": "Show layers",
