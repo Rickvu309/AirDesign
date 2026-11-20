@@ -4,7 +4,16 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { runCheck, stepRunner, stepsOf } from "./check.mjs"
-import { checkSteps, designScans, designShardOf, designShardVariable, onCi, partOf, shardOf } from "./check-steps.mjs"
+import {
+  browserShares,
+  checkSteps,
+  designScans,
+  designShardOf,
+  designShardVariable,
+  onCi,
+  partOf,
+  shardOf,
+} from "./check-steps.mjs"
 
 const { isPreflight, mayPush, stagesFor, stampable, warns } = checkSteps
 const stages = stagesFor("all", true)
@@ -208,9 +217,14 @@ const browserStep = (part, shard) =>
     .find(([name]) => name === "browser-tests")
 const browserRun = (part, shard) => browserStep(part, shard)?.[2].join(" ")
 const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\\.spec\\.ts"
+if (browserRun("browser") !== `test:browser ${exceptDesignScans}`)
+  throw new Error("a browser part with no shard runs every browser test outside the design scans")
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const sharesOfThree = browserShares(repoRoot, 3).shares
 for (const current of [1, 2, 3]) {
-  if (browserRun("browser", { current, total: 3 }) !== `test:browser ${exceptDesignScans} --shard=${current}/3`)
-    throw new Error(`shard ${current} does not run its share of the browser tests outside the design scans`)
+  const files = sharesOfThree[current - 1].map((name) => `tests/browser/${name.replaceAll(".", "\\.")}$`)
+  if (browserRun("browser", { current, total: 3 }) !== `test:browser ${files.join(" ")}`)
+    throw new Error(`shard ${current} does not run its weighted share of the spec files outside the design scans`)
   if (ranWhen("browser", true).join() !== "test-imports,browser-build,browser-tests")
     throw new Error(`shard ${current} must run only its share of the browser tests`)
 }

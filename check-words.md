@@ -80,6 +80,10 @@ _Avoid_: target, threshold
 The most seconds a timed step may take.
 _Avoid_: budget, ceiling, threshold
 
+**spec seconds**:
+The seconds one browser spec file took, summed over its tests, as `tests/browser/spec-seconds.json` records them. The browser and corpus shards split files by them.
+_Avoid_: weight, shard weight, timing
+
 **frame time**:
 The milliseconds from one painted frame to the next. At 60 frames a second it is 16.7.
 _Avoid_: fps, frame rate

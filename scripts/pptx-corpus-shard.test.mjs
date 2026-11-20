@@ -1,6 +1,15 @@
 import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
-import { checkFails, corpusDecision, corpusInputs, corpusPartition } from "./pptx-corpus.mjs"
+import { loadCases } from "./pptx-cases.mjs"
+import {
+  checkFails,
+  corpusCaseShares,
+  corpusCases,
+  corpusDecision,
+  corpusInputs,
+  corpusPartition,
+} from "./pptx-corpus.mjs"
+import { readSpecSeconds } from "./spec-seconds.mjs"
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url))
 const same = (name, actual, expected) => assert.deepEqual(actual, expected, name)
@@ -67,3 +76,34 @@ for (const failed of [0, 1]) {
     failed > 0,
   )
 }
+
+const entries = await loadCases(repoRoot)
+const exported = readSpecSeconds(repoRoot).export
+const caseHalves = [1, 2].map((shard) =>
+  corpusCases({ argv: ["--corpus", `--shard=${shard}/2`], entries, seconds: exported }),
+)
+same(
+  "each case entry runs in exactly one corpus shard",
+  caseHalves.flatMap((half) => half.map((entry) => entry.file)).sort(),
+  entries.map((entry) => entry.file).sort(),
+)
+assert.ok(
+  caseHalves[0].filter((entry) => (entry.specs ?? []).length === 0).length ===
+    entries.filter((entry) => (entry.specs ?? []).length === 0).length,
+  "an entry that writes its files with no browser spec stays with the fixed work",
+)
+const specsOf = (half) => new Set(half.flatMap((entry) => entry.specs ?? []))
+const [first, second] = caseHalves.map(specsOf)
+assert.ok(
+  [...first].every((spec) => !second.has(spec)),
+  "a browser spec runs in one corpus shard, with every entry that shares it",
+)
+assert.deepEqual(corpusCases({ argv: ["--corpus"], entries, seconds: exported }), entries)
+assert.deepEqual(corpusCases({ argv: [], entries, seconds: exported }), entries)
+const { loads } = corpusCaseShares({ entries, seconds: exported })
+assert.ok(Math.abs(loads[0] - loads[1]) <= Math.max(...Object.values(exported)), "the export specs split evenly")
+const unknown = { file: "unknown.mjs", specs: ["tests/browser/unknown.spec.ts"], exports: ["exported-unknown.pptx"] }
+const withUnknown = [1, 2].map((shard) =>
+  corpusCases({ argv: ["--corpus", `--shard=${shard}/2`], entries: [...entries, unknown], seconds: exported }),
+)
+assert.equal(withUnknown.flat().filter((entry) => entry === unknown).length, 1, "a new entry lands in one shard")
