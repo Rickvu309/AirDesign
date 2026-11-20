@@ -158,6 +158,7 @@ export const gestures = [
     where: ["slide"],
   },
   { id: "rotate", group: "size", keys: [], pointing: [{ on: "rotate", drag: true }], where: ["slide"] },
+  { id: "crop", group: "size", keys: [], pointing: [{ on: "element", drag: false, double: true }], where: ["slide"] },
   {
     id: "resize-keys",
     group: "size",

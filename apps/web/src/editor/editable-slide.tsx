@@ -1,4 +1,4 @@
-import { format, type ElementId, type Register, type SetChange, type StackMove } from "@airdesign/document"
+import { format, type ElementId, type Register, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import {
   boxOf,
@@ -20,6 +20,8 @@ import { commitEdit, cornersPatch, flushPending, storeBoxes, type BoxCommit, typ
 import { latestFit } from "@/editor/latest-fit"
 import { resizedCorners } from "@/resized-corners"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { canvasCropChange } from "@/design/crop-change"
+import { flipChanges, turnChanges } from "@/editor/turn-changes"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { toggleLayerFlag } from "@/editor/layer-flags"
 import { valueFits } from "@/design/trait-edit"
@@ -254,24 +256,13 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     })
   }
 
-  function angleUnits(degrees: number): number {
-    const normalized = ((degrees % 360) + 360) % 360
-    return Math.round(normalized * 60_000) % 21_600_000
+  function framingNow(): Register | null {
+    const shownRegister = deck.shown.shownRegister.current
+    return shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
   }
 
   function onRotate(turned: readonly Turned[]) {
-    const shownRegister = deck.shown.shownRegister.current
-    const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
-    const changes: readonly SetChange[] = turned.map((each) => {
-      const placed = each.box === undefined ? undefined : storedBox(framing, each.id, each.box)
-      return {
-        target: { node: each.id },
-        box: {
-          ...(placed === undefined ? {} : { x: placed.x, y: placed.y }),
-          rot: angleUnits(each.rotation),
-        },
-      }
-    })
+    const changes = turnChanges(framingNow(), turned)
     const clearLive = async () => {
       const currentRegister = await deviceRegister(id)
       for (const each of turned) {
@@ -288,20 +279,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
   }
 
   function onFlip(flipped: readonly FlippedLayer[]) {
-    const shownRegister = deck.shown.shownRegister.current
-    const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
-    const changes: readonly SetChange[] = flipped.map((each) => {
-      const placed = each.box === undefined ? undefined : storedBox(framing, each.id, each.box)
-      return {
-        target: { node: each.id },
-        box: {
-          ...(placed === undefined ? {} : { x: placed.x, y: placed.y }),
-          ...(each.rotation === undefined ? {} : { rot: angleUnits(each.rotation) }),
-          ...(each.flipH === undefined ? {} : { flipH: each.flipH }),
-          ...(each.flipV === undefined ? {} : { flipV: each.flipV }),
-        },
-      }
-    })
+    const changes = flipChanges(framingNow(), flipped)
     changeDesign(deck, () => changes)
   }
 
@@ -436,6 +414,10 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
             onConnect={(node, end, to) => {
               clear()
               changeDesign(deck, () => endChange(node, end, to))
+            }}
+            onCrop={(node, cropped) => {
+              clear()
+              changeDesign(deck, () => canvasCropChange(node, cropped))
             }}
             onGroup={(nodes) => {
               clear()

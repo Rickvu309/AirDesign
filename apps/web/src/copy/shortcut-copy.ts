@@ -42,6 +42,7 @@ export const shortcutCopy = {
     nudge: "Nudge",
     "nudge-far": "Nudge 10",
     resize: "Resize",
+    crop: "Crop an image",
     rotate: "Rotate",
     "resize-keys": "Resize with the arrow keys",
     "rotate-keys": "Rotate 1°, or 15° with Shift",

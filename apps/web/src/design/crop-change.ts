@@ -1,4 +1,5 @@
-import type { Box, ScopedElement, SetChange } from "@airdesign/document"
+import type { Box, ElementId, ScopedElement, SetChange } from "@airdesign/document"
+import type { Cropped } from "@airdesign/render"
 
 type Rect = { readonly l: number; readonly t: number; readonly r: number; readonly b: number }
 
@@ -33,5 +34,14 @@ export function cropChange(view: ScopedElement, before: unknown): (value: unknow
     const fills = { crop: value, mode: "crop" } as SetChange["fills"]
     if (box === null) return { target, fills }
     return { target, fills, box: { x: box.x, y: box.y, w: box.cx, h: box.cy } }
+  }
+}
+
+export function canvasCropChange(node: ElementId, cropped: Cropped): SetChange {
+  const { frame, crop } = cropped
+  return {
+    target: { node },
+    fills: { crop, mode: "crop" } as SetChange["fills"],
+    box: { x: frame.x, y: frame.y, w: frame.width, h: frame.height },
   }
 }

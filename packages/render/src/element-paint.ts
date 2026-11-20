@@ -21,6 +21,11 @@ export type CanvasGeometry = {
   }
 }
 
+export type CanvasCrop = {
+  readonly url: string
+  readonly image: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+}
+
 export type Framing = "auto" | "free"
 
 export type Measure = "due" | "owed"
@@ -63,5 +68,6 @@ export type ElementPaint = {
   readonly chart?: CanvasChart
   readonly label?: string
   readonly layers?: readonly CanvasLayer[]
+  readonly crop?: CanvasCrop
   readonly connection?: CanvasConnection
 }

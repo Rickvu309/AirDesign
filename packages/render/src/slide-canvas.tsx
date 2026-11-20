@@ -1,8 +1,18 @@
-import { Fragment, memo, useLayoutEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react"
+import {
+  Fragment,
+  memo,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react"
 import type { CellRange, ElementId, StackMove, TableChange } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import { CopiedLayer } from "./copied-layer.js"
+import { CropLayer, cropFits, type Cropped } from "./crop-frame.js"
 import type { End } from "./connector-drag.js"
 import { targetsOf } from "./connector-follow.js"
 import { PaintedElement } from "./element-kind.js"
@@ -77,6 +87,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onFrame?: (ids: readonly ElementId[]) => void
   readonly onPlainFrame?: (ids: readonly ElementId[]) => void
   readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
+  readonly onCrop?: (id: ElementId, cropped: Cropped) => void
   readonly notice?: string
   readonly entering?: Entering | null
   readonly formatting?: TextFormatting
@@ -124,7 +135,25 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     },
     props.onDuplicate,
   )
-  const moving = props.onBoxes === undefined ? null : moves
+  const [cropping, setCropping] = useState<ElementId | null>(null)
+  const onCrop = props.onCrop
+  const moving =
+    props.onBoxes === undefined
+      ? null
+      : onCrop === undefined
+        ? moves
+        : {
+            ...moves,
+            doubleClick: (event: ReactMouseEvent<HTMLElement>, element: CanvasElement) => {
+              const chosen = moves.latest.current.ids
+              const plain = !event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey
+              if (!plain || !cropFits(element) || chosen.length !== 1 || chosen[0] !== element.id)
+                return moves.doubleClick(event, element)
+              event.preventDefault()
+              event.stopPropagation()
+              setCropping(element.id)
+            },
+          }
   const marquee = useSlideMarquee({
     surface,
     enabled: moving !== null,
@@ -171,6 +200,19 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   const lead = moving === null || many.length > 0 ? null : leadOf(moving.selection)
   const selected = lead === null ? undefined : slide.elements.find((each) => each.id === lead)
   const onConnect = selected?.kind === "connector" ? props.onConnect : undefined
+  const cropped =
+    cropping !== null && selected !== undefined && selected.id === cropping && cropFits(selected) ? selected : null
+  useLayoutEffect(() => {
+    if (cropping !== null && cropped === null) setCropping(null)
+  }, [cropping, cropped])
+  function cropDone(id: ElementId, change: Cropped | null) {
+    setCropping(null)
+    if (change !== null) onCrop?.(id, change)
+    const key = slide.elements.find((each) => each.id === id)?.key
+    const frame =
+      key === undefined ? null : surface.current?.querySelector<HTMLElement>(`[data-canvas-element="${key}"]`)
+    frame?.focus({ preventScroll: true })
+  }
   useMeasuring(surface, slide, props.store, ids, moving?.guides)
   const entered = useRef<ElementId | null>(null)
   const keys = props.entering?.keys
@@ -310,7 +352,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           store={props.store}
         />
       )}
-      {moving === null || selected === undefined || selected.id === null ? null : (
+      {moving === null || selected === undefined || selected.id === null || cropped !== null ? null : (
         <SelectionFrame
           element={selected}
           id={selected.id}
@@ -319,6 +361,17 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           rotatable={props.onRotate !== undefined && canRotateElement(selected) && onConnect === undefined}
           scaled={scaled}
           store={props.store}
+        />
+      )}
+      {cropped === null || cropped.id === null ? null : (
+        <CropLayer
+          key={cropped.id}
+          element={cropped}
+          id={cropped.id}
+          onDone={cropDone}
+          scaled={scaled}
+          store={props.store}
+          unit={slide.width / width}
         />
       )}
       {moving === null ? null : <TransformHud channel={moving.hud} scaled={scaled} />}

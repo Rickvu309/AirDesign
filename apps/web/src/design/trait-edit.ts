@@ -181,6 +181,16 @@ function landedBefore(register: Register, node: ElementId, after: ElementPatch):
   return beforeOf(body === undefined ? {} : landedPatch(body, "text"), after)
 }
 
+function shownBoxBefore(before: ElementPatch, view: ScopedElement): ElementPatch {
+  const box = shownFields(view).box
+  if (before.box === undefined || box === undefined) return before
+  const fields = Object.entries(before.box).map(([field, edit]) => {
+    const shown = (box as Readonly<Record<string, number>>)[field]
+    return [field, edit === "opening" && shown !== undefined ? { set: shown } : edit]
+  })
+  return { ...before, box: Object.fromEntries(fields) }
+}
+
 function planned(deck: ChangingDeck, register: Register, change: SetChange): readonly Planned[] | null {
   const opened = indexed(deck.parts(), register)
   const scope = registerScope(opened)
@@ -193,7 +203,7 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
     const values = formatOne(row.patch, valueHolder(opened, node, "person"))
     if (view === undefined) return null
     if (values === null) {
-      const before = landedBefore(opened, node, row.patch)
+      const before = shownBoxBefore(landedBefore(opened, node, row.patch), view)
       const text = row.patch.text?.value
       if (text !== undefined && typeof text === "object" && !deck.fits(node, text.set)) return null
       rows.push({ node, row, step: { node, before, after: row.patch }, name: rowName(node, row) })
