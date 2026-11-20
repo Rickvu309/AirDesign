@@ -30,6 +30,7 @@ import { useSlideMarquee, type OwnsKey } from "./use-slide-marquee.js"
 import { canResizeElement, canRotateElement, type Turned } from "./transform-drag.js"
 import { TransformHud } from "./transform-hud.js"
 import type { FlippedLayer } from "./transform-math.js"
+import type { FitSize } from "./text-hug.js"
 
 const defaultTextSize = 203_200
 
@@ -58,7 +59,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly measuring?: boolean
   readonly highlights?: readonly ElementId[]
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
-  readonly onFit?: (id: ElementId, height: number) => void
+  readonly onFit?: (id: ElementId, size: FitSize) => void
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRotate?: (turned: readonly Turned[]) => void

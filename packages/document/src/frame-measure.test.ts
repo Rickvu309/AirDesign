@@ -102,7 +102,12 @@ describe("a measure an agent's edit owes", () => {
     expect(register.elements[a]?.guarded).toBe(false)
     expect(ran(register, [agent(a, { text: { value: { set: "Longer still" } } })]).elements[a]?.landed).toHaveLength(3)
     const resized = ran(column(), [
-      { command: "person", node: a, v: 13, patch: { box: { w: { set: 900 }, h: { set: 600 } } } },
+      {
+        command: "person",
+        node: a,
+        v: 13,
+        patch: { box: { x: { set: 100 }, y: { set: 100 }, w: { set: 900 }, h: { set: 600 } } },
+      },
     ])
     expect(resized.elements[a]?.guarded).toBe(true)
   })

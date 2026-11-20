@@ -186,6 +186,8 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   await (await saving).saveAs(file)
   const xml = (await partsOf(file)).get(slidePart)?.toString("utf8") ?? ""
   expect(xml).toMatch(/<p:cNvPr id="25" name="Box 25"\/>.*?<a:bodyPr anchor="t"><a:spAutoFit\/><\/a:bodyPr>/)
+  const fittedHeight = Number(/<p:cNvPr id="25" name="Box 25"\/>.*?<a:ext cx="\d+" cy="(\d+)"/.exec(xml)?.[1])
+  expect(fittedHeight / 9_525).toBeCloseTo(taller.height, 0)
   await opened(page, file)
   await actualSize(page)
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
@@ -194,7 +196,8 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   await unfold(page.locator("[data-design-element]"), bodyCopy.section)
   await expect(autofit).toHaveText(/^Resize shape to fit text/)
   await choose("Do not Autofit")
-  await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(loose.height, 0)
+  await expect(autofit).toHaveText(/^Do not Autofit/)
+  expect((await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
   expect((await laid(shapeAt(page, "25"))).font).toBe(loose.font)
 
   await shapeAt(page, "22").locator('[contenteditable="true"]').focus()

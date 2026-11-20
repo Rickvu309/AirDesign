@@ -62,6 +62,7 @@ assert.deepEqual(
     "template-style.mjs",
     "text-fields.mjs",
     "text-format.mjs",
+    "text-hug.mjs",
     "text.mjs",
     "trait-body.mjs",
     "trait-border.mjs",

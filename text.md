@@ -22,3 +22,11 @@ A line height of PowerPoint's single line, 100%: the font's own spacing, as Figm
 **fixed line height**:
 A line height in points that stays the same when the type size changes, as Figma's line height in pixels does. Typing `24pt` into Line height sets one, and the field then shows `24 pt` and reads a bare number as points until a `%` or Auto is typed. A paragraph stores it as `lineHeightPoints` in hundredths of a point, and a PowerPoint file keeps it as `lnSpc` with `spcPts`; an imported `spcPts` shows in the field the same way.
 _Avoid_: exact line spacing, absolute line height
+
+**text resizing**:
+How a text layer's box follows its words, with Figma's three names. **Auto width** grows and shrinks the box both ways as a person types, one line long; **Auto height** keeps the width and grows or shrinks the height; **Fixed size** keeps both, and words that do not fit draw past the box. A PowerPoint file keeps them in `bodyPr`: Auto width is `wrap="none"` with `spAutoFit`, Auto height is `wrap="square"` with `spAutoFit`, Fixed size has no autofit. The open tab measures the words and saves the box it draws as a row that sets only the box's height, or its width and height (`measuredOnly`), which neither guards a run nor counts as the person's writing. An imported box keeps its file's size until someone edits it.
+_Avoid_: autosize, shrink-wrap
+
+**text layer inset**:
+The room between a text layer's box and its words. Text a person or an agent adds in AirDesign has none, as a Figma text layer has no padding, and its file writes `lIns="0" tIns="0" rIns="0" bIns="0"` so PowerPoint does not add its 7.2 pt and 3.6 pt. Imported text keeps its own inset.
+_Avoid_: padding, margin (the design panel's Margins fields set it)

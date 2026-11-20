@@ -1,6 +1,5 @@
 import {
   memo,
-  useLayoutEffect,
   useMemo,
   useRef,
   type CSSProperties,
@@ -11,7 +10,7 @@ import {
   type RefObject,
 } from "react"
 import { keptCorners, type ElementId, type TableChange } from "@airdesign/document"
-import { memberAt } from "./box-gesture.js"
+import { boxOf, memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
@@ -30,9 +29,11 @@ import { leadOf } from "./selection.js"
 import { keepsFormat, runTextKey, textKeyOf, type TextFormatting } from "./text-formatting.js"
 import { FillLayers } from "./fill-layers.js"
 import { unshownFill } from "./unshown-fill.js"
-import { textHeight, useTextFit } from "./text-fit.js"
+import { useTextFit } from "./text-fit.js"
+import { useFitReport } from "./fit-report.js"
 import { presetTextArea, type TextArea } from "./preset-path.js"
 import { tidy } from "./effect-art.js"
+import type { FitSize } from "./text-hug.js"
 import { UnshownLabel } from "./unshown-label.js"
 
 const defaultInsetX = 91_440
@@ -53,38 +54,11 @@ export type ElementPaintProps = {
   readonly scaled: Scaled
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
-  readonly onFit?: ((id: ElementId, height: number) => void) | undefined
+  readonly onFit?: ((id: ElementId, size: FitSize) => void) | undefined
   readonly onTable?: ((id: ElementId, change: TableChange) => void) | undefined
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
   readonly targets?: Targets | undefined
-}
-
-function useFitReport(
-  layer: RefObject<HTMLDivElement | null>,
-  placed: CanvasElement,
-  scaled: Scaled,
-  report: (height: number) => void,
-) {
-  const reported = useRef<number | null>(null)
-  const answered = useRef(false)
-  useLayoutEffect(() => {
-    const shown = layer.current
-    const stored = placed.box?.height
-    const owed = placed.measure === "owed"
-    if (!owed) answered.current = false
-    if (shown === null || stored === undefined || placed.inFrame !== "auto") return
-    const grows = placed.text?.fit?.kind === "grow"
-    const measured = grows ? textHeight(shown, placed.measure !== undefined) : null
-    const unit = scaled(1)
-    if (unit <= 0 || (grows && measured === null)) return
-    const height = measured === null ? stored : Math.round(measured / unit)
-    const answers = owed && !answered.current
-    if (!answers && (Math.abs(height - stored) * unit < 1 || reported.current === height)) return
-    answered.current = owed
-    reported.current = height
-    report(height)
-  })
 }
 
 function turned(box: PaintBox): string | undefined {
@@ -446,7 +420,7 @@ function PlacedText(props: {
   readonly id: ElementId
   readonly scaled: Scaled
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
-  readonly onFit?: ((id: ElementId, height: number) => void) | undefined
+  readonly onFit?: ((id: ElementId, size: FitSize) => void) | undefined
   readonly moves: Moves | null
   readonly unshown: boolean
   readonly drawnWhenBlank: boolean
@@ -459,7 +433,14 @@ function PlacedText(props: {
   const shown = record?.text ?? ""
   const placed = usePlaced(store, props.element, id, props.targets)
   const { element, layer } = useTextFit(placed, scaled, shown)
-  useFitReport(layer, placed, scaled, (height) => props.onFit?.(id, height))
+  useFitReport(
+    layer,
+    placed,
+    element,
+    scaled,
+    (size) => props.onFit?.(id, size),
+    (box) => store.placeBox(id, boxOf(box)),
+  )
   const painted = useHeldInPlace(element)
   const empty = useMemo(() => isBlank(shown), [shown])
   const fallback = element.label ?? (element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName))

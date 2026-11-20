@@ -4,6 +4,7 @@ import { elementId, slideId, type ElementId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
 import type { SlideCommand } from "./slide-order.js"
 import { redoOf, slideUndoable, undoOf, type Undoable } from "./person-undo.js"
+import { textOpening } from "./text-resizing.js"
 
 const file = [slideId("256"), slideId("257"), slideId("258")] as const
 const node = elementId("256.2")
@@ -66,6 +67,28 @@ describe("person undo of an added or removed element", () => {
     const typed = landed(redone, { command: "person", value: "Typed", node: box.node })
     expect(undoOf(typed, added.undoable)).toEqual({ ok: false })
     expect(currentValue(typed.elements[box.node]!)).toBe("Typed")
+  })
+
+  it("undoes added text whose size the device measured from its text, since that size follows the text", () => {
+    const box = {
+      node: elementId("256.9"),
+      kind: "shape" as const,
+      value: "",
+      box: from,
+      grouped: false,
+      opening: textOpening("auto-width"),
+    }
+    const added = slid(openRegister("", ""), { slide: "element-add", id: file[0], element: box })
+    const opening = landed(added.register, { command: "add", node: box.node, floor: "", route: "" })
+    const measured = landed(opening, {
+      command: "person",
+      node: box.node,
+      v: 13,
+      patch: { box: { w: { set: 9 }, h: { set: 7 } } },
+    })
+    expect(elementGone(turned(measured, undoOf(measured, added.undoable)), box.node)).toBe(true)
+    const resized = landed(measured, { command: "person", node: box.node, property: "box", value: to })
+    expect(undoOf(resized, added.undoable)).toEqual({ ok: false })
   })
 
   it("undoes an added ellipse once its move is undone, and redoes it with its geometry", () => {

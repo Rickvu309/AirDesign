@@ -242,6 +242,8 @@ export { spotNow } from "./group-join.js"
 export { plainFrameTurn } from "./plain-frame.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
 export { measureDue, measureOwed, measureStale } from "./frame-measure.js"
+export { hugsText, textOpening } from "./text-resizing.js"
+export { measuredOnly, personWrote } from "./measured-row.js"
 export { regroupTurn, ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,

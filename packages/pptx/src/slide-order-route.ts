@@ -92,6 +92,16 @@ function pendingAfter(pending: Pending, command: ElementCommand): void {
   shapes.set(shape, { ...kept, now: command.slide === "element-restore" })
 }
 
+function openedBody(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  shape: string,
+  element: IndexElement,
+): ReadonlyMap<string, Uint8Array> {
+  const body = element.opening?.body
+  return body === undefined ? parts : writeTrait(parts, { slide: "", part, shape }, "body", body)
+}
+
 function elementAdded(
   parts: ReadonlyMap<string, Uint8Array>,
   part: string,
@@ -113,7 +123,13 @@ function elementAdded(
   if (shown.geometry !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
   if (element.kind !== "table") {
-    const added = applyRoute(parts, { name: "add", part, id, text: "", ...box })
+    const align = element.opening?.body === undefined ? {} : { align: "left" as const }
+    const added = openedBody(
+      applyRoute(parts, { name: "add", part, id, text: "", ...box, ...align }),
+      part,
+      shape,
+      element,
+    )
     if (!hasSlideNumber(element.value)) return added
     return applyRoute(added, {
       name: "text",

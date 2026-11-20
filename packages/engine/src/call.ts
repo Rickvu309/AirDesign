@@ -10,6 +10,7 @@ import {
   decide,
   undoSlides,
   storedElements,
+  measuredOnly,
   storedValue,
   limits,
   openRegister,
@@ -92,6 +93,13 @@ function floorOver(register: Register, element: WireRunElement): boolean {
   return openingElement(register, element.node)?.value !== element.floor
 }
 
+function measuredFrom(deck: Deck, register: Register): Register {
+  const last = deck.register.lastRun
+  return last?.revision === deck.revision
+    ? { ...register, lastRun: { ...last, revision: deck.revision + 1 } }
+    : register
+}
+
 function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]): CallResult {
   let register = deck.register
   for (const edit of edits) {
@@ -113,7 +121,8 @@ function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]):
     if (decision.decision === "refuse") return refused(decision.code)
     register = { ...decision.register, bytes: next }
   }
-  return landed(deck, register)
+  const measured = edits.every((edit) => !("slide" in edit) && measuredOnly(storedValue(edit)))
+  return landed(deck, measured ? measuredFrom(deck, register) : register)
 }
 
 function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: string, base: number): CallResult {

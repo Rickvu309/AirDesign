@@ -95,7 +95,7 @@ function labelOf(row: PaintElement): { readonly label?: string } {
 }
 
 function heldText(text: CanvasText | null, shape: CanvasShape | undefined): CanvasText | null {
-  if (text?.fit?.kind !== "shrink" || shape?.refit === true) return text
+  if (text?.fit === undefined || shape?.refit === true) return text
   return { ...text, fit: { ...text.fit, held: true } }
 }
 

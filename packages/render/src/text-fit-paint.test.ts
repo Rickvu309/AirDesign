@@ -193,13 +193,13 @@ it("leaves text with no autofit to overflow its box", async () => {
   expect(frame(host)?.style.height).toBe("100px")
 })
 
-it("grows a box to fit its text from the edge its text holds to", async () => {
-  const top = await painted(lines({ kind: "grow" }, "top"))
+it("grows an imported box that fits its text from the edge its text holds to, while nobody has edited it", async () => {
+  const top = await painted(lines({ kind: "grow", held: true }, "top"))
   expect(frame(top)?.style.height).toBe("120px")
   expect(frame(top)?.style.top).toBe("200px")
-  const middle = await painted(lines({ kind: "grow" }, "middle"))
+  const middle = await painted(lines({ kind: "grow", held: true }, "middle"))
   expect(frame(middle)?.style.top).toBe("190px")
-  const bottom = await painted(lines({ kind: "grow" }, "bottom"))
+  const bottom = await painted(lines({ kind: "grow", held: true }, "bottom"))
   expect(frame(bottom)?.style.top).toBe("180px")
 })
 

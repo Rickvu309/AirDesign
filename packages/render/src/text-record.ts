@@ -2,7 +2,7 @@ import type { ListIndent, TextFill, SchemeName } from "@airdesign/document"
 
 export type CanvasFit =
   | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number; readonly held?: true }
-  | { readonly kind: "grow" }
+  | { readonly kind: "grow"; readonly held?: true }
 
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
 

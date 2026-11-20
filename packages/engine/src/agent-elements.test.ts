@@ -6,6 +6,7 @@ import {
   elementId,
   slideId,
   plainSlideNumber,
+  textOpening,
   writeTextValue,
   type Box,
   type ElementId,
@@ -94,8 +95,21 @@ describe("add_text_box", () => {
     )
     const added = lastAdded(deck.register)
     expect(added).toMatchObject({ id: "256", runId: "run" })
-    expect(added.element).toEqual({ node: "256.6", kind: "shape", value: "", box, grouped: false })
+    expect(added.element).toEqual({
+      node: "256.6",
+      kind: "shape",
+      value: "",
+      box,
+      grouped: false,
+      opening: textOpening("fixed"),
+    })
     expect(deck.revision).toBe(1)
+  })
+
+  it("makes text with no inset that hugs its height inside the free area when the agent sends no box, as a person's text does", () => {
+    const { deck } = landed(add(opened(), { text: { value: "Takeaway" } }))
+    const added = lastAdded(deck.register)
+    expect(added.element.opening).toEqual(textOpening("auto-height"))
   })
 
   it("puts the box in clear space when the agent sends none", () => {
@@ -319,6 +333,34 @@ describe("a box a person typed in", () => {
     expect(
       changeCall("delete", held, { actor: "agent", runId: "later" }, { deck: "deck", base: 1, node: "256.6" }).ok,
     ).toBe(true)
+  })
+})
+
+describe("text the device measured", () => {
+  it("stays open to the run that added it, since the measured size follows the text", () => {
+    const added = landed(add(opened(), { text: { value: "Takeaway" } })).deck
+    const node = elementId("256.6")
+    const patch = { box: { w: { set: 900_000 }, h: { set: 274_320 } } }
+    const measured = decide(added.register, { command: "person", v: 13, patch, node })
+    if (measured.decision !== "apply") throw new Error(measured.code)
+    expect(remove({ ...added, register: measured.register }, "256.6").ok).toBe(true)
+  })
+
+  it("keeps the run's read fresh across the size the open tab measured, and not across a person's edit", () => {
+    const added = landed(add(opened(), { text: { value: "Takeaway" } })).deck
+    const size = { v: 13, patch: { box: { w: { set: 900_000 }, h: { set: 274_320 } } } }
+    const measured = landed(call("commit_edits", added, person, { deck: "deck", batch: [{ ...size, node: "256.6" }] }))
+    const set = (after: Deck) =>
+      call("edit_deck", after, actor, {
+        deck: "deck",
+        base: added.revision,
+        changes: [{ op: "set", target: "256.6", text: { value: "Takeaway, longer" } }],
+      })
+    expect(set(measured.deck).ok).toBe(true)
+    const typed = landed(
+      call("commit_edits", added, person, { deck: "deck", batch: [{ value: "Mine", node: "256.2" }] }),
+    )
+    expect(set(typed.deck)).toEqual({ ok: false, refusal: "stale" })
   })
 })
 

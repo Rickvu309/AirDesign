@@ -3,6 +3,7 @@ import type { CanvasElement } from "./record.js"
 import type { CanvasFit, CanvasParagraph, CanvasRunStyle, CanvasSpacing, CanvasText } from "./text-record.js"
 import type { PaintBox } from "./paint-box.js"
 import type { Scaled } from "./text-look.js"
+import { huggedBox, hugs, naturalSize, sameHug, type Hug } from "./text-hug.js"
 
 type Shrink = Extract<CanvasFit, { kind: "shrink" }>
 
@@ -159,6 +160,22 @@ export function textHeight(layer: HTMLElement, shrinks: boolean): number | null 
   return height + lengthOf(style.paddingTop) + lengthOf(style.paddingBottom)
 }
 
+function paintedBox(
+  box: PaintBox | null,
+  text: CanvasText | null,
+  unit: number,
+  hug: Hug | null,
+  grown: number,
+): PaintBox | null {
+  if (box === null || text === null || unit <= 0) return box
+  if (hug !== null)
+    return huggedBox(box, {
+      width: hug.width === null ? null : Math.round(hug.width / unit),
+      height: Math.round(hug.height / unit),
+    })
+  return grown > 0 ? grownBox(box, text.anchor, grown / unit) : box
+}
+
 export function useTextFit(
   element: CanvasElement,
   scaled: Scaled,
@@ -184,9 +201,24 @@ export function useTextFit(
   const [held, hold] = useState(now)
   const fitting = sameFor(held, now) ? held : now
   const steps = useMemo(() => (fit?.kind === "shrink" ? shrinkSteps(fit) : []), [fit])
+  const hugging = hugs(text)
+  const [hug, setHug] = useState<Hug | null>(null)
   useLayoutEffect(() => {
     const shown = layer.current
-    if (shown === null || !measured(text)) return
+    if (shown === null || text === null || !hugs(text)) return
+    const measure = () => {
+      const next = naturalSize(shown, text)
+      if (next !== null) setHug((before) => (sameHug(before, next) ? before : next))
+    }
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+    const watch = new ResizeObserver(measure)
+    for (const each of shown.children) watch.observe(each)
+    return () => watch.disconnect()
+  }, [text, fonts, written])
+  useLayoutEffect(() => {
+    const shown = layer.current
+    if (shown === null || !measured(text) || hugs(text)) return
     const measure = () => {
       const over = overflowOf(shown, text?.columns ?? 1)
       if (over !== null)
@@ -203,7 +235,6 @@ export function useTextFit(
     const shrunk = text !== null && step !== undefined && fitting.step > 0 ? fitted(text, step) : text
     return shrunk !== null && fitting.overflow ? { ...shrunk, overflow: true } : shrunk
   }, [text, step, fitting.step, fitting.overflow])
-  const grown =
-    box !== null && text !== null && fitting.grown > 0 ? grownBox(box, text.anchor, fitting.grown / scaled(1)) : box
+  const grown = paintedBox(box, text, scaled(1), hugging ? hug : null, fitting.grown)
   return { element: shown === text && grown === box ? element : { ...element, text: shown, box: grown }, layer }
 }

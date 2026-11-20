@@ -257,6 +257,14 @@ describe("undoing a run's element commands", () => {
     expect(undone !== null && elementGone(undone, added)).toBe(true)
   })
 
+  it("takes back a box the run added after the device measured its text", () => {
+    const register = slideLanded(indexed(), { slide: "element-add", id: slide, element: textBox })
+    const opened = landed(register, { command: "add", node: added, floor: "", route: "" })
+    const measured = landed(opened, { command: "person", node: added, v: 13, patch: { box: { h: { set: 50 } } } })
+    const undone = undoSlides(measured, runId)
+    expect(undone !== null && elementGone(undone, added)).toBe(true)
+  })
+
   it("brings back an element the run removed", () => {
     const register = slideLanded(indexed(), { slide: "element-remove", id: slide, node })
     expect(elementGone(register, node)).toBe(true)

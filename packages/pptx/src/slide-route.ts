@@ -6,7 +6,7 @@ import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { attachedConnections, shapeAnimated } from "./shape-id.js"
 import { PaintPartError, paintReader } from "./paint-reader.js"
 import type { TemplateIndent } from "./paragraph-format.js"
-import { addTextShape } from "./shape-write.js"
+import { addTextShape, type NewTextAlign } from "./shape-write.js"
 import {
   markupChildren,
   oneRunIn,
@@ -35,6 +35,7 @@ export type SlideRoute =
       readonly y: number
       readonly cx: number
       readonly cy: number
+      readonly align?: NewTextAlign
     }
   | { readonly name: "remove"; readonly part: string; readonly shape: string }
 
@@ -265,7 +266,7 @@ export function writeRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideR
   if (current === undefined) throw new Error("part")
   if (route.name === "add") {
     const { x, y, cx, cy } = route
-    const written = addTextShape(decodeUtf8(current), route.text, { x, y, cx, cy }, route.id)
+    const written = addTextShape(decodeUtf8(current), route.text, { x, y, cx, cy }, route.id, route.align)
     const nextBytes = encodeUtf8(written.xml)
     const next = new Map(parts)
     next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)

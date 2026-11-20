@@ -6,7 +6,7 @@ import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
 import { groupedNow } from "./element-group.js"
 import { frameNow, framedNow } from "./frame-layout.js"
-import { heightOnly } from "./frame-measure.js"
+import { measuredOnly } from "./measured-row.js"
 import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import {
@@ -399,7 +399,7 @@ function editNode(register: Register, id: ElementId, command: Command): Decision
     throw new Error("missing node")
   }
   if (command.command === "person") {
-    return place(register, id, personEdit(current, command, heightOnly(command)))
+    return place(register, id, personEdit(current, command, measuredOnly(command)))
   }
   const edited =
     command.command === "agent"

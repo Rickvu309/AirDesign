@@ -8,12 +8,14 @@ import {
   openingElement,
   openingTable,
   openingTableSize,
+  personWrote,
   placeNewBox,
   presentSlides,
   readSlideId,
   shapeOf,
   slideMeasure,
   tableColumns,
+  textOpening,
   writeTableValue,
   type Box,
   type ElementId,
@@ -55,7 +57,7 @@ function addedByRun(register: Register, node: ElementId, runId: string): boolean
 }
 
 function personTyped(register: Register, node: ElementId): boolean {
-  return register.elements[node]?.landed.some((row) => row.actor === "person" && row.visible) === true
+  return register.elements[node]?.landed.some(personWrote) === true
 }
 
 function protectedFrom(register: Register, node: ElementId, runId: string): CallRefusal | null {
@@ -113,7 +115,8 @@ export function addTextBox(
   }
   const box = wanted ?? placeNewBox(measure.size ?? { width: 0, height: 0 }, takenBoxes(register, slide))
   const node = nextElementId(register, slide, measure.free)
-  const element = { node, kind: "shape", value, box, grouped: false } as const
+  const opening = value === "" ? { opening: textOpening(wanted === undefined ? "auto-height" : "fixed") } : {}
+  const element = { node, kind: "shape", value, box, grouped: false, ...opening } as const
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 

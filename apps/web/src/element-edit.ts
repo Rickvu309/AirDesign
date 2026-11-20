@@ -13,6 +13,7 @@ import {
   slideUndoable,
   stackTarget,
   swapUndoable,
+  textOpening,
   type CopiedRows,
   type ElementClone,
   type ElementCommand,
@@ -40,6 +41,7 @@ import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
+const textLine = 274_320
 const shapeShare = 0.2
 const lineShare = 0.3
 
@@ -163,8 +165,10 @@ export function elementCommand(
     const element = { node, kind, value: null, box, grouped: false } as const
     return { slide: "element-add", id: slide.id, element, geometry: change.geometry }
   }
-  const box = placeNewBox(change.size, taken)
-  return { slide: "element-add", id: slide.id, element: { node, kind: "shape", value: "", box, grouped: false } }
+  const room = placeNewBox(change.size, taken)
+  const box = { x: room.x, y: room.y, cx: textLine, cy: textLine }
+  const element = { node, kind: "shape", value: "", box, grouped: false, opening: textOpening("auto-width") } as const
+  return { slide: "element-add", id: slide.id, element }
 }
 
 export async function commitElement(
