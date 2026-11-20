@@ -39,7 +39,7 @@ export function suiteRules(repo) {
         ...api,
         "tests/journeys/",
         skillPath,
-        "playwright.journeys.config.ts",
+        "playwright.journeys.config.mts",
         "pnpm-lock.yaml",
       ],
     },

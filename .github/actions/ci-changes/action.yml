@@ -21,6 +21,9 @@ outputs:
     value: ${{ steps.map.outputs.corpus }}
   model-check:
     value: ${{ steps.map.outputs.model-check }}
+  journey-names:
+    description: The journey names to run as JSON, or empty for the full suite.
+    value: ${{ steps.map.outputs.journey-names }}
   unit-tests:
     description: The unit test folders the source part runs, as a JSON list, or all.
     value: ${{ steps.map.outputs.unit-tests }}

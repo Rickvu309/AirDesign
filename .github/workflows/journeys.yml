@@ -3,6 +3,10 @@ name: journeys
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      journey-names:
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -12,7 +16,11 @@ concurrency:
 
 jobs:
   journeys:
-    name: journeys
+    name: journeys (${{ matrix.shard }}/${{ strategy.job-total }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.journey-names != '' && '[1]' || '[1,2]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -35,11 +43,13 @@ jobs:
       - uses: ./.github/actions/postgres
       - run: pnpm test:journeys
         env:
+          JOURNEYS_CHANGED: ${{ inputs.journey-names }}
+          JOURNEYS_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
           JOURNEYS_REPORT: ${{ runner.temp }}/journeys.json
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: test-results-journeys
+          name: test-results-journeys-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
           if-no-files-found: ignore

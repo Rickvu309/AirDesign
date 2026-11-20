@@ -30,6 +30,7 @@ jobs:
       pptx: ${{ steps.map.outputs.pptx }}
       corpus: ${{ steps.map.outputs.corpus }}
       model-check: ${{ steps.map.outputs.model-check }}
+      journey-names: ${{ steps.map.outputs.journey-names }}
       unit-tests: ${{ steps.map.outputs.unit-tests }}
       check: ${{ steps.map.outputs.check }}
       queued: ${{ steps.queued.outputs.passed }}
@@ -334,6 +335,8 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.journeys != 'false' }}
     uses: ./.github/workflows/journeys.yml
+    with:
+      journey-names: ${{ needs.changes.outputs.journey-names }}
   ci:
     name: ci
     needs: [check, changes, corpus, journeys]
