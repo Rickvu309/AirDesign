@@ -264,7 +264,7 @@ export function EditorShell({
     ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),
     ...(formats === undefined ? {} : { formats }),
     ...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture }),
-    ...(deck?.onShape === undefined ? {} : { onShape: pointer.arm }),
+    ...(deck?.onShape === undefined ? {} : { onShape: gridOpen ? deck.onShape : pointer.arm }),
     ...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon }),
     ...(onPanel === undefined ? {} : { onPanel }),
     ...(designMode === undefined ? {} : { designMode }),

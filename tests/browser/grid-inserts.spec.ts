@@ -26,7 +26,6 @@ const tools: Record<string, (page: Page) => Promise<void>> = {
   shape: async (page) => {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
-    await page.keyboard.press("Enter")
   },
   icon: async (page) => {
     const pictureCopy = await pictureWords()
