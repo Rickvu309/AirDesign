@@ -21,6 +21,8 @@ const topColor = new RegExp(`--${top}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens)?.[1] 
     <meta name="theme-color" media="(prefers-color-scheme: light)" content={topColor} />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content={topColor} />
     {description && <meta name="description" content={description} />}
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon-art.svg" />
     <title>{title}</title>
   </head>
