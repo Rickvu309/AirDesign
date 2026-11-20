@@ -16,6 +16,10 @@ import type { PaintBox } from "./index.js"
 
 afterEach(unmountAll)
 
+function aimedEnd(host: HTMLElement): readonly string[] {
+  return (host.querySelector("[data-connector-aim]")?.getAttribute("data-ends") ?? "").split(" ").slice(2)
+}
+
 describe("snapping and Shift angle lock on line and arrow ends", () => {
   const marginCardBox: PaintBox = { x: 500_000, y: 2_500_000, width: 7_500_000, height: 800_000, ...upright }
   const ruleBox: PaintBox = { x: 500_000, y: 4_500_000, width: 2_000_000, height: 0, ...upright }
@@ -27,8 +31,7 @@ describe("snapping and Shift angle lock on line and arrow ends", () => {
     await pointer(end, "pointerdown", pixels(2_500_000), pixels(4_500_000))
     await pointer(end.ownerDocument, "pointermove", pixels(8_030_000), pixels(4_525_000))
     expect(guideLines(host)).toEqual(["snap x 800", "snap y 450"])
-    const preview = host.querySelector<SVGLineElement>("[data-connector-aim] line")
-    expect([preview?.getAttribute("x2"), preview?.getAttribute("y2")]).toEqual(["800", "450"])
+    expect(aimedEnd(host)).toEqual(["800", "450"])
     await pointer(end.ownerDocument, "pointerup", pixels(8_030_000), pixels(4_525_000))
     expect(host.querySelector("[data-guides]")).toBeNull()
     expect(bound).toEqual([
@@ -66,8 +69,7 @@ describe("snapping and Shift angle lock on line and arrow ends", () => {
     expect(guideLines(host)).toEqual(["snap x 800", "snap y 450"])
     await keyEvent(end.ownerDocument, "keydown", "Control", { ctrlKey: true })
     expect(host.querySelector("[data-guides]")).toBeNull()
-    const preview = host.querySelector<SVGLineElement>("[data-connector-aim] line")
-    expect([preview?.getAttribute("x2"), preview?.getAttribute("y2")]).toEqual(["803", "452.5"])
+    expect(aimedEnd(host)).toEqual(["803", "452.5"])
     await pointer(end.ownerDocument, "pointerup", pixels(8_030_000), pixels(4_525_000), { ctrlKey: true })
     expect(bound).toEqual([
       [
@@ -85,11 +87,9 @@ describe("snapping and Shift angle lock on line and arrow ends", () => {
     await pointer(end.ownerDocument, "pointermove", pixels(8_030_000), pixels(4_800_000))
     expect(guideLines(host)).toEqual(["snap x 800"])
     await keyEvent(end.ownerDocument, "keydown", "Shift", { shiftKey: true })
-    const horizontal = host.querySelector<SVGLineElement>("[data-connector-aim] line")
-    expect([horizontal?.getAttribute("x2"), horizontal?.getAttribute("y2")]).toEqual(["800", "450"])
+    expect(aimedEnd(host)).toEqual(["800", "450"])
     await pointer(end.ownerDocument, "pointermove", pixels(2_400_000), pixels(2_700_000), { shiftKey: true })
-    const diagonal = host.querySelector<SVGLineElement>("[data-connector-aim] line")
-    expect([diagonal?.getAttribute("x2"), diagonal?.getAttribute("y2")]).toEqual(["235", "265"])
+    expect(aimedEnd(host)).toEqual(["235", "265"])
     await pointer(end.ownerDocument, "pointerup", pixels(8_030_000), pixels(4_800_000), { shiftKey: true })
     expect(bound).toEqual([
       [line, "end", { box: { x: 500_000, y: 4_500_000, cx: 7_500_000, cy: 0 }, rot: 0, flipH: false, flipV: false }],

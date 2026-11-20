@@ -5,6 +5,7 @@ import { aimAt, endsOf, paintPlace, type Aim, type End } from "./connector-drag.
 import { snapConnectorEnd, type EndModifiers } from "./connector-snap.js"
 import { snapTargets } from "./drag-snap.js"
 import type { GuideBoard } from "./guide-layer.js"
+import { ConnectorLiveLine } from "./connector-live-line.js"
 import { liveBox } from "./live-box.js"
 import { useBox } from "./element-view.js"
 import { oncePerFrame } from "./once-per-frame.js"
@@ -67,6 +68,8 @@ export function ConnectorEnds(props: {
     cancelling.current?.()
     guides?.show([])
     const pointer = event.pointerId
+    const resting = surface.querySelector<HTMLElement>(`[data-canvas-element="${CSS.escape(element.key)}"]`)
+    if (resting !== null) resting.style.visibility = "hidden"
     const pressed: Point = { x: event.clientX, y: event.clientY }
     const from = end === "start" ? spots.end : spots.start
     const targets = snapTargets(slide, store, [id])
@@ -115,6 +118,7 @@ export function ConnectorEnds(props: {
       cancelling.current = null
       guides?.show([])
       setAiming(null)
+      if (resting !== null) resting.style.visibility = ""
     }
 
     function move(next: globalThis.PointerEvent) {
@@ -169,28 +173,7 @@ export function ConnectorEnds(props: {
   return (
     <>
       {aiming === null || goal === undefined ? null : (
-        <svg
-          aria-hidden
-          data-connector-aim
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            overflow: "visible",
-            pointerEvents: "none",
-          }}
-        >
-          <line
-            x1={scaled(aiming.from.x)}
-            y1={scaled(aiming.from.y)}
-            x2={scaled(goal.x)}
-            y2={scaled(goal.y)}
-            stroke="var(--primary)"
-            strokeWidth={1.5}
-            strokeDasharray="4 3"
-          />
-        </svg>
+        <ConnectorLiveLine element={element} box={box} end={aiming.end} from={aiming.from} at={goal} scaled={scaled} />
       )}
       {aim?.sites.map((spot, site) => {
         const chosen = site === aim.site

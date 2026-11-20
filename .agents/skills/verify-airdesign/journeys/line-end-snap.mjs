@@ -22,9 +22,10 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   const canvas = page.locator("[data-slide-paint]")
   const guide = (name) => page.locator(`[data-guides] [data-guide="${name}"]`)
-  const preview = page.locator("[data-connector-aim] line")
-  const previewEnd = async () => [await preview.getAttribute("x2"), await preview.getAttribute("y2")]
-  const previewStart = async () => [await preview.getAttribute("x1"), await preview.getAttribute("y1")]
+  const preview = page.locator("[data-connector-aim]")
+  const previewEnds = async () => ((await preview.getAttribute("data-ends")) ?? "").split(" ")
+  const previewEnd = async () => (await previewEnds()).slice(2)
+  const previewStart = async () => (await previewEnds()).slice(0, 2)
   const point = async (x, y) => {
     const paint = await canvas.boundingBox()
     if (paint === null) throw new Error("no slide")
