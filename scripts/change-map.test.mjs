@@ -1,0 +1,195 @@
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { changeMap, ciParts, readChangeGraph } from "./change-map.mjs"
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+
+const same = (name, actual, expected) => {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+  }
+}
+
+const on = (result) => ciParts.filter((part) => result.parts[part])
+
+const toy = {
+  packages: [
+    { name: "@airdesign/document", dir: "packages/document", deps: [] },
+    { name: "@airdesign/pptx", dir: "packages/pptx", deps: ["@airdesign/document"] },
+    { name: "@airdesign/oauth", dir: "packages/oauth", deps: [] },
+    { name: "@airdesign/api", dir: "apps/api", deps: ["@airdesign/document", "@airdesign/oauth"] },
+    { name: "@airdesign/site", dir: "apps/site", deps: [] },
+    { name: "web", dir: "apps/web", deps: ["@airdesign/document", "@airdesign/pptx"] },
+    { name: "@airdesign/boundary-fetch", dir: "tooling/boundary-fixtures/fetch-in-document", deps: [] },
+  ],
+  imports: {
+    "vitest.config.mts": ["scripts/vitest-metrics.mjs"],
+    "scripts/vitest-metrics.mjs": ["scripts/longest-first.mjs"],
+    "tests/browser/home.spec.ts": ["web", "scripts/slide-export.mjs"],
+    "tests/browser/design-states.spec.ts": [
+      "tests/browser/open-screen.ts",
+      ".agents/skills/verify-airdesign/look/scan.mjs",
+    ],
+    ".agents/skills/verify-airdesign/look/scan.mjs": [".agents/skills/verify-airdesign/look/walk.mjs"],
+    ".agents/skills/verify-airdesign/look/walk.mjs": [".agents/skills/verify-airdesign/journeys/theme.mjs"],
+    "tests/edit-replay.test.ts": ["@airdesign/document", "tests/spec-graph.ts"],
+    "unit:apps/web/": ["tests/spec-graph.ts"],
+    "scripts/pptx-check.mjs": ["@airdesign/pptx"],
+    "tests/journeys/journeys.spec.ts": ["gone:scripts/stored-zip"],
+  },
+  pptxPaths: ["packages/pptx", "packages/document", "scripts/pptx-check.mjs"],
+}
+
+const map = (changed, options) => changeMap(changed, toy, options)
+
+same(
+  "a change to packages/document runs its own tests and every package that imports it, since document imports nothing and everything imports it",
+  map(["packages/document/src/slide.ts"]).unitTests,
+  ["apps/api/", "apps/web/", "packages/document/", "packages/pptx/", "tests/"],
+)
+same(
+  "a package nobody imports runs only its own tests and the parts its importers feed",
+  map(["packages/oauth/src/grant.ts"]).unitTests,
+  ["apps/api/", "packages/oauth/"],
+)
+same(
+  "the api is served to the browser, design and journeys parts, so a change under a package the api imports runs them",
+  on(map(["packages/oauth/src/grant.ts"])),
+  ["source", "design", "browser", "journeys"],
+)
+same(
+  "the site is served only to the browser part and built by the scripts part, since the design scans read web screens",
+  on(map(["apps/site/src/pages/index.astro"])),
+  ["source", "scripts", "browser"],
+)
+same(
+  "a package's own test file runs only that package's tests, since no app code imports a test",
+  [on(map(["apps/web/src/editor.test.tsx"])), map(["apps/web/src/editor.test.tsx"]).unitTests],
+  [["source"], ["apps/web/"]],
+)
+same(
+  "a file outside the packages reaches the tests that import it, including a package's tests",
+  map(["tests/spec-graph.ts"]).unitTests,
+  ["apps/web/", "tests/"],
+)
+same(
+  "a browser spec runs the browser part alone; narrowing to the one spec is left for later",
+  on(map(["tests/browser/home.spec.ts"])),
+  ["source", "browser"],
+)
+same("a design scan runs the design part alone", on(map(["tests/browser/design-states.spec.ts"])), ["source", "design"])
+same(
+  "a browser helper or setup file runs browser and design, since both shards load the same launch and helpers",
+  on(map(["tests/browser/launch.ts"])),
+  ["source", "design", "browser"],
+)
+same(
+  "a script a browser spec imports runs the browser part as well as the script tests",
+  on(map(["scripts/slide-export.mjs"])),
+  ["source", "scripts", "browser"],
+)
+same(
+  "a deleted file reaches the files that still import it, so a dangling import breaks where it shows",
+  on(map(["scripts/stored-zip.mjs"])),
+  ["source", "scripts", "journeys"],
+)
+same("a script nothing else imports runs only the script tests", on(map(["scripts/land.mjs"])), ["source", "scripts"])
+same(
+  "a journey runs journeys, and design too when a look state walks it",
+  on(map([".agents/skills/verify-airdesign/journeys/theme.mjs"])),
+  ["source", "design", "journeys"],
+)
+same(
+  "a journey nothing walks runs only journeys",
+  on(map([".agents/skills/verify-airdesign/journeys/account-name.mjs"])),
+  ["source", "journeys"],
+)
+same("tests/journeys runs journeys", on(map(["tests/journeys/journeys.spec.ts"])), ["source", "journeys"])
+same(
+  "a TLA+ spec runs model-check and the replay tests in tests/, and no browser part",
+  [on(map(["specs/run/Run.tla"])), map(["specs/run/Run.tla"]).unitTests],
+  [["source", "model-check"], ["tests/"]],
+)
+same(
+  "a doc is inert to every test part; source and scripts still run, since file-growth, rule-rows and the script tests read docs",
+  [on(map(["GLOSSARY.md"])), on(map(["scripts/land.rule.md"])), on(map(["packages/document/README.md"]))],
+  [
+    ["source", "scripts"],
+    ["source", "scripts"],
+    ["source", "scripts", "pptx", "corpus"],
+  ],
+)
+same(
+  "pptx and corpus follow .github/actions/pptx-changed/paths.txt, the one list the pptx job reads",
+  [on(map(["scripts/pptx-check.mjs"])), on(map(["packages/oauth/src/grant.ts"])).includes("pptx")],
+  [["source", "scripts", "pptx", "corpus"], false],
+)
+same(
+  "a boundary fixture is a package the script tests read, so it runs scripts and no app part",
+  on(map(["tooling/boundary-fixtures/fetch-in-document/src/index.ts"])),
+  ["source", "scripts"],
+)
+same("the skill folders under .claude are links to .agents and run nothing", on(map([".claude/skills/x/SKILL.md"])), [])
+same("no change runs nothing", on(map([])), [])
+
+const everything = (name, changed, options) => same(name, map(changed, options).everything, true)
+everything("the lockfile runs everything", ["pnpm-lock.yaml"])
+everything("any package.json runs everything, since it can change dependencies every package reads", [
+  "apps/web/package.json",
+])
+everything("CI config runs everything", [".github/workflows/ci.yml"])
+everything("a CI-only doc under .github runs everything, since the bar and pr-body checks read it", [
+  ".github/pull_request_template.md",
+])
+everything("the check runner runs everything", ["scripts/check-steps.mjs"])
+everything("this map runs everything, since it decides what runs", ["scripts/change-map.mjs"])
+everything("a file the unit test setup reaches runs everything", ["scripts/longest-first.mjs"])
+everything("a path nobody owns runs everything", ["newfolder/thing.ts"])
+everything("a diff that cannot be read runs everything", null)
+everything("--full runs everything, for pushes to main", ["GLOSSARY.md"], { full: true })
+same("a run of everything runs every unit test", map(null).unitTests, "all")
+
+const graph = readChangeGraph(root)
+const real = (changed) => changeMap(changed, graph)
+
+same(
+  "every workspace package is in the graph, read from pnpm-workspace.yaml and the manifests",
+  graph.packages.map((pkg) => pkg.dir).sort(),
+  fs
+    .readFileSync(path.join(root, "pnpm-workspace.yaml"), "utf8")
+    .match(/^packages:\n((?:\s+-.*\n)+)/m)[1]
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => line.replace(/^\s+-\s+["']?|["']$/g, ""))
+    .flatMap((pattern) =>
+      fs
+        .readdirSync(path.join(root, pattern.slice(0, -2)))
+        .map((name) => `${pattern.slice(0, -2)}/${name}`)
+        .filter((dir) => fs.existsSync(path.join(root, dir, "package.json"))),
+    )
+    .sort(),
+)
+same(
+  "packages/document imports no package, so the graph does real work",
+  graph.packages.find((pkg) => pkg.dir === "packages/document").deps,
+  [],
+)
+same(
+  "the real pptx list is the one in .github/actions/pptx-changed/paths.txt",
+  graph.pptxPaths,
+  fs.readFileSync(path.join(root, ".github/actions/pptx-changed/paths.txt"), "utf8").split("\n").filter(Boolean),
+)
+same(
+  "in the repo, a look state reaches design, since design-states loads the look scan",
+  real([".agents/skills/verify-airdesign/look/scan.mjs"]).parts.design,
+  true,
+)
+same(
+  "in the repo, the browser launch reaches the browser part through playwright.config.ts",
+  real(["tests/browser/launch.ts"]).parts.browser,
+  true,
+)
+same("in the repo, a vitest setup file runs everything", real(["scripts/vitest-metrics.mjs"]).everything, true)
+same("in the repo, the PR body check is a script alone", on(real(["scripts/pr-body.mjs"])), ["source", "scripts"])
+same("in the repo, the oauth package runs no pptx part", real(["packages/oauth/src/index.ts"]).parts.pptx, false)
