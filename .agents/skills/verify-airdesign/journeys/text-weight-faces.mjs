@@ -15,7 +15,7 @@ export default async function drive(kit) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const fonts = await import(pathToFileURL(path.join(repo, "packages/fonts/dist/index.js")).href)
   const styles = fonts
-    .familyStyles([
+    .listedStyles("Inter", () => [
       { style: "normal", weight: "100 900" },
       { style: "italic", weight: "100 900" },
     ])

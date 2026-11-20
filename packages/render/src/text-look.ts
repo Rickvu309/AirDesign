@@ -11,6 +11,8 @@ import {
 } from "@airdesign/document"
 import type { CSSProperties } from "react"
 import { bulletLabel } from "./bullet-label.js"
+import { bodyLook } from "./text-body-look.js"
+import type { FileWeight } from "./run-weight.js"
 import { readFormat } from "./run-format-node.js"
 import { listNumbers, type ListSource } from "./paragraph-list.js"
 import { paragraphPaint, type ParagraphPaint, type RunPaint } from "./paragraph-paint.js"
@@ -65,10 +67,11 @@ export type TextLook = {
   fileList(paragraph: number): TextList
   fileLevel(paragraph: number): number
   fileNumber(paragraph: number): ListSource
+  fileWeight(paragraph: number, run: number): FileWeight
+  fonts(): Readonly<Record<string, string>>
   swatches(): readonly CanvasTemplateColor[]
 }
 
-export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
 const pageColor = "black"
 export const singleLineHeight = 1.2
 const shiftedShare = 0.58
@@ -331,35 +334,6 @@ function paragraphOverlay(
   return align
 }
 
-function bodyLook(text: CanvasText, scaled: Scaled): CSSProperties {
-  const whiteSpace = text.wrap ? "pre-wrap" : "pre"
-  const columns = text.columns ?? 1
-  if (columns > 1) {
-    return {
-      display: "block",
-      flexShrink: 0,
-      ...(text.overflow === true ? { columnFill: "balance" } : { maxBlockSize: "100%", columnFill: "auto" }),
-      columnCount: columns,
-      columnGap: `${scaled(text.columnGap ?? 0)}px`,
-      whiteSpace,
-    }
-  }
-  return {
-    display: "flex",
-    flexDirection: "column",
-    flexShrink: 0,
-    justifyContent: anchored[text.anchor],
-    ...((text.flow ?? "horz") === "horz" ? { minHeight: "100%" } : { minBlockSize: "100%" }),
-    whiteSpace,
-  }
-}
-
-export const flowModes = {
-  horz: {},
-  vert: { writingMode: "vertical-rl", textOrientation: "sideways" },
-  vert270: { writingMode: "sideways-lr" },
-} as const satisfies Readonly<Record<NonNullable<CanvasText["flow"]>, CSSProperties>>
-
 function edged(style: Look, edges: { readonly first: number; readonly last: number } | null, from: number): Look {
   if (edges === null || (from !== edges.first && from !== edges.last)) return style
   const { marginTop, marginBottom, ...rest } = style
@@ -441,6 +415,11 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     fileLevel(from) {
       return paragraphs.get(from)?.level ?? 0
     },
+    fileWeight(from, run) {
+      const style = styleAt(from, run)
+      return { typeface: style?.font ?? null, bold: style?.bold === true, italic: style?.italic === true }
+    },
+    fonts: () => text.fonts ?? {},
     fileNumber(from) {
       const paragraph = paragraphs.get(from)
       const bullet = paragraph?.bullet

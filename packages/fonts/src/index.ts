@@ -4,7 +4,6 @@ export { fontFamily, fontRoutes } from "./family.js"
 
 export {
   boldWeight,
-  familyStyles,
   holdsWeight,
   namedFace,
   readStyleName,
@@ -14,3 +13,4 @@ export {
   type FontStyle,
   type ServedFace,
 } from "./named-face.js"
+export { listedStyles, plainStyles, steppedWeight } from "./weight-step.js"

@@ -236,6 +236,13 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: ">", code: "Period", ctrlKey: true, shiftKey: true }, "element")).toBe("size-up")
   })
 
+  it("steps the selected text's weight with the same keys while typing", () => {
+    const mac = { ...plain, metaKey: true, altKey: true, shiftKey: true }
+    expect(gestureFor({ ...mac, key: "˘", code: "Period" }, "text")).toBe("weight-up")
+    expect(gestureFor({ ...mac, key: "¯", code: "Comma" }, "text")).toBe("weight-down")
+    expect(gestureFor({ ...plain, key: ">", code: "Period", ctrlKey: true, shiftKey: true }, "text")).toBe("size-up")
+  })
+
   it("resizes a frame to fit with Mod+Alt+Shift+R without colliding with rename or text alignment", () => {
     expect(
       gestureFor({ ...plain, key: "‰", code: "KeyR", metaKey: true, altKey: true, shiftKey: true }, "editor"),

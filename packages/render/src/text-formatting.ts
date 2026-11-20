@@ -27,6 +27,7 @@ export type FormatTarget = {
   readonly place: (align: ParagraphAlign, editing: boolean) => void
   readonly bullet: (editing: boolean) => FormatState
   readonly bullets: (editing: boolean) => void
+  readonly weight: (step: 1 | -1, editing: boolean) => void
   readonly swatches: () => readonly CanvasTemplateColor[]
 }
 
@@ -48,6 +49,7 @@ export type TextFormatting = {
   readonly place: (align: ParagraphAlign) => void
   readonly bullet: () => FormatState | null
   readonly bullets: () => void
+  readonly weight: (step: 1 | -1) => void
   readonly swatches: () => readonly CanvasTemplateColor[]
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void
@@ -61,6 +63,7 @@ export type TextKey =
   | { readonly resize: SizeStep }
   | { readonly place: ParagraphAlign }
   | { readonly bullets: true }
+  | { readonly weight: 1 | -1 }
 
 const textKeys: Partial<Readonly<Record<GestureId, TextKey>>> = {
   bold: { toggle: "bold" },
@@ -73,6 +76,8 @@ const textKeys: Partial<Readonly<Record<GestureId, TextKey>>> = {
   "text-center": { place: "center" },
   "text-right": { place: "right" },
   bullets: { bullets: true },
+  "weight-up": { weight: 1 },
+  "weight-down": { weight: -1 },
 }
 
 export function textKeyOf(event: KeyLike): TextKey | null {
@@ -84,6 +89,7 @@ export function runTextKey(formatting: TextFormatting, key: TextKey) {
   if ("toggle" in key) formatting.toggle(key.toggle)
   else if ("resize" in key) formatting.resize(key.resize)
   else if ("place" in key) formatting.place(key.place)
+  else if ("weight" in key) formatting.weight(key.weight)
   else formatting.bullets()
 }
 
@@ -183,6 +189,9 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     },
     bullets() {
       act((found, on) => found.bullets(on))
+    },
+    weight(step) {
+      act((found, on) => found.weight(step, on))
     },
     swatches() {
       return target()?.swatches() ?? []

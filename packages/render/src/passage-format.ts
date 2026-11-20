@@ -1,4 +1,5 @@
 import {
+  applyRuns,
   linkRange,
   linkState,
   alignRange,
@@ -20,6 +21,8 @@ import {
   type TextRange,
   type TextValue,
 } from "@airdesign/document"
+import { fontsFor } from "./font-load.js"
+import { weightedRun } from "./run-weight.js"
 import type { TextFormatting } from "./text-formatting.js"
 import type { TextLook } from "./text-look.js"
 
@@ -129,6 +132,20 @@ export function formatTarget(
       if (read === null) return
       const on = bulletState(read.value, range(editing), fileList) !== "on"
       commit(read.value, bulletRange(read.value, range(editing), on, fileList), editing)
+    },
+    weight(step, editing) {
+      const read = readNow()
+      const shownLook = look()
+      if (read === null || shownLook === undefined) return
+      const faces = (family: string) => {
+        const fonts = fontsFor(shown.ownerDocument)
+        if (fonts !== undefined && !fonts.ready(family)) void fonts.load(family)
+        return fonts?.faces(family)
+      }
+      const next = applyRuns(read.value, range(editing), (paragraph, run) =>
+        weightedRun(run, shownLook.fileWeight(paragraph.from, run.from), step, faces, shownLook.fonts()),
+      )
+      commit(read.value, next, editing)
     },
     swatches: () => look()?.swatches() ?? [],
   })

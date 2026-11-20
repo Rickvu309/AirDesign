@@ -61,6 +61,7 @@ for (const name of [
   "text-fill-image",
   "text-style-weight",
   "text-weight-faces",
+  "text-weight-switch",
   "text-list-levels",
   "text-spacing-units",
   "text-template-indent",

@@ -59,3 +59,32 @@ it("refuses a manifest that sends the browser off origin", async () => {
   )
   expect(await loader.load("Montserrat")).toEqual({ family: "Montserrat", refusal: "unavailable" })
 })
+
+it("knows a family's faces once its manifest arrives, before its files install", async () => {
+  let finish = () => {}
+  const installed = new Promise<void>((resolve) => {
+    finish = resolve
+  })
+  let asked = () => {}
+  const installing = new Promise<void>((resolve) => {
+    asked = resolve
+  })
+  const network: typeof fetch = async () =>
+    new Response(
+      JSON.stringify({
+        ok: true,
+        family: "Montserrat",
+        faces: [{ url: "/fonts/file?montserrat", style: "normal", weight: "100 900" }],
+      }),
+    )
+  const loader = new FontLoader(document, network, async () => {
+    asked()
+    return installed
+  })
+  const loaded = loader.load("Montserrat")
+  await installing
+  expect(loader.faces("Montserrat")).toEqual([{ style: "normal", weight: "100 900" }])
+  expect(loader.ready("Montserrat")).toBe(false)
+  finish()
+  await loaded
+})

@@ -306,6 +306,7 @@ export {
 export { withCurrentKeys } from "./current-keys.js"
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
 export {
+  applyRuns,
   linkRange,
   linkState,
   alignRange,

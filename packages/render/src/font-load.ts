@@ -133,11 +133,15 @@ export class FontLoader {
     if (!response.ok) throw new Error("font source")
     const raw: unknown = await response.json()
     if (!manifest(raw)) throw new Error("font manifest")
-    await this.install(raw)
+    const key = name.toLowerCase()
     this.served.set(
-      name.toLowerCase(),
+      key,
       raw.faces.map(({ style, weight }) => ({ style, weight })),
     )
+    await this.install(raw).catch((error: unknown) => {
+      this.served.delete(key)
+      throw error
+    })
     return null
   }
 }

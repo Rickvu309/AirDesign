@@ -1,4 +1,4 @@
-import { readStyleName } from "@airdesign/fonts"
+import { readStyleName, steppedWeight, styleName, type FontStyle } from "@airdesign/fonts"
 
 type WeightChoices = {
   readonly value: unknown
@@ -8,13 +8,10 @@ type WeightChoices = {
 export function steppedStyle(control: WeightChoices, step: 1 | -1): string | null {
   const current = typeof control.value === "string" ? readStyleName(control.value) : undefined
   if (current === undefined) return null
-  const slanted = (control.choices ?? []).flatMap((choice) => {
+  const styles = (control.choices ?? []).flatMap((choice): FontStyle[] => {
     const style = readStyleName(choice.value)
-    return style === undefined || style.italic !== current.italic ? [] : [{ value: choice.value, weight: style.weight }]
+    return style === undefined ? [] : [style]
   })
-  const next =
-    step > 0
-      ? slanted.find((choice) => choice.weight > current.weight)
-      : slanted.findLast((choice) => choice.weight < current.weight)
-  return next?.value ?? null
+  const next = steppedWeight(current, styles, step)
+  return next === null ? null : styleName(next)
 }
