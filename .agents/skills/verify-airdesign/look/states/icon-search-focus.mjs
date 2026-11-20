@@ -1,10 +1,9 @@
 import { expect } from "@playwright/test"
-import { readPictureToolCopy, toolbarCopy } from "../../bin/product-copy.mjs"
+import { readPictureToolCopy } from "../../bin/product-copy.mjs"
 import element from "./design-element.mjs"
 
 async function drive(kit) {
   await element.drive(kit)
-  await kit.page.getByRole("button", { name: toolbarCopy.more, exact: true }).click()
   await kit.page.getByRole("button", { name: readPictureToolCopy().addIcon, exact: true }).click()
   const icons = kit.page.locator("[data-icon-search] [role=group] button")
   await expect(icons.first()).toBeVisible()
