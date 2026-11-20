@@ -35,7 +35,7 @@ test("an asset control finds an icon by a word, swaps the picture's icon, and Un
   const tool = page.locator("[data-icon-tool]")
   await tool.getByRole("searchbox", { name: "Search icons" }).fill("rocket")
   await tool.getByRole("button", { name: "rocket", exact: true }).click()
-  await expect.poll(() => drawn(picture(page))).toContain("blob:")
+  await expect.poll(() => drawn(picture(page))).toContain("data:image/svg+xml")
   const rocket = await drawn(picture(page))
 
   const section = await iconPanel(page)
@@ -63,7 +63,7 @@ test("a shape's Fill takes an icon, which the asset control inside the fill's un
     .getByRole("group", { name: fillCopy.box, exact: true })
     .getByRole("button", { name: fillWords.image, exact: true })
     .click()
-  await expect.poll(() => drawn(shape)).toContain("blob:")
+  await expect.poll(() => drawn(shape)).toContain("data:image/svg+xml")
   await expect(fill.getByText("Shows the star icon")).toBeVisible()
   const star = await drawn(shape)
   await fill.getByRole("searchbox", { name: "Search icons" }).fill("leaf")

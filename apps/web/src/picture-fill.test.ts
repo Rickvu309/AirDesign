@@ -82,20 +82,33 @@ describe("pictureSources", () => {
     expect([...emf]).toEqual([...rectangleEmf()])
   })
 
-  it("paints an icon at a weight the device has not drawn yet from the same icon at another weight, so it never blinks", async () => {
-    const made: Blob[] = []
+  it("gives an icon's SVG a data address, which the browser paints in the frame it swaps in, and revokes no address for it", () => {
+    const { made, revoked } = urls()
     const rocket = iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]])
-    const parts = new Map([[iconParts("rocket").svg, new TextEncoder().encode(rocket)]])
-    const sources = pictureSources(parts, {
+    const sources = pictureSources(new Map([[iconParts("rocket").svg, new TextEncoder().encode(rocket)]]), {
       create: (blob) => {
-        made.push(blob)
-        return `blob:${made.length}`
+        made.push(blob.type)
+        return "blob:icon"
       },
-      revoke: () => undefined,
+      revoke: (url) => {
+        revoked.push(url)
+      },
     })
+    const url = sources.src(image({ part: iconParts("rocket").svg, contentType: "image/svg+xml" }))
+    expect(url).toBe(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(rocket)}`)
+    expect(made).toEqual([])
+    sources.release()
+    expect(revoked).toEqual([])
+  })
+
+  it("paints an icon at a weight the device has not drawn yet from the same icon at another weight, so it never blinks", () => {
+    const rocket = iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]])
+    const sources = pictureSources(new Map([[iconParts("rocket").svg, new TextEncoder().encode(rocket)]]))
     const thin = iconParts("rocket", 150).svg
-    expect(sources.src(image({ part: thin, contentType: "image/svg+xml" }))).toBe("blob:1")
-    expect(await made[0]?.text()).toBe(iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]], 150))
+    const lighter = iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]], 150)
+    expect(sources.src(image({ part: thin, contentType: "image/svg+xml" }))).toBe(
+      `data:image/svg+xml;charset=utf-8,${encodeURIComponent(lighter)}`,
+    )
     expect(sources.src(image({ part: iconParts("star", 150).svg, contentType: "image/svg+xml" }))).toBeNull()
   })
 

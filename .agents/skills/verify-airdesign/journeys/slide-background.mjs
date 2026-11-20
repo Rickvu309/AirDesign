@@ -131,7 +131,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const imageOf = (selector) => page.locator(selector).evaluate((node) => getComputedStyle(node).backgroundImage)
   for (const [kind, button, expected, stored] of [
     ["gradient", fillWords.gradient, "linear-gradient", "gradient"],
-    ["picture", fillWords.image, "blob:", "image"],
+    ["picture", fillWords.image, "data:image/svg+xml", "image"],
   ]) {
     await panel.getByRole("button", { name: button, exact: true }).click()
     for (const selector of ["[data-slide-paint]", "[data-slide-entry='1'] [data-thumb-paint]"])
