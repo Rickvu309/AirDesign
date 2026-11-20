@@ -87,9 +87,7 @@ function groupTurn(parts: Parts, register: Register, change: GroupChange): reado
   const backdrop = elementId(`${slide}.${String(Number(shapeOf(node).shape) + 1)}`)
   if (change.change === "plain-frame") return plainFrameTurn(register, file, slide, node, backdrop, change.nodes)
   const framed = changeLayout(register, { wrap: change.nodes, slide, node, backdrop })
-  if (framed === null || !("slide" in framed)) return null
-  const rows = framed.rows.map((row): Command => ({ command: "person", v: format, patch: row.patch, node: row.node }))
-  return [{ command: "slide", file, edit: framed.slide }, ...rows]
+  return framed === null || !("slide" in framed) ? null : [{ command: "slide", file, edit: framed.slide }]
 }
 
 async function sent(deckId: string, command: Command): Promise<boolean> {

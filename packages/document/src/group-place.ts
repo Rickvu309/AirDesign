@@ -16,7 +16,7 @@ import {
   type Member,
 } from "./element-group.js"
 import { takes, type ElementFacts } from "./element-takes.js"
-import { frameNow, huggedSize, readLayout } from "./frame-layout.js"
+import { huggedSize, readLayout } from "./frame-layout.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { openingElement } from "./slide-floor.js"
 import type { FieldKey } from "./traits.js"
@@ -145,15 +145,9 @@ export function huggedPlace(register: Register, node: ElementId, place: Place): 
 }
 
 export function rowsKept(register: Register, command: ElementGroup): boolean {
-  const above = groupParent(register, command.element.node)
-  const nested = typeof above === "string" && frameBackdrop(register, above) !== null
-  const laid = nested ? readLayout(register, command.element.node) : null
   return command.members.every((member) => {
     const place = rowPlace(register, member.node)
-    const box = laid?.children.find((child) => child.node === member.node)?.box
-    const shown =
-      place === null ? null : box === undefined ? huggedPlace(register, member.node, place) : { ...place, box }
-    return samePlace(shown, memberPlace(member))
+    return samePlace(place === null ? null : huggedPlace(register, member.node, place), memberPlace(member))
   })
 }
 
@@ -226,37 +220,21 @@ function framedPlace(register: Register, node: ElementId, child: ElementId, plac
   return laid === undefined ? null : { ...place, box: laid }
 }
 
-function placedIn(place: Place, origin: Box | undefined): Place {
-  return origin === undefined
-    ? place
-    : { ...place, box: { ...place.box, x: place.box.x - origin.x, y: place.box.y - origin.y } }
-}
-
 export function ungroupRows(register: Register, node: ElementId, freed: Freed = "laid"): readonly PlacedRow[] | null {
   const frame = groupFrame(register, node)
   const group = placeOf(register, node)
   if (frame === null || group === null) return null
   const backdrop = frameBackdrop(register, node)
-  const above = groupParent(register, node)
-  const into = typeof above === "string" ? frameNow(register, above) : null
-  const origin = into === "free" && typeof above === "string" ? readLayout(register, above)?.box : undefined
   const rows: PlacedRow[] = []
   for (const child of groupChildren(register, node)) {
     const opening = openingElement(register, child)
     const place = placeOf(register, child)
     if (opening === undefined || place === null || child === backdrop) continue
-    const facts: ElementFacts = {
-      kind: opening.kind,
-      text: opening.value !== null,
-      grouped: into !== null,
-      animated: false,
-      ...(into === null ? {} : { framed: into }),
-    }
+    const facts: ElementFacts = { kind: opening.kind, text: opening.value !== null, grouped: false, animated: false }
     const target =
       backdrop === null ? throughGroup(place, group, frame) : framedPlace(register, node, child, place, freed)
     if (target === null) continue
-    const held = origin === undefined ? heldSides(register, child) : new Set([...heldSides(register, child), "x", "y"])
-    const patch = boxEdits(placedIn(place, origin), placedIn(target, origin), held, takes(facts))
+    const patch = boxEdits(place, target, heldSides(register, child), takes(facts))
     if (patch.box !== undefined) rows.push({ node: child, patch })
   }
   return rows

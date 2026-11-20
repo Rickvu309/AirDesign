@@ -77,18 +77,6 @@ function flowWith(flow: readonly ElementId[], node: ElementId, before: ElementId
   return at < 0 ? [...rest, node] : [...rest.slice(0, at), node, ...rest.slice(at)]
 }
 
-function replacedIn(
-  flow: readonly ElementId[],
-  out: readonly ElementId[],
-  into: readonly ElementId[],
-): readonly ElementId[] {
-  const at = flow.findIndex((each) => out.includes(each))
-  const kept = flow.filter((each) => !out.includes(each))
-  if (at < 0) return [...kept, ...into]
-  const before = flow.slice(0, at).filter((each) => !out.includes(each)).length
-  return [...kept.slice(0, before), ...into, ...kept.slice(before)]
-}
-
 function openingRows(state: Indexed): readonly IndexElement[] {
   return [...(state.index?.elements ?? []), ...state.order.flatMap((command) => floorOf(command))]
 }
@@ -131,24 +119,7 @@ function foldTree(state: Indexed): Tree {
     }
     if (command.slide === "element-group") {
       const node = command.element.node
-      const held = new Set(command.members.map((member) => parent.get(member.node)))
-      const [holder] = held
-      const filed = parent.get(node)
-      const replayed = holder === node
-      const above = replayed ? filed : held.size === 1 ? holder : null
-      const inside = typeof above === "string" && above !== "unknown" && above !== node ? above : null
-      parent.set(node, inside)
-      if (inside !== null && !replayed) {
-        flow.set(
-          inside,
-          replacedIn(
-            flow.get(inside) ?? [],
-            command.members.map((member) => member.node),
-            [node],
-          ),
-        )
-        joined.set(node, { node, box: command.element.box ?? { x: 0, y: 0, cx: 0, cy: 0 } })
-      }
+      parent.set(node, null)
       if (command.backdrop !== undefined) parent.set(command.backdrop.node, node)
       for (const member of command.members) {
         parent.set(member.node, node)
@@ -183,24 +154,12 @@ function foldTree(state: Indexed): Tree {
       const children = childrenIn(parent, command.node)
       const above = parent.get(command.node) ?? null
       for (const child of children) parent.set(child, above)
-      if (typeof above === "string" && above !== "unknown") {
-        const ordered = (flow.get(command.node) ?? []).filter((child) => children.includes(child))
-        flow.set(above, replacedIn(flow.get(above) ?? [], [command.node], ordered))
-        for (const child of ordered) {
-          const member = made.get(command.node)?.members.find((each) => each.node === child)
-          if (member !== undefined) joined.set(child, member)
-        }
-      }
       former.set(command.node, children)
       dissolved.add(command.node)
       continue
     }
     if (command.slide !== "element-regroup") continue
-    const back = former.get(command.node) ?? []
-    for (const child of back) parent.set(child, command.node)
-    const above = parent.get(command.node)
-    if (typeof above === "string" && above !== "unknown")
-      flow.set(above, replacedIn(flow.get(above) ?? [], back, [command.node]))
+    for (const child of former.get(command.node) ?? []) parent.set(child, command.node)
     dissolved.delete(command.node)
   }
   return { parent, dissolved, former, made, joined, flow, vacated, rejoined }

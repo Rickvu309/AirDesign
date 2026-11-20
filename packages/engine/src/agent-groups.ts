@@ -61,15 +61,7 @@ function framed(deck: Deck, elements: readonly ElementId[], runId: string, base:
   const backdrop = elementId(`${slide}.${String(Number(shapeOf(node).shape) + 1)}`)
   const changed = changeLayout(deck.register, { wrap: elements, slide, node, backdrop })
   if (changed === null || !("slide" in changed)) return dead
-  const made = decided(deck.register, opened.file, { ...changed.slide, runId }, runId)
-  let register = made.ok ? made.register : null
-  for (const row of changed.rows) {
-    if (register === null) break
-    const landed = landStarted(register, row.node, { v: format, patch: row.patch }, runId)
-    if (!landed.ok) return landed
-    register = landed.register
-  }
-  return register === null ? made : { ok: true, register }
+  return decided(deck.register, opened.file, { ...changed.slide, runId }, runId)
 }
 
 function turned(register: Register, file: readonly SlideId[], turn: readonly Command[], runId: string): Applied {
