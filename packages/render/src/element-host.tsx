@@ -10,7 +10,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
-import type { ElementId } from "@airdesign/document"
+import { keptCorners, type ElementId } from "@airdesign/document"
 import { memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
@@ -185,8 +185,18 @@ function usePlaced(
 ): CanvasElement {
   const group = element.group
   const carried = useBox(store, group?.id ?? id, read)
-  const box = memberAt(element, useBox(store, id, read), useRotation(store, id), carried)
-  return useFollowed(store, box === element.box ? element : { ...element, box }, targets, read)
+  const own = useBox(store, id, read)
+  const box = memberAt(element, own, useRotation(store, id), carried)
+  const placed = box === element.box ? element : own === null ? { ...element, box } : roundedAt(element, box)
+  return useFollowed(store, placed, targets, read)
+}
+
+function roundedAt(element: CanvasElement, box: PaintBox | null): CanvasElement {
+  const { geometry } = element
+  if (geometry === undefined || element.box === null || box === null) return { ...element, box }
+  const before = { cx: element.box.width, cy: element.box.height }
+  const adjusts = keptCorners(geometry.preset, geometry.adjusts, before, { cx: box.width, cy: box.height })
+  return adjusts === null ? { ...element, box } : { ...element, box, geometry: { ...geometry, adjusts } }
 }
 
 type QuietProps = {

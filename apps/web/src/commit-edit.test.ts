@@ -1,6 +1,10 @@
-import { elementId, limits } from "@airdesign/document"
+import { elementId, format, limits } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { commitBoxes, commitEdit, flushPending, server } from "./commit-edit"
+
+async function noRow(): Promise<{ readonly ok: boolean }> {
+  throw new Error("a plain box went through the row path")
+}
 
 it("paints before the commit is sent", async () => {
   const order: string[] = []
@@ -183,6 +187,7 @@ it("keeps a box with the element's floor, paints it, then sends it on the text's
   const box = { x: 1, y: 2, cx: 3, cy: 4 }
   const outcome = await commitBoxes(
     (remote) => ({
+      enqueueRow: noRow,
       async enqueueBox(deck, value, node, floor) {
         order.push(`keep ${remote === server ? "server" : "device"} ${deck} ${JSON.stringify(value)} ${node} ${floor}`)
         return { ok: true }
@@ -212,6 +217,7 @@ it("puts a refused box back and sends nothing", async () => {
   const order: string[] = []
   const outcome = await commitBoxes(
     () => ({
+      enqueueRow: noRow,
       async enqueueBox() {
         return { ok: false }
       },
@@ -292,6 +298,7 @@ it("keeps every box it can, puts a refused one back, paints the kept ones once a
       async pending() {
         return []
       },
+      enqueueRow: noRow,
       async enqueueBox(_deck, _value, node) {
         order.push(`keep ${node}`)
         return node === refusedNode ? { ok: false } : { ok: true }
@@ -325,6 +332,7 @@ it("reports boxes too large to send as too-large, puts them back and sends nothi
       async pending() {
         return []
       },
+      enqueueRow: noRow,
       async enqueueBox() {
         return { ok: false, refusal: "size" }
       },
@@ -344,4 +352,46 @@ it("reports boxes too large to send as too-large, puts them back and sends nothi
   expect(outcome).toBe("too-large")
   expect(flushed).toBe(0)
   expect(restored).toEqual(["256.2"])
+})
+
+it("keeps a resized rounded shape's box and its kept corners in one row", async () => {
+  const rows: unknown[] = []
+  const box = { x: 1, y: 2, cx: 300, cy: 400 }
+  const shape = { preset: "roundRect" as const, adjust: { adj: 10_000 } }
+  const outcome = await commitBoxes(
+    () => ({
+      async enqueueRow(deck, row, node, floor) {
+        rows.push([deck, row, node, floor])
+        return { ok: true }
+      },
+      async enqueueBox() {
+        throw new Error("a rounded shape's box went without its corners")
+      },
+      async flush() {
+        return { ok: true }
+      },
+      async pending() {
+        return []
+      },
+    }),
+    "any-deck",
+    [{ box, element: { id: elementId("256.2"), file: "Hello" }, corners: { before: shape, after: shape } }],
+    () => undefined,
+    () => undefined,
+  )
+  expect(rows).toEqual([
+    [
+      "any-deck",
+      {
+        v: format,
+        patch: {
+          box: { x: { set: 1 }, y: { set: 2 }, w: { set: 300 }, h: { set: 400 } },
+          geometry: { shape: { set: shape } },
+        },
+      },
+      "256.2",
+      "Hello",
+    ],
+  ])
+  expect(outcome).toBe("sent")
 })

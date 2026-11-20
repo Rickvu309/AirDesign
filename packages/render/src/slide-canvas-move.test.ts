@@ -170,6 +170,17 @@ describe("SlideCanvas boxes", () => {
     expect(placement(frameOf(host))).toEqual(["30px", "30px", "360px", "120px"])
   })
 
+  it("keeps a rounded rectangle's corner radius while its placed box changes its short side", async () => {
+    const rounded = element(id, { outline: "round", geometry: { preset: "roundRect", adjusts: { adj: 20_000 } } })
+    const { host, store } = await mounted([rounded], "", false, false)
+    const outline = () => host.querySelector("[data-canvas-element] path")?.getAttribute("d")
+    expect(outline()).toMatch(/^M0 24A24 24 0 0 1 24 0L336 0/)
+    await act(async () => {
+      store.placeBox(id, { x: 914_400, y: 1_371_600, cx: 3_657_600, cy: 2_743_200 })
+    })
+    expect(Number(/^M0 ([\d.]+)A/.exec(outline() ?? "")?.[1])).toBeCloseTo(24, 2)
+  })
+
   it("selects an element on a press and shows a frame at its box with edge and corner handles", async () => {
     const { host } = await mounted([element(id), element(other, { box: { ...place, y: 3_000_000 } })])
     expect(selection(host)).toBeNull()

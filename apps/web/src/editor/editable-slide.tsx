@@ -1,4 +1,4 @@
-import { boxPatch, format, type ElementId, type Register, type SetChange, type StackMove } from "@airdesign/document"
+import { format, type ElementId, type Register, type SetChange, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import {
   boxOf,
@@ -15,7 +15,8 @@ import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { commitPlace } from "@/editor/group-actions"
-import { commitEdit, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
+import { commitEdit, cornersPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
+import { resizedCorners } from "@/resized-corners"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { toggleLayerFlag } from "@/editor/layer-flags"
@@ -171,7 +172,7 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
       boxes,
       async (kept) => {
         const opened = await opening
-        const steps = boxes.flatMap(({ box, element }) => {
+        const steps = boxes.flatMap(({ box, element, corners }) => {
           const target = element.id
           if (!kept.includes(target)) return []
           const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
@@ -183,7 +184,16 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
           const name = before === null ? null : boxName(before, box)
           return before === null || name === null
             ? []
-            : [{ name, step: { node: target, before: boxPatch(before), after: boxPatch(box) } }]
+            : [
+                {
+                  name,
+                  step: {
+                    node: target,
+                    before: cornersPatch(before, corners?.before),
+                    after: cornersPatch(box, corners?.after),
+                  },
+                },
+              ]
         })
         const [first] = steps
         if (first === undefined) return
@@ -206,10 +216,15 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
   async function onBoxes(moved: readonly Moved[]): Promise<void> {
     const shownRegister = deck.shown.shownRegister.current
     const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
+    const painted = canvases.current(current)?.elements
     const boxes = moved.flatMap(({ id: target, box }) => {
       const element = movables.current.get(target)
       const stored = storedGroupBox(framing, target, box) ?? storedBox(framing, target, box)
-      return element === undefined ? [] : [{ box: stored, element }]
+      const corners = resizedCorners(
+        painted?.find((each) => each.id === target),
+        box,
+      )
+      return element === undefined ? [] : [{ box: stored, element, ...corners }]
     })
     const release = noteBoxes(
       id,

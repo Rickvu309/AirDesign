@@ -1,4 +1,14 @@
-import { bytesOf, limits, type Box, type ElementId } from "@airdesign/document"
+import {
+  boxPatch,
+  bytesOf,
+  format,
+  limits,
+  type Box,
+  type ElementId,
+  type ElementPatch,
+  type Preset,
+  type Row,
+} from "@airdesign/document"
 import { httpRemote, memoryRemote, type Remote } from "@airdesign/live"
 
 export type TextBox = { readonly id: ElementId; readonly file: string }
@@ -16,6 +26,7 @@ type EditLink = FlushLink & {
 
 type BoxLink = FlushLink & {
   enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<Kept>
+  enqueueRow(deck: string, row: Row, node: ElementId, floor: string): Promise<Kept>
 }
 
 export const server = httpRemote()
@@ -72,7 +83,17 @@ export function commitEdit(
   return commitKept(open, deckId, kept, paint, refused)
 }
 
-export type BoxCommit = { readonly box: Box; readonly element: TextBox }
+export type CornersShape = { readonly preset: Preset; readonly adjust: Readonly<Record<string, number>> }
+
+export type BoxCommit = {
+  readonly box: Box
+  readonly element: TextBox
+  readonly corners?: { readonly before: CornersShape; readonly after: CornersShape }
+}
+
+export function cornersPatch(box: Box, shape: CornersShape | undefined): ElementPatch {
+  return shape === undefined ? boxPatch(box) : { ...boxPatch(box), geometry: { shape: { set: shape } } }
+}
 
 export async function storeBoxes(
   open: (remote: Remote) => BoxLink,
@@ -83,8 +104,17 @@ export async function storeBoxes(
 ): Promise<CommitOutcome | "stored"> {
   const kept: ElementId[] = []
   let refusal: CommitOutcome = "refused"
-  for (const { box, element } of boxes) {
-    const result = await open(memoryRemote()).enqueueBox(deckId, box, element.id, element.file)
+  for (const { box, element, corners } of boxes) {
+    const link = open(memoryRemote())
+    const result =
+      corners === undefined
+        ? await link.enqueueBox(deckId, box, element.id, element.file)
+        : await link.enqueueRow(
+            deckId,
+            { v: format, patch: cornersPatch(box, corners.after) },
+            element.id,
+            element.file,
+          )
     if (result.ok) kept.push(element.id)
     else {
       if (result.refusal === "size") refusal = "too-large"
