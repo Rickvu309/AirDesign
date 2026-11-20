@@ -52,7 +52,7 @@ const snapshotLines = ({ repository, run, git, gh, files }) => {
   )
 }
 
-export const ciFailureLines = ({ repository, run, gh, git, read = failedJobLogs({ repository, run, gh }) }) => {
+export const failureLines = ({ repository, run, gh, read }) => {
   const { logs, warnings } = read
   const steps = [...new Set(logs.flatMap(failedSteps))]
   const joined = logs.join("\n")
@@ -81,6 +81,10 @@ export const ciFailureLines = ({ repository, run, gh, git, read = failedJobLogs(
   for (const name of artifacts.stdout.split("\n").filter((line) => line.startsWith("test-results"))) {
     lines.push(`kept test results: ${name} (gh run download ${run.id} -n ${name})`)
   }
-  const files = [...new Set(tests.map((test) => test.file))]
+  return { lines, files: [...new Set(tests.map((test) => test.file))] }
+}
+
+export const ciFailureLines = ({ repository, run, gh, git, read = failedJobLogs({ repository, run, gh }) }) => {
+  const { lines, files } = failureLines({ repository, run, gh, read })
   return [...lines, ...snapshotLines({ repository, run, git, gh, files })]
 }

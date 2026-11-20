@@ -19,6 +19,8 @@ const toolFiles = new Set([
   "scripts/production-commit.mjs",
   "scripts/pull-edit.mjs",
   "scripts/queue-drop.mjs",
+  "scripts/red-main-revert.mjs",
+  "scripts/red-main-verdict.mjs",
   "scripts/red-main.sh",
   "scripts/worktrees.mjs",
 ])

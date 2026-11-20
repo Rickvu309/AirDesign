@@ -32,6 +32,13 @@ same("the failed browser test is named once, with its file and first error", fai
   },
 ])
 
+const pptxExport = fs.readFileSync(new URL("./red-main-fixtures/run-43778249943-corpus.log", import.meta.url), "utf8")
+same(
+  "the PowerPoint check's browser export spec names its failed test with no indent",
+  failedTests(pptxExport).map((test) => [test.file, test.line, test.error]),
+  [["tests/browser/gesture-size.spec.ts", 82, "Error: expect(received).toEqual(expected) // deep equality"]],
+)
+
 same("a log with no failure names nothing", failedTests("ok lint 1.2s\nok unit-tests 3.4s\n"), [])
 same("several failed steps are all named", failedSteps("failed: unit-tests, browser-tests, typecheck\n"), [
   "unit-tests",

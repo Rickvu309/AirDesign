@@ -1,0 +1,45 @@
+2026-11-15T22:35:41.3917616Z Vitest caught 1 unhandled error during the test run.
+2026-11-15T22:35:41.3918587Z This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+2026-11-15T22:35:41.3919051Z 
+2026-11-15T22:35:41.3919383Z [31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+2026-11-15T22:35:41.3919927Z [31m[1mError[22m: PostgreSQL 18 was not found.[39m
+2026-11-15T22:35:41.3920502Z [36m [2m❯[22m apps/api/src/postgres-setup.ts:[2m280:24[22m[39m
+2026-11-15T22:35:41.3921028Z     [90m278|[39m           [34msettle[39m(() [33m=>[39m
+2026-11-15T22:35:41.3921619Z     [90m279|[39m             typeof cluster === "object" && cluster !== null && "error"…
+2026-11-15T22:35:41.3922356Z     [90m280|[39m               [33m?[39m [34mreject[39m([35mnew[39m [33mError[39m(cluster[33m.[39merror))
+2026-11-15T22:35:41.3922935Z     [90m   |[39m                        [31m^[39m
+2026-11-15T22:35:41.3923444Z     [90m281|[39m               [33m:[39m [34mresolve[39m(cluster)[33m,[39m
+2026-11-15T22:35:41.3923904Z     [90m282|[39m           )
+2026-11-15T22:35:41.3924425Z [90m [2m❯[22m settle apps/api/src/postgres-setup.ts:[2m272:7[22m[39m
+2026-11-15T22:35:41.3925023Z [90m [2m❯[22m apps/api/src/postgres-setup.ts:[2m278:11[22m[39m
+2026-11-15T22:35:41.3925297Z 
+2026-11-15T22:35:41.3926152Z [31mThis error originated in "[1mapps/api/src/postgres-setup.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+2026-11-15T22:35:41.3927385Z [31mThe last test to run before this error was "[1mfails with the reason a cluster could not start[22m". This means either:
+2026-11-15T22:35:41.3928087Z - the error was thrown while Vitest was running this test, or
+2026-11-15T22:35:41.3928974Z - the error was thrown after the test completed, and this was the most recent test at that point.[39m
+2026-11-15T22:35:41.3929596Z [31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+2026-11-15T22:35:41.3929799Z 
+2026-11-15T22:35:41.3929817Z 
+2026-11-15T22:35:41.3930269Z [2m Test Files [22m [1m[32m518 passed[39m[22m[90m (518)[39m
+2026-11-15T22:35:41.3931002Z [2m      Tests [22m [1m[32m4898 passed[39m[22m[2m | [22m[36m6 expected fail[39m[90m (4904)[39m
+2026-11-15T22:35:41.3931588Z [2m     Errors [22m [1m[31m1 error[39m[22m
+2026-11-15T22:35:41.3931991Z [2m   Start at [22m 22:34:12
+2026-11-15T22:35:41.3932623Z [2m   Duration [22m 88.47s[2m (tests 66%, import 10%, environment 10%, transform 10%, setup 4%)[22m
+2026-11-15T22:35:41.3932993Z 
+2026-11-15T22:35:41.3933514Z [2m    Isolate [22m [33m75 workers spawned[39m[2m · ~238ms startup each (spawn + environment, per file)[22m
+2026-11-15T22:35:41.3934554Z [2m            [22m [2mat least ~5.71s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+2026-11-15T22:35:41.3935043Z 
+2026-11-15T22:35:41.3935144Z fail test 93.2s
+2026-11-15T22:35:41.6899715Z metric known-failures       now 15  goal 0
+2026-11-15T22:35:41.6901151Z metric corpus-size          now 20  goal 20
+2026-11-15T22:35:41.6901618Z metric export-coverage      now 19  goal 50
+2026-11-15T22:35:41.6902068Z metric fault-detection      now 10  goal 11
+2026-11-15T22:35:41.6902503Z metric long-titles          now 1  goal 0
+2026-11-15T22:35:41.6902942Z metric import-parse         now 141  goal 100
+2026-11-15T22:35:41.6903387Z metric slides-repainted     now 1  goal 1
+2026-11-15T22:35:41.6903739Z ok metrics 0.4s
+2026-11-15T22:35:41.6904223Z metric ci-duration  now 93.6  limit 40
+2026-11-15T22:35:41.6905160Z ci-duration is 93.6 and its limit is 40. Make it faster.
+2026-11-15T22:35:41.7047785Z failed: test
+2026-11-15T22:35:41.7095896Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-15T22:35:41.7119060Z ##[error]Process completed with exit code 1.

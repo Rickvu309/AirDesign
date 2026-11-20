@@ -10,7 +10,7 @@ export const seen = (file) => {
   return file.startsWith("packages/render/src/") || file.startsWith("packages/theme/src/")
 }
 
-const section = (body) => {
+export const beforeAfterSection = (body) => {
   const lines = String(body ?? "").split(/\r?\n/)
   const start = lines.findIndex((line) => /^#{1,6}[ \t]*before[ \t]*\/[ \t]*after\b/i.test(line))
   if (start === -1) return undefined
@@ -20,7 +20,7 @@ const section = (body) => {
 }
 
 export const noVisibleChange = (body) =>
-  (section(body) ?? "")
+  (beforeAfterSection(body) ?? "")
     .split("\n")
     .map((line) =>
       line
@@ -31,7 +31,7 @@ export const noVisibleChange = (body) =>
     .find((reason) => reason !== undefined)
 
 export const hasBeforeAfter = (body, repository) => {
-  const text = section(body)
+  const text = beforeAfterSection(body)
   if (text === undefined) return false
   if (noVisibleChange(body) !== undefined) return true
   const place = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
