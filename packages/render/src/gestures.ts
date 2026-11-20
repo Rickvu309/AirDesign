@@ -270,6 +270,7 @@ export const gestures = [
   { id: "tool-line", group: "tools", keys: [{ key: "l" }], where: ["editor"] },
   { id: "tool-arrow", group: "tools", keys: [{ code: "KeyL", shift: true }], where: ["editor"] },
   { id: "place-image", group: "tools", keys: [{ code: "KeyK", mod: true, shift: true }], where: ["editor"] },
+  { id: "tool-eyedropper", group: "tools", keys: [{ key: "i" }], where: ["element"] },
   { id: "layers-panel", group: "view", keys: [{ code: "Digit1", alt: true }], where: ["editor"] },
   { id: "hide-ui", group: "view", keys: [{ code: "Backslash", mod: true }], where: ["editor"] },
   { id: "slide-list", group: "view", keys: [{ code: "Backslash", mod: true, shift: true }], where: ["editor"] },

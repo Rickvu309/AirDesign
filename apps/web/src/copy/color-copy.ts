@@ -13,6 +13,8 @@ export const colorCopy = {
   hue: "Hue",
   hex: "Hex",
   pick: "Pick a color from the screen",
+  eyedropper: "Eyedropper",
+  eyedropperHint: "Click a color on the slide, or press Esc to cancel",
   lighter: (name: string, percent: number) => `${name}, lighter ${String(percent)}%`,
   darker: (name: string, percent: number) => `${name}, darker ${String(percent)}%`,
   hexName: (hex: string) => `#${hex}`,

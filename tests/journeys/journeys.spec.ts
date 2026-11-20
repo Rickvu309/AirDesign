@@ -98,6 +98,7 @@ for (const name of [
   "auto-layout-opacity",
   "auto-layout-measure",
   "group-transform",
+  "eyedropper",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
