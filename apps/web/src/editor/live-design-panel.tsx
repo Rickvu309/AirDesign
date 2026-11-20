@@ -55,6 +55,7 @@ import { liveSlideNumber } from "./live-slide-number"
 import { LiveBoxFields } from "./live-box-fields"
 import { servedFaces, useServedFaces } from "@/design/served-faces"
 import { controlsOf, perDesignChanges } from "@/editor/per-design-change"
+import { TableCellsSection, type TableCells } from "@/editor/table-cells-section"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -67,6 +68,7 @@ export type DesigningDeck = DesignDeck & {
   readonly matchable?: boolean
   readonly replacePicture?: (node: ElementId, file: File) => void
   readonly chooseFillImage?: (node: ElementId) => void
+  readonly tableCells?: TableCells | null
 }
 
 const deckTraits = new WeakMap<Parts, DeckTraits | null>()
@@ -217,6 +219,19 @@ function LiveElementDesign({
         mode={mode}
         selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
         palette={palette}
+        {...(design.model.kind === "table"
+          ? {
+              children: (
+                <TableCellsSection
+                  deck={deck}
+                  node={node}
+                  value={design.view.value}
+                  picked={deck.tableCells}
+                  palette={palette}
+                />
+              ),
+            }
+          : {})}
         onChange={(control, value) => {
           const chosen = chosenFill(
             value,

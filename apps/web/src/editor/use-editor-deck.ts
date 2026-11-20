@@ -1,6 +1,6 @@
 import { gestureFor, noSelection, type Selection } from "@airdesign/render"
-import { useEffect, useMemo, useState } from "react"
-import type { ElementId } from "@airdesign/document"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import type { CellRange, ElementId } from "@airdesign/document"
 import { flushMedia, keepMedia } from "@airdesign/live"
 import { toast } from "@/components/ui/toast"
 import { designCopy } from "@/copy/design-copy"
@@ -17,6 +17,7 @@ import { useNotes } from "@/notes-edit"
 import { pickPicture } from "@/editor/picture-picker"
 import { usePictureStore, usePictureTool } from "@/picture-tool"
 import { useTables } from "@/table-hook"
+import type { TableCells } from "@/editor/table-cells-section"
 
 export type EditorDeck = ReturnType<typeof useEditorDeck>
 
@@ -99,6 +100,10 @@ export function useEditorDeck(id: string) {
   }
   const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, cutLayers } = inserts
   const tables = useTables(shown)
+  const [tableCells, setTableCells] = useState<TableCells | null>(null)
+  const onCells = useCallback((node: ElementId, cells: CellRange | null) => {
+    setTableCells((now) => (cells !== null ? { node, cells } : now?.node === node ? null : now))
+  }, [])
   const exported = useExport({ id, records, pictureTool, paint: shown.store, setFailure: status.setFailure })
   return {
     ...status,
@@ -126,6 +131,8 @@ export function useEditorDeck(id: string) {
     pasteFromDeck,
     cutLayers,
     tables,
+    tableCells,
+    onCells,
     exported,
   }
 }

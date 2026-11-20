@@ -14,6 +14,7 @@ import {
   type CellRange,
 } from "./table-cells.js"
 import { droppedSize, placedSize, readSize, readSizes } from "./table-sizes.js"
+import { styledCell, type CellStyle } from "./table-style.js"
 import { readParagraphs, type TextValue } from "./text-value.js"
 
 export type TableRow = {
@@ -38,6 +39,7 @@ export type TableChange =
   | { readonly change: "fill"; readonly cells: CellRange; readonly fill: CellFill }
   | { readonly change: "border"; readonly cells: CellRange; readonly sides: BorderSides; readonly border: Border }
   | { readonly change: "widths"; readonly widths: readonly number[] }
+  | { readonly change: "style"; readonly cells: CellRange; readonly style: CellStyle }
   | { readonly change: "heights"; readonly heights: readonly number[] }
 
 const emptyCell: TextValue = [{ from: 0, runs: [] }]
@@ -238,6 +240,24 @@ function changedColumns(
   )
 }
 
+function styled(value: TableValue, change: Extract<TableChange, { readonly change: "style" }>): TableValue | null {
+  if (!inRange(change.cells, value.rows.length, cellCount(value))) return null
+  const [top, bottom] = change.cells.rows
+  const [left, right] = change.cells.columns
+  const rows = value.rows.map((row, at) =>
+    at < top || at > bottom
+      ? row
+      : {
+          ...row,
+          cells: row.cells.map((cell, column) =>
+            column < left || column > right ? cell : styledCell(cell, change.style),
+          ),
+        },
+  )
+  const next = tableOf(rows, tableColumns(value), value.widths)
+  return writeTableValue(next) === writeTableValue(value) ? value : next
+}
+
 function resized(value: TableValue, change: Extract<TableChange, { readonly change: "widths" | "heights" }>) {
   if (change.change === "widths") {
     const widths = readSizes(change.widths, cellCount(value))
@@ -256,6 +276,7 @@ export function changedTable(value: TableValue, change: TableChange): TableValue
   if (change.change === "column" || change.change === "remove-column") return changedColumns(value, change)
   if (change.change === "fill" || change.change === "border") return changedCells(value, change)
   if (change.change === "widths" || change.change === "heights") return resized(value, change)
+  if (change.change === "style") return styled(value, change)
   const row = value.rows[change.row]
   if (row === undefined) return null
   if (change.change === "cell") {

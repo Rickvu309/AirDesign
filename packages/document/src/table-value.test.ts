@@ -206,3 +206,41 @@ describe("column widths and row heights", () => {
     expect(changedTable(openingTable(2, 2), { change: "column", column: 0, place: "after" })!.widths).toBeUndefined()
   })
 })
+
+describe("cell text style", () => {
+  const typed = (text: string) => [{ from: 0, runs: [{ from: 0, text }] }]
+  const table: TableValue = {
+    rows: [
+      { from: 0, cells: [typed("Region"), typed("Revenue")] },
+      { from: 1, cells: [typed("Europe"), empty] },
+    ],
+  }
+
+  it("styles every run and paragraph in the cells it names, and leaves the others", () => {
+    const style = { bold: true, size: 1400, color: { scheme: "accent1" }, align: "center" } as const
+    const header = changedTable(table, { change: "style", cells: { rows: [0, 0], columns: [0, 1] }, style })!
+    expect(header.rows[0]?.cells[0]).toEqual([
+      {
+        from: 0,
+        align: "center",
+        runs: [{ from: 0, text: "Region", bold: true, size: 1400, color: { scheme: "accent1" } }],
+      },
+    ])
+    expect(header.rows[1]).toEqual(table.rows[1])
+    expect(readTableValue(writeTableValue(header))).toEqual(header)
+  })
+
+  it("refuses a range outside the table and returns the table itself when nothing changes", () => {
+    expect(
+      changedTable(table, { change: "style", cells: { rows: [0, 2], columns: [0, 0] }, style: { bold: true } }),
+    ).toBeNull()
+    const bold = changedTable(table, {
+      change: "style",
+      cells: { rows: [0, 0], columns: [0, 0] },
+      style: { bold: true },
+    })!
+    expect(
+      changedTable(bold, { change: "style", cells: { rows: [0, 0], columns: [0, 0] }, style: { bold: true } }),
+    ).toBe(bold)
+  })
+})

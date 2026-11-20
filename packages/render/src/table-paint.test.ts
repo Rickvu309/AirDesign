@@ -67,6 +67,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
   const store = paintStore()
   store.publish({ id, kind: "table", text: "" })
   const changes: TableChange[] = []
+  const scopes: unknown[] = []
   const removed: ElementId[] = []
   const boxes: Box[] = []
   const host = document.createElement("div")
@@ -91,11 +92,12 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
           onRemove: (targets: readonly ElementId[]) => removed.push(...targets),
           onTable: (_: ElementId, change: TableChange) => changes.push(change),
           tableWords: words,
+          onCells: (_: ElementId, cells: unknown) => scopes.push(cells),
         }),
       )
     })
   await draw(2)
-  return { host, store, changes, removed, boxes, draw }
+  return { host, store, changes, scopes, removed, boxes, draw }
 }
 
 function cell(host: HTMLElement, spot: string): HTMLElement {
@@ -285,6 +287,17 @@ describe("SlideCanvas table", () => {
     await clicked(named(host, "Column 2"))
     await key(named(host, "Column 2"), "Escape")
     expect(host.querySelectorAll("[data-table-picked]")).toHaveLength(0)
+  })
+
+  it("tells the panel which cells a picked row, a picked column or the cell being typed in names", async () => {
+    const { host, scopes } = await mounted(null)
+    await selected(host)
+    await clicked(named(host, "Row 2"))
+    expect(scopes.at(-1)).toEqual({ rows: [1, 1], columns: [0, 1] })
+    await clicked(named(host, "Column 1"))
+    expect(scopes.at(-1)).toEqual({ rows: [0, 1], columns: [0, 0] })
+    await act(async () => cell(host, "0.1").focus())
+    expect(scopes.at(-1)).toEqual({ rows: [0, 0], columns: [1, 1] })
   })
 
   it("drags the border between two columns to move width from one to the other, and sends the widths once", async () => {

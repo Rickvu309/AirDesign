@@ -1,4 +1,11 @@
-import { cellText, readTableValue, type ElementId, type TableChange, type TableValue } from "@airdesign/document"
+import {
+  cellText,
+  readTableValue,
+  type CellRange,
+  type ElementId,
+  type TableChange,
+  type TableValue,
+} from "@airdesign/document"
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
@@ -163,12 +170,16 @@ function TableEdit(props: {
   readonly moves: Moves
   readonly onTable: (id: ElementId, change: TableChange) => void
   readonly words: TableWords | undefined
+  readonly onCells: ((id: ElementId, cells: CellRange | null) => void) | undefined
 }) {
-  const { element, id, moves, onTable, scaled, table, words } = props
+  const { element, id, moves, onTable, onCells, scaled, table, words } = props
   const [active, setActive] = useState<Spot | null>(null)
   const [picked, setPicked] = useState<TablePick | null>(null)
   const [sizing, setSizing] = useState<TableSizing | null>(null)
   const shown = sizedTable(table, sizing)
+  const [scope, setScope] = useState<CellRange | null>(null)
+  const lastRow = table.rows.length - 1
+  const lastColumn = table.columns.length - 1
   const stored = storedCells(useElement(props.store, id)?.text, table)
   const pending = useRef<Spot | null>(null)
   const frame = useRef<HTMLDivElement>(null)
@@ -203,6 +214,21 @@ function TableEdit(props: {
   }
 
   const selected = moves.selection.ids.length === 1 && leadOf(moves.selection) === id
+  const scopeKey = selected && scope !== null ? JSON.stringify(scope) : ""
+  useEffect(() => {
+    onCells?.(id, scopeKey === "" ? null : (JSON.parse(scopeKey) as CellRange))
+  }, [onCells, id, scopeKey])
+
+  function pick(next: TablePick | null) {
+    setPicked(next)
+    if (next === null) setScope(null)
+    else
+      setScope(
+        next.kind === "row"
+          ? { rows: [next.at, next.at], columns: [0, lastColumn] }
+          : { rows: [0, lastRow], columns: [next.at, next.at] },
+      )
+  }
   const fits = picked === null || picked.at < (picked.kind === "row" ? table.rows.length : table.columns.length)
   const handles: TableHandles | null =
     !selected || words === undefined
@@ -213,7 +239,7 @@ function TableEdit(props: {
           scaled,
           words,
           picked: fits ? picked : null,
-          onPick: setPicked,
+          onPick: pick,
           onSizing: setSizing,
           change,
           leave: () => frame.current?.querySelector<HTMLElement>("[data-canvas-table]")?.focus(),
@@ -231,7 +257,11 @@ function TableEdit(props: {
           holder.textContent = ""
           setActive((now) => (now !== null && spotKey(now) === here ? null : now))
         }}
-        onFocus={() => setActive(spot)}
+        onFocus={() => {
+          setActive(spot)
+          setPicked(null)
+          setScope({ rows: [at, at], columns: [column, column] })
+        }}
         onKey={(event) => key(spot, event)}
         onText={(text) => change({ change: "cell", row: at, column, text })}
         scaled={scaled}
@@ -326,6 +356,7 @@ export function TablePaint(props: ElementPaintProps) {
         store={props.store}
         table={element.table}
         words={tableWords}
+        onCells={props.onCells}
       />
     )
   if (element.id !== null && moves !== null)
