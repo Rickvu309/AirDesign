@@ -186,6 +186,7 @@ export {
 } from "./trait-border.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
+export { keptCorners } from "./kept-corners.js"
 export {
   connectorEnds,
   elbowClearance,
