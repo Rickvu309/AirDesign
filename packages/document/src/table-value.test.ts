@@ -67,6 +67,38 @@ describe("table value", () => {
     expect(changedTable(table, { change: "row", row: 2, place: "below" })).toBeNull()
     expect(changedTable(openingTable(limits.tableRows, 1), { change: "row", row: 0, place: "below" })).toBeNull()
   })
+
+  it("clears the text of a range of cells and keeps each cell's paragraph and run format", () => {
+    const typed = changedTable(openingTable(2, 2), { change: "cell", row: 0, column: 0, text: "A" })!
+    const styled = changedTable(typed, {
+      change: "style",
+      cells: { rows: [0, 1], columns: [0, 1] },
+      style: { size: 12 },
+    })!
+    const both = changedTable(styled, { change: "cell", row: 1, column: 1, text: "D" })!
+    const cleared = changedTable(both, { change: "clear", cells: { rows: [0, 1], columns: [0, 0] } })!
+    expect(cleared.rows.map((row) => row.cells.map(cellText))).toEqual([
+      ["", ""],
+      ["", "D"],
+    ])
+    expect(cleared.rows[0]!.cells[0]![0]!.from).toBe(both.rows[0]!.cells[0]![0]!.from)
+    expect(changedTable(cleared, { change: "clear", cells: { rows: [0, 1], columns: [0, 0] } })).toBe(cleared)
+    expect(changedTable(both, { change: "clear", cells: { rows: [0, 2], columns: [0, 0] } })).toBeNull()
+  })
+
+  it("removes a run of rows or columns at once, and refuses a run that would leave none", () => {
+    const table = changedTable(openingTable(4, 3), { change: "cell", row: 3, column: 2, text: "D" })!
+    const rows = changedTable(table, { change: "remove-row", row: 1, through: 2 })!
+    expect(rows.rows.map((row) => row.from)).toEqual([0, 3])
+    expect(cellText(rows.rows[1]!.cells[2]!)).toBe("D")
+    const columns = changedTable(table, { change: "remove-column", column: 0, through: 1 })!
+    expect(columns.columns).toEqual([2])
+    expect(cellText(columns.rows[3]!.cells[0]!)).toBe("D")
+    expect(changedTable(table, { change: "remove-row", row: 0, through: 3 })).toBeNull()
+    expect(changedTable(table, { change: "remove-column", column: 0, through: 2 })).toBeNull()
+    expect(changedTable(table, { change: "remove-row", row: 2, through: 1 })).toBeNull()
+    expect(changedTable(table, { change: "remove-row", row: 3, through: 4 })).toBeNull()
+  })
 })
 
 describe("cell fills and borders", () => {

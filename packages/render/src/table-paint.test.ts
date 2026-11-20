@@ -63,7 +63,7 @@ function table(rows: number, overrides: Partial<CanvasElement> = {}, columns = 2
   }
 }
 
-async function mounted(entering: ElementId | null, overrides: Partial<CanvasElement> = {}) {
+async function mounted(entering: ElementId | null, overrides: Partial<CanvasElement> = {}, columns = 2) {
   const store = paintStore()
   store.publish({ id, kind: "table", text: "" })
   const changes: TableChange[] = []
@@ -74,7 +74,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const draw = async (rows: number, columns = 2) =>
+  const draw = async (rows: number, across = columns) =>
     act(async () => {
       root.render(
         createElement(SlideCanvas, {
@@ -83,7 +83,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
             width: 12_192_000,
             height: 6_858_000,
             background: null,
-            elements: [table(rows, overrides, columns)],
+            elements: [table(rows, overrides, across)],
           },
           width: 800,
           entering: entering === null ? null : { id: entering },
@@ -145,10 +145,28 @@ async function key(target: Element | null, name: string, shiftKey = false) {
   })
 }
 
-async function pointer(target: EventTarget, type: string, x: number, y: number) {
+async function pointer(target: EventTarget, type: string, x: number, y: number, shiftKey = false) {
   await act(async () => {
     target.dispatchEvent(
-      new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, button: 0 }),
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        pointerId: 1,
+        button: 0,
+        shiftKey,
+      }),
+    )
+  })
+}
+
+async function pressed(target: HTMLElement, shiftKey = false) {
+  await pointer(target, "pointerdown", 30, 30, shiftKey)
+  await pointer(target.ownerDocument, "pointerup", 30, 30, shiftKey)
+  await act(async () => {
+    target.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, clientX: 30, clientY: 30, shiftKey }),
     )
   })
 }
@@ -298,6 +316,87 @@ describe("SlideCanvas table", () => {
     expect(scopes.at(-1)).toEqual({ rows: [0, 1], columns: [0, 0] })
     await act(async () => cell(host, "0.1").focus())
     expect(scopes.at(-1)).toEqual({ rows: [0, 0], columns: [1, 1] })
+  })
+
+  it("names the whole table once Escape leaves the cell being typed in", async () => {
+    const { host, scopes } = await mounted(id)
+    expect(scopes.at(-1)).toEqual({ rows: [0, 0], columns: [0, 0] })
+    await key(host.ownerDocument.activeElement, "Escape")
+    expect(host.ownerDocument.activeElement).toBe(host.querySelector("[data-canvas-table]"))
+    expect(scopes.at(-1)).toBeNull()
+  })
+
+  it("names the whole table when it is selected again after its cell was left by a click away", async () => {
+    const { host, scopes } = await mounted(id)
+    await act(async () => cell(host, "1.1").focus())
+    expect(scopes.at(-1)).toEqual({ rows: [1, 1], columns: [1, 1] })
+    const surface = host.querySelector<HTMLElement>("[data-slide-paint]")
+    if (surface === null) throw new Error("surface")
+    await act(async () => surface.focus())
+    expect(host.querySelector("[data-selection]")).toBeNull()
+    await selected(host)
+    expect(scopes.at(-1)).toBeNull()
+  })
+
+  it("picks the cell a click lands on once the table is selected, and Shift-click picks the range to another", async () => {
+    const { host, scopes } = await mounted(null, {}, 3)
+    const at = (spot: string) => {
+      const found = host.querySelector<HTMLElement>(`[data-table-cell="${spot}"]`)
+      if (found === null) throw new Error(spot)
+      return found
+    }
+    await pressed(at("0.1"))
+    expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
+    expect(scopes.filter((scope) => scope !== null)).toEqual([])
+    await pressed(at("0.1"))
+    expect(scopes.at(-1)).toEqual({ rows: [0, 0], columns: [1, 1] })
+    expect(host.querySelectorAll("[data-table-picked]")).toHaveLength(1)
+    await pressed(at("1.2"), true)
+    expect(scopes.at(-1)).toEqual({ rows: [0, 1], columns: [1, 2] })
+    expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
+    expect(host.querySelectorAll("[data-table-picked]")).toHaveLength(4)
+    await key(host.querySelector("[data-canvas-table]"), "Escape")
+    expect(scopes.at(-1)).toBeNull()
+    expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
+    expect(host.querySelectorAll("[data-table-picked]")).toHaveLength(0)
+  })
+
+  it("clears the picked cells' text on Delete and keeps the table", async () => {
+    const { host, changes, removed } = await mounted(null)
+    const target = host.querySelector<HTMLElement>('[data-table-cell="1.0"]')
+    if (target === null) throw new Error("cell")
+    await pressed(target)
+    await pressed(target)
+    await key(host.querySelector("[data-canvas-table]"), "Delete")
+    expect(changes).toEqual([{ change: "clear", cells: { rows: [1, 1], columns: [0, 0] } }])
+    expect(removed).toEqual([])
+  })
+
+  it("moves the table on a drag from a cell without picking that cell", async () => {
+    const { host, scopes, boxes } = await mounted(null)
+    const target = host.querySelector<HTMLElement>('[data-table-cell="1.0"]')
+    if (target === null) throw new Error("cell")
+    await pressed(target)
+    await pointer(target, "pointerdown", 40, 40)
+    await pointer(host.ownerDocument, "pointermove", 80, 60)
+    await pointer(host.ownerDocument, "pointerup", 80, 60)
+    await act(async () => target.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 80, clientY: 60 })))
+    expect(boxes).toHaveLength(1)
+    expect(scopes.filter((scope) => scope !== null)).toEqual([])
+  })
+
+  it("picks a run of rows with Shift-click on a second handle, and Delete removes them all", async () => {
+    const { host, scopes, changes, draw } = await mounted(null)
+    await draw(4)
+    await selected(host)
+    await clicked(named(host, "Row 2"))
+    await act(async () =>
+      named(host, "Row 4").dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true })),
+    )
+    expect(scopes.at(-1)).toEqual({ rows: [1, 3], columns: [0, 1] })
+    expect(named(host, "Row 3").getAttribute("aria-pressed")).toBe("true")
+    await key(named(host, "Row 4"), "Delete")
+    expect(changes).toEqual([{ change: "remove-row", row: 1, through: 3 }])
   })
 
   it("drags the border between two columns to move width from one to the other, and sends the widths once", async () => {
