@@ -40,6 +40,7 @@ async function placeShape(
 ): Promise<Locator> {
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Enter")
   const layer = shapeAt(page, shapeNumber)
   await expect(layer).toBeVisible()
   const box = await boxOf(layer)

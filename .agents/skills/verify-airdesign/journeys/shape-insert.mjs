@@ -17,11 +17,13 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const insert = async (name) => {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   await expect(page.locator("[data-shape-tray]")).toBeVisible()
   await capture("shape-tray")
   await page.getByRole("button", { name: "Rectangle", exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   await expect(element(4)).toBeVisible()
   await insert("Ellipse")

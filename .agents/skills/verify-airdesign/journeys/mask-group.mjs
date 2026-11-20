@@ -28,6 +28,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
 
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.circle, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(selection).toHaveCount(1)
   const circleId = (await selection.getAttribute("data-selection"))?.split(".")[1]
   const circle = element(circleId)

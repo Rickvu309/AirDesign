@@ -10,6 +10,7 @@ async function drive(kit) {
   await fixtureDeck(kit, "picture-png.pptx")
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.circle, exact: true }).click()
+  await page.keyboard.press("Enter")
   const added = page.locator("[data-slide-paint] [data-selection]")
   await added.waitFor()
   const from = await added.boundingBox()

@@ -25,6 +25,7 @@ async function drive(kit) {
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   await page.getByRole("button", { name: "Add text", exact: true }).click()
   const slide = await page.locator("[data-slide-paint]").boundingBox()

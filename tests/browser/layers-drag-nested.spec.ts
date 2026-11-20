@@ -97,6 +97,7 @@ test("a frame drags into a group in the layers panel and keeps its place and its
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle, shapeCopy.shapes.triangle]) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name: name ?? "", exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   }
   const [square, circle, triangle] = [painted(page, 4), painted(page, 5), painted(page, 6)]

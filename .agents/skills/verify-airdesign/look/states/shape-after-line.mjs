@@ -9,6 +9,7 @@ async function drive(kit) {
   for (const name of ["Line", "Rectangle"]) {
     await kit.page.getByRole("button", { name: "Shapes", exact: true }).click()
     await kit.page.getByRole("button", { name, exact: true }).click()
+    await kit.page.keyboard.press("Enter")
   }
   await expect(kit.page.locator('[data-slide-paint] [data-canvas-element$="#5"]')).toBeVisible()
   await expect(kit.page.locator("[data-slide-paint] [data-canvas-line]").first()).toBeVisible()

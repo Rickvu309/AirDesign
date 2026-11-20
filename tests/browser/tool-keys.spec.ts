@@ -10,7 +10,7 @@ import { covers } from "./gesture"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("T arms the Text tool and a click places text, R, O, L, Shift+L and Shift+Ctrl+K add shapes and an image, from the slide and not from a button", async ({
+test("T arms the Text tool and a click places text, R, O, L and Shift+L arm a shape tool that Enter places, Shift+Ctrl+K adds an image, from the slide and not from a button", async ({
   page,
 }) => {
   covers("tool-text", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow", "place-image")
@@ -32,6 +32,8 @@ test("T arms the Text tool and a click places text, R, O, L, Shift+L and Shift+C
   for (const [step, key] of ["r", "o", "l", "Shift+L"].entries()) {
     await slide.click({ position: { x: 4, y: 4 } })
     await page.keyboard.press(key)
+    await expect(page.locator("[data-shape-drawing]")).toHaveCount(1)
+    await page.keyboard.press("Enter")
     await expect(layers).toHaveCount(initial + step + 2)
   }
   const browser = await page.context().newCDPSession(page)

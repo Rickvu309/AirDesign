@@ -10,6 +10,7 @@ async function drive(kit) {
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   await page.locator(painted(5)).waitFor()
   await page.locator(painted(4)).click()

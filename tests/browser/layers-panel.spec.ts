@@ -15,6 +15,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 async function insert(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
 }
 

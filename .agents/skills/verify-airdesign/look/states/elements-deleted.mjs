@@ -17,6 +17,7 @@ async function drive(kit) {
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   await expect(element(5)).toBeVisible()
   await element(4).click()

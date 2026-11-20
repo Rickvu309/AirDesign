@@ -23,6 +23,7 @@ export async function selectTwo(kit) {
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   await expect.poll(async () => (await shown(page)).length).toBe(before.length + 2)
   const [first, second] = (await shown(page)).filter((node) => !before.includes(node))

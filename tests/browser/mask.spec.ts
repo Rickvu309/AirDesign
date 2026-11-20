@@ -26,6 +26,7 @@ async function exportedSlide(file: string): Promise<{ xml: string; media: readon
 async function onPicture(page: Page, name: string) {
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   const added = page.locator("[data-slide-paint] [data-selection]")
   await expect(added).toHaveCount(1)
@@ -135,11 +136,13 @@ test("an imported picture cropped to a circle keeps its bytes when a mask beside
   await expect(page.locator("[data-slide-paint] [data-mask-clip]")).toHaveCount(0)
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   const square = page.locator("[data-slide-paint] [data-selection]")
   const id = await square.getAttribute("data-selection")
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.circle, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   await page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#${id?.split(".")[1] ?? ""}"]`).click({
     modifiers: [shortcutCopy.chord.other.shift],

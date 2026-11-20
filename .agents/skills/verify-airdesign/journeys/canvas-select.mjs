@@ -40,6 +40,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const place = async (name, number, target) => {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
     const layer = shape(number)
     await expect(layer).toBeVisible()

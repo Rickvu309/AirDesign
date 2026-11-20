@@ -19,6 +19,7 @@ export default {
     for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
       await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
       await page.getByRole("button", { name, exact: true }).click()
+      await page.keyboard.press("Enter")
       await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
     }
     await layer("slide1", 4).click()

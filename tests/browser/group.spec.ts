@@ -84,6 +84,7 @@ test("two shapes group in place, move together, ungroup in place, and the export
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   const shapes = [frame(page, part, 4), frame(page, part, 5)]
   await expect(shapes[1]!).toBeVisible()

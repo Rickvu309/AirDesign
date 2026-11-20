@@ -61,6 +61,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
 
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(shape(7)).toBeVisible()
   const added = await placed(7)
   const grab = (left, top) => ({ x: origin.x + left + added[2] / 2, y: origin.y + top + added[3] / 2 })

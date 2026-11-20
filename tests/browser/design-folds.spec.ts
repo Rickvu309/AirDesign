@@ -76,6 +76,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
 
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   await page.getByRole("button", { name: "Rectangle", exact: true }).click()
+  await page.keyboard.press("Enter")
   const shape = page.locator("[data-design-element]")
   await expect(shape.locator("[data-design-head]")).toHaveText(designCopy.square)
   await expect(shape.getByRole("heading")).toHaveText([

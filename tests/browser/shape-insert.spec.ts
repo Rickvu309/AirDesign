@@ -47,6 +47,7 @@ function painted(page: Page, shape: number) {
 async function insert(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
 }
 
@@ -78,6 +79,7 @@ test("the Shapes tray has every shape on, and More shapes opens a grid of every 
   await grid.getByRole("button", { name: "Hexagon", exact: true }).focus()
   await page.keyboard.press("Enter")
   await expect(grid).toHaveCount(0)
+  await page.keyboard.press("Enter")
   await expect(painted(page, 4)).toBeVisible()
   await expect(page.locator("[data-slide-paint] [data-canvas-element] svg path").first()).toHaveAttribute("d", /L/)
   await page.getByRole("button", { name: "Undo add shape", exact: true }).click()

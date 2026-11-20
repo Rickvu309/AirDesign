@@ -189,5 +189,6 @@ test("in a 1280x720 window a shape added through More while text is aimed lands 
   await page.locator("[data-editor-toolbar]").getByRole("button", { name: "More", exact: true }).click()
   await page.locator("[data-toolbar-more]").getByRole("button", { name: "Shapes", exact: true }).click()
   await page.locator("[data-shape-tray]").getByRole("button", { name: "Rectangle", exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(elements).toHaveCount(before + 1)
 })

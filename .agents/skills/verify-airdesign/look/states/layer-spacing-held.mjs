@@ -13,6 +13,7 @@ async function drive(kit) {
   await openDeck(page, path.join(kit.repo, "scripts/pptx-fixtures/shapes-added.pptx"))
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator(added)).toBeVisible()
   const slide = await page.locator("[data-slide-paint]").boundingBox()
   const box = await page.locator(added).boundingBox()

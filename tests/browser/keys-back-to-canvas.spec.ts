@@ -83,6 +83,7 @@ test("Enter or Escape in a design panel control, or a pick from a picker, gives 
   await expect(opacity).toHaveValue(/^50/)
   await expect(panel).not.toContainText("20%")
   await page.keyboard.press("r")
+  await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(initial + 2)
 
   const oval = shapeAt(page, "5")
@@ -91,5 +92,6 @@ test("Enter or Escape in a design panel control, or a pick from a picker, gives 
   await pickColor(page, panel.getByLabel(fillWords.color, { exact: true }), names.accent2)
   await expect(oval).toBeFocused()
   await page.keyboard.press("l")
+  await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(initial + 3)
 })

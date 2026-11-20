@@ -74,6 +74,7 @@ test("a node control reads an imported deck's placeholders as Title and Subtitle
   for (const name of ["Rectangle", "Line"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
