@@ -18,6 +18,7 @@ export type StructuralEdit =
       readonly part: string
       readonly text: string
       readonly geometry?: Geometry
+      readonly holdsText?: true
       readonly id?: number
     } & ShapeBox)
   | { readonly name: "spTree.remove"; readonly part: string; readonly shape: string }
@@ -59,7 +60,7 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       const written =
         route.geometry === undefined
           ? addTextShape(xml, route.text, box, route.id)
-          : addDrawnShape(xml, route.geometry, box, route.id)
+          : addDrawnShape(xml, route.geometry, box, route.id, route.holdsText === true)
       replacePart(next, route.part, encodeUtf8(written.xml))
       return { parts: next, id: String(written.id) }
     }

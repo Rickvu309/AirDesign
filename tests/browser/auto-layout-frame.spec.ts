@@ -247,7 +247,7 @@ test("a shape dropped into an auto layout frame joins its row, a child dragged o
   await expect.poll(async () => (await placed(triangle)).x < row.x - 10).toBe(true)
   await expect.poll(async () => (await placed(square!)).y > row.y + row.height).toBe(true)
   const shifted = await placed(circle!)
-  await circle!.dblclick()
+  await circle!.click()
   await expect(selection).toHaveAttribute("data-selection", /\.5$/)
   await page.keyboard.press("Delete")
   await expect(circle!).toHaveCount(0)

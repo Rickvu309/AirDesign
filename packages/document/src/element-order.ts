@@ -158,10 +158,10 @@ function freshShape(element: IndexElement): boolean {
 }
 
 function drawable(element: IndexElement, geometry: Geometry): boolean {
-  const { box } = element
-  if (box === null || element.value !== null || !geometries.includes(geometry)) return false
+  const { box, value } = element
+  if (box === null || (value !== null && value !== "") || !geometries.includes(geometry)) return false
   if (lineGeometries.includes(geometry))
-    return element.kind === "connector" && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0
+    return value === null && element.kind === "connector" && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0
   return element.kind === "shape" && box.cx > 0 && box.cy > 0
 }
 

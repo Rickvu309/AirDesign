@@ -394,10 +394,15 @@ describe("SlideCanvas boxes", () => {
     expect(boxes).toEqual([[id, { x: 502_350, y: 519_610, cx: 5_674_167, cy: 1_597_887 }]])
   })
 
+  it("names a filled box with no words a shape", async () => {
+    const { host } = await mounted([element(id, { editable: true })], "", true)
+    expect(frameOf(host).getAttribute("aria-label")).toBe("Shape")
+  })
+
   it("names each element and puts a movable element with no text to edit in the tab order", async () => {
     const { host } = await mounted(
       [
-        element(id, { editable: true }),
+        element(id, { editable: true, filled: false }),
         element(other, { kind: "picture" }),
         element(elementId("256.4"), { kind: "connector", movable: false, filled: false }),
       ],

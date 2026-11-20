@@ -108,6 +108,24 @@ it("orders a drawn shape by its fill, border and shape type", () => {
   expect(sections(labelled, fields).map(([trait]) => trait)).toContain("text")
 })
 
+it("orders a filled square that holds no words as a shape, though it holds empty text to type in", () => {
+  const square = { ...textBox, value: "" }
+  const drawn: PanelReads = {
+    reads: {},
+    moves: true,
+    fields: {
+      "geometry.shape": { value: { preset: "rect", adjust: {} }, own: true },
+      "fills.p0": { value: { solid: { scheme: "accent1" } }, own: false },
+    },
+  }
+  const red = { ...drawn, fields: { ...drawn.fields, "fills.p0": { value: { solid: { rgb: "D93829" } }, own: true } } }
+  const unfilled = { ...drawn, fields: { ...drawn.fields, "fills.p0": { value: { none: true }, own: true } } }
+  expect(panelKind(square, drawn)).toBe("shape")
+  expect(panelKind(square, red)).toBe("shape")
+  expect(panelKind(square, unfilled)).toBe("text")
+  expect(panelKind({ ...square, value: "Grow" }, red)).toBe("text")
+})
+
 it("offers a shape whose fills hold an image no shape type while it is a plain rectangle", () => {
   const picture = { ...textBox, facts: { ...textBox.facts, text: false }, value: null }
   const image = { "fills.p0": { image: true } }

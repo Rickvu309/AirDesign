@@ -125,7 +125,15 @@ function elementAdded(
   if (icon !== null)
     return addPicture(parts, part, { id, box, source: openedIcon(parts, part, icon, element.opening?.fills) })
   if (shown.geometry !== undefined)
-    return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
+    return applyStructuralRoute(parts, {
+      name: "spTree.add",
+      part,
+      id,
+      text: "",
+      geometry: shown.geometry,
+      ...box,
+      ...(element.value === "" ? { holdsText: true as const } : {}),
+    })
   if (element.kind === "chart") return chartAdded(parts, part, id, box, element.value)
   if (element.kind !== "table") {
     const align = element.opening?.body === undefined ? {} : { align: "left" as const }

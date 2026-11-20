@@ -139,7 +139,7 @@ describe("element order", () => {
     expect(refused({ ...textBox, value: writeTableValue(openingTable(1, 1)) })).toBe(true)
   })
 
-  it("opens an added rectangle, ellipse and line with their geometry, and refuses one with text, media or the wrong kind", () => {
+  it("opens an added rectangle, ellipse and line with their geometry, a shape with empty text to type in, and refuses one with text, media or the wrong kind", () => {
     const shape: IndexElement = { ...textBox, value: null }
     const line: IndexElement = { ...shape, kind: "connector", box: { ...box, cy: 0 } }
     const add = (element: IndexElement, geometry: unknown) =>
@@ -157,7 +157,8 @@ describe("element order", () => {
     }
     const refused = (command: SlideCommand) => slide(indexed, command).decision === "refuse"
     expect(refused(add(shape, "rect"))).toBe(false)
-    expect(refused(add({ ...shape, value: "" }, "rect"))).toBe(true)
+    expect(refused(add({ ...shape, value: "" }, "rect"))).toBe(false)
+    expect(refused(add({ ...line, value: "" }, "line"))).toBe(true)
     expect(refused(add({ ...shape, value: "Text" }, "ellipse"))).toBe(true)
     expect(refused(add(line, "rect"))).toBe(true)
     expect(refused(add(shape, "line"))).toBe(true)

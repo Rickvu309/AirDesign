@@ -33,11 +33,8 @@ function foldedElement(register: Register, node: ElementId): IndexElement | unde
   const opening = openingElement(register, node)
   if (opening === undefined) return undefined
   const drawn = opening.design === undefined ? addedGeometry(register, node) : null
-  return {
-    ...opening,
-    grouped: groupedNow(register, node),
-    ...(drawn === null ? {} : { design: drawnDesign(drawn, opening.box ?? undefined) }),
-  }
+  const design = drawn === null ? {} : { design: drawnDesign(drawn, opening.box ?? undefined, opening.value === "") }
+  return { ...opening, grouped: groupedNow(register, node), ...design }
 }
 
 function shownValue(value: string | null): string | null {

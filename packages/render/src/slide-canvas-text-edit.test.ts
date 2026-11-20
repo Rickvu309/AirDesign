@@ -141,6 +141,26 @@ describe("editing a text layer on the slide", () => {
     expect(boxes).toEqual([])
   })
 
+  it("keeps a right press in a layer's text out of the text when nobody is typing in it", async () => {
+    const host = await mounted([element(id)])
+    const text = textOf(host, id)
+    const at = { bubbles: true, cancelable: true, clientX: 100, clientY: 80, pointerId: 1, button: 2 }
+    const resting = new PointerEvent("pointerdown", at)
+    await act(async () => {
+      text.dispatchEvent(resting)
+    })
+    expect(resting.defaultPrevented).toBe(true)
+    expect(host.ownerDocument.activeElement).toBe(text.closest("[data-canvas-element]"))
+    await act(async () => {
+      text.focus()
+    })
+    const typing = new PointerEvent("pointerdown", at)
+    await act(async () => {
+      text.dispatchEvent(typing)
+    })
+    expect(typing.defaultPrevented).toBe(false)
+  })
+
   it("selects and moves a text layer from a press in its text when nobody is typing in it", async () => {
     const host = await mounted([element(id)])
     const text = textOf(host, id)

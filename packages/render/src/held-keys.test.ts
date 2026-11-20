@@ -100,6 +100,16 @@ describe("holdKeys", () => {
     expect(press(button, "a").down).toBe(true)
   })
 
+  it("selects a drawn shape that holds text without typing in it, so Enter is what starts typing", async () => {
+    const { button, text, draw } = await painted()
+    const keys = holdKeys(document)
+    pressAll(button, "Gr")
+    await draw({ id: added, keys, selects: true })
+    expect(document.activeElement).not.toBe(text)
+    expect(document.activeElement?.closest("[data-canvas-element]")).not.toBeNull()
+    expect(typed).toEqual([])
+  })
+
   it("leaves keys that go into a text and keys with Control or Meta to their target", async () => {
     const { button, text } = await painted()
     const keys = holdKeys(document)

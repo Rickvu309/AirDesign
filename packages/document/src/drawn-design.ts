@@ -20,8 +20,15 @@ function roundedOf(geometry: Geometry, box: Size | undefined): Design {
 
 type Size = { readonly cx: number; readonly cy: number }
 
-export function drawnDesign(geometry: Geometry, box?: Size): Design {
+const drawnText: Design = {
+  "text.color": ["lt1", "style"],
+  "text.font": ["+mn-lt", "style"],
+  "body.anchor": ["ctr"],
+}
+
+export function drawnDesign(geometry: Geometry, box?: Size, holdsText = false): Design {
   const named: Design = geometry === "rect" ? {} : { geometry: [geometry], ...roundedOf(geometry, box) }
   if (geometry === "straightConnector1") return { ...named, ...drawnLine, "border.tail": ["triangle"] }
-  return { ...named, ...(lineGeometries.includes(geometry) ? drawnLine : drawnShape) }
+  if (lineGeometries.includes(geometry)) return { ...named, ...drawnLine }
+  return { ...named, ...drawnShape, ...(holdsText ? drawnText : {}) }
 }

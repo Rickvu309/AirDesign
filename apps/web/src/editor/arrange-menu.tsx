@@ -1,7 +1,7 @@
 import { stackTarget, type ElementId, type StackMove } from "@airdesign/document"
 import { shapeSiblings } from "@airdesign/pptx"
 import type { CanvasSlide, Selection } from "@airdesign/render"
-import { useState, type MouseEvent, type ReactNode } from "react"
+import { useRef, useState, type MouseEvent, type ReactNode } from "react"
 import type { CommitOutcome } from "@/commit-edit"
 import type { GroupChange } from "@/editor/group-actions"
 import {
@@ -52,6 +52,7 @@ export function ArrangeMenu(props: {
 }) {
   const [notice, setNotice] = useState("")
   const [node, setNode] = useState<ElementId | null>(null)
+  const returnTo = useRef<HTMLElement | null>(null)
   const [among, setAmong] = useState<readonly ElementId[] | null>(null)
   const unit = node === null ? null : unitOf(props.slide, node)
   const masking = maskAction(props.selection.ids, props.slide.elements)
@@ -76,7 +77,16 @@ export function ArrangeMenu(props: {
     })
   }
 
+  function giveBack(): boolean {
+    const held = returnTo.current
+    if (held === null || !held.isConnected) return true
+    held.focus({ preventScroll: true })
+    return false
+  }
+
   function onContextMenu(event: MenuEvent) {
+    const held = event.currentTarget.ownerDocument.activeElement
+    returnTo.current = held instanceof HTMLElement && event.currentTarget.contains(held) ? held : null
     const id = elementUnder(event.target, props.slide)
     if (id === null) {
       event.preventBaseUIHandler?.()
@@ -93,7 +103,7 @@ export function ArrangeMenu(props: {
       <ContextMenuTrigger className={props.className} onContextMenu={onContextMenu}>
         {props.children({ notice, order, group, clear })}
       </ContextMenuTrigger>
-      <ContextMenuContent data-keeps-selection>
+      <ContextMenuContent data-keeps-selection finalFocus={giveBack}>
         {arrangeMoves.map((move) => (
           <ContextMenuItem
             key={move}

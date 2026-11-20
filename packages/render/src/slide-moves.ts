@@ -16,7 +16,7 @@ import { gestureFor, releases } from "./gestures.js"
 import { transformByKey, transformsByKey } from "./transform-keys.js"
 import { canDrag, canMove } from "./layer-movable.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
-import { editingText, enterText } from "./text-entry.js"
+import { editingText, enterText, enterTextAt, pressOutOfText } from "./text-entry.js"
 import {
   alone,
   childrenSelection,
@@ -321,7 +321,11 @@ export function useMoves(
 
   function press(event: PointerEvent<HTMLElement>, element: CanvasElement, grip: TransformGrip) {
     const id = element.id
-    if (id === null || event.button !== 0 || held.current !== null) return
+    if (id === null || held.current !== null) return
+    if (event.button !== 0) {
+      pressOutOfText(event, frameOf(event.currentTarget, element))
+      return
+    }
     const mod = event.metaKey || event.ctrlKey
     if (grip === "move" && element.backdrop === true) {
       const owner = elementOf(unitOf(size, latest.current, id))
@@ -368,11 +372,7 @@ export function useMoves(
     const frame = frameOf(event.currentTarget, element)
     const chosen = latest.current.ids
     if (!element.editable || frame === null || chosen.length !== 1 || chosen[0] !== id) return
-    if (editingText(event.target, frame)) return
-    if (enterText(frame, { x: event.clientX, y: event.clientY })) {
-      event.preventDefault()
-      event.stopPropagation()
-    }
+    enterTextAt(event, frame)
   }
 
   function owns(event: KeyboardEvent<HTMLElement>): boolean {
