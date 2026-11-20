@@ -73,11 +73,8 @@ const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
 const inputs = corpusInputs(root)
 const { fixedWork } = corpusPartition({ argv: process.argv, ...inputs })
-const entries = corpusCases({
-  argv: process.argv,
-  entries: await loadCases(root),
-  seconds: readSpecSeconds(root).export,
-})
+const allEntries = await loadCases(root)
+const entries = corpusCases({ argv: process.argv, entries: allEntries, seconds: readSpecSeconds(root).export })
 const exportNames = caseExports(entries)
 const exportPath = (name) => path.join(root, "tests/browser", name)
 
@@ -149,7 +146,7 @@ const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browser
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
 const staticCases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 const cases = fixedWork ? [...staticCases] : []
-const names = [...new Set([...staticCases.flatMap((row) => [row.before, row.after]), ...caseOriginals(entries)])]
+const names = [...new Set([...staticCases.flatMap((row) => [row.before, row.after]), ...caseOriginals(allEntries)])]
 const browserExports = new Map(exportNames.map((name) => [name, exportPath(name)]))
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
