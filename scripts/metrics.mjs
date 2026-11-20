@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import { changesFrom } from "./check-steps.mjs"
+import { changesFrom, unitShardVariable } from "./check-steps.mjs"
 import { importParse } from "./import-parse.mjs"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
@@ -30,6 +30,8 @@ export const browserFaults = (root) =>
   )
 
 const knownFailures = (root) => readRun(root).faults + listedMisses(root) + browserFaults(root)
+
+const measuredByRun = (root, name) => readRun(root).measured?.[name]
 
 const realDecks = (root) => judgedDecks(root).length
 
@@ -74,10 +76,36 @@ export const measuredLive = new Set(["known-failures", "long-titles", "slides-re
 
 export const readFromUnitRun = new Set(["known-failures", "slides-repainted"])
 
-export const measuredHere = (env) =>
-  changesFrom(env).unitTests === "all"
-    ? measures
-    : Object.fromEntries(Object.entries(measures).filter(([name]) => !readFromUnitRun.has(name)))
+export const unitShardOf = (env) => {
+  const [current, total] =
+    /^([1-9]\d*)\/([1-9]\d*)$/
+      .exec(env[unitShardVariable] ?? "")
+      ?.slice(1)
+      .map(Number) ?? []
+  return total > 1 ? { current, total } : undefined
+}
+
+const fromUnitRun = Object.fromEntries(Object.entries(measures).filter(([name]) => readFromUnitRun.has(name)))
+
+const splitMeasures = ({ current, total }) => {
+  const note = `(unit shard ${current}/${total}: this shard's part, and the whole run is the sum of the shards)`
+  return {
+    ...fromUnitRun,
+    "known-failures": Object.assign(
+      (root) => readRun(root).faults + (current === 1 ? listedMisses(root) + browserFaults(root) : 0),
+      { note },
+    ),
+    "slides-repainted": (root) => measuredByRun(root, "slides-repainted"),
+  }
+}
+
+export const measuredHere = (env) => {
+  if (changesFrom(env).unitTests !== "all")
+    return Object.fromEntries(Object.entries(measures).filter(([name]) => !readFromUnitRun.has(name)))
+  const shard = unitShardOf(env)
+  if (shard === undefined) return measures
+  return shard.current === 1 ? { ...measures, ...splitMeasures(shard) } : splitMeasures(shard)
+}
 
 export const timedMetrics = {
   "check-duration": "scripts/check.mjs",
@@ -130,7 +158,7 @@ export const readMetrics = async (root, measuring = measures) => {
     }
     const measured = await measure(root)
     if (measuredLive.has(name)) {
-      rows.push({ name, now: measured, goal: metric.goal })
+      if (measured !== undefined) rows.push({ name, now: measured, goal: metric.goal, note: measure.note })
       continue
     }
     const { now, goal } = typeof measured === "number" ? { now: measured, goal: metric.goal } : measured
@@ -158,7 +186,9 @@ export const metricLines = (rows) => {
   const width = Math.max(...rows.map((row) => row.name.length))
   return rows
     .filter((row) => !("limit" in row))
-    .map((row) => `metric ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`)
+    .map(
+      (row) => `metric ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}${row.note ? `  ${row.note}` : ""}`,
+    )
 }
 
 const self = fileURLToPath(import.meta.url)
@@ -169,7 +199,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     process.exit(1)
   })
   for (const line of metricLines(rows)) console.log(line)
-  if (measuring !== measures)
+  if (changesFrom(process.env).unitTests !== "all")
     console.log(
       `${[...readFromUnitRun].join(" and ")} read the whole unit run, and this run ran only the unit tests its change reaches, so main's full run measures them.`,
     )

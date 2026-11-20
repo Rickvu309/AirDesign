@@ -10,6 +10,7 @@ export const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-re
 export { designScans }
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
 export const designShardVariable = "AIRDESIGN_DESIGN_SHARD"
+export const unitShardVariable = "AIRDESIGN_UNIT_SHARD"
 export const statesPerDesignShard = 200
 export const designShardCount = (states) => Math.max(1, Math.ceil(states / statesPerDesignShard))
 
@@ -42,6 +43,14 @@ const browserArgs = (part, shard, { browserSpecs = "all" }) =>
           ? ["--grep-invert", exceptDesignScans]
           : browserShare(shard)
       : []
+
+const unitShardArgs = (part, shard) =>
+  part === "source" && shard !== undefined ? [`--shard=${shard.current}/${shard.total}`] : []
+
+const unitShardEnv = (part, shard) => (shard === undefined || shard.current === 1 ? { AIRDESIGN_REPLAY_ONLY: "1" } : {})
+
+const metricsShardEnv = (part, shard) =>
+  part === "source" && shard !== undefined ? { [unitShardVariable]: `${shard.current}/${shard.total}` } : undefined
 
 const designShardEnv = (part, shard) =>
   part === "design" && shard !== undefined ? { [designShardVariable]: `${shard.current}/${shard.total}` } : undefined
@@ -135,7 +144,10 @@ const rows = [
     kind: "tests",
     command: "node",
     args: ["node_modules/vitest/vitest.mjs", "run"],
-    env: { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache },
+    env: { AIRDESIGN_SPEC_CACHE: specCache },
+    partArgs: unitShardArgs,
+    partEnv: unitShardEnv,
+    sharded: true,
     gate: { order: 2, select: gateTests },
     narrow: changedUnitTests,
     localLimit: 720,
@@ -302,6 +314,8 @@ const rows = [
     kind: "rule",
     command: "node",
     args: ["scripts/metrics.mjs"],
+    partEnv: metricsShardEnv,
+    sharded: true,
     after: "work",
     showOnSuccess: true,
   },
@@ -416,9 +430,11 @@ export const defineCheckSteps = (rows) => {
   return {
     parts: () => [...parts],
     stagesFor: (part, ci = onCi(process.env), shard, changes = everyChange) => {
-      const chosen = rows.filter(
+      const inPart = rows.filter(
         (row) => runsOn(row.name, ci) && (part === "all" || row.part === "all" || partsOf(row).includes(part)),
       )
+      const splitsPart = shard !== undefined && shard.current > 1 && inPart.some((row) => row.sharded)
+      const chosen = splitsPart ? inPart.filter((row) => row.sharded) : inPart
       return [
         stageFor(
           chosen.filter((row) => row.after === undefined),

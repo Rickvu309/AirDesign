@@ -192,3 +192,63 @@ assert.deepEqual(
 assert.throws(() => defineCheckSteps([{ ...row, narrow: "yes" }]), {
   message: "planted: make narrow a function on a step outside the preflight and the lanes.",
 })
+
+const shardNames = (current, total, changes = everyChange) =>
+  checkSteps
+    .stagesFor("source", true, { current, total }, changes)
+    .flat()
+    .flatMap(stepsOf)
+    .map(([name]) => name)
+const wholeSource = checkSteps
+  .stagesFor("source", true, undefined, everyChange)
+  .flat()
+  .flatMap(stepsOf)
+  .map(([name]) => name)
+const unitShardSteps = ["unit-tests", "metrics"]
+const everyShard = [1, 2, 3].map((current) => shardNames(current, 3))
+assert.deepEqual(everyShard[0].toSorted(), wholeSource.toSorted(), "the first source shard runs every step of the part")
+for (const later of everyShard.slice(1))
+  assert.deepEqual(
+    later,
+    unitShardSteps,
+    "a later source shard runs the unit tests and their metrics, and nothing else",
+  )
+for (const name of wholeSource.filter((step) => !unitShardSteps.includes(step)))
+  assert.equal(everyShard.flat().filter((step) => step === name).length, 1, `${name} runs in exactly one source shard`)
+const unitStep = (current, total) =>
+  checkSteps
+    .stagesFor("source", true, current === undefined ? undefined : { current, total }, everyChange)
+    .flat()
+    .flatMap(stepsOf)
+    .find(([name]) => name === "unit-tests")
+assert.deepEqual(unitStep(2, 3).at(2).slice(-1), ["--shard=2/3"], "a shard hands its place to Vitest")
+assert.equal(
+  unitStep(undefined)
+    .at(2)
+    .some((word) => word.startsWith("--shard")),
+  false,
+  "no shard runs the whole suite",
+)
+assert.equal(
+  unitStep(1, 3).at(3).AIRDESIGN_REPLAY_ONLY,
+  "1",
+  "the first shard waits for the spec dumps its model check makes",
+)
+assert.equal(
+  unitStep(2, 3).at(3).AIRDESIGN_REPLAY_ONLY,
+  undefined,
+  "a later shard has no model check beside it, so a replay with no cached dump makes its own",
+)
+assert.equal(unitStep(undefined).at(3).AIRDESIGN_REPLAY_ONLY, "1")
+const metricsStep = (current, total) =>
+  checkSteps
+    .stagesFor("source", true, { current, total }, everyChange)
+    .flat()
+    .flatMap(stepsOf)
+    .find(([name]) => name === "metrics")
+assert.equal(metricsStep(2, 3).at(3).AIRDESIGN_UNIT_SHARD, "2/3", "metrics learns which part of the unit run it read")
+assert.equal(
+  checkSteps.stagesFor("browser", true, { current: 2, total: 8 }, everyChange).flat().flatMap(stepsOf).length > 1,
+  true,
+  "a part with no split step runs all its steps in every shard",
+)

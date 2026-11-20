@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - if: matrix.part == 'source'
+      - if: matrix.specCache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         id: cache-lookup
@@ -118,13 +118,13 @@ jobs:
           base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
           part: ${{ matrix.part }}
           shard: ${{ strategy.job-index }}
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'source' && !cancelled()
+      - if: steps.work.outputs.needed == 'true' && matrix.specCache && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
-      - if: github.event_name == 'merge_group' && matrix.part == 'source'
+      - if: github.event_name == 'merge_group' && matrix.specCache
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         continue-on-error: true
         timeout-minutes: 2
@@ -133,7 +133,7 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           include-hidden-files: true
           retention-days: 1
-      - if: matrix.part == 'source' && steps.work.outputs.passed == 'true' && steps.cache-lookup.outputs.cache-hit != 'true'
+      - if: matrix.specCache && steps.work.outputs.passed == 'true' && steps.cache-lookup.outputs.cache-hit != 'true'
         id: specs
         continue-on-error: true
         timeout-minutes: 2

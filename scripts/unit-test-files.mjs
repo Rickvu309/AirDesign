@@ -23,3 +23,7 @@ export const testFilesByProject = (root) => {
   }
   return files
 }
+
+export const unitSecondsFile = "tests/unit-seconds.json"
+
+export const readUnitSeconds = (root) => JSON.parse(fs.readFileSync(`${root}/${unitSecondsFile}`, "utf8"))
