@@ -1,5 +1,6 @@
 export { browserExportFailures, paragraphExportFailures, routeExportFailures } from "./browser-export.js"
 export { branchOrderErrors } from "./child-order.js"
+export { chartWorkbookErrors } from "./chart-workbook-check.js"
 export { exportPackage } from "./export-package.js"
 export { indexPackage } from "./index-package.js"
 export { markupBytesRead } from "./markup-reader.js"

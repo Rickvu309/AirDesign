@@ -1,5 +1,10 @@
 export const sharedPartLine = (row) => `Shared part: ${row.part} belongs to ${row.owners.join(" and ")}`
 
+export const validatorBlindFaults = (pptx, parts) => [
+  ...pptx.branchOrderErrors(parts),
+  ...pptx.chartWorkbookErrors(parts),
+]
+
 export const judge = (pptx, before, after) => {
   const errors = [
     ...pptx.newValidatorErrors(before.list, after.list, after.copies),
@@ -15,7 +20,7 @@ export const judgeParts = (pptx, before, list, parts) =>
   judge(pptx, before, {
     list,
     ids: pptx.shapeIdCounts(parts),
-    orders: pptx.branchOrderErrors(parts),
+    orders: validatorBlindFaults(pptx, parts),
     dangling: pptx.newDanglingShapeReferences(before.references, pptx.danglingShapeReferences(parts)),
     shared: pptx.newSharedOwnedParts(before.shared, pptx.sharedOwnedParts(parts)),
   })

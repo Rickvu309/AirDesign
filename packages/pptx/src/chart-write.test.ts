@@ -1,6 +1,8 @@
 import { openingChart, type ChartValue } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { addChart, writeChart } from "./chart-write.js"
+import { chartWorkbookErrors } from "./chart-workbook-check.js"
+import { partData, readContainer } from "./package-container.js"
 import { decodeUtf8 } from "./package-bytes.js"
 import { paintReader, readPackage, readShapes } from "./index.js"
 
@@ -52,9 +54,73 @@ it("rewrites the chart's data in place and keeps its part, relationship and fram
     series: [{ name: "EBITDA", values: [12, 15.5] }],
   }
   const next = writeChart(parts, slide, "9", growth)
-  expect([...next.keys()].filter((name) => name.startsWith("ppt/charts/"))).toEqual(["ppt/charts/chart1.xml"])
+  expect([...next.keys()].filter((name) => name.startsWith("ppt/charts/"))).toEqual([
+    "ppt/charts/_rels/chart1.xml.rels",
+    "ppt/charts/chart1.xml",
+  ])
   const chart = painted(next)
   expect(chart?.kind).toBe("line")
   expect(chart?.categories).toEqual(["2024", "2025"])
   expect(chart?.series.map((series) => [series.name, series.values])).toEqual([["EBITDA", [12, 15.5]]])
+})
+
+const workbook = "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx"
+
+function workbookCells(bytes: Uint8Array): readonly (readonly string[])[] {
+  const files = new Map(readContainer(bytes).map((record) => [record.name, decodeUtf8(partData(record)!)]))
+  const strings = [...(files.get("xl/sharedStrings.xml") ?? "").matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((found) =>
+    (found[1] ?? "").replaceAll("&amp;", "&"),
+  )
+  const rows = [...(files.get("xl/worksheets/sheet1.xml") ?? "").matchAll(/<row r="(\d+)">(.*?)<\/row>/g)]
+  return rows.map((row) => {
+    const cells = [...(row[2] ?? "").matchAll(/<c r="([A-Z]+)\d+"( t="s")?><v>([^<]*)<\/v><\/c>/g)]
+    const width = Math.max(...cells.map((found) => (found[1] ?? "A").charCodeAt(0) - 64))
+    const line = Array.from({ length: width }, () => "")
+    for (const [, column, shared, value] of cells)
+      line[(column ?? "A").charCodeAt(0) - 65] = shared === undefined ? (value ?? "") : (strings[Number(value)] ?? "")
+    return line
+  })
+}
+
+it("embeds a workbook of the chart's numbers and links it as PowerPoint does, so Edit Data opens them", async () => {
+  const parts = new Map(await blank())
+  addChart(parts, { part: slide, id: 9, ...box, chart: openingChart("bar") })
+  expect(parts.has(workbook)).toBe(true)
+  expect(decodeUtf8(parts.get("ppt/charts/_rels/chart1.xml.rels")!)).toContain(
+    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" Target="../embeddings/Microsoft_Excel_Worksheet1.xlsx"',
+  )
+  expect(decodeUtf8(parts.get("[Content_Types].xml")!)).toContain(
+    '<Override PartName="/ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>',
+  )
+  const xml = decodeUtf8(parts.get("ppt/charts/chart1.xml")!)
+  expect(xml).toContain('<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData></c:chartSpace>')
+  expect(xml).toContain("<c:tx><c:strRef><c:f>Sheet1!$C$1</c:f>")
+  expect(xml).toContain("<c:cat><c:strRef><c:f>Sheet1!$A$2:$A$5</c:f>")
+  expect(xml).toContain("<c:val><c:numRef><c:f>Sheet1!$C$2:$C$5</c:f>")
+  expect(chartWorkbookErrors(parts)).toEqual([])
+  expect(workbookCells(parts.get(workbook)!)).toEqual([
+    ["", "Series 1", "Series 2"],
+    ["Q1", "4.1", "3.2"],
+    ["Q2", "4.6", "3.5"],
+    ["Q3", "5", "4.4"],
+    ["Q4", "5.4", "4.9"],
+  ])
+})
+
+it("rewrites the embedded workbook with the chart's new data and keeps its one part", async () => {
+  const parts = new Map(await blank())
+  addChart(parts, { part: slide, id: 9, ...box, chart: openingChart("bar") })
+  const next = writeChart(parts, slide, "9", {
+    kind: "pie",
+    categories: ["North", "South & East"],
+    series: [{ name: "Share", values: [60, 40] }],
+  })
+  expect([...next.keys()].filter((name) => name.startsWith("ppt/embeddings/"))).toEqual([workbook])
+  expect(chartWorkbookErrors(next)).toEqual([])
+  expect(workbookCells(next.get(workbook)!)).toEqual([
+    ["", "Share"],
+    ["North", "60"],
+    ["South & East", "40"],
+  ])
+  expect(decodeUtf8(next.get("ppt/charts/_rels/chart1.xml.rels")!).match(/<Relationship /g)).toHaveLength(1)
 })
