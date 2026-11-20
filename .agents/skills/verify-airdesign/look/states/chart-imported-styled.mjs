@@ -30,6 +30,15 @@ async function drive(kit) {
   await settings.getByRole("combobox", { name: chartCopy.format, exact: true }).click()
   await page.getByRole("option", { name: chartCopy.formats["0.0%"], exact: true }).click()
   await expect(page.locator("[data-slide-paint] [data-chart-text]").filter({ hasText: "44.4%" })).toHaveCount(1)
+  const data = page.locator("[data-chart-data]")
+  await data.getByRole("button", { name: chartCopy.addRow, exact: true }).click()
+  const label = data.getByRole("textbox", { name: chartCopy.category(4), exact: true })
+  await label.fill("Moved away")
+  await label.press("Enter")
+  const share = data.getByRole("textbox", { name: chartCopy.value(4, 1), exact: true })
+  await share.fill("0.05")
+  await share.press("Enter")
+  await expect(data.getByRole("textbox", { name: chartCopy.category(4), exact: true })).toHaveValue("Moved away")
   await page.waitForTimeout(500)
 }
 
