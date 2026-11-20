@@ -13,6 +13,7 @@ async function drive(kit) {
   const count = await layers.count()
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.circle, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(count + 1)
   await layers.last().click()
   await expect(page.locator("[data-selection-colors]")).toBeVisible()

@@ -33,6 +33,7 @@ export default async function drive(kit) {
     const before = await layers.count()
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(layers).toHaveCount(before + 1)
     const key = await layers.last().getAttribute("data-canvas-element")
     if (key === null) throw new Error("missing key")

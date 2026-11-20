@@ -12,6 +12,7 @@ async function drive(kit) {
   const insert = async (name, shape) => {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(page.locator(element(shape))).toBeVisible()
   }
   const box = async (shape) => {

@@ -31,6 +31,7 @@ test("Shift+click adds a second shape, and when an agent deletes it the first ke
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   await expect.poll(async () => (await shapes(page)).length).toBe(before.length + 2)
   const [first, second] = (await shapes(page)).filter((node) => !before.includes(node))

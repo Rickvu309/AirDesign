@@ -32,6 +32,7 @@ test("the stack keys move a shape one place or to an end, and Ctrl+G groups the 
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   await expect(frame(page, 5)).toHaveCount(1)
   await expect.poll(() => order(page)).toEqual(["4", "5"])

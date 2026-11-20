@@ -30,6 +30,7 @@ function near(left: Placed, right: Placed): boolean {
 async function insert(page: Page, name: string, shape: number): Promise<void> {
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   await expect(painted(page, shape)).toBeVisible()
 }

@@ -11,6 +11,7 @@ async function drive({ page, signIn }) {
   const layers = slide.locator("[data-canvas-element]")
   await slide.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("r")
+  await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(1)
   await page.keyboard.press("Enter")
   await page.keyboard.type("Sales up", { delay: 0 })

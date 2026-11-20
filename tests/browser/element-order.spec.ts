@@ -43,6 +43,7 @@ function frame(page: Page, shape: number) {
 async function insert(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Enter")
   await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
 }
 

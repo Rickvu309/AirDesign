@@ -52,6 +52,7 @@ test("Delete takes every chosen shape away as one step, one undo brings them all
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   const shapes = [frame(page, 4), frame(page, 5)]
   await counted(shapes, 1)

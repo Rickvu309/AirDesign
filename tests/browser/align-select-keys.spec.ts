@@ -13,6 +13,7 @@ async function addShapes(page: Page): Promise<Locator> {
   for (const [index, name] of [shapeCopy.shapes.square, shapeCopy.shapes.circle].entries()) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(layers).toHaveCount(initial + index + 1)
     await page.locator("[data-slide-paint]").click({ position: { x: 4, y: 4 } })
   }

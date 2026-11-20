@@ -35,6 +35,7 @@ async function drive(kit) {
   ].entries()) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(page.locator(element(shape))).toBeVisible()
     await drag(shape, slide.x + slide.width * (0.3 + at * 0.16), slide.y + slide.height * 0.45)
   }

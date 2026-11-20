@@ -35,6 +35,7 @@ test("Enter or a double-click on a drawn shape types in it, and its letters neve
   const layers = slide.locator("[data-canvas-element]")
   await slide.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("r")
+  await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(1)
   await page.keyboard.press("Enter")
   const typing = slide.locator('[contenteditable="true"]:focus')
@@ -47,6 +48,7 @@ test("Enter or a double-click on a drawn shape types in it, and its letters neve
 
   await slide.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("o")
+  await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(2)
   await page.keyboard.press("Escape")
   const ellipse = layers.last()

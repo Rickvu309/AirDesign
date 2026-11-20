@@ -89,6 +89,7 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   const shapes = [frame(page, part, 4), frame(page, part, 5)]
   await expect(shapes[1]!).toBeVisible()
@@ -141,6 +142,7 @@ async function wrappedPair(page: Page, part: string): Promise<readonly Locator[]
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
   }
   const shapes = [frame(page, part, 4), frame(page, part, 5)]
   await expect(shapes[1]!).toBeVisible()
@@ -227,6 +229,7 @@ test("a shape dropped into an auto layout frame joins its row, a child dragged o
   const selection = page.locator("[data-slide-paint] [data-selection]")
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.triangle, exact: true }).click()
+  await page.keyboard.press("Enter")
   const triangle = frame(page, part, 8)
   await expect(triangle).toBeVisible()
   const left = await placed(square!)

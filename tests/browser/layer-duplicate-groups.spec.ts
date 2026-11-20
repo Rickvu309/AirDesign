@@ -96,6 +96,7 @@ test("a frame copies with Ctrl+D with its backdrop and layer, in place", async (
   await openDeck(page, "blank.pptx")
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.square ?? "", exact: true }).click()
+  await page.keyboard.press("Enter")
   const square = painted(page, 4)
   await expect(square).toBeVisible()
   await square.click()

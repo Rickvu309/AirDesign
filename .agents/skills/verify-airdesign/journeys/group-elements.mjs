@@ -18,6 +18,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const insert = async (name) => {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
+    await page.keyboard.press("Enter")
     await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
   }
   const boxes = async () => Promise.all([element(4).boundingBox(), element(5).boundingBox()])
