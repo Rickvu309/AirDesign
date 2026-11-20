@@ -19,6 +19,8 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import type { ServedFace } from "@airdesign/fonts"
+import type { TypedUnit } from "./typed-number"
+import { spacingUnits } from "./spacing-units"
 import type { CSSProperties, ReactNode } from "react"
 import { fillCopy } from "@/copy/fill-copy"
 import { pictureCopy } from "@/copy/picture-copy"
@@ -83,6 +85,7 @@ export type PanelControl = {
   }[]
   readonly placeholder?: string
   readonly numberScale?: number
+  readonly typed?: TypedUnit
   readonly parent?: unknown
   readonly slides?: readonly string[]
   readonly nodes?: readonly NodeChoice[]
@@ -300,10 +303,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         text?.flatMap((paragraph) => paragraph.runs).find((run) => run.text !== "")?.size ??
         shown.fields?.["text.size"]?.value ??
         readsSize(shown.reads)
-      const number =
-        trait === "text" && field === "letterSpacing"
-          ? { numberScale: typeof size === "number" ? size / 10_000 : 0.18 }
-          : {}
+      const number = spacingUnits(trait, field, size)
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
         resolveControl({

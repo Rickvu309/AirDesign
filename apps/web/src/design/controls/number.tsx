@@ -9,6 +9,7 @@ import type { ControlProps } from "@/design/panel"
 import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
+import { typedNumber } from "@/design/typed-number"
 
 export function chosenStep(shown: string, steps: readonly number[]): number | null {
   const value = Number(shown.trim().replace(",", "."))
@@ -73,6 +74,8 @@ export function NumberField({
   const named = Icon !== undefined || look.name.show === "letter" || look.name.show === "inside"
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(control, scale)
+  const typedUnit = control.typed ?? {}
+  const auto = typedUnit.auto !== undefined && shown !== "" && Number(shown) === typedUnit.auto
   const field = useRef<HTMLInputElement>(null)
   const scrub = useRef<Scrub | null>(null)
 
@@ -85,8 +88,8 @@ export function NumberField({
 
   function commit(text: string) {
     setDraft(null)
-    const typed = Number(text.trim().replace(",", "."))
-    if (text.trim() === "" || !Number.isFinite(typed)) return
+    const typed = typedNumber(text, typedUnit)
+    if (typed === null || !Number.isFinite(typed)) return
     const read = readNumber(typed)
     if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
   }
@@ -97,8 +100,8 @@ export function NumberField({
     const moved = stepOf(event, step)
     if (moved === 0) return
     event.preventDefault()
-    const from = Number(event.currentTarget.value.replace(",", "."))
-    commit(String((Number.isFinite(from) ? from : 0) + moved))
+    const from = typedNumber(event.currentTarget.value, typedUnit) ?? 0
+    commit(String(from + moved))
   }
 
   function startScrub(event: PointerEvent<HTMLSpanElement>) {
@@ -124,8 +127,8 @@ export function NumberField({
     scrub.current = null
   }
 
-  const suffix = size || borderWidth || unit === "" ? "" : unit
-  const value = draft ?? shown
+  const suffix = size || borderWidth || unit === "" || (auto && draft === null) ? "" : unit
+  const value = draft ?? (auto ? textCopy.auto : shown)
   const steps = look.steps
   const list = size ? (
     <DropdownMenu>

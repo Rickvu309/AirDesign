@@ -62,6 +62,7 @@ for (const name of [
   "text-style-weight",
   "text-weight-faces",
   "text-list-levels",
+  "text-spacing-units",
   "dynamic-fonts",
   "picture-icon",
   "theme",
