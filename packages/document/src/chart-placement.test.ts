@@ -60,3 +60,27 @@ it("keeps clear of a caption that sits on the first chart when it splits", () =>
   const placed = placeChart(slide, [first.box, caption], [first], half)
   if (placed.moved !== null) expect([placed.box, placed.moved.box].some((box) => overlaps(box, caption))).toBe(false)
 })
+
+it("lines a chart's top up with the chart beside it, instead of centring it in the free space", () => {
+  const left = { node: elementId("256.4"), box: { x: 487_680, y: 1_100_000, cx: 5_400_000, cy: 3_429_000 } }
+  const placed = placeChart(slide, [left.box], [left], half, false)
+  expect(placed.moved).toBeNull()
+  expect(overlaps(placed.box, left.box)).toBe(false)
+  expect(placed.box.y).toBe(left.box.y)
+  const split = placeChart(
+    slide,
+    [half].map(() => ({ x: 3_048_000, y: 1_100_000, ...half })),
+    [{ node: elementId("256.5"), box: { x: 3_048_000, y: 1_100_000, ...half } }],
+    { cx: half.cx, cy: half.cy * 1.2 },
+  )
+  const moved = split.moved?.box
+  if (moved === undefined) throw new Error("moved")
+  expect(split.box.y).toBe(moved.y)
+})
+
+it("keeps a centred chart when its neighbour's top would put it on another layer or off the slide", () => {
+  const left = { node: elementId("256.4"), box: { x: 487_680, y: 4_500_000, cx: 5_400_000, cy: 2_000_000 } }
+  const placed = placeChart(slide, [left.box], [left], half, false)
+  expect(inside(placed.box)).toBe(true)
+  expect(placed.box.y + placed.box.cy).toBeLessThanOrEqual(slide.height)
+})

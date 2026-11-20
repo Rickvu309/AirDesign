@@ -305,3 +305,68 @@ it("puts a person's new chart in the free half beside a chart on the left, rathe
   expect(box.x).toBeGreaterThanOrEqual(left.x + left.width)
   expect(box.x + box.cx).toBeLessThanOrEqual(slide.width)
 })
+
+it("puts a person's chart on a blank title slide where its empty title and subtitle would not stop it", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const empty = (box: PaintBox) => ({ box, placeholder: true, text: null })
+  const title = { x: 1_524_000, y: 1_122_363, width: 9_144_000, height: 2_387_600 } as PaintBox
+  const subtitle = { x: 1_524_000, y: 3_602_038, width: 9_144_000, height: 1_655_762 } as PaintBox
+  type Laid = { readonly box: PaintBox; readonly placeholder: boolean; readonly text: RoomText | null }
+  type RoomText = { readonly paragraphs: readonly { readonly runs: readonly { readonly text: string }[] }[] }
+  const add = (elements: readonly Laid[]) => {
+    const added = elementCommand(parts, openRegister("", ""), {
+      change: "chart",
+      kind: "bar",
+      index: 0,
+      size: { ...slide, elements },
+    })
+    return added !== null && "element" in added ? added.element.box : null
+  }
+  expect(add([empty(title), empty(subtitle)])).toEqual(add([]))
+  const typed = { box: title, placeholder: true, text: { paragraphs: [{ runs: [{ from: 0, text: "Plan" }] }] } }
+  expect(add([typed, empty(subtitle)])).not.toEqual(add([]))
+})
+
+it("lines a person's chart up with the top of the chart beside it", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const left = { x: 487_680, y: 1_100_000, width: 5_400_000, height: 3_429_000 } as PaintBox
+  const added = elementCommand(parts, openRegister("", ""), {
+    change: "chart",
+    kind: "line",
+    index: 0,
+    size: { ...slide, elements: [{ box: left, chart: {} }] },
+  })
+  const box = added !== null && "element" in added ? added.element.box : null
+  expect(box?.y).toBe(left.y)
+})
+
+it("keeps a person's second chart on a new title slide off the first one", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const title = { x: 1_524_000, y: 1_122_363, width: 9_144_000, height: 2_387_600 } as PaintBox
+  const subtitle = { x: 1_524_000, y: 3_602_038, width: 9_144_000, height: 1_655_762 } as PaintBox
+  const first = { x: 3_048_000, y: 1_714_500, width: 6_096_000, height: 3_429_000 } as PaintBox
+  const added = elementCommand(parts, openRegister("", ""), {
+    change: "chart",
+    kind: "line",
+    index: 0,
+    size: {
+      ...slide,
+      elements: [
+        { box: title, placeholder: true, text: null },
+        { box: subtitle, placeholder: true, text: null },
+        { box: first, chart: {} },
+      ],
+    },
+  })
+  const box = added !== null && "element" in added ? added.element.box : null
+  if (box === null || box === undefined) throw new Error("no chart")
+  const apart =
+    box.x + box.cx <= first.x ||
+    first.x + first.width <= box.x ||
+    box.y + box.cy <= first.y ||
+    first.y + first.height <= box.y
+  expect(apart).toBe(true)
+})

@@ -117,10 +117,10 @@ function shrunk(free: Box, size: Size): Size {
   return { cx: Math.max(1, Math.floor(size.cx * scale)), cy: Math.max(1, Math.floor(size.cy * scale)) }
 }
 
-export function fitNewBox(area: PlacementArea, taken: readonly Box[], size: Size): Box {
+export function fitNewBox(area: PlacementArea, taken: readonly Box[], size: Size, floor = fittedShare): Box {
   const areas = clearAreas(area, taken)
   if (areas.some((free) => free.cx >= size.cx && free.cy >= size.cy)) return placeNewBox(area, taken, size)
-  const smallest = Math.round(area.height * fittedShare)
+  const smallest = Math.round(area.height * floor)
   const gap = Math.round(area.height * strokeReachShare)
   const fits = areas
     .map((each) => ({ x: each.x + gap, y: each.y + gap, cx: each.cx - 2 * gap, cy: each.cy - 2 * gap }))

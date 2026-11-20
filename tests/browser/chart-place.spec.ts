@@ -36,4 +36,28 @@ test("a second chart from the toolbar lands beside a chart that was moved to the
   const [left, right] = [await frames.nth(0).boundingBox(), await frames.nth(1).boundingBox()]
   if (left === null || right === null) throw new Error("no chart")
   expect(left.x + left.width <= right.x || right.x + right.width <= left.x).toBe(true)
+  expect(Math.abs(left.y - right.y)).toBeLessThan(1.5)
+})
+
+test("keeps a second chart on a title slide clear of the first, its top level with it", async ({ page }) => {
+  await openDeck(page, "blank.pptx")
+  const slide = page.locator("[data-slide-paint]")
+  const frames = slide.locator("[data-canvas-element]").filter({ has: page.locator("svg[data-chart]") })
+  for (const [kind, count] of [
+    [chartCopy.kinds.bar, 1],
+    [chartCopy.kinds.line, 2],
+  ] as const) {
+    await page.getByRole("button", { name: chartCopy.tool, exact: true }).click()
+    await page.getByRole("button", { name: kind, exact: true }).click()
+    await expect(frames).toHaveCount(count)
+  }
+  const [first, second] = [await frames.nth(0).boundingBox(), await frames.nth(1).boundingBox()]
+  if (first === null || second === null) throw new Error("no chart")
+  const apart =
+    first.x + first.width <= second.x ||
+    second.x + second.width <= first.x ||
+    first.y + first.height <= second.y ||
+    second.y + second.height <= first.y
+  expect(apart).toBe(true)
+  expect(Math.abs(first.y - second.y)).toBeLessThan(1.5)
 })
