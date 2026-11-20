@@ -40,6 +40,7 @@ export function sameFormats(left: TextRun, right: TextRun): boolean {
     left.size === right.size &&
     left.font === right.font &&
     left.letterSpacing === right.letterSpacing &&
+    left.case === right.case &&
     JSON.stringify(left.fill) === JSON.stringify(right.fill) &&
     sameColor(left.color, right.color)
   )

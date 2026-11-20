@@ -6,6 +6,7 @@ import {
   type ElementLink,
   type ParagraphAlign,
   type ParagraphSpacing,
+  type TextCase,
   type RunFormat,
   type TextFill,
   type TextList,
@@ -18,6 +19,7 @@ export type RunPaint = RunFormat & {
   readonly color?: Color
   readonly font?: string
   readonly letterSpacing?: number
+  readonly case?: TextCase
 }
 export type ParagraphPaint = {
   readonly align?: ParagraphAlign

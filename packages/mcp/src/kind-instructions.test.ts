@@ -15,7 +15,7 @@ it("gives the run format of a JSON text value, the form of a table value and how
   const instructions = kindInstructions()
   expect(instructions).toContain("A run may set bold, italic, underline or strike to true or false")
   expect(instructions).toContain("size in hundredths of a point from 100 to 400000")
-  expect(instructions).toContain("align to left, center or right, and list to none, bullets or numbers")
+  expect(instructions).toContain("align to left, center, right or justify, and list to none, bullets or numbers")
   expect(instructions).toContain("A JSON table value is {rows: [{from, cells, fills, borders}]}")
   expect(instructions).toContain('Add a table with { "op": "add", "kind": "table"')
   expect(instructions).toContain('attaches each end with { "shape": { "node": ..., "site": ... } }')

@@ -226,3 +226,21 @@ it("paints a run filled with an image as the file's picture clipped to the lette
     color: "transparent",
   })
 })
+
+it("paints a run's letter case over the file's caps, keeping the typed letters", () => {
+  const look = textLook(text, scaled)
+  const shown = (letters: "none" | "upper" | "lower" | "title" | "small") => {
+    const css = look.run(0, 0, { case: letters })
+    return [css.textTransform, css.fontVariantCaps]
+  }
+  expect(shown("upper")).toEqual(["uppercase", "normal"])
+  expect(shown("lower")).toEqual(["lowercase", "normal"])
+  expect(shown("title")).toEqual(["capitalize", "normal"])
+  expect(shown("small")).toEqual(["none", "small-caps"])
+  const capped = textLook(
+    { ...text, paragraphs: [{ ...text.paragraphs[0]!, runs: [{ from: 0, text: "a", ...plain, caps: "all" }] }] },
+    scaled,
+  )
+  expect(capped.run(0, 0, { case: "none" }).textTransform).toBe("none")
+  expect(capped.run(0, 0, {}).textTransform).toBe("uppercase")
+})

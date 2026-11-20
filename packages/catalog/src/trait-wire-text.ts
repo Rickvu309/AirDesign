@@ -33,6 +33,7 @@ export const textWire: TraitWire<"text"> = {
       description: "Points. Negative tightens.",
       example: { text: { letterSpacing: 1.5 } },
     },
+    case: { description: "small is small caps.", example: { text: { case: "upper" } } },
     lineHeight: { description: "Line height in percent; 100 is single.", example: { text: { lineHeight: 150 } } },
     spaceBefore: { description: "Space above each paragraph, in points.", example: { text: { spaceBefore: 12 } } },
     style: {

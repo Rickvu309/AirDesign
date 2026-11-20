@@ -25,7 +25,7 @@ export type CanvasRunStyle = {
   readonly underline?: boolean
   readonly strike?: boolean
   readonly letterSpacing?: number
-  readonly caps?: "all" | "small" | "none"
+  readonly caps?: "all" | "small" | "none" | "lower" | "title"
   readonly baseline?: number
   readonly color: string | null
   readonly highlight?: string | null

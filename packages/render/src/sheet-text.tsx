@@ -6,6 +6,7 @@ import type {
   Color,
   TextFill,
   TextFormat,
+  TextCase,
 } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
@@ -20,6 +21,7 @@ type ShownRun = {
   readonly underline?: boolean
   readonly strike?: boolean
   readonly letterSpacing?: number
+  readonly case?: TextCase
   readonly size?: number
   readonly fill?: TextFill
   readonly color?: Color | string | null
@@ -49,6 +51,7 @@ function overlayOf(run: ShownRun): RunPaint {
     if (set !== undefined) paint = { ...paint, [name]: set }
   }
   if (run.letterSpacing !== undefined) paint = { ...paint, letterSpacing: run.letterSpacing }
+  if (run.case !== undefined) paint = { ...paint, case: run.case }
   if (run.size !== undefined) paint = { ...paint, size: run.size }
   if (color !== undefined) paint = { ...paint, color }
   if (

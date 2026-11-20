@@ -173,6 +173,16 @@ describe("size, colour, alignment and bullets", () => {
     ])
   })
 
+  it("keeps a run's letter case and refuses one Figma does not offer", () => {
+    for (const letters of ["none", "upper", "lower", "title", "small"])
+      expect(readTextValue(`[{"from":0,"runs":[{"from":0,"text":"a","case":"${letters}"}]}]`)).toEqual([
+        { from: 0, runs: [{ from: 0, text: "a", case: letters }] },
+      ])
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","case":"shout"}]}]')).toBeNull()
+    const kept = readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","case":"small"}]}]')
+    expect(kept === null ? "" : writeTextValue(kept)).toBe('[{"from":0,"runs":[{"from":0,"text":"a","case":"small"}]}]')
+  })
+
   it("keeps a run's font face and a paragraph's line and paragraph spacing, and refuses ones it cannot write", () => {
     const stored =
       '[{"from":0,"lineHeight":150000,"spaceBefore":600,"spaceAfter":0,"runs":[{"from":0,"text":"a","font":"Georgia"}]}]'

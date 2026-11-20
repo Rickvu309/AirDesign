@@ -19,6 +19,7 @@ export const textControls: TraitControls<"text"> = {
     list: { label: textCopy.list },
     strike: { label: formatCopy.named.strike },
     letterSpacing: { label: textCopy.letterSpacing },
+    case: { label: textCopy.case },
     lineHeight: { label: textCopy.lineHeight },
     spaceBefore: { label: textCopy.spaceBefore },
     spaceAfter: { label: textCopy.spaceAfter },

@@ -2,6 +2,7 @@ import { textFill } from "./text-fill.js"
 import { trait } from "./trait-decl.js"
 import {
   alignNames,
+  caseNames,
   letterSpacingFloor,
   letterSpacingCeiling,
   lineHeightCeiling,
@@ -37,6 +38,7 @@ export const text = trait(
     underline: flag,
     strike: flag,
     letterSpacing: pointsWithin(letterSpacingFloor, letterSpacingCeiling),
+    case: choice(caseNames),
     align: choice(alignNames),
     list: choice(["none", "bullets", "numbers"]),
     lineHeight: fractionWithin(lineHeightFloor, lineHeightCeiling),
