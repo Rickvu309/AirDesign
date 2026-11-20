@@ -1,12 +1,12 @@
 import { copyFile, readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import type { Page } from "@playwright/test"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { decksOn } from "./deck-test"
-import { openDeck } from "./design-panel"
+import { expect, test } from "./deck-test"
+import { fixtures } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { covers } from "./gesture"
 
@@ -45,15 +45,12 @@ async function circleBehindPicture(page: Page) {
   await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveCount(2)
 }
 
-async function reopened(page: Page, file: string) {
-  await decksOn(page).open(file)
-}
-
 test("Use as mask clips a picture to a circle, undoes in one step, and exports the picture with the circle's outline @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("mask")
-  await openDeck(page, "picture-png.pptx")
+  await decks.open(join(fixtures, "picture-png.pptx"))
   await circleBehindPicture(page)
   await page.keyboard.press("Control+Alt+KeyM")
   const clip = page.locator("[data-slide-paint] [data-mask-clip]")
@@ -73,6 +70,7 @@ test("Use as mask clips a picture to a circle, undoes in one step, and exports t
   await expect(clip.locator(`[data-canvas-element="${slidePart}#4"]`)).toHaveCount(1)
   await page.locator("[data-design-mode]").click()
   const layers = page.locator("[data-layers-panel]")
+  await expect(layers.getByText("Mask group", { exact: true })).toBeVisible()
   await expect(layers.locator("[data-layer-masked]")).toHaveCount(1)
   await expect(layers.locator("[data-layer-mask]")).toHaveCount(1)
   const exported = testInfo.outputPath("exported-mask.pptx")
@@ -83,14 +81,15 @@ test("Use as mask clips a picture to a circle, undoes in one step, and exports t
   expect(xml).toMatch(
     /<p:pic><p:nvPicPr><p:cNvPr id="\d+" name="Picture 4"\/>.*?<a:srcRect[^>]*\/>.*?<a:prstGeom prst="ellipse">/,
   )
-  await reopened(page, exported)
+  await decks.open(exported)
   await expect(page.locator("[data-slide-paint] [data-mask-clip]")).toHaveCount(1)
 })
 
 test("a mask over a picture and a shape exports a picture of how it looks, and imports back as the mask", async ({
   page,
+  decks,
 }, testInfo) => {
-  await openDeck(page, "picture-png.pptx")
+  await decks.open(join(fixtures, "picture-png.pptx"))
   await onPicture(page, shapeCopy.shapes.square)
   await circleBehindPicture(page)
   await page
@@ -121,17 +120,18 @@ test("a mask over a picture and a shape exports a picture of how it looks, and i
     [...look],
   )
   expect(pixels).toEqual({ corner: 0, center: 255 })
-  await reopened(page, exported)
+  await decks.open(exported)
   await expect(page.locator("[data-slide-paint] [data-mask-clip]")).toHaveCount(1)
 })
 
 test("an imported picture cropped to a circle keeps its bytes when a mask beside it exports @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const opening = await exportedSlide(join(process.cwd(), "scripts/pptx-fixtures/picture-shape-cropped.pptx"))
   const headshot = /<p:pic><p:nvPicPr><p:cNvPr id="4" name="Headshot 4"\/>.*?<\/p:pic>/.exec(opening.xml)?.[0]
   if (headshot === undefined) throw new Error("no headshot")
-  await openDeck(page, "picture-shape-cropped.pptx")
+  await decks.open(join(fixtures, "picture-shape-cropped.pptx"))
   await expect(page.locator("[data-slide-paint] [data-mask-clip]")).toHaveCount(0)
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
