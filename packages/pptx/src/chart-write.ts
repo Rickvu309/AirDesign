@@ -1,6 +1,7 @@
 import type { ChartSeries, ChartValue } from "@airdesign/document"
+import { chartFormulas, chartWorkbook, workbookContentType } from "./chart-workbook.js"
 import { link, freePart, typed } from "./notes-part.js"
-import { partOf, relsOf } from "./package-address.js"
+import { partOf, relativeTarget, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { insertAt, replacePart, requireMarkup, within } from "./part-markup.js"
 import { nextShapeId, shapeIdsIn } from "./shape-id.js"
@@ -24,20 +25,31 @@ function points(values: readonly (string | number)[]): string {
   return values.map((value, at) => `<c:pt idx="${String(at)}"><c:v>${xmlText(String(value))}</c:v></c:pt>`).join("")
 }
 
-function data(categories: readonly string[], series: ChartSeries): string {
-  const count = `<c:ptCount val="${String(categories.length)}"/>`
-  return `<c:cat><c:strLit>${count}${points(categories)}</c:strLit></c:cat><c:val><c:numLit><c:formatCode>General</c:formatCode>${count}${points(series.values)}</c:numLit></c:val>`
+function count(length: number): string {
+  return `<c:ptCount val="${String(length)}"/>`
 }
 
-function named(series: ChartSeries, at: number): string {
-  return `<c:idx val="${String(at)}"/><c:order val="${String(at)}"/><c:tx><c:v>${xmlText(series.name)}</c:v></c:tx>`
+type SeriesCells = { readonly categories: string; readonly name: string; readonly values: string }
+
+function data(chart: ChartValue, series: ChartSeries, cells: SeriesCells): string {
+  const length = count(chart.categories.length)
+  return `<c:cat><c:strRef><c:f>${cells.categories}</c:f><c:strCache>${length}${points(chart.categories)}</c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>${cells.values}</c:f><c:numCache><c:formatCode>General</c:formatCode>${length}${points(series.values)}</c:numCache></c:numRef></c:val>`
+}
+
+function named(series: ChartSeries, at: number, cells: SeriesCells): string {
+  return `<c:idx val="${String(at)}"/><c:order val="${String(at)}"/><c:tx><c:strRef><c:f>${cells.name}</c:f><c:strCache>${count(1)}${points([series.name])}</c:strCache></c:strRef></c:tx>`
+}
+
+function cellsOf(chart: ChartValue, at: number): SeriesCells {
+  const formulas = chartFormulas(chart)
+  return { categories: formulas.categories, ...(formulas.series[at] ?? { name: "", values: "" }) }
 }
 
 function barSeries(chart: ChartValue): string {
   return chart.series
     .map(
       (series, at) =>
-        `<c:ser>${named(series, at)}<c:spPr>${paint(at)}</c:spPr><c:invertIfNegative val="0"/>${data(chart.categories, series)}</c:ser>`,
+        `<c:ser>${named(series, at, cellsOf(chart, at))}<c:spPr>${paint(at)}</c:spPr><c:invertIfNegative val="0"/>${data(chart, series, cellsOf(chart, at))}</c:ser>`,
     )
     .join("")
 }
@@ -46,7 +58,7 @@ function lineSeries(chart: ChartValue): string {
   return chart.series
     .map(
       (series, at) =>
-        `<c:ser>${named(series, at)}<c:spPr><a:ln w="28575" cap="rnd">${paint(at)}<a:round/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker>${data(chart.categories, series)}<c:smooth val="0"/></c:ser>`,
+        `<c:ser>${named(series, at, cellsOf(chart, at))}<c:spPr><a:ln w="28575" cap="rnd">${paint(at)}<a:round/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker>${data(chart, series, cellsOf(chart, at))}<c:smooth val="0"/></c:ser>`,
     )
     .join("")
 }
@@ -60,7 +72,7 @@ function pieSeries(chart: ChartValue): string {
         `<c:dPt><c:idx val="${String(at)}"/><c:bubble3D val="0"/><c:spPr>${paint(at)}<a:ln w="12700"><a:solidFill><a:schemeClr val="bg1"/></a:solidFill></a:ln></c:spPr></c:dPt>`,
     )
     .join("")
-  return `<c:ser>${named(series, 0)}${slices}${data(chart.categories, series)}</c:ser>`
+  return `<c:ser>${named(series, 0, cellsOf(chart, 0))}${slices}${data(chart, series, cellsOf(chart, 0))}</c:ser>`
 }
 
 const axes =
@@ -77,15 +89,59 @@ function plot(chart: ChartValue): string {
   return `<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>${barSeries(chart)}<c:gapWidth val="80"/>${axisIds}</c:barChart>${axes}`
 }
 
-export function chartSpaceXml(chart: ChartValue): string {
+export function chartSpaceXml(chart: ChartValue, workbook: string): string {
   const legend = chart.series.length > 1 || chart.kind === "pie"
   const text =
     '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1200"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>'
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<c:chartSpace ${chartNamespaces}><c:roundedCorners val="0"/><c:chart><c:autoTitleDeleted val="1"/><c:plotArea><c:layout/>${plot(chart)}</c:plotArea>` +
     `${legend ? '<c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>' : ""}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart>` +
-    `<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${text}</c:chartSpace>`
+    `<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${text}<c:externalData r:id="${workbook}"><c:autoUpdate val="0"/></c:externalData></c:chartSpace>`
   )
+}
+
+const embeddingPrefix = "ppt/embeddings/Microsoft_Excel_Worksheet"
+const packageType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
+
+function freeWorkbook(parts: ReadonlyMap<string, Uint8Array>): string {
+  let at = 1
+  while (parts.has(`${embeddingPrefix}${String(at)}.xlsx`)) at += 1
+  return `${embeddingPrefix}${String(at)}.xlsx`
+}
+
+function linkedWorkbook(parts: ReadonlyMap<string, Uint8Array>, chartPart: string) {
+  const rels = parts.get(relsOf(chartPart))
+  if (rels === undefined) return null
+  for (const row of requireMarkup(rels).elements) {
+    const read = (name: string) => row.attributes.find((item) => item.name === name)?.value
+    const id = read("Id")
+    const target = read("Target")
+    if (row.kind !== "Relationship" || read("Type") !== packageType || read("TargetMode") === "External") continue
+    if (id !== undefined && target !== undefined && target.endsWith(".xlsx"))
+      return { id, part: partOf(chartPart, target) }
+  }
+  return null
+}
+
+function placeWorkbook(parts: Map<string, Uint8Array>, chartPart: string, chart: ChartValue): string {
+  const linked = linkedWorkbook(parts, chartPart)
+  if (linked !== null) {
+    replacePart(parts, linked.part, chartWorkbook(chart))
+    return linked.id
+  }
+  const workbook = freeWorkbook(parts)
+  parts.set(workbook, chartWorkbook(chart))
+  typed(parts, workbook, workbookContentType)
+  const rels = relsOf(chartPart)
+  if (parts.has(rels)) return link(parts, chartPart, "package", workbook)
+  const row = `<Relationship Id="rId1" Type="${packageType}" Target="${relativeTarget(chartPart, workbook)}"/>`
+  parts.set(
+    rels,
+    encodeUtf8(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${row}</Relationships>`,
+    ),
+  )
+  return "rId1"
 }
 
 function chartFrame(id: number, shape: ShapeBox, relationship: string): string {
@@ -104,7 +160,8 @@ export function addChart(
   if (!Number.isInteger(id) || id < 2 || shapeIdsIn(bytes).includes(String(id))) throw new Error("shape id")
   if (![route.x, route.y, route.cx, route.cy].every(Number.isSafeInteger)) throw new Error("emu")
   const chartPart = freePart(parts, "ppt/charts/chart")
-  parts.set(chartPart, encodeUtf8(chartSpaceXml(route.chart)))
+  const workbook = placeWorkbook(parts, chartPart, route.chart)
+  parts.set(chartPart, encodeUtf8(chartSpaceXml(route.chart, workbook)))
   typed(parts, chartPart, chartContentType)
   const relationship = link(parts, route.part, "chart", chartPart)
   const slide = parts.get(route.part) ?? bytes
@@ -136,6 +193,7 @@ export function writeChart(
   chart: ChartValue,
 ): ReadonlyMap<string, Uint8Array> {
   const next = new Map(parts)
-  replacePart(next, chartPartOf(parts, part, shape), encodeUtf8(chartSpaceXml(chart)))
+  const chartPart = chartPartOf(parts, part, shape)
+  replacePart(next, chartPart, encodeUtf8(chartSpaceXml(chart, placeWorkbook(next, chartPart, chart))))
   return next
 }

@@ -8,7 +8,7 @@ import { validatorFiles } from "./paragraph-export.mjs"
 import { freshBrowserExport, playwrightTestLines } from "./browser-export.mjs"
 import { browserExportArgs, caseExports, caseOriginals, loadCases, writeCases } from "./pptx-cases.mjs"
 import { textExportName } from "./pptx-cases/text.mjs"
-import { judgeParts } from "./judge.mjs"
+import { judgeParts, validatorBlindFaults } from "./judge.mjs"
 import {
   changedSinceArgs,
   freshMissFails,
@@ -304,7 +304,7 @@ console.log((await renderCacheReady).line())
 console.log(validatorLine(validatorTally))
 const endJudging = phases.begin("judging")
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
-const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
+const orders = new Map([...parts].map(([name, packageParts]) => [name, validatorBlindFaults(pptx, packageParts)]))
 const references = new Map([...parts].map(([name, packageParts]) => [name, pptx.danglingShapeReferences(packageParts)]))
 const shared = new Map([...parts].map(([name, packageParts]) => [name, pptx.sharedOwnedParts(packageParts)]))
 const judgedBefore = (name) => ({

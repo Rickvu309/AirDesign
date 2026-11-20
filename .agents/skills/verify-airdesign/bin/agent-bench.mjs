@@ -231,7 +231,7 @@ export async function validator(repo) {
     repo,
     "scripts/pptx-validator.mjs",
   )
-  const { judgeParts } = await fromRepo(repo, "scripts/judge.mjs")
+  const { judgeParts, validatorBlindFaults } = await fromRepo(repo, "scripts/judge.mjs")
   execFileSync(dotnet, judgeBuild, { cwd: repo, stdio: "pipe" })
   return async (pptx, original, file) => {
     const lists = await validatorLists({
@@ -247,7 +247,7 @@ export async function validator(repo) {
       {
         list: lists.get(path.basename(original)),
         ids: pptx.shapeIdCounts(before),
-        orders: pptx.branchOrderErrors(before),
+        orders: validatorBlindFaults(pptx, before),
         references: pptx.danglingShapeReferences(before),
         shared: pptx.sharedOwnedParts(before),
       },
