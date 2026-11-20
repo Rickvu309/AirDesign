@@ -33,6 +33,7 @@ import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useShortcutsKey } from "@/editor/shortcuts-key"
 import { useToolKeys } from "@/editor/tool-keys"
+import { useChromeKeys } from "@/editor/chrome-keys"
 import { ShortcutsPanel } from "@/editor/shortcuts-panel"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -126,6 +127,8 @@ export function EditorShell({
   const [gridPanel, setGridPanel] = useState(false)
   const [selectedSlides, setSelectedSlides] = useState(0)
   const [shortcutsOpen, setShortcutsOpen] = useState(shortcutsShown)
+  const [bare, setBare] = useState(false)
+  const [listHidden, setListHidden] = useState(false)
   const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
@@ -154,6 +157,10 @@ export function EditorShell({
     onText: deck?.onText,
     onShape: deck?.onShape,
     onPicture: deck?.onPicture,
+  })
+  useChromeKeys(deck !== undefined && !gridOpen && present.show === null, {
+    onHideAll: () => setBare((now) => !now),
+    onSlideList: () => setListHidden((now) => !now),
   })
   useShortcutsKey(deck !== undefined && present.show === null, () => setShortcutsOpen((open) => !open))
   function withShortcuts(editor: ReactNode) {
@@ -274,7 +281,7 @@ export function EditorShell({
   }
   return withShortcuts(
     <div className="relative flex h-full min-h-0" inert={present.show !== null}>
-      {rail === "slides" ? (
+      {rail === "slides" && !bare && !listHidden ? (
         <SlideSidebar
           run={run}
           title={title}
@@ -344,7 +351,7 @@ export function EditorShell({
           data-canvas-overlay
           className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
         >
-          {notes === undefined ? null : (
+          {notes === undefined || bare ? null : (
             <>
               <div data-notes-width style={{ width: Math.min(width, room.width) }}>
                 <NotesBar
@@ -355,9 +362,11 @@ export function EditorShell({
               <span className="block h-3" />
             </>
           )}
-          <div className="w-full px-4">
-            <EditorToolbar {...tools} />
-          </div>
+          {bare ? null : (
+            <div className="w-full px-4">
+              <EditorToolbar {...tools} />
+            </div>
+          )}
         </div>
         {shapeTray ? (
           <div className="absolute inset-x-0 bottom-[72px] flex justify-center">
@@ -365,45 +374,47 @@ export function EditorShell({
           </div>
         ) : null}
       </div>
-      <ResizablePanel panel={panel === "design" ? "design" : "agent"}>
-        <PanelHead>
-          {deck === undefined ? (
-            <ZoomReadout value="64%" />
-          ) : size === null ? (
-            <span />
-          ) : (
-            <ZoomMenu
-              zoom={zoom}
-              percent={zoomPercent(width, size)}
-              onZoom={zoomTo}
-              {...(deck.selection === undefined || deck.selection.ids.length === 0
-                ? {}
-                : { onSelection: zoomToSelection })}
-            />
-          )}
-          <span className="flex items-center gap-1">
-            <PresentButton
-              ref={presentButton}
-              {...(deck === undefined ? {} : { onClick: () => present.start(deck.slides.current) })}
-            />
-            <ExportControl
-              {...(deck === undefined
-                ? {}
-                : {
-                    target: {
-                      name: title,
-                      count: deck.slides.count,
-                      current: deck.slides.current,
-                      size,
-                      slide: deck.slides.thumb,
-                      onExport: deck.onExport,
-                    },
-                  })}
-            />
-          </span>
-        </PanelHead>
-        {sideContent}
-      </ResizablePanel>
+      {bare ? null : (
+        <ResizablePanel panel={panel === "design" ? "design" : "agent"}>
+          <PanelHead>
+            {deck === undefined ? (
+              <ZoomReadout value="64%" />
+            ) : size === null ? (
+              <span />
+            ) : (
+              <ZoomMenu
+                zoom={zoom}
+                percent={zoomPercent(width, size)}
+                onZoom={zoomTo}
+                {...(deck.selection === undefined || deck.selection.ids.length === 0
+                  ? {}
+                  : { onSelection: zoomToSelection })}
+              />
+            )}
+            <span className="flex items-center gap-1">
+              <PresentButton
+                ref={presentButton}
+                {...(deck === undefined ? {} : { onClick: () => present.start(deck.slides.current) })}
+              />
+              <ExportControl
+                {...(deck === undefined
+                  ? {}
+                  : {
+                      target: {
+                        name: title,
+                        count: deck.slides.count,
+                        current: deck.slides.current,
+                        size,
+                        slide: deck.slides.thumb,
+                        onExport: deck.onExport,
+                      },
+                    })}
+              />
+            </span>
+          </PanelHead>
+          {sideContent}
+        </ResizablePanel>
+      )}
       {templatePicker ? <TemplatePicker /> : null}
       {toast}
       {overlay}

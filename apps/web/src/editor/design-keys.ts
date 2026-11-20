@@ -18,6 +18,41 @@ const alignOf: Partial<Readonly<Record<GestureId, string>>> = {
 
 const pairWithin = 500
 
+const clearedBy: Partial<
+  Readonly<Record<GestureId, { readonly trait: string; readonly field: string; readonly none: unknown }>>
+> = {
+  "remove-fill": { trait: "fills", field: "paint", none: { none: true } },
+  "remove-border": { trait: "border", field: "border", none: "none" },
+}
+
+const carried: Readonly<Record<string, readonly string[] | "all">> = {
+  fills: ["paint"],
+  border: ["border", "color", "fill", "width", "dash", "cap", "compound", "join", "head", "tail"],
+  effects: ["shadow", "innerShadow", "glow", "softEdge", "blur"],
+  opacity: ["opacity"],
+  corners: "all",
+}
+
+type Property = { readonly trait: string; readonly field: string; readonly value: unknown }
+
+function propertiesOf(deck: DesigningDeck): readonly Property[] {
+  return (selectedDesign(deck)?.controls ?? []).flatMap((control) => {
+    const fields = carried[control.trait]
+    const takes = fields === "all" || (fields?.includes(control.field) ?? false)
+    return takes && !control.mixed && control.value !== undefined
+      ? [{ trait: control.trait, field: control.field, value: control.value }]
+      : []
+  })
+}
+
+function pastedOnto(deck: DesigningDeck, properties: readonly Property[]) {
+  const controls = selectedDesign(deck)?.controls ?? []
+  return properties.flatMap(({ trait, field, value }) => {
+    const control = controls.find((each) => each.trait === trait && each.field === field)
+    return control === undefined ? [] : [control.change(value)]
+  })
+}
+
 function controlOf(deck: DesigningDeck, trait: string, field: string) {
   return selectedDesign(deck)?.controls.find((control) => control.trait === trait && control.field === field)
 }
@@ -30,6 +65,7 @@ function opacityTyped(digit: string, pair: string | null): number {
 export function useDesignKeys(deck: DesigningDeck, working: boolean) {
   const latest = useRef(deck)
   const typed = useRef<{ readonly digit: string; readonly at: number } | null>(null)
+  const kept = useRef<readonly Property[] | null>(null)
   useEffect(() => {
     latest.current = deck
   })
@@ -46,15 +82,45 @@ export function useDesignKeys(deck: DesigningDeck, working: boolean) {
         changeDesign(now, () => controlOf(latest.current, "box", "align")?.change(align) ?? [])
         return
       }
-      if (gestureFor(event, "element") === "opacity") {
-        if (!onLayers(event.target) || controlOf(now, "opacity", "opacity") === undefined) return
-        if (!editorOwnsKey(event)) return
+      const onLayer = onLayers(event.target) ? gestureFor(event, "element") : null
+      const cleared = onLayer === null ? undefined : clearedBy[onLayer]
+      if (cleared !== undefined) {
+        if (controlOf(now, cleared.trait, cleared.field) === undefined || !editorOwnsKey(event)) return
+        event.preventDefault()
+        changeDesign(now, () => controlOf(latest.current, cleared.trait, cleared.field)?.change(cleared.none) ?? [])
+        return
+      }
+      if (onLayer === "numbers") {
+        const list = controlOf(now, "text", "list")
+        if (list === undefined || !editorOwnsKey(event)) return
+        event.preventDefault()
+        const next = list.value === "numbers" ? "none" : "numbers"
+        changeDesign(now, () => controlOf(latest.current, "text", "list")?.change(next) ?? [])
+        return
+      }
+      if (onLayer === "opacity") {
+        if (controlOf(now, "opacity", "opacity") === undefined || !editorOwnsKey(event)) return
         event.preventDefault()
         const last = typed.current
         const pair = last !== null && event.timeStamp - last.at < pairWithin ? last.digit + event.key : null
         typed.current = pair === null ? { digit: event.key, at: event.timeStamp } : null
         const value = opacityTyped(event.key, pair)
         changeDesign(now, () => controlOf(latest.current, "opacity", "opacity")?.change(value) ?? [])
+        return
+      }
+      if (gesture === "copy-properties") {
+        if (now.selection.ids.length !== 1 || !editorOwnsKey(event)) return
+        const properties = propertiesOf(now)
+        if (properties.length === 0) return
+        event.preventDefault()
+        kept.current = properties
+        return
+      }
+      if (gesture === "paste-properties") {
+        const properties = kept.current
+        if (properties === null || now.selection.ids.length === 0 || !editorOwnsKey(event)) return
+        event.preventDefault()
+        changeDesign(now, () => pastedOnto(latest.current, properties))
         return
       }
       if (gesture !== "remove-auto-layout") return
