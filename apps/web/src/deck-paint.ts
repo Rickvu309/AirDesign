@@ -243,7 +243,10 @@ export function paint(
     for (const { id, kind, file } of shapes.shapes) {
       files.set(id, file)
       const current = store.getElement(id)
-      if (busy.has(id) && current !== null) continue
+      if (busy.has(id) && current !== null) {
+        busy.missed(id)
+        continue
+      }
       const record = {
         id,
         kind,

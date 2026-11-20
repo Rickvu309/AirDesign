@@ -148,3 +148,31 @@ it("shows the words of a text layer copied inside a group, not the empty text it
   }
   expect(shownValue(register, layer, "")).toBe(words)
 })
+
+it("hands back an element a repaint left while the person's edits held it, once the last of them lets go", () => {
+  const store = painted()
+  const freed: string[] = []
+  const busy = busyElements((id) => freed.push(id))
+  const repaint = liveRepaint(store, files, null, busy)
+  const first = busy.hold(other)
+  const second = busy.hold(other)
+  repaint(edited)
+  expect(store.getElement(other)?.text).toBe("Typing")
+  first()
+  expect(freed).toEqual([])
+  second()
+  expect(freed).toEqual([other])
+  busy.hold(other)()
+  expect(freed).toEqual([other])
+})
+
+it("paints the server's text on an element a whole repaint left while it was busy, once it is free", () => {
+  const store = painted()
+  const busy = busyElements()
+  const release = busy.hold(other)
+  const repaint = liveRepaint(store, files, edited, busy)
+  expect(store.getElement(other)?.text).toBe("Typing")
+  release()
+  repaint(edited)
+  expect(store.getElement(other)?.text).toBe("Agent other")
+})

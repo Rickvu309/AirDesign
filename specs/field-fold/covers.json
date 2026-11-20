@@ -58,8 +58,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
-      "digest": "8b481699fc94",
-      "blob": "a8e179082acb36bf43b6f97f97b8ebeef2f5328e"
+      "digest": "eee4072dc0c9",
+      "blob": "701f0266781c161a94d176dbda59146a2582965c"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
@@ -71,7 +71,7 @@
       "file": "apps/web/src/undo-list.ts",
       "names": ["recorded", "turnBack", "sent", "sentCommand"],
       "digest": "e43c8bf25acb",
-      "blob": "fda449a501688ee11767cdea256f8cf9e5aeffb8"
+      "blob": "4a0559876f5e8a36b75aae2e4562a3e34be29c31"
     },
     {
       "file": "apps/web/src/exported-parts.ts",
@@ -82,8 +82,8 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "fe334757c197",
-      "blob": "5750a7a0a89063641f81215bb3d9754488df757f"
+      "digest": "dfc8fba671aa",
+      "blob": "4b99f8c83c433f08048187dae3ec0872d37e8c65"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
@@ -113,7 +113,7 @@
       "file": "packages/engine/src/apply-change.ts",
       "names": ["applySet", "landRow"],
       "digest": "b3d2b91658cb",
-      "blob": "bdd53b92d056a386242e36049bffba8182476339"
+      "blob": "1bda1011bcf9eb9c95d8b446777d04b51e37399b"
     }
   ]
 }
