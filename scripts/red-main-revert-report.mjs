@@ -52,6 +52,8 @@ const beforeAfter = ({ repository, named, culprit, changedFiles }) => {
   return ["## Before / after", "", `This puts back what main showed before ${named}, whose body has no image.`, ""]
 }
 
+const testLabel = (test) => `${test.file}${test.line === undefined ? "" : `:${test.line}`} › ${test.name}`
+
 export const testExcerpt = (log, test) => beforeAttachment(failureExcerpt(log, test)).replace(runnerPath, "")
 
 export const revertPull = ({
@@ -67,25 +69,24 @@ export const revertPull = ({
   drill,
 }) => {
   const named = number === undefined ? `commit \`${short(target)}\`` : `#${number}`
-  const real = decision?.judged.at(-1) ?? { checks: [], tests: [] }
+  const judgment = decision?.judgment ?? { verdict: "real", checks: [], tests: [] }
+  const suspect = judgment.verdict === "suspect"
+  const shown = judgment.tests.filter((each) => each.verdict === judgment.verdict)
   const whys = [
-    ...real.checks.map((check) => `${check} failed, and a failed check is never a race`),
-    ...real.tests
-      .filter((each) => each.verdict === "real")
-      .map((each) => `${each.title.replace(/^Race: /, "")}: ${each.why}`),
+    ...judgment.checks.map((check) => `${check} failed, and a failed check is never a race`),
+    ...shown.map((each) => `${testLabel(each.test)}: ${each.why}`),
   ]
   const log = jobs.map((job) => withoutProgress(job.log)).join("\n")
-  const excerpts = real.tests
-    .filter((each) => each.verdict === "real")
-    .slice(0, excerptLimit)
-    .flatMap((each) => ["~~~text", testExcerpt(log, each.test), "~~~", ""])
+  const excerpts = shown.slice(0, excerptLimit).flatMap((each) => ["~~~text", testExcerpt(log, each.test), "~~~", ""])
   const pullTitleText = pullTitle(target, title, drill)
   const summary = drill
     ? [
         `This reverts \`${short(target)}\`${number === undefined ? "" : ` from #${number}`} to verify the red-main bot can start ci and bar. The bot closes this pull request after both workflows start.`,
       ]
     : [
-        `ci failed on main, and the first red commit is \`${short(target)}\` from ${named}, "${title}". This reverts it so main goes green again. The red-main bot merges this pull request once its ci passes while main is still red. It closes it instead if main goes green first, because someone fixed forward.`,
+        suspect
+          ? `ci failed on main, and the first red commit is \`${short(target)}\` from ${named}, "${title}". Only browser tests that ${named} reaches through app code failed, and one red may be a race. The red-main bot merges this pull request only once a later push run on main fails the same test, and its own ci passes. It closes it if a later push run on main passes first, and records the failure as a race.`
+          : `ci failed on main, and the first red commit is \`${short(target)}\` from ${named}, "${title}". This reverts it so main goes green again. The red-main bot merges this pull request once its ci passes while main is still red. It closes it instead if main goes green first, because someone fixed forward.`,
         "",
         `- First red run: ${runUrl(repository, decision.run.id)} at \`${short(decision.run.sha)}\``,
         `- Last green run: ${runUrl(repository, decision.green.id)} at \`${short(decision.green.sha)}\``,
@@ -99,7 +100,7 @@ export const revertPull = ({
         ...failure.map((line) => line.replace(runnerPath, "")),
         "~~~",
         "",
-        "Why this is not a race:",
+        suspect ? "Why this may be a race:" : "Why this is not a race:",
         "",
         ...whys.map((why) => `- ${why}`),
         "",

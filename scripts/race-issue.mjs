@@ -12,7 +12,9 @@ const excerptEnd = /^\s*\[\d+\/\d+\]|⎯{3,}|^\s+\d+ (?:failed|passed|flaky)/
 
 const testId = (test) => `${test.file}${test.line === undefined ? "" : `:${test.line}`} › ${test.name}`
 
-export const raceTitle = (test) => `Race: ${testId(test)}`.slice(0, titleLimit)
+export const raceTitle = (test) => `Race: ${test.file} › ${test.name}`.slice(0, titleLimit)
+
+export const raceKey = (title) => title.replace(/^(Race: \S+?):\d+ › /, "$1 › ").slice(0, titleLimit - 10)
 
 const isHeaderOf = (line, test) =>
   failureHeader.test(line) &&
@@ -76,7 +78,7 @@ export const recordRace = ({ gh, repository, test, excerpt, commit, seen }) => {
   const title = raceTitle(test)
   const issues = openIssues({ gh, repository })
   if (issues.why !== undefined) return issues
-  const known = issues.open.find((issue) => issue.title === title)
+  const known = issues.open.find((issue) => raceKey(issue.title) === raceKey(title))
   if (known !== undefined) {
     const commented = gh(
       ["issue", "comment", String(known.number), "--repo", repository, "--body-file", "-"],

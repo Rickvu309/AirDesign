@@ -179,9 +179,12 @@ same(
   ],
 )
 same(
-  "a race's title names the file, the line and the test",
-  raceTitle(saveStatus),
-  "Race: tests/browser/save-status.spec.ts:206 › an added slide reads Saving while its commit waits and Saved once the server takes it",
+  "a race's title names the file and the test, not the line, so an edit above the test keeps one issue",
+  [raceTitle(saveStatus), raceTitle({ ...saveStatus, line: 214 })],
+  [
+    "Race: tests/browser/save-status.spec.ts › an added slide reads Saving while its commit waits and Saved once the server takes it",
+    "Race: tests/browser/save-status.spec.ts › an added slide reads Saving while its commit waits and Saved once the server takes it",
+  ],
 )
 same("a vitest race's title has no line", raceTitle({ file, name: "a > b" }), `Race: ${file} › a > b`)
 
@@ -232,6 +235,24 @@ same(
   "the second failure comments with its own commit and output",
   [commented.args.slice(0, 3), commented.input.includes("a7e595902bbb"), commented.input.includes('Received: "Saved"')],
   [["issue", "comment", "990"], true, true],
+)
+
+const maskGroup = { file: "tests/journeys/journeys.spec.ts", line: 116, name: "mask-group" }
+const lined = issues()
+lined.open.push({ number: 1074, title: "Race: tests/journeys/journeys.spec.ts:114 › mask-group", url: issueUrl })
+recordRace({ ...seen("d"), gh: lined.gh, test: maskGroup, excerpt: "" })
+same(
+  "a race filed under its old line takes the comment when the test moved from :114 to :116",
+  lined.calls.filter((call) => call.args[1] !== "list").map((call) => call.args.slice(0, 3).join(" ")),
+  ["issue comment 1074"],
+)
+const shifted = issues()
+recordRace({ ...seen("e"), gh: shifted.gh, test: { ...maskGroup, line: 114 } })
+recordRace({ ...seen("f"), gh: shifted.gh, test: maskGroup })
+same(
+  "the mask-group race at :114 and then at :116 is one issue",
+  shifted.calls.filter((call) => call.args[1] !== "list").map((call) => call.args[1]),
+  ["create", "comment"],
 )
 
 const broken = recordRace({ ...seen("c"), gh: () => ({ status: 1, stdout: "", stderr: "gh: not logged in" }) })

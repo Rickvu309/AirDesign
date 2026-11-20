@@ -166,7 +166,7 @@ same(
   ]),
   [
     [
-      "Race: tests/browser/save-status.spec.ts:206 › an added slide reads Saving while its commit waits and Saved once the server takes it",
+      "Race: tests/browser/save-status.spec.ts › an added slide reads Saving while its commit waits and Saved once the server takes it",
       true,
       true,
       true,
