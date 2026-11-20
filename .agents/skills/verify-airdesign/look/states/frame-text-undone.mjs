@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
-import { undoCopy } from "../../bin/product-copy.mjs"
+import { groupCopy, undoCopy } from "../../bin/product-copy.mjs"
 
 const part = "ppt/slides/slide1.xml"
 const line = '<a:p><a:r><a:rPr lang="en-US" sz="1800"/><a:t>A card line</a:t></a:r></a:p>'
@@ -46,7 +46,7 @@ async function drive(kit) {
   await shape(20).click()
   await shape(21).click({ modifiers: ["Shift"] })
   await page.keyboard.press("Shift+A")
-  await expect(page.locator("[data-slide-paint] [data-chosen], [data-slide-paint] [data-grip]").first()).toBeVisible()
+  await expect(page.locator("[data-slide-paint]").getByRole("status")).toHaveText(groupCopy.said.frame)
   const before = await shape(21).boundingBox()
   await shape(20).dblclick()
   await page.keyboard.press("Enter")
