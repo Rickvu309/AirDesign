@@ -149,6 +149,9 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
       await deck.shown.showEdited(current)
     })
     if (outcome === "kept") store.current.placeBox(only.id, landedBox(await deviceRegister(id), only.id))
+    const shownRegister = deck.shown.shownRegister.current
+    if (outcome === "stored" && shownRegister !== null)
+      store.current.placeBox(only.id, landedBox(indexedRegister(parts, shownRegister), only.id))
     return outcome
   }
 
