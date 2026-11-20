@@ -1,7 +1,7 @@
 import { elementId, format, openRegister, slideId, writeTextValue, type Register } from "@airdesign/document"
 import { iconParts } from "@airdesign/pptx"
-import { expect, it } from "vitest"
-import { iconMarkup, iconSvg, missingIcons, registerIcons } from "./icon-fallback"
+import { expect, it, onTestFinished, vi } from "vitest"
+import { iconMarkup, iconPng, iconSvg, missingIcons, registerIcons } from "./icon-fallback"
 
 const ink = "000000"
 
@@ -72,3 +72,37 @@ it("finds an icon that fills text, so an export can embed it", () => {
   }
   expect(registerIcons(register)).toEqual(["moon"])
 })
+
+it("makes an icon's PNG while the tab stays busy, since toBlob answers only when the browser goes idle", async () => {
+  const png = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10)
+  const drawn: unknown[] = []
+  vi.stubGlobal(
+    "Image",
+    class {
+      src = ""
+      decode() {
+        return Promise.resolve()
+      }
+    },
+  )
+  vi.stubGlobal("document", {
+    createElement: () => ({
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage: (...args: unknown[]) => drawn.push(args.slice(1)) }),
+      toBlob: () => undefined,
+      toDataURL: (type: string) => `data:${type};base64,${btoa(String.fromCharCode(...png))}`,
+    }),
+  })
+  onTestFinished(() => {
+    vi.unstubAllGlobals()
+  })
+  expect(await iconPng(await iconMarkupOf("star"), 64)).toEqual(png)
+  expect(drawn).toEqual([[0, 0, 64, 64]])
+})
+
+async function iconMarkupOf(name: string): Promise<string> {
+  const svg = await iconSvg(name)
+  if (svg === null) throw new Error(name)
+  return svg
+}
