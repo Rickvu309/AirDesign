@@ -1,12 +1,13 @@
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { designScans } from "./browser-change-map.mjs"
 import { smallLaneCommand } from "./machine-lock.mjs"
 import { readSpecSeconds, specFiles, specFolder, weightedShares } from "./spec-seconds.mjs"
 import { testFilesByProject } from "./unit-test-files.mjs"
 
 export const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-results")
-export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
+export { designScans }
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
 export const designShardVariable = "AIRDESIGN_DESIGN_SHARD"
 export const statesPerDesignShard = 200
@@ -22,20 +23,24 @@ export const browserShares = (folder, total) =>
     total,
   })
 
+const specPattern = (file) => `${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`
+
 const browserShare = (shard) => {
   const share = browserShares(root, shard.total).shares[shard.current - 1]
   if (share.length === 0)
     throw new Error(`browser shard ${shard.current}/${shard.total} has no spec file. Use fewer shards.`)
-  return share.map((name) => `${specFolder}/${name.replaceAll(".", "\\.")}$`)
+  return share.map((name) => specPattern(`${specFolder}/${name}`))
 }
 
-const browserArgs = (part, shard) =>
+const browserArgs = (part, shard, { browserSpecs = "all" }) =>
   part === "design"
     ? designScans
     : part === "browser"
-      ? shard === undefined
-        ? ["--grep-invert", exceptDesignScans]
-        : browserShare(shard)
+      ? browserSpecs !== "all" && browserSpecs.length > 0
+        ? browserSpecs.map(specPattern)
+        : shard === undefined
+          ? ["--grep-invert", exceptDesignScans]
+          : browserShare(shard)
       : []
 
 const designShardEnv = (part, shard) =>
@@ -52,10 +57,11 @@ const listOf = (value) => {
 
 export const changesFrom = (env) => ({
   unitTests: listOf(env.AIRDESIGN_UNIT_TESTS ?? ""),
+  browserSpecs: listOf(env.AIRDESIGN_BROWSER_SPECS ?? ""),
   modelCheck: env.AIRDESIGN_MODEL_CHECK !== "false",
 })
 
-export const everyChange = { unitTests: "all", modelCheck: true }
+export const everyChange = { unitTests: "all", modelCheck: true, browserSpecs: "all" }
 
 export const unitTestsIn = (folders, files = Object.values(testFilesByProject(root)).flat().sort()) =>
   folders === "all" ? files : files.filter((file) => folders.some((folder) => file.startsWith(folder)))
@@ -316,10 +322,15 @@ const defaultPart = "source"
 
 const partsOf = ({ part = defaultPart }) => (Array.isArray(part) ? part : [part])
 
-const tuple = ({ name, command, args = [], env, partArgs, partEnv }, part, shard) => {
+const tuple = ({ name, command, args = [], env, partArgs, partEnv }, part, shard, changes = everyChange) => {
   const added = partEnv?.(part, shard)
   const stepEnv = env === undefined && added === undefined ? undefined : { ...env, ...added }
-  return [name, command, [...args, ...(partArgs?.(part, shard) ?? [])], ...(stepEnv === undefined ? [] : [stepEnv])]
+  return [
+    name,
+    command,
+    [...args, ...(partArgs?.(part, shard, changes) ?? [])],
+    ...(stepEnv === undefined ? [] : [stepEnv]),
+  ]
 }
 
 const wrapStage = (steps) => (steps.length === 0 ? [] : [steps])
@@ -328,7 +339,8 @@ const stageFor = (rows, part, shard, changes) => {
   const lanes = new Map()
   const entries = []
   for (const row of rows) {
-    const step = row.narrow === undefined ? tuple(row, part, shard) : row.narrow(changes, tuple(row, part, shard))
+    const fullStep = tuple(row, part, shard, changes)
+    const step = row.narrow === undefined ? fullStep : row.narrow(changes, fullStep)
     if (step === undefined) continue
     if (row.lane === undefined) {
       entries.push(step)

@@ -2,6 +2,9 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { browserJobs, browserReach, browserSpec, designScans, inBrowser } from "./browser-change-map.mjs"
+import { browserExportTag } from "./pptx-cases.mjs"
+import { readSpecSeconds } from "./spec-seconds.mjs"
 
 export const ciParts = ["source", "scripts", "design", "browser", "journeys", "pptx", "corpus", "model-check"]
 
@@ -12,7 +15,7 @@ const runsEverything = [
   /^\.npmrc$/,
   /^tsconfig(\.base)?\.json$/,
   /^\.github\//,
-  /^scripts\/(check|check-steps|change-map)\.mjs$/,
+  /^scripts\/(check|check-steps|change-map|browser-change-map|spec-seconds)\.mjs$/,
 ]
 
 const sharedTestSetup = ["vitest.config.mts"]
@@ -22,8 +25,6 @@ const inert = [/^\.claude\//]
 const readByChecks = [/\.md$/, /^metrics\.json$/]
 
 const sourceOnly = [/^\.gitignore$/, /^\.oxfmtrc\.json$/, /^\.railway\//]
-
-const designScans = new Set(["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"])
 
 const servedBy = {
   web: ["browser", "design", "journeys"],
@@ -44,9 +45,9 @@ const partsOfFile = (file) => {
   if (file === "playwright.journeys.config.ts") return ["journeys"]
   if (file.startsWith("tests/journeys/") || file.startsWith(".agents/skills/verify-airdesign/journeys/"))
     return ["journeys"]
-  if (designScans.has(file)) return ["design"]
-  if (/^tests\/browser\/.*\.spec\.ts$/.test(file)) return ["browser"]
-  if (file.startsWith("tests/browser/")) return ["browser", "design"]
+  if (designScans.includes(file)) return ["design"]
+  if (browserSpec(file)) return ["browser"]
+  if (inBrowser(file)) return ["browser", "design"]
   if (file.startsWith("tests/")) return [unitNode("tests")]
   if (file === "scripts/check-specs.mjs") return ["scripts", "model-check"]
   if (file.startsWith("scripts/") || file.startsWith("tooling/")) return ["scripts"]
@@ -101,6 +102,7 @@ const runEverything = (because) => ({
   parts: Object.fromEntries(ciParts.map((part) => [part, true])),
   unitTests: "all",
   packages: "all",
+  browserSpecs: "all",
 })
 
 export const changeMap = (changed, graph, { full = false } = {}) => {
@@ -109,6 +111,9 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
   const importers = importersOf(graph)
   const byName = new Map(graph.packages.map((pkg) => [pkg.name, pkg]))
   const setup = setupFiles(graph)
+  const browser = browserReach(graph, walk)
+  const selected = new Set()
+  let canNarrowBrowser = true
   const parts = new Map()
   const packages = new Set()
   const turnOn = (part, file) => parts.has(part) || parts.set(part, file)
@@ -118,7 +123,11 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       return runEverything(`${file} changes how every part runs`)
     if (setup.has(file)) return runEverything(`${file} is shared test setup`)
     turnOn("source", file)
-    if (listed(file, graph.pptxPaths)) {
+    const gone = goneNode(file)
+    if (
+      listed(file, graph.pptxPaths) ||
+      [browser.setup, browser.exports].some((files) => files.has(file) || files.has(gone))
+    ) {
       turnOn("pptx", file)
       turnOn("corpus", file)
     }
@@ -132,11 +141,27 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       turnOn(unitNode("tests"), file)
       continue
     }
+    const shared = browser.setup.has(file) || browser.setup.has(gone)
+    const specs = [...browser.specs].filter(([, needs]) => needs.has(file) || needs.has(gone)).map(([spec]) => spec)
+    const narrowed = inBrowser(file) && !shared && specs.length > 0
+    canNarrowBrowser &&= narrowed
+    if (shared) {
+      turnOn("browser", file)
+      turnOn("design", file)
+    }
+    for (const spec of specs) {
+      if (designScans.includes(spec)) turnOn("design", file)
+      else {
+        turnOn("browser", file)
+        selected.add(spec)
+      }
+    }
     const start = nodeOf(file, graph.packages)
     if (start === file && partsOfFile(file).length === 0 && !(file in graph.imports))
       return runEverything(`no part owns ${file}`)
-    const reached = new Set([start, goneNode(file)].flatMap((from) => [...walk(from, (at) => importers.get(at) ?? [])]))
+    const reached = new Set([start, gone].flatMap((from) => [...walk(from, (at) => importers.get(at) ?? [])]))
     for (const node of reached) {
+      if (narrowed && inBrowser(node) && !browserSpec(node)) continue
       const pkg = byName.get(node)
       if (pkg) packages.add(pkg.name)
       for (const part of pkg ? partsOfPackage(pkg) : partsOfFile(node)) turnOn(part, file)
@@ -151,6 +176,8 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       .map((part) => part.slice("unit:".length))
       .sort(),
     packages: [...packages].sort(),
+    browserSpecs: canNarrowBrowser ? [...selected].sort() : "all",
+    browserSeconds: graph.browserSeconds,
   }
 }
 
@@ -193,7 +220,9 @@ const specifiers = (file, source) => [
   ...[...source.matchAll(loadedModule)].map((match) => match[1]),
   ...[...source.matchAll(quotedPath)]
     .map((match) => match[1])
-    .filter((quoted) => quoted.includes("/") && (rootConfig.test(file) || !/\.[a-z]+$/.test(quoted))),
+    .filter(
+      (quoted) => quoted.includes("/") && (rootConfig.test(file) || inBrowser(file) || !/\.[a-z]+$/.test(quoted)),
+    ),
 ]
 
 const resolver = (files, packages) => {
@@ -253,7 +282,10 @@ const readImports = (root, files, packages) => {
   for (const file of files.filter((name) => code.test(name))) {
     const from = nodeOf(file, packages)
     const targets = resolve(file, specifiers(file, fs.readFileSync(path.join(root, file), "utf8")))
-      .filter((target) => target !== file && target !== from && !testOrSpec.test(target))
+      .filter(
+        (target) =>
+          target !== file && target !== from && (!testOrSpec.test(target) || (inBrowser(file) && browserSpec(target))),
+      )
       .filter((target) => from === file || !names.has(target))
     if (targets.length > 0) imports[from] = [...new Set([...(imports[from] ?? []), ...targets])].sort()
   }
@@ -267,14 +299,33 @@ export const readChangeGraph = (root) => {
     .split("\n")
     .filter((file) => file && fs.existsSync(path.join(root, file)))
   const packages = readPackages(root)
+  const browserSpecs = files.filter(browserSpec)
+  const exportSpecs = new Set(
+    browserSpecs.filter((file) => fs.readFileSync(path.join(root, file), "utf8").includes(browserExportTag)),
+  )
+  for (const file of files.filter((file) => file.startsWith("scripts/pptx-cases/") && file.endsWith(".mjs"))) {
+    for (const [, target] of fs.readFileSync(path.join(root, file), "utf8").matchAll(quotedPath))
+      if (browserSpec(target)) exportSpecs.add(target)
+  }
   return {
+    browserSpecs,
+    browserSeconds: readSpecSeconds(root).seconds,
+    exportSpecs: [...exportSpecs],
     packages,
     imports: readImports(root, files, packages),
     pptxPaths: fs.readFileSync(path.join(root, pptxPathsFile), "utf8").split("\n").filter(Boolean),
   }
 }
 
-export const checkJobsFor = (result, jobs) => jobs.filter((job) => result.parts[job.part] === true)
+export const checkJobsFor = (result, jobs) => {
+  const active = jobs.filter((job) => result.parts[job.part] === true)
+  if (result.browserSpecs === "all" || result.browserSpecs.length === 0) return active
+  const firstBrowser = active.findIndex((job) => job.part === "browser")
+  if (firstBrowser === -1) return active
+  const limit = active.filter((job) => job.part === "browser").length
+  const narrowed = browserJobs(result.browserSpecs, result.browserSeconds, limit)
+  return active.flatMap((job, index) => (job.part === "browser" ? (index === firstBrowser ? narrowed : []) : [job]))
+}
 
 export const githubOutput = (result, jobs) => [
   ...ciParts.map((part) => `${part}=${String(result.parts[part])}`),
@@ -289,6 +340,9 @@ export const decisionLines = (result) =>
         ...ciParts.map((part) =>
           result.parts[part] ? `${part} runs, for ${result.because[part]}` : `${part} skips: nothing it judges changed`,
         ),
+        ...(result.browserSpecs.length > 0 && result.browserSpecs !== "all"
+          ? [`browser specs: ${result.browserSpecs.join(" ")}`]
+          : []),
         `unit tests: ${result.unitTests.length === 0 ? "none" : result.unitTests.join(" ")}`,
       ]
 

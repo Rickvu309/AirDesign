@@ -13,11 +13,14 @@ const recordPath = (root) => path.join(root, specFolder, specSecondsName)
 
 export const readSpecSeconds = (root) => JSON.parse(fs.readFileSync(recordPath(root), "utf8"))
 
-export const specFiles = (root) =>
-  fs
-    .readdirSync(path.join(root, specFolder))
-    .filter((name) => name.endsWith(".spec.ts"))
+export const specFiles = (root) => {
+  const folder = path.join(root, specFolder)
+  return fs
+    .readdirSync(folder, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".spec.ts"))
+    .map((entry) => path.relative(folder, path.join(entry.parentPath, entry.name)))
     .sort()
+}
 
 const middle = (values) => {
   const sorted = values.toSorted((a, b) => a - b)

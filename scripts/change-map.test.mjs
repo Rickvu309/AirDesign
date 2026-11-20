@@ -2,7 +2,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { changeMap, ciParts, decide, readChangeGraph } from "./change-map.mjs"
+import { changeMap, checkJobsFor, ciParts, decide, readChangeGraph } from "./change-map.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -74,17 +74,15 @@ same(
   map(["tests/spec-graph.ts"]).unitTests,
   ["apps/web/", "tests/"],
 )
-same(
-  "a browser spec runs the browser part alone; narrowing to the one spec is left for later",
-  on(map(["tests/browser/home.spec.ts"])),
-  ["source", "browser"],
-)
+same("a browser spec runs the browser part alone", on(map(["tests/browser/home.spec.ts"])), ["source", "browser"])
 same("a design scan runs the design part alone", on(map(["tests/browser/design-states.spec.ts"])), ["source", "design"])
-same(
-  "a browser helper or setup file runs browser and design, since both shards load the same launch and helpers",
-  on(map(["tests/browser/launch.ts"])),
-  ["source", "design", "browser"],
-)
+same("browser, design and PowerPoint load the browser launch", on(map(["tests/browser/launch.ts"])), [
+  "source",
+  "design",
+  "browser",
+  "pptx",
+  "corpus",
+])
 same(
   "a script a browser spec imports runs the browser part as well as the script tests",
   on(map(["scripts/slide-export.mjs"])),
@@ -151,6 +149,58 @@ everything("a diff that cannot be read runs everything", null)
 everything("--full runs everything, for pushes to main", ["GLOSSARY.md"], { full: true })
 same("a run of everything runs every unit test", map(null).unitTests, "all")
 
+const scope = (changed) =>
+  changeMap(changed, {
+    ...toy,
+    imports: {
+      ...toy.imports,
+      "tests/browser/home.spec.ts": ["tests/browser/fixtures/index.ts"],
+      "tests/browser/fixtures/index.ts": ["tests/browser/fixtures/sky.ts"],
+      "tests/browser/fixtures/sky.ts": ["tests/browser/fixtures/index.ts", "gone:tests/browser/fixtures/removed"],
+      "tests/browser/guest.spec.ts": ["tests/browser/home.spec.ts"],
+    },
+    browserSpecs: ["tests/browser/home.spec.ts", "tests/browser/guest.spec.ts", "tests/browser/unrelated.spec.ts"],
+    browserSeconds: { "home.spec.ts": 70, "guest.spec.ts": 80, "unrelated.spec.ts": 40 },
+    exportSpecs: ["tests/browser/home.spec.ts"],
+  })
+const homeAndGuest = ["tests/browser/guest.spec.ts", "tests/browser/home.spec.ts"]
+for (const changed of [
+  "tests/browser/home.spec.ts",
+  "tests/browser/fixtures/sky.ts",
+  "tests/browser/fixtures/removed.ts",
+]) {
+  const result = scope([changed])
+  same(`${changed} reaches its direct and transitive importers`, result.browserSpecs, homeAndGuest)
+  same(`${changed} reaches the export spec`, on(result), ["source", "browser", "pptx", "corpus"])
+  same(
+    `${changed} fits in two time-weighted jobs`,
+    checkJobsFor(
+      result,
+      [1, 2, 3, 4].map((n) => ({ part: "browser", shard: `${n}/4` })),
+    ),
+    [
+      { part: "browser", shard: "1/2", browserSpecs: ["tests/browser/guest.spec.ts"] },
+      { part: "browser", shard: "2/2", browserSpecs: ["tests/browser/home.spec.ts"] },
+    ],
+  )
+}
+same(
+  "a change to app code alongside a spec runs the full browser suite",
+  scope(["apps/web/src/editor.tsx", "tests/browser/home.spec.ts"]).browserSpecs,
+  "all",
+)
+same(
+  "a change to a Playwright setting runs the full browser suite",
+  scope(["playwright.config.ts"]).browserSpecs,
+  "all",
+)
+same(
+  "an unclaimed browser fixture runs the full browser suite",
+  scope(["tests/browser/fixtures/unknown.pptx"]).browserSpecs,
+  "all",
+)
+same("an unrelated spec skips PowerPoint", on(scope(["tests/browser/unrelated.spec.ts"])), ["source", "browser"])
+
 const graph = readChangeGraph(root)
 const real = (changed) => changeMap(changed, graph)
 
@@ -214,11 +264,11 @@ same(
     design: "false",
     browser: "true",
     journeys: "false",
-    pptx: "true",
-    corpus: "true",
+    pptx: "false",
+    corpus: "false",
     "model-check": "false",
     "unit-tests": "[]",
-    check: jobs,
+    check: JSON.stringify([{ part: "source" }, { part: "browser", browserSpecs: ["tests/browser/home.spec.ts"] }]),
   },
 )
 same(
