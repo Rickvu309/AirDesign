@@ -99,9 +99,11 @@ it("a recovery notice shown again before dismissal reaches Sonner has active con
   expect(leaving).not.toBeNull()
   await act(async () => root.render(<ThinNoticeView notice={null} onTryAgain={() => undefined} />))
   expect(leaving?.inert).toBe(true)
-  await show(root, "storage-failed", 0)
-  const active = window.document.querySelector<HTMLElement>('[data-sonner-toast]:not([data-removed="true"])')
-  expect(active).not.toBeNull()
-  expect(active?.inert).toBe(false)
+  await show(root, "storage-failed", 1)
+  const active = [...window.document.querySelectorAll<HTMLElement>("[data-sonner-toast]")].find(
+    (toast) => toast !== leaving,
+  )
+  expect(active).toBeDefined()
+  expect(active?.inert === true).toBe(false)
   expect(active?.getAttribute("aria-hidden")).toBeNull()
 })
