@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
+import { expect } from "@playwright/test"
 
 type ZipEntry = {
   readonly filename: string
@@ -31,4 +32,18 @@ export async function partsOf(file: string): Promise<Map<string, Buffer>> {
   }
   await reader.close()
   return parts
+}
+
+export async function changedParts(before: string, after: string): Promise<string[]> {
+  const original = await partsOf(before)
+  const saved = await partsOf(after)
+  expect([...saved.keys()]).toEqual([...original.keys()])
+  return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
+}
+
+export function shapeIn(slideXml: string, id: string): string {
+  const named = slideXml.indexOf(`<p:cNvPr id="${id}"`)
+  const start = slideXml.lastIndexOf("<p:sp>", named)
+  const end = slideXml.indexOf("</p:sp>", named) + "</p:sp>".length
+  return slideXml.slice(start, end)
 }

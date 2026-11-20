@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { stored } from "./device-store"
-import { partsOf, zip } from "./thin-deck-parts.ts"
+import { changedParts, partsOf, shapeIn, zip } from "./thin-deck-parts.ts"
 import { expectNoSample } from "./no-sample"
 import { savedExport } from "./export-dialog.ts"
 import { decksOn, readyMark, test } from "./deck-test"
@@ -12,13 +12,6 @@ const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const fixture = join(fixtures, "clean.pptx")
 const exported = join(process.cwd(), "tests/browser/exported-deck.pptx")
 const slide = "ppt/slides/slide1.xml"
-
-async function changedParts(before: string, after: string): Promise<string[]> {
-  const original = await partsOf(before)
-  const saved = await partsOf(after)
-  expect([...saved.keys()]).toEqual([...original.keys()])
-  return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
-}
 
 function lines(value: string): string {
   const paragraphs = JSON.parse(value) as { runs: { text: string }[] }[]
@@ -389,13 +382,6 @@ test("an edit made offline is sent when the page comes back online", async ({ pa
   await confirmed(page, "Hello?")
 })
 
-function shapeIn(slideXml: string, id: string): string {
-  const named = slideXml.indexOf(`<p:cNvPr id="${id}"`)
-  const start = slideXml.lastIndexOf("<p:sp>", named)
-  const end = slideXml.indexOf("</p:sp>", named) + "</p:sp>".length
-  return slideXml.slice(start, end)
-}
-
 function runsIn(shape: string): [string, string][] {
   return [...shape.matchAll(/<a:r>(<a:rPr(?:[^>]*\/>|[\s\S]*?<\/a:rPr>))?<a:t>([^<]*)<\/a:t><\/a:r>/g)].map((run) => [
     run[1] ?? "",
@@ -534,30 +520,6 @@ test("undo after Enter takes the new paragraph back", async ({ page }) => {
   await expect.poll(() => paragraphsOf(page, editor)).toEqual(["Hello", ""])
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(() => paragraphsOf(page, editor)).toEqual(["Hello"])
-})
-
-test("an empty box takes typed text, keeps it after reload and exports it", async ({ page }, testInfo) => {
-  const deck = join(fixtures, "doe-heat-pumps.pptx")
-  const download = testInfo.outputPath("empty-box.pptx")
-  const part = "ppt/slides/slide1.xml"
-  await open(page, deck)
-  const empty = page.locator("[contenteditable]").nth(2)
-  await expect(empty).toHaveAttribute("contenteditable", "true")
-  await expect(empty).toHaveText("")
-  await page.locator("[contenteditable]").nth(1).focus()
-  await page.keyboard.press("Tab")
-  await expect(empty).toBeFocused()
-  await empty.pressSequentially("Typed here", { delay: 50 })
-  await stored(page, "Typed here")
-  await reload(page)
-  await expect(page.locator("[contenteditable]").nth(2)).toHaveText("Typed here")
-  await savedExport(page, download)
-  expect(await changedParts(deck, download)).toEqual([part])
-  const before = (await partsOf(deck)).get(part)?.toString("utf8") ?? ""
-  const after = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
-  const written = shapeIn(after, "4")
-  expect(after.replace(written, "")).toBe(before.replace(shapeIn(before, "4"), ""))
-  expect(written).toContain("<a:t>Typed here</a:t>")
 })
 
 test("the page names the opened file, not the sample deck", async ({ page }) => {

@@ -328,7 +328,7 @@ describe("SlideCanvas groups, deep select, keyboard traversal and hover", () => 
     expect(chosenIds(host)).toEqual([])
   })
 
-  it("does not steal Tab, Enter or Escape when editing text or when ownsKey denies ownership", async () => {
+  it("keeps Tab in the text being edited, as Figma does, and takes no selection key ownsKey denies", async () => {
     const { host } = await mount({ ownsKey: () => false })
     await pointer(frameOf(host, group), "pointerdown", 550, 150)
     await pointer(document, "pointerup", 550, 150)
@@ -349,7 +349,9 @@ describe("SlideCanvas groups, deep select, keyboard traversal and hover", () => 
     await act(async () => {
       editable.dispatchEvent(tabEvent)
     })
-    expect(tabEvent.defaultPrevented).toBe(false)
+    expect(tabEvent.defaultPrevented).toBe(true)
+    expect(chosenIds(host2)).toEqual([textNode])
+    expect(document.activeElement).toBe(editable)
   })
 
   it("asks ownsKey only for the selection keys, so Ctrl+Shift+G still ungroups while a popover is open", async () => {

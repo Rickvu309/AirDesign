@@ -16,6 +16,7 @@ import { useDeckOpen } from "@/editor/use-deck-open"
 import { useKeptPanel } from "@/editor/kept-panel"
 import { shownNotice } from "@/editor/use-deck-status"
 import { useDesignKeys } from "@/editor/design-keys"
+import { selectionFocus, useKeysBackToCanvas } from "@/editor/keys-back-to-canvas"
 import { SlideEyedropper, useDeckEyedropper } from "@/editor/eyedropper-tool"
 import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
@@ -73,6 +74,7 @@ export function ThinDeck({ id }: { id: string }) {
   }
   const designing = { ...deck, selectedSlides }
   useDesignKeys(designing, deck.paintedDeck === id)
+  useKeysBackToCanvas(deck.paintedDeck === id, () => selectionFocus(currentCanvas, deck.selection))
   const eyedropper = useDeckEyedropper(designing, deck.paintedDeck === id)
   useLayerKeys(deck.paintedDeck === id, {
     onFlag: (flag) => toggleLayerFlag(deck, deck.selection.ids, flag),

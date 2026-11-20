@@ -30,6 +30,7 @@ export const shortcutCopy = {
     measure: "Measure the distance to another layer",
     deselect: "Clear the selection",
     "edit-text": "Edit text, or select the layers inside",
+    "leave-control": "Leave a design panel control and go back to the canvas",
     delete: "Delete",
     rulers: "Show or hide rulers",
     "layout-guides": "Show or hide layout guides",

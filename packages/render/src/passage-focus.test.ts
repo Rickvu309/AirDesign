@@ -46,3 +46,34 @@ it("a value from elsewhere does not move the selection into a box that has lost 
     root.unmount()
   })
 })
+
+it("puts back the words a person had selected when focus comes back from a panel field", async () => {
+  const store = paintStore()
+  const id = elementId("1.1")
+  await act(async () => {
+    store.publish({ id, kind: "shape", text: "Hello world" })
+  })
+  const host = document.createElement("div")
+  document.body.append(host)
+  const root = createRoot(host)
+  await act(async () => {
+    root.render(createElement(Passage, { store, id, onEdit: () => {} }))
+  })
+  const editor = host.querySelector<HTMLElement>("[contenteditable]")
+  const text = editor?.querySelector("[data-run]")?.firstChild
+  if (editor === null || editor === undefined || !(text instanceof Text)) throw new Error("missing passage")
+  editor.focus()
+  window.getSelection()?.setBaseAndExtent(text, 6, text, 11)
+  document.dispatchEvent(new Event("selectionchange"))
+  const field = document.createElement("input")
+  field.dataset.keepsFormat = ""
+  host.after(field)
+  field.focus()
+  expect(window.getSelection()?.toString()).toBe("")
+  editor.focus()
+  expect(window.getSelection()?.toString()).toBe("world")
+  field.remove()
+  await act(async () => {
+    root.unmount()
+  })
+})

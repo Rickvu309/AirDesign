@@ -1,4 +1,4 @@
-export type Where = "slide" | "element" | "guide" | "text" | "slides" | "grid" | "editor" | "show"
+export type Where = "slide" | "element" | "guide" | "text" | "control" | "slides" | "grid" | "editor" | "show"
 
 type Chord = {
   readonly mod?: true
@@ -117,6 +117,7 @@ export const gestures = [
   },
   { id: "deselect", group: "select", keys: [{ key: "Escape" }], where: ["element", "text", "guide"] },
   { id: "edit-text", group: "select", keys: [{ key: "Enter" }], where: ["element"] },
+  { id: "leave-control", group: "select", keys: [{ key: "Enter" }, { key: "Escape" }], where: ["control"] },
   { id: "delete", group: "select", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["element", "guide"] },
   { id: "move", group: "move", keys: [], pointing: [{ on: "element", drag: true }], where: ["slide"] },
   {

@@ -20,6 +20,7 @@ test("a person changes a picture's fill mode and exports its native placement @e
   await width.press("Enter")
   let fitted = ""
   for (const mode of ["fit", "fill", "crop", "tile"] as const) {
+    await picture.click({ position: { x: 8, y: 8 } })
     await panel.getByRole("combobox", { name: pictureCopy.mode, exact: true }).click()
     await page.getByRole("option", { name: pictureWords[mode], exact: true }).click()
     await expect(panel.getByRole("combobox", { name: pictureCopy.mode, exact: true })).toContainText(

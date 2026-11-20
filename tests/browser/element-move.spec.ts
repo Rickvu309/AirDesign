@@ -230,7 +230,7 @@ test("a first press on text inside a group picks the group, and a double-click s
   await expect.poll(async () => (await boxRows(page)).length).toBeGreaterThan(0)
 })
 
-test("Tab reaches the slide number, which can move, and then cycles to the empty unfilled box frame", async ({
+test("Tab keeps the caret in the title being edited, as Figma does; after Esc it reaches the slide number, which can move, and then cycles to the empty unfilled box frame", async ({
   page,
 }) => {
   covers("select-next")
@@ -246,6 +246,9 @@ test("Tab reaches the slide number, which can move, and then cycles to the empty
   })
   await page.mouse.dblclick(point.x, point.y)
   await expect(title).toBeFocused()
+  await page.keyboard.press("Tab")
+  await expect(title).toBeFocused()
+  await page.keyboard.press("Escape")
   await page.keyboard.press("Tab")
   await expect(page.getByRole("group", { name: "29" })).toBeFocused()
   await page.keyboard.press("Tab")

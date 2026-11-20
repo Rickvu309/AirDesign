@@ -66,11 +66,30 @@ it("takes Figma's Command or Ctrl and the brackets as indent and outdent too", a
   expect(readTextValue(sent.at(-1) ?? "")?.[0]).toMatchObject({ level: 1 })
 })
 
-it("leaves Tab to the browser outside a list", async () => {
+it("keeps Tab and Shift Tab inside plain text, as Figma does, so the caret never jumps to another layer", async () => {
   const { editor, sent } = await mount([{ from: 0, runs: [{ from: 0, text: "Plain" }] }])
   caretIn(editor, 0, 2)
-  expect(await press(editor, "Tab")).toBe(false)
+  expect(await press(editor, "Tab")).toBe(true)
+  expect(await press(editor, "Tab", { shiftKey: true })).toBe(true)
   expect(sent).toEqual([])
+})
+
+it("lets Tab move on from text that Tab reached, so the keyboard never stays in a layer it only passes through", async () => {
+  const plain = await mount([{ from: 0, runs: [{ from: 0, text: "Plain" }] }])
+  plain.editor.focus()
+  await act(async () => {
+    plain.editor.dispatchEvent(new KeyboardEvent("keyup", { key: "Tab", bubbles: true }))
+  })
+  expect(await press(plain.editor, "Tab")).toBe(false)
+  expect(await press(plain.editor, "Tab", { shiftKey: true })).toBe(false)
+  document.body.replaceChildren()
+  const list = await mount(items)
+  list.editor.focus()
+  await act(async () => {
+    list.editor.dispatchEvent(new KeyboardEvent("keyup", { key: "Tab", bubbles: true }))
+  })
+  expect(await press(list.editor, "Tab")).toBe(false)
+  expect(list.sent).toEqual([])
 })
 
 it("outdents an empty indented list item on Enter instead of adding one, as Figma does", async () => {

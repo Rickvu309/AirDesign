@@ -17,7 +17,7 @@ const look = "size-9 rounded-lg text-quiet hover:bg-transparent active:translate
 
 export function UndoButtons({ state }: { state?: UndoButtonsState }) {
   return (
-    <span className="flex items-center gap-0.5" data-undo-buttons>
+    <span className="flex items-center gap-0.5" data-undo-buttons data-keeps-selection>
       <Button
         type="button"
         variant="ghost"
