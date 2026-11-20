@@ -1,0 +1,16 @@
+2026-11-17T05:06:57.3019917Z ok commit-authors 0.1s
+2026-11-17T05:06:57.4331745Z ok bug-rule 0.2s
+2026-11-17T05:06:58.0551664Z ok file-size 0.9s
+2026-11-17T05:06:58.1799248Z ok format 1.0s
+2026-11-17T05:07:15.0359475Z Product copy literals in tests: 1554 (existing counted; additions refused)
+2026-11-17T05:07:15.0407437Z tests/browser/save-failure.spec.ts:16: "End" is product copy. Import connectionCopy.end from apps/web/src/copy/connection-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0430699Z tests/browser/save-failure.spec.ts:19: "Unable to save" is product copy. Import productCopy.unsaved from apps/web/src/copy/product-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0480143Z tests/browser/save-failure.spec.ts:27: "Reload" is product copy. Import productCopy.reload from apps/web/src/copy/product-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0514740Z tests/browser/save-failure.spec.ts:65: "End" is product copy. Import connectionCopy.end from apps/web/src/copy/connection-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0579733Z tests/browser/save-failure.spec.ts:67: "AirDesign has a new version" is product copy. Import productCopy.newerVersion from apps/web/src/copy/product-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0644021Z tests/browser/save-failure.spec.ts:71: "Reload" is product copy. Import productCopy.reload from apps/web/src/copy/product-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0669718Z tests/browser/save-failure.spec.ts:88: "End" is product copy. Import connectionCopy.end from apps/web/src/copy/connection-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0696036Z tests/browser/save-failure.spec.ts:91: "Unable to reach AirDesign" is product copy. Import productCopy.savedUnreached from apps/web/src/copy/product-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0730160Z tests/browser/save-failure.spec.ts:94: "Unable to reach AirDesign. Edits are saved on this device." is product copy. Import productCopy.editorUnreached from apps/web/src/copy/product-copy.ts, so the test follows a change of words.
+2026-11-17T05:07:15.0770362Z fail copy-literals 14.1s
+2026-11-17T05:08:47.5124675Z failed: copy-literals

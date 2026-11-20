@@ -95,3 +95,66 @@ same(
   ),
   true,
 )
+
+const reportFor = (jobName, log) =>
+  ciFailureLines({
+    repository: "Rickvu309/AirDesign",
+    run: queueRun,
+    gh: (args) => {
+      if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100")) return ok(`[{"id":1,"name":"${jobName}"}]`)
+      if (args[0] === "api" && args[1].endsWith("/jobs/1/logs")) return ok(log)
+      if (args[0] === "api" && args[1].endsWith("/artifacts")) return ok("")
+      throw new Error(`unexpected gh ${args.join(" ")}`)
+    },
+    git: (args) => (args[0] === "rev-list" ? ok("0\n") : args[0] === "merge-base" ? ok(`${args[1]}\n`) : ok("")),
+  })
+
+const script = reportFor("check (scripts)", fixture("job-script-test-failed.log"))
+same("a failed script test is named with the file and the error it threw", script.slice(0, 3), [
+  "ci run 43261070420 (merge_group) failed in script-tests.",
+  "  scripts/rule-table.test.mjs: (the whole file)",
+  "    Error: CHECKS.md is under the file-size limit",
+])
+same(
+  "a named script test does not say that no test was named",
+  script.some((line) => line.includes("no failed test was named")),
+  false,
+)
+same(
+  "main has not moved, and the report names the script test file",
+  script.at(-1),
+  "main has not moved since this run started. A rerun would test the same snapshot: fix the test or the code.",
+)
+
+const ruleStep = reportFor("check (main)", fixture("job-file-size-failed.log"))
+same("a rule step that failed names what it printed", ruleStep.slice(0, 2), [
+  "ci run 43261070420 (merge_group) failed in file-size.",
+  "  file-size: CHECKS.md is 5042 tokens, over the limit of 5000, and this change adds 126. Move one idea out of it into a new file beside it, named after what the new file holds, and import it from there. Leave the rest where it is.",
+])
+
+const manyFaults = reportFor("check (main)", fixture("job-copy-literals-failed.log"))
+same(
+  "a rule step with many faults names three and counts the rest",
+  manyFaults.slice(1, 6).map((line) => line.replace(/ is product copy\..*/, "")),
+  [
+    "  copy-literals:",
+    '    tests/browser/save-failure.spec.ts:16: "End"',
+    '    tests/browser/save-failure.spec.ts:19: "Unable to save"',
+    '    tests/browser/save-failure.spec.ts:27: "Reload"',
+    "    and 6 more",
+  ],
+)
+
+const build = reportFor("check (main)", fixture("job-typescript-build-failed.log"))
+same(
+  "a TypeScript error is named in the report",
+  build[2],
+  "    src/design/controls/text.test.tsx(158,43): error TS2769: No overload matches this call.",
+)
+
+const silent = reportFor("check (main)", "failed: unit-tests\n")
+same(
+  "a log with no cause still says to read it",
+  silent[1],
+  "  no failed test was named in the log. Read it with: gh run view 43261070420 --log-failed",
+)

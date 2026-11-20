@@ -268,6 +268,10 @@ const saveStatus =
   "tests/browser/save-status.spec.ts:206 › an added slide reads Saving while its commit waits and Saved once the server takes it"
 same("a browser failure is its file, line and name", classesIn(browserLog), [saveStatus])
 same("a step with no named test stays the step", classesIn("failed: typecheck\n"), ["pnpm check: typecheck"])
+const scriptLog = fs.readFileSync(new URL("./land-fixtures/job-script-test-failed.log", import.meta.url), "utf8")
+same("a script test file that threw is a class of its own, not the step", classesIn(scriptLog), [
+  "scripts/rule-table.test.mjs › (the whole file)",
+])
 const gitHint = [
   "2026-11-18T16:09:45.4799754Z hint: \tgit config --global init.defaultBranch <name>",
   "2026-11-18T16:09:45.4805583Z hint: \tgit branch -m <name>",

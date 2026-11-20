@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { failedSteps, failedTests } from "./failed-tests.mjs"
+import { failedScripts, failedSteps, failedTests } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { overLimit } from "./metrics.mjs"
 
@@ -47,7 +47,7 @@ export const testClass = (test) => {
 }
 
 export const classesIn = (log) => {
-  const tests = failedTests(log).map(testClass)
+  const tests = [...failedTests(log), ...failedScripts(log)].map(testClass)
   if (tests.length > 0) return tests
   const steps = failedSteps(log).map(stepClass)
   if (steps.length > 0) return steps

@@ -1,0 +1,24 @@
+2026-11-20T04:52:05.7999610Z start script-tests
+2026-11-20T04:52:05.8016301Z start site-build
+2026-11-20T04:52:05.8166269Z $ node scripts/tooling-tests.mjs
+2026-11-20T04:52:20.4809110Z ok site-build 14.7s
+2026-11-20T04:52:32.9157578Z file:///home/runner/work/AirDesign/AirDesign/scripts/rule-table.test.mjs:12
+2026-11-20T04:52:32.9158731Z     throw new Error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+2026-11-20T04:52:32.9159690Z           ^
+2026-11-20T04:52:32.9159995Z 
+2026-11-20T04:52:32.9160431Z Error: CHECKS.md is under the file-size limit
+2026-11-20T04:52:32.9161072Z false
+2026-11-20T04:52:32.9161785Z true
+2026-11-20T04:52:32.9173952Z     at same (file:///home/runner/work/AirDesign/AirDesign/scripts/rule-table.test.mjs:12:11)
+2026-11-20T04:52:32.9174587Z     at file:///home/runner/work/AirDesign/AirDesign/scripts/rule-table.test.mjs:25:1
+2026-11-20T04:52:32.9175284Z     at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+2026-11-20T04:52:32.9175708Z     at async node:internal/modules/esm/loader:647:26
+2026-11-20T04:52:32.9176268Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+2026-11-20T04:52:32.9176549Z 
+2026-11-20T04:52:32.9176643Z Node.js v24.22.2
+2026-11-20T04:52:32.9176894Z fail scripts/rule-table.test.mjs
+2026-11-20T04:52:32.9201140Z [ELIFECYCLE] Command failed with exit code 1.
+2026-11-20T04:52:32.9215322Z fail script-tests 27.1s
+2026-11-20T04:52:32.9435811Z metric check-duration  now 27.1  limit 40
+2026-11-20T04:52:32.9436559Z failed: script-tests
+2026-11-20T04:52:32.9485994Z [ELIFECYCLE] Command failed with exit code 1.
