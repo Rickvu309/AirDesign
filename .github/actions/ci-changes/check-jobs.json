@@ -1,6 +1,16 @@
 [
   {
-    "part": "source"
+    "part": "source",
+    "specCache": true,
+    "unitTests": "[]"
+  },
+  {
+    "part": "source",
+    "shard": "1/2"
+  },
+  {
+    "part": "source",
+    "shard": "2/2"
   },
   {
     "part": "scripts"

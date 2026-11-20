@@ -250,6 +250,27 @@ same(
 )
 same("an unrelated spec skips PowerPoint", on(scope(["tests/browser/unrelated.spec.ts"])), ["source", "browser"])
 
+const sourceShards = [1, 2, 3].map((n) => ({
+  part: "source",
+  shard: `${n}/3`,
+  ...(n === 1 ? { specCache: true } : {}),
+}))
+const scripts = { part: "scripts" }
+same("a run of every unit test keeps the source shards", checkJobsFor(map(null), [...sourceShards, scripts]), [
+  ...sourceShards,
+  scripts,
+])
+same(
+  "a change that narrows the unit tests runs one source job with every step and no shard",
+  checkJobsFor(map(["packages/oauth/src/grant.ts"]), [...sourceShards, scripts]),
+  [{ part: "source", specCache: true }],
+)
+same(
+  "a docs change runs one source job and no unit test",
+  checkJobsFor(map(["GLOSSARY.md"]), [...sourceShards, scripts]),
+  [{ part: "source", specCache: true }, scripts],
+)
+
 const graph = readChangeGraph(root)
 const real = (changed) => changeMap(changed, graph)
 

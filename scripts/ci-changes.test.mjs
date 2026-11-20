@@ -246,7 +246,7 @@ same(
 )
 const partCheck = check.steps.find((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("the source part runs the unit test folders and model check that changes chose", partCheck.env, {
-  AIRDESIGN_UNIT_TESTS: "${{ needs.changes.outputs.unit-tests }}",
+  AIRDESIGN_UNIT_TESTS: "${{ matrix.unitTests || needs.changes.outputs.unit-tests }}",
   AIRDESIGN_MODEL_CHECK: "${{ needs.changes.outputs.model-check }}",
   AIRDESIGN_BROWSER_SPECS: "${{ toJSON(matrix.browserSpecs) }}",
 })
