@@ -161,4 +161,37 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "Enter", shiftKey: true }, "editor")).toBeNull()
     expect(gestureFor({ ...plain, key: "d", ctrlKey: true }, "element")).toBeNull()
   })
+
+  it("takes Figma's align keys by where the letter sits, so Option on a Mac still aligns", () => {
+    const align = (code: string) => gestureFor({ ...plain, key: "å", code, altKey: true }, "editor")
+    expect(["KeyA", "KeyH", "KeyD", "KeyW", "KeyV", "KeyS"].map(align)).toEqual([
+      "align-left",
+      "align-center",
+      "align-right",
+      "align-top",
+      "align-middle",
+      "align-bottom",
+    ])
+    expect(gestureFor({ ...plain, key: "A", code: "KeyA", altKey: true, shiftKey: true }, "editor")).toBe(
+      "remove-auto-layout",
+    )
+    expect(gestureFor({ ...plain, key: "a", code: "KeyA", altKey: true, ctrlKey: true }, "editor")).toBe(
+      "select-matching",
+    )
+  })
+
+  it("selects all or the inverse on the slide and on a layer, and leaves text to the browser", () => {
+    expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "slide")).toBe("select-all")
+    expect(gestureFor({ ...plain, key: "A", code: "KeyA", metaKey: true, shiftKey: true }, "element")).toBe(
+      "select-inverse",
+    )
+    expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "text")).toBeNull()
+  })
+
+  it("reads Figma's backslash as select parent, Shift and minus as zoom out, and Mod+Backspace as ungroup", () => {
+    expect(gestureFor({ ...plain, key: "\\", code: "Backslash" }, "element")).toBe("select-parent")
+    expect(gestureFor({ ...plain, key: "_", code: "Minus", shiftKey: true }, "editor")).toBe("zoom-out")
+    expect(gestureFor({ ...plain, key: "Backspace", metaKey: true }, "element")).toBe("ungroup")
+    expect(gestureFor({ ...plain, key: "Backspace" }, "element")).toBe("delete")
+  })
 })

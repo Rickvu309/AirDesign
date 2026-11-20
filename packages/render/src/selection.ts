@@ -1,4 +1,5 @@
 import type { ElementId } from "@airdesign/document"
+import type { GestureId } from "./gestures.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 
 export type Selection = {
@@ -124,6 +125,36 @@ export function siblingSelection(slide: CanvasSlide, selection: Selection, step:
     current === -1 ? (step === 1 ? 0 : siblings.length - 1) : (current + step + siblings.length) % siblings.length
   const next = siblings[index]
   return next === undefined ? null : alone(slide, next)
+}
+
+function levelOf(slide: CanvasSlide, selection: Selection): ElementId | null {
+  const lead = leadOf(selection)
+  return selection.acrossGroups === true && lead !== null ? parentOf(slide, lead) : selection.inside
+}
+
+function layersAt(slide: CanvasSlide, level: ElementId | null): readonly ElementId[] {
+  return slide.elements.flatMap((each) =>
+    each.id === null || each.backdrop === true || each.locked === true || (each.group?.id ?? null) !== level
+      ? []
+      : [each.id],
+  )
+}
+
+export function allSelection(slide: CanvasSlide, selection: Selection): Selection {
+  const level = levelOf(slide, selection)
+  const ids = layersAt(slide, level)
+  return ids.length === 0 ? noSelection : { ids, inside: level }
+}
+
+export function inverseSelection(slide: CanvasSlide, selection: Selection): Selection {
+  const level = levelOf(slide, selection)
+  const ids = layersAt(slide, level).filter((id) => !selection.ids.includes(id))
+  return ids.length === 0 ? noSelection : { ids, inside: level }
+}
+
+export function keyedSelection(slide: CanvasSlide, selection: Selection, gesture: GestureId | null): Selection | null {
+  if (gesture === "select-all") return allSelection(slide, selection)
+  return gesture === "select-inverse" ? inverseSelection(slide, selection) : null
 }
 
 export function hoverTarget(

@@ -15,5 +15,10 @@ it("presents from the current slide on Cmd or Ctrl+Enter outside a text field", 
   expect(key("Enter", { ctrlKey: true })).toBe("current")
   expect(key("Enter", { metaKey: true, field: true })).toBeNull()
   expect(key("Enter")).toBeNull()
-  expect(key("Enter", { metaKey: true, altKey: true })).toBeNull()
+})
+
+it("presents from the current slide on Figma's Cmd or Ctrl+Alt+Enter", () => {
+  expect(key("Enter", { metaKey: true, altKey: true })).toBe("current")
+  expect(key("Enter", { ctrlKey: true, altKey: true })).toBe("current")
+  expect(key("Enter", { altKey: true })).toBeNull()
 })

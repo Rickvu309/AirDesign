@@ -27,6 +27,7 @@ import {
   noSelection,
   parentSelection,
   sameSelection,
+  keyedSelection,
   siblingSelection,
   steppedIn,
   toggled,
@@ -84,6 +85,7 @@ export type Moves = {
     readonly onPointerDown: (event: PointerEvent<HTMLDivElement>) => void
     readonly onFocus: (event: FocusEvent<HTMLDivElement>) => void
     readonly onBlur: (event: FocusEvent<HTMLDivElement>) => void
+    readonly onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
     readonly onKeyUp: (event: KeyboardEvent<HTMLDivElement>) => void
   }
 }
@@ -441,9 +443,10 @@ export function useMoves(
       }
       return
     }
-    if (gesture === "select-next") {
+    if (gesture === "select-next" || gesture === "select-all" || gesture === "select-inverse") {
       if (now !== null) return
-      const next = siblingSelection(size, latest.current, event.shiftKey ? -1 : 1)
+      const next =
+        keyedSelection(size, latest.current, gesture) ?? siblingSelection(size, latest.current, event.shiftKey ? -1 : 1)
       if (next !== null && owns(event)) {
         event.preventDefault()
         choose(next)
@@ -530,6 +533,13 @@ export function useMoves(
       const next = event.relatedTarget
       if (next instanceof Element && next.closest(keepsSelection) !== null) return
       if (!(next instanceof Node) || !event.currentTarget.contains(next)) choose(noSelection)
+    },
+    onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+      const next = keyedSelection(size, noSelection, gestureFor(event, "slide"))
+      if (event.target !== event.currentTarget || next === null || next.ids.length === 0 || !owns(event)) return
+      event.preventDefault()
+      choose(next)
+      focusSelection(event.currentTarget, next)
     },
     onKeyUp(event: KeyboardEvent<HTMLDivElement>) {
       const now = held.current

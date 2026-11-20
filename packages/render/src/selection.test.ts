@@ -2,11 +2,13 @@ import { elementId, type ElementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import {
+  allSelection,
   childrenSelection,
   deepPicked,
   deepToggled,
   focused,
   hoverTarget,
+  inverseSelection,
   kept,
   leadOf,
   noSelection,
@@ -211,5 +213,29 @@ describe("kept", () => {
   it("drops elements an agent grouped, since they no longer share the selection's parent", () => {
     const grouped = slideOf([element(outer), element(loose, outer), element(other, outer)])
     expect(kept(many(loose, other), grouped)).toEqual(noSelection)
+  })
+})
+
+describe("select all and select inverse", () => {
+  const locked = elementId("7.11")
+  const withLocked = slideOf([...slide.elements, element(locked, undefined, { locked: true })])
+
+  it("selects every layer at the level of the selection, skipping backdrops and locked layers", () => {
+    expect(allSelection(withLocked, noSelection)).toEqual({ ids: [outer, loose, other], inside: null })
+    expect(allSelection(withLocked, many(loose))).toEqual({ ids: [outer, loose, other], inside: null })
+    expect(allSelection(withLocked, { ids: [first], inside: outer })).toEqual({
+      ids: [first, second, inner],
+      inside: outer,
+    })
+  })
+
+  it("selects the other layers at that level, or none when all were selected", () => {
+    expect(inverseSelection(withLocked, many(loose))).toEqual({ ids: [outer, other], inside: null })
+    expect(inverseSelection(withLocked, noSelection)).toEqual({ ids: [outer, loose, other], inside: null })
+    expect(inverseSelection(withLocked, { ids: [first, inner], inside: outer })).toEqual({
+      ids: [second],
+      inside: outer,
+    })
+    expect(inverseSelection(withLocked, many(outer, loose, other))).toEqual(noSelection)
   })
 })
