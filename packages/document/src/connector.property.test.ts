@@ -1,6 +1,6 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
-import { connectorEnds, routed, routedPresets, siteTie } from "./connector.js"
+import { connectorEnds, routed, routedPresets, siteTie, type Tie } from "./connector.js"
 import type { Place } from "./group-place.js"
 import { siteCount } from "./preset-sites.js"
 import { presets } from "./trait-geometry.js"
@@ -25,13 +25,24 @@ const outline = fc
     fc.record({ preset: fc.constant(preset), site: fc.integer({ min: 0, max: siteCount(preset) - 1 }) }),
   )
 
-const near = (left: { x: number; y: number }, right: { x: number; y: number }) =>
-  Math.abs(left.x - right.x) <= 2 && Math.abs(left.y - right.y) <= 2
+type Spot = { readonly x: number; readonly y: number }
+
+const near = (left: Spot, right: Spot, within: number) =>
+  Math.abs(left.x - right.x) <= within && Math.abs(left.y - right.y) <= within
+
+const halfPoint = 6_350
+
+const levelU = (start: Tie, end: Tie): boolean => {
+  const gap = { x: end.spot.x - start.spot.x, y: end.spot.y - start.spot.y }
+  const apart = gap.x !== 0 || gap.y !== 0
+  const sameWay = start.way.x === end.way.x && start.way.y === end.way.y
+  return apart && sameWay && gap.x * start.way.x + gap.y * start.way.y === 0
+}
 
 const straight: readonly string[] = ["line", "straightConnector1"]
 const quarters: readonly number[] = [0, 5_400_000, 10_800_000, 16_200_000]
 
-it("puts every bound end on its site, whatever the shapes' places, turns, flips and presets", () => {
+it("puts every bound end on its site, whatever the shapes' places, turns, flips and presets, but for half a point on an elbow U whose ends sit level, which PowerPoint stores one point wide", () => {
   fc.assert(
     fc.property(
       placement,
@@ -47,7 +58,8 @@ it("puts every bound end on its site, whatever the shapes' places, turns, flips 
         const once = routed(connector, preset, {}, start, end)
         if (once === null) throw new Error("route")
         const ends = connectorEnds(once.place)
-        expect(near(ends.start, start.spot) && near(ends.end, end.spot)).toBe(true)
+        const within = !straight.includes(preset) && levelU(start, end) ? halfPoint : 2
+        expect(near(ends.start, start.spot, within) && near(ends.end, end.spot, within)).toBe(true)
         if (straight.includes(preset)) expect(once.place.rot).toBe(connector.rot)
         else expect(quarters).toContain(once.place.rot)
         expect(Object.values(once.adjust).every(Number.isSafeInteger)).toBe(true)

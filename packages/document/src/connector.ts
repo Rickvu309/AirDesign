@@ -215,6 +215,8 @@ export function routed(
   const rot = elbowTurn(connector, elbow, from, to, ways.start, ways.end)
   const place = route({ ...connector, rot }, from, to)
   if (elbow.adjusts.length === 0) return { place, preset: shape, adjust: shape === preset ? adjust : {} }
+  if (place.box.cx === 0 && place.box.cy === 0)
+    return { place, preset: shape, adjust: Object.fromEntries(elbow.adjusts.map((name) => [name, half])) }
   const bent = elbowAdjust(place, elbow, ways.start, ways.end)
   if (place.box.cx > 0 || Object.values(bent).every((value) => value === half))
     return { place, preset: shape, adjust: bent }
