@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { elementId, landedPatch, type ElementId, type Register } from "../../packages/document/src/index.ts"
-import { forward, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
 import { unfold } from "./design-panel"
@@ -36,16 +36,13 @@ test("two crop sides typed one after another on a slow device both land, on the 
   page,
   context,
   stack,
+  decks,
 }, testInfo) => {
-  test.setTimeout(90_000)
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   await holdableDevice(page)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(join(fixtures, "picture-png.pptx"))
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(join(fixtures, "picture-png.pptx"))
   const deck = new URL(page.url()).pathname.slice("/deck/".length)
   const photo = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
   const crop = await cropped(page, photo)

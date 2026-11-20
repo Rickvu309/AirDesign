@@ -2,13 +2,13 @@ import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { boxTurnedExportName, boxTurnedXfrm } from "../../scripts/pptx-cases/box.mjs"
 import { tableResizedExportName } from "../../scripts/pptx-cases/trait-table.mjs"
-import { designing, unfold, openDeck, settled, storedRows } from "./design-panel"
+import { designing, unfold, openDeck, storedRows } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
-import { importTitleDeck } from "./new-deck"
 import { historicalTable } from "./historical-table"
+import { test } from "./deck-test"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -58,6 +58,7 @@ async function exported(page: Page, file: string): Promise<string> {
 
 test("a turned shape resizes by its corner, keeps the opposite corner on screen and exports turned @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", boxTurnedExportName)
   await rm(judged, { force: true })
@@ -77,7 +78,7 @@ test("a turned shape resizes by its corner, keeps the opposite corner on screen 
   await dragGrip(page, frame.locator('[data-grip="bottom-right"]'), { x: twentieth, y: -twentieth / 2 })
   await expect.poll(() => lastBox(page)).toEqual({ x: 574_236, y: 589_182, cx: 5_861_929, cy: 1_260_035 })
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const file = testInfo.outputPath(boxTurnedExportName)
   const xml = await exported(page, file)
   expect(xml).toContain(boxTurnedXfrm)
@@ -86,6 +87,7 @@ test("a turned shape resizes by its corner, keeps the opposite corner on screen 
 
 test("a table resizes by its corner and by Width, scales its columns and rows, and exports at the size kept @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", tableResizedExportName)
   await rm(judged, { force: true })
@@ -121,7 +123,7 @@ test("a table resizes by its corner and by Width, scales its columns and rows, a
   await page.getByRole("button", { name: "Undo resize", exact: true }).click()
   await expect(width).toHaveValue(String(Math.round((dragged.cx / 12_700) * 10) / 10))
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(table).toContainText("Region")
   const file = testInfo.outputPath(tableResizedExportName)
   const xml = await exported(page, file)

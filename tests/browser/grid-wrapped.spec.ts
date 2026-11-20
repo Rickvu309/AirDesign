@@ -1,9 +1,10 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { blankAt, centre, crossed, marquee, selectedNumbers, type Point } from "./grid-marquee-deck.ts"
 import { boxOf, canvas, grab, hover, panOf, roomOf, zoomTo } from "./grid-reorder-deck.ts"
-import { entry, fixtures, manySlides, openFile, openGrid, groupNumbers } from "./slide-grid-deck.ts"
+import { entry, fixtures, manySlides, openGrid, groupNumbers } from "./slide-grid-deck.ts"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -150,7 +151,6 @@ test("hovering the handle tints every line as one band and nothing animates", as
 })
 
 test("dragging the handle moves every line of the group", async ({ page }) => {
-  test.setTimeout(60_000)
   await openWrapped(page)
   await zoomTo(page, 12)
   const room = await roomOf(page)
@@ -282,8 +282,16 @@ test("Fit, Zoom to selection, remembered pan, arrows, marquee and skip follow th
   await page.keyboard.press("Shift+Digit2")
   await expect.poll(async () => (await boxOf(page, 22)).width).toBeGreaterThan(before + 20)
   await zoomTo(page, 100)
+  const stored = () =>
+    page.evaluate(() =>
+      Object.entries(localStorage)
+        .filter(([key]) => key.startsWith("airdesign.grid-viewport."))
+        .map(([, value]) => value)
+        .join(),
+    )
+  const unpanned = await stored()
   await canvas(page).dispatchEvent("wheel", { deltaX: 180, deltaY: 220, clientX: 400, clientY: 400 })
-  await page.waitForTimeout(300)
+  await expect.poll(stored).not.toBe(unpanned)
   const held = await panOf(page)
   await page.reload()
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
@@ -315,8 +323,8 @@ test("Fit, Zoom to selection, remembered pan, arrows, marquee and skip follow th
   ).toHaveCount(1)
 })
 
-test("a deck whose slide groups already fit one line draws no wrap", async ({ page }) => {
-  await openFile(page, {
+test("a deck whose slide groups already fit one line draws no wrap", async ({ page, decks }) => {
+  await decks.open({
     name: "twenty.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(20, [10, 10]),
@@ -329,8 +337,8 @@ test("a deck whose slide groups already fit one line draws no wrap", async ({ pa
   expect(last.y).toBeCloseTo(first.y, 0)
 })
 
-test("an imported section longer than a line is one slide group drawn on wrapped lines", async ({ page }) => {
-  await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
+test("an imported section longer than a line is one slide group drawn on wrapped lines", async ({ page, decks }) => {
+  await decks.open(join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
   expect(await lengths(page)).toEqual([1, 28, 10, 2])
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)

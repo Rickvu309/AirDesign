@@ -1,11 +1,12 @@
 import { copyFile, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { stored } from "./device-store"
 import { partsOf, zip } from "./thin-deck-parts.ts"
 import { expectNoSample } from "./no-sample"
 import { exportFromDialog, savedExport } from "./export-dialog.ts"
+import { decksOn, readyMark, test } from "./deck-test"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const fixture = join(fixtures, "clean.pptx")
@@ -30,16 +31,9 @@ async function paragraphsOf(page: Page, box: ReturnType<Page["locator"]>): Promi
 
 const deckAddress = /\/deck\/[A-Za-z0-9_-]{1,64}$/
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function reload(page: Page): Promise<void> {
   await page.reload()
-  await settled(page)
+  await decksOn(page).ready()
 }
 
 async function showSlide(page: Page, number: number): Promise<void> {
@@ -49,10 +43,7 @@ async function showSlide(page: Page, number: number): Promise<void> {
 }
 
 async function open(page: Page, file: string): Promise<string> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(deckAddress)
-  await settled(page)
+  await decksOn(page).open(file)
   return page.url()
 }
 
@@ -89,20 +80,20 @@ async function readyLog(page: Page): Promise<ReadyEntry[]> {
 }
 
 test("the page marks a deck ready only once it is painted", async ({ page }) => {
-  await page.addInitScript(() => {
+  await page.addInitScript((mark) => {
     const log: { value: string | null; boxes: number }[] = []
     Object.assign(window, { readyLog: log })
     new MutationObserver(() => {
       log.push({
-        value: document.querySelector(".thin-page")?.getAttribute("data-deck-ready") ?? null,
+        value: document.querySelector(".thin-page")?.getAttribute(mark) ?? null,
         boxes: document.querySelectorAll('[contenteditable="true"]').length,
       })
     }).observe(document, {
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-deck-ready"],
+      attributeFilter: [mark],
     })
-  })
+  }, readyMark)
   const address = await open(page, fixture)
   const deck = address.slice(address.lastIndexOf("/") + 1)
   const painted = await readyLog(page)
@@ -376,8 +367,8 @@ test("an edit left pending by a failed commit is sent after a reload", async ({ 
   await editor.pressSequentially("!", { delay: 50 })
   await stored(page, "Hello!")
   expect((await rowsOf(page)).map((row) => `${row.kind}:${lines(row.value)}`)).toEqual(["pending:Hello!"])
-  await reload(page)
   await answerCommits(page)
+  await reload(page)
   await confirmed(page, "Hello!")
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
 })
@@ -663,7 +654,7 @@ async function typeAtEnd(page: Page, text: string): Promise<void> {
   await editor.pressSequentially(text, { delay: 50 })
 }
 
-test("a commit answered 404 with an HTML body shows no offline words", async ({ page }) => {
+test("a commit answered 404 with an HTML body shows no offline words", async ({ page, decks }) => {
   let answered = 0
   await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
@@ -675,11 +666,11 @@ test("a commit answered 404 with an HTML body shows no offline words", async ({ 
   await typeAtEnd(page, "!")
   await stored(page, "Hello!")
   await expect.poll(() => answered).toBeGreaterThan(0)
-  await settled(page)
+  await decks.ready()
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 
-test("a commit answered 500 with a text body shows no offline words", async ({ page }) => {
+test("a commit answered 500 with a text body shows no offline words", async ({ page, decks }) => {
   let answered = 0
   await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
@@ -691,11 +682,11 @@ test("a commit answered 500 with a text body shows no offline words", async ({ p
   await typeAtEnd(page, "!")
   await stored(page, "Hello!")
   await expect.poll(() => answered).toBeGreaterThan(0)
-  await settled(page)
+  await decks.ready()
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 
-test("a commit answered 404 with a JSON body shows no offline words", async ({ page }) => {
+test("a commit answered 404 with a JSON body shows no offline words", async ({ page, decks }) => {
   let answered = 0
   await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
@@ -707,7 +698,7 @@ test("a commit answered 404 with a JSON body shows no offline words", async ({ p
   await typeAtEnd(page, "!")
   await stored(page, "Hello!")
   await expect.poll(() => answered).toBeGreaterThan(0)
-  await settled(page)
+  await decks.ready()
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 

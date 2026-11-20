@@ -1,11 +1,12 @@
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { fixtures, openDeck, settled, unfold } from "./design-panel"
+import { fixtures, openDeck, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
 import { outline } from "./shape-turns"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -43,6 +44,7 @@ async function pickConnector(page: Page) {
 
 test("a person drags a connector's end onto a site the hovered picture shows, moves that picture offline, and the connector follows before the network, through Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "census-updating-spm.pptx")
@@ -85,7 +87,7 @@ test("a person drags a connector's end onto a site the hovered picture shows, mo
   await page.context().setOffline(false)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await page.locator('[data-slide-entry="10"]').click()
   await expect.poll(() => placement(frame(page, "26"))).toEqual(followed)
 
@@ -102,10 +104,7 @@ test("a person drags a connector's end onto a site the hovered picture shows, mo
   expect(changed.map(([name]) => name)).toEqual([slidePart])
   await copyFile(saved, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(saved)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(saved)
   await page.locator('[data-slide-entry="10"]').click()
   await expect.poll(() => placement(frame(page, "26"))).toEqual(followed)
 })
@@ -172,6 +171,7 @@ test("both elbow connectors follow Build while a person drags it, bend as their 
 
 test("a person drags a connector's end off its shape to a point on the slide, and Undo puts it back on its site", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "connectors.pptx")
   const between = frame(page, "4", deckSlide)
@@ -205,7 +205,7 @@ test("a person drags a connector's end off its shape to a point on the slide, an
   await page.getByRole("button", { name: "Redo connector", exact: true }).click()
   await expect.poll(() => placement(between)).toEqual(freed)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => placement(frame(page, "4", deckSlide))).toEqual(freed)
 })
 

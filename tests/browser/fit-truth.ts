@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
+import { decksOn } from "./deck-test"
 
 export type Row = {
   readonly group: string
@@ -9,20 +10,11 @@ export type Row = {
 }
 
 export async function openDeck(page: Page, name: string, buffer: Buffer): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+  await decksOn(page).open({
     name,
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer,
   })
-  await page.waitForFunction(
-    () => {
-      const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-      return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
-    },
-    undefined,
-    { timeout: 120_000 },
-  )
 }
 
 export async function zoomTo(page: Page, step: number | "fit"): Promise<void> {
@@ -35,7 +27,7 @@ export async function showSlide(page: Page, number: number): Promise<void> {
   const entry = page.locator(`[data-slide-entry="${number}"]`)
   await entry.click()
   await expect(entry).toHaveAttribute("aria-current", "true")
-  await page.evaluate(() => document.fonts.ready)
+  await decksOn(page).ready()
 }
 
 function ratios(): () => number {

@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import type { ReadDeckAnswer, ReadElement } from "../../packages/engine/src/index.ts"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
@@ -88,12 +88,13 @@ test("a cleared browser rebuilds a duplicate from the server's snapshot, not fro
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await serveOriginals(page, stack.originals)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const editor = page.locator('[contenteditable="true"]')
   await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
@@ -124,7 +125,7 @@ test("a cleared browser rebuilds a duplicate from the server's snapshot, not fro
   await page.goto("/version")
   await clearBrowser(page)
   await page.goto(address)
-  await settled(page)
+  await decks.ready()
   await entry(page, 1).click()
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Source after")
   await entry(page, 2).click()
@@ -135,12 +136,13 @@ test("an agent's edit of a cloned slide and of an added slide paints in the open
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await serveOriginals(page, stack.originals)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await page.evaluate(() => {
     document.body.dataset.sameLoad = "yes"
   })
@@ -161,10 +163,7 @@ test("an agent's edit of a cloned slide and of an added slide paints in the open
   await entry(page, 1).click()
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello")
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(blank)
   await page.evaluate(() => {
     document.body.dataset.sameLoad = "yes"
   })

@@ -18,13 +18,14 @@ export type OpeningDeck = {
   readonly settle: (outcome: CommitOutcome) => void
   readonly setTitle: (title: string) => void
   readonly setPaintedDeck: (deck: string | undefined) => void
+  readonly setOpenedDeck: (deck: string | undefined) => void
   readonly setRefused: (refused: boolean) => void
   readonly setFailure: (failure: "import-failed") => void
   readonly aside: number
 }
 
 export function useDeckOpen(deck: OpeningDeck) {
-  const { id, shown, notesBar, settle, setTitle, setPaintedDeck, setRefused, setFailure, aside } = deck
+  const { id, shown, notesBar, settle, setTitle, setPaintedDeck, setOpenedDeck, setRefused, setFailure, aside } = deck
   const { store, shownParts, pictures, structure, bound, repaint, setCurrent, showOpened, showRegister } = shown
 
   function openFrom(
@@ -71,6 +72,7 @@ export function useDeckOpen(deck: OpeningDeck) {
     let live = true
     const leaving = new AbortController()
     setPaintedDeck(undefined)
+    setOpenedDeck(undefined)
     setRefused(false)
     void (async () => {
       const device = await deviceCopy(id, server)
@@ -125,6 +127,7 @@ export function useDeckOpen(deck: OpeningDeck) {
         const indexed = await connect(memoryRemote()).openDeck(id)
         if (live && indexed.ok && gridSectionStarts(indexed.register) !== undefined) reconcile(indexed.register)
       }
+      if (live) setOpenedDeck(id)
       void flushOriginal(id)
       const ended = await followed
       if (live && ended !== undefined) await refusedBy(ended)
@@ -133,7 +136,7 @@ export function useDeckOpen(deck: OpeningDeck) {
       live = false
       leaving.abort()
     }
-  }, [id, settle, setPaintedDeck, setRefused, setFailure])
+  }, [id, settle, setPaintedDeck, setOpenedDeck, setRefused, setFailure])
 
   useEffect(() => {
     if (aside === 0) return

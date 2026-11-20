@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { openDeck, unfold } from "./design-panel"
 import { shapeAt } from "./shape-fills"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -29,7 +30,13 @@ function renders(page: Page): Promise<number> {
 
 async function rendersWhile(page: Page, ms: number): Promise<number> {
   const before = await renders(page)
-  await page.waitForTimeout(ms)
+  await page.waitForTimeout(
+    keptWait(ms, {
+      why: "measures that the editor renders nothing for a span after the last key: the quiet span is what the test measures",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   return (await renders(page)) - before
 }
 

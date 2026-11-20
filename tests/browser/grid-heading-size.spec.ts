@@ -1,6 +1,7 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
-import { entry, fixtures, manySlides, openFile, openGrid, groupNumbers } from "./slide-grid-deck"
+import { expect, type Page } from "@playwright/test"
+import { entry, fixtures, manySlides, openGrid, groupNumbers } from "./slide-grid-deck"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -13,7 +14,7 @@ async function faceGap(page: Page, from: number, to: number): Promise<number> {
 }
 
 async function openTwelve(page: Page) {
-  await openFile(page, {
+  await decksOn(page).open({
     name: "twelve-sections.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(
@@ -42,8 +43,11 @@ test("twelve two-slide sections fit at 5% with a gap and no heading", async ({ p
   await expect(entry(page, 5)).toBeVisible()
 })
 
-test("the heat-pump deck fits at 11% and a wrapped group's lines sit closer than the next group", async ({ page }) => {
-  await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
+test("the heat-pump deck fits at 11% and a wrapped group's lines sit closer than the next group", async ({
+  page,
+  decks,
+}) => {
+  await decks.open(join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
   await expect(readout(page)).toHaveText("11%")
   await expect(page.locator("[data-group-head]")).toHaveCount(0)
@@ -70,8 +74,8 @@ test("the heat-pump deck fits at 11% and a wrapped group's lines sit closer than
   expect(betweenQuarter).toBeGreaterThan(withinQuarter * 2)
 })
 
-test("six slides in two sections fit at 31%", async ({ page }) => {
-  await openFile(page, {
+test("six slides in two sections fit at 31%", async ({ page, decks }) => {
+  await decks.open({
     name: "six-sections.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(6, true),
@@ -87,8 +91,8 @@ test("six slides in two sections fit at 31%", async ({ page }) => {
   await expect(page.locator("[data-group-head]")).toHaveCount(0)
 })
 
-test("an unsectioned six-slide deck fits at 23% with four slides on the first line", async ({ page }) => {
-  await openFile(page, {
+test("an unsectioned six-slide deck fits at 23% with four slides on the first line", async ({ page, decks }) => {
+  await decks.open({
     name: "six.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(6),

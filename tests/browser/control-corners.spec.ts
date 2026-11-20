@@ -1,11 +1,13 @@
 import { geometryCopy, geometryWords } from "../../apps/web/src/copy/geometry-copy"
-import { expect, test } from "@playwright/test"
-import { openDeck, settled, unfold } from "./design-panel"
+import { expect } from "@playwright/test"
+import { openDeck, unfold } from "./design-panel"
 import { shapeAt } from "./shape-fills"
 import { outline, pickShape } from "./shape-turns"
+import { test } from "./deck-test"
 
 test("Corners rounds a rectangle in pixels, agrees with Shape type, persists and returns to square", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
@@ -23,7 +25,7 @@ test("Corners rounds a rectangle in pixels, agrees with Shape type, persists and
   await unfold(panel, geometryCopy.section)
   await expect(panel.locator('[data-control="preset"]')).toContainText(geometryWords.roundRect ?? "")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await shape.click({ position: { x: 30, y: 30 } })
   await expect(corners).toHaveValue("21.5")
   await corners.fill("0")

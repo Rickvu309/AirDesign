@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { stored } from "./device-store"
 import { exportFromDialog } from "./export-dialog.ts"
-import { newBlankDeck } from "./new-deck"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -26,18 +26,8 @@ async function partText(file: string, name: string): Promise<string> {
   return new TextDecoder().decode(bytes)
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function blank(page: Page): Promise<void> {
-  await page.goto("/")
-  await newBlankDeck(page)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).blank()
 }
 
 const layoutNames = ["Title Slide", "Title and Content", "Section Header", "Two Content", "Title Only", "Blank"]
@@ -47,6 +37,7 @@ const placeholder = (page: Page, part: string, shape: number) =>
 
 test("a person picks the layout of a new slide, types in its placeholders, and it survives a reload and the export @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await blank(page)
   await page.getByRole("button", { name: "Choose a layout for the new slide" }).click()
@@ -63,7 +54,7 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
   await stored(page, "Two columns")
   await page.keyboard.press("Escape")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await entry(page, 2).click()
   await expect(heading).toHaveText("Two columns")
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
@@ -77,9 +68,7 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
   const added = await partText(file, "ppt/slides/slide2.xml")
   expect(added).toContain("<a:t>Two columns</a:t>")
   expect(added.match(/<p:ph /g)).toHaveLength(3)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await settled(page)
+  await decks.open(file)
   await entry(page, 2).click()
   await expect(heading).toHaveText("Two columns")
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
@@ -87,10 +76,9 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
 
 test("the plus button adds the deck's content layout after a title slide and the same layout after any other", async ({
   page,
+  decks,
 }) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles("scripts/pptx-fixtures/blank.pptx")
-  await settled(page)
+  await decks.open("scripts/pptx-fixtures/blank.pptx")
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)

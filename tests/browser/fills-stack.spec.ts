@@ -3,9 +3,10 @@ import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { PNG } from "pngjs"
 import { format, type Register } from "../../packages/document/src/index.ts"
-import { forward, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
+import { decksOn } from "./deck-test"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const slidePart = "ppt/slides/slide1.xml"
@@ -47,10 +48,7 @@ async function exactShot(element: Locator): Promise<PNG> {
 test.use({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: scale })
 
 async function imported(page: Page, file: string): Promise<string> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).open(file)
   return new URL(page.url()).pathname.slice("/deck/".length)
 }
 
@@ -78,14 +76,14 @@ test("a gradient over a photo paints on the canvas as it bakes into the photo's 
   page,
   context,
   stack,
+  decks,
 }, testInfo) => {
-  test.setTimeout(90_000)
   const { slideDiff } = await import("../../scripts/slide-diff.mjs")
   const cookie = await signedIn(page, context, stack)
   const deck = await imported(page, join(fixtures, "picture-png.pptx"))
   await stacked(stack, cookie, deck, "4", { p1: { set: shade } })
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const photo = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
   await expect.poll(() => photo.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("gradient")
   const painted = await exactShot(photo)
@@ -110,13 +108,13 @@ test("a text box with two paints exports as one image fill and opens again with 
   page,
   context,
   stack,
+  decks,
 }, testInfo) => {
-  test.setTimeout(90_000)
   const cookie = await signedIn(page, context, stack)
   const deck = await imported(page, join(fixtures, "clean.pptx"))
   await stacked(stack, cookie, deck, "2", { p0: { set: { solid: { scheme: "accent1" } } }, p1: { set: shade } })
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const title = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#2"]`)
   await expect.poll(() => title.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("gradient")
   const words = (await title.textContent()) ?? ""

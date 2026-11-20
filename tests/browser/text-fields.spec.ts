@@ -1,11 +1,12 @@
 import { copyFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
-import { openDeck, settled } from "./design-panel"
+import { openDeck } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const slide = "ppt/slides/slide1.xml"
 const canvas = (page: Page) => page.locator(`[data-slide-paint] [data-canvas-element="${slide}#2"]`)
@@ -13,7 +14,7 @@ const canvas = (page: Page) => page.locator(`[data-slide-paint] [data-canvas-ele
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
-  test(`sets ${feature} in Design, keeps it after reload and exports it @export`, async ({ page }, info) => {
+  test(`sets ${feature} in Design, keeps it after reload and exports it @export`, async ({ page, decks }, info) => {
     await openDeck(page, "clean.pptx")
     await page.getByRole("button", { name: "Design", exact: true }).click()
     await canvas(page).click({ position: { x: 4, y: 4 } })
@@ -75,7 +76,7 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
       await editor.press("Escape")
     }
     await page.reload()
-    await settled(page)
+    await decks.ready()
     const file = info.outputPath(`${feature}.pptx`)
     await savedExport(page, file)
     const xml = (await partsOf(file)).get(slide)?.toString("utf8") ?? ""

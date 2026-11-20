@@ -2,8 +2,9 @@ import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/nasa-1d-cnn.pptx")
 const typed = "Remember the result & the next step.\nThank everyone."
@@ -35,13 +36,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
   return parts
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function openNotes(page: Page) {
   await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   return page.getByRole("textbox", { name: presentCopy.notes, exact: true })
@@ -51,16 +45,14 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a speaker note typed in the bar survives a reload and changes only its notes part in the export", async ({
   page,
+  decks,
 }, testInfo) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   let field = await openNotes(page)
   await expect(field).toBeEditable()
   await field.fill(typed)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   field = await openNotes(page)
   await expect(field).toHaveValue(typed)
   const saving = page.waitForEvent("download")
@@ -73,10 +65,7 @@ test("a speaker note typed in the bar survives a reload and changes only its not
   const changed = [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
   expect(changed).toHaveLength(1)
   expect(changed[0]).toMatch(/^ppt\/notesSlides\/notesSlide\d+\.xml$/)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(download)
   field = await openNotes(page)
   await expect(field).toHaveValue(typed)
 })

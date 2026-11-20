@@ -1,7 +1,8 @@
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
-import { forward, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { first, store } from "./home-store.ts"
+import { decksOn } from "./deck-test"
 
 const fixtures = ["clean.pptx", "blank.pptx", "picture-png.pptx"].map((name) =>
   join(process.cwd(), "scripts/pptx-fixtures", name),
@@ -13,7 +14,7 @@ async function imported(page: Page, file: string): Promise<string> {
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForFunction(() => /^\/deck\/[A-Za-z0-9_-]{1,64}$/.test(location.pathname))
-  await settled(page)
+  await decksOn(page).ready()
   return new URL(page.url()).pathname.slice("/deck/".length)
 }
 

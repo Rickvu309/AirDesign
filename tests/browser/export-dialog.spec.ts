@@ -3,15 +3,16 @@ import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { inflateSync } from "node:zlib"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import {
   blankRangeExportName,
   currentSlideExportName,
   currentSlideOriginalName,
   currentSlidePart,
 } from "../../scripts/slide-subset.mjs"
-import { newBlankDeck } from "./new-deck"
 import { holdDevice, holdableDevice, openDevice } from "./slow-device"
+import { test } from "./deck-test"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 type ZipEntry = {
   readonly filename: string
@@ -41,20 +42,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 
 function slideParts(parts: ReadonlyMap<string, Buffer>): string[] {
   return [...parts.keys()].filter((name) => slideName.test(name))
-}
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
-async function openFile(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
 }
 
 function entry(page: Page, number: number) {
@@ -91,9 +78,10 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("Export opens the dialog on PowerPoint and all slides, and Enter exports the whole deck as before", async ({
   page,
+  decks,
 }, testInfo) => {
   const original = join(fixtures, "tall-glyph-before.pptx")
-  await openFile(page, original)
+  await decks.open(original)
   await openDialog(page)
   await expect(dialog(page).getByRole("combobox", { name: "File type" })).toContainText("PowerPoint")
   await expect(dialog(page).getByRole("combobox", { name: "Slides" })).toContainText("All slides")
@@ -111,11 +99,12 @@ test("Export opens the dialog on PowerPoint and all slides, and Enter exports th
 
 test("the current slide of an imported deck exports as a one-slide deck that imports again @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", currentSlideExportName)
   await rm(judged, { force: true })
   const original = join(fixtures, currentSlideOriginalName)
-  await openFile(page, original)
+  await decks.open(original)
   await entry(page, 7).click()
   await expect(entry(page, 7)).toHaveAttribute("aria-current", "true")
   const shown = (await entry(page, 7).locator("[data-thumb-paint]").innerText()).trim().slice(0, 24)
@@ -130,19 +119,17 @@ test("the current slide of an imported deck exports as a one-slide deck that imp
   expect(slideParts(after)).toEqual([currentSlidePart])
   expect(after.get(currentSlidePart)?.equals(before.get(currentSlidePart) ?? Buffer.from(""))).toBe(true)
   await copyFile(file, judged)
-  await openFile(page, file)
+  await decks.open(file)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText(shown)
-  await openFile(page, original)
+  await decks.open(original)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(41)
 })
 
-test("a range of a blank deck's slides exports only those slides @export", async ({ page }, testInfo) => {
+test("a range of a blank deck's slides exports only those slides @export", async ({ page, decks }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", blankRangeExportName)
   await rm(judged, { force: true })
-  await page.goto("/")
-  await newBlankDeck(page)
-  await settled(page)
+  await decks.blank()
   await page.getByRole("button", { name: "Add slide" }).click()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
@@ -159,15 +146,13 @@ test("a range of a blank deck's slides exports only those slides @export", async
   await (await saving).saveAs(file)
   expect(slideParts(await partsOf(file))).toHaveLength(2)
   await copyFile(file, judged)
-  await openFile(page, file)
+  await decks.open(file)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })
 
 for (const format of ["PowerPoint", "PDF"]) {
-  test(`${format} range fields describe the error until the range is corrected`, async ({ page }) => {
-    await page.goto("/")
-    await newBlankDeck(page)
-    await settled(page)
+  test(`${format} range fields describe the error until the range is corrected`, async ({ page, decks }) => {
+    await decks.blank()
     await page.getByRole("button", { name: "Add slide" }).click()
     await page.getByRole("button", { name: "Add slide" }).click()
     await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
@@ -201,8 +186,8 @@ for (const format of ["PowerPoint", "PDF"]) {
   })
 }
 
-test("the dialog keeps focus inside, Escape closes it and focus returns to Export", async ({ page }) => {
-  await openFile(page, join(fixtures, "clean.pptx"))
+test("the dialog keeps focus inside, Escape closes it and focus returns to Export", async ({ page, decks }) => {
+  await decks.open(join(fixtures, "clean.pptx"))
   await openDialog(page)
   for (let step = 0; step < 6; step += 1) {
     await page.keyboard.press("Tab")
@@ -213,9 +198,9 @@ test("the dialog keeps focus inside, Escape closes it and focus returns to Expor
   await expect(page.getByRole("button", { name: "Export", exact: true })).toBeFocused()
 })
 
-test("Cancel while exporting closes the dialog and downloads nothing", async ({ page }) => {
+test("Cancel while exporting closes the dialog and downloads nothing", async ({ page, decks }) => {
   await holdableDevice(page)
-  await openFile(page, join(fixtures, "nasa-1d-cnn.pptx"))
+  await decks.open(join(fixtures, "nasa-1d-cnn.pptx"))
   await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   await holdDevice(page)
   await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill("Held note")
@@ -229,18 +214,27 @@ test("Cancel while exporting closes the dialog and downloads nothing", async ({ 
   await dialog(page).getByRole("button", { name: "Cancel" }).click()
   await expect(dialog(page)).toHaveCount(0)
   await openDevice(page)
-  await page.waitForTimeout(500)
+  await page.waitForTimeout(
+    keptWait(500, {
+      why: "proves a cancelled export never downloads: no event marks that a download will not come",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   expect(downloads).toBe(0)
 })
 
-test("PDF prints every chosen slide on its own page, painted, through the browser's print window", async ({ page }) => {
+test("PDF prints every chosen slide on its own page, painted, through the browser's print window", async ({
+  page,
+  decks,
+}) => {
   await page.addInitScript(() => {
     Object.assign(window, { printed: 0 })
     window.print = () => {
       Object.assign(window, { printed: (window as unknown as { printed: number }).printed + 1 })
     }
   })
-  await openFile(page, join(fixtures, "tall-glyph-before.pptx"))
+  await decks.open(join(fixtures, "tall-glyph-before.pptx"))
   await openDialog(page)
   await choose(page, "File type", "PDF")
   await expect(dialog(page)).toContainText("Your browser's print window opens next. Choose Save as PDF there.")
@@ -279,11 +273,9 @@ function boxOf(page: Page) {
   })
 }
 
-test("the dialog fades and scales in from the middle of the window and fades out", async ({ page }) => {
+test("the dialog fades and scales in from the middle of the window and fades out", async ({ page, decks }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
-  await page.goto("/")
-  await newBlankDeck(page)
-  await settled(page)
+  await decks.blank()
   const client = await page.context().newCDPSession(page)
   await client.send("Animation.enable")
   await client.send("Animation.setPlaybackRate", { playbackRate: 0 })
@@ -318,11 +310,9 @@ test("the dialog fades and scales in from the middle of the window and fades out
   await expect(dialog(page)).toHaveCount(0)
 })
 
-test("the dialog can close while opening and open again", async ({ page }) => {
+test("the dialog can close while opening and open again", async ({ page, decks }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
-  await page.goto("/")
-  await newBlankDeck(page)
-  await settled(page)
+  await decks.blank()
   const client = await page.context().newCDPSession(page)
   await client.send("Animation.enable")
   await client.send("Animation.setPlaybackRate", { playbackRate: 0 })
@@ -351,11 +341,9 @@ test("the dialog can close while opening and open again", async ({ page }) => {
   await expect(trigger).toBeFocused()
 })
 
-test("with reduced motion the dialog opens and closes in its finished state", async ({ page }) => {
+test("with reduced motion the dialog opens and closes in its finished state", async ({ page, decks }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
-  await page.goto("/")
-  await newBlankDeck(page)
-  await settled(page)
+  await decks.blank()
   await openDialog(page)
   expect(await motionOf(page, "[data-export-dialog]")).toEqual({
     property: "opacity, scale",
@@ -374,8 +362,9 @@ test("with reduced motion the dialog opens and closes in its finished state", as
 for (const afterprint of [true, false]) {
   test(`PDF uses the deck file name and restores the tab title ${afterprint ? "on afterprint" : "on cancel without afterprint"}`, async ({
     page,
+    decks,
   }) => {
-    await openFile(page, join(fixtures, "clean.pptx"))
+    await decks.open(join(fixtures, "clean.pptx"))
     await page.getByRole("button", { name: "Rename deck: clean" }).click()
     await page.getByRole("textbox", { name: "Deck name" }).fill("Q3 / Board: final.")
     await page.getByRole("textbox", { name: "Deck name" }).press("Enter")

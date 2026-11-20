@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { airaCopy, airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US" })
 
@@ -13,10 +13,11 @@ test("the chat a person picked from history reopens after a reload, and an empty
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const side = page.locator("[data-editor-panel]")
   const log = side.getByRole("log")
   const newChat = side.getByRole("button", { name: "New chat", exact: true })
@@ -35,7 +36,7 @@ test("the chat a person picked from history reopens after a reload, and an empty
   await expect(log.getByText("First chat question", { exact: true })).toBeVisible()
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(log.getByText("First chat question", { exact: true })).toBeVisible()
   await expect(log.getByText("Second chat question", { exact: true })).toHaveCount(0)
   await side.getByRole("button", { name: /chat history/ }).click()

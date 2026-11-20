@@ -2,13 +2,18 @@ import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expectNoticeTint } from "./notice-tint"
 import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 for (const refusal of ["storage", "size"] as const) {
-  test(`${refusal} save failure shows an error and a working recovery action`, async ({ page, context, stack }) => {
+  test(`${refusal} save failure shows an error and a working recovery action`, async ({
+    page,
+    context,
+    stack,
+    decks,
+  }) => {
     await signInBrowser(context, await stack.signIn())
     await forward(page, stack)
-    await openClean(page)
+    await decks.open()
     await page.route("**/decks/commit", (route) =>
       route.fulfill({ status: refusal === "size" ? 413 : 200, json: { ok: false, refusal } }),
     )
@@ -43,10 +48,10 @@ test("the offline design keeps Export available at full opacity", async ({ page 
   await expect(button).toHaveCSS("opacity", "1")
 })
 
-test("an open deck exports on the device while offline", async ({ page, context, stack }) => {
+test("an open deck exports on the device while offline", async ({ page, context, stack, decks }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   await context.setOffline(true)
   const button = page.getByRole("button", { name: "Export", exact: true })
   await expect(button).toBeEnabled()
@@ -56,10 +61,10 @@ test("an open deck exports on the device while offline", async ({ page, context,
   expect((await download).suggestedFilename()).toMatch(/\.pptx$/)
 })
 
-test("a new version uses a neutral pill with visible action feedback", async ({ page, context, stack }) => {
+test("a new version uses a neutral pill with visible action feedback", async ({ page, context, stack, decks }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   await page.route("**/decks/commit", (route) => route.fulfill({ status: 200, json: { ok: false, refusal: "newer" } }))
   const text = page.locator('[contenteditable="true"]')
   await text.click()
@@ -83,10 +88,11 @@ test("a connection interruption announces its status and keeps the notice neutra
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   await page.route("**/decks/commit", (route) => route.abort("connectionfailed"))
   const text = page.locator('[contenteditable="true"]')
   await text.click()

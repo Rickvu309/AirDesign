@@ -1,8 +1,9 @@
-import { expect, test } from "@playwright/test"
-import { openDeck, settled } from "./design-panel"
+import { expect } from "@playwright/test"
+import { openDeck } from "./design-panel"
 import { tableCopy } from "../../apps/web/src/copy/table-copy"
+import { test } from "./deck-test"
 
-test("an imported table paints without insert, cell or table Design controls after reload", async ({ page }) => {
+test("an imported table paints without insert, cell or table Design controls after reload", async ({ page, decks }) => {
   await openDeck(page, "table-added.pptx")
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toContainText("Region")
@@ -14,7 +15,7 @@ test("an imported table paints without insert, cell or table Design controls aft
   await expect(page.locator("[data-table-bar], [data-table-picker]")).toHaveCount(0)
   await expect(page.locator("[data-design-element]").getByRole("group", { name: tableCopy.cells })).toHaveCount(0)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(table).toContainText("Region")
   await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
 })

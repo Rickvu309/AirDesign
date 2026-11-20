@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { importTitleDeck } from "./new-deck"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { test } from "./deck-test"
 
 const pictureWords = async () => (await import("../../apps/web/src/copy/picture-copy.ts")).pictureCopy
 
@@ -31,13 +32,6 @@ async function partsOf(file: string): Promise<Map<string, Uint8Array>> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function painted(picture: Locator): Promise<void> {
   await expect(picture).toBeVisible()
   await expect.poll(async () => picture.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("blob:")
@@ -51,11 +45,12 @@ async function size(picture: Locator): Promise<{ readonly width: number; readonl
 
 test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps it through reload, export and a new import", async ({
   page,
+  decks,
 }, testInfo) => {
   await page.goto("/")
   await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.ready()
   const choosing = page.waitForEvent("filechooser")
   await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (await choosing).setFiles(pictureFile)
@@ -83,7 +78,7 @@ test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps i
   const resized = await size(picture)
   expect(resized.width / resized.height).toBeCloseTo(before.width / before.height, 1)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await painted(picture)
   expect((await size(picture)).width).toBeCloseTo(resized.width, 0)
   const saving = page.waitForEvent("download")
@@ -98,17 +93,15 @@ test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps i
   expect(media).toHaveLength(1)
   expect(Buffer.from(parts.get(media[0] ?? "") ?? [])).toEqual(await readFile(pictureFile))
   expect(new TextDecoder().decode(parts.get("[Content_Types].xml"))).toContain('<Default Extension="png"')
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await settled(page)
+  await decks.open(file)
   await painted(picture)
 })
 
-test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", async ({ page }) => {
+test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", async ({ page, decks }) => {
   await page.goto("/")
   await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.ready()
   const choosing = page.waitForEvent("filechooser")
   await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (
@@ -122,11 +115,11 @@ test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", as
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)
 })
 
-test("Undo takes back an added picture and Redo paints it again, through a reload", async ({ page }) => {
+test("Undo takes back an added picture and Redo paints it again, through a reload", async ({ page, decks }) => {
   await page.goto("/")
   await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.ready()
   const choosing = page.waitForEvent("filechooser")
   await page.getByRole("button", { name: (await pictureWords()).add, exact: true }).click()
   await (await choosing).setFiles(pictureFile)
@@ -137,15 +130,15 @@ test("Undo takes back an added picture and Redo paints it again, through a reloa
   await page.getByRole("button", { name: undoCopy.redoNamed["add-picture"], exact: true }).click()
   await painted(picture)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await painted(picture)
 })
 
-test("a picture added to a new title slide lands clear of the empty title and subtitle", async ({ page }) => {
+test("a picture added to a new title slide lands clear of the empty title and subtitle", async ({ page, decks }) => {
   await page.goto("/")
   await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.ready()
   const placeholders = page.locator("[data-slide-paint] [data-canvas-element]")
   await expect(placeholders).toHaveCount(2)
   const empty = await placeholders.evaluateAll((nodes) =>

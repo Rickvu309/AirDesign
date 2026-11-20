@@ -2,7 +2,7 @@ import { expect, type Page, type Request } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -33,11 +33,12 @@ test("an edit reads Saving while its commit waits and Saved once it lands on the
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await expect(saveStatus(page)).toHaveText(saved)
   const statusBox = await saveStatus(page).boundingBox()
   expect(statusBox?.width).toBeLessThanOrEqual(1)
@@ -67,10 +68,11 @@ test("a server that cannot be reached reads the unreached words, then Saved once
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const blocked = (url: URL) => url.pathname.startsWith("/decks/")
   await page.route(blocked, (route) => route.abort("connectionfailed"))
   await typeAtEnd(page, "!")
@@ -94,11 +96,12 @@ for (const answer of unreadable) {
     page,
     context,
     stack,
+    decks,
   }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
-    const deck = await openClean(page)
+    const deck = await decks.open()
     const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
     const before = await revision()
     const commit = (url: URL) => url.pathname === "/decks/commit"
@@ -117,11 +120,12 @@ test("an edit that landed but whose answer came back cut off lands once when it 
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const before = await revision()
   const commit = (url: URL) => url.pathname === "/decks/commit"
@@ -154,10 +158,11 @@ test("going offline reads Offline before any edit, and Saved again when the brow
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   await expect(saveStatus(page)).toHaveText(saved)
   await context.setOffline(true)
   await expect(saveStatus(page)).toHaveText(offline)
@@ -169,11 +174,12 @@ test("going offline and back while a resend is on the wire reads Saved once it l
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const before = await revision()
   let down = true
@@ -210,10 +216,11 @@ for (const [step, button] of [
     page,
     context,
     stack,
+    decks,
   }) => {
     await signInBrowser(context, await stack.signIn())
     await forward(page, stack)
-    await openClean(page)
+    await decks.open()
     await expect(saveStatus(page)).toHaveText(saved)
     const released = Promise.withResolvers<void>()
     const held = Promise.withResolvers<void>()
@@ -257,12 +264,12 @@ for (const { name, edit, sizeRefusal } of [
   { name: "added slide", edit: addThirdSlide, sizeRefusal: false },
   { name: "typed edit refused for size", edit: typeOnFirstSlide, sizeRefusal: true },
 ]) {
-  test(`an earlier commit cannot mark a later ${name} Saved`, async ({ page, context, stack }) => {
+  test(`an earlier commit cannot mark a later ${name} Saved`, async ({ page, context, stack, decks }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
     const watching = page.waitForRequest("**/decks/watch")
-    const deck = await openClean(page)
+    const deck = await decks.open()
     await watching
     const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
     const before = await revision()
@@ -304,17 +311,21 @@ test("a deck reopened with an edit still on the device reads Saving until that e
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const before = await revision()
   let holdCommit = false
+  let reloaded = false
   const releaseCommit = Promise.withResolvers<void>()
+  const heldAfterReload = Promise.withResolvers<void>()
   await page.route("**/decks/commit", async (route) => {
     if (!holdCommit) return route.abort("connectionfailed")
+    if (reloaded) heldAfterReload.resolve()
     await releaseCommit.promise
     await route.fallback()
   })
@@ -322,10 +333,11 @@ test("a deck reopened with an edit still on the device reads Saving until that e
   await expect(saveStatus(page)).toHaveText(unreached)
   holdCommit = true
   try {
+    page.on("framenavigated", (frame) => {
+      if (frame === page.mainFrame()) reloaded = true
+    })
     await page.reload()
-    await settled(page)
-    await expect(saveStatus(page)).toHaveText(saving)
-    await page.waitForTimeout(1000)
+    await heldAfterReload.promise
     await expect(saveStatus(page)).toHaveText(saving)
     expect(await revision()).toBe(before)
   } finally {
@@ -353,6 +365,7 @@ for (const answer of refusals) {
     page,
     context,
     stack,
+    decks,
   }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
@@ -379,7 +392,7 @@ for (const answer of refusals) {
         return route.fulfill({ status: answer.status, json: { ok: false, refusal: answer.refusal } })
       },
     )
-    const deck = await openClean(page)
+    const deck = await decks.openHeld()
     const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
     const before = await revision()
     try {
@@ -405,10 +418,12 @@ test("a commit answered newer shows that AirDesign has a new version with Reload
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await page.clock.install()
+  await decks.open()
   let sent = 0
   await page.route(
     (url) => url.pathname === "/decks/commit",
@@ -422,6 +437,6 @@ test("a commit answered newer shows that AirDesign has a new version with Reload
   await expect(page.getByRole("button", { name: "Reload" })).toBeVisible()
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
   const refused = sent
-  await page.waitForTimeout(2500)
+  await page.clock.runFor(10_000)
   expect(sent).toBe(refused)
 })

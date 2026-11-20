@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ reducedMotion: "reduce" })
 
@@ -42,11 +42,12 @@ test("a deck deleted for good shows Deck not found and stays closed after a relo
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   expect((await stack.post("/decks/trash", { deck }, cookie)).json.ok).toBe(true)
   expect((await stack.post("/decks/delete", { decks: [deck] }, cookie)).json.ok).toBe(true)
   await expect(page.getByRole("heading", { name: productCopy.deckNotFoundTitle })).toBeVisible()

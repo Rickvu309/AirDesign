@@ -1,6 +1,6 @@
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
-import { expect, test, type Page } from "@playwright/test"
-import { newBlankDeck } from "./new-deck"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
 async function gaps(page: Page) {
   return page.evaluate(() => {
@@ -12,9 +12,8 @@ async function gaps(page: Page) {
   })
 }
 
-test("Fit centres the slide above notes and follows their resized height", async ({ page }) => {
-  await page.goto("/")
-  await newBlankDeck(page)
+test("Fit centres the slide above notes and follows their resized height", async ({ page, decks }) => {
+  await decks.blank()
   await expect(page.locator("[data-slide-paint]")).toBeVisible()
   await page.getByRole("button", { name: "Collapse presenter notes" }).click()
   await expect
@@ -39,9 +38,8 @@ test("Fit centres the slide above notes and follows their resized height", async
   await expect.poll(async () => (await gaps(page)).below).toBeGreaterThanOrEqual(40)
 })
 
-test("a zoomed slide pans with Hand until 64 px of it stays in view on any side", async ({ page }) => {
-  await page.goto("/")
-  await newBlankDeck(page)
+test("a zoomed slide pans with Hand until 64 px of it stays in view on any side", async ({ page, decks }) => {
+  await decks.blank()
   await page.locator("[data-zoom-readout]").click()
   await page.getByRole("menuitemradio", { name: "Zoom to 200%", exact: true }).click()
   await page.keyboard.press("h")

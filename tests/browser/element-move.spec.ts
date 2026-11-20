@@ -1,7 +1,8 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { covers } from "./gesture"
+import { decksOn, test } from "./deck-test"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const clean = join(fixtures, "clean.pptx")
@@ -11,18 +12,8 @@ const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 
 type Row = { kind: string; property?: string; value: unknown; node?: string }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).open(file)
 }
 
 async function rowsOf(page: Page): Promise<Row[]> {
@@ -155,6 +146,7 @@ test("typing still goes into the text after the element is selected and nudged",
 
 test("a drag follows the pointer, keeps one box edit when it ends, and the box stays after reload", async ({
   page,
+  decks,
 }) => {
   covers("move")
   await open(page, clean)
@@ -171,12 +163,12 @@ test("a drag follows the pointer, keeps one box edit when it ends, and the box s
   await page.mouse.up()
   await expect.poll(() => boxRows(page)).toEqual([`pending:256.2:${JSON.stringify(moved)}`])
   await page.reload()
-  await settled(page)
+  await decks.ready()
   expect(await placed(page)).toEqual([60, 90, 360, 120])
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
 })
 
-test("a corner handle resizes, the arrows nudge, and Shift nudges ten times as far", async ({ page }) => {
+test("a corner handle resizes, the arrows nudge, and Shift nudges ten times as far", async ({ page, decks }) => {
   covers("resize", "nudge", "nudge-far")
   await open(page, clean)
   const origin = await corner(page)
@@ -190,7 +182,7 @@ test("a corner handle resizes, the arrows nudge, and Shift nudges ten times as f
   const nudged = { ...resized, x: start.x + 12_700, y: start.y + 127_000 }
   await expect.poll(() => boxRows(page)).toEqual([`pending:256.2:${JSON.stringify(nudged)}`])
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const shown = await placed(page)
   ;[nudged.x, nudged.y, nudged.cx, nudged.cy].forEach((emu, index) =>
     expect(shown[index]).toBeCloseTo(emu / emuPerPixel, 3),

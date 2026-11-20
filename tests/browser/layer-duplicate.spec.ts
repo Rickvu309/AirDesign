@@ -1,21 +1,15 @@
 import { copyFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { savedExport } from "./export-dialog"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const slidePart = "ppt/slides/slide1.xml"
 
 test.use({ viewport: { width: 1470, height: 923 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function layer(page: Page, shape: number) {
   return page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#${String(shape)}"]`)
@@ -39,12 +33,13 @@ function chosen(page: Page) {
 
 test("Alt-drag leaves a layer in place and moves a copy above it, Ctrl+D repeats the distance, and one undo takes one copy away @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("duplicate-drag", "duplicate")
   await page.goto(".")
   await page.locator("input[type=file]").setInputFiles(fixture)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.ready()
   const slide = await page.locator("[data-slide-paint]").boundingBox()
   if (slide === null) throw new Error("no slide")
   expect(await placed(page, 2)).toEqual([30, 30, 360, 120])

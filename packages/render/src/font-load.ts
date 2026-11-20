@@ -47,6 +47,7 @@ async function installFonts(doc: Document, family: Manifest): Promise<void> {
 export class FontLoader {
   private readonly pending = new Map<string, Promise<FontIssue | null>>()
   private readonly settled = new Set<string>()
+  private readonly watchers = new Set<() => void>()
   private readonly network: typeof fetch
   private readonly install: (family: Manifest) => Promise<void>
 
@@ -63,6 +64,17 @@ export class FontLoader {
     return this.settled.has(name.toLowerCase())
   }
 
+  busy(): boolean {
+    return this.pending.size > this.settled.size
+  }
+
+  subscribe(watcher: () => void): () => void {
+    this.watchers.add(watcher)
+    return () => {
+      this.watchers.delete(watcher)
+    }
+  }
+
   async wait(): Promise<void> {
     await Promise.all(this.pending.values())
   }
@@ -75,10 +87,16 @@ export class FontLoader {
       .catch((): FontIssue => ({ family: name, refusal: "unavailable" }))
       .then((issue) => {
         this.settled.add(key)
+        this.tell()
         return issue
       })
     this.pending.set(key, pending)
+    this.tell()
     return pending
+  }
+
+  private tell(): void {
+    for (const watcher of this.watchers) watcher()
   }
 
   private async register(name: string): Promise<FontIssue | null> {

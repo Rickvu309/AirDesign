@@ -1,10 +1,11 @@
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { colorWords } from "./color-words"
-import { openDeck, settled, typeColor } from "./design-panel"
+import { openDeck, typeColor } from "./design-panel"
 import { filled, shapeAt } from "./shape-fills"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -14,6 +15,7 @@ const grey = "505050"
 
 test("a theme colour takes a picked hex colour, every shape that names it repaints, and Undo puts the colour back", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "shapes-added.pptx")
   const names = await colorWords("shapes-added.pptx")
@@ -60,6 +62,6 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
   await page.getByRole("button", { name: undoCopy.redoNamed["template-color"], exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(painted)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(painted)
 })

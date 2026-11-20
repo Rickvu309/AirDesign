@@ -13,6 +13,7 @@ import {
 } from "../../packages/document/src/index.ts"
 import { agreementTable, openDeck, showSlide, within, worst, type Row } from "./fit-truth.ts"
 import { paintedHeights, slideWidths } from "./font-widths.ts"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 const point = 12_700
 const truthDecks = ["doe-heat-pumps.pptx", "nasa-cots-parts-nesc.pptx", "census-updating-spm.pptx"]
@@ -36,7 +37,6 @@ function median(values: readonly number[]): number {
 }
 
 test("findings over every fixture deck, counted by kind and timed with no device", async ({ page }) => {
-  test.setTimeout(3 * 60_000)
   const decks = await readDecks()
   await page.goto("/")
   const widths = await slideWidths(
@@ -95,7 +95,13 @@ function shapeOf(element: ResolvedElement): string {
 }
 
 test("text fit agrees with the painter on the text of real decks", async ({ page }) => {
-  test.setTimeout(3 * 60_000)
+  test.setTimeout(
+    keptWait(3 * 60_000, {
+      why: "lays out the text of every real deck against the painter, about 20 seconds on ci",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const decks = (await readDecks()).filter((deck) => truthDecks.includes(deck.name))
   const rows: Row[] = []
   const verdicts = { agree: 0, missed: 0, alarms: 0 }

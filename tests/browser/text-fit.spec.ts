@@ -3,6 +3,7 @@ import { layText, type FontWidths, type ResolvedText } from "../../packages/docu
 import { fitCases, fitDeck, placeCases, type FitGroup, type PlacedCase } from "./fit-deck.ts"
 import { measureFaces, paintedFamilies, paintedHeights } from "./font-widths.ts"
 import { agreementTable, openDeck, overflowAgreement, showSlide, within, worst, zoomTo, type Row } from "./fit-truth.ts"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 const point = 12_700
 const counts: Record<FitGroup, number> = { plain: 400, spacing: 120, bullets: 160, mixed: 160, marks: 160 }
@@ -52,7 +53,13 @@ async function compare(page: Page, placed: readonly PlacedCase[], zoom: number |
 }
 
 test("text fit lays text out as the painter does where sizes fall on whole pixels", async ({ page }) => {
-  test.setTimeout(3 * 60_000)
+  test.setTimeout(
+    keptWait(3 * 60_000, {
+      why: "compares text fit with the painter over the corpus decks, about 14 seconds on ci",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const rows = await compare(page, placeCases(fitCases(counts, 3)), 100)
   console.log(`text fit against the painter at 100%, sizes on a 3 pt grid\n${agreementTable(rows)}\n${worst(rows, 8)}`)
   for (const group of groups) {
@@ -62,7 +69,13 @@ test("text fit lays text out as the painter does where sizes fall on whole pixel
 })
 
 test("text fit agrees with the painter on overflow at the zoom that fits the slide", async ({ page }) => {
-  test.setTimeout(3 * 60_000)
+  test.setTimeout(
+    keptWait(3 * 60_000, {
+      why: "compares text fit with the painter over the corpus decks, about 14 seconds on ci",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const rows = await compare(page, placeCases(fitCases(counts)), null)
   console.log(
     `text fit against the painter at fit zoom, any whole point size\n${agreementTable(rows)}\n${worst(rows, 8)}`,

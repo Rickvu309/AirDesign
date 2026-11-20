@@ -2,7 +2,8 @@ import { expect, test, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { boxOf, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, manySlides, openFile, openGrid, groupNumbers } from "./slide-grid-deck"
+import { entry, manySlides, openGrid, groupNumbers } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -19,7 +20,7 @@ async function boxIn(page: Page, selector: string): Promise<Box> {
 }
 
 async function eight(page: Page, percent: number): Promise<void> {
-  await openFile(page, {
+  await decksOn(page).open({
     name: "eight.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(8, [4, 4]),

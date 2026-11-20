@@ -1,20 +1,7 @@
-import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
-
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
-
-async function open(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(clean)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-  await expect(page.locator("[data-slide-entry='1'] [data-thumb-paint]")).toContainText("Hello")
-}
 
 function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${String(number)}"]`)
@@ -24,8 +11,8 @@ function item(page: Page, name: RegExp) {
   return page.getByRole("menuitem", { name })
 }
 
-test("the selected slide highlight hugs its thumbnail with a six pixel inset", async ({ page }) => {
-  await open(page)
+test("the selected slide highlight hugs its thumbnail with a six pixel inset", async ({ page, decks }) => {
+  await decks.open()
   const row = await entry(page, 1).boundingBox()
   const thumb = await entry(page, 1).locator("[data-thumb-paint]").boundingBox()
   expect(row).not.toBeNull()
@@ -36,8 +23,8 @@ test("the selected slide highlight hugs its thumbnail with a six pixel inset", a
   expect(row.x + row.width - thumb.x - thumb.width).toBeCloseTo(6, 0)
 })
 
-test("one slide can be duplicated from its menu, and move and delete are unavailable", async ({ page }) => {
-  await open(page)
+test("one slide can be duplicated from its menu, and move and delete are unavailable", async ({ page, decks }) => {
+  await decks.open()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   await expect(page.getByRole("button", { name: /Slide \d+ actions/ })).toHaveCount(0)
   await entry(page, 1).click({ button: "right" })
@@ -54,8 +41,8 @@ test("one slide can be duplicated from its menu, and move and delete are unavail
   await expect(entry(page, 1)).toBeFocused()
 })
 
-test("the menu duplicates, moves and deletes, and undo brings the deleted slide back", async ({ page }) => {
-  await open(page)
+test("the menu duplicates, moves and deletes, and undo brings the deleted slide back", async ({ page, decks }) => {
+  await decks.open()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await entry(page, 1).click({ button: "right" })
@@ -81,8 +68,8 @@ test("the menu duplicates, moves and deletes, and undo brings the deleted slide 
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
 })
 
-test("Shift+F10 opens the menu from the slide and Tab leaves the slide list", async ({ page }) => {
-  await open(page)
+test("Shift+F10 opens the menu from the slide and Tab leaves the slide list", async ({ page, decks }) => {
+  await decks.open()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(entry(page, 2)).toBeFocused()
   await page.keyboard.press("Shift+F10")
@@ -101,8 +88,9 @@ test("Shift+F10 opens the menu from the slide and Tab leaves the slide list", as
 
 test("deleting a slide shows no notice, tells a screen reader, and one Undo brings it back at its place", async ({
   page,
+  decks,
 }) => {
-  await open(page)
+  await decks.open()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await entry(page, 1).click({ button: "right" })
@@ -116,8 +104,8 @@ test("deleting a slide shows no notice, tells a screen reader, and one Undo brin
   await expect(entry(page, 2)).not.toContainText("Hello")
 })
 
-test("right-click opens the menu after scrolling to the last slide", async ({ page }) => {
-  await open(page)
+test("right-click opens the menu after scrolling to the last slide", async ({ page, decks }) => {
+  await decks.open()
   for (let count = 2; count <= 8; count += 1) {
     await page.getByRole("button", { name: "Add slide" }).click()
     await expect(page.locator("[data-slide-entry]")).toHaveCount(count)

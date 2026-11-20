@@ -8,7 +8,7 @@ What a person types survives a reload or a closed tab, even one that comes befor
 - `reload-at-once` text typed and reloaded at once shows after the reload, reaches `deckRoutes.open`, and the journal ends empty. Driven live on 2026-11-13: a typed title, the text of a new text box, an added table row, speaker notes, a nudge, a rename and bold, each reloaded with no wait, and a new text box, a deleted element, an inserted table, a new slide, a deleted slide and a picture, each reloaded once the server had it, all showed after the reload, and a fresh device then read the same deck from the server.
 - `tab-closed` text typed and the tab closed at once shows in a new tab and reaches the server.
 - `lost-answer` when the server stores an edit but its answer is lost, the next page sends it again with the same `once` key and the revision rises once (`commit-once` journey, for text). Known failure for a slide command (`Add slide`, `Add text box`, an inserted table): the first reload paints with the error `person edit refused`, and every reload after it leaves the editor blank, with no slide, no name and no slide list, on that browser for good. The device then holds a confirmed row and a pending row for the same command (`withSlides` in `packages/live/src/slide-replay.ts` throws on the second). The server's copy is whole and a fresh device opens it. Pinned in `tests/browser/real-save.spec.ts`.
-- `device-paint` a deck this account opened before on this browser paints from the device copy and sets `.thin-page[data-deck-ready]` while `deckRoutes.open` is still on its way, then applies the server's answer on top.
+- `device-paint` a deck this account opened before on this browser paints from the device copy while `deckRoutes.open` is still on its way, then applies the server's answer on top and sets `.thin-page[data-deck-ready]`.
 - `device-account` the device copy, the journal, the queued names, the pictures and the Aira chats are kept under the account (`accountKey` in `packages/live`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees no deck, name, picture or chat of the first, and a deck address of the first shows `Deck not found` with nothing painted; the first account finds all of it again after signing in again. Signing out from Settings and deleting the account drop the chats kept for a closing page (`airdesign:chats:<account>:<deck>`).
 - `refused` when `deckRoutes.open` or `deckRoutes.watch` answers `owner`, `deleted` or `deck`, the editor drops the painted deck and shows `Deck not found` with `link "Go to your decks"` (`[data-deck-refused]`), with no editable text and no Export, and it stays closed through a reload. A `session` refusal goes to sign-in; any other refusal or a network failure keeps the deck open.
 
@@ -26,7 +26,7 @@ Preconditions:
 
 - **Run it.** `$V journey <run> typed-reload`. Prints `"passed":true`.
 - **Reload at once.** Import `clean.pptx`, select the text, type `Kept` with no delay and reload in the same breath. The slide reads `Kept`, `deckRoutes.open` holds `Kept`, and no `airdesign:unsaved:` key is left. Evidence `NN-reloaded`.
-- **Device paint.** Hold `deckRoutes.open` with `page.route` and reload: `data-deck-ready` is set and the slide reads `Kept` while the open is held. Evidence `NN-device-paint`.
+- **Device paint.** Hold `deckRoutes.open` with `page.route` and reload: the slide reads `Kept` while the open is held, and `data-deck-ready` is set once it lands. Evidence `NN-device-paint`.
 - **Tab closed.** Type `Closed` and close the page at once; a new page on the deck address reads `Closed` and so does the server. The kit's `capture` uses the first page, so the journey does this after its captures.
 - **Refused.** On that new page, answer `deckRoutes.open` with `{ok:false, refusal:"deleted"}`: `[data-deck-refused]` shows and no `[contenteditable]` is left.
 - **Two accounts.** `signed-out-deck` signs out from Home and from Settings and opens a deck address. A scratch journey with `kit.signIn(email)` drove the round trip in `deck-names.md`.
@@ -35,6 +35,6 @@ Preconditions:
 ## Gotchas
 
 - A faked refusal closes the deck for good in that browser: a reload after `unroute` still shows `Deck not found`. Drive the refusal last, or in a fresh context.
-- `.thin-page[data-deck-ready]` is set by the device paint as well as the server open, so it is no proof of a save. Poll `deckRoutes.open`.
+- `.thin-page[data-deck-ready]` says the open finished, not that every edit was saved. Poll `deckRoutes.open`.
 - `tests/browser/open-from-device.spec.ts` slows IndexedDB with `window.deviceDelay` to widen the window; the journey reloads with no wait instead.
 - A blank editor after a reload, with `person edit refused` in the page's errors, is the lost-answer failure above; listen with `page.on("pageerror")`.

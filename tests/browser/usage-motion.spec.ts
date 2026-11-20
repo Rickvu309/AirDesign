@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 async function usageGrowth(page: Page, side: ReturnType<Page["locator"]>) {
   await page.evaluate((name) => {
@@ -46,11 +46,12 @@ test("the usage popover grows from its ring on the micro curve, holds still with
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const side = page.locator("[data-editor-panel]")
   const ring = side.getByRole("button", { name: productCopy.usageTitle })
   const grown = await usageGrowth(page, side)

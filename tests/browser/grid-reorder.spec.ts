@@ -3,6 +3,7 @@ import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { boxOf, canvas, grab, hover, openSaved, panOf, picked, roomOf, zoomTo } from "./grid-reorder-deck"
 import { entry, fixtures, groupSizes } from "./slide-grid-deck"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -10,7 +11,13 @@ const said = (page: Page) => page.locator("[data-editor-grid] [data-announcer]")
 
 async function stays(page: Page): Promise<void> {
   const held = await panOf(page)
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(
+    keptWait(400, {
+      why: "proves an edge pan stops once the pointer leaves the band: the pan runs on animation frames for the whole drag, and no event marks that it stopped",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   expect(await panOf(page)).toEqual(held)
 }
 
@@ -25,7 +32,13 @@ test("a dragged slide pans the canvas from the first slide group to the last and
   context,
   stack,
 }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(
+    keptWait(180_000, {
+      why: "the owner's slowed-CPU run, AIRDESIGN_GRID_CPU_RATE=4, drags across 50 slides at a quarter of the speed",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const saved = await openSaved(page, context, stack, 50)
   await zoomTo(page, 100)
   await entry(page, 1).focus()
@@ -64,7 +77,13 @@ test("edge panning works at every edge and at the side panel, and stops when the
   context,
   stack,
 }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(
+    keptWait(180_000, {
+      why: "the owner's slowed-CPU run, AIRDESIGN_GRID_CPU_RATE=4, drags across 50 slides at a quarter of the speed",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const saved = await openSaved(page, context, stack, 50)
   await zoomTo(page, 50)
   await entry(page, 23).focus()
@@ -105,7 +124,13 @@ test("drops land where the bar shows at 25% and 150%, after panning, at the firs
   context,
   stack,
 }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(
+    keptWait(120_000, {
+      why: "the owner's slowed-CPU run, AIRDESIGN_GRID_CPU_RATE=4, drags across 50 slides at a quarter of the speed",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const saved = await openSaved(page, context, stack, 8, groupSizes(8))
   await zoomTo(page, 25)
   await page.mouse.move(700, 400)
@@ -146,7 +171,12 @@ test("a slide dropped into another section joins that slide group where the bar 
   await expect.poll(saved.order).toEqual(picked(saved.ids, [2, 3, 1]))
 })
 
-test("edge pan stores once after cancellation and restores the panned place", async ({ page, context, stack }) => {
+test("edge pan stores once after cancellation and restores the panned place", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   const saved = await openSaved(page, context, stack, 8)
   await zoomTo(page, 100)
   await entry(page, 1).focus()
@@ -173,7 +203,7 @@ test("edge pan stores once after cancellation and restores the panned place", as
   await expect(canvas(page)).toHaveAttribute("data-place-writes", "1")
   const held = await panOf(page)
   await page.reload()
-  await page.waitForFunction(() => document.querySelector(".thin-page[data-deck-ready]"))
+  await decks.ready()
   await page.getByRole("button", { name: "Grid", exact: true }).click()
   expect(await panOf(page)).toEqual(held)
   expect(await saved.order()).toEqual(saved.ids)

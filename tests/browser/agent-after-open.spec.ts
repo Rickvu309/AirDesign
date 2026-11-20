@@ -1,7 +1,8 @@
 import { airaCopy, airaStepWords } from "../../apps/web/src/copy/aira-copy.ts"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
+import { cleanFixture, decksOn } from "./deck-test"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 
@@ -20,12 +21,20 @@ async function hold(page: Page, path: string): Promise<() => void> {
   return release
 }
 
-async function importHeld(page: Page): Promise<string> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await expect(page).toHaveURL(/\/deck\//)
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(2)
-  return page.url().split("/").at(-1) ?? ""
+async function importHeld(page: Page, file = blank, boxes = 2): Promise<string> {
+  const deck = await decksOn(page).openHeld(file)
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(boxes)
+  return deck
+}
+
+function editsSent(page: Page, stack: Stack): () => number {
+  let sent = 0
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname !== stack.mcp) return
+    const body = request.postData() ?? ""
+    if (body.includes('"tools/call"') && body.includes("edit_deck")) sent += 1
+  })
+  return () => sent
 }
 
 test("Aira asked at once adds the slide when the index lands, and the step stays working until then", async ({
@@ -38,11 +47,12 @@ test("Aira asked at once adds the slide when the index lands, and the step stays
   await forward(page, stack)
   const release = await hold(page, "/decks/index")
   const deck = await importHeld(page)
+  const edits = editsSent(page, stack)
   stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
   await page.keyboard.press("Enter")
   await expect(page.getByText(airaStepWords.edit_deck.working)).toBeVisible()
-  await page.waitForTimeout(2500)
+  await expect.poll(edits).toBeGreaterThanOrEqual(3)
   await expect(page.getByText(airaStepWords.edit_deck.working)).toBeVisible()
   await expect(page.getByText(airaStepWords.edit_deck.refused)).toHaveCount(0)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
@@ -97,10 +107,11 @@ test("Aira asked before the server's first open of a new deck adds the slide onc
   const release = await hold(page, "/decks/open")
   const deck = await importHeld(page)
   stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
+  const turned = page.waitForResponse((response) => new URL(response.url()).pathname === "/aira/turn")
   await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
   await page.keyboard.press("Enter")
+  await turned
   await expect(page.getByText(airaStepWords.edit_deck.working)).toBeVisible()
-  await page.waitForTimeout(1500)
   release()
   await expect(page.getByText(airaStepWords.edit_deck.done)).toBeVisible({ timeout: 10_000 })
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
@@ -111,7 +122,7 @@ test("Aira's edit paints on the slide while the index is still uploading", async
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const release = await hold(page, "/decks/index")
-  const deck = await openClean(page)
+  const deck = await importHeld(page, cleanFixture, 1)
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node: "256.2" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: airaCopy.askAira }).fill("Change the title to Hello from Aira")
@@ -121,13 +132,18 @@ test("Aira's edit paints on the slide while the index is still uploading", async
   release()
 })
 
-test("Aira's edit paints on the slide while the imported file is still uploading", async ({ page, context, stack }) => {
+test("Aira's edit paints on the slide while the imported file is still uploading", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const release = await hold(page, "/decks/original/upload")
   const uploading = page.waitForRequest((request) => new URL(request.url()).pathname === "/decks/original/upload")
-  const deck = await openClean(page)
+  const deck = await decks.open()
   stack.aira({ name: "edit.sse", fill: { deck, base: "0", node: "256.2" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: airaCopy.askAira }).fill("Change the title to Hello from Aira")
   await page.keyboard.press("Enter")

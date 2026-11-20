@@ -1,4 +1,5 @@
 import type { CDPSession, Page } from "@playwright/test"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 type Point = { readonly x: number; readonly y: number }
 
@@ -139,7 +140,14 @@ async function record(page: Page, dragged: string): Promise<void> {
 
 function pause(ms: number): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, ms)
+    setTimeout(
+      resolve,
+      keptWait(ms, {
+        why: "paces mouse moves 8 ms apart like a 120 Hz mouse, so the frame-time bench measures a real drag",
+        until: "2027-02-18",
+        approval: keptWaitApproval,
+      }),
+    )
   })
 }
 

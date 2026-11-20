@@ -3,13 +3,12 @@ import { randomBytes } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
 import { createServer, request as forwardTo } from "node:http"
 import type { AddressInfo } from "node:net"
-import { dirname, join } from "node:path"
-import { expect, test as base, type BrowserContext, type Page } from "@playwright/test"
+import { dirname } from "node:path"
+import { expect, type BrowserContext, type Page } from "@playwright/test"
 import type { Script } from "../../apps/api/src/aira-replay.ts"
 import { watchRequests } from "../request-timeline.ts"
+import { test as base } from "./deck-test.ts"
 import { sessionCookie, type Production } from "./production.ts"
-
-export const cleanFixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 
 type Mail = { readonly to: string; readonly subject: string; readonly text: string; readonly html: string }
 type Landed = { readonly value: string; readonly visible: boolean }
@@ -310,25 +309,4 @@ export async function forward(page: Page, stack: Stack, country = "US"): Promise
     },
   )
   return asked
-}
-
-export async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
-export async function indexed(stack: Stack, deck: string, cookie: string): Promise<void> {
-  await expect
-    .poll(async () => (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)).index)
-    .toBe("ready")
-}
-
-export async function openClean(page: Page): Promise<string> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(cleanFixture)
-  await page.waitForFunction(() => /^\/deck\/[A-Za-z0-9_-]{1,64}$/.test(location.pathname))
-  await settled(page)
-  return new URL(page.url()).pathname.slice("/deck/".length)
 }

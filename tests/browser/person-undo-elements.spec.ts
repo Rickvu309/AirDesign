@@ -2,9 +2,10 @@ import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { elementGone, elementId, readSlideState } from "../../packages/document/src/index.ts"
-import { forward, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { holdWriteOf, holdWrites, readwrites, releaseWrite, writeHeld } from "./held-write"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { decksOn } from "./deck-test"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const title = "ppt/slides/slide1.xml#2"
@@ -28,21 +29,19 @@ async function serverOrder(stack: Stack, deck: string, cookie: string) {
 }
 
 async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(join(fixtures, file))
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).open(join(fixtures, file))
 }
 
 test("a person undoes and redoes an added text box and a deleted element, and the server keeps the result", async ({
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(1)
   const start = await placed(page, title)
@@ -81,7 +80,7 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   ).toBe(true)
   expect(elementGone(state, elementId("256.2"))).toBe(false)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(texts).toHaveCount(2)
   await expect(texts.first()).toHaveText("Hello")
   await expect(texts.last()).toHaveText("Added")
@@ -91,11 +90,12 @@ test("an undo of an added text box an agent wrote in changes nothing, says so an
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(2)
@@ -129,7 +129,7 @@ test("an undo of an added text box an agent wrote in changes nothing, says so an
   expect(state.order.map((command) => command.slide)).toEqual(["element-add"])
   expect(elementGone(state, node)).toBe(false)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toHaveText("Agent")
 })

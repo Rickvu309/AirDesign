@@ -1,12 +1,14 @@
 import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
-import { expect, test } from "@playwright/test"
-import { designing, openDeck, settled } from "./design-panel"
+import { expect } from "@playwright/test"
+import { designing, openDeck } from "./design-panel"
 import { fillPanel, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a choice aligns every paragraph of the element, shows the pick, and Undo puts the alignment back", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "clean.pptx")
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
@@ -31,7 +33,7 @@ test("a choice aligns every paragraph of the element, shows the pick, and Undo p
   await alignment.getByRole("button", { name: "Right", exact: true }).click()
   await expect.poll(aligned).toBe("right")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect
     .poll(() =>
       page

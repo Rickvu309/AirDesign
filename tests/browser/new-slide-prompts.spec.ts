@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { stored } from "./device-store"
 import { exportFromDialog } from "./export-dialog.ts"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -27,18 +28,8 @@ async function slideTexts(file: string): Promise<readonly string[]> {
   return texts
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function imported(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/, { timeout: 30_000 })
-  await settled(page)
+  await decksOn(page).open(file)
 }
 
 const prompts = (page: Page) => page.locator("[data-slide-paint] [data-placeholder-prompt]")

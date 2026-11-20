@@ -1,22 +1,11 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const sectioned = join(process.cwd(), "scripts/pptx-fixtures/sections-before.pptx")
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
-
-async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-  await expect(page.locator("[data-slide-entry='1'] [data-thumb-paint]")).toBeVisible()
-}
 
 function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${number}"]`)
@@ -29,8 +18,8 @@ async function addSlides(page: Page, count: number): Promise<void> {
   }
 }
 
-test("two Alt+ArrowDown presses move the same slide twice, and the focus ring stays on it", async ({ page }) => {
-  await open(page, clean)
+test("two Alt+ArrowDown presses move the same slide twice, and the focus ring stays on it", async ({ page, decks }) => {
+  await decks.open()
   await addSlides(page, 2)
   await entry(page, 1).click()
   await expect(entry(page, 1)).toContainText("Hello")
@@ -46,8 +35,8 @@ test("two Alt+ArrowDown presses move the same slide twice, and the focus ring st
   await expect(entry(page, 2)).toBeFocused()
 })
 
-test("a duplicate moves focus to the copy, so the next duplicate copies the copy", async ({ page }) => {
-  await open(page, clean)
+test("a duplicate moves focus to the copy, so the next duplicate copies the copy", async ({ page, decks }) => {
+  await decks.open()
   await entry(page, 1).focus()
   await page.keyboard.press(duplicate)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
@@ -60,8 +49,9 @@ test("a duplicate moves focus to the copy, so the next duplicate copies the copy
 
 test("a new slide takes focus, and a delete leaves focus on the slide that becomes current, never on the body", async ({
   page,
+  decks,
 }) => {
-  await open(page, clean)
+  await decks.open()
   await addSlides(page, 2)
   await expect(entry(page, 3)).toBeFocused()
   await page.keyboard.press("Delete")
@@ -76,8 +66,9 @@ test("a new slide takes focus, and a delete leaves focus on the slide that becom
 
 test("a slide moved into a collapsed section opens it and keeps focus, across the section headings", async ({
   page,
+  decks,
 }) => {
-  await open(page, sectioned)
+  await decks.open(sectioned)
   await entry(page, 1).click()
   await addSlides(page, 1)
   await expect(page.locator("[data-slide-item]")).toHaveCount(3)
@@ -96,8 +87,9 @@ test("a slide moved into a collapsed section opens it and keeps focus, across th
 
 test("a slide row hugs the New slide button: its thumbnail ends on the button's edge and a hover tints it", async ({
   page,
+  decks,
 }) => {
-  await open(page, clean)
+  await decks.open()
   await addSlides(page, 1)
   await entry(page, 1).click()
   const row = await page.locator("[data-new-slide-layouts]").locator("..").boundingBox()

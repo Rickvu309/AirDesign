@@ -2,11 +2,12 @@ import { effectsCopy, effectsWords } from "../../apps/web/src/copy/effects-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { colorWords } from "./color-words"
-import { openDeck, pickColor, settled, shownColor, unfold } from "./design-panel"
+import { openDeck, pickColor, shownColor, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 const deck = "corpus/nasa-cots-electronics.pptx"
 const exportName = "exported-shape-effects.pptx"
@@ -67,6 +68,7 @@ function choices(section: Locator, label: string): Locator {
 
 test("a person adds glow to a shape whose shadow comes from its style and recolours it, moves another's shadow and softens its edge, and the effects survive Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, deck)
@@ -126,7 +128,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await expect.poll(() => offset(second)).toBe(far)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await actualSize(page)
   await slide(page, 8)
   await expect.poll(() => offset(shapeAt(page, "4", softened))).toBe(far)
@@ -147,10 +149,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   expect(changed.map(([name]) => name)).toEqual([glowing, softened])
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await actualSize(page)
   await slide(page, 7)
   await expect.poll(() => painted(shapeAt(page, "4", glowing))).toEqual({ shadow: 1, glow: 1, inner: 1, blur: 1 })

@@ -4,12 +4,13 @@ import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled, unfold } from "./design-panel"
+import { openDeck, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 import { fillWords } from "../../apps/web/src/copy/fill-copy.ts"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
+import { test } from "./deck-test"
 
 const exportName = "exported-border-style.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -72,6 +73,7 @@ async function choose(section: Locator, label: string, option: string) {
 
 test("a person widens and dashes a border that comes from its style and puts an arrowhead on a line, all in the one Border section, and the border survives Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
@@ -143,7 +145,7 @@ test("a person widens and dashes a border that comes from its style and puts an 
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await actualSize(page)
   await expect.poll(() => stroked(shapeAt(page, "4"))).toEqual(styled)
   await expect.poll(async () => (await stroked(shapeAt(page, "6"))).tail).toMatch(/url\(#.+-tail\)/)
@@ -161,10 +163,7 @@ test("a person widens and dashes a border that comes from its style and puts an 
   expect(changed.map(([name]) => name)).toEqual([slidePart])
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await actualSize(page)
   await expect.poll(() => stroked(shapeAt(page, "4"))).toEqual(styled)
   await expect.poll(async () => (await stroked(shapeAt(page, "6"))).tail).toMatch(/url\(#.+-tail\)/)

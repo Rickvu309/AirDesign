@@ -1,9 +1,10 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck } from "./design-panel"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 const deck = "corpus/nasa-lessons-capture-eee.pptx"
 const exportName = "exported-gradient-kept.pptx"
@@ -16,6 +17,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a person turns a tiled radial gradient linear, and the export keeps its flip and tile rectangle @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, deck)
@@ -45,10 +47,7 @@ test("a person turns a tiled radial gradient linear, and the export keeps its fl
   expect(changed.map(([name]) => name)).toEqual([slidePart])
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await page.locator('[data-slide-entry="2"]').click()
   await expect.poll(() => filled(shapeAt(page, "5", slidePart))).toBe(turned)
 })

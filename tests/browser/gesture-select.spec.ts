@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { covers } from "./gesture"
 
 const part = "ppt/slides/slide1.xml"
@@ -20,12 +20,13 @@ test("Shift+click adds a second shape, and when an agent deletes it the first ke
   page,
   context,
   stack,
+  decks,
 }) => {
   covers("select-add")
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const before = await shapes(page)
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()

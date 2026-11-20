@@ -1,12 +1,13 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { exportFromDialog } from "./export-dialog"
 import { boxFillPanel, fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 import { colorWords } from "./color-words"
-import { openDeck, openFillDetails, pickColor, settled, setPanelMode, shownColor } from "./design-panel"
+import { openDeck, openFillDetails, pickColor, setPanelMode, shownColor } from "./design-panel"
 import { fillWords } from "../../apps/web/src/copy/fill-copy.ts"
+import { test } from "./deck-test"
 
 const exportName = "exported-shape-fill.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -24,6 +25,7 @@ function entry(page: Page, number: number) {
 
 test("a person fills a shape whose fill comes from its style with a color and another with a gradient, and the fills survive Undo, a reload, a duplicate, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
@@ -62,7 +64,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const gradient = await filled(oval)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(accentTwo)
   await expect.poll(() => filled(shapeAt(page, "5"))).toBe(gradient)
 
@@ -90,10 +92,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   expect(changed.map(([name]) => name).sort()).toEqual([...deckParts, slidePart].sort())
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(accentTwo)
   await expect.poll(() => filled(shapeAt(page, "5"))).toBe(gradient)
 })

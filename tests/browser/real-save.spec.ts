@@ -1,16 +1,21 @@
 import { expect, type Page } from "@playwright/test"
 import type { ReadDeckAnswer } from "../../packages/engine/src/index.ts"
-import { forward, openClean, settled, signInBrowser, test, type SavedRegister } from "./api-stack"
+import { forward, signInBrowser, test, type SavedRegister } from "./api-stack"
 
 const typed = "Saved on the server"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("home import exposes every untouched text box on slide one to the agent API", async ({ page, context, stack }) => {
+test("home import exposes every untouched text box on slide one to the agent API", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const readDeck = async () =>
     (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as ReadDeckAnswer
   await expect.poll(async () => (await readDeck()).index).toBe("ready")
@@ -118,10 +123,15 @@ async function confirmedText(page: Page, text: string): Promise<void> {
     .toMatchObject({ pending: 0, last: expect.arrayContaining([text]) })
 }
 
-test("home import through the first typed edit opens the deck exactly once", async ({ page, context, stack }) => {
+test("home import through the first typed edit opens the deck exactly once", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   await signInBrowser(context, await stack.signIn())
   const asked = await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   await typeOver(page, typed)
   await confirmedText(page, typed)
   expect(asked.filter((path) => path === "/decks/open")).toHaveLength(1)
@@ -131,19 +141,26 @@ test("a first typed edit that lands before the server answers the open still ope
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   const asked = await forward(page, stack)
-  let slow = true
+  let release = () => {}
+  const typedFirst = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let first = true
   await page.route("**/decks/open", async (route) => {
-    if (slow) {
-      slow = false
-      await new Promise((resolve) => setTimeout(resolve, 2500))
+    if (first) {
+      first = false
+      await typedFirst
     }
     await route.fallback()
   })
-  await openClean(page)
+  await decks.openHeld()
   await typeOver(page, typed)
+  release()
+  await decks.ready()
   await confirmedText(page, typed)
   await expect.poll(() => asked.filter((path) => path === "/decks/watch").length).toBeGreaterThan(0)
   expect(asked.filter((path) => path === "/decks/open")).toHaveLength(1)
@@ -153,18 +170,19 @@ test("opening an existing deck from the deck list through the first typed edit o
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const asked = await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await typeOver(page, typed)
   await confirmedText(page, typed)
   await forgetDeckRows(page)
   await page.goto("/")
   const before = asked.filter((path) => path === "/decks/open").length
   await page.locator(`a[href="/deck/${deck}"]`).click()
-  await settled(page)
+  await decks.ready()
   await typeOver(page, `${typed} again`)
   await confirmedText(page, `${typed} again`)
   expect(asked.filter((path) => path === "/decks/open").slice(before)).toHaveLength(1)
@@ -174,11 +192,12 @@ test("an edit made while the server cannot be reached lands once it answers agai
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await typeOver(page, typed)
   await confirmedText(page, typed)
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
@@ -195,11 +214,11 @@ test("an edit made while the server cannot be reached lands once it answers agai
   await expect(page.getByText(/Edits are saved on this device/)).toHaveCount(0)
 })
 
-test("a typed edit lands in Postgres and comes back from the server", async ({ page, context, stack }) => {
+test("a typed edit lands in Postgres and comes back from the server", async ({ page, context, stack, decks }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const asked = await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await typeOver(page, typed)
   await confirmedText(page, typed)
   const firstCommit = asked.indexOf("/decks/commit")
@@ -219,14 +238,14 @@ test("a typed edit lands in Postgres and comes back from the server", async ({ p
   await forgetDeckRows(page)
   expect(await deckRows(page)).toEqual([])
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(page.locator('[contenteditable="true"]')).toHaveText(typed)
 })
 
-test("a second account opening the deck is refused owner", async ({ page, context, stack }) => {
+test("a second account opening the deck is refused owner", async ({ page, context, stack, decks }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await typeOver(page, typed)
   await confirmedText(page, typed)
   const other = await stack.signIn()
@@ -239,11 +258,12 @@ test("a deck deleted on the server closes the editor, takes no edit and does not
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const asked = await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await typeOver(page, typed)
   await confirmedText(page, typed)
   expect((await stack.post("/decks/trash", { deck }, cookie)).json.ok).toBe(true)
@@ -262,11 +282,12 @@ test("a new slide whose commit answer was lost still opens after the reloads tha
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const committing = (url: URL) => url.pathname === "/decks/commit"
   await page.route(committing, async (route) => {
     const batch = (route.request().postDataJSON() as { batch: { slide?: string }[] }).batch
@@ -285,7 +306,7 @@ test("a new slide whose commit answer was lost still opens after the reloads tha
   await page.unroute(committing)
   for (const round of [1, 2]) {
     await page.reload()
-    await expect(page.locator(".thin-page"), `reload ${String(round)}`).toHaveAttribute("data-deck-ready", deck)
+    expect(await decks.ready(), `reload ${String(round)}`).toBe(deck)
     await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   }
   await expect.poll(async () => (await deckRows(page)).filter((row) => row.kind === "pending")).toHaveLength(0)

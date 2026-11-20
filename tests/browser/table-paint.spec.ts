@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx")
 
@@ -9,13 +10,9 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("an imported merged table paints locked cells rather than a grey box and exports byte for byte", async ({
   page,
+  decks,
 }, testInfo) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(deck)
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
-  })
+  await decks.open(deck)
   await page.locator('[data-slide-entry="11"]').click()
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toHaveCount(1)
@@ -60,15 +57,8 @@ test("an imported merged table paints locked cells rather than a grey box and ex
   await expect(table).toContainText("Objectives:")
 })
 
-test("narrow table cells wrap unbroken numbers rather than painting over adjacent cells", async ({ page }) => {
-  await page.goto("/")
-  await page
-    .locator("input[type=file]")
-    .setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx"))
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
-  })
+test("narrow table cells wrap unbroken numbers rather than painting over adjacent cells", async ({ page, decks }) => {
+  await decks.open(join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx"))
   await page.locator('[data-slide-entry="10"]').click()
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toContainText("54.45")

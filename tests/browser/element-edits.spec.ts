@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
-import { newBlankDeck } from "./new-deck"
+import { test } from "./deck-test"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -26,20 +26,11 @@ async function slideXml(file: string): Promise<string> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 test("adds a text box and deletes an element, and both survive a reload, the export and a new import", async ({
   page,
+  decks,
 }, testInfo) => {
-  await page.goto("/")
-  await newBlankDeck(page)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.blank()
   await page.getByRole("button", { name: "Add text", exact: true }).click()
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(1)
@@ -53,7 +44,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await page.keyboard.type("Added text", { delay: 20 })
   await expect(added).toHaveText("Added text")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toHaveText("Added text")
   await texts.first().dblclick()
@@ -64,7 +55,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await expect(texts).toHaveCount(1)
   await expect(texts.last()).toHaveText("Added text")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(texts).toHaveCount(1)
   await expect(texts.last()).toHaveText("Added text")
   const saving = page.waitForEvent("download")
@@ -74,18 +65,13 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   const xml = await slideXml(file)
   expect(xml).toContain("<a:t>Added text</a:t>")
   expect(xml.match(/<p:sp>/g)).toHaveLength(1)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await settled(page)
+  await decks.open(file)
   await expect(texts).toHaveCount(1)
   await expect(texts.last()).toHaveText("Added text")
 })
 
-test("text typed straight after Add text box keeps its first letters", async ({ page }) => {
-  await page.goto("/")
-  await newBlankDeck(page)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+test("text typed straight after Add text box keeps its first letters", async ({ page, decks }) => {
+  await decks.blank()
   const boxes = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(boxes).toHaveCount(0)
   await page.getByRole("button", { name: "Add text", exact: true }).click()

@@ -2,9 +2,10 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect } from "@playwright/test"
-import { cleanFixture, forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { exportFromDialog } from "./export-dialog"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { cleanFixture } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -36,10 +37,11 @@ test("an export after every edit is undone changes no part of the original", asy
   page,
   context,
   stack,
+  decks,
 }, testInfo) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const text = page.locator('[data-slide-paint] [contenteditable="true"]').first()
 
   await text.dblclick()
@@ -85,14 +87,12 @@ test("an export after a layout placeholder's move is undone changes no part of t
   page,
   context,
   stack,
+  decks,
 }, testInfo) => {
   const fixture = join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx")
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   await page.locator('[data-slide-entry="3"]').click()
   const title = page.locator('[data-canvas-element="ppt/slides/slide3.xml#3"]')
   const start = await title.boundingBox()

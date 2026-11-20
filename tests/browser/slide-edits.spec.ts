@@ -1,11 +1,12 @@
 import { copyFile, readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { slideEditsExportName } from "../../scripts/slide-edits.mjs"
 import { exportFromDialog } from "./export-dialog.ts"
 import { importTitleDeck } from "./new-deck"
+import { decksOn, test } from "./deck-test"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -49,13 +50,6 @@ async function partText(file: string, name: string): Promise<string> {
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${number}"]`)
 }
@@ -68,7 +62,7 @@ async function blank(page: Page): Promise<void> {
   await page.goto("/")
   await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).ready()
 }
 
 async function replace(page: Page, box: ReturnType<typeof title>, text: string): Promise<void> {
@@ -118,6 +112,7 @@ async function rowsOf(page: Page): Promise<Row[]> {
 
 test("a duplicate keeps the title it had when it was made, and a new slide takes typed text, through a reload and the export @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await blank(page)
   const source = title(page, sourcePart)
@@ -163,7 +158,7 @@ test("a duplicate keeps the title it had when it was made, and a new slide takes
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowDown")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await entry(page, 1).click()
   await expect(source).toHaveText("Source after")
   expect((await placed(page, sourcePart))[0]).toBeCloseTo(titleBox.x / emuPerPixel, 3)
@@ -193,9 +188,7 @@ test("a duplicate keeps the title it had when it was made, and a new slide takes
   expect(copyXml).not.toContain("Snapshot title")
   expect(addedXml).toContain("<a:t>Typed on a new slide</a:t>")
   await copyFile(file, join(process.cwd(), "tests/browser", slideEditsExportName))
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await settled(page)
+  await decks.open(file)
   await expect(title(page, sourcePart)).toHaveText("Source after")
   await entry(page, 2).click()
   await expect(title(page, copyPart)).toHaveText("Copy title")
@@ -251,11 +244,9 @@ test("typing and a nudge on a new slide paint before the network and stay when i
 
 test("text inside a group on a duplicated slide picks its group first, and a double-click steps in with handles that move it", async ({
   page,
+  decks,
 }) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(join(fixtures, "census-updating-spm.pptx"))
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(join(fixtures, "census-updating-spm.pptx"))
   await entry(page, 5).click()
   await entry(page, 5).focus()
   await page.keyboard.press(duplicate)

@@ -1,13 +1,15 @@
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { colorWords } from "./color-words"
-import { openDeck, settled, setPanelMode } from "./design-panel"
+import { openDeck, setPanelMode } from "./design-panel"
 import { boxFillPanel, filled, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a union picks one case of a field, shows the pick and its own controls, and Undo goes back to the case before", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "clean.pptx")
   const names = await colorWords("clean.pptx")
@@ -43,6 +45,6 @@ test("a union picks one case of a field, shows the pick and its own controls, an
   await kind("None").click()
   await expect.poll(() => filled(shape)).toBe("rgba(0, 0, 0, 0)")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "2"))).toBe("rgba(0, 0, 0, 0)")
 })

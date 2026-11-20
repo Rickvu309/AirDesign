@@ -1,10 +1,11 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { slideExportName, slideOriginalName } from "../../scripts/slide-export.mjs"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures", slideOriginalName)
 const judged = join(process.cwd(), "tests/browser", slideExportName)
@@ -35,20 +36,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
   }
   await reader.close()
   return parts
-}
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
-async function openFile(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
 }
 
 function entry(page: Page, number: number) {
@@ -112,10 +99,11 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a person adds, duplicates, deletes and reorders slides, then the export keeps that order @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   const download = testInfo.outputPath(slideExportName)
-  await openFile(page, fixture)
+  await decks.open(fixture)
   await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
@@ -134,7 +122,7 @@ test("a person adds, duplicates, deletes and reorders slides, then the export ke
   await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
   await expect(entry(page, 3).locator("[data-thumb-paint]")).not.toContainText("Heat pumps")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
   await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
   const saving = page.waitForEvent("download")
@@ -146,16 +134,20 @@ test("a person adds, duplicates, deletes and reorders slides, then the export ke
     true,
   )
   await copyFile(download, judged)
-  await openFile(page, judged)
+  await decks.open(judged)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
   await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")
   await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
   await expect(entry(page, 3).locator("[data-thumb-paint]")).not.toContainText("Hello")
 })
 
-test("a slide added offline stays in the list and is sent when the network returns", async ({ page, context }) => {
+test("a slide added offline stays in the list and is sent when the network returns", async ({
+  page,
+  context,
+  decks,
+}) => {
   await answerOpens(page)
-  await openFile(page, fixture)
+  await decks.open(fixture)
   await page.route("**/decks/commit", (route) => route.abort("internetdisconnected"))
   await context.setOffline(true)
   await page.getByRole("button", { name: "Add slide" }).click()

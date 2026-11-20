@@ -1,24 +1,13 @@
 import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
-import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const pictureWords = async () => (await import("../../apps/web/src/copy/picture-copy.ts")).pictureCopy
 
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 
 type Row = { kind: string; property?: string; value: unknown; node?: string }
-
-async function openClean(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(clean)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 async function boxRows(page: Page): Promise<string[]> {
   const rows = await page.evaluate(
@@ -59,8 +48,11 @@ async function zoomTo(page: Page, step: number | "fit"): Promise<void> {
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("Grid and Shapes are enabled, table insertion is absent, and every shape in the tray is on", async ({ page }) => {
-  await openClean(page)
+test("Grid and Shapes are enabled, table insertion is absent, and every shape in the tray is on", async ({
+  page,
+  decks,
+}) => {
+  await decks.open()
   await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add text", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Shapes", exact: true })).toBeEnabled()
@@ -76,8 +68,9 @@ test("Grid and Shapes are enabled, table insertion is absent, and every shape in
 
 test("the tool menu lists Move and Hand with their keys, and Hand pans the zoomed canvas without moving a box", async ({
   page,
+  decks,
 }) => {
-  await openClean(page)
+  await decks.open()
   await page.getByRole("button", { name: "Tools" }).click()
   const menu = page.getByRole("menu")
   await expect(menu).toBeVisible()
@@ -103,9 +96,9 @@ test("the tool menu lists Move and Hand with their keys, and Hand pans the zoome
   expect(await boxRows(page)).toEqual([])
 })
 
-test("V and H pick the tool, but not while typing in a text box", async ({ page }) => {
+test("V and H pick the tool, but not while typing in a text box", async ({ page, decks }) => {
   covers("tool-move", "tool-hand")
-  await openClean(page)
+  await decks.open()
   const text = page.locator('[contenteditable="true"]')
   await text.dblclick()
   await page.keyboard.press("End")
@@ -122,8 +115,9 @@ test("V and H pick the tool, but not while typing in a text box", async ({ page 
 
 test("zoom fits by default, each step sets the slide width, and a drag at another zoom lands on the exact EMU", async ({
   page,
+  decks,
 }) => {
-  await openClean(page)
+  await decks.open()
   await expect(page.locator("[data-zoom-readout]")).toHaveText("63%")
   expect((await slideBox(page)).width).toBe(800)
   await zoomTo(page, 100)

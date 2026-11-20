@@ -3,11 +3,12 @@ import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { colorWords } from "./color-words"
-import { openDeck, pickColor, settled, shownColor, unfold } from "./design-panel"
+import { openDeck, pickColor, shownColor, unfold } from "./design-panel"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 const styleExport = "exported-opacity.pptx"
 const textExport = "exported-opacity-text.pptx"
@@ -64,6 +65,7 @@ async function opacity(input: Locator, percent: string) {
 
 test("a person fades a shape whose fill and line come from its style, and a line, and the opacity survives Undo, a new color, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", styleExport)
   await rm(judged, { force: true })
@@ -107,7 +109,7 @@ test("a person fades a shape whose fill and line come from its style, and a line
   const fadedLine = await stroke(connector)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(faded)
   await expect.poll(() => stroke(shapeAt(page, "6"))).toBe(fadedLine)
 
@@ -125,10 +127,7 @@ test("a person fades a shape whose fill and line come from its style, and a line
   expect(changed.map(([name]) => name)).toEqual([slidePart])
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(faded)
   await expect.poll(() => stroke(shapeAt(page, "6"))).toBe(fadedLine)
 })
@@ -158,6 +157,7 @@ test("a person fades a shape's fill and text together, the text paints faded, an
 
 test("a colour picked after Reset fill keeps the opacity shown, through a reload and export", async ({
   page,
+  decks,
 }, testInfo) => {
   await openDeck(page, "shapes-added.pptx")
   const names = await colorWords("shapes-added.pptx")
@@ -166,10 +166,7 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   await exportFromDialog(page)
   const file = testInfo.outputPath("own-alpha.pptx")
   await (await saving).saveAs(file)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   const rectangle = shapeAt(page, "4")
   const panel = await fillPanel(page, rectangle)
   await expect(panel.getByRole("textbox", { name: opacityCopy.label, exact: true })).toHaveValue("60")
@@ -180,7 +177,7 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   const after = "rgb(96, 96, 96)"
   await expect.poll(() => filled(rectangle)).toBe(after)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(after)
   const exported = page.waitForEvent("download")
   await exportFromDialog(page)

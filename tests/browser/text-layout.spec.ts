@@ -2,10 +2,11 @@ import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck, settled, unfold } from "./design-panel"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { openDeck, unfold } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 const typeExport = "exported-text-type.pptx"
 const layoutExport = "exported-text-layout.pptx"
@@ -69,6 +70,7 @@ async function exported(page: Page, file: string, judged: string) {
 
 test("a person sets a text box's font, spacing, margins, anchor, wrap, direction and columns, and each survives Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const judgedType = join(process.cwd(), "tests/browser", typeExport)
   const judgedLayout = join(process.cwd(), "tests/browser", layoutExport)
@@ -125,17 +127,14 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   const laid = await shown(shape)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await actualSize(page)
   await expect.poll(() => shown(shapeAt(page, "2"))).toEqual(laid)
   const layout = await exported(page, testInfo.outputPath(layoutExport), judgedLayout)
   expect(layout).toContain(laidOut)
   expect(layout).toContain(typed)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(testInfo.outputPath(layoutExport))
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(testInfo.outputPath(layoutExport))
   await actualSize(page)
   await expect.poll(() => shown(shapeAt(page, "2"))).toEqual(laid)
 })

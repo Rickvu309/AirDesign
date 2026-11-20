@@ -1,7 +1,8 @@
 import { expect } from "@playwright/test"
 import { forward, test } from "./api-stack"
 import { boxOf, grab, hover, openSaved, panOf, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, openGrid, groupNumbers, settled, groupSizes } from "./slide-grid-deck"
+import { entry, openGrid, groupNumbers, groupSizes } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -9,6 +10,7 @@ test("slide group start drops follow the pointer, save across tabs and reload, a
   page,
   context,
   stack,
+  decks,
 }) => {
   const saved = await openSaved(page, context, stack, 8, groupSizes(8))
   const before = await saved.rows()
@@ -34,7 +36,7 @@ test("slide group start drops follow the pointer, save across tabs and reload, a
   const second = await context.newPage()
   await forward(second, stack)
   await second.goto(page.url())
-  await settled(second)
+  await decksOn(second).ready()
   await openGrid(second)
   await expect
     .poll(() => groupNumbers(second))
@@ -58,7 +60,7 @@ test("slide group start drops follow the pointer, save across tabs and reload, a
         [4, 5, 6, 7, 8],
       ])
     await page.reload()
-    await settled(page)
+    await decks.ready()
     await openGrid(page)
     await expect
       .poll(() => groupNumbers(page))

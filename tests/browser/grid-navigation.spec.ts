@@ -1,16 +1,18 @@
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { covers } from "./gesture"
-import { clean, entry, openFile, openGrid, manySlides, settled } from "./slide-grid-deck"
+import { clean, entry, openGrid, manySlides } from "./slide-grid-deck"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 test("Space drag pans over a focused slide with a grab cursor, without picking the slide or scrolling", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, { name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+  await decks.open({ name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   await entry(page, 1).focus()
   const second = (await entry(page, 2).boundingBox())!
@@ -30,8 +32,8 @@ test("Space drag pans over a focused slide with a grab cursor, without picking t
   expect(await page.evaluate(() => [scrollX, scrollY, document.scrollingElement?.scrollTop ?? 0])).toEqual([0, 0, 0])
 })
 
-test("Space types a space into a grid text box being edited and does not pan", async ({ page }) => {
-  await openFile(page, clean)
+test("Space types a space into a grid text box being edited and does not pan", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await page.locator("[data-grid-card] [data-thumb-node]").first().dblclick({ force: true })
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
@@ -43,8 +45,8 @@ test("Space types a space into a grid text box being edited and does not pan", a
   expect((await entry(page, 1).boundingBox())!.x).toBeCloseTo(before.x, 0)
 })
 
-test("Space and arrows reach the show when Present starts from the grid", async ({ page }) => {
-  await openFile(page, { name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+test("Space and arrows reach the show when Present starts from the grid", async ({ page, decks }) => {
+  await decks.open({ name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   const slide = page.locator("[data-present-show] [data-present-slide]")
@@ -60,9 +62,10 @@ test("Space and arrows reach the show when Present starts from the grid", async 
 
 test("Shift+2 fills the canvas with the selected slide and Shift+1 fits the deck, both in the shared menu", async ({
   page,
+  decks,
 }) => {
   covers("zoom-fit", "zoom-selection")
-  await openFile(page, { name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+  await decks.open({ name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   const host = (await page.locator("[data-grid-viewport]").boundingBox())!
   await entry(page, 7).click()
@@ -83,8 +86,8 @@ test("Shift+2 fills the canvas with the selected slide and Shift+1 fits the deck
   expect((await entry(page, 7).boundingBox())!.width).toBeCloseTo(seventh.width, 0)
 })
 
-test("Shift+1 and Shift+2 leave typed digits alone in a grid text box", async ({ page }) => {
-  await openFile(page, clean)
+test("Shift+1 and Shift+2 leave typed digits alone in a grid text box", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await page.locator("[data-grid-card] [data-thumb-node]").first().dblclick({ force: true })
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
@@ -96,22 +99,27 @@ test("Shift+1 and Shift+2 leave typed digits alone in a grid text box", async ({
   expect((await entry(page, 1).boundingBox())!.width).toBeCloseTo(before.width, 0)
 })
 
-test("pinch paints immediately and writes storage once after thirty events", async ({ page }) => {
-  await openFile(page, clean)
+test("pinch paints immediately and writes storage once after thirty events", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
-  const result = await page.locator("[data-grid-viewport]").evaluate(async (host) => {
-    let writes = 0
+  const host = page.locator("[data-grid-viewport]")
+  const pinched = await host.evaluate(async (host) => {
+    const seen = { writes: 0, changes: 0, stop: () => undefined as void }
+    Object.assign(window, { pinchSeen: seen })
     const original = Storage.prototype.setItem
     Storage.prototype.setItem = function (key, value) {
-      writes++
+      seen.writes++
       original.call(this, key, value)
     }
     const world = host.querySelector('[role="group"]')!
-    let changes = 0
     const observer = new MutationObserver((records) => {
-      changes += records.filter((record) => record.target !== world).length
+      seen.changes += records.filter((record) => record.target !== world).length
     })
     observer.observe(world, { subtree: true, attributes: true, childList: true, characterData: true })
+    seen.stop = () => {
+      observer.disconnect()
+      Storage.prototype.setItem = original
+    }
     const before = world.getAttribute("style")
     for (let n = 0; n < 30; n++)
       host.dispatchEvent(
@@ -125,22 +133,31 @@ test("pinch paints immediately and writes storage once after thirty events", asy
         }),
       )
     await Promise.resolve()
-    const during = writes
-    const rendered = changes
     const transform = world.getAttribute("style")
-    const moved = before !== world.getAttribute("style")
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    const stable = transform === world.getAttribute("style")
-    observer.disconnect()
-    Storage.prototype.setItem = original
-    return { during, after: writes, moved, rendered, stable }
+    return { during: seen.writes, rendered: seen.changes, moved: before !== transform, transform }
   })
-  expect(result).toEqual({ during: 0, after: 1, moved: true, rendered: 0, stable: true })
+  await decks.ready()
+  const after = await host.evaluate((host, transform) => {
+    const seen = (window as unknown as { pinchSeen: { writes: number; stop: () => void } }).pinchSeen
+    seen.stop()
+    return { after: seen.writes, stable: transform === host.querySelector('[role="group"]')!.getAttribute("style") }
+  }, pinched.transform)
+  expect({ ...pinched, ...after, transform: undefined }).toEqual({
+    during: 0,
+    after: 1,
+    moved: true,
+    rendered: 0,
+    stable: true,
+    transform: undefined,
+  })
 })
 
-test("Shift wheel and arrows with no slide focused pan, while focused arrows move between slides", async ({ page }) => {
+test("Shift wheel and arrows with no slide focused pan, while focused arrows move between slides", async ({
+  page,
+  decks,
+}) => {
   covers("pan-arrows")
-  await openFile(page, { name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+  await decks.open({ name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   const host = page.locator("[data-grid-viewport]")
   const first = (await entry(page, 1).boundingBox())!
@@ -161,8 +178,8 @@ test("Shift wheel and arrows with no slide focused pan, while focused arrows mov
   expect((await entry(page, 1).boundingBox())!.y).toBeCloseTo(focused.y, 0)
 })
 
-test("fifty-slide fit keeps proportional gaps and readable numbers", async ({ page }) => {
-  await openFile(page, { name: "fifty.pptx", mimeType: "application/octet-stream", buffer: await manySlides(50) })
+test("fifty-slide fit keeps proportional gaps and readable numbers", async ({ page, decks }) => {
+  await decks.open({ name: "fifty.pptx", mimeType: "application/octet-stream", buffer: await manySlides(50) })
   await openGrid(page)
   const first = (await entry(page, 1).boundingBox())!
   const second = (await entry(page, 2).boundingBox())!
@@ -172,42 +189,45 @@ test("fifty-slide fit keeps proportional gaps and readable numbers", async ({ pa
   expect(number.y).toBeGreaterThan(first.y + first.height + 4)
 })
 
-test("remembers pan and zoom through Slides and reload", async ({ page }) => {
-  await openFile(page, clean)
+test("remembers pan and zoom through Slides and reload", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const host = page.locator("[data-grid-viewport]")
   await host.dispatchEvent("wheel", { deltaY: -40, ctrlKey: true, clientX: 300, clientY: 300 })
   await host.dispatchEvent("wheel", { deltaX: 160, deltaY: 170 })
-  await page.waitForTimeout(300)
+  await decks.ready()
   const before = (await entry(page, 1).boundingBox())!
   const percent = await page.locator("[data-zoom-readout]").textContent()
   await page.getByRole("button", { name: slideListCopy.listName, exact: true }).click()
   await openGrid(page)
   expect((await entry(page, 1).boundingBox())!).toEqual(before)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   expect((await entry(page, 1).boundingBox())!).toEqual(before)
   await expect(page.locator("[data-zoom-readout]")).toHaveText(percent!)
 })
 
-test("a deck left at Zoom to fit reopens at Zoom to fit after a pan is fitted away", async ({ page }) => {
-  await openFile(page, clean)
+test("a deck left at Zoom to fit reopens at Zoom to fit after a pan is fitted away", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const fitted = (await entry(page, 1).boundingBox())!
   await page.locator("[data-grid-viewport]").dispatchEvent("wheel", { deltaX: 300, deltaY: 200 })
-  await page.waitForTimeout(300)
+  await decks.ready()
   await page.keyboard.press("Shift+Digit1")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   expect((await entry(page, 1).boundingBox())!).toEqual(fitted)
   await page.locator("[data-zoom-readout]").click()
   await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toBeChecked()
 })
 
-test("a pinch that settles stays where it was pinched, with another slide selected off screen", async ({ page }) => {
-  await openFile(page, { name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+test("a pinch that settles stays where it was pinched, with another slide selected off screen", async ({
+  page,
+  decks,
+}) => {
+  await decks.open({ name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   await entry(page, 7).click()
   const first = (await entry(page, 1).boundingBox())!
@@ -216,13 +236,13 @@ test("a pinch that settles stays where it was pinched, with another slide select
     await host.dispatchEvent("wheel", { deltaY: -10, ctrlKey: true, clientX: first.x + 10, clientY: first.y + 10 })
   await expect(entry(page, 7)).not.toBeInViewport()
   const pinched = (await entry(page, 1).boundingBox())!
-  await page.waitForTimeout(400)
+  await decks.ready()
   expect((await entry(page, 1).boundingBox())!.x).toBeCloseTo(pinched.x, 0)
   expect((await entry(page, 1).boundingBox())!.y).toBeCloseTo(pinched.y, 0)
 })
 
-test("H hand and middle-button drag still pan over slides", async ({ page }) => {
-  await openFile(page, clean)
+test("H hand and middle-button drag still pan over slides", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   for (const button of ["left", "middle"] as const) {
     if (button === "left") await page.keyboard.press("h")
@@ -236,13 +256,13 @@ test("H hand and middle-button drag still pan over slides", async ({ page }) => 
   }
 })
 
-test("Space pans before a restored canvas has keyboard focus", async ({ page }) => {
-  await openFile(page, clean)
+test("Space pans before a restored canvas has keyboard focus", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await page.locator("[data-grid-viewport]").dispatchEvent("wheel", { deltaY: 40 })
-  await page.waitForTimeout(300)
+  await decks.ready()
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -258,8 +278,8 @@ test("Space pans before a restored canvas has keyboard focus", async ({ page }) 
   expect((await entry(page, 1).boundingBox())!.x).toBeCloseTo(box.x + 40, 0)
 })
 
-test("slide numbers sit above the slide and Grid draws no section heading", async ({ page }) => {
-  await openFile(page, "scripts/pptx-fixtures/sections-before.pptx")
+test("slide numbers sit above the slide and Grid draws no section heading", async ({ page, decks }) => {
+  await decks.open("scripts/pptx-fixtures/sections-before.pptx")
   await openGrid(page)
   await expect(page.locator("[data-editor-grid]").getByRole("heading", { name: "Opening" })).toHaveCount(0)
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Opening")

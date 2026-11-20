@@ -1,22 +1,17 @@
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { decksOn } from "./deck-test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-conjunction-assessment.pptx")
 const broken = "CA can be performed only against well tracked objects in the catalog"
 
 async function open(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(deck)
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
-  })
+  await decksOn(page).open(deck)
   const entry = page.locator('[data-slide-entry="11"]')
   await entry.click()
   await expect(entry).toHaveAttribute("aria-current", "true")
   await expect(page.locator("[data-slide-paint]").getByText(broken)).toBeVisible()
-  await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
-  await page.evaluate(() => document.fonts.ready)
+  await decksOn(page).ready()
 }
 
 async function lines(root: Locator): Promise<{ readonly words: number; readonly block: number }> {

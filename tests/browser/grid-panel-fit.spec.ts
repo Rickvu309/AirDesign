@@ -2,7 +2,8 @@ import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { canvas, openSaved, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, fixtures, openFile, openGrid } from "./slide-grid-deck"
+import { entry, fixtures, openGrid } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -38,8 +39,8 @@ test("Escape from the toolbar returns to the canvas when nothing is selected", a
   }
 })
 
-test("typing a zoom and pressing Enter returns to the canvas without its ring", async ({ page }) => {
-  await openFile(page, join(fixtures, "clean.pptx"))
+test("typing a zoom and pressing Enter returns to the canvas without its ring", async ({ page, decks }) => {
+  await decks.open(join(fixtures, "clean.pptx"))
   await openGrid(page)
   await readout(page).click()
   await page.locator("[data-zoom-field]").fill("9")
@@ -102,9 +103,8 @@ test("keyboard Undo shows the slide focus ring and a clicked Undo does not", asy
 })
 
 async function zoomedHeatTitle(page: Page, viewport: { width: number; height: number }) {
-  test.setTimeout(120_000)
   await page.setViewportSize(viewport)
-  await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
+  await decksOn(page).open(join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
   await zoomTo(page, 40)
   await entry(page, 1).locator("[data-thumb-node]").filter({ hasText: "Introduction to Heat Pumps" }).click()
@@ -176,9 +176,9 @@ test("a narrower window keeps a zoomed title inside the canvas", async ({ page }
   expect(Number.parseInt((await readout(page).textContent()) ?? "", 10)).toBeLessThanOrEqual(zoom)
 })
 
-test("named groups keep their names for a screen reader when the window is narrow", async ({ page }) => {
+test("named groups keep their names for a screen reader when the window is narrow", async ({ page, decks }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
-  await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
+  await decks.open(join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
   await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Introduction")
@@ -186,7 +186,7 @@ test("named groups keep their names for a screen reader when the window is narro
   await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Introduction")
   await expect(entry(page, 1)).toBeVisible()
 
-  await openFile(page, join(fixtures, "sections-after.pptx"))
+  await decks.open(join(fixtures, "sections-after.pptx"))
   await openGrid(page)
   await zoomTo(page, 5)
   const groups = page.locator("[data-slide-group]")

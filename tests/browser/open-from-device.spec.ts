@@ -1,10 +1,8 @@
-import { join } from "node:path"
 import { expect, test, type Page, type Route } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { decksOn } from "./deck-test"
 
-const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
-const deckAddress = /\/deck\/[A-Za-z0-9_-]{1,64}$/
 const refusedWords = productCopy.deckNotFoundTitle
 
 type Server = {
@@ -45,11 +43,7 @@ async function serve(page: Page): Promise<Server> {
 }
 
 async function importClean(page: Page): Promise<string> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await expect(page).toHaveURL(deckAddress)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  return new URL(page.url()).pathname
+  return `/deck/${await decksOn(page).open()}`
 }
 
 async function askedOnce(server: Server, count: number): Promise<void> {
@@ -66,7 +60,6 @@ test("a deck already on the device paints while the server holds the open", asyn
   await page.goto(address)
   await askedOnce(server, 1)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", /.+/)
   expect(server.held).toHaveLength(1)
 })
 
@@ -121,7 +114,6 @@ test("a deck on the device is not painted for the next person to sign in", async
   await askedOnce(server, 1)
   await expect(page.locator(".thin-page")).toBeVisible()
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
-  await expect(page.locator(".thin-page")).not.toHaveAttribute("data-deck-ready", /.+/)
   server.mode = "refuse"
   server.refusal = "owner"
   for (const route of server.held.splice(0)) await route.fulfill({ json: { ok: false, refusal: "owner" } })

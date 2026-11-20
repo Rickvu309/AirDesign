@@ -1,7 +1,8 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { colorWords } from "./color-words"
-import { clean, entry, openFile, openGrid, manySlides } from "./slide-grid-deck"
+import { clean, entry, openGrid, manySlides } from "./slide-grid-deck"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -22,8 +23,8 @@ for (const [percent, placement] of [
   [23, "above"],
   [14, "inside"],
 ] as const) {
-  test(`${placement} number and hover chrome at ${percent} percent`, async ({ page }) => {
-    await openFile(page, { name: "hover.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
+  test(`${placement} number and hover chrome at ${percent} percent`, async ({ page, decks }) => {
+    await decks.open({ name: "hover.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
     await openGrid(page)
     await zoom(page, percent)
     const card = page.locator("[data-grid-card]").first()
@@ -60,8 +61,8 @@ for (const [width, placement] of [
   [76.8, "hidden"],
   [96, "inside"],
 ] as const) {
-  test(`${placement} numbers at ${width} screen pixels`, async ({ page }) => {
-    await openFile(page, { name: "overview.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
+  test(`${placement} numbers at ${width} screen pixels`, async ({ page, decks }) => {
+    await decks.open({ name: "overview.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
     await openGrid(page)
     await zoom(page, 10)
     const host = page.locator("[data-grid-viewport]")
@@ -90,8 +91,8 @@ for (const [width, placement] of [
   })
 }
 
-test("placement waits for a pinch to settle instead of flickering", async ({ page }) => {
-  await openFile(page, clean)
+test("placement waits for a pinch to settle instead of flickering", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await zoom(page, 29)
   const placements = await page.locator("[data-grid-viewport]").evaluate((host) => {
@@ -109,16 +110,16 @@ test("placement waits for a pinch to settle instead of flickering", async ({ pag
 test("touch never leaves a hover halo", async ({ browser }) => {
   const context = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 1000, height: 800 } })
   const page = await context.newPage()
-  await openFile(page, clean)
+  await decksOn(page).open(clean)
   await openGrid(page)
   await entry(page, 1).tap()
   await expect(page.locator("[data-grid-halo]").first()).toHaveCSS("opacity", "0")
   await context.close()
 })
 
-test("inside numbers stay readable over a dark slide", async ({ page }) => {
+test("inside numbers stay readable over a dark slide", async ({ page, decks }) => {
   const names = await colorWords("clean.pptx")
-  await openFile(page, clean)
+  await decks.open(clean)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page
     .locator("[data-design-panel]")
@@ -141,8 +142,8 @@ test("inside numbers stay readable over a dark slide", async ({ page }) => {
   await expect(card.locator("[data-slide-number]")).toHaveCSS("background-color", "rgb(191, 228, 255)")
 })
 
-test("pan and reorder suppress hover, and reduced motion has no halo transition", async ({ page }) => {
-  await openFile(page, clean)
+test("pan and reorder suppress hover, and reduced motion has no halo transition", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await entry(page, 1).hover()
   const halo = page.locator("[data-grid-halo]").first()
@@ -160,8 +161,8 @@ test("pan and reorder suppress hover, and reduced motion has no halo transition"
   await page.mouse.up()
 })
 
-test("element selection, text and element gestures keep hover separate from canvas focus", async ({ page }) => {
-  await openFile(page, {
+test("element selection, text and element gestures keep hover separate from canvas focus", async ({ page, decks }) => {
+  await decks.open({
     name: "editing-hover.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(2),
@@ -190,8 +191,8 @@ test("element selection, text and element gestures keep hover separate from canv
   await expect(page.locator("[data-grid-viewport]")).toHaveCSS("outline-style", "none")
 })
 
-test("inside number tab wins over live content", async ({ page }) => {
-  await openFile(page, { name: "tab.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
+test("inside number tab wins over live content", async ({ page, decks }) => {
+  await decks.open({ name: "tab.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
   await openGrid(page)
   await zoom(page, 20)
   const card = page.locator("[data-grid-card]").first()
@@ -204,8 +205,8 @@ test("inside number tab wins over live content", async ({ page }) => {
 })
 
 for (const gesture of ["move", "resize"] as const) {
-  test(`element ${gesture} suppresses hover on other slides`, async ({ page }) => {
-    await openFile(page, {
+  test(`element ${gesture} suppresses hover on other slides`, async ({ page, decks }) => {
+    await decks.open({
       name: "gesture-hover.pptx",
       mimeType: "application/octet-stream",
       buffer: await manySlides(2),
@@ -227,8 +228,8 @@ for (const gesture of ["move", "resize"] as const) {
   })
 }
 
-test("Escape closes an open slide menu before clearing slide selection", async ({ page }) => {
-  await openFile(page, clean)
+test("Escape closes an open slide menu before clearing slide selection", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const slide = entry(page, 1)
   await slide.click({ button: "right" })
@@ -241,8 +242,8 @@ test("Escape closes an open slide menu before clearing slide selection", async (
 })
 
 for (const percent of [9, 53, 200]) {
-  test(`slide and selection share the scaled corner at ${percent}%`, async ({ page }) => {
-    await openFile(page, clean)
+  test(`slide and selection share the scaled corner at ${percent}%`, async ({ page, decks }) => {
+    await decks.open(clean)
     await openGrid(page)
     await zoom(page, percent)
     const card = page.locator("[data-grid-card]").first()

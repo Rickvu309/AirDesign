@@ -1,8 +1,9 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { airaCopy, airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, indexed, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { holdableDevice, slowDevice } from "./slow-device"
+import { decksOn } from "./deck-test"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -12,18 +13,23 @@ const answer = "Lead with the claim. Then show the evidence."
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
-async function openDeck(page: Page, context: BrowserContext, stack: Stack, indexDelay = 0) {
+async function openDeck(page: Page, context: BrowserContext, stack: Stack, indexLate = false) {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  if (indexDelay > 0) {
+  let release = () => {}
+  const painted = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  if (indexLate) {
     await page.route("**/decks/index", async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, indexDelay))
+      await painted
       await route.fallback()
     })
+    await decksOn(page).openHeld()
+    release()
   }
-  const deck = await openClean(page)
-  await indexed(stack, deck, cookie)
+  const deck = indexLate ? await decksOn(page).ready() : await decksOn(page).open()
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   const side = page.locator("[data-editor-panel]")
   return { cookie, deck, base: String(base), side, log: side.getByRole("log") }
@@ -89,6 +95,7 @@ test("a chat survives a reload, New chat keeps it in history, and picking it sho
   page,
   context,
   stack,
+  decks,
 }) => {
   const { deck, base, side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" })
@@ -99,7 +106,7 @@ test("a chat survives a reload, New chat keeps it in history, and picking it sho
   await expect(head).toHaveAttribute("title", asked)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(side.getByText(reply, { exact: true })).toBeVisible()
   await expect(side.getByText("Edited slides", { exact: true })).toBeVisible()
@@ -128,6 +135,7 @@ test("an answer shown while the device write is slow is still there after an imm
   page,
   context,
   stack,
+  decks,
 }) => {
   await holdableDevice(page)
   const { deck, side, log } = await openDeck(page, context, stack)
@@ -136,7 +144,7 @@ test("an answer shown while the device write is slow is still there after an imm
   await ask(page, "Lead with the number")
   await expect(log.getByText(answer, { exact: true })).toBeVisible()
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(log.getByText("Lead with the number", { exact: true })).toBeVisible()
   await expect(log.getByText(answer, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: airaHistoryNameOf("Lead with the number") })).toBeVisible()
@@ -159,7 +167,7 @@ test("an answer shown while the device write is slow is still there when the tab
   const reopened = await context.newPage()
   await forward(reopened, stack)
   await reopened.goto(`/deck/${deck}`)
-  await settled(reopened)
+  await decksOn(reopened).ready()
   const log = reopened.locator("[data-editor-panel]").getByRole("log")
   await expect(log.getByText("Lead with the number", { exact: true })).toBeVisible()
   await expect(log.getByText(answer, { exact: true })).toBeVisible()
@@ -170,6 +178,7 @@ test("Undo on a restored chat takes the run back, and the chat stays undone afte
   page,
   context,
   stack,
+  decks,
 }) => {
   const { deck, base, side } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" })
@@ -177,20 +186,20 @@ test("Undo on a restored chat takes the run back, and the chat stays undone afte
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello from Aira")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await side.getByRole("button", { name: productCopy.undo }).click()
   await expect(editor).toHaveText("Hello")
   await expect(side.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(editor).toHaveText("Hello")
   await expect(side.getByText(reply, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
 })
 
 test("an edit shows on the slide when the deck's index reached the server late", async ({ page, context, stack }) => {
-  const { deck, base, side } = await openDeck(page, context, stack, 2500)
+  const { deck, base, side } = await openDeck(page, context, stack, true)
   stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" })
   await ask(page, asked)
   await expect(side.getByText(reply, { exact: true })).toBeVisible()
@@ -201,6 +210,7 @@ test("a chat whose run was undone elsewhere says Undo is no longer possible inst
   page,
   context,
   stack,
+  decks,
 }) => {
   const { cookie, deck, base, side } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" })
@@ -211,13 +221,13 @@ test("a chat whose run was undone elsewhere says Undo is no longer possible inst
   const [runId] = await chatRuns(page, deck)
   expect((await stack.post("/decks/undo", { deck, runId }, cookie)).json.ok).toBe(true)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(editor).toHaveText("Hello")
   await side.getByRole("button", { name: productCopy.undo }).click()
   await expect(side.getByText(airaCopy.undoRefused, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(side.getByText(airaCopy.undoRefused, { exact: true })).toBeVisible()
 })
 
@@ -225,6 +235,7 @@ test("a reply cut off by a reload is kept up to where it got, as stopped, and ru
   page,
   context,
   stack,
+  decks,
 }) => {
   const { deck, base, side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base, node }, holdAfter: 3 }, { name: "edited.sse" })
@@ -238,7 +249,7 @@ test("a reply cut off by a reload is kept up to where it got, as stopped, and ru
   })
   await page.reload()
   stack.release()
-  await settled(page)
+  await decks.ready()
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(side.getByText("I will change the title", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)

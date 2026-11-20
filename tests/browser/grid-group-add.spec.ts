@@ -1,7 +1,8 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { entry, fifty, manySlides, openFile, openGrid, groupNumbers, settled, groupSizes } from "./slide-grid-deck"
+import { entry, fifty, manySlides, openGrid, groupNumbers, groupSizes } from "./slide-grid-deck"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -14,7 +15,7 @@ const original = [
 ]
 
 async function ten(page: Page) {
-  await openFile(page, {
+  await decksOn(page).open({
     name: "ten.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(10, groupSizes(10)),
@@ -30,8 +31,8 @@ async function zoom(page: Page, percent: number) {
   await expect(page.locator("[data-zoom-readout]")).toHaveText(new RegExp(`^${percent}`))
 }
 
-test("a one-slide deck keeps the below control within the fitted viewport", async ({ page }) => {
-  await openFile(page, {
+test("a one-slide deck keeps the below control within the fitted viewport", async ({ page, decks }) => {
+  await decks.open({
     name: "one.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(1, groupSizes(1)),
@@ -97,7 +98,7 @@ test("the last slide group previews a full cell when there is space below", asyn
   await expect(placeholder).toBeInViewport({ ratio: 1 })
 })
 
-test("a final slide group add keeps fit zoom then survives undo redo and reload", async ({ page }) => {
+test("a final slide group add keeps fit zoom then survives undo redo and reload", async ({ page, decks }) => {
   await ten(page)
   const percent = await page.locator("[data-zoom-readout]").textContent()
   await below(page, 3).click()
@@ -115,7 +116,7 @@ test("a final slide group add keeps fit zoom then survives undo redo and reload"
   await page.setViewportSize({ width: 1000, height: 800 })
   expect(await groupNumbers(page)).toEqual(added)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   expect(await groupNumbers(page)).toEqual(added)
 })
@@ -167,8 +168,8 @@ test("below controls and the preview yield to Space pan and Hand mode", async ({
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
 })
 
-test("a full deck removes every inline add and describes the limit in the top bar", async ({ page }) => {
-  await openFile(page, {
+test("a full deck removes every inline add and describes the limit in the top bar", async ({ page, decks }) => {
+  await decks.open({
     name: "fifty.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(fifty, groupSizes(fifty)),
@@ -183,7 +184,7 @@ test("a full deck removes every inline add and describes the limit in the top ba
   await expect(page.locator("[data-slide-entry]")).toHaveCount(50)
 })
 
-test("leaving text editing restores the below add and keeps the text edit", async ({ page }) => {
+test("leaving text editing restores the below add and keeps the text edit", async ({ page, decks }) => {
   await ten(page)
   await entry(page, 1).focus()
   await page.keyboard.press("Enter")
@@ -200,7 +201,7 @@ test("leaving text editing restores the below add and keeps the text edit", asyn
   await page.locator('[data-grid-edit] [contenteditable="true"]').first().fill("Text in the new row")
   await entry(page, 1).focus()
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await expect(entry(page, 1)).toContainText("Changed before adding below")
   await expect(entry(page, 5)).toContainText("Text in the new row")
@@ -209,6 +210,7 @@ test("leaving text editing restores the below add and keeps the text edit", asyn
 test("an offline below add and undo keep the original slide groups after reconnect and reload", async ({
   page,
   context,
+  decks,
 }) => {
   await ten(page)
   await context.setOffline(true)
@@ -219,7 +221,7 @@ test("an offline below add and undo keep the original slide groups after reconne
   expect(await groupNumbers(page)).toEqual(original)
   await context.setOffline(false)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   expect(await groupNumbers(page)).toEqual(original)
 })

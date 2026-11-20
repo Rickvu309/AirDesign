@@ -1,11 +1,12 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { exportFromDialog } from "./export-dialog"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -39,21 +40,12 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 test("a person sets how a slide arrives, presents it, undoes it, and the export writes that transition @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.getByRole("tab", { name: transitionCopy.animate }).click()
   const panel = page.locator("[data-animate-panel]")
@@ -74,7 +66,7 @@ test("a person sets how a slide arrives, presents it, undoes it, and the export 
   await page.keyboard.press("Escape")
   await expect(page.locator("[data-present-show]")).toHaveCount(0)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.getByRole("tab", { name: transitionCopy.animate }).click()
   await expect(

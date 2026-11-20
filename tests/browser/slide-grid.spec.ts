@@ -1,21 +1,11 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 import { covers } from "./gesture"
-import {
-  clean,
-  entry,
-  fifty,
-  fixtures,
-  manySlides,
-  mark,
-  openFile,
-  openGrid,
-  sectioned,
-  settled,
-} from "./slide-grid-deck"
+import { clean, entry, fifty, fixtures, manySlides, mark, openGrid, sectioned } from "./slide-grid-deck"
+import { test } from "./deck-test"
 
 const hundred = 100
 
@@ -35,8 +25,8 @@ async function ringed(page: Page): Promise<boolean> {
   })
 }
 
-test("a selected slide has one frame that follows its thumbnail corners", async ({ page }) => {
-  await openFile(page, sectioned)
+test("a selected slide has one frame that follows its thumbnail corners", async ({ page, decks }) => {
+  await decks.open(sectioned)
   await openGrid(page)
   const selected = entry(page, 1)
   const thumb = selected.locator("[data-slide-thumb]")
@@ -50,9 +40,9 @@ test("a selected slide has one frame that follows its thumbnail corners", async 
   expect(await ringed(page)).toBe(true)
 })
 
-test("the grid shows every slide, and the keyboard opens one", async ({ page }) => {
+test("the grid shows every slide, and the keyboard opens one", async ({ page, decks }) => {
   covers("slide-open")
-  await openFile(page, sectioned)
+  await decks.open(sectioned)
   await openGrid(page)
   const groups = page.locator("[data-editor-grid] [data-slide-group]")
   await expect(groups).toHaveCount(2)
@@ -94,9 +84,9 @@ test("the grid shows every slide, and the keyboard opens one", async ({ page }) 
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
-test("the grid adds, reorders, duplicates and deletes a slide without a mouse", async ({ page }) => {
+test("the grid adds, reorders, duplicates and deletes a slide without a mouse", async ({ page, decks }) => {
   covers("slide-earlier", "slide-later")
-  await openFile(page, clean)
+  await decks.open(clean)
   await openGrid(page)
   const said = page.locator("[data-editor-grid] [data-announcer]")
   const plus = page.locator('[aria-label="Add slide after slide 1"]')
@@ -134,8 +124,9 @@ test("the grid adds, reorders, duplicates and deletes a slide without a mouse", 
 
 test("a right click or the menu key on a slide offers the slide commands, and each one does what the keyboard does", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, sectioned)
+  await decks.open(sectioned)
   await openGrid(page)
   const said = page.locator("[data-editor-grid] [data-announcer]")
   const menu = page.getByRole("menu")
@@ -181,8 +172,8 @@ test("a right click or the menu key on a slide offers the slide commands, and ea
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
-test("Escape closes the slide menu while focus is still on its slide", async ({ page }) => {
-  await openFile(page, sectioned)
+test("Escape closes the slide menu while focus is still on its slide", async ({ page, decks }) => {
+  await decks.open(sectioned)
   await openGrid(page)
   await entry(page, 2).click({ button: "right" })
   const menu = page.getByRole("menu")
@@ -225,8 +216,11 @@ async function dragOnto(
   await expect(bar).toBeHidden()
 }
 
-test("a slide dragged onto half of another lands on that side of it, where the drop bar showed", async ({ page }) => {
-  await openFile(page, clean)
+test("a slide dragged onto half of another lands on that side of it, where the drop bar showed", async ({
+  page,
+  decks,
+}) => {
+  await decks.open(clean)
   await openGrid(page)
   const said = page.locator("[data-editor-grid] [data-announcer]")
   for (const count of [2, 3, 4]) {
@@ -247,8 +241,9 @@ test("a slide dragged onto half of another lands on that side of it, where the d
 
 test("a slide dropped at the start of a section's line shows there and joins that section at its start", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, join(fixtures, "sections-after.pptx"))
+  await decks.open(join(fixtures, "sections-after.pptx"))
   await openGrid(page)
   const groups = page.locator("[data-editor-grid] [data-slide-group]")
   await expect(groups.nth(0)).toHaveAccessibleName("Opening")
@@ -289,9 +284,8 @@ async function groupCounts(page: Page): Promise<number[]> {
   })
 }
 
-test("a 50-slide deck paints grid thumbnails as they come into view", async ({ page }) => {
-  test.setTimeout(120_000)
-  await openFile(page, {
+test("a 50-slide deck paints grid thumbnails as they come into view", async ({ page, decks }) => {
+  await decks.open({
     name: "fifty.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(fifty),
@@ -328,9 +322,9 @@ async function thumbWidth(page: Page): Promise<number> {
 
 test("the grid fits the deck by default, zooms by percent with the keyboard and the menu, and keeps the zoom for the deck", async ({
   page,
+  decks,
 }) => {
-  test.setTimeout(120_000)
-  await openFile(page, {
+  await decks.open({
     name: "fifty.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(fifty),
@@ -354,7 +348,7 @@ test("the grid fits the deck by default, zooms by percent with the keyboard and 
   expect(await thumbWidth(page)).toBe(640)
   await expect.poll(() => perRow(page)).toBe(9)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")
   await expect.poll(() => perRow(page)).toBe(9)
@@ -364,8 +358,8 @@ test("the grid fits the deck by default, zooms by percent with the keyboard and 
   await expect.poll(() => perRow(page)).toBe(9)
 })
 
-test("Zoom to fit shows every slide of a short deck as large as the window allows", async ({ page }) => {
-  await openFile(page, sectioned)
+test("Zoom to fit shows every slide of a short deck as large as the window allows", async ({ page, decks }) => {
+  await decks.open(sectioned)
   await openGrid(page)
   const room = await page.locator("[data-grid-viewport]").boundingBox()
   for (const number of [1, 2]) {
@@ -396,8 +390,9 @@ async function zoomMenuOf(page: Page) {
 
 test("the slide view and the grid open the same zoom menu, hung from the zoom button's right edge", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, sectioned)
+  await decks.open(sectioned)
   const slides = await zoomMenuOf(page)
   await openGrid(page)
   const grid = await zoomMenuOf(page)
@@ -413,8 +408,11 @@ test("the slide view and the grid open the same zoom menu, hung from the zoom bu
   await expect(page.locator("[data-view-bar] [data-present-button]")).toHaveText("")
 })
 
-test("Present in the grid starts the show from the focused slide and lands back in the grid", async ({ page }) => {
-  await openFile(page, sectioned)
+test("Present in the grid starts the show from the focused slide and lands back in the grid", async ({
+  page,
+  decks,
+}) => {
+  await decks.open(sectioned)
   await openGrid(page)
   await entry(page, 2).focus()
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
@@ -428,7 +426,6 @@ test("Present in the grid starts the show from the focused slide and lands back 
 })
 
 test("a 100-slide deck is refused before it opens", async ({ page }) => {
-  test.setTimeout(60_000)
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles({
     name: "hundred.pptx",

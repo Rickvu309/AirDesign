@@ -1,8 +1,9 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { clean, entry, manySlides, mark, openFile, openGrid } from "./slide-grid-deck"
+import { clean, entry, manySlides, mark, openGrid } from "./slide-grid-deck"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -15,7 +16,7 @@ const frame = (page: Page) => live(page).locator("[data-canvas-element]").first(
 const text = (page: Page) => live(page).locator('[contenteditable="true"]').first()
 
 async function slides(page: Page, count: number) {
-  await openFile(page, {
+  await decksOn(page).open({
     name: `${String(count)}.pptx`,
     mimeType: "application/octet-stream",
     buffer: await manySlides(count),
@@ -68,8 +69,9 @@ test("one click on an element of a slide that is not open selects it with handle
 
 test("right-clicking a live slide matches Slides element menus and opens its slide menu on blank areas", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, clean)
+  await decks.open(clean)
   await page.locator("[data-slide-paint] [data-canvas-element]").first().click({ button: "right", force: true })
   await expect(page.getByRole("menuitem", { name: /Bring to front/ })).toBeVisible()
   const slideItems = await page.getByRole("menuitem").allTextContents()

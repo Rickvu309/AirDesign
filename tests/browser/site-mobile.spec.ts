@@ -200,10 +200,15 @@ test("a finger on the demo scrolls the page past it", async ({ page }) => {
   await open(page, "/")
   const demo = page.locator("[data-fit-frame]").first()
   await demo.scrollIntoViewIfNeeded()
-  await page.waitForFunction(() => {
-    const at = scrollY
-    return new Promise((resolve) => setTimeout(() => resolve(at === scrollY), 100))
-  })
+  let last = Number.NaN
+  await expect
+    .poll(async () => {
+      const at = await page.evaluate(() => scrollY)
+      const still = at === last
+      last = at
+      return still
+    })
+    .toBe(true)
   const before = await page.evaluate(() => scrollY)
   const box = await demo.boundingBox()
   expect(box).not.toBeNull()
@@ -213,7 +218,6 @@ test("a finger on the demo scrolls the page past it", async ({ page }) => {
   await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] })
   for (let step = 1; step <= 10; step += 1) {
     await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y - step * 10 }] })
-    await page.waitForTimeout(16)
   }
   await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before)
@@ -226,7 +230,7 @@ test("pressing a button moves it, and with reduced motion it does not", async ({
     const box = await button.boundingBox()
     await page.mouse.move((box?.x ?? 0) + 20, (box?.y ?? 0) + 10)
     await page.mouse.down()
-    await page.waitForTimeout(300)
+    await expect.poll(() => button.evaluate((element) => element.getAnimations().length)).toBe(0)
     const transform = await button.evaluate((element) => getComputedStyle(element).transform)
     await page.mouse.up()
     return transform

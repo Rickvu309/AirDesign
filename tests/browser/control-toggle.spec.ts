@@ -1,6 +1,7 @@
-import { expect, test, type Locator, type Page, type Route } from "@playwright/test"
-import { designing, openDeck, pendingValues, settled, setPanelMode } from "./design-panel"
+import { expect, type Locator, type Page, type Route } from "@playwright/test"
+import { designing, openDeck, pendingValues, setPanelMode } from "./design-panel"
 import { holdableDevice } from "./slow-device"
+import { test } from "./deck-test"
 
 function looks(run: Locator): Promise<string[]> {
   return run.evaluate((node) => {
@@ -53,6 +54,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a toggle makes the whole element bold and italic, each change is one undo step, and a reload keeps it", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "clean.pptx")
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
@@ -86,7 +88,7 @@ test("a toggle makes the whole element bold and italic, each change is one undo 
   await page.getByRole("button", { name: "Redo text format", exact: true }).click()
   await expect.poll(() => looks(run)).toEqual(["700", "italic", "none"])
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => looks(editor.locator("[data-run]").first())).toEqual(["700", "italic", "none"])
 })
 

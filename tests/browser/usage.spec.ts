@@ -2,7 +2,7 @@ import { expect } from "@playwright/test"
 import { productCopy, usageResetsOn } from "../../apps/web/src/copy/product-copy.ts"
 import { usageCopy, usageUsedOf } from "../../apps/web/src/copy/usage-copy.ts"
 import { settingsCopy } from "../../apps/web/src/settings/settings-sample.ts"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
@@ -13,11 +13,12 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const paths = await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const side = page.locator("[data-editor-panel]")
   const ring = side.getByRole("button", { name: productCopy.usageTitle })
   await expect(ring).toBeVisible()

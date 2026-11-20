@@ -1,21 +1,15 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 const part = "ppt/slides/slide1.xml"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function shapeAt(page: Page, number: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(number)}"]`)
@@ -55,12 +49,10 @@ async function placeShape(
 
 test("marquee, Shift-marquee, Cmd/Ctrl deep-select, Escape to parent, Enter, Tab and hover match Figma", async ({
   page,
+  decks,
 }) => {
   covers("marquee", "deep-select", "select-parent", "select-add", "step-in", "select-next", "deselect")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(blank)
   const slide = await boxOf(page.locator("[data-slide-paint]"))
   await dragMouse(
     page,

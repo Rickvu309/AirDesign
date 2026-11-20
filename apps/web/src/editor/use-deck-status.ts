@@ -27,6 +27,7 @@ export function tellRefusal(outcome: CommitOutcome): void {
 
 export function useDeckStatus(id: string) {
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
+  const [openedDeck, setOpenedDeck] = useState<string | undefined>(undefined)
   const [pending, setPending] = useState(false)
   useEffect(() => watchUnsent(id, setPending), [id])
   const online = useSyncExternalStore(watchNetwork, browserOnline)
@@ -57,6 +58,8 @@ export function useDeckStatus(id: string) {
   return {
     paintedDeck,
     setPaintedDeck,
+    openedDeck,
+    setOpenedDeck,
     pending,
     online,
     offline,

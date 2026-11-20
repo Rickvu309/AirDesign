@@ -70,9 +70,13 @@ test("escape, outside, and empty releases put every slide back and send no move"
     await expect(page.locator("[data-grid-edit]")).toHaveCount(0)
   }
   await expect(said(page)).not.toContainText("Moved")
-  await page.waitForTimeout(500)
-  expect(moves()).toBe(0)
   expect(await saved.order()).toEqual(saved.ids)
+  await grab(page, 1)
+  await hover(page, 3, 0.8)
+  await page.mouse.up()
+  await expect(said(page)).toContainText("Moved")
+  await expect.poll(saved.order).not.toEqual(saved.ids)
+  expect(moves()).toBe(1)
 })
 
 for (const percent of [12, 200]) {

@@ -1,7 +1,7 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { frameCopy } from "../../apps/web/src/copy/frame-copy"
@@ -10,6 +10,7 @@ import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
+import { decksOn, test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -40,13 +41,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 }
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function frame(page: Page, part: string, shape: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
@@ -84,15 +78,13 @@ async function changedParts(original: string, saved: string): Promise<string[]> 
 
 test("two shapes wrap in an auto layout frame with a filled backdrop, and the export keeps the frame @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("auto-layout")
   const part = "ppt/slides/slide1.xml"
   const judged = join(process.cwd(), "tests/browser", frameName)
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(blank)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
@@ -121,7 +113,7 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   await expect(page.getByRole("button", { name: undoCopy.undoNamed.fill, exact: true })).toBeEnabled()
   await holds(shapes, laid)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await holds(shapes, laid)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -135,9 +127,7 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
   expect(xml).toMatch(/<p:grpSp><p:nvGrpSpPr><p:cNvPr id="6" name="Frame 6"\/>/)
   expect(xml.indexOf('<p:cNvPr id="7" name="Backdrop 7"/>')).toBeLessThan(xml.indexOf('<p:cNvPr id="4"'))
   await copyFile(download, judged)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await settled(page)
+  await decks.open(download)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect(frame(page, part, 6)).toHaveCount(1)
   await holds(shapes, laid)
@@ -146,10 +136,7 @@ test("two shapes wrap in an auto layout frame with a filled backdrop, and the ex
 })
 
 async function wrappedPair(page: Page, part: string): Promise<readonly Locator[]> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).open(blank)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) {
     await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
@@ -187,6 +174,7 @@ function by(boxes: readonly Placed[], dx: number, dy: number): readonly Placed[]
 
 test("a child of a frame without auto layout moves on its own, follows its frame, and Shift+A lays it out again", async ({
   page,
+  decks,
 }) => {
   const part = "ppt/slides/slide1.xml"
   const shapes = await wrappedPair(page, part)
@@ -206,7 +194,7 @@ test("a child of a frame without auto layout moves on its own, follows its frame
   await dragBy(page, shapes[0]!, 100, 0)
   await holds(shapes, by(apart, 100, 0))
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await holds(shapes, by(apart, 100, 0))
   await shapes[0]!.click()

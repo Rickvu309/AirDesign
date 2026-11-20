@@ -1,6 +1,7 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
+import { decksOn } from "./deck-test"
 
 const offlineWords = "You're offline. Edits are saved on this device."
 const unreachedWords = productCopy.editorUnreached
@@ -41,7 +42,7 @@ async function pendingRows(page: Page): Promise<number> {
 
 async function goOffline(page: Page, context: BrowserContext): Promise<void> {
   await page.route("**/decks/commit", (route) => route.abort("connectionfailed"))
-  await openClean(page)
+  await decksOn(page).open()
   await context.setOffline(true)
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   await text.dblclick()
@@ -89,12 +90,12 @@ test("the offline notice shows at rest with reduced motion", async ({ page, cont
   expect(await transitionOf(page, offlineWords)).toBe("none")
 })
 
-test("the notice after an undo that changed nothing shows at once", async ({ page, context, stack }) => {
+test("the notice after an undo that changed nothing shows at once", async ({ page, context, stack, decks }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   await text.dblclick()
   await page.keyboard.press("ControlOrMeta+a")

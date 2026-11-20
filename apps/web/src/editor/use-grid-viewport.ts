@@ -1,4 +1,4 @@
-import { gestureFor, releases, type PaintBox } from "@airdesign/render"
+import { gestureFor, releases, startSettling, type PaintBox } from "@airdesign/render"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
   createElement,
@@ -127,6 +127,7 @@ export function useGridViewport({
   const [space, setSpace] = useState(false)
   const heldSpace = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const settling = useRef<(() => void) | null>(null)
   const dirty = useRef(false)
   const dragged = useRef(false)
   const pan = useRef<{ pointer: number; x: number; y: number; view: GridViewport } | null>(null)
@@ -143,9 +144,15 @@ export function useGridViewport({
     timer.current = null
   }
 
+  function settled() {
+    stopTimer()
+    settling.current?.()
+    settling.current = null
+  }
+
   function store() {
     pinch.current?.settled()
-    stopTimer()
+    settled()
     if (!dirty.current) return
     dirty.current = false
     keepGridViewport(kept.current, view.current)
@@ -156,6 +163,7 @@ export function useGridViewport({
     dirty.current = true
     fits.current = false
     stopTimer()
+    settling.current ??= startSettling()
     timer.current = setTimeout(store, settleAfter)
   }
 
@@ -444,7 +452,7 @@ export function useGridViewport({
     paint(next)
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     frame.current = null
-    stopTimer()
+    settled()
     dirty.current = false
     if (!selection) {
       keepGridViewport(kept.current, null)

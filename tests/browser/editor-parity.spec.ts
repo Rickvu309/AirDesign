@@ -1,9 +1,9 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { openScreen } from "./open-screen"
+import { test } from "./deck-test"
 
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const designed = "/screens/s42-02-editor-agent-run-complete"
 const toolCount = 6
 
@@ -105,25 +105,15 @@ function relative(box: Box, origin: Box): Box {
   return { x: box.x - origin.x, y: box.y - origin.y, width: box.width, height: box.height }
 }
 
-async function openClean(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(clean)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-  await expect(page.locator("[data-slide-entry='1'] [data-thumb-paint]")).toContainText("Hello")
-}
-
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 test("the real editor's sidebar, canvas, toolbar and panel head sit where the designed editor puts them", async ({
   page,
+  decks,
 }) => {
   await openScreen(page, designed)
   const design = await regions(page, 2, 1)
-  await openClean(page)
+  await decks.open()
   const real = await regions(page, 0, 0)
 
   expectNear(real.sidebar, design.sidebar, "sidebar")
@@ -156,8 +146,8 @@ test("the real editor's sidebar, canvas, toolbar and panel head sit where the de
   expect(real.activeLook).toEqual(design.activeLook)
 })
 
-test("a skipped slide's card keeps its box and look", async ({ page }) => {
-  await openClean(page)
+test("a skipped slide's card keeps its box and look", async ({ page, decks }) => {
+  await decks.open()
   const finished = await regions(page, 0, 0)
   const entry = page.locator("[data-slide-entry='1']")
   await entry.click({ button: "right" })
@@ -267,11 +257,11 @@ for (const [state, screen, ask, hold] of [
     false,
   ],
 ] as const) {
-  test(`the Agent panel head sits where the designed head puts it when ${state}`, async ({ page }) => {
+  test(`the Agent panel head sits where the designed head puts it when ${state}`, async ({ page, decks }) => {
     await openScreen(page, screen)
     const design = await headRegions(page)
     await mockAira(page, hold)
-    await openClean(page)
+    await decks.open()
     const side = page.locator("[data-editor-panel]")
     await expect(side.getByRole("button", { name: "Weekly usage" })).toBeVisible()
     if (ask !== undefined) {

@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, indexed, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { openScreen } from "./open-screen"
 
 const node = "256.2"
@@ -75,6 +75,7 @@ test("the real Agent panel keeps the designed head, composer, message and step r
   page,
   context,
   stack,
+  decks,
 }) => {
   await openScreen(page, "/screens/s42-01-editor-agent-working")
   const designWorking = await panelRegions(page, "Building slide 3 of 8")
@@ -84,8 +85,7 @@ test("the real Agent panel keeps the designed head, composer, message and step r
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
-  await indexed(stack, deck, cookie)
+  const deck = await decks.open()
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   const empty = await panelRegions(page, null)
   sameFrame(empty, designDone)
