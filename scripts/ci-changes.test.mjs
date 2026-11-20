@@ -251,6 +251,15 @@ same("the source part runs the unit test folders and model check that changes ch
   AIRDESIGN_BROWSER_SPECS: "${{ toJSON(matrix.browserSpecs) }}",
 })
 
+const saveSpecCache = check.steps.find(
+  (step) => step.uses?.startsWith("actions/cache/save@") && step.with.path === "~/.cache/airdesign/spec-results",
+)
+same(
+  "only a successful model check can save the exact spec key",
+  saveSpecCache.if,
+  "success() && steps.work.outputs.needed == 'true' && matrix.specCache && needs.changes.outputs.model-check == 'true' && steps.work-cache.outputs.cache-hit != 'true'",
+)
+
 const gated = {
   corpus: "${{ !cancelled() && needs.changes.outputs.corpus != 'false' }}",
   journeys: "${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.journeys != 'false' }}",
