@@ -62,7 +62,7 @@ export function deckInserts(deck: InsertingDeck) {
       parts: () => shownParts.current,
       room: () => roomAt(current),
       index: () => current,
-      showSaved: () => showEdited(current),
+      showSaved: () => showEdited("kept"),
       enter: (node, keys) => setEntering({ id: node, keys }),
       record,
       lane,
@@ -93,7 +93,7 @@ export function deckInserts(deck: InsertingDeck) {
       if (undoable !== null) record({ name, undoable, ...(absorbs === undefined ? {} : { absorbs }) })
       const held = keys === undefined ? {} : { keys }
       setEntering(added === null ? null : { id: added, ...held, ...(selects ? { selects: true as const } : {}) })
-      await showEdited(current)
+      await showEdited("kept")
     }
   }
 
@@ -135,7 +135,7 @@ export function deckInserts(deck: InsertingDeck) {
       const paint = async (undoable: Undoable | null) => {
         stored()
         if (undoable !== null) record({ name, undoable })
-        await showEdited(current)
+        await showEdited("kept")
       }
       const made = await commitCopies(id, shownParts.current, register, copies, paint, title, replacing)
       void made.flushed.then(settle)
@@ -187,7 +187,7 @@ export function deckInserts(deck: InsertingDeck) {
       if (went.length === 0) return []
       const undoable = await replacedUndoable(id, shownParts.current, register, went, replacing)
       if (undoable !== null) record({ name: replacing.length === 0 ? "paste-layer" : "replace-layer", undoable })
-      await showEdited(current)
+      await showEdited("kept")
       void flushMedia(id).then(() => flushPending(connect, id).then(settle))
       return edits.map((edit) => ({ copy: edit.element.node, source: edit.element.node }))
     })

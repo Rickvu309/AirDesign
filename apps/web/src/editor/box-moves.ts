@@ -24,7 +24,7 @@ type BoxMoves = {
 }
 
 export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
-  const { store, movables, shapes, canvases, current, bound, shownParts, shownRegister, showEdited } = shown
+  const { store, movables, shapes, canvases, bound, shownParts, shownRegister, showEdited } = shown
   const { record } = undo
 
   async function placed(only: Moved, rest: RestBox): Promise<"moved" | "kept" | "refused" | "stored"> {
@@ -33,7 +33,7 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
     const parts = shownParts.current
     const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
       if (undoable !== null) record({ name: "move", undoable })
-      await showEdited(current)
+      await showEdited("kept")
     })
     if (outcome === "kept") rest(only.id, landedBox(await deviceRegister(id), only.id))
     const register = shownRegister.current
@@ -98,13 +98,13 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
             undoable: { steps: steps.map((each) => each.step) },
           })
         }
-        if (repaints) await showEdited(current)
+        if (repaints) await showEdited("kept")
       },
       refused,
     )
     const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
     if (grouped.length > 0) {
-      await showEdited(current)
+      await showEdited("kept")
       for (const each of grouped) rest(each.id, null)
     }
     return stored

@@ -199,7 +199,7 @@ export function editableSlide(
     const row = { v: format, patch: { box: { ...width, h: { set: size.height } } } }
     const latest = latestFit(store.current, node)
     if (!(await connect(memoryRemote()).enqueueRow(id, row, node, floor)).ok) return
-    await deck.shown.showEdited(current)
+    await deck.shown.showEdited("kept")
     const shownRegister = deck.shown.shownRegister.current
     if (shownRegister !== null && latest())
       store.current.placeBox(node, landedBox(indexedRegister(deck.shown.shownParts.current, shownRegister), node))
