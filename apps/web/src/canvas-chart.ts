@@ -6,7 +6,7 @@ type PaintChart = NonNullable<PaintElement["chart"]>
 type PaintLook = NonNullable<PaintChart["title"]>["look"]
 type PaintMark = PaintChart["series"][number]["points"][number]
 type PaintLine = NonNullable<PaintMark["line"]>
-type PaintFrame = NonNullable<PaintChart["categoryAxis"]>
+type PaintFrame = Omit<NonNullable<PaintChart["categoryAxis"]>, "reversed">
 
 function color(value: PaintColor | null): string | null {
   return value === null ? null : cssColor(value)

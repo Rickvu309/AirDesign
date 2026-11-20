@@ -44,11 +44,21 @@ it("reads back every setting it writes, for each kind", () => {
   for (const kind of ["bar", "line", "pie"] as const) expect(written(openingChart(kind))).toEqual(openingChart(kind))
 })
 
+it("reads back a stacked, 100% stacked and horizontal bar chart with its settings", () => {
+  for (const kind of ["stacked", "stacked100", "horizontal"] as const) {
+    const chart: ChartValue = { ...consulting, kind, valueTitle: "Revenue ($B)", categoryTitle: "Year" }
+    expect(written(chart)).toEqual(chart)
+    expect(written(openingChart(kind))).toEqual(openingChart(kind))
+  }
+})
+
 it("reads nothing from a chart kind it cannot write, so that chart stays as it is", () => {
   const xml = chartSpaceXml(consulting, "rId1")
   const as = (from: string, to: string) => chartValueOf(encodeUtf8(xml.replace(from, to)))
-  expect(as('<c:grouping val="clustered"/>', '<c:grouping val="stacked"/>')).toBeNull()
-  expect(as('<c:barDir val="col"/>', '<c:barDir val="bar"/>')).toBeNull()
+  expect(
+    as('<c:barDir val="col"/><c:grouping val="clustered"/>', '<c:barDir val="bar"/><c:grouping val="stacked"/>'),
+  ).toBeNull()
+  expect(as('<c:grouping val="clustered"/>', '<c:grouping val="standard"/>')).toBeNull()
   expect(as("<c:barChart>", "<c:bar3DChart>")).toBeNull()
   expect(
     as("<c:invertIfNegative", '<c:trendline><c:trendlineType val="linear"/></c:trendline><c:invertIfNegative'),

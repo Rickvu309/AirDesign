@@ -1,5 +1,6 @@
 import type { ChartValue } from "@airdesign/document"
 import { patchedChart } from "./chart-data-patch.js"
+import { chartInk } from "./chart-ink.js"
 import { chartSpaceXml, chartUri } from "./chart-space.js"
 import { chartWorkbook, workbookContentType } from "./chart-workbook.js"
 import { link, freePart, typed } from "./notes-part.js"
@@ -8,6 +9,7 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { insertAt, replacePart, requireMarkup, within } from "./part-markup.js"
 import { nextShapeId, shapeIdsIn } from "./shape-id.js"
 import { shapeById } from "./shape-tree.js"
+import { slidePalette } from "./trait-read.js"
 import type { ShapeBox } from "./shape-write.js"
 
 export type ChartShape = ShapeBox & { readonly chart: ChartValue }
@@ -75,7 +77,7 @@ export function addChart(
   if (![route.x, route.y, route.cx, route.cy].every(Number.isSafeInteger)) throw new Error("emu")
   const chartPart = freePart(parts, "ppt/charts/chart")
   const workbook = placeWorkbook(parts, chartPart, route.chart)
-  parts.set(chartPart, encodeUtf8(chartSpaceXml(route.chart, workbook)))
+  parts.set(chartPart, encodeUtf8(chartSpaceXml(route.chart, workbook, chartInk(slidePalette(parts, route.part)))))
   typed(parts, chartPart, chartContentType)
   const relationship = link(parts, route.part, "chart", chartPart)
   const slide = parts.get(route.part) ?? bytes
@@ -108,7 +110,8 @@ export function writeChart(
 ): ReadonlyMap<string, Uint8Array> {
   const next = new Map(parts)
   const chartPart = chartPartOf(parts, part, shape)
-  if (patchedChart(next, chartPart, chart)) return next
-  replacePart(next, chartPart, encodeUtf8(chartSpaceXml(chart, placeWorkbook(next, chartPart, chart))))
+  const ink = chartInk(slidePalette(parts, part))
+  if (patchedChart(next, chartPart, chart, ink)) return next
+  replacePart(next, chartPart, encodeUtf8(chartSpaceXml(chart, placeWorkbook(next, chartPart, chart), ink)))
   return next
 }

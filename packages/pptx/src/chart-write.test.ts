@@ -46,6 +46,74 @@ it("adds a native column, line or pie chart with its own part, relationship and 
   }
 })
 
+it("adds stacked, 100% stacked and horizontal bar charts the way PowerPoint draws them, which paint back", async () => {
+  const drawn = async (chart: ChartValue) => {
+    const parts = new Map(await blank())
+    addChart(parts, { part: slide, id: 9, ...box, chart })
+    return { xml: decodeUtf8(parts.get("ppt/charts/chart1.xml")!), paint: painted(parts) }
+  }
+  const labelled = (kind: ChartValue["kind"]): ChartValue => ({
+    ...openingChart(kind),
+    labels: "General",
+    valueTitle: "Revenue ($B)",
+    categoryTitle: "Quarter",
+  })
+  const stacked = await drawn(labelled("stacked"))
+  expect(stacked.xml).toContain('<c:barDir val="col"/><c:grouping val="stacked"/>')
+  expect(stacked.xml).toContain('<c:gapWidth val="80"/><c:overlap val="100"/>')
+  expect(stacked.xml).toContain('<c:dLblPos val="ctr"/>')
+  expect(stacked.xml).not.toContain('<c:dLblPos val="outEnd"/>')
+  expect(stacked.paint?.kind).toBe("column")
+  expect(stacked.paint?.grouping).toBe("stacked")
+  expect(stacked.paint?.valueAxis?.max).toBeGreaterThanOrEqual(10.3)
+  expect(stacked.paint?.series[1]?.labels[3]).toMatchObject({ text: "4.9", position: "center" })
+
+  const share = await drawn(labelled("stacked100"))
+  expect(share.xml).toContain('<c:barDir val="col"/><c:grouping val="percentStacked"/>')
+  expect(share.xml).toContain('<c:overlap val="100"/>')
+  expect(share.xml).toContain('<c:numFmt formatCode="0%" sourceLinked="0"/>')
+  expect(share.paint?.grouping).toBe("percentStacked")
+  expect(share.paint?.valueAxis?.ticks.map((tick) => tick.text).at(-1)).toBe("100%")
+
+  const sideways = await drawn(labelled("horizontal"))
+  expect(sideways.xml).toContain('<c:barDir val="bar"/><c:grouping val="clustered"/>')
+  expect(sideways.xml).not.toContain("<c:overlap")
+  expect(sideways.xml).toContain('<c:dLblPos val="outEnd"/>')
+  expect(sideways.xml).toMatch(/<c:catAx>.*<c:axPos val="l"\/>.*<c:valAx>.*<c:axPos val="b"\/>/)
+  expect(sideways.xml).toMatch(/<c:catAx>.*<a:bodyPr rot="-5400000" vert="horz"\/>.*<\/c:catAx>/)
+  expect(sideways.xml).not.toMatch(/<c:valAx>.*rot="-5400000".*<\/c:valAx>/)
+  expect(sideways.paint?.kind).toBe("bar")
+  expect(sideways.paint?.categoryAxis?.title?.text).toBe("Quarter")
+  expect(sideways.paint?.valueAxis?.title?.text).toBe("Revenue ($B)")
+})
+
+it("writes labels inside stacked bars in the slide colour that reads on each series, and follows a new series colour", async () => {
+  const parts = new Map(await blank())
+  addChart(parts, { part: slide, id: 9, ...box, chart: openingChart("stacked") })
+  const inks = (from: ReadonlyMap<string, Uint8Array>) =>
+    [...decodeUtf8(from.get("ppt/charts/chart1.xml")!).matchAll(/<c:dLbls>.*?<\/c:dLbls>/g)].map(
+      (found) => /<a:schemeClr val="(bg1|tx1)"\/>/.exec(found[0])?.[1],
+    )
+  const labelled = writeChart(parts, slide, "9", { ...openingChart("stacked"), labels: "General" })
+  expect(inks(labelled)).toEqual(["bg1", "tx1"])
+  const navy: ChartValue = {
+    ...openingChart("stacked"),
+    labels: "General",
+    series: openingChart("stacked").series.map((series, at) =>
+      at === 1 ? { ...series, color: { rgb: "1F3A5F" } } : series,
+    ),
+  }
+  const recoloured = writeChart(labelled, slide, "9", navy)
+  expect(inks(recoloured)).toEqual(["bg1", "bg1"])
+  const fresh = new Map(await blank())
+  addChart(fresh, { part: slide, id: 9, ...box, chart: navy })
+  expect(inks(fresh)).toEqual(["bg1", "bg1"])
+  const columns = new Map(await blank())
+  addChart(columns, { part: slide, id: 9, ...box, chart: { ...openingChart("bar"), labels: "General" } })
+  expect(inks(columns)).toEqual(["tx1", "tx1"])
+  expect(painted(recoloured)?.series[0]?.labels[0]?.look.color).toEqual({ hex: "FFFFFF", alpha: 1 })
+})
+
 it("rewrites the chart's data in place and keeps its part, relationship and frame", async () => {
   const parts = new Map(await blank())
   addChart(parts, { part: slide, id: 9, ...box, chart: openingChart("bar") })

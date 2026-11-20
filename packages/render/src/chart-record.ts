@@ -36,6 +36,8 @@ export type CanvasChartFrame = {
   readonly shown: boolean
 }
 
+export type CanvasChartCategoryAxis = CanvasChartFrame & { readonly reversed: boolean }
+
 export type CanvasChartAxis = CanvasChartFrame & {
   readonly min: number
   readonly max: number
@@ -61,5 +63,5 @@ export type CanvasChart = {
   readonly line: CanvasChartLine | null
   readonly plot: { readonly x: number; readonly y: number; readonly width: number; readonly height: number } | null
   readonly valueAxis: CanvasChartAxis | null
-  readonly categoryAxis: CanvasChartFrame | null
+  readonly categoryAxis: CanvasChartCategoryAxis | null
 }

@@ -44,7 +44,15 @@ const chart: PaintChart = {
     max: 3,
     ticks: [{ value: 0, text: "0" }],
   },
-  categoryAxis: { look, title: { text: "Year", look }, line: null, gridlines: null, labels: true, shown: true },
+  categoryAxis: {
+    look,
+    title: { text: "Year", look },
+    line: null,
+    gridlines: null,
+    labels: true,
+    shown: true,
+    reversed: false,
+  },
 }
 
 const row = {

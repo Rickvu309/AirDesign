@@ -1,4 +1,5 @@
 import type { ChartValue } from "@airdesign/document"
+import type { ChartInk } from "./chart-ink.js"
 import { lookPatched } from "./chart-look-patch.js"
 import { chartValueOf } from "./chart-read.js"
 import { lookBefore, shapePatched } from "./chart-shape-patch.js"
@@ -85,14 +86,19 @@ function linkedWorkbook(parts: Parts, chartPart: string, tree: ChartTree): strin
   return (treeValue(row, "Type") ?? "").endsWith("/package") ? partOf(chartPart, target) : null
 }
 
-export function patchedChart(parts: Map<string, Uint8Array>, chartPart: string, chart: ChartValue): boolean {
+export function patchedChart(
+  parts: Map<string, Uint8Array>,
+  chartPart: string,
+  chart: ChartValue,
+  ink?: ChartInk,
+): boolean {
   const bytes = parts.get(chartPart)
   const before = bytes === undefined ? null : chartValueOf(bytes)
   if (bytes === undefined || before === null || before.kind !== chart.kind) return false
   const shaped = chartTree(shapePatched(bytes, before, chart) ?? undefined)
   const found = shaped === null ? null : dataEdits(shaped, chart)
   if (shaped === null || found === null) return false
-  const looked = lookPatched(spliceBytes(shaped.bytes, found), lookBefore(before, chart), chart)
+  const looked = lookPatched(spliceBytes(shaped.bytes, found), lookBefore(before, chart), chart, ink)
   if (looked === null) return false
   const original = chartTree(bytes)
   const workbookPart = original === null ? null : linkedWorkbook(parts, chartPart, original)

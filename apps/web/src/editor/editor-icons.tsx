@@ -16,6 +16,14 @@ const iconPaths = {
   icon: '<path d="M12 3.5 14.6 9l5.9.6-4.5 3.9 1.3 5.8L12 16.3l-5.3 3 1.3-5.8-4.5-3.9 5.9-.6z"/>',
   table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/>',
   chartLine: '<path d="M3 4v16h18"/><path d="m7 15 4-5 4 3 5-6"/>',
+  chartColumns:
+    '<path d="M3.5 20h17"/><rect x="5" y="10" width="3.5" height="7" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="8" width="3.5" height="9" rx=".6"/>',
+  chartStacked:
+    '<path d="M3.5 20h17"/><rect x="5" y="10" width="3.5" height="7" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="8" width="3.5" height="9" rx=".6"/><path d="M5 13.5h3.5M10.25 11h3.5M15.5 12.5h3.5"/>',
+  chartStacked100:
+    '<path d="M3.5 20h17"/><rect x="5" y="5" width="3.5" height="12" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="5" width="3.5" height="12" rx=".6"/><path d="M5 11h3.5M10.25 8.5h3.5M15.5 12.5h3.5"/>',
+  chartHorizontal:
+    '<path d="M4 3.5v17"/><rect x="7" y="5" width="12" height="3.5" rx=".6"/><rect x="7" y="10.25" width="8.5" height="3.5" rx=".6"/><rect x="7" y="15.5" width="5" height="3.5" rx=".6"/>',
   chartPie: '<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',

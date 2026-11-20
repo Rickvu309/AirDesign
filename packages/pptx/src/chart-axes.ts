@@ -14,7 +14,7 @@ type AxisFrame = {
   readonly shown: boolean
 }
 
-export type PaintChartCategoryAxis = AxisFrame
+export type PaintChartCategoryAxis = AxisFrame & { readonly reversed: boolean }
 
 export type PaintChartAxis = AxisFrame & {
   readonly min: number
@@ -87,6 +87,13 @@ function plainScale(markup: ChartMarkup, axis: MarkupElement): boolean {
   return markup.value(scaling, "c:orientation") !== "maxMin" && markup.child(scaling, "c:logBase") === undefined
 }
 
+function reversedOrder(markup: ChartMarkup, categoryAxis: MarkupElement, valueAxis: MarkupElement): boolean | null {
+  const scaling = markup.child(categoryAxis, "c:scaling")
+  if (markup.child(scaling, "c:logBase") !== undefined) return null
+  if (markup.value(scaling, "c:orientation") !== "maxMin") return false
+  return markup.value(valueAxis, "c:crosses") === "max" ? true : null
+}
+
 export function chartAxes(
   markup: ChartMarkup,
   source: ChartAxisSource,
@@ -100,7 +107,8 @@ export function chartAxes(
   if (categoryAxis === undefined || valueAxis === undefined || moreCategories.length + moreValues.length + other > 0) {
     return null
   }
-  if (!plainScale(markup, categoryAxis) || !plainScale(markup, valueAxis)) return null
+  const reversed = reversedOrder(markup, categoryAxis, valueAxis)
+  if (reversed === null || !plainScale(markup, valueAxis)) return null
   const scaling = markup.child(valueAxis, "c:scaling")
   const [low, high] = range(source)
   const scale = chartScale(low, high, {
@@ -124,6 +132,6 @@ export function chartAxes(
       max: scale.max,
       ticks: ticks.map((tick) => ({ value: tick.value, text: tick.text ?? "" })),
     },
-    categoryAxis: frameOf(markup, categoryAxis, source.base, title),
+    categoryAxis: { ...frameOf(markup, categoryAxis, source.base, title), reversed },
   }
 }

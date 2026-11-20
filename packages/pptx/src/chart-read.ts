@@ -1,4 +1,5 @@
 import {
+  chartBars,
   chartFormats,
   chartGap,
   chartLegend,
@@ -11,6 +12,7 @@ import {
   type ChartValue,
   type Color,
 } from "@airdesign/document"
+import { chartBarKindOf } from "./chart-space.js"
 import { colorIn } from "./color-read.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { holderText, markupChildren, type MarkupChildren } from "./text-value-route.js"
@@ -168,16 +170,20 @@ function labelsOf(read: Read, group: MarkupElement, first: MarkupElement, kind: 
   return known ?? "General"
 }
 
-function plainGroup(read: Read, plot: MarkupElement | undefined): MarkupElement | null {
+type Plain = { readonly group: MarkupElement; readonly kind: ChartKind }
+
+function plainGroup(read: Read, plot: MarkupElement | undefined): Plain | null {
   const groups = [...families.keys(), ...otherFamilies].flatMap((kind) => kids(read, plot, kind))
   const [group] = groups
-  if (groups.length !== 1 || group === undefined || !families.has(group.kind)) return null
+  const family = group === undefined ? undefined : families.get(group.kind)
+  if (groups.length !== 1 || group === undefined || family === undefined) return null
   if (group.kind === "c:barChart") {
     const grouping = value(read, group, "c:grouping") ?? "clustered"
-    if (value(read, group, "c:barDir") !== "col" || grouping !== "clustered") return null
+    const kind = chartBarKindOf(value(read, group, "c:barDir"), grouping)
+    return kind === undefined ? null : { group, kind }
   }
   if (group.kind === "c:lineChart" && (value(read, group, "c:grouping") ?? "standard") !== "standard") return null
-  return group
+  return { group, kind: family }
 }
 
 type Settings = Omit<ChartValue, "kind" | "categories" | "series">
@@ -212,7 +218,7 @@ function settingsOf(
     ...(labels === undefined ? {} : { labels }),
     ...(value.kind !== "pie" && on(read, valueAxis, "c:delete") === true ? { axis: false } : {}),
     ...(value.kind !== "pie" && kid(read, valueAxis, "c:majorGridlines") === undefined ? { gridlines: false } : {}),
-    ...(value.kind === "bar" && gap !== chartGap && Number.isInteger(gap) && gap >= 0 && gap <= chartLimits.gap
+    ...(chartBars(value.kind) && gap !== chartGap && Number.isInteger(gap) && gap >= 0 && gap <= chartLimits.gap
       ? { gap }
       : {}),
     ...(legend === automatic ? {} : { legend }),
@@ -233,9 +239,9 @@ export function chartValueOf(bytes: Uint8Array): ChartValue | null {
   const root = elements.find((element) => element.parent < 0)
   const chart = kid(read, root, "c:chart")
   const plot = kid(read, chart, "c:plotArea")
-  const group = plainGroup(read, plot)
-  const kind = group === null ? undefined : families.get(group.kind)
-  if (chart === undefined || plot === undefined || group === null || kind === undefined) return null
+  const plain = plainGroup(read, plot)
+  if (chart === undefined || plot === undefined || plain === null) return null
+  const { group, kind } = plain
   const listed = [...kids(read, group, "c:ser")].sort(
     (left, right) => Number(value(read, left, "c:order") ?? "0") - Number(value(read, right, "c:order") ?? "0"),
   )
@@ -273,9 +279,9 @@ export function chartFormatsOf(bytes: Uint8Array): readonly string[] | null {
   }
   const read: Read = { bytes, children: markupChildren(elements) }
   const root = elements.find((element) => element.parent < 0)
-  const group = plainGroup(read, kid(read, kid(read, root, "c:chart"), "c:plotArea"))
-  if (group === null) return null
-  const listed = [...kids(read, group, "c:ser")].sort(
+  const plain = plainGroup(read, kid(read, kid(read, root, "c:chart"), "c:plotArea"))
+  if (plain === null) return null
+  const listed = [...kids(read, plain.group, "c:ser")].sort(
     (left, right) => Number(value(read, left, "c:order") ?? "0") - Number(value(read, right, "c:order") ?? "0"),
   )
   return listed.map((series) => {

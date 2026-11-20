@@ -7,7 +7,14 @@ import { floatShadow } from "@/editor/editor-chrome"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
-const kindIcons: Readonly<Record<ChartKind, EditorIconName>> = { bar: "chart", line: "chartLine", pie: "chartPie" }
+export const chartKindIcons: Readonly<Record<ChartKind, EditorIconName>> = {
+  bar: "chartColumns",
+  stacked: "chartStacked",
+  stacked100: "chartStacked100",
+  horizontal: "chartHorizontal",
+  line: "chartLine",
+  pie: "chartPie",
+}
 
 export function ChartKinds({ onChart }: { onChart: (kind: ChartKind) => void }) {
   return (
@@ -21,7 +28,7 @@ export function ChartKinds({ onChart }: { onChart: (kind: ChartKind) => void }) 
           onClick={() => onChart(kind)}
           className="h-9 gap-1.5 rounded-md px-2.5 text-[length:var(--type-dense)] text-foreground hover:bg-line active:translate-y-0"
         >
-          <EditorIcon name={kindIcons[kind]} size={18} />
+          <EditorIcon name={chartKindIcons[kind]} size={18} />
           {chartCopy.types[kind]}
         </Button>
       ))}

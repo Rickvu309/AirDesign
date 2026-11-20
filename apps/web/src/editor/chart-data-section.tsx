@@ -23,7 +23,9 @@ import { chartCopy } from "@/copy/chart-copy"
 import { changeDesign, fileChartFormatsOf, fileValue, type DesignDeck } from "@/design/design-change"
 import { gridFormat, gridNumber, gridParse } from "@/editor/chart-grid-number"
 import { pastedChart, withColors, withRow, withSeries } from "@/editor/chart-grid-paste"
+import { chartKindIcons } from "@/editor/chart-tool"
 import { DesignSection } from "@/editor/design-panel"
+import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 import { heldChart } from "@/live-repaint"
 
@@ -200,17 +202,19 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
                 type="button"
                 variant="ghost"
                 aria-pressed={chosen}
+                aria-label={chartCopy.types[kind]}
+                title={chartCopy.types[kind]}
                 onClick={() => {
                   if (!chosen) save((fresh) => ({ ...fresh, kind }))
                 }}
                 className={cn(
-                  "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-0 text-xs font-normal active:translate-y-0",
+                  "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-0 active:translate-y-0",
                   chosen
-                    ? "bg-white font-medium text-foreground shadow-[inset_0_0_0_1px_var(--panel-edge)] hover:bg-white"
+                    ? "bg-white text-foreground shadow-[inset_0_0_0_1px_var(--panel-edge)] hover:bg-white"
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}
               >
-                {chartCopy.types[kind]}
+                <EditorIcon name={chartKindIcons[kind]} strokeWidth={1.5} />
               </Button>
             )
           })}
