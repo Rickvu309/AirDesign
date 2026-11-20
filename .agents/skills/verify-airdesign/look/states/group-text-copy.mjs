@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test"
-import { productCopy, transitionCopy } from "../../bin/product-copy.mjs"
+import { productCopy, readPictureToolCopy, transitionCopy } from "../../bin/product-copy.mjs"
+
+const iconCopy = readPictureToolCopy()
 
 const words = "Market context and sizing"
 const label = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#7"]'
@@ -13,8 +15,8 @@ async function drive(kit) {
   await expect(page.locator(".thin-page[data-deck-ready]")).toHaveCount(1)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.locator("[data-design-mode]").click()
-  await page.getByRole("button", { name: "Add icon", exact: true }).click()
-  await page.locator("[data-icon-tool]").getByRole("searchbox", { name: "Search icons" }).fill("star")
+  await page.getByRole("button", { name: iconCopy.addIcon, exact: true }).click()
+  await page.locator("[data-icon-tool]").getByRole("searchbox", { name: iconCopy.search }).fill("star")
   await page.locator("[data-icon-tool]").getByRole("button", { name: "star", exact: true }).click()
   const slide = await page.locator("[data-slide-paint]").boundingBox()
   if (slide === null) throw new Error("no slide")

@@ -2,7 +2,11 @@ import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
-import { productCopy, transitionCopy } from "../bin/product-copy.mjs"
+import { productCopy, readPictureToolCopy, shortcutCopy, transitionCopy, undoCopy } from "../bin/product-copy.mjs"
+
+const iconCopy = readPictureToolCopy()
+const shift = shortcutCopy.chord.other.shift
+const exportName = shortcutCopy.gestures.export
 
 const words = "Market context and sizing"
 const part = "ppt/slides/slide1.xml"
@@ -14,7 +18,7 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
   await page.getByRole("menuitem", { name: productCopy.blankDeck, exact: true }).click()
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const deck = page.url().split("/").at(-1)
+  const deck = new URL(page.url()).pathname.split(/\W/).at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.locator("[data-design-mode]").click()
@@ -25,8 +29,8 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   const layer = (shape) => paint.locator(`[data-canvas-element="${part}#${shape}"]`)
   const frame = paint.locator("[data-selection]")
 
-  await page.getByRole("button", { name: "Add icon", exact: true }).click()
-  await page.locator("[data-icon-tool]").getByRole("searchbox", { name: "Search icons" }).fill("star")
+  await page.getByRole("button", { name: iconCopy.addIcon, exact: true }).click()
+  await page.locator("[data-icon-tool]").getByRole("searchbox", { name: iconCopy.search }).fill("star")
   await page.locator("[data-icon-tool]").getByRole("button", { name: "star", exact: true }).click()
   await expect(layer(2)).toBeVisible()
   await page.keyboard.press("t")
@@ -37,7 +41,7 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   await page.keyboard.press("ControlOrMeta+KeyA")
   await page.keyboard.press("ControlOrMeta+KeyG")
   await expect(frame).toHaveAttribute("data-selection", "256.4")
-  await expect(page.getByRole("button", { name: "Undo group", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.group, exact: true })).toBeVisible()
   const label = await layer(3).boundingBox()
   await expect
     .poll(async () => {
@@ -76,7 +80,7 @@ export default async function drive({ repo, page, signIn, capture, note }) {
     )
   const star = await drawn()
   const panel = page.locator("[data-design-element]")
-  await panel.getByRole("searchbox", { name: "Search icons" }).fill("heart")
+  await panel.getByRole("searchbox", { name: iconCopy.search }).fill("heart")
   const picked = Date.now()
   await panel.getByRole("button", { name: "heart", exact: true }).click()
   await expect.poll(drawn, { timeout: 1000 }).not.toBe(star)
@@ -93,11 +97,11 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   for (const shape of [3, 7]) {
     const box = await layer(shape).boundingBox()
     if (box === null) throw new Error("no label")
-    if (shape === 7) await page.keyboard.down("Shift")
+    if (shape === 7) await page.keyboard.down(shift)
     await page.keyboard.down("Control")
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
     await page.keyboard.up("Control")
-    if (shape === 7) await page.keyboard.up("Shift")
+    if (shape === 7) await page.keyboard.up(shift)
   }
   await expect(page.locator("[data-layers-panel]").getByRole("treeitem", { name: words, selected: true })).toHaveCount(
     2,
@@ -115,8 +119,8 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   await expect.poll(async () => [await sizeOf(3), await sizeOf(7)]).toEqual(after)
 
   const downloading = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
-  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.getByRole("button", { name: exportName, exact: true }).click()
+  await expect(page.getByRole("dialog", { name: exportName }).getByRole("button", { name: exportName })).toBeFocused()
   await page.keyboard.press("Enter")
   const out = path.dirname(await capture("exported"))
   const exported = path.join(out, "group-text-copy.pptx")
