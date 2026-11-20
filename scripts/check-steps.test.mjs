@@ -91,7 +91,8 @@ assert.throws(
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8")
 const workflow = parse(read(".github/workflows/ci.yml"))
 const question = parse(read(".github/actions/queued/action.yml")).runs.steps[0]
-const checkJobs = JSON.parse(workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs"])
+const checkJobsFile = workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs-file"]
+const checkJobs = JSON.parse(read(checkJobsFile))
 const matrixParts = [...new Set(checkJobs.map(({ part }) => part))]
 const calledParts = fs
   .readdirSync(new URL("../.github/workflows/", import.meta.url))

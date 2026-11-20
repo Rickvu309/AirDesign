@@ -21,9 +21,10 @@ const stateCount = fs
   .readdirSync(path.join(root, ".agents/skills/verify-airdesign/look/states"))
   .filter((file) => file.endsWith(".mjs")).length
 const designShards = designShardCount(stateCount)
-const designEntries = JSON.parse(
-  workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs"],
-).filter((entry) => entry.part === "design")
+const checkJobsFile = workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs-file"]
+const designEntries = JSON.parse(fs.readFileSync(path.join(root, checkJobsFile), "utf8")).filter(
+  (entry) => entry.part === "design",
+)
 same("a design shard is sized from the count of states", [1, 200, 201, 400, 401].map(designShardCount), [1, 1, 2, 2, 3])
 same(
   `the design scans run in one check job per ${statesPerDesignShard} states, ${designShards} for ${stateCount} states`,
