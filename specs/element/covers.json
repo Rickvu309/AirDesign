@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "43e55daec8b2",
-      "blob": "07df989cc3224e57318febf56ee7662b7144b243"
+      "digest": "48af27403584",
+      "blob": "9552f4699671803d8291f5f470f0aa783ab5867c"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -21,7 +21,7 @@
         "stillShows"
       ],
       "digest": "6ea273889d8f",
-      "blob": "1bc3a969227ae25178a432df77cc909c43bc947c"
+      "blob": "911cc43ff15c9b26d77ce626b8afe1af8eabd550"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -63,7 +63,7 @@
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
       "digest": "b036366c72c8",
-      "blob": "edd7e5896b36f35e34d46a8808a5b4f07be30c4b"
+      "blob": "4401508bb1506816e4da1108b8660129de392b83"
     }
   ]
 }
