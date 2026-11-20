@@ -1,4 +1,5 @@
 import {
+  clonedLayer,
   currentValue,
   history,
   openingElement,
@@ -43,7 +44,7 @@ function painted(value: string, file: string): string {
 export function shownValue(register: Register | null, id: ElementId, file: string): string {
   const body = register?.elements[id]
   if (body !== undefined && history(body).length > 0) return painted(currentValue(body), file)
-  const opening = newSlideElement(register, id)
+  const opening = register === null ? undefined : (newSlideElement(register, id) ?? clonedLayer(register, id))
   return opening === undefined ? file : painted(opening.value ?? "", file)
 }
 
