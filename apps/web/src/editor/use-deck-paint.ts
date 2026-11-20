@@ -17,6 +17,7 @@ import { type PictureStore } from "@/picture-tool"
 import { layoutChoices } from "@/slide-layout"
 import { structureOf } from "@/table-hook"
 import { placedOn, type PlacedText } from "@/editor/placed-text"
+import { shownSlideAfter, type ShownSlide } from "@/editor/shown-slide"
 
 export type DeckPaint = ReturnType<typeof useDeckPaint>
 
@@ -139,11 +140,11 @@ export function useDeckPaint(
     if (next.ok) repaint.current(next.register)
   }
 
-  async function showEdited(currentIndex: number, whole?: "whole") {
+  async function showEdited(wanted: ShownSlide, whole?: "whole") {
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
     showRegister(next.register, whole)
-    setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
+    setCurrent((now) => shownSlideAfter(wanted, now, store.current.slides().length))
   }
 
   return {
