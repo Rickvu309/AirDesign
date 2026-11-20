@@ -1,9 +1,9 @@
-import { spawnSync } from "node:child_process"
-import { execFileSync } from "node:child_process"
+import { execFile, spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { promisify } from "node:util"
 import { parse } from "yaml"
 import { stepsOf } from "./check.mjs"
 import { checkSteps, designScans, shardOf } from "./check-steps.mjs"
@@ -54,15 +54,32 @@ same(
   steps.find((step) => step.with?.name?.startsWith("test-results-check"))?.with.name.includes("strategy.job-index"),
   true,
 )
-const browserTests = (args) =>
-  execFileSync(process.execPath, ["node_modules/@playwright/test/cli.js", "test", "--list", ...args], {
-    cwd: root,
-    encoding: "utf8",
-    env: { ...process.env, CI: "" },
-  })
+const listingWidth = 8
+const listBrowserTests = async (args) =>
+  (
+    await promisify(execFile)(process.execPath, ["node_modules/@playwright/test/cli.js", "test", "--list", ...args], {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, CI: "" },
+      maxBuffer: 64 * 2 ** 20,
+    })
+  ).stdout
     .split("\n")
     .filter((line) => line.includes(" › "))
     .map((line) => line.trim())
+const listAll = async (argLists) => {
+  const results = new Array(argLists.length)
+  let next = 0
+  const worker = async () => {
+    while (next < argLists.length) {
+      const at = next
+      next += 1
+      results[at] = await listBrowserTests(argLists[at])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(listingWidth, argLists.length) }, worker))
+  return results
+}
 const browserStep = (part, shard) =>
   checkSteps
     .stagesFor(part, true, shard)
@@ -71,8 +88,16 @@ const browserStep = (part, shard) =>
     .find(([name]) => name === "browser-tests")[2]
     .slice(1)
 const shards = entries.filter((entry) => entry.part === "browser").map((entry) => shardOf([`--shard=${entry.shard}`]))
-const scanned = browserTests(browserStep("design"))
-const sharded = shards.flatMap((shard) => browserTests(browserStep("browser", shard)))
+const [scanned, ...shardLists] = await listAll([
+  browserStep("design"),
+  ...shards.map((shard) => browserStep("browser", shard)),
+])
+const sharded = shardLists.flat()
+const [everyTest, thinDeck, ...thinDeckShards] = await listAll([
+  [],
+  ["thin-deck.spec.ts"],
+  ...[1, 2].map((shard) => ["thin-deck.spec.ts", `--shard=${shard}/2`]),
+])
 same(
   "the design part runs both design scans whose reports design-findings judges",
   designScans.map((file) => scanned.some((line) => line.includes(`${path.basename(file)}:`))),
@@ -81,19 +106,14 @@ same(
 same(
   "the design part and the browser shards run every browser test exactly once",
   [...scanned, ...sharded].toSorted(),
-  browserTests([]).toSorted(),
+  everyTest.toSorted(),
 )
-const thinDeckShards = [1, 2].map((shard) => browserTests(["thin-deck.spec.ts", `--shard=${shard}/2`]))
 same(
   "independent thin-deck tests can cross a shard boundary",
   thinDeckShards.every((tests) => tests.length > 0),
   true,
 )
-same(
-  "splitting thin-deck keeps every test exactly once",
-  thinDeckShards.flat().toSorted(),
-  browserTests(["thin-deck.spec.ts"]).toSorted(),
-)
+same("splitting thin-deck keeps every test exactly once", thinDeckShards.flat().toSorted(), thinDeck.toSorted())
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
 same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "changes", "corpus", "journeys"])
 same(
