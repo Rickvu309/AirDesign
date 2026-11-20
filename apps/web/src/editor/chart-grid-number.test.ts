@@ -7,6 +7,8 @@ it("shows a chart's numbers in its own format, keeping one decimal of a share", 
   expect(gridNumber(0.087201699999999993, "0.0%")).toBe("8.7%")
   expect(gridNumber(16.100000000000001, "General")).toBe("16.1")
   expect(gridNumber(1234.5, "$#,##0.0")).toBe("$1,234.5")
+  expect(gridNumber(-0.125, "0%")).toBe("-12.5%")
+  expect(gridNumber(1234567, "General")).toBe("1234567")
 })
 
 it("reads a typed share the way Excel does in a percent cell", () => {
@@ -17,6 +19,8 @@ it("reads a typed share the way Excel does in a percent cell", () => {
   expect(gridParse("12", "General")).toBe(12)
   expect(gridParse("", "General")).toBeNull()
   expect(gridParse("abc", "General")).toBeNull()
+  expect(gridParse("-12.5%", "0%")).toBe(-0.125)
+  expect(gridParse("%", "0%")).toBeNull()
 })
 
 it("takes the numbers' own format first, then the data labels' format, unless a pie's labels show shares", () => {
