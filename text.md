@@ -32,7 +32,7 @@ The tool T or Add text arms, as Figma's Text tool. A click on the slide places A
 _Avoid_: text box tool, insert text
 
 **placed text**:
-Text the Text tool placed that has no characters yet. It lives only in the open tab: no undo step, no stored edit, nothing sent. Its first character stores the add, in one undo step, and the typing after it is the next step. When editing ends with no characters, by Escape or a click away from its words, it is removed and focus stays on the slide, as Figma and PowerPoint remove an empty text box. A click into a panel that keeps the selection does not end editing.
+Text the Text tool placed that has no characters yet. It lives only in the open tab: no undo step, no stored edit, nothing sent. Its first character stores the add, in one undo step, and the typing after it is the next step. When editing ends with no characters, by Escape or a click away from its words, it is removed and focus stays on the slide, as Figma and PowerPoint remove an empty text box. A click into a panel that keeps the selection does not end editing. Each placed text takes its own element, even while the tab is still storing earlier edits, so text placed quickly one after another never shares a box, and each keeps the words typed in it.
 _Avoid_: draft text, pending text
 
 **emptied text**:

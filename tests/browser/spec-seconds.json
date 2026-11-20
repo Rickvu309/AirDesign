@@ -205,7 +205,7 @@
     "picture-fill-switch.spec.ts": 3.3,
     "picture-mode.spec.ts": 3.3,
     "picture-paint.spec.ts": 8.5,
-    "placed-text.spec.ts": 3,
+    "placed-text.spec.ts": 11.8,
     "present-screens.spec.ts": 0.7,
     "present-transitions.spec.ts": 11.7,
     "present.spec.ts": 11,

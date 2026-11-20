@@ -52,3 +52,35 @@ export async function storedValues(page: Page): Promise<string[]> {
     })
   })
 }
+
+export async function holdDeviceStore(page: Page): Promise<() => Promise<void>> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((held, refused) => {
+        const request = indexedDB.open("airdesign")
+        request.onerror = () => refused(request.error)
+        request.onsuccess = () => {
+          const database = request.result
+          const stores = [...database.objectStoreNames]
+          const writing = database.transaction(stores, "readwrite")
+          const rows = writing.objectStore(stores[0] ?? "")
+          const scope = window as Window & { releaseDeviceStore?: () => void }
+          let releasing = false
+          scope.releaseDeviceStore = () => {
+            releasing = true
+          }
+          const keep = () => {
+            if (!releasing) rows.get("held").onsuccess = keep
+          }
+          keep()
+          writing.oncomplete = () => database.close()
+          held()
+        }
+      }),
+  )
+  return () =>
+    page.evaluate(() => {
+      const scope = window as Window & { releaseDeviceStore?: () => void }
+      scope.releaseDeviceStore?.()
+    })
+}

@@ -100,13 +100,11 @@ export async function readPicture(file: Blob): Promise<PictureFile | PictureRefu
 export async function commitPicture(
   deckId: string,
   parts: Parts,
+  register: Register,
   picture: PictureFile,
   at: PictureAt,
   paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  const opened = await connect(memoryRemote()).openDeck(deckId)
-  if (!opened.ok) return "refused"
-  const register = opened.register
   const sha256 = await keepMedia(deckId, picture.bytes)
   at.keep(sha256, picture.bytes)
   const box = placedPicture(picture, at.slide)
@@ -125,13 +123,11 @@ export async function commitPicture(
 export async function commitIcon(
   deckId: string,
   parts: Parts,
+  register: Register,
   name: string,
   at: PictureAt,
   paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  const opened = await connect(memoryRemote()).openDeck(deckId)
-  if (!opened.ok) return "refused"
-  const register = opened.register
   const slide = readSlides(slideBase(parts, register))[at.index]
   const hex = slide === undefined ? null : slideColorHex(parts, slide.part, iconTextColor)
   const made = await iconBytes({

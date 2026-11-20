@@ -66,7 +66,7 @@ export function useDeckPaint(
   const structure = useRef("")
   const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
-  const placed = useRef<PlacedText | null>(null)
+  const placed = useRef<readonly PlacedText[]>([])
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const displayed = useRef(partsWatch())
   const [entering, setEntering] = useState<Entering | null>(null)

@@ -5,6 +5,7 @@ import {
   type ElementId,
   type Geometry,
   type Media,
+  type Register,
   type Undoable,
 } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
@@ -31,12 +32,16 @@ import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
-import { placingText } from "@/editor/placed-text"
+import { placedOn, placingText } from "@/editor/placed-text"
 
 import { commitPastedTable } from "@/pasted-table"
 import { tableCopy } from "@/copy/table-copy"
 
 import { addSlideNumbers } from "./slide-number-actions"
+
+function addsElement(change: ElementChange): boolean {
+  return change.change === "text" || change.change === "table" || change.change === "chart" || change.change === "shape"
+}
 
 export type InsertingDeck = {
   readonly id: string
@@ -64,6 +69,11 @@ export function deckInserts(deck: InsertingDeck) {
     },
     connect(memoryRemote()),
   )
+
+  async function openPlaced(): Promise<Register | null> {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    return opened.ok ? placedOn(opened.register, deck.shown.placed.current) : null
+  }
 
   function roomAt(index: number): CanvasSlide | null {
     const room = canvases.current(index)
@@ -96,6 +106,7 @@ export function deckInserts(deck: InsertingDeck) {
         keys?.stop()
         return "closed"
       }
+      const register = addsElement(change) ? placedOn(opened.register, deck.shown.placed.current) : opened.register
       const name =
         named ??
         (change.change !== "order"
@@ -105,7 +116,7 @@ export function deckInserts(deck: InsertingDeck) {
             : "layer-order")
       const absorbs = change.change === "remove" && change.emptied === true ? change.nodes[0] : undefined
       const added = recordAdded(name, stored, keys, change.change === "shape", absorbs)
-      const outcome = await commitElement(id, shownParts.current, opened.register, change, added)
+      const outcome = await commitElement(id, shownParts.current, register, change, added)
       if (outcome === "refused") keys?.stop()
       settle(outcome)
       return outcome
@@ -119,14 +130,14 @@ export function deckInserts(deck: InsertingDeck) {
     replacing: readonly ElementId[] = [],
   ): Promise<readonly Copied[]> {
     return lane(async (stored) => {
-      const opened = await connect(memoryRemote()).openDeck(id)
-      if (!opened.ok) return []
+      const register = await openPlaced()
+      if (register === null) return []
       const paint = async (undoable: Undoable | null) => {
         stored()
         if (undoable !== null) record({ name, undoable })
         await showEdited(current)
       }
-      const made = await commitCopies(id, shownParts.current, opened.register, copies, paint, title, replacing)
+      const made = await commitCopies(id, shownParts.current, register, copies, paint, title, replacing)
       void made.flushed.then(settle)
       return made.copies
     })
@@ -159,22 +170,22 @@ export function deckInserts(deck: InsertingDeck) {
     replacing: readonly ElementId[] = [],
   ): Promise<readonly Copied[]> {
     return lane(async (stored) => {
-      const opened = await connect(memoryRemote()).openDeck(id)
-      if (!opened.ok) return []
+      const register = await openPlaced()
+      if (register === null) return []
       const media: (readonly Media[])[] = []
       for (const layer of copy.layers) media.push((await keptImages(layer)) ?? [])
-      const { edits, refused } = pastedAdds(shownParts.current, opened.register, copy, places, media)
+      const { edits, refused } = pastedAdds(shownParts.current, register, copy, places, media)
       for (const refusal of refused)
         toast.refusal(elementCopy.pasteRefusedTitle, {
           id: `paste-refused-${refusal}`,
           description: elementCopy.pasteElsewhereBody[refusal],
         })
-      const file = fileSlides(shownParts.current, opened.register)
+      const file = fileSlides(shownParts.current, register)
       const went = []
       for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(id, file, edit)).ok) went.push(edit)
       stored()
       if (went.length === 0) return []
-      const undoable = await replacedUndoable(id, shownParts.current, opened.register, went, replacing)
+      const undoable = await replacedUndoable(id, shownParts.current, register, went, replacing)
       if (undoable !== null) record({ name: replacing.length === 0 ? "paste-layer" : "replace-layer", undoable })
       await showEdited(current)
       void flushMedia(id).then(() => flushPending(connect, id).then(settle))
@@ -204,11 +215,11 @@ export function deckInserts(deck: InsertingDeck) {
     const size = roomAt(current)
     if (size === null) return
     void lane(async (stored) => {
-      const opened = await connect(memoryRemote()).openDeck(id)
-      if (!opened.ok) return
+      const register = await openPlaced()
+      if (register === null) return
       const asked = { index: current, size, cells }
       const added = recordAdded("paste-layer", stored, undefined, true)
-      const outcome = await commitPastedTable(id, shownParts.current, opened.register, asked, added)
+      const outcome = await commitPastedTable(id, shownParts.current, register, asked, added)
       if (outcome === "too-large")
         toast.refusal(tableCopy.pasteRefused, {
           id: "table-paste-refused",
@@ -233,7 +244,11 @@ export function deckInserts(deck: InsertingDeck) {
     if (slide === null) return
     const at = { index: current, slide, keep: pictureTool.store.keep }
     settle(
-      await lane((stored) => commitPicture(id, shownParts.current, picture, at, recordAdded("add-picture", stored))),
+      await lane(async (stored) => {
+        const register = await openPlaced()
+        if (register === null) return "refused"
+        return commitPicture(id, shownParts.current, register, picture, at, recordAdded("add-picture", stored))
+      }),
     )
   }
 
@@ -241,7 +256,13 @@ export function deckInserts(deck: InsertingDeck) {
     const slide = roomAt(current)
     if (slide === null) return
     const at = { index: current, slide, keep: pictureTool.store.keep }
-    settle(await lane((stored) => commitIcon(id, shownParts.current, name, at, recordAdded("add-icon", stored))))
+    settle(
+      await lane(async (stored) => {
+        const register = await openPlaced()
+        if (register === null) return "refused"
+        return commitIcon(id, shownParts.current, register, name, at, recordAdded("add-icon", stored))
+      }),
+    )
   }
 
   return {
