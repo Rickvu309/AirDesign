@@ -6,7 +6,7 @@ import {
   shapeOf,
   slideId,
   writeChartValue,
-  sameColor,
+  type CellTexts,
   type ChartKind,
   type ChartSeries,
   type ChartValue,
@@ -14,13 +14,15 @@ import {
   type ElementId,
 } from "@airdesign/document"
 import { Minus, Plus } from "lucide-react"
-import { useState, useSyncExternalStore, type KeyboardEvent } from "react"
+import { manyCells, readPastedCells } from "@airdesign/render"
+import { useState, useSyncExternalStore, type ClipboardEvent, type KeyboardEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { chartCopy } from "@/copy/chart-copy"
 import { changeDesign, fileChartFormatsOf, fileValue, type DesignDeck } from "@/design/design-change"
 import { gridFormat, gridNumber, gridParse } from "@/editor/chart-grid-number"
+import { pastedChart, withColors, withRow, withSeries } from "@/editor/chart-grid-paste"
 import { DesignSection } from "@/editor/design-panel"
 import { cn } from "@/lib/class-names"
 import { heldChart } from "@/live-repaint"
@@ -34,6 +36,7 @@ export function ChartField(props: {
   readonly hint?: string
   readonly numeric?: boolean
   readonly onCommit: (text: string) => void
+  readonly onCells?: (cells: CellTexts) => void
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const commit = () => {
@@ -53,15 +56,29 @@ export function ChartField(props: {
       onChange={(event) => setDraft(event.currentTarget.value)}
       onBlur={commit}
       onKeyDown={key}
+      onPaste={(event) => pastedCells(event, props.onCells, () => setDraft(null))}
       className={cn("h-[var(--control-dense)]", fieldLook, props.numeric === true && "text-right")}
     />
   )
+}
+
+function pastedCells(
+  event: ClipboardEvent<HTMLElement>,
+  onCells: ((cells: CellTexts) => void) | undefined,
+  drop: () => void,
+) {
+  const cells = readPastedCells(event.clipboardData)
+  if (onCells === undefined || !manyCells(cells)) return
+  event.preventDefault()
+  drop()
+  onCells(cells)
 }
 
 function ChartLabelField(props: {
   readonly label: string
   readonly value: string
   readonly onCommit: (text: string) => void
+  readonly onCells: (cells: CellTexts) => void
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const commit = () => {
@@ -83,6 +100,7 @@ function ChartLabelField(props: {
       onChange={(event) => setDraft(event.currentTarget.value.replaceAll("\n", " "))}
       onBlur={commit}
       onKeyDown={key}
+      onPaste={(event) => pastedCells(event, props.onCells, () => setDraft(null))}
       className={cn("min-h-[var(--control-dense)] resize-none py-1 leading-snug", fieldLook)}
     />
   )
@@ -120,12 +138,6 @@ function pointColors(chart: ChartValue, series: ChartSeries, at: number): readon
   return series.colors
 }
 
-function withColors(series: ChartSeries, colors: readonly Color[] | undefined, pie: boolean): ChartSeries {
-  const { colors: _, ...rest } = series
-  const automatic = pie && colors?.every((color, point) => sameColor(color, chartAccent(point))) === true
-  return colors === undefined || automatic ? rest : { ...rest, colors }
-}
-
 function withoutRow(chart: ChartValue, row: number): ChartValue {
   const kept = (_: unknown, at: number) => at !== row
   return {
@@ -138,20 +150,6 @@ function withoutRow(chart: ChartValue, row: number): ChartValue {
         chart.kind === "pie",
       ),
     ),
-  }
-}
-
-function withRow(chart: ChartValue): ChartValue {
-  const count = chart.categories.length
-  const added = (series: ChartSeries, at: number) =>
-    chart.kind === "pie" ? chartAccent(count) : (series.color ?? chartAccent(at))
-  return {
-    ...chart,
-    categories: [...chart.categories, chartCopy.category(count + 1)],
-    series: chart.series.map((series, at) => {
-      const colors = series.colors === undefined ? undefined : [...series.colors, added(series, at)]
-      return withColors({ ...series, values: [...series.values, 0] }, colors, chart.kind === "pie")
-    }),
   }
 }
 
@@ -179,6 +177,12 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
   const formats = chart.series.map((_, column) => gridFormat(own[column] ?? own[0], chart))
   const many = chart.kind !== "pie"
   const columns = chart.series.length
+  const pasteAt = (row: number, column: number) => (cells: CellTexts) =>
+    save((fresh) =>
+      pastedChart(fresh, { row, column }, cells, (text, series) =>
+        gridParse(text, formats[series] ?? formats[0] ?? "General"),
+      ),
+    )
   return (
     <div data-chart-data>
       <DesignSection title={chartCopy.data}>
@@ -223,6 +227,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
               <ChartField
                 label={chartCopy.series(column + 1)}
                 value={series.name}
+                onCells={pasteAt(-1, column + 1)}
                 onCommit={(name) =>
                   save((fresh) => ({
                     ...fresh,
@@ -233,19 +238,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
             </div>
           ))}
           {many && columns < chartLimits.series ? (
-            <IconButton
-              label={chartCopy.addSeries}
-              add
-              onClick={() =>
-                save((fresh) => ({
-                  ...fresh,
-                  series: [
-                    ...fresh.series,
-                    { name: chartCopy.seriesName(fresh.series.length + 1), values: fresh.categories.map(() => 0) },
-                  ],
-                }))
-              }
-            />
+            <IconButton label={chartCopy.addSeries} add onClick={() => save(withSeries)} />
           ) : (
             <span />
           )}
@@ -254,6 +247,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
               key={`label ${String(row)}`}
               label={chartCopy.category(row + 1)}
               value={category}
+              onCells={pasteAt(row, 0)}
               onCommit={(text) =>
                 save((fresh) => ({
                   ...fresh,
@@ -267,6 +261,7 @@ export function ChartDataSection(props: { readonly deck: DesignDeck; readonly no
                 label={chartCopy.value(row + 1, column + 1)}
                 value={gridNumber(series.values[row] ?? 0, formats[column] ?? "General")}
                 numeric
+                onCells={pasteAt(row, column + 1)}
                 onCommit={(text) => {
                   const value = gridParse(text, formats[column] ?? "General")
                   if (value !== null && value !== series.values[row])

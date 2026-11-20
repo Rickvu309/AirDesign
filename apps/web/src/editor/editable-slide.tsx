@@ -1,7 +1,9 @@
-import { format, type ElementId, type Register, type StackMove } from "@airdesign/document"
+import { format, type CellTexts, type ElementId, type Register, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import {
   boxOf,
+  manyCells,
+  readPastedCells,
   SlideCanvas,
   type Copied,
   type FitSize,
@@ -60,6 +62,7 @@ export type EditableDeck = DesignDeck &
       replacing?: readonly ElementId[],
     ) => Promise<readonly Copied[]>
     readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
+    readonly pasteTable?: (cells: CellTexts) => void
     readonly selection: Selection
     readonly select: (selection: Selection) => void
     readonly hovered?: ElementId | null
@@ -289,7 +292,11 @@ export function editableSlide(
           paste(paste) {
             if (paste.data === null) return readClipboardCopy().then((copy) => pasted(copy, paste))
             const copy = readLayerCopy(paste.data.getData("text/html"))
-            return copy === null ? null : pasted(copy, paste)
+            if (copy !== null) return pasted(copy, paste)
+            const cells = paste.mode === "paste" ? readPastedCells(paste.data) : null
+            if (!manyCells(cells) || deck.pasteTable === undefined) return null
+            deck.pasteTable(cells)
+            return Promise.resolve([])
           },
         }
 

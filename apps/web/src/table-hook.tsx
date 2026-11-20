@@ -84,6 +84,7 @@ const editNames: Readonly<Record<TableChange["change"], UndoName>> = {
   heights: "resize",
   style: "format",
   clear: "text",
+  paste: "paste-layer",
 }
 
 export function useTables(deck: TableDeck) {

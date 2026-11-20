@@ -1,12 +1,17 @@
 import {
+  cellText,
   mediaTypes,
   readBox,
   readElementId,
   readFloor,
   readSlideId,
+  readTableValue,
   readTextValue,
   shapeOf,
+  tabbedTable,
+  writeTabbed,
   type Box,
+  type CellTexts,
   type ClonedLayer,
   type ElementId,
   type IndexElement,
@@ -66,8 +71,15 @@ function escaped(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
 }
 
+function tableTexts(value: string | null): CellTexts | null {
+  const table = value === null ? null : readTableValue(value)
+  return table === null ? null : table.rows.map((row) => row.cells.map(cellText))
+}
+
 function valueText(value: string | null): string {
   if (value === null) return ""
+  const cells = tableTexts(value)
+  if (cells !== null) return writeTabbed(cells)
   const paragraphs = readTextValue(value)
   if (paragraphs === null) return value
   return paragraphs.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
@@ -80,9 +92,17 @@ export function layerText(copy: LayerCopy): string {
     .join("\n")
 }
 
+function rowHtml(value: string | null): string {
+  const cells = tableTexts(value)
+  return cells === null ? valueText(value).split("\n").map(escaped).join("<br>") : tabbedTable(cells)
+}
+
 export function layerCopyHtml(copy: LayerCopy): string {
-  const lines = layerText(copy).split("\n").map(escaped).join("<br>")
-  return `<meta charset="utf-8"><div ${marker}="${encoded(JSON.stringify(copy))}">${lines}</div>`
+  const shown = copy.layers
+    .flatMap((layer) => layer.rows.filter((row) => valueText(row.element.value).trim() !== ""))
+    .map((row) => rowHtml(row.element.value))
+    .join("<br>")
+  return `<meta charset="utf-8"><div ${marker}="${encoded(JSON.stringify(copy))}">${shown}</div>`
 }
 
 function record(raw: unknown): Readonly<Record<string, unknown>> | null {

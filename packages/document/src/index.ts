@@ -269,6 +269,7 @@ export {
   changedTable,
   openingTable,
   openingTableSize,
+  pastedTable,
   readTableValue,
   tableColumns,
   writeTableValue,
@@ -276,6 +277,7 @@ export {
   type TableRow,
   type TableValue,
 } from "./table-value.js"
+export { readTabbed, tabbedHtml, tabbedTable, writeTabbed, type CellTexts } from "./table-text.js"
 export {
   cellFill,
   tableSides,

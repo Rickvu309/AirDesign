@@ -1,4 +1,4 @@
-import { elementId, slideId, writeTextValue } from "@airdesign/document"
+import { changedTable, elementId, openingTable, slideId, writeTableValue, writeTextValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { layerCopyHtml, layerText, readLayerCopy, type LayerCopy } from "@/layer-clipboard"
 
@@ -50,6 +50,39 @@ describe("layer clipboard", () => {
   it("gives other apps the layers' text", () => {
     expect(layerText(copy)).toBe("Q3 <revenue> & costs\nSecond line")
     expect(layerCopyHtml(copy)).toContain(">Q3 &lt;revenue&gt; &amp; costs<br>Second line</div>")
+  })
+
+  it("gives other apps a table's cells as tab-separated text and an HTML table", () => {
+    const table = changedTable(
+      changedTable(openingTable(2, 2), { change: "cell", row: 0, column: 0, text: "Region" })!,
+      {
+        change: "cell",
+        row: 1,
+        column: 1,
+        text: "12",
+      },
+    )!
+    const node = elementId("256.4")
+    const held: LayerCopy = {
+      ...copy,
+      layers: [
+        {
+          source: node,
+          box,
+          rows: [
+            {
+              source: node,
+              element: { node: elementId("256.11"), kind: "table", value: writeTableValue(table), box, grouped: false },
+            },
+          ],
+        },
+      ],
+    }
+    expect(layerText(held)).toBe("Region\t\n\t12")
+    expect(layerCopyHtml(held)).toContain(
+      "<table><tr><td>Region</td><td></td></tr><tr><td></td><td>12</td></tr></table>",
+    )
+    expect(readLayerCopy(layerCopyHtml(held))).toEqual(held)
   })
 
   it("reads layers from the HTML another browser tab put on the clipboard", () => {
