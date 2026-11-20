@@ -13,7 +13,7 @@ The spreadsheet a chart carries inside the PowerPoint file, which PowerPoint's E
 _Avoid_: chart sheet, data sheet, linked workbook
 
 **data labels**:
-Each point's number written on the chart, in one number format from a short list, such as 1,234.5, 12% or $1,234. A pie with a percent format shows each slice's share. In a PowerPoint file it is the series' `c:dLbls`.
+Each point's number written on the chart, in one number format from a short list, such as 1,234.5, 12% or $1,234. Labels turned on start in General, PowerPoint's own default, which shows a number as it was typed: 12 as 12 and 4.5 as 4.5. A pie with a percent format shows each slice's share. In a PowerPoint file it is the series' `c:dLbls`.
 _Avoid_: value labels, data callouts
 
 **value axis**:

@@ -26,7 +26,7 @@ Open a deck, click Insert chart in the toolbar and pick Bar, Line or Pie, then o
 - `chart-place` (recorded Aira) adds two charts with no box to an empty slide and finds them side by side at one width, then sets the first chart's W in Position and size and checks the exported frame.
 - `tests/browser/chart-settings.spec.ts` sets every Chart setting and judges the export; `tests/browser/chart-place.spec.ts` inserts a second chart beside one moved to the left.
 - `slide-charts` selects an imported census pie, deletes and restores it, edits its first number and checks that the export changed only that chart and its workbook. `tests/browser/chart-imported.spec.ts` does the same with a move.
-- Look states `chart-data-panel`, `chart-settings-panel`, `chart-placed-beside` and `chart-imported-selected`.
+- Look states `chart-data-panel`, `chart-settings-panel`, `chart-labels-whole` (whole numbers typed into the grid, then Data labels on), `chart-placed-beside` and `chart-imported-selected`.
 
 ## Gotchas
 
