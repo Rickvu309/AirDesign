@@ -64,6 +64,7 @@ export const parsePull = (text) => {
     checks: sortChecks(rollup?.contexts.nodes ?? []),
     removal: latestRemoval(pullRequest.timelineItems.nodes),
     queue: (mergeQueue?.entries.nodes ?? []).map((entry) => entry.pullRequest.number),
+    hasQueue: mergeQueue !== null && mergeQueue !== undefined,
   }
 }
 

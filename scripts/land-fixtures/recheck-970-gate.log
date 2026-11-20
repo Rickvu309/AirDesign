@@ -1,0 +1,95 @@
+ok tsconfig-references 0.1s
+ok commit-authors 0.1s
+ok lint-rules 0.2s
+ok file-growth 1.8s
+ok format 2.5s
+ok package-boundaries 3.6s
+ok test-imports 4.3s
+ok unused-exports 4.3s
+ok lint 8.5s
+ok actionlint 0.1s
+gate: 57 changed files against 2a7448aa0271ce393c841d8df510300c76b767d8, chosen in 18.7s: 8 unit test files, 1 script test files, the build of apps/web, packages/catalog, packages/document, packages/engine, packages/live, packages/mcp, packages/pptx, packages/render and what depends on them
+Product copy literals in tests: 1862 (existing counted; additions refused)
+.agents/skills/verify-airdesign/journeys/layer-duplicate.mjs:19: "/" is product copy. Import shortcutCopy.keyNames.Slash from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/journeys/layer-duplicate.mjs:22: "/" is product copy. Import shortcutCopy.keyNames.Slash from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/journeys/layer-duplicate.mjs:40: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/journeys/layer-duplicate.mjs:48: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/look/states/layer-duplicate-held.mjs:11: "/" is product copy. Import shortcutCopy.keyNames.Slash from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/look/states/layer-duplicate-held.mjs:19: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/look/states/layer-duplicated.mjs:11: "/" is product copy. Import shortcutCopy.keyNames.Slash from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/look/states/layer-duplicated.mjs:20: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+.agents/skills/verify-airdesign/look/states/layer-duplicated.mjs:24: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+tests/browser/layer-duplicate.spec.ts:44: "/" is product copy. Import shortcutCopy.keyNames.Slash from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+tests/browser/layer-duplicate.spec.ts:53: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+tests/browser/layer-duplicate.spec.ts:59: "Alt" is product copy. Import shortcutCopy.chord.other.alt from apps/web/src/copy/shortcut-copy.ts, so the test follows a change of words.
+fail copy-in-tests 24.1s
+ok sweep-list 29.1s
+affected report: possible unit reach 782, gate plans 8, outside gate 774; recorded left-out seconds 0.000 (774 files untimed)
+affected report: added 0.786s; browser and design computed only on ci; incomplete
+ok script-tests 0.3s
+ok unit-tests 9.9s
+Scope: 11 of 20 workspace projects
+$ tsc -b
+$ tsc -b
+$ tsc -b
+$ tsc -b
+$ pnpm --filter @airdesign/site^... run build && astro check && astro build
+Scope: 5 of 20 workspace projects
+../../packages/device build$ tsc -b
+../../packages/document build$ tsc -b
+../../packages/theme build$ tsc -b
+../../packages/fonts build$ tsc -b
+../../packages/device build: Done
+../../packages/fonts build: Done
+../../packages/document build: Done
+../../packages/catalog build$ tsc -b
+../../packages/theme build: Done
+../../packages/catalog build: Done
+08:32:53 [types] Generated 451ms
+08:32:53 [check] Getting diagnostics for Astro files in /scratch/recheck/77e158c8b01b/apps/site...
+Result (47 files): 
+- 0 errors
+- 0 warnings
+- 0 hints
+
+08:33:00 [types] Generated 76ms
+08:33:00 [build] output: "static"
+08:33:00 [build] mode: "static"
+08:33:00 [build] directory: /scratch/recheck/77e158c8b01b/apps/site/dist/
+08:33:00 [build] Collecting build info...
+08:33:00 [build] ✓ Completed in 148ms.
+08:33:00 [build] Building static entrypoints...
+08:33:01 [vite] ✓ built in 950ms
+08:33:02 [vite] ✓ built in 266ms
+08:33:02 [build] Rearranging server assets...
+
+ generating static routes 
+08:33:02   ├─ /privacy/index.html (+23ms) 
+08:33:02   ├─ /sign-in/check/index.html (+7ms) 
+08:33:02   ├─ /sign-in/expired/index.html (+4ms) 
+08:33:02   ├─ /sign-in/index.html (+4ms) 
+08:33:02   ├─ /terms/index.html (+4ms) 
+08:33:02   ├─ /index.html (+30ms) 
+08:33:02 ✓ Completed in 118ms.
+
+08:33:02 [build] ✓ Completed in 1.42s.
+08:33:02 [build] 6 page(s) built in 1.58s
+08:33:02 [build] Complete!
+$ tsc -b
+$ tsc -b
+$ tsc -b
+$ tsc -b && vite build
+src/copy/shortcut-copy.ts(18,3): error TS2739: Type '{ readonly select: "Select a layer"; readonly "select-add": "Add to or remove from the selection"; readonly "deep-select": "Select a layer inside a group"; readonly marquee: "Select by dragging across layers"; ... 63 more ...; readonly "show-presenter": "Presenter view"; }' is missing the following properties from type 'Readonly<Record<"auto-layout" | "back" | "backward" | "bold" | "deep-select" | "delete" | "deselect" | "design-mode" | "duplicate" | "duplicate-drag" | "edit-text" | "flip-horizontal" | ... 57 more ... | "zoom-selection", string>>': duplicate, "duplicate-drag"
+src/editor/shortcuts-panel.tsx(78,47): error TS7053: Element implicitly has an 'any' type because expression of type '"auto-layout" | "back" | "backward" | "bold" | "deep-select" | "delete" | "deselect" | "design-mode" | "duplicate" | "duplicate-drag" | "edit-text" | "flip-horizontal" | "flip-vertical" | ... 56 more ... | "zoom-selection"' can't be used to index type '{ readonly select: "Select a layer"; readonly "select-add": "Add to or remove from the selection"; readonly "deep-select": "Select a layer inside a group"; readonly marquee: "Select by dragging across layers"; ... 63 more ...; readonly "show-presenter": "Presenter view"; }'.
+  Property 'duplicate' does not exist on type '{ readonly select: "Select a layer"; readonly "select-add": "Add to or remove from the selection"; readonly "deep-select": "Select a layer inside a group"; readonly marquee: "Select by dragging across layers"; ... 63 more ...; readonly "show-presenter": "Presenter view"; }'.
+[ELIFECYCLE] Command failed with exit code 1.
+Error: ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL
+
+  × "pnpm recursive run" failed in /scratch/recheck/77e158c8b01b/apps/
+  │ web
+
+fail build 25.4s
+metric gate-duration  now 64.3  limit 60
+gate-duration is 64.3 and its limit is 60. Make it faster.
+ci runs every step of pnpm check on GitHub, with 641 more test files reach this diff, before the merge.
+failed: copy-in-tests, build

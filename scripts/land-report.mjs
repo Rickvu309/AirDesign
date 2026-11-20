@@ -3,7 +3,7 @@ import { failedJobLogs } from "./job-logs.mjs"
 
 const queueBase = (branch) => /^gh-readonly-queue\/main\/pr-\d+-([0-9a-f]{40})$/.exec(branch)?.[1]
 
-const mainWhenRunStarted = ({ repository, run, gh, git }) => {
+export const mainWhenRunStarted = ({ repository, run, gh, git }) => {
   if (run.event === "merge_group") {
     const base = queueBase(run.branch)
     if (base === undefined) return undefined

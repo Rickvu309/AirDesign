@@ -46,6 +46,7 @@ export const followPull = async ({
   interval = 30000,
   graceMs = 180000,
   limitMs = 4 * 60 * 60 * 1000,
+  merge,
 }) => {
   const started = now()
   let queuedSeen = false
@@ -161,6 +162,7 @@ export const followPull = async ({
       return 1
     }
     const green = !pull.queued && pull.checks.running.length === 0 && pull.checks.passed.length > 0
+    if (green && !pull.hasQueue && merge !== undefined && pull.checks.failed.length === 0) return await merge(pull)
     greenSince = green ? (greenSince ?? now()) : undefined
     if (green && now() - greenSince >= graceMs) {
       say(
