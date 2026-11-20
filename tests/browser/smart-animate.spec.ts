@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
-import { exportFromDialog } from "./export-dialog"
+import { exportDialogClosed, exportFromDialog } from "./export-dialog"
 import { test } from "./deck-test"
 
 type ZipEntry = {
@@ -69,6 +69,7 @@ test("Smart animate exports as PowerPoint's Morph and moves the layer two slides
   expect(saved).toContain('<p159:morph option="byObject"/>')
   expect(saved).toContain('<mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback>')
   await copyFile(download, judged)
+  await exportDialogClosed(page)
 
   await entry(page, 1).click()
   await page.keyboard.press(duplicate)
