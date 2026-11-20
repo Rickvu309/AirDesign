@@ -2,6 +2,7 @@ import type { PresetRule } from "./preset-rule.js"
 
 export const presetRounded: Readonly<Record<string, PresetRule>> = {
   round1Rect: {
+    area: "l t ir b",
     adjusts: ["adj val 16667"],
     guides: ["a pin 0 adj 50000", "dx1 */ ss a 100000", "x1 +- r 0 dx1", "idx */ dx1 29289 100000", "ir +- r 0 idx"],
     paths: [
@@ -13,6 +14,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
     ],
   },
   round2SameRect: {
+    area: "il tdx ir ib",
     adjusts: ["adj1 val 16667", "adj2 val 0"],
     guides: [
       "a1 pin 0 adj1 50000",
@@ -38,6 +40,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
     ],
   },
   snip1Rect: {
+    area: "l it ir b",
     adjusts: ["adj val 16667"],
     guides: ["a pin 0 adj 50000", "dx1 */ ss a 100000", "x1 +- r 0 dx1", "it */ dx1 1 2", "ir +/ x1 r 2"],
     paths: [
@@ -49,6 +52,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
     ],
   },
   snip2DiagRect: {
+    area: "il il ir ib",
     adjusts: ["adj1 val 0", "adj2 val 16667"],
     guides: [
       "a1 pin 0 adj1 50000",
@@ -74,6 +78,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
     ],
   },
   roundRect: {
+    area: "il il ir ib",
     adjusts: ["adj val 16667"],
     guides: [
       "a pin 0 adj 50000",

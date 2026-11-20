@@ -48,6 +48,7 @@ export const presetCallouts: Readonly<Record<string, PresetRule>> = {
     ],
   },
   wedgeRoundRectCallout: {
+    area: "il il ir ib",
     adjusts: ["adj1 val -20833", "adj2 val 62500", "adj3 val 16667"],
     guides: [
       "dxPos */ w adj1 100000",

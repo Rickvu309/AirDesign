@@ -2,6 +2,7 @@ import type { PresetRule } from "./preset-rule.js"
 
 export const presetBasic: Readonly<Record<string, PresetRule>> = {
   triangle: {
+    area: "x1 vc x3 b",
     adjusts: ["adj val 50000"],
     guides: ["a pin 0 adj 100000", "x1 */ w a 200000", "x2 */ w a 100000", "x3 +- x1 wd2 0"],
     paths: [
@@ -13,6 +14,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   rtTriangle: {
+    area: "wd12 it ir ib",
     adjusts: [],
     guides: ["it */ h 7 12", "ir */ w 7 12", "ib */ h 11 12"],
     paths: [
@@ -24,6 +26,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   diamond: {
+    area: "wd4 hd4 ir ib",
     adjusts: [],
     guides: ["ir */ w 3 4", "ib */ h 3 4"],
     paths: [
@@ -35,6 +38,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   parallelogram: {
+    area: "il it ir ib",
     adjusts: ["adj val 25000"],
     guides: [
       "maxAdj */ 100000 w ss",
@@ -65,6 +69,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   trapezoid: {
+    area: "il it ir b",
     adjusts: ["adj val 25000"],
     guides: [
       "maxAdj */ 50000 w ss",
@@ -86,6 +91,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   pentagon: {
+    area: "x2 it x3 y2",
     adjusts: ["hf val 105146", "vf val 110557"],
     guides: [
       "swd2 */ wd2 hf 100000",
@@ -112,6 +118,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   hexagon: {
+    area: "il it ir ib",
     adjusts: ["adj val 25000", "vf val 115470"],
     guides: [
       "maxAdj */ 50000 w ss",
@@ -144,6 +151,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   octagon: {
+    area: "il il ir ib",
     adjusts: ["adj val 29289"],
     guides: [
       "a pin 0 adj 50000",
@@ -163,6 +171,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   homePlate: {
+    area: "l t ir b",
     adjusts: ["adj val 50000"],
     guides: [
       "maxAdj */ 100000 w ss",
@@ -181,6 +190,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   chevron: {
+    area: "il t ir b",
     adjusts: ["adj val 50000"],
     guides: [
       "maxAdj */ 100000 w ss",
@@ -201,6 +211,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   plus: {
+    area: "il it ir ib",
     adjusts: ["adj val 25000"],
     guides: [
       "a pin 0 adj 50000",
@@ -222,6 +233,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   frame: {
+    area: "x1 x1 x4 y4",
     adjusts: ["adj1 val 12500"],
     guides: ["a1 pin 0 adj1 50000", "x1 */ ss a1 100000", "x4 +- r 0 x1", "y4 +- b 0 x1"],
     paths: [
@@ -233,6 +245,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   corner: {
+    area: "l it ir b",
     adjusts: ["adj1 val 50000", "adj2 val 50000"],
     guides: [
       "maxAdj1 */ 100000 h ss",
@@ -252,6 +265,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     ],
   },
   star4: {
+    area: "sx1 sy1 sx2 sy2",
     adjusts: ["adj val 12500"],
     guides: [
       "a pin 0 adj 50000",

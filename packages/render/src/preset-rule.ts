@@ -1,6 +1,7 @@
 export { presetGuides } from "@airdesign/document"
 
 export type PresetRule = {
+  readonly area?: string
   readonly adjusts: readonly string[]
   readonly guides: readonly string[]
   readonly paths: readonly {

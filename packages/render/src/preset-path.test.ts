@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
 import { presetAdjusts, presets as pickable } from "@airdesign/document"
-import { adjustDefaults, drawnPresets, openPreset, presetOutline } from "./preset-path.js"
+import { adjustDefaults, drawnPresets, openPreset, presetOutline, presetTextArea } from "./preset-path.js"
 import { presetGuides } from "./preset-rule.js"
 
 it("reads DrawingML formulas with repeated whitespace without changing their operands", () => {
@@ -143,4 +143,33 @@ it("draws every preset a person or an agent can pick, with the same adjusts, and
   expect(drawnPresets.filter((name) => !(pickable as readonly string[]).includes(name))).toEqual(
     ["bentConnector", "curvedConnector"].flatMap((routed) => [2, 3, 4, 5].map((bends) => `${routed}${String(bends)}`)),
   )
+})
+
+it("lays text in PowerPoint's text area for each preset, as margins from the box", () => {
+  expect(presetTextArea("rect", 200, 100)).toBeNull()
+  expect(presetTextArea("wedgeRectCallout", 200, 100)).toBeNull()
+  expect(presetTextArea("unknown", 200, 100)).toBeNull()
+  expect(presetTextArea("rightArrow", 400, 200)).toEqual({ left: 0, top: 50, right: 50, bottom: 50 })
+  expect(presetTextArea("chevron", 400, 200)).toEqual({ left: 100, top: 0, right: 100, bottom: 0 })
+  expect(presetTextArea("diamond", 200, 100)).toEqual({ left: 50, top: 25, right: 50, bottom: 25 })
+  const ellipse = presetTextArea("ellipse", 200, 100)
+  expect(ellipse?.left).toBeCloseTo(100 - 100 * Math.SQRT1_2, 6)
+  expect(ellipse?.top).toBeCloseTo(50 - 50 * Math.SQRT1_2, 6)
+  expect(presetTextArea("roundRect", 200, 100, { adj: 50000 })?.left).toBeCloseTo(50 * 0.29289, 6)
+})
+
+it("keeps every preset's text area inside its box, at any size and adjust", () => {
+  for (const preset of [...pickable, ...drawnPresets])
+    for (const [width, height] of [
+      [200, 100],
+      [50, 200],
+      [0, 0],
+    ] as const)
+      for (const adjusts of [{}, { adj: 0, adj1: 0, adj2: 0 }, { adj: 100000, adj1: 100000, adj2: 100000 }]) {
+        const area = presetTextArea(preset, width, height, adjusts)
+        if (area === null) continue
+        for (const margin of Object.values(area)) expect(margin, preset).toBeGreaterThanOrEqual(0)
+        expect(area.left + area.right, preset).toBeLessThanOrEqual(width + 1e-9)
+        expect(area.top + area.bottom, preset).toBeLessThanOrEqual(height + 1e-9)
+      }
 })

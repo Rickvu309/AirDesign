@@ -2,6 +2,7 @@ import type { PresetRule } from "./preset-rule.js"
 
 export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   star5: {
+    area: "sx1 sy1 sx4 sy3",
     adjusts: ["adj val 19098", "hf val 105146", "vf val 110557"],
     guides: [
       "a pin 0 adj 50000",
@@ -42,6 +43,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   pieWedge: {
+    area: "x1 y1 r b",
     adjusts: [],
     guides: [],
     paths: [{ data: "M l b A w h cd2 cd4 L r b Z", fill: true, stroke: true }],
@@ -60,6 +62,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartDecision: {
+    area: "wd4 hd4 ir ib",
     adjusts: [],
     guides: ["ir */ w 3 4", "ib */ h 3 4"],
     paths: [
@@ -73,6 +76,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartTerminator: {
+    area: "il it ir ib",
     adjusts: [],
     guides: ["il */ w 1018 21600", "ir */ w 20582 21600", "it */ h 3163 21600", "ib */ h 18437 21600"],
     paths: [
@@ -86,6 +90,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   bracketPair: {
+    area: "il il ir ib",
     adjusts: ["adj val 16667"],
     guides: [
       "a pin 0 adj 50000",
@@ -110,6 +115,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   bracePair: {
+    area: "il il ir ib",
     adjusts: ["adj val 8333"],
     guides: [
       "a pin 0 adj 25000",
@@ -139,6 +145,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   donut: {
+    area: "il it ir ib",
     adjusts: ["adj val 25000"],
     guides: [
       "a pin 0 adj 50000",
@@ -161,6 +168,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   arc: {
+    area: "il it ir ib",
     adjusts: ["adj1 val 16200000", "adj2 val 0"],
     guides: [
       "stAng pin 0 adj1 21599999",
@@ -220,6 +228,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   can: {
+    area: "l y2 r y3",
     adjusts: ["adj val 25000"],
     guides: ["maxAdj */ 50000 h ss", "a pin 0 adj maxAdj", "y1 */ ss a 200000", "y2 +- y1 y1 0", "y3 +- b 0 y1"],
     paths: [
@@ -241,6 +250,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   cube: {
+    area: "l y1 x4 b",
     adjusts: ["adj val 25000"],
     guides: [
       "a pin 0 adj 100000",
@@ -276,6 +286,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   rightBrace: {
+    area: "l it ir ib",
     adjusts: ["adj1 val 8333", "adj2 val 50000"],
     guides: [
       "a2 pin 0 adj2 100000",
@@ -308,6 +319,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   leftBrace: {
+    area: "il it r ib",
     adjusts: ["adj1 val 8333", "adj2 val 50000"],
     guides: [
       "a2 pin 0 adj2 100000",
@@ -339,6 +351,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   cloud: {
+    area: "il it ir ib",
     adjusts: [],
     guides: [
       "il */ w 2977 21600",
@@ -368,6 +381,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartInputOutput: {
+    area: "wd5 t x5 b",
     adjusts: [],
     guides: [],
     paths: [
@@ -381,6 +395,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartManualOperation: {
+    area: "wd5 t x3 b",
     adjusts: [],
     guides: [],
     paths: [
@@ -394,6 +409,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartMerge: {
+    area: "wd4 t x2 vc",
     adjusts: [],
     guides: [],
     paths: [
@@ -407,6 +423,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartExtract: {
+    area: "wd4 vc x2 b",
     adjusts: [],
     guides: [],
     paths: [
@@ -420,6 +437,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartPreparation: {
+    area: "wd5 t x2 b",
     adjusts: [],
     guides: [],
     paths: [
@@ -433,6 +451,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartManualInput: {
+    area: "l hd5 r b",
     adjusts: [],
     guides: [],
     paths: [
@@ -446,6 +465,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartOffpageConnector: {
+    area: "l t r y1",
     adjusts: [],
     guides: [],
     paths: [
@@ -459,6 +479,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     ],
   },
   flowChartPunchedCard: {
+    area: "l hd5 r b",
     adjusts: [],
     guides: [],
     paths: [
