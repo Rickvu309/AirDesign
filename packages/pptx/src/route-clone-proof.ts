@@ -25,8 +25,7 @@ function backToSource(piece: Uint8Array, source: Uint8Array): Uint8Array | strin
     const name = attribute(mark, "name")
     const sourceName = attribute(sourceMarks[index], "name")
     if (name === undefined || sourceName === undefined || name.value === sourceName.value) continue
-    if (index !== 0 || name.value !== copyName(sourceName.value, mark.id ?? ""))
-      return `the copy is named ${name.value}`
+    if (name.value !== copyName(sourceName.value, mark.id ?? "")) return `the copy is named ${name.value}`
     edits.push({ start: name.valueStart, end: name.valueEnd, next: encodeUtf8(sourceName.value) })
   }
   return spliceBytes(piece, edits)
