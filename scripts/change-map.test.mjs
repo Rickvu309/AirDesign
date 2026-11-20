@@ -43,6 +43,34 @@ const toy = {
 }
 
 const map = (changed, options) => changeMap(changed, toy, options)
+const reading = {
+  ...toy,
+  reads: {
+    "scripts/deploy.test.mjs": [".railway/railway.ts"],
+    "scripts/land.test.mjs": ["apps/web/src/thin-deck.tsx"],
+    "scripts/check-specs.test.mjs": ["specs/edit/"],
+  },
+}
+const mapReading = (changed) => changeMap(changed, reading)
+
+same(
+  "a file a script test reads runs the script tests though it is source only and nothing imports it",
+  [on(map([".railway/railway.ts"])), on(mapReading([".railway/railway.ts"]))],
+  [["source"], ["source", "scripts"]],
+)
+same(
+  "a file in an app that a script test reads keeps its own parts and adds the script tests",
+  on(mapReading(["apps/web/src/thin-deck.tsx"])),
+  ["source", "scripts", "design", "browser", "journeys"],
+)
+same(
+  "a file under a folder a script test reads runs the script tests, and its neighbour in another folder does not",
+  [on(mapReading(["specs/edit/Edit.tla"])), on(mapReading(["specs/run/Run.tla"]))],
+  [
+    ["source", "scripts", "model-check"],
+    ["source", "model-check"],
+  ],
+)
 
 same(
   "a change to packages/document runs its own tests and every package that imports it, since document imports nothing and everything imports it",
@@ -244,6 +272,18 @@ same(
 same("in the repo, a vitest setup file runs everything", real(["scripts/vitest-metrics.mjs"]).everything, true)
 same("in the repo, the PR body check is a script alone", on(real(["scripts/pr-body.mjs"])), ["source", "scripts"])
 same("in the repo, the oauth package runs no pptx part", real(["packages/oauth/src/index.ts"]).parts.pptx, false)
+same(
+  "in the repo, a file a script test reads turns on the script tests even when no import links them",
+  [".oxfmtrc.json", ".railway/railway.ts", "specs/edit/Edit.tla", "tests/browser/preview-port.ts"].map(
+    (file) => real([file]).parts.scripts,
+  ),
+  [true, true, true, true],
+)
+same(
+  "in the repo, a doc and a workflow that script tests read turn them on",
+  ["AGENTS.md", ".github/workflows/ci.yml"].map((file) => real([file]).parts.scripts),
+  [true, true],
+)
 
 const jobs = JSON.stringify([{ part: "source" }, { part: "browser", shard: "1/2" }, { part: "browser", shard: "2/2" }])
 const said = (argv) =>

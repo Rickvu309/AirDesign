@@ -53,6 +53,7 @@ export const readFacts = async (repo, against) => {
   const base = git(repo, ["merge-base", against, "HEAD"])
   const { states } = await import("../look/states.mjs")
   const { replays } = await fromRepo(repo, "scripts/spec-replays.mjs")
+  const { scriptTestReads } = await fromRepo(repo, "scripts/script-test-reads.mjs")
   return {
     base,
     head: git(repo, ["rev-parse", "HEAD"]),
@@ -62,6 +63,7 @@ export const readFacts = async (repo, against) => {
     states: states.map(({ name, design }) => ({ name, design: design ?? null })),
     replays: replays(repo),
     scripts: importGraph(repo, "scripts", /\.mjs$/),
+    reads: scriptTestReads(repo, git(repo, ["ls-files"]).split("\n")),
     browser: importGraph(repo, "tests/browser", /\.(ts|mts)$/),
     rules: suiteRules(repo),
   }

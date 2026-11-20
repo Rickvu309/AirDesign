@@ -61,11 +61,18 @@ const unitStep = (changed) => {
   return { kind: "unit-tests", files: sources, tests: "related", because: `${String(sources.length)} changed sources` }
 }
 
-const toolingStep = (changed, scripts) => {
+const readBy = (reads, file) =>
+  Object.entries(reads)
+    .filter(([, links]) => links.some((link) => link === file || (link.endsWith("/") && file.startsWith(link))))
+    .map(([test]) => test)
+
+const toolingStep = (changed, scripts, reads) => {
   const touched = changed.filter((file) => /^scripts\/[^/]+\.mjs$/.test(file))
-  const files = importersOf(scripts, touched).filter((file) => file.endsWith(".test.mjs") && file in scripts)
+  const imported = importersOf(scripts, touched).filter((file) => file.endsWith(".test.mjs") && file in scripts)
+  const read = changed.filter((file) => readBy(reads, file).length > 0)
+  const files = [...new Set([...imported, ...read.flatMap((file) => readBy(reads, file))])].sort()
   if (files.length === 0) return undefined
-  return { kind: "script-tests", files, because: `${touched.join(", ")} changed` }
+  return { kind: "script-tests", files, because: `${[...new Set([...touched, ...read])].join(", ")} changed` }
 }
 
 const specsStep = (changed, moved, replays) => {
@@ -118,6 +125,7 @@ export const proofPlan = ({
   states = [],
   replays = [],
   scripts = {},
+  reads = {},
   browser = {},
   rules = [],
 }) => {
@@ -132,7 +140,7 @@ export const proofPlan = ({
       : undefined
   const steps = [
     unitStep(changed),
-    toolingStep(changed, scripts),
+    toolingStep(changed, scripts, reads),
     specsStep(changed, moved, replays),
     browserRun,
     note,
