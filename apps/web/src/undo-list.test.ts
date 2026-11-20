@@ -159,9 +159,7 @@ describe("undo list", () => {
         name: "format",
         session: 5,
         undoable: {
-          steps: [
-            { node: target, before: { text: { size: { set: 1800 } } }, after: { text: { size: { set: 2000 } } } },
-          ],
+          steps: [{ ...step("Small", "Large"), node: target }],
         },
       }) as const
     const both = recorded(recorded(emptyUndo, sized(node)), sized(other))
