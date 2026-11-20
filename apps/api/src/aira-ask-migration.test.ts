@@ -1,18 +1,19 @@
 import { Client } from "pg"
 import { expect, it } from "vitest"
 
+import { sharedCluster, unmigratedDatabase } from "./harness.js"
 import { migrations } from "./migrations.js"
-import { startEmptyCluster } from "./postgres-setup.js"
-import { createRole } from "./provision.js"
 import { applySchema } from "./schema.js"
 
 it("names each ask once at migration 16 and keeps every row it found", async () => {
-  const cluster = await startEmptyCluster()
-  const url = `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres`
-  const db = new Client({ connectionString: url })
+  const database = await unmigratedDatabase()
+  const db = new Client({ connectionString: database.admin })
   try {
+    const template = new URL((await sharedCluster()).admin)
+    const address = new URL(database.admin)
+    expect(address.host).toBe(template.host)
+    expect(address.pathname).not.toBe(template.pathname)
     await db.connect()
-    for (const role of ["session", "deck", "listen"]) await createRole(db, role, "local-test")
     expect(await applySchema(db, migrations.slice(0, 15))).toEqual({ applied: 15, at: 15 })
     await db.query("insert into session.account (email) values ('a@example.com'), ('b@example.com')")
     await db.query(`
@@ -60,7 +61,10 @@ it("names each ask once at migration 16 and keeps every row it found", async () 
       db.query("insert into session.aira_ask (email, ask) values ('a@example.com', null)"),
     ).resolves.toMatchObject({ rowCount: 1 })
   } finally {
-    await db.end()
-    await cluster.stop()
+    try {
+      await db.end()
+    } finally {
+      await database.drop()
+    }
   }
 })
