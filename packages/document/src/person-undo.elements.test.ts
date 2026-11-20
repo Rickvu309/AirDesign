@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { decide, openRegister, type Command, type Register } from "./decide.js"
+import { currentValue, decide, openRegister, type Command, type Register } from "./decide.js"
 import { elementId, slideId, type ElementId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
 import type { SlideCommand } from "./slide-order.js"
@@ -123,5 +123,46 @@ describe("person undo of a delete of several elements", () => {
     expect(gone(turned(restored, undo))).toEqual([false, false])
     const both = slid(restored, { slide: "element-restore", id: file[0], node: b })
     expect(undoOf(both, removed.undoable)).toEqual({ ok: false })
+  })
+})
+
+describe("person undo of emptied text removed when left", () => {
+  const words = '[{"from":0,"runs":[{"from":-1,"text":"Words"}]}]'
+  const emptied = '[{"from":0,"runs":[{"from":-1,"text":""}]}]'
+
+  function emptiedThenRemoved() {
+    const typed = landed(landed(opened(), { command: "person", node: a, value: words }), {
+      command: "person",
+      node: a,
+      value: emptied,
+    })
+    const removed = deleted(typed, [a])
+    const rows = [
+      { node: a, before: { text: { value: { set: words } } }, after: { text: { value: { set: emptied } } } },
+    ]
+    return { register: removed.register, undoable: { ...removed.undoable, rows } as Undoable }
+  }
+
+  function wordsOf(register: Register): string | null {
+    const body = register.elements[a]
+    return body === undefined ? null : currentValue(body)
+  }
+
+  it("brings the layer back with its old words in one undo, and one redo empties and removes it again", () => {
+    const removed = emptiedThenRemoved()
+    const undone = turned(removed.register, undoOf(removed.register, removed.undoable))
+    expect(gone(undone)).toEqual([false, false])
+    expect(wordsOf(undone)).toBe(words)
+    const redone = turned(undone, redoOf(undone, removed.undoable))
+    expect(gone(redone)).toEqual([true, false])
+    expect(wordsOf(redone)).toBe(emptied)
+    expect(wordsOf(turned(redone, undoOf(redone, removed.undoable)))).toBe(words)
+  })
+
+  it("refuses the redo once someone else wrote new words into the brought back layer", () => {
+    const removed = emptiedThenRemoved()
+    const undone = turned(removed.register, undoOf(removed.register, removed.undoable))
+    const wrote = agentWrote(undone, a, "Aira")
+    expect(redoOf(wrote, removed.undoable)).toEqual({ ok: false })
   })
 })

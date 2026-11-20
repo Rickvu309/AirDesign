@@ -3,6 +3,7 @@ import { applyDiagram } from "./agent-diagram.js"
 import { addLine, drawsLine } from "./agent-line.js"
 import { applyGroup } from "./agent-groups.js"
 import { deleteElement } from "./agent-elements.js"
+import { emptiedNow } from "./emptied-text.js"
 import { inGroupSpace } from "./grouped-box.js"
 import { agentSlide } from "./agent-slides.js"
 import {
@@ -165,6 +166,10 @@ function applyAgentEdits(
     const decision = decide(register, agentCommand(placed, runId))
     if (decision.decision === "refuse") return refused(decision.code)
     register = { ...decision.register, bytes: next }
+  }
+  for (const node of emptiedNow(deck.register, register)) {
+    const removed = deleteElement({ ...deck, register }, { op: "delete", node }, runId, base)
+    if (removed.ok) register = removed.register
   }
   return landed(deck, register, runId)
 }

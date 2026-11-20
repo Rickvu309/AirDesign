@@ -109,11 +109,13 @@ export function placingText(deck: PlacingDeck, link: PlacingLink) {
     return stored(node)
   }
 
-  function left(node: ElementId): void {
+  function left(node: ElementId): boolean {
     const placed = held.current
-    if (placed === null || placed.node !== node || placed.kept !== null) return
+    if (placed === null || placed.node !== node) return false
+    if (placed.kept !== null) return false
     held.current = null
     void deck.showSaved()
+    return true
   }
 
   return { place, typed, stored, left }

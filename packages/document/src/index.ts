@@ -320,6 +320,7 @@ export {
 export { cycledColor, presentSlots } from "./template-remix.js"
 export { fixedLineHeight } from "./text-restyle.js"
 export {
+  noCharacters,
   readTextValue,
   hasSlideNumber,
   openingSlideNumber,

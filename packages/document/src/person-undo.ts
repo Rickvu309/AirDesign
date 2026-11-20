@@ -11,7 +11,7 @@ import { regroupTurn, ungroupTurn } from "./group-turn.js"
 import { joinEdit, joinTurn, spotNow, type Spot } from "./group-join.js"
 import type { OrderKey } from "./order-key.js"
 import { openingElement } from "./slide-floor.js"
-import { readTextValue } from "./text-value.js"
+import { noCharacters } from "./text-value.js"
 import { foldSlides, type SlideCommand } from "./slide-order.js"
 import { format } from "./format.js"
 import {
@@ -52,6 +52,7 @@ export type Undoable =
       readonly file: readonly SlideId[]
       readonly before: boolean
       readonly after: boolean
+      readonly rows?: readonly NodeStep[]
     }
   | {
       readonly stack: ElementId
@@ -93,11 +94,6 @@ function openingOf(register: Register, node: ElementId): ElementPatch {
     rows.push(rowOf({ value: opening.value }, valueHolder(register, node, "person")))
   if (opening?.box !== undefined && opening.box !== null) rows.push({ v: 1, patch: boxPatch(opening.box) })
   return netPatch(rows)
-}
-
-function noCharacters(value: string): boolean {
-  const text = readTextValue(value)
-  return text === null ? value === "" : text.every((paragraph) => paragraph.runs.every((run) => run.text === ""))
 }
 
 function shownWith(register: Register, node: ElementId, landed: ElementPatch): ElementPatch {
@@ -219,14 +215,7 @@ function stepCommands(register: Register, steps: readonly NodeStep[], from: "bef
 }
 
 function applying(register: Register, commands: readonly Command[] | null): readonly Command[] | null {
-  if (commands === null) return null
-  let current = register
-  for (const command of commands) {
-    const decision = decide(current, command)
-    if (decision.decision !== "apply") return null
-    current = decision.register
-  }
-  return commands
+  return commands !== null && landedAll(register, commands) !== null ? commands : null
 }
 
 function elementsTurn(register: Register, undoable: ElementsUndoable, from: "before" | "after"): Turns {
@@ -238,19 +227,33 @@ function elementsTurn(register: Register, undoable: ElementsUndoable, from: "bef
     (each) => was(each) !== becomes(each) && elementGone(register, each.node) !== was(each),
   )
   if (turning.length === 0) return changed
-  if (turning.some((each) => !becomes(each) && !stillShows(register, each.node, each.shown))) return changed
   const file = register.file.length > 0 ? register.file : undoable.file
-  const commands = applying(
-    register,
-    turning.map((each): Command => {
-      const id = readSlideId(shapeOf(each.node).slide) ?? undoable.slide
-      const edit: SlideCommand = becomes(each)
-        ? { slide: "element-restore", id, node: each.node }
-        : { slide: "element-remove", id, node: each.node }
-      return { command: "slide", file, edit }
-    }),
-  )
+  const slid = (each: Turned, edit: "element-restore" | "element-remove"): Command => {
+    const id = readSlideId(shapeOf(each.node).slide) ?? undoable.slide
+    return { command: "slide", file, edit: { slide: edit, id, node: each.node } }
+  }
+  const restores = turning.filter(becomes).map((each) => slid(each, "element-restore"))
+  const restored = landedAll(register, restores)
+  const rows = restored === null ? null : applying(restored, stepCommands(restored, undoable.rows ?? [], from))
+  const written = restored === null || rows === null ? null : landedAll(restored, rows)
+  const leaving = turning.filter((each) => !becomes(each))
+  if (written === null || leaving.some((each) => !stillShows(written, each.node, each.shown))) return changed
+  const commands = applying(register, [
+    ...restores,
+    ...(rows ?? []),
+    ...leaving.map((each) => slid(each, "element-remove")),
+  ])
   return commands === null ? changed : { ok: true, commands, undoable: { ...undoable, elements: turning } }
+}
+
+function landedAll(register: Register, commands: readonly Command[]): Register | null {
+  let current = register
+  for (const command of commands) {
+    const decision = decide(current, command)
+    if (decision.decision !== "apply") return null
+    current = decision.register
+  }
+  return current
 }
 
 function landing(register: Register, command: Command): readonly Command[] | null {

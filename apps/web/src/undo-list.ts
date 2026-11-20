@@ -1,9 +1,11 @@
 import {
+  noCharacters,
   redoOf,
   undoOf,
   type Box,
   type Command,
   type ElementId,
+  type ElementPatch,
   type NodeStep,
   type Register,
   type Row,
@@ -15,7 +17,12 @@ import { undoCopy, type UndoName } from "@/copy/undo-copy"
 
 export type Typing = { readonly node: ElementId; readonly session: number; readonly before: Promise<string> }
 
-export type UndoEntry = { readonly name: UndoName; readonly undoable: Undoable; readonly session?: number }
+export type UndoEntry = {
+  readonly name: UndoName
+  readonly undoable: Undoable
+  readonly session?: number
+  readonly absorbs?: ElementId
+}
 
 export type UndoList = { readonly undo: readonly UndoEntry[]; readonly redo: readonly UndoEntry[] }
 
@@ -81,14 +88,44 @@ function joined(top: UndoEntry | undefined, entry: UndoEntry): UndoEntry | null 
   }
 }
 
+function wordless(patch: ElementPatch): boolean {
+  const value = patch.text?.value
+  return Object.keys(patch).length === 1 && typeof value === "object" && noCharacters(value.set)
+}
+
 function unchanged(entry: UndoEntry): boolean {
   return (
     "steps" in entry.undoable &&
-    entry.undoable.steps.every((step) => JSON.stringify(step.before) === JSON.stringify(step.after))
+    entry.undoable.steps.every(
+      (step) =>
+        JSON.stringify(step.before) === JSON.stringify(step.after) || (wordless(step.before) && wordless(step.after)),
+    )
   )
 }
 
+function addedOnly(undoable: Undoable, node: ElementId): boolean {
+  return (
+    "elements" in undoable &&
+    !undoable.before &&
+    undoable.after &&
+    undoable.elements.every((each) => each.node === node)
+  )
+}
+
+function absorbed(list: UndoList, entry: UndoEntry): UndoList | null {
+  const { absorbs: node, ...kept } = entry
+  const top = list.undo.at(-1)
+  if (node === undefined || top === undefined || !("elements" in entry.undoable)) return null
+  const below = list.undo.slice(0, -1)
+  if (addedOnly(top.undoable, node)) return { undo: below, redo: [] }
+  const rows = stepsOf(top.undoable)
+  if (rows.length === 0 || rows.some((step) => step.node !== node)) return null
+  return { undo: [...below, { ...kept, undoable: { ...entry.undoable, rows } }], redo: [] }
+}
+
 export function recorded(list: UndoList, entry: UndoEntry): UndoList {
+  const folded = absorbed(list, entry)
+  if (folded !== null) return folded
   const top = list.undo.at(-1)
   const merged = joined(top, entry)
   const below = merged === null ? list.undo : list.undo.slice(0, -1)

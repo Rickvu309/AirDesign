@@ -220,6 +220,11 @@ function readParagraph(value: unknown): TextParagraph | null {
   return { ...read, ...spacing }
 }
 
+export function noCharacters(value: string): boolean {
+  const text = readTextValue(value)
+  return text === null ? value === "" : text.every((paragraph) => paragraph.runs.every((run) => run.text === ""))
+}
+
 export function readTextValue(value: string): TextValue | null {
   let parsed: unknown
   try {
