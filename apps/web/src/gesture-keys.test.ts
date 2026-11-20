@@ -56,7 +56,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/editor/adjust-tone.tsx": arrows,
   "apps/web/src/editor/deck-title-edit.tsx": field,
   "apps/web/src/editor/editor-grid-keys.ts": list,
-  "apps/web/src/editor/editor-key-ownership.ts": ["Escape"],
+  "apps/web/src/editor/editor-key-ownership.ts": ["Alt", "Control", "Escape", "Meta", "Shift"],
   "apps/web/src/editor/format-buttons.tsx": [...arrows, ...field],
   "apps/web/src/editor/grid-group-add.tsx": ["Escape"],
   "apps/web/src/editor/grid-menu.tsx": ["Enter"],

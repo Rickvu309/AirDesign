@@ -16,6 +16,7 @@ import { formatTarget, type FormatEdit } from "./passage-format.js"
 import { gestureFor } from "./gestures.js"
 import { readFormat, writeFormat } from "./run-format-node.js"
 import type { TextFormatting } from "./text-formatting.js"
+import { useTextReach } from "./text-reach.js"
 import { useElement } from "./element-view.js"
 import {
   cutValue,
@@ -222,6 +223,10 @@ function showValue(box: HTMLElement, value: TextValue, carets: Carets | null, lo
   )
   if (look !== undefined) restyle(box, look)
   if (carets === null || !box.contains(box.ownerDocument.activeElement)) return
+  placeCarets(box, carets)
+}
+
+function placeCarets(box: HTMLElement, carets: Carets): void {
   const selection = box.ownerDocument.getSelection()
   if (selection === null) return
   const kept = box.ownerDocument.createRange()
@@ -257,6 +262,10 @@ export function Passage(props: {
   const text = record === null ? "" : record.text
   const box = useRef<HTMLDivElement>(null)
   const composing = useRef(false)
+  const reach = useTextReach(box, {
+    read: (shown) => selectionCarets(shown, readBox(shown).units),
+    place: placeCarets,
+  })
   const [opened] = useState(() => writeTextValue(textValue(text)))
   const reported = useRef(opened)
   const pending = useRef<string[]>([])
@@ -351,16 +360,18 @@ export function Passage(props: {
       contentEditable={props.onEdit !== undefined}
       aria-placeholder={props.prompt}
       style={{ whiteSpace: "pre-wrap", ...(props.framed === true ? framedOutline : {}), ...look?.body }}
+      {...reach.handlers}
       onKeyDown={(event) => {
         if (composing.current || event.nativeEvent.isComposing) return
         const shown = event.currentTarget
         const gesture = gestureFor(event, "text")
         if (gesture === "list-indent" || gesture === "list-outdent") {
+          if (reach.passesTab()) return
+          event.preventDefault()
           const read = readBox(shown)
           const at = selectionCarets(shown, read.units)
           const next = at === null ? null : leveled(read.value, at, gesture === "list-indent" ? 1 : -1)
           if (at === null || next === null) return
-          event.preventDefault()
           edit(shown, next, at.start, at.end, "format")
           return
         }
@@ -440,6 +451,7 @@ export function Passage(props: {
         composing.current = false
       }}
       onInput={(event) => {
+        reach.typed()
         const native = event.nativeEvent
         if (composing.current || (native instanceof InputEvent && native.isComposing)) return
         const read = readBox(event.currentTarget)

@@ -22,7 +22,6 @@ async function drive(kit) {
   await crop.getByRole("textbox", { name: "Left", exact: true }).focus()
   await page.keyboard.press("ControlOrMeta+A")
   await page.keyboard.type("10")
-  await page.keyboard.press("Enter")
   await page.keyboard.press("Tab")
   await page.keyboard.press("Tab")
   await page.keyboard.press("ControlOrMeta+A")

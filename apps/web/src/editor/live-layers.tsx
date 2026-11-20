@@ -10,6 +10,7 @@ import { setLayerFlag } from "@/editor/layer-flags"
 import { layerJoins } from "@/editor/layer-join"
 import { LayersPanel, type LayerPick, type RenameRequest } from "@/editor/layers-panel"
 import { fieldsOf } from "@/editor/panel-fields"
+import { canvasFrame } from "@/editor/keys-back-to-canvas"
 import { slideLayerRows, type LayerLook } from "@/editor/slide-layers"
 import type { ElementChange } from "@/element-edit"
 import { indexedRegister } from "@/indexed-register"
@@ -66,12 +67,6 @@ function useSlideTree(deck: LayeringDeck): readonly Layer[] {
     }
     return layerTree(slideLayerRows(parts, slide, look))
   }, [file, parts, register, slide])
-}
-
-function canvasFrame(slide: CanvasSlide | null, node: ElementId): HTMLElement | null {
-  const key = slide?.elements.find((each) => each.id === node)?.key
-  if (key === undefined) return null
-  return document.querySelector<HTMLElement>(`[data-slide-paint] [data-canvas-element="${CSS.escape(key)}"]`)
 }
 
 export function LiveLayers({

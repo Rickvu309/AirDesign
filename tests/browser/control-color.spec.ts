@@ -65,7 +65,7 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   await expect(used).toHaveCount(1)
   await used.click()
   await page.keyboard.press("Escape")
-  await expect(shownColor(field)).toBeFocused()
+  await expect(rectangle).toBeFocused()
   await expect.poll(() => filled(rectangle)).toBe(navy)
   await expect(shownColor(field)).toHaveText("1F4E79")
   await undone(page, rectangle, field, accent, names.accent1)
