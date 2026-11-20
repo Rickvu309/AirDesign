@@ -44,7 +44,7 @@ it("describes each element kind", async () => {
     expect(instructions).toContain("connection (start, end) and opacity.")
     expect(instructions).toContain('"opacity": 60')
     expect(instructions).toContain(
-      "A table takes identity (name, alt, hidden, locked) and box (x, y, w, h, align, distribute).",
+      "A table takes identity (name, alt, hidden, locked), box (x, y, w, h, align, distribute) and table (value).",
     )
     expect(instructions).toContain(
       "A group takes identity (name, alt, hidden, locked), box (x, y, w, h, rot, flipH, flipV, align, distribute) and effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur).",

@@ -10,7 +10,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
-import { keptCorners, type ElementId } from "@airdesign/document"
+import { keptCorners, type ElementId, type TableChange } from "@airdesign/document"
 import { memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
@@ -54,6 +54,7 @@ export type ElementPaintProps = {
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
   readonly onFit?: ((id: ElementId, height: number) => void) | undefined
+  readonly onTable?: ((id: ElementId, change: TableChange) => void) | undefined
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
   readonly targets?: Targets | undefined

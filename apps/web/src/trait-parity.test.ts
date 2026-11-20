@@ -1,4 +1,4 @@
-import { authorableTrait, readAgent, traitWire } from "@airdesign/catalog"
+import { readAgent, traitWire } from "@airdesign/catalog"
 import {
   inheritable,
   rowOf,
@@ -14,7 +14,7 @@ import {
 import { exportParts } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
-import { canvasControl } from "./design/panel-arrangement"
+import { canvasControl, panelTrait } from "./design/panel-arrangement"
 import { traitControls } from "./design/trait-controls"
 import { ensureMarkup } from "./markup"
 import {
@@ -198,7 +198,7 @@ function alphaField(trait: TraitName, field: string): boolean {
 
 async function parityProblems(): Promise<readonly Problem[]> {
   const problems: Problem[] = []
-  for (const trait of traitNames.filter(authorableTrait)) {
+  for (const trait of traitNames.filter(panelTrait)) {
     if (Object.keys(traits[trait].fields).length === 0) continue
     const probe = probes[trait] as Loose
     const wire = traitWire[trait] as Partial<LooseWire>

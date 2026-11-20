@@ -1,7 +1,6 @@
-import { authorableTrait } from "@airdesign/catalog"
 import { traitNames, traits, type Desc } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { controlKinds, controlOf } from "./design/panel-arrangement"
+import { controlKinds, controlOf, panelTrait } from "./design/panel-arrangement"
 import { controlViews } from "./design/control-views"
 
 type Loose = Readonly<Record<string, { readonly desc: Desc }>>
@@ -19,7 +18,7 @@ function inside(desc: Desc): readonly Desc[] {
 
 function kindsInUse(): readonly string[] {
   const descs = traitNames
-    .filter(authorableTrait)
+    .filter(panelTrait)
     .flatMap((trait) => [
       ...Object.values(traits[trait].fields as Loose),
       ...Object.values(traits[trait].inputs as Loose),

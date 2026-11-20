@@ -23,7 +23,7 @@ import type { Deck } from "./call.js"
 export type WireLine = Extract<WireAdd, { readonly kind: "line" | "arrow" }>
 
 export function drawsLine(edit: WireSet | WireAdd): edit is WireLine {
-  return edit.op === "add" && edit.kind !== "shape"
+  return edit.op === "add" && (edit.kind === "line" || edit.kind === "arrow")
 }
 
 type End = NonNullable<NonNullable<WireLine["connection"]>["start"]>

@@ -49,7 +49,7 @@ import {
   VerticalPadding,
 } from "./layout-icons"
 import { optionWord } from "@/copy/option-copy"
-import type { Desc } from "@airdesign/document"
+import type { Desc, TraitName } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
 
 export type NameLook =
@@ -327,6 +327,10 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       ...(place?.unnamed === undefined ? {} : { unnamed: true }),
     },
   }
+}
+
+export function panelTrait(trait: TraitName): boolean {
+  return trait !== "table"
 }
 
 export function canvasControl(trait: SectionName, field: string): boolean {

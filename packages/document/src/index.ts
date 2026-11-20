@@ -259,6 +259,7 @@ export {
   cellText,
   changedTable,
   openingTable,
+  openingTableSize,
   readTableValue,
   tableColumns,
   writeTableValue,

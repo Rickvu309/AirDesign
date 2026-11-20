@@ -47,7 +47,6 @@ test("preserves a previously edited readable table through reload and native exp
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toContainText("Region")
   await readable(page, "0.0", "Region")
-  await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
   await page.reload()
   await decks.ready()
   await expect(table).toContainText("Region")

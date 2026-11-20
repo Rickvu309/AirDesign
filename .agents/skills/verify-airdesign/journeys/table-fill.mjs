@@ -1,6 +1,4 @@
 import path from "node:path"
-import { readFile } from "node:fs/promises"
-import { tableCopy } from "../../../../apps/web/src/copy/table-copy.ts"
 
 export default async function drive(kit) {
   const { page, expect, repo, capture, note, post, deckRoutes } = kit
@@ -13,32 +11,35 @@ export default async function drive(kit) {
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toContainText("Region")
-  await expect(page.getByRole("button", { name: tableCopy.tool, exact: true })).toHaveCount(0)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  await table.click()
-  await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
-  await expect(page.locator("[data-table-bar], [data-table-picker]")).toHaveCount(0)
   await capture("imported-table")
-  const before = await post(deckRoutes.open, { deck }, cookie)
-  const refused = await post(
-    deckRoutes.commit,
-    { deck, batch: [{ node: "256.4", value: '{"rows":[{"from":0,"cells":[[{"from":0,"runs":[]}]]}]}' }] },
-    cookie,
-  )
-  expect(refused.json.ok).toBe(false)
+  await table.locator('[data-table-cell="1.0"]').dblclick()
+  await expect(table.locator('[data-table-text="1.0"]')).toBeFocused()
+  await page.keyboard.type("Europe")
+  await page.keyboard.press("Tab")
+  await expect(table.locator('[data-table-text="1.1"]')).toBeFocused()
+  await page.keyboard.type("4.2")
+  await capture("typed-in-cells")
+  await page.keyboard.press("Escape")
+  await expect(table).toBeFocused()
+  const held = async () => JSON.stringify((await post(deckRoutes.open, { deck }, cookie)).json.register)
+  await expect.poll(held, { intervals: [250], timeout: 30_000 }).toContain("4.2")
   await page.reload()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
-  await expect(table).toContainText("Region")
-  const after = await post(deckRoutes.open, { deck }, cookie)
-  expect(after.json.register).toEqual(before.json.register)
+  await expect(table.locator('[data-table-cell="1.0"]')).toContainText("Europe")
+  await expect(table.locator('[data-table-cell="1.1"]')).toContainText("4.2")
   const downloading = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
   await page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export", exact: true }).click()
   const out = path.dirname(await capture("exported"))
-  const exported = path.join(out, "table-preserved.pptx")
+  const exported = path.join(out, "table-typed.pptx")
   await (await downloading).saveAs(exported)
-  expect(await readFile(exported)).toEqual(await readFile(fixture))
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(exported)
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().replace(/^.*\//, ""))
+  await expect(table.locator('[data-table-cell="1.0"]')).toContainText("Europe")
+  await capture("reimported")
   note(
-    "Imported table preserved byte for byte after reload and export; new table edits refused and server register unchanged",
+    "A double-click on an imported table's cell started typing there, Tab moved to the next cell, Escape went back to the table, the server held both cells after reload, and the export opened again with them in the same cells.",
   )
 }

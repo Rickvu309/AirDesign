@@ -113,7 +113,6 @@ it("reads a person's copy of a layer on a commit, onto its own slide or another,
     { slide: "element-clone", id: "256", source: "257.2", element, layers },
   ])
   expect(readCommit({ deck: "deck", batch: [{ ...clone, element: { ...element, node: "257.9" } }] })).toEqual(field)
-  expect(readCommit({ deck: "deck", batch: [{ ...clone, element: { ...element, kind: "table" } }] })).toEqual(field)
   expect(readCommit({ deck: "deck", batch: [{ ...clone, key: "a" }] })).toEqual(field)
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [clone] })).toEqual(field)
 })

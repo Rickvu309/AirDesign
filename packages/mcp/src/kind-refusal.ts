@@ -74,7 +74,7 @@ function textNext(node: ElementId, { facts }: Missing): string {
   if (facts.kind === "group")
     return "Edit the text of the layers inside it: airdesign_read_deck lists them with grouped true."
   if (facts.kind === "chart") return `No tool edits a chart's data yet. Tell the person, or ${beside}.`
-  if (facts.kind === "table") return `Table cells cannot be edited. You can ${beside}.`
+  if (facts.kind === "table") return `Set its cells with table's value, as airdesign_read_deck lists it, or ${beside}.`
   if (facts.kind === "kept") return "Leave it, or tell the person."
   return `To put words beside it, call airdesign_edit_deck with op add and kind shape on slide ${shapeOf(node).slide}.`
 }
@@ -198,5 +198,6 @@ export function kindInstructions(): string {
     "Presenter notes hold plain text; send their value as plain text.",
     "In airdesign_read_deck, role is one of title, subtitle, body, date, footer, number, picture, chart, table or object. design lists the layer's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the layer itself; once a change lands on a layer, its text fields follow its first run as it is now. Colors name a template color slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another; templateStyle lists what deck.templateStyles changed. connection.start and connection.end name the shape and site each end of a connector attaches to.",
     "A JSON text value is [{from, runs: [{from, text}]}]: each from is an index the file has, and -1 is a new one. A run may set bold, italic, underline or strike to true or false, size in hundredths of a point from 100 to 400000, letterSpacing in hundredths of a point from -400000 to 400000, font, and color as {scheme: dk1, lt1, dk2, lt2 or accent1 through accent6} or {rgb: six uppercase hex digits}. A paragraph may set align to left, center or right, and list to none, bullets or numbers. Leaving one out keeps the file's.",
+    'A JSON table value is {rows: [{from, cells, fills, borders}]}, where each cell is a JSON text value. from names a row the file has, or -1 for a new row; a row left out is deleted. columns lists the file\'s column for each cell, or -1 for a new column, when columns change. fills and borders hold one entry per cell, or null to keep the cell\'s: a fill as stored, such as {"solid":{"scheme":"accent1"}}, and borders as {top, right, bottom, left}, each {fill, width in EMU, dash}. Add a table with { "op": "add", "kind": "table", "slide": ..., "table": { "value": ... } }: its rows and columns come from the value, and each row\'s from is its place.',
   ].join("\n")
 }

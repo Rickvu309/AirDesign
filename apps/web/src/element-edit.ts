@@ -5,6 +5,7 @@ import {
   lineGeometries,
   nextElementId,
   openingTable,
+  openingTableSize,
   placeNewBox,
   writeTableValue,
   readSlideId,
@@ -39,7 +40,6 @@ import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-const tableRow = 370840
 const shapeShare = 0.2
 const lineShare = 0.3
 
@@ -150,8 +150,7 @@ export function elementCommand(
   const node = nextElementId(register, slide.id, freeShapeId(base, slide.part))
   const taken = takenBoxes(change.size)
   if (change.change === "table") {
-    const size = { cx: Math.round(change.size.width * 0.6), cy: change.rows * tableRow }
-    const box = placeNewBox(change.size, taken, size)
+    const box = placeNewBox(change.size, taken, openingTableSize(change.size.width, change.rows))
     const value = writeTableValue(openingTable(change.rows, change.columns))
     return { slide: "element-add", id: slide.id, element: { node, kind: "table", value, box, grouped: false } }
   }

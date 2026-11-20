@@ -1,4 +1,4 @@
-import { authorableValue, authorableSlide, readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
 import {
   currentBox,
   currentValue,
@@ -328,7 +328,6 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
-    if (!authorableValue(edit)) return Promise.resolve({ ok: false, refusal: "field" })
     const parsed = readDeckId(deck)
     if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
     const named = readElementId(node)
@@ -352,8 +351,7 @@ export function connect(remote: Remote, options: Options = {}) {
       if (!parsed.ok) return parsed
       const state = readSlideState({ file, order: edits })
       const first = state?.order[0]
-      if (state === undefined || first === undefined || !state.order.every(authorableSlide))
-        return { ok: false, refusal: "field" }
+      if (state === undefined || first === undefined) return { ok: false, refusal: "field" }
       const kept: Kept =
         state.order.length === 1
           ? { kind: "slide", file: state.file, edit: first }

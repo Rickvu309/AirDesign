@@ -11,14 +11,14 @@ afterEach(async () => {
   await deleteDatabase()
 })
 
-it("refuses table authoring before it enters the device queue", async () => {
+it("keeps a person's new table and table edits in the device queue", async () => {
   const link = connect(memoryRemote())
   const node = elementId("258.7")
   const value = writeTableValue(openingTable(2, 2))
-  expect(await link.enqueue("deck", value, node, value)).toMatchObject({ ok: false })
+  expect(await link.enqueue("deck", value, node, value)).toMatchObject({ ok: true })
   expect(
     await link.enqueueRow("deck", { v: format, patch: { table: { value: { set: value } } } }, node, value),
-  ).toMatchObject({ ok: false })
+  ).toMatchObject({ ok: true })
   expect(
     await link.enqueueSlide("deck", [slideId("258")], {
       slide: "element-add",
@@ -31,11 +31,11 @@ it("refuses table authoring before it enters the device queue", async () => {
         box: { x: 0, y: 0, cx: 914400, cy: 914400 },
       },
     }),
-  ).toMatchObject({ ok: false })
-  expect(await link.pending("deck")).toEqual([])
+  ).toMatchObject({ ok: true })
+  expect(await link.pending("deck")).toHaveLength(3)
 })
 
-it("replays a saved table row on the device without applying authoring restrictions", async () => {
+it("replays a saved table row on the device", async () => {
   const parsed = readDeckId("saved-table")
   if (!parsed.ok) throw new Error(parsed.refusal)
   const node = elementId("258.7")
