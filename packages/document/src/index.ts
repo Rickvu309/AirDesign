@@ -280,6 +280,7 @@ export {
   type TemplateColor,
 } from "./color.js"
 export { cycledColor, presentSlots } from "./template-remix.js"
+export { fixedLineHeight } from "./text-restyle.js"
 export {
   readTextValue,
   hasSlideNumber,
@@ -287,7 +288,9 @@ export {
   alignNames,
   formatNames,
   lastListLevel,
+  lineHeightPointsFloor,
   schemeNames,
+  spaceCeiling,
   spacingNames,
   writeTextValue,
   type ParagraphAlign,
@@ -301,7 +304,7 @@ export {
   type TextValue,
 } from "./text-value.js"
 export { withCurrentKeys } from "./current-keys.js"
-export { levelNumbering, listIndent } from "./list-level.js"
+export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
 export {
   linkRange,
   linkState,

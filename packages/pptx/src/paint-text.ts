@@ -1,3 +1,4 @@
+import type { ListIndent } from "@airdesign/document"
 import { runColor } from "./text-fill-read.js"
 import type { PaintImage, PaintPicture } from "./paint-image.js"
 import { runPicture } from "./text-fill-read.js"
@@ -7,6 +8,8 @@ import { paintAttribute, paintColor, type PaintColor, type PaintPalette } from "
 import { paintChild } from "./paint-fill.js"
 import { defaultColor, highlightOf, linkColor } from "./text-color.js"
 import { sourceBody, type MarkupChildren, type SourceParagraph } from "./text-value-route.js"
+import { templateIndents } from "./template-indent.js"
+import { aligns, anchors, caps } from "./paint-text-words.js"
 
 export type PaintRunStyle = {
   fill?: ReturnType<typeof runFill>
@@ -54,6 +57,7 @@ export type PaintParagraph = {
 
 export type PaintText = {
   readonly fonts?: Readonly<Record<string, string>>
+  readonly templateIndents?: readonly (ListIndent | null)[]
   paragraphs: readonly PaintParagraph[]
   anchor: "top" | "middle" | "bottom"
   insets: { left: number; top: number; right: number; bottom: number }
@@ -117,27 +121,6 @@ const bulletKinds = new Set(["a:buNone", "a:buChar", "a:buAutoNum", "a:buBlip"])
 const bulletFontKinds = new Set(["a:buFont", "a:buFontTx"])
 const bulletColorKinds = new Set(["a:buClr", "a:buClrTx"])
 const bulletSizeKinds = new Set(["a:buSzPct", "a:buSzPts", "a:buSzTx"])
-const anchors = new Map<string, PaintText["anchor"]>([
-  ["t", "top"],
-  ["ctr", "middle"],
-  ["b", "bottom"],
-  ["just", "top"],
-  ["dist", "top"],
-])
-const aligns = new Map<string, PaintParagraph["align"]>([
-  ["l", "left"],
-  ["ctr", "center"],
-  ["r", "right"],
-  ["just", "justify"],
-  ["justLow", "justify"],
-  ["dist", "distributed"],
-  ["thaiDist", "distributed"],
-])
-const caps = new Map<string, NonNullable<PaintRunStyle["caps"]>>([
-  ["all", "all"],
-  ["small", "small"],
-  ["none", "none"],
-])
 const fontReference = /^\+m[jn]-(lt|ea|cs)$/
 
 const inside = (holder: PaintTextHolder): readonly MarkupElement[] => holder.children[holder.element.index] ?? []
@@ -473,10 +456,8 @@ const textParagraph = (
 
 const resolvedText = (shape: PaintTextShape, source: readonly SourceParagraph[], scope: PaintTextScope): PaintText => {
   const nearLists = present([shape, ...shape.above].map(listOf))
-  const farLists = present([
-    stylesFor(shape.placeholder, scope.styles),
-    styledByMaster(shape.placeholder) ? null : scope.defaults,
-  ])
+  const templateStyle = stylesFor(shape.placeholder, scope.styles)
+  const farLists = present([templateStyle, styledByMaster(shape.placeholder) ? null : scope.defaults])
   const known = new Map<number, Pick<Levels, "nearRuns" | "farRuns"> & { lists: readonly PaintTextHolder[] }>()
   const levelsAt = (properties: PaintTextHolder | undefined, level: number): Levels => {
     let lists = known.get(level)
@@ -497,6 +478,7 @@ const resolvedText = (shape: PaintTextShape, source: readonly SourceParagraph[],
   const reference = { ...referenceOf(shape, scope), ...shape.style }
   return {
     fonts: Object.fromEntries(scope.fonts),
+    ...templateIndents(shape.placeholder, present([...nearLists, templateStyle])),
     paragraphs: source.map((paragraph, from) =>
       textParagraph(shape, paragraph, from, levelsAt, count, reference, scope),
     ),

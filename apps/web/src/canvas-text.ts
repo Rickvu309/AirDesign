@@ -84,6 +84,7 @@ export function canvasText(text: PaintText | null, src: PictureSource = () => nu
   return {
     ...fitOf(text),
     ...(text.fonts === undefined ? {} : { fonts: text.fonts }),
+    ...(text.templateIndents === undefined ? {} : { templateIndents: text.templateIndents }),
     paragraphs: text.paragraphs.map((paragraph) =>
       canvasParagraph(paragraph, text.fontScale, text.spacingReduction, src),
     ),

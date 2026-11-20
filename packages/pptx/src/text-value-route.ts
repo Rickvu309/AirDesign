@@ -8,7 +8,7 @@ import {
 } from "@airdesign/document"
 import { spliceBytes, contentSpans, decodedXmlText, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { paragraphBytes } from "./paragraph-format.js"
+import { noTemplate, paragraphBytes, type TemplateIndent } from "./paragraph-format.js"
 import { formatEdits, formattedInline, runProperties } from "./run-format.js"
 import { xmlText } from "./shape-write.js"
 
@@ -235,8 +235,13 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
   return true
 }
 
-function propertiesBytes(bytes: Uint8Array, source: SourceParagraph, wanted: TextParagraph): Uint8Array {
-  return paragraphBytes(bytes, source.properties, wanted) ?? copied(bytes, source.properties)
+function propertiesBytes(
+  bytes: Uint8Array,
+  source: SourceParagraph,
+  wanted: TextParagraph,
+  template: TemplateIndent,
+): Uint8Array {
+  return paragraphBytes(bytes, source.properties, wanted, template) ?? copied(bytes, source.properties)
 }
 
 function writtenParagraph(
@@ -246,11 +251,12 @@ function writtenParagraph(
   again: boolean,
   numbers: SlideNumbers | undefined,
   fieldId: (run: number) => string,
+  template: TemplateIndent,
 ): Uint8Array {
   if (!source.copyable) throw new Error("text-carried")
   return joinBytes([
     openTag(bytes, source.element, paragraphOpen),
-    propertiesBytes(bytes, source, wanted),
+    propertiesBytes(bytes, source, wanted, template),
     ...wanted.runs.map((run, at) => writtenRun(bytes, source, run, again, numbers, fieldId(at))),
     copied(bytes, source.end),
     paragraphClose,
@@ -268,10 +274,11 @@ function keptEdits(
   wanted: TextParagraph,
   numbers: SlideNumbers | undefined,
   fieldId: (run: number) => string,
+  template: TemplateIndent,
 ): readonly ByteEdit[] | null {
   if (wanted.runs.length !== source.inlines.length) return null
   const edits: ByteEdit[] = []
-  const formatted = paragraphBytes(bytes, source.properties, wanted)
+  const formatted = paragraphBytes(bytes, source.properties, wanted, template)
   if (formatted !== null) {
     if (source.properties === undefined) {
       const at = source.element.selfClosing ? source.element.end - 2 : source.element.openEnd
@@ -313,6 +320,7 @@ export function textValueEdits(
   value: TextValue,
   numbers?: SlideNumbers,
   fieldId: (paragraph: number, run: number) => string = () => "{00000000-0000-4000-8000-000000000000}",
+  template: TemplateIndent = noTemplate,
 ): readonly ByteEdit[] {
   const paragraphs = sourceBody(children, bytes, shape)
   if (paragraphs === null) throw new Error("text-body")
@@ -339,10 +347,10 @@ export function textValueEdits(
     if (source === undefined) throw new Error("text-paragraph")
     const again = seen.has(wanted.from)
     const idAt = (run: number) => fieldId(paragraph, run)
-    const kept = wanted.from >= next && !again ? keptEdits(bytes, source, wanted, numbers, idAt) : null
+    const kept = wanted.from >= next && !again ? keptEdits(bytes, source, wanted, numbers, idAt, template) : null
     seen.add(wanted.from)
     if (kept === null) {
-      pending.push(writtenParagraph(bytes, source, wanted, again, numbers, idAt))
+      pending.push(writtenParagraph(bytes, source, wanted, again, numbers, idAt, template))
       continue
     }
     place(wanted.from)

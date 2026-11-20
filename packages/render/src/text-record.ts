@@ -1,4 +1,4 @@
-import type { TextFill, SchemeName } from "@airdesign/document"
+import type { ListIndent, TextFill, SchemeName } from "@airdesign/document"
 
 export type CanvasFit =
   | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number; readonly held?: true }
@@ -49,6 +49,7 @@ export type CanvasParagraph = {
 
 export type CanvasText = {
   readonly fonts?: Readonly<Record<string, string>>
+  readonly templateIndents?: readonly (ListIndent | null)[]
   readonly colors?: readonly CanvasTemplateColor[]
   readonly paragraphs: readonly CanvasParagraph[]
   readonly anchor: "top" | "middle" | "bottom"
