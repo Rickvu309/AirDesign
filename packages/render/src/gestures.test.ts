@@ -222,4 +222,16 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...pc, key: "<", code: "Comma" }, "element")).toBe("weight-down")
     expect(gestureFor({ ...plain, key: ">", code: "Period", ctrlKey: true, shiftKey: true }, "element")).toBe("size-up")
   })
+
+  it("resizes a frame to fit with Mod+Alt+Shift+R without colliding with rename or text alignment", () => {
+    expect(
+      gestureFor({ ...plain, key: "‰", code: "KeyR", metaKey: true, altKey: true, shiftKey: true }, "editor"),
+    ).toBe("resize-to-fit")
+    expect(
+      gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, altKey: true, shiftKey: true }, "editor"),
+    ).toBe("resize-to-fit")
+    expect(gestureFor({ ...plain, key: "r", code: "KeyR", metaKey: true }, "editor")).toBe("rename")
+    expect(gestureFor({ ...plain, key: "®", code: "KeyR", metaKey: true, altKey: true }, "element")).toBe("text-right")
+    expect(gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, shiftKey: true }, "editor")).toBeNull()
+  })
 })

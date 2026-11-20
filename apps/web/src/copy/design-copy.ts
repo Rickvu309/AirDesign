@@ -36,6 +36,7 @@ export const designCopy = {
   titles: { text: "Text", picture: "Image" },
   autoFrame: frameCopy.autoFrame,
   removeAutoLayout: frameCopy.removeAutoLayout,
+  resizeToFit: frameCopy.resizeToFit,
   square: "Square",
   fillDetails: "Fill details",
   nothing: "Nothing on this layer can be changed here yet.",

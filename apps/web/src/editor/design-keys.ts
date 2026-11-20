@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react"
 import { changeDesign } from "@/design/design-change"
 import { removeAutoLayout } from "@/editor/auto-layout-removal"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
+import { hasPlainFrame, resizeFramesToFit } from "@/editor/frame-fit-action"
 import { selectedDesign, type DesigningDeck } from "@/editor/live-design-panel"
 import { onLayers, typing } from "@/editor/pointer-tool"
 import { steppedStyle } from "@/design/weight-step"
@@ -130,6 +131,12 @@ export function useDesignKeys(deck: DesigningDeck, working: boolean) {
         if (properties === null || now.selection.ids.length === 0 || !editorOwnsKey(event)) return
         event.preventDefault()
         changeDesign(now, () => pastedOnto(latest.current, properties))
+        return
+      }
+      if (gesture === "resize-to-fit") {
+        if (now.selection.ids.length === 0 || !hasPlainFrame(now, now.selection.ids) || !editorOwnsKey(event)) return
+        event.preventDefault()
+        resizeFramesToFit(now, now.selection.ids)
         return
       }
       if (gesture !== "remove-auto-layout") return

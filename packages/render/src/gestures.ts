@@ -176,6 +176,12 @@ export const gestures = [
   },
   { id: "flip-horizontal", group: "size", keys: [{ code: "KeyH", shift: true }], where: ["element"] },
   { id: "flip-vertical", group: "size", keys: [{ code: "KeyV", shift: true }], where: ["element"] },
+  {
+    id: "resize-to-fit",
+    group: "size",
+    keys: [{ code: "KeyR", mod: true, alt: true, shift: true }],
+    where: ["editor"],
+  },
   { id: "forward", group: "arrange", keys: [{ code: "BracketRight", mod: true }], where: ["element"] },
   { id: "backward", group: "arrange", keys: [{ code: "BracketLeft", mod: true }], where: ["element"] },
   {
