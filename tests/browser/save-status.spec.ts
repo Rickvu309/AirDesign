@@ -1,4 +1,5 @@
 import { expect, type Page, type Request } from "@playwright/test"
+import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
@@ -294,7 +295,7 @@ for (const { name, edit, sizeRefusal } of [
       second.resolve()
     }
 
-    await expect(saveStatus(page)).toHaveText(sizeRefusal ? "Unable to save" : saved)
+    await expect(saveStatus(page)).toHaveText(sizeRefusal ? productCopy.unsaved : saved)
     expect(await revision()).toBe(before + (sizeRefusal ? 1 : 2))
   })
 }
@@ -310,24 +311,26 @@ test("a deck reopened with an edit still on the device reads Saving until that e
   const deck = await openClean(page)
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const before = await revision()
-  const committing = (url: URL) => url.pathname === "/decks/commit"
-  await page.route(committing, (route) => route.abort("connectionfailed"))
-  await typeAtEnd(page, "!")
-  await expect(saveStatus(page)).toHaveText(unreached)
-  await page.unroute(committing)
-  let release = () => undefined as void
-  const released = new Promise<void>((resolve) => (release = resolve))
-  await page.route(committing, async (route) => {
-    await released
+  let holdCommit = false
+  const releaseCommit = Promise.withResolvers<void>()
+  await page.route("**/decks/commit", async (route) => {
+    if (!holdCommit) return route.abort("connectionfailed")
+    await releaseCommit.promise
     await route.fallback()
   })
-  await page.reload()
-  await settled(page)
-  await expect(saveStatus(page)).toHaveText(saving)
-  await page.waitForTimeout(1000)
-  await expect(saveStatus(page)).toHaveText(saving)
-  expect(await revision()).toBe(before)
-  release()
+  await typeAtEnd(page, "!")
+  await expect(saveStatus(page)).toHaveText(unreached)
+  holdCommit = true
+  try {
+    await page.reload()
+    await settled(page)
+    await expect(saveStatus(page)).toHaveText(saving)
+    await page.waitForTimeout(1000)
+    await expect(saveStatus(page)).toHaveText(saving)
+    expect(await revision()).toBe(before)
+  } finally {
+    releaseCommit.resolve()
+  }
   await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
   expect(await revision()).toBeGreaterThan(before)
 })
@@ -354,23 +357,19 @@ for (const answer of refusals) {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
-    const indexReached = Promise.withResolvers<void>()
+    let indexReached = false
     const releaseIndex = Promise.withResolvers<void>()
     await page.route("**/decks/index", async (route) => {
-      indexReached.resolve()
+      indexReached = true
       await releaseIndex.promise
       await route.fallback()
     })
-    const deck = await openClean(page)
-    const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
-    const before = await revision()
-    const watched = Promise.withResolvers<void>()
+    const watchReply = Promise.withResolvers<{ deck: string; revision: number }>()
+    let watches = 0
     await page.route("**/decks/watch", async (route) => {
-      await page.unroute("**/decks/watch")
-      const watching = page.waitForRequest("**/decks/watch")
-      await route.fulfill({ json: { ok: true, deck, revision: before } })
-      await watching
-      watched.resolve()
+      watches += 1
+      if (watches > 1) return route.fallback()
+      await route.fulfill({ json: { ok: true, ...(await watchReply.promise) } })
     })
     let sent = 0
     await page.route(
@@ -380,15 +379,22 @@ for (const answer of refusals) {
         return route.fulfill({ status: answer.status, json: { ok: false, refusal: answer.refusal } })
       },
     )
+    const deck = await openClean(page)
+    const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+    const before = await revision()
     try {
-      await indexReached.promise
+      await expect.poll(() => indexReached, { message: "Wait for POST /decks/index before typing" }).toBe(true)
       await typeAtEnd(page, "!")
       await expect(saveStatus(page)).toHaveText(saving)
     } finally {
       releaseIndex.resolve()
     }
-    await watched.promise
-    await expect(saveStatus(page)).toHaveText("Unable to save")
+    await expect(saveStatus(page)).toHaveText(productCopy.unsaved)
+    watchReply.resolve({ deck, revision: before })
+    await expect
+      .poll(() => watches, { message: "Wait for a follow-up POST /decks/watch after the save refusal" })
+      .toBeGreaterThanOrEqual(2)
+    await expect(saveStatus(page)).toHaveText(productCopy.unsaved)
     await expect(page.getByText(answer.says)).toBeVisible()
     expect(sent).toBe(1)
     expect(await revision()).toBe(before)
