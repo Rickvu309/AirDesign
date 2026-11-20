@@ -201,6 +201,7 @@ export {
   type Tie,
 } from "./connector.js"
 export { followedPlace } from "./connector-place.js"
+export { drawnDesign } from "./drawn-design.js"
 export { siteCount, siteSpot, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
@@ -208,6 +209,7 @@ export { slideMeasure } from "./slide-measure.js"
 export { cloneOf, type CopiedRows } from "./element-clone.js"
 export { pastedMedia, type PastedLayers } from "./pasted-layers.js"
 export {
+  addedGeometry,
   addedPictures,
   elementCommand,
   elementGone,
