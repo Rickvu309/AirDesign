@@ -40,9 +40,9 @@ export function deckInserts(deck: InsertingDeck) {
   function recordAdded(name: UndoName, keys?: HeldKeys, selects = false) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
       if (undoable !== null) record({ name, undoable })
-      await showEdited(current)
       const held = keys === undefined ? {} : { keys }
       setEntering(added === null ? null : { id: added, ...held, ...(selects ? { selects: true as const } : {}) })
+      await showEdited(current)
     }
   }
 
