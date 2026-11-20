@@ -10,7 +10,8 @@ import {
 } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideKey } from "@/editor/slide-keys"
-import { SlideMenu } from "@/editor/slide-menu"
+import { SlideMenu, type SlideMenuSet } from "@/editor/slide-menu"
+import { slidePress, type SlidePress } from "@/editor/slide-list-pick"
 import { SkippedSlide } from "@/editor/skipped-slide"
 import { cn } from "@/lib/class-names"
 
@@ -18,6 +19,8 @@ export function SlideItem({
   index,
   count = 0,
   active,
+  picked = false,
+  menuSet,
   reachable = true,
   working = false,
   skipped = false,
@@ -33,11 +36,13 @@ export function SlideItem({
   index: number
   count?: number
   active: boolean
+  picked?: boolean
+  menuSet?: SlideMenuSet | undefined
   reachable?: boolean
   working?: boolean
   skipped?: boolean
   onSkip?: ((skipped: boolean) => void) | undefined
-  onSelect?: () => void
+  onSelect?: (press: SlidePress) => void
   onChoose?: (change: SlideKey) => void
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
   onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
@@ -54,12 +59,12 @@ export function SlideItem({
   const onMenuChoose = useCallback((change: SlideKey) => latest.current.onChoose?.(change), [])
   const onMenuOpenChange = useCallback((next: boolean) => {
     setMenuOpen(next)
-    if (next) latest.current.onSelect?.()
+    if (next) latest.current.onSelect?.("menu")
     else if (entry.current?.isConnected) entry.current.focus()
   }, [])
   const look = cn(
     "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
-    active ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
+    active || picked ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
   )
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
@@ -77,7 +82,7 @@ export function SlideItem({
     )
   }
   const openMenu = () => {
-    onSelect?.()
+    onSelect?.("menu")
     setMenuOpen(true)
   }
   return (
@@ -87,7 +92,7 @@ export function SlideItem({
         type="button"
         draggable={onDragStart !== undefined}
         aria-current={active ? "true" : undefined}
-        aria-label={slideListCopy.slideName(index, count)}
+        aria-label={picked ? slideListCopy.selectedName(index, count) : slideListCopy.slideName(index, count)}
         aria-description={skipped ? slideListCopy.skipped : undefined}
         data-slide-skipped={skipped || undefined}
         tabIndex={reachable ? 0 : -1}
@@ -95,7 +100,8 @@ export function SlideItem({
         data-stop={`slide:${String(index - 1)}`}
         data-slide-entry={index}
         data-slide-item
-        onClick={onSelect}
+        data-selected={picked || undefined}
+        onClick={(event) => onSelect(slidePress(event))}
         onContextMenu={
           onChoose === undefined
             ? undefined
@@ -129,6 +135,7 @@ export function SlideItem({
           onChoose={onMenuChoose}
           skipped={skipped}
           onSkip={onSkip}
+          set={menuSet}
         />
       )}
     </div>

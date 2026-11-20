@@ -93,6 +93,7 @@ for (const name of [
   "transform-canvas",
   "connected-agents",
   "slide-commands",
+  "slide-list-select",
   "grid-group-add",
   "grid-gap-add",
   "person-undo",
