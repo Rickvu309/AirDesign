@@ -1,7 +1,7 @@
 import type { Geometry } from "@airdesign/document"
 import { editorOwnsKey, toolKeyPlace } from "@/editor/editor-key-ownership"
 import { gestureFor } from "@airdesign/render"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 export type PointerTool = "move" | "hand" | "text"
 
@@ -51,16 +51,13 @@ export function usePointerTool(working: boolean, placesText: boolean): ToolPick 
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [working, placesText])
-  return {
-    tool,
-    shape,
-    pick(next) {
-      choose(next)
-      setShape(null)
-    },
-    arm(next) {
-      choose("move")
-      setShape(next)
-    },
-  }
+  const pick = useCallback((next: PointerTool) => {
+    choose(next)
+    setShape(null)
+  }, [])
+  const arm = useCallback((next: Geometry) => {
+    choose("move")
+    setShape(next)
+  }, [])
+  return useMemo(() => ({ tool, shape, pick, arm }), [tool, shape, pick, arm])
 }
