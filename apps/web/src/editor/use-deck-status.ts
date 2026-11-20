@@ -6,13 +6,7 @@ import { productCopy } from "@/copy/product-copy"
 import { signInAddress, type ThinNotice } from "@/thin-notice"
 import type { UndoDirection } from "@/undo-list"
 
-export type DeckFailure =
-  | "import-failed"
-  | "export-failed"
-  | "export-file-missing"
-  | "export-edits-unread"
-  | "export-edit-unwritten"
-  | "picture-uploading"
+export type DeckFailure = "import-failed" | "export-failed" | "picture-uploading"
 
 export type SaveStatus = "saved" | "saving" | "offline" | "unreached" | "unsaved"
 

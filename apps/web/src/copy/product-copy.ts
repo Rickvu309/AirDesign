@@ -120,10 +120,6 @@ export const productCopy = {
   done: "Done",
   undo: "Undo",
   exportFailed: "Unable to export. Your deck is unchanged.",
-  exportFileMissing: "Unable to export. This deck's file could not be fetched. Check your connection.",
-  exportEditsUnread: "Unable to export. This device could not read the deck's edits. Your deck is unchanged.",
-  exportEditUnwritten:
-    "Unable to export. One of this deck's edits could not be written to PowerPoint. Your deck is unchanged.",
   editorOffline: "You're offline. Edits are saved on this device.",
   editorUnreached: "Unable to reach AirDesign. Edits are saved on this device.",
   saved: "Saved",

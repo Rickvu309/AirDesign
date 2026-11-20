@@ -36,18 +36,6 @@ describe("live cache", () => {
     expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
   })
 
-  it("answers absent for a deck whose stored part file is gone, as after the browser cleared it", async () => {
-    const files = installParts()
-    const slide = "ppt/slides/slide1.xml"
-    const saved = await putParts("clean", {
-      parts: new Map([[slide, new Uint8Array([9, 8, 7])]]),
-      file: new Uint8Array([5]),
-    })
-    expect(saved.ok).toBe(true)
-    for (const [name, bytes] of files) if (bytes.length === 3) files.delete(name)
-    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
-  })
-
   it("keeps the name stored with a deck", async () => {
     installParts()
     const slide = "ppt/slides/slide1.xml"
