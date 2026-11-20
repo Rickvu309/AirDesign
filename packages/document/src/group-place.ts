@@ -119,7 +119,10 @@ export function placeOf(register: Register, node: ElementId): Place | null {
 
 export function rowPlace(register: Register, node: ElementId): Place | null {
   const opening = openingElement(register, node)
-  const body = Object.hasOwn(register.elements, node) ? register.elements[node] : undefined
+  const own = Object.hasOwn(register.elements, node) ? register.elements[node] : undefined
+  const floor = opening?.box ?? undefined
+  const body =
+    own === undefined || own.floorBox !== undefined || floor === undefined ? own : { ...own, floorBox: floor }
   const box = (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null
   if (box === null) return null
   const edits: Readonly<Record<string, FieldEdit<unknown>>> =
