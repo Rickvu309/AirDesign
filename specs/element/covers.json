@@ -5,7 +5,7 @@
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
       "digest": "364cbe5b32df",
-      "blob": "cfefcb981823f412404d08a9ce353b1a689d98e6"
+      "blob": "56cc0239e80dbc37d516a34f6f9d8fa5b0b6e334"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -21,7 +21,7 @@
         "stillShows"
       ],
       "digest": "95cb742d47c3",
-      "blob": "da9e8643ad8b8ff01db6c9bdc0421e6a31e3f3c1"
+      "blob": "7ed527442e35b154bfa1538fcc341f2d47d6e9ef"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -44,26 +44,26 @@
     {
       "file": "packages/document/src/slide-order.ts",
       "names": ["applySlide"],
-      "digest": "201ce181ae77",
-      "blob": "627178ecb3719639a4ac9b638c3cb5fe58336c7d"
+      "digest": "7ee0041d12d1",
+      "blob": "9aea391c81a7bcde4ecfd91a7d409c3e65348da2"
     },
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide"],
       "digest": "3f5fe5d94e9d",
-      "blob": "2f4972c2e048809bc3a99c81c9e036e634f4146f"
+      "blob": "54402c37c2ca634c34cd8cf4212ab2ed8e7f9e93"
     },
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
       "digest": "e883a9ae8da9",
-      "blob": "490897f886cf1a9212527e4fe3d8ff69804ddd19"
+      "blob": "0ceea0cb84d9cce66f5bdf3b8757982ed3e22942"
     },
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
       "digest": "da093aa7cc3a",
-      "blob": "7dbf50018b514bd9f1f183b86dff4a0cd836c47d"
+      "blob": "47ba3272fe9af22adbf87cd2a7ba1b15beb5a137"
     }
   ]
 }

@@ -14,15 +14,19 @@ import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { designCopy } from "@/copy/design-copy"
 import { layersCopy } from "@/copy/layers-copy"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
+import { depthAt, scrollNearEdge, zoneAt } from "@/editor/layer-drag"
+import { useFlagStroke } from "@/editor/layer-flag-stroke"
 import {
-  layerDrop,
+  frontOf,
+  holdsLayers,
+  layerPlace,
   layerRange,
   layersUnder,
   openedFor,
   shownLayers,
   type Layer,
   type LayerKind,
-  type LayerSide,
+  type LayerPlace,
   type ShownLayer,
 } from "@/editor/layer-tree"
 import type { LayerFlag } from "@/editor/layer-flags"
@@ -37,7 +41,14 @@ export type LayersSource = {
   readonly onHover?: (node: ElementId | null) => void
   readonly onRename?: (node: ElementId, name: string) => void
   readonly onOrder?: (node: ElementId, before: ElementId | null) => void
-  readonly onFlag?: (node: ElementId, flag: LayerFlag, on: boolean) => void
+  readonly onMove?: (
+    node: ElementId,
+    parent: ElementId | null,
+    before: ElementId | null,
+    from: ElementId | null,
+  ) => void
+  readonly joins?: (node: ElementId, parent: ElementId | null) => boolean
+  readonly onFlag?: (nodes: readonly ElementId[], flag: LayerFlag, on: boolean) => void
 }
 
 const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
@@ -52,17 +63,10 @@ const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
   kept: "layers",
 }
 
-type Spot = { readonly target: ElementId; readonly side: LayerSide }
-
 function iconOf(layer: Layer): EditorIconName {
   if (layer.flow === "horizontal") return "flowHorizontal"
   if (layer.flow === "vertical") return "flowVertical"
   return kindIcons[layer.kind]
-}
-
-function sideOf(event: DragEvent<HTMLElement>): LayerSide {
-  const box = event.currentTarget.getBoundingClientRect()
-  return event.clientY < box.top + box.height / 2 ? "above" : "below"
 }
 
 function rowOf(list: HTMLElement | null, node: ElementId): HTMLElement | null {
@@ -81,12 +85,16 @@ function FlagButton({
   mark,
   icon,
   onPress,
+  onStroke,
+  onPass,
 }: {
   readonly on: boolean
   readonly label: string
   readonly mark: string
   readonly icon: ReactNode
   readonly onPress: () => void
+  readonly onStroke: () => void
+  readonly onPass: () => void
 }) {
   return (
     <button
@@ -99,9 +107,15 @@ function FlagButton({
         "flex size-6 shrink-0 items-center justify-center rounded-[var(--shape-control)] text-quiet hover:bg-black/6 hover:text-foreground",
         on ? "" : "opacity-0 group-hover/layer:opacity-100 group-focus-visible/layer:opacity-100",
       )}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || event.shiftKey || event.metaKey || event.ctrlKey) return
+        event.preventDefault()
+        onStroke()
+      }}
+      onPointerEnter={onPass}
       onClick={(event) => {
         event.stopPropagation()
-        onPress()
+        if (event.detail === 0) onPress()
       }}
       onDoubleClick={(event) => event.stopPropagation()}
     >
@@ -165,14 +179,16 @@ function NameEdit({ name, onDone }: { readonly name: string; readonly onDone: (n
 }
 
 export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
-  const { tree, selected, onSelect, onHover, onRename, onOrder, onFlag } = layers
+  const { tree, selected, onSelect, onHover, onRename, onOrder, onMove, joins, onFlag } = layers
   const list = useRef<HTMLDivElement>(null)
   const anchor = useRef<ElementId | null>(null)
   const dragged = useRef<ElementId | null>(null)
+  const joinable = useRef(new Map<ElementId | null, boolean>())
+  const stroke = useFlagStroke(onFlag)
   const [open, setOpen] = useState<ReadonlySet<ElementId>>(() => openedFor(tree, selected))
   const [seen, setSeen] = useState(selected)
   const [renaming, setRenaming] = useState<ElementId | null>(null)
-  const [spot, setSpot] = useState<Spot | null>(null)
+  const [spot, setSpot] = useState<LayerPlace["mark"] | null>(null)
   const [stop, setStop] = useState<ElementId | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
   const [folded, setFolded] = useState(false)
@@ -239,12 +255,36 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
     run()
   }
 
-  function dropOf(event: DragEvent<HTMLElement>, target: ElementId) {
+  function joinsTo(node: ElementId, parent: ElementId | null): boolean {
+    const known = joinable.current.get(parent)
+    if (known !== undefined) return known
+    const found = onMove !== undefined && (joins?.(node, parent) ?? true)
+    joinable.current.set(parent, found)
+    return found
+  }
+
+  function dropOf(event: DragEvent<HTMLElement>, row: ShownLayer): LayerPlace | null {
     const node = dragged.current
     if (node === null) return null
-    const side = sideOf(event)
-    const drop = layerDrop(tree, node, target, side)
-    return drop === null ? null : { drop, spot: { target, side } }
+    const zone = zoneAt(event, event.currentTarget, holdsLayers(row.layer))
+    const depth = depthAt(event, event.currentTarget, row.depth)
+    const place = layerPlace(tree, shown, node, row.layer.node, zone, depth)
+    if (place === null) return null
+    const stays = shown.find((each) => each.layer.node === node)?.layer.parent === place.parent
+    return (stays ? onOrder !== undefined : joinsTo(node, place.parent)) ? place : null
+  }
+
+  function moved(place: LayerPlace) {
+    const named = (node: ElementId | null) => shown.find((each) => each.layer.node === node)?.layer.name
+    const name = named(place.node) ?? ""
+    const into = named(place.parent)
+    const was = shown.find((each) => each.layer.node === place.node)?.layer.parent ?? null
+    const text = into === undefined || was === place.parent ? layersCopy.moved(name) : layersCopy.movedInto(name, into)
+    setMessage((held) => ({ text, odd: held === null ? false : !held.odd }))
+    if (was === place.parent) onOrder?.(place.node, place.before)
+    else onMove?.(place.node, place.parent, place.before, frontOf(tree, place.node))
+    if (place.parent !== null && !open.has(place.parent)) setOpen(new Set([...open, place.parent]))
+    if (!selected.includes(place.node)) onSelect?.([place.node], "keys")
   }
 
   function row(each: ShownLayer, at: number) {
@@ -252,7 +292,10 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
     const chosen = selected.includes(layer.node)
     const within = !chosen && inside.has(layer.node)
     const editing = renaming === layer.node
-    const line = spot?.target === layer.node ? spot.side : null
+    const hidden = stroke.shown(layer.node, "hidden", layer.hidden)
+    const locked = stroke.shown(layer.node, "locked", layer.locked)
+    const [markRow, zone, markDepth] = spot ?? [null, null, 0]
+    const line = markRow === layer.node ? zone : null
     return (
       <div
         key={layer.node}
@@ -288,28 +331,29 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         onKeyDown={(event) => onRowKey(event, each, at)}
         onDragStart={(event) => {
           dragged.current = layer.node
+          joinable.current = new Map()
           onHover?.(null)
           event.dataTransfer.setData("text/plain", layer.node)
           event.dataTransfer.effectAllowed = "move"
         }}
         onDragOver={(event) => {
-          const found = dropOf(event, layer.node)
+          const found = dropOf(event, each)
           if (found === null) {
-            if (spot?.target === layer.node) setSpot(null)
+            if (markRow === layer.node) setSpot(null)
             return
           }
           event.preventDefault()
           event.dataTransfer.dropEffect = "move"
-          if (spot?.target !== found.spot.target || spot.side !== found.spot.side) setSpot(found.spot)
+          const [row, side, level] = found.mark
+          if (spot?.[0] !== row || spot[1] !== side || spot[2] !== level) setSpot(found.mark)
         }}
         onDrop={(event) => {
-          const found = dropOf(event, layer.node)
+          const found = dropOf(event, each)
           setSpot(null)
           dragged.current = null
           if (found === null) return
           event.preventDefault()
-          setMessage((held) => ({ text: layersCopy.moved(each.layer.name), odd: held === null ? false : !held.odd }))
-          onOrder?.(found.drop.node, found.drop.before)
+          moved(found)
         }}
         onDragEnd={() => {
           dragged.current = null
@@ -347,30 +391,41 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         {onFlag === undefined || editing ? null : (
           <>
             <FlagButton
-              on={layer.locked}
-              label={layer.locked ? layersCopy.unlock(layer.name) : layersCopy.lock(layer.name)}
+              on={locked}
+              label={locked ? layersCopy.unlock(layer.name) : layersCopy.lock(layer.name)}
               mark="data-layer-lock"
-              icon={layer.locked ? <Lock aria-hidden="true" size={14} /> : <LockOpen aria-hidden="true" size={14} />}
-              onPress={() => onFlag(layer.node, "locked", !layer.locked)}
+              icon={locked ? <Lock aria-hidden="true" size={14} /> : <LockOpen aria-hidden="true" size={14} />}
+              onPress={() => onFlag([layer.node], "locked", !layer.locked)}
+              onStroke={() => stroke.start(layer.node, "locked", !layer.locked)}
+              onPass={() => stroke.enter(layer.node, "locked", layer.locked)}
             />
             <FlagButton
-              on={layer.hidden}
-              label={layer.hidden ? layersCopy.show(layer.name) : layersCopy.hide(layer.name)}
+              on={hidden}
+              label={hidden ? layersCopy.show(layer.name) : layersCopy.hide(layer.name)}
               mark="data-layer-eye"
-              icon={layer.hidden ? <EyeOff aria-hidden="true" size={14} /> : <Eye aria-hidden="true" size={14} />}
-              onPress={() => onFlag(layer.node, "hidden", !layer.hidden)}
+              icon={hidden ? <EyeOff aria-hidden="true" size={14} /> : <Eye aria-hidden="true" size={14} />}
+              onPress={() => onFlag([layer.node], "hidden", !layer.hidden)}
+              onStroke={() => stroke.start(layer.node, "hidden", !layer.hidden)}
+              onPass={() => stroke.enter(layer.node, "hidden", layer.hidden)}
             />
           </>
         )}
-        {line === null ? null : (
+        {line === null ? null : line === "inside" ? (
           <span
             aria-hidden="true"
             data-layer-drop={line}
+            className="pointer-events-none absolute inset-0 rounded-[var(--shape-control)] shadow-[inset_0_0_0_2px_var(--ring)]"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            data-layer-drop={line}
+            data-layer-drop-depth={markDepth}
             className={cn(
               "pointer-events-none absolute right-0 h-0.5 bg-[var(--ring)]",
               line === "above" ? "-top-px" : "-bottom-px",
             )}
-            style={{ left: `calc(var(--space-24) + ${String(depth)} * var(--space-16))` }}
+            style={{ left: `calc(var(--space-24) + ${String(markDepth)} * var(--space-16))` }}
           />
         )}
       </div>
@@ -411,6 +466,9 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
           className="flex min-h-0 flex-col overflow-y-auto px-1.5 pb-2"
           data-layer-list
           onPointerLeave={() => onHover?.(null)}
+          onDragOver={(event) => {
+            if (dragged.current !== null) scrollNearEdge(event, event.currentTarget)
+          }}
           onDragLeave={(event) => {
             if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget))
               setSpot(null)

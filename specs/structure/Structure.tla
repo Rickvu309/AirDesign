@@ -358,14 +358,24 @@ Leave ==
   /\ UNCHANGED <<grouped, maker, offset, inside, touched, framed, auto, pad, backdrop>>
   /\ UNCHANGED old
 
+LeaveGroup ==
+  /\ Quiet
+  /\ grouped = "formed"
+  /\ ~framed /\ member /\ offset = 0 /\ maker = "person" /\ ~touched /\ childMoved = 0
+  /\ member' = FALSE
+  /\ own' = Shown
+  /\ groupKind' = "member"
+  /\ UNCHANGED <<grouped, maker, offset, inside, seen, childMoved, touched, framed, auto, pad, backdrop>>
+  /\ UNCHANGED old
+
 UndoLeave ==
   /\ Quiet
   /\ grouped = "formed"
-  /\ framed /\ ~member
+  /\ ~member
   /\ groupKind = "member"
   /\ member' = TRUE
   /\ seen' = inside + offset + pad
-  /\ groupKind' = "child"
+  /\ groupKind' = IF framed THEN "child" ELSE "group"
   /\ UNCHANGED <<grouped, maker, offset, inside, own, childMoved, touched, framed, auto, pad, backdrop>>
   /\ UNCHANGED old
 
@@ -417,6 +427,7 @@ Next ==
   \/ UndoRemoveAutoLayout
   \/ MoveInFrame
   \/ Leave
+  \/ LeaveGroup
   \/ UndoLeave
   \/ Unwrap
 
@@ -449,7 +460,7 @@ ChildrenKeepPlace == Shown = seen
 
 RunUndoTurnsBackGroup == groupKind = "runUndo" => grouped = "dissolved" /\ maker = "none"
 
-LeftChildStaysOut == ~member => framed /\ grouped # "none"
+LeftChildStaysOut == ~member => grouped # "none"
 
 BackdropOnlyInFrame == backdrop <=> (grouped = "formed" /\ framed)
 
