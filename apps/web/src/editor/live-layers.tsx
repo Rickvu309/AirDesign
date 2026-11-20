@@ -7,6 +7,7 @@ import { panelKind } from "@/design/panel-order"
 import { deviceScope } from "@/design/trait-edit"
 import { layerTree, type Layer } from "@/editor/layer-tree"
 import { setLayerFlag } from "@/editor/layer-flags"
+import { layerJoins } from "@/editor/layer-join"
 import { LayersPanel, type LayerPick } from "@/editor/layers-panel"
 import { fieldsOf } from "@/editor/panel-fields"
 import { slideLayerRows, type LayerLook } from "@/editor/slide-layers"
@@ -96,7 +97,12 @@ export function LiveLayers({
         onHover,
         onRename: (node, name) => changeDesign(deck, () => ({ target: { node }, identity: { name } })),
         onOrder: (node, before) => void deck.changeElement({ change: "order", node, move: { before } }),
-        onFlag: (node, flag, on) => setLayerFlag(deck, [node], flag, on),
+        onMove: (node, parent, before, from) => void deck.changeElement({ change: "join", node, parent, before, from }),
+        joins: (node, parent) => {
+          const register = deck.shown.shownRegister.current
+          return register !== null && layerJoins(deck.shown.shownParts.current, register, node, parent)
+        },
+        onFlag: (nodes, flag, on) => setLayerFlag(deck, nodes, flag, on),
       }}
     />
   )

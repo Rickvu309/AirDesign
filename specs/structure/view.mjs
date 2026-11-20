@@ -39,7 +39,9 @@ export const step = (action, from) => {
   if (action === "UndoRemoveAutoLayout") return "the person undoes Remove auto layout"
   if (action === "Unwrap") return "the person undoes the wrap"
   if (action === "Leave") return "the person drags the child out of the frame"
-  if (action === "UndoLeave") return "the person undoes that, and the child joins the frame where it was"
+  if (action === "LeaveGroup")
+    return "the person drags the child out of the group in the layers panel, and it stays where it shows"
+  if (action === "UndoLeave") return "the person undoes that, and the child joins its frame or group where it was"
   if (action === "MoveInFrame") return "the person moves the child inside the frame without auto layout, or undoes that"
   if (action === "RunUndo" && from.touched !== true && from.own === from.inside)
     return "the run's Undo ungroups the agent's group"

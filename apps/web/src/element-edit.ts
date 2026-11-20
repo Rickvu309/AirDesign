@@ -25,6 +25,7 @@ import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { elementCopy, type RemovalRefusal } from "@/copy/element-copy"
 import { commitGroup, type GroupChange } from "@/editor/group-actions"
+import { commitJoin, type LayerJoin } from "@/editor/layer-join"
 import { slideBase } from "@/exported-parts"
 import { framedOf } from "@/frame-boxes"
 import { indexedRegister } from "@/indexed-register"
@@ -53,6 +54,7 @@ export type ElementChange =
   | { readonly change: "remove"; readonly nodes: readonly ElementId[] }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove | LayerSpot }
   | GroupChange
+  | LayerJoin
 
 export function takenBoxes(room: SlideRoom): readonly Box[] {
   return (room.elements ?? []).flatMap((each) => (each.box === null ? [] : [boxOf(each.box)]))
@@ -133,7 +135,7 @@ export function removals(
 export function elementCommand(
   parts: Parts,
   register: Register,
-  change: Exclude<ElementChange, GroupChange | { readonly change: "remove" }>,
+  change: Exclude<ElementChange, GroupChange | LayerJoin | { readonly change: "remove" }>,
 ): SlideCommand | null {
   const base = slideBase(parts, register)
   if (change.change === "order") return orderCommand(base, change)
@@ -170,6 +172,7 @@ export async function commitElement(
   if (change.change === "group" || change.change === "ungroup" || change.change === "frame")
     return commitGroup(deckId, parts, register, change, paint)
   if (change.change === "remove") return commitRemovals(deckId, parts, register, change.nodes, paint)
+  if (change.change === "join") return commitJoin(deckId, parts, register, change, paint)
   const edit = elementCommand(parts, register, change)
   if (edit === null) return "refused"
   const file = fileSlides(parts, register)

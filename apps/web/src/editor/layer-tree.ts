@@ -149,7 +149,7 @@ export function layerPlace(
   return { node, parent, before, mark: [target, zone, found.level] }
 }
 
-function frontOf(tree: readonly Layer[], node: ElementId): ElementId | null {
+export function frontOf(tree: readonly Layer[], node: ElementId): ElementId | null {
   const parent = layerOf(tree, node)?.parent ?? null
   const siblings = layersIn(tree, parent).map((layer) => layer.node)
   return siblings[siblings.indexOf(node) - 1] ?? null

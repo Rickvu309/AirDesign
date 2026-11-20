@@ -5,6 +5,7 @@ import {
   elementGone,
   elementId,
   groupedNow,
+  groupFrame,
   landedPatch,
   groupFormed,
   groupOf,
@@ -16,6 +17,7 @@ import {
   regroupTurn,
   rootElement,
   slideId,
+  spotNow,
   throughGroup,
   slideUndoable,
   undoOf,
@@ -42,6 +44,7 @@ const frameActions = [
   "Unwrap",
   "MoveInFrame",
   "Leave",
+  "LeaveGroup",
   "UndoLeave",
 ]
 type Told = (source: Spec, target: Spec, action: string) => string
@@ -62,6 +65,7 @@ const treeActions = [
   "Unwrap",
   "MoveInFrame",
   "Leave",
+  "LeaveGroup",
   "UndoLeave",
 ]
 
@@ -263,6 +267,14 @@ function framed(register: Register, action: string, removal: Undoable | undefine
     const next = ran(register, changed.turn)
     return next === null || removal === undefined ? null : { register: next, removal }
   }
+  if (action === "LeaveGroup") {
+    const before = spotNow(register, child)
+    const changed = changeLayout(register, { move: child, frame: null, file })
+    if (before === null || changed === null || !("turn" in changed)) return null
+    const after = { frame: null, before: null, box: before.box }
+    const next = ran(register, changed.turn)
+    return next === null ? null : { register: next, removal: { joined: child, slide, file, before, after } }
+  }
   if (action === "UndoLeave") {
     const undone = removal === undefined ? null : undoOf(register, removal)
     const next = undone === null || !undone.ok ? null : ran(register, undone.commands)
@@ -319,7 +331,7 @@ function slideX(register: Register): number | null {
   if (own === null || !groupedNow(register, child)) return own?.box.x ?? null
   const laid = readLayout(register, group)?.children.find((each) => each.node === child)
   if (laid !== undefined) return laid.box.x
-  const frame = madeGroup(register, group)?.element.box ?? null
+  const frame = groupFrame(register, group)
   const outer = placeOf(register, group)
   return frame === null || outer === null ? null : throughGroup(own, outer, frame).box.x
 }
