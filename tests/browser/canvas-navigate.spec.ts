@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { covers } from "./gesture"
+import { entry, openGrid } from "./slide-grid-deck"
 
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const slideWide = 12_192_000
@@ -199,4 +200,166 @@ test("a pinch keeps the slide laid out until the gesture rests, then lays it out
   await expect.poll(() => percent(page)).toBeGreaterThan(fit)
   const laid = await page.evaluate(() => (window as unknown as { laidWidths: string[] }).laidWidths)
   expect(laid).toEqual([`${String((await slideBox(page)).width)}px`])
+})
+
+test("Safari gesture events zoom slide view about the cursor, prevent default, lay out once on gestureend, and never double-zoom with ctrl+wheel", async ({
+  page,
+}) => {
+  await openClean(page)
+  const fit = await percent(page)
+  const before = await slideBox(page)
+  const cursor = {
+    x: Math.round(before.x + layerMiddle.x * before.width),
+    y: Math.round(before.y + layerMiddle.y * before.height),
+  }
+
+  await page.evaluate(() => {
+    const wrapper = document.querySelector<HTMLElement>("[data-slide-wrapper]")
+    const widths: string[] = []
+    Object.assign(window, { laidWidths: widths })
+    if (wrapper !== null)
+      new MutationObserver(() => widths.push(wrapper.style.width)).observe(wrapper, {
+        attributes: true,
+        attributeFilter: ["style"],
+      })
+  })
+
+  const pinchIn = await page.evaluate((point) => {
+    const target = document.elementFromPoint(point.x, point.y)
+    if (target === null) throw new Error("no gesture target")
+    const make = (type: string, scale: number) =>
+      Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
+        scale,
+        clientX: point.x,
+        clientY: point.y,
+      })
+    const events = [
+      make("gesturestart", 1),
+      make("gesturechange", 1.15),
+      new WheelEvent("wheel", {
+        deltaY: -10,
+        ctrlKey: true,
+        clientX: point.x,
+        clientY: point.y,
+        bubbles: true,
+        cancelable: true,
+      }),
+      make("gesturechange", 1.35),
+      make("gesturechange", 1.6),
+      make("gestureend", 1.6),
+    ]
+    for (const event of events) target.dispatchEvent(event)
+    return events.map((event) => event.defaultPrevented)
+  }, cursor)
+
+  expect(pinchIn).toEqual([true, true, true, true, true, true])
+  const zoomed = await slideBox(page)
+  expect(Math.abs(zoomed.width - before.width * 1.6)).toBeLessThanOrEqual(1)
+  expect(Math.abs(zoomed.x + layerMiddle.x * zoomed.width - cursor.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(zoomed.y + layerMiddle.y * zoomed.height - cursor.y)).toBeLessThanOrEqual(1)
+  await expect(page.locator("[data-canvas-stage] > div")).toHaveAttribute("style", /^(?!.*transform)/)
+  const laid = await page.evaluate(() => (window as unknown as { laidWidths: string[] }).laidWidths)
+  expect(laid).toEqual([`${String(zoomed.width)}px`])
+
+  const pinchOut = await page.evaluate((point) => {
+    const target = document.elementFromPoint(point.x, point.y)
+    if (target === null) throw new Error("no gesture target")
+    const make = (type: string, scale: number) =>
+      Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
+        scale,
+        clientX: point.x,
+        clientY: point.y,
+      })
+    const events = [
+      make("gesturestart", 1),
+      make("gesturechange", 0.75),
+      make("gesturechange", 0.625),
+      make("gestureend", 0.625),
+    ]
+    for (const event of events) target.dispatchEvent(event)
+    return events.map((event) => event.defaultPrevented)
+  }, cursor)
+
+  expect(pinchOut).toEqual([true, true, true, true])
+  const restored = await slideBox(page)
+  expect(Math.abs(restored.width - before.width)).toBeLessThanOrEqual(1)
+  expect(await percent(page)).toBe(fit)
+  expect(Math.abs(restored.x + layerMiddle.x * restored.width - cursor.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(restored.y + layerMiddle.y * restored.height - cursor.y)).toBeLessThanOrEqual(1)
+
+  const wheelFirst = await page.evaluate((point) => {
+    const target = document.elementFromPoint(point.x, point.y)
+    if (target === null) throw new Error("no gesture target")
+    const make = (type: string, scale: number) =>
+      Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
+        scale,
+        clientX: point.x,
+        clientY: point.y,
+      })
+    const events = [
+      new WheelEvent("wheel", {
+        deltaY: -10,
+        ctrlKey: true,
+        clientX: point.x,
+        clientY: point.y,
+        bubbles: true,
+        cancelable: true,
+      }),
+      make("gesturestart", 1),
+      make("gesturechange", 2),
+      make("gestureend", 2),
+    ]
+    for (const event of events) target.dispatchEvent(event)
+    return events.map((event) => event.defaultPrevented)
+  }, cursor)
+
+  expect(wheelFirst).toEqual([true, true, true, true])
+  await expect.poll(() => percent(page)).toBeGreaterThan(fit)
+  const afterWheel = await slideBox(page)
+  expect(Math.abs(afterWheel.width - restored.width * Math.exp(0.1))).toBeLessThanOrEqual(2)
+})
+
+test("Safari gesture events zoom grid view about the cursor, prevent default, and do not double-zoom with ctrl+wheel", async ({
+  page,
+}) => {
+  await openClean(page)
+  await openGrid(page)
+  const before = (await entry(page, 1).boundingBox())!
+  const beforePercent = await percent(page)
+  const cursor = { x: Math.round(before.x + before.width * 0.4), y: Math.round(before.y + before.height * 0.35) }
+  const anchor = { x: (cursor.x - before.x) / before.width, y: (cursor.y - before.y) / before.height }
+
+  const prevented = await page.evaluate((point) => {
+    const host = document.querySelector("[data-grid-viewport]")
+    if (host === null) throw new Error("no grid viewport")
+    const make = (type: string, scale: number) =>
+      Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
+        scale,
+        clientX: point.x,
+        clientY: point.y,
+      })
+    const events = [
+      make("gesturestart", 1),
+      make("gesturechange", 1.25),
+      new WheelEvent("wheel", {
+        deltaY: -10,
+        ctrlKey: true,
+        clientX: point.x,
+        clientY: point.y,
+        bubbles: true,
+        cancelable: true,
+      }),
+      make("gesturechange", 1.5),
+      make("gestureend", 1.5),
+    ]
+    for (const event of events) host.dispatchEvent(event)
+    return events.map((event) => event.defaultPrevented)
+  }, cursor)
+
+  expect(prevented).toEqual([true, true, true, true, true])
+  await expect.poll(async () => Math.abs((await percent(page)) - beforePercent * 1.5)).toBeLessThanOrEqual(1)
+  const after = (await entry(page, 1).boundingBox())!
+  expect(Math.abs(after.width - before.width * 1.5)).toBeLessThanOrEqual(2)
+  expect(Math.abs(after.x + anchor.x * after.width - cursor.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(after.y + anchor.y * after.height - cursor.y)).toBeLessThanOrEqual(1)
 })

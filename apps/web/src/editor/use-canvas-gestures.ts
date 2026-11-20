@@ -11,12 +11,12 @@ import {
   unionRect,
   viewCentre,
   wheelPixelsOf,
-  wheelZoomFactor,
   zoomedAbout,
   type ScreenPoint,
   type ScreenRect,
   type WidthLimits,
 } from "@/editor/canvas-viewport"
+import { listenPinchZoom, type PinchZoomHandle } from "@/editor/pinch-zoom"
 
 export type CanvasView = {
   readonly aim: (width: number, commit: () => void) => void
@@ -73,6 +73,7 @@ export function useCanvasGestures({
   const [space, setSpace] = useState(false)
   const [panning, setPanning] = useState(false)
   const gesture = useRef<Gesture | null>(null)
+  const pinch = useRef<PinchZoomHandle | null>(null)
   const placing = useRef(false)
   const frame = useRef<number | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -120,6 +121,7 @@ export function useCanvasGestures({
   }
 
   function settle() {
+    pinch.current?.settled()
     if (timer.current !== null) clearTimeout(timer.current)
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     timer.current = null
@@ -156,28 +158,35 @@ export function useCanvasGestures({
   useLayoutEffect(() => {
     const element = root.current
     if (element === null) return
-    function wheel(event: WheelEvent) {
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault()
-        if (latest.current.onZoom === undefined) return
-        zoomBy(wheelZoomFactor(event), { x: event.clientX, y: event.clientY })
-        return
-      }
+    const handle = listenPinchZoom(element, {
+      enabled: () => latest.current.onZoom !== undefined,
+      onZoom: zoomBy,
+      onEnd: settle,
+      onWheel(event) {
+        settle()
+        const scroller = stage.current
+        if (scroller === null || !(event.target instanceof Element) || event.target.closest("[data-hand-pan]") === null)
+          return
+        const { x, y } = wheelPixelsOf(event)
+        scroller.scrollBy(event.shiftKey && x === 0 ? { left: y, top: 0 } : { left: x, top: y })
+      },
+      fallbackPoint() {
+        const shown = viewRect()
+        return shown === null ? null : viewCentre(shown)
+      },
+    })
+    pinch.current = handle
+    function stop() {
+      handle.cancel()
       settle()
-      const scroller = stage.current
-      if (scroller === null || !(event.target instanceof Element) || event.target.closest("[data-hand-pan]") === null)
-        return
-      const { x, y } = wheelPixelsOf(event)
-      scroller.scrollBy(event.shiftKey && x === 0 ? { left: y, top: 0 } : { left: x, top: y })
     }
-    function press() {
-      settle()
-    }
-    element.addEventListener("wheel", wheel, { passive: false })
-    element.addEventListener("pointerdown", press, true)
+    element.addEventListener("pointerdown", stop, true)
+    window.addEventListener("blur", stop)
     return () => {
-      element.removeEventListener("wheel", wheel)
-      element.removeEventListener("pointerdown", press, true)
+      pinch.current = null
+      handle.dispose()
+      element.removeEventListener("pointerdown", stop, true)
+      window.removeEventListener("blur", stop)
       settle()
     }
   }, [])

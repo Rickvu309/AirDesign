@@ -59,9 +59,13 @@ export function gridSpacing(width: number, height: number) {
   return { column: width * 0.13, line: height * 0.57 }
 }
 
+export function zoomedGridBy(view: GridViewport, factor: number, anchor: GridDelta): GridViewport {
+  return zoomedGrid(view, boundedGridScale(view.scale * factor), anchor)
+}
+
 export function wheeledGrid(view: GridViewport, event: WheelLike, anchor: GridDelta): GridViewport {
   if (event.ctrlKey || event.metaKey) {
-    return zoomedGrid(view, boundedGridScale(view.scale * wheelZoomFactor(event)), anchor)
+    return zoomedGridBy(view, wheelZoomFactor(event), anchor)
   }
   const { x, y } = wheelPixelsOf(event)
   return pannedGrid(view, event.shiftKey && x === 0 ? { x: -y, y: 0 } : { x: -x, y: -y })

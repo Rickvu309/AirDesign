@@ -70,6 +70,90 @@ it("reports thirty pinch frames live while painting thumbnail content once and p
   }
 })
 
+it("zooms grid view on Safari gesture events, prevents default, ignores interleaved ctrl wheel, and persists once on gestureend", async () => {
+  const moduleName = "jsdom"
+  const { JSDOM } = await import(moduleName)
+  const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost" })
+  for (const name of ["window", "document", "HTMLElement", "Element", "localStorage", "Event", "WheelEvent"]) {
+    const value = (dom.window as unknown as Record<string, unknown>)[name]
+    if (value !== undefined) vi.stubGlobal(name, value)
+  }
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  )
+  vi.stubGlobal("requestAnimationFrame", (run: FrameRequestCallback) => setTimeout(() => run(0), 16))
+  vi.stubGlobal("cancelAnimationFrame", clearTimeout)
+  vi.useFakeTimers()
+  const writes = vi.spyOn(dom.window.Storage.prototype, "setItem")
+  dom.window.localStorage.setItem("airdesign.grid-viewport.deck", JSON.stringify({ x: 48, y: 24, scale: 0.25 }))
+  writes.mockClear()
+  const host = document.createElement("div")
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <EditorGrid
+          id="deck"
+          title="Deck"
+          size={{ width: 12192000, height: 6858000 }}
+          strip={{ count: 3, current: 0, onSelect: () => undefined, thumbHeight: 720, thumb: () => <span>Slide</span> }}
+          onSlides={() => undefined}
+          onExport={() => undefined}
+        />,
+      ),
+    )
+    const canvas = host.querySelector("[data-grid-viewport]")!
+    const start = Object.assign(new dom.window.Event("gesturestart", { bubbles: true, cancelable: true }), {
+      scale: 1,
+      clientX: 200,
+      clientY: 150,
+    })
+    const change = Object.assign(new dom.window.Event("gesturechange", { bubbles: true, cancelable: true }), {
+      scale: 2,
+      clientX: 200,
+      clientY: 150,
+    })
+    const wheel = new dom.window.WheelEvent("wheel", {
+      ctrlKey: true,
+      deltaY: -10,
+      clientX: 200,
+      clientY: 150,
+      bubbles: true,
+      cancelable: true,
+    })
+    const end = Object.assign(new dom.window.Event("gestureend", { bubbles: true, cancelable: true }), {
+      scale: 2,
+      clientX: 200,
+      clientY: 150,
+    })
+    await act(async () => {
+      canvas.dispatchEvent(start)
+      canvas.dispatchEvent(change)
+      canvas.dispatchEvent(wheel)
+      vi.advanceTimersByTime(16)
+    })
+    expect(start.defaultPrevented).toBe(true)
+    expect(change.defaultPrevented).toBe(true)
+    expect(wheel.defaultPrevented).toBe(true)
+    expect(host.querySelector("[data-zoom-readout]")?.textContent).toBe("50%")
+    expect(writes).not.toHaveBeenCalled()
+    await act(async () => {
+      canvas.dispatchEvent(end)
+    })
+    expect(end.defaultPrevented).toBe(true)
+    expect(writes).toHaveBeenCalledTimes(1)
+  } finally {
+    await act(async () => root.unmount())
+    dom.window.close()
+  }
+})
+
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()

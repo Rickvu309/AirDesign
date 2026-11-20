@@ -15,6 +15,7 @@ import {
 import { flushSync } from "react-dom"
 import {
   zoomedGrid,
+  zoomedGridBy,
   pannedGrid,
   wheeledGrid,
   arrowGrid,
@@ -31,6 +32,7 @@ import {
   exposedGrid,
   type GridViewport,
 } from "@/editor/grid-viewport"
+import { listenPinchZoom, type PinchZoomHandle } from "@/editor/pinch-zoom"
 import { gridBlank } from "@/editor/grid-hit"
 import { keptGridViewport, keepGridViewport } from "@/editor/grid-zoom"
 
@@ -117,6 +119,7 @@ export function useGridViewport({
   const geometryRef = useRef(geometry)
   geometryRef.current = geometry
   const frame = useRef<number | null>(null)
+  const pinch = useRef<PinchZoomHandle | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const openRoom = useRef<DOMRect | null>(null)
   const [restored] = useState(() => keptGridViewport(deck))
@@ -143,6 +146,7 @@ export function useGridViewport({
   }
 
   function store() {
+    pinch.current?.settled()
     stopTimer()
     if (!dirty.current) return
     dirty.current = false
@@ -292,10 +296,7 @@ export function useGridViewport({
   useLayoutEffect(() => {
     const host = viewport.current
     if (host === null) return
-    const wheel = (event: WheelEvent) => {
-      event.preventDefault()
-      const box = host.getBoundingClientRect()
-      paint(wheeledGrid(view.current, event, { x: event.clientX - box.left, y: event.clientY - box.top }))
+    function syncZoom() {
       settle()
       if (frame.current === null)
         frame.current = requestAnimationFrame(() => {
@@ -303,8 +304,38 @@ export function useGridViewport({
           flushSync(() => zoom.current(view.current.scale * 100, false))
         })
     }
-    host.addEventListener("wheel", wheel, { passive: false })
-    return () => host.removeEventListener("wheel", wheel)
+    const handle = listenPinchZoom(host, {
+      onZoom(factor, point) {
+        const box = host.getBoundingClientRect()
+        paint(zoomedGridBy(view.current, factor, { x: point.x - box.left, y: point.y - box.top }))
+        syncZoom()
+      },
+      onWheel(event) {
+        event.preventDefault()
+        const box = host.getBoundingClientRect()
+        paint(wheeledGrid(view.current, event, { x: event.clientX - box.left, y: event.clientY - box.top }))
+        syncZoom()
+      },
+      onEnd() {
+        if (frame.current !== null) cancelAnimationFrame(frame.current)
+        frame.current = null
+        store()
+      },
+      fallbackPoint() {
+        const box = host.getBoundingClientRect()
+        return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+      },
+    })
+    pinch.current = handle
+    function blur() {
+      handle.cancel()
+    }
+    window.addEventListener("blur", blur)
+    return () => {
+      pinch.current = null
+      handle.dispose()
+      window.removeEventListener("blur", blur)
+    }
   }, [])
 
   useLayoutEffect(() => {
@@ -343,6 +374,7 @@ export function useGridViewport({
   }, [])
 
   function press(event: PointerEvent<HTMLDivElement>) {
+    pinch.current?.cancel()
     const blank = gridBlank(event.target)
     const touch = blank && event.pointerType === "touch"
     if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || touch))) return

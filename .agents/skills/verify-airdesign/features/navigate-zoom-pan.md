@@ -5,6 +5,7 @@ A person zooms and pans slide view as in Figma Slides. Ctrl or Command with the 
 ## Sub-features
 
 - `wheel` Ctrl+scroll over a point zooms in and keeps that point of the slide under the cursor.
+- `safari-pinch` Safari `gesturestart`, `gesturechange` and `gestureend` events zoom about the cursor through the same zoom path, prevent default so the page does not zoom, and ignore interleaved `wheel` with `ctrlKey`.
 - `pan` holding Space shows the hand over the canvas; a drag moves the view and nothing on the slide. Space types a space while editing text.
 - `selection` Shift+2 fills the canvas with the selected layers, 48 px in from its edges, and centres them.
 - `fit` Shift+1 goes back to zoom to fit.
@@ -22,6 +23,7 @@ A person zooms and pans slide view as in Figma Slides. Ctrl or Command with the 
 - **Pan.** Space down, drag by -120,-60, Space up. `[data-canvas-stage]` scrolled by 120,60. Evidence `NN-panned`.
 - **Zoom to selection.** Click the text, Escape, Shift+2. `[data-selection]` is centred within 1 px and 48 px in from the canvas sides. Evidence `NN-zoom-to-selection`.
 - **Fit.** Shift+1 gives back the fit percent and the 800 px slide. Evidence `NN-back-to-fit`.
+- **Safari pinch.** Dispatches `gesturestart`, `gesturechange` (1.25 then 1.6) and `gestureend` over the text box's middle. Every event has `defaultPrevented === true`, the slide scales to 1.6x within 1 px, and the point stays within 1 px. Evidence `NN-safari-pinch`.
 - **Drag at a zoom.** Ctrl+scroll three turns, drag the frame's bottom edge by 40,70. Poll `post(deckRoutes.open, { deck })` until the last box row of `256.2` is within one pixel of the pointer. Evidence `NN-dragged-at-zoom`.
 
 ## Gotchas
