@@ -19,16 +19,16 @@ export function orderShape(bytes: Uint8Array, shape: string, before: string): Ui
   return moveBytes(bytes, shapeById(document.elements, shape), shapeById(document.elements, before))
 }
 
-export function cloneShape(bytes: Uint8Array, shape: string): Uint8Array {
+export function cloneShape(bytes: Uint8Array, shape: string, id?: number): Uint8Array {
   const document = requireMarkup(bytes)
   const found = shapeById(document.elements, shape)
   let piece: Uint8Array = new Uint8Array(bytes.subarray(found.start, found.end))
   const marks = requireMarkup(piece).elements.filter((element) => element.kind === "p:cNvPr" && element.id !== null)
-  let next = nextShapeId(decodeUtf8(bytes))
+  let next = Math.max(nextShapeId(decodeUtf8(bytes)), id === undefined ? 0 : id + 1)
   for (const mark of marks.slice().reverse()) {
     if (mark.id === null) continue
-    piece = replaceShapeId(piece, mark.id, String(next))
-    next += 1
+    piece = replaceShapeId(piece, mark.id, String(id !== undefined && mark.id === shape ? id : next))
+    if (id === undefined || mark.id !== shape) next += 1
   }
   return insertAt(bytes, found.end, piece)
 }

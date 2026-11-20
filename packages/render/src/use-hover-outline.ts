@@ -26,6 +26,7 @@ export function useHoverOutline(params: {
 }) {
   const mark = useRef<HTMLDivElement>(null)
   const hovered = useRef<{ id: ElementId | null; deep: boolean }>({ id: null, deep: false })
+  const pointed = useRef<{ x: number; y: number } | null>(null)
   const latest = useRef(params)
   latest.current = params
 
@@ -64,7 +65,18 @@ export function useHoverOutline(params: {
     box.style.transform = placed.rotation === 0 ? "" : `rotate(${placed.rotation}deg)`
   }
 
-  useLayoutEffect(paint, [params.enabled, params.slide, params.width, params.selection])
+  function repaint() {
+    const at = pointed.current
+    const host = latest.current.surface.current
+    if (at !== null && host !== null && hovered.current.id !== null) {
+      const under = host.ownerDocument.elementFromPoint(at.x, at.y)
+      const id = under !== null && host.contains(under) ? elementIdFromTarget(under, latest.current.slide) : null
+      hovered.current = { ...hovered.current, id }
+    }
+    paint()
+  }
+
+  useLayoutEffect(repaint, [params.enabled, params.slide, params.width, params.selection])
 
   useEffect(() => {
     const host = params.surface.current
@@ -76,6 +88,7 @@ export function useHoverOutline(params: {
         hide()
         return
       }
+      pointed.current = { x: event.clientX, y: event.clientY }
       const id = elementIdFromTarget(event.target, latest.current.slide)
       const deep = event.metaKey || event.ctrlKey
       if (hovered.current.id === id && hovered.current.deep === deep) {
@@ -86,6 +99,7 @@ export function useHoverOutline(params: {
       paint()
     }
     function onPointerLeave() {
+      pointed.current = null
       hovered.current = { id: null, deep: false }
       hide()
     }

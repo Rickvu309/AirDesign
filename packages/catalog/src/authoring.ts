@@ -10,5 +10,5 @@ export function authorableValue(edit: Value): boolean {
 }
 
 export function authorableSlide(edit: SlideCommand): boolean {
-  return edit.slide !== "element-add" || edit.element.kind !== "table"
+  return (edit.slide !== "element-add" && edit.slide !== "element-clone") || edit.element.kind !== "table"
 }

@@ -111,7 +111,7 @@ export function slideChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op"],
     description:
-      "add_slide takes after and layout, with optional slide group placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and group (same, new, or keep for one whole slide group), in presentation order in one edit. duplicate_slides and delete_slides take slides in one edit; copies follow the last source. New ids come back in slides. The last slide cannot be deleted.",
+      "add_slide takes after, layout and optional group; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and group (same, new, or keep for one whole slide group), in presentation order. duplicate_slides and delete_slides take slides; copies follow the last source. New ids come back in slides. The last slide cannot be deleted.",
     properties: {
       op: { type: "string", enum: slideOps },
       slide: slideSchema,

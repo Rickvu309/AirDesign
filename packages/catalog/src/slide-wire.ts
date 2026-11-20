@@ -7,6 +7,7 @@ export type WireSlide = SlideCommand & { readonly file: readonly SlideId[] }
 
 const keysFor = {
   "element-add": ["slide", "id", "element", "media", "geometry", "file"],
+  "element-clone": ["slide", "id", "source", "element", "file"],
   "element-remove": ["slide", "id", "node", "file"],
   "element-restore": ["slide", "id", "node", "file"],
   "element-order": ["slide", "id", "node", "before", "among", "file"],
@@ -23,6 +24,7 @@ const keysFor = {
 
 function slideKeys(slide: unknown): readonly string[] | undefined {
   if (slide === "element-add") return keysFor["element-add"]
+  if (slide === "element-clone") return keysFor["element-clone"]
   if (slide === "element-remove") return keysFor["element-remove"]
   if (slide === "element-restore") return keysFor["element-restore"]
   if (slide === "element-order") return keysFor["element-order"]
@@ -78,6 +80,8 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
     const geometry = edit.geometry === undefined ? {} : { geometry: edit.geometry }
     return { slide: "element-add", id: edit.id, element: edit.element, ...media, ...geometry }
   }
+  if (edit.slide === "element-clone")
+    return { slide: "element-clone", id: edit.id, source: edit.source, element: edit.element }
   if (edit.slide === "element-remove") return { slide: "element-remove", id: edit.id, node: edit.node }
   if (edit.slide === "element-restore") return { slide: "element-restore", id: edit.id, node: edit.node }
   if (edit.slide === "element-order") {

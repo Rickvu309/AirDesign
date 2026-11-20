@@ -112,13 +112,15 @@ function addedNodes(before: Register, after: Register): readonly ElementId[] {
   return after.order
     .slice(before.order.length)
     .flatMap((command) =>
-      command.slide === "element-add" || command.slide === "element-group" ? [command.element.node] : [],
+      command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group"
+        ? [command.element.node]
+        : [],
     )
 }
 
 function groupDetail(changes: readonly AgentChange[], refusal: string): string | undefined {
   if (refusal !== "kind" || !changes.some((change) => "elements" in change)) return undefined
-  return "Only shapes, images, lines, tables, charts and groups that are not placeholders can be grouped or framed, only a group can be ungrouped, and only a frame can be joined."
+  return "Only shapes, images, lines, tables, charts and groups that are not placeholders can be grouped or framed, only a group can be ungrouped, only a frame can be joined, and only shapes, images and lines outside a group can be duplicated."
 }
 
 export function editDeck(raw: unknown, session: Session): ToolResult {

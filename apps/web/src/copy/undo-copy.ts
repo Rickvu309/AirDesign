@@ -13,6 +13,7 @@ export type UndoName =
   | "add-picture"
   | "add-icon"
   | "delete-element"
+  | "duplicate-layer"
   | "new"
   | "duplicate"
   | "delete"
@@ -72,6 +73,7 @@ export const undoCopy = {
     "add-picture": "Undo add image",
     "add-icon": "Undo add icon",
     "delete-element": "Undo delete layer",
+    "duplicate-layer": "Undo duplicate layer",
     new: "Undo new slide",
     duplicate: "Undo duplicate slide",
     delete: "Undo delete slide",
@@ -128,6 +130,7 @@ export const undoCopy = {
     "add-picture": "Redo add image",
     "add-icon": "Redo add icon",
     "delete-element": "Redo delete layer",
+    "duplicate-layer": "Redo duplicate layer",
     new: "Redo new slide",
     duplicate: "Redo duplicate slide",
     delete: "Redo delete slide",

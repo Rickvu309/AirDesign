@@ -92,6 +92,21 @@ it("reads an added text box and a removed element on a person's commit and refus
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [remove] })).toEqual(field)
 })
 
+it("reads a person's copy of a layer on a commit, never from an agent's edit, and refuses a copy across slides", () => {
+  const element = { node: "256.9", kind: "shape", value: "Hi", box: { x: 1, y: 2, cx: 3, cy: 4 }, grouped: false }
+  const clone = { slide: "element-clone", id: "256", source: "256.2", element, file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [clone] })
+  if (!read.ok) throw new Error(read.refusal)
+  expect(read.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-clone", id: "256", source: "256.2", element },
+  ])
+  expect(readCommit({ deck: "deck", batch: [{ ...clone, source: "257.2" }] })).toEqual(field)
+  expect(readCommit({ deck: "deck", batch: [{ ...clone, element: { ...element, node: "257.9" } }] })).toEqual(field)
+  expect(readCommit({ deck: "deck", batch: [{ ...clone, element: { ...element, kind: "table" } }] })).toEqual(field)
+  expect(readCommit({ deck: "deck", batch: [{ ...clone, key: "a" }] })).toEqual(field)
+  expect(readAgentEdit({ deck: "deck", base: 0, changes: [clone] })).toEqual(field)
+})
+
 it("carries an added photo's hash and media type through commit_edits, never its bytes, and an old tab's picture as a shape", () => {
   const element = { node: "256.9", kind: "shape", value: null, box: { x: 0, y: 0, cx: 10, cy: 10 }, grouped: false }
   const media = { sha256: "b".repeat(64), type: "image/jpeg" }

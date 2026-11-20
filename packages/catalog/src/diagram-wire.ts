@@ -47,7 +47,7 @@ export function diagramChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "slide", "labels"],
     description:
-      "Add a diagram to one slide: a rounded shape per label, left to right, each joined to the next by an arrow connector, all grouped. Without box it takes the largest free area. Ids come back in elements.",
+      "Add a diagram to one slide: a rounded shape per label, left to right, each joined to the next by an arrow connector, all grouped. Omit box to use the largest free area. Ids come back in elements.",
     properties: {
       op: { type: "string", const: "diagram" },
       slide: slideSchema,

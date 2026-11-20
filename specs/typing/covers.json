@@ -46,8 +46,8 @@
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "c712a62ddcf4",
-      "blob": "467fbfcae296188328e0de9cacee156e4ddf948a"
+      "digest": "7d55bfcc12f6",
+      "blob": "147ab0b371c14575709bd7f98e2e8bd04f9ddc42"
     },
     {
       "file": "packages/live/src/held.ts",

@@ -74,6 +74,7 @@ for (const name of [
   "navigate-zoom-pan",
   "snap-drag",
   "snap-resize",
+  "layer-duplicate",
   "busy-drag",
   "canvas-select",
   "transform-canvas",

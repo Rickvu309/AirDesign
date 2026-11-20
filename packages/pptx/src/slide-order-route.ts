@@ -61,6 +61,7 @@ type Shown = {
   readonly element?: IndexElement
   readonly media?: Media | undefined
   readonly geometry?: Geometry | undefined
+  readonly source?: string
 }
 
 type Pending = Map<SlideId, Map<string, Shown>>
@@ -72,6 +73,11 @@ function pendingAfter(pending: Pending, command: ElementCommand): void {
   if (command.slide === "element-add") {
     const { element, media, geometry } = command
     const shown = { start: false, now: true, element, media, geometry }
+    shapes.set(shapeOf(command.element.node).shape, shown)
+    return
+  }
+  if (command.slide === "element-clone") {
+    const shown = { start: false, now: true, element: command.element, source: shapeOf(command.source).shape }
     shapes.set(shapeOf(command.element.node).shape, shown)
     return
   }
@@ -91,6 +97,8 @@ function elementAdded(
   const box = element?.box ?? null
   if (element === undefined || box === null) throw new Error("box")
   const id = Number(shape)
+  if (shown.source !== undefined)
+    return applyStructuralRoute(parts, { name: "spTree.clone", part, shape: shown.source, id })
   if (shown.media !== undefined)
     return addPicture(parts, part, { id, box, source: { media: shown.media, bytes: media(shown.media.sha256) } })
   const icon = element.kind === "shape" && element.value === null ? openingIcon(element) : null
@@ -131,21 +139,22 @@ function elementsShown(
   shapes: ReadonlyMap<string, Shown> | undefined,
   media: MediaBytes,
   now: boolean,
-  grouped: ReadonlySet<string>,
+  replayed: ReadonlySet<string>,
 ): ReadonlyMap<string, Uint8Array> {
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("slide")
   let next = parts
   for (const [shape, shown] of shapes ?? []) {
-    const passing = !shown.start && !shown.now && grouped.has(shape)
+    const passing = !shown.start && !shown.now && replayed.has(shape)
     if (!passing && (shown.start === shown.now || shown.now !== now)) continue
     next = now ? elementAdded(next, part, shape, shown, media) : applyRoute(next, { name: "remove", part, shape })
   }
   return next
 }
 
-function groupedShapes(state: GroupedState, from: SlideId, upTo: number): ReadonlySet<string> {
+function replayedShapes(state: GroupedState, from: SlideId, upTo: number): ReadonlySet<string> {
   const nodes = state.order.slice(0, upTo).flatMap((command) => {
+    if (command.slide === "element-clone" && command.id === from) return [command.source]
     if (!groupCommand(command) || command.id !== from) return []
     if (command.slide === "element-group") return command.members.map((member) => member.node)
     return command.slide === "element-join" ? [command.member.node] : []
@@ -162,7 +171,7 @@ function slideShown(
   shapes: ReadonlyMap<string, Shown> | undefined,
   media: MediaBytes,
 ): ReadonlyMap<string, Uint8Array> {
-  const members = groupedShapes(state, from, upTo)
+  const members = replayedShapes(state, from, upTo)
   const added = elementsShown(parts, minted, shapes, media, true, members)
   const grouped = groupsReplayed(added, minted, from, state, upTo)
   return elementsShown(grouped, minted, shapes, media, false, members)
