@@ -117,20 +117,24 @@ function shapeNumber(node: ElementId): number {
   return Number(shapeOf(node).shape)
 }
 
-export function nextElementId(state: SlideState, slide: SlideId, free: number): ElementId {
+function elementNames(element: IndexElement): readonly ElementId[] {
+  return element.framing === undefined ? [element.node] : [element.node, element.framing.backdrop]
+}
+
+function namedElements(state: Indexed): readonly ElementId[] {
+  const filed = (state.index?.elements ?? []).flatMap(elementNames)
+  const ordered = state.order.flatMap((command) => [
+    ...floorOf(command).flatMap(elementNames),
+    ...("node" in command ? [command.node] : []),
+  ])
+  return [...filed, ...ordered]
+}
+
+export function nextElementId(state: Indexed, slide: SlideId, free: number): ElementId {
   let next = free
-  for (const command of state.order) {
-    if (!("id" in command) || command.id !== slide) continue
-    if (command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group")
-      next = Math.max(next, shapeNumber(command.element.node) + 1)
-    if (command.slide === "element-clone")
-      for (const layer of command.layers ?? []) next = Math.max(next, shapeNumber(layer.element.node) + 1)
-    if (command.slide === "element-add")
-      for (const layer of pastedNodes(command.pasted)) next = Math.max(next, shapeNumber(layer) + 1)
-    if (command.slide === "element-group" && command.backdrop !== undefined)
-      next = Math.max(next, shapeNumber(command.backdrop.node) + 1)
-    if (command.slide === "element-remove" || command.slide === "element-restore")
-      next = Math.max(next, shapeNumber(command.node) + 1)
+  for (const node of namedElements(state)) {
+    const number = shapeNumber(node)
+    if (shapeOf(node).slide === slide && Number.isInteger(number)) next = Math.max(next, number + 1)
   }
   return elementId(`${slide}.${String(next)}`)
 }

@@ -81,3 +81,21 @@ it("wraps added shapes in a plain frame with flow none and a backdrop on the nex
     },
   })
 })
+
+const groupOnTopSlide = `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="9000" cy="1000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Title</a:t></a:r></a:p></p:txBody></p:sp><p:grpSp><p:nvGrpSpPr><p:cNvPr id="5" name="Group 5"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="1000" y="2000"/><a:ext cx="4000" cy="2000"/><a:chOff x="1000" y="2000"/><a:chExt cx="4000" cy="2000"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="3" name="Left"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1000" y="2000"/><a:ext cx="1500" cy="2000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:sp><p:sp><p:nvSpPr><p:cNvPr id="4" name="Right"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="3500" y="2000"/><a:ext cx="1500" cy="2000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:sp></p:grpSp></p:spTree></p:cSld></p:sld>`
+
+it("adds a layer after ungrouping the slide's top group without reusing the group's id", () => {
+  const parts = onSlide(xml(groupOnTopSlide))
+  const { slides, elements } = indexPackage(parts)
+  const register: Register = {
+    ...openRegister("", ""),
+    index: { total: elements.length, slides, elements, pages: [{ once: "page", offset: 0, count: elements.length }] },
+  }
+  const ungroup = groupCommands(parts, register, { change: "ungroup", node: "256.5" as never })
+  expect(ungroup?.[0]).toMatchObject({ edit: { slide: "element-ungroup", node: "256.5" } })
+  const ungrouped = ran(register, ungroup ?? [])
+  const edit = elementCommand(parts, ungrouped, { change: "text", index: 0, size })
+  if (edit === null) throw new Error("add")
+  expect(edit).toMatchObject({ slide: "element-add", element: { node: "256.6" } })
+  expect(decide(ungrouped, { command: "slide", file, edit }).decision).toBe("apply")
+})
