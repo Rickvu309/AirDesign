@@ -101,6 +101,7 @@ for (const name of [
   "auto-layout-opacity",
   "auto-layout-measure",
   "group-transform",
+  "mask-group",
   "eyedropper",
   "resize-to-fit",
 ]) {
