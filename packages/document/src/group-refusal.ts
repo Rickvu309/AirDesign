@@ -112,7 +112,8 @@ function madeRefusal(state: Indexed, command: ElementGroup): SlideRefusal | null
     const refusal = memberRefusal(state, command.id, member.node)
     if (refusal !== null) return refusal
   }
-  return sameBox(element.box, groupBounds(members)) ? null : "dead"
+  const fits = sameBox(element.box, groupBounds(members)) || sameBox(element.box, groupBounds(members.slice(0, 1)))
+  return fits ? null : "dead"
 }
 
 function ungroupRefusal(state: Indexed, command: ElementUngroup): SlideRefusal | null {

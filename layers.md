@@ -27,3 +27,7 @@ _Avoid_: hug (an auto layout frame's size setting), refit, resize to fit (a fram
 **mask**:
 A shape or image that clips the layers above it in its group, up to the next mask, to its outline, and does not paint itself. Ctrl+Alt+M (Control+Command+M or Command+Option+M on a Mac) or the slide's right-click menu Use as mask groups the selected layers and makes the back one the mask, as one undo; with one layer selected it turns that layer's mask on or off. The layers panel shows the mask's icon and an up arrow on each masked layer, which still moves and resizes on its own inside the mask. A hidden mask clips nothing. It is the `identity.mask` field an agent sends; in a PowerPoint file a picture masked by one shape exports as a picture with the shape's outline and an `a:srcRect` crop, and anything else masked as a picture of how it looks, with the mask and its layers kept hidden in the group so AirDesign reads the mask back. Figma: "Use as mask", whose mask "applies to all siblings above it".
 _Avoid_: clip, clipping mask, crop shape (a crop is an image's own cut)
+
+**mask group**:
+The group Use as mask makes, named "Mask group". It fits its masks, not every layer in it: its selection frame, handles, snapping and its X, Y, W and H are the box around its shown masks, and stay there when a masked layer moves inside it. Once no shown mask is left in it, it fits its layers again. In a PowerPoint file its `a:off`, `a:ext`, `a:chOff` and `a:chExt` are that box. Figma: a mask group's bounds are its mask's bounds.
+_Avoid_: masked group, clip group

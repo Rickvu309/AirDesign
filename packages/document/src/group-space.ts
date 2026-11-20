@@ -13,6 +13,7 @@ import {
   type Member,
 } from "./element-group.js"
 import { elementGone } from "./element-order.js"
+import { fittingMembers, maskTurned } from "./mask-fit.js"
 import { takes } from "./element-takes.js"
 import {
   boxEdits,
@@ -136,13 +137,15 @@ function rebasedNow(register: Register, group: ElementId): Rebased | null {
   const all = groupChildren(register, group)
   const children = all.filter((child) => !elementGone(register, child))
   const changed = children.length < all.length || groupRejoined(register, group)
-  if (!changed && !children.some((child) => boxMoved(register, child) || rebased(register, child) !== null)) return null
+  const touched = (child: ElementId) =>
+    boxMoved(register, child) || maskTurned(register, child) || rebased(register, child) !== null
+  if (!changed && !children.some(touched)) return null
   const members = children.flatMap((child) => {
     const place = rebased(register, child)?.place ?? placeOf(register, child)
     return place === null ? [] : [memberOf(child, place)]
   })
   if (members.length !== children.length || members.length === 0) return null
-  const frame = fittedFrame(members, space)
+  const frame = fittedFrame(fittingMembers(register, members), space)
   return { frame, place: fittedPlace(space.place, space.frame, frame) }
 }
 
