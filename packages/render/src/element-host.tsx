@@ -13,7 +13,8 @@ import { keptCorners, type ElementId, type TableChange } from "@airdesign/docume
 import { boxOf, memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { restingBox, shownBox, useBox, useElement, useRotation, type BoxRead } from "./element-view.js"
-import { paragraphText, textValue } from "./paragraph-edit.js"
+import { textValue } from "./paragraph-edit.js"
+import { isBlank, nameOf } from "./text-lines.js"
 import { framedOutline, Passage, type TextEditKind } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
 import { paintsFillAsSvg, ShapeArt } from "./shape-art.js"
@@ -23,6 +24,7 @@ import { ChartArt } from "./chart-art.js"
 import { canDrag, canMove } from "./layer-movable.js"
 import type { Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
+import { useShrinkKept } from "./shrink-kept.js"
 import { anchored, flowModes } from "./text-body-look.js"
 import { textLook, type Scaled, type TextLook } from "./text-look.js"
 import { leadOf } from "./selection.js"
@@ -114,22 +116,6 @@ export function textLayer(element: TextHost, text: CanvasText, scaled: Scaled): 
     ...flowModes[text.flow ?? "horz"],
     ...(mirrored ? { transform: "scaleX(-1)" } : {}),
   }
-}
-
-function lines(text: string): readonly string[] {
-  return textValue(text).flatMap((paragraph) => paragraphText(paragraph).split(/\r\n|[\r\n\v\f\u2028\u2029]/))
-}
-
-function isBlank(text: string): boolean {
-  return lines(text).every((line) => line.trim() === "")
-}
-
-function nameOf(text: string, fallback: string): string {
-  return (
-    lines(text)
-      .find((line) => line.trim() !== "")
-      ?.trim() ?? fallback
-  )
 }
 
 function grabbed(element: CanvasElement): boolean {
@@ -441,6 +427,7 @@ function PlacedText(props: {
     (size) => props.onFit?.(id, size),
     (box) => store.placeBox(id, boxOf(box)),
   )
+  useShrinkKept(store, id, element, shown, moves === null ? "thumbnail" : "canvas")
   const painted = useHeldInPlace(element)
   const empty = useMemo(() => isBlank(shown), [shown])
   const fallback = element.label ?? (element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName))

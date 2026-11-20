@@ -99,7 +99,7 @@ export function useEditorDeck(id: string) {
   }
   const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, cutLayers } = inserts
   const tables = useTables(shown)
-  const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
+  const exported = useExport({ id, records, pictureTool, paint: shown.store, setFailure: status.setFailure })
   return {
     ...status,
     save: status.paintedDeck === id ? save : null,

@@ -11,7 +11,7 @@ import { whole, type ElementAt, type FieldXml, type PartCodec, type Parts, type 
 const empty = "<a:bodyPr/>"
 const fits = Object.values(fitTags)
 
-function bodyEdited(parts: Parts, at: ElementAt, slot: Slot): Parts {
+export function bodyEdited(parts: Parts, at: ElementAt, slot: Slot): Parts {
   const bytes = partBytes(parts, at.part)
   const { elements } = requireMarkup(bytes)
   const shape = shapeById(elements, at.shape)
