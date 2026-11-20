@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect } from "@playwright/test"
+import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { tableCopy } from "../../apps/web/src/copy/table-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { openDeck, typeColor } from "./design-panel"
@@ -62,4 +63,43 @@ test("styles a picked row's cells from the Design panel and the export carries t
   expect(rows[0]).toMatch(/<a:rPr[^>]*\bb="1"/)
   expect(rows[0]).toContain('algn="ctr"')
   expect(rows[1]).not.toContain('val="1F4E79"')
+})
+
+test("styles every cell once Escape leaves a typed cell, and a Shift-click range styles only its cells @export", async ({
+  page,
+  decks,
+}, testInfo) => {
+  await openDeck(page, "table-added.pptx")
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
+  const table = page.locator("[data-slide-paint] [data-canvas-table]")
+  await table.click()
+  await table.locator('[data-table-cell="1.1"]').dblclick()
+  await page.keyboard.type("North")
+  await page.keyboard.press("Escape")
+  await expect(table).toBeFocused()
+  const cells = page.locator("[data-table-cells]")
+  const size = cells.getByRole("textbox", { name: tableCopy.textSize, exact: true })
+  await size.fill("12")
+  await size.press("Enter")
+  await expect(size).toHaveValue("12")
+  await table.locator('[data-table-cell="0.1"]').click()
+  await table.locator('[data-table-cell="1.1"]').click({ modifiers: [shortcutCopy.chord.other.shift] })
+  await expect(table.locator("[data-table-picked]")).toHaveCount(2)
+  await cells.getByRole("button", { name: tableCopy.italic, exact: true }).click()
+  await expect(cells.getByRole("button", { name: tableCopy.italic, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
+  await page.reload()
+  await decks.ready()
+  const saving = page.waitForEvent("download")
+  await exportFromDialog(page)
+  const file = testInfo.outputPath("table-cells-whole.pptx")
+  await (await saving).saveAs(file)
+  const xml = await slideXml(file)
+  const runOf = (word: string) => new RegExp(`<a:rPr([^>]*)/?>(?:(?!<a:rPr).)*<a:t>${word}</a:t>`).exec(xml)?.[1] ?? ""
+  for (const word of ["Region", "Sales", "North"]) expect(runOf(word)).toContain('sz="1200"')
+  expect(runOf("Sales")).toContain('i="1"')
+  expect(runOf("North")).toContain('i="1"')
+  expect(runOf("Region")).not.toContain('i="1"')
 })

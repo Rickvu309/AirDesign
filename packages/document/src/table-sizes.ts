@@ -18,6 +18,10 @@ export function placedSize(
   return size === undefined ? sizes : [...sizes.slice(0, at), size, ...sizes.slice(at)]
 }
 
-export function droppedSize(sizes: readonly number[] | undefined, at: number): readonly number[] | undefined {
-  return sizes?.filter((_, index) => index !== at)
+export function droppedSizes(
+  sizes: readonly number[] | undefined,
+  first: number,
+  last: number,
+): readonly number[] | undefined {
+  return sizes?.filter((_, index) => index < first || index > last)
 }

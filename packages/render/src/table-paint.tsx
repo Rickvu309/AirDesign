@@ -6,7 +6,7 @@ import {
   type TableChange,
   type TableValue,
 } from "@airdesign/document"
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
 import { framedOutline, refusedInput } from "./passage.js"
@@ -18,9 +18,11 @@ import { elementFrame, type ElementPaintProps } from "./element-host.js"
 import { cellTextFrame, TableArt, type Cell } from "./table-art.js"
 import { textLook, type Scaled } from "./text-look.js"
 import { leadOf } from "./selection.js"
+import { gestureFor } from "./gestures.js"
 import {
   cellHandles,
   edgeBars,
+  pickSpan,
   sizedTable,
   type TableHandles,
   type TablePick,
@@ -29,10 +31,31 @@ import {
 } from "./table-handles.js"
 
 const typingOutline = "inset 0 0 0 2px var(--ring)"
+const clickSlop = 3
 
 type Spot = { readonly row: number; readonly column: number }
 
+type CellPick = { readonly anchor: Spot; readonly to: Spot }
+
+type Press = { readonly spot: Spot; readonly x: number; readonly y: number }
+
 const spotKey = (spot: Spot) => `${spot.row}.${spot.column}`
+
+const sameSpot = (left: Spot | null, right: Spot) => left !== null && spotKey(left) === spotKey(right)
+
+function spotAt(target: EventTarget | null): Spot | null {
+  const cell = target instanceof Element ? target.closest<HTMLElement>("[data-table-cell]") : null
+  const [row, column] = (cell?.dataset.tableCell ?? "").split(".").map(Number)
+  return row === undefined || column === undefined || Number.isNaN(row) || Number.isNaN(column) ? null : { row, column }
+}
+
+function cellRange(pick: CellPick): CellRange {
+  const { anchor, to } = pick
+  return {
+    rows: [Math.min(anchor.row, to.row), Math.max(anchor.row, to.row)],
+    columns: [Math.min(anchor.column, to.column), Math.max(anchor.column, to.column)],
+  }
+}
 
 function plainText(text: CanvasText | null): string {
   return (text?.paragraphs ?? []).map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
@@ -175,13 +198,14 @@ function TableEdit(props: {
   const { element, id, moves, onTable, onCells, scaled, table, words } = props
   const [active, setActive] = useState<Spot | null>(null)
   const [picked, setPicked] = useState<TablePick | null>(null)
+  const [cells, setCells] = useState<CellPick | null>(null)
   const [sizing, setSizing] = useState<TableSizing | null>(null)
   const shown = sizedTable(table, sizing)
-  const [scope, setScope] = useState<CellRange | null>(null)
   const lastRow = table.rows.length - 1
   const lastColumn = table.columns.length - 1
   const stored = storedCells(useElement(props.store, id)?.text, table)
   const pending = useRef<Spot | null>(null)
+  const press = useRef<Press | null>(null)
   const frame = useRef<HTMLDivElement>(null)
   const box = paintedAt(element.box, useBox(props.store, id))
 
@@ -200,8 +224,17 @@ function TableEdit(props: {
     frame.current?.querySelector<HTMLElement>(`[data-table-text="${spotKey(spot)}"]`)?.focus()
   }
 
+  function focusTable() {
+    frame.current?.querySelector<HTMLElement>("[data-canvas-table]")?.focus()
+  }
+
   function key(spot: Spot, event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Tab" || event.nativeEvent.isComposing) return
+    if (event.nativeEvent.isComposing) return
+    if (gestureFor(event, "text") === "deselect") {
+      setCells(null)
+      return
+    }
+    if (event.key !== "Tab") return
     event.preventDefault()
     const next = nextSpot(table, spot, event.shiftKey)
     if (next !== null) {
@@ -214,22 +247,86 @@ function TableEdit(props: {
   }
 
   const selected = moves.selection.ids.length === 1 && leadOf(moves.selection) === id
+  const wasSelected = useRef(selected)
+  useEffect(() => {
+    const left = wasSelected.current && !selected
+    wasSelected.current = selected
+    if (!left) return
+    setCells(null)
+    setPicked(null)
+  }, [selected])
+
+  const fits = (pick: TablePick | null) =>
+    pick === null || pickSpan(pick)[1] < (pick.kind === "row" ? table.rows.length : table.columns.length)
+  const cellsFit = cells === null || cellRange(cells).rows[1] <= lastRow
+  const pickedNow = fits(picked) ? picked : null
+  const cellsNow = cellsFit && cells !== null && cellRange(cells).columns[1] <= lastColumn ? cells : null
+  const scope: CellRange | null =
+    pickedNow !== null
+      ? pickedNow.kind === "row"
+        ? { rows: pickSpan(pickedNow), columns: [0, lastColumn] }
+        : { rows: [0, lastRow], columns: pickSpan(pickedNow) }
+      : cellsNow === null
+        ? null
+        : cellRange(cellsNow)
   const scopeKey = selected && scope !== null ? JSON.stringify(scope) : ""
   useEffect(() => {
     onCells?.(id, scopeKey === "" ? null : (JSON.parse(scopeKey) as CellRange))
   }, [onCells, id, scopeKey])
 
-  function pick(next: TablePick | null) {
-    setPicked(next)
-    if (next === null) setScope(null)
-    else
-      setScope(
-        next.kind === "row"
-          ? { rows: [next.at, next.at], columns: [0, lastColumn] }
-          : { rows: [0, lastRow], columns: [next.at, next.at] },
-      )
+  function pick(kind: TablePick["kind"], at: number | null, extend: boolean) {
+    setCells(null)
+    if (at === null) setPicked(null)
+    else setPicked((now) => (extend && now?.kind === kind ? { ...now, to: at } : { kind, from: at, to: at }))
   }
-  const fits = picked === null || picked.at < (picked.kind === "row" ? table.rows.length : table.columns.length)
+
+  function pickCells(spot: Spot, extend: boolean) {
+    setPicked(null)
+    setCells((now) => ({ anchor: extend ? (now?.anchor ?? active ?? spot) : spot, to: spot }))
+  }
+
+  function pressed(event: PointerEvent<HTMLDivElement>) {
+    press.current = null
+    const spot = spotAt(event.target)
+    const plain = event.button === 0 && !event.metaKey && !event.ctrlKey
+    if (selected && plain && spot !== null && !sameSpot(active, spot)) {
+      if (event.shiftKey) {
+        event.preventDefault()
+        pickCells(spot, true)
+        focusTable()
+        return
+      }
+      press.current = { spot, x: event.clientX, y: event.clientY }
+    }
+    moves.press(event, element, "move")
+  }
+
+  function clicked(event: { readonly clientX: number; readonly clientY: number }) {
+    const at = press.current
+    press.current = null
+    if (at === null || Math.hypot(event.clientX - at.x, event.clientY - at.y) > clickSlop) return
+    pickCells(at.spot, false)
+  }
+
+  function keyed(event: KeyboardEvent<HTMLDivElement>) {
+    const onFrame = event.target === event.currentTarget
+    const gesture = onFrame && cellsNow !== null ? gestureFor(event, "element") : null
+    if (gesture === "delete" && cellsNow !== null) {
+      event.preventDefault()
+      change({ change: "clear", cells: cellRange(cellsNow) })
+      return
+    }
+    if (onFrame && (cells !== null || picked !== null) && gestureFor(event, "element") === "deselect") {
+      event.preventDefault()
+      setCells(null)
+      setPicked(null)
+      return
+    }
+    moves.key(event, element)
+  }
+
+  const region =
+    pickedNow !== null || (cellsNow !== null && !(active !== null && sameSpot(cellsNow.to, active))) ? scope : null
   const handles: TableHandles | null =
     !selected || words === undefined
       ? null
@@ -238,11 +335,12 @@ function TableEdit(props: {
           box,
           scaled,
           words,
-          picked: fits ? picked : null,
+          picked: pickedNow,
+          region,
           onPick: pick,
           onSizing: setSizing,
           change,
-          leave: () => frame.current?.querySelector<HTMLElement>("[data-canvas-table]")?.focus(),
+          leave: focusTable,
         }
 
   const editor = (cell: Cell, at: number, column: number) => {
@@ -260,7 +358,7 @@ function TableEdit(props: {
         onFocus={() => {
           setActive(spot)
           setPicked(null)
-          setScope({ rows: [at, at], columns: [column, column] })
+          setCells({ anchor: spot, to: spot })
         }}
         onKey={(event) => key(spot, event)}
         onText={(text) => change({ change: "cell", row: at, column, text })}
@@ -287,9 +385,10 @@ function TableEdit(props: {
         frame={{
           "aria-label": "Table",
           tabIndex: 0,
-          onPointerDown: (event) => moves.press(event, element, "move"),
+          onPointerDown: pressed,
+          onClick: clicked,
           onDoubleClick: (event) => moves.doubleClick(event, element),
-          onKeyDown: (event) => moves.key(event, element),
+          onKeyDown: keyed,
           onFocus: () => moves.select(id),
         }}
         scaled={scaled}

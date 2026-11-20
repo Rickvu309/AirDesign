@@ -13,7 +13,7 @@ import {
   type CellFill,
   type CellRange,
 } from "./table-cells.js"
-import { droppedSize, placedSize, readSize, readSizes } from "./table-sizes.js"
+import { droppedSizes, placedSize, readSize, readSizes } from "./table-sizes.js"
 import { styledCell, type CellStyle } from "./table-style.js"
 import { readParagraphs, type TextValue } from "./text-value.js"
 
@@ -33,14 +33,15 @@ export type TableValue = {
 export type TableChange =
   | { readonly change: "cell"; readonly row: number; readonly column: number; readonly text: string }
   | { readonly change: "row"; readonly row: number; readonly place: "above" | "below" }
-  | { readonly change: "remove-row"; readonly row: number }
+  | { readonly change: "remove-row"; readonly row: number; readonly through?: number }
   | { readonly change: "column"; readonly column: number; readonly place: "before" | "after" }
-  | { readonly change: "remove-column"; readonly column: number }
+  | { readonly change: "remove-column"; readonly column: number; readonly through?: number }
   | { readonly change: "fill"; readonly cells: CellRange; readonly fill: CellFill }
   | { readonly change: "border"; readonly cells: CellRange; readonly sides: BorderSides; readonly border: Border }
   | { readonly change: "widths"; readonly widths: readonly number[] }
   | { readonly change: "style"; readonly cells: CellRange; readonly style: CellStyle }
   | { readonly change: "heights"; readonly heights: readonly number[] }
+  | { readonly change: "clear"; readonly cells: CellRange }
 
 const emptyCell: TextValue = [{ from: 0, runs: [] }]
 
@@ -215,6 +216,12 @@ function changedCells(
   return writeTableValue(next) === writeTableValue(value) ? value : next
 }
 
+function runEnd(first: number, through: number | undefined, count: number): number | null {
+  const last = through ?? first
+  const whole = Number.isInteger(first) && Number.isInteger(last)
+  return whole && first >= 0 && last >= first && last < count && last - first + 1 < count ? last : null
+}
+
 function changedColumns(
   value: TableValue,
   change: Extract<TableChange, { readonly change: "column" | "remove-column" }>,
@@ -222,12 +229,13 @@ function changedColumns(
   const columns = tableColumns(value)
   if (!Number.isInteger(change.column) || change.column < 0 || change.column >= columns.length) return null
   if (change.change === "remove-column") {
-    if (columns.length < 2) return null
-    const kept = (_: unknown, at: number) => at !== change.column
+    const last = runEnd(change.column, change.through, columns.length)
+    if (last === null) return null
+    const kept = (_: unknown, at: number) => at < change.column || at > last
     return tableOf(
       value.rows.map((row) => withCells(row, (items) => items.filter(kept))),
       columns.filter(kept),
-      droppedSize(value.widths, change.column),
+      droppedSizes(value.widths, change.column, last),
     )
   }
   if (columns.length >= limits.tableColumns) return null
@@ -240,19 +248,14 @@ function changedColumns(
   )
 }
 
-function styled(value: TableValue, change: Extract<TableChange, { readonly change: "style" }>): TableValue | null {
-  if (!inRange(change.cells, value.rows.length, cellCount(value))) return null
-  const [top, bottom] = change.cells.rows
-  const [left, right] = change.cells.columns
+function rangeChanged(value: TableValue, cells: CellRange, each: (cell: TextValue) => TextValue): TableValue | null {
+  if (!inRange(cells, value.rows.length, cellCount(value))) return null
+  const [top, bottom] = cells.rows
+  const [left, right] = cells.columns
   const rows = value.rows.map((row, at) =>
     at < top || at > bottom
       ? row
-      : {
-          ...row,
-          cells: row.cells.map((cell, column) =>
-            column < left || column > right ? cell : styledCell(cell, change.style),
-          ),
-        },
+      : { ...row, cells: row.cells.map((cell, column) => (column < left || column > right ? cell : each(cell))) },
   )
   const next = tableOf(rows, tableColumns(value), value.widths)
   return writeTableValue(next) === writeTableValue(value) ? value : next
@@ -276,7 +279,8 @@ export function changedTable(value: TableValue, change: TableChange): TableValue
   if (change.change === "column" || change.change === "remove-column") return changedColumns(value, change)
   if (change.change === "fill" || change.change === "border") return changedCells(value, change)
   if (change.change === "widths" || change.change === "heights") return resized(value, change)
-  if (change.change === "style") return styled(value, change)
+  if (change.change === "style") return rangeChanged(value, change.cells, (cell) => styledCell(cell, change.style))
+  if (change.change === "clear") return rangeChanged(value, change.cells, (cell) => typedCell(cell, ""))
   const row = value.rows[change.row]
   if (row === undefined) return null
   if (change.change === "cell") {
@@ -291,9 +295,10 @@ export function changedTable(value: TableValue, change: TableChange): TableValue
     )
   }
   if (change.change === "remove-row") {
-    if (value.rows.length < 2) return null
+    const last = runEnd(change.row, change.through, value.rows.length)
+    if (last === null) return null
     return tableOf(
-      value.rows.filter((_, at) => at !== change.row),
+      value.rows.filter((_, at) => at < change.row || at > last),
       tableColumns(value),
       value.widths,
     )

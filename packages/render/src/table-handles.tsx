@@ -18,7 +18,11 @@ export type TableEditing = {
   readonly onCells?: ((id: ElementId, cells: CellRange | null) => void) | undefined
 }
 
-export type TablePick = { readonly kind: "row" | "column"; readonly at: number }
+export type TablePick = { readonly kind: "row" | "column"; readonly from: number; readonly to: number }
+
+export function pickSpan(pick: TablePick): readonly [number, number] {
+  return [Math.min(pick.from, pick.to), Math.max(pick.from, pick.to)]
+}
 
 export type TableSizing =
   | { readonly kind: "column"; readonly sizes: readonly number[] }
@@ -32,7 +36,8 @@ export type TableHandles = {
   readonly scaled: Scaled
   readonly words: TableWords
   readonly picked: TablePick | null
-  readonly onPick: (pick: TablePick | null) => void
+  readonly region: CellRange | null
+  readonly onPick: (kind: TablePick["kind"], at: number | null, extend: boolean) => void
   readonly onSizing: (sizing: TableSizing | null) => void
   readonly change: (change: TableChange) => void
   readonly leave: () => void
@@ -137,42 +142,51 @@ function Border(props: { readonly kind: "row" | "column"; readonly at: number; r
   )
 }
 
-function Handle(props: { readonly pick: TablePick; readonly handles: TableHandles }) {
-  const { pick, handles } = props
-  const on = handles.picked?.kind === pick.kind && handles.picked.at === pick.at
-  const label = pick.kind === "row" ? handles.words.row(pick.at + 1) : handles.words.column(pick.at + 1)
-  const rows = handles.table.rows.length
-  const columns = handles.table.columns.length
+function removal(pick: TablePick): TableChange {
+  const [first, last] = pickSpan(pick)
+  const through = last === first ? {} : { through: last }
+  return pick.kind === "row"
+    ? { change: "remove-row", row: first, ...through }
+    : { change: "remove-column", column: first, ...through }
+}
+
+function Handle(props: { readonly kind: TablePick["kind"]; readonly at: number; readonly handles: TableHandles }) {
+  const { kind, at, handles } = props
+  const picked = handles.picked?.kind === kind ? handles.picked : null
+  const span = picked === null ? null : pickSpan(picked)
+  const on = span !== null && at >= span[0] && at <= span[1]
+  const label = kind === "row" ? handles.words.row(at + 1) : handles.words.column(at + 1)
+  const count = kind === "row" ? handles.table.rows.length : handles.table.columns.length
   function key(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Escape") {
       event.preventDefault()
       event.stopPropagation()
-      handles.onPick(null)
+      handles.onPick(kind, null, false)
       handles.leave()
       return
     }
     if (event.key !== "Delete" && event.key !== "Backspace") return
     event.preventDefault()
     event.stopPropagation()
-    if (pick.kind === "row" ? rows < 2 : columns < 2) return
-    handles.onPick(null)
-    handles.change(
-      pick.kind === "row" ? { change: "remove-row", row: pick.at } : { change: "remove-column", column: pick.at },
-    )
+    const removed = on && span !== null && picked !== null ? picked : { kind, from: at, to: at }
+    const [first, last] = pickSpan(removed)
+    if (count - (last - first + 1) < 1) return
+    handles.onPick(kind, null, false)
+    handles.change(removal(removed))
   }
   const place: CSSProperties =
-    pick.kind === "row"
+    kind === "row"
       ? { left: -reach, top: 0, bottom: 0, width: reach - 2 }
       : { top: -reach, left: 0, right: 0, height: reach - 2 }
-  const pill: CSSProperties = pick.kind === "row" ? { width: 4, height: 16 } : { width: 16, height: 4 }
+  const pill: CSSProperties = kind === "row" ? { width: 4, height: 16 } : { width: 16, height: 4 }
   return (
     <button
       type="button"
       aria-label={label}
       aria-pressed={on}
-      data-table-handle={pick.kind}
+      data-table-handle={kind}
       onPointerDown={quiet}
-      onClick={() => handles.onPick(pick)}
+      onClick={(event) => handles.onPick(kind, at, event.shiftKey)}
       onKeyDown={key}
       style={{
         position: "absolute",
@@ -193,16 +207,17 @@ function Handle(props: { readonly pick: TablePick; readonly handles: TableHandle
 }
 
 export function cellHandles(row: number, column: number, handles: TableHandles): ReactNode {
-  const { table, words, picked, change } = handles
+  const { table, words, region, change } = handles
   const lastRow = table.rows.length - 1
   const lastColumn = table.columns.length - 1
-  const tinted = picked !== null && (picked.kind === "row" ? picked.at === row : picked.at === column)
-  const across = picked?.kind === "row"
+  const [top, bottom] = region?.rows ?? [-1, -1]
+  const [left, right] = region?.columns ?? [-1, -1]
+  const tinted = row >= top && row <= bottom && column >= left && column <= right
   const edges = [
-    across || row === 0 ? `inset 0 2px 0 ${ring}` : null,
-    across || row === lastRow ? `inset 0 -2px 0 ${ring}` : null,
-    !across || column === 0 ? `inset 2px 0 0 ${ring}` : null,
-    !across || column === lastColumn ? `inset -2px 0 0 ${ring}` : null,
+    row === top ? `inset 0 2px 0 ${ring}` : null,
+    row === bottom ? `inset 0 -2px 0 ${ring}` : null,
+    column === left ? `inset 2px 0 0 ${ring}` : null,
+    column === right ? `inset -2px 0 0 ${ring}` : null,
   ].filter((edge) => edge !== null)
   return (
     <>
@@ -213,8 +228,8 @@ export function cellHandles(row: number, column: number, handles: TableHandles):
           style={{ position: "absolute", inset: 0, boxShadow: edges.join(", "), pointerEvents: "none" }}
         />
       ) : null}
-      {row === 0 ? <Handle pick={{ kind: "column", at: column }} handles={handles} /> : null}
-      {column === 0 ? <Handle pick={{ kind: "row", at: row }} handles={handles} /> : null}
+      {row === 0 ? <Handle kind="column" at={column} handles={handles} /> : null}
+      {column === 0 ? <Handle kind="row" at={row} handles={handles} /> : null}
       {row === 0 && column < lastColumn ? (
         <Plus
           style={{ top: -reach - 2, right: -8 }}
