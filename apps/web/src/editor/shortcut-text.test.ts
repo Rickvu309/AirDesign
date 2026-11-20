@@ -13,8 +13,14 @@ const { mac, other } = shortcutCopy.chord
 
 describe("the keys the shortcuts panel shows", () => {
   it("shows Command, Option and Shift signs on a Mac, and Ctrl, Alt and Shift elsewhere", () => {
-    expect(caps("ungroup", "mac")).toEqual([[mac.shift, mac.mod, "G"]])
-    expect(caps("ungroup", "other")).toEqual([[other.mod, other.shift, "G"]])
+    expect(caps("ungroup", "mac")).toEqual([
+      [mac.shift, mac.mod, "G"],
+      [mac.mod, shortcutCopy.macKeyNames.Backspace],
+    ])
+    expect(caps("ungroup", "other")).toEqual([
+      [other.mod, other.shift, "G"],
+      [other.mod, "Backspace"],
+    ])
     expect(caps("select-matching", "mac")).toEqual([[mac.alt, mac.mod, "A"]])
     expect(caps("select-matching", "other")).toEqual([[other.mod, other.alt, "A"]])
   })

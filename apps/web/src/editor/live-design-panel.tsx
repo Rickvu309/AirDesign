@@ -140,6 +140,14 @@ function controlsOf(sections: readonly PanelSection[] | undefined): readonly Pan
   return (sections ?? []).flatMap((section) => section.strips.flat())
 }
 
+export function selectedDesign(deck: DesigningDeck): { model: PanelModel; controls: readonly PanelControl[] } | null {
+  const [first, ...rest] = deck.selection.ids
+  if (first === undefined) return null
+  const model =
+    rest.length === 0 ? elementDesign(deck, first)?.model : manyDesign(deck, [first, ...rest], "design")?.model
+  return model === undefined ? null : { model, controls: controlsOf(model.sections) }
+}
+
 export function usePalette(deck: DesigningDeck): Palette {
   const { shown } = deck
   const { current } = shown
