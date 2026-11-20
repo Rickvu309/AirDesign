@@ -9,6 +9,7 @@ import {
   type ChartLegend,
   type ChartSeries,
   type ChartValue,
+  type Color,
 } from "@airdesign/document"
 import { colorIn } from "./color-read.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
@@ -94,13 +95,46 @@ function nameOf(read: Read, series: MarkupElement, at: number): string {
   return cached(read, holder)?.[0] ?? `Series ${String(at + 1)}`
 }
 
+function accentAt(at: number): Color {
+  return { scheme: accents[at % accents.length] ?? "accent1" }
+}
+
+function solidOf(read: Read, holder: MarkupElement | undefined): Color | null {
+  const fill = kid(read, holder, "a:solidFill")
+  return fill === undefined ? null : colorIn({ element: fill, children: read.children }, null)
+}
+
 function seriesColor(read: Read, series: MarkupElement, kind: ChartKind, at: number): Pick<ChartSeries, "color"> {
   const properties = kid(read, series, "c:spPr")
-  const holder = kind === "line" ? kid(read, properties, "a:ln") : properties
-  const fill = kid(read, holder, "a:solidFill")
-  const color = fill === undefined ? null : colorIn({ element: fill, children: read.children }, null)
-  const automatic = { scheme: accents[at % accents.length] ?? "accent1" } as const
-  return color === null || sameColor(color, automatic) ? {} : { color }
+  const color = solidOf(read, kind === "line" ? kid(read, properties, "a:ln") : properties)
+  return color === null || sameColor(color, accentAt(at)) ? {} : { color }
+}
+
+function pointColors(read: Read, series: MarkupElement, kind: ChartKind, at: number, count: number) {
+  if (kind === "line") return {}
+  const own = kind === "pie" ? null : solidOf(read, kid(read, series, "c:spPr"))
+  const automatic = (point: number) => (kind === "pie" ? accentAt(point) : (own ?? accentAt(at)))
+  const points = kids(read, series, "c:dPt")
+  const colors = Array.from({ length: count }, (_, point) => {
+    const single = points.find((each) => value(read, each, "c:idx") === String(point))
+    return solidOf(read, kid(read, single, "c:spPr")) ?? automatic(point)
+  })
+  return colors.every((color, point) => sameColor(color, automatic(point))) ? {} : { colors }
+}
+
+function axisTitleOf(read: Read, axis: MarkupElement | undefined): string | undefined {
+  const holder = kid(read, axis, "c:title")
+  if (holder === undefined) return undefined
+  const rich = kid(read, kid(read, holder, "c:tx"), "c:rich")
+  if (rich === undefined) return cached(read, kid(read, holder, "c:tx"))?.[0] ?? "Axis Title"
+  return kids(read, rich, "a:p")
+    .map((paragraph) =>
+      kids(read, paragraph, "a:r")
+        .map((run) => holderText(read.bytes, kid(read, run, "a:t")))
+        .join(""),
+    )
+    .join(" ")
+    .slice(0, chartLimits.title)
 }
 
 function titleOf(read: Read, chart: MarkupElement | undefined, series: readonly ChartSeries[]): string | undefined {
@@ -148,6 +182,16 @@ function plainGroup(read: Read, plot: MarkupElement | undefined): MarkupElement 
 
 type Settings = Omit<ChartValue, "kind" | "categories" | "series">
 
+function axisTitles(read: Read, plot: MarkupElement, kind: ChartKind): Settings {
+  if (kind === "pie") return {}
+  const valueTitle = axisTitleOf(read, kid(read, plot, "c:valAx"))
+  const categoryTitle = axisTitleOf(read, kid(read, plot, "c:catAx"))
+  return {
+    ...(valueTitle === undefined || valueTitle === "" ? {} : { valueTitle }),
+    ...(categoryTitle === undefined || categoryTitle === "" ? {} : { categoryTitle }),
+  }
+}
+
 function settingsOf(
   read: Read,
   found: { readonly chart: MarkupElement; readonly plot: MarkupElement; readonly group: MarkupElement },
@@ -172,6 +216,7 @@ function settingsOf(
       ? { gap }
       : {}),
     ...(legend === automatic ? {} : { legend }),
+    ...axisTitles(read, plot, value.kind),
   }
 }
 
@@ -205,7 +250,12 @@ export function chartValueOf(bytes: Uint8Array): ChartValue | null {
       text === undefined || text.trim() === "" ? Number.NaN : Number(text),
     )
     if (values?.length !== categories.length || !values.every(Number.isFinite)) return null
-    series.push({ name: nameOf(read, item, at), values, ...(kind === "pie" ? {} : seriesColor(read, item, kind, at)) })
+    series.push({
+      name: nameOf(read, item, at),
+      values,
+      ...(kind === "pie" ? {} : seriesColor(read, item, kind, at)),
+      ...pointColors(read, item, kind, at, categories.length),
+    })
   }
   const labels = categories as readonly string[]
   if ([...labels, ...series.map((each) => each.name)].some((text) => text.length > chartLimits.label)) return null

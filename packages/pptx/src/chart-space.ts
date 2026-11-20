@@ -59,11 +59,24 @@ export function chartLabelsXml(chart: ChartValue): string {
   return `<c:dLbls><c:numFmt formatCode="${xmlAttribute(chart.labels)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${textLook(labelSize, false)}<c:dLblPos val="${position}"/><c:showLegendKey val="0"/><c:showVal val="${shown(!share)}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${shown(share)}"/><c:showBubbleSize val="0"/></c:dLbls>`
 }
 
+export function barPointXml(at: number, fill: string): string {
+  return `<c:dPt><c:idx val="${String(at)}"/><c:invertIfNegative val="0"/><c:bubble3D val="0"/><c:spPr>${fill}</c:spPr></c:dPt>`
+}
+
+function barPointsXml(series: ChartSeries): string {
+  return (series.colors ?? []).map((color, at) => barPointXml(at, solidFillXml(color))).join("")
+}
+
+export function sliceFillXml(series: ChartSeries, at: number): string {
+  const own = series.colors?.[at]
+  return own === undefined ? accent(at) : solidFillXml(own)
+}
+
 function barSeries(chart: ChartValue): string {
   return chart.series
     .map((series, at) => {
       const cells = cellsOf(chart, at)
-      return `<c:ser>${named(series, at, cells)}<c:spPr>${seriesFillXml(series, at)}</c:spPr><c:invertIfNegative val="0"/>${chartLabelsXml(chart)}${data(chart, series, cells)}</c:ser>`
+      return `<c:ser>${named(series, at, cells)}<c:spPr>${seriesFillXml(series, at)}</c:spPr><c:invertIfNegative val="0"/>${barPointsXml(series)}${chartLabelsXml(chart)}${data(chart, series, cells)}</c:ser>`
     })
     .join("")
 }
@@ -83,18 +96,30 @@ function pieSeries(chart: ChartValue): string {
   const slices = chart.categories
     .map(
       (_, at) =>
-        `<c:dPt><c:idx val="${String(at)}"/><c:bubble3D val="0"/><c:spPr>${accent(at)}<a:ln w="12700"><a:solidFill><a:schemeClr val="bg1"/></a:solidFill></a:ln></c:spPr></c:dPt>`,
+        `<c:dPt><c:idx val="${String(at)}"/><c:bubble3D val="0"/><c:spPr>${sliceFillXml(series, at)}<a:ln w="12700"><a:solidFill><a:schemeClr val="bg1"/></a:solidFill></a:ln></c:spPr></c:dPt>`,
     )
     .join("")
   return `<c:ser>${named(series, 0, cellsOf(chart, 0))}${slices}${chartLabelsXml(chart)}${data(chart, series, cellsOf(chart, 0))}</c:ser>`
+}
+
+export const axisTitleLook = `<a:defRPr sz="${String(labelSize)}" b="0"/>`
+
+export function axisTitleXml(text: string, upright: boolean, look: string): string {
+  const turn = upright ? ' rot="-5400000" vert="horz"' : ""
+  return `<c:title><c:tx><c:rich><a:bodyPr${turn}/><a:lstStyle/><a:p><a:pPr>${look}</a:pPr><a:r><a:rPr lang="en-US"/><a:t>${xmlText(text)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>`
+}
+
+function axisTitle(text: string | undefined, upright: boolean): string {
+  const look = `<a:defRPr sz="${String(labelSize)}" b="0">${ink}</a:defRPr>`
+  return text === undefined || text === "" ? "" : axisTitleXml(text, upright, look)
 }
 
 function axesXml(chart: ChartValue): string {
   const gridlines = chart.gridlines === false ? "" : chartGridlinesXml
   const hidden = chart.axis === false ? "1" : "0"
   return (
-    `<c:catAx><c:axId val="111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr>${quiet}</c:spPr><c:crossAx val="222"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
-    `<c:valAx><c:axId val="222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="${hidden}"/><c:axPos val="l"/>${gridlines}<c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:crossAx val="111"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>`
+    `<c:catAx><c:axId val="111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>${axisTitle(chart.categoryTitle, false)}<c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr>${quiet}</c:spPr><c:crossAx val="222"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
+    `<c:valAx><c:axId val="222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="${hidden}"/><c:axPos val="l"/>${gridlines}${axisTitle(chart.valueTitle, true)}<c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:crossAx val="111"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>`
   )
 }
 

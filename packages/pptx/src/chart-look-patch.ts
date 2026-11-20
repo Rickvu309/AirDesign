@@ -1,5 +1,14 @@
-import { chartGap, chartLegend, sameColor, type ChartValue } from "@airdesign/document"
-import { chartGridlinesXml, chartLabelsXml, chartLineWidth, seriesFillXml } from "./chart-space.js"
+import { chartGap, chartLegend, sameColor, type ChartValue, type Color } from "@airdesign/document"
+import { solidFillXml } from "./color-xml.js"
+import {
+  axisTitleLook,
+  axisTitleXml,
+  barPointXml,
+  chartGridlinesXml,
+  chartLabelsXml,
+  chartLineWidth,
+  seriesFillXml,
+} from "./chart-space.js"
 import {
   attributeSet,
   chartGroup,
@@ -247,7 +256,90 @@ const colorsPass: Pass = (tree, before, after) => {
   })
 }
 
-const passes: readonly Pass[] = [titlePass, labelsPass, axisPass, gridlinesPass, gapPass, legendPass, colorsPass]
+const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
+const beforeShapeInPoint = ["c:idx", "c:invertIfNegative", "c:marker", "c:bubble3D", "c:explosion"]
+
+function pointColor(chart: ChartValue, series: number, point: number): Color {
+  const own = chart.series[series]
+  const accent = (at: number): Color => ({ scheme: accents[at % accents.length] ?? "accent1" })
+  if (own?.colors?.[point] !== undefined) return own.colors[point]
+  return chart.kind === "pie" ? accent(point) : (own?.color ?? accent(series))
+}
+
+const pointColorsPass: Pass = (tree, before, after) => {
+  if (after.kind === "line") return []
+  const listed = orderedSeries(tree, chartGroup(tree))
+  return after.series.flatMap((series, at) => {
+    const element = listed[at]
+    const pointed = series.colors !== undefined || before.series[at]?.colors !== undefined
+    if (element === undefined || (after.kind === "bar" && !pointed) || (after.kind === "pie" && at > 0)) return []
+    const singles = treeKids(tree, element, "c:dPt")
+    const added: string[] = []
+    const edits: ByteEdit[] = []
+    for (const point of after.categories.keys()) {
+      const color = pointColor(after, at, point)
+      if (sameColor(pointColor(before, at, point), color)) continue
+      const fill = solidFillXml(color)
+      const single = singles.find((each) => treeValue(treeKid(tree, each, "c:idx")) === String(point))
+      const properties = treeKid(tree, single, "c:spPr")
+      if (single === undefined)
+        added.push(
+          after.kind === "pie"
+            ? `<c:dPt><c:idx val="${String(point)}"/><c:bubble3D val="0"/><c:spPr>${fill}</c:spPr></c:dPt>`
+            : barPointXml(point, fill),
+        )
+      else if (properties === undefined)
+        edits.push(placedAfter(tree, single, beforeShapeInPoint, `<c:spPr>${fill}</c:spPr>`))
+      else edits.push(fillEdit(tree, properties, fill, ["a:xfrm", "a:custGeom", "a:prstGeom"]))
+    }
+    return added.length === 0 ? edits : [...edits, placedAfter(tree, element, beforeSeriesLabels, added.join(""))]
+  })
+}
+
+function axisOf(tree: ChartTree, kind: string): MarkupElement | undefined {
+  const group = chartGroup(tree)
+  const ids = new Set(treeKids(tree, group, "c:axId").map((axis) => treeValue(axis)))
+  const plot = treeKid(tree, chartOf(tree), "c:plotArea")
+  return treeKids(tree, plot, kind).find((axis) => ids.has(treeValue(treeKid(tree, axis, "c:axId"))))
+}
+
+const axisTitlesPass: Pass = (tree, before, after) => {
+  if (after.kind === "pie") return []
+  const axes = [
+    ["c:valAx", before.valueTitle, after.valueTitle, true],
+    ["c:catAx", before.categoryTitle, after.categoryTitle, false],
+  ] as const
+  const edits: ByteEdit[] = []
+  for (const [kind, had, wanted, upright] of axes) {
+    if ((had ?? "") === (wanted ?? "")) continue
+    const axis = axisOf(tree, kind)
+    if (axis === undefined) return null
+    const title = treeKid(tree, axis, "c:title")
+    const rich = treeKid(tree, treeKid(tree, title, "c:tx"), "c:rich")
+    if (wanted === undefined || wanted === "") edits.push(...(title === undefined ? [] : [removed(title)]))
+    else if (rich !== undefined) edits.push(...wordsEdits(tree, rich, wanted))
+    else {
+      const paragraph = treeKid(tree, treeKid(tree, axis, "c:txPr"), "a:p")
+      const look = treeKid(tree, treeKid(tree, paragraph, "a:pPr"), "a:defRPr")
+      const xml = axisTitleXml(wanted, upright, look === undefined ? axisTitleLook : treeXml(tree, look))
+      const after_ = ["c:axId", "c:scaling", "c:delete", "c:axPos", "c:majorGridlines", "c:minorGridlines"]
+      edits.push(title === undefined ? placedAfter(tree, axis, after_, xml) : replaced(title, xml))
+    }
+  }
+  return edits
+}
+
+const passes: readonly Pass[] = [
+  titlePass,
+  labelsPass,
+  axisPass,
+  gridlinesPass,
+  gapPass,
+  legendPass,
+  colorsPass,
+  pointColorsPass,
+  axisTitlesPass,
+]
 
 export function lookPatched(bytes: Uint8Array, before: ChartValue, after: ChartValue): Uint8Array | null {
   let tree = chartTree(bytes)

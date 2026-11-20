@@ -31,4 +31,9 @@ export const chartCopy = {
     "$#,##0.0": "$1,234.5",
   },
   gap: "Gap width",
+  axisTitles: "Axis titles",
+  valueTitle: "Value axis title",
+  categoryTitle: "Category axis title",
+  valueHint: "Value",
+  categoryHint: "Category",
 } as const

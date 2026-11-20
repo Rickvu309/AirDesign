@@ -31,6 +31,10 @@ async function drive(kit) {
     await expect(box).toBeChecked({ checked: on })
   }
   await expect(canvas.locator("[data-chart-text]").filter({ hasText: "4.1" })).toHaveCount(1)
+  const named = settings.getByRole("textbox", { name: chartCopy.categoryTitle, exact: true })
+  await named.fill("Quarter")
+  await named.press("Enter")
+  await expect(canvas.locator("[data-chart-text]").filter({ hasText: "Quarter" })).toHaveCount(1)
   await settings.scrollIntoViewIfNeeded()
 }
 

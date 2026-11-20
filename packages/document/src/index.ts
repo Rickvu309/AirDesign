@@ -289,6 +289,7 @@ export {
   chartFormats,
   chartGap,
   chartKinds,
+  chartAccent,
   chartLegend,
   chartLegends,
   chartLimits,

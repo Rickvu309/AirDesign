@@ -123,18 +123,24 @@ it("gives a new pie slice the next colour with the slices' own border, and keeps
     '<c:dPt><c:idx val="2"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:schemeClr val="accent3"/></a:solidFill><a:ln w="19050"><a:solidFill><a:schemeClr val="lt1"/></a:solidFill></a:ln>',
   )
   expect(chartWorkbookErrors(added.next)).toEqual([])
-  const first: ChartValue = {
+  const kept: ChartValue = {
     ...chart,
     categories: chart.categories.slice(1),
-    series: [{ ...series, values: series.values.slice(1) }],
+    series: [{ ...series, values: series.values.slice(1), colors: [{ scheme: "accent2" }] }],
   }
-  const removed = edit(first)
-  expect(removed.read).toEqual(first)
+  const removed = edit(kept)
+  expect(removed.read).toEqual(kept)
   expect(removed.after).toContain(
     '<c:dPt><c:idx val="0"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:schemeClr val="accent2"/>',
   )
   expect(removed.after).toContain('<c:dLbl><c:idx val="0"/>')
   expect(chartWorkbookErrors(removed.next)).toEqual([])
+  const positional: ChartValue = { ...kept, series: [{ ...series, values: series.values.slice(1) }] }
+  const followed = edit(positional)
+  expect(followed.read).toEqual(positional)
+  expect(followed.after).toContain(
+    '<c:dPt><c:idx val="0"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:schemeClr val="accent1"/>',
+  )
 })
 
 it("adds a line series with its neighbours' stroke width and cap, in its own colour", async () => {

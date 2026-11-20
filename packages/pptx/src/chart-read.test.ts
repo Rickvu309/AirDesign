@@ -89,3 +89,26 @@ it("reads each series' own number format, so the Data grid can show numbers as t
   expect(formats).toEqual([["General"], ["General"], ["0%"], ["0%"]])
   expect(chartFormatsOf(encodeUtf8(chartSpaceXml(consulting, "rId1")))).toEqual(["General", "General"])
 })
+
+it("writes and reads back each slice's colour, a bar series' own bar colours and the axis titles", () => {
+  const pie: ChartValue = {
+    kind: "pie",
+    categories: ["North", "South", "East"],
+    series: [
+      { name: "Share", values: [0.5, 0.3, 0.2], colors: [{ rgb: "1F4E79" }, { scheme: "accent2" }, { rgb: "BFBFBF" }] },
+    ],
+  }
+  expect(written(pie)).toEqual(pie)
+  const highlighted: ChartValue = {
+    ...consulting,
+    series: consulting.series.map((series, at) =>
+      at === 0 ? { ...series, colors: [{ rgb: "BFBFBF" }, { rgb: "BFBFBF" }, { rgb: "1F4E79" }] } : series,
+    ),
+    valueTitle: "Revenue ($M)",
+    categoryTitle: "Fiscal year",
+  }
+  expect(written(highlighted)).toEqual(highlighted)
+  const { gap: _, ...rest } = consulting
+  const line: ChartValue = { ...rest, kind: "line", valueTitle: "Margin (%)" }
+  expect(written(line)).toEqual(line)
+})

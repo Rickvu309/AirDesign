@@ -64,8 +64,15 @@ function formatControl(labels: ChartFormat): PanelControl {
   return { ...shown, look: { ...shown.look, name: { show: "hidden" }, form: "list" } }
 }
 
+function sliceColor(chart: ChartValue, at: number): Color {
+  return chart.series[0]?.colors?.[at] ?? { scheme: accents[at % accents.length] ?? "accent1" }
+}
+
 function colorStrips(chart: ChartValue): readonly (readonly PanelControl[])[] {
-  if (chart.kind === "pie") return []
+  if (chart.kind === "pie")
+    return chart.categories.map((category, at) => [
+      control(`slice.${String(at)}`, category.trim(), colorDesc, sliceColor(chart, at)),
+    ])
   return chart.series.map((series, at) => [
     control(`color.${String(at)}`, series.name, colorDesc, seriesColor(chart, at)),
   ])
@@ -86,6 +93,12 @@ function ChartCheck(props: { readonly label: string; readonly on: boolean; reado
   )
 }
 
+function titled(chart: ChartValue, key: "valueTitle" | "categoryTitle", text: string): ChartValue {
+  const { [key]: _, ...rest } = chart
+  const title = text.trim().slice(0, chartLimits.title)
+  return title === "" ? rest : { ...rest, [key]: title }
+}
+
 function edited(chart: ChartValue, field: string, chosen: unknown): ChartValue {
   if (field === "legend") return { ...chart, legend: chosen as ChartLegend }
   if (field === "labels") {
@@ -99,6 +112,11 @@ function edited(chart: ChartValue, field: string, chosen: unknown): ChartValue {
   }
   if (field === "gap" && typeof chosen === "number")
     return { ...chart, gap: Math.round(Math.min(chartLimits.gap, Math.max(0, chosen))) }
+  if (field.startsWith("slice.")) {
+    const at = Number(field.slice("slice.".length))
+    const colors = chart.categories.map((_, index) => (index === at ? (chosen as Color) : sliceColor(chart, index)))
+    return { ...chart, series: chart.series.map((series, index) => (index === 0 ? { ...series, colors } : series)) }
+  }
   if (!field.startsWith("color.")) return chart
   const at = Number(field.slice("color.".length))
   return {
@@ -164,6 +182,25 @@ export function ChartSettingsSection(props: {
               on={chart.gridlines !== false}
               onChange={(on) => change("gridlines", on)}
             />
+          </div>
+        )}
+        {pie ? null : (
+          <div className="flex flex-col gap-1">
+            <span className={controlLabel}>{chartCopy.axisTitles}</span>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
+              <ChartField
+                label={chartCopy.valueTitle}
+                hint={chartCopy.valueHint}
+                value={chart.valueTitle ?? ""}
+                onCommit={(text) => save((fresh) => titled(fresh, "valueTitle", text))}
+              />
+              <ChartField
+                label={chartCopy.categoryTitle}
+                hint={chartCopy.categoryHint}
+                value={chart.categoryTitle ?? ""}
+                onCommit={(text) => save((fresh) => titled(fresh, "categoryTitle", text))}
+              />
+            </div>
           </div>
         )}
         {chart.kind === "bar" ? (

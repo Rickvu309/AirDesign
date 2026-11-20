@@ -1,4 +1,4 @@
-import { chartLegend, type ChartValue } from "@airdesign/document"
+import { chartAccent, chartLegend, type ChartSeries, type ChartValue } from "@airdesign/document"
 import { seriesFillXml } from "./chart-space.js"
 import {
   attributeSet,
@@ -296,15 +296,26 @@ export function shapePatched(bytes: Uint8Array, before: ChartValue, after: Chart
   return tree?.bytes ?? null
 }
 
+function remappedColors(source: ChartSeries, index: number, rows: Mapping, pie: boolean): ChartSeries {
+  if (!pie && source.colors === undefined) return source
+  const automatic = (point: number) => (pie ? chartAccent(point) : (source.color ?? chartAccent(index)))
+  const colors = rows.map((from, point) =>
+    from === null ? automatic(point) : (source.colors?.[from] ?? automatic(from)),
+  )
+  return { ...source, colors }
+}
+
 export function lookBefore(before: ChartValue, after: ChartValue): ChartValue {
   const seriesMap = after.kind === "pie" ? [0] : seriesMapping(before, after)
+  const rows = rowMapping(before, after)
   return {
     ...before,
     legend: chartLegend(before) ?? "none",
     series: after.series.map((series, at) => {
       const from = seriesMap[at]
       const source = from === null || from === undefined ? undefined : before.series[from]
-      if (source !== undefined) return source
+      if (source !== undefined && from !== null && from !== undefined)
+        return remappedColors(source, from, rows, after.kind === "pie")
       const { color: _, ...rest } = series
       return rest
     }),
