@@ -1,7 +1,8 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { join } from "node:path"
+import type { Locator, Page } from "@playwright/test"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
-import { decksOn } from "./deck-test"
-import { openDeck } from "./design-panel"
+import { expect, test } from "./deck-test"
+import { fixtures } from "./design-panel"
 
 const slidePart = "ppt/slides/slide1.xml"
 
@@ -36,8 +37,9 @@ async function insert(page: Page, name: string): Promise<void> {
 
 test("a layer inside a group inside a frame moves where it is dropped, and the group grows to hold it", async ({
   page,
+  decks,
 }) => {
-  await openDeck(page, "blank.pptx")
+  await decks.open(join(fixtures, "blank.pptx"))
   for (const name of [shapeCopy.shapes.square, shapeCopy.shapes.circle]) await insert(page, name ?? "")
   const [square, circle] = [painted(page, 4), painted(page, 5)]
   await expect(circle).toBeVisible()
@@ -64,6 +66,6 @@ test("a layer inside a group inside a frame moves where it is dropped, and the g
   await at(circle, still)
   await expect.poll(async () => (await placed(painted(page, 6))).height).toBeGreaterThan(group.height + 100)
   await page.reload()
-  await decksOn(page).ready()
+  await decks.ready()
   await at(painted(page, 4), dropped)
 })
