@@ -23,7 +23,7 @@ export type Pointing = {
 
 export type GestureRow = {
   readonly id: string
-  readonly group: "select" | "move" | "size" | "arrange" | "view" | "history" | "text" | "slides" | "present"
+  readonly group: "select" | "move" | "size" | "arrange" | "tools" | "view" | "history" | "text" | "slides" | "present"
   readonly keys: readonly Keys[]
   readonly pointing?: readonly Pointing[]
   readonly where: readonly Where[]
@@ -249,8 +249,16 @@ export const gestures = [
   },
   { id: "zoom-selection", group: "view", keys: [{ code: "Digit2", shift: true }], where: ["editor"] },
   { id: "design-mode", group: "view", keys: [{ key: "d", shift: true }], where: ["editor"] },
-  { id: "tool-move", group: "view", keys: [{ key: "v" }], where: ["editor"] },
-  { id: "tool-hand", group: "view", keys: [{ key: "h" }], where: ["editor"] },
+  { id: "tool-move", group: "tools", keys: [{ key: "v" }], where: ["editor"] },
+  { id: "tool-hand", group: "tools", keys: [{ key: "h" }], where: ["editor"] },
+  { id: "tool-text", group: "tools", keys: [{ key: "t" }], where: ["editor"] },
+  { id: "tool-rectangle", group: "tools", keys: [{ key: "r" }], where: ["editor"] },
+  { id: "tool-ellipse", group: "tools", keys: [{ key: "o" }], where: ["editor"] },
+  { id: "tool-line", group: "tools", keys: [{ key: "l" }], where: ["editor"] },
+  { id: "tool-arrow", group: "tools", keys: [{ code: "KeyL", shift: true }], where: ["editor"] },
+  { id: "place-image", group: "tools", keys: [{ code: "KeyK", mod: true, shift: true }], where: ["editor"] },
+  { id: "layers-panel", group: "view", keys: [{ code: "Digit1", alt: true }], where: ["editor"] },
+  { id: "export", group: "view", keys: [{ code: "KeyE", mod: true, shift: true }], where: ["editor"] },
   { id: "pan", group: "view", keys: [{ code: "Space" }], where: ["editor"] },
   { id: "pan-arrows", group: "view", keys: arrows.map((key) => ({ key })), where: ["grid"] },
   {
@@ -262,6 +270,13 @@ export const gestures = [
   { id: "bold", group: "text", keys: [{ key: "b", mod: true }], where: ["element", "text"] },
   { id: "italic", group: "text", keys: [{ key: "i", mod: true }], where: ["element", "text"] },
   { id: "underline", group: "text", keys: [{ key: "u", mod: true }], where: ["element", "text"] },
+  { id: "strike", group: "text", keys: [{ code: "KeyX", mod: true, shift: true }], where: ["element", "text"] },
+  { id: "size-up", group: "text", keys: [{ key: ">", mod: true }], where: ["element", "text"] },
+  { id: "size-down", group: "text", keys: [{ key: "<", mod: true }], where: ["element", "text"] },
+  { id: "text-left", group: "text", keys: [{ code: "KeyL", mod: true, alt: true }], where: ["element", "text"] },
+  { id: "text-center", group: "text", keys: [{ code: "KeyT", mod: true, alt: true }], where: ["element", "text"] },
+  { id: "text-right", group: "text", keys: [{ code: "KeyR", mod: true, alt: true }], where: ["element", "text"] },
+  { id: "bullets", group: "text", keys: [{ code: "Digit8", mod: true, shift: true }], where: ["element", "text"] },
   { id: "slide-duplicate", group: "slides", keys: [{ key: "d", mod: true }], where: ["slides"] },
   { id: "slide-delete", group: "slides", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["slides"] },
   {
@@ -321,6 +336,7 @@ export const gestures = [
   { id: "show-erase", group: "present", keys: [{ key: "Backspace" }], where: ["show"] },
   { id: "show-stop", group: "present", keys: [{ key: "Escape" }], where: ["show"] },
   { id: "show-presenter", group: "present", keys: [{ key: "p" }], where: ["show"] },
+  { id: "opacity", group: "arrange", keys: digits.map((key) => ({ key })), where: ["element"] },
 ] as const satisfies readonly GestureRow[]
 
 export type GestureId = (typeof gestures)[number]["id"]

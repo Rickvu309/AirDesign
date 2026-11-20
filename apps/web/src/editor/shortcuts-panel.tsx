@@ -13,6 +13,7 @@ const groupOrder: readonly GestureGroup[] = [
   "move",
   "size",
   "arrange",
+  "tools",
   "text",
   "view",
   "slides",

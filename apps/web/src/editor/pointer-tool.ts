@@ -11,6 +11,10 @@ export function typing(target: EventTarget | null): boolean {
   return target.isContentEditable || target.closest("input, textarea, select") !== null
 }
 
+export function onLayers(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("[data-slide-paint], [data-layers-panel]") !== null
+}
+
 function toolForKey(event: KeyboardEvent): PointerTool | null {
   if (typing(event.target)) return null
   const gesture = gestureFor(event, "editor")

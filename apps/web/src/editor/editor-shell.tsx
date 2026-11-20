@@ -32,6 +32,7 @@ import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextP
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useShortcutsKey } from "@/editor/shortcuts-key"
+import { useToolKeys } from "@/editor/tool-keys"
 import { ShortcutsPanel } from "@/editor/shortcuts-panel"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -149,6 +150,11 @@ export function EditorShell({
   usePresentKeys(strip !== undefined && !gridOpen && present.show === null, (from) =>
     present.start(from === "first" ? 0 : (strip?.current ?? 0)),
   )
+  useToolKeys(deck !== undefined && !gridOpen && present.show === null, {
+    onText: deck?.onText,
+    onShape: deck?.onShape,
+    onPicture: deck?.onPicture,
+  })
   useShortcutsKey(deck !== undefined && present.show === null, () => setShortcutsOpen((open) => !open))
   function withShortcuts(editor: ReactNode) {
     if (!shortcutsOpen || present.show !== null) return editor
@@ -165,10 +171,11 @@ export function EditorShell({
     if (mode === undefined || changeMode === undefined || size === null || present.show !== null) return
     function toggle(event: KeyboardEvent) {
       if (event.repeat || event.isComposing || event.defaultPrevented || typing(event.target)) return
-      if (gestureFor(event, "editor") !== "design-mode" || !editorOwnsKey(event)) return
+      const gesture = gestureFor(event, "editor")
+      if ((gesture !== "design-mode" && gesture !== "layers-panel") || !editorOwnsKey(event)) return
       if (document.querySelector('[role="dialog"][data-open], [role="alertdialog"][data-open]') !== null) return
       event.preventDefault()
-      changeMode?.(mode === "slides" ? "design" : "slides")
+      changeMode?.(gesture === "layers-panel" || mode === "slides" ? "design" : "slides")
     }
     window.addEventListener("keydown", toggle)
     return () => window.removeEventListener("keydown", toggle)
