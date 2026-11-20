@@ -80,7 +80,10 @@ function joined(top: UndoEntry | undefined, entry: UndoEntry): UndoEntry | null 
   if (top === undefined || entry.session === undefined || top.session !== entry.session) return null
   const below = stepsOf(top.undoable)
   const above = stepsOf(entry.undoable)
-  if (below.length === 0 || below.length !== above.length) return null
+  if (below.length === 0 || above.length === 0) return null
+  if (top.name === entry.name && above.every((step) => below.every((each) => each.node !== step.node)))
+    return { ...top, undoable: { steps: [...below, ...above] } }
+  if (below.length !== above.length) return null
   if (below.some((step, index) => step.node !== above[index]?.node)) return null
   return {
     ...top,

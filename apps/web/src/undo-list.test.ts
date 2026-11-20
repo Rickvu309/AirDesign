@@ -152,6 +152,26 @@ describe("undo list", () => {
     expect(recorded(second, { ...typed("Two"), session: 2 }).undo).toHaveLength(2)
   })
 
+  it("keeps one key's format on several selected layers as one edit", () => {
+    const other = elementId("256.3")
+    const sized = (target: typeof node) =>
+      ({
+        name: "format",
+        session: 5,
+        undoable: {
+          steps: [
+            { node: target, before: { text: { size: { set: 1800 } } }, after: { text: { size: { set: 2000 } } } },
+          ],
+        },
+      }) as const
+    const both = recorded(recorded(emptyUndo, sized(node)), sized(other))
+    expect(both.undo).toHaveLength(1)
+    expect(both.undo[0]?.undoable).toEqual({
+      steps: [...sized(node).undoable.steps, ...sized(other).undoable.steps],
+    })
+    expect(recorded(both, { ...sized(other), name: "text" }).undo).toHaveLength(2)
+  })
+
   it("drops a session that starts and ends with no characters, however the empty text is written", () => {
     const emptyLine = '[{"from":0,"runs":[{"from":-1,"text":""}]}]'
     const session = { name: "text", session: 1, undoable: { steps: [step("", emptyLine)] } } as const
