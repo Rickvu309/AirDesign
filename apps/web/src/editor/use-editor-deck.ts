@@ -73,7 +73,15 @@ export function useEditorDeck(id: string) {
   useMatchingShortcut(selection.ids.length > 0 ? selectMatching : undefined)
 
   const [lane] = useState(storeLane)
-  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, lane })
+  const inserts = deckInserts({
+    id,
+    shown,
+    pictureTool: pictures,
+    record,
+    hold: () => undo.records.current.hold(),
+    settle,
+    lane,
+  })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
   function placeImage(node: ElementId, file: File, paint: boolean) {
     pictureTool.pick(file, async (picture) => {

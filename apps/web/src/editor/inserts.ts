@@ -21,14 +21,17 @@ import type { DeckPaint } from "@/editor/use-deck-paint"
 import { elementCopy } from "@/copy/element-copy"
 import {
   commitCopies,
-  commitElement,
+  copyPlan,
+  planElement,
+  storePlan,
+  type ElementPlan,
   replacedUndoable,
   type CopyAsked,
   type ElementChange,
   type TableSize,
   type TextPlace,
 } from "@/element-edit"
-import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
+import { commitPicture, iconPlan, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
@@ -39,16 +42,13 @@ import { tableCopy } from "@/copy/table-copy"
 
 import { addSlideNumbers } from "./slide-number-actions"
 
-function addsElement(change: ElementChange): boolean {
-  return change.change === "text" || change.change === "table" || change.change === "chart" || change.change === "shape"
-}
-
 export type InsertingDeck = {
   readonly id: string
   readonly shown: DeckPaint
   readonly lane: StoreLane
   readonly pictureTool: { readonly store: PictureStore }
   readonly record: (entry: UndoEntry) => void
+  readonly hold: () => () => void
   readonly settle: (outcome: CommitOutcome) => void
 }
 
@@ -62,6 +62,8 @@ export function deckInserts(deck: InsertingDeck) {
       parts: () => shownParts.current,
       room: () => roomAt(current),
       index: () => current,
+      painted: () => painted(),
+      show: () => deck.shown.showRegister(deck.shown.shownRegister.current),
       showSaved: () => showEdited("kept"),
       enter: (node, keys) => setEntering({ id: node, keys }),
       record,
@@ -97,29 +99,66 @@ export function deckInserts(deck: InsertingDeck) {
     }
   }
 
+  function painted(): Register | null {
+    const register = deck.shown.shownRegister.current
+    return register === null ? null : placedOn(register, deck.shown.placed.current)
+  }
+
+  function enterAdded(added: ElementId | null, keys?: HeldKeys, selects = false) {
+    const held = keys === undefined ? {} : { keys }
+    setEntering(added === null ? null : { id: added, ...held, ...(selects ? { selects: true as const } : {}) })
+  }
+
+  function storeAhead(plan: ElementPlan, recorded: (undoable: Undoable | null) => void): Promise<"stored" | "refused"> {
+    const written = deck.shown.ahead.paint(plan.commands)
+    const release = deck.hold()
+    return lane(async (stored) => {
+      try {
+        const went = await storePlan(id, plan)
+        written()
+        stored()
+        if (went !== null) recorded(plan.undo(went))
+        release()
+        await showEdited("kept")
+        return went === null ? "refused" : "stored"
+      } finally {
+        written()
+        release()
+      }
+    })
+  }
+
+  async function flushed(outcome: "stored" | "refused"): Promise<CommitOutcome> {
+    const settled = outcome === "stored" ? await flushPending(connect, id) : "refused"
+    settle(settled)
+    return settled
+  }
+
   function changeElement(change: ElementChange, named?: UndoName): Promise<CommitOutcome | "closed"> {
     const typed = change.change === "text" || change.change === "table" || change.change === "shape"
     const keys = typed ? holdKeys(document) : undefined
-    return lane(async (stored) => {
-      const opened = await connect(memoryRemote()).openDeck(id)
-      if (!opened.ok) {
-        keys?.stop()
-        return "closed"
-      }
-      const register = addsElement(change) ? placedOn(opened.register, deck.shown.placed.current) : opened.register
-      const name =
-        named ??
-        (change.change !== "order"
-          ? elementNames[change.change]
-          : typeof change.move === "string"
-            ? stackNames[change.move]
-            : "layer-order")
-      const absorbs = change.change === "remove" && change.emptied === true ? change.nodes[0] : undefined
-      const added = recordAdded(name, stored, keys, change.change === "shape", absorbs)
-      const outcome = await commitElement(id, shownParts.current, register, change, added)
+    const name =
+      named ??
+      (change.change !== "order"
+        ? elementNames[change.change]
+        : typeof change.move === "string"
+          ? stackNames[change.move]
+          : "layer-order")
+    const absorbs = change.change === "remove" && change.emptied === true ? { absorbs: change.nodes[0] } : {}
+    const register = painted()
+    const plan = register === null ? null : planElement(shownParts.current, register, change)
+    if (plan === null) {
+      keys?.stop()
+      settle("refused")
+      return Promise.resolve("refused")
+    }
+    const storing = storeAhead(plan, (undoable) => {
+      if (undoable !== null) record({ name, undoable, ...absorbs })
+    })
+    enterAdded(plan.added, keys, change.change === "shape")
+    return storing.then((outcome) => {
       if (outcome === "refused") keys?.stop()
-      settle(outcome)
-      return outcome
+      return flushed(outcome)
     })
   }
 
@@ -129,6 +168,15 @@ export function deckInserts(deck: InsertingDeck) {
     title?: string,
     replacing: readonly ElementId[] = [],
   ): Promise<readonly Copied[]> {
+    const register = painted()
+    if (replacing.length === 0 && register !== null) {
+      const made = copyPlan(shownParts.current, register, copies, title)
+      if (made === null) return Promise.resolve([])
+      void storeAhead(made.plan, (undoable) => {
+        if (undoable !== null) record({ name, undoable })
+      }).then(flushed)
+      return Promise.resolve(made.copies)
+    }
     return lane(async (stored) => {
       const register = await openPlaced()
       if (register === null) return []
@@ -199,7 +247,7 @@ export function deckInserts(deck: InsertingDeck) {
 
   function addText(place?: TextPlace) {
     if (place !== undefined) {
-      void placedText.place(place, holdKeys(document))
+      placedText.place(place, holdKeys(document))
       return
     }
     const size = roomAt(current)
@@ -257,13 +305,16 @@ export function deckInserts(deck: InsertingDeck) {
     const slide = roomAt(current)
     if (slide === null) return
     const at = { index: current, slide, keep: pictureTool.store.keep }
-    settle(
-      await lane(async (stored) => {
-        const register = await openPlaced()
-        if (register === null) return "refused"
-        return commitIcon(id, shownParts.current, register, name, at, recordAdded("add-icon", stored))
-      }),
-    )
+    const plan = await iconPlan(shownParts.current, painted, name, at)
+    if (plan === null) {
+      settle("refused")
+      return
+    }
+    const storing = storeAhead(plan, (undoable) => {
+      if (undoable !== null) record({ name: "add-icon", undoable })
+    })
+    enterAdded(plan.added)
+    await flushed(await storing)
   }
 
   return {

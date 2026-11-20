@@ -19,12 +19,11 @@ import {
   type Register,
   type Undoable,
 } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
 import { freeShapeId, readShapes, readSlides, shapeKind } from "@airdesign/pptx"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { slideBase } from "@/exported-parts"
 import { indexedRegister } from "@/indexed-register"
 import { fileSlides } from "@/slide-edit"
+import { storeCommand } from "@/command-store"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -104,29 +103,16 @@ function groupTurn(parts: Parts, register: Register, change: GroupChange): reado
   return [{ command: "slide", file, edit: framed.slide }, ...rows]
 }
 
-async function sent(deckId: string, command: Command): Promise<boolean> {
-  const link = connect(memoryRemote())
-  if (command.command === "slide") return (await link.enqueueSlide(deckId, command.file, command.edit)).ok
-  if (command.command !== "person" || command.node === undefined || command.v === undefined) return false
-  return (await link.enqueueRow(deckId, { v: command.v, patch: command.patch }, command.node, "")).ok
-}
-
-export async function commitGroup(
-  deckId: string,
+export function groupPlanned(
   parts: Parts,
   register: Register,
   change: GroupChange,
-  paint: (group: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
-): Promise<CommitOutcome> {
-  const indexed = indexedRegister(parts, register)
-  const planned = groupPlan(parts, indexed, change)
+): (Planned & { readonly made: ElementId | null }) | null {
+  const planned = groupPlan(parts, indexedRegister(parts, register), change)
   const head = planned?.commands[0]
-  if (planned === null || head === undefined) return "refused"
-  const { commands, undoable } = planned
-  for (const command of commands) if (!(await sent(deckId, command))) return "refused"
+  if (planned === null || head === undefined) return null
   const made = head.command === "slide" && head.edit.slide === "element-group" ? head.edit.element.node : null
-  await paint(made, undoable)
-  return flushPending(connect, deckId)
+  return { ...planned, made }
 }
 
 export async function commitPlace(
@@ -144,7 +130,7 @@ export async function commitPlace(
   const head = changed.turn[0]
   if (head?.command !== "slide") return "kept"
   const undoable = slideUndoable(indexed, head.file, head.edit)
-  for (const command of changed.turn) if (!(await sent(deckId, command))) return "refused"
+  for (const command of changed.turn) if (!(await storeCommand(deckId, command))) return "refused"
   await paint(undoable)
   return "stored"
 }

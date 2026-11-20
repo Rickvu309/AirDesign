@@ -36,14 +36,16 @@ test("keys typed at once after placing text land in it, while the device holds i
   await expect(texts.last()).toHaveText("Big title")
 })
 
-test("keys typed at once after adding a table land in its first cell", async ({ page }) => {
+test("a table added while the device is busy paints at once, and keys typed at once land in its first cell", async ({
+  page,
+}) => {
   await blankDeck(page)
   const cell = page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="0.0"]')
   await page.getByRole("button", { name: tableCopy.tool, exact: true }).click()
   await holdDevice(page)
   await page.getByRole("button", { name: tableCopy.sizeOf(3, 3), exact: true }).click()
   await page.keyboard.type("Re", { delay: 0 })
-  await expect(cell).toHaveCount(0)
+  await expect(cell).toBeFocused()
   await openDevice(page)
   await page.keyboard.type("gion", { delay: 0 })
   await expect(cell).toBeFocused()

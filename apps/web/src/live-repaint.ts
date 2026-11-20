@@ -78,15 +78,15 @@ export function liveRepaint(
   painted: Register | null,
   busy: BusyElements,
   numberText: NumberedText = (_id, stored) => stored,
-): (register: Register, from?: "person") => void {
+): (register: Register, from?: "person", only?: ReadonlySet<ElementId>) => void {
   const landed = new Map<ElementId, Landed>()
   for (const [id, file] of files)
     if (!busy.has(id))
       landed.set(id, { text: numberText(id, shownValue(painted, id, file)), box: landedBox(painted, id) })
-  return (register, from) => {
+  return (register, from, only) => {
     for (const [id, file] of files) {
       const record = store.getElement(id)
-      if (record === null) continue
+      if (record === null || (only !== undefined && !only.has(id))) continue
       if (from !== "person" && busy.has(id)) {
         busy.missed(id)
         landed.delete(id)

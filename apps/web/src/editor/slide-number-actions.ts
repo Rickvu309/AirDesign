@@ -113,7 +113,7 @@ function additions(
   })
 }
 
-export async function addSlideNumbers(deck: Omit<InsertingDeck, "pictureTool" | "lane">, source?: ElementId) {
+export async function addSlideNumbers(deck: Omit<InsertingDeck, "pictureTool" | "lane" | "hold">, source?: ElementId) {
   const { id, shown } = deck
   const link = connect(memoryRemote())
   const opened = await link.openDeck(id)

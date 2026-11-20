@@ -22,7 +22,7 @@ import {
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { freeShapeId, iconInk, readSlides, slideColorHex } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
-import { takenBoxes, type SlideRoom } from "@/element-edit"
+import { takenBoxes, type ElementPlan, type SlideRoom } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
 import { iconBytes } from "@/icon-fallback"
 import { indexedRegister } from "@/indexed-register"
@@ -120,30 +120,33 @@ export async function commitPicture(
   return outcome
 }
 
-export async function commitIcon(
-  deckId: string,
+export async function iconPlan(
   parts: Parts,
-  register: Register,
+  painted: () => Register | null,
   name: string,
   at: PictureAt,
-  paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
-): Promise<CommitOutcome> {
-  const slide = readSlides(slideBase(parts, register))[at.index]
+): Promise<ElementPlan | null> {
+  const before = painted()
+  if (before === null) return null
+  const slide = readSlides(slideBase(parts, before))[at.index]
   const hex = slide === undefined ? null : slideColorHex(parts, slide.part, iconTextColor)
   const made = await iconBytes({
     name,
     weight: iconWeights.lucide,
     color: { hex: hex ?? iconInk.hex, ...iconTextColor },
   })
-  if (made === null) return "refused"
+  const register = painted()
+  if (made === null || register === null) return null
   for (const [part, bytes] of made) at.keep(part, bytes)
   const side = iconSideOn(indexedRegister(parts, register).index?.elements ?? [], slide?.slide ?? "")
   const edit = pictureCommand(parts, register, at.index, { icon: name }, placedIcon(at.slide, side))
-  if (edit === null || edit.slide !== "element-add") return "refused"
+  if (edit === null || edit.slide !== "element-add") return null
   const file = fileSlides(parts, register)
   const undoable = slideUndoable(register, file, edit)
-  const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
-  if (!kept.ok) return "refused"
-  await paint(edit.element.node, undoable)
-  return flushPending(connect, deckId)
+  return {
+    commands: [{ command: "slide", file, edit }],
+    added: edit.element.node,
+    undo: () => undoable,
+    partial: false,
+  }
 }

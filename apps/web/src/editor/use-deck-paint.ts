@@ -69,17 +69,17 @@ export function useDeckPaint(
   const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
   const placed = useRef<readonly PlacedText[]>([])
-  const showAhead = useRef<(register: Register) => void>(() => undefined)
+  const showAhead = useRef<(register: Register, nodes: readonly ElementId[]) => void>(() => undefined)
   const [ahead] = useState(() =>
     paintingAhead({
       shown: () => shownRegister.current,
       keep: (register) => {
         shownRegister.current = register
       },
-      show: (register) => showAhead.current(register),
+      show: (register, nodes) => showAhead.current(register, nodes),
     }),
   )
-  const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
+  const repaint = useRef<(register: Register, from?: "person", only?: ReadonlySet<ElementId>) => void>(() => undefined)
   const displayed = useRef(partsWatch())
   const [entering, setEntering] = useState<Entering | null>(null)
   const [cropping, setCropping] = useState<ElementId | null>(null)
@@ -136,10 +136,10 @@ export function useDeckPaint(
     shownRegister.current = register
     const laid = framed === null ? null : indexedRegister(shownParts.current, framed)
     const paintChanges = liveRepaint(store.current, next.files, laid, busy.current, next.numberText)
-    repaint.current = (changed, from) => {
+    repaint.current = (changed, from, only) => {
       const register = ahead.on(changed)
       shownRegister.current = register
-      paintChanges(indexedRegister(shownParts.current, register), from)
+      paintChanges(indexedRegister(shownParts.current, register), from, only)
     }
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
@@ -156,10 +156,14 @@ export function useDeckPaint(
     if (next.ok) repaint.current(next.register)
   }
 
-  showAhead.current = (register) => {
-    if (structure.current !== structureOf(withFileFloors(register, shownParts.current), bound.current))
-      showRegister(register)
-    repaint.current(register, "person")
+  showAhead.current = (register, nodes) => {
+    if (structure.current === structureOf(withFileFloors(register, shownParts.current), bound.current)) {
+      repaint.current(register, "person")
+      return
+    }
+    showRegister(register)
+    const missed = nodes.filter((node) => busy.current.has(node))
+    if (missed.length > 0) repaint.current(register, "person", new Set(missed))
   }
 
   async function showEdited(wanted: ShownSlide, whole?: "whole") {
