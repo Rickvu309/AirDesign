@@ -26,5 +26,6 @@ export function entryOf(page, number) {
 
 export async function selectTwoToFour(page) {
   await entryOf(page, 2).click()
+  await expect(entryOf(page, 2)).toHaveAttribute("aria-current", "true")
   await entryOf(page, 4).click({ modifiers: [shortcutCopy.chord.other.shift] })
 }
