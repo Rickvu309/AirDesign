@@ -1,6 +1,6 @@
 import { stepsOf } from "./check.mjs"
 import { checkSteps } from "./check-steps.mjs"
-import { packagesFor, runGate, testsFor } from "./gate.mjs"
+import { ciAlsoRuns, packagesFor, recordedSeconds, runGate, testsFor, unitSecondsBudget } from "./gate.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -8,42 +8,79 @@ const same = (what, actual, expected) => {
   }
 }
 
-const planWith = (tests) => ({
-  steps:
-    tests === undefined
-      ? []
-      : [{ kind: "unit-tests", tests, files: ["x.ts"], because: "package.json is read outside the import graph" }],
+const inventory = [
+  ...Array.from({ length: 300 }, (_, at) => `packages/document/src/t${String(at).padStart(3, "0")}.test.ts`),
+  "packages/oauth/src/grant.test.ts",
+  "tests/edit-replay.test.ts",
+]
+const mapOf = (unitTests, parts = {}) => ({
+  everything: unitTests === "all",
+  because: "pnpm-lock.yaml changes how every part runs",
+  unitTests,
+  parts,
 })
-const many = Array.from({ length: 599 }, (_, at) => `t${String(at)}.test.ts`)
+const document = inventory.slice(0, 300)
 same(
-  "a diff reaching 599 unit files runs the changed test and names the ci remainder",
-  testsFor({ plan: planWith("related"), related: many, changed: ["t3.test.ts", "core.ts"] }),
-  { files: ["t3.test.ts"], ci: "598 more test files reach this diff" },
-)
-same(
-  "a whole-suite plan runs the changed unit test and names why ci runs the suite",
+  "the gate runs only unit test files in the folders the map reaches, the same folders ci runs",
   testsFor({
-    plan: planWith("all"),
-    related: [],
-    inventory: many,
-    changed: ["t5.test.ts", "package.json", "scripts/gate.test.mjs"],
+    map: mapOf(["packages/oauth/"]),
+    related: [...document, "packages/oauth/src/grant.test.ts"],
+    inventory,
+    changed: [],
   }),
-  { files: ["t5.test.ts"], ci: "every unit test, because package.json is read outside the import graph" },
+  { files: ["packages/oauth/src/grant.test.ts"], reach: 1 },
 )
-same("a diff with no unit reach runs no unit test", testsFor({ plan: planWith(), related: [], changed: [] }), {
-  files: [],
-  ci: undefined,
-})
-const atLimit = many.slice(0, 40)
-same("all 40 reached files run", testsFor({ plan: planWith("related"), related: atLimit, changed: ["core.ts"] }), {
-  files: atLimit,
-  ci: undefined,
-})
 same(
-  "Vitest reach applies to script inputs too",
-  testsFor({ plan: planWith(), related: atLimit, changed: ["scripts/input.mjs"] }),
-  { files: atLimit, ci: undefined },
+  "a change no unit test folder reaches runs no unit test",
+  testsFor({ map: mapOf([]), related: [], inventory, changed: ["GLOSSARY.md"] }),
+  { files: [], reach: 0 },
 )
+const wide = testsFor({ map: mapOf(["packages/document/", "tests/"]), related: document, inventory, changed: [] })
+same(
+  "a wide reach runs as many files as fit the seconds budget, each at 1 s plus half its recorded seconds, and leaves the rest to ci",
+  [wide.files.length, wide.reach],
+  [unitSecondsBudget, 301],
+)
+const timed = Object.fromEntries(document.map((file, at) => [file, at < 290 ? 2 : 0]))
+same(
+  "recorded seconds let the budget take the cheap files first",
+  testsFor({ map: mapOf(["packages/document/"]), related: document, inventory, changed: [], seconds: timed }).files,
+  [...document.slice(0, 2), ...document.slice(290)],
+)
+same(
+  "a changed test file in the reach always runs, even past the budget",
+  testsFor({
+    map: mapOf(["packages/document/"]),
+    related: [],
+    inventory,
+    changed: ["packages/document/src/t299.test.ts", "packages/document/src/x.ts"],
+    seconds: { "packages/document/src/t299.test.ts": 99 },
+  }).files,
+  ["packages/document/src/t299.test.ts"],
+)
+same(
+  "when the map runs everything, the gate runs the changed test files and leaves the suite to ci",
+  testsFor({
+    map: mapOf("all"),
+    related: document,
+    inventory,
+    changed: ["tests/edit-replay.test.ts", "pnpm-lock.yaml"],
+  }),
+  { files: ["tests/edit-replay.test.ts"], reach: 302 },
+)
+same(
+  "the end names what only ci runs: the unit files left out and each part the map turned on",
+  ciAlsoRuns(mapOf(["packages/document/"], { source: true, browser: true, journeys: true, scripts: false }), 75, 301),
+  ["226 more unit test files the change reaches", "the browser tests (4 jobs)", "the journeys"],
+)
+same("a run of everything names why", ciAlsoRuns(mapOf("all", {}), 1, 302), [
+  "every part, because pnpm-lock.yaml changes how every part runs",
+  "301 more unit test files the change reaches",
+])
+same("a docs change leaves only the scripts part to ci", ciAlsoRuns(mapOf([], { source: true, scripts: true }), 0, 0), [
+  "every script test and the site build",
+])
+same("no Vitest cache records nothing", recordedSeconds("/nowhere"), {})
 
 same(
   "each changed app or package folder is built, once, and a root file is not",

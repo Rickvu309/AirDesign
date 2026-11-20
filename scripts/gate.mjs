@@ -4,30 +4,71 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
+import { changeMap, readChangeGraph } from "./change-map.mjs"
 import { run, runCheck } from "./check.mjs"
-import { checkSteps } from "./check-steps.mjs"
+import { checkSteps, unitTestsIn } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { timeMetric } from "./metrics.mjs"
 import { testFilesByProject } from "./unit-test-files.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const prove = ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs"
-const testLimit = 40
+export const unitSecondsBudget = 15
+const secondsPerFile = 1
 
 export const packagesFor = (changed) =>
   [...new Set(changed.flatMap((file) => file.match(/^(?:apps|packages)\/[^/]+(?=\/)/)?.[0] ?? []))].sort()
 
-const wholeSuite = (plan) => plan.steps.find((step) => step.kind === "unit-tests" && step.tests === "all")
+export const testsFor = ({ map, related, inventory, changed, seconds = {} }) => {
+  const reach = unitTestsIn(map.unitTests, inventory)
+  const reached = new Set(reach)
+  const weight = (file) => secondsPerFile + (seconds[file] ?? 0) / 2
+  const mustRun = changed.filter((file) => reached.has(file))
+  const near = map.unitTests === "all" ? [] : related.filter((file) => reached.has(file) && !mustRun.includes(file))
+  const files = [...mustRun]
+  let spent = files.reduce((sum, file) => sum + weight(file), 0)
+  for (const file of near.toSorted((a, b) => weight(a) - weight(b) || a.localeCompare(b))) {
+    if (spent + weight(file) > unitSecondsBudget) break
+    files.push(file)
+    spent += weight(file)
+  }
+  return { files: files.toSorted(), reach: reach.length }
+}
 
-export const testsFor = ({ plan, related, inventory, changed }) => {
-  const unit = wholeSuite(plan)
-  if (unit === undefined && related.length <= testLimit) return { files: related, ci: undefined }
-  const files = (unit === undefined ? related : inventory).filter((file) => changed.includes(file))
-  const ci =
-    unit === undefined
-      ? `${String(related.length - files.length)} more test files reach this diff`
-      : `every unit test, because ${unit.because}`
-  return { files, ci }
+const partNames = {
+  scripts: "every script test and the site build",
+  design: "the design scans (2 jobs)",
+  browser: "the browser tests (4 jobs)",
+  journeys: "the journeys",
+  pptx: "the PowerPoint check",
+  corpus: "the corpus (2 jobs)",
+  "model-check": "the model check",
+}
+
+export const ciAlsoRuns = (map, ranUnit, reach) => [
+  ...(map.everything ? [`every part, because ${map.because}`] : []),
+  ...(reach > ranUnit ? [`${String(reach - ranUnit)} more unit test files the change reaches`] : []),
+  ...(map.everything
+    ? []
+    : Object.entries(partNames)
+        .filter(([part]) => map.parts[part])
+        .map(([, name]) => name)),
+]
+
+export const recordedSeconds = (folder) => {
+  const seconds = {}
+  const cache = path.join(folder, "node_modules/.vite/vitest")
+  if (!fs.existsSync(cache)) return seconds
+  for (const entry of fs.readdirSync(cache)) {
+    const file = path.join(cache, entry, "results.json")
+    if (!fs.existsSync(file)) continue
+    try {
+      for (const project of Object.values(JSON.parse(fs.readFileSync(file, "utf8")).projects ?? {}))
+        for (const [test, result] of Object.entries(project.files ?? {}))
+          if (typeof result?.duration === "number") seconds[test] = Math.max(seconds[test] ?? 0, result.duration / 1000)
+    } catch {}
+  }
+  return seconds
 }
 
 const noLine = async () => () => {}
@@ -86,15 +127,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       later: async () => {
         const base = execFileSync("git", ["merge-base", against, "HEAD"], { cwd: root, encoding: "utf8" }).trim()
         const plan = JSON.parse((await node([prove, "prove", "--plan", "--base", against])).stdout)
-        const all = wholeSuite(plan) !== undefined
-        const inventory = all ? Object.values(testFilesByProject(root)).flat() : []
-        const related = all ? [] : await relatedTests(base, ownTemp)
-        const { files: tests, ci } = testsFor({ plan, related, inventory, changed: plan.changed })
-        left = ci
-        const tooling = plan.steps.find((step) => step.kind === "script-tests")?.files ?? []
+        const map = changeMap(plan.changed, readChangeGraph(root))
+        const inventory = Object.values(testFilesByProject(root)).flat().sort()
+        const related = map.unitTests === "all" || map.unitTests.length === 0 ? [] : await relatedTests(base, ownTemp)
+        const { files: tests, reach } = testsFor({
+          map,
+          related,
+          inventory,
+          changed: plan.changed,
+          seconds: recordedSeconds(root),
+        })
+        left = ciAlsoRuns(map, tests.length, reach)
+        const tooling = map.parts.scripts ? (plan.steps.find((step) => step.kind === "script-tests")?.files ?? []) : []
         const packages = packagesFor(plan.changed)
         console.log(
-          `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s: ${String(tests.length)} unit test files, ${String(tooling.length)} script test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
+          `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s by scripts/change-map.mjs, the map ci uses: ${String(tests.length)} of the ${String(reach)} unit test files the change reaches, ${String(tooling.length)} script test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
         )
         selection = { base, plan, related, tests, tooling }
         return checkSteps.affectedGateStages({ tests, tooling, packages })
@@ -134,9 +181,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const seconds = timeMetric(root, "gate-duration", started)
   console.log(seconds.line)
   if (seconds.over !== undefined) console.error(seconds.over)
-  console.log(
-    `ci runs every step of pnpm check on GitHub${left === undefined ? "" : `, with ${left}`}, before the merge.`,
-  )
+  if (left !== undefined)
+    console.log(left.length === 0 ? "CI will also run: nothing more" : `CI will also run: ${left.join(", ")}`)
   if (result.failed.length > 0) {
     console.error(`failed: ${result.failed.join(", ")}`)
     process.exit(1)
