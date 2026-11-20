@@ -2,6 +2,8 @@ export type RemovalRefusal = "animated" | "group"
 
 export type CopyRefusal = "kind" | "group-box" | "present"
 
+export type ElsewhereRefusal = "layout" | "carried"
+
 export const elementCopy = {
   removeRefusedTitle: "Unable to delete this layer",
   removeRefusedBody: {
@@ -11,9 +13,10 @@ export const elementCopy = {
   copyRefusedTitle: "Unable to duplicate this layer",
   clipRefusedTitle: "Unable to copy this layer",
   pasteRefusedTitle: "Unable to paste this layer",
-  pasteElsewhereTitle: "Unable to paste these layers",
-  pasteElsewhereBody:
-    "They come from another deck, and AirDesign can paste layers only into the deck they were copied from.",
+  pasteElsewhereBody: {
+    layout: "It takes its look from its slide layout, so AirDesign can't move it to another deck yet.",
+    carried: "It holds an image or a frame AirDesign can't move to another deck yet.",
+  },
   copyRefusedBody: {
     kind: "It is a chart or table, or a group that holds one, and AirDesign can't duplicate those yet.",
     "group-box": "It is inside a frame, and AirDesign can't duplicate layers in a frame yet.",
@@ -25,7 +28,6 @@ export const elementCopy = {
   readonly copyRefusedTitle: string
   readonly clipRefusedTitle: string
   readonly pasteRefusedTitle: string
-  readonly pasteElsewhereTitle: string
-  readonly pasteElsewhereBody: string
+  readonly pasteElsewhereBody: Readonly<Record<ElsewhereRefusal, string>>
   readonly copyRefusedBody: Readonly<Record<CopyRefusal, string>>
 }

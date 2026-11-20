@@ -1,4 +1,5 @@
 import {
+  mediaTypes,
   readBox,
   readElementId,
   readFloor,
@@ -9,13 +10,19 @@ import {
   type ClonedLayer,
   type ElementId,
   type IndexElement,
+  type MediaType,
   type SlideId,
 } from "@airdesign/document"
+
+export type CarriedImage = { readonly type: MediaType; readonly data: string }
+
+export type CarriedLayer = { readonly markup: string; readonly images: readonly CarriedImage[] }
 
 export type CopiedLayer = {
   readonly source: ElementId
   readonly box: Box
   readonly rows: readonly ClonedLayer[]
+  readonly carried?: CarriedLayer
 }
 
 export type LayerCopy = {
@@ -28,17 +35,28 @@ const marker = "data-airdesign-layers"
 const found = new RegExp(`${marker}="([A-Za-z0-9+/=]+)"`)
 const largest = 8_000_000
 
-function encoded(text: string): string {
-  const bytes = new TextEncoder().encode(text)
+export function base64Of(bytes: Uint8Array): string {
   let binary = ""
   for (let at = 0; at < bytes.length; at += 0x8000) binary += String.fromCharCode(...bytes.subarray(at, at + 0x8000))
   return btoa(binary)
 }
 
-function decoded(base64: string): string | null {
+export function bytesOf64(base64: string): Uint8Array | null {
   try {
-    const binary = atob(base64)
-    return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, (each) => each.charCodeAt(0)))
+    return Uint8Array.from(atob(base64), (each) => each.charCodeAt(0))
+  } catch {
+    return null
+  }
+}
+
+function encoded(text: string): string {
+  return base64Of(new TextEncoder().encode(text))
+}
+
+function decoded(base64: string): string | null {
+  const bytes = bytesOf64(base64)
+  try {
+    return bytes === null ? null : new TextDecoder("utf-8", { fatal: true }).decode(bytes)
   } catch {
     return null
   }
@@ -90,13 +108,28 @@ function readRows(raw: unknown, slide: SlideId): readonly ClonedLayer[] | null {
   })
 }
 
+function readCarried(raw: unknown): CarriedLayer | null | undefined {
+  if (raw === undefined) return undefined
+  const carried = record(raw)
+  if (carried === null || typeof carried.markup !== "string" || !Array.isArray(carried.images)) return null
+  const images = carried.images.map((item) => {
+    const image = record(item)
+    const type = mediaTypes.find((each) => each === image?.type)
+    return type === undefined || typeof image?.data !== "string" ? null : { type, data: image.data }
+  })
+  if (images.some((image) => image === null)) return null
+  return { markup: carried.markup, images: images.filter((image) => image !== null) }
+}
+
 function readLayer(raw: unknown, slide: SlideId): CopiedLayer | null {
   const layer = record(raw)
   const source = readElementId(layer?.source)
   const box = readBox(layer?.box)
   const rows = readRows(layer?.rows, slide)
+  const carried = readCarried(layer?.carried)
   if (source === undefined || box === null || rows === null || shapeOf(source).slide !== slide) return null
-  return rows[0]?.source === source ? { source, box, rows } : null
+  if (rows[0]?.source !== source || carried === null) return null
+  return { source, box, rows, ...(carried === undefined ? {} : { carried }) }
 }
 
 export function readLayerCopy(html: string): LayerCopy | null {

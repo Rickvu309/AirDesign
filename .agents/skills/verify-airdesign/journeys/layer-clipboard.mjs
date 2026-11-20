@@ -75,4 +75,30 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await expect(shape(second, 9)).toBeVisible()
   await capture("paste-undone")
   note("Undo cut brings 257.10 back, and one Undo paste takes it away again; 257.9 stays")
+
+  await page.goto(".")
+  await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/picture-png.pptx"))
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  const pictures = new URL(page.url()).pathname.replace(/^\/deck\//, "")
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", pictures)
+  await shape(first, 4).click()
+  await page.keyboard.press("ControlOrMeta+KeyC")
+  await page.goto(".")
+  await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/clean.pptx"))
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await expect(page).not.toHaveURL(new RegExp(pictures))
+  const clean = new URL(page.url()).pathname.replace(/^\/deck\//, "")
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", clean)
+  await page.locator("[data-slide-paint]").focus()
+  await page.keyboard.press("ControlOrMeta+KeyV")
+  await expect(shape(first, 3)).toBeVisible()
+  await capture("pasted-other-deck")
+  const added = async () =>
+    ((await post(deckRoutes.open, { deck: clean }, cookie)).json.register?.order ?? [])
+      .filter((command) => command.slide === "element-add" && command.pasted !== undefined)
+      .map((command) => [command.element.node, command.pasted.media.length])
+  await expect.poll(added, { timeout: 20_000 }).toEqual([["256.3", 1]])
+  note(
+    "the picture copied in picture-png.pptx pastes into clean.pptx as 256.3, an element-add carrying its markup and one image",
+  )
 }
