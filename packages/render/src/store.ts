@@ -39,6 +39,9 @@ export type PaintStore = {
   readonly placeRotation: (id: ElementId, rotation: number | null) => void
   readonly gripRotation: (id: ElementId) => RotationGrip
   readonly boxSubscribe: (id: ElementId) => (listener: () => void) => () => void
+  readonly lay: (boxes: ReadonlyMap<ElementId, Box> | null) => void
+  readonly getLaid: (id: ElementId) => Box | null
+  readonly laidNow: () => ReadonlyMap<ElementId, Box> | null
   readonly placeFit: (id: ElementId, fit: MeasuredFit, painter: FitPainter) => void
   readonly getFit: (id: ElementId) => MeasuredFit | null
   readonly fits: () => ReadonlyMap<ElementId, MeasuredFit>
@@ -125,6 +128,7 @@ export function paintStore(): PaintStore {
   const slideSubscribeCache = new Map<SlideId, (listener: () => void) => () => void>()
   const boxes = new Map<ElementId, Box>()
   const boxListeners = new Map<ElementId, Set<() => void>>()
+  let laid: ReadonlyMap<ElementId, Box> | null = null
   const boxSubscribeCache = new Map<ElementId, (listener: () => void) => () => void>()
   const gripped = new Map<ElementId, { held: Box | null }>()
   const rotations = new Map<ElementId, number>()
@@ -292,6 +296,13 @@ export function paintStore(): PaintStore {
     placeRotation,
     gripRotation,
     boxSubscribe: (id) => subscribeTo(boxListeners, boxSubscribeCache, id),
+    lay: (next) => {
+      const touched = new Set([...(laid?.keys() ?? []), ...(next?.keys() ?? [])])
+      laid = next
+      for (const id of touched) notify(boxListeners, id)
+    },
+    getLaid: (id) => laid?.get(id) ?? null,
+    laidNow: () => laid,
     placeFit: (id, fit, painter) => {
       const kept = measured.get(id)
       if (painter === "thumbnail" && kept?.painter === "canvas" && kept.written === fit.written) return

@@ -72,4 +72,14 @@ describe("an auto layout frame while a side handle resizes it", () => {
     expect(liveBox(store, backdrop)).toMatchObject({ x: 100, y: 100, width: 320, height: 60 })
     expect(liveBox(store, child)).toMatchObject({ x: 100, y: 100, width: 80, height: 60 })
   })
+
+  it("paints a layer where the frame's live layout lays it, then follows the frame again once that layout is cleared", () => {
+    const store = paintStore()
+    store.placeBox(outer, { x: 80, y: 100, cx: 340, cy: 60 })
+    const laid = new Map([[leaf, { x: 200, y: 100, cx: 140, cy: 60 }]])
+    store.lay(laid)
+    expect(liveBox(store, child)).toMatchObject({ x: 200, y: 100, width: 140, height: 60 })
+    store.lay(null)
+    expect(liveBox(store, child)).toMatchObject({ x: 80, y: 100, width: 80, height: 60 })
+  })
 })

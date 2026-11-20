@@ -12,12 +12,18 @@ import { indexedRegister } from "@/indexed-register"
 import { resizedCorners } from "@/resized-corners"
 import { resizedSizing } from "@/resized-sizing"
 import { boxName } from "@/undo-names"
+import { relaidBoxes } from "@/editor/live-layout"
 
 type RestBox = (target: ElementId, box: Box | null) => void
 
 const movesInFlight = new WeakMap<PaintStore, Map<ElementId, Box>>()
 
-export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: readonly Moved[]) => Promise<void> {
+type BoxMoves = {
+  readonly onBoxes: (moved: readonly Moved[]) => Promise<void>
+  readonly relayout: (boxes: ReadonlyMap<ElementId, Box>) => ReadonlyMap<ElementId, Box> | null
+}
+
+export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
   const { store, movables, shapes, canvases, current, bound, shownParts, shownRegister, showEdited } = shown
   const { record } = undo
 
@@ -109,20 +115,9 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: reado
     const rest: RestBox = (target, box) => {
       if (isLatest(target)) paint.placeBox(target, box)
     }
-    const register = shownRegister.current
-    const framing = register === null ? null : indexedRegister(shownParts.current, register)
-    const painted = canvases.current(current)?.elements
-    const boxes = moved.flatMap(({ id: target, box }) => {
-      const element = movables.current.get(target)
-      const stored = storedGroupBox(framing, target, box) ?? storedBox(framing, target, box)
-      const shown = painted?.find((each) => each.id === target)
-      const corners = resizedCorners(shown, box)
-      const sizing = resizedSizing(shown, box)
-      const sides = framing === null ? null : resizedSides(framing, target, stored)
-      return element === undefined
-        ? []
-        : [{ box: stored, element, ...corners, ...sizing, ...(sides === null ? {} : { sides }) }]
-    })
+    const laid = paint.laidNow()
+    const framing = framingNow()
+    const boxes = commitsOf(framing, moved)
     const release = noteBoxes(
       id,
       boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
@@ -133,9 +128,41 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: reado
         release()
         for (const target of latest.keys()) if (isLatest(target)) inFlight.delete(target)
       })
+    if (laid !== null && paint.laidNow() === laid) paint.lay(null)
     if (stored === "stored") settle(await flushPending(connect, id))
     else if (stored !== null) settle(stored)
   }
 
-  return onBoxes
+  function framingNow(): Register | null {
+    const register = shownRegister.current
+    return register === null ? null : indexedRegister(shownParts.current, register)
+  }
+
+  function commitsOf(framing: Register | null, moved: readonly Moved[]): readonly BoxCommit[] {
+    const painted = canvases.current(current)?.elements
+    return moved.flatMap(({ id: target, box }) => {
+      const element = movables.current.get(target)
+      const stored = storedGroupBox(framing, target, box) ?? storedBox(framing, target, box)
+      const shown = painted?.find((each) => each.id === target)
+      const corners = resizedCorners(shown, box)
+      const sizing = resizedSizing(shown, box)
+      const sides = framing === null ? null : resizedSides(framing, target, stored)
+      return element === undefined
+        ? []
+        : [{ box: stored, element, ...corners, ...sizing, ...(sides === null ? {} : { sides }) }]
+    })
+  }
+
+  function relayout(boxes: ReadonlyMap<ElementId, Box>): ReadonlyMap<ElementId, Box> | null {
+    const framing = framingNow()
+    return relaidBoxes(
+      framing,
+      commitsOf(
+        framing,
+        [...boxes].map(([target, box]) => ({ id: target, box })),
+      ),
+    )
+  }
+
+  return { onBoxes, relayout }
 }

@@ -12,7 +12,16 @@ import {
 import { keptCorners, type ElementId } from "@airdesign/document"
 import { boxOf, memberAt } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
-import { restingBox, shownBox, useBox, useBoxes, useElement, useRotation, type BoxRead } from "./element-view.js"
+import {
+  restingBox,
+  shownBox,
+  useBox,
+  useBoxes,
+  useElement,
+  useLaid,
+  useRotation,
+  type BoxRead,
+} from "./element-view.js"
 import { textValue } from "./paragraph-edit.js"
 import { isBlank, nameOf } from "./text-lines.js"
 import { framedOutline, Passage, type TextEditKind } from "./passage.js"
@@ -186,7 +195,8 @@ function usePlaced(
   const carried = useBox(store, group?.id ?? id, read)
   const nested = useBoxes(store, holdersOf(element), read)
   const own = useBox(store, id, read)
-  const box = memberAt(element, own, useRotation(store, id), carried, nested)
+  const laid = useLaid(store, id, read)
+  const box = memberAt(element, own, useRotation(store, id), carried, nested, laid)
   const placed = box === element.box ? element : own === null ? { ...element, box } : roundedAt(element, box)
   return useFollowed(store, placed, targets, read)
 }

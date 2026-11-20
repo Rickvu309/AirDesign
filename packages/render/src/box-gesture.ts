@@ -149,7 +149,9 @@ export function memberAt(
   rotation: number | null,
   carried: Box | null,
   nestedCarried: readonly (Box | null)[] = [],
+  laid: Box | null = null,
 ): PaintBox | null {
+  if (laid !== null) return ownBox(element, laid, rotation)
   const placed = ownBox(element, own, rotation)
   const group = element.group
   if (group === undefined || (own !== null && element.movable === true && group.frame === undefined)) return placed

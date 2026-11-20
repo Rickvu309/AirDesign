@@ -64,7 +64,11 @@ type Mounted = {
   readonly flips: (readonly FlippedLayer[])[]
 }
 
-async function mounted(elements: readonly CanvasElement[], editing = false): Promise<Mounted> {
+async function mounted(
+  elements: readonly CanvasElement[],
+  editing = false,
+  onRelayout?: (boxes: ReadonlyMap<ElementId, Box>) => ReadonlyMap<ElementId, Box> | null,
+): Promise<Mounted> {
   const store = paintStore()
   for (const each of elements) {
     if (each.id !== null)
@@ -88,6 +92,7 @@ async function mounted(elements: readonly CanvasElement[], editing = false): Pro
         onBoxes: (moved) => boxes.push(moved.map((each) => [each.id, each.box])),
         onRotate: (turned) => turns.push(turned),
         onFlip: (flipped) => flips.push(flipped),
+        ...(onRelayout === undefined ? {} : { onRelayout }),
       }),
     )
   })
@@ -151,6 +156,26 @@ describe("SlideCanvas transform gestures", () => {
     await pointer(host.ownerDocument, "pointerup", 350, 220)
     expect(host.querySelector("[data-transform-hud]")).toBeNull()
     expect(boxes).toEqual([[[id, { ...start, cx: start.cx + 762_000 }]]])
+  })
+
+  it("lays the frame's live layout while a side handle resizes, and asks for none while a layer moves", async () => {
+    const sibling = elementId("256.9")
+    const asked: ReadonlyMap<ElementId, Box>[] = []
+    const relayout = (boxes: ReadonlyMap<ElementId, Box>) => {
+      asked.push(boxes)
+      return new Map([[sibling, { x: 1, y: 2, cx: 3, cy: 4 }]])
+    }
+    const { host, store } = await mounted([element(id)], false, relayout)
+    await pointer(frameOf(host), "pointerdown", 150, 150)
+    await pointer(host.ownerDocument, "pointermove", 180, 150)
+    await pointer(host.ownerDocument, "pointerup", 180, 150)
+    expect(asked).toEqual([])
+    await pointer(grip(host, "right"), "pointerdown", 330, 150)
+    await pointer(host.ownerDocument, "pointermove", 380, 150)
+    expect(asked.length).toBeGreaterThan(0)
+    expect(store.getLaid(sibling)).toEqual({ x: 1, y: 2, cx: 3, cy: 4 })
+    await keyEvent(frameOf(host), "keydown", { key: "Escape" })
+    expect(store.laidNow()).toBeNull()
   })
 
   it("updates Shift and Alt modifiers dynamically mid-drag during resize", async () => {
