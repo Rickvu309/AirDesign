@@ -121,7 +121,7 @@ if (!ranWhen("browser", true).includes("browser-tests"))
   throw new Error("the browser part on ci lost the browser tests")
 if (ranWhen("scripts", true).includes("browser-tests"))
   throw new Error("the scripts part runs browser tests beside the site build and the script tests")
-for (const name of everyStep.filter((step) => step !== "browser-tests" && step !== "design-findings")) {
+for (const name of everyStep.filter((step) => !["browser-build", "browser-tests", "design-findings"].includes(step))) {
   if (!ranWhen("all", false).includes(name)) throw new Error(`a local check skips ${name}`)
 }
 if (stagesFor("design", false).length !== 1) throw new Error("an emptied stage was kept")
@@ -208,12 +208,12 @@ const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\
 for (const current of [1, 2, 3]) {
   if (browserRun("browser", { current, total: 3 }) !== `test:browser ${exceptDesignScans} --shard=${current}/3`)
     throw new Error(`shard ${current} does not run its share of the browser tests outside the design scans`)
-  if (ranWhen("browser", true).join() !== "test-imports,browser-tests")
+  if (ranWhen("browser", true).join() !== "test-imports,browser-build,browser-tests")
     throw new Error(`shard ${current} must run only its share of the browser tests`)
 }
 if (browserRun("design") !== `test:browser ${designScans.join(" ")}`)
   throw new Error("the design part must run the design scans and no other browser test")
-if (ranWhen("design", true).join() !== "test-imports,browser-tests")
+if (ranWhen("design", true).join() !== "test-imports,browser-build,browser-tests")
   throw new Error("a design shard runs the design scans and leaves judging them to the findings part")
 for (const current of [1, 2, 3]) {
   const step = browserStep("design", { current, total: 3 })
@@ -350,7 +350,7 @@ writeFileSync(
 )
 const slowReader = await new Promise((resolve) => {
   const child = spawn(process.execPath, [fileURLToPath(new URL("./check.mjs", import.meta.url))], {
-    env: { ...process.env, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}` },
+    env: { ...process.env, CI: "false", PATH: `${fakeBin}${path.delimiter}${process.env.PATH}` },
   })
   let stderr = ""
   child.stderr.pause()

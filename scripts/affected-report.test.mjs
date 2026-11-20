@@ -176,7 +176,11 @@ try {
   assert.equal(step["continue-on-error"], true)
   assert.match(step.if, /always\(\)/)
   const action = parse(fs.readFileSync(path.join(root, ".github/actions/affected-report/action.yml"), "utf8"))
-  for (const step of action.runs.steps) assert.equal(step["continue-on-error"], true)
+  for (const step of action.runs.steps) {
+    assert.equal(step["continue-on-error"], true)
+    assert.ok(!("timeout-minutes" in step), "GitHub rejects timeout-minutes on composite action steps")
+  }
+  assert.match(action.runs.steps[0].run, /timeout --kill-after=5s 2m node scripts\/affected-report\.mjs\b/)
   const upload = action.runs.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"))
   assert.equal(upload.with["retention-days"], 7)
   assert.equal(upload.with.path, "test-results/affected-report.json")

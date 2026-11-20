@@ -6,7 +6,6 @@ import { onCi, workerLimit, workerOverrideName } from "./tests/browser-workers.t
 const checkout = createHash("sha256").update(process.cwd()).digest().readUInt16BE(0)
 const port = Number(process.env.AIRDESIGN_PORT || 4400 + (checkout % 600))
 const origin = `http://127.0.0.1:${port}`
-const built = process.env.AIRDESIGN_WEB_BUILT === "1"
 
 export default defineConfig({
   testDir: "tests/browser",
@@ -40,7 +39,9 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: `pnpm --workspace-concurrency=1 --filter @airdesign/api ${built ? "" : "--filter web "}build && node tests/browser/font-preview.mjs ${port}`,
+    command: `node tests/browser/font-preview.mjs ${port}`,
+    stdout: "pipe",
+    stderr: "pipe",
     url: origin,
     reuseExistingServer: false,
     timeout: 120_000,

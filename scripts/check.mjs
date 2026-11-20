@@ -43,6 +43,7 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "",
   try {
     const runLane = async (entry) => {
       for (const step of stepsOf(entry)) {
+        if (failed.includes(checkSteps.needs(step[0]))) continue
         await runStep(step)
         if (failed.includes(step[0]) && !all && !hung) return
       }
@@ -64,7 +65,7 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "",
   }
 }
 
-const groups = new Set()
+const groups = new Map()
 
 const stopGroup = (pid) => {
   try {
@@ -73,7 +74,7 @@ const stopGroup = (pid) => {
 }
 
 const stopEveryGroup = () => {
-  for (const pid of groups) stopGroup(pid)
+  for (const pid of groups.keys()) stopGroup(pid)
 }
 
 const stillRunning = (pid) =>
@@ -89,28 +90,33 @@ const hungLine = (name, command, args, limit, running) =>
 const print = (text, stream) => (stream === "error" ? process.stderr : process.stdout).write(text)
 
 export const stepRunner =
-  ({ limitOf, say = print, eventName = "", failedFiles = new Set() }) =>
+  ({ limitOf, say = print, eventName = "", failedFiles = new Set(), live = false }) =>
   ([name, command, args, extra]) =>
     new Promise((resolve) => {
       const limit = limitOf(name)
       const started = Date.now()
+      if (live) say(`start ${name}\n`)
       const child = spawn(command, args, {
         cwd: root,
         env: extra ? { ...process.env, ...extra } : process.env,
         detached: limit !== undefined,
       })
-      if (limit !== undefined && child.pid !== undefined) groups.add(child.pid)
+      if (limit !== undefined && child.pid !== undefined) groups.set(child.pid, name)
       let output = ""
       let hung = false
       let finished = false
-      child.stdout.on("data", (chunk) => (output += chunk))
-      child.stderr.on("data", (chunk) => (output += chunk))
+      const record = (chunk, stream) => {
+        output += chunk
+        if (live) say(chunk, stream)
+      }
+      child.stdout.setEncoding("utf8").on("data", (chunk) => record(chunk))
+      child.stderr.setEncoding("utf8").on("data", (chunk) => record(chunk, "error"))
       const timer =
         limit === undefined
           ? undefined
           : setTimeout(() => {
               hung = true
-              output += hungLine(name, command, args, limit, stillRunning(child.pid))
+              record(`\n${hungLine(name, command, args, limit, stillRunning(child.pid))}`, "error")
               stopGroup(child.pid)
               child.stdout.destroy()
               child.stderr.destroy()
@@ -123,9 +129,14 @@ export const stepRunner =
         groups.delete(child.pid)
         const seconds = ((Date.now() - started) / 1000).toFixed(1)
         if (status !== 0 || hung) {
-          say(`${output}${checkSteps.warns(name, eventName) && !hung ? "warn" : "fail"} ${name} ${seconds}s\n`, "error")
+          const prefix = live ? "" : output
+          const newline = output && !output.endsWith("\n") ? "\n" : ""
+          say(
+            `${prefix}${newline}${checkSteps.warns(name, eventName) && !hung ? "warn" : "fail"} ${name} ${seconds}s\n`,
+            "error",
+          )
         } else {
-          say(`${checkSteps.showsOutput(name) ? output : ""}ok ${name} ${seconds}s\n`)
+          say(`${!live && checkSteps.showsOutput(name) ? output : ""}ok ${name} ${seconds}s\n`)
         }
         if (status !== 0) for (const test of failedTests(output)) failedFiles.add(test.file)
         const hint = checkSteps.failureHint(name)
@@ -133,18 +144,26 @@ export const stepRunner =
         resolve(hung ? "hung" : status)
       }
       child.on("error", (error) => {
-        output += `${error.message}\n`
+        record(`${error.message}\n`, "error")
         finish(1)
       })
-      child.on("close", (status) => finish(status ?? 1))
+      child.on("close", (status, signal) => {
+        if (!hung && signal !== null) record(`\n${name} stopped by ${signal}\n`, "error")
+        finish(status ?? 1)
+      })
     })
 
 export const run = stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, false) })
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   process.on("exit", stopEveryGroup)
-  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"])
-    process.once(signal, () => process.exit(128 + os.constants.signals[signal]))
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+    process.once(signal, () => {
+      const running = [...groups.values()]
+      if (running.length > 0) fs.writeSync(2, `\ncheck stopped by ${signal} while running ${running.join(", ")}\n`)
+      process.exit(128 + os.constants.signals[signal])
+    })
+  }
   const ci = onCi(process.env)
   const eventName = process.env.GITHUB_EVENT_NAME
   const part = partOf(process.argv)
@@ -162,7 +181,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       all: process.argv.includes("--all"),
       tree: checkedTree,
       failedFiles,
-      run: stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, ci), eventName, failedFiles }),
+      run: stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, ci), eventName, failedFiles, live: ci }),
       lock: async () => {
         const release = await takeMachineLock()
         checkStarted = Date.now()

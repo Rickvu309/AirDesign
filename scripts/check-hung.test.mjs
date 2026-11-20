@@ -42,6 +42,28 @@ const lock = () => takeMachineLock({ folder, env: oneSlot(), say: () => {} })
 const node = (name, code) => [name, process.execPath, ["-e", code]]
 const forever = "setInterval(() => {}, 1000)"
 
+const killed = []
+const killedStatus = await within(
+  stepRunner({
+    limitOf: () => 5,
+    live: true,
+    say: (line) => {
+      killed.push(line)
+      const pid = Number(/slide-grid is running in (\d+)\n/.exec(line)?.[1])
+      if (pid && killed[0]?.startsWith("start browser-tests")) process.kill(pid, "SIGKILL")
+    },
+  })(node("browser-tests", 'console.log("slide-grid is running in " + process.pid); ' + forever)),
+  15,
+  "check never reported the killed browser step",
+)
+const killedReport = killed.join("")
+if (
+  killedStatus !== 1 ||
+  !/start browser-tests[^]*slide-grid is running in \d+\n[^]*SIGKILL[^]*fail browser-tests/.test(killedReport)
+) {
+  fail(`check must print step output while the child still runs and name the signal that killed it:\n${killedReport}`)
+}
+
 const stuck = `const { spawn } = require("node:child_process")
 const left = spawn(process.execPath, ["-e", ${JSON.stringify(forever)}], { stdio: "inherit" })
 console.log("left behind " + left.pid)
@@ -79,8 +101,11 @@ await within(
 )
 if (next.length > 0) fail(`the next check waited for a slot: ${next.join(" ")}`)
 
-if (checkSteps.stepLimit("unit-tests", true) !== undefined || checkSteps.stepLimit("lint", true) !== undefined)
-  fail("ci has its own job time limit and no slot to hold, so check sets no step limit there")
+for (const name of ["browser-build", "browser-tests", "unit-tests", "lint"]) {
+  const limit = checkSteps.stepLimit(name, true)
+  if (!Number.isFinite(limit) || limit >= 30 * 60)
+    fail(`${name} must diagnose its timeout before the ci job's 30-minute limit`)
+}
 if (checkSteps.stepLimit("unit-tests", false) < 600 || checkSteps.stepLimit("lint", false) < 400)
   fail("a step limit is below the slowest step seen on a loaded machine: unit-tests took 430 s, the others 310 s")
 
