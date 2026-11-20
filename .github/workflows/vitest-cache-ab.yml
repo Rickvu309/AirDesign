@@ -22,9 +22,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/tla
       - uses: ./.github/actions/postgres
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/spec-results
+          key: spec-results-${{ hashFiles('specs/**') }}
+          restore-keys: spec-results-
       - env:
           CI: "true"
           AIRDESIGN_REPLAY_ONLY: "1"
+          AIRDESIGN_SPEC_CACHE: /home/runner/.cache/airdesign/spec-results
         run: |
           nproc
           for round in 1 2; do
