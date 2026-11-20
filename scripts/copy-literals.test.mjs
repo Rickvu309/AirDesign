@@ -82,6 +82,31 @@ try {
   assert.match(scanCopyLiterals(repo).faults[0], /Import unavailableConnect.body/)
   write(".agents/skills/verify-airdesign/look/states/replay.mjs", "page.getByText(unavailableConnect.body)")
   assert.deepEqual(scanCopyLiterals(repo).faults, [])
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Move to the new copy")
+  git("update-ref", "refs/remotes/origin/main", "HEAD")
+  for (let each = 0; each < 20; each++) write(`tests/browser/unchanged-${String(each)}.spec.ts`, "page.getByText(`a`)")
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Add unchanged specs")
+  git("update-ref", "refs/remotes/origin/main", "HEAD")
+  write("tests/browser/changed.spec.ts", 'page.getByText("Try again in a moment.")')
+  const shim = path.join(repo, "..", `git-shim-${path.basename(repo)}`)
+  const calls = path.join(shim, "calls")
+  fs.mkdirSync(shim)
+  const realGit = execFileSync("which", ["git"], { encoding: "utf8" }).trim()
+  fs.writeFileSync(path.join(shim, "git"), `#!/bin/sh\necho x >> "${calls}"\nexec "${realGit}" "$@"\n`, { mode: 0o755 })
+  const searchPath = process.env.PATH
+  process.env.PATH = `${shim}${path.delimiter}${searchPath}`
+  try {
+    const scanned = scanCopyLiterals(repo)
+    assert.match(scanned.faults[0], /changed\.spec\.ts/)
+    assert.equal(scanned.faults.length, 1)
+    const forks = fs.readFileSync(calls, "utf8").trim().split("\n").length
+    assert.ok(forks <= 8, `the scan started git ${String(forks)} times; it must not start git once per tested file`)
+  } finally {
+    process.env.PATH = searchPath
+    fs.rmSync(shim, { recursive: true, force: true })
+  }
 } finally {
   fs.rmSync(repo, { recursive: true, force: true })
 }

@@ -196,7 +196,7 @@ const rows = [
     name: "sweep-list",
     kind: "report",
     command: "node",
-    args: ["scripts/sweep.mjs"],
+    args: ["scripts/sweep.mjs", "--at-most-every=30"],
     gate: { order: 14 },
     showOnSuccess: true,
   },

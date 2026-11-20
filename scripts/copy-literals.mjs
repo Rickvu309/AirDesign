@@ -95,7 +95,12 @@ const at = (root, tree, file) => {
 
 export const scanCopyLiterals = (root) => {
   const base = git(root, ["merge-base", "HEAD", "origin/main"]).trim()
-  const files = git(root, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean)
+  const listed = (args) => git(root, args).split("\0").filter(Boolean)
+  const files = listed(["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+  const changed = new Set([
+    ...listed(["diff", "--name-only", "--no-renames", "-z", base]),
+    ...listed(["ls-files", "--others", "--exclude-standard", "-z"]),
+  ])
   const copy = files.filter(
     (file) => /^apps\/web\/src\/copy\/.*\.ts$/.test(file) && fs.existsSync(path.join(root, file)),
   )
@@ -109,10 +114,9 @@ export const scanCopyLiterals = (root) => {
   const faults = []
   for (const file of files.filter(tested)) {
     if (!fs.existsSync(path.join(root, file))) continue
-    const before = at(root, base, file)
     const after = fs.readFileSync(path.join(root, file), "utf8")
     existing += literals(file, after).filter(({ value }) => words.has(value)).length
-    faults.push(...literalFaults(file, before, after, words))
+    if (changed.has(file)) faults.push(...literalFaults(file, at(root, base, file), after, words))
   }
   return { existing, faults }
 }

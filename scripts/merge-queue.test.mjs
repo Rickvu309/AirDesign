@@ -250,6 +250,25 @@ if (!never.state.message.includes("no check has started")) {
   throw new Error(`the wait does not say why it stopped: ${never.state.message}`)
 }
 
+const noQueue = { queue: false, enforcement: null }
+const queueWait = await waiting({ reads: [answer(), answer({ contexts: started })] })
+same("with a merge queue it says what it waits for before arming", queueWait.said, [
+  "waiting for a ci check to start on the head, so land arms auto-merge on a head with a check and the merge queue takes it once ci passes",
+])
+const freeWait = await waiting({ reads: [answer(noQueue), answer({ ...noQueue, contexts: started })] })
+same("with no merge queue it says land arms nothing and merges the head itself", freeWait.said, [
+  "waiting for a ci check to start on the head. main has no merge queue, so land arms no auto-merge: once ci passes it rechecks this head against the newest main and merges it itself",
+])
+const freeNever = await waiting({ reads: [answer(noQueue)] })
+same(
+  "with no merge queue the give-up message does not name the queue",
+  freeNever.state.message.includes("queue"),
+  false,
+)
+same("and still says no check started", freeNever.state.message.includes("no check has started"), true)
+const queueNever = await waiting({ reads: [answer()] })
+same("with a merge queue the give-up message names the queue", queueNever.state.message.includes("merge queue"), true)
+
 same("an armed pull request needs no wait", (await waiting({ reads: [answer({ armed: true })] })).reads(), 1)
 same(
   "a queued pull request needs no wait",
