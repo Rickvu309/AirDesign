@@ -24,6 +24,8 @@ const iconPaths = {
     '<path d="M3.5 20h17"/><rect x="5" y="5" width="3.5" height="12" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="5" width="3.5" height="12" rx=".6"/><path d="M5 11h3.5M10.25 8.5h3.5M15.5 12.5h3.5"/>',
   chartHorizontal:
     '<path d="M4 3.5v17"/><rect x="7" y="5" width="12" height="3.5" rx=".6"/><rect x="7" y="10.25" width="8.5" height="3.5" rx=".6"/><rect x="7" y="15.5" width="5" height="3.5" rx=".6"/>',
+  chartWaterfall:
+    '<path d="M3.5 20h17"/><rect x="4" y="10" width="3.2" height="7" rx=".5"/><rect x="8.3" y="5.5" width="3.2" height="4.5" rx=".5"/><rect x="12.6" y="5.5" width="3.2" height="3" rx=".5"/><rect x="16.9" y="8.5" width="3.2" height="8.5" rx=".5"/>',
   chartPie: '<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',

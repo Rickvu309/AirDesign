@@ -5,8 +5,16 @@ A layer that draws numbers as bars, a line or a pie. Figma Slides has no chart, 
 ## Language
 
 **chart kind**:
-How a chart draws its numbers: `bar` (columns side by side), `stacked` (each category's series piled in one column), `stacked100` (each column scaled to 100%), `horizontal` (bars laid sideways, the first category on top), `line` or `pie`. In a PowerPoint file the four bar kinds are one `c:barChart` with its `c:barDir` and `c:grouping`.
+How a chart draws its numbers: `bar` (columns side by side), `stacked` (each category's series piled in one column), `stacked100` (each column scaled to 100%), `horizontal` (bars laid sideways, the first category on top), `waterfall`, `line` or `pie`. In a PowerPoint file the bar kinds are one `c:barChart` with its `c:barDir` and `c:grouping`.
 _Avoid_: chart type (except as the Data section's label), chart style
+
+**waterfall**:
+A bridge from one number to another: each bar floats from the level the bars before it reached and shows a change, and a total stands on the axis at its own value and sets the level for the bars after it, as PowerPoint's Set as total does. A start, a subtotal and an end are each a total. In a PowerPoint file it is a stacked column whose first series, Base, has no fill, then Increase, Decrease and the totals, each with its own column in the embedded workbook.
+_Avoid_: bridge chart (in code), cascade chart
+
+**total bar**:
+A waterfall bar that stands on the axis, in the chart value's `totals`. Its label shows its value; a change's label shows a sign, +12 or -14.
+_Avoid_: sum bar, subtotal bar (a subtotal is a total in the middle)
 
 **chart value**:
 A chart's kind, its categories and its series of numbers, as JSON in the `chart.value` field. The Design panel's Data section edits it, and an agent sends it with `op: add, kind: chart`.

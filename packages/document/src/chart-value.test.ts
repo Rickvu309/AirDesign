@@ -22,7 +22,7 @@ describe("chart value", () => {
 
   it("reads back what it writes, and opens each kind with sample data a person replaces", () => {
     expect(readChartValue(writeChartValue(revenue))).toEqual(revenue)
-    expect(chartKinds).toEqual(["bar", "stacked", "stacked100", "horizontal", "line", "pie"])
+    expect(chartKinds).toEqual(["bar", "stacked", "stacked100", "horizontal", "waterfall", "line", "pie"])
     for (const kind of chartKinds) {
       const opened = openingChart(kind)
       expect(opened.kind).toBe(kind)
@@ -30,6 +30,21 @@ describe("chart value", () => {
       expect(readChartValue(writeChartValue(opened))).toEqual(opened)
     }
     expect(openingChart("pie").series).toHaveLength(1)
+  })
+
+  it("reads back a waterfall's totals, and refuses totals a waterfall cannot draw", () => {
+    const bridge = openingChart("waterfall")
+    expect(bridge.totals).toEqual([0, 5])
+    expect(bridge.series).toHaveLength(1)
+    expect(readChartValue(writeChartValue({ ...bridge, totals: [5, 0] }))?.totals).toEqual([0, 5])
+    const read = (value: object) => readChartValue(JSON.stringify(value))
+    expect(read({ ...bridge, totals: [6] })).toBeNull()
+    expect(read({ ...bridge, totals: [-1] })).toBeNull()
+    expect(read({ ...bridge, totals: [1.5] })).toBeNull()
+    expect(read({ ...bridge, totals: [2, 2] })).toBeNull()
+    expect(read({ ...bridge, totals: "0" })).toBeNull()
+    expect(read({ ...revenue, totals: [0] })).toBeNull()
+    expect(read({ ...bridge, totals: [] })).toEqual({ ...bridge, totals: [] })
   })
 
   it("refuses a value that a chart cannot be drawn from", () => {

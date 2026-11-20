@@ -1,8 +1,8 @@
 import { readColor, writtenColor, type Color } from "./color.js"
 import { record } from "./plain-object.js"
 
-export const chartKinds = ["bar", "stacked", "stacked100", "horizontal", "line", "pie"] as const
-export const chartBarKinds = ["bar", "stacked", "stacked100", "horizontal"] as const
+export const chartKinds = ["bar", "stacked", "stacked100", "horizontal", "waterfall", "line", "pie"] as const
+export const chartBarKinds = ["bar", "stacked", "stacked100", "horizontal", "waterfall"] as const
 export const chartLegends = ["bottom", "top", "right", "left", "none"] as const
 export const chartFormats = ["General", "#,##0", "#,##0.0", "#,##0.00", "0%", "0.0%", "$#,##0", "$#,##0.0"] as const
 export const chartLimits = { categories: 24, series: 8, label: 80, title: 120, gap: 500 } as const
@@ -30,10 +30,11 @@ export type ChartValue = {
   readonly legend?: ChartLegend
   readonly valueTitle?: string
   readonly categoryTitle?: string
+  readonly totals?: readonly number[]
 }
 
 const settingKeys = ["title", "labels", "axis", "gridlines", "gap", "legend", "valueTitle", "categoryTitle"] as const
-const chartKeys = ["kind", "categories", "series", ...settingKeys]
+const chartKeys = ["kind", "categories", "series", "totals", ...settingKeys]
 
 function knownKeys(value: Readonly<Record<string, unknown>>, required: readonly string[], known: readonly string[]) {
   const own = Object.keys(value)
@@ -81,7 +82,7 @@ const isGap = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= chartLimits.gap
 const isLegend = (value: unknown): value is ChartLegend => chartLegends.some((each) => each === value)
 
-type Settings = Omit<ChartValue, "kind" | "categories" | "series">
+type Settings = Omit<ChartValue, "kind" | "categories" | "series" | "totals">
 
 function readSettings(chart: Readonly<Record<string, unknown>>): Settings | null {
   const read = {
@@ -119,7 +120,17 @@ export function readChartValue(value: string): ChartValue | null {
     series.push(read)
   }
   const settings = readSettings(chart)
-  return settings === null ? null : { kind, categories, series, ...settings }
+  const totals = readTotals(chart.totals, kind, categories.length)
+  if (settings === null || totals === null) return null
+  return { kind, categories, series, ...settings, ...(totals === undefined ? {} : { totals }) }
+}
+
+function readTotals(raw: unknown, kind: ChartKind, count: number): readonly number[] | undefined | null {
+  if (raw === undefined) return undefined
+  if (kind !== "waterfall" || !Array.isArray(raw)) return null
+  const places = raw.filter((at): at is number => Number.isInteger(at) && at >= 0 && at < count)
+  if (places.length !== raw.length || new Set(places).size !== places.length) return null
+  return [...places].sort((left, right) => left - right)
 }
 
 export function writeChartValue(value: ChartValue): string {
@@ -135,6 +146,7 @@ export function writeChartValue(value: ChartValue): string {
       ...(each.color === undefined ? {} : { color: writtenColor(each.color) }),
       ...(each.colors === undefined ? {} : { colors: each.colors.map(writtenColor) }),
     })),
+    ...(value.totals === undefined ? {} : { totals: [...value.totals].sort((left, right) => left - right) }),
     ...settings,
   })
 }
@@ -152,12 +164,57 @@ export function chartBars(kind: ChartKind): kind is ChartBarKind {
 export function chartLegend(chart: ChartValue): Exclude<ChartLegend, "none"> | null {
   if (chart.legend === "none") return null
   if (chart.legend !== undefined) return chart.legend
+  if (chart.kind === "waterfall") return null
   return chart.series.length > 1 || chart.kind === "pie" ? "bottom" : null
+}
+
+export type WaterfallRole = "increase" | "decrease" | "total"
+export type WaterfallBar = { readonly start: number; readonly end: number; readonly role: WaterfallRole }
+
+export function waterfallBars(chart: ChartValue): readonly WaterfallBar[] {
+  const totals = new Set(chart.totals ?? [])
+  let level = 0
+  return (chart.series[0]?.values ?? []).map((value, at): WaterfallBar => {
+    if (totals.has(at)) {
+      level = value
+      return { start: 0, end: value, role: "total" }
+    }
+    const start = level
+    level = start + value
+    return { start, end: level, role: value < 0 ? "decrease" : "increase" }
+  })
+}
+
+const waterfallColors: Readonly<Record<WaterfallRole, Color>> = {
+  increase: {
+    scheme: "accent1",
+    transforms: [
+      { op: "lumMod", val: 60000 },
+      { op: "lumOff", val: 40000 },
+    ],
+  },
+  decrease: { scheme: "bg1", transforms: [{ op: "lumMod", val: 75000 }] },
+  total: { scheme: "tx2" },
+}
+
+export function waterfallColor(role: WaterfallRole): Color {
+  return waterfallColors[role]
 }
 
 const sampleCategories = ["Q1", "Q2", "Q3", "Q4"]
 
+const sampleBridge: ChartValue = {
+  kind: "waterfall",
+  categories: ["FY24", "Price", "Volume", "New markets", "Churn", "FY25"],
+  series: [{ name: "Revenue ($M)", values: [100, 12, 18, 9, -14, 125] }],
+  totals: [0, 5],
+  labels: "General",
+  axis: false,
+  gridlines: false,
+}
+
 export function openingChart(kind: ChartKind): ChartValue {
+  if (kind === "waterfall") return sampleBridge
   const first = { name: "Series 1", values: [4.1, 4.6, 5, 5.4] }
   const second = { name: "Series 2", values: [3.2, 3.5, 4.4, 4.9] }
   return { kind, categories: sampleCategories, series: kind === "pie" ? [first] : [first, second] }

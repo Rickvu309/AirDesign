@@ -94,7 +94,7 @@ export function patchedChart(
 ): boolean {
   const bytes = parts.get(chartPart)
   const before = bytes === undefined ? null : chartValueOf(bytes)
-  if (bytes === undefined || before === null || before.kind !== chart.kind) return false
+  if (bytes === undefined || before === null || before.kind !== chart.kind || chart.kind === "waterfall") return false
   const shaped = chartTree(shapePatched(bytes, before, chart) ?? undefined)
   const found = shaped === null ? null : dataEdits(shaped, chart)
   if (shaped === null || found === null) return false

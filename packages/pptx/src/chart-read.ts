@@ -11,10 +11,12 @@ import {
   type ChartSeries,
   type ChartValue,
   type Color,
+  waterfallColor,
+  type WaterfallRole,
 } from "@airdesign/document"
 import { chartBarKindOf } from "./chart-space.js"
 import { colorIn } from "./color-read.js"
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
 import { holderText, markupChildren, type MarkupChildren } from "./text-value-route.js"
 
 type Read = { readonly bytes: Uint8Array; readonly children: MarkupChildren }
@@ -164,13 +166,33 @@ function labelsOf(read: Read, group: MarkupElement, first: MarkupElement, kind: 
   const own = kid(read, holder, "c:numFmt")
   const linked = own === undefined || ["1", "true"].includes(attribute(own, "sourceLinked") ?? "0")
   const cache = kid(read, kid(read, kid(read, first, "c:val"), "c:numRef"), "c:numCache")
-  const code = linked ? holderText(read.bytes, kid(read, cache, "c:formatCode")) : attribute(own, "formatCode")
+  const written = attribute(own, "formatCode")
+  const code = linked
+    ? holderText(read.bytes, kid(read, cache, "c:formatCode"))
+    : written === undefined
+      ? undefined
+      : decodedXmlText(written)
   const known = chartFormats.find((format) => format === code)
   if (percent) return known?.includes("%") === true ? known : percentFormat
   return known ?? "General"
 }
 
 type Plain = { readonly group: MarkupElement; readonly kind: ChartKind }
+
+const bridgeSeries = 4
+const exact = 12
+
+function ordered(read: Read, group: MarkupElement): readonly MarkupElement[] {
+  return [...kids(read, group, "c:ser")].sort(
+    (left, right) => Number(value(read, left, "c:order") ?? "0") - Number(value(read, right, "c:order") ?? "0"),
+  )
+}
+
+function bridge(read: Read, group: MarkupElement): boolean {
+  const listed = ordered(read, group)
+  const base = kid(read, kid(read, listed[0], "c:spPr"), "a:noFill")
+  return listed.length === bridgeSeries && base !== undefined
+}
 
 function plainGroup(read: Read, plot: MarkupElement | undefined): Plain | null {
   const groups = [...families.keys(), ...otherFamilies].flatMap((kind) => kids(read, plot, kind))
@@ -180,6 +202,7 @@ function plainGroup(read: Read, plot: MarkupElement | undefined): Plain | null {
   if (group.kind === "c:barChart") {
     const grouping = value(read, group, "c:grouping") ?? "clustered"
     const kind = chartBarKindOf(value(read, group, "c:barDir"), grouping)
+    if (kind === "stacked" && bridge(read, group)) return { group, kind: "waterfall" }
     return kind === undefined ? null : { group, kind }
   }
   if (group.kind === "c:lineChart" && (value(read, group, "c:grouping") ?? "standard") !== "standard") return null
@@ -226,6 +249,65 @@ function settingsOf(
   }
 }
 
+function numbersOf(read: Read, series: MarkupElement | undefined, count: number): readonly (number | null)[] | null {
+  const texts = cached(read, kid(read, series, "c:val"))
+  if (texts === null || texts.length !== count) return null
+  const numbers = texts.map((text) => (text === undefined || text.trim() === "" ? null : Number(text)))
+  return numbers.every((number) => number === null || Number.isFinite(number)) ? numbers : null
+}
+
+type BridgePoint = { readonly value: number; readonly role: WaterfallRole }
+
+function bridgePoint(base: number, change: readonly (number | null)[]): BridgePoint | null {
+  const [increase, decrease, total] = change
+  if (total !== null && total !== undefined) return { value: total, role: "total" }
+  const shown = increase ?? decrease
+  if (shown === null || shown === undefined) return null
+  const span = Math.abs(shown) + (base * shown < 0 ? Math.abs(base) : 0)
+  const size = Number(span.toPrecision(exact))
+  return increase !== null && increase !== undefined
+    ? { value: size, role: "increase" }
+    : { value: -size, role: "decrease" }
+}
+
+function pointColor(read: Read, series: MarkupElement | undefined, at: number): Color | null {
+  const single = kids(read, series, "c:dPt").find((each) => value(read, each, "c:idx") === String(at))
+  return solidOf(read, kid(read, single, "c:spPr")) ?? solidOf(read, kid(read, series, "c:spPr"))
+}
+
+function bridgeOf(
+  read: Read,
+  found: { readonly chart: MarkupElement; readonly plot: MarkupElement; readonly group: MarkupElement },
+  categories: readonly string[],
+): ChartValue | null {
+  const listed = ordered(read, found.group)
+  const [base, ...changes] = listed.map((series) => numbersOf(read, series, categories.length))
+  if (base === null || base === undefined || changes.some((series) => series === null)) return null
+  const steps = categories.map((_, at) =>
+    bridgePoint(
+      base[at] ?? 0,
+      changes.map((series) => series?.[at] ?? null),
+    ),
+  )
+  if (steps.some((step) => step === null)) return null
+  const points = steps as readonly BridgePoint[]
+  const roles = ["increase", "decrease", "total"] as const
+  const colors = points.map(
+    (step, at) => pointColor(read, listed[1 + roles.indexOf(step.role)], at) ?? waterfallColor(step.role),
+  )
+  const automatic = colors.every((color, at) => sameColor(color, waterfallColor(points[at]?.role ?? "total")))
+  const totals = points.flatMap((step, at) => (step.role === "total" ? [at] : []))
+  const named = listed[bridgeSeries - 1]
+  if (named === undefined) return null
+  const series: ChartSeries = {
+    name: nameOf(read, named, 0),
+    values: points.map((step) => step.value),
+    ...(automatic ? {} : { colors }),
+  }
+  const settings = settingsOf(read, found, { kind: "waterfall", series: [series] }, named)
+  return { kind: "waterfall", categories, series: [series], totals, ...settings }
+}
+
 export function chartValueOf(bytes: Uint8Array): ChartValue | null {
   let elements: readonly MarkupElement[]
   try {
@@ -250,6 +332,7 @@ export function chartValueOf(bytes: Uint8Array): ChartValue | null {
   if (listed.some((item) => unsupportedSeriesParts.some((part) => kid(read, item, part) !== undefined))) return null
   const categories = cached(read, kid(read, first, "c:cat"))
   if (categories === null || categories.length === 0 || categories.some((text) => text === undefined)) return null
+  if (kind === "waterfall") return bridgeOf(read, { chart, plot, group }, categories as readonly string[])
   const series: ChartSeries[] = []
   for (const [at, item] of (kind === "pie" ? listed.slice(0, 1) : listed).entries()) {
     const values = cached(read, kid(read, item, "c:val"))?.map((text) =>

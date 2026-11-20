@@ -10,7 +10,9 @@ import {
   type Color,
 } from "@airdesign/document"
 import type { ChartInk, ChartInkSlot } from "./chart-ink.js"
-import { chartFormulas } from "./chart-workbook.js"
+import { chartNumber } from "./chart-number.js"
+import { waterfallSeries, type WaterfallSeries } from "./chart-waterfall.js"
+import { chartFormulas, chartTable } from "./chart-workbook.js"
 import { solidFillXml } from "./color-xml.js"
 import { xmlAttribute, xmlText } from "./shape-write.js"
 
@@ -36,6 +38,7 @@ const barLayouts: Readonly<Record<ChartBarKind, readonly [ChartBarDirection, Cha
   stacked: ["col", "stacked"],
   stacked100: ["col", "percentStacked"],
   horizontal: ["bar", "clustered"],
+  waterfall: ["col", "stacked"],
 }
 
 export function chartBarLayout(kind: ChartBarKind): readonly [ChartBarDirection, ChartGrouping] {
@@ -85,7 +88,7 @@ function count(length: number): string {
 type SeriesCells = { readonly categories: string; readonly name: string; readonly values: string }
 
 function cellsOf(chart: ChartValue, at: number): SeriesCells {
-  const formulas = chartFormulas(chart)
+  const formulas = chartFormulas(chartTable(chart))
   return { categories: formulas.categories, ...(formulas.series[at] ?? { name: "", values: "" }) }
 }
 
@@ -130,6 +133,74 @@ function barSeries(chart: ChartValue, ink: ChartInk): string {
       return `<c:ser>${named(series, at, cells)}<c:spPr>${seriesFillXml(series, at)}</c:spPr><c:invertIfNegative val="0"/>${barPointsXml(series)}${chartLabelsXml(chart, chartLabelInk(chart, at, ink))}${data(chart, series, cells)}</c:ser>`
     })
     .join("")
+}
+
+function cachedPoints(values: readonly (number | null)[]): string {
+  return values
+    .flatMap((value, at) => (value === null ? [] : [`<c:pt idx="${String(at)}"><c:v>${String(value)}</c:v></c:pt>`]))
+    .join("")
+}
+
+const signed = { increase: "+", decrease: "-", total: "" } as const
+
+function waterfallCode(code: string, role: keyof typeof signed): string {
+  const sign = signed[role]
+  return sign === "" ? code : `"${sign}"${code};"${sign}"${code}`
+}
+
+function waterfallLabel(
+  code: string,
+  role: keyof typeof signed,
+  slot: ChartInkSlot,
+  at: number | null,
+  text: string | null,
+): string {
+  const format = text === null ? waterfallCode(code, role) : `"${text}"`
+  const head = at === null ? "" : `<c:idx val="${String(at)}"/>`
+  const position = role === "total" ? "inEnd" : "ctr"
+  const tag = at === null ? "c:dLbls" : "c:dLbl"
+  return `<${tag}>${head}<c:numFmt formatCode="${xmlAttribute(format)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${textLook(labelSize, false, slot)}<c:dLblPos val="${position}"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></${tag}>`
+}
+
+function waterfallLabels(chart: ChartValue, series: WaterfallSeries, crossed: readonly boolean[], ink: ChartInk) {
+  const code = chart.labels
+  if (code === undefined || series.role === "base" || series.fill === null) return ""
+  const { role, fill } = series
+  const slot = ink(fill)
+  const singles = series.values.flatMap((value, at) => {
+    const own = series.points[at] ?? null
+    const span = series.spans[at] ?? null
+    const across = crossed[at] === true && span !== null
+    const pointSlot = own === null ? slot : ink(own)
+    if (value === null || (!across && pointSlot === slot)) return []
+    const words = across ? chartNumber(Math.abs(span), code) : null
+    const text = words === null ? null : `${signed[role]}${words}`
+    return [waterfallLabel(code, role, pointSlot, at, text)]
+  })
+  const shared = waterfallLabel(code, role, slot, null, null)
+  return shared.replace("<c:dLbls>", `<c:dLbls>${singles.join("")}`)
+}
+
+function waterfallPlot(chart: ChartValue, ink: ChartInk): string {
+  const plotted = waterfallSeries(chart)
+  const formulas = chartFormulas({ categories: chart.categories, series: plotted })
+  const [base] = plotted
+  const crossed = chart.categories.map((_, at) => base?.points[at] != null)
+  const length = count(chart.categories.length)
+  const categories = `<c:cat><c:strRef><c:f>${formulas.categories}</c:f><c:strCache>${length}${points(chart.categories)}</c:strCache></c:strRef></c:cat>`
+  const series = plotted
+    .map((each, at) => {
+      const cells = formulas.series[at] ?? { name: "", values: "" }
+      const head = `<c:idx val="${String(at)}"/><c:order val="${String(at)}"/><c:tx><c:strRef><c:f>${cells.name}</c:f><c:strCache>${count(1)}${points([each.name])}</c:strCache></c:strRef></c:tx>`
+      const fill = each.fill === null ? "<a:noFill/>" : solidFillXml(each.fill)
+      const singles = each.points
+        .flatMap((color, point) => (color === null ? [] : [barPointXml(point, solidFillXml(color))]))
+        .join("")
+      const values = `<c:val><c:numRef><c:f>${cells.values}</c:f><c:numCache><c:formatCode>General</c:formatCode>${length}${cachedPoints(each.values)}</c:numCache></c:numRef></c:val>`
+      return `<c:ser>${head}<c:spPr>${fill}</c:spPr><c:invertIfNegative val="0"/>${singles}${waterfallLabels(chart, each, crossed, ink)}${categories}${values}</c:ser>`
+    })
+    .join("")
+  return `<c:barChart><c:barDir val="col"/><c:grouping val="stacked"/><c:varyColors val="0"/>${series}<c:gapWidth val="${String(chart.gap ?? chartGap)}"/><c:overlap val="100"/>${axisIds}</c:barChart>${axesXml(chart)}`
 }
 
 function lineSeries(chart: ChartValue): string {
@@ -185,6 +256,7 @@ function axesXml(chart: ChartValue): string {
 const axisIds = '<c:axId val="111"/><c:axId val="222"/>'
 
 function plot(chart: ChartValue, ink: ChartInk): string {
+  if (chart.kind === "waterfall") return waterfallPlot(chart, ink)
   if (chart.kind === "pie")
     return `<c:pieChart><c:varyColors val="1"/>${pieSeries(chart)}<c:firstSliceAng val="0"/></c:pieChart>`
   if (chart.kind === "line")
@@ -203,7 +275,10 @@ function titleXml(chart: ChartValue): string {
 
 function legendXml(chart: ChartValue): string {
   const place = chartLegend(chart)
-  return place === null ? "" : `<c:legend><c:legendPos val="${legendPlaces[place]}"/><c:overlay val="0"/></c:legend>`
+  const hidden = chart.kind === "waterfall" ? '<c:legendEntry><c:idx val="0"/><c:delete val="1"/></c:legendEntry>' : ""
+  return place === null
+    ? ""
+    : `<c:legend><c:legendPos val="${legendPlaces[place]}"/>${hidden}<c:overlay val="0"/></c:legend>`
 }
 
 export function chartSpaceXml(chart: ChartValue, workbook: string, ink: ChartInk = plainInk): string {

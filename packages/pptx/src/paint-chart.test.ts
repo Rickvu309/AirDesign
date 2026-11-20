@@ -175,6 +175,15 @@ it("reads clustered columns with theme colours from the colour cycle, gridlines 
   ])
 })
 
+it("reads a label format whose quoted words the file escapes, as PowerPoint writes them", () => {
+  const signed = bars("col", "clustered").replace(
+    "<c:gapWidth",
+    '<c:dLbls><c:numFmt formatCode="&quot;+&quot;0&quot; pts&quot;" sourceLinked="0"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls><c:gapWidth',
+  )
+  const chart = chartIn(partsOf(space(signed)))
+  expect(chart?.series[0]?.labels.map((label) => label?.text)).toEqual(["+3 pts", "+5 pts"])
+})
+
 it("reads stacked bars and scales the axis to each category's total", () => {
   const chart = chartIn(partsOf(space(bars("bar", "stacked"))))
   expect(chart?.kind).toBe("bar")
