@@ -411,7 +411,21 @@ same(
 )
 
 const workflow = parse(fs.readFileSync(path.join(root, ".github/workflows/red-main-revert.yml"), "utf8"))
-same("dispatch requires a drill SHA", workflow.on.workflow_dispatch?.inputs.drill_sha.required, true)
+same("a dispatch names a drill SHA or a red run to rerun", Object.keys(workflow.on.workflow_dispatch?.inputs ?? {}), [
+  "drill_sha",
+  "rerun_run",
+])
+same(
+  "a drill reverts only from main, and only with a drill SHA",
+  workflow.jobs["red-main-revert"].if.includes("github.ref == 'refs/heads/main' && inputs.drill_sha != ''"),
+  true,
+)
+const rerunDrill = workflow.jobs["green-rerun-drill"]
+same(
+  "the green rerun drill gets no secret and no write permission, so any branch may dispatch it",
+  [JSON.stringify(rerunDrill).includes("secrets."), rerunDrill.permissions, rerunDrill.steps.at(-1).run],
+  [false, { actions: "read", contents: "read" }, 'node scripts/green-rerun-drill.mjs "$RERUN_RUN"'],
+)
 same("the bot runs when ci completes on main or on a revert branch", workflow.on.workflow_run, {
   workflows: ["ci"],
   types: ["completed"],
@@ -424,6 +438,13 @@ same("the workflow token gets only what the bot needs", workflow.permissions, {
   "pull-requests": "write",
 })
 const steps = workflow.jobs["red-main-revert"].steps
+same(
+  "the bot sets up Node, pnpm and Postgres for a green rerun",
+  steps
+    .filter((step) => step.uses !== undefined && !step.uses.startsWith("actions/checkout"))
+    .map((step) => step.uses.split("@")[0]),
+  ["pnpm/action-setup", "actions/setup-node", "./.github/actions/postgres"],
+)
 same(
   "it checks out main, never the code of a pull request",
   steps.filter((step) => step.uses?.startsWith("actions/checkout")).map((step) => step.with?.ref),

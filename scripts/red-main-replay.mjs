@@ -22,6 +22,10 @@ export const logs = {
   43769961904: [{ name: "check (main)", log: fixture("run-43769961904-check-main.log") }],
   43778249943: [{ name: "corpus", log: fixture("run-43778249943-corpus.log") }],
   44748130700: [{ name: "check (browser 8/8)", log: fixture("run-44748130700-check-browser-8.log") }],
+  44764886281: [
+    { name: "check (source 1/2)", log: fixture("run-44764886281-check-source-1.log") },
+    { name: "check (browser 1/8)", log: fixture("run-44764886281-check-browser-1.log") },
+  ],
 }
 const jobsOf = (run) => ({
   jobs: logs[run.id] ?? [],
@@ -37,8 +41,8 @@ export const upTo = (window, sha) => {
   const at = window.commits.findIndex((each) => each.startsWith(sha))
   return window.runs.filter((run) => window.commits.indexOf(run.sha) <= at)
 }
-export const decideIn = (window, sha, races = new Set(), runs = upTo(window, sha)) =>
-  decide({ runs, commits: window.commits, jobsOf, filesBetween: filesBetween(window.commits), races })
+export const decideIn = (window, sha, races = new Set(), runs = upTo(window, sha), rerun = undefined) =>
+  decide({ runs, commits: window.commits, jobsOf, filesBetween: filesBetween(window.commits), races, rerun })
 export const short = (sha) => sha?.slice(0, 7)
 export const culpritBody = (section) =>
   `## Summary\n\nSets type.\n\n## Before / after\n\n${section}\n\n## Merge Danger\n\n**Door:** two-way.\n`
@@ -83,6 +87,7 @@ export const io = (fake) => ({
     said.push(body)
     return ok()
   },
+  rerun: fake.rerun,
   lowersTheBar: () => false,
   failure: (run, read) => {
     failureReads.push({ run, read })

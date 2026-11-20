@@ -5,9 +5,11 @@ import { readLocal, verdict } from "./bar.mjs"
 import { countersignBody } from "./countersign.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { failureLines } from "./land-report.mjs"
-import { agentHeader, openIssues, recordRace } from "./race-issue.mjs"
+import { agentHeader, openIssues } from "./race-issue.mjs"
+import { recordEndedRaces, recordRun } from "./red-main-records.mjs"
 import { decide } from "./red-main-verdict.mjs"
-import { cleanRead, revertPull, runUrl, testExcerpt } from "./red-main-revert-report.mjs"
+import { cleanRead, revertPull, runUrl } from "./red-main-revert-report.mjs"
+import { greenRerun, rerunProcess } from "./green-rerun.mjs"
 import { drillBranch, finishDrill, removeDrillBranch } from "./red-main-drill.mjs"
 
 export const branchPrefix = "red-main/revert-"
@@ -248,42 +250,6 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
   return { failed: false }
 }
 
-const recordRun = ({ repository, io, judged, event }) => {
-  if (judged === undefined) return { failed: false }
-  if (judged.verdict === "unknown") {
-    io.redMain(
-      `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}, and the bot reverts nothing: ${judged.why}. A person or agent reads the log.`,
-    )
-    return { failed: false }
-  }
-  const log = io
-    .jobsOf(judged.run)
-    .jobs.map((job) => job.log)
-    .join("\n")
-  const urls = []
-  for (const each of judged.tests.filter((test) => test.verdict === "race")) {
-    const kept = recordRace({
-      gh: io.gh,
-      repository,
-      test: each.test,
-      excerpt: testExcerpt(log, each.test),
-      commit: event.sha,
-      seen: `on main in ci run ${runUrl(repository, event.id)}, where ${each.why}`,
-    })
-    if (kept.why !== undefined) {
-      io.redMain(
-        `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)} on a race, and the race could not be recorded: ${kept.why}`,
-      )
-      return { failed: true }
-    }
-    urls.push(kept.url)
-  }
-  io.redMain(
-    `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)} only on races, recorded in ${[...new Set(urls)].join(", ")}. The bot reverts nothing. The next push to main runs ci again, and if the same test fails there, the bot reverts the first red commit.`,
-  )
-  return { failed: false }
-}
-
 const closePull = ({ repository, io, number, comment }) =>
   io.gh(["pr", "close", String(number), "--repo", repository, "--comment", `${agentHeader}\n\n${comment}`])
 
@@ -297,27 +263,6 @@ const closeRevert = ({ repository, io, number, green, raceUrls = [] }) =>
         ? `ci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before this revert landed. Someone fixed forward, so the bot closes it.`
         : `ci passed on main at ${green.sha} (${runUrl(repository, green.id)}) before any later push run failed the same test again. The failure was a race, recorded in ${raceUrls.join(", ")}, so the bot closes this revert of a good commit.`,
   })
-
-const recordEndedRaces = ({ repository, io, races, green }) => {
-  const urls = []
-  for (const each of races) {
-    const log = io
-      .jobsOf(each.run)
-      .jobs.map((job) => job.log)
-      .join("\n")
-    const kept = recordRace({
-      gh: io.gh,
-      repository,
-      test: each.test,
-      excerpt: testExcerpt(log, each.test),
-      commit: each.run.sha,
-      seen: `on main in ci run ${runUrl(repository, each.run.id)}, where ${each.why}, and the next push run on main passed at ${short(green.sha)} in ${runUrl(repository, green.id)}`,
-    })
-    if (kept.why !== undefined) return { why: kept.why, urls }
-    urls.push(kept.url)
-  }
-  return { urls: [...new Set(urls)] }
-}
 
 const closeFixedForward = ({ repository, io, state, green, races }) => {
   const recorded = recordEndedRaces({ repository, io, races, green })
@@ -384,7 +329,7 @@ const followRevert = ({ repository, io, event, say }) => {
     closeRevert({ repository, io, number, green })
     return { failed: false }
   }
-  const decision = decide({ ...state, jobsOf: io.jobsOf, filesBetween: filesBetween(io) })
+  const decision = decide({ ...state, jobsOf: io.jobsOf, filesBetween: filesBetween(io), rerun: io.rerun })
   if (decision.action !== "revert" || decision.target !== target) {
     io.gh([
       "pr",
@@ -432,15 +377,13 @@ export const redMainBot = async ({ repository, event, io }) => {
   }
   const state = mainState({ repository, io })
   if (state.why !== undefined) return { said, failed: true, why: state.why }
-  const decision = decide({ ...state, jobsOf: bot.jobsOf, filesBetween: filesBetween(io) })
+  const decision = decide({ ...state, jobsOf: bot.jobsOf, filesBetween: filesBetween(io), rerun: io.rerun })
   if (decision.action === "green")
     return { said, ...closeFixedForward({ repository, io: bot, state, green: decision.green, races: decision.races }) }
   if (decision.action === "wait") return say(`waiting for ci run ${decision.run.id} on ${decision.run.sha}`)
   if (decision.action === "revert") return { said, ...openRevert({ repository, io: bot, decision, event, say }) }
   const judged = decision.judged.find((each) => each.run.id === event.id)
-  const recorded = ["race", "unknown"].includes(judged?.verdict)
-    ? recordRun({ repository, io: bot, judged, event })
-    : { failed: false }
+  const recorded = recordRun({ repository, io: bot, judged, event })
   if (decision.action !== "suspect") return { said, ...recorded }
   const opened = openRevert({ repository, io: bot, decision, event, say })
   return { said, failed: recorded.failed || opened.failed }
@@ -463,6 +406,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     git: runner("git"),
     remote: token === undefined ? undefined : `https://x-access-token:${token}@github.com/${repository}.git`,
     jobsOf: (run) => failedJobLogs({ repository, run, gh, reads: 3 }),
+    rerun: greenRerun({ root, run: rerunProcess, say: (line) => console.log(line) }),
     failure: (run, read) => failureLines({ repository, run, gh, read }).lines,
     lowersTheBar: () => {
       const read = readLocal(root)

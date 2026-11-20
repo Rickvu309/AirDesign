@@ -1,0 +1,57 @@
+2026-11-20T15:38:49.8217595Z 
+2026-11-20T15:38:49.8219156Z [31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+2026-11-20T15:38:49.8219608Z 
+2026-11-20T15:38:49.8223576Z [41m[1m FAIL [22m[49m [30m[42m unit [49m[39m packages/document/src/connector.property.test.ts[2m > [22mputs every bound end on its site, whatever the shapes' places, turns, flips and presets
+2026-11-20T15:38:49.8233809Z [31m[1mError[22m: Property failed after 91 tests
+2026-11-20T15:38:49.8234910Z { seed: -1896601759, path: "90:0:0:0:0:0:2:2:2:2:3:4:4:4:2:2:1:2:1:1:3:3:1:1:1", endOnFailure: true }
+2026-11-20T15:38:49.8237124Z Counterexample: [{"box":{"x":0,"y":0,"cx":1,"cy":1},"rot":0,"flipH":false,"flipV":false},"bentConnector3",{"box":{"x":0,"y":0,"cx":1,"cy":1},"rot":0,"flipH":false,"flipV":false},{"preset":"rect","site":0},{"box":{"x":0,"y":0,"cx":1,"cy":1},"rot":0,"flipH":false,"flipV":false},{"preset":"rect","site":0}]
+2026-11-20T15:38:49.8238923Z Shrunk 24 time(s)
+2026-11-20T15:38:49.8239270Z 
+2026-11-20T15:38:49.8240164Z Hint: Enable verbose mode in order to have the list of all failing values encountered during the run[39m
+2026-11-20T15:38:49.8241777Z [90m [2m❯[22m buildError node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2484:16[22m[39m
+2026-11-20T15:38:49.8243727Z [90m [2m❯[22m throwIfFailed node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2491:8[22m[39m
+2026-11-20T15:38:49.8245499Z [90m [2m❯[22m reportRunDetails node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2507:14[22m[39m
+2026-11-20T15:38:49.8247182Z [90m [2m❯[22m Module.assert node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2677:7[22m[39m
+2026-11-20T15:38:49.8248609Z [36m [2m❯[22m Proxy.<anonymous> scripts/property-count.mjs:[2m19:23[22m[39m
+2026-11-20T15:38:49.8251002Z     [90m 17|[39m       [35mreturn[39m ([33m...[39margs) [33m=>[39m {
+2026-11-20T15:38:49.8251857Z     [90m 18|[39m         propertyAsserts [33m+=[39m [34m1[39m
+2026-11-20T15:38:49.8252917Z     [90m 19|[39m         [35mreturn[39m target[33m.[39m[34massert[39m([33m...[39margs)
+2026-11-20T15:38:49.8253739Z     [90m   |[39m                       [31m^[39m
+2026-11-20T15:38:49.8254264Z     [90m 20|[39m       }
+2026-11-20T15:38:49.8254680Z     [90m 21|[39m     }
+2026-11-20T15:38:49.8255482Z [90m [2m❯[22m packages/document/src/connector.property.test.ts:[2m35:6[22m[39m
+2026-11-20T15:38:49.8255987Z 
+2026-11-20T15:38:49.8257147Z [31m[1mCaused by: AssertionError[22m: expected false to be true // Object.is equality[39m
+2026-11-20T15:38:49.8257648Z 
+2026-11-20T15:38:49.8257857Z [32m- Expected[39m
+2026-11-20T15:38:49.8258242Z [31m+ Received[39m
+2026-11-20T15:38:49.8258426Z 
+2026-11-20T15:38:49.8258578Z [32m- true[39m
+2026-11-20T15:38:49.8258923Z [31m+ false[39m
+2026-11-20T15:38:49.8259087Z 
+2026-11-20T15:38:49.8259692Z [36m [2m❯[22m packages/document/src/connector.property.test.ts:[2m50:74[22m[39m
+2026-11-20T15:38:49.8261212Z [90m [2m❯[22m Property.predicate node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m1370:99[22m[39m
+2026-11-20T15:38:49.8263003Z [90m [2m❯[22m Property.run node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m1339:24[22m[39m
+2026-11-20T15:38:49.8264693Z [90m [2m❯[22m propertyExecution node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2564:23[22m[39m
+2026-11-20T15:38:49.8266199Z [90m [2m❯[22m run node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2654:91[22m[39m
+2026-11-20T15:38:49.8267506Z [90m [2m❯[22m runIt node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2557:15[22m[39m
+2026-11-20T15:38:49.8269000Z [90m [2m❯[22m check node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2670:14[22m[39m
+2026-11-20T15:38:49.8270520Z [90m [2m❯[22m Module.assert node_modules/.pnpm/fast-check@4.10.2/node_modules/fast-check/lib/cjs/fast-check.js:[2m2675:14[22m[39m
+2026-11-20T15:38:49.8271626Z [90m [2m❯[22m Proxy.<anonymous> scripts/property-count.mjs:[2m19:23[22m[39m
+2026-11-20T15:38:49.8272678Z [90m [2m❯[22m packages/document/src/connector.property.test.ts:[2m35:6[22m[39m
+2026-11-20T15:38:49.8273126Z 
+2026-11-20T15:38:49.8273465Z [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+2026-11-20T15:38:49.8273756Z 
+2026-11-20T15:38:49.8283773Z 
+2026-11-20T15:38:49.8284572Z [2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m423 passed[39m[22m[90m (424)[39m
+2026-11-20T15:38:49.8295308Z [2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3528 passed[39m[22m[2m | [22m[36m4 expected fail[39m[90m (3533)[39m
+2026-11-20T15:38:49.8296090Z [2m   Start at [22m 15:36:38
+2026-11-20T15:38:49.8303108Z [2m   Duration [22m 131.27s[2m (tests 44%, import 28%, setup 11%, transform 10%, environment 7%, worker 1%)[22m
+2026-11-20T15:38:49.8327919Z 
+2026-11-20T15:38:50.0999125Z fail unit-tests 132.1s
+2026-11-20T15:38:50.1011288Z start metrics
+2026-11-20T15:38:50.1475830Z metric known-failures       now 6  goal 0  (unit shard 1/2: this shard's part, and the whole run is the sum of the shards)
+2026-11-20T15:38:50.1515837Z ok metrics 0.1s
+2026-11-20T15:38:50.1519919Z metric check-duration  now 132.1  limit 40
+2026-11-20T15:38:50.1520803Z check-duration is 132.1 and its limit is 40. Make it faster.
+2026-11-20T15:38:50.1521303Z failed: unit-tests

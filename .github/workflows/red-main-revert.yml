@@ -5,7 +5,11 @@ on:
     inputs:
       drill_sha:
         description: Full SHA of a recent commit on main to revert in a drill
-        required: true
+        required: false
+        type: string
+      rerun_run:
+        description: Id of a red ci run whose failed tests to rerun at its parent, reverting nothing
+        required: false
         type: string
   workflow_run:
     workflows:
@@ -30,7 +34,7 @@ jobs:
   red-main-revert:
     name: red-main-revert
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.drill_sha != '') ||
       github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -39,6 +43,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - uses: ./.github/actions/postgres
       - env:
           GH_TOKEN: ${{ github.token }}
           RED_MAIN_TOKEN: ${{ secrets.RED_MAIN_TOKEN }}
@@ -53,3 +63,27 @@ jobs:
           GIT_COMMITTER_NAME: Quan Vu
           GIT_COMMITTER_EMAIL: 193299474+quanvu309@users.noreply.github.com
         run: node scripts/red-main-revert.mjs
+
+  green-rerun-drill:
+    name: green-rerun-drill
+    if: github.event_name == 'workflow_dispatch' && inputs.rerun_run != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - uses: ./.github/actions/postgres
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RERUN_RUN: ${{ inputs.rerun_run }}
+        run: node scripts/green-rerun-drill.mjs "$RERUN_RUN"
