@@ -77,7 +77,7 @@ describe("the floor of a slide that was not in the file", () => {
     expect(currentBox(body)).toEqual(box)
   })
 
-  it("keeps the group rule on a clone of a grouped element", () => {
+  it("moves a clone of a grouped element inside its group", () => {
     const source = indexed().index?.elements.filter((element) => element.node.startsWith("257.")) ?? []
     const cloned = landed(indexed(), {
       slide: "clone",
@@ -89,11 +89,8 @@ describe("the floor of a slide that was not in the file", () => {
     const opened = decide(cloned, { command: "add", node: elementId("259.2"), floor: "", route: "" })
     if (opened.decision !== "apply") throw new Error(opened.code)
     expect(
-      decide(opened.register, { command: "person", property: "box", value: box, node: elementId("259.2") }),
-    ).toEqual({
-      decision: "refuse",
-      code: "group-box",
-    })
+      decide(opened.register, { command: "person", property: "box", value: box, node: elementId("259.2") }).decision,
+    ).toBe("apply")
   })
 
   it("reads no floor row that names another slide, twice the same element, or a bad value", () => {

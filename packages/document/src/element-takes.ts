@@ -43,7 +43,7 @@ const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept"
 export function takes(facts: ElementFacts): readonly FieldKey[] {
   const fields = kindTraits[facts.kind].flatMap((trait): readonly FieldKey[] => {
     if (trait === "layout") return facts.frame === undefined ? [] : fieldKeys(trait)
-    if (trait === "box" && facts.grouped) return facts.framed === "free" ? placed : facts.framed === "auto" ? sized : []
+    if (trait === "box" && facts.framed !== undefined) return facts.framed === "free" ? placed : sized
     return fieldKeys(trait)
   })
   return fields.filter(

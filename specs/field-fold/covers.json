@@ -16,20 +16,20 @@
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "d0038a7aaea5",
-      "blob": "360e11ee93579b7bd2d52cb9d60cbb3fc5d0b7f8"
+      "digest": "61bcb8247bb2",
+      "blob": "33a6b3e395731133c9aeb18aaee92b37cba0de6e"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "caa722abc1dd",
-      "blob": "8d92ad7d0dc4c6280072daf9b2987a9dc575cede"
+      "blob": "7ed527442e35b154bfa1538fcc341f2d47d6e9ef"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
       "digest": "a022f6949f23",
-      "blob": "24fcb6f4210eb285da143a4316d59ce92a822358"
+      "blob": "e7734f71603a19d5a05bed06fa87fd4e5bafd5db"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "9b8821614b0d",
-      "blob": "2d610fc1b75015fa92dd07b2d0ac2e2313cda5e5"
+      "digest": "37e0d9152e74",
+      "blob": "71fa67f3cd9e0bd1664f96f68e277c0df2faa6cb"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,14 +52,14 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
-      "digest": "b3eef95f3943",
-      "blob": "c53aeacbfa077037bb7b4b0fbe37006f1822de5f"
+      "digest": "61091889e5ad",
+      "blob": "b3d57873904416fbe0e667d6e0cfba82c15789fd"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
       "names": ["fieldsRead"],
-      "digest": "bc3867e41815",
-      "blob": "22c47198b47d5f19678fc6fd63fcebf5eb1739c2"
+      "digest": "62a43db2ba93",
+      "blob": "1ce531fbc5f00e510eaaf7895cb50927c5e08fce"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -76,14 +76,14 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "4a306c6a0aa1",
-      "blob": "c829291f01eec5edc491f896ae2832c78155a55d"
+      "digest": "eeadb61b13dd",
+      "blob": "6bb52ca44a92c1ce1458ce581ee71e1c7c1a0ff1"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "2d7343f385f6",
-      "blob": "20becda8c39e0f51c8c070cb52cf499dac856f0b"
+      "digest": "171974ea8bc1",
+      "blob": "520089baaf2411f64804ec028ba6bf3f146fc710"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
@@ -94,8 +94,8 @@
     {
       "file": "packages/pptx/src/trait-xml-fills.ts",
       "names": ["fillAlpha", "fadedFill", "fillsXml"],
-      "digest": "a0c6a44d0ffb",
-      "blob": "86a3879bffb73b2871a6115c32e2515359e9ba6f"
+      "digest": "e83bfce2e247",
+      "blob": "2135ff87785e6607d4ba349bd0ef520f53fbd14a"
     },
     {
       "file": "packages/pptx/src/alpha-codec.ts",

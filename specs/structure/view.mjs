@@ -31,8 +31,11 @@ export const step = (action, from) => {
   if (action === "UndoMoveGroup") return "the person undoes the group's move"
   if (action === "MoveChild") return "the person moves the child on the slide"
   if (action === "UndoMoveChild") return "the person undoes the child's move"
+  if (action === "MoveInGroup") return "the person steps into the group and moves the child inside it"
+  if (action === "UndoMoveInGroup") return "the person undoes the child's move inside the group"
   if (action === "Ungroup") return "the person ungroups, or undoes the group"
-  if (action === "Regroup") return "the person undoes the ungroup, or redoes the group"
+  if (action === "Regroup")
+    return "the person undoes the ungroup, or redoes the group, and the child goes back inside where it shows"
   if (action === "Wrap") return "the person wraps the child in an auto layout frame"
   if (action === "Pad") return "the person changes the frame's padding, which moves the child"
   if (action === "RemoveAutoLayout") return "the person removes auto layout"

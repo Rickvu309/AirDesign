@@ -115,11 +115,9 @@ describe("element group", () => {
     const opened = decide(boxed, { command: "add", node: a, floor: "", route: "" })
     if (opened.decision !== "apply") throw new Error(opened.code)
     expect(
-      decide(opened.register, { command: "person", property: "box", value: { x: 1, y: 1, cx: 200, cy: 100 }, node: a }),
-    ).toEqual({
-      decision: "refuse",
-      code: "group-box",
-    })
+      decide(opened.register, { command: "person", property: "box", value: { x: 1, y: 1, cx: 200, cy: 100 }, node: a })
+        .decision,
+    ).toBe("apply")
     expect(placeOf(moved(after, made, 600), made)?.box).toEqual({ x: 600, y: 100, cx: 400, cy: 300 })
     expect(nextElementId(after, slide, 3)).toBe("256.21")
   })

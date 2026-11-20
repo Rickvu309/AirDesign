@@ -275,7 +275,7 @@ export function groupFormed(state: Indexed, node: ElementId): boolean {
   return openingElement(state, node)?.kind === "group" && !elementGone(state, node)
 }
 
-function memberBounds(members: readonly Member[]): Box {
+function memberBounds(members: readonly Member[], scaleX = 1, scaleY = 1): Box {
   let left = Number.POSITIVE_INFINITY
   let top = Number.POSITIVE_INFINITY
   let right = Number.NEGATIVE_INFINITY
@@ -283,8 +283,9 @@ function memberBounds(members: readonly Member[]): Box {
   for (const member of members) {
     const { x, y, cx, cy } = member.box
     const radians = ((member.rot ?? 0) / 60_000) * (Math.PI / 180)
-    const halfWidth = (Math.abs(cx * Math.cos(radians)) + Math.abs(cy * Math.sin(radians))) / 2
-    const halfHeight = (Math.abs(cx * Math.sin(radians)) + Math.abs(cy * Math.cos(radians))) / 2
+    const [cos, sin] = [Math.abs(Math.cos(radians)), Math.abs(Math.sin(radians))]
+    const halfWidth = (cx * scaleX * cos + cy * scaleY * sin) / 2 / scaleX
+    const halfHeight = (cx * scaleX * sin + cy * scaleY * cos) / 2 / scaleY
     const middleX = x + cx / 2
     const middleY = y + cy / 2
     left = Math.min(left, middleX - halfWidth)
@@ -297,8 +298,8 @@ function memberBounds(members: readonly Member[]): Box {
   return { x, y, cx: Math.ceil(right - 1e-6) - x, cy: Math.ceil(bottom - 1e-6) - y }
 }
 
-export function groupBounds(members: readonly Member[]): Box {
-  return memberBounds(members)
+export function groupBounds(members: readonly Member[], scaleX = 1, scaleY = 1): Box {
+  return memberBounds(members, scaleX, scaleY)
 }
 
 function readTurn(raw: unknown): number | null | undefined {

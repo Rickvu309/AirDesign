@@ -13,9 +13,12 @@ import {
   madeGroup,
   openRegister,
   placeOf,
+  planChange,
   readLayout,
+  registerScope,
   regroupTurn,
   rootElement,
+  shownPlace,
   slideId,
   spotNow,
   throughGroup,
@@ -55,6 +58,8 @@ const treeActions = [
   "UndoMoveGroup",
   "MoveChild",
   "UndoMoveChild",
+  "MoveInGroup",
+  "UndoMoveInGroup",
   "Ungroup",
   "Regroup",
   "RunUndo",
@@ -226,6 +231,19 @@ function shifted(register: Register, node: typeof child, by: number): Register |
   return ran(register, [{ command: "person", v: 1, patch: { box: { x: { set: x + by } } }, node }])
 }
 
+function movedInside(register: Register, by: number): Register | null {
+  const shown = shownPlace(register, child)
+  const plan =
+    shown === null
+      ? null
+      : planChange({ target: { node: child }, box: { x: shown.box.x + by } }, registerScope(register))
+  if (plan === null || !plan.ok) return null
+  return ran(
+    register,
+    plan.rows.map(({ node, row }): Command => ({ command: "person", ...row, node })),
+  )
+}
+
 function slideCommand(edit: SlideCommand): Command {
   return { command: "slide", file, edit }
 }
@@ -309,6 +327,8 @@ function treeStep(register: Register, action: string): Register | null | "refuse
   if (action === "UndoMoveGroup") return shifted(register, group, -step)
   if (action === "MoveChild") return shifted(register, child, step)
   if (action === "UndoMoveChild") return shifted(register, child, -step)
+  if (action === "MoveInGroup") return movedInside(register, step)
+  if (action === "UndoMoveInGroup") return movedInside(register, -step)
   if (action === "Ungroup") {
     const turn = ungroupTurn(register, file, slide, group)
     return turn === null ? null : ran(register, turn)

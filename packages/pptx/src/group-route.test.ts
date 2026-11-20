@@ -4,6 +4,8 @@ import {
   groupOf,
   openRegister,
   slideId,
+  slideUndoable,
+  undoOf,
   ungroupTurn,
   type Command,
   type Register,
@@ -174,8 +176,11 @@ describe("group export", () => {
   it("puts an ungrouped file group back byte for byte when the ungroup is undone", () => {
     const turn = ungroupTurn(opened, file, slide, node(10))
     if (turn === null) throw new Error("ungroup")
-    const back = ran(ran(opened, turn), [slideCommand({ slide: "element-regroup", id: slide, node: node(10) })])
-    expect(decodeUtf8(exported(back).get(part) ?? new Uint8Array())).toBe(body)
+    const after = ran(opened, turn)
+    const undoable = slideUndoable(opened, file, { slide: "element-ungroup", id: slide, node: node(10) })
+    const undone = undoable === null ? null : undoOf(after, undoable)
+    if (undone === null || !undone.ok) throw new Error("undo")
+    expect(decodeUtf8(exported(ran(after, undone.commands)).get(part) ?? new Uint8Array())).toBe(body)
   })
 
   it("orders the slide before grouping, so the group sits where the person saw its front member", () => {

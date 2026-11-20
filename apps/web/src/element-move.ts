@@ -1,4 +1,4 @@
-import { currentBox, type Box, type ElementId, type Register } from "@airdesign/document"
+import { currentBox, followsGroups, type Box, type ElementId, type Register } from "@airdesign/document"
 import { applyRoute, type ReadShape } from "@airdesign/pptx"
 import { boxOf, type PaintBox } from "@airdesign/render"
 import { newSlideElement } from "@/exported-parts"
@@ -6,8 +6,8 @@ import { laidBox } from "@/frame-boxes"
 
 const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp", "p:grpSp"])
 
-export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape, framed = false): boolean {
-  if (!movableKinds.has(shape.kind) || shape.locked || (shape.grouped && !framed)) return false
+export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape, placed = false): boolean {
+  if (!movableKinds.has(shape.kind) || shape.locked || (shape.grouped && !placed)) return false
   const { part } = shape
   try {
     applyRoute(parts, { name: "move", part, shape: shape.shape, x: 0, y: 0 })
@@ -25,7 +25,8 @@ export function landedBox(register: Register | null, id: ElementId): Box | null 
   const moved = body?.landed.some(
     (row) => row.visible && (row.v === undefined ? row.property === "box" : row.patch.box !== undefined),
   )
-  return body === undefined || moved !== true ? null : currentBox(body)
+  if (register === null || body === undefined || moved !== true || followsGroups(register, id)) return null
+  return currentBox(body)
 }
 
 export function shownBox(register: Register | null, id: ElementId, file: Box | null): Box | null {

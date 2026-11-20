@@ -86,7 +86,7 @@ export const writeCases = async ({ pptx, entries, parts, original, directory }) 
   const files = []
   for (const entry of entries) {
     if (entry.write === undefined) continue
-    const rows = entry.write({ pptx, parts })
+    const rows = await entry.write({ pptx, parts })
     const names = rows.map((row) => row.name)
     if (JSON.stringify(names) !== JSON.stringify(entry.written))
       throw new Error(`${entry.file} wrote ${names.join(", ")}`)

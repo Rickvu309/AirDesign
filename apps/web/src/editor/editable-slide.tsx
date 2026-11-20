@@ -14,6 +14,7 @@ import { slideFrame } from "@/editor/revenue-slide"
 import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { framedOf, storedBox } from "@/frame-boxes"
+import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
 import { MeasuredSlides, owingSlides } from "@/editor/measured-slides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
@@ -129,7 +130,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
     const boxes = moved.flatMap(({ id: target, box }) => {
       const element = movables.current.get(target)
-      return element === undefined ? [] : [{ box: storedBox(framing, target, box), element }]
+      const stored = storedGroupBox(framing, target, box) ?? storedBox(framing, target, box)
+      return element === undefined ? [] : [{ box: stored, element }]
     })
     const release = noteBoxes(
       id,
@@ -154,7 +156,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             if (!kept.includes(target)) return []
             const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
             const shown = shownBox(opened.ok ? opened.register : null, target, file)
-            const before = shown === null ? null : storedBox(framing, target, shown)
+            const before =
+              storedGroupBoxNow(framing, target) ?? (shown === null ? null : storedBox(framing, target, shown))
             if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
               void deck.shown.showEdited(current)
             const name = before === null ? null : boxName(before, box)
@@ -173,6 +176,11 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         },
         refused,
       )
+      const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
+      if (grouped.length > 0) {
+        await deck.shown.showEdited(current)
+        for (const each of grouped) store.current.placeBox(each.id, null)
+      }
       settle(outcome)
     } finally {
       release()

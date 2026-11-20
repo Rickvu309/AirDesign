@@ -565,9 +565,9 @@ it("lets a slide shape move when the host can keep its box", () => {
   expect(canvas?.elements.map((each) => each.movable)).toEqual([true])
 })
 
-it("does not move a shape inside a group, since its box is in the group's space", () => {
+it("moves a shape inside a group when its slide says it can move there", () => {
   const canvas = slideCanvases(reader({ ...size, elements: [row({ group: "5" })] }), [movable])(0)
-  expect(canvas?.elements.map((each) => each.movable)).toEqual([false])
+  expect(canvas?.elements.map((each) => each.movable)).toEqual([true])
 })
 
 it("does not move a shape the reader gave no place", () => {

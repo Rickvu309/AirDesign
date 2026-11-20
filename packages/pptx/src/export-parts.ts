@@ -6,6 +6,7 @@ import {
   layoutNodes,
   netPatch,
   readLayout,
+  rebasedGroups,
   newSlideElement,
   rowOf,
   shapeOf,
@@ -26,7 +27,7 @@ import {
   type SlideNumbers,
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
-import { childSpace, placeFrame, shapePlace } from "./group-write.js"
+import { childSpace, fitGroup, placeFrame, shapePlace } from "./group-write.js"
 import { markFrame } from "./frame-tag.js"
 import { withFiledFrames } from "./filed-frames.js"
 import type { ShapeBox } from "./shape-write.js"
@@ -212,6 +213,17 @@ function laidOutFrame(parts: Parts, register: Register, node: ElementId): Parts 
   return markFrame(next, part, shapeOf(node).shape, layoutMarker(view))
 }
 
+function followedGroups(parts: Parts, register: Register): Parts {
+  let next = parts
+  for (const { node, frame } of rebasedGroups(register)) {
+    const slide = shapeOf(node).slide
+    const part = slidePart(next, slide)
+    if (part === null || slideGone(register, slide)) continue
+    next = new Map([...next, [part, fitGroup(partBytes(next, part), shapeOf(node).shape, frame)]])
+  }
+  return next
+}
+
 function laidOutFrames(parts: Parts, register: Register): Parts {
   let next = parts
   for (const node of layoutNodes(register)) next = laidOutFrame(next, register, node)
@@ -248,5 +260,6 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
           ? writtenSlide(next, node, body, opening)
           : writtenElement(next, shapes, node, body, opening, media, numbers)
   }
-  return dropUnusedTemplates(routedParts(parts, laidOutFrames(next, withFiledFrames(parts, register))), register)
+  const followed = followedGroups(next, register)
+  return dropUnusedTemplates(routedParts(parts, laidOutFrames(followed, withFiledFrames(parts, register))), register)
 }

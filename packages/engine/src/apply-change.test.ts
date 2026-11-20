@@ -16,7 +16,7 @@ import {
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { nodeBody } from "./call-fixtures.js"
-import { call, openDeck, type Deck } from "./index.js"
+import { call, openDeck, readDeckPage, type Deck } from "./index.js"
 
 const box = { x: 914_400, y: 457_200, cx: 1_828_800, cy: 914_400 }
 const size = { width: 12_192_000, height: 6_858_000 }
@@ -102,6 +102,66 @@ describe("edit_deck lands a set change as one row of trait fields on each elemen
     expect(readTextValue(currentValue(nodeBody(deck.register, elementId("259.2"))))).toEqual([
       { from: 0, runs: [{ from: 0, text: "Agenda", bold: true }] },
     ])
+  })
+})
+
+describe("edit_deck moves a layer inside a group by its place on the slide", () => {
+  const frame = { x: 0, y: 0, cx: 914_400, cy: 457_200 }
+  const group = element("258.7", { kind: "group", value: null, frame })
+  const child = element("258.8", { box: { x: 0, y: 0, cx: 457_200, cy: 457_200 }, grouped: true, group: group.node })
+  const grouped = () => {
+    const all = [...elements, group, child]
+    return started(indexed({ elements: all, total: all.length }), "258.8")
+  }
+
+  it("stores the move in the group's own space, as a person's move does", () => {
+    const deck = landed(edit(grouped(), { op: "set", target: "258.8", box: { x: 144 } }))
+    expect(currentBox(nodeBody(deck.register, elementId("258.8")))).toEqual({
+      x: 457_200,
+      y: 0,
+      cx: 457_200,
+      cy: 457_200,
+    })
+    expect(deck.register.nodes).not.toContain(elementId("258.7"))
+    const read = readDeckPage(deck, { runId: "run" }).elements
+    expect(read.find((each) => each.node === "258.8")?.box).toEqual({
+      x: 1_828_800,
+      y: 457_200,
+      cx: 914_400,
+      cy: 914_400,
+    })
+    expect(read.find((each) => each.node === "258.7")?.box).toEqual({
+      x: 1_828_800,
+      y: 457_200,
+      cx: 914_400,
+      cy: 914_400,
+    })
+  })
+
+  it("stores an agent's whole-box edit of a grouped layer in its group's space, and refuses one whose group is unknown", () => {
+    const value = { x: 1_828_800, y: 457_200, cx: 914_400, cy: 914_400 }
+    const deck = landed(edit(grouped(), { node: "258.8", readAt: 0, property: "box", value }))
+    expect(currentBox(nodeBody(deck.register, elementId("258.8")))).toEqual({
+      x: 457_200,
+      y: 0,
+      cx: 457_200,
+      cy: 457_200,
+    })
+    const lost = started(indexed(), "258.5")
+    expect(edit(lost, { node: "258.5", readAt: 0, property: "box", value })).toEqual({
+      ok: false,
+      refusal: "group-box",
+    })
+  })
+
+  it("reads a grouped layer's box where it sits on the slide", () => {
+    const read = readDeckPage(grouped(), { runId: "run" }).elements
+    expect(read.find((each) => each.node === "258.8")?.box).toEqual({
+      x: 914_400,
+      y: 457_200,
+      cx: 914_400,
+      cy: 914_400,
+    })
   })
 })
 

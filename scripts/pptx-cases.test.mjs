@@ -30,6 +30,7 @@ assert.deepEqual(
     "element-order.mjs",
     "frame.mjs",
     "gradient-kept.mjs",
+    "group-transform.mjs",
     "group.mjs",
     "layer-duplicate.mjs",
     "layer-join.mjs",
@@ -145,7 +146,11 @@ assert.match(caseProblems("w.mjs", { written: [], lines: () => [] }).join("\n"),
 assert.deepEqual(caseSpecs([writing, good]), good.specs)
 assert.deepEqual(caseExports([writing, good]), good.exports)
 assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
-assert.deepEqual(caseWritten(entries).slice(0, 2), ["written-section-split.pptx", "written-section-merge.pptx"])
+assert.deepEqual(caseWritten(entries).slice(0, 3), [
+  "written-group-transform.pptx",
+  "written-section-split.pptx",
+  "written-section-merge.pptx",
+])
 
 const out = scenario({})
 const original = new Map([["a", new Uint8Array([1])]])

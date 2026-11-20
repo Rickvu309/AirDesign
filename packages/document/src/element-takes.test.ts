@@ -117,7 +117,7 @@ describe("the server admits only the edits the device can write onto an element 
       ["256.4", "apply", "apply"],
       ["256.5", "apply", "apply"],
       ["256.6", "apply", "apply"],
-      ["256.7", "group-box", "group-box"],
+      ["256.7", "apply", "apply"],
       ["256.8", "apply", "apply"],
       ["256.9", "apply", "apply"],
       ["256.10", "kind", "kind"],
@@ -204,6 +204,7 @@ describe("the server admits only the edits the device can write onto an element 
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
     expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([
       ...named,
+      ...box,
       "geometry.shape",
       ...fill,
       ...border,

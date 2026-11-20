@@ -13,3 +13,7 @@ _Avoid_: turn knob, spinner
 **flip**:
 Mirroring a layer or multi-selection horizontally (`Shift+H`, `box.flipH`) or vertically (`Shift+V`, `box.flipV`).
 _Avoid_: mirror, invert
+
+**group space**:
+Where a group keeps its layers' boxes: PowerPoint's `a:chOff` and `a:chExt`, scaled and turned onto the group's box. A person and an agent see and send a grouped layer's box on the slide; it is stored in its group's space, and the group's box then fits its layers, as a Figma group fits its content.
+_Avoid_: child space, child coordinates, group coordinates

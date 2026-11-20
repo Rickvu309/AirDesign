@@ -123,14 +123,32 @@ export function ownBox(
   element: {
     readonly box: PaintBox | null
     readonly connection?: unknown
+    readonly movable?: boolean
     readonly group?: { readonly frame?: unknown }
   },
   box: Box | null,
   rotation: number | null = null,
 ) {
   if (element.connection !== undefined) return element.box
-  if (element.group !== undefined && element.group.frame === undefined) return element.box
+  if (element.group !== undefined && element.group.frame === undefined && element.movable !== true) return element.box
   return paintedAt(element.box, box, rotation)
+}
+
+export function memberAt(
+  element: {
+    readonly box: PaintBox | null
+    readonly connection?: unknown
+    readonly movable?: boolean
+    readonly group?: { readonly box: PaintBox | null; readonly frame?: unknown }
+  },
+  own: Box | null,
+  rotation: number | null,
+  carried: Box | null,
+): PaintBox | null {
+  const placed = ownBox(element, own, rotation)
+  const group = element.group
+  if (group === undefined || (own !== null && element.movable === true && group.frame === undefined)) return placed
+  return followed(placed, group.box, carried, group.frame === undefined)
 }
 
 export function followed(

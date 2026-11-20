@@ -4,20 +4,26 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "1853b09be074",
-      "blob": "f652cc555c0ce18335065cf7a36b9e334fb60f88"
+      "digest": "9274b3183f99",
+      "blob": "d7e04dca50a07ba025ff31ccea245dea8bea523f"
     },
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "7dfd4d996d0a",
-      "blob": "1a9a16b054638450a4ec09ff5d8c664b250a627e"
+      "digest": "201a4632d6e3",
+      "blob": "04cd11075db5c0156c7699bb7fdb00d0e6f5a214"
     },
     {
       "file": "packages/document/src/group-turn.ts",
       "names": ["*"],
-      "digest": "3cd61c33e2b5",
-      "blob": "815f05501953f3944a462fd9b708c867f32f5b29"
+      "digest": "92e1f5d13514",
+      "blob": "0435724ca69116373b2e80c38110d53fab455e12"
+    },
+    {
+      "file": "packages/document/src/group-space.ts",
+      "names": ["*"],
+      "digest": "5ec3333d9db6",
+      "blob": "82ee39b701bdbc3fa4368df29f24573ffc9ca2c5"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -35,19 +41,13 @@
       "file": "packages/document/src/group-join.ts",
       "names": ["joinTurn", "spotNow"],
       "digest": "79f9b266340e",
-      "blob": "fdd701fd29d489d8403d21faf809b25bed3ea1a9"
+      "blob": "e6d3c3ed40cff85fcfb9ad18329292fb7fc0014e"
     },
     {
       "file": "packages/document/src/group-refusal.ts",
       "names": ["*"],
       "digest": "cbe075875cd9",
       "blob": "e806aaf642cfe23ec697997aa2a151d75ba589ef"
-    },
-    {
-      "file": "packages/document/src/group-space.ts",
-      "names": ["*"],
-      "digest": "af6232295446",
-      "blob": "eb9295636778f6441e2851697725e172ac28d806"
     }
   ]
 }

@@ -1,4 +1,14 @@
-import { layoutNodes, opaque, readLayout, type Box, type ElementId, type Register } from "@airdesign/document"
+import {
+  floorNodes,
+  followsGroups,
+  layoutNodes,
+  opaque,
+  readLayout,
+  shownPlace,
+  type Box,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
 import type { ReadElement } from "./read-deck.js"
 
 type Frame = { readonly frame: "auto" | "free"; readonly backdrop: ElementId; readonly opacity: number }
@@ -24,6 +34,10 @@ export function readFrames(register: Register): ReadFrames {
     backdrops.add(view.backdrop)
     boxes.set(node, view.box)
     for (const child of view.children) boxes.set(child.node, child.box)
+  }
+  for (const node of [...(register.index?.elements.map((element) => element.node) ?? []), ...floorNodes(register)]) {
+    const shown = boxes.has(node) || !followsGroups(register, node) ? null : shownPlace(register, node)
+    if (shown !== null) boxes.set(node, shown.box)
   }
   const found = { boxes, frames, backdrops }
   read.set(register, found)
