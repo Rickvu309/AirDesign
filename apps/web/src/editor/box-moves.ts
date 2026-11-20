@@ -63,6 +63,7 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
       async (kept) => {
         const opened = await opening
         const beforeRegister = opened.ok ? indexedRegister(shownParts.current, opened.register) : framing
+        let repaints = false
         const steps = boxes.flatMap((commit) => {
           const { box, element } = commit
           const target = element.id
@@ -73,7 +74,7 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
             storedGroupBoxNow(beforeRegister, target) ??
             (shown === null ? null : storedBox(beforeRegister, target, shown))
           if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
-            void showEdited(current)
+            repaints = true
           const name = before === null ? null : boxName(before, box)
           return before === null || name === null
             ? []
@@ -89,12 +90,15 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
               ]
         })
         const [first] = steps
-        if (first === undefined) return
-        const name = steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
-        record({
-          name,
-          undoable: { steps: steps.map((each) => each.step) },
-        })
+        if (first !== undefined) {
+          const name =
+            steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
+          record({
+            name,
+            undoable: { steps: steps.map((each) => each.step) },
+          })
+        }
+        if (repaints) await showEdited(current)
       },
       refused,
     )

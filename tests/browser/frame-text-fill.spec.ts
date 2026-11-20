@@ -64,6 +64,20 @@ function shape(page: Page, id: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(id)}"]`)
 }
 
+type Laid = Window & { laidHeights?: number[] }
+
+async function watchHeights(locator: Locator) {
+  await locator.evaluate((card) => {
+    const heights: number[] = []
+    new ResizeObserver(() => heights.push(card.getBoundingClientRect().height)).observe(card)
+    Object.assign(window, { laidHeights: heights })
+  })
+}
+
+async function laidHeights(page: Page): Promise<number[]> {
+  return (await page.evaluate(() => (window as Laid).laidHeights ?? [])).map(Math.round)
+}
+
 async function placed(locator: Locator) {
   const box = await locator.boundingBox()
   if (box === null) throw new Error("not painted")
@@ -112,6 +126,7 @@ test("a text card that fills a column frame wraps to the frame's width and hugs 
   await expect.poll(async () => (await placed(top)).width).toBeLessThan(wide.width - 150)
   await expect.poll(async () => (await placed(top)).height).toBeGreaterThan(wide.height + 10)
   await expect.poll(follows).toBe(true)
+  await watchHeights(top)
   await page.mouse.up()
   const narrow = await placed(top)
   await expect.poll(follows).toBe(true)
@@ -124,6 +139,7 @@ test("a text card that fills a column frame wraps to the frame's width and hugs 
   await expect.poll(follows).toBe(true)
   await page.getByRole("button", { name: undoCopy.redoNamed.resize, exact: true }).click()
   await expect.poll(async () => Math.abs((await placed(top)).height - narrow.height)).toBeLessThan(2)
+  expect(await laidHeights(page)).toEqual([narrow.height, wide.height, narrow.height].map(Math.round))
   await page.reload()
   await decks.ready()
   await expect.poll(async () => Math.abs((await placed(top)).width - narrow.width)).toBeLessThan(2)
