@@ -15,6 +15,7 @@ import {
 } from "./table-cells.js"
 import { droppedSizes, placedSize, readSize, readSizes } from "./table-sizes.js"
 import { styledCell, type CellStyle } from "./table-style.js"
+import type { CellTexts } from "./table-text.js"
 import { readParagraphs, type TextValue } from "./text-value.js"
 
 export type TableRow = {
@@ -42,6 +43,7 @@ export type TableChange =
   | { readonly change: "style"; readonly cells: CellRange; readonly style: CellStyle }
   | { readonly change: "heights"; readonly heights: readonly number[] }
   | { readonly change: "clear"; readonly cells: CellRange }
+  | { readonly change: "paste"; readonly row: number; readonly column: number; readonly cells: CellTexts }
 
 const emptyCell: TextValue = [{ from: 0, runs: [] }]
 
@@ -275,7 +277,34 @@ function resized(value: TableValue, change: Extract<TableChange, { readonly chan
   return tableOf(rows, tableColumns(value), value.widths)
 }
 
+function pasted(value: TableValue, change: Extract<TableChange, { readonly change: "paste" }>): TableValue | null {
+  const { row, column, cells } = change
+  const across = Math.max(0, ...cells.map((each) => each.length))
+  const start = Number.isInteger(row) && Number.isInteger(column) && row >= 0 && column >= 0
+  if (!start || row >= value.rows.length || column >= cellCount(value) || cells.length === 0 || across === 0)
+    return null
+  if (row + cells.length > limits.tableRows || column + across > limits.tableColumns) return null
+  let next: TableValue | null = value
+  while (next !== null && next.rows.length < row + cells.length)
+    next = changedTable(next, { change: "row", row: next.rows.length - 1, place: "below" })
+  while (next !== null && cellCount(next) < column + across)
+    next = changedTable(next, { change: "column", column: cellCount(next) - 1, place: "after" })
+  cells.forEach((texts, down) =>
+    texts.forEach((text, right) => {
+      if (next !== null) next = changedTable(next, { change: "cell", row: row + down, column: column + right, text })
+    }),
+  )
+  return next
+}
+
+export function pastedTable(cells: CellTexts): TableValue | null {
+  const across = Math.max(0, ...cells.map((each) => each.length))
+  if (cells.length === 0 || across === 0 || cells.length > limits.tableRows || across > limits.tableColumns) return null
+  return pasted(openingTable(cells.length, across), { change: "paste", row: 0, column: 0, cells })
+}
+
 export function changedTable(value: TableValue, change: TableChange): TableValue | null {
+  if (change.change === "paste") return pasted(value, change)
   if (change.change === "column" || change.change === "remove-column") return changedColumns(value, change)
   if (change.change === "fill" || change.change === "border") return changedCells(value, change)
   if (change.change === "widths" || change.change === "heights") return resized(value, change)

@@ -1,12 +1,23 @@
 import {
   cellText,
   readTableValue,
+  tabbedHtml,
+  writeTabbed,
   type CellRange,
+  type CellTexts,
   type ElementId,
   type TableChange,
   type TableValue,
 } from "@airdesign/document"
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
 import { framedOutline, refusedInput } from "./passage.js"
@@ -19,6 +30,7 @@ import { cellTextFrame, TableArt, type Cell } from "./table-art.js"
 import { textLook, type Scaled } from "./text-look.js"
 import { leadOf } from "./selection.js"
 import { gestureFor } from "./gestures.js"
+import { manyCells, readPastedCells } from "./pasted-cells.js"
 import {
   cellHandles,
   edgeBars,
@@ -111,6 +123,7 @@ function CellText(props: {
   readonly onBlur: (holder: HTMLElement) => void
   readonly onText: (text: string) => void
   readonly onKey: (event: KeyboardEvent<HTMLDivElement>) => void
+  readonly onCells: (cells: CellTexts) => void
 }) {
   const { active, cell, scaled, shown, spot, steady } = props
   const holder = useRef<HTMLDivElement>(null)
@@ -173,6 +186,12 @@ function CellText(props: {
           props.onText(typed)
         }}
         onKeyDown={props.onKey}
+        onPaste={(event) => {
+          const cells = readPastedCells(event.clipboardData)
+          if (!manyCells(cells)) return
+          event.preventDefault()
+          props.onCells(cells)
+        }}
       >
         {active ? null : shown === plainText(text) && look !== null && text !== null ? (
           <SheetText text={text} look={{ ...look, body: { ...look.body, minHeight: undefined } }} />
@@ -325,6 +344,35 @@ function TableEdit(props: {
     moves.key(event, element)
   }
 
+  function scopeTexts(range: CellRange): CellTexts {
+    const [top, bottom] = range.rows
+    const [left, right] = range.columns
+    const kept = stored === null || stored === "moving" ? null : stored
+    return table.rows.slice(top, bottom + 1).map((row, down) =>
+      row.cells.slice(left, right + 1).map((cell, across) => {
+        const held = kept?.rows[top + down]?.cells[left + across]
+        return held === undefined ? plainText(cell.text) : cellText(held)
+      }),
+    )
+  }
+
+  function pastedIn(event: ClipboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget || !selected || scope === null) return
+    const cells = readPastedCells(event.clipboardData)
+    if (cells === null) return
+    event.preventDefault()
+    change({ change: "paste", row: scope.rows[0], column: scope.columns[0], cells })
+  }
+
+  function copiedOut(event: ClipboardEvent<HTMLDivElement>, cut: boolean) {
+    if (event.target !== event.currentTarget || !selected || scope === null) return
+    event.preventDefault()
+    const texts = scopeTexts(scope)
+    event.clipboardData.setData("text/plain", writeTabbed(texts))
+    event.clipboardData.setData("text/html", tabbedHtml(texts))
+    if (cut) change({ change: "clear", cells: scope })
+  }
+
   const region =
     pickedNow !== null || (cellsNow !== null && !(active !== null && sameSpot(cellsNow.to, active))) ? scope : null
   const handles: TableHandles | null =
@@ -362,6 +410,7 @@ function TableEdit(props: {
         }}
         onKey={(event) => key(spot, event)}
         onText={(text) => change({ change: "cell", row: at, column, text })}
+        onCells={(cells) => change({ change: "paste", row: at, column, cells })}
         scaled={scaled}
         shown={kept === undefined ? plainText(cell.text) : cellText(kept)}
         spot={spot}
@@ -387,6 +436,9 @@ function TableEdit(props: {
           tabIndex: 0,
           onPointerDown: pressed,
           onClick: clicked,
+          onPaste: pastedIn,
+          onCopy: (event) => copiedOut(event, false),
+          onCut: (event) => copiedOut(event, true),
           onDoubleClick: (event) => moves.doubleClick(event, element),
           onKeyDown: keyed,
           onFocus: () => moves.select(id),

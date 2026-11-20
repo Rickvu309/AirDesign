@@ -17,4 +17,7 @@ export const tableCopy = {
   insertColumn: (column: number) => `Add column after column ${String(column)}`,
   row: (row: number) => `Row ${String(row)}`,
   column: (column: number) => `Column ${String(column)}`,
+  pasteRefused: "Unable to paste these cells",
+  pasteTooLarge: (rows: number, columns: number, characters: number) =>
+    `Paste fewer cells. A table holds up to ${String(rows)} rows, ${String(columns)} columns and about ${characters.toLocaleString("en-US")} characters.`,
 } as const

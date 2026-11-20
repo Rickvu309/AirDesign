@@ -1,4 +1,12 @@
-import { type ChartKind, type ElementId, type Geometry, type Media, type Undoable } from "@airdesign/document"
+import {
+  limits,
+  type CellTexts,
+  type ChartKind,
+  type ElementId,
+  type Geometry,
+  type Media,
+  type Undoable,
+} from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { holdKeys, type CanvasSlide, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
@@ -24,6 +32,9 @@ import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
 import { placingText } from "@/editor/placed-text"
+
+import { commitPastedTable } from "@/pasted-table"
+import { tableCopy } from "@/copy/table-copy"
 
 import { addSlideNumbers } from "./slide-number-actions"
 
@@ -189,6 +200,24 @@ export function deckInserts(deck: InsertingDeck) {
     if (room !== null) void changeElement({ change: "table", index: current, size: room, ...size })
   }
 
+  function pasteTable(cells: CellTexts) {
+    const size = roomAt(current)
+    if (size === null) return
+    void lane(async (stored) => {
+      const opened = await connect(memoryRemote()).openDeck(id)
+      if (!opened.ok) return
+      const asked = { index: current, size, cells }
+      const added = recordAdded("paste-layer", stored, undefined, true)
+      const outcome = await commitPastedTable(id, shownParts.current, opened.register, asked, added)
+      if (outcome === "too-large")
+        toast.refusal(tableCopy.pasteRefused, {
+          id: "table-paste-refused",
+          description: tableCopy.pasteTooLarge(limits.tableRows, limits.tableColumns, limits.valueBytes),
+        })
+      settle(outcome === "too-large" ? "refused" : outcome)
+    })
+  }
+
   function addChart(kind: ChartKind) {
     const room = roomAt(current)
     if (room !== null) void changeElement({ change: "chart", kind, index: current, size: room })
@@ -220,6 +249,7 @@ export function deckInserts(deck: InsertingDeck) {
     duplicateLayers,
     pasteLayers,
     pasteFromDeck,
+    pasteTable,
     cutLayers,
     addText,
     placedText,

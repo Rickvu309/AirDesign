@@ -53,3 +53,4 @@ export {
 export { leadOf, noSelection, type Selection } from "./selection.js"
 export { bulletLabel } from "./bullet-label.js"
 export { fontsFor, installedFaces, waitForFonts } from "./font-load.js"
+export { manyCells, readPastedCells } from "./pasted-cells.js"

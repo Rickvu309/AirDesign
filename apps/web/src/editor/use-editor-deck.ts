@@ -100,7 +100,7 @@ export function useEditorDeck(id: string) {
   function chooseFillImage(node: ElementId) {
     pickPicture((file) => placeImage(node, file, true))
   }
-  const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, cutLayers } = inserts
+  const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, pasteTable, cutLayers } = inserts
   const tables = useTables(shown)
   const [tableCells, setTableCells] = useState<TableCells | null>(null)
   const onCells = useCallback((node: ElementId, cells: CellRange | null) => {
@@ -132,6 +132,7 @@ export function useEditorDeck(id: string) {
     duplicateLayers,
     pasteLayers,
     pasteFromDeck,
+    pasteTable,
     cutLayers,
     tables,
     tableCells,
