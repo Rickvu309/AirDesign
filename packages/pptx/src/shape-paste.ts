@@ -20,6 +20,7 @@ type Link = { readonly id: string; readonly type: string; readonly target: strin
 
 const emptyRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`
 const connectionEnds = new Set(["a:stCxn", "a:endCxn"])
+const bakedStand = "adm:baked"
 
 function valueOf(element: MarkupElement, name: string): string | null {
   return element.attributes.find((item) => item.name === name)?.value ?? null
@@ -120,8 +121,7 @@ function typeRow(types: Uint8Array, part: string): string | null {
 function carriedPart(next: Map<string, Uint8Array>, source: Parts, part: string) {
   if (next.has(part)) return
   const bytes = source.get(part)
-  if (bytes === undefined) throw new Error("rels")
-  next.set(part, bytes)
+  if (bytes !== undefined) next.set(part, bytes)
   const types = partBytes(next, contentTypesPart)
   if (typeRow(types, part) !== null) return
   const row = typeRow(partBytes(source, contentTypesPart), part)
@@ -158,6 +158,10 @@ function placedEdits(marks: readonly MarkupElement[], copies: ReadonlyMap<string
     if (element.kind === "p:cNvPr") {
       const edit = idEdit(element, element.id === null ? undefined : copies.get(element.id))
       if (edit !== null) edits.push(edit)
+      continue
+    }
+    if (element.kind === bakedStand) {
+      edits.push({ start: element.start, end: element.end, next: new Uint8Array() })
       continue
     }
     if (connectionEnds.has(element.kind)) {

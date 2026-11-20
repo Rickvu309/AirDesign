@@ -4,6 +4,7 @@ import { openedMasks } from "./mask-open.js"
 import { maskRuns } from "./mask-runs.js"
 import { bakedMask } from "./mask-stand.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { pasteShape } from "./shape-paste.js"
 
 const part = "ppt/slides/slide1.xml"
 const tags = `xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"`
@@ -130,5 +131,33 @@ describe("anything else masked exports as a picture of how it looks", () => {
     expect(text(baked)).toContain('name="Oval 2" hidden="1"')
     expect(text(openedMasks(baked))).not.toContain("hidden")
     expect(text(bakedMask(openedMasks(baked), part, "2", null))).toBe(text(baked))
+  })
+})
+
+describe("a mask group pasted onto another slide bakes its own stand there", () => {
+  const other = "ppt/slides/slide2.xml"
+  const otherRels = "ppt/slides/_rels/slide2.xml.rels"
+  const layout = rels
+    .replace('Id="rId2"', 'Id="rId1"')
+    .replace("/image", "/slideLayout")
+    .replace("../media/image1.png", "../slideLayouts/slideLayout1.xml")
+
+  it("leaves behind the stand its source slide cached, whose picture links only that slide holds", () => {
+    const parts = new Map(deck(group(`${oval("2", 1000, 1000, 2000)}${photo("3", 0, 0, 4000, 2000)}${label("4")}`)))
+    parts.set(other, encodeUtf8(`<p:sld ${tags}><p:cSld><p:spTree></p:spTree></p:cSld></p:sld>`))
+    parts.set(otherRels, encodeUtf8(layout))
+    const opened = openedMasks(bakedMask(parts, part, "2", png))
+    const ids = new Map([
+      ["2", 2],
+      ["3", 3],
+      ["4", 4],
+    ])
+    const pasted = pasteShape(opened, other, { source: opened, from: part, shape: "9", id: 9, ids })
+    expect(() => bakedMask(pasted, other, "2", null)).toThrow("mask-picture")
+    const baked = bakedMask(pasted, other, "2", png)
+    const links = [...decodeUtf8(baked.get(other)!).matchAll(/r:embed="(rId\d+)"/g)].map((found) => found[1])
+    const held = decodeUtf8(baked.get(otherRels)!)
+    expect(links.length).toBe(2)
+    for (const link of links) expect(held).toContain(`Id="${link ?? ""}"`)
   })
 })
