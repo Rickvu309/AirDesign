@@ -3,7 +3,7 @@ import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
 import type { Route } from "./server.js"
 
-type AnsweredName = Exclude<keyof typeof deckRoutes, "watch">
+type AnsweredName = Exclude<keyof typeof deckRoutes, "watch" | "findings">
 type Parsed<Name extends AnsweredName> = ReturnType<(typeof deckRoutes)[Name]["read"]>
 type Answer<Parsed> = (
   db: Sql,
@@ -28,6 +28,6 @@ export function answeredDeckRoutes(
     return { method: "POST", path: route.path, serve: serve(route.read, answers[name]) }
   }
   return Object.keys(deckRoutes)
-    .filter((name): name is AnsweredName => name !== "watch")
+    .filter((name): name is AnsweredName => name !== "watch" && name !== "findings")
     .map(row)
 }

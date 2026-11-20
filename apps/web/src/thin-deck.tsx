@@ -13,6 +13,7 @@ import { EditorShell } from "@/editor/editor-shell"
 import { editableSlide } from "@/editor/editable-slide"
 import { slideCommands } from "@/editor/slide-commands"
 import { useDeckOpen } from "@/editor/use-deck-open"
+import { useFindingsReport } from "@/editor/use-findings-report"
 import { useKeptPanel } from "@/editor/kept-panel"
 import { shownNotice } from "@/editor/use-deck-status"
 import { useDesignKeys } from "@/editor/design-keys"
@@ -49,6 +50,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [tone] = useState(toneLink)
   useDeckOpen(deck)
   useNetwork(deck)
+  useFindingsReport(id, deck.shown.shownParts, deck.openedDeck === id)
   const undoButtons = useUndoTurn(deck)
   const newer = useSyncExternalStore(watchNewer, storeNewer)
   const settled = useSettled()

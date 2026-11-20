@@ -68,6 +68,17 @@ function overflowOf(slide: string, element: ResolvedElement, laid: TextLayout, w
   }
 }
 
+export function elementOverflow(
+  slide: string,
+  element: ResolvedElement,
+  widths: FontWidths,
+): Finding | Unjudged | "box" | null {
+  if (element.text === null || !written(element.text)) return null
+  if (element.box === null) return "box"
+  const laid = layText(element.text, element.box, widths)
+  return typeof laid === "string" ? laid : overflowOf(slide, element, laid, widths)
+}
+
 function pastEdge(rect: Rect, width: number, height: number): number {
   return Math.max(0, -rect.x, rect.x + rect.w - width, -rect.y, rect.y + rect.h - height)
 }

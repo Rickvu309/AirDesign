@@ -10,6 +10,7 @@ import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Atta
 import { badTargets } from "./fuzz-target.js"
 import { storageFuzzGood } from "./storage-fuzz.js"
 import { deckListFuzzGood } from "./deck-list-fuzz.js"
+import { tabFuzzGood } from "./tab-fuzz.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
@@ -356,9 +357,9 @@ describe("hostile input over every route", () => {
           fields: { deck, batch: [{ value: "w", node: "258.7" }], once: "fuzzonce" },
         },
       ],
-      "POST /decks/watch": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck, cursor: null } }],
       ...deckListFuzzGood(deck),
       ...storageFuzzGood(deck),
+      ...tabFuzzGood(deck),
     }
   })
 

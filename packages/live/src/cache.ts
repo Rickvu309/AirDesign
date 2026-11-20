@@ -23,6 +23,7 @@ import { indexedGridOpening } from "./grid-opening.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, commitRefusal, keepCommitRefusal, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
+import { knownRevisions } from "./served-deck.js"
 import { slideBatch, slideChange, valueChange, type Enqueued } from "./deck-edit.js"
 import {
   adoptRows,
@@ -73,7 +74,6 @@ export type EnqueueResult<Painted = string> =
 type OpenOnceResult = { ok: true; index?: DeckIndex } | Extract<OpenResult, { ok: false }>
 
 const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenResult>>>()
-const knownByRemote = new WeakMap<Remote, Map<DeckId, number>>()
 
 const signedOut = { ok: false, refusal: "session" } as const
 
@@ -113,8 +113,7 @@ export function connect(remote: Remote, options: Options = {}) {
   const shelf = options.shelf ?? pageShelf()
   const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenResult>>()
   openingByRemote.set(remote, openingDecks)
-  const known = knownByRemote.get(remote) ?? new Map<DeckId, number>()
-  knownByRemote.set(remote, known)
+  const known = knownRevisions(remote)
 
   function forget(deck: DeckId, opening: Promise<OpenResult>) {
     if (openingDecks.get(deck) === opening) openingDecks.delete(deck)

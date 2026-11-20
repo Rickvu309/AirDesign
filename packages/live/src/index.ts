@@ -1,4 +1,5 @@
 export { connect, type FollowResult } from "./cache.js"
+export { knownRevision, servedDeck } from "./served-deck.js"
 export { watchUnsent } from "./held.js"
 export { fetchOriginal } from "./original.js"
 export { renameDeck } from "./deck-rename.js"

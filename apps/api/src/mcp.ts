@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { notifyKey, readDeckId, readNamedDeck, type DeckId } from "@airdesign/catalog"
+import { notifyKey, readDeckId, readNamedDeck, type DeckId, type FindingsReport } from "@airdesign/catalog"
 import { measureOwed } from "@airdesign/document"
 import { openDeck, ownedDecks, type Deck } from "@airdesign/engine"
 import {
@@ -27,6 +27,7 @@ import { keepMedia } from "./media.js"
 import type { OriginalStore } from "./original-store.js"
 import { admitCaller, refundCaller } from "./caller-log.js"
 import { readOwnedDecks } from "./deck-list.js"
+import type { DeckFindings } from "./deck-findings.js"
 import type { DeckListen } from "./listen.js"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved, readStoredOnce, uniqueOnce, writeRevision } from "./saved.js"
@@ -49,6 +50,7 @@ export type Measures = {
   readonly listen: Pick<DeckListen, "wait" | "ready">
   readonly following: (deck: string) => boolean
   readonly limit: number
+  readonly findings?: Pick<DeckFindings, "latest" | "wait">
 }
 
 type Saved = Awaited<ReturnType<typeof readSaved>>
@@ -94,6 +96,27 @@ async function fetchedImages(host: McpHost, session: Session, deck: DeckId, raw:
   for (const [address, image] of fetched) named.set(address, image)
   for (const address of wanted.slice(imagesPerCall)) named.set(address, { ok: false, refusal: "many" })
   session.images = named
+}
+
+async function freshFindings(
+  measures: Measures | undefined,
+  deck: DeckId,
+  revision: number,
+): Promise<FindingsReport | undefined> {
+  const findings = measures?.findings
+  if (measures === undefined || findings === undefined) return undefined
+  const behind = () => (findings.latest(deck)?.revision ?? revision) < revision
+  if (!behind() || !measures.following(deck)) return findings.latest(deck)
+  const until = AbortSignal.timeout(measures.limit)
+  while (behind() && !until.aborted) await findings.wait(deck, until)
+  return findings.latest(deck)
+}
+
+async function savedAt(db: Sql, deck: DeckId, email: string, revision: number): Promise<Deck | undefined> {
+  const saved = await readSaved(db, deck).catch(() => undefined)
+  const access = saved === undefined ? undefined : deckAccess(saved, email)
+  if (access?.ok !== true || access.saved.revision !== revision) return undefined
+  return { id: deck, revision, register: access.saved.register }
 }
 
 function mcpRequest(req: IncomingMessage, body: Buffer) {
@@ -151,7 +174,12 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       }
       loaded = { id: named.deck, revision: access.saved.revision, register: access.saved.register }
       storedIndex = access.saved.storedIndex
+      const findings =
+        name === "airdesign_read_deck" ? await freshFindings(host.measures, named.deck, loaded.revision) : undefined
+      if (findings !== undefined && findings.revision > loaded.revision)
+        loaded = (await savedAt(host.deck, named.deck, host.email, findings.revision)) ?? loaded
       session.deck = loaded
+      session.findings = findings
       dropGoneTurn(session, seen)
       if (name === "airdesign_edit_deck") await fetchedImages(host, session, named.deck, raw)
       if (session.once === undefined) return { ok: true }

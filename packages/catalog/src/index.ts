@@ -80,6 +80,7 @@ export { groupOps, readGroupChange, type WireGroup } from "./group-wire.js"
 export { readDiagramChange, type WireDiagram } from "./diagram-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
+export { readFindingsReport, type FindingsReport, type Overflow, type OverflowFinding } from "./findings-wire.js"
 export { slideEditCommand, type WireSlide } from "./slide-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"

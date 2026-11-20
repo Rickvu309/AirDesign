@@ -2,6 +2,7 @@ import { creditsRoutes } from "./credits-routes.js"
 import { unreachable } from "@airdesign/device"
 import { readRegister, refusals, type Register } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
+import { readFindingsReport } from "./findings-wire.js"
 import { readDeckIndex } from "./index-wire.js"
 import {
   readCapture,
@@ -201,6 +202,7 @@ export const deckRoutes = {
   mediaUpload: { path: "/decks/media/upload", read: readOriginalUpload, result: decode(uploadAnswer) },
   media: { path: "/decks/media", read: readMediaRequest, result: decode(originalAnswer) },
   undo: { path: "/decks/undo", read: readRun, result: decode(commitAnswer) },
+  findings: { path: "/decks/findings", read: readFindingsReport, result: decode(deckAnswer) },
 } as const
 
 export const airaRoutes = {

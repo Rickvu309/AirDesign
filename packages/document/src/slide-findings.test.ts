@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { Fill, ResolvedElement, ResolvedSlide, ResolvedText } from "./resolved-slide.js"
 import { findingLimits, type Finding } from "./finding.js"
-import { slideFindings } from "./slide-findings.js"
+import { elementOverflow, slideFindings } from "./slide-findings.js"
 import { fontFace, type FontWidths } from "./text-fit.js"
 
 const point = 12_700
@@ -100,6 +100,15 @@ describe("overflow", () => {
         close,
       ]),
     ).toEqual([])
+  })
+
+  it("judges one element's overflow the way the slide's findings do", () => {
+    const box = element("2", { x: 10, y: 10, w: 50, h: 20 }, { text: tall })
+    expect(elementOverflow("256", box, widths)).toEqual(find([box])[0])
+    expect(elementOverflow("256", element("3", { x: 10, y: 10, w: 50, h: 40 }, { text: tall }), widths)).toBeNull()
+    expect(elementOverflow("256", element("4", { x: 10, y: 10, w: 50, h: 5 }), widths)).toBeNull()
+    const strange = element("5", { x: 10, y: 10, w: 50, h: 5 }, { text: words(["aaaa 你好"]) })
+    expect(elementOverflow("256", strange, widths)).toBe("script")
   })
 
   it("counts text it cannot judge instead of guessing", () => {
