@@ -99,6 +99,71 @@ same(
   true,
 )
 
+const loggedAt = (run, start) => run.log.findIndex((line) => line.startsWith(start))
+const joined = harness({ merges: ["Merge origin/main into land-command"] })
+same("a branch holding a merge commit lands", await joined.run(), 0)
+same(
+  "land rebuilds it as one commit on origin/main, with the pull request's title",
+  joined.log.filter((line) => line.startsWith("git commit-tree")),
+  ["git commit-tree tree -p land-command -m Add pnpm land"],
+)
+same(
+  "land moves the branch to the rebuilt commit without losing uncommitted work",
+  joined.log.filter((line) => line.startsWith("git reset")),
+  ["git reset --keep rebuilt1111"],
+)
+same(
+  "the rebuild comes before the conflict check against main and before the gate stamps the commit it judged",
+  loggedAt(joined, "git reset") < joined.log.findLastIndex((line) => line.startsWith("git merge-tree")) &&
+    loggedAt(joined, "git reset") < joined.log.indexOf("stamp"),
+  true,
+)
+same("and before the push", loggedAt(joined, "git reset") < loggedAt(joined, "git push"), true)
+same(
+  "land says what it replaced and how to go back",
+  joined.said.some(
+    (line) => line.startsWith("linear") && line.includes("rebuilt") && line.includes("git reset --hard"),
+  ),
+  true,
+)
+same(
+  "a linear branch is not rebuilt",
+  clean.log.some((line) => line.startsWith("git commit-tree") || line.startsWith("git reset")),
+  false,
+)
+same(
+  "and land says it is linear",
+  clean.said.some((line) => line.startsWith("linear") && line.includes("no merge commit")),
+  true,
+)
+
+const joinedAndConflicting = harness({
+  merges: ["Merge origin/main into land-command"],
+  conflicts: "apps/web/src/thin-deck.tsx",
+})
+same("a branch with a merge commit and a conflict stops", await joinedAndConflicting.run(), 1)
+same(
+  "and rebuilds nothing, so the branch is as the agent left it",
+  joinedAndConflicting.log.some((line) => line.startsWith("git commit-tree") || line.startsWith("git reset")),
+  false,
+)
+same("and runs no check", joinedAndConflicting.log.includes("stamp"), false)
+same(
+  "and names the file",
+  joinedAndConflicting.said.some(
+    (line) => line.startsWith("STOPPED at linear") && line.includes("apps/web/src/thin-deck.tsx"),
+  ),
+  true,
+)
+
+const joinedAndDirty = harness({ merges: ["Merge origin/main into land-command"], dirty: " M scripts/land.mjs\n" })
+same("uncommitted files stop before any rebuild", await joinedAndDirty.run(), 1)
+same(
+  "and rebuild nothing",
+  joinedAndDirty.log.some((line) => line.startsWith("git commit-tree")),
+  false,
+)
+
 const marked = harness({ markerFiles: ["apps/web/src/thin-deck.tsx"] })
 same("a committed conflict marker stops the push", await marked.run(), 1)
 same(

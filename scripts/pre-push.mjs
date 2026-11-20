@@ -6,7 +6,12 @@ import { knowsMain, uncheckedPushes } from "./checked.mjs"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const pushed = fs.readFileSync(0, "utf8")
 const unchecked = uncheckedPushes(root, pushed)
-const refused = knowsMain(root) ? (await import("./commit-authors.mjs")).pushRefusals(root, pushed) : []
+const refused = knowsMain(root)
+  ? [
+      ...(await import("./commit-authors.mjs")).pushRefusals(root, pushed),
+      ...(await import("./linear-branch.mjs")).pushFaults(root, pushed),
+    ]
+  : []
 for (const line of refused) console.error(line)
 if (unchecked.length > 0) {
   for (const { ref, commit } of unchecked) {

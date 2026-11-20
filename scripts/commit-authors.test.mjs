@@ -84,7 +84,7 @@ process.on("exit", () => fs.rmSync(folder, { recursive: true, force: true }))
 const root = path.join(folder, "repo")
 fs.mkdirSync(path.join(root, "scripts"), { recursive: true })
 const here = path.dirname(fileURLToPath(import.meta.url))
-for (const name of ["checked.mjs", "commit-authors.mjs", "pre-push.mjs"])
+for (const name of ["checked.mjs", "commit-authors.mjs", "land-git.mjs", "linear-branch.mjs", "pre-push.mjs"])
   fs.copyFileSync(path.join(here, name), path.join(root, "scripts", name))
 
 const git = (...args) =>

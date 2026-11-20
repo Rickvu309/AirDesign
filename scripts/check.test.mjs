@@ -145,6 +145,9 @@ for (const name of [...requiredSteps, "bar"]) {
 if (!namesIn("source").includes("commit-authors")) throw new Error("the source part must run commit-authors")
 if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run commit-authors")
 if (warns("commit-authors")) throw new Error("commit-authors blocks from the start")
+if (!namesIn("source").includes("linear-branch")) throw new Error("the source part must run linear-branch")
+if (!stepsWhen(true).includes("linear-branch")) throw new Error("ci must run linear-branch")
+if (warns("linear-branch")) throw new Error("linear-branch blocks from the start")
 
 if (ranWhen("design", true).includes("design-findings"))
   throw new Error("design-findings judges every design shard's report together, so no one design shard runs it")
@@ -233,6 +236,7 @@ for (const name of [
   "tsconfig-references",
   "lint-rules",
   "commit-authors",
+  "linear-branch",
   "package-boundaries",
 ]) {
   if (!isPreflight(name) || !everyStep.includes(name)) throw new Error(`preflight lost ${name}`)

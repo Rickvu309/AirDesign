@@ -1,0 +1,3 @@
+# A pull request branch holds no merge commit, because the merge queue rebases commit by commit and drops a merge commit as `merge_conflict`
+
+`pnpm land` rebuilds a branch that holds one as a single commit on the `origin/main` it just fetched, with the tree `git merge-tree --write-tree` gives for that main and the branch head, so no change is lost; it refuses instead when that merge conflicts or files are uncommitted, and prints the head it replaced. The `linear-branch` step of `pnpm gate` and `pnpm check` (`scripts/linear-branch.mjs`), and the pre-push hook, refuse a branch with a merge commit since `origin/main` and print `node scripts/linear-branch.mjs --rebuild` (`linear-branch.test.mjs`)

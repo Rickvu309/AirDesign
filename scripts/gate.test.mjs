@@ -74,6 +74,7 @@ const preflight = [
   "package-boundaries",
   "unused-exports",
   "rule-rows",
+  "linear-branch",
 ]
 const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],
