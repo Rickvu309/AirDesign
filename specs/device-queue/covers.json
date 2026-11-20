@@ -5,19 +5,19 @@
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
       "digest": "ac2b3ba85ed1",
-      "blob": "8af14e1c5da945aac922912b0a0bee6ef0696347"
+      "blob": "8497f89b1fb2d898fb19d43c02d3d273df8d393a"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
       "digest": "b561187b2f9c",
-      "blob": "e7734f71603a19d5a05bed06fa87fd4e5bafd5db"
+      "blob": "92f065aac610d9cae168fcb7d6c60ae8b48a6034"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoList", "useUndoTurn"],
-      "digest": "58fab8940046",
-      "blob": "15e5ad97ae6a4a4ed475aec09dbbd1fbec9b8a22"
+      "digest": "f65cf2a57df8",
+      "blob": "f0296c464d624b5bc2bc8c8d8674822b83c5dea7"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -29,19 +29,19 @@
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
       "digest": "93acf5940101",
-      "blob": "8f9d58b06231562e7fa4e1e6bbe9b9b4df5ec34b"
+      "blob": "a47b151c996a145d4d4244a7b5ae9fa89c270974"
     },
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "d414df951ae5",
-      "blob": "884f4194567de70892671caace0cc22eaaf92c3a"
+      "digest": "9359d9fe4854",
+      "blob": "960a2123de0a74e1f5d840778bd7f0e86d3e4dc4"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf"],
       "digest": "7e4cd4c8fc38",
-      "blob": "f53394fc17a3f1606438a2547bd6d01d8f714cdf"
+      "blob": "2dd4c40e79ed2fed3b55102e2bb98c52a35f6d8c"
     },
     {
       "file": "packages/live/src/cache.ts",

@@ -1,4 +1,4 @@
-import { boxPatch, format, type ElementId, type SetChange, type StackMove } from "@airdesign/document"
+import { boxPatch, format, type ElementId, type Register, type SetChange, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import {
   boxOf,
@@ -15,7 +15,7 @@ import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { commitPlace } from "@/editor/group-actions"
-import { commitEdit, flushPending, storeBoxes, type CommitOutcome } from "@/commit-edit"
+import { commitEdit, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { toggleLayerFlag } from "@/editor/layer-flags"
@@ -132,21 +132,71 @@ export function editableSlide(deck: EditableDeck): (width: number, rulers?: bool
     settle(await flushPending(connect, id))
   }
 
-  async function placed(only: Moved): Promise<boolean> {
+  async function placed(only: Moved): Promise<"moved" | "kept" | "refused" | "stored"> {
     const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return false
+    if (!opened.ok) return "moved"
     const parts = deck.shown.shownParts.current
     const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
       if (undoable !== null) record({ name: "move", undoable })
       await deck.shown.showEdited(current)
     })
-    if (outcome === "moved") return false
     if (outcome === "kept") store.current.placeBox(only.id, landedBox(await deviceRegister(id), only.id))
-    else settle(outcome)
-    return true
+    return outcome
   }
 
-  function onBoxes(moved: readonly Moved[]): Promise<void> {
+  async function storeMoved(
+    moved: readonly Moved[],
+    boxes: readonly BoxCommit[],
+    framing: Register | null,
+  ): Promise<CommitOutcome | "stored" | null> {
+    const [only] = moved
+    const place = moved.length === 1 && only !== undefined ? await placed(only) : "moved"
+    if (place === "kept") return null
+    if (place !== "moved") return place
+    const opening = connect(memoryRemote()).openDeck(id)
+    async function refused(target: ElementId) {
+      store.current.placeBox(target, landedBox(await deviceRegister(id), target))
+    }
+    for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
+    const stored = await storeBoxes(
+      connect,
+      id,
+      boxes,
+      async (kept) => {
+        const opened = await opening
+        const steps = boxes.flatMap(({ box, element }) => {
+          const target = element.id
+          if (!kept.includes(target)) return []
+          const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
+          const shown = shownBox(opened.ok ? opened.register : null, target, file)
+          const before =
+            storedGroupBoxNow(framing, target) ?? (shown === null ? null : storedBox(framing, target, shown))
+          if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
+            void deck.shown.showEdited(current)
+          const name = before === null ? null : boxName(before, box)
+          return before === null || name === null
+            ? []
+            : [{ name, step: { node: target, before: boxPatch(before), after: boxPatch(box) } }]
+        })
+        const [first] = steps
+        if (first === undefined) return
+        const name = steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
+        record({
+          name,
+          undoable: { steps: steps.map((each) => each.step) },
+        })
+      },
+      refused,
+    )
+    const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
+    if (grouped.length > 0) {
+      await deck.shown.showEdited(current)
+      for (const each of grouped) store.current.placeBox(each.id, null)
+    }
+    return stored
+  }
+
+  async function onBoxes(moved: readonly Moved[]): Promise<void> {
     const shownRegister = deck.shown.shownRegister.current
     const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
     const boxes = moved.flatMap(({ id: target, box }) => {
@@ -158,66 +208,9 @@ export function editableSlide(deck: EditableDeck): (width: number, rulers?: bool
       id,
       boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
     )
-    let flushed: Promise<void> = Promise.resolve()
-    const done = new Promise<void>((resolve) => {
-      deck.undo.turnAfter(async () => {
-        let flush = false
-        let outcome: CommitOutcome | null = null
-        try {
-          const [only] = moved
-          if (moved.length === 1 && only !== undefined && (await placed(only))) return
-          const opening = connect(memoryRemote()).openDeck(id)
-          async function refused(target: ElementId) {
-            store.current.placeBox(target, landedBox(await deviceRegister(id), target))
-          }
-          for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
-          const stored = await storeBoxes(
-            connect,
-            id,
-            boxes,
-            async (kept) => {
-              const opened = await opening
-              const steps = boxes.flatMap(({ box, element }) => {
-                const target = element.id
-                if (!kept.includes(target)) return []
-                const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
-                const shown = shownBox(opened.ok ? opened.register : null, target, file)
-                const before =
-                  storedGroupBoxNow(framing, target) ?? (shown === null ? null : storedBox(framing, target, shown))
-                if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
-                  void deck.shown.showEdited(current)
-                const name = before === null ? null : boxName(before, box)
-                return before === null || name === null
-                  ? []
-                  : [{ name, step: { node: target, before: boxPatch(before), after: boxPatch(box) } }]
-              })
-              const [first] = steps
-              if (first === undefined) return
-              const name =
-                steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
-              record({
-                name,
-                undoable: { steps: steps.map((each) => each.step) },
-              })
-            },
-            refused,
-          )
-          const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
-          if (grouped.length > 0) {
-            await deck.shown.showEdited(current)
-            for (const each of grouped) store.current.placeBox(each.id, null)
-          }
-          if (stored === "stored") flush = true
-          else outcome = stored
-        } finally {
-          release()
-          if (flush) flushed = flushPending(connect, id).then(settle)
-          else if (outcome !== null) settle(outcome)
-          resolve()
-        }
-      })
-    })
-    return done.then(() => flushed)
+    const stored = await deck.undo.turnAfter(() => storeMoved(moved, boxes, framing)).finally(release)
+    if (stored === "stored") settle(await flushPending(connect, id))
+    else if (stored !== null) settle(stored)
   }
 
   function holding<T>(targets: readonly ElementId[], work: () => Promise<T>): Promise<T> {

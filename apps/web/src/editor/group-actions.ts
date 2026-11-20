@@ -122,7 +122,7 @@ export async function commitPlace(
   node: ElementId,
   box: Box,
   paint: (undoable: Undoable | null) => void | Promise<void>,
-): Promise<CommitOutcome | "moved" | "kept"> {
+): Promise<"moved" | "kept" | "refused" | "stored"> {
   const indexed = indexedRegister(parts, register)
   const file = fileSlides(parts, register)
   const changed = changeLayout(indexed, { place: node, box, file })
@@ -132,5 +132,5 @@ export async function commitPlace(
   const undoable = slideUndoable(indexed, head.file, head.edit)
   for (const command of changed.turn) if (!(await sent(deckId, command))) return "refused"
   await paint(undoable)
-  return flushPending(connect, deckId)
+  return "stored"
 }
