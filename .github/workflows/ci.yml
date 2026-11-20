@@ -118,7 +118,7 @@ jobs:
           base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
           part: ${{ matrix.part }}
           shard: ${{ strategy.job-index }}
-      - if: steps.work.outputs.needed == 'true' && matrix.specCache && !cancelled()
+      - if: success() && steps.work.outputs.needed == 'true' && matrix.specCache && needs.changes.outputs.model-check == 'true' && steps.work-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:

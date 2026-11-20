@@ -68,59 +68,20 @@ const writeCache = (key, value) => {
   fs.renameSync(temporary, path.join(root, `${key}.json`))
 }
 
-const waitForCache = (key) => {
-  const deadline = Date.now() + 50000
-  while (Date.now() < deadline) {
-    const ready = readCache(key)
-    if (ready) return ready
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50)
-  }
-  return null
-}
-
 const cachedDump = (directory, java, jar, spec, config) => {
   const key = specKey(directory, spec, config)
   const found = readCache(key)
   if (found) return { ...found, cached: true }
-  if (process.env.AIRDESIGN_REPLAY_ONLY === "1") {
-    const waited = waitForCache(key)
-    if (waited) return waited
-    throw new Error(`missing spec dump for ${spec}`)
+  const dot = path.join(os.tmpdir(), `airdesign-tlc-${process.pid}-${Date.now()}.dot`)
+  const result = runTlc(directory, java, jar, spec, config, ["-dump", "dot,actionlabels", dot], dot)
+  const value = {
+    states: distinctStates(result.output),
+    passed: result.status === 0 && result.output.includes("No error has been found."),
+    output: result.output,
+    graph: result.graph,
   }
-  const root = cacheRoot()
-  fs.mkdirSync(root, { recursive: true })
-  const lock = path.join(root, `${key}.lock`)
-  let owned = false
-  const deadline = Date.now() + 180000
-  while (!owned && Date.now() < deadline) {
-    try {
-      fs.closeSync(fs.openSync(lock, "wx"))
-      owned = true
-    } catch (error) {
-      if (error.code !== "EEXIST") throw error
-      const ready = readCache(key)
-      if (ready) return ready
-      if (Date.now() - fs.statSync(lock).mtimeMs > 180000) fs.rmSync(lock, { force: true })
-      else Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50)
-    }
-  }
-  if (!owned) throw new Error(`timed out waiting for ${spec}`)
-  try {
-    const again = readCache(key)
-    if (again) return again
-    const dot = path.join(os.tmpdir(), `airdesign-tlc-${process.pid}-${Date.now()}.dot`)
-    const result = runTlc(directory, java, jar, spec, config, ["-dump", "dot,actionlabels", dot], dot)
-    const value = {
-      states: distinctStates(result.output),
-      passed: result.status === 0 && result.output.includes("No error has been found."),
-      output: result.output,
-      graph: result.graph,
-    }
-    writeCache(key, value)
-    return value
-  } finally {
-    fs.rmSync(lock, { force: true })
-  }
+  writeCache(key, value)
+  return value
 }
 
 const integersSnapshot = (modules) => {

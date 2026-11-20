@@ -235,15 +235,14 @@ assert.equal(
   false,
   "no shard runs the whole suite",
 )
+const withoutModelCheck = checkSteps
+  .stagesFor("source", true, undefined, { ...everyChange, modelCheck: false })
+  .flat()
+  .flatMap(stepsOf)
 assert.equal(
-  stepOf("unit-tests", undefined).at(3).AIRDESIGN_REPLAY_ONLY,
-  "1",
-  "a whole run waits for the spec dumps its model check makes",
-)
-assert.equal(
-  stepOf("unit-tests", { current: 1, total: 2 }).at(3).AIRDESIGN_REPLAY_ONLY,
+  withoutModelCheck.find(([name]) => name === "unit-tests").at(3).AIRDESIGN_REPLAY_ONLY,
   undefined,
-  "a shard has no model check beside it, so a replay with no cached dump makes its own",
+  "an unsharded replay can create the missing spec dump even when the model check is skipped",
 )
 assert.equal(
   stepOf("metrics", { current: 2, total: 3 }).at(3).AIRDESIGN_UNIT_SHARD,

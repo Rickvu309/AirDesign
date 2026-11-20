@@ -47,8 +47,6 @@ const browserArgs = (part, shard, { browserSpecs = "all" }) =>
 const unitShardArgs = (part, shard) =>
   part === "source" && shard !== undefined ? [`--shard=${shard.current}/${shard.total}`] : []
 
-const unitShardEnv = (part, shard) => (shard === undefined ? { AIRDESIGN_REPLAY_ONLY: "1" } : {})
-
 const metricsShardEnv = (part, shard) =>
   part === "source" && shard !== undefined ? { [unitShardVariable]: `${shard.current}/${shard.total}` } : undefined
 
@@ -146,7 +144,6 @@ const rows = [
     args: ["node_modules/vitest/vitest.mjs", "run"],
     env: { AIRDESIGN_SPEC_CACHE: specCache },
     partArgs: unitShardArgs,
-    partEnv: unitShardEnv,
     sharded: true,
     gate: { order: 2, select: gateTests },
     narrow: changedUnitTests,
