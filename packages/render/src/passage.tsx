@@ -1,6 +1,9 @@
 import {
+  lastListLevel,
+  levelRange,
   spacingNames,
   writeTextValue,
+  type LevelStep,
   type ParagraphSpacing,
   type TextParagraph,
   type TextList,
@@ -10,6 +13,7 @@ import {
 import { useLayoutEffect, useRef, useState } from "react"
 import type { ElementId } from "@airdesign/document"
 import { formatTarget, type FormatEdit } from "./passage-format.js"
+import { gestureFor } from "./gestures.js"
 import { readFormat, writeFormat } from "./run-format-node.js"
 import type { TextFormatting } from "./text-formatting.js"
 import { useElement } from "./element-view.js"
@@ -74,6 +78,7 @@ type ReadParagraph = {
   from: number
   align?: "left" | "center" | "right"
   list?: TextList
+  level?: number
   runs: TextRun[]
 } & ParagraphSpacing
 
@@ -83,6 +88,9 @@ function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadPa
   if (align === "left" || align === "center" || align === "right") paragraph = { ...paragraph, align }
   const list = node.dataset.list
   if (list === "none" || list === "bullets" || list === "numbers") paragraph = { ...paragraph, list }
+  const level = node.dataset.level
+  if (level !== undefined && /^\d$/.test(level) && Number(level) <= lastListLevel)
+    paragraph = { ...paragraph, level: Number(level) }
   for (const name of spacingNames) {
     const kept = node.dataset[name]
     if (kept !== undefined && /^\d+$/.test(kept)) paragraph = { ...paragraph, [name]: Number(kept) }
@@ -167,6 +175,7 @@ function paragraphNode(document: Document, paragraph: TextParagraph, readonly: b
   block.dataset.paragraph = String(paragraph.from)
   if (paragraph.align !== undefined) block.dataset.align = paragraph.align
   if (paragraph.list !== undefined) block.dataset.list = paragraph.list
+  if (paragraph.level !== undefined) block.dataset.level = String(paragraph.level)
   for (const name of spacingNames) {
     const kept = paragraph[name]
     if (kept !== undefined) block.dataset[name] = String(kept)
@@ -281,6 +290,15 @@ export function Passage(props: {
     showValue(shown, value, { start: caret, end }, look)
     report(writeTextValue(value), kind)
   }
+  function leveled(value: TextValue, at: { readonly start: Caret; readonly end: Caret }, step: LevelStep) {
+    return levelRange(
+      value,
+      at,
+      step,
+      (from) => look?.fileLevel(from) ?? 0,
+      (from) => look?.fileList(from) ?? "none",
+    )
+  }
   const formats = useRef<FormatEdit | null>(null)
   formats.current = {
     look,
@@ -336,11 +354,28 @@ export function Passage(props: {
       onKeyDown={(event) => {
         if (composing.current || event.nativeEvent.isComposing) return
         const shown = event.currentTarget
+        const gesture = gestureFor(event, "text")
+        if (gesture === "list-indent" || gesture === "list-outdent") {
+          const read = readBox(shown)
+          const at = selectionCarets(shown, read.units)
+          const next = at === null ? null : leveled(read.value, at, gesture === "list-indent" ? 1 : -1)
+          if (at === null || next === null) return
+          event.preventDefault()
+          edit(shown, next, at.start, at.end, "format")
+          return
+        }
         if (event.key === "Enter") {
           event.preventDefault()
           const read = readBox(shown)
           const at = selectionCarets(shown, read.units)
           if (at === null) return
+          const current = read.value[at.start.paragraph]
+          const outdented =
+            sameCaret(at) && current !== undefined && paragraphText(current) === "" ? leveled(read.value, at, -1) : null
+          if (outdented !== null && writeTextValue(outdented) !== writeTextValue(read.value)) {
+            edit(shown, outdented, at.start, at.end, "format")
+            return
+          }
           const kept = sameCaret(at) ? read.value : cutValue(read.value, at.start, at.end)
           edit(shown, splitParagraph(kept, at.start), { paragraph: at.start.paragraph + 1, offset: 0 })
           return

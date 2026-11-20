@@ -44,10 +44,11 @@ function paragraph(overrides: Partial<CanvasParagraph> = {}): CanvasText {
   }
 }
 
-function painted(text: CanvasText, words = "Item") {
+function painted(text: CanvasText, words = "Item", kept: Readonly<Record<string, string>> = {}) {
   const host = document.createElement("div")
   const block = document.createElement("div")
   block.dataset.paragraph = "0"
+  Object.assign(block.dataset, kept)
   const span = document.createElement("span")
   span.dataset.run = "0.0"
   if (words !== "") span.textContent = words
@@ -207,4 +208,22 @@ it.each(["all", "small", "none"] as const)("paints %s capitals without changing 
   expect(shown.textContent).toBe("Mixed Case")
   expect(shown.style.textTransform).toBe(caps === "all" ? "uppercase" : "none")
   expect(shown.style.fontVariantCaps).toBe(caps === "small" ? "small-caps" : "normal")
+})
+
+it("paints a list item a person indents at its level's indent before the file has it", () => {
+  const { block } = painted(paragraph(), "Item", { level: "1" })
+  expect(Number.parseFloat(block.style.paddingLeft)).toBeCloseTo(scaled(742_950), 4)
+  expect(Number.parseFloat(block.style.textIndent)).toBeCloseTo(scaled(-285_750), 4)
+  expect(Number.parseFloat(block.style.getPropertyValue("--bullet-hang"))).toBeCloseTo(scaled(285_750), 4)
+  expect(block.style.getPropertyValue("--bullet")).toBe('"•"')
+})
+
+it("numbers an indented item with its level's letters and roman numerals", () => {
+  const numbered = { autoNumber: "arabicPeriod", number: 1, font: null, color: null, size: null }
+  const second = painted(paragraph({ bullet: numbered }), "Item", { level: "1" }).block
+  expect(second.style.getPropertyValue("--bullet")).toBe('"a."')
+  expect(Number.parseFloat(second.style.paddingLeft)).toBeCloseTo(scaled(914_400), 4)
+  const third = painted(paragraph({ bullet: null }), "Item", { list: "numbers", level: "2" }).block
+  expect(third.style.getPropertyValue("--bullet")).toBe('"i."')
+  expect(Number.parseFloat(third.style.paddingLeft)).toBeCloseTo(scaled(1_371_600), 4)
 })

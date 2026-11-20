@@ -1,4 +1,11 @@
-import { spacingNames, type ParagraphAlign, type TextParagraph } from "@airdesign/document"
+import {
+  levelNumbering,
+  listIndent,
+  spacingNames,
+  type ParagraphAlign,
+  type TextList,
+  type TextParagraph,
+} from "@airdesign/document"
 import { markupDocument, spliceBytes, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 
@@ -63,26 +70,75 @@ function spacings(paragraph: TextParagraph): string {
     .join("")
 }
 
-function created(paragraph: TextParagraph): Uint8Array {
-  const align = paragraph.align === undefined ? "" : ` algn="${alignValue[paragraph.align]}"`
-  const bullet = paragraph.list === undefined ? "" : listXml(paragraph.list)
-  const inner = spacings(paragraph) + bullet
-  return encodeUtf8(inner === "" ? `<a:pPr${align}/>` : `<a:pPr${align}>${inner}</a:pPr>`)
+function levelAttributes(level: number, list: TextList): readonly (readonly [string, string | null])[] {
+  const { marginLeft, indent } = listIndent(level, list)
+  return [
+    ["marL", String(marginLeft)],
+    ["lvl", level === 0 ? null : String(level)],
+    ["indent", String(indent)],
+  ]
 }
 
-function alignBytes(slice: Uint8Array, align: ParagraphAlign): Uint8Array {
+const listed = (list: TextList | undefined) => list === "bullets" || list === "numbers"
+
+function created(paragraph: TextParagraph): Uint8Array {
+  const level =
+    paragraph.level === undefined && !listed(paragraph.list)
+      ? ""
+      : levelAttributes(paragraph.level ?? 0, paragraph.list ?? "none")
+          .flatMap(([name, value]) => (value === null ? [] : [` ${name}="${value}"`]))
+          .join("")
+  const align = paragraph.align === undefined ? "" : ` algn="${alignValue[paragraph.align]}"`
+  const bullet = paragraph.list === undefined ? "" : listXml(paragraph.list, paragraph.level)
+  const inner = spacings(paragraph) + bullet
+  return encodeUtf8(inner === "" ? `<a:pPr${level}${align}/>` : `<a:pPr${level}${align}>${inner}</a:pPr>`)
+}
+
+const isSpace = (byte: number | undefined) => byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d
+
+function attributeBytes(slice: Uint8Array, name: string, value: string | null): Uint8Array {
   const found = rootOf(slice)
   if (found === null) return slice
   const { root } = found
-  const value = alignValue[align]
-  const attribute = root.attributes.find((item) => item.name === "algn")
+  const attribute = root.attributes.find((item) => item.name === name)
   if (attribute?.value === value) return slice
-  if (attribute !== undefined) {
+  if (attribute !== undefined && value !== null) {
     return spliceBytes(slice, [{ start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(value) }])
   }
+  if (attribute !== undefined) {
+    let start = attribute.valueStart - 1
+    while (start > 0 && (slice[start - 1] === 0x3d || isSpace(slice[start - 1]))) start -= 1
+    start -= attribute.name.length
+    while (start > 0 && isSpace(slice[start - 1])) start -= 1
+    return spliceBytes(slice, [{ start, end: attribute.valueEnd + 1, next: emptyBytes }])
+  }
+  if (value === null) return slice
   const nameEnd = root.start + 1 + root.kind.length
   const at = root.attributes.reduce((last, item) => Math.max(last, item.valueEnd + 1), nameEnd)
-  return spliceBytes(slice, [{ start: at, end: at, next: encodeUtf8(` algn="${value}"`) }])
+  return spliceBytes(slice, [{ start: at, end: at, next: encodeUtf8(` ${name}="${value}"`) }])
+}
+
+function alignBytes(slice: Uint8Array, align: ParagraphAlign): Uint8Array {
+  return attributeBytes(slice, "algn", alignValue[align])
+}
+
+function heldList(slice: Uint8Array): TextList {
+  const kinds = rootOf(slice)?.children.map((child) => child.kind) ?? []
+  if (kinds.includes("a:buAutoNum")) return "numbers"
+  return kinds.includes("a:buNone") ? "none" : "bullets"
+}
+
+function heldLevel(slice: Uint8Array): number {
+  const value = rootOf(slice)?.root.attributes.find((item) => item.name === "lvl")?.value
+  const level = value === undefined ? 0 : Number(value)
+  return Number.isInteger(level) && level >= 0 ? level : 0
+}
+
+function levelBytes(slice: Uint8Array, level: number, list: TextList | undefined): Uint8Array {
+  const held = list ?? heldList(slice)
+  let next = slice
+  for (const [name, value] of levelAttributes(level, held)) next = attributeBytes(next, name, value)
+  return held === "numbers" && list === undefined ? listBytes(next, "numbers", level) : next
 }
 
 function slot(root: MarkupElement, children: readonly MarkupElement[], tag: string): number {
@@ -97,16 +153,16 @@ function slot(root: MarkupElement, children: readonly MarkupElement[], tag: stri
   return at
 }
 
-function listXml(list: NonNullable<TextParagraph["list"]>): string {
+function listXml(list: TextList, level = 0): string {
   return list === "numbers"
-    ? `<a:buAutoNum type="arabicPeriod"/>`
+    ? `<a:buAutoNum type="${levelNumbering(level)}"/>`
     : list === "bullets"
       ? `<a:buChar char="•"/>`
       : `<a:buNone/>`
 }
 
-function listBytes(slice: Uint8Array, list: NonNullable<TextParagraph["list"]>): Uint8Array {
-  return childBytes(slice, bulletKinds, "a:buNone", encodeUtf8(listXml(list)))
+function listBytes(slice: Uint8Array, list: TextList, level = 0): Uint8Array {
+  return childBytes(slice, bulletKinds, "a:buNone", encodeUtf8(listXml(list, level)))
 }
 
 function childBytes(slice: Uint8Array, kinds: ReadonlySet<string>, tag: string, xml: Uint8Array): Uint8Array {
@@ -135,14 +191,22 @@ export function paragraphBytes(
   paragraph: TextParagraph,
 ): Uint8Array | null {
   const spaced = spacingNames.filter((name) => paragraph[name] !== undefined)
-  if (paragraph.align === undefined && paragraph.list === undefined && spaced.length === 0) return null
+  if (
+    paragraph.align === undefined &&
+    paragraph.list === undefined &&
+    paragraph.level === undefined &&
+    spaced.length === 0
+  )
+    return null
   if (properties === undefined) return created(paragraph)
   let slice = bytes.subarray(properties.start, properties.end)
+  if (paragraph.level !== undefined || listed(paragraph.list))
+    slice = levelBytes(slice, paragraph.level ?? heldLevel(slice), paragraph.list)
   if (paragraph.align !== undefined) slice = alignBytes(slice, paragraph.align)
   for (const name of spaced) {
     const tag = spacingTags[name]
     slice = childBytes(slice, new Set([tag]), tag, encodeUtf8(spacingXml[name](paragraph[name] ?? 0)))
   }
-  if (paragraph.list !== undefined) slice = listBytes(slice, paragraph.list)
+  if (paragraph.list !== undefined) slice = listBytes(slice, paragraph.list, paragraph.level ?? heldLevel(slice))
   return slice
 }

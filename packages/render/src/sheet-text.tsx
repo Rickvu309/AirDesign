@@ -31,6 +31,7 @@ type ShownRun = {
 type ShownParagraph = {
   readonly from: number
   readonly list?: TextList
+  readonly level?: unknown
   readonly align?: ShownAlign
   readonly bullet?: boolean | CanvasBullet | null
   readonly runs: readonly ShownRun[]
@@ -90,13 +91,15 @@ export function SheetText(props: {
         const filled = paragraph.runs.some((run) => run.text !== "")
         const align = placed(paragraph.align)
         const list = paragraph.list
-        const number = nextNumber(paragraph.from, list)
+        const level = typeof paragraph.level === "number" ? paragraph.level : undefined
+        const number = nextNumber(paragraph.from, list, level)
         const first = paragraph.runs.find((run) => run.text !== "") ?? paragraph.runs[0]
         const overlay = {
           ...(first === undefined ? {} : { firstRun: { ...overlayOf(first), from: first.from } }),
           ...(number === null ? {} : { number }),
           ...(align === undefined ? {} : { align }),
           ...(list === undefined ? {} : { list }),
+          ...(level === undefined ? {} : { level }),
           ...spacingOf(paragraph),
         }
         const style = look.paragraph(paragraph.from, filled, overlay)

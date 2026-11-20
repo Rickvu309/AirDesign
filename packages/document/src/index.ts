@@ -286,6 +286,7 @@ export {
   openingSlideNumber,
   alignNames,
   formatNames,
+  lastListLevel,
   schemeNames,
   spacingNames,
   writeTextValue,
@@ -300,6 +301,7 @@ export {
   type TextValue,
 } from "./text-value.js"
 export { withCurrentKeys } from "./current-keys.js"
+export { levelNumbering, listIndent } from "./list-level.js"
 export {
   linkRange,
   linkState,
@@ -312,12 +314,14 @@ export {
   formatRange,
   formatState,
   formatWhole,
+  levelRange,
   sameFormats,
   sizeRange,
   sizeState,
   stepSize,
   typedSize,
   type Caret,
+  type LevelStep,
   type SizeStep,
   type FormatState,
   type TextRange,

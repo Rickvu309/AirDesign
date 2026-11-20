@@ -247,3 +247,13 @@ describe("a paragraph a build stored before line height had its name", () => {
     expect(readTextValue('{"lineSpacing":120000,"runs":[]}')).toBeNull()
   })
 })
+
+it("stores a list level from 0 to 8, PowerPoint's lvl, and refuses any other", () => {
+  for (const level of [0, 4, 8]) {
+    const written = writeTextValue([{ from: 0, list: "bullets", level, runs: [{ from: 0, text: "Item" }] }])
+    expect(written).toBe(`[{"from":0,"list":"bullets","level":${level},"runs":[{"from":0,"text":"Item"}]}]`)
+    expect(readTextValue(written)?.[0]?.level).toBe(level)
+  }
+  for (const level of [-1, 9, 1.5, "1"])
+    expect(readTextValue(JSON.stringify([{ from: 0, level, runs: [] }]))).toBeNull()
+})
