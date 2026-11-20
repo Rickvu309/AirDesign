@@ -25,7 +25,9 @@ export type SpacingGuide = {
 
 export type Guide = SnapGuide | SpacingGuide
 
-export type SnapTargets = { readonly layers: readonly Bounds[]; readonly slide: Bounds }
+export type GuideLines = { readonly x: readonly number[]; readonly y: readonly number[] }
+
+export type SnapTargets = { readonly layers: readonly Bounds[]; readonly slide: Bounds; readonly guides?: GuideLines }
 
 export type Snapped = { readonly box: Bounds; readonly guides: readonly Guide[] }
 
@@ -98,7 +100,10 @@ function moved(box: Bounds, axis: Axis, by: number): Bounds {
 }
 
 function goalsOf(targets: SnapTargets, axis: Axis): readonly number[] {
-  return [...targets.layers, targets.slide].flatMap((box) => lines.map((line) => lineOf(spanOf(box, axis), line)))
+  const boxes = [...targets.layers, targets.slide].flatMap((box) =>
+    lines.map((line) => lineOf(spanOf(box, axis), line)),
+  )
+  return [...boxes, ...(targets.guides?.[axis] ?? [])]
 }
 
 function nearest(offsets: readonly number[], reach: number): number | null {

@@ -30,6 +30,7 @@ import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { framedOf, storedBox } from "@/frame-boxes"
 import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
 import { MeasuredSlides, owingSlides } from "@/editor/measured-slides"
+import { guidedCanvas, shownGuides } from "@/editor/slide-guides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
@@ -49,7 +50,7 @@ export type EditableDeck = DesignDeck & {
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
 
-export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
+export function editableSlide(deck: EditableDeck): (width: number, rulers?: boolean) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
@@ -337,8 +338,12 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     )
   }
 
-  function slideAt(width: number) {
-    const canvas = canvases.current(current)
+  function slideAt(width: number, rulers: boolean) {
+    const painted = canvases.current(current)
+    const canvas =
+      painted === null || !rulers
+        ? painted
+        : guidedCanvas(painted, shownGuides(deck.shown.displayParts.current, current))
     return canvas === null ? (
       <div />
     ) : (
@@ -424,9 +429,9 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     )
   }
 
-  return (width) => (
+  return (width, rulers = false) => (
     <>
-      {slideAt(width)}
+      {slideAt(width, rulers)}
       {measured(width)}
     </>
   )

@@ -118,7 +118,7 @@ function writtenSlide(
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("fill-slide")
   let next = parts
-  for (const trait of ["templateStyle", "fills", "show", "transition"] as const) {
+  for (const trait of ["templateStyle", "fills", "show", "transition", "guides"] as const) {
     const fields = heldFields(opening?.opening?.[trait] ?? {}, patch[trait] ?? {})
     if (Object.keys(fields).length > 0) next = writeTrait(next, { slide, part, shape: "slide" }, trait, fields)
   }

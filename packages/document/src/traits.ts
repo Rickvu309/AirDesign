@@ -6,6 +6,7 @@ import { connection } from "./trait-connection.js"
 import { dropSlots, effects, innerSlots } from "./trait-effects.js"
 import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
+import { guides } from "./trait-guides.js"
 import { identity } from "./trait-identity.js"
 import { layout } from "./trait-layout.js"
 import { link } from "./trait-link.js"
@@ -33,6 +34,7 @@ export const traits = {
   templateStyle,
   show,
   transition,
+  guides,
   layout,
 } as const
 
@@ -73,7 +75,7 @@ export const kindTraits = {
   master: [],
   layout: [],
   section: [],
-  slide: ["fills", "templateStyle", "show", "transition"],
+  slide: ["fills", "templateStyle", "show", "transition", "guides"],
   notes: ["notes"],
   shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link"],
   connector: ["identity", "box", "geometry", "border", "effects", "connection"],

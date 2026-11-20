@@ -29,6 +29,8 @@ export {
 export { holdKeys, type HeldKeys } from "./held-keys.js"
 export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
+export { CanvasRulers } from "./canvas-rulers.js"
+export type { GuideEdit } from "./guide-edit.js"
 export { paintStore, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"
 export {

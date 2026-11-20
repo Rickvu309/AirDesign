@@ -32,6 +32,9 @@ export type UndoName =
   | "remove-auto-layout"
   | "template"
   | "transition"
+  | "add-guide"
+  | "move-guide"
+  | "delete-guide"
   | "background"
   | "template-color"
   | "template-font"
@@ -94,6 +97,9 @@ export const undoCopy = {
     "remove-auto-layout": "Undo remove auto layout",
     template: "Undo template style",
     transition: "Undo transition",
+    "add-guide": "Undo add guide",
+    "move-guide": "Undo move guide",
+    "delete-guide": "Undo delete guide",
     background: "Undo background color",
     "template-color": "Undo template color",
     "template-font": "Undo template font",
@@ -153,6 +159,9 @@ export const undoCopy = {
     "remove-auto-layout": "Redo remove auto layout",
     template: "Redo template style",
     transition: "Redo transition",
+    "add-guide": "Redo add guide",
+    "move-guide": "Redo move guide",
+    "delete-guide": "Redo delete guide",
     background: "Redo background color",
     "template-color": "Redo template color",
     "template-font": "Redo template font",

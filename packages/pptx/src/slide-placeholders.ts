@@ -100,7 +100,7 @@ function footerText(
   )
 }
 
-function relatedPart(parts: ReadonlyMap<string, Uint8Array>, part: string, kind: string): string | null {
+export function relatedPart(parts: ReadonlyMap<string, Uint8Array>, part: string, kind: string): string | null {
   const rels = parts.get(relsOf(part))
   if (rels === undefined) return null
   for (const item of markupDocument(rels).elements) {

@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { steppedZoom, typedZoom, zoomPresets, zoomRanges, type ZoomRange, type Zoom } from "@/editor/canvas-zoom"
 import { EditorIcon } from "@/editor/editor-icons"
-import { EditorMenuAction, EditorMenuContent, EditorMenuRow, EditorMenuRule } from "@/editor/editor-menu"
+import { guideCopy } from "@/copy/guide-copy"
+import {
+  EditorMenuAction,
+  EditorMenuCheck,
+  EditorMenuContent,
+  EditorMenuRow,
+  EditorMenuRule,
+} from "@/editor/editor-menu"
+
+export type ViewToggle = { readonly shown: boolean; readonly onChange: (shown: boolean) => void }
 
 const menuKeys = new Set(["ArrowDown", "ArrowUp", "Escape", "Tab"])
 
@@ -57,6 +66,7 @@ export function ZoomMenu({
   onSelection,
   canvas,
   range = zoomRanges.slides,
+  rulers,
 }: {
   range?: ZoomRange
   zoom: Zoom
@@ -64,6 +74,7 @@ export function ZoomMenu({
   onZoom: (zoom: Zoom) => void
   onSelection?: () => void
   canvas?: RefObject<HTMLElement | null>
+  rulers?: ViewToggle
 }) {
   const [open, setOpen] = useState(false)
   const typed = useRef(false)
@@ -162,6 +173,18 @@ export function ZoomMenu({
             />
           ))}
         </DropdownMenuRadioGroup>
+        {rulers === undefined ? null : (
+          <>
+            <EditorMenuRule />
+            <EditorMenuCheck
+              label={guideCopy.rulers}
+              checked={rulers.shown}
+              shortcut={guideCopy.rulersKey}
+              keys="Shift+R"
+              onChange={rulers.onChange}
+            />
+          </>
+        )}
       </EditorMenuContent>
     </DropdownMenu>
   )

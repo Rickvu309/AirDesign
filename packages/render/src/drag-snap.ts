@@ -57,7 +57,16 @@ export function snapTargets(slide: CanvasSlide, store: PaintStore, moving: reado
       each.id !== null && held.has(each.id) ? [[each.id, store.getRotation(each.id) ?? each.box?.rotation ?? 0]] : [],
     ),
   )
-  return { layers, slide: { left: 0, top: 0, right: slide.width, bottom: slide.height }, turns }
+  const guides = slide.guides ?? []
+  return {
+    layers,
+    slide: { left: 0, top: 0, right: slide.width, bottom: slide.height },
+    guides: {
+      x: guides.flatMap((guide) => (guide.axis === "x" ? [guide.offset] : [])),
+      y: guides.flatMap((guide) => (guide.axis === "y" ? [guide.offset] : [])),
+    },
+    turns,
+  }
 }
 
 function boundsAround(boxes: ReadonlyMap<ElementId, Box>, turns: ReadonlyMap<ElementId, number>): Bounds | null {

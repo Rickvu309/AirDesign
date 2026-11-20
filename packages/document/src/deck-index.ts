@@ -21,7 +21,7 @@ import { borderFormat, borderIndex } from "./border-conversion.js"
 import { overlayFormat, overlayIndex } from "./overlay-conversion.js"
 import { fillsFormat, fillsIndex, imageFormat, imageIndex } from "./fills-conversion.js"
 import { templateStyleFormat, templateStyleIndex } from "./template-style-conversion.js"
-import { readStoredTransition, type TransitionValue } from "./trait-transition.js"
+import { readIndexArrangement, type IndexArrangement } from "./index-slide-arrangement.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { kinds, type Kind } from "./kinds.js"
@@ -40,8 +40,7 @@ export type IndexSlide = {
   readonly templateStyle?: string
   readonly textStyles?: readonly TextStyle[] | string
   readonly palette?: number
-  readonly transition?: TransitionValue | "kept"
-}
+} & IndexArrangement
 export type IndexElement = {
   readonly link?: ElementLink
   readonly node: ElementId
@@ -96,6 +95,7 @@ export const indexKeys = {
     "textStyles",
     "skipped",
     "transition",
+    "guides",
   ],
   element: [
     "node",
@@ -190,19 +190,15 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
   const style = row.templateStyle
   if (style !== undefined && (typeof style !== "string" || bytesOf(style) > 256)) return null
   if (row.skipped !== undefined && row.skipped !== true) return null
-  let transition: TransitionValue | "kept" | undefined
-  if (row.transition !== undefined) {
-    const stored = readStoredTransition(row.transition)
-    if (stored === null) return null
-    transition = stored
-  }
+  const arrangement = readIndexArrangement(row)
+  if (arrangement === null) return null
   const measures = {
     ...(row.skipped === true ? { skipped: true as const } : {}),
     ...read,
     ...(textStyles === undefined ? {} : { textStyles }),
     ...(row.palette === undefined ? {} : { palette: row.palette }),
     ...(style === undefined ? {} : { templateStyle: style }),
-    ...(transition === undefined ? {} : { transition }),
+    ...arrangement,
   }
   if (row.layout === undefined) return { id: row.id, position, ...measures }
   if (!Array.isArray(row.layout) || row.layout.length > limits.batch) return null

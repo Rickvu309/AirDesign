@@ -1,6 +1,7 @@
 import { elementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { snappedTransform, type DragSnap } from "./drag-snap.js"
+import { snapTargets, snappedTransform, type DragSnap } from "./drag-snap.js"
+import { paintStore } from "./store.js"
 import { evaluateTransform, type TransformDragInput } from "./transform-drag.js"
 import type { TransformGrip } from "./transform-math.js"
 
@@ -54,5 +55,27 @@ describe("snappedTransform", () => {
   it("snaps a move on both axes without Shift", () => {
     const result = dragged("move", { x: 98, y: 0 })
     expect(result.boxes.get(id)).toEqual({ ...start, x: wall.right - start.cx, y: shelf.top })
+  })
+})
+
+describe("snapTargets", () => {
+  it("lines a slide's guides up by axis, so a drag snaps to them", () => {
+    const store = paintStore()
+    const targets = snapTargets(
+      {
+        width: slide.width,
+        height: slide.height,
+        background: null,
+        elements: [],
+        guides: [
+          { axis: "x", offset: 914_400 },
+          { axis: "y", offset: 457_200 },
+          { axis: "x", offset: -12_700 },
+        ],
+      },
+      store,
+      [],
+    )
+    expect(targets.guides).toEqual({ x: [914_400, -12_700], y: [457_200] })
   })
 })

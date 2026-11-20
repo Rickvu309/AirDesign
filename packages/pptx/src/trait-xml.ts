@@ -7,6 +7,7 @@ import { effectsXml } from "./trait-xml-effects.js"
 import type { Faded } from "./alpha-codec.js"
 import { fillAlpha, fillsXml, writtenFills } from "./trait-xml-fills.js"
 import { geometryXml } from "./trait-xml-geometry.js"
+import { guidesXml } from "./guide-list.js"
 import { identityXml } from "./trait-xml-identity.js"
 import { borderAlpha, borderXml } from "./trait-xml-border.js"
 import { notesXml } from "./trait-xml-notes.js"
@@ -36,6 +37,7 @@ export const traitXml: { readonly [T in Written]: TraitXml<T> } = {
   templateStyle: templateStyleXml,
   show: showXml,
   transition: transitionXml,
+  guides: guidesXml,
 }
 
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {

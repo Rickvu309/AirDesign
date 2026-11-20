@@ -59,11 +59,20 @@ describe("deck index", () => {
       ...page,
       slides: [
         { id: "258", position: 0, size: { width: 9144000, height: 6858000 }, free: 12, animated: ["7", "9"] },
-        { id: "259", position: 1, size: { width: 9144000, height: 6858000 }, free: 3, animated: [] },
+        {
+          id: "259",
+          position: 1,
+          size: { width: 9144000, height: 6858000 },
+          free: 3,
+          animated: [],
+          guides: [{ axis: "x" as const, offset: 457200 }],
+        },
       ],
     }
     expect(readIndexPage(measured)).toEqual(measured)
     for (const slide of [
+      { guides: [{ axis: "z", offset: 1 }] },
+      { guides: "x" },
       { size: { width: 0, height: 5 } },
       { size: { width: 5 } },
       { free: 0 },
@@ -268,7 +277,7 @@ describe("index format", () => {
 
   it("keeps the recorded index keys and the stamp that introduced them", () => {
     const recorded = {
-      stamp: 20,
+      stamp: 21,
       keys: {
         page: [
           "format",
@@ -294,6 +303,7 @@ describe("index format", () => {
           "textStyles",
           "skipped",
           "transition",
+          "guides",
         ],
         element: [
           "node",

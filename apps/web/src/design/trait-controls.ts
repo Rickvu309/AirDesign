@@ -12,6 +12,7 @@ import { layoutControls } from "./trait-controls-layout"
 import { linkControls } from "./trait-controls-link"
 import { notesControls } from "./trait-controls-notes"
 import { textControls } from "./trait-controls-text"
+import { guideCopy } from "@/copy/guide-copy"
 import { transitionCopy } from "@/copy/transition-copy"
 import { templateStyleControls } from "./trait-controls-template-style"
 
@@ -43,4 +44,5 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   templateStyle: templateStyleControls,
   show: { section: slideListCopy.listName, fields: { skipped: { label: slideListCopy.skip } } },
   transition: { section: transitionCopy.transition, fields: { value: { label: transitionCopy.style } } },
+  guides: { section: guideCopy.guides, fields: { ruler: { label: guideCopy.guides } } },
 }

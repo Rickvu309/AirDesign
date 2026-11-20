@@ -1,6 +1,7 @@
 import { shapeOf, slideNode, type ElementId } from "@airdesign/document"
 import { changeDesign } from "@/design/design-change"
 import { PresentLinks } from "@/present/present-links"
+import { slideRulers } from "@/editor/slide-rulers"
 import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
 import { storeNewer, watchNewer } from "@airdesign/live"
@@ -145,6 +146,8 @@ export function ThinDeck({ id }: { id: string }) {
               },
             },
             slide: editableSlide({ ...deck, hovered: mode === "design" ? hovered : null }),
+            rulers: slideRulers(deck),
+            displayed: deck.shown.displayed,
             layers: (
               <LiveLayers
                 deck={deck}
