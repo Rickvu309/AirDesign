@@ -1,9 +1,7 @@
 import {
   changeLayout,
   decide,
-  elementGone,
   elementId,
-  groupParent,
   slideUndoable,
   undoOf,
   openRegister,
@@ -324,53 +322,5 @@ describe("a frame inside an auto layout frame in PowerPoint", () => {
     const shown = exported(gapped(nested(), 150000))
     expect(painted(shown, 5).x).toBe(430000)
     expect(painted(shown, 23).width).toBe(480000)
-  })
-})
-
-describe("Shift+A on children of an auto layout frame in PowerPoint", () => {
-  it("writes the new frame's group inside the outer frame's at their place, every layer where it showed", () => {
-    const outer = gapped(ran(opened, [slideCommand(wrapCommand(opened, [3, 5, 4]))]), 50800)
-    const changed = changeLayout(outer, { wrap: [node(5), node(3)], slide, node: node(22), backdrop: node(23) })
-    if (changed === null || !("slide" in changed)) throw new Error("wrap")
-    const before = exported(outer)
-    const shown = exported(ran(outer, [slideCommand(changed.slide)]))
-    for (const shape of [3, 4, 5]) expect(painted(shown, shape)).toEqual(painted(before, shape))
-    const groups = readShapes(shown).filter((each) => ["3", "4", "5", "22"].includes(each.shape))
-    expect(new Map(groups.map((each) => [each.shape, each.group ?? null]))).toEqual(
-      new Map([
-        ["4", "20"],
-        ["22", "20"],
-        ["3", "22"],
-        ["5", "22"],
-      ]),
-    )
-    const reread = new Map(indexPackage(shown).elements.map((element) => [element.node, element.framing]))
-    expect(reread.get(node(20))?.children).toEqual([node(4), node(22)])
-    expect(reread.get(node(22))?.children).toEqual([node(3), node(5)])
-  })
-})
-
-describe("a wrap replayed over an index read from the parts it already wrote", () => {
-  function reindexed(register: Register): Register {
-    const shown = exported(register)
-    const { slides: read, elements: filed } = indexPackage(shown)
-    return { ...register, index: { total: filed.length, slides: read, elements: filed, pages: [] } }
-  }
-
-  it("keeps a top-level frame at the top and its children in it, with no group holding itself", () => {
-    const after = reindexed(wrapped(opened))
-    expect(groupParent(after, node(20))).toBeNull()
-    expect(groupParent(after, node(3))).toBe(node(20))
-    expect(elementGone(after, node(3))).toBe(false)
-  })
-
-  it("keeps a frame made inside a frame in its parent", () => {
-    const outer = gapped(ran(opened, [slideCommand(wrapCommand(opened, [3, 5, 4]))]), 50800)
-    const changed = changeLayout(outer, { wrap: [node(5), node(3)], slide, node: node(22), backdrop: node(23) })
-    if (changed === null || !("slide" in changed)) throw new Error("wrap")
-    const after = reindexed(ran(outer, [slideCommand(changed.slide)]))
-    expect(groupParent(after, node(22))).toBe(node(20))
-    expect(groupParent(after, node(3))).toBe(node(22))
-    expect(elementGone(after, node(3))).toBe(false)
   })
 })

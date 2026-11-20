@@ -92,15 +92,9 @@ function freshGroup(element: IndexElement, id: SlideId, framed: boolean): boolea
   )
 }
 
-function sharedFrame(state: Indexed, members: readonly ElementId[]): ElementId | null {
-  const parents = new Set(members.map((node) => groupParent(state, node)))
-  const [parent] = parents
-  return parents.size === 1 && typeof parent === "string" && frameBackdrop(state, parent) !== null ? parent : null
-}
-
-function memberRefusal(state: Indexed, id: SlideId, node: ElementId, holder: ElementId | null): SlideRefusal | null {
+function memberRefusal(state: Indexed, id: SlideId, node: ElementId): SlideRefusal | null {
   if (shapeOf(node).slide !== id || slideKind(node) !== null || elementGone(state, node)) return "dead"
-  if (groupedNow(state, node) && (holder === null || groupParent(state, node) !== holder)) return "group-box"
+  if (groupedNow(state, node)) return "group-box"
   const opening = openingElement(state, node)
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   if (!groupable.includes(opening.kind) || opening.role !== undefined) return "kind"
@@ -114,29 +108,17 @@ function madeRefusal(state: Indexed, command: ElementGroup): SlideRefusal | null
   if (members.length < (backdrop === undefined ? 2 : 1)) return "dead"
   for (const fresh of backdrop === undefined ? [element] : [element, backdrop])
     if (openingElement(state, fresh.node) !== undefined || elementGone(state, fresh.node)) return "present"
-  const holder =
-    backdrop === undefined
-      ? null
-      : sharedFrame(
-          state,
-          members.map((member) => member.node),
-        )
   for (const member of members) {
-    const refusal = memberRefusal(state, command.id, member.node, holder)
+    const refusal = memberRefusal(state, command.id, member.node)
     if (refusal !== null) return refusal
   }
   const fits = sameBox(element.box, groupBounds(members)) || sameBox(element.box, groupBounds(members.slice(0, 1)))
   return fits ? null : "dead"
 }
 
-function inFrame(state: Indexed, node: ElementId): boolean {
-  const parent = groupParent(state, node)
-  return typeof parent === "string" && frameBackdrop(state, parent) !== null
-}
-
 function ungroupRefusal(state: Indexed, command: ElementUngroup): SlideRefusal | null {
   if (elementGone(state, command.node)) return "dead"
-  if (groupedNow(state, command.node) && !inFrame(state, command.node)) return "group-box"
+  if (groupedNow(state, command.node)) return "group-box"
   const opening = openingElement(state, command.node)
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   if (opening.kind !== "group") return "kind"
@@ -147,12 +129,10 @@ function ungroupRefusal(state: Indexed, command: ElementUngroup): SlideRefusal |
 function regroupRefusal(state: Indexed, command: ElementRegroup): SlideRefusal | null {
   if (!groupDissolved(state, command.node)) return "dead"
   const backdrop = frameSource(state, command.node)?.backdrop
-  const above = groupParent(state, command.node)
   for (const child of formerChildren(state, command.node)) {
     if (child === backdrop) continue
     if (elementGone(state, child)) return "dead"
-    if (groupedNow(state, child) && (groupParent(state, child) !== above || !inFrame(state, command.node)))
-      return "group-box"
+    if (groupedNow(state, child)) return "group-box"
   }
   return null
 }
