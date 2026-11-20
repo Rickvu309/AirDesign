@@ -2,8 +2,10 @@ import { expect, type Page } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 
 export async function exportFromDialog(page: Page): Promise<void> {
+  const dialog = page.getByRole("dialog", { name: "Export" })
+  await expect(dialog).toHaveCount(0)
   await page.getByRole("button", { name: "Export", exact: true }).click()
-  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await expect(dialog.getByRole("button", { name: "Export" })).toBeFocused()
   await page.keyboard.press("Enter")
 }
 
