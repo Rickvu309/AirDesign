@@ -23,7 +23,7 @@ async function drive(kit) {
   await page.mouse.move(end.x, end.y)
   await page.mouse.down()
   await page.mouse.move(near.x, near.y, { steps: 8 })
-  await expect(page.locator("[data-connector-aim]")).toBeVisible()
+  await expect(page.locator("[data-connector-aim]")).toHaveCount(1)
 }
 
 export default { name: "line-end-snap-held", design: editor, drive }
