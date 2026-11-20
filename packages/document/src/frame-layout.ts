@@ -21,12 +21,13 @@ import { rebased } from "./group-space.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { floorOf, openingElement } from "./slide-floor.js"
 import type { Framing } from "./frame-index.js"
-import { flows, layoutAligns } from "./trait-layout.js"
+import { flows, layoutAligns, sizings } from "./trait-layout.js"
 import type { Alpha } from "./value-kind.js"
 import { guessed } from "./layout-guess.js"
 
 export type Flow = (typeof flows)[number]
 export type LayoutAlign = (typeof layoutAligns)[number]
+export type Sizing = (typeof sizings)[number]
 export type Sides = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
 
 export type LayoutChild = { readonly node: ElementId; readonly box: Box }
@@ -39,6 +40,8 @@ export type LayoutView = {
   readonly padding: Sides
   readonly align: LayoutAlign
   readonly opacity: Alpha
+  readonly width: Sizing
+  readonly height: Sizing
   readonly box: Box
   readonly children: readonly LayoutChild[]
 }
@@ -83,13 +86,15 @@ function traitNow(register: Register, node: ElementId, trait: "layout" | "identi
 
 function filedLayout(framing: Framing | undefined): Readonly<Record<string, FieldEdit<unknown>>> | undefined {
   if (framing === undefined) return undefined
-  const { flow, gap, padding, align } = framing.layout
+  const { flow, gap, padding, align, width, height } = framing.layout
   const [left, top, right, bottom] = padding
   return {
     flow: { set: flow },
     gap: { set: gap },
     padding: { set: { left, top, right, bottom } },
     align: { set: align },
+    ...(width === undefined ? {} : { width: { set: width } }),
+    ...(height === undefined ? {} : { height: { set: height } }),
   }
 }
 
@@ -108,10 +113,10 @@ function sidesOf(value: unknown): Sides {
   }
 }
 
-function crossShare(flow: Flow, align: LayoutAlign): number {
+function shareAcross(align: LayoutAlign, horizontal: boolean): number {
   const name = align.toLowerCase()
-  if (flow === "horizontal") return name.startsWith("top") ? 0 : name.startsWith("bottom") ? 1 : 0.5
-  return name.endsWith("left") ? 0 : name.endsWith("right") ? 1 : 0.5
+  if (horizontal) return name.endsWith("left") ? 0 : name.endsWith("right") ? 1 : 0.5
+  return name.startsWith("top") ? 0 : name.startsWith("bottom") ? 1 : 0.5
 }
 
 function whole(value: unknown, fallback: number): number {
@@ -209,6 +214,8 @@ function laidOut(
     readonly gap: number
     readonly padding: Sides
     readonly align: LayoutAlign
+    readonly width: Sizing
+    readonly height: Sizing
   },
 ): { readonly box: Box; readonly children: readonly LayoutChild[] } {
   const horizontal = fields.flow === "horizontal"
@@ -222,13 +229,18 @@ function laidOut(
   const across = (box: Box) => (horizontal ? box.cy : box.cx)
   const thickest = Math.max(0, ...slots.map(({ bounds }) => across(bounds)))
   const { padding, gap } = fields
-  const start = horizontal ? padding.left : padding.top
-  const crossStart = horizontal ? padding.top : padding.left
-  const share = crossShare(fields.flow, fields.align)
+  const [start, end] = horizontal ? [padding.left, padding.right] : [padding.top, padding.bottom]
+  const [crossStart, crossEnd] = horizontal ? [padding.top, padding.bottom] : [padding.left, padding.right]
+  const [fixedAlong, fixedAcross] = horizontal ? [fields.width, fields.height] : [fields.height, fields.width]
+  const content = slots.reduce((sum, { bounds }) => sum + along(bounds), 0) + gap * Math.max(0, slots.length - 1)
+  const length = fixedAlong === "fixed" ? along(origin) : start + content + end
+  const thickness = fixedAcross === "fixed" ? across(origin) : crossStart + thickest + crossEnd
+  const room = thickness - crossStart - crossEnd
+  const share = shareAcross(fields.align, !horizontal)
   const children: LayoutChild[] = []
-  let cursor = start
+  let cursor = start + Math.round((length - start - end - content) * shareAcross(fields.align, horizontal))
   for (const { member, box, bounds } of slots) {
-    const cross = crossStart + Math.round((thickest - across(bounds)) * share)
+    const cross = crossStart + Math.round((room - across(bounds)) * share)
     const slotX = origin.x + (horizontal ? cursor : cross)
     const slotY = origin.y + (horizontal ? cross : cursor)
     children.push({ node: member.node, box: { ...box, x: slotX + box.x - bounds.x, y: slotY + box.y - bounds.y } })
@@ -242,9 +254,6 @@ function laidOut(
       box: { ...box, x: origin.x + box.x - opened.x, y: origin.y + box.y - opened.y },
     })
   }
-  const used = slots.length === 0 ? start : cursor - gap
-  const length = used + (horizontal ? padding.right : padding.bottom)
-  const thickness = crossStart + thickest + (horizontal ? padding.bottom : padding.right)
   const box = {
     x: origin.x,
     y: origin.y,
@@ -282,10 +291,12 @@ function arranged(register: Register, node: ElementId, origin: Box, mode: Mode):
   const padding = sidesOf(fields.padding)
   const align = layoutAligns.find((each) => each === fields.align) ?? "topLeft"
   const opacity = (typeof fields.opacity === "number" ? fields.opacity : opaque) as Alpha
-  const view = { node, backdrop, flow, gap, padding, align, opacity }
+  const width: Sizing = fields.width === "fixed" ? "fixed" : "hug"
+  const height: Sizing = fields.height === "fixed" ? "fixed" : "hug"
+  const view = { node, backdrop, flow, gap, padding, align, opacity, width, height }
   const members = frameMembers(register, node)
   if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin, mode) }
-  return { ...view, ...laidOut(register, made, members, origin, mode, { flow, gap, padding, align }) }
+  return { ...view, ...laidOut(register, made, members, origin, mode, { flow, gap, padding, align, width, height }) }
 }
 
 function layoutIn(register: Register, node: ElementId, mode: Mode): LayoutView | null {

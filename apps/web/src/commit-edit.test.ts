@@ -1,4 +1,4 @@
-import { elementId, format, limits } from "@airdesign/document"
+import { boxPatch, elementId, format, limits } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { commitBoxes, commitEdit, flushPending, server } from "./commit-edit"
 
@@ -393,5 +393,39 @@ it("keeps a resized rounded shape's box and its kept corners in one row", async 
       "Hello",
     ],
   ])
+  expect(outcome).toBe("sent")
+})
+
+it("keeps a resized frame's box and the sides it makes Fixed in one row", async () => {
+  const rows: unknown[] = []
+  const box = { x: 1, y: 2, cx: 30, cy: 4 }
+  const outcome = await commitBoxes(
+    () => ({
+      async enqueueRow(_deck, row) {
+        rows.push(row)
+        return { ok: true }
+      },
+      async enqueueBox() {
+        throw new Error("a frame's resize went through the plain box path")
+      },
+      async flush() {
+        return { ok: true }
+      },
+      async pending() {
+        return []
+      },
+    }),
+    "any-deck",
+    [
+      {
+        box,
+        element: { id: elementId("256.20"), file: "" },
+        sides: { before: { width: "hug" }, after: { width: "fixed" } },
+      },
+    ],
+    () => undefined,
+    () => undefined,
+  )
+  expect(rows).toEqual([{ v: format, patch: { ...boxPatch(box), layout: { width: { set: "fixed" } } } }])
   expect(outcome).toBe("sent")
 })

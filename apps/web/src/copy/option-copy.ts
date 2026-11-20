@@ -7,7 +7,7 @@ import { fillWords } from "@/copy/fill-copy"
 import { borderWords } from "@/copy/border-copy"
 import { geometryWords } from "@/copy/geometry-copy"
 import { pictureWords } from "@/copy/picture-copy"
-import { layoutWords } from "@/copy/frame-copy"
+import { layoutWords, sizingShown } from "@/copy/frame-copy"
 import { transitionWords } from "@/copy/transition-copy"
 import { guideWords } from "@/copy/guide-copy"
 
@@ -36,4 +36,10 @@ export const optionCopy: Readonly<Record<string, string>> = {
 
 export function optionWord(field: string, option: string): string {
   return optionCopy[`${field}.${option}`] ?? optionCopy[option] ?? option
+}
+
+const shownCopy: Readonly<Record<string, string>> = sizingShown
+
+export function shownWord(field: string, option: string): string {
+  return shownCopy[`${field}.${option}`] ?? optionWord(field, option)
 }

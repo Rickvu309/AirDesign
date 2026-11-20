@@ -143,6 +143,7 @@ export function memberAt(
     readonly movable?: boolean
     readonly group?: Holder
     readonly nestedIn?: readonly Holder[]
+    readonly backdrop?: true
   },
   own: Box | null,
   rotation: number | null,
@@ -153,11 +154,13 @@ export function memberAt(
   const group = element.group
   if (group === undefined || (own !== null && element.movable === true && group.frame === undefined)) return placed
   const holders = element.nestedIn ?? []
+  const spans = (at: number) => element.backdrop === true && at === 0
   const nested = holders.reduce(
-    (child, holder, at) => followed(child, holder.box, nestedCarried[at] ?? null, holder.frame === undefined),
+    (child, holder, at) =>
+      followed(child, holder.box, nestedCarried[at] ?? null, holder.frame === undefined, spans(at)),
     placed,
   )
-  return followed(nested, group.box, carried, group.frame === undefined)
+  return followed(nested, group.box, carried, group.frame === undefined, spans(holders.length))
 }
 
 export function followed(
@@ -165,15 +168,17 @@ export function followed(
   group: PaintBox | null,
   moved: Box | null,
   scales = true,
+  spans = false,
 ): PaintBox | null {
   if (child === null || group === null || moved === null) return child
   const scaleX = group.width === 0 || !scales ? 1 : moved.cx / group.width
   const scaleY = group.height === 0 || !scales ? 1 : moved.cy / group.height
+  const [grownX, grownY] = spans && !scales ? [moved.cx - group.width, moved.cy - group.height] : [0, 0]
   return {
     ...child,
     x: moved.x + (child.x - group.x) * scaleX,
     y: moved.y + (child.y - group.y) * scaleY,
-    width: child.width * scaleX,
-    height: child.height * scaleY,
+    width: child.width * scaleX + grownX,
+    height: child.height * scaleY + grownY,
   }
 }

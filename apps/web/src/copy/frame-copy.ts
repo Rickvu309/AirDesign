@@ -8,6 +8,8 @@ export const frameCopy = {
   gap: "Gap",
   padding: "Padding",
   align: "Alignment",
+  width: "Width",
+  height: "Height",
   individualPadding: "Edit individual padding",
 } as const
 
@@ -15,6 +17,10 @@ export const layoutWords = {
   "flow.horizontal": "Horizontal",
   "flow.vertical": "Vertical",
   "flow.none": "None",
+  hug: "Hug contents",
+  fixed: "Fixed",
+  "width.fixed": "Fixed width",
+  "height.fixed": "Fixed height",
   "padding.horizontal": "Horizontal padding",
   "padding.vertical": "Vertical padding",
   "padding.left": "Left",
@@ -28,4 +34,11 @@ export const layoutWords = {
   topRight: "Top right",
   bottomLeft: "Bottom left",
   bottomRight: "Bottom right",
+} as const
+
+export const sizingShown = {
+  "width.hug": "Hug",
+  "width.fixed": "Fixed",
+  "height.hug": "Hug",
+  "height.fixed": "Fixed",
 } as const
