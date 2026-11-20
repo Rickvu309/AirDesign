@@ -51,6 +51,7 @@ import { toneScope } from "@/editor/tone-scope"
 import { LiveSelectionColors } from "./live-selection-colors"
 import { liveSlideNumber } from "./live-slide-number"
 import { LiveBoxFields } from "./live-box-fields"
+import { servedFaces, useServedFaces } from "@/design/served-faces"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -118,6 +119,7 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const role = placeholderRole(shown.displayParts.current, node)
   const model = panelOf(view, {
     fonts: fontsOf(shown.displayParts.current, node),
+    faces: servedFaces,
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
     slides: readSlides(shown.displayParts.current).map((each) => each.slide),
@@ -351,6 +353,7 @@ export function LiveDesignPanel(props: PanelProps) {
 }
 
 function DesignPanelSwitch({ deck, selectedSlides = 1, mode, toneFor }: PanelProps) {
+  useServedFaces()
   const [tab, onTab] = useState<SlideTab["tab"]>("design")
   const tabs: SlideTab = { tab, onTab }
   if (selectedSlides === 0)

@@ -1,5 +1,5 @@
 import type { GestureId, GestureRow, Pointing } from "@airdesign/render"
-import { zoomToOf } from "./product-copy"
+import { zoomToOf } from "./product-copy.ts"
 
 export const shortcutCopy = {
   title: "Keyboard shortcuts",
@@ -101,6 +101,8 @@ export const shortcutCopy = {
     strike: "Strikethrough",
     "size-up": "Larger text",
     "size-down": "Smaller text",
+    "weight-up": "Heavier font weight",
+    "weight-down": "Lighter font weight",
     "text-left": "Align text left",
     "text-center": "Align text center",
     "text-right": "Align text right",

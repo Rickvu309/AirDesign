@@ -13,7 +13,7 @@ export default async function drive(kit) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const document = await import(pathToFileURL(path.join(repo, "packages/document/dist/index.js")).href)
   const fonts = await import(pathToFileURL(path.join(repo, "packages/fonts/dist/index.js")).href)
-  const light = fonts.portableFace("Lato Light").name
+  const light = fonts.namedFace("Lato Light").name
   const signed = await kit.signIn()
   const fixture = path.join(repo, "scripts/pptx-fixtures/doe-heat-pumps.pptx")
   await page.goto("/")
@@ -152,6 +152,6 @@ export default async function drive(kit) {
     `MCP read_deck exposes template text styles; edit_deck text.style ${title.id} lands and paints the matching style.`,
   )
   note(
-    `Style, one-step Undo, Weight/Bold agreement, portable face, preset size, Custom, server, reload and native export passed. Only slide1.xml changed: ${file}`,
+    `Style, one-step Undo, Weight/Bold agreement, named face, preset size, Custom, server, reload and native export passed. Only slide1.xml changed: ${file}`,
   )
 }

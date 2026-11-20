@@ -60,6 +60,7 @@ for (const name of [
   "text-fields",
   "text-fill-image",
   "text-style-weight",
+  "text-weight-faces",
   "dynamic-fonts",
   "picture-icon",
   "theme",

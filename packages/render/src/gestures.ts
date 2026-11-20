@@ -376,6 +376,18 @@ export const gestures = [
     where: ["element"],
   },
   { id: "numbers", group: "text", keys: [{ code: "Digit7", mod: true, shift: true }], where: ["element"] },
+  {
+    id: "weight-up",
+    group: "text",
+    keys: [{ code: "Period", mod: true, alt: true, shift: true }],
+    where: ["element"],
+  },
+  {
+    id: "weight-down",
+    group: "text",
+    keys: [{ code: "Comma", mod: true, alt: true, shift: true }],
+    where: ["element"],
+  },
 ] as const satisfies readonly GestureRow[]
 
 export type GestureId = (typeof gestures)[number]["id"]

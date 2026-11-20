@@ -1,10 +1,37 @@
-import { fontFamily, portableFace, portableFaces } from "@airdesign/fonts"
+import {
+  boldWeight,
+  familyStyles,
+  fontFamily,
+  namedFace,
+  readStyleName,
+  regularWeight,
+  resolveFont,
+  styleName,
+  styleTypeface,
+  type FontStyle,
+} from "@airdesign/fonts"
 import { readTextFill, type TextStyle } from "@airdesign/document"
 import { designCopy } from "@/copy/design-copy"
-import { formatCopy } from "@/copy/format-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { PanelControl, PanelReads } from "./panel"
 import { resolveControl } from "./panel-arrangement"
+
+const plainStyles: readonly FontStyle[] = [regularWeight, boldWeight].flatMap((weight) => [
+  { weight, italic: false },
+  { weight, italic: true },
+])
+
+function stylesOf(family: string | undefined, current: FontStyle | undefined, shown: PanelReads) {
+  const served = family !== undefined && resolveFont(family)?.family.toLowerCase() === family.toLowerCase()
+  const faces = served ? shown.faces?.(family) : undefined
+  const listed = faces === undefined ? plainStyles : familyStyles(faces)
+  const all = current === undefined || listed.some((style) => sameStyle(style, current)) ? listed : [...listed, current]
+  return [...all].sort((left, right) => left.weight - right.weight || Number(left.italic) - Number(right.italic))
+}
+
+function sameStyle(left: FontStyle, right: FontStyle): boolean {
+  return left.weight === right.weight && left.italic === right.italic
+}
 
 export function typographyControls(
   controls: readonly PanelControl[],
@@ -15,14 +42,17 @@ export function typographyControls(
   const typeface =
     font?.value === "+mj-lt" ? shown.fonts?.major : font?.value === "+mn-lt" ? shown.fonts?.minor : font?.value
   const bold = controls.find((control) => control.field === "bold")
-  const available = portableFaces(typeof typeface === "string" ? typeface : "")
-  const choices = [
-    ...available.slice(0, 3).map((face) => ({ value: face.typeface, label: face.name })),
-    { value: "regular", label: textCopy.regular },
-    ...available.slice(3, 5).map((face) => ({ value: face.typeface, label: face.name })),
-    { value: "bold", label: formatCopy.named.bold },
-    ...available.slice(5).map((face) => ({ value: face.typeface, label: face.name })),
-  ]
+  const italic = controls.find((control) => control.field === "italic")
+  const named = typeof font?.value === "string" ? namedFace(font.value) : undefined
+  const family = named?.family ?? (typeof typeface === "string" ? typeface : undefined)
+  const mixed = bold?.mixed === true || font?.mixed === true || italic?.mixed === true
+  const current: FontStyle | undefined = mixed
+    ? undefined
+    : { weight: bold?.value === true ? boldWeight : (named?.weight ?? regularWeight), italic: italic?.value === true }
+  const choices = stylesOf(family, current, shown).map((style) => ({
+    value: styleName(style),
+    label: styleName(style),
+  }))
   const weight =
     bold === undefined
       ? []
@@ -31,28 +61,23 @@ export function typographyControls(
             ...bold,
             field: "weight",
             label: textCopy.weight,
-            desc: {
-              kind: "choice",
-              options: choices.map((choice) => choice.value),
-            },
-            value:
-              bold.mixed || font?.mixed
-                ? undefined
-                : bold.value === true
-                  ? "bold"
-                  : typeof font?.value === "string"
-                    ? (portableFace(font.value)?.typeface ?? "regular")
-                    : "regular",
-            mixed: bold.mixed || font?.mixed === true,
+            desc: { kind: "choice", options: choices.map((choice) => choice.value) },
+            value: current === undefined ? undefined : styleName(current),
+            mixed,
             reset: null,
             change: (value) => {
-              const face = typeof value === "string" ? portableFace(value) : undefined
-              const base = typeof font?.value === "string" ? portableFace(font.value)?.family : undefined
+              const style = typeof value === "string" ? readStyleName(value) : undefined
+              const wanted = style ?? { weight: regularWeight, italic: false }
+              const face = family === undefined ? undefined : styleTypeface(family, wanted.weight)
+              const plain = wanted.weight === regularWeight || wanted.weight === boldWeight
+              const refaced = face !== undefined && (plain ? named !== undefined : face !== font?.value)
+              const emboldened = wanted.weight === boldWeight
               return {
-                ...bold.change(value === "bold"),
+                ...bold.change(emboldened),
                 text: {
-                  ...(bold.mixed || font?.mixed || bold.value !== (value === "bold") ? { bold: value === "bold" } : {}),
-                  ...(face === undefined ? (base === undefined ? {} : { font: base }) : { font: face.typeface }),
+                  ...(refaced ? { font: face } : {}),
+                  ...(mixed || bold.value !== emboldened ? { bold: emboldened } : {}),
+                  ...(mixed || italic?.value !== wanted.italic ? { italic: wanted.italic } : {}),
                 },
               }
             },
@@ -61,13 +86,15 @@ export function typographyControls(
         ]
   return [
     ...controls.map((control) => {
-      const face = typeof font?.value === "string" ? portableFace(font.value) : undefined
       if (control.field === "font" && typeof typeface === "string")
-        return { ...control, value: face?.family ?? typeface }
-      if (control.field === "bold" && face !== undefined)
+        return { ...control, value: named?.family ?? typeface }
+      if (control.field === "bold" && named !== undefined)
         return {
           ...control,
-          change: (value: unknown) => ({ ...control.change(value), text: { font: face.family, bold: value === true } }),
+          change: (value: unknown) => ({
+            ...control.change(value),
+            text: { font: named.family, bold: value === true },
+          }),
         }
       if (control.field !== "style") return control
       const matching = styles.find((style) =>

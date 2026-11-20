@@ -1,4 +1,4 @@
-import type { FontFamily } from "./source.js"
+import type { FontFamily } from "./catalog.js"
 
 export type FontFile = {
   readonly file: string

@@ -180,7 +180,7 @@ it("writes decimal numbering as the paragraph's one list choice", () => {
   expect(written(value)).toContain('<a:buAutoNum type="arabicPeriod"/>')
 })
 
-it("exports a portable face by its native typeface name and changes no other run bytes", () => {
+it("exports a named face by its own typeface name and changes no other run bytes", () => {
   for (const face of [
     "Lato Thin",
     "Lato ExtraLight",

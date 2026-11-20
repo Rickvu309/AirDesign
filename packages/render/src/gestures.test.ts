@@ -204,4 +204,14 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "I", code: "KeyI", shiftKey: true }, "element")).toBeNull()
     expect(gestureFor({ ...plain, key: "i", code: "KeyI", altKey: true }, "element")).toBeNull()
   })
+
+  it("steps a layer's font weight with Figma's Option Command or Ctrl Alt and the angle brackets", () => {
+    const mac = { ...plain, metaKey: true, altKey: true, shiftKey: true }
+    const pc = { ...plain, ctrlKey: true, altKey: true, shiftKey: true }
+    expect(gestureFor({ ...mac, key: "˘", code: "Period" }, "element")).toBe("weight-up")
+    expect(gestureFor({ ...mac, key: "¯", code: "Comma" }, "element")).toBe("weight-down")
+    expect(gestureFor({ ...pc, key: ">", code: "Period" }, "element")).toBe("weight-up")
+    expect(gestureFor({ ...pc, key: "<", code: "Comma" }, "element")).toBe("weight-down")
+    expect(gestureFor({ ...plain, key: ">", code: "Period", ctrlKey: true, shiftKey: true }, "element")).toBe("size-up")
+  })
 })

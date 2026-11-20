@@ -18,6 +18,7 @@ import {
   type TraitName,
   type TraitReads,
 } from "@airdesign/document"
+import type { ServedFace } from "@airdesign/fonts"
 import type { CSSProperties, ReactNode } from "react"
 import { fillCopy } from "@/copy/fill-copy"
 import { pictureCopy } from "@/copy/picture-copy"
@@ -223,6 +224,7 @@ function wireFields(trait: TraitName): readonly (readonly [string, Desc])[] {
 
 export type PanelReads = {
   readonly fonts?: { readonly major?: string; readonly minor?: string }
+  readonly faces?: (family: string) => readonly ServedFace[] | undefined
   readonly reads: TraitReads
   readonly moves: boolean
   readonly fields?: Readonly<Record<string, ShownField | undefined>>

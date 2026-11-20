@@ -6,6 +6,7 @@ import { removeAutoLayout } from "@/editor/auto-layout-removal"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { selectedDesign, type DesigningDeck } from "@/editor/live-design-panel"
 import { onLayers, typing } from "@/editor/pointer-tool"
+import { steppedStyle } from "@/design/weight-step"
 
 const alignOf: Partial<Readonly<Record<GestureId, string>>> = {
   "align-left": "left",
@@ -96,6 +97,14 @@ export function useDesignKeys(deck: DesigningDeck, working: boolean) {
         event.preventDefault()
         const next = list.value === "numbers" ? "none" : "numbers"
         changeDesign(now, () => controlOf(latest.current, "text", "list")?.change(next) ?? [])
+        return
+      }
+      if (onLayer === "weight-up" || onLayer === "weight-down") {
+        const weight = controlOf(now, "text", "weight")
+        const next = weight === undefined ? null : steppedStyle(weight, onLayer === "weight-up" ? 1 : -1)
+        if (next === null || !editorOwnsKey(event)) return
+        event.preventDefault()
+        changeDesign(now, () => controlOf(latest.current, "text", "weight")?.change(next) ?? [])
         return
       }
       if (onLayer === "opacity") {
