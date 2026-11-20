@@ -1,4 +1,5 @@
-import { sameColor, type ChartValue } from "@airdesign/document"
+import type { ChartValue } from "@airdesign/document"
+import { lookPatched } from "./chart-look-patch.js"
 import { chartValueOf } from "./chart-read.js"
 import { spanOf, unzipped } from "./chart-workbook-check.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
@@ -14,10 +15,10 @@ type Read = {
   readonly elements: readonly MarkupElement[]
   readonly children: MarkupChildren
 }
-type CellWrite = { readonly formula: string; readonly values: readonly (string | number)[] }
+type CellWrite = { readonly formula: string; readonly values: readonly (string | number | undefined)[] }
+type PointWrite = { readonly edits: readonly ByteEdit[]; readonly changed: readonly (string | number | undefined)[] }
 
 const groupKinds = ["c:barChart", "c:lineChart", "c:pieChart"]
-const settingKeys = ["title", "labels", "axis", "gridlines", "gap", "legend"] as const
 
 function read(bytes: Uint8Array | undefined): Read | null {
   if (bytes === undefined) return null
@@ -47,11 +48,12 @@ function own(element: MarkupElement | undefined, name: string): string | undefin
   return element?.attributes.find((item) => item.name === name)?.value
 }
 
-function sameLook(before: ChartValue, after: ChartValue): boolean {
-  if (before.kind !== after.kind || before.categories.length !== after.categories.length) return false
-  if (before.series.length !== after.series.length) return false
-  if (settingKeys.some((key) => before[key] !== after[key])) return false
-  return before.series.every((series, at) => sameColor(series.color, after.series[at]?.color))
+function sameShape(before: ChartValue, after: ChartValue): boolean {
+  return (
+    before.kind === after.kind &&
+    before.categories.length === after.categories.length &&
+    before.series.length === after.series.length
+  )
 }
 
 function text(markup: Read, element: MarkupElement | undefined): string {
@@ -73,17 +75,21 @@ function holderOf(markup: Read, parent: MarkupElement | undefined): Holder | nul
   return { formula: formula === undefined ? null : text(markup, formula), cache }
 }
 
-function pointEdits(markup: Read, holder: Holder, values: readonly (string | number)[]): readonly ByteEdit[] | null {
+function pointEdits(markup: Read, holder: Holder, values: readonly (string | number)[]): PointWrite | null {
   const numeric = local(holder.cache.kind).startsWith("num")
   const edits: ByteEdit[] = []
+  const changed: (string | number | undefined)[] = []
   for (const [at, value] of values.entries()) {
     const point = kids(markup, holder.cache, "pt").find((each) => Number(own(each, "idx")) === at)
     const shown = kid(markup, point, "v")
     if (shown === undefined || shown.selfClosing) return null
     if (numeric && !Number.isFinite(Number(value))) return null
-    edits.push({ start: shown.openEnd, end: shown.closeStart, next: encodeUtf8(xmlText(String(value))) })
+    const held = text(markup, shown)
+    const same = numeric ? held.trim() !== "" && Number(held) === Number(value) : held === String(value)
+    changed.push(same ? undefined : value)
+    if (!same) edits.push({ start: shown.openEnd, end: shown.closeStart, next: encodeUtf8(xmlText(String(value))) })
   }
-  return edits
+  return { edits, changed }
 }
 
 function seriesEdits(markup: Read, chart: ChartValue): { edits: ByteEdit[]; cells: CellWrite[] } | null {
@@ -105,14 +111,16 @@ function seriesEdits(markup: Read, chart: ChartValue): { edits: ByteEdit[]; cell
       [holderOf(markup, kid(markup, element, "cat")), chart.categories],
       [holderOf(markup, kid(markup, element, "val")), series.values],
     ]
-    if (direct !== undefined && !direct.selfClosing)
-      edits.push({ start: direct.openEnd, end: direct.closeStart, next: encodeUtf8(xmlText(series.name)) })
-    else parts.push([holderOf(markup, tx), [series.name]])
+    if (direct !== undefined && !direct.selfClosing) {
+      if (text(markup, direct) !== series.name)
+        edits.push({ start: direct.openEnd, end: direct.closeStart, next: encodeUtf8(xmlText(series.name)) })
+    } else parts.push([holderOf(markup, tx), [series.name]])
     for (const [holder, values] of parts) {
       const patched = holder === null ? null : pointEdits(markup, holder, values)
       if (holder === null || patched === null) return null
-      edits.push(...patched)
-      if (holder.formula !== null) cells.push({ formula: holder.formula, values })
+      edits.push(...patched.edits)
+      if (holder.formula !== null && patched.edits.length > 0)
+        cells.push({ formula: holder.formula, values: patched.changed })
     }
   }
   return { edits, cells }
@@ -172,7 +180,10 @@ function patchedWorkbook(bytes: Uint8Array, cells: readonly CellWrite[]): Uint8A
     const part = span === null ? undefined : sheets.get(span.sheet)
     if (span === null || part === undefined || span.cells.length !== write.values.length) return null
     const sheet = wanted.get(part) ?? new Map<string, string | number>()
-    span.cells.forEach((cell, at) => sheet.set(cell, write.values[at] ?? ""))
+    span.cells.forEach((cell, at) => {
+      const value = write.values[at]
+      if (value !== undefined) sheet.set(cell, value)
+    })
     wanted.set(part, sheet)
   }
   const next = new Map(files)
@@ -198,18 +209,20 @@ function linkedWorkbook(parts: Parts, chartPart: string, markup: Read): string |
   return link !== undefined && link.type.endsWith("/package") ? link.part : null
 }
 
-export function patchedChartData(parts: Map<string, Uint8Array>, chartPart: string, chart: ChartValue): boolean {
+export function patchedChart(parts: Map<string, Uint8Array>, chartPart: string, chart: ChartValue): boolean {
   const bytes = parts.get(chartPart)
   const before = bytes === undefined ? null : chartValueOf(bytes)
   const markup = read(bytes)
-  if (before === null || markup === null || !sameLook(before, chart)) return false
+  if (before === null || markup === null || !sameShape(before, chart)) return false
   const found = seriesEdits(markup, chart)
-  if (found === null) return false
+  const looked = found === null ? null : lookPatched(spliceBytes(markup.bytes, found.edits), before, chart)
+  if (found === null || looked === null) return false
   const workbookPart = linkedWorkbook(parts, chartPart, markup)
   const workbookBytes = workbookPart === null ? undefined : parts.get(workbookPart)
-  const workbook = workbookBytes === undefined ? null : patchedWorkbook(workbookBytes, found.cells)
-  if (workbookPart !== null && workbook === null) return false
-  parts.set(chartPart, spliceBytes(markup.bytes, found.edits))
+  const workbook =
+    workbookBytes === undefined || found.cells.length === 0 ? null : patchedWorkbook(workbookBytes, found.cells)
+  if (workbookPart !== null && found.cells.length > 0 && workbook === null) return false
+  parts.set(chartPart, looked)
   if (workbookPart !== null && workbook !== null) parts.set(workbookPart, workbook)
   return true
 }

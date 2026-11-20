@@ -8,6 +8,8 @@ export const chartUri = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 const chartNamespaces = `xmlns:c="${chartUri}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`
 const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
 const quiet = '<a:ln w="9525"><a:solidFill><a:srgbClr val="D9D9D9"/></a:solidFill></a:ln>'
+export const chartGridlinesXml = `<c:majorGridlines><c:spPr>${quiet}</c:spPr></c:majorGridlines>`
+export const chartLineWidth = 28575
 const ink = '<a:solidFill><a:schemeClr val="tx1"/></a:solidFill>'
 const legendPlaces = { bottom: "b", top: "t", right: "r", left: "l" } as const
 const titleSize = 1400
@@ -17,7 +19,7 @@ function accent(at: number): string {
   return solidFillXml({ scheme: accents[at % accents.length] ?? "accent1" })
 }
 
-function paint(series: ChartSeries, at: number): string {
+export function seriesFillXml(series: ChartSeries, at: number): string {
   return series.color === undefined ? accent(at) : solidFillXml(series.color)
 }
 
@@ -49,7 +51,7 @@ function textLook(size: number, bold: boolean): string {
   return `<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${String(size)}" b="${bold ? "1" : "0"}">${ink}</a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>`
 }
 
-function labelsXml(chart: ChartValue): string {
+export function chartLabelsXml(chart: ChartValue): string {
   if (chart.labels === undefined) return ""
   const share = chart.kind === "pie" && chart.labels.includes("%")
   const position = chart.kind === "pie" ? "bestFit" : chart.kind === "line" ? "t" : "outEnd"
@@ -61,7 +63,7 @@ function barSeries(chart: ChartValue): string {
   return chart.series
     .map((series, at) => {
       const cells = cellsOf(chart, at)
-      return `<c:ser>${named(series, at, cells)}<c:spPr>${paint(series, at)}</c:spPr><c:invertIfNegative val="0"/>${labelsXml(chart)}${data(chart, series, cells)}</c:ser>`
+      return `<c:ser>${named(series, at, cells)}<c:spPr>${seriesFillXml(series, at)}</c:spPr><c:invertIfNegative val="0"/>${chartLabelsXml(chart)}${data(chart, series, cells)}</c:ser>`
     })
     .join("")
 }
@@ -70,7 +72,7 @@ function lineSeries(chart: ChartValue): string {
   return chart.series
     .map((series, at) => {
       const cells = cellsOf(chart, at)
-      return `<c:ser>${named(series, at, cells)}<c:spPr><a:ln w="28575" cap="rnd">${paint(series, at)}<a:round/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker>${labelsXml(chart)}${data(chart, series, cells)}<c:smooth val="0"/></c:ser>`
+      return `<c:ser>${named(series, at, cells)}<c:spPr><a:ln w="${String(chartLineWidth)}" cap="rnd">${seriesFillXml(series, at)}<a:round/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker>${chartLabelsXml(chart)}${data(chart, series, cells)}<c:smooth val="0"/></c:ser>`
     })
     .join("")
 }
@@ -84,11 +86,11 @@ function pieSeries(chart: ChartValue): string {
         `<c:dPt><c:idx val="${String(at)}"/><c:bubble3D val="0"/><c:spPr>${accent(at)}<a:ln w="12700"><a:solidFill><a:schemeClr val="bg1"/></a:solidFill></a:ln></c:spPr></c:dPt>`,
     )
     .join("")
-  return `<c:ser>${named(series, 0, cellsOf(chart, 0))}${slices}${labelsXml(chart)}${data(chart, series, cellsOf(chart, 0))}</c:ser>`
+  return `<c:ser>${named(series, 0, cellsOf(chart, 0))}${slices}${chartLabelsXml(chart)}${data(chart, series, cellsOf(chart, 0))}</c:ser>`
 }
 
 function axesXml(chart: ChartValue): string {
-  const gridlines = chart.gridlines === false ? "" : `<c:majorGridlines><c:spPr>${quiet}</c:spPr></c:majorGridlines>`
+  const gridlines = chart.gridlines === false ? "" : chartGridlinesXml
   const hidden = chart.axis === false ? "1" : "0"
   return (
     `<c:catAx><c:axId val="111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr>${quiet}</c:spPr><c:crossAx val="222"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
