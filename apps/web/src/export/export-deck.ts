@@ -1,5 +1,6 @@
-import { connect, getParts, memoryRemote } from "@airdesign/live"
+import { connect, memoryRemote } from "@airdesign/live"
 import { exportPackage } from "@airdesign/pptx"
+import { deckParts } from "@/device-copy"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
 import { bakeFills } from "@/export/fill-bake"
@@ -13,7 +14,27 @@ export type ExportRequest = {
   readonly signal?: AbortSignal
 }
 
+export type ExportStop = "file" | "edits" | "write"
+
+export class ExportStopped extends Error {
+  readonly stop: ExportStop
+
+  constructor(stop: ExportStop, options?: ErrorOptions) {
+    super(stop, options)
+    this.name = "ExportStopped"
+    this.stop = stop
+  }
+}
+
 const asked = new Map<string, readonly number[] | undefined>()
+
+async function written(file: Uint8Array, edited: () => Promise<ReadonlyMap<string, Uint8Array>>): Promise<Uint8Array> {
+  try {
+    return await exportPackage(file, await edited())
+  } catch (error) {
+    throw new ExportStopped("write", { cause: error })
+  }
+}
 
 export async function exportDeck(
   id: string,
@@ -24,15 +45,16 @@ export async function exportDeck(
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
   await ready
-  const stored = await getParts(id)
-  if (!stored.ok) throw new Error("parts")
+  const stored = await deckParts(id)
+  if (stored === null || typeof stored === "string") throw new ExportStopped("file")
   const opened = await connect(memoryRemote()).openDeck(id)
-  if (!opened.ok) throw new Error("register")
+  if (!opened.ok) throw new ExportStopped("edits")
   const held = await exportablePictures(pictures, id, opened.register)
-  const chosen = chosenParts(stored.parts, opened.register, slides, held)
-  const masked = await bakeMasks(chosen, maskPicture())
-  const baked = await bakeFills(masked, opened.register)
-  const bytes = await exportPackage(stored.file, await bakeShadows(baked))
+  const bytes = await written(stored.file, async () => {
+    const chosen = chosenParts(stored.parts, opened.register, slides, held)
+    const masked = await bakeMasks(chosen, maskPicture())
+    return bakeShadows(await bakeFills(masked, opened.register))
+  })
   if (request?.signal?.aborted === true) return
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)

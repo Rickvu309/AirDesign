@@ -75,12 +75,17 @@ export async function getParts(deck: string): Promise<PartsResult> {
   if (!isPartRow(stored)) return { ok: false, refusal: "absent" }
   const names = Object.entries(stored.names)
   if (names.some(([, hash]) => typeof hash !== "string")) return { ok: false, refusal: "absent" }
-  const [read, file] = await Promise.all([
-    Promise.all(names.map(async ([name, hash]) => [name, await getPart(hash)] as const)),
-    getPart(stored.file),
-  ])
-  const parts = new Map<string, Uint8Array>(read)
-  return { ok: true, parts, file, ...(stored.name === undefined ? {} : { name: stored.name }) }
+  try {
+    const [read, file] = await Promise.all([
+      Promise.all(names.map(async ([name, hash]) => [name, await getPart(hash)] as const)),
+      getPart(stored.file),
+    ])
+    const parts = new Map<string, Uint8Array>(read)
+    return { ok: true, parts, file, ...(stored.name === undefined ? {} : { name: stored.name }) }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "NotFoundError") return { ok: false, refusal: "absent" }
+    throw error
+  }
 }
 
 export function hex(buffer: ArrayBuffer): string {
