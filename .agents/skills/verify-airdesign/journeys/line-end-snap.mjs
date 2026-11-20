@@ -15,7 +15,7 @@ function lastEndBox(register, node) {
 
 export default async function drive({ repo, page, signIn, post, capture, note, deckRoutes }) {
   const { cookie } = await signIn()
-  await page.goto("/")
+  await page.goto("./")
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/shapes-added.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
