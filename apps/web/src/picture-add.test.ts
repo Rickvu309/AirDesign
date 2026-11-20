@@ -2,14 +2,12 @@ import { decide, limits, openRegister, slideId, type Register, type SlideCommand
 import { readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts, missingPictures } from "./exported-parts"
-import { pictureCommand, pictureRefusal, pictureType, placedPicture } from "./picture-add"
+import { pictureCommand, pictureRefusal, placedPicture } from "./picture-add"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
 const slide = { width: 12_192_000, height: 6_858_000 }
 const media = { sha256: "c".repeat(64), type: "image/png" } as const
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])
-const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0])
-const gif = xml("GIF89a\u0000")
 const svg = xml("<svg xmlns='http://www.w3.org/2000/svg'/>")
 
 function landed(register: Register, edit: SlideCommand | null): Register {
@@ -19,20 +17,17 @@ function landed(register: Register, edit: SlideCommand | null): Register {
   return decision.register
 }
 
-it("reads PNG, JPEG and GIF from their bytes, whatever the file claims, and nothing else", () => {
-  expect(pictureType(png)).toBe("image/png")
-  expect(pictureType(jpeg)).toBe("image/jpeg")
-  expect(pictureType(gif)).toBe("image/gif")
-  expect(pictureType(svg)).toBeNull()
-  expect(pictureType(xml("not a picture"))).toBeNull()
-})
-
 it("refuses a file of another type and a picture at or over the media limit", () => {
   expect(pictureRefusal(png)).toBeNull()
   expect(pictureRefusal(svg)).toBe("type")
   const large = new Uint8Array(limits.media)
   large.set(png)
   expect(pictureRefusal(large)).toBe("size")
+  const huge = new Uint8Array(24)
+  huge.set(png.subarray(0, 8))
+  new DataView(huge.buffer).setUint32(16, 30_000)
+  new DataView(huge.buffer).setUint32(20, 30_000)
+  expect(pictureRefusal(huge)).toBe("size")
 })
 
 it("places a picture at its natural size, centred, and scales a large one down to fit with a margin", () => {

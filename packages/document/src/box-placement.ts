@@ -1,4 +1,5 @@
 import type { Box } from "./box.js"
+import type { PixelSize } from "./media-bytes.js"
 
 export type PlacementArea = { readonly width: number; readonly height: number }
 
@@ -129,4 +130,23 @@ export function fitNewBox(area: PlacementArea, taken: readonly Box[], size: Size
     .sort((left, right) => right.fitted.cx * right.fitted.cy - left.fitted.cx * left.fitted.cy)[0]
   if (fits === undefined) return placeNewBox(area, taken, size)
   return centredIn(fits.free, fits.fitted)
+}
+
+const emuPerPixel = 9525
+const pictureShare = 0.9
+
+export function pictureSize(natural: PixelSize, area: PlacementArea): Size {
+  const width = Math.max(1, natural.width) * emuPerPixel
+  const height = Math.max(1, natural.height) * emuPerPixel
+  const scale = Math.min(1, (area.width * pictureShare) / width, (area.height * pictureShare) / height)
+  return { cx: Math.max(1, Math.round(width * scale)), cy: Math.max(1, Math.round(height * scale)) }
+}
+
+export function fittedInside(box: Box, natural: PixelSize): Box {
+  const scale = Math.min(box.cx / Math.max(1, natural.width), box.cy / Math.max(1, natural.height))
+  const size = {
+    cx: Math.max(1, Math.round(Math.max(1, natural.width) * scale)),
+    cy: Math.max(1, Math.round(Math.max(1, natural.height) * scale)),
+  }
+  return centredIn(box, size)
 }

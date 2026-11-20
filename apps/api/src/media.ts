@@ -36,15 +36,15 @@ async function held(db: Sql, deck: DeckId, sha256: string): Promise<MediaRow | u
   return (await db.query<MediaRow>(heldSql, [deck, sha256])).rows[0]
 }
 
-export async function uploadMedia(
+type Placed = { readonly deck: DeckId; readonly bytes: number; readonly sha256: string }
+
+async function placedMedia(
   db: Sql,
-  parsed: { readonly deck: DeckId; readonly bytes: number; readonly sha256: string },
+  parsed: Placed,
   email: string,
-  store: OriginalStore | undefined,
-): Promise<unknown> {
+): Promise<{ readonly ok: true; readonly row: MediaRow } | ReturnType<typeof refused>> {
   const missing = await unowned(db, parsed.deck, email)
   if (missing !== undefined) return missing
-  if (store === undefined) return refused("storage")
   if (parsed.bytes < 1 || parsed.bytes >= limits.media) return refused("limit")
   const account = createHash("sha256").update(email).digest("hex")
   const key = `media/${account}/${parsed.deck}/${parsed.sha256}`
@@ -58,8 +58,34 @@ export async function uploadMedia(
   ])
   const row = inserted.rows[0] ?? (await held(db, parsed.deck, parsed.sha256))
   if (row === undefined) return (await unowned(db, parsed.deck, email)) ?? refused("limit")
-  if (row.bytes !== parsed.bytes) return refused("present")
-  return { ok: true, ...(await store.upload(row.key, row.bytes)) }
+  return row.bytes === parsed.bytes ? { ok: true, row } : refused("present")
+}
+
+export async function uploadMedia(
+  db: Sql,
+  parsed: Placed,
+  email: string,
+  store: OriginalStore | undefined,
+): Promise<unknown> {
+  if (store === undefined) return (await unowned(db, parsed.deck, email)) ?? refused("storage")
+  const placed = await placedMedia(db, parsed, email)
+  if (!placed.ok) return placed
+  return { ok: true, ...(await store.upload(placed.row.key, placed.row.bytes)) }
+}
+
+export async function keepMedia(
+  db: Sql,
+  deck: DeckId,
+  bytes: Uint8Array,
+  email: string,
+  store: OriginalStore | undefined,
+): Promise<{ readonly ok: true; readonly sha256: string } | ReturnType<typeof refused>> {
+  if (store === undefined) return refused("storage")
+  const sha256 = createHash("sha256").update(bytes).digest("hex")
+  const placed = await placedMedia(db, { deck, bytes: bytes.byteLength, sha256 }, email)
+  if (!placed.ok) return placed
+  if ((await store.size(placed.row.key)) !== placed.row.bytes) await store.write(placed.row.key, bytes)
+  return { ok: true, sha256 }
 }
 
 export async function downloadMedia(

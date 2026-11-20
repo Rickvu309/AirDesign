@@ -10,6 +10,7 @@ type OpDetails = {
   readonly kind: "query" | "command" | "action" | "stream"
   readonly destructive?: true
   readonly idempotent?: true
+  readonly openWorld?: true
 }
 
 export type OpRow = OpDetails &
@@ -45,7 +46,7 @@ export type AgentTool<Op extends string = AgentOp> = {
   readonly readOnlyHint: boolean
   readonly destructiveHint: boolean
   readonly idempotentHint: boolean
-  readonly openWorldHint: false
+  readonly openWorldHint: boolean
 }
 
 export const catalog = {
@@ -68,6 +69,7 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     destructive: true,
+    openWorld: true,
     read: readAgentEdit,
     description:
       "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). Pass the returned runId to airdesign_stop_run when done.",
@@ -147,7 +149,7 @@ export function projectTools<Ops extends Readonly<Record<string, OpRow>>>(
       readOnlyHint: row.kind !== "command",
       destructiveHint: row.destructive === true,
       idempotentHint: row.kind !== "command" || row.idempotent === true,
-      openWorldHint: false,
+      openWorldHint: row.openWorld === true,
     })
   }
   tools.sort(toolOrder)

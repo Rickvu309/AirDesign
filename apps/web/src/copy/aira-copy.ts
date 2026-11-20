@@ -59,6 +59,7 @@ export const airaRefusalWords: Readonly<Record<EditRefusal | "unreached", string
   store: unsaved,
   kept: "AirDesign keeps that part exactly as the PowerPoint file has it.",
   indexing: "The deck was still loading. Try again in a moment.",
+  image: "AirDesign couldn't use the image at that web address.",
   unreached: "Aira lost its connection during this step. Check your connection and try again.",
 }
 

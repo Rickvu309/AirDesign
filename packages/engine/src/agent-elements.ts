@@ -3,12 +3,15 @@ import {
   currentBox,
   decide,
   elementGone,
+  fitNewBox,
+  fittedInside,
   floorNodes,
   nextElementId,
   openingElement,
   openingTable,
   openingTableSize,
   personWrote,
+  pictureSize,
   placeNewBox,
   presentSlides,
   readSlideId,
@@ -20,6 +23,7 @@ import {
   type Box,
   type ElementId,
   type IndexElement,
+  type Media,
   type Register,
   type SlideCommand,
   type SlideId,
@@ -167,6 +171,31 @@ export function addIcon(
   const opening = { fills: { p0: { set: { image: true } }, source: { set: icon } } } as const
   const element = { node, kind: "shape", value: null, box, grouped: false, opening } as const
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
+}
+
+export function addPicture(
+  head: Head,
+  deck: Deck,
+  slide: SlideId,
+  image: { readonly media: Media; readonly width: number; readonly height: number },
+  wanted: Box | undefined,
+  runId: string,
+): Built {
+  const register = deck.register
+  const opened = ready(head, deck, slide, runId)
+  if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
+  const measure = slideMeasure(register, slide)
+  if (measure === undefined || (wanted === undefined && measure.size === undefined)) {
+    return { ok: false, refusal: "dead" }
+  }
+  const size = measure.size ?? { width: 0, height: 0 }
+  const box =
+    wanted === undefined
+      ? fitNewBox(size, takenBoxes(register, slide), pictureSize(image, size))
+      : fittedInside(wanted, image)
+  const node = nextElementId(register, slide, measure.free)
+  const element = { node, kind: "shape", value: null, box, grouped: false } as const
+  return decided(register, opened.file, { slide: "element-add", id: slide, element, media: image.media, runId }, runId)
 }
 
 export function deleteElement(deck: Deck, change: WireDelete, runId: string, base: number): Built {

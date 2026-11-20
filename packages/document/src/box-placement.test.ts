@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { fitNewBox, placeNewBox } from "./box-placement.js"
+import { fitNewBox, fittedInside, pictureSize, placeNewBox } from "./box-placement.js"
 import type { Box } from "./box.js"
 
 const slide = { width: 12_192_000, height: 6_858_000 }
@@ -132,5 +132,31 @@ describe("fitting a new picture", () => {
     const heading = { x: 838_200, y: 365_125, cx: 10_515_600, cy: 1_325_563 }
     const picture = { cx: 4_572_000, cy: 3_048_000 }
     expect(fitNewBox(slide, [heading, content], picture)).toEqual(placeNewBox(slide, [heading, content], picture))
+  })
+})
+
+describe("an image's frame from its pixel size", () => {
+  it("sizes an image at 96 pixels an inch, shrunk to nine tenths of the slide", () => {
+    const area = { width: 12_192_000, height: 6_858_000 }
+    expect(pictureSize({ width: 480, height: 320 }, area)).toEqual({ cx: 4_572_000, cy: 3_048_000 })
+    const wide = pictureSize({ width: 4000, height: 1000 }, area)
+    expect(wide.cx).toBe(Math.round(12_192_000 * 0.9))
+    expect(wide.cx / wide.cy).toBeCloseTo(4, 3)
+  })
+
+  it("places an image whole inside a box at its own proportions, centred", () => {
+    const box = { x: 1_000_000, y: 1_000_000, cx: 4_000_000, cy: 1_000_000 }
+    expect(fittedInside(box, { width: 200, height: 100 })).toEqual({
+      x: 2_000_000,
+      y: 1_000_000,
+      cx: 2_000_000,
+      cy: 1_000_000,
+    })
+    expect(fittedInside(box, { width: 800, height: 100 })).toEqual({
+      x: 1_000_000,
+      y: 1_250_000,
+      cx: 4_000_000,
+      cy: 500_000,
+    })
   })
 })

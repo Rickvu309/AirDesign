@@ -4,7 +4,9 @@ const message =
   "Open a server only in apps/api/src/server.ts: add a row to its `routes` table, and use `import type` for the node:http types."
 const modules = new Set(["http", "https", "node:http", "node:https"])
 
-const harnessAllows = (node) =>
+const requestFiles = new Set(["harness.ts", "image-fetch.ts"])
+
+const requestOnly = (node) =>
   node.type === "ImportDeclaration" &&
   named(node, (specifier) => isType(specifier) || (specifier.imported?.name ?? specifier.imported?.value) === "request")
 
@@ -21,7 +23,7 @@ const rule = {
     return moduleVisitors((node, source) => {
       if (source !== undefined && !modules.has(source)) return
       if (source !== undefined && typeOnly(node)) return
-      if (file === "harness.ts" && harnessAllows(node)) return
+      if (requestFiles.has(file) && requestOnly(node)) return
       context.report({ node, message })
     })
   },

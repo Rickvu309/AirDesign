@@ -28,6 +28,7 @@ import {
   stopForNewTurn,
 } from "./run.js"
 import { changeDetail } from "./change-detail.js"
+import { imageLookup, imageProblem } from "./named-image.js"
 import { textProblem } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
 
@@ -140,11 +141,13 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
   const problem = textProblem(floors.floors, checked)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
+  const unfetched = imageProblem(parsed.changes, session.images)
+  if (unfetched !== undefined) return editRefusal(before, "image", nodes, unfetched)
   const holds = runElements(before.register, parsed.changes).length > 0
   const opened = holds ? startedTurn(raw, session) : addTurn(session, parsed.base)
   if (!opened.ok) return editRefusal(before, opened.refusal, nodes)
   const deck = { id: before.id, revision: before.revision, register: opened.register }
-  const result = call("edit_deck", deck, opened.caller, raw)
+  const result = call("edit_deck", deck, opened.caller, raw, imageLookup(session.images))
   if (!result.ok)
     return {
       ...editRefusal(

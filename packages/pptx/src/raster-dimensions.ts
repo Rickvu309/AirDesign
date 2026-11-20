@@ -1,39 +1,20 @@
+import { mediaSize, mediaTypeOf } from "@airdesign/document"
 import { drawablePicture } from "./picture-drawable.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { markupDocument } from "./element-span.js"
 import { paintAttribute } from "./paint-color.js"
 
 export function rasterDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  const media = mediaSize(bytes)
+  if (media !== null) return { width: media.width, height: media.height }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   let width = 0
   let height = 0
-  if (bytes.length >= 24 && view.getUint32(0) === 0x89504e47) {
-    width = view.getUint32(16)
-    height = view.getUint32(20)
-  } else if (bytes.length >= 10 && bytes[0] === 71 && bytes[1] === 73 && bytes[2] === 70) {
-    width = view.getUint16(6, true)
-    height = view.getUint16(8, true)
-  } else if (bytes.length >= 4 && view.getUint16(0) === 0xffd8) {
-    let at = 2
-    while (at + 4 <= bytes.length) {
-      if (bytes[at] !== 0xff) break
-      const marker = bytes[at + 1] ?? 0
-      const length = view.getUint16(at + 2)
-      if (length < 2 || at + 2 + length > bytes.length) break
-      if (
-        [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker) &&
-        length >= 7
-      ) {
-        height = view.getUint16(at + 5)
-        width = view.getUint16(at + 7)
-        break
-      }
-      at += 2 + length
-    }
-  } else if (bytes.length >= 26 && view.getUint16(0) === 0x424d) {
+  const raster = mediaTypeOf(bytes) !== null
+  if (!raster && bytes.length >= 26 && view.getUint16(0) === 0x424d) {
     width = view.getInt32(18, true)
     height = Math.abs(view.getInt32(22, true))
-  } else if (bytes.find((byte) => ![9, 10, 13, 32].includes(byte)) === 60) {
+  } else if (!raster && bytes.find((byte) => ![9, 10, 13, 32].includes(byte)) === 60) {
     const svg = markupDocument(bytes).elements.find((element) => element.kind === "svg")
     const box = svg === undefined ? [] : (paintAttribute(svg, "viewBox") ?? "").trim().split(/[ ,]+/).map(Number)
     width = box[2] ?? Number.parseFloat(svg === undefined ? "" : (paintAttribute(svg, "width") ?? ""))
