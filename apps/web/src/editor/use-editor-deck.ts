@@ -1,4 +1,4 @@
-import { noSelection, type Selection } from "@airdesign/render"
+import { gestureFor, noSelection, type Selection } from "@airdesign/render"
 import { useEffect, useMemo, useState } from "react"
 import type { ElementId } from "@airdesign/document"
 import { flushMedia, keepMedia } from "@airdesign/live"
@@ -127,9 +127,8 @@ function useMatchingShortcut(selectMatching: (() => void) | undefined) {
   useEffect(() => {
     if (selectMatching === undefined) return
     function match(event: KeyboardEvent) {
-      if (event.code !== "KeyA" || !event.altKey || event.ctrlKey === event.metaKey || event.shiftKey || event.repeat)
-        return
-      if (event.isComposing || event.defaultPrevented) return
+      if (event.repeat || event.isComposing || event.defaultPrevented) return
+      if (gestureFor(event, "editor") !== "select-matching") return
       const target = event.target
       if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select")))
         return

@@ -1,3 +1,4 @@
+import { gestureFor } from "@airdesign/render"
 import {
   useCallback,
   useLayoutEffect,
@@ -104,7 +105,7 @@ export function SlideItem({
               }
         }
         onKeyDown={(event) => {
-          if (onChoose !== undefined && (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))) {
+          if (onChoose !== undefined && gestureFor(event, "slides") === "slide-menu") {
             event.preventDefault()
             openMenu()
             return

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { flushSync } from "react-dom"
-import { gestureFor } from "@airdesign/render"
+import { gestureFor, releases } from "@airdesign/render"
 
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
@@ -191,7 +191,7 @@ export function useCanvasGestures({
       if (!event.repeat) setSpace(true)
     }
     function up(event: KeyboardEvent) {
-      if (event.code === "Space") setSpace(false)
+      if (releases(event, "pan")) setSpace(false)
     }
     function release() {
       setSpace(false)

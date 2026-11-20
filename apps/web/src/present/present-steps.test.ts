@@ -7,7 +7,7 @@ const deck = (count: number, hidden: readonly number[] = []) => ({
 })
 const at = (index: number): Show => ({ ...firstShow(index), at: index })
 const press = (key: string, extra: Partial<Parameters<typeof showKey>[0]> = {}) =>
-  showKey({ key, metaKey: false, ctrlKey: false, altKey: false, ...extra })
+  showKey({ key, metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, ...extra })
 
 it("reads the keys people present with", () => {
   for (const key of ["ArrowRight", "ArrowDown", "PageDown", " ", "n"]) expect(press(key)).toBe("next")

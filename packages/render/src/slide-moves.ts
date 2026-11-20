@@ -10,9 +10,9 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
-import { boxOf, isArrow, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gesture.js"
+import { boxOf, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gesture.js"
 import { snapTargets } from "./drag-snap.js"
-import { gestureFor } from "./gestures.js"
+import { gestureFor, releases } from "./gestures.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import { editingText, enterText } from "./text-entry.js"
 import {
@@ -541,7 +541,7 @@ export function useMoves(
     },
     onKeyUp(event: KeyboardEvent<HTMLDivElement>) {
       const now = held.current
-      if (now?.by === "keys" && isArrow(event.key)) {
+      if (now?.by === "keys" && releases(event, "nudge")) {
         finish(now)
         setMessage(`${keyed.current.verb} ${keyed.current.label}`)
       }

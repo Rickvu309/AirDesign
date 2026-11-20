@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
+import { covers } from "./gesture"
 import {
   clean,
   entry,
@@ -50,6 +51,7 @@ test("a selected slide has one frame that follows its thumbnail corners", async 
 })
 
 test("the grid shows every slide, and the keyboard opens one", async ({ page }) => {
+  covers("slide-open")
   await openFile(page, sectioned)
   await openGrid(page)
   const groups = page.locator("[data-editor-grid] [data-slide-group]")
@@ -93,6 +95,7 @@ test("the grid shows every slide, and the keyboard opens one", async ({ page }) 
 })
 
 test("the grid adds, reorders, duplicates and deletes a slide without a mouse", async ({ page }) => {
+  covers("slide-earlier", "slide-later")
   await openFile(page, clean)
   await openGrid(page)
   const said = page.locator("[data-editor-grid] [data-announcer]")

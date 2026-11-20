@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { covers } from "./gesture"
 
 type ZipLibrary = {
   readonly ZipReader: new (reader: unknown) => {
@@ -34,6 +35,7 @@ function selectedCount(page: Page) {
 test("a person selects several slides with the mouse and the keyboard, and exports just those", async ({
   page,
 }, testInfo) => {
+  covers("select-all")
   test.setTimeout(120_000)
   await openFile(page, { name: "six.pptx", mimeType: "application/octet-stream", buffer: await manySlides(6) })
   await openGrid(page)

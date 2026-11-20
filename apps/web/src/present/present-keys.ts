@@ -1,3 +1,4 @@
+import { gestureFor } from "@airdesign/render"
 import { useEffect, useRef } from "react"
 
 export type PresentFrom = "first" | "current"
@@ -15,10 +16,10 @@ export function presentKey(event: {
   readonly shiftKey: boolean
   readonly field: boolean
 }): PresentFrom | null {
-  if (event.altKey) return null
-  if (event.key === "F5" && !event.metaKey && !event.ctrlKey) return event.shiftKey ? "current" : "first"
-  if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.field) return "current"
-  return null
+  const gesture = gestureFor(event, "editor")
+  if (gesture === "present") return "first"
+  if (gesture !== "present-here") return null
+  return event.field && !event.shiftKey ? null : "current"
 }
 
 export function usePresentKeys(working: boolean, onKey: (from: PresentFrom) => void) {

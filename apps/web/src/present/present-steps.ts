@@ -1,3 +1,5 @@
+import { gestureFor, type GestureId, type KeyLike } from "@airdesign/render"
+
 export type ShowView = "audience" | "presenter"
 
 export type Show = {
@@ -13,23 +15,15 @@ export type ShowKey = "next" | "previous" | "first" | "last" | "go" | "erase" | 
 
 export type ShownDeck = { readonly count: number; readonly hidden: readonly boolean[] }
 
-const keys: Readonly<Record<string, ShowKey>> = {
-  ArrowRight: "next",
-  ArrowDown: "next",
-  PageDown: "next",
-  " ": "next",
-  n: "next",
-  N: "next",
-  ArrowLeft: "previous",
-  ArrowUp: "previous",
-  PageUp: "previous",
-  Enter: "go",
-  Backspace: "erase",
-  Home: "first",
-  End: "last",
-  Escape: "stop",
-  p: "presenter",
-  P: "presenter",
+const showKeys: Partial<Readonly<Record<GestureId, ShowKey>>> = {
+  "show-next": "next",
+  "show-previous": "previous",
+  "show-go": "go",
+  "show-erase": "erase",
+  "show-first": "first",
+  "show-last": "last",
+  "show-stop": "stop",
+  "show-presenter": "presenter",
 }
 
 function isDigit(key: string): key is Digit {
@@ -40,15 +34,10 @@ export function firstShow(at: number): Show {
   return { at, ended: false, typed: "", view: "audience" }
 }
 
-export function showKey(event: {
-  readonly key: string
-  readonly metaKey: boolean
-  readonly ctrlKey: boolean
-  readonly altKey: boolean
-}): ShowKey | null {
-  if (event.metaKey || event.ctrlKey || event.altKey) return null
-  if (isDigit(event.key)) return event.key
-  return keys[event.key] ?? null
+export function showKey(event: KeyLike): ShowKey | null {
+  const gesture = gestureFor(event, "show")
+  if (gesture === "show-number") return isDigit(event.key) ? event.key : null
+  return gesture === null ? null : (showKeys[gesture] ?? null)
 }
 
 function shownFrom(deck: ShownDeck, from: number, by: 1 | -1): number | null {
