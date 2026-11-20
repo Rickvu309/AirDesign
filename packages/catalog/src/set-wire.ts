@@ -12,6 +12,7 @@ import {
   type Box,
   type Desc,
   type SetChange,
+  type SlideId,
   type Target,
   type TraitName,
 } from "@airdesign/document"
@@ -33,7 +34,7 @@ const ownKinds = slideKinds.join("|")
 const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
-const addable = ["shape"] as const
+const addable = ["shape", "line", "arrow"] as const
 const oldAddable = ["picture"]
 const boxSides = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
@@ -138,16 +139,51 @@ export function readSetChange(raw: unknown): Read<WireSet> {
   return { ok: true, change: { op: "set", target, ...opacity.change, ...read.change } as WireSet }
 }
 
-export function readPlacedBox(raw: unknown): Box | null {
+function boxOf(raw: unknown): Box | null {
   const read = readTrait("box", raw)
   if (!read.ok || Object.keys(read.change).some((field) => !Object.hasOwn(boxSides, field))) return null
   const box = Object.fromEntries(Object.entries(boxSides).map(([field, side]) => [side, read.change[field]]))
   const { x, y, cx, cy } = box
   if (typeof x !== "number" || typeof y !== "number" || typeof cx !== "number" || typeof cy !== "number") return null
-  return cx > 0 && cy > 0 ? { x, y, cx, cy } : null
+  return { x, y, cx, cy }
 }
 
-const addKeys = ["op", "kind", "slide", "box", "text", "icon"]
+export function readPlacedBox(raw: unknown): Box | null {
+  const box = boxOf(raw)
+  return box !== null && box.cx > 0 && box.cy > 0 ? box : null
+}
+
+function readLineBox(raw: unknown): Box | null {
+  const box = boxOf(raw)
+  return box !== null && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0 ? box : null
+}
+
+const addKeys = ["op", "kind", "slide", "box", "text", "icon", "connection"]
+
+function attached(end: unknown): boolean {
+  return plainObject(end) && plainObject(end.shape)
+}
+
+function readLineAdd(raw: Inputs, kind: "line" | "arrow", slide: SlideId): Read<WireAdd> {
+  if (raw.text !== undefined) return refused("text")
+  if (raw.icon !== undefined) return refused("icon")
+  const box = raw.box === undefined ? undefined : readLineBox(raw.box)
+  if (box === null) return refused("box")
+  const connection = raw.connection === undefined ? undefined : readTrait("connection", raw.connection)
+  if (connection !== undefined && !connection.ok) return connection
+  const ends = connection?.change
+  if (box === undefined && !(attached(ends?.start) && attached(ends?.end))) return refused("box")
+  return {
+    ok: true,
+    change: {
+      op: "add",
+      kind,
+      slide,
+      ...(box === undefined ? {} : { box }),
+      ...(ends === undefined ? {} : { connection: ends }),
+    } as WireAdd,
+  }
+}
 
 export function readAddChange(raw: unknown): Read<WireAdd> {
   if (!plainObject(raw) || raw.op !== "add") return refused("op")
@@ -158,6 +194,8 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   if (slide === undefined) return refused("slide")
   const extra = Object.keys(raw).find((key) => !addKeys.includes(key))
   if (extra !== undefined) return refused(extra)
+  if (kind === "line" || kind === "arrow") return readLineAdd(raw, kind, slide)
+  if (raw.connection !== undefined) return refused("connection")
   if (old && raw.icon === undefined) return refused("icon")
   if (raw.icon !== undefined && raw.text !== undefined) return refused("text")
   const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
@@ -241,7 +279,8 @@ export function addChangeSchema(): JsonSchema {
     type: "object",
     additionalProperties: false,
     required: ["op", "kind", "slide"],
-    description: "Add text or a Lucide icon. Omit box to use the largest free area. Returns its id in elements.",
+    description:
+      "Add text, a Lucide icon, a line or an arrow. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
@@ -252,6 +291,7 @@ export function addChangeSchema(): JsonSchema {
         ...agentSchema(traits.fills.fields.source.desc),
         description: "An icon name such as rocket, in place of text.",
       },
+      connection: traitSchema("connection", null),
     },
   }
 }

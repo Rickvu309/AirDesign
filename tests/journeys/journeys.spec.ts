@@ -129,6 +129,7 @@ test.describe("recorded Aira", () => {
     "group-elements",
     "auto-layout-agent",
     "connector-diagram",
+    "line-add",
     "agent-bench-recorded",
   ]) {
     test(name, async ({ page, context }) => {
