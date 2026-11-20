@@ -23,6 +23,7 @@ import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.j
 import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { GuideLayer } from "./guide-layer.js"
+import { ShapeDrawingLayer, type ShapeDrawing } from "./shape-drawing.js"
 import { TextPlacing, type TextPlace } from "./text-placing.js"
 import { useTextLeave } from "./text-leave.js"
 import { useSlideFocusKept } from "./slide-focus-kept.js"
@@ -101,6 +102,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly ownsKey?: OwnsKey
   readonly clipboard?: LayerClipboard
   readonly onPlaceText?: (place: TextPlace) => void
+  readonly drawShape?: ShapeDrawing
   readonly onLeaveText?: (id: ElementId) => void
 }) {
   const { slide, width } = props
@@ -408,6 +410,15 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           width={width}
           guides={moving.guides}
           onPlace={props.onPlaceText}
+        />
+      )}
+      {moving === null || props.drawShape === undefined ? null : (
+        <ShapeDrawingLayer
+          slide={slide}
+          store={props.store}
+          width={width}
+          guides={moving.guides}
+          drawing={props.drawShape}
         />
       )}
       {moving === null ? null : <GuideLayer board={moving.guides} scaled={scaled} />}

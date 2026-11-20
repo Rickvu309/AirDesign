@@ -12,6 +12,7 @@ import {
   type LayerPaste,
   type Moved,
   type Selection,
+  type ShapeDrawing,
   type TextPlace,
   type Turned,
 } from "@airdesign/render"
@@ -83,7 +84,12 @@ const noGuidesShown: GuidesShown = { rulers: false, layoutGuides: true }
 
 export function editableSlide(
   deck: EditableDeck,
-): (width: number, shown?: GuidesShown, onPlaceText?: (place: TextPlace) => void) => ReactNode {
+): (
+  width: number,
+  shown?: GuidesShown,
+  onPlaceText?: (place: TextPlace) => void,
+  drawShape?: ShapeDrawing,
+) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
   const { onBoxes, relayout } = boxMoves(deck)
@@ -316,7 +322,12 @@ export function editableSlide(
     )
   }
 
-  function slideAt(width: number, shown: GuidesShown, onPlaceText: ((place: TextPlace) => void) | undefined) {
+  function slideAt(
+    width: number,
+    shown: GuidesShown,
+    onPlaceText: ((place: TextPlace) => void) | undefined,
+    drawShape: ShapeDrawing | undefined,
+  ) {
     const painted = canvases.current(current)
     const canvas = painted === null ? null : guidedCanvas(painted, deck.shown.displayParts.current, current, shown)
     return canvas === null ? (
@@ -366,6 +377,7 @@ export function editableSlide(
             ownsKey={editorOwnsKey}
             {...(clipboard === undefined ? {} : { clipboard })}
             {...(onPlaceText === undefined ? {} : { onPlaceText })}
+            {...(drawShape === undefined ? {} : { drawShape })}
             onLeaveText={leftText}
             selection={selection}
             onSelection={select}
@@ -415,9 +427,9 @@ export function editableSlide(
     )
   }
 
-  return (width, shown = noGuidesShown, onPlaceText) => (
+  return (width, shown = noGuidesShown, onPlaceText, drawShape) => (
     <>
-      {slideAt(width, shown, onPlaceText)}
+      {slideAt(width, shown, onPlaceText, drawShape)}
       {measured(width)}
     </>
   )

@@ -9,7 +9,7 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
-import { holdKeys, type CanvasSlide, type Copied, type HeldKeys, type Moved } from "@airdesign/render"
+import { holdKeys, type CanvasSlide, type Copied, type HeldKeys, type Moved, type ShapeDrawn } from "@airdesign/render"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { toast } from "@/components/ui/toast"
 import { bytesOf64, type CopiedLayer, type LayerCopy } from "@/layer-clipboard"
@@ -234,9 +234,10 @@ export function deckInserts(deck: InsertingDeck) {
     if (room !== null) void changeElement({ change: "chart", kind, index: current, size: room })
   }
 
-  function addShape(geometry: Geometry) {
+  function addShape(geometry: Geometry, drawn?: ShapeDrawn) {
     const size = roomAt(current)
-    if (size !== null) void changeElement({ change: "shape", geometry, index: current, size })
+    if (size !== null)
+      void changeElement({ change: "shape", geometry, index: current, size, ...(drawn === undefined ? {} : { drawn }) })
   }
 
   async function addPicture(picture: PictureFile) {
