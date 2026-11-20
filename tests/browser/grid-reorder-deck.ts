@@ -68,6 +68,7 @@ export async function zoomTo(page: Page, percent: number): Promise<void> {
   await page.locator("[data-zoom-field]").fill(String(percent))
   await page.keyboard.press("Enter")
   await expect(page.locator("[data-zoom-readout]")).toHaveText(new RegExp(`^${String(percent)}`))
+  await expect(page.locator("[data-zoom-field]")).toHaveCount(0)
 }
 
 export function canvas(page: Page) {
