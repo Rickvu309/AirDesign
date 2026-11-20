@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url"
 import { runCheck, stepRunner, stepsOf } from "./check.mjs"
 import {
   browserShares,
+  changesFrom,
   checkSteps,
   designScans,
   designShardOf,
@@ -219,6 +220,17 @@ const browserRun = (part, shard) => browserStep(part, shard)?.[2].join(" ")
 const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\\.spec\\.ts"
 if (browserRun("browser") !== `test:browser ${exceptDesignScans}`)
   throw new Error("a browser part with no shard runs every browser test outside the design scans")
+const scopedBrowser = stagesFor(
+  "browser",
+  true,
+  { current: 2, total: 2 },
+  changesFrom({ AIRDESIGN_BROWSER_SPECS: '["tests/browser/one+two.spec.ts"]' }),
+)
+  .flat()
+  .flatMap(stepsOf)
+  .find(([name]) => name === "browser-tests")
+if (scopedBrowser?.[2].join(" ") !== "test:browser tests/browser/one\\+two\\.spec\\.ts$")
+  throw new Error("a narrowed browser shard must run the exact paths its matrix row names")
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const sharesOfThree = browserShares(repoRoot, 3).shares
 for (const current of [1, 2, 3]) {

@@ -33,13 +33,13 @@ git(repo, "add", "-A")
 git(repo, "commit", "-q", "-m", "base")
 const start = git(repo, "rev-parse", "HEAD")
 
-const touch = (files) => {
+const touch = (files, edit = (before) => `${before}\n`) => {
   for (const file of files) {
     const at = path.join(repo, file)
     const before = fs.existsSync(at) ? fs.readFileSync(at, "utf8") : ""
     fs.rmSync(at, { force: true })
     fs.mkdirSync(path.dirname(at), { recursive: true })
-    fs.writeFileSync(at, `${before}\n`)
+    fs.writeFileSync(at, edit(before))
   }
   git(repo, "add", "-A")
   git(repo, "commit", "-q", "--allow-empty", "-m", "change")
@@ -73,9 +73,9 @@ const step = (event) => {
   }
 }
 
-const pullRequest = (files) => {
+const pullRequest = (files, edit) => {
   git(repo, "checkout", "-q", "--detach", start)
-  touch(files)
+  touch(files, edit)
   return step("pull_request")
 }
 
@@ -93,14 +93,53 @@ try {
 
   const spec = pullRequest(["tests/browser/grid-last-faults.spec.ts"])
   same(
-    "69807ec35, one browser spec, runs source, the four browser shards, and pptx and corpus since tests/browser is on the pptx list, and no unit test",
-    [partsOn(spec), jobsOf(spec), spec["unit-tests"]],
+    "69807ec35, one non-export browser spec, runs one browser job and skips PowerPoint checks",
+    [partsOn(spec), jobsOf(spec), JSON.parse(spec.check).at(-1).browserSpecs, spec["unit-tests"]],
+    [["source", "browser"], ["source", "browser"], ["tests/browser/grid-last-faults.spec.ts"], "[]"],
+  )
+
+  const exported = pullRequest(["tests/browser/box-export.spec.ts"])
+  same(
+    "a registered export spec runs one browser job and both PowerPoint parts",
+    [partsOn(exported), jobsOf(exported)],
     [
       ["source", "browser", "pptx", "corpus"],
-      ["source", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
-      "[]",
+      ["source", "browser", "pptx"],
     ],
   )
+
+  const removedTag = pullRequest(["tests/browser/box-export.spec.ts"], (source) => source.replaceAll("@export", ""))
+  same(
+    "removing the tag from a registered case still reaches the judge",
+    [removedTag.pptx, removedTag.corpus],
+    ["true", "true"],
+  )
+
+  const fixture = pullRequest(["tests/browser/font-widths.ts"])
+  same(
+    "a browser helper runs its importing specs and skips the other browser and PowerPoint work",
+    [partsOn(fixture), jobsOf(fixture), JSON.parse(fixture.check).at(-1).browserSpecs],
+    [
+      ["source", "browser"],
+      ["source", "browser"],
+      [
+        "tests/browser/font-widths.spec.ts",
+        "tests/browser/slide-findings.spec.ts",
+        "tests/browser/text-fit.spec.ts",
+        "tests/browser/theme-findings.spec.ts",
+      ],
+    ],
+  )
+
+  for (const file of ["launch.ts", "deck-test.ts", "api-stack.ts", "font-preview.mjs", "preview-server.mjs"]) {
+    const shared = pullRequest([`tests/browser/${file}`])
+    same(
+      `${file} runs the full browser matrix`,
+      jobsOf(shared).filter((job) => job.startsWith("browser")),
+      ["browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4"],
+    )
+    same(`${file} also reaches PowerPoint`, [shared.pptx, shared.corpus], ["true", "true"])
+  }
 
   const catalog = pullRequest(["packages/catalog/src/trait-wire-transition.ts"])
   same(
@@ -194,6 +233,7 @@ const partCheck = check.steps.find((step) => (step.run ?? "").startsWith("pnpm c
 same("the source part runs the unit test folders and model check that changes chose", partCheck.env, {
   AIRDESIGN_UNIT_TESTS: "${{ needs.changes.outputs.unit-tests }}",
   AIRDESIGN_MODEL_CHECK: "${{ needs.changes.outputs.model-check }}",
+  AIRDESIGN_BROWSER_SPECS: "${{ toJSON(matrix.browserSpecs) }}",
 })
 
 const gated = {

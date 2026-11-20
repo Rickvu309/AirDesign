@@ -107,6 +107,7 @@ jobs:
         env:
           AIRDESIGN_UNIT_TESTS: ${{ needs.changes.outputs.unit-tests }}
           AIRDESIGN_MODEL_CHECK: ${{ needs.changes.outputs.model-check }}
+          AIRDESIGN_BROWSER_SPECS: ${{ toJSON(matrix.browserSpecs) }}
       - if: always() && steps.work.outputs.needed == 'true' && (matrix.part == 'source' || matrix.part == 'browser' || matrix.part == 'design')
         continue-on-error: true
         uses: ./.github/actions/affected-report

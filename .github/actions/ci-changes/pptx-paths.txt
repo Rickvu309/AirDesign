@@ -27,7 +27,6 @@ scripts/pptx-fixtures
 apps/web
 packages/live
 packages/render
-tests/browser
 scripts/pptx-route-judge.mjs
 scripts/pptx-corpus.mjs
 scripts/metrics.mjs
