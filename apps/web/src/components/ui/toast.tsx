@@ -4,6 +4,8 @@ import { productCopy } from "@/copy/product-copy"
 
 const persistent = { duration: Infinity, closeButton: true, dismissible: true }
 
+const figmaNotice = 3000
+
 let nextId = 0
 
 function identified(options?: ExternalToast): ExternalToast {
@@ -40,6 +42,9 @@ export const toast = {
   },
   error(message: Parameters<typeof sonner.error>[0], options?: ExternalToast) {
     return sonner.error(message, { ...identified(options), ...persistent })
+  },
+  refusal(message: Parameters<typeof sonner.error>[0], options?: ExternalToast) {
+    return sonner.error(message, { ...identified(options), ...persistent, duration: figmaNotice })
   },
   notice(content: Parameters<typeof sonner.custom>[0], options?: ExternalToast) {
     return sonner.custom(

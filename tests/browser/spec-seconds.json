@@ -126,6 +126,7 @@
     "grid-selected-set.spec.ts": 10.3,
     "grid-set-edits.spec.ts": 11.4,
     "grid-wrapped.spec.ts": 19.6,
+    "group-delete.spec.ts": 7.1,
     "group-effects.spec.ts": 13.3,
     "group.spec.ts": 12,
     "hero-chart.spec.ts": 1,

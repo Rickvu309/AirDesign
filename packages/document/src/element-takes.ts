@@ -42,7 +42,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]
 
-const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept"]
+const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept", "group"]
 
 export function takes(facts: ElementFacts): readonly FieldKey[] {
   const fields = kindTraits[facts.kind].flatMap((trait): readonly FieldKey[] => {

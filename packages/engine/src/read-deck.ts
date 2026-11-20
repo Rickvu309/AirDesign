@@ -29,6 +29,7 @@ import {
   type TemplateStyle,
   slideNode,
   type Role,
+  groupParent,
 } from "@airdesign/document"
 
 import type { Deck } from "./call.js"
@@ -156,7 +157,12 @@ function knownNodes(register: Register): readonly ElementId[] {
     if (command.slide === "element-restore" || command.slide === "element-regroup") removed.delete(command.node)
   }
   nodes.sort(byId)
-  const present = nodes.filter((node) => !removed.has(node))
+  const inRemoved = (node: ElementId): boolean => {
+    for (let above = groupParent(register, node); typeof above === "string"; above = groupParent(register, above))
+      if (removed.has(above)) return true
+    return false
+  }
+  const present = nodes.filter((node) => !removed.has(node) && !inRemoved(node))
   sortedNodes.set(register, present)
   return present
 }

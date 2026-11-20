@@ -20,8 +20,6 @@ function addDetail(deck: Deck, slide: string): string {
 }
 
 function deleteDetail(deck: Deck, node: ElementId, code: EditCode): string | undefined {
-  if (code === "group-box" && openingElement(deck.register, node)?.kind === "group")
-    return `Layer ${node} is a group, and deleting a group is not supported yet. Leave it, or tell the person.`
   if (code === "group-box")
     return `Layer ${node} is inside a group, and deleting it is not supported. Edit its text instead.`
   if (code === "locked")
