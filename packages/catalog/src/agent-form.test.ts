@@ -407,3 +407,21 @@ describe("foldDesign shows an image's fill mode", () => {
     })
   })
 })
+
+describe("an agent reads a rounded rectangle's corners in points", () => {
+  it("shows an imported radius and folds a later adjust against the box", () => {
+    const read: ElementRead = {
+      reads: { geometry: { value: "roundRect" }, "geometry.corners": { value: 190_504 } },
+      kept: [],
+    }
+    const design = designOf(read).design
+    expect(design).toEqual({ geometry: ["roundRect"], "geometry.corners": [15] })
+    const card = { cx: 3_000_000, cy: 2_540_000 }
+    const rounded = { set: { preset: "roundRect", adjust: { adj: 10_000 } } } as const
+    expect(foldDesign(design, { geometry: { shape: rounded } }, card)).toEqual({
+      geometry: ["roundRect"],
+      "geometry.corners": [20],
+    })
+    expect(foldDesign(design, { geometry: { shape: { set: { preset: "rect", adjust: {} } } } }, card)).toBeUndefined()
+  })
+})

@@ -9,8 +9,19 @@ const drawnShape: Design = {
 
 const drawnLine: Design = { "border.width": [2.3], "border.fill": ["accent1", "style"] }
 
-export function drawnDesign(geometry: Geometry): Design {
-  const named: Design = geometry === "rect" ? {} : { geometry: [geometry] }
+const defaultRounding = 16_667
+const emuPerPoint = 12_700
+
+function roundedOf(geometry: Geometry, box: Size | undefined): Design {
+  if (geometry !== "roundRect" || box === undefined) return {}
+  const radius = Math.round((defaultRounding * Math.min(box.cx, box.cy)) / 100_000)
+  return { "geometry.corners": [Math.round((radius / emuPerPoint) * 10) / 10] }
+}
+
+type Size = { readonly cx: number; readonly cy: number }
+
+export function drawnDesign(geometry: Geometry, box?: Size): Design {
+  const named: Design = geometry === "rect" ? {} : { geometry: [geometry], ...roundedOf(geometry, box) }
   if (geometry === "straightConnector1") return { ...named, ...drawnLine, "border.tail": ["triangle"] }
   return { ...named, ...(lineGeometries.includes(geometry) ? drawnLine : drawnShape) }
 }

@@ -181,3 +181,24 @@ it("says which template font a text shows, so a template font change can name it
   })
   expect(traits.elements.get(elementId("256.2"))?.reads["text.font"]).toEqual({ value: "Abadi" })
 })
+
+it("reads a rounded rectangle's corner radius from its adjust and its own size", async () => {
+  const parts = await deck("connectors.pptx")
+  const rounded = (read: typeof parts) =>
+    [...readTraits(read).elements.values()].find((each) => each.reads.geometry?.value === "roundRect")?.reads[
+      "geometry.corners"
+    ]
+  expect(rounded(parts)).toEqual({ value: 190_504 })
+  const slide = "ppt/slides/slide1.xml"
+  const adjusted = new Map(parts)
+  adjusted.set(
+    slide,
+    encodeUtf8(
+      decodeUtf8(parts.get(slide) ?? new Uint8Array()).replaceAll(
+        '<a:prstGeom prst="roundRect"><a:avLst/>',
+        '<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 30000"/></a:avLst>',
+      ),
+    ),
+  )
+  expect(rounded(adjusted)).toEqual({ value: 342_900 })
+})

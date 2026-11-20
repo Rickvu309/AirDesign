@@ -33,13 +33,13 @@ it("describes each element kind", async () => {
     const instructions = client.getInstructions() ?? ""
     expect(instructions).toContain('"op": "set"')
     expect(instructions).toContain(
-      "A shape takes identity (name, alt, hidden, locked, mask), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fills (paint, source, weight, mode, tileScale, crop, recolor, overlay, blur), border (fill, width, dash, cap, compound, join, head, tail), effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur), body (insets, anchor, wrap, autofit, vertical, columns), text (value, fill, color, size, font",
+      "A shape takes identity (name, alt, hidden, locked, mask), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape, corners), fills (paint, source, weight, mode, tileScale, crop, recolor, overlay, blur), border (fill, width, dash, cap, compound, join, head, tail), effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur), body (insets, anchor, wrap, autofit, vertical, columns), text (value, fill, color, size, font",
     )
     expect(instructions).toContain(
       "letterSpacing, lineHeight, spaceBefore, style, spaceAfter), link (target) and opacity.",
     )
     expect(instructions).toContain(
-      "A line takes identity (name, alt, hidden, locked), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), border (fill, width, dash",
+      "A line takes identity (name, alt, hidden, locked), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape, corners), border (fill, width, dash",
     )
     expect(instructions).toContain("connection (start, end) and opacity.")
     expect(instructions).toContain('"opacity": 60')

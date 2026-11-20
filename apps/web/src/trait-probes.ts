@@ -163,8 +163,9 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     },
   },
   geometry: {
-    deck: "clean.pptx",
+    deck: "shapes-added.pptx",
     kind: "shape",
+    node: "256.4",
     opening: () => ({ v: format, patch: { geometry: { shape: "opening" } } }),
     edit: (_, __, value) => ({ v: format, patch: { geometry: { shape: { set: value } } } }),
     fields: { shape: { file: (parts, at) => shownGeometry(parts, at)?.value, shows: (value) => value } },

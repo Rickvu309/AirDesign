@@ -170,6 +170,7 @@ export type ShownField = { readonly value: unknown; readonly own: boolean }
 const imageFields: readonly string[] = ["mode", "tileScale", "source", "weight", "recolor", "overlay", "blur"]
 
 export function shownPlace(trait: TraitName, field: string): { readonly trait: SectionName; readonly field: string } {
+  if (trait === "geometry" && field === "corners") return { trait: "corners", field }
   if (trait !== "fills") return { trait, field }
   if (field === "crop") return { trait: "crop", field: "rect" }
   return imageFields.includes(field) ? { trait: "image", field } : { trait, field }

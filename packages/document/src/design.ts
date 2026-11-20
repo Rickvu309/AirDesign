@@ -32,6 +32,7 @@ type ShadowSlotKey = (typeof shadowSlotKeys)[number]
 
 export const designKeys = [
   "geometry",
+  "geometry.corners",
   "fills",
   "border.width",
   "border.fill",
@@ -113,6 +114,7 @@ export type CropRead = { readonly l: number; readonly t: number; readonly r: num
 export type BoundRead = { readonly node: string; readonly site: number }
 export type TraitReads = Readonly<Partial<Record<ShadowSlotKey, Read<ShadowRead>>>> & {
   readonly geometry?: Read<string>
+  readonly "geometry.corners"?: Read<number>
   readonly fills?: Read<FillRead>
   readonly "border.width"?: Read<number>
   readonly "border.fill"?: Read<FillRead>

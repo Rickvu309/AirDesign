@@ -9,7 +9,7 @@ export const cornerSteps = [0, 4, 8, 16, 24, 32] as const
 export function cornersSection(view: ScopedElement, shown: PanelReads): PanelSection | null {
   if (view.facts.kind !== "shape") return null
   if (keptRefuses(view.kept, "geometry", "shape")) return null
-  const shape = shown.fields?.["geometry.shape"]?.value
+  const shape = shown.fields?.["geometry.shape"]?.value ?? view.outline
   if (typeof shape !== "object" || shape === null || !("preset" in shape)) return null
   if (shape.preset !== "rect" && shape.preset !== "roundRect") return null
   const side = Math.min(view.box?.cx ?? 0, view.box?.cy ?? 0)

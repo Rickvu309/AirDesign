@@ -33,7 +33,11 @@ function foldedElement(register: Register, node: ElementId): IndexElement | unde
   const opening = openingElement(register, node)
   if (opening === undefined) return undefined
   const drawn = opening.design === undefined ? addedGeometry(register, node) : null
-  return { ...opening, grouped: groupedNow(register, node), ...(drawn === null ? {} : { design: drawnDesign(drawn) }) }
+  return {
+    ...opening,
+    grouped: groupedNow(register, node),
+    ...(drawn === null ? {} : { design: drawnDesign(drawn, opening.box ?? undefined) }),
+  }
 }
 
 function shownValue(value: string | null): string | null {
@@ -71,7 +75,7 @@ function elementOf(
   const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
   const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
   const turned = followed === null ? [] : [{ v: 1, patch: turnOf(followed) }]
-  const folded = foldDesign(typed, netPatch([...opening, ...rows, ...turned]))
+  const folded = foldDesign(typed, netPatch([...opening, ...rows, ...turned]), box ?? undefined)
   const design = followed === null ? folded : { ...folded, geometry: [followed.preset] as const }
   const line = design === undefined ? "" : printDesign(templateFontDesign(design, fonts))
   const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target
