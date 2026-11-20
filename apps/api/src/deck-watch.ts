@@ -12,10 +12,16 @@ export async function heldRevision(
 ): Promise<number | "owner" | "deleted" | undefined> {
   for (;;) {
     if (signal.aborted) return undefined
-    await options.listen.ready()
-    if (signal.aborted) return undefined
-    const revision = watchedRevision(await readSaved(options.deck, deck), email, cursor)
-    if (revision !== undefined) return revision
-    await options.listen.wait(signal)
+    const answered = new AbortController()
+    const woken = options.listen.wait(AbortSignal.any([signal, answered.signal]))
+    try {
+      await options.listen.ready()
+      if (signal.aborted) return undefined
+      const revision = watchedRevision(await readSaved(options.deck, deck), email, cursor)
+      if (revision !== undefined) return revision
+      await woken
+    } finally {
+      answered.abort()
+    }
   }
 }
