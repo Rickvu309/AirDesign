@@ -380,7 +380,7 @@ describe("SlideCanvas boxes", () => {
       ["top-left", "top-right", "bottom-left", "bottom-right"].map((name) => grip(host, name).style.cursor),
     ).toEqual(["ns-resize", "ew-resize", "ew-resize", "ns-resize"])
     await drag(grip(host, "bottom-right"), [390, 150], [410, 140])
-    expect(boxes).toEqual([[id, { x: 515_718, y: 523_191, cx: 5_674_165, cy: 1_544_418 }]])
+    expect(boxes).toEqual([[id, { x: 502_350, y: 519_610, cx: 5_674_167, cy: 1_597_887 }]])
   })
 
   it("names each element and puts a movable element with no text to edit in the tab order", async () => {

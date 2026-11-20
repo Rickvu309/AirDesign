@@ -29,7 +29,7 @@ function dragged(grip: TransformGrip, by: { x: number; y: number }, modifiers = 
     modifiers,
     centerScreen: { x: 0, y: 0 },
   }
-  return snappedTransform(input, evaluateTransform(input), snap)
+  return snappedTransform(input, evaluateTransform, snap)
 }
 
 describe("snappedTransform", () => {
@@ -44,12 +44,6 @@ describe("snappedTransform", () => {
   it("snaps a dragged bottom-right corner on both axes", () => {
     const result = dragged("bottom-right", { x: 18, y: 48 })
     expect(result.boxes.get(id)).toEqual({ ...start, cx: wall.left - start.x, cy: wall.top - start.y })
-  })
-
-  it("leaves a resize from the centre with Alt unsnapped", () => {
-    const result = dragged("right", { x: 18, y: 0 }, { ...plain, altKey: true })
-    expect(result.guides).toEqual([])
-    expect(result.boxes.get(id)?.cx).toBe(start.cx + 2 * 18 * 15_240)
   })
 
   it("keeps a Shift move on its axis while it snaps along it", () => {

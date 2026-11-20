@@ -1,5 +1,5 @@
 import type { Box, ElementId } from "@airdesign/document"
-import { boxOf, emuOf, minimumSide, movedBoxes, ownBox } from "./box-gesture.js"
+import { boxOf, emuOf, movedBoxes, ownBox } from "./box-gesture.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import {
   around,
@@ -8,16 +8,14 @@ import {
   guidesAt,
   reachOf,
   snapMove,
-  snapResize,
-  type Axis,
   type Bounds,
   type Guide,
-  type Side,
   type SnapTargets,
 } from "./snapping.js"
+import { snappedResize, type Evaluate } from "./resize-snap.js"
 import type { PaintStore } from "./store.js"
 import type { TransformDragInput, TransformResult } from "./transform-drag.js"
-import { constrainMove, isCorner, isEdge, type ResizeGrip } from "./transform-math.js"
+import { constrainMove, isResizeGrip } from "./transform-math.js"
 
 export type DragSnap = SnapTargets & { readonly turns: ReadonlyMap<ElementId, number> }
 
@@ -75,15 +73,6 @@ function sameBounds(one: Bounds, two: Bounds): boolean {
   )
 }
 
-function boxAt(bounds: Bounds): Box {
-  return {
-    x: Math.round(bounds.left),
-    y: Math.round(bounds.top),
-    cx: Math.round(bounds.right - bounds.left),
-    cy: Math.round(bounds.bottom - bounds.top),
-  }
-}
-
 function snappedMove(input: TransformDragInput, raw: ReadonlyMap<ElementId, Box>, snap: DragSnap): SnappedDrag {
   const moving = boundsAround(raw, snap.turns)
   if (moving === null) return { boxes: raw, guides: [] }
@@ -102,43 +91,14 @@ function snappedMove(input: TransformDragInput, raw: ReadonlyMap<ElementId, Box>
   return { boxes, guides: sameBounds(placed, snapped.box) ? snapped.guides : guidesAt(placed, snap, everyLine) }
 }
 
-function sidesOf(grip: ResizeGrip): Readonly<Record<Axis, Side>> {
-  return {
-    x: grip.includes("left") ? "start" : "end",
-    y: grip.includes("top") ? "start" : "end",
-  }
-}
-
-function snappedResize(input: TransformDragInput, grip: ResizeGrip, raw: ReadonlyMap<ElementId, Box>, snap: DragSnap) {
-  const [id] = input.ids
-  const box = id === undefined ? undefined : raw.get(id)
-  const start = id === undefined ? undefined : input.starts.get(id)
-  const keepRatio = input.modifiers.shiftKey
-  const still = { boxes: raw, guides: [] }
-  if (id === undefined || box === undefined || start === undefined || input.ids.length !== 1) return still
-  if (start.rotation !== 0 || input.modifiers.altKey || (keepRatio && isEdge(grip))) return still
-  const reach = reachOf(input.width, input.slide.width)
-  const snapped = snapResize(boundsOf(box), sidesOf(grip), snap, reach, keepRatio)
-  const across: Axis | null = isCorner(grip) ? null : grip === "left" || grip === "right" ? "x" : "y"
-  const shown = boxAt(snapped.box)
-  const next =
-    across === "x" ? { ...shown, y: box.y, cy: box.cy } : across === "y" ? { ...shown, x: box.x, cx: box.cx } : shown
-  if (next.cx < Math.min(minimumSide, start.box.cx) || next.cy < Math.min(minimumSide, start.box.cy)) return still
-  const guides = across === null ? snapped.guides : snapped.guides.filter((guide) => guide.axis === across)
-  return { boxes: new Map([[id, next]]), guides }
-}
-
 export function snappedTransform(
   input: TransformDragInput,
-  result: TransformResult,
+  evaluate: Evaluate,
   snap: DragSnap | null,
 ): TransformResult & { readonly guides: readonly Guide[] } {
+  const result = evaluate(input)
   if (snap === null) return { ...result, guides: [] }
-  const grip = input.grip
-  if (grip === "move") return { ...result, ...snappedMove(input, result.boxes, snap) }
-  if (!isCorner(grip) && !isEdge(grip)) return { ...result, guides: [] }
-  const snapped = snappedResize(input, grip, result.boxes, snap)
-  const box = input.ids.length === 1 && input.ids[0] !== undefined ? snapped.boxes.get(input.ids[0]) : undefined
-  const hud = result.hud !== null && box !== undefined ? { ...result.hud, frame: box } : result.hud
-  return { ...result, boxes: snapped.boxes, guides: snapped.guides, hud }
+  if (input.grip === "move") return { ...result, ...snappedMove(input, result.boxes, snap) }
+  if (!isResizeGrip(input.grip)) return { ...result, guides: [] }
+  return snappedResize(input, evaluate, snap)
 }
