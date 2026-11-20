@@ -2,7 +2,7 @@ import { elementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import type { Point } from "./box-gesture.js"
 import type { CanvasElement } from "./record.js"
-import { canResizeElement, evaluateTransform } from "./transform-drag.js"
+import { canResizeElement, canRotateElement, evaluateTransform } from "./transform-drag.js"
 import type { TransformGrip } from "./transform-math.js"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
@@ -70,8 +70,10 @@ describe("canResizeElement", () => {
     expect(canResizeElement(frame)).toBe(true)
   })
 
-  it("keeps the size of a layer the auto layout frame places", () => {
+  it("resizes a layer its auto layout frame places, and does not turn it", () => {
     const { frame: _, ...layer } = frame
-    expect(canResizeElement({ ...layer, id: elementId("256.3"), kind: "shape", inFrame: "auto" })).toBe(false)
+    const placed: CanvasElement = { ...layer, id: elementId("256.3"), kind: "shape", inFrame: "auto" }
+    expect(canResizeElement(placed)).toBe(true)
+    expect(canRotateElement(placed)).toBe(false)
   })
 })

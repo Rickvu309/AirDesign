@@ -61,13 +61,7 @@ export type TransformDragInput = {
 }
 
 export function canResizeElement(element: CanvasElement): boolean {
-  return (
-    element.id !== null &&
-    element.movable === true &&
-    element.box !== null &&
-    element.connection === undefined &&
-    element.inFrame !== "auto"
-  )
+  return element.id !== null && element.movable === true && element.box !== null && element.connection === undefined
 }
 
 export function canRotateElement(element: CanvasElement): boolean {

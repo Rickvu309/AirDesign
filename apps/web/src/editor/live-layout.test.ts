@@ -81,6 +81,19 @@ describe("the live layout of an auto layout frame while a side handle resizes it
     expect(relaidBoxes(centred, [widened(100 * point)])?.get(a)).toMatchObject({ x: 30 * point })
   })
 
+  it("moves the next layer and grows a hugging frame while a layer's side handle widens it", () => {
+    const wider = {
+      box: { x: 0, y: 0, cx: 40 * point, cy: 10 * point },
+      element: { id: a, file: "" },
+      laidOut: true as const,
+    }
+    const laid = relaidBoxes(row(), [wider])
+    expect(laid?.get(a)).toEqual({ x: 0, y: 0, cx: 40 * point, cy: 10 * point })
+    expect(laid?.get(b)).toMatchObject({ x: 50 * point })
+    expect(laid?.get(backdrop)).toEqual({ x: 0, y: 0, cx: 60 * point, cy: 20 * point })
+    expect(laid?.get(frame)).toEqual({ x: 0, y: 0, cx: 60 * point, cy: 20 * point })
+  })
+
   it("lays nothing for a layer outside an auto layout frame", () => {
     const loose = { box: { x: 0, y: 0, cx: 50 * point, cy: 10 * point }, element: { id: a, file: "" } }
     expect(relaidBoxes(indexed, [loose])).toBeNull()

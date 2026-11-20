@@ -1,7 +1,7 @@
-import { resizedSides, type Box, type ElementId, type Register } from "@airdesign/document"
+import { placedByFrame, resizedSides, type Box, type ElementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import type { Moved, PaintStore } from "@airdesign/render"
-import { cornersPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
+import { commitPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
 import type { DesignDeck } from "@/design/design-change"
 import { deviceRegister } from "@/device-copy"
 import { commitPlace } from "@/editor/group-actions"
@@ -48,7 +48,7 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
     rest: RestBox,
   ): Promise<CommitOutcome | "stored" | null> {
     const [only] = moved
-    const place = moved.length === 1 && only !== undefined ? await placed(only, rest) : "moved"
+    const place = moved.length === 1 && only !== undefined && !resized(only) ? await placed(only, rest) : "moved"
     if (place === "kept") return null
     if (place !== "moved") return place
     const opening = connect(memoryRemote()).openDeck(id)
@@ -63,7 +63,8 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
       async (kept) => {
         const opened = await opening
         const beforeRegister = opened.ok ? indexedRegister(shownParts.current, opened.register) : framing
-        const steps = boxes.flatMap(({ box, element, corners, sizing, sides }) => {
+        const steps = boxes.flatMap((commit) => {
+          const { box, element } = commit
           const target = element.id
           if (!kept.includes(target)) return []
           const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
@@ -81,8 +82,8 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
                   name,
                   step: {
                     node: target,
-                    before: cornersPatch(before, corners?.before, sizing?.before, sides?.before),
-                    after: cornersPatch(box, corners?.after, sizing?.after, sides?.after),
+                    before: commitPatch(before, commit, "before"),
+                    after: commitPatch(box, commit, "after"),
                   },
                 },
               ]
@@ -133,6 +134,11 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
     else if (stored !== null) settle(stored)
   }
 
+  function resized({ id: target, box }: Moved): boolean {
+    const painted = canvases.current(current)?.elements.find((each) => each.id === target)?.box
+    return painted != null && (painted.width !== box.cx || painted.height !== box.cy)
+  }
+
   function framingNow(): Register | null {
     const register = shownRegister.current
     return register === null ? null : indexedRegister(shownParts.current, register)
@@ -147,9 +153,10 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
       const corners = resizedCorners(shown, box)
       const sizing = resizedSizing(shown, box)
       const sides = framing === null ? null : resizedSides(framing, target, stored)
+      const laidOut = framing !== null && placedByFrame(framing, target) ? { laidOut: true as const } : {}
       return element === undefined
         ? []
-        : [{ box: stored, element, ...corners, ...sizing, ...(sides === null ? {} : { sides }) }]
+        : [{ box: stored, element, ...corners, ...sizing, ...(sides === null ? {} : { sides }), ...laidOut }]
     })
   }
 

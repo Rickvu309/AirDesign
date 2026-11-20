@@ -173,14 +173,14 @@ export function followed(
   spans = false,
 ): PaintBox | null {
   if (child === null || group === null || moved === null) return child
+  if (spans && !scales) return { ...child, x: moved.x, y: moved.y, width: moved.cx, height: moved.cy }
   const scaleX = group.width === 0 || !scales ? 1 : moved.cx / group.width
   const scaleY = group.height === 0 || !scales ? 1 : moved.cy / group.height
-  const [grownX, grownY] = spans && !scales ? [moved.cx - group.width, moved.cy - group.height] : [0, 0]
   return {
     ...child,
     x: moved.x + (child.x - group.x) * scaleX,
     y: moved.y + (child.y - group.y) * scaleY,
-    width: child.width * scaleX + grownX,
-    height: child.height * scaleY + grownY,
+    width: child.width * scaleX,
+    height: child.height * scaleY,
   }
 }

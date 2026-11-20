@@ -429,3 +429,39 @@ it("keeps a resized frame's box and the sides it makes Fixed in one row", async 
   expect(rows).toEqual([{ v: format, patch: { ...boxPatch(box), layout: { width: { set: "fixed" } } } }])
   expect(outcome).toBe("sent")
 })
+
+it("writes only the size of a layer its auto layout frame places, with the side it makes Fixed", async () => {
+  const rows: unknown[] = []
+  const box = { x: 1, y: 2, cx: 30, cy: 4 }
+  await commitBoxes(
+    () => ({
+      async enqueueRow(_deck, row) {
+        rows.push(row)
+        return { ok: true }
+      },
+      async enqueueBox() {
+        throw new Error("a laid-out layer's resize went through the whole box path")
+      },
+      async flush() {
+        return { ok: true }
+      },
+      async pending() {
+        return []
+      },
+    }),
+    "any-deck",
+    [
+      {
+        box,
+        element: { id: elementId("256.3"), file: "" },
+        laidOut: true,
+        sides: { before: { width: "fill" }, after: { width: "fixed" } },
+      },
+    ],
+    () => undefined,
+    () => undefined,
+  )
+  expect(rows).toEqual([
+    { v: format, patch: { box: { w: { set: 30 }, h: { set: 4 } }, layout: { width: { set: "fixed" } } } },
+  ])
+})

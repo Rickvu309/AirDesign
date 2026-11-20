@@ -1,5 +1,5 @@
 import { decide, format, groupParent, readLayout, type Box, type ElementId, type Register } from "@airdesign/document"
-import { cornersPatch, type BoxCommit } from "@/commit-edit"
+import { commitPatch, type BoxCommit } from "@/commit-edit"
 
 function autoFrame(register: Register, node: ElementId): boolean {
   const view = readLayout(register, node)
@@ -22,7 +22,7 @@ function landed(register: Register, commit: BoxCommit): Register {
     ? null
     : decide(register, { command: "add", node, floor: commit.element.file, route: "" })
   const start = opened?.decision === "apply" ? opened.register : register
-  const patch = cornersPatch(commit.box, commit.corners?.after, commit.sizing?.after, commit.sides?.after)
+  const patch = commitPatch(commit.box, commit, "after")
   const decision = decide(start, { command: "person", node, v: format, patch })
   return decision.decision === "apply" ? decision.register : register
 }
