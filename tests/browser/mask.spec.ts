@@ -23,13 +23,21 @@ async function exportedSlide(file: string): Promise<{ xml: string; media: readon
   return { xml, media }
 }
 
-async function onPicture(page: Page, name: string) {
+async function placed(page: Page, name: string) {
+  const layers = page.locator("[data-slide-paint] [data-canvas-element]")
+  const before = await layers.count()
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.getByRole("button", { name, exact: true }).click()
   await page.keyboard.press("Enter")
-  await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
+  await expect(layers).toHaveCount(before + 1)
+  const shape = (await layers.last().getAttribute("data-canvas-element"))?.split("#")[1] ?? ""
   const added = page.locator("[data-slide-paint] [data-selection]")
-  await expect(added).toHaveCount(1)
+  await expect(added).toHaveAttribute("data-selection", new RegExp(`\\.${shape}$`))
+  return added
+}
+
+async function onPicture(page: Page, name: string) {
+  const added = await placed(page, name)
   const from = await added.boundingBox()
   const to = await page.locator(picture).boundingBox()
   if (from === null || to === null) throw new Error("no box")
@@ -134,16 +142,9 @@ test("an imported picture cropped to a circle keeps its bytes when a mask beside
   if (headshot === undefined) throw new Error("no headshot")
   await decks.open(join(fixtures, "picture-shape-cropped.pptx"))
   await expect(page.locator("[data-slide-paint] [data-mask-clip]")).toHaveCount(0)
-  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
-  await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
-  await page.keyboard.press("Enter")
-  await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
-  const square = page.locator("[data-slide-paint] [data-selection]")
+  const square = await placed(page, shapeCopy.shapes.square)
   const id = await square.getAttribute("data-selection")
-  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
-  await page.getByRole("button", { name: shapeCopy.shapes.circle, exact: true }).click()
-  await page.keyboard.press("Enter")
-  await expect(page.locator("[data-shape-tray]")).toHaveCount(0)
+  await placed(page, shapeCopy.shapes.circle)
   await page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#${id?.split(".")[1] ?? ""}"]`).click({
     modifiers: [shortcutCopy.chord.other.shift],
   })
