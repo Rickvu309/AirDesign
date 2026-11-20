@@ -31,7 +31,8 @@ export default defineConfig({
     retry: 0,
     isolate: true,
     sequence: { sequencer: LongestFirst },
-    setupFiles: ["scripts/vitest-assertions.mjs"],
+    allowOnly: !process.env.CI,
+    setupFiles: ["scripts/vitest-clean-environment.mjs", "scripts/vitest-assertions.mjs"],
     reporters: ["default", "scripts/vitest-metrics.mjs"],
     projects: [
       {
