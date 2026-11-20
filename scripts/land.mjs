@@ -24,6 +24,7 @@ import { statusLines } from "./land-status.mjs"
 import { mergesSince, rebuildBranch, rebuildLine } from "./linear-branch.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
+import { mergeAfterRecheck, premergeRecheck, scratchGate } from "./premerge-recheck.mjs"
 import { recordRace } from "./race-issue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { branchBodyFaults } from "./pr-body.mjs"
@@ -132,6 +133,7 @@ export const land = async (ctx) => {
       gh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]),
       "could not name the repository",
     ).trim()
+  const recheck = (asked) => ctx.recheck({ ...asked, repository })
   const followed = (number, branch) =>
     followPull({
       number,
@@ -146,6 +148,7 @@ export const land = async (ctx) => {
       interval: ctx.interval,
       graceMs: ctx.graceMs,
       limitMs: ctx.limitMs,
+      merge: mergeAfterRecheck({ recheck, gh, read, repository, number, say }),
     })
   const follow = async (number, branch) => {
     const code = await followed(number, branch)
@@ -292,9 +295,18 @@ export const land = async (ctx) => {
       limitMs: ctx.checksLimitMs,
     })
     if (!ready.ok) stop("queue", ready.message)
-    const queued = enqueue({ merge: gh, read, repository, number: pull.number })
-    if (!queued.ok) stop("queue", queued.message)
-    line("queue", queueLine(queued.state))
+    if (ready.state.hasQueue) {
+      const checked = await recheck({ number: pull.number, head: commit })
+      for (const each of checked.lines) line("recheck", each)
+      if (!checked.ok) stop("recheck", "nothing was queued.")
+      const queued = enqueue({ merge: gh, read, repository, number: pull.number })
+      if (!queued.ok) stop("queue", queued.message)
+      line("queue", queueLine(queued.state))
+    } else
+      line(
+        "queue",
+        "main has no merge queue: once ci passes, land rechecks this head against the newest main and merges only that head",
+      )
     const signed = ctx.countersign?.({ number: pull.number, repository })
     if (signed?.line !== undefined) line("bar", signed.line)
     if (signed !== undefined && !signed.pass) {
@@ -352,6 +364,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       }
     },
     stamp: () => stampChecked(root),
+    recheck: ({ head, repository }) => premergeRecheck({ git, gh, repository, head, gate: scratchGate({ git }) }),
     countersign: ({ number, repository }) => {
       const read = readLocal(root)
       if (read.why !== undefined) return undefined

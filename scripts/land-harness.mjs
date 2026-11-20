@@ -22,6 +22,7 @@ export const pullAnswer = ({
   contexts = checkRun,
   base = "main",
   timeline = [],
+  queue = true,
 } = {}) =>
   JSON.stringify({
     data: {
@@ -39,10 +40,12 @@ export const pullAnswer = ({
           commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS", contexts: { nodes: contexts } } } }] },
           timelineItems: { nodes: timeline },
         },
-        mergeQueue: { entries: { nodes: [] } },
+        mergeQueue: queue ? { entries: { nodes: [] } } : null,
       },
     },
   })
+
+const unmoved = async () => ({ ok: true, lines: ["main has not moved since ci tested this head; nothing to recheck"] })
 
 export const harness = (options = {}) => {
   const {
@@ -72,6 +75,7 @@ export const harness = (options = {}) => {
     pushed = ok(),
     merges = [ok()],
     reads = [pullAnswer({ armed: true }), pullAnswer({ merged: true })],
+    recheck = unmoved,
   } = options
   const log = []
   const said = []
@@ -143,6 +147,10 @@ export const harness = (options = {}) => {
       return alone
     },
     stamp: () => log.push("stamp"),
+    recheck: async (asked) => {
+      log.push(`recheck ${asked.number} ${asked.head}`)
+      return recheck(asked)
+    },
     readText: (file) => {
       log.push(`read ${file}`)
       if (bodyText === null) throw new Error(`ENOENT: no such file, open '${file}'`)
