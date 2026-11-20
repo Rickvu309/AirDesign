@@ -6,6 +6,8 @@ body="${RED_BODY:-${RED_WHAT:-ci} failed on main at ${GITHUB_SHA::7}. $GITHUB_SE
 open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
 if [ -n "$open" ]; then
   printf '%s' "$body" | gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body-file -
+elif [ "${RED_EXISTING_ONLY:-}" = 1 ]; then
+  echo "No open $title issue. The drill result is recorded in the workflow log."
 else
   printf '%s' "$body" | gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file -
 fi
