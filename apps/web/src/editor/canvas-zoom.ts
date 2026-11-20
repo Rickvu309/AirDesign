@@ -80,7 +80,7 @@ export function zoomKey(event: {
   if (gesture === "zoom-in") return "in"
   if (gesture === "zoom-out") return "out"
   if (gesture === "zoom-selection") return "selection"
-  if (gesture === "zoom-100") return "actual"
+  if (gesture === "zoom-actual") return "actual"
   return gesture === "zoom-fit" ? "fit" : null
 }
 

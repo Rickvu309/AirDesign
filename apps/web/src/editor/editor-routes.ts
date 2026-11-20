@@ -17,6 +17,7 @@ export const editorRoutes = {
   textFormat: "/screens/s43-08-editor-tools-text-format",
   designElement: "/screens/s43-09-editor-tools-design-element",
   layers: "/screens/s43-10-editor-tools-layers",
+  shortcuts: "/screens/s43-11-editor-tools-keyboard-shortcuts",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
   offline: "/screens/s49-02-editor-errors-offline",
   setAside: "/screens/s49-03-editor-errors-edits-set-aside",

@@ -31,6 +31,8 @@ import type { SaveStatus } from "@/editor/use-deck-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
+import { useShortcutsKey } from "@/editor/shortcuts-key"
+import { ShortcutsPanel } from "@/editor/shortcuts-panel"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
@@ -90,6 +92,7 @@ export type EditorShellProps = {
   overlay?: ReactNode
   formats?: FormatShown
   layers?: ReactNode
+  shortcuts?: boolean
   deck?: EditorDeck
 }
 
@@ -112,6 +115,7 @@ export function EditorShell({
   overlay,
   formats,
   layers,
+  shortcuts: shortcutsShown = false,
   deck,
 }: EditorShellProps) {
   const canvas = useCanvasRoom()
@@ -120,6 +124,7 @@ export function EditorShell({
   const [gridOpen, setGridOpen] = useState(false)
   const [gridPanel, setGridPanel] = useState(false)
   const [selectedSlides, setSelectedSlides] = useState(0)
+  const [shortcutsOpen, setShortcutsOpen] = useState(shortcutsShown)
   const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
@@ -144,6 +149,16 @@ export function EditorShell({
   usePresentKeys(strip !== undefined && !gridOpen && present.show === null, (from) =>
     present.start(from === "first" ? 0 : (strip?.current ?? 0)),
   )
+  useShortcutsKey(deck !== undefined && present.show === null, () => setShortcutsOpen((open) => !open))
+  function withShortcuts(editor: ReactNode) {
+    if (!shortcutsOpen || present.show !== null) return editor
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="min-h-0 flex-1">{editor}</div>
+        <ShortcutsPanel onClose={() => setShortcutsOpen(false)} />
+      </div>
+    )
+  }
   const mode = designMode?.value
   const changeMode = designMode?.onChange
   useEffect(() => {
@@ -203,7 +218,7 @@ export function EditorShell({
     ...(designMode === undefined ? {} : { designMode }),
   }
   if (deck !== undefined && gridOpen) {
-    return (
+    return withShortcuts(
       <div className="relative flex h-full min-h-0">
         <div className="min-w-0 flex-1">
           <EditorGrid
@@ -247,10 +262,10 @@ export function EditorShell({
         {toast}
         {overlay}
         {presenting}
-      </div>
+      </div>,
     )
   }
-  return (
+  return withShortcuts(
     <div className="relative flex h-full min-h-0" inert={present.show !== null}>
       {rail === "slides" ? (
         <SlideSidebar
@@ -386,6 +401,6 @@ export function EditorShell({
       {toast}
       {overlay}
       {presenting}
-    </div>
+    </div>,
   )
 }

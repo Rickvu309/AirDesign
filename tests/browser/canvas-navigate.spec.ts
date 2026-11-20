@@ -79,7 +79,7 @@ async function zoomWheel(page: Page, at: { x: number; y: number }, turns: number
 test("Ctrl+scroll zooms about the layer under the cursor, Space pans, Shift+2 and Shift+1 fit, and a drag lands under the pointer", async ({
   page,
 }) => {
-  covers("pan", "zoom-selection", "zoom-fit", "zoom-100")
+  covers("pan", "zoom-selection", "zoom-fit", "zoom-actual")
   await openClean(page)
   const fit = await percent(page)
   const before = await slideBox(page)

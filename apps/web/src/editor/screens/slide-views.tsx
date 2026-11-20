@@ -47,6 +47,10 @@ export function LayersScreen() {
   )
 }
 
+export function ShortcutsScreen() {
+  return <EditorView {...galleryDeck} run="done" shortcuts />
+}
+
 export function ImagesScreen() {
   return <EditorView {...galleryDeck} run="done" rail="images" activeTool="image" />
 }
