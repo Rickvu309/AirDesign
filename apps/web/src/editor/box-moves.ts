@@ -24,7 +24,7 @@ type BoxMoves = {
 }
 
 export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
-  const { store, movables, shapes, canvases, bound, shownParts, shownRegister, showEdited } = shown
+  const { store, movables, shapes, canvases, current, bound, shownParts, shownRegister, showEdited } = shown
   const { record } = undo
 
   async function placed(only: Moved, rest: RestBox): Promise<"moved" | "kept" | "refused" | "stored"> {
