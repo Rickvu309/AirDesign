@@ -12,6 +12,7 @@ import { layoutWire } from "./trait-wire-layout.js"
 import { linkWire } from "./trait-wire-link.js"
 import { notesWire } from "./trait-wire-notes.js"
 import { tableWire } from "./trait-wire-table.js"
+import { chartWire } from "./trait-wire-chart.js"
 import { textWire } from "./trait-wire-text.js"
 import { templateStyleWire } from "./trait-wire-template-style.js"
 import { transitionWire } from "./trait-wire-transition.js"
@@ -40,6 +41,7 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   text: textWire,
   connection: connectionWire,
   table: tableWire,
+  chart: chartWire,
   layout: layoutWire,
   notes: notesWire,
   templateStyle: templateStyleWire,

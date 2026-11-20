@@ -5,5 +5,5 @@ export function FrameArt(props: ElementPaintProps) {
   const diagram = props.element.diagram !== undefined
   const painted = diagram || props.element.chart !== undefined
   const fallbackName = diagram ? "Diagram" : chart ? "Chart" : "Shape"
-  return <ElementHost {...props} drawnWhenBlank={false} fallbackName={fallbackName} unshown={chart && !painted} />
+  return <ElementHost {...props} drawnWhenBlank={chart} fallbackName={fallbackName} unshown={chart && !painted} />
 }

@@ -6,9 +6,11 @@ import {
   elementGone,
   elementId,
   format,
+  openingChart,
   openingTable,
   readTableValue,
   readTextValue,
+  writeChartValue,
   writeTableValue,
   writeTextValue,
   type DeckIndex,
@@ -302,6 +304,20 @@ describe("edit_deck adds a table from an add change", () => {
     const added = deck.register.order.at(-1)
     if (added?.slide !== "element-add") throw new Error("not added")
     expect(added.element.box?.cy).toBe(3 * 370_840)
+  })
+})
+
+describe("edit_deck adds a chart from an add change", () => {
+  it("adds a native chart that carries its data under the run, and undo_run removes it", () => {
+    const value = writeChartValue(openingChart("pie"))
+    const deck = landed(edit(indexed(), { op: "add", kind: "chart", slide: "258", chart: { value } }))
+    expect(deck.register.order.at(-1)).toMatchObject({
+      slide: "element-add",
+      runId: "run",
+      element: { node: "258.9", kind: "chart", value },
+    })
+    const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
+    expect(elementGone(undone.register, elementId("258.9"))).toBe(true)
   })
 })
 

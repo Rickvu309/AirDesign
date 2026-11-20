@@ -9,6 +9,7 @@ export type UndoName =
   | "skip-slide"
   | "unskip-slide"
   | "add-table"
+  | "add-chart"
   | "add-shape"
   | "add-picture"
   | "add-icon"
@@ -79,6 +80,7 @@ export const undoCopy = {
     "skip-slide": "Undo skip slide",
     "unskip-slide": "Undo unskip slide",
     "add-table": "Undo add table",
+    "add-chart": "Undo add chart",
     "add-shape": "Undo add shape",
     "add-picture": "Undo add image",
     "add-icon": "Undo add icon",
@@ -146,6 +148,7 @@ export const undoCopy = {
     "skip-slide": "Redo skip slide",
     "unskip-slide": "Redo unskip slide",
     "add-table": "Redo add table",
+    "add-chart": "Redo add chart",
     "add-shape": "Redo add shape",
     "add-picture": "Redo add image",
     "add-icon": "Redo add icon",

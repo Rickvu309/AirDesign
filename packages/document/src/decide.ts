@@ -144,7 +144,7 @@ export function version(register: NodeRegister): number {
 
 function heldText(row: Value, floor: string): readonly string[] {
   if (row.v === undefined) return row.property === "box" ? [] : [row.value]
-  const edit = row.patch.text?.value ?? row.patch.notes?.value ?? row.patch.table?.value
+  const edit = row.patch.text?.value ?? row.patch.notes?.value ?? row.patch.table?.value ?? row.patch.chart?.value
   if (edit === undefined) return []
   return [typeof edit === "object" ? edit.set : floor]
 }

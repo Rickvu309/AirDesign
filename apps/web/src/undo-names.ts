@@ -13,6 +13,7 @@ export const slideNames: Readonly<Record<SlideChange, UndoName>> = {
 export const elementNames: Readonly<Record<Exclude<ElementChange["change"], "order">, UndoName>> = {
   text: "add-box",
   table: "add-table",
+  chart: "add-chart",
   shape: "add-shape",
   remove: "delete-element",
   group: "group",

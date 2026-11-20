@@ -125,6 +125,7 @@ export function ThinDeck({ id }: { id: string }) {
             undo: undoButtons,
             onText: deck.inserts.addText,
             onTable: deck.inserts.addTable,
+            onChart: deck.inserts.addChart,
             onSlideNumber: deck.inserts.addSlideNumber,
             onRename: deck.rename,
             onTrash: () =>

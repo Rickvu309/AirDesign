@@ -6,6 +6,7 @@ import {
   landedPatch,
   paintSlots,
   planChange,
+  readChartValue,
   readTableValue,
   registerScope,
   slideKind,
@@ -69,13 +70,14 @@ export function deviceScope(parts: Parts, register: Register): Scope {
 export function valueFits(parts: Parts, shape: ReadShape | undefined, value: string): boolean {
   if (shape === undefined) return false
   if (shape.contentKind === "table") return readTableValue(value) !== null
+  if (shape.contentKind === "chart") return readChartValue(value) !== null
   return valueStorable(parts, shape, textValue(value))
 }
 
 function shownFields(view: ScopedElement): Readonly<Record<string, Readonly<Record<string, unknown>> | undefined>> {
   const value = { value: view.value ?? "" }
   const box = view.box === null ? undefined : { x: view.box.x, y: view.box.y, w: view.box.cx, h: view.box.cy }
-  return { box, text: value, table: value, notes: value }
+  return { box, text: value, table: value, chart: value, notes: value }
 }
 
 function heldPatch(view: ScopedElement, after: ElementPatch): ElementPatch | null {

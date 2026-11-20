@@ -24,6 +24,7 @@ export type Desc =
   | { readonly kind: "named"; readonly item: Desc; readonly max: number }
   | { readonly kind: "text" }
   | { readonly kind: "table" }
+  | { readonly kind: "chart" }
   | { readonly kind: "asset"; readonly media?: true }
   | { readonly kind: "node" }
   | { readonly kind: "link" }
@@ -146,7 +147,7 @@ export function named<const I extends AnyKind>(
   return kind({ kind: "named", item: item.desc, max })
 }
 
-export function custom<V, A>(name: "text" | "table" | "asset" | "node" | "link"): ValueKind<V, A> {
+export function custom<V, A>(name: "text" | "table" | "chart" | "asset" | "node" | "link"): ValueKind<V, A> {
   return kind({ kind: name })
 }
 
@@ -240,6 +241,7 @@ function readDesc(desc: Desc, raw: unknown): unknown {
       )
     case "text":
     case "table":
+    case "chart":
       return typeof raw === "string" ? raw : unread
   }
 }

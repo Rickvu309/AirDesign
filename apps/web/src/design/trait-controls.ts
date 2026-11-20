@@ -23,7 +23,7 @@ export type FieldCopy = {
 
 type PanelField<T extends TraitName> = Exclude<WireField<T>, SlotField<T>>
 
-export type TraitControls<T extends TraitName> = [T extends "table" ? never : PanelField<T>] extends [never]
+export type TraitControls<T extends TraitName> = [T extends "table" | "chart" ? never : PanelField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
   : { readonly section: string; readonly fields: { readonly [F in PanelField<T>]-?: FieldCopy } }
 
@@ -39,6 +39,7 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   text: textControls,
   connection: connectionControls,
   table: { fields: {} },
+  chart: { fields: {} },
   layout: layoutControls,
   notes: notesControls,
   templateStyle: templateStyleControls,

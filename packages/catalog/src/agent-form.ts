@@ -332,6 +332,7 @@ export function agentSchema(desc: Desc): JsonSchema {
       return linkSchema
     case "text":
     case "table":
+    case "chart":
     case "node":
       return { type: "string" }
     case "choice":
@@ -449,6 +450,7 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
       return readString(raw, (text) => knownIcon(text) || (desc.media === true && webImage(text)))
     case "text":
     case "table":
+    case "chart":
       return readString(raw, storableText)
     case "link": {
       const value = readLinkTarget(raw)

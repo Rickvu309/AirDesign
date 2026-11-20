@@ -2,6 +2,7 @@ import { readArrival, readLayoutGuideList, readShows, readSlideGuides, shownLink
 import {
   changeFills,
   format,
+  readChartValue,
   readTableValue,
   readTextValue,
   writeTableValue,
@@ -323,6 +324,13 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     },
   },
   layout: layoutProbe,
+  chart: {
+    deck: "blank.pptx",
+    kind: "chart",
+    opening: () => ({ value: "" }),
+    edit: (_, __, value) => ({ value }),
+    fields: { value: { file: () => undefined, shows: (value) => readChartValue(value) } },
+  },
   table: {
     deck: "table-added.pptx",
     kind: "table",

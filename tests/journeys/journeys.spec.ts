@@ -134,6 +134,7 @@ test.describe("recorded Aira", () => {
     "corners-agent",
     "connector-diagram",
     "line-add",
+    "chart-insert",
     "table-insert",
     "agent-bench-recorded",
   ]) {

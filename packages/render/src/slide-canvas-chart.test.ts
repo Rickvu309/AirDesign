@@ -68,7 +68,7 @@ function frame(chart: CanvasChart | undefined, placeholder = false): CanvasEleme
   }
 }
 
-async function painted(elements: readonly CanvasElement[], quiet = false): Promise<HTMLElement> {
+async function painted(elements: readonly CanvasElement[], quiet = false, moving = false): Promise<HTMLElement> {
   const store = paintStore()
   store.publish({ id, kind: "chart", text: "" })
   const host = document.createElement("div")
@@ -77,7 +77,9 @@ async function painted(elements: readonly CanvasElement[], quiet = false): Promi
   hosts.push({ host, root })
   const slide = { width: 12_192_000, height: 6_858_000, background: null, elements }
   await act(async () => {
-    root.render(createElement(SlideCanvas, { store, slide, width: 960, quiet }))
+    root.render(
+      createElement(SlideCanvas, { store, slide, width: 960, quiet, ...(moving ? { onBoxes: () => undefined } : {}) }),
+    )
   })
   return host
 }
@@ -131,4 +133,11 @@ it("keeps the box it cannot show for a chart it could not read", async () => {
 it("draws no empty placeholder outline around a chart that fills its placeholder", async () => {
   const host = await painted([frame(tenure, true)])
   expect(held(host)?.style.outline).toBe("")
+})
+
+it("lets a movable chart take the pointer while a kept chart lets it pass", async () => {
+  const kept = await painted([frame(tenure)], false, true)
+  expect(held(kept)?.style.pointerEvents).toBe("none")
+  const made = await painted([{ ...frame(tenure), movable: true }], false, true)
+  expect(held(made)?.style.pointerEvents).toBe("auto")
 })

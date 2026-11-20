@@ -54,6 +54,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/design/controls/text.tsx": field,
   "apps/web/src/design/custom-color.tsx": [...list, ...field],
   "apps/web/src/editor/adjust-tone.tsx": arrows,
+  "apps/web/src/editor/chart-data-section.tsx": ["Enter"],
   "apps/web/src/editor/deck-title-edit.tsx": field,
   "apps/web/src/editor/editor-grid-keys.ts": list,
   "apps/web/src/editor/editor-key-ownership.ts": ["Alt", "Control", "Escape", "Meta", "Shift"],

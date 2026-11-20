@@ -19,6 +19,7 @@ import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type DesignMode, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import type { TableSize } from "@/element-edit"
+import type { ChartKind } from "@airdesign/document"
 import { TableSizeGrid } from "@/editor/table-tool"
 import { typing, usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
@@ -71,6 +72,7 @@ export type EditorDeck = {
   readonly select?: (selection: Selection) => void
   readonly onText?: () => void
   readonly onTable?: (size: TableSize) => void
+  readonly onChart?: (kind: ChartKind) => void
   readonly onSlideNumber?: () => void
   readonly onTrash?: () => void
   readonly onRename?: (name: string) => void
@@ -248,6 +250,7 @@ export function EditorShell({
     ...(deck?.onTable === undefined
       ? {}
       : { onTable: deck.onTable, tablePicker: { open: tablePicking, onOpenChange: setTablePicking } }),
+    ...(deck?.onChart === undefined ? {} : { onChart: deck.onChart }),
     ...(deck?.formatting === undefined ? {} : { formatting: deck.formatting }),
     ...(deck?.tone === undefined ? {} : { tone: deck.tone }),
     ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),

@@ -150,6 +150,31 @@ export function addTable(
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 
+const chartShare = 0.5
+
+export function addChartLayer(
+  head: Head,
+  deck: Deck,
+  slide: SlideId,
+  value: string,
+  wanted: Box | undefined,
+  runId: string,
+): Built {
+  const register = deck.register
+  const opened = ready(head, deck, slide, runId)
+  if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
+  const measure = slideMeasure(register, slide)
+  if (measure === undefined || (wanted === undefined && measure.size === undefined)) {
+    return { ok: false, refusal: "dead" }
+  }
+  const size = measure.size ?? { width: 0, height: 0 }
+  const half = { cx: Math.round(size.width * chartShare), cy: Math.round(size.height * chartShare) }
+  const box = wanted ?? placeNewBox(size, takenBoxes(register, slide), half)
+  const node = nextElementId(register, slide, measure.free)
+  const element = { node, kind: "chart", value, box, grouped: false } as const
+  return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
+}
+
 export function addIcon(
   head: Head,
   deck: Deck,
