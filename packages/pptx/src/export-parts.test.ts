@@ -39,7 +39,14 @@ const decks = [
     .map((name) => `corpus/${name}`),
 ]
 const unreadable = new Set(["broken-order.pptx"])
-const withoutText = ["duplicate-id.pptx", "element-removed.pptx", "empty.pptx", "frame.pptx", "nested-groups.pptx"]
+const withoutText = [
+  "duplicate-id.pptx",
+  "element-removed.pptx",
+  "empty.pptx",
+  "frame.pptx",
+  "nested-groups.pptx",
+  "office-chart.pptx",
+]
 
 async function deckParts(name: string): Promise<Parts> {
   return readParts(new Uint8Array(readFileSync(`${fixtures}/${name}`)))

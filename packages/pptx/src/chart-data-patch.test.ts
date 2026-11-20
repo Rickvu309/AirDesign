@@ -40,9 +40,17 @@ it("changes only the edited number in a PowerPoint chart and its workbook, keepi
   expect(changed).toHaveLength(2)
 })
 
-it("rewrites a PowerPoint chart in AirDesign's style when a setting changes", async () => {
-  const { parts, shape, chartPart, chart } = await census()
-  const next = writeChart(parts, shape.part, shape.shape, { ...chart, title: "Housing" })
-  expect(decodeUtf8(next.get(chartPart)!)).toContain("<a:t>Housing</a:t>")
-  expect(chartWorkbookErrors(next)).toEqual([])
+it("keeps the cached text of every number it does not change", async () => {
+  const { parts } = await census()
+  const shape = readShapes(parts).filter((each) => each.contentKind === "chart")[1]
+  if (shape === undefined) throw new Error("chart")
+  const chartPart = chartPartOf(parts, shape.part, shape.shape)
+  const before = decodeUtf8(parts.get(chartPart)!)
+  expect(before).toContain("<c:v>16.100000000000001</c:v>")
+  const chart = chartValueOf(parts.get(chartPart)!)
+  const [first] = chart?.series ?? []
+  if (chart === null || first === undefined) throw new Error("value")
+  const edited = { ...chart, series: [{ ...first, values: [9, ...first.values.slice(1)] }] }
+  const after = decodeUtf8(writeChart(parts, shape.part, shape.shape, edited).get(chartPart)!)
+  expect(after).toBe(before.replace("<c:v>8.1</c:v>", "<c:v>9</c:v>"))
 })

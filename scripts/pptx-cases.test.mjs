@@ -25,6 +25,7 @@ assert.deepEqual(
     "box.mjs",
     "chart-edits.mjs",
     "chart-imported.mjs",
+    "chart-look-kept.mjs",
     "chart-settings.mjs",
     "color-picker.mjs",
     "color-transforms.mjs",
@@ -166,9 +167,9 @@ assert.deepEqual(caseSpecs([writing, good]), good.specs)
 assert.deepEqual(caseExports([writing, good]), good.exports)
 assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
 assert.deepEqual(caseWritten(entries).slice(0, 3), [
+  "written-chart-look-office.pptx",
+  "written-chart-look-census.pptx",
   "written-frame-group.pptx",
-  "written-frame-nested.pptx",
-  "written-group-duplicate.pptx",
 ])
 
 const out = scenario({})

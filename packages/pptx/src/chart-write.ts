@@ -1,5 +1,5 @@
 import type { ChartValue } from "@airdesign/document"
-import { patchedChartData } from "./chart-data-patch.js"
+import { patchedChart } from "./chart-data-patch.js"
 import { chartSpaceXml, chartUri } from "./chart-space.js"
 import { chartWorkbook, workbookContentType } from "./chart-workbook.js"
 import { link, freePart, typed } from "./notes-part.js"
@@ -108,7 +108,7 @@ export function writeChart(
 ): ReadonlyMap<string, Uint8Array> {
   const next = new Map(parts)
   const chartPart = chartPartOf(parts, part, shape)
-  if (patchedChartData(next, chartPart, chart)) return next
+  if (patchedChart(next, chartPart, chart)) return next
   replacePart(next, chartPart, encodeUtf8(chartSpaceXml(chart, placeWorkbook(next, chartPart, chart))))
   return next
 }
