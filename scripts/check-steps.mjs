@@ -47,7 +47,7 @@ const browserArgs = (part, shard, { browserSpecs = "all" }) =>
 const unitShardArgs = (part, shard) =>
   part === "source" && shard !== undefined ? [`--shard=${shard.current}/${shard.total}`] : []
 
-const unitShardEnv = (part, shard) => (shard === undefined || shard.current === 1 ? { AIRDESIGN_REPLAY_ONLY: "1" } : {})
+const unitShardEnv = (part, shard) => (shard === undefined ? { AIRDESIGN_REPLAY_ONLY: "1" } : {})
 
 const metricsShardEnv = (part, shard) =>
   part === "source" && shard !== undefined ? { [unitShardVariable]: `${shard.current}/${shard.total}` } : undefined
@@ -433,7 +433,7 @@ export const defineCheckSteps = (rows) => {
       const inPart = rows.filter(
         (row) => runsOn(row.name, ci) && (part === "all" || row.part === "all" || partsOf(row).includes(part)),
       )
-      const splitsPart = shard !== undefined && shard.current > 1 && inPart.some((row) => row.sharded)
+      const splitsPart = shard !== undefined && inPart.some((row) => row.sharded)
       const chosen = splitsPart ? inPart.filter((row) => row.sharded) : inPart
       return [
         stageFor(

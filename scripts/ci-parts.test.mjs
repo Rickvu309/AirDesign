@@ -30,9 +30,9 @@ same(
   "the check job runs the source part and the browser tests in shards, the scripts and pptx parts, beside the design shards",
   entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
   [
-    "source 1/3",
-    "source 2/3",
-    "source 3/3",
+    "source",
+    "source 1/2",
+    "source 2/2",
     "scripts",
     "browser 1/8",
     "browser 2/8",

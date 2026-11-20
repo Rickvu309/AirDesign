@@ -343,13 +343,14 @@ export const readChangeGraph = (root) => {
   }
 }
 
-const withoutShard = (job) => Object.fromEntries(Object.entries(job).filter(([key]) => key !== "shard"))
+const wholeSourceJob = (job) =>
+  Object.fromEntries(Object.entries(job).filter(([key]) => key !== "shard" && key !== "unitTests"))
 
 const oneSourceJob = (active, result) => {
   if (result.unitTests === "all") return active
   const firstSource = active.findIndex((job) => job.part === "source")
   return active.flatMap((job, index) =>
-    job.part === "source" ? (index === firstSource ? [withoutShard(job)] : []) : [job],
+    job.part === "source" ? (index === firstSource ? [wholeSourceJob(job)] : []) : [job],
   )
 }
 

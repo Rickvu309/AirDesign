@@ -370,14 +370,14 @@ const thirdShard = await readEvery(root, inShard(3))
 if (unitRow(thirdShard, "slides-repainted")?.now !== 7) throw new Error("the shard that ran the paint test reports it")
 cache(2, 2, {})
 const firstShard = await readEvery(root, inShard(1))
+if (measuredRows(firstShard).some((row) => !(row.name in fromUnitMeasures)))
+  throw new Error("a shard measures only the unit run's metrics, since another source job measures the rest")
 if (unitRow(firstShard, "known-failures")?.now !== 2 + 1)
   throw new Error(
     `the first shard adds the repo's static faults to its own: ${unitRow(firstShard, "known-failures")?.now}`,
   )
 if (unitRow(firstShard, "slides-repainted") !== undefined)
   throw new Error("a shard that did not run the paint test must not fail for it")
-if (!firstShard.rows.some((row) => row.name === "corpus-size"))
-  throw new Error("the first shard measures the metrics that are not from the unit run")
 if (measuredHere({ ...unitShard(1), AIRDESIGN_UNIT_SHARD: "1/1" }) !== measures)
   throw new Error("one shard is the whole run")
 if (

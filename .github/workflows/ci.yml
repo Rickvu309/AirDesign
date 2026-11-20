@@ -108,7 +108,7 @@ jobs:
       - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
         env:
-          AIRDESIGN_UNIT_TESTS: ${{ needs.changes.outputs.unit-tests }}
+          AIRDESIGN_UNIT_TESTS: ${{ matrix.unitTests || needs.changes.outputs.unit-tests }}
           AIRDESIGN_MODEL_CHECK: ${{ needs.changes.outputs.model-check }}
           AIRDESIGN_BROWSER_SPECS: ${{ toJSON(matrix.browserSpecs) }}
       - if: always() && steps.work.outputs.needed == 'true' && (matrix.part == 'source' || matrix.part == 'browser' || matrix.part == 'design')

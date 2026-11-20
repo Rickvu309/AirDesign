@@ -103,8 +103,7 @@ export const measuredHere = (env) => {
   if (changesFrom(env).unitTests !== "all")
     return Object.fromEntries(Object.entries(measures).filter(([name]) => !readFromUnitRun.has(name)))
   const shard = unitShardOf(env)
-  if (shard === undefined) return measures
-  return shard.current === 1 ? { ...measures, ...splitMeasures(shard) } : splitMeasures(shard)
+  return shard === undefined ? measures : splitMeasures(shard)
 }
 
 export const timedMetrics = {
@@ -201,7 +200,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   for (const line of metricLines(rows)) console.log(line)
   if (changesFrom(process.env).unitTests !== "all")
     console.log(
-      `${[...readFromUnitRun].join(" and ")} read the whole unit run, and this run ran only the unit tests its change reaches, so main's full run measures them.`,
+      `${[...readFromUnitRun].join(" and ")} read the whole unit run, and this run did not run every unit test, so main's full run measures them.`,
     )
   for (const line of drift) console.log(line)
   if (drift.length > 0) process.exit(1)

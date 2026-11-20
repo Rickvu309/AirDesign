@@ -261,7 +261,7 @@ same("a run of every unit test keeps the source shards", checkJobsFor(map(null),
   scripts,
 ])
 same(
-  "a change that narrows the unit tests runs one source job with no shard",
+  "a change that narrows the unit tests runs one source job with every step and no shard",
   checkJobsFor(map(["packages/oauth/src/grant.ts"]), [...sourceShards, scripts]),
   [{ part: "source", specCache: true }],
 )
