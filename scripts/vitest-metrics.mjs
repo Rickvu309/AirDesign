@@ -96,6 +96,9 @@ export default class VitestMetrics {
 
   onTestRunEnd(modules, errors = [], reason) {
     writeRun(this.root, countRun(modules))
+    console.log(
+      `UNIT-SECONDS ${JSON.stringify(Object.fromEntries(modules.map((mod) => [path.relative(this.root, mod.moduleId), moduleSeconds(mod)])))}`,
+    )
     try {
       if (wholeLocalRun(this.config, modules, reason)) recordUnitSeconds(this.root, modules)
     } catch (error) {

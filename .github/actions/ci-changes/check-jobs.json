@@ -6,11 +6,15 @@
   },
   {
     "part": "source",
-    "shard": "1/2"
+    "shard": "1/3"
   },
   {
     "part": "source",
-    "shard": "2/2"
+    "shard": "2/3"
+  },
+  {
+    "part": "source",
+    "shard": "3/3"
   },
   {
     "part": "scripts"

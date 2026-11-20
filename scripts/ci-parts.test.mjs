@@ -31,8 +31,9 @@ same(
   entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
   [
     "source",
-    "source 1/2",
-    "source 2/2",
+    "source 1/3",
+    "source 2/3",
+    "source 3/3",
     "scripts",
     "browser 1/8",
     "browser 2/8",
