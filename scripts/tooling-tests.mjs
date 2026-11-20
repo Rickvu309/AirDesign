@@ -3,6 +3,7 @@ import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { onCi } from "./check-steps.mjs"
+import { cleanEnvironment } from "./test-environment.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -30,7 +31,7 @@ export const timed = ({ test, status, output, seconds, limit }) =>
 const runOne = (test, cwd, limit) =>
   new Promise((resolve) => {
     const started = Date.now()
-    const child = spawn(process.execPath, [test], { cwd })
+    const child = spawn(process.execPath, [test], { cwd, env: cleanEnvironment(process.env) })
     let output = ""
     child.stdout.on("data", (chunk) => (output += chunk))
     child.stderr.on("data", (chunk) => (output += chunk))

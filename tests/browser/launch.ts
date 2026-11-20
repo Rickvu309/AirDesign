@@ -3,11 +3,13 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import type { FullConfig } from "@playwright/test"
 import { onCi, workerOverrideName, workerRefusal } from "../browser-workers.ts"
+import { stripInherited } from "../../scripts/test-environment.mjs"
 import { buildSite } from "./site-server.ts"
 
 const browserHelper = join(process.cwd(), ".agents/skills/verify-airdesign/bin/browser.mjs")
 
 export default async function launch(config: FullConfig): Promise<void> {
+  stripInherited(process.env)
   const refusal = workerRefusal({
     workers: config.workers,
     cores: availableParallelism(),
