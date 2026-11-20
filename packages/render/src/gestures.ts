@@ -282,6 +282,15 @@ export const gestures = [
   { id: "zoom-selection", group: "view", keys: [{ code: "Digit2", shift: true }], where: ["editor"] },
   { id: "design-mode", group: "view", keys: [{ key: "d", shift: true }], where: ["editor"] },
   { id: "rulers", group: "view", keys: [{ key: "r", shift: true }], where: ["editor"] },
+  {
+    id: "layout-guides",
+    group: "view",
+    keys: [
+      { key: "g", shift: true },
+      { code: "Digit4", ctrl: true, shift: true },
+    ],
+    where: ["editor"],
+  },
   { id: "guide-add", group: "view", keys: [], pointing: [{ on: "ruler", drag: true }], where: ["editor"] },
   {
     id: "guide-duplicate",

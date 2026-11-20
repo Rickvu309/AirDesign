@@ -13,6 +13,7 @@ import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.j
 import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { GuideLayer } from "./guide-layer.js"
+import { LayoutGuidePaint } from "./layout-guide-paint.js"
 import { useMeasuring } from "./measuring.js"
 import { useMoves } from "./slide-moves.js"
 import type { Duplicate } from "./use-layer-copies.js"
@@ -251,6 +252,9 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
             {masked}
           </MaskClip>
         ),
+      )}
+      {moving === null || slide.layoutHidden === true || slide.layoutGuides === undefined ? null : (
+        <LayoutGuidePaint guides={slide.layoutGuides} width={slide.width} height={slide.height} scaled={scaled} />
       )}
       {moving === null ? null : (
         <div role="status" aria-live="polite" aria-atomic="true" style={visuallyHidden}>

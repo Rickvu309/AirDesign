@@ -12,6 +12,7 @@ import {
   type Guide,
   type SnapTargets,
 } from "./snapping.js"
+import { layoutSnapLines } from "./layout-guide-lines.js"
 import { snappedResize, type Evaluate } from "./resize-snap.js"
 import type { PaintStore } from "./store.js"
 import type { TransformDragInput, TransformResult } from "./transform-drag.js"
@@ -58,12 +59,13 @@ export function snapTargets(slide: CanvasSlide, store: PaintStore, moving: reado
     ),
   )
   const guides = slide.guides ?? []
+  const laid = layoutSnapLines(slide.layoutGuides ?? [], slide.width, slide.height)
   return {
     layers,
     slide: { left: 0, top: 0, right: slide.width, bottom: slide.height },
     guides: {
-      x: guides.flatMap((guide) => (guide.axis === "x" ? [guide.offset] : [])),
-      y: guides.flatMap((guide) => (guide.axis === "y" ? [guide.offset] : [])),
+      x: [...guides.flatMap((guide) => (guide.axis === "x" ? [guide.offset] : [])), ...laid.x],
+      y: [...guides.flatMap((guide) => (guide.axis === "y" ? [guide.offset] : [])), ...laid.y],
     },
     turns,
   }

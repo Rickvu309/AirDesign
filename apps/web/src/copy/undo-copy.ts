@@ -36,6 +36,7 @@ export type UndoName =
   | "add-guide"
   | "move-guide"
   | "delete-guide"
+  | "layout-guide"
   | "background"
   | "template-color"
   | "template-font"
@@ -103,6 +104,7 @@ export const undoCopy = {
     "add-guide": "Undo add guide",
     "move-guide": "Undo move guide",
     "delete-guide": "Undo delete guide",
+    "layout-guide": "Undo layout guide",
     background: "Undo background color",
     "template-color": "Undo template color",
     "template-font": "Undo template font",
@@ -167,6 +169,7 @@ export const undoCopy = {
     "add-guide": "Redo add guide",
     "move-guide": "Redo move guide",
     "delete-guide": "Redo delete guide",
+    "layout-guide": "Redo layout guide",
     background: "Redo background color",
     "template-color": "Redo template color",
     "template-font": "Redo template font",

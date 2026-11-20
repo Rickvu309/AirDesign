@@ -34,7 +34,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   show: ["5465b825", "fc0e1303"],
   templateStyle: ["5465b825", "fd31b1bd", "3c85bab0", "fca050fd", "9fd0fc46", "facd0a47"],
   transition: ["b27cd785", "1c7d8e58"],
-  guides: ["5465b825", "9280948e"],
+  guides: ["5465b825", "9280948e", "26d56cee"],
   layout: ["5465b825", "8d73e44c", "1094f216"],
 }
 

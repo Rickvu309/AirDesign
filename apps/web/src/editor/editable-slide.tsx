@@ -31,7 +31,7 @@ import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { framedOf, storedBox } from "@/frame-boxes"
 import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
 import { MeasuredSlides, owingSlides } from "@/editor/measured-slides"
-import { guidedCanvas, shownGuides } from "@/editor/slide-guides"
+import { guidedCanvas, type GuidesShown } from "@/editor/slide-guides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
@@ -52,7 +52,9 @@ export type EditableDeck = DesignDeck & {
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
 
-export function editableSlide(deck: EditableDeck): (width: number, rulers?: boolean) => ReactNode {
+const noGuidesShown: GuidesShown = { rulers: false, layoutGuides: true }
+
+export function editableSlide(deck: EditableDeck): (width: number, shown?: GuidesShown) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
@@ -348,12 +350,9 @@ export function editableSlide(deck: EditableDeck): (width: number, rulers?: bool
     )
   }
 
-  function slideAt(width: number, rulers: boolean) {
+  function slideAt(width: number, shown: GuidesShown) {
     const painted = canvases.current(current)
-    const canvas =
-      painted === null || !rulers
-        ? painted
-        : guidedCanvas(painted, shownGuides(deck.shown.displayParts.current, current))
+    const canvas = painted === null ? null : guidedCanvas(painted, deck.shown.displayParts.current, current, shown)
     return canvas === null ? (
       <div />
     ) : (
@@ -440,9 +439,9 @@ export function editableSlide(deck: EditableDeck): (width: number, rulers?: bool
     )
   }
 
-  return (width, rulers = false) => (
+  return (width, shown = noGuidesShown) => (
     <>
-      {slideAt(width, rulers)}
+      {slideAt(width, shown)}
       {measured(width)}
     </>
   )

@@ -96,6 +96,7 @@ export const indexKeys = {
     "skipped",
     "transition",
     "guides",
+    "layoutGuides",
   ],
   element: [
     "node",

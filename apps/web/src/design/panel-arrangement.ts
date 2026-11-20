@@ -123,7 +123,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   show: [[placed("skipped", hidden, { control: "canvas" })]],
   transition: [[{ field: "value", name: hidden }]],
-  guides: [[{ field: "ruler", name: hidden }]],
+  guides: [[{ field: "ruler", name: hidden }], [{ field: "layout", name: hidden }]],
   link: [[placed("target", hidden)]],
   text: [
     [placed("value", hidden, { control: "canvas" })],

@@ -73,7 +73,15 @@ export type ReadDeckAnswer = {
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<
     IndexSlide,
-    "id" | "position" | "palette" | "templateStyle" | "textStyles" | "skipped" | "transition" | "guides"
+    | "id"
+    | "position"
+    | "palette"
+    | "templateStyle"
+    | "textStyles"
+    | "skipped"
+    | "transition"
+    | "guides"
+    | "layoutGuides"
   >[]
   readonly templateStyles?: readonly ReadTemplateStyle[]
   readonly palettes?: readonly Palette[]

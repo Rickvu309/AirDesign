@@ -67,6 +67,7 @@ export function ZoomMenu({
   canvas,
   range = zoomRanges.slides,
   rulers,
+  layoutGuides,
 }: {
   range?: ZoomRange
   zoom: Zoom
@@ -75,6 +76,7 @@ export function ZoomMenu({
   onSelection?: () => void
   canvas?: RefObject<HTMLElement | null>
   rulers?: ViewToggle
+  layoutGuides?: ViewToggle
 }) {
   const [open, setOpen] = useState(false)
   const typed = useRef(false)
@@ -184,6 +186,15 @@ export function ZoomMenu({
               onChange={rulers.onChange}
             />
           </>
+        )}
+        {layoutGuides === undefined ? null : (
+          <EditorMenuCheck
+            label={guideCopy.layoutGuides}
+            checked={layoutGuides.shown}
+            shortcut={guideCopy.layoutGuidesKey}
+            keys="Shift+G Control+Shift+4"
+            onChange={layoutGuides.onChange}
+          />
         )}
       </EditorMenuContent>
     </DropdownMenu>

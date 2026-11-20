@@ -1,4 +1,4 @@
-import type { ElementId, Guide, Kind, SlideId } from "@airdesign/document"
+import type { ElementId, Guide, Kind, LayoutGuide, SlideId } from "@airdesign/document"
 import type { FrameRecord } from "./frame-record.js"
 import type { GroupRecord } from "./group-record.js"
 import type { PictureRecord } from "./picture-record.js"
@@ -39,6 +39,8 @@ export type CanvasSlide = {
   readonly background: string | null
   readonly elements: readonly CanvasElement[]
   readonly guides?: readonly Guide[]
+  readonly layoutGuides?: readonly LayoutGuide[]
+  readonly layoutHidden?: boolean
   readonly unpainted?: readonly ElementId[]
   readonly part?: string
 }

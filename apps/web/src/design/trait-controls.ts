@@ -44,5 +44,8 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   templateStyle: templateStyleControls,
   show: { section: slideListCopy.listName, fields: { skipped: { label: slideListCopy.skip } } },
   transition: { section: transitionCopy.transition, fields: { value: { label: transitionCopy.style } } },
-  guides: { section: guideCopy.guides, fields: { ruler: { label: guideCopy.guides } } },
+  guides: {
+    section: guideCopy.guides,
+    fields: { ruler: { label: guideCopy.guides }, layout: { label: guideCopy.layoutGuide } },
+  },
 }

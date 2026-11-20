@@ -1,38 +1,59 @@
-import { slideNode, type Guide } from "@airdesign/document"
-import { readSlideGuides, readSlides } from "@airdesign/pptx"
+import { slideNode, type Guide, type LayoutGuide } from "@airdesign/document"
+import { readLayoutGuideList, readSlideGuides, readSlides } from "@airdesign/pptx"
 import type { CanvasSlide, GuideEdit } from "@airdesign/render"
 import { changeRows, type DesignDeck } from "@/design/design-change"
 import { currentSlide } from "@/editor/transition-value"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-const readGuides = new WeakMap<Parts, Map<number, readonly Guide[]>>()
-const guided = new WeakMap<CanvasSlide, { readonly guides: readonly Guide[]; readonly slide: CanvasSlide }>()
+type SlideGuides = { readonly guides: readonly Guide[]; readonly layoutGuides: readonly LayoutGuide[] }
 
-export function shownGuides(parts: Parts, index: number): readonly Guide[] {
-  const held = readGuides.get(parts) ?? new Map<number, readonly Guide[]>()
+export type GuidesShown = { readonly rulers: boolean; readonly layoutGuides: boolean }
+
+const readGuides = new WeakMap<Parts, Map<number, SlideGuides>>()
+const guided = new WeakMap<CanvasSlide, { readonly key: string; readonly slide: CanvasSlide }>()
+
+export function slideGuides(parts: Parts, index: number): SlideGuides {
+  const held = readGuides.get(parts) ?? new Map<number, SlideGuides>()
   readGuides.set(parts, held)
   const known = held.get(index)
   if (known !== undefined) return known
   const part = readSlides(parts)[index]?.part
-  const guides = part === undefined ? [] : readSlideGuides(parts, part)
-  held.set(index, guides)
-  return guides
+  const found =
+    part === undefined
+      ? { guides: [], layoutGuides: [] }
+      : { guides: readSlideGuides(parts, part), layoutGuides: readLayoutGuideList(parts, part) }
+  held.set(index, found)
+  return found
 }
 
-function sameGuides(one: readonly Guide[], two: readonly Guide[]): boolean {
-  return (
-    one.length === two.length &&
-    one.every((guide, index) => guide.axis === two[index]?.axis && guide.offset === two[index]?.offset)
-  )
+export function shownGuides(parts: Parts, index: number): readonly Guide[] {
+  return slideGuides(parts, index).guides
 }
 
-export function guidedCanvas(slide: CanvasSlide, guides: readonly Guide[]): CanvasSlide {
+export function guidedCanvas(slide: CanvasSlide, parts: Parts, index: number, shown: GuidesShown): CanvasSlide {
+  const found = slideGuides(parts, index)
+  const extra = {
+    ...(shown.rulers ? { guides: found.guides } : {}),
+    ...(found.layoutGuides.length === 0 ? {} : { layoutGuides: found.layoutGuides }),
+    ...(shown.layoutGuides ? {} : { layoutHidden: true }),
+  }
+  const key = JSON.stringify(extra)
   const held = guided.get(slide)
-  if (held !== undefined && sameGuides(held.guides, guides)) return held.slide
-  const next = { ...slide, guides }
-  guided.set(slide, { guides, slide: next })
+  if (held !== undefined && held.key === key) return held.slide
+  const next = { ...slide, ...extra }
+  guided.set(slide, { key, slide: next })
   return next
+}
+
+export function changeLayoutGuides(deck: DesignDeck, index: number, layout: readonly LayoutGuide[]) {
+  const slide = currentSlide(deck.shown.displayParts.current, index)
+  if (slide === null) return
+  changeRows(
+    deck,
+    () => [{ node: slideNode(slide, "slide"), patch: { guides: { layout: { set: layout } } } }],
+    "layout-guide",
+  )
 }
 
 export function changeGuides(deck: DesignDeck, index: number, edit: GuideEdit) {

@@ -60,3 +60,5 @@ export const { arrangeCopy, groupCopy } = createRequire(import.meta.url)(
 )
 export const { layersCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/layers-copy.ts")
 export const { shortcutCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/shortcut-copy.ts")
+
+export const { guideCopy, guideWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/guide-copy.ts")
