@@ -38,7 +38,7 @@ it("groups two added shapes and ungroups them with each child's place", () => {
   })
 })
 
-it("wraps added shapes in an auto layout frame with its backdrop on the next free shape id", () => {
+it("wraps added shapes in an auto layout frame with its backdrop on the next free shape id, and a child of it in a frame inside it", () => {
   const parts = onSlide(xml(twoBoxSlide))
   const { slides, elements } = indexPackage(parts)
   let register: Register = {
@@ -56,7 +56,10 @@ it("wraps added shapes in an auto layout frame with its backdrop on the next fre
     edit: { slide: "element-group", element: { node: "256.6" }, backdrop: { node: "256.7", kind: "shape" } },
   })
   const after = ran(register, framed ?? [])
-  expect(groupCommands(parts, after, { change: "frame", nodes: ["256.4"] as never })).toBeNull()
+  expect(groupCommands(parts, after, { change: "frame", nodes: ["256.4"] as never })?.[0]).toMatchObject({
+    command: "slide",
+    edit: { slide: "element-group", element: { node: "256.8" }, members: [{ node: "256.4" }] },
+  })
 })
 
 it("wraps added shapes in a plain frame with flow none and a backdrop on the next free shape id", () => {

@@ -5,6 +5,7 @@ import {
   decide,
   elementGone,
   elementId,
+  groupOf,
   groupedNow,
   layoutNodes,
   nextElementId,
@@ -213,8 +214,10 @@ describe("auto layout frame", () => {
     expect(readLayout(again, frame)?.children).toEqual(readLayout(after, frame)?.children)
   })
 
-  it("refuses a wrap that names a layer already in a group, or no layer", () => {
-    const after = wrapped()
+  it("refuses a wrap that names a layer in a plain group, or no layer", () => {
+    const grouped = groupOf(indexed, slide, frame, [a, b])
+    if (grouped === null) throw new Error("group")
+    const after = applied(indexed, grouped)
     expect(
       changeLayout(after, { wrap: [a], slide, node: elementId("256.30"), backdrop: elementId("256.31") }),
     ).toBeNull()

@@ -23,6 +23,7 @@ import { floorOf, openingElement } from "./slide-floor.js"
 import type { Framing } from "./frame-index.js"
 import { flows, layoutAligns } from "./trait-layout.js"
 import type { Alpha } from "./value-kind.js"
+import { guessed } from "./layout-guess.js"
 
 export type Flow = (typeof flows)[number]
 export type LayoutAlign = (typeof layoutAligns)[number]
@@ -61,7 +62,6 @@ export type LayoutIntent =
       readonly file: readonly SlideId[]
     }
 
-const point = 12_700
 const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
 
 type Fields = Readonly<Record<string, unknown>>
@@ -342,52 +342,27 @@ export function frameNow(register: Register, node: ElementId): Framed | null {
   return flowOf(traitNow(register, node, "layout")) === "none" ? "free" : "auto"
 }
 
-function spread(values: readonly number[]): number {
-  return Math.max(...values) - Math.min(...values)
+function sharedHolder(register: Register, nodes: readonly ElementId[]): ElementId | null | undefined {
+  const parents = new Set(nodes.map((node) => groupParent(register, node)))
+  const [parent] = parents
+  if (parents.size !== 1 || parent === undefined) return undefined
+  return parent === null || frameBackdrop(register, parent) !== null ? parent : undefined
 }
 
-function middle(values: readonly number[]): number {
-  const sorted = [...values].sort((left, right) => left - right)
-  const half = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 1 ? (sorted[half] ?? 0) : ((sorted[half - 1] ?? 0) + (sorted[half] ?? 0)) / 2
-}
-
-function guessed(members: readonly Member[]): {
-  readonly flow: Exclude<Flow, "none">
-  readonly gap: number
-  readonly align: LayoutAlign
-  readonly order: readonly Member[]
-} {
-  const bounds = members.map((member) => ({ member, box: groupBounds([member]) }))
-  const centresX = bounds.map(({ box }) => box.x + box.cx / 2)
-  const centresY = bounds.map(({ box }) => box.y + box.cy / 2)
-  const horizontal = spread(centresX) >= spread(centresY)
-  const order = [...bounds].sort((left, right) => (horizontal ? left.box.x - right.box.x : left.box.y - right.box.y))
-  const gaps = order.slice(1).map((each, at) => {
-    const before = order[at]?.box ?? each.box
-    return horizontal ? each.box.x - (before.x + before.cx) : each.box.y - (before.y + before.cy)
-  })
-  const gap = gaps.length === 0 ? 0 : Math.max(0, Math.round(middle(gaps) / point) * point)
-  const starts = order.map(({ box }) => (horizontal ? box.y : box.x))
-  const centres = horizontal ? centresY : centresX
-  const ends = order.map(({ box }) => (horizontal ? box.y + box.cy : box.x + box.cx))
-  const fits = [spread(starts), spread(centres), spread(ends)]
-  const best = fits.indexOf(Math.min(...fits))
-  const named: readonly (readonly [LayoutAlign, LayoutAlign])[] = [
-    ["topLeft", "topLeft"],
-    ["left", "top"],
-    ["bottomLeft", "topRight"],
-  ]
-  const align = named[best]?.[horizontal ? 0 : 1] ?? "topLeft"
-  return { flow: horizontal ? "horizontal" : "vertical", gap, align, order: order.map(({ member }) => member) }
-}
-
-function wrapped(register: Register, intent: Extract<LayoutIntent, { readonly wrap: unknown }>): ElementGroup | null {
+function wrapped(
+  register: Register,
+  intent: Extract<LayoutIntent, { readonly wrap: unknown }>,
+): { readonly slide: ElementGroup; readonly rows: readonly PlacedRow[] } | null {
+  const holder = sharedHolder(register, intent.wrap)
+  if (holder === undefined) return null
+  const laid = holder === null ? null : readLayout(register, holder)
   const members: Member[] = []
   for (const node of intent.wrap) {
     const place = placeOf(register, node)
-    if (place === null || shapeOf(node).slide !== intent.slide || groupParent(register, node) !== null) return null
-    members.push(memberOf(node, huggedPlace(register, node, place)))
+    if (place === null || shapeOf(node).slide !== intent.slide) return null
+    const shown = laid?.children.find((child) => child.node === node)?.box
+    if (laid !== null && shown === undefined) return null
+    members.push(memberOf(node, shown === undefined ? huggedPlace(register, node, place) : { ...place, box: shown }))
   }
   if (members.length === 0 || new Set(intent.wrap).size !== intent.wrap.length) return null
   const { flow, gap, align, order } = guessed(members)
@@ -397,7 +372,10 @@ function wrapped(register: Register, intent: Extract<LayoutIntent, { readonly wr
   }
   const element: IndexElement = { node: intent.node, kind: "group", value: null, box, grouped: false, opening }
   const backdrop: IndexElement = { node: intent.backdrop, kind: "shape", value: null, box, grouped: false }
-  return { slide: "element-group", id: intent.slide, element, members: order, backdrop }
+  const slide: ElementGroup = { slide: "element-group", id: intent.slide, element, members: order, backdrop }
+  if (laid === null || laid.flow !== "none") return { slide, rows: [] }
+  const at = { x: { set: box.x - laid.box.x }, y: { set: box.y - laid.box.y } }
+  return { slide, rows: [{ node: intent.node, patch: { box: at } }] }
 }
 
 function ownBox(register: Register, node: ElementId, box: Box): Readonly<Record<string, FieldEdit<number>>> {
@@ -445,14 +423,11 @@ export function changeLayout(
   register: Register,
   intent: LayoutIntent,
 ):
-  | { readonly slide: ElementGroup }
+  | { readonly slide: ElementGroup; readonly rows: readonly PlacedRow[] }
   | { readonly rows: readonly PlacedRow[] }
   | { readonly turn: readonly Command[] }
   | null {
-  if ("wrap" in intent) {
-    const slide = wrapped(register, intent)
-    return slide === null ? null : { slide }
-  }
+  if ("wrap" in intent) return wrapped(register, intent)
   if ("move" in intent) {
     const now = spotNow(register, intent.move)
     const inPlain = now?.frame !== null && now?.frame !== undefined && plainGroup(register, now.frame)

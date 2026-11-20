@@ -89,6 +89,7 @@
     "font-widths.spec.ts": 0.3,
     "frame-group-move.spec.ts": 0,
     "frame-opacity.spec.ts": 2.2,
+    "frame-wrap-inside.spec.ts": 5.7,
     "gesture-arrange.spec.ts": 1.6,
     "gesture-move.spec.ts": 1.9,
     "gesture-select.spec.ts": 1.7,
