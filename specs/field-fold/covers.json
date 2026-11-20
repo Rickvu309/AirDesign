@@ -11,25 +11,25 @@
       "file": "packages/document/src/decide.ts",
       "names": ["landedPatch", "shownPatch"],
       "digest": "ef74e6ff3820",
-      "blob": "54402c37c2ca634c34cd8cf4212ab2ed8e7f9e93"
+      "blob": "c09ae971feb317d4f98b48593f7fbe39967c20c4"
     },
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "61bcb8247bb2",
-      "blob": "33a6b3e395731133c9aeb18aaee92b37cba0de6e"
+      "digest": "93100bf35721",
+      "blob": "e39667d179f6b0ecad5caa506777c20dfdcc0b55"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "caa722abc1dd",
-      "blob": "911cc43ff15c9b26d77ce626b8afe1af8eabd550"
+      "blob": "bbf7d14da6b8e1871d9778060e8f1fc355b28b40"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
-      "digest": "a022f6949f23",
-      "blob": "92f065aac610d9cae168fcb7d6c60ae8b48a6034"
+      "digest": "038db79f0a0c",
+      "blob": "bdf9ce3509a33d52ccb0ad593eda77b0fd099d11"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf"],
-      "digest": "c48f261328e1",
-      "blob": "30deb3dd91b43bb65d821c3e7c08655e4fa43fc6"
+      "digest": "ded9f7b01fb4",
+      "blob": "49dab959ce11b2bbda7d19136d4805ac0e687362"
     },
     {
       "file": "apps/web/src/design/text-shown.ts",
@@ -58,20 +58,20 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
-      "digest": "8863d7ed22a0",
-      "blob": "d2a42fa0f21b412d9230a95e5aa670527ea88525"
+      "digest": "8b481699fc94",
+      "blob": "a8e179082acb36bf43b6f97f97b8ebeef2f5328e"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
       "names": ["fieldsRead"],
-      "digest": "62a43db2ba93",
-      "blob": "1ce531fbc5f00e510eaaf7895cb50927c5e08fce"
+      "digest": "77642cae9b25",
+      "blob": "508efead42f1eef1f9abc83664f5b4cdf7ae3ada"
     },
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["recorded", "turnBack", "sent", "sentCommand"],
-      "digest": "95f6c0f3cde9",
-      "blob": "787c0bc93b538c9c5838a7561f7f216184647994"
+      "digest": "e43c8bf25acb",
+      "blob": "fda449a501688ee11767cdea256f8cf9e5aeffb8"
     },
     {
       "file": "apps/web/src/exported-parts.ts",
@@ -82,14 +82,14 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "23bc1bb224f5",
-      "blob": "831d0fffed3a50d3b8968ee9b3ac4e70c396f0e5"
+      "digest": "fe334757c197",
+      "blob": "5750a7a0a89063641f81215bb3d9754488df757f"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "b0b471a44685",
-      "blob": "c99f5995a97b55914cce8d74e872fc5d260a42df"
+      "digest": "a0c86a4d67d2",
+      "blob": "7a664704f33508785737eec10ad6c9364cb80988"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
@@ -100,8 +100,8 @@
     {
       "file": "packages/pptx/src/trait-xml-fills.ts",
       "names": ["fillAlpha", "fadedFill", "fillsXml"],
-      "digest": "e83bfce2e247",
-      "blob": "2135ff87785e6607d4ba349bd0ef520f53fbd14a"
+      "digest": "c1e4f8824f5f",
+      "blob": "3273286f6900907d6e74ad3fcbae602eb16e2464"
     },
     {
       "file": "packages/pptx/src/alpha-codec.ts",
@@ -113,7 +113,7 @@
       "file": "packages/engine/src/apply-change.ts",
       "names": ["applySet", "landRow"],
       "digest": "b3d2b91658cb",
-      "blob": "febcf8621970fd6b34e9b97d9caa9940eb75952a"
+      "blob": "bdd53b92d056a386242e36049bffba8182476339"
     }
   ]
 }

@@ -35,6 +35,10 @@ _Avoid_: text box tool, insert text
 Text the Text tool placed that has no characters yet. It lives only in the open tab: no undo step, no stored edit, nothing sent. Its first character stores the add, in one undo step, and the typing after it is the next step. When editing ends with no characters, by Escape or a click away from its words, it is removed and focus stays on the slide, as Figma and PowerPoint remove an empty text box. A click into a panel that keeps the selection does not end editing.
 _Avoid_: draft text, pending text
 
+**emptied text**:
+A saved text layer whose words a person deleted, or an agent set to none. When the person's editing ends, by Escape or a click away from its words, it is removed, as Figma removes an empty text layer; an agent's emptied text is removed in the same run. The removal takes the typing that emptied it into one undo step, so one Undo brings the layer back with its words, and text typed and emptied in one visit leaves no step. A placeholder stays, as PowerPoint keeps an empty one, and so does a shape with a fill, a border or a geometry other than a rectangle.
+_Avoid_: blank text, cleared text
+
 **text layer inset**:
 The room between a text layer's box and its words. Text a person or an agent adds in AirDesign has none, as a Figma text layer has no padding, and its file writes `lIns="0" tIns="0" rIns="0" bIns="0"` so PowerPoint does not add its 7.2 pt and 3.6 pt. Imported text keeps its own inset.
 _Avoid_: padding, margin (the design panel's Margins fields set it)

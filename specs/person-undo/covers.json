@@ -4,14 +4,14 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf", "turn", "turnCommands", "stepCommands", "applying", "holderOf"],
-      "digest": "667739c79ecd",
-      "blob": "f53394fc17a3f1606438a2547bd6d01d8f714cdf"
+      "digest": "c27e7247609e",
+      "blob": "bbf7d14da6b8e1871d9778060e8f1fc355b28b40"
     },
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide", "shownPatch"],
       "digest": "3dd6781fbed9",
-      "blob": "54402c37c2ca634c34cd8cf4212ab2ed8e7f9e93"
+      "blob": "c09ae971feb317d4f98b48593f7fbe39967c20c4"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -23,7 +23,7 @@
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack", "sent", "sentCommand"],
       "digest": "59505e6ed638",
-      "blob": "787c0bc93b538c9c5838a7561f7f216184647994"
+      "blob": "fda449a501688ee11767cdea256f8cf9e5aeffb8"
     }
   ]
 }

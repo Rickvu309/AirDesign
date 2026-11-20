@@ -152,6 +152,12 @@ describe("undo list", () => {
     expect(recorded(second, { ...typed("Two"), session: 2 }).undo).toHaveLength(2)
   })
 
+  it("drops a session that starts and ends with no characters, however the empty text is written", () => {
+    const emptyLine = '[{"from":0,"runs":[{"from":-1,"text":""}]}]'
+    const session = { name: "text", session: 1, undoable: { steps: [step("", emptyLine)] } } as const
+    expect(recorded(emptyUndo, session)).toEqual(emptyUndo)
+  })
+
   it("five arrow presses in one visit are one entry", () => {
     const other = elementId("256.3")
     const width = (w: number) => ({ box: { w: { set: w } } })
@@ -244,6 +250,41 @@ describe("undo list", () => {
     const third = await turnBack(deck.link, "deck", second.list, "redo")
     expect(third.outcome).toBe("turned")
     expect(deck.sent).toEqual(["slide element-restore", "slide element-remove", "slide element-restore"])
+  })
+
+  it("folds the typing that emptied a text into its removal, so one undo brings the layer back with its words", async () => {
+    const typed = landed(edited(), { command: "person", value: "", node })
+    const remove: SlideCommand = { slide: "element-remove", id: file[0], node }
+    const removed = landed(typed, { command: "slide", file, edit: remove })
+    const deck = deckLink(removed)
+    const emptied = { name: "text", session: 1, undoable: { steps: [step("New", "")] } } as const
+    const removal = { name: "delete-element", undoable: undoableOf(typed, remove), absorbs: node } as const
+    const list = recorded(recorded(recorded(emptyUndo, textEdit), emptied), removal)
+    expect(list.undo.map((entry) => entry.name)).toEqual(["text", "delete-element"])
+    const undone = await turnBack(deck.link, "deck", list, "undo")
+    expect(undone.outcome).toBe("turned")
+    expect(deck.sent).toEqual(["slide element-restore", "text New"])
+    const redone = await turnBack(deck.link, "deck", undone.list, "redo")
+    expect(redone.outcome).toBe("turned")
+    expect(deck.sent.slice(2)).toEqual(["text ", "slide element-remove"])
+  })
+
+  it("drops both the add and the removal of text that was added, typed in and emptied", () => {
+    const box = { node, kind: "shape" as const, value: "", box: { x: 0, y: 0, cx: 1, cy: 1 }, grouped: false }
+    const add: SlideCommand = { slide: "element-add", id: file[0], element: box }
+    const added = landed(openRegister("", ""), { command: "slide", file, edit: add })
+    const remove: SlideCommand = { slide: "element-remove", id: file[0], node }
+    const addBox = { name: "add-box", undoable: undoableOf(openRegister("", ""), add) } as const
+    const removal = { name: "delete-element", undoable: undoableOf(added, remove), absorbs: node } as const
+    expect(recorded(recorded(recorded(emptyUndo, textEdit), addBox), removal).undo).toEqual([textEdit])
+  })
+
+  it("records a removal on its own when the entry below is not that layer's typing or add", () => {
+    const other = elementId("256.3")
+    const remove: SlideCommand = { slide: "element-remove", id: file[0], node }
+    const removal = { name: "delete-element", undoable: undoableOf(edited(), remove), absorbs: node } as const
+    const below = { ...textEdit, undoable: { steps: [{ ...step("Old", "New"), node: other }] } }
+    expect(recorded(recorded(emptyUndo, below), removal).undo).toHaveLength(2)
   })
 
   it("keeps for the other list only the elements a turn took back, so one an agent deleted in between stays gone", async () => {

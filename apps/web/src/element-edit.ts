@@ -67,7 +67,7 @@ export type ElementChange =
   | ({ readonly change: "table"; readonly index: number; readonly size: SlideRoom } & TableSize)
   | { readonly change: "chart"; readonly kind: ChartKind; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
-  | { readonly change: "remove"; readonly nodes: readonly ElementId[] }
+  | { readonly change: "remove"; readonly nodes: readonly ElementId[]; readonly emptied?: true }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove | LayerSpot }
   | GroupChange
   | LayerJoin

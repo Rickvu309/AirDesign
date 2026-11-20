@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "48af27403584",
-      "blob": "9552f4699671803d8291f5f470f0aa783ab5867c"
+      "digest": "e240dbd7c835",
+      "blob": "bc123efe4872f8b0db4bf8d8569509ddfdd4b39b"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "6ea273889d8f",
-      "blob": "911cc43ff15c9b26d77ce626b8afe1af8eabd550"
+      "digest": "93698b8ad458",
+      "blob": "bbf7d14da6b8e1871d9778060e8f1fc355b28b40"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -39,7 +39,7 @@
       "file": "packages/engine/src/agent-elements.ts",
       "names": ["deleteElement"],
       "digest": "9b56b13446a8",
-      "blob": "2e5f988c86938c1c8a63fe435cf91488bfb69c6a"
+      "blob": "066bb9a815f440b05ddff9219368dd31382a5b31"
     },
     {
       "file": "packages/document/src/slide-order.ts",
@@ -51,25 +51,25 @@
       "file": "packages/document/src/decide.ts",
       "names": ["decide"],
       "digest": "3f5fe5d94e9d",
-      "blob": "54402c37c2ca634c34cd8cf4212ab2ed8e7f9e93"
+      "blob": "c09ae971feb317d4f98b48593f7fbe39967c20c4"
     },
     {
       "file": "packages/document/src/table-value.ts",
       "names": ["changedTable", "openedTable"],
-      "digest": "16b881133851",
-      "blob": "268cdaf398e75b714aa3966fbaad14e612da7116"
+      "digest": "8b8a43a69cb9",
+      "blob": "d43a1e9bb70effebc142d8bf7568f52424081625"
     },
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "dc84073273ca",
-      "blob": "21817a0a497ad24a36d72ec2172088f77d51c4c7"
+      "digest": "102600fdbb5b",
+      "blob": "d6c8d8eb521ebf18bb3d1bcc516f313a8cee9e25"
     },
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
-      "digest": "b036366c72c8",
-      "blob": "4401508bb1506816e4da1108b8660129de392b83"
+      "digest": "7f4b4f1df9c0",
+      "blob": "891aa7324d884dfc755acb4a22bcc8960c4c98ab"
     }
   ]
 }

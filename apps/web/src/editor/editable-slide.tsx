@@ -19,6 +19,7 @@ import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { boxMoves } from "@/editor/box-moves"
 import { commitEdit, flushPending, type CommitOutcome } from "@/commit-edit"
 import { latestFit } from "@/editor/latest-fit"
+import { leftEmptied } from "@/editor/emptied-text"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { canvasCropChange } from "@/design/crop-change"
 import { flipChanges, turnChanges } from "@/editor/turn-changes"
@@ -67,7 +68,7 @@ export type EditableDeck = DesignDeck &
 type PlacedTextActions = {
   readonly typed: (node: ElementId, value: string) => Promise<boolean>
   readonly stored: (node: ElementId) => Promise<boolean>
-  readonly left: (node: ElementId) => void
+  readonly left: (node: ElementId) => boolean
 }
 
 const noCut: Promise<"refused"> = Promise.resolve("refused")
@@ -148,6 +149,20 @@ export function editableSlide(
     )
     settle(outcome)
     return outcome
+  }
+
+  const leaveEmptied = leftEmptied({
+    typedIn: (node) => typed.current?.node === node,
+    landed: () => records.current.landed(),
+    saved: async () => {
+      const register = await deviceRegister(id)
+      return register === null ? null : indexedRegister(deck.shown.shownParts.current, register)
+    },
+    remove: (node) => holding([node], () => changeElement({ change: "remove", nodes: [node], emptied: true })),
+  })
+
+  function leftText(node: ElementId) {
+    if (deck.placedText?.left(node) !== true) void leaveEmptied(node)
   }
 
   async function fitted(node: ElementId, size: FitSize) {
@@ -326,7 +341,7 @@ export function editableSlide(
             ownsKey={editorOwnsKey}
             {...(clipboard === undefined ? {} : { clipboard })}
             {...(onPlaceText === undefined ? {} : { onPlaceText })}
-            {...(deck.placedText === undefined ? {} : { onLeaveText: deck.placedText.left })}
+            onLeaveText={leftText}
             selection={selection}
             onSelection={select}
             onConnect={(node, end, to) => {

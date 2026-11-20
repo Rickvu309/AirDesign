@@ -14,6 +14,8 @@ import {
   slideKind,
   version,
   withCurrentKeys,
+  type Box,
+  type Design,
   type ElementId,
   type IndexElement,
   type NodeRegister,
@@ -29,7 +31,7 @@ function closedTo(body: NodeRegister, runId: string | null): boolean {
   return body.runId !== runId
 }
 
-function foldedElement(register: Register, node: ElementId): IndexElement | undefined {
+export function foldedElement(register: Register, node: ElementId): IndexElement | undefined {
   const opening = openingElement(register, node)
   if (opening === undefined) return undefined
   const drawn = opening.design === undefined ? addedGeometry(register, node) : null
@@ -45,6 +47,32 @@ function turnOf({ place }: Routed) {
   return { box: { rot: { set: place.rot }, flipH: { set: place.flipH }, flipV: { set: place.flipV } } }
 }
 
+function boxOf(body: NodeRegister | undefined, indexed: IndexElement | undefined, followed: Routed | null) {
+  return followed?.place.box ?? (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
+}
+
+function designOf(
+  body: NodeRegister | undefined,
+  indexed: IndexElement | undefined,
+  followed: Routed | null,
+  box: Box | null,
+): Design | undefined {
+  const edited = body !== undefined && history(body).length > 0
+  const typed = edited ? shownDesign(indexed?.design ?? {}, currentValue(body)) : indexed?.design
+  const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
+  const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
+  const turned = followed === null ? [] : [{ v: 1, patch: turnOf(followed) }]
+  const folded = foldDesign(typed, netPatch([...opening, ...rows, ...turned]), box ?? undefined)
+  return followed === null ? folded : { ...folded, geometry: [followed.preset] as const }
+}
+
+export function layerDesign(register: Register, node: ElementId): Design | undefined {
+  const indexed = foldedElement(register, node)
+  const body = register.elements[node]
+  const followed = followedPlace(register, node)
+  return designOf(body, indexed, followed, boxOf(body, indexed, followed))
+}
+
 function elementOf(
   node: ElementId,
   body: NodeRegister | undefined,
@@ -53,7 +81,7 @@ function elementOf(
   indexed: IndexElement | undefined,
   followed: Routed | null,
 ): ReadElement {
-  const box = followed?.place.box ?? (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
+  const box = boxOf(body, indexed, followed)
   const own = slideKind(node) === "slide"
   const held = {
     node,
@@ -67,13 +95,7 @@ function elementOf(
       : { kind: indexed.kind, grouped: indexed.grouped }),
   }
   const withBox = box === null && indexed === undefined ? held : { ...held, box }
-  const edited = body !== undefined && history(body).length > 0
-  const typed = edited ? shownDesign(indexed?.design ?? {}, currentValue(body)) : indexed?.design
-  const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
-  const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
-  const turned = followed === null ? [] : [{ v: 1, patch: turnOf(followed) }]
-  const folded = foldDesign(typed, netPatch([...opening, ...rows, ...turned]), box ?? undefined)
-  const design = followed === null ? folded : { ...folded, geometry: [followed.preset] as const }
+  const design = designOf(body, indexed, followed, box)
   const line = design === undefined ? "" : printDesign(templateFontDesign(design, fonts))
   const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target
   const link = typeof linkEdit === "object" ? linkEdit.set : indexed?.link

@@ -66,10 +66,10 @@ export function deckInserts(deck: InsertingDeck) {
     return { ...room, elements }
   }
 
-  function recordAdded(name: UndoName, stored: () => void, keys?: HeldKeys, selects = false) {
+  function recordAdded(name: UndoName, stored: () => void, keys?: HeldKeys, selects = false, absorbs?: ElementId) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
       stored()
-      if (undoable !== null) record({ name, undoable })
+      if (undoable !== null) record({ name, undoable, ...(absorbs === undefined ? {} : { absorbs }) })
       const held = keys === undefined ? {} : { keys }
       setEntering(added === null ? null : { id: added, ...held, ...(selects ? { selects: true as const } : {}) })
       await showEdited(current)
@@ -92,7 +92,8 @@ export function deckInserts(deck: InsertingDeck) {
           : typeof change.move === "string"
             ? stackNames[change.move]
             : "layer-order")
-      const added = recordAdded(name, stored, keys, change.change === "shape")
+      const absorbs = change.change === "remove" && change.emptied === true ? change.nodes[0] : undefined
+      const added = recordAdded(name, stored, keys, change.change === "shape", absorbs)
       const outcome = await commitElement(id, shownParts.current, opened.register, change, added)
       if (outcome === "refused") keys?.stop()
       settle(outcome)

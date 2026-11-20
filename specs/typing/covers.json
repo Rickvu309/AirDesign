@@ -4,14 +4,14 @@
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["recordsInFlight", "joined", "recorded", "turnBack"],
-      "digest": "4ce863e77683",
-      "blob": "787c0bc93b538c9c5838a7561f7f216184647994"
+      "digest": "4c09ca4ae39e",
+      "blob": "c095ea7d2c0a3bf7b17095b7f465c42d66fe1b79"
     },
     {
       "file": "apps/web/src/live-repaint.ts",
       "names": ["liveRepaint", "busyElements"],
       "digest": "18f757799e70",
-      "blob": "8eaaff26862176151872ed30a09fc7d3a04a7063"
+      "blob": "6e6b9da3ec3edd585f7c0f3d700ce9c8a9d2a291"
     },
     {
       "file": "apps/web/src/notes-edit.ts",
@@ -28,8 +28,8 @@
     {
       "file": "packages/render/src/passage.tsx",
       "names": ["Passage"],
-      "digest": "066b5bc0a211",
-      "blob": "cd04b34424bd2f7ca40ecc4115babf45e49a4a35"
+      "digest": "42e8773e7d72",
+      "blob": "5f4783c93836c117d43fc77a2b3031bc902dccf3"
     },
     {
       "file": "apps/web/src/editor/notes-bar.tsx",
@@ -46,8 +46,8 @@
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "960dd90620ab",
-      "blob": "cb9a42fbc5d23b9c5ef8f740f2104c6b32da9f37"
+      "digest": "71c9a5f0fd0d",
+      "blob": "5e0df38fdee68ae0b891b44c5c209693c73d7ad2"
     },
     {
       "file": "packages/live/src/held.ts",
