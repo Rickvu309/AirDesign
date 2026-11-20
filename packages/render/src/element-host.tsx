@@ -1,5 +1,7 @@
 import {
+  memo,
   useLayoutEffect,
+  useMemo,
   useRef,
   type CSSProperties,
   type FocusEvent,
@@ -135,13 +137,13 @@ function grabbed(element: CanvasElement): boolean {
   return canMove(element) || element.group !== undefined
 }
 
-function takesPointer(element: CanvasElement, text: string, moving: boolean, drawnWhenBlank: boolean): boolean {
+function takesPointer(element: CanvasElement, blank: boolean, moving: boolean, drawnWhenBlank: boolean): boolean {
   if (element.locked === true) return false
   const movable = moving && grabbed(element)
   if (element.backdrop === true) return movable
   if (!element.editable && !movable) return false
   const drawn = movable && drawnWhenBlank
-  return drawn || element.placeholder || element.filled || element.box === null || !isBlank(text)
+  return drawn || element.placeholder || element.filled || element.box === null || !blank
 }
 
 function cornerOf(element: CanvasElement, scaled: Scaled): number {
@@ -250,10 +252,10 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
   )
 }
 
-function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves, typing: boolean, fallback: string) {
+function reach(element: CanvasElement, id: ElementId, name: string, moves: Moves, typing: boolean) {
   return {
     role: "group",
-    "aria-label": nameOf(text, fallback),
+    "aria-label": name,
     "aria-description": `${canDrag(element) ? "Arrow keys move. Alt and Shift with the arrow keys resize. " : ""}${element.editable ? "Enter edits the text. " : ""}Delete removes it.`,
     tabIndex: canMove(element) && !typing ? 0 : -1,
     onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
@@ -312,6 +314,100 @@ function promptLook(text: CanvasText, look: TextLook, scaled: Scaled): CSSProper
   } as CSSProperties
 }
 
+function sameSize(left: PaintBox | null, right: PaintBox | null): boolean {
+  if (left === null || right === null) return left === right
+  return (
+    left.width === right.width &&
+    left.height === right.height &&
+    left.rotation === right.rotation &&
+    left.flipH === right.flipH &&
+    left.flipV === right.flipV
+  )
+}
+
+function samePaint(left: CanvasElement, right: CanvasElement): boolean {
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)] as (keyof CanvasElement)[])
+  for (const key of keys) {
+    if (key === "box" ? !sameSize(left.box, right.box) : left[key] !== right[key]) return false
+  }
+  return true
+}
+
+function useHeldInPlace(element: CanvasElement): CanvasElement {
+  const held = useRef(element)
+  if (!samePaint(held.current, element)) held.current = element
+  return held.current
+}
+
+const LayerArt = memo(function LayerArt(props: {
+  readonly store: PaintStore
+  readonly element: CanvasElement
+  readonly id: ElementId
+  readonly scaled: Scaled
+  readonly layer: RefObject<HTMLDivElement | null>
+  readonly grab: boolean
+  readonly unshown: boolean
+  readonly framed: boolean
+  readonly prompt: string | undefined
+  readonly formatting: TextFormatting | undefined
+  readonly onEdit: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
+}) {
+  const { element, formatting, id, layer, onEdit, prompt, scaled, store, unshown } = props
+  const text = element.text ?? noText
+  const look = useMemo(() => textLook(text, scaled), [text, scaled])
+  return (
+    <>
+      <FillLayers element={element} scaled={scaled} unshown={unshown || paintsFillAsSvg(element, scaled)} />
+      <ShapeArt element={element} grab={props.grab} scaled={scaled} />
+      <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
+      <DiagramArt element={element} scaled={scaled} />
+      <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
+      <div ref={layer} style={textLayer(element.box, text, scaled)}>
+        {prompt === undefined ? null : (
+          <div
+            aria-hidden="true"
+            data-placeholder-prompt={prompt}
+            style={{
+              position: "absolute",
+              left: scaled(text.insets.left),
+              top: scaled(text.insets.top),
+              right: scaled(text.insets.right),
+              bottom: scaled(text.insets.bottom),
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: anchored[text.anchor],
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            <div
+              style={{
+                ...promptLook(text, look, scaled),
+                whiteSpace: "pre-line",
+              }}
+            >
+              {prompt}
+            </div>
+          </div>
+        )}
+        {onEdit === undefined ? (
+          <Passage id={id} look={look} prompt={prompt} store={store} />
+        ) : (
+          <Passage
+            formatting={formatting}
+            framed={props.framed}
+            id={id}
+            look={look}
+            onEdit={(value, kind) => onEdit(id, value, kind)}
+            prompt={prompt}
+            store={store}
+          />
+        )}
+      </div>
+    </>
+  )
+})
+
 function PlacedText(props: {
   readonly store: PaintStore
   readonly element: CanvasElement
@@ -332,10 +428,11 @@ function PlacedText(props: {
   const placed = usePlaced(store, props.element, id, props.targets)
   const { element, layer } = useTextFit(placed, scaled, shown)
   useFitReport(layer, placed, scaled, (height) => props.onFit?.(id, height))
-  const text = element.text ?? noText
-  const look = textLook(text, scaled)
+  const painted = useHeldInPlace(element)
+  const empty = useMemo(() => isBlank(shown), [shown])
+  const fallback = element.label ?? (element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName))
+  const name = useMemo(() => nameOf(shown, fallback), [shown, fallback])
   const typing = element.editable && onEdit !== undefined
-  const empty = isBlank(shown)
   const isSelected = moves !== null && leadOf(moves.selection) === id
   const showPrompt = typing && element.placeholder && empty && Boolean(element.prompt)
   const filledFrame = element.diagram !== undefined || element.chart !== undefined
@@ -349,69 +446,26 @@ function PlacedText(props: {
     <div
       data-canvas-element={element.key}
       style={{
-        ...elementFrame(element, scaled, takesPointer(element, shown, moves !== null, drawnWhenBlank), unshown),
+        ...elementFrame(element, scaled, takesPointer(element, empty, moves !== null, drawnWhenBlank), unshown),
         ...promptOutline,
         ...(moves === null || typing || !grabbed(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
-      {...(moves === null
-        ? {}
-        : reach(
-            element,
-            id,
-            shown,
-            moves,
-            typing,
-            element.label ?? (element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName)),
-          ))}
+      {...(moves === null ? {} : reach(element, id, name, moves, typing))}
       {...(typing ? formatReach(formatting, id, moves, element) : {})}
     >
-      <FillLayers element={element} scaled={scaled} unshown={unshown || paintsFillAsSvg(element, scaled)} />
-      <ShapeArt element={element} grab={moves !== null && grabbed(element)} scaled={scaled} />
-      <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
-      <DiagramArt element={element} scaled={scaled} />
-      <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
-      <div ref={layer} style={textLayer(element.box, text, scaled)}>
-        {showPrompt ? (
-          <div
-            aria-hidden="true"
-            data-placeholder-prompt={element.prompt}
-            style={{
-              position: "absolute",
-              left: scaled(text.insets.left),
-              top: scaled(text.insets.top),
-              right: scaled(text.insets.right),
-              bottom: scaled(text.insets.bottom),
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: anchored[text.anchor],
-              pointerEvents: "none",
-              userSelect: "none",
-            }}
-          >
-            <div
-              style={{
-                ...promptLook(text, look, scaled),
-                whiteSpace: "pre-line",
-              }}
-            >
-              {element.prompt}
-            </div>
-          </div>
-        ) : null}
-        {element.editable && onEdit !== undefined ? (
-          <Passage
-            formatting={formatting}
-            framed={moves !== null}
-            id={id}
-            look={look}
-            onEdit={(value, kind) => onEdit(id, value, kind)}
-            prompt={showPrompt ? (element.prompt ?? undefined) : undefined}
-            store={store}
-          />
-        ) : (
-          <Passage id={id} look={look} prompt={showPrompt ? (element.prompt ?? undefined) : undefined} store={store} />
-        )}
-      </div>
+      <LayerArt
+        element={painted}
+        formatting={formatting}
+        framed={moves !== null}
+        grab={moves !== null && grabbed(element)}
+        id={id}
+        layer={layer}
+        onEdit={typing ? onEdit : undefined}
+        prompt={showPrompt ? (element.prompt ?? undefined) : undefined}
+        scaled={scaled}
+        store={store}
+        unshown={unshown}
+      />
     </div>
   )
 }

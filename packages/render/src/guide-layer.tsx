@@ -1,4 +1,4 @@
-import { useSyncExternalStore, type CSSProperties } from "react"
+import { useRef, useSyncExternalStore, type CSSProperties } from "react"
 import type { Distance, Extension, Measure, Outline } from "./distances.js"
 import type { SnapGuide, SpacingGuide, Guide } from "./snapping.js"
 import type { Scaled } from "./text-look.js"
@@ -53,8 +53,9 @@ function pixelsOf(scaled: Scaled, emu: number): string {
   return String(Math.round(scaled(emu)))
 }
 
-function SnapLine(props: { readonly guide: SnapGuide; readonly scaled: Scaled }) {
-  const { guide, scaled } = props
+type LineLook = { readonly "data-guide": string; readonly d: string; readonly style: CSSProperties }
+
+function snapLine(guide: SnapGuide, scaled: Scaled): LineLook {
   const line = crisp(scaled(guide.at))
   const along = (value: number) => crisp(scaled(value))
   const point = (across: number, down: number) => (guide.axis === "x" ? `${across},${down}` : `${down},${across}`)
@@ -62,19 +63,14 @@ function SnapLine(props: { readonly guide: SnapGuide; readonly scaled: Scaled })
     const at = along(mark)
     return `M${point(line - markArm, at - markArm)}L${point(line + markArm, at + markArm)}M${point(line - markArm, at + markArm)}L${point(line + markArm, at - markArm)}`
   })
-  return (
-    <path
-      data-guide={`snap ${guide.axis} ${pixelsOf(scaled, guide.at)}`}
-      d={`M${point(line, along(guide.from))}L${point(line, along(guide.to))}${marks.join("")}`}
-      fill="none"
-      shapeRendering="crispEdges"
-      style={snapStroke}
-    />
-  )
+  return {
+    "data-guide": `snap ${guide.axis} ${pixelsOf(scaled, guide.at)}`,
+    d: `M${point(line, along(guide.from))}L${point(line, along(guide.to))}${marks.join("")}`,
+    style: snapStroke,
+  }
 }
 
-function SpacingLine(props: { readonly guide: SpacingGuide; readonly scaled: Scaled }) {
-  const { guide, scaled } = props
+function spacingLine(guide: SpacingGuide, scaled: Scaled): LineLook {
   const across = crisp(scaled(guide.across))
   const from = crisp(scaled(guide.from))
   const to = crisp(scaled(guide.to))
@@ -84,15 +80,11 @@ function SpacingLine(props: { readonly guide: SpacingGuide; readonly scaled: Sca
     `M${point(from, across - tick)}L${point(from, across + tick)}`,
     `M${point(to, across - tick)}L${point(to, across + tick)}`,
   ].join("")
-  return (
-    <path
-      data-guide={`spacing ${guide.axis} ${pixelsOf(scaled, guide.from)} ${pixelsOf(scaled, guide.to)}`}
-      d={d}
-      fill="none"
-      shapeRendering="crispEdges"
-      style={spacingStroke}
-    />
-  )
+  return {
+    "data-guide": `spacing ${guide.axis} ${pixelsOf(scaled, guide.from)} ${pixelsOf(scaled, guide.to)}`,
+    d,
+    style: spacingStroke,
+  }
 }
 
 const label: CSSProperties = {
@@ -108,8 +100,17 @@ const label: CSSProperties = {
   fontVariantNumeric: "tabular-nums",
 }
 
-function GapLabel(props: { readonly guide: SpacingGuide | Distance; readonly scaled: Scaled }) {
+const restingLabel: CSSProperties = { display: "none" }
+
+type Gap = SpacingGuide | Distance
+
+function isGap(guide: Drawn): guide is Gap {
+  return guide.kind === "spacing" || guide.kind === "distance"
+}
+
+function GapLabel(props: { readonly guide: Gap | undefined; readonly scaled: Scaled }) {
   const { guide, scaled } = props
+  if (guide === undefined) return <span style={restingLabel}>{""}</span>
   const middle = scaled((guide.from + guide.to) / 2)
   const across = scaled(guide.across)
   const place: CSSProperties =
@@ -126,60 +127,44 @@ function GapLabel(props: { readonly guide: SpacingGuide | Distance; readonly sca
   )
 }
 
-function DistanceLine(props: { readonly guide: Distance; readonly scaled: Scaled }) {
-  const { guide, scaled } = props
+function distanceLine(guide: Distance, scaled: Scaled): LineLook {
   const across = crisp(scaled(guide.across))
   const from = crisp(scaled(guide.from))
   const to = crisp(scaled(guide.to))
   const point = (along: number) => (guide.axis === "x" ? `${along},${across}` : `${across},${along}`)
-  return (
-    <path
-      data-guide={`distance ${guide.axis} ${pixelsOf(scaled, guide.from)} ${pixelsOf(scaled, guide.to)}`}
-      d={`M${point(from)}L${point(to)}`}
-      fill="none"
-      shapeRendering="crispEdges"
-      style={snapStroke}
-    />
-  )
+  return {
+    "data-guide": `distance ${guide.axis} ${pixelsOf(scaled, guide.from)} ${pixelsOf(scaled, guide.to)}`,
+    d: `M${point(from)}L${point(to)}`,
+    style: snapStroke,
+  }
 }
 
-function ExtensionLine(props: { readonly guide: Extension; readonly scaled: Scaled }) {
-  const { guide, scaled } = props
+function extensionLine(guide: Extension, scaled: Scaled): LineLook {
   const at = crisp(scaled(guide.at))
   const point = (along: number) => (guide.axis === "y" ? `${at},${along}` : `${along},${at}`)
-  return (
-    <path
-      data-guide={`extension ${guide.axis} ${pixelsOf(scaled, guide.at)}`}
-      d={`M${point(crisp(scaled(guide.from)))}L${point(crisp(scaled(guide.to)))}`}
-      fill="none"
-      shapeRendering="crispEdges"
-      style={extensionStroke}
-    />
-  )
+  return {
+    "data-guide": `extension ${guide.axis} ${pixelsOf(scaled, guide.at)}`,
+    d: `M${point(crisp(scaled(guide.from)))}L${point(crisp(scaled(guide.to)))}`,
+    style: extensionStroke,
+  }
 }
 
-function OutlineBox(props: { readonly guide: Outline; readonly scaled: Scaled }) {
-  const { box } = props.guide
-  const { scaled } = props
+function outlineBox(guide: Outline, scaled: Scaled): LineLook {
+  const { box } = guide
   const [left, top, right, bottom] = [box.left, box.top, box.right, box.bottom].map((edge) => crisp(scaled(edge)))
-  return (
-    <path
-      data-guide={`outline ${[box.left, box.top, box.right, box.bottom].map((edge) => pixelsOf(scaled, edge)).join(" ")}`}
-      d={`M${left},${top}H${right}V${bottom}H${left}Z`}
-      fill="none"
-      shapeRendering="crispEdges"
-      style={snapStroke}
-    />
-  )
+  return {
+    "data-guide": `outline ${[box.left, box.top, box.right, box.bottom].map((edge) => pixelsOf(scaled, edge)).join(" ")}`,
+    d: `M${left},${top}H${right}V${bottom}H${left}Z`,
+    style: snapStroke,
+  }
 }
 
-function DrawnLine(props: { readonly guide: Drawn; readonly scaled: Scaled }) {
-  const { guide, scaled } = props
-  if (guide.kind === "snap") return <SnapLine guide={guide} scaled={scaled} />
-  if (guide.kind === "spacing") return <SpacingLine guide={guide} scaled={scaled} />
-  if (guide.kind === "distance") return <DistanceLine guide={guide} scaled={scaled} />
-  if (guide.kind === "extension") return <ExtensionLine guide={guide} scaled={scaled} />
-  return <OutlineBox guide={guide} scaled={scaled} />
+function drawnLine(guide: Drawn, scaled: Scaled): LineLook {
+  if (guide.kind === "snap") return snapLine(guide, scaled)
+  if (guide.kind === "spacing") return spacingLine(guide, scaled)
+  if (guide.kind === "distance") return distanceLine(guide, scaled)
+  if (guide.kind === "extension") return extensionLine(guide, scaled)
+  return outlineBox(guide, scaled)
 }
 
 const layer: CSSProperties = { position: "absolute", inset: 0, overflow: "visible", pointerEvents: "none" }
@@ -187,19 +172,29 @@ const layer: CSSProperties = { position: "absolute", inset: 0, overflow: "visibl
 export function GuideLayer(props: { readonly board: GuideBoard; readonly scaled: Scaled }) {
   const { board, scaled } = props
   const guides = useSyncExternalStore(board.subscribe, board.read, board.read)
-  if (guides.length === 0) return null
-  const gaps = guides.filter(
-    (guide): guide is SpacingGuide | Distance => guide.kind === "spacing" || guide.kind === "distance",
-  )
+  const gaps = guides.filter(isGap)
+  const room = useRef({ lines: 0, labels: 0 })
+  room.current = {
+    lines: Math.max(room.current.lines, guides.length),
+    labels: Math.max(room.current.labels, gaps.length),
+  }
   return (
-    <div data-guides={guides.length} aria-hidden style={layer}>
+    <div {...(guides.length === 0 ? {} : { "data-guides": guides.length })} aria-hidden style={layer}>
       <svg width="100%" height="100%" style={{ ...layer, width: "100%", height: "100%" }}>
-        {guides.map((guide, index) => (
-          <DrawnLine key={index} guide={guide} scaled={scaled} />
-        ))}
+        {Array.from({ length: room.current.lines }, (_, index) => {
+          const guide = guides[index]
+          return (
+            <path
+              key={index}
+              fill="none"
+              shapeRendering="crispEdges"
+              {...(guide === undefined ? {} : drawnLine(guide, scaled))}
+            />
+          )
+        })}
       </svg>
-      {gaps.map((guide, index) => (
-        <GapLabel key={index} guide={guide} scaled={scaled} />
+      {Array.from({ length: room.current.labels }, (_, index) => (
+        <GapLabel key={index} guide={gaps[index]} scaled={scaled} />
       ))}
     </div>
   )

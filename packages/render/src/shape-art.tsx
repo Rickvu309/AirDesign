@@ -1,6 +1,7 @@
 import { useId } from "react"
 import { presetOutline } from "./preset-path.js"
 import type { CanvasElement, CanvasLine } from "./record.js"
+import type { CanvasGeometry } from "./element-paint.js"
 import type { CanvasArrowSize } from "./line-record.js"
 import type { Scaled } from "./text-look.js"
 import {
@@ -121,14 +122,23 @@ function GrabBand(props: { readonly d: string; readonly weight: number }) {
   )
 }
 
-export function shapePaths(element: CanvasElement, scaled: Scaled) {
-  if (element.box === null || element.geometry === undefined) return null
-  return presetOutline(
-    element.geometry.preset,
-    scaled(element.box.width),
-    scaled(element.box.height),
-    element.geometry.adjusts,
-  )
+type Outline = ReturnType<typeof presetOutline>
+
+const outlines = new WeakMap<
+  CanvasGeometry,
+  { readonly width: number; readonly height: number; readonly paths: Outline }
+>()
+
+export function shapePaths(element: CanvasElement, scaled: Scaled): Outline {
+  const { box, geometry } = element
+  if (box === null || geometry === undefined) return null
+  const width = scaled(box.width)
+  const height = scaled(box.height)
+  const kept = outlines.get(geometry)
+  if (kept !== undefined && kept.width === width && kept.height === height) return kept.paths
+  const paths = presetOutline(geometry.preset, width, height, geometry.adjusts)
+  outlines.set(geometry, { width, height, paths })
+  return paths
 }
 
 export function paintsFillAsSvg(element: CanvasElement, scaled: Scaled) {

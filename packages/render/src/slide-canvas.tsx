@@ -74,7 +74,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
-  const scaled: Scaled = (emu) => (emu * width) / slide.width
+  const scaled = useMemo<Scaled>(() => (emu) => (emu * width) / slide.width, [width, slide.width])
   useLayoutEffect(() => {
     ensureTextRule(document)
   }, [])

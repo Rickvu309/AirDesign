@@ -199,8 +199,10 @@ export function useTextFit(
     return () => watch.disconnect()
   }, [text, fit, steps, fitting])
   const step = steps[fitting.step]
-  const shrunk = text !== null && step !== undefined && fitting.step > 0 ? fitted(text, step) : text
-  const shown = shrunk !== null && fitting.overflow ? { ...shrunk, overflow: true } : shrunk
+  const shown = useMemo(() => {
+    const shrunk = text !== null && step !== undefined && fitting.step > 0 ? fitted(text, step) : text
+    return shrunk !== null && fitting.overflow ? { ...shrunk, overflow: true } : shrunk
+  }, [text, step, fitting.step, fitting.overflow])
   const grown =
     box !== null && text !== null && fitting.grown > 0 ? grownBox(box, text.anchor, fitting.grown / scaled(1)) : box
   return { element: shown === text && grown === box ? element : { ...element, text: shown, box: grown }, layer }

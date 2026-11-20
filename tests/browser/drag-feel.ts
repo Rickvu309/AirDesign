@@ -10,6 +10,7 @@ type Recorded = {
   readonly thumbnails: number
   readonly panel: number
   readonly placements: number
+  readonly restyled: number
 }
 
 export type Feel = {
@@ -28,6 +29,7 @@ export type Feel = {
   readonly thumbnails: number
   readonly panel: number
   readonly placements: number
+  readonly restyled: number
 }
 
 declare global {
@@ -67,6 +69,7 @@ async function record(page: Page, dragged: string): Promise<void> {
     let thumbnails = 0
     let panel = 0
     let placements = 0
+    let restyled = 0
     let running = true
     const painted = new MessageChannel()
     painted.port1.onmessage = () => {
@@ -106,6 +109,18 @@ async function record(page: Page, dragged: string): Promise<void> {
     const placeWatch = new MutationObserver((list) => {
       placements += list.length
     })
+    const textWatch = new MutationObserver((list) => {
+      for (const each of list) {
+        const target = each.target
+        if (
+          target instanceof HTMLElement &&
+          (target.dataset.paragraph !== undefined || target.dataset.run !== undefined)
+        )
+          restyled += 1
+      }
+    })
+    for (const each of document.querySelectorAll("[data-slide-paint] [data-text-body]"))
+      textWatch.observe(each, { attributes: true, subtree: true })
     const frame = document.querySelector(`[data-slide-paint] [data-canvas-element="${key}"]`)
     if (frame !== null) placeWatch.observe(frame, { attributes: true, attributeFilter: ["style"] })
     window.feelStop = () => {
@@ -115,8 +130,9 @@ async function record(page: Page, dragged: string): Promise<void> {
       thumbWatch.disconnect()
       panelWatch.disconnect()
       placeWatch.disconnect()
+      textWatch.disconnect()
       settling = []
-      return { frames, delays, moves, long, thumbnails, panel, placements }
+      return { frames, delays, moves, long, thumbnails, panel, placements, restyled }
     }
   }, dragged)
 }
@@ -175,5 +191,6 @@ export async function dragFeel(page: Page, from: Point, by: Point, samples: numb
     thumbnails: recorded.thumbnails,
     panel: recorded.panel,
     placements: recorded.placements,
+    restyled: recorded.restyled,
   }
 }
