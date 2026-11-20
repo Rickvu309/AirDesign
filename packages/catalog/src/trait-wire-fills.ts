@@ -8,11 +8,11 @@ export const fillsWire: TraitWire<"fills"> = {
   description: "Shape fill or slide background. Image fields apply to image fills.",
   fields: {
     paint: {
-      description: `Color like "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" inherits the group fill; gradient (pos and focus %, angle degrees); pattern like "dkDnDiag"; image by Lucide icon name.`,
+      description: `Color like "accent1", "#${navy}" or "accent1 lumMod 75"; "none"; "group" inherits the group fill; gradient (pos and focus %, angle degrees); pattern like "dkDnDiag"; image by Lucide icon name or https address.`,
       example: { fills: { paint: "accent2" } },
     },
     source: {
-      description: "Lucide icon name.",
+      description: "Lucide icon name or https image address.",
       example: { fills: { source: "rocket" } },
     },
     weight: {
