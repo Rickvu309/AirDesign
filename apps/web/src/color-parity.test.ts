@@ -30,6 +30,7 @@ type Loose = {
       | {
           file: (parts: Parts, at: At) => unknown
           shows: (value: unknown) => unknown
+          prepare?: (parts: Parts, at: At) => Parts
           on?: { readonly deck: string; readonly kind: Parameters<typeof placed>[1]; readonly node: string }
         }
       | undefined
@@ -101,8 +102,9 @@ async function landings(): Promise<readonly Landed[]> {
       ]?.[field]
       const read = readAgent(desc, sent)
       const on = probe.fields[field]?.on ?? probe
-      const parts = await deckParts(on.deck)
-      const at = placed(parts, on.kind, on.node)
+      const source = await deckParts(on.deck)
+      const at = placed(source, on.kind, on.node)
+      const parts = probe.fields[field]?.prepare?.(source, at) ?? source
       const templateColors = namedByColor(themeSwatches(parts, at.part))
       for (const [name, color] of Object.entries(personColors(templateColors))) {
         const value = read.ok && color !== null ? recolored(read.value, color) : undefined

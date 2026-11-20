@@ -46,6 +46,7 @@ export { shapeSiblings } from "./element-stack-route.js"
 export { deckLayouts } from "./deck-layouts.js"
 export {
   addedPicturePart,
+  iconInk,
   iconOfPart,
   iconParts,
   installedPicture,
@@ -87,7 +88,7 @@ export { shownTextStyle } from "./text-style-read.js"
 export { shownGeometry } from "./geometry-read.js"
 export { shownTurn } from "./turn-read.js"
 export { shownAlphas } from "./trait-xml.js"
-export { templateStyles, templateStyle, type TemplateStyle } from "./template-style.js"
+export { slideColorHex, templateStyles, templateStyle, type TemplateStyle } from "./template-style.js"
 export { themeCustomColors, type ThemeCustomColor } from "./template-colors.js"
 export { remixTargets } from "./template-remix.js"
 export { shownLink, type ElementLink } from "./trait-xml-link.js"

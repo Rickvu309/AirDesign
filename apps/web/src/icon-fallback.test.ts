@@ -18,11 +18,13 @@ it("draws a Lucide icon as a black-stroked SVG of its nodes, and knows no icon b
   expect(await iconSvg("rocketship")).toBeNull()
 })
 
-it("draws an icon at its weight, Lucide's 2 unless a weight is given", () => {
+it("draws an icon at its weight and in its color, Lucide's 2 in black unless they are given", () => {
   const nodes = [["path", { d: "M1 2h3" }]] as const
   expect(iconMarkup(nodes)).toContain('stroke-width="2"')
   expect(iconMarkup(nodes, 150)).toContain('stroke-width="1.5"')
   expect(iconMarkup(nodes, 275)).toContain('stroke-width="2.75"')
+  const blue = "4472C4"
+  expect(iconMarkup(nodes, 150, blue)).toContain(`stroke="#${blue}" stroke-width="1.5"`)
 })
 
 it("finds every icon the written slides link but neither the file nor the device holds", () => {
@@ -34,6 +36,7 @@ it("finds every icon the written slides link but neither the file nor the device
     "../media/icon-star.png",
     "../media/icon-star.svg",
     "../media/icon-leaf.svg",
+    "../media/icon-moon.c4472C4.accent1.svg",
     "../media/image1.png",
   ]
     .map((target, at) => link(at + 1, target))
@@ -46,7 +49,10 @@ it("finds every icon the written slides link but neither the file nor the device
     [iconParts("star").svg, new Uint8Array()],
     [iconParts("star").png, new Uint8Array()],
   ])
-  expect(missingIcons(painted, held)).toEqual([{ name: "rocket", weight: 150 }])
+  expect(missingIcons(painted, held)).toEqual([
+    { name: "rocket", weight: 150, color: { hex: "000000" } },
+    { name: "moon", weight: 200, color: { hex: "4472C4", scheme: "accent1" } },
+  ])
 })
 
 it("makes an icon's PNG while the tab stays busy, since toBlob answers only when the browser goes idle", async () => {

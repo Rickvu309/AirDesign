@@ -59,6 +59,7 @@ export const designKeys = [
   "box.flipV",
   "fills.source",
   "fills.weight",
+  "fills.color",
   "fills.mode",
   "fills.recolor",
   "fills.crop",
@@ -139,6 +140,7 @@ export type TraitReads = Readonly<Partial<Record<ShadowSlotKey, Read<ShadowRead>
   readonly "box.flipV"?: Read<boolean>
   readonly "fills.source"?: Read<string>
   readonly "fills.weight"?: Read<number>
+  readonly "fills.color"?: Read<Color>
   readonly "fills.mode"?: Read<string>
   readonly "fills.recolor"?: Read<RecolorRead>
   readonly "fills.crop"?: Read<CropRead>

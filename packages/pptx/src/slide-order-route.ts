@@ -27,6 +27,7 @@ import { deckLayouts } from "./deck-layouts.js"
 import { slideAddresses, slidePart } from "./package-address.js"
 import { withFileSections, writeSlideGroups } from "./slide-group-write.js"
 import { addPicture, linkedSource } from "./picture-write.js"
+import { openedIcon } from "./trait-xml-image.js"
 import { pasteMarkup } from "./shape-paste.js"
 import { writeTrait } from "./trait-xml.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
@@ -119,7 +120,8 @@ function elementAdded(
   if (shown.media !== undefined)
     return addPicture(parts, part, { id, box, source: { media: shown.media, bytes: media(shown.media.sha256) } })
   const icon = element.kind === "shape" && element.value === null ? openingIcon(element) : null
-  if (icon !== null) return addPicture(parts, part, { id, box, source: { icon } })
+  if (icon !== null)
+    return addPicture(parts, part, { id, box, source: openedIcon(parts, part, icon, element.opening?.fills) })
   if (shown.geometry !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
   if (element.kind !== "table") {

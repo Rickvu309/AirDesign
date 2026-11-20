@@ -45,6 +45,7 @@ const fillsOpening = {
   p3: "opening",
   source: "opening",
   weight: "opening",
+  color: "opening",
   mode: "opening",
   tileScale: "opening",
   crop: "opening",

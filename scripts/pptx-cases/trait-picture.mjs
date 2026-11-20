@@ -5,8 +5,7 @@ const exported = "exported-picture.pptx"
 const slide = "ppt/slides/slide1.xml"
 const rels = "ppt/slides/_rels/slide1.xml.rels"
 const types = "[Content_Types].xml"
-const svg = "ppt/media/icon-rocket.svg"
-const png = "ppt/media/icon-rocket.png"
+const drawn = /^ppt\/media\/icon-rocket(?:\.c[0-9A-F]{6}\.tx1)?\.svg$/
 const photo =
   '<p:blipFill><a:blip r:embed="rId2"><a:alphaModFix amt="60000"/><a:grayscl/></a:blip><a:srcRect l="10000" r="10000"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
 const frame = '<a:off x="4267200" y="1905000"/><a:ext cx="3657600" cy="3048000"/>'
@@ -53,19 +52,21 @@ export default {
     if (!xml.includes(frame)) lines.push("picture did not move the photo's frame with its crop")
     if (!xml.includes(named)) lines.push("picture did not write the photo's name and alt text")
     if (!xml.includes(hidden)) lines.push("picture did not hide the subtitle")
+    const svg = [...(after?.keys() ?? [])].find((name) => drawn.test(name)) ?? "ppt/media/icon-rocket.svg"
+    const png = svg.replace(/\.svg$/, ".png")
     const linked = icon.exec(xml)
     const links = decode(rels)
     if (linked === null) lines.push("picture did not write the icon's PNG blip with its SVG in svgBlip")
     else {
       if (
         !links.includes(
-          `Id="${linked[1]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/icon-rocket.png"`,
+          `Id="${linked[1]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../${png.slice("ppt/".length)}"`,
         )
       )
         lines.push("picture did not link the icon's blip to its PNG")
       if (
         !links.includes(
-          `Id="${linked[2]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/icon-rocket.svg"`,
+          `Id="${linked[2]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../${svg.slice("ppt/".length)}"`,
         )
       )
         lines.push("picture did not link the icon's svgBlip to its SVG")

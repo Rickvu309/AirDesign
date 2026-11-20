@@ -164,6 +164,7 @@ export {
 export { readTextFill, type TextFill } from "./text-fill.js"
 export {
   changeFills,
+  iconTextColor,
   iconWeights,
   paintSlots,
   patternPresets,

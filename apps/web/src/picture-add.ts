@@ -1,5 +1,6 @@
 import {
   fitNewBox,
+  iconTextColor,
   iconWeights,
   limits,
   nextElementId,
@@ -14,7 +15,7 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
-import { freeShapeId, readSlides } from "@airdesign/pptx"
+import { freeShapeId, iconInk, readSlides, slideColorHex } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { takenBoxes, type SlideRoom } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
@@ -84,7 +85,9 @@ export function pictureCommand(
   const node = nextElementId(register, id, freeShapeId(base, slide.part))
   const element = { node, kind: "shape", value: null, box, grouped: false } as const
   if ("media" in source) return { slide: "element-add", id, element, media: source.media }
-  const opening = { fills: { p0: { set: { image: true } }, source: { set: source.icon } } } as const
+  const opening = {
+    fills: { p0: { set: { image: true } }, source: { set: source.icon }, color: { set: iconTextColor } },
+  } as const
   return { slide: "element-add", id, element: { ...element, opening } }
 }
 
@@ -141,12 +144,18 @@ export async function commitIcon(
   at: PictureAt,
   paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  const made = await iconBytes({ name, weight: iconWeights.lucide })
-  if (made === null) return "refused"
-  for (const [part, bytes] of made) at.keep(part, bytes)
   const opened = await connect(memoryRemote()).openDeck(deckId)
   if (!opened.ok) return "refused"
   const register = opened.register
+  const slide = readSlides(slideBase(parts, register))[at.index]
+  const hex = slide === undefined ? null : slideColorHex(parts, slide.part, iconTextColor)
+  const made = await iconBytes({
+    name,
+    weight: iconWeights.lucide,
+    color: { hex: hex ?? iconInk.hex, ...iconTextColor },
+  })
+  if (made === null) return "refused"
+  for (const [part, bytes] of made) at.keep(part, bytes)
   const edit = pictureCommand(parts, register, at.index, { icon: name }, placedIcon(at.slide))
   if (edit === null || edit.slide !== "element-add") return "refused"
   const file = fileSlides(parts, register)

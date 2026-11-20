@@ -19,6 +19,10 @@ export const fillsWire: TraitWire<"fills"> = {
       description: "Icon line weight on Lucide's 24 grid.",
       example: { fills: { weight: 1.5 } },
     },
+    color: {
+      description: "Icon line color.",
+      example: { fills: { color: "accent1" } },
+    },
     mode: {
       description: "Fill covers, Fit contains, Crop clips, Tile repeats, Stretch distorts.",
       example: { fills: { mode: "fit" } },

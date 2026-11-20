@@ -43,7 +43,7 @@ async function withClient(held: Session, use: (client: Client) => Promise<void>)
 }
 
 describe("an agent places a Lucide icon by name", () => {
-  it("adds a one-inch shape whose opening fills hold the icon, then sets its alt text and line weight", async () => {
+  it("adds a one-inch shape whose opening fills hold the icon, in the template's text color, then sets its alt text, line weight and color", async () => {
     const held = session()
     await withClient(held, async (client) => {
       const added = await client.callTool({
@@ -58,7 +58,9 @@ describe("an agent places a Lucide icon by name", () => {
           node: "256.5",
           kind: "shape",
           value: null,
-          opening: { fills: { p0: { set: { image: true } }, source: { set: "rocket" } } },
+          opening: {
+            fills: { p0: { set: { image: true } }, source: { set: "rocket" }, color: { set: { scheme: "tx1" } } },
+          },
         },
       })
       const placed = command?.slide === "element-add" ? command.element.box : null
@@ -68,17 +70,25 @@ describe("an agent places a Lucide icon by name", () => {
         arguments: {
           deck: "deck",
           base: held.deck.revision,
-          changes: [{ op: "set", target: "256.5", identity: { alt: "A rocket lifting off" }, fills: { weight: 1.5 } }],
+          changes: [
+            {
+              op: "set",
+              target: "256.5",
+              identity: { alt: "A rocket lifting off" },
+              fills: { weight: 1.5, color: "accent1" },
+            },
+          ],
         },
       })
       expect(alt.isError).not.toBe(true)
       expect(held.deck.register.elements[elementId("256.5")]?.landed.at(-1)).toMatchObject({
-        patch: { fills: { weight: { set: 150 } } },
+        patch: { fills: { weight: { set: 150 }, color: { set: { scheme: "accent1" } } } },
       })
       const read = readDeckPage(held.deck, { runId: "run", slide: "256" })
       expect(read.elements.find((element) => element.node === "256.5")).toMatchObject({
         kind: "shape",
-        design: "fills image · fills.source rocket · fills.weight 1.5 · identity.alt A rocket lifting off",
+        design:
+          "fills image · fills.source rocket · fills.weight 1.5 · fills.color accent1 · identity.alt A rocket lifting off",
       })
     })
   })

@@ -107,6 +107,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     expect(shownImage(after, picture)).toEqual({
       source: "rocket",
       weight: 200,
+      color: { rgb: "000000" },
       alpha: 100_000,
       recolor: { none: true },
       blur: 0,
@@ -175,6 +176,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     expect(shownImage(gray, picture)).toEqual({
       source: null,
       weight: null,
+      color: null,
       alpha: 60_000,
       recolor: { grayscale: true },
       blur: 0,

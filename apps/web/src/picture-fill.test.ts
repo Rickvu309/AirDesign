@@ -101,7 +101,7 @@ describe("pictureSources", () => {
     expect(revoked).toEqual([])
   })
 
-  it("paints an icon at a weight the device has not drawn yet from the same icon at another weight, so it never blinks", () => {
+  it("paints an icon at a weight or color the device has not drawn yet from the same icon drawn otherwise, so it never blinks", () => {
     const rocket = iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]])
     const sources = pictureSources(new Map([[iconParts("rocket").svg, new TextEncoder().encode(rocket)]]))
     const thin = iconParts("rocket", 150).svg
@@ -110,6 +110,11 @@ describe("pictureSources", () => {
       `data:image/svg+xml;charset=utf-8,${encodeURIComponent(lighter)}`,
     )
     expect(sources.src(image({ part: iconParts("star", 150).svg, contentType: "image/svg+xml" }))).toBeNull()
+    const blue = { hex: "4472C4", scheme: "accent1" } as const
+    const tinted = iconMarkup([["path", { d: "M4.5 16.5c-1.5 1.26-2 5-2 5" }]], 250, blue.hex)
+    expect(sources.src(image({ part: iconParts("rocket", 250, blue).svg, contentType: "image/svg+xml" }))).toBe(
+      `data:image/svg+xml;charset=utf-8,${encodeURIComponent(tinted)}`,
+    )
   })
 
   it("makes no address for a part the deck does not hold", () => {

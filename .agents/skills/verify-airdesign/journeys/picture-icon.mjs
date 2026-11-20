@@ -89,7 +89,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await tool("airdesign_stop_run", { deck, runId: added.runId })
   const read = await tool("airdesign_read_deck", { deck })
   const design = read.elements.find((element) => element.node === node)?.design
-  expect(design).toBe("fills image · fills.source rocket · identity.alt A rocket lifting off")
+  expect(design).toBe("fills image · fills.source rocket · fills.color tx1 · identity.alt A rocket lifting off")
   note(`read_deck prints ${node} as: ${design}`)
   await expect.poll(async () => (await look(shape)).image).toContain("data:image/svg+xml")
   await expect.poll(async () => (await look(shape)).label).toBe("A rocket lifting off")
@@ -152,9 +152,10 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   expect(pptx.shownImage(parts, at("4"))?.recolor).toEqual({ grayscale: true })
   expect(pptx.shownCrop(parts, at("4"))).toEqual({ l: 10000, t: 0, r: 10000, b: 0 })
   for (const name of ["rocket", "leaf"]) {
-    const svg = new TextDecoder().decode(parts.get(`ppt/media/icon-${name}.svg`) ?? new Uint8Array())
+    const icon = [...parts.keys()].find((part) => part.startsWith(`ppt/media/icon-${name}.`) && part.endsWith(".svg"))
+    const svg = new TextDecoder().decode(parts.get(icon ?? "") ?? new Uint8Array())
     expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true)
-    expect(parts.get(`ppt/media/icon-${name}.png`)?.byteLength ?? 0).toBeGreaterThan(100)
+    expect(parts.get(icon?.replace(/\.svg$/, ".png") ?? "")?.byteLength ?? 0).toBeGreaterThan(100)
   }
   const blips = new TextDecoder().decode(parts.get(slidePart)).match(/<p:blipFill>.*?<\/p:blipFill>/gs)
   note(`The export's blips: ${JSON.stringify(blips)}`)

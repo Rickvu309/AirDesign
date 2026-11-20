@@ -28,14 +28,26 @@ export type Derived = [
   Expect<
     Same<
       FieldName<"fills">,
-      "p0" | "p1" | "p2" | "p3" | "source" | "weight" | "mode" | "tileScale" | "crop" | "recolor" | "blur" | "alpha"
+      | "p0"
+      | "p1"
+      | "p2"
+      | "p3"
+      | "source"
+      | "weight"
+      | "color"
+      | "mode"
+      | "tileScale"
+      | "crop"
+      | "recolor"
+      | "blur"
+      | "alpha"
     >
   >,
   Expect<Same<FieldValue<"fills", "alpha">, Alpha>>,
   Expect<
     Same<
       WireField<"fills">,
-      "paint" | "source" | "weight" | "mode" | "tileScale" | "crop" | "recolor" | "blur" | "overlay"
+      "paint" | "source" | "weight" | "color" | "mode" | "tileScale" | "crop" | "recolor" | "blur" | "overlay"
     >
   >,
   Expect<
@@ -103,6 +115,7 @@ describe("the one table of traits", () => {
       "fills.p3",
       "fills.source",
       "fills.weight",
+      "fills.color",
       "fills.mode",
       "fills.tileScale",
       "fills.crop",

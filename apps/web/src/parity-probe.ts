@@ -192,6 +192,7 @@ function panelControl(register: Register, at: At, trait: TraitName, field: strin
           "fills.mode": { value: shownPictureMode(parts, at), own: true },
           "fills.tileScale": { value: shownTileScale(parts, at), own: true },
           "fills.weight": { value: shownImage(parts, at)?.weight ?? null, own: true },
+          "fills.color": { value: shownImage(parts, at)?.color ?? null, own: true },
         }
   const sections =
     view === undefined

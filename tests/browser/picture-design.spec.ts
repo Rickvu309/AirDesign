@@ -1,6 +1,7 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
+import { templateHex } from "./color-words"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
@@ -136,10 +137,9 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   expect(slide).toContain(`<p:cNvPr id="4" name="Sales chart" descr="${alt}"/>`)
   expect(slide).toContain('<p:cNvPr id="3" name="subTitle 1" hidden="1"/>')
   expect(slide).toContain(svgBlip)
-  expect(saved.get("ppt/media/icon-rocket.svg")?.toString("utf8")).toMatch(
-    /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/,
-  )
-  expect(saved.get("ppt/media/icon-rocket.png")?.subarray(1, 4).toString("latin1")).toBe("PNG")
+  const rocket = `ppt/media/icon-rocket.c${await templateHex("picture-png.pptx", "tx1")}.tx1`
+  expect(saved.get(`${rocket}.svg`)?.toString("utf8")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)
+  expect(saved.get(`${rocket}.png`)?.subarray(1, 4).toString("latin1")).toBe("PNG")
   const changed = [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
   expect(changed.sort()).toEqual(["[Content_Types].xml", relsPart, slidePart].sort())
   await copyFile(file, judged)

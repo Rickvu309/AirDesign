@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, test, type Locator } from "@playwright/test"
+import { templateHex } from "./color-words"
 import { decksOn } from "./deck-test"
 import { designing, openDeck } from "./design-panel"
 import { savedExport } from "./export-dialog"
@@ -56,10 +57,11 @@ test("a person sets an icon's weight, its lines repaint, Undo puts Lucide's 2 ba
   await savedExport(page, file)
   const parts = await partsOf(file)
   const rels = parts.get(relsPart)?.toString("utf8") ?? ""
-  expect(rels).toContain('Target="../media/icon-rocket.w150.svg"')
-  expect(rels).toContain('Target="../media/icon-rocket.w150.png"')
-  expect(parts.get("ppt/media/icon-rocket.w150.svg")?.toString("utf8")).toContain('stroke-width="1.5"')
-  expect(parts.get("ppt/media/icon-rocket.w150.png")?.subarray(1, 4).toString("latin1")).toBe("PNG")
+  const thin = `icon-rocket.w150.c${await templateHex("picture-png.pptx", "tx1")}.tx1`
+  expect(rels).toContain(`Target="../media/${thin}.svg"`)
+  expect(rels).toContain(`Target="../media/${thin}.png"`)
+  expect(parts.get(`ppt/media/${thin}.svg`)?.toString("utf8")).toContain('stroke-width="1.5"')
+  expect(parts.get(`ppt/media/${thin}.png`)?.subarray(1, 4).toString("latin1")).toBe("PNG")
 
   await decksOn(page).open(file)
   const reopened = page.locator(`[data-slide-paint] [data-canvas-element="${iconKey}"]`)

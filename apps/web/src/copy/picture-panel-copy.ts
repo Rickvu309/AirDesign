@@ -4,6 +4,7 @@ export const picturePanelCopy = {
   section: "Image",
   source: "Icon",
   weight: "Weight",
+  color: "Color",
   recolor: "Recolor",
   overlay: "Overlay",
   blur: "Blur",

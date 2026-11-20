@@ -1,4 +1,12 @@
-import { assetIcon, iconWeights, type Media } from "@airdesign/document"
+import {
+  assetIcon,
+  iconWeights,
+  readColor,
+  type ColorTransform,
+  type MappedSlot,
+  type Media,
+  type TemplateColor,
+} from "@airdesign/document"
 import { fillWritten } from "./blip-edit.js"
 import { spliceBytes, markupDocument, type MarkupElement } from "./element-span.js"
 import type { ElementAt } from "./xml-codec.js"
@@ -15,9 +23,17 @@ export type AddedPicture = {
   readonly source: { readonly media: Media; readonly bytes: Uint8Array | undefined } | IconSource
 }
 
-export type IconSource = { readonly icon: string; readonly weight?: number }
+export type IconSource = { readonly icon: string; readonly weight?: number; readonly color?: IconColor }
 
-export type IconRef = { readonly name: string; readonly weight: number }
+export type IconColor = {
+  readonly hex: string
+  readonly scheme?: TemplateColor | MappedSlot
+  readonly transforms?: readonly ColorTransform[]
+}
+
+export type IconRef = { readonly name: string; readonly weight: number; readonly color: IconColor }
+
+export const iconInk: IconColor = { hex: "000000" }
 
 const imageType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 const relationshipsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -40,24 +56,55 @@ export function addedPicturePart(part: string): boolean {
   return part.startsWith(addedPrefix) || part.startsWith(iconPrefix)
 }
 
+function transformWord(each: ColorTransform): string {
+  return "val" in each ? `${each.op}${String(each.val)}` : each.op
+}
+
+function colorStem(color: IconColor): string {
+  if (color.scheme === undefined && color.hex === iconInk.hex) return ""
+  const slot = color.scheme === undefined ? [] : [color.scheme, ...(color.transforms ?? []).map(transformWord)]
+  return [`.c${color.hex}`, ...slot.map((word) => `.${word}`)].join("")
+}
+
 export function iconParts(
   name: string,
   weight: number = iconWeights.lucide,
+  color: IconColor = iconInk,
 ): { readonly svg: string; readonly png: string } {
-  const stem = weight === iconWeights.lucide ? `${iconPrefix}${name}` : `${iconPrefix}${name}.w${String(weight)}`
+  const weighed = weight === iconWeights.lucide ? "" : `.w${String(weight)}`
+  const stem = `${iconPrefix}${name}${weighed}${colorStem(color)}`
   return { svg: `${stem}.svg`, png: `${stem}.png` }
 }
 
-const iconPart = /^ppt\/media\/icon-([a-z0-9-]+)(?:\.w([0-9]{1,4}))?\.(?:svg|png)$/
+const iconPart =
+  /^ppt\/media\/icon-([a-z0-9-]+)(?:\.w([0-9]{1,4}))?(?:\.c([0-9A-F]{6})((?:\.[A-Za-z]+-?[0-9]*)*))?\.(?:svg|png)$/
+
+const wordPart = /^([A-Za-z]+)(-?[0-9]+)?$/
+
+function colorOf(hex: string, words: readonly string[]): IconColor | null {
+  const [slot, ...rest] = words
+  if (slot === undefined) return { hex }
+  const transforms = rest.map((each) => {
+    const found = wordPart.exec(each)
+    if (found === null) return null
+    return found[2] === undefined ? { op: found[1] } : { op: found[1], val: Number(found[2]) }
+  })
+  if (transforms.includes(null)) return null
+  const color = readColor({ scheme: slot, ...(transforms.length === 0 ? {} : { transforms }) })
+  if (color === null || color === undefined || !("scheme" in color)) return null
+  return { hex, scheme: color.scheme, ...(color.transforms === undefined ? {} : { transforms: color.transforms }) }
+}
 
 export function iconOfPart(part: string): IconRef | null {
   const found = iconPart.exec(part)
   const name = found?.[1] === undefined ? null : assetIcon(found[1])
   if (found === null || name === null) return null
+  const color = colorOf(found[3] ?? iconInk.hex, found[4]?.split(".").slice(1) ?? [])
+  if (color === null) return null
   const weight = found[2] === undefined ? iconWeights.lucide : Number(found[2])
-  const named = iconParts(name, weight)
+  const named = iconParts(name, weight, color)
   const kept = weight >= iconWeights.lightest && weight <= iconWeights.heaviest
-  return kept && (named.svg === part || named.png === part) ? { name, weight } : null
+  return kept && (named.svg === part || named.png === part) ? { name, weight, color } : null
 }
 
 export function mediaName(parts: ReadonlyMap<string, Uint8Array>, media: Media, bytes: Uint8Array | undefined): string {
@@ -134,7 +181,7 @@ export function linkedSource(
   source: AddedPicture["source"],
 ): LinkedSource {
   if ("icon" in source) {
-    const named = iconParts(source.icon, source.weight)
+    const named = iconParts(source.icon, source.weight, source.color)
     mediaTyped(parts, "png", "image/png")
     mediaTyped(parts, "svg", "image/svg+xml")
     return { embed: imageLink(parts, slide, named.png), svg: imageLink(parts, slide, named.svg) }
@@ -239,7 +286,7 @@ export function unheldIcons(parts: ReadonlyMap<string, Uint8Array>): readonly Ic
   const icons = new Map<string, IconRef>()
   for (const part of unheldPictures(parts)) {
     const icon = iconOfPart(part)
-    if (icon !== null) icons.set(iconParts(icon.name, icon.weight).svg, icon)
+    if (icon !== null) icons.set(iconParts(icon.name, icon.weight, icon.color).svg, icon)
   }
   return [...icons.values()]
 }

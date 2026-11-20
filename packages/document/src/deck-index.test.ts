@@ -190,7 +190,7 @@ describe("index format", () => {
     expect(read).toEqual(resent(0, titled))
     for (const element of [
       { ...titled, role: "headline" },
-      { ...titled, design: { "fills.color": ["accent1"] } },
+      { ...titled, design: { "fills.tint": ["accent1"] } },
       { ...titled, design: { fills: ["accent1", "file"] } },
       { ...titled, design: { fills: [] } },
       { ...titled, design: { fills: [{ scheme: "accent1" }] } },

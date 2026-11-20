@@ -159,6 +159,7 @@ describe("the server admits only the edits the device can write onto an element 
     const image = [
       "fills.source",
       "fills.weight",
+      "fills.color",
       "fills.mode",
       "fills.tileScale",
       "fills.crop",
