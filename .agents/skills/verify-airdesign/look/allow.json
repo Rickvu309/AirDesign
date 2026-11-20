@@ -82,5 +82,11 @@
     "detector": "overflowing-text",
     "selector": "[data-slide-paint]",
     "reason": "The state pastes slide 1's rectangle onto slide 2 at its own place, on top of the slide's layers as a paste lands, so it covers the two text lines under it, as the paste asks."
+  },
+  {
+    "page": "frame-joined",
+    "detector": "invisible-control",
+    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#6\"]",
+    "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
   }
 ]

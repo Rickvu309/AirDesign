@@ -235,7 +235,9 @@ test("a shape dropped into an auto layout frame joins its row, a child dragged o
   await expect
     .poll(async () => {
       const [one, two, three] = await Promise.all([square!, triangle, circle!].map(placed))
-      return one!.x + one!.width <= two!.x + 1 && two!.x + two!.width <= three!.x + 1 && Math.abs(two!.y - one!.y) < 2
+      const before = two!.x - (one!.x + one!.width)
+      const after = three!.x - (two!.x + two!.width)
+      return before >= -1 && Math.abs(before - after) <= 1.5 && Math.abs(two!.y - one!.y) < 2
     })
     .toBe(true)
   await square!.dblclick()
