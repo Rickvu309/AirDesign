@@ -61,7 +61,7 @@ Read-only. Prints `{"ok":true,...,"checks":{...}}` and exits 1 when any check fa
 - `apiCommit`, `buildIsHead`: the API reports the commit it was launched at, and that commit is the checkout's `HEAD`. When `buildIsHead` is false you edited or moved since launch: stop and launch again.
 - `databaseAnswers`: `deckRoutes.list` without a cookie answers 401 `session`, which needs the API and Postgres both up.
 
-Doctor also prints `load`, the machine's one-minute load average on its cores. Above the core count it says the machine is busy: a timeout then may be load, so rerun that step alone before you believe it. When the stack is gone it prints `next`, naming `stack.log`, where the stack writes the signal or the uncaught error that stopped it.
+Doctor also prints `load`, the machine's one-minute load average on its cores. Above the core count it says the machine is busy. A step that fails then and passes alone has found a race: force the gap and fix it. When the stack is gone it prints `next`, naming `stack.log`, where the stack writes the signal or the uncaught error that stopped it.
 
 Run doctor first whenever anything looks off. Never drive an instance whose doctor fails or that another run started. Gate each drive on it: `$V doctor <run> >/dev/null && $V journey <run> <name>`.
 

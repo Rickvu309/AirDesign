@@ -1,6 +1,6 @@
 import { fixture, harness, migrationsOf, ok, pullAnswer, same } from "./land-harness.mjs"
 
-const failedLoad = { status: 1, output: fixture("vitest-failed.log") }
+const failedRace = { status: 1, output: fixture("vitest-failed.log") }
 
 const clean = harness()
 same("a clean branch lands and follows to merged", await clean.run(), 0)
@@ -177,13 +177,35 @@ same(
   false,
 )
 
-const load = harness({ checkRuns: [failedLoad], alone: { status: 0, output: "" } })
-same("a failed test that passes alone is load and lands", await load.run(), 0)
-same("the file was rerun alone", load.log.includes("rerun apps/api/src/agent-commit-race.test.ts"), true)
-same("and the commit is stamped by land", load.log.includes("stamp"), true)
+const raced = harness({ checkRuns: [failedRace], alone: { status: 0, output: "" } })
+same("a failed test outside the diff that passes alone is recorded as a race and lands", await raced.run(), 0)
+same("the file was rerun alone", raced.log.includes("rerun apps/api/src/agent-commit-race.test.ts"), true)
+same(
+  "the race is one issue that names the test, the branch and the commit",
+  raced.raised.map((issue) => [
+    issue.title.startsWith("Race: apps/api/src/agent-commit-race.test.ts › "),
+    issue.body.includes("on branch land-command"),
+    issue.body.includes("at commit land-command"),
+  ]),
+  [[true, true, true]],
+)
+same("and the commit is stamped by land", raced.log.includes("stamp"), true)
+
+const unrecorded = harness({ checkRuns: [failedRace], issues: { status: 1, stdout: "", stderr: "HTTP 503" } })
+same("a race that cannot be recorded stops the push", await unrecorded.run(), 1)
+same("and stamps nothing", unrecorded.log.includes("stamp"), false)
+
+const owned = harness({ checkRuns: [failedRace], changed: "apps/api/src/agent-commit-race.test.ts\n" })
+same("a failed test this branch changes that passes alone stops the push", await owned.run(), 1)
+same("and opens no issue", owned.raised, [])
+same(
+  "and says to force the gap",
+  owned.said.some((line) => line.includes("forcing the gap") && line.includes("5 times")),
+  true,
+)
 
 const real = harness({
-  checkRuns: [failedLoad],
+  checkRuns: [failedRace],
   alone: { status: 1, output: " FAIL  api apps/api/src/agent-commit-race.test.ts > a > b\nAssertionError: boom\n" },
 })
 same("a failed test that fails alone too stops the push", await real.run(), 1)

@@ -1,5 +1,6 @@
 import fs from "node:fs"
 import { beforeAfterNeed } from "./before-after.mjs"
+import { changedOnBranch } from "./land-git.mjs"
 
 const templateFile = new URL("../.github/pull_request_template.md", import.meta.url)
 
@@ -82,11 +83,6 @@ const contains = (status) => status === "ahead" || status === "identical"
 export const githubOffBranch = (compare) => (sha) => {
   const head = compare(sha, "head")
   return head !== undefined && !contains(head) && !contains(compare(sha, "base"))
-}
-
-const changedOnBranch = (git) => {
-  const listed = git(["diff", "--name-only", "origin/main...HEAD"])
-  return listed.status === 0 ? listed.stdout.split("\n").filter((file) => file !== "") : []
 }
 
 export const branchBodyFaults = ({ body, git, repository }) =>

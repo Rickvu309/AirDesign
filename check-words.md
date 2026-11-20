@@ -54,6 +54,10 @@ _Avoid_: hard fail, enforce
 To print a step failure and let the run pass.
 _Avoid_: soft fail, advisory, non-blocking
 
+**race**:
+A test that fails beside other work and passes on its own. It has found a fault in the test or the code it covers, and the fix forces the gap: a delay that makes the old code fail every time.
+_Avoid_: flake, flaky test, machine load
+
 **false stop**:
 A failed run on a pull request that merged with the same content.
 _Avoid_: flake, spurious failure

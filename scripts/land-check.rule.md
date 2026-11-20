@@ -1,3 +1,3 @@
-# A commit whose test failed is not pushed; a failed test is load only when it passes alone
+# A test that fails in the gate and passes alone has a race: never pushed if the branch changes it, pushed only once recorded as an issue if not
 
-`pnpm gate` and `pnpm check` withhold the stamp if step `unit-tests` fails. `pnpm land` stamps after the alone rerun (`scripts/land-check.mjs`)
+`pnpm gate` and `pnpm check` withhold the stamp if step `unit-tests` fails. `pnpm land` reruns each failed file alone (`judgeCheck` in `scripts/land-check.mjs`): a file that fails alone too stops the push; one the branch changes stops it and says to force the gap; any other is recorded by `recordRace` in `scripts/race-issue.mjs` as an open `Race:` issue with the test, its failure output and the commit, or the push stops. `scripts/land-check.test.mjs` replays the save-status queue failure and checks that no message says load
