@@ -27,6 +27,7 @@ import type { Moves } from "./moves.js"
 import type { PaintStore } from "./store.js"
 import { elementFrame, type ElementPaintProps } from "./element-host.js"
 import { cellTextFrame, TableArt, type Cell } from "./table-art.js"
+import { rowFloors, useMeasuredRows } from "./table-rows.js"
 import { textLook, type Scaled } from "./text-look.js"
 import { leadOf } from "./selection.js"
 import { gestureFor } from "./gestures.js"
@@ -222,11 +223,13 @@ function TableEdit(props: {
   const shown = sizedTable(table, sizing)
   const lastRow = table.rows.length - 1
   const lastColumn = table.columns.length - 1
-  const stored = storedCells(useElement(props.store, id)?.text, table)
+  const written = useElement(props.store, id)?.text
+  const stored = storedCells(written, table)
   const pending = useRef<Spot | null>(null)
   const press = useRef<Press | null>(null)
   const frame = useRef<HTMLDivElement>(null)
   const box = paintedAt(element.box, useBox(props.store, id))
+  useMeasuredRows(props.store, id, frame, written ?? "", box?.height, scaled, shown)
 
   useEffect(() => {
     const wanted = pending.current
@@ -387,6 +390,7 @@ function TableEdit(props: {
           region,
           onPick: pick,
           onSizing: setSizing,
+          floors: () => rowFloors(frame.current),
           change,
           leave: focusTable,
         }
@@ -466,30 +470,34 @@ function TableObject(
 ) {
   const { element, id, moves, scaled, table } = props
   const box = paintedAt(element.box, useBox(props.store, id))
+  const holder = useRef<HTMLDivElement>(null)
+  useMeasuredRows(props.store, id, holder, useElement(props.store, id)?.text ?? "", box?.height, scaled, table)
   return (
-    <TableArt
-      box={box}
-      elementKey={element.key}
-      scaled={scaled}
-      table={table}
-      frame={{
-        "aria-label": "Table",
-        tabIndex: 0,
-        onPointerDown: (event) => moves.press(event, element, "move"),
-        onDoubleClick: (event) => moves.doubleClick(event, element),
-        onKeyDown: (event) => moves.key(event, element),
-        onFocus: () => moves.select(id),
-      }}
-      style={{
-        ...(box === null
-          ? {}
-          : { position: "absolute", left: scaled(box.x), top: scaled(box.y), width: scaled(box.width) }),
-        pointerEvents: "auto",
-        cursor: "move",
-        touchAction: "none",
-        ...framedOutline,
-      }}
-    />
+    <div ref={holder} style={{ display: "contents" }}>
+      <TableArt
+        box={box}
+        elementKey={element.key}
+        scaled={scaled}
+        table={table}
+        frame={{
+          "aria-label": "Table",
+          tabIndex: 0,
+          onPointerDown: (event) => moves.press(event, element, "move"),
+          onDoubleClick: (event) => moves.doubleClick(event, element),
+          onKeyDown: (event) => moves.key(event, element),
+          onFocus: () => moves.select(id),
+        }}
+        style={{
+          ...(box === null
+            ? {}
+            : { position: "absolute", left: scaled(box.x), top: scaled(box.y), width: scaled(box.width) }),
+          pointerEvents: "auto",
+          cursor: "move",
+          touchAction: "none",
+          ...framedOutline,
+        }}
+      />
+    </div>
   )
 }
 

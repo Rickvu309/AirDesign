@@ -23,3 +23,7 @@ _Avoid_: clone (in product copy)
 **left-out edit**:
 An edit the deck holds that this device cannot write into its PowerPoint file. The slides and an export leave it out, with the layers it made and their rows, so every edit before and after it still paints and saves, and the deck still opens after a reload. The editor says "Unable to show some edits" once for it. `writtenDeck` in `packages/pptx` finds it when the deck's edits do not write together.
 _Avoid_: dropped edit, broken edit, failed edit
+
+**painted row height**:
+The height a table row shows on the canvas: its own height, or more while its text needs more. The table's frame follows it while a person types, a row border drag stops at the row's text, and the export writes it as the row's height in the file. Figma's plugin API calls the least height a row's "minimum size".
+_Avoid_: auto row height, row fit

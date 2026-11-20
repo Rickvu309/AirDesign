@@ -1,6 +1,6 @@
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
-import { within } from "./part-markup.js"
+import { partBytes, within } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
 import { gridOf, type Grid } from "./table-grid.js"
 
@@ -92,4 +92,37 @@ export function sizedGrid(
     ...(heights === undefined ? [] : shared(grid.rows, "h", heights, frame.cy)),
   ]
   return edits.length === 0 ? bytes : spliceBytes(bytes, edits)
+}
+
+function valueEdit(element: MarkupElement, name: string, size: number): ByteEdit[] {
+  const value = element.attributes.find((item) => item.name === name)
+  if (value === undefined || sizeOf(element, name) === size) return []
+  return [{ start: value.valueStart, end: value.valueEnd, next: encodeUtf8(String(size)) }]
+}
+
+export function fittedGrid(bytes: Uint8Array, shape: string, heights: readonly number[]): Uint8Array {
+  const grid = gridOf(bytes, shape)
+  if (heights.length !== grid.rows.length || heights.some((height) => !Number.isSafeInteger(height) || height <= 0))
+    throw new Error("a:tr")
+  const total = heights.reduce((sum, height) => sum + height, 0)
+  const edits = [
+    ...grid.rows.flatMap((row, at) => valueEdit(row, "h", heights[at] ?? 0)),
+    ...valueEdit(extOf(grid, shape), "cy", total),
+  ]
+  return edits.length === 0 ? bytes : spliceBytes(bytes, edits)
+}
+
+export function fittedTable(
+  parts: ReadonlyMap<string, Uint8Array>,
+  at: { readonly part: string; readonly shape: string; readonly height: number },
+  heights: readonly number[],
+): ReadonlyMap<string, Uint8Array> {
+  const { part, shape } = at
+  const bytes = partBytes(parts, part)
+  if (frameSize(bytes, shape).cy !== at.height) return parts
+  const fitted = fittedGrid(bytes, shape, heights)
+  if (fitted === bytes) return parts
+  const next = new Map(parts)
+  next.set(part, fitted)
+  return next
 }

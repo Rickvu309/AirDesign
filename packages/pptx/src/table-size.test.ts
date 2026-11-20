@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { frameSize, scaledGrid } from "./table-size.js"
+import { fittedGrid, frameSize, scaledGrid } from "./table-size.js"
 
 const cell = "<a:tc><a:txBody><a:bodyPr/><a:p/></a:txBody><a:tcPr/></a:tc>"
 
@@ -44,5 +44,19 @@ describe("scaledGrid", () => {
   it("returns the same bytes when the frame kept its size", () => {
     const bytes = slide(6_000_000, 900_000)
     expect(scaledGrid(bytes, "4", { cx: 6_000_000, cy: 900_000 })).toBe(bytes)
+  })
+})
+
+describe("fittedGrid", () => {
+  it("writes each row's painted height and the frame's height as their sum", () => {
+    const fitted = fittedGrid(slide(6_000_000, 900_000), "4", [355_600, 812_800])
+    expect(sizes(fitted).heights).toEqual([355_600, 812_800])
+    expect(frameSize(fitted, "4")).toEqual({ cx: 6_000_000, cy: 1_168_400 })
+  })
+
+  it("returns the same bytes when the rows already have those heights, and refuses a list of the wrong length", () => {
+    const bytes = slide(6_000_000, 900_000)
+    expect(fittedGrid(bytes, "4", [300_000, 600_000])).toBe(bytes)
+    expect(() => fittedGrid(bytes, "4", [300_000])).toThrow()
   })
 })
