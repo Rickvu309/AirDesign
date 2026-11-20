@@ -1,8 +1,8 @@
 name: ci-changes
 description: Says which ci parts this change can affect, read by scripts/change-map.mjs. A pull request maps its own diff, and every other event runs every part.
 inputs:
-  check-jobs:
-    description: Every check job as a JSON list of matrix entries, each with its part.
+  check-jobs-file:
+    description: Path to the JSON list of check jobs.
     required: true
 outputs:
   source:
@@ -34,11 +34,12 @@ runs:
       shell: bash
       env:
         EVENT_NAME: ${{ github.event_name }}
-        CHECK_JOBS: ${{ inputs.check-jobs }}
+        CHECK_JOBS_FILE: ${{ inputs.check-jobs-file }}
       run: |
         set -uo pipefail
+        check_jobs=$(<"$CHECK_JOBS_FILE") || exit 1
         decide() {
-          node scripts/change-map.mjs --jobs "$CHECK_JOBS" "$@" | tee -a "$GITHUB_OUTPUT"
+          node scripts/change-map.mjs --jobs "$check_jobs" "$@" | tee -a "$GITHUB_OUTPUT"
           exit "${PIPESTATUS[0]}"
         }
         if [ "$EVENT_NAME" != pull_request ]; then

@@ -13,7 +13,8 @@ const workflow = parse(fs.readFileSync(path.join(root, ".github/workflows/ci.yml
 const action = parse(fs.readFileSync(path.join(root, ".github/actions/ci-changes/action.yml"), "utf8"))
 const changes = workflow.jobs.changes
 const mapStep = changes.steps.find((step) => step.id === "map")
-const checkJobs = JSON.parse(mapStep.with["check-jobs"])
+const checkJobsFile = mapStep.with["check-jobs-file"]
+const checkJobs = JSON.parse(fs.readFileSync(path.join(root, checkJobsFile), "utf8"))
 
 const git = (folder, ...args) =>
   execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: folder, encoding: "utf8" }).trim()
@@ -55,7 +56,7 @@ const step = (event) => {
       env: {
         ...process.env,
         EVENT_NAME: event,
-        CHECK_JOBS: mapStep.with["check-jobs"],
+        CHECK_JOBS_FILE: checkJobsFile,
         GITHUB_OUTPUT: output,
         RUNNER_TEMP: temp,
       },
@@ -136,7 +137,16 @@ try {
     same(
       `${file} runs the full browser matrix`,
       jobsOf(shared).filter((job) => job.startsWith("browser")),
-      ["browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4"],
+      [
+        "browser 1/8",
+        "browser 2/8",
+        "browser 3/8",
+        "browser 4/8",
+        "browser 5/8",
+        "browser 6/8",
+        "browser 7/8",
+        "browser 8/8",
+      ],
     )
     same(`${file} also reaches PowerPoint`, [shared.pptx, shared.corpus], ["true", "true"])
   }
