@@ -340,9 +340,9 @@ same(
   ['["agent-bench-recorded","connector-follow"]', true],
 )
 same(
-  "an account journey change selects just that journey",
+  "an account journey change selects that journey and the agent bench that walks it",
   real([".agents/skills/verify-airdesign/journeys/account-name.mjs"]).journeyNames,
-  ["account-name"],
+  ["account-name", "agent-bench-recorded"],
 )
 same(
   "a docs change keeps only the source job",

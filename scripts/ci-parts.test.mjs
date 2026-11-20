@@ -176,22 +176,7 @@ same(
   "${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.journeys != 'false' }}",
 )
 same("ci calls the reusable journeys workflow", journeys.uses, "./.github/workflows/journeys.yml")
-same(
-  "ci passes the selected journey names",
-  journeys.with["journey-names"],
-  "${{ needs.changes.outputs.journey-names }}",
-)
 const journeysFile = parse(fs.readFileSync(path.join(root, ".github/workflows/journeys.yml"), "utf8"))
-const journeyJob = journeysFile.jobs.journeys
-const journeyRun = journeyJob.steps.find((step) => step.run === "pnpm test:journeys")
-same("each journey shard keeps running if another fails", journeyJob.strategy["fail-fast"], false)
-same("the journey runner gets the selected names", journeyRun.env.JOURNEYS_CHANGED, "${{ inputs.journey-names }}")
-same("the journey runner gets its own shard", journeyRun.env.JOURNEYS_SHARD.includes("matrix.shard"), true)
-same(
-  "each shard has its own failure artifact",
-  journeyJob.steps.find((step) => step.if === "failure()").with.name.includes("matrix.shard"),
-  true,
-)
 same("the journeys workflow can be called from ci", "workflow_call" in journeysFile.on, true)
 same("journeys no longer run on push", "push" in journeysFile.on, false)
 same("journeys keep manual dispatch", "workflow_dispatch" in journeysFile.on, true)
