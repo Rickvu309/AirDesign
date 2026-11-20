@@ -1,6 +1,7 @@
 import { freshRunVerdict, recordRaces, takeFreshRun } from "./fresh-run.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { ciFailureLines } from "./land-report.mjs"
+import { mainGreenComment, mainRedLine, mainsFault } from "./main-red.mjs"
 import { queueLine, readPull, removalLine } from "./merge-queue.mjs"
 import { forceTheGap } from "./race-issue.mjs"
 
@@ -57,15 +58,52 @@ export const followPull = async ({
     if (line !== lastLine) say(`follow: ${line}`)
     lastLine = line
   }
-  const report = (event, pull) => {
+  const failedRun = (event, pull) => {
     const run = failedRunFor({ gh, repository, branch, head: pull.head, number, event })
     if (run === undefined) {
       say(`follow: no failed ci run was found for pull request ${number}. Look at: gh pr checks ${number}`)
       return undefined
     }
     const read = failedJobLogs({ repository, run, gh })
-    for (const line of ciFailureLines({ repository, run, gh, git, read })) say(line)
-    return { run, jobs: read.jobs }
+    return { run, jobs: read.jobs, read }
+  }
+  const report = (failure) => {
+    if (failure !== undefined)
+      for (const line of ciFailureLines({ repository, run: failure.run, gh, git, read: failure.read })) say(line)
+    return failure
+  }
+  const mainsTurn = async (event, pull, failure) => {
+    if (failure === undefined) return "no"
+    const verdict = await mainsFault({
+      gh,
+      repository,
+      run: failure.run,
+      jobs: failure.jobs,
+      say,
+      sleep,
+      now,
+      interval: interval * 2,
+      limitMs,
+    })
+    if (!verdict.mains) return "no"
+    if (verdict.healer === undefined) return "stop"
+    const queue = event === "merge_group"
+    const fault = await takeFreshRun({
+      gh,
+      read,
+      repository,
+      number,
+      run: failure.run,
+      head: pull.head,
+      queue,
+      sleep,
+      now,
+      interval,
+      comment: mainGreenComment({ repository, run: failure.run, head: pull.head, ...verdict, queue }),
+    })
+    if (fault === undefined) return "continue"
+    say(`follow: the run on the green main did not start: ${fault}`)
+    return "stop"
   }
   const ciEnded = (pull) =>
     !runsOf({ gh, repository, event: "pull_request", branch }).some(
@@ -111,6 +149,8 @@ export const followPull = async ({
     if (fault !== undefined) say(`follow: the fresh run did not start: ${fault}`)
     return fault === undefined
   }
+  const red = mainRedLine({ gh, repository })
+  if (red !== undefined) say(`follow: ${red}`)
   for (;;) {
     const pull = readPull({ read, repository, number })
     if (pull.merged) {
@@ -133,8 +173,15 @@ export const followPull = async ({
       }
       say("follow: dropped from the merge queue. The queue's own run failed:")
       if (removalLine(again) !== undefined) say(`follow: ${removalLine(again)}`)
-      const failure = report("merge_group", again)
+      const failure = failedRun("merge_group", again)
       const reason = again.removal?.reason
+      const turn = reason === "failed_checks" ? await mainsTurn("merge_group", again, failure) : "no"
+      if (turn === "continue") {
+        queuedSeen = false
+        continue
+      }
+      if (turn === "stop") return 1
+      report(failure)
       if (reason !== "failed_checks")
         say(`follow: no fresh run: the queue recorded ${reason ?? "no reason"} for this drop, not failed_checks.`)
       else if (await freshRun("merge_group", again, failure)) {
@@ -158,7 +205,11 @@ export const followPull = async ({
       return 1
     }
     if (!pull.queued && pull.checks.failed.length > 0 && pull.checks.running.length === 0 && ciEnded(pull)) {
-      if (await freshRun("pull_request", pull, report("pull_request", pull))) continue
+      const failure = failedRun("pull_request", pull)
+      const turn = await mainsTurn("pull_request", pull, failure)
+      if (turn === "continue") continue
+      if (turn === "stop") return 1
+      if (await freshRun("pull_request", pull, report(failure))) continue
       return 1
     }
     const green = !pull.queued && pull.checks.running.length === 0 && pull.checks.passed.length > 0

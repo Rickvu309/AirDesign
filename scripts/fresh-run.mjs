@@ -120,8 +120,9 @@ export const takeFreshRun = async ({
   sleep,
   now,
   interval,
+  comment,
 }) => {
-  const body = freshRunComment({ repository, run, head, tests, queue, races })
+  const body = comment ?? freshRunComment({ repository, run, head, tests, queue, races })
   const commented = gh(["api", "-X", "POST", `repos/${repository}/issues/${number}/comments`, "-f", `body=${body}`])
   if (commented.status !== 0) return `the comment could not be posted: ${commented.stderr.trim()}`
   if (!queue) {

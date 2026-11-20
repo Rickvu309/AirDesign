@@ -1,0 +1,46 @@
+2026-11-14T22:16:25.9536009Z   1) tests/browser/line-style.spec.ts:65:1 › a person widens and dashes a line that comes from its style and puts an arrowhead on a connector, and the line survives Undo, a reload, the export and a new import @export 
+2026-11-14T22:16:25.9536999Z 
+2026-11-14T22:16:25.9537282Z     Error: expect(received).toContain(expected) // indexOf
+2026-11-14T22:16:25.9537618Z 
+2026-11-14T22:16:25.9538413Z     Expected substring: "<a:prstGeom prst=\"line\"><a:avLst/></a:prstGeom><a:ln><a:tailEnd type=\"triangle\" w=\"lg\" len=\"med\"/></a:ln></p:spPr><p:style><a:lnRef idx=\"1\">"
+2026-11-14T22:16:25.9561976Z     Received string:    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id=\"1\" name=\"\"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"0\" cy=\"0\"/><a:chOff x=\"0\" y=\"0\"/><a:chExt cx=\"0\" cy=\"0\"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id=\"2\" name=\"ctrTitle 0\"/><p:cNvSpPr><a:spLocks noGrp=\"1\"/></p:cNvSpPr><p:nvPr><p:ph type=\"ctrTitle\" idx=\"0\"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"914400\" y=\"1828800\"/><a:ext cx=\"10363200\" cy=\"1371600\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr anchor=\"ctr\"/><a:lstStyle/><a:p><a:pPr algn=\"ctr\"><a:defRPr sz=\"4400\"><a:solidFill><a:schemeClr val=\"tx1\"/></a:solidFill><a:latin typeface=\"+mn-lt\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id=\"3\" name=\"subTitle 1\"/><p:cNvSpPr><a:spLocks noGrp=\"1\"/></p:cNvSpPr><p:nvPr><p:ph type=\"subTitle\" idx=\"1\"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"914400\" y=\"3429000\"/><a:ext cx=\"10363200\" cy=\"1371600\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr anchor=\"t\"/><a:lstStyle/><a:p><a:pPr algn=\"ctr\"><a:defRPr sz=\"2400\"><a:solidFill><a:schemeClr val=\"tx1\"/></a:solidFill><a:latin typeface=\"+mn-lt\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id=\"4\" name=\"Rectangle 4\"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"914400\" y=\"1371600\"/><a:ext cx=\"2743200\" cy=\"1828800\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom><a:ln w=\"76200\"><a:prstDash val=\"lgDash\"/></a:ln></p:spPr><p:style><a:lnRef idx=\"2\"><a:schemeClr val=\"accent1\"><a:shade val=\"15000\"/></a:schemeClr></a:lnRef><a:fillRef idx=\"1\"><a:schemeClr val=\"accent1\"/></a:fillRef><a:effectRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:effectRef><a:fontRef idx=\"minor\"><a:schemeClr val=\"lt1\"/></a:fontRef></p:style></p:sp><p:sp><p:nvSpPr><p:cNvPr id=\"5\" name=\"Oval 5\"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"4114800\" y=\"1371600\"/><a:ext cx=\"2743200\" cy=\"1828800\"/></a:xfrm><a:prstGeom prst=\"ellipse\"><a:avLst/></a:prstGeom></p:spPr><p:style><a:lnRef idx=\"2\"><a:schemeClr val=\"accent1\"><a:shade val=\"15000\"/></a:schemeClr></a:lnRef><a:fillRef idx=\"1\"><a:schemeClr val=\"accent1\"/></a:fillRef><a:effectRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:effectRef><a:fontRef idx=\"minor\"><a:schemeClr val=\"lt1\"/></a:fontRef></p:style></p:sp><p:cxnSp><p:nvCxnSpPr><p:cNvPr id=\"6\" name=\"Straight Connector 6\"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm><a:off x=\"4572000\" y=\"4572000\"/><a:ext cx=\"3657600\" cy=\"0\"/></a:xfrm><a:prstGeom prst=\"line\"><a:avLst/></a:prstGeom><a:ln><a:tailEnd type=\"triangle\" w=\"med\" len=\"med\"/></a:ln></p:spPr><p:style><a:lnRef idx=\"1\"><a:schemeClr val=\"accent1\"/></a:lnRef><a:fillRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:fillRef><a:effectRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:effectRef><a:fontRef idx=\"minor\"><a:schemeClr val=\"tx1\"/></a:fontRef></p:style></p:cxnSp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>"
+2026-11-14T22:16:25.9576717Z 
+2026-11-14T22:16:25.9577059Z       124 |   const slide = saved.get(slidePart)?.toString("utf8") ?? ""
+2026-11-14T22:16:25.9577695Z       125 |   expect(slide).toContain(rectangleLine)
+2026-11-14T22:16:25.9578365Z     > 126 |   expect(slide).toContain(connectorLine)
+2026-11-14T22:16:25.9578823Z           |                 ^
+2026-11-14T22:16:25.9579525Z       127 |   const changed = [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true)
+2026-11-14T22:16:25.9582405Z       128 |   expect(changed.map(([name]) => name)).toEqual([slidePart])
+2026-11-14T22:16:25.9582999Z       129 |   await copyFile(file, judged)
+2026-11-14T22:16:25.9583696Z         at /home/runner/work/AirDesign/AirDesign/tests/browser/line-style.spec.ts:126:17
+2026-11-14T22:16:25.9584183Z 
+2026-11-14T22:16:25.9584857Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-14T22:16:25.9591874Z     test-results/line-style-a-person-widens-405ee-ort-and-a-new-import-export/test-failed-1.png
+2026-11-14T22:16:25.9593020Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-14T22:16:25.9593435Z 
+2026-11-14T22:16:25.9594023Z     Error Context: test-results/line-style-a-person-widens-405ee-ort-and-a-new-import-export/error-context.md
+2026-11-14T22:16:25.9598372Z 
+2026-11-14T22:16:25.9611000Z   2) tests/browser/opacity.spec.ts:59:1 › a person fades a shape whose fill and line come from its style, and a line, and the opacity survives Undo, a new color, a reload, the export and a new import @export 
+2026-11-14T22:16:25.9612060Z 
+2026-11-14T22:16:25.9613344Z     Error: expect(locator).toHaveValue(expected) failed
+2026-11-14T22:16:25.9613756Z 
+2026-11-14T22:16:25.9614661Z     Locator:  locator('[data-design-element]').locator('section').filter({ has: getByRole('heading', { name: 'Opacity', exact: true }) }).getByRole('textbox', { name: 'Opacity', exact: true })
+2026-11-14T22:16:25.9615595Z     Expected: "60"
+2026-11-14T22:16:25.9615917Z     Received: "100"
+2026-11-14T22:16:25.9616222Z     Timeout:  5000ms
+2026-11-14T22:16:25.9616427Z 
+2026-11-14T22:16:25.9616564Z     Call log:
+2026-11-14T22:16:25.9617759Z       - Expect "toHaveValue" locator('[data-design-element]').locator('section').filter({ has: getByRole('heading', { name: 'Opacity', exact: true }) }).getByRole('textbox', { name: 'Opacity', exact: true }) with timeout 5000ms
+2026-11-14T22:16:25.9620144Z       - waiting for locator('[data-design-element]').locator('section').filter({ has: getByRole('heading', { name: 'Opacity', exact: true }) }).getByRole('textbox', { name: 'Opacity', exact: true })
+2026-11-14T22:16:25.9622520Z         14 × locator resolved to <input value="100" placeholder="" inputmode="decimal" aria-label="Opacity" class="min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] text-foreground tabular-nums outline-none placeholder:text-faint"/>
+2026-11-14T22:16:25.9623912Z            - unexpected value "100"
+2026-11-14T22:16:25.9624155Z 
+2026-11-14T22:16:25.9624161Z 
+2026-11-14T22:16:25.9624343Z       54 |   await input.fill(percent)
+2026-11-14T22:16:25.9624784Z       55 |   await input.press("Enter")
+2026-11-14T22:16:25.9625274Z     > 56 |   await expect(input).toHaveValue(percent)
+2026-11-14T22:16:25.9625735Z          |                       ^
+2026-11-14T22:16:25.9626093Z       57 | }
+2026-11-14T22:16:25.9626375Z       58 |
+2026-11-14T22:16:26.0307465Z fail browser 638.4s
+2026-11-14T22:16:26.0645958Z failed: browser
