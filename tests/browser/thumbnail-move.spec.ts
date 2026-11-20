@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
+import { decksOn } from "./deck-test"
 
 const element = "ppt/slides/slide1.xml#2"
 const emuPerPixel = 15_240
@@ -42,7 +43,7 @@ async function expectShownAt(page: Page, box: typeof start): Promise<void> {
 }
 
 async function opened(page: Page): Promise<string> {
-  const deck = await openClean(page)
+  const deck = await decksOn(page).open()
   await expect(page.locator(`[data-slide-list] [data-thumb-element="${element}"]`)).toBeAttached()
   return deck
 }

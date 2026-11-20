@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { covers } from "./gesture"
+import { decksOn } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -52,16 +53,10 @@ async function showDeck(): Promise<Buffer> {
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 async function presented(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+  await decksOn(page).open({
     name: "show.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await showDeck(),
-  })
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
   })
   await page.locator('[data-slide-entry="2"]').click()
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()

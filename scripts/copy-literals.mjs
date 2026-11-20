@@ -29,6 +29,8 @@ const valueOf = (node) =>
       ? node.quasis[0].value.cooked
       : undefined
 
+const keysAndAddresses = new Set(["press", "goto"])
+
 export const literals = (file, source) => {
   const parsed = parseSync(file, source)
   if (parsed.errors.length) throw new Error(`Cannot scan ${file}: ${parsed.errors[0].message}`)
@@ -39,7 +41,7 @@ export const literals = (file, source) => {
       node.type === "CallExpression" &&
       node.callee.type === "MemberExpression" &&
       !node.callee.computed &&
-      node.callee.property.name === "press"
+      keysAndAddresses.has(node.callee.property.name)
     )
       keys.add(node.arguments[0])
     if (keys.has(node)) return

@@ -1,4 +1,5 @@
 import noComments from "./rules/no-comments.js"
+import noBlindWait from "./rules/no-blind-wait.js"
 import noByteCounter from "./rules/no-byte-counter.js"
 import noElementIdCast from "./rules/no-element-id-cast.js"
 import noEnvOutsideEntry from "./rules/no-env-outside-entry.js"
@@ -15,6 +16,7 @@ import noXmlSearch from "./rules/no-xml-search.js"
 const plugin = {
   meta: { name: "airdesign" },
   rules: {
+    "no-blind-wait": noBlindWait,
     "no-comments": noComments,
     "no-byte-counter": noByteCounter,
     "no-element-id-cast": noElementIdCast,

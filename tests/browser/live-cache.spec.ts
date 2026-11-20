@@ -119,7 +119,7 @@ test("cold open reads 3000 rows in one getAll", async ({ baseURL }, testInfo) =>
       return originalCursor.apply(this, args)
     }
     await globalThis.airdesignLive.openDeck("bench")
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    for (const entry of observer.takeRecords()) entries.push({ start: entry.startTime, duration: entry.duration })
     observer.disconnect()
     const covered = entries.some((entry) => entry.start <= started && entry.start + entry.duration >= ended)
     return { getAllCount, cursorCount, span, rowCount, otherCount, covered }

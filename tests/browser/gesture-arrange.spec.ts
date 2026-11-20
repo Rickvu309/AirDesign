@@ -1,18 +1,12 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 const part = "ppt/slides/slide1.xml"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function frame(page: Page, shape: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
@@ -29,12 +23,12 @@ async function order(page: Page): Promise<string[]> {
   return shapes.filter((shape) => shape === "4" || shape === "5")
 }
 
-test("the stack keys move a shape one place or to an end, and Ctrl+G groups the selected shapes", async ({ page }) => {
+test("the stack keys move a shape one place or to an end, and Ctrl+G groups the selected shapes", async ({
+  page,
+  decks,
+}) => {
   covers("forward", "front", "back", "group")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(blank)
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()

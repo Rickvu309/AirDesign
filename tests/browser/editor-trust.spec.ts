@@ -3,9 +3,10 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test"
 import type { DeckDiff } from "../../packages/pptx/src/index.ts"
-import { forward, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
+import { decksOn } from "./deck-test"
 
 const doe = join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx")
 const typed = "Every letter stays"
@@ -66,7 +67,7 @@ async function openFile(page: Page, file: string | undefined): Promise<{ address
   if (file === undefined) await newBlankDeck(page)
   else await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).ready()
   const slides = await page.locator("[data-slide-entry]").count()
   return { address: page.url(), slides }
 }
@@ -89,7 +90,7 @@ async function addAndType(page: Page, text: string): Promise<Locator> {
 
 async function stillOpen(page: Page, address: string, slides: number): Promise<void> {
   expect(page.url()).toBe(address)
-  await settled(page)
+  await decksOn(page).ready()
   await expect(page.locator(".thin-page")).toBeVisible()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(slides)
 }
@@ -314,7 +315,6 @@ test("an open blank deck shows an agent's text once after a lost watch answer an
   page,
   stack,
 }) => {
-  test.setTimeout(60_000)
   await agentTypesOnOpenDeck(page, stack, undefined, agentText)
 })
 
@@ -322,6 +322,5 @@ test("an open doe-heat-pumps deck shows an agent's text once after a lost watch 
   page,
   stack,
 }) => {
-  test.setTimeout(60_000)
   await agentTypesOnOpenDeck(page, stack, doe, `${agentText} on the deck`)
 })

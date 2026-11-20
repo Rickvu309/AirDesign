@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
-import { settled } from "./design-panel"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -64,15 +64,13 @@ async function placed(locator: Locator) {
 
 test("a growing text box in an auto layout column pushes the next one down as it grows, shrinks back on Undo, and keeps both places through Redo and a reload", async ({
   page,
+  decks,
 }) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+  await decks.open({
     name: "cards.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await cardsDeck(),
   })
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
   const [top, bottom] = [shape(page, 20), shape(page, 21)]
   await expect(bottom).toBeVisible()
   await top.click()
@@ -109,6 +107,6 @@ test("a growing text box in an auto layout column pushes the next one down as it
   await page.getByRole("button", { name: undoCopy.redoNamed.text, exact: true }).click()
   await expect.poll(async () => Math.abs((await placed(bottom)).y - moved.y)).toBeLessThan(2)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(async () => Math.abs((await placed(bottom)).y - moved.y)).toBeLessThan(2)
 })

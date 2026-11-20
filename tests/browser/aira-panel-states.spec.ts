@@ -1,6 +1,7 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { airaCopy, airaRefusalWords } from "../../apps/web/src/copy/aira-copy.ts"
-import { forward, indexed, openClean, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
+import { decksOn } from "./deck-test"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -15,8 +16,7 @@ async function openDeck(page: Page, context: BrowserContext, stack: Stack, count
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const paths = await forward(page, stack, country)
-  const deck = await openClean(page)
-  await indexed(stack, deck, cookie)
+  const deck = await decksOn(page).open()
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   const side = page.locator("[data-editor-panel]")
   return { cookie, deck, base: String(base), paths, side, log: side.getByRole("log") }

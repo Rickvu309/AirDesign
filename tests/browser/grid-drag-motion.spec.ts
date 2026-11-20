@@ -1,5 +1,6 @@
-import { expect, test, type Page } from "@playwright/test"
-import { entry, manySlides, openFile, openGrid, groupSizes } from "./slide-grid-deck"
+import { expect, type Page } from "@playwright/test"
+import { entry, manySlides, openGrid, groupSizes } from "./slide-grid-deck"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "no-preference" })
 
@@ -46,9 +47,9 @@ async function grab(page: Page, number: number): Promise<number> {
 
 test("slides move aside to show where a dragged slide lands, go back when it goes back, and stay put on the drop", async ({
   page,
+  decks,
 }) => {
-  test.setTimeout(120_000)
-  await openFile(page, {
+  await decks.open({
     name: "four.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(4, groupSizes(4)),
@@ -84,8 +85,8 @@ test("slides move aside to show where a dragged slide lands, go back when it goe
   }
 })
 
-test("a drag keeps the motion setting it started with until the drop", async ({ page }) => {
-  await openFile(page, {
+test("a drag keeps the motion setting it started with until the drop", async ({ page, decks }) => {
+  await decks.open({
     name: "four.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(4, groupSizes(4)),
@@ -107,8 +108,9 @@ test("a drag keeps the motion setting it started with until the drop", async ({ 
 
 test("a drag to the first place of its own grid slide group moves the slides aside with no drop bar", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, {
+  await decks.open({
     name: "eight.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(8, groupSizes(8)),
@@ -128,8 +130,9 @@ test("a drag to the first place of its own grid slide group moves the slides asi
 
 test("a drag to the first place of another grid slide group keeps the slides still and shows the bar", async ({
   page,
+  decks,
 }) => {
-  await openFile(page, {
+  await decks.open({
     name: "eight.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(8, groupSizes(8)),
@@ -144,8 +147,8 @@ test("a drag to the first place of another grid slide group keeps the slides sti
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 3 to position 4")
 })
 
-test("the add mark between slides appears on hover and stays still with reduced motion", async ({ page }) => {
-  await openFile(page, {
+test("the add mark between slides appears on hover and stays still with reduced motion", async ({ page, decks }) => {
+  await decks.open({
     name: "two.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(2, groupSizes(2)),

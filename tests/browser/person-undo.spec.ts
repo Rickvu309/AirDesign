@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { covers } from "./gesture"
 
 const element = "ppt/slides/slide1.xml#2"
@@ -74,11 +74,12 @@ test("a person undoes a move, a text edit and a slide delete, redoes the move, a
   page,
   context,
   stack,
+  decks,
 }) => {
   covers("undo", "redo")
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
   await expect(page.getByRole("button", { name: "Redo", exact: true })).toBeDisabled()
@@ -131,18 +132,23 @@ test("a person undoes a move, a text edit and a slide delete, redoes the move, a
   await expect.poll(() => pendingRows(page)).toBe(0)
   await forgetDeckRows(page)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(text).toHaveText("Hello")
   expect(await placed(page)).toEqual(moved)
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
 })
 
-test("an undo after an agent changed the same text changes nothing and says so", async ({ page, context, stack }) => {
+test("an undo after an agent changed the same text changes nothing and says so", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   await text.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
@@ -171,10 +177,11 @@ test("undoing a text edit paints the old text on the slide and its thumbnail wit
   page,
   context,
   stack,
+  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   const thumbnail = entry(page, 1)
   await expect(thumbnail).toContainText("Hello")
@@ -197,10 +204,10 @@ test("undoing a text edit paints the old text on the slide and its thumbnail wit
   await expect(thumbnail).toContainText("Mine")
 })
 
-test("Ctrl+Z straight after typing over a text brings the old text back", async ({ page, context, stack }) => {
+test("Ctrl+Z straight after typing over a text brings the old text back", async ({ page, context, stack, decks }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await openClean(page)
+  await decks.open()
   const text = page.locator('[data-slide-paint] [contenteditable="true"]')
   await text.dblclick()
   await page.keyboard.press("ControlOrMeta+a")

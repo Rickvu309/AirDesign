@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { PNG } from "pngjs"
 import { shapeDeck } from "./shape-deck"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
@@ -53,17 +54,12 @@ test("a preset arrow selects, moves and resizes by its box, and a connector drag
   expect(await connector.boundingBox()).toEqual({ ...start, x: start.x + 20, y: start.y + 20 })
 })
 
-test("a custom triangle paints its path instead of a rectangle", async ({ page }) => {
+test("a custom triangle paints its path instead of a rectangle", async ({ page, decks }) => {
   test.fail()
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+  await decks.open({
     name: "custom-shape.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await shapeDeck(true),
-  })
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
   })
   const triangle = page.locator('[data-canvas-element="ppt/slides/slide1.xml#2"]')
   expect(await triangle.locator("[data-canvas-path]").count()).toBe(1)
@@ -71,17 +67,13 @@ test("a custom triangle paints its path instead of a rectangle", async ({ page }
 
 test("an imported arrow and callout keep their outlines, connector ends paint, and export is untouched", async ({
   page,
+  decks,
 }) => {
   const original = await shapeDeck()
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+  await decks.open({
     name: "shapes.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: original,
-  })
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
   })
   const arrow = page.locator('[data-canvas-element="ppt/slides/slide1.xml#2"]')
   await expect(arrow.locator("[data-canvas-path]")).toBeVisible()

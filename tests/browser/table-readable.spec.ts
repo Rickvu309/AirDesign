@@ -1,10 +1,10 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { tableReadableExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { historicalTable } from "./historical-table"
-import { settled } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
+import { test } from "./deck-test"
 
 async function shown(page: Page, spot: string): Promise<{ text: string; ink: string; ground: string; ratio: number }> {
   const [text, ink, ground] = await page
@@ -39,6 +39,7 @@ async function readable(page: Page, spot: string, text: string): Promise<{ ink: 
 
 test("preserves a previously edited readable table through reload and native export @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", tableReadableExportName)
   await rm(judged, { force: true })
@@ -48,7 +49,7 @@ test("preserves a previously edited readable table through reload and native exp
   await readable(page, "0.0", "Region")
   await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(table).toContainText("Region")
   await readable(page, "0.0", "Region")
   const saving = page.waitForEvent("download")

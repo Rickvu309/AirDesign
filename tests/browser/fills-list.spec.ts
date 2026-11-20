@@ -1,12 +1,13 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { PNG } from "pngjs"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { fixtures, openDeck, setPanelMode, settled } from "./design-panel"
+import { fixtures, openDeck, setPanelMode } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const part = "ppt/slides/slide1.xml"
 
@@ -44,8 +45,8 @@ function bandLight(image: PNG, from: number, to: number): number {
 
 test("a person adds a gradient over a photo in the design-mode fills list, undoes it in one step, and the export reopens with it @export", async ({
   page,
+  decks,
 }, testInfo) => {
-  test.setTimeout(120_000)
   await openDeck(page, "picture-png.pptx")
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await photo(page).click({ position: { x: 8, y: 8 } })
@@ -73,7 +74,7 @@ test("a person adds a gradient over a photo in the design-mode fills list, undoe
   await expect.poll(() => shaded(photo(page))).toBe(true)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => shaded(photo(page))).toBe(true)
 
   const file = testInfo.outputPath("gradient-over-photo.pptx")
@@ -87,10 +88,7 @@ test("a person adds a gradient over a photo in the design-mode fills list, undoe
   expect(bandLight(baked, 0.9, 1)).toBeLessThan(bandLight(before, 0.9, 1) / 2)
   expect(Math.abs(bandLight(baked, 0, 0.05) - bandLight(before, 0, 0.05))).toBeLessThan(25)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await expect(photo(page)).toBeVisible()
   await expect.poll(() => photo(page).evaluate((node) => getComputedStyle(node).backgroundImage)).toContain("url(")
 })

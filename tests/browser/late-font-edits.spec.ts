@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 const node = "256.2"
 
@@ -26,13 +26,18 @@ async function holdFonts(page: Page): Promise<() => void> {
   return release
 }
 
-test("an agent's edits paint on a slide whose font arrives after the deck opens", async ({ page, context, stack }) => {
+test("an agent's edits paint on a slide whose font arrives after the deck opens", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const release = await holdFonts(page)
   try {
-    const deck = await openClean(page)
+    const deck = await decks.openHeld()
     const editor = page.locator('[contenteditable="true"]')
     await expect(editor).toHaveText("Hello")
     await expect(pending(page).first()).toBeAttached()
@@ -63,13 +68,18 @@ test("an agent's edits paint on a slide whose font arrives after the deck opens"
   }
 })
 
-test("a person's typing stays on a slide whose font arrives while they type", async ({ page, context, stack }) => {
+test("a person's typing stays on a slide whose font arrives while they type", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const release = await holdFonts(page)
   try {
-    await openClean(page)
+    await decks.openHeld()
     const editor = page.locator('[contenteditable="true"]')
     await expect(pending(page).first()).toBeAttached()
     await editor.dblclick()
@@ -86,13 +96,13 @@ test("a person's typing stays on a slide whose font arrives while they type", as
   }
 })
 
-test("Aira's edit paints on a slide whose font arrives after the edit", async ({ page, context, stack }) => {
+test("Aira's edit paints on a slide whose font arrives after the edit", async ({ page, context, stack, decks }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const release = await holdFonts(page)
   try {
-    const deck = await openClean(page)
+    const deck = await decks.openHeld()
     const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
     const editor = page.locator('[contenteditable="true"]')
     await expect(pending(page).first()).toBeAttached()

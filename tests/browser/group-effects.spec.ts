@@ -1,9 +1,10 @@
 import { effectsCopy } from "../../apps/web/src/copy/effects-copy"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled, unfold } from "./design-panel"
+import { openDeck, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const deck = "doe-heat-pumps.pptx"
 const part = "ppt/slides/slide8.xml"
@@ -56,6 +57,7 @@ async function effectsOfGroup(page: Page): Promise<Locator> {
 
 test("a person gives a file group a shadow, a glow and a soft edge, and the canvas paints them once over everything the group holds, through Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await openDeck(page, deck)
   await slide(page)
@@ -95,7 +97,7 @@ test("a person gives a file group a shadow, a glow and a soft edge, and the canv
   await expect.poll(async () => (await painted(page)).steps.length).toBe(14)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await slide(page)
   await expect.poll(async () => (await painted(page)).members).toEqual(held)
 
@@ -109,10 +111,7 @@ test("a person gives a file group a shadow, a glow and a soft edge, and the canv
   const changed = [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true)
   expect(changed.map(([name]) => name)).toEqual([part])
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await slide(page)
   await expect.poll(async () => (await painted(page)).members).toEqual(held)
 })

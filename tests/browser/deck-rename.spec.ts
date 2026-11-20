@@ -1,18 +1,18 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { expect, test, type Page } from "@playwright/test"
-import { openFixture as open } from "./fixture-deck.ts"
+import { expect, type Page } from "@playwright/test"
 import { store } from "./home-store.ts"
-import { cleanFixture, forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
+import { forward, signInBrowser, test as stackTest, type Stack } from "./api-stack"
 import { exportFromDialog } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
 import { holdableDevice, slowDevice } from "./slow-device"
+import { cleanFixture, test } from "./deck-test"
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
 const field = (page: Page) => page.getByRole("textbox", { name: "Deck name" })
 
-test("clicking the title renames the deck in place and Enter saves it everywhere", async ({ page }) => {
+test("clicking the title renames the deck in place and Enter saves it everywhere", async ({ page, decks }) => {
   const { calls } = await store(page, [])
-  await open(page)
+  await decks.open()
   await page.getByRole("button", { name: "Rename deck: clean" }).click()
   await expect(field(page)).toBeFocused()
   await field(page).fill("Quarterly plan")
@@ -28,9 +28,9 @@ test("clicking the title renames the deck in place and Enter saves it everywhere
   await expect(title(page)).toHaveAccessibleName("Rename deck: Quarterly plan")
 })
 
-test("the new name is the exported file's name", async ({ page }) => {
+test("the new name is the exported file's name", async ({ page, decks }) => {
   await store(page, [])
-  await open(page)
+  await decks.open()
   await title(page).click()
   await field(page).fill("Quarterly plan")
   await field(page).press("Enter")
@@ -39,9 +39,9 @@ test("the new name is the exported file's name", async ({ page }) => {
   expect((await download).suggestedFilename()).toBe("Quarterly plan.pptx")
 })
 
-test("Escape leaves the name as it was", async ({ page }) => {
+test("Escape leaves the name as it was", async ({ page, decks }) => {
   const { calls } = await store(page, [])
-  await open(page)
+  await decks.open()
   await title(page).click()
   await field(page).fill("Not saved")
   await field(page).press("Escape")
@@ -50,9 +50,9 @@ test("Escape leaves the name as it was", async ({ page }) => {
   expect(calls.filter((call) => call.path === "rename" && call.body.name === "Not saved")).toEqual([])
 })
 
-test("an empty or too long name is refused with words, and the field stays open", async ({ page }) => {
+test("an empty or too long name is refused with words, and the field stays open", async ({ page, decks }) => {
   await store(page, [])
-  await open(page)
+  await decks.open()
   await title(page).click()
   await field(page).fill("   ")
   await field(page).press("Enter")
@@ -67,9 +67,9 @@ test("an empty or too long name is refused with words, and the field stays open"
   await expect(title(page)).toHaveAccessibleName(`Rename deck: ${"a".repeat(200)}`)
 })
 
-test("leaving the field saves a valid name and drops an invalid one", async ({ page }) => {
+test("leaving the field saves a valid name and drops an invalid one", async ({ page, decks }) => {
   await store(page, [])
-  await open(page)
+  await decks.open()
   await title(page).click()
   await field(page).fill("By clicking away")
   await page.locator("[data-editor-canvas]").click({ position: { x: 5, y: 5 } })
@@ -80,9 +80,9 @@ test("leaving the field saves a valid name and drops an invalid one", async ({ p
   await expect(title(page)).toHaveAccessibleName("Rename deck: By clicking away")
 })
 
-test("a rename made offline reaches the server once the network is back", async ({ page, context }) => {
+test("a rename made offline reaches the server once the network is back", async ({ page, context, decks }) => {
   const { calls } = await store(page, [])
-  await open(page)
+  await decks.open()
   await context.setOffline(true)
   await title(page).click()
   await field(page).fill("Made offline")
@@ -93,9 +93,9 @@ test("a rename made offline reaches the server once the network is back", async 
   await expect.poll(() => calls.filter((call) => call.path === "rename").at(-1)?.body.name).toBe("Made offline")
 })
 
-test("the deck home shows the new name", async ({ page }) => {
+test("the deck home shows the new name", async ({ page, decks }) => {
   const { calls } = await store(page, [])
-  await open(page)
+  await decks.open()
   await title(page).click()
   await field(page).fill("Shown at home")
   await field(page).press("Enter")
@@ -111,19 +111,22 @@ async function serverName(stack: Stack, cookie: string, deck: string): Promise<u
 
 async function slow(page: Page, path: string): Promise<void> {
   const onDeck = () => new URL(page.url()).pathname.startsWith("/deck/")
-  let loads = 0
-  let deckLoad = onDeck() ? loads : -1
-  page.on("domcontentloaded", () => loads++)
+  let left = () => {}
+  const leaving = new Promise<void>((resolve) => {
+    left = resolve
+  })
   page.on("framenavigated", (frame) => {
-    if (frame === page.mainFrame() && onDeck()) deckLoad = loads
+    if (frame === page.mainFrame() && !onDeck()) left()
   })
   await page.route(
     (url) => url.pathname === path,
     async (route) => {
-      const fromDeck = loads === deckLoad
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      const left = loads !== deckLoad || !onDeck()
-      await (fromDeck && left ? route.abort() : route.fallback()).catch(() => undefined)
+      if (!onDeck()) {
+        await route.fallback().catch(() => undefined)
+        return
+      }
+      await leaving
+      await route.abort().catch(() => undefined)
     },
   )
 }
@@ -163,11 +166,11 @@ async function leftAtOnce(page: Page, create: () => Promise<void>): Promise<stri
 
 stackTest(
   "a name entered just before going Back on a slow network reaches the server without opening the deck again",
-  async ({ page, context, stack }) => {
+  async ({ page, context, stack, decks }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
-    const deck = await openClean(page)
+    const deck = await decks.open()
     await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
     await slow(page, "/decks/rename")
     await title(page).click()
@@ -182,11 +185,11 @@ stackTest(
 
 stackTest(
   "a name entered just before leaving through the mark reaches the server and shows on Home",
-  async ({ page, context, stack }) => {
+  async ({ page, context, stack, decks }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
-    const deck = await openClean(page)
+    const deck = await decks.open()
     await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
     await slow(page, "/decks/rename")
     await title(page).click()
@@ -201,12 +204,12 @@ stackTest(
 
 stackTest(
   "a deck imported and left at once on a slow network keeps its file's name on Home",
-  async ({ page, context, stack }) => {
+  async ({ page, context, stack, decks }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
     await slow(page, "/decks/rename")
-    const deck = await openClean(page)
+    const deck = await decks.open()
     await page.goBack()
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
@@ -283,12 +286,12 @@ stackTest(
 
 stackTest(
   "a name entered while its device write is held is still the deck's name after an immediate reload",
-  async ({ page, context, stack }) => {
+  async ({ page, context, stack, decks }) => {
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
     await holdableDevice(page)
-    const deck = await openClean(page)
+    const deck = await decks.open()
     await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
     await slowDevice(page)
     await title(page).click()
@@ -325,9 +328,9 @@ stackTest(
   },
 )
 
-test("the title menu renames with focus in a selected full-width field", async ({ page }) => {
+test("the title menu renames with focus in a selected full-width field", async ({ page, decks }) => {
   await store(page, [])
-  await open(page)
+  await decks.open()
   await page.getByRole("button", { name: "clean actions" }).click()
   await expect(page.getByRole("menuitem")).toHaveCount(2)
   const chevron = await page.getByRole("button", { name: "clean actions" }).boundingBox()
@@ -355,9 +358,9 @@ test("the title menu renames with focus in a selected full-width field", async (
 })
 
 for (const ok of [true, false]) {
-  test(`moving from the title menu ${ok ? "goes home" : "stays with a failure notice"}`, async ({ page }) => {
+  test(`moving from the title menu ${ok ? "goes home" : "stays with a failure notice"}`, async ({ page, decks }) => {
     await store(page, [])
-    await open(page)
+    await decks.open()
     const id = page.url().split("/").at(-1)
     await page.route("**/decks/trash", async (route) => {
       expect(route.request().postDataJSON()).toEqual({ deck: id })

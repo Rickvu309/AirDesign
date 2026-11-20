@@ -9,8 +9,9 @@ async function zoomTo(page: Page, percent: number | "fit") {
     await page.getByRole("textbox", { name: zoomCopy.field }).press("Enter")
   }
 }
-import { expect, test } from "@playwright/test"
-import { clean, entry, numberText, openFile, openGrid, settled, manySlides } from "./slide-grid-deck"
+import { expect } from "@playwright/test"
+import { clean, entry, numberText, openGrid, manySlides } from "./slide-grid-deck"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -20,8 +21,8 @@ test.beforeEach(async ({ page }) => {
   await device.send("Emulation.setCPUThrottlingRate", { rate: 4 })
 })
 
-test("edits a slide in Grid view and keeps the text after reopening", async ({ page }) => {
-  await openFile(page, clean)
+test("edits a slide in Grid view and keeps the text after reopening", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await page.locator("[data-editor-grid] [data-thumb-node]").first().dblclick({ force: true })
   await expect(page.locator("[data-editor-grid]")).toBeVisible()
@@ -29,13 +30,13 @@ test("edits a slide in Grid view and keeps the text after reopening", async ({ p
   await text.fill("Edited on the grid")
   await text.press("Tab")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await expect(page.locator("[data-editor-grid] [data-thumb-node]").first()).toHaveText("Edited on the grid")
 })
 
-test("keeps slide numbers above the canvas", async ({ page }) => {
-  await openFile(page, clean)
+test("keeps slide numbers above the canvas", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const card = await entry(page, 1).boundingBox()
   const number = await numberText(page.locator("[data-slide-number]").first())
@@ -43,8 +44,8 @@ test("keeps slide numbers above the canvas", async ({ page }) => {
   expect(number.bottom).toBeLessThan(card?.y ?? 0)
 })
 
-test("pans beyond the slide layout and zooms without reflowing it", async ({ page }) => {
-  await openFile(page, clean)
+test("pans beyond the slide layout and zooms without reflowing it", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const first = await entry(page, 1).boundingBox()
   await page.mouse.move(800, 350)
@@ -58,8 +59,8 @@ test("pans beyond the slide layout and zooms without reflowing it", async ({ pag
 })
 
 for (const count of [7, 50]) {
-  test(`fits all ${count} slides inside the visible canvas`, async ({ page }) => {
-    await openFile(page, {
+  test(`fits all ${count} slides inside the visible canvas`, async ({ page, decks }) => {
+    await decks.open({
       name: "fit.pptx",
       mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       buffer: await manySlides(count),
@@ -72,8 +73,8 @@ for (const count of [7, 50]) {
     await expect(entry(page, count)).toBeInViewport()
   })
 }
-test("keeps chrome constant and numbers visible while they fit", async ({ page }) => {
-  await openFile(page, clean)
+test("keeps chrome constant and numbers visible while they fit", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const rim = async () =>
     entry(page, 1).evaluate(
@@ -91,9 +92,9 @@ test("keeps chrome constant and numbers visible while they fit", async ({ page }
   await zoomTo(page, 10)
   await expect(page.locator("[data-slide-number]").first()).toBeVisible()
 })
-test("keeps slide groups fixed across resize and panel changes", async ({ page }) => {
+test("keeps slide groups fixed across resize and panel changes", async ({ page, decks }) => {
   await page.setViewportSize({ width: 900, height: 923 })
-  await openFile(page, {
+  await decks.open({
     name: "rows.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(7),
@@ -112,14 +113,14 @@ test("keeps slide groups fixed across resize and panel changes", async ({ page }
   const [resizedFirst, resizedFourth] = await row()
   expect(resizedFourth).toBeCloseTo(resizedFirst!)
 })
-test("selects without opening a side panel", async ({ page }) => {
-  await openFile(page, clean)
+test("selects without opening a side panel", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   await entry(page, 1).click()
   await expect(page.locator("[data-editor-panel]")).toHaveCount(0)
 })
-test("keeps the selected slide visible when menu and keys zoom", async ({ page }) => {
-  await openFile(page, {
+test("keeps the selected slide visible when menu and keys zoom", async ({ page, decks }) => {
+  await decks.open({
     name: "selected.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(7),
@@ -133,8 +134,8 @@ test("keeps the selected slide visible when menu and keys zoom", async ({ page }
   await expect(entry(page, 7)).toBeInViewport()
 })
 
-test("centres the occupied slide group including chrome even with one slide", async ({ page }) => {
-  await openFile(page, clean)
+test("centres the occupied slide group including chrome even with one slide", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   const card = await page.locator("[data-grid-card]").boundingBox()
   const room = await page.locator("[data-grid-viewport]").boundingBox()
@@ -147,8 +148,8 @@ test("centres the occupied slide group including chrome even with one slide", as
   expect(card.y + card.height / 2).toBeCloseTo(room.y + room.height / 2, 0)
 })
 
-test("numbers clear the preceding slide group at fit", async ({ page }) => {
-  await openFile(page, { name: "numbers.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+test("numbers clear the preceding slide group at fit", async ({ page, decks }) => {
+  await decks.open({ name: "numbers.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   const first = await entry(page, 1).boundingBox()
   const fifth = await page.locator("[data-slide-number]").nth(4).boundingBox()
@@ -190,8 +191,8 @@ async function resizedGrid(page: Page, resize: () => Promise<void>) {
   return { ...result, beforeRoom, afterRoom }
 }
 
-test("refits in the resize paint without moving again on later frames", async ({ page }) => {
-  await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+test("refits in the resize paint without moving again on later frames", async ({ page, decks }) => {
+  await decks.open({ name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   for (const resize of [
     () => page.setViewportSize({ width: 900, height: 923 }),
@@ -209,8 +210,8 @@ test("refits in the resize paint without moving again on later frames", async ({
   }
 })
 
-test("keeps a chosen zoom and pans only when resize newly clips the working slide", async ({ page }) => {
-  await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+test("keeps a chosen zoom and pans only when resize newly clips the working slide", async ({ page, decks }) => {
+  await decks.open({ name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   await zoomTo(page, 50)
   await entry(page, 7).focus()
@@ -243,8 +244,8 @@ test("keeps a chosen zoom and pans only when resize newly clips the working slid
   }
 })
 
-test("resize leaves a deliberately panned-off working slide alone", async ({ page }) => {
-  await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+test("resize leaves a deliberately panned-off working slide alone", async ({ page, decks }) => {
+  await decks.open({ name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   await zoomTo(page, 50)
   await entry(page, 7).focus()
@@ -260,8 +261,8 @@ test("resize leaves a deliberately panned-off working slide alone", async ({ pag
   }
 })
 
-test("typed Grid zoom accepts low values and keeps them after reload", async ({ page }) => {
-  await openFile(page, clean)
+test("typed Grid zoom accepts low values and keeps them after reload", async ({ page, decks }) => {
+  await decks.open(clean)
   await openGrid(page)
   for (const percent of [1, 4, 5, 7, 9]) {
     await zoomTo(page, percent)
@@ -269,15 +270,15 @@ test("typed Grid zoom accepts low values and keeps them after reload", async ({ 
   }
   await zoomTo(page, 5)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await expect(page.locator("[data-zoom-readout]")).toContainText("5%")
   await page.keyboard.press("ControlOrMeta+Minus")
   await expect(page.locator("[data-zoom-readout]")).toContainText("1%")
 })
 
-test("zoom reveals the whole slide group handle after panning past it", async ({ page }) => {
-  await openFile(page, {
+test("zoom reveals the whole slide group handle after panning past it", async ({ page, decks }) => {
+  await decks.open({
     name: "seven.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(7),

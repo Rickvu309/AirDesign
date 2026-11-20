@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 const node = "256.2"
 
@@ -13,11 +13,12 @@ test("an outside agent's edit and its undo paint in the open editor without a re
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
   await page.evaluate(() => {
@@ -40,11 +41,11 @@ test("an outside agent's edit and its undo paint in the open editor without a re
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
 })
 
-test("the person's typing stays on screen while an agent edits the deck", async ({ page, context, stack }) => {
+test("the person's typing stays on screen while an agent edits the deck", async ({ page, context, stack, decks }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const asked = await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const editor = page.locator('[contenteditable="true"]')
   await editor.dblclick()
   await page.keyboard.press("ControlOrMeta+a")
@@ -66,11 +67,12 @@ test("slide revisions follow without reload, keep selection, and select a neighb
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await page.evaluate(() => {
     document.body.dataset.sameLoad = "yes"
   })

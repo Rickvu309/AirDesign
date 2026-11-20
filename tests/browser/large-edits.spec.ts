@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test, type SavedRegister } from "./api-stack"
+import { forward, signInBrowser, test, type SavedRegister } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -109,11 +109,12 @@ test("edits kept on this device that together pass the request limit all save, a
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await keptOnDevice(page)
   expect(await keepLargeEdits(page, kept, null)).toBe(kept)
   const commits = watchCommits(page)
@@ -142,11 +143,12 @@ test("a device stuck on a sealed batch the server refused as too large saves it 
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await keptOnDevice(page)
   expect(await keepLargeEdits(page, kept, "stuck-batch")).toBe(kept)
   await page.unroute(committing)
@@ -178,11 +180,12 @@ test("an edit too large for any request is set aside, and the editor says it was
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await keptOnDevice(page)
   expect(await keepLargeEdits(page, 1, "stuck-batch", requestLimit)).toBe(1)
   await page.unroute(committing)

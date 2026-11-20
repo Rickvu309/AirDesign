@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { first, store } from "./home-store.ts"
 import { productCopy, starOf, unstarOf } from "../../apps/web/src/copy/product-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
@@ -24,11 +24,12 @@ test("a person stars a deck from its card, sees it under Starred at once, and it
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await home(page)
   await expect(starred(page)).toContainText("Star a deck to keep it here.")
   await page.getByRole("button", { name: "Star clean" }).click()
@@ -44,11 +45,11 @@ test("a person stars a deck from its card, sees it under Starred at once, and it
   await expect.poll(() => serverStar(stack, cookie, deck)).toBe(false)
 })
 
-test("the list view keeps actions in a context menu with keyboard access", async ({ page, context, stack }) => {
+test("the list view keeps actions in a context menu with keyboard access", async ({ page, context, stack, decks }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await page.goto("/?view=list")
   const row = page.locator("[data-deck-row]").filter({ hasText: "clean" })
   const link = row.getByRole("link", { name: "clean", exact: true })
@@ -114,11 +115,12 @@ test("a star sent while the server is slow, then unreachable, shows at once and 
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await home(page)
   let release = () => {}
   const held = new Promise<void>((resolve) => {
@@ -144,12 +146,13 @@ test("a star shown while its device write is held is still there after an immedi
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   await holdableDevice(page)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await home(page)
   await slowDevice(page)
   await page.getByRole("button", { name: "Star clean" }).click()
@@ -175,11 +178,12 @@ test("a second account on the same browser sees none of the first one's stars, a
   page,
   context,
   stack,
+  decks,
 }) => {
   const first = await stack.signIn()
   await signInBrowser(context, first)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await home(page)
   await page.route("**/decks/star", (route) => route.abort())
   await page.getByRole("button", { name: "Star clean" }).click()

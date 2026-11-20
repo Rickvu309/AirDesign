@@ -1,10 +1,11 @@
 import { copyFile, readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { diagramEditsExportName, diagramEditsOriginalName } from "../../scripts/diagram-edits.mjs"
 import { stored } from "./device-store"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const original = join(process.cwd(), "scripts/pptx-fixtures", diagramEditsOriginalName)
@@ -52,24 +53,15 @@ function diagramFrame(xml: string): string {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${number}"]`)
 }
 
 test("a diagram paints its saved shapes and words, offers nothing to edit, and exports byte for byte after an edit and a duplicate @export", async ({
   page,
+  decks,
 }, testInfo) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(original)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(original)
   await entry(page, 5).click()
   await expect(entry(page, 5)).toHaveAttribute("aria-current", "true")
   const frame = page.locator(`[data-slide-paint] [data-canvas-element="${frameKey}"]`)

@@ -1,21 +1,17 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { decksOn, test } from "./deck-test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-cots-parts-nesc.pptx")
 const box = '[data-canvas-element="ppt/slides/slide8.xml#3"]'
 const wrapped = `${box} [data-run="1.0"]`
 
 async function open(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(deck)
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
-  })
+  await decksOn(page).open(deck)
   const entry = page.locator('[data-slide-entry="8"]')
   await entry.click()
   await expect(entry).toHaveAttribute("aria-current", "true")
-  await page.evaluate(() => document.fonts.ready)
+  await decksOn(page).ready()
 }
 
 async function lineTops(run: Locator): Promise<readonly number[]> {
@@ -107,15 +103,13 @@ test("a double-click on a word on a later line puts the caret in that word, and 
 
 test("an Arial Narrow run paints in Liberation Sans Narrow, an open font of its widths, when Arial Narrow is missing", async ({
   page,
+  decks,
 }) => {
-  await page.goto("/")
-  await page
-    .locator("input[type=file]")
-    .setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-ixpe-science-ops.pptx"))
+  await decks.open(join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-ixpe-science-ops.pptx"))
   const entry = page.locator('[data-slide-entry="5"]')
   await entry.click()
   await expect(entry).toHaveAttribute("aria-current", "true")
-  await page.evaluate(() => document.fonts.ready)
+  await decks.ready()
   const families = await page
     .locator("[data-slide-paint] [data-run]")
     .evaluateAll((runs) => runs.map((run) => getComputedStyle(run).fontFamily))

@@ -1,8 +1,9 @@
 import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { covers } from "./gesture"
+import { decksOn } from "./deck-test"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 
@@ -30,7 +31,7 @@ async function openBlankDeck(page: Page): Promise<void> {
   await page.locator("input[type=file]").setInputFiles(blank)
   await expect(page).toHaveURL(/\/deck\//)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  await settled(page)
+  await decksOn(page).ready()
 }
 
 async function stopNow(page: Page): Promise<Stop> {
@@ -213,9 +214,10 @@ test("adding a slide says the slide was added and no element of the slide left b
   page,
   context,
   stack,
+  decks,
 }) => {
   await signedIn(page, context, stack)
-  await openClean(page)
+  await decks.open()
   await expect(page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" })).toBeVisible()
   const said = page.locator("[data-slide-list]").locator("xpath=preceding-sibling::*[@data-announcer]")
   await page.evaluate(() => {
@@ -238,10 +240,11 @@ test("duplicating, moving, selecting and deleting a slide says the slide, and so
   page,
   context,
   stack,
+  decks,
 }) => {
   covers("slide-duplicate", "slide-up", "slide-delete")
   await signedIn(page, context, stack)
-  await openClean(page)
+  await decks.open()
   const canvas = page.locator('[data-slide-paint] [role="status"]')
   const said = page.locator("[data-slide-list]").locator("xpath=preceding-sibling::*[@data-announcer]")
   const entry = (number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)

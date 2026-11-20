@@ -1,19 +1,13 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/shapes-added.pptx")
 const oval = "ppt/slides/slide1.xml#5"
 const emuPerPixel = 15_240
 
 test.use({ viewport: { width: 1470, height: 923 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 async function corner(page: Page): Promise<{ x: number; y: number }> {
   const slide = await page.locator("[data-slide-paint]").boundingBox()
@@ -54,12 +48,10 @@ async function boxRows(page: Page): Promise<unknown[]> {
 
 test("a dragged layer snaps to a nearby edge with a red guide, saves the snapped box, and undoes in one step", async ({
   page,
+  decks,
 }) => {
   covers("move")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   const origin = await corner(page)
   expect(await placed(page)).toEqual([270, 90, 180, 120])
   const press = { x: origin.x + 360, y: origin.y + 150 }
@@ -76,12 +68,12 @@ test("a dragged layer snaps to a nearby edge with a red guide, saves the snapped
   await expect.poll(() => placed(page)).toEqual([270, 90, 180, 120])
 })
 
-test("holding Control during a drag places the layer where the pointer leaves it, with no guides", async ({ page }) => {
+test("holding Control during a drag places the layer where the pointer leaves it, with no guides", async ({
+  page,
+  decks,
+}) => {
   covers("snap-off")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   const origin = await corner(page)
   const press = { x: origin.x + 360, y: origin.y + 150 }
   await page.mouse.move(press.x, press.y)
@@ -98,12 +90,10 @@ test("holding Control during a drag places the layer where the pointer leaves it
 
 test("holding Alt with a layer selected shows the distances to the layer under the pointer, then to the slide's edges", async ({
   page,
+  decks,
 }) => {
   covers("measure")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   const origin = await corner(page)
   await page.mouse.click(origin.x + 360, origin.y + 150)
   await expect(page.locator(`[data-slide-paint] [data-selection="256.5"]`)).toHaveCount(1)

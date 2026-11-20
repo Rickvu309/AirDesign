@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 import type { Page } from "@playwright/test"
-import { settled } from "./design-panel"
+import { decksOn } from "./deck-test"
 
 export async function historicalTable(page: Page, kind: "typed" | "cells" | "readable" = "typed") {
   const doc = await import("../../packages/document/dist/index.js")
@@ -60,6 +60,6 @@ export async function historicalTable(page: Page, kind: "typed" | "cells" | "rea
     .locator("input[type=file]")
     .setInputFiles({ name: "saved-table.pptx", mimeType: "application/octet-stream", buffer })
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).ready()
   return buffer
 }

@@ -1,7 +1,8 @@
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { actualSize } from "./paint-scale"
-import { expect, test } from "@playwright/test"
-import { designing, unfold, openDeck, pendingValues, placed, settled } from "./design-panel"
+import { expect } from "@playwright/test"
+import { designing, unfold, openDeck, pendingValues, placed } from "./design-panel"
+import { test } from "./deck-test"
 
 const element = "ppt/slides/slide1.xml#2"
 const point = 12_700
@@ -10,6 +11,7 @@ test.use({ viewport: { width: 1470, height: 923 } })
 
 test("a length moves and sizes the selected element in points, Undo takes back each visit to a field, and a reload keeps it", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "clean.pptx")
   await actualSize(page)
@@ -40,7 +42,7 @@ test("a length moves and sizes the selected element in points, Undo takes back e
   await page.getByRole("button", { name: "Redo move", exact: true }).click()
   await expect.poll(() => placed(page, element)).toEqual([96, 48, 576, 192])
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await actualSize(page)
   await expect.poll(() => placed(page, element)).toEqual([96, 48, 576, 192])
 })

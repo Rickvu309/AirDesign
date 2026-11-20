@@ -1,9 +1,10 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { boxExpected, boxExportName, boxOriginalName } from "../../scripts/paragraph-export.mjs"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures", boxOriginalName)
 const judged = join(process.cwd(), "tests/browser", boxExportName)
@@ -34,13 +35,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
   }
   await reader.close()
   return parts
-}
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
 }
 
 test.use({ viewport: { width: 1470, height: 923 } })
@@ -76,13 +70,11 @@ async function keptBox(page: Page): Promise<unknown> {
 
 test("a box dragged and resized in the editor exports through the move and resize routes for the PowerPoint check @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   const download = testInfo.outputPath(boxExportName)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   const slideBox = await page.locator("[data-slide-paint]").boundingBox()
   if (slideBox === null) throw new Error("no slide")
   const origin = { x: Math.round(slideBox.x), y: Math.round(slideBox.y) }
@@ -91,7 +83,7 @@ test("a box dragged and resized in the editor exports through the move and resiz
   await drag(page, { x: origin.x + 420, y: origin.y + 210 }, { x: -120, y: 60 })
   await expect.poll(() => keptBox(page)).toEqual(box)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)

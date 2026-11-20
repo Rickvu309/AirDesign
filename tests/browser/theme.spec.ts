@@ -6,12 +6,14 @@ import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { colorWords } from "./color-words"
-import { openDeck, settled, typeColor } from "./design-panel"
+import { openDeck, typeColor } from "./design-panel"
 import { boxFillPanel, filled, partsOf } from "./shape-fills"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { test } from "./deck-test"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 const exportName = "exported-theme.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -52,8 +54,15 @@ function fonts(element: Locator): Promise<string> {
 
 test("a person changes accent 1 and the heading font of a deck with two themes, every slide that names them repaints, and the theme survives Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
-  test.setTimeout(180_000)
+  test.setTimeout(
+    keptWait(180_000, {
+      why: "changes the template of a deck with two themes through export and import, about 13 seconds on ci",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   await rm(judged, { force: true })
   const source = "doe-heat-pumps.pptx"
   const accent = await colorWords(source, { theme: 0 })
@@ -94,7 +103,7 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   await expect.poll(() => fonts(title)).toContain("Georgia")
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   theme = await themePanel(page)
   await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
   await expect(theme.getByRole("button", { name: accentRed.accent1, exact: true })).toHaveAttribute(
@@ -125,10 +134,7 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   }
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   theme = await themePanel(page)
   await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
   await expect(theme.getByRole("button", { name: accentRed.accent1, exact: true })).toHaveAttribute(

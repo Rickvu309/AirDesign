@@ -1,16 +1,16 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
-import { expect, test } from "@playwright/test"
-import { openFixture } from "./fixture-deck.ts"
+import { expect } from "@playwright/test"
 import { store } from "./home-store.ts"
 import { exportFromDialog } from "./export-dialog.ts"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("Export downloads the file under the deck's name and shows no notice", async ({ page }) => {
+test("Export downloads the file under the deck's name and shows no notice", async ({ page, decks }) => {
   await store(page, [])
-  await openFixture(page)
+  await decks.open()
   const download = page.waitForEvent("download")
   await exportFromDialog(page)
   expect((await download).suggestedFilename()).toBe("clean.pptx")
@@ -19,9 +19,9 @@ test("Export downloads the file under the deck's name and shows no notice", asyn
   expect(await page.getByText(/downloaded$/).count()).toBe(0)
 })
 
-test("a renamed deck downloads under its new file name and shows no notice", async ({ page }) => {
+test("a renamed deck downloads under its new file name and shows no notice", async ({ page, decks }) => {
   await store(page, [])
-  await openFixture(page)
+  await decks.open()
   await page.getByRole("button", { name: "Rename deck: clean" }).click()
   await page.getByRole("textbox", { name: "Deck name" }).fill("Q3 plan")
   await page.getByRole("textbox", { name: "Deck name" }).press(slideListCopy.openKey)
@@ -32,9 +32,9 @@ test("a renamed deck downloads under its new file name and shows no notice", asy
   expect(await page.locator("[data-sonner-toast]").count()).toBe(0)
 })
 
-test("a failed export shows the failure and no download notice", async ({ page }) => {
+test("a failed export shows the failure and no download notice", async ({ page, decks }) => {
   await store(page, [])
-  await openFixture(page)
+  await decks.open()
   await page.evaluate(() => {
     HTMLAnchorElement.prototype.click = () => {
       throw new Error("blocked")
@@ -45,9 +45,9 @@ test("a failed export shows the failure and no download notice", async ({ page }
   await expect(page.getByText(/downloaded$/)).toHaveCount(0)
 })
 
-test("notes recovery errors persist and can be dismissed by pointer and keyboard", async ({ page }) => {
+test("notes recovery errors persist and can be dismissed by pointer and keyboard", async ({ page, decks }) => {
   await store(page, [])
-  await openFixture(page)
+  await decks.open()
   await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   const notes = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
   const error = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save presenter notes" })
@@ -66,9 +66,9 @@ test("notes recovery errors persist and can be dismissed by pointer and keyboard
   await expect(error).toHaveCount(0)
 })
 
-test("Sonner's close makes a native toast inert during its exit", async ({ page }) => {
+test("Sonner's close makes a native toast inert during its exit", async ({ page, decks }) => {
   await store(page, [])
-  await openFixture(page)
+  await decks.open()
   await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill("Keep these notes ".repeat(600))
   const notice = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save presenter notes" })

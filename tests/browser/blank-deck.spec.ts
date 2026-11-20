@@ -1,9 +1,10 @@
 import { copyFile, readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
+import { test } from "./deck-test"
 
 type ZipLibrary = {
   ZipReader: new (reader: unknown) => {
@@ -31,13 +32,13 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 test("Blank deck edits, reloads, exports and imports without an upload, even when created offline @export", async ({
   page,
   context,
+  decks,
 }, testInfo) => {
   await page.goto("/")
   await context.setOffline(true)
   await newBlankDeck(page)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await decks.ready()
   const address = page.url()
-  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", address.split("/").at(-1) ?? "")
   const title = page.locator('[contenteditable="true"]').first()
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(0)
   await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
@@ -50,6 +51,7 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   await context.setOffline(false)
   await page.reload()
   await expect(page).toHaveURL(address)
+  await decks.ready()
   await expect(title).toHaveText("My first deck")
   const download = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -59,16 +61,13 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   await exported.saveAs(file)
   expect((await readFile(file)).length).toBeGreaterThan(0)
   await copyFile(file, join(process.cwd(), "tests/browser/exported-blank.pptx"))
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await decks.open(file)
   expect(page.url()).not.toBe(address)
   await expect(title).toHaveText("My first deck")
 })
 
-test("New slide on a blank deck stays empty and exports @export", async ({ page }, testInfo) => {
-  await page.goto("/")
-  await newBlankDeck(page)
+test("New slide on a blank deck stays empty and exports @export", async ({ page, decks }, testInfo) => {
+  await decks.blank()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)

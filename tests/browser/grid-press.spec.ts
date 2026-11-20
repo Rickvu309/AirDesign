@@ -1,6 +1,7 @@
-import { expect, test, type Page } from "@playwright/test"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { expect, type Page } from "@playwright/test"
+import { entry, manySlides, openGrid } from "./slide-grid-deck"
 import { panOf, roomOf, zoomTo } from "./grid-reorder-deck"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce", hasTouch: true })
 
@@ -16,8 +17,8 @@ test.beforeEach(async ({ page }) => {
 
 for (const zoom of ["fit", 200] as const) {
   for (const pointer of ["mouse", "touch"] as const) {
-    test(`press ownership at ${String(zoom)} with ${pointer}`, async ({ page }) => {
-      await openFile(page, { name: "three.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
+    test(`press ownership at ${String(zoom)} with ${pointer}`, async ({ page, decks }) => {
+      await decks.open({ name: "three.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
       await openGrid(page)
       if (zoom !== "fit") await zoomTo(page, zoom)
       const device = await page.context().newCDPSession(page)

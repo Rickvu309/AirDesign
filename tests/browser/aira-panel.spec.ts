@@ -1,7 +1,8 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { airaBackOn, airaCopy, airaLimitBodyOn, airaStepWords } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy, usageResetsOn } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, indexed, openClean, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
+import { decksOn } from "./deck-test"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -12,8 +13,7 @@ async function openDeck(page: Page, context: BrowserContext, stack: Stack) {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const paths = await forward(page, stack)
-  const deck = await openClean(page)
-  await indexed(stack, deck, cookie)
+  const deck = await decksOn(page).open()
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   await page.evaluate(() => {
     document.body.dataset.sameLoad = "yes"

@@ -1,9 +1,10 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { colorWords } from "./color-words"
 import { exportFromDialog } from "./export-dialog"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -39,13 +40,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 }
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 async function painted(page: Page, color: string): Promise<void> {
   const shown = (selector: string) => page.locator(selector).evaluate((node) => getComputedStyle(node).backgroundColor)
@@ -84,12 +78,10 @@ async function storeColor(page: Page, color: unknown): Promise<number> {
 
 test("a background stored as a theme colour with lumMod paints darker and exports with the slot and transform @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page
     .locator("[data-design-panel]")
@@ -101,7 +93,7 @@ test("a background stored as a theme colour with lumMod paints darker and export
   await painted(page, darkTwo)
   expect(await storeColor(page, darker)).toBe(1)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await painted(page, accentDarker)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -115,9 +107,6 @@ test("a background stored as a theme colour with lumMod paints darker and export
   ).toEqual([slidePart])
   expect(saved.get(slidePart)?.toString("utf8")).toContain(written)
   await copyFile(download, judged)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(download)
   await painted(page, accentDarker)
 })

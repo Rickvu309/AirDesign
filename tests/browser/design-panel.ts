@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
+import { decksOn } from "./deck-test"
 
 export async function setPanelMode(page: Page, mode: "slides" | "design"): Promise<void> {
   const toggle = page.locator("[data-design-mode]")
@@ -16,18 +17,8 @@ export const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 
 type StoredRow = { readonly kind: string; readonly node?: string; readonly property?: string; readonly value?: unknown }
 
-export async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 export async function openDeck(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(join(fixtures, file))
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decksOn(page).open(join(fixtures, file))
 }
 
 export async function designing(page: Page, element: Locator): Promise<Locator> {

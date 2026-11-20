@@ -1,9 +1,10 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -36,13 +37,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 }
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function frame(page: Page, part: string, shape: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
@@ -80,15 +74,13 @@ async function changedParts(original: string, saved: string): Promise<string[]> 
 
 test("two shapes group in place, move together, ungroup in place, and the export keeps the group @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("ungroup")
   const part = "ppt/slides/slide1.xml"
   const judged = join(process.cwd(), "tests/browser", groupName)
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(blank)
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
@@ -131,7 +123,7 @@ test("two shapes group in place, move together, ungroup in place, and the export
   await expect(frame(page, part, 6)).toHaveCount(1)
   await holds(shapes, moved)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await holds(shapes, moved)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -142,23 +134,19 @@ test("two shapes group in place, move together, ungroup in place, and the export
   expect(xml).toMatch(/<p:grpSp><p:nvGrpSpPr><p:cNvPr id="6" name="Group 6"\/>/)
   expect(xml.indexOf('<p:cNvPr id="4"')).toBeGreaterThan(xml.indexOf('<p:cNvPr id="6"'))
   await copyFile(download, judged)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await settled(page)
+  await decks.open(download)
   await expect(frame(page, part, 6)).toHaveCount(1)
   await holds(shapes, moved)
 })
 
 test("a file group with its own child frame ungroups with nothing moving, and the export judges clean @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const part = "ppt/slides/slide8.xml"
   const judged = join(process.cwd(), "tests/browser", ungroupName)
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(heatPumps)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(heatPumps)
   await page.locator('[data-slide-entry="8"]').click()
   const children = [7, 9, 16].map((shape) => frame(page, part, shape))
   await expect(children[0]!).toBeVisible()
@@ -177,9 +165,7 @@ test("a file group with its own child frame ungroups with nothing moving, and th
   const xml = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
   expect(xml).not.toContain('name="Group 17"')
   await copyFile(download, judged)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await settled(page)
+  await decks.open(download)
   await page.locator('[data-slide-entry="8"]').click()
   await holds(children, before)
 })

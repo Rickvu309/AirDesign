@@ -1,7 +1,8 @@
 import { connectionCopy } from "../../apps/web/src/copy/connection-copy"
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck, settled, unfold } from "./design-panel"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { openDeck, unfold } from "./design-panel"
 import { importTitleDeck } from "./new-deck"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -65,10 +66,11 @@ test("a node control names the shape a connector's end attaches to, moves the en
 
 test("a node control reads an imported deck's placeholders as Title and Subtitle, never as their file ids", async ({
   page,
+  decks,
 }) => {
   await page.goto("/")
   await importTitleDeck(page)
-  await settled(page)
+  await decks.ready()
   for (const name of ["Rectangle", "Line"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()

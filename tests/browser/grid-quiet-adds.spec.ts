@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { entry, manySlides, openFile, openGrid, groupSizes } from "./slide-grid-deck"
+import { entry, manySlides, openGrid, groupSizes } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
@@ -8,7 +9,7 @@ const adds = "[data-add-gap], [data-add-group]"
 const cards = "[data-slide-entry]"
 
 async function open(page: Page, count = 7) {
-  await openFile(page, {
+  await decksOn(page).open({
     name: "seven-slides.pptx",
     mimeType: "application/octet-stream",
     buffer: await manySlides(count, groupSizes(count)),

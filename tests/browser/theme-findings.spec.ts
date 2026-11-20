@@ -18,7 +18,6 @@ function themedSlides(deck: string, slot: string, hex: string): Themed {
 test("a theme colour that matches the background raises low contrast on the slides whose text names it", async ({
   page,
 }) => {
-  test.setTimeout(120_000)
   const { before, after } = themedSlides("doe-heat-pumps.pptx", "dk1", "FFFFFF")
   await page.goto("/")
   const widths = await slideWidths(page, [...before, ...after])

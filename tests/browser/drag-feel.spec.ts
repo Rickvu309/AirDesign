@@ -4,8 +4,8 @@ import { expect, test, type Page } from "@playwright/test"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { snapReach } from "../../packages/render/src/snapping.ts"
 import { busyDeck, busyKey, cardId } from "./busy-deck.ts"
-import { settled } from "./design-panel.ts"
 import { dragFeel, type Feel } from "./drag-feel.ts"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
@@ -15,15 +15,11 @@ const by = { x: 240, y: 90 }
 const tenths = (value: number) => Math.round(value * 10) / 10
 
 async function openBusy(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+  await decksOn(page).open({
     name: "busy.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await busyDeck(),
   })
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
-  await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
 }
 
 function frame(page: Page, shape: number) {

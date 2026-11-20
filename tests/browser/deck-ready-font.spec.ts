@@ -1,9 +1,10 @@
-import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { cleanFixture, test } from "./deck-test"
 
-const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
-
-test("a deck is ready and its text is painted while a font is still arriving", async ({ page }) => {
+test("a deck's text paints while a font is still arriving, and the deck is ready once the font is in", async ({
+  page,
+  decks,
+}) => {
   let release = () => {}
   const held = new Promise<void>((done) => {
     release = done
@@ -14,21 +15,19 @@ test("a deck is ready and its text is painted while a font is still arriving", a
     await held
     await route.fulfill({ status: 404, body: "" }).catch(() => undefined)
   })
-  const ready = page.locator(".thin-page")
   const text = page.locator("[data-slide-paint] [data-run]").first()
   try {
     await page.goto("/")
-    await page.locator("input[type=file]").setInputFiles(fixture)
+    await page.locator("input[type=file]").setInputFiles(cleanFixture)
     await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-    await expect(ready).toHaveAttribute("data-deck-ready", /.+/)
     await expect(text).toBeVisible()
     expect(asked).toBeGreaterThan(0)
     await expect(page.locator("[data-slide-paint] [data-fonts-pending]").first()).toBeAttached()
-    const deck = await ready.getAttribute("data-deck-ready")
+    expect(await decks.readiness()).toBeNull()
     release()
+    expect(page.url()).toContain(await decks.ready())
     await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toHaveCount(0)
     await expect(text).toBeVisible()
-    await expect(ready).toHaveAttribute("data-deck-ready", deck ?? "")
     await expect(page.getByText(/fallback font/)).toHaveCount(0)
   } finally {
     release()

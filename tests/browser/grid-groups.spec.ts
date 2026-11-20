@@ -1,17 +1,18 @@
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { expect, test, type Page } from "@playwright/test"
-import { entry, fixtures, manySlides, openFile, openGrid, groupNumbers, groupSizes, settled } from "./slide-grid-deck"
+import { expect, type Page } from "@playwright/test"
+import { entry, fixtures, manySlides, openGrid, groupNumbers, groupSizes } from "./slide-grid-deck"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 async function openTen(page: Page) {
-  await openFile(page, {
+  await decksOn(page).open({
     name: "ten.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(10, groupSizes(10)),
   })
   await openGrid(page)
 }
-test("the eleventh slide keeps stored slide groups across zoom resize and reload", async ({ page }) => {
+test("the eleventh slide keeps stored slide groups across zoom resize and reload", async ({ page, decks }) => {
   await openTen(page)
   expect(await groupNumbers(page)).toEqual([
     [1, 2, 3, 4],
@@ -42,7 +43,7 @@ test("the eleventh slide keeps stored slide groups across zoom resize and reload
   await page.setViewportSize({ width: 1000, height: 800 })
   expect(await groupNumbers(page)).toEqual(after)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   expect(await groupNumbers(page)).toEqual(after)
 })
@@ -88,8 +89,8 @@ test("Grid adds duplicates deletes moves and undoes with its slide group boundar
   expect(await groupNumbers(page)).toEqual(original)
 })
 
-test("two named groups stay fully shown, with the second group below the first", async ({ page }) => {
-  await openFile(page, {
+test("two named groups stay fully shown, with the second group below the first", async ({ page, decks }) => {
+  await decks.open({
     name: "sectioned-ten.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(10, true),
@@ -110,8 +111,8 @@ test("two named groups stay fully shown, with the second group below the first",
   await expect(entry(page, 10)).toBeVisible()
 })
 
-test("each heat-pump group is announced by its name and draws no heading", async ({ page }) => {
-  await openFile(page, `${fixtures}/doe-heat-pumps.pptx`)
+test("each heat-pump group is announced by its name and draws no heading", async ({ page, decks }) => {
+  await decks.open(`${fixtures}/doe-heat-pumps.pptx`)
   await openGrid(page)
   await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)

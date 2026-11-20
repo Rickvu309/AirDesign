@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { flushSync } from "react-dom"
-import { gestureFor, releases } from "@airdesign/render"
+import { gestureFor, releases, startSettling } from "@airdesign/render"
 
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
@@ -77,6 +77,7 @@ export function useCanvasGestures({
   const placing = useRef(false)
   const frame = useRef<number | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const settling = useRef<(() => void) | null>(null)
   const latest = useRef({ overlay, limits, onZoom })
   latest.current = { overlay, limits, onZoom }
 
@@ -126,6 +127,8 @@ export function useCanvasGestures({
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     timer.current = null
     frame.current = null
+    settling.current?.()
+    settling.current = null
     const held = gesture.current
     gesture.current = null
     const element = content.current
@@ -152,6 +155,7 @@ export function useCanvasGestures({
     held.wanted = zoomedAbout(held.wanted, bounded, point)
     if (frame.current === null) frame.current = requestAnimationFrame(paint)
     if (timer.current !== null) clearTimeout(timer.current)
+    settling.current ??= startSettling()
     timer.current = setTimeout(settle, settleAfter)
   }
 

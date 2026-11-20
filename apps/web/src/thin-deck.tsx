@@ -30,6 +30,7 @@ import { useLayerKeys } from "@/editor/layer-keys"
 import { toggleLayerFlag } from "@/editor/layer-flags"
 import { toneLink } from "@/editor/tone-link"
 import { toneScope } from "@/editor/tone-scope"
+import { useSettled } from "@airdesign/render"
 
 import type { PanelMode } from "@/design/panel-order"
 
@@ -46,6 +47,7 @@ export function ThinDeck({ id }: { id: string }) {
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
   const newer = useSyncExternalStore(watchNewer, storeNewer)
+  const settled = useSettled()
   const { shown, notesBar, exported } = deck
   const currentSlide = shown.store.current.slides()[shown.current]?.id
   const currentCanvas = shown.canvases.current(shown.current)
@@ -95,7 +97,10 @@ export function ThinDeck({ id }: { id: string }) {
   const shows = showsIn(shown.displayParts.current, strip.slideIds ?? [])
 
   return (
-    <div className="thin-page" data-deck-ready={deck.paintedDeck}>
+    <div
+      className="thin-page"
+      data-deck-ready={deck.paintedDeck === id && deck.openedDeck === id && settled ? id : undefined}
+    >
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
       <EditorFrame fills>
         <EditorShell

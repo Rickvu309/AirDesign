@@ -1,14 +1,15 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { openDeck, settled } from "./design-panel"
+import { openDeck } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
 import { filled, partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const exportName = "exported-frame-faded.pptx"
 const part = "ppt/slides/slide1.xml"
@@ -32,6 +33,7 @@ async function heldShapes(page: Page): Promise<readonly string[]> {
 
 test("a person fades a whole auto layout frame as one, and the export fades each of its layers @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("auto-layout")
   const judged = join(process.cwd(), "tests/browser", exportName)
@@ -56,7 +58,7 @@ test("a person fades a whole auto layout frame as one, and the export fades each
   await page.getByRole("button", { name: undoCopy.redoNamed.opacity, exact: true }).click()
   await expect(fadedLayer(page)).toHaveCSS("opacity", "0.5")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(fadedLayer(page)).toHaveCSS("opacity", "0.5")
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)

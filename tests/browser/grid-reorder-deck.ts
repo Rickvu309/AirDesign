@@ -1,7 +1,8 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import type { ReadDeckAnswer } from "../../packages/engine/src/index.ts"
 import { forward, signInBrowser, type Stack } from "./api-stack"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, manySlides, openGrid } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 export type Saved = {
   readonly deck: string
@@ -23,8 +24,7 @@ export async function openSaved(
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  await openFile(
-    page,
+  await decksOn(page).open(
     typeof file === "string"
       ? file
       : { name: "slides.pptx", mimeType: "application/octet-stream", buffer: await manySlides(file, sections) },

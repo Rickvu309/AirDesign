@@ -113,23 +113,6 @@ export async function manySlides(
   return Buffer.from(await writer.close())
 }
 
-export async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
-export async function openFile(
-  page: Page,
-  file: string | { name: string; mimeType: string; buffer: Buffer },
-): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(deckAddress)
-  await settled(page)
-}
-
 export function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${number}"]`)
 }

@@ -2,11 +2,12 @@ import { actualSize } from "./paint-scale"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { settled, unfold } from "./design-panel"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { unfold } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
 import { bodyCopy } from "../../apps/web/src/copy/body-copy"
+import { decksOn, test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -109,8 +110,7 @@ function laid(shape: Locator): Promise<Laid> {
 }
 
 async function opened(page: Page, file: string | Buffer): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(
+  await decksOn(page).open(
     typeof file === "string"
       ? file
       : {
@@ -119,14 +119,13 @@ async function opened(page: Page, file: string | Buffer): Promise<void> {
           buffer: file,
         },
   )
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
   await actualSize(page)
-  await page.evaluate(() => document.fonts.ready.then(() => undefined))
+  await decksOn(page).ready()
 }
 
 test("the canvas anchors text in columns, keeps the fit a file stored until its text changes and grows a box to fit as its file says, and a person chooses each autofit through Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await opened(page, await fitDeck())
   await actualSize(page)
@@ -178,7 +177,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   expect(taller.textBottom).toBeLessThanOrEqual(taller.bottom + 1)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await actualSize(page)
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
   const saving = page.waitForEvent("download")

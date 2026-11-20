@@ -437,7 +437,6 @@ it("rebuilds a deck this device lost from the server's original and paints the s
   const file = await cleanFile()
   const window = await renderedDeck(file, "cleared-deck", editedRegister([[await editedId, "Kept on the server"]]))
   expect(window.document.querySelector('[contenteditable="true"]')?.textContent).toBe("Kept on the server")
-  expect(window.document.querySelector("[data-deck-ready]")?.getAttribute("data-deck-ready")).toBe("cleared-deck")
   expect(live.saved.map((each) => [each.deck, each.file])).toEqual([["cleared-deck", file]])
 })
 

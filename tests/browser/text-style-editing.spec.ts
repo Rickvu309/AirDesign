@@ -1,11 +1,12 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { openDeck, settled } from "./design-panel"
+import { openDeck } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -35,8 +36,7 @@ function masterTitleSizes(parts: ReadonlyMap<string, Buffer>): string[] {
     })
 }
 
-test("edits the Title style, keeps explicit sizes, and undoes once @export", async ({ page }, info) => {
-  test.setTimeout(180_000)
+test("edits the Title style, keeps explicit sizes, and undoes once @export", async ({ page, decks }, info) => {
   await openDeck(page, "doe-heat-pumps.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const explicit = await runSizes(page)
@@ -69,7 +69,7 @@ test("edits the Title style, keeps explicit sizes, and undoes once @export", asy
   await page.getByRole("button", { name: undoCopy.undoNamed["text-style"], exact: true }).click()
   await expect.poll(() => runSizes(page)).toEqual(inheriting)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await openSlide(page, 12)
   await expect.poll(() => runSizes(page)).toEqual(inheriting)

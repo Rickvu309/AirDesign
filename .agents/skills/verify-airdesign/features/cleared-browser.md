@@ -6,7 +6,7 @@ A person saves an edit, then their browser loses everything AirDesign stored on 
 
 - `cleared-reopen-text` the edited text box reads the text the server kept.
 - `cleared-reopen-paint` the slide paints as many elements as it did before the browser was cleared.
-- `cleared-rebuilding` while it rebuilds there is no loading text: an empty slide area, a blank title and slide label `1`. A browser that was not cleared paints its device copy first instead (`keep-typed-text.md`). `.thin-page` gets `data-deck-ready` once the slide is painted.
+- `cleared-rebuilding` while it rebuilds there is no loading text: an empty slide area, a blank title and slide label `1`. A browser that was not cleared paints its device copy first instead (`keep-typed-text.md`). `.thin-page` gets `data-deck-ready` once the deck is ready.
 - `cleared-failed` a rebuild that fails for a reason other than a missing deck shows `Unable to open this deck` with `button "Go to your decks"`, which goes to `/`. Signed out, the editor sends the person to sign-in with `?next=` the deck address instead (`sign-in.md`, `signin-deck`).
 - `cleared-no-edits` if the original downloads but `deckRoutes.open` fails, the plain original shows without the edits and without a notice.
 

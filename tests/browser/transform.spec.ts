@@ -1,8 +1,9 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy.ts"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/shapes-added.pptx")
 const part = "ppt/slides/slide1.xml"
@@ -10,13 +11,6 @@ const part = "ppt/slides/slide1.xml"
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 type Rect = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function shape(page: Page, id: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(id)}"]`)
@@ -50,12 +44,10 @@ async function centerOf(locator: Locator): Promise<{ readonly x: number; readonl
 
 test("edge resize, Shift and Alt modifiers, rotate handle with Shift snap, flip shortcuts, and Shift axis-lock move", async ({
   page,
+  decks,
 }) => {
   covers("rotate", "flip-horizontal", "flip-vertical")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
 
   const first = shape(page, 4)
   await first.click()
@@ -127,7 +119,7 @@ test("edge resize, Shift and Alt modifiers, rotate handle with Shift snap, flip 
   expect(snapped % 15).toBe(0)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   expect(await rotationOf(shape(page, 4))).toBe(snapped)
 
   const flipTarget = shape(page, 5)
@@ -141,11 +133,8 @@ test("edge resize, Shift and Alt modifiers, rotate handle with Shift snap, flip 
   await expect.poll(() => transformOf(flipTarget)).toContain("scale(-1, 1)")
 })
 
-test("a two-layer selection resizes and rotates together, each undone in one step", async ({ page }) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+test("a two-layer selection resizes and rotates together, each undone in one step", async ({ page, decks }) => {
+  await decks.open(fixture)
 
   const a = shape(page, 4)
   const b = shape(page, 5)

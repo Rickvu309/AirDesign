@@ -3,7 +3,8 @@ import { expect, test, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
-import { entry, fixtures, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, fixtures, manySlides, openGrid } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -15,7 +16,7 @@ async function pictureWords() {
 }
 
 async function threeSlides(page: Page) {
-  await openFile(page, { name: "three.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
+  await decksOn(page).open({ name: "three.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
 }
 
 const tools: Record<string, (page: Page) => Promise<void>> = {

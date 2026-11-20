@@ -1,15 +1,16 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { borderCopy } from "../../apps/web/src/copy/border-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { colorPickerExport, colorPickerWritten } from "../../scripts/pptx-cases/color-picker.mjs"
 import { colorWords } from "./color-words"
-import { designing, openDeck, picker, settled, shownColor, typeColor } from "./design-panel"
+import { designing, openDeck, picker, shownColor, typeColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 const judged = join(process.cwd(), "tests/browser", colorPickerExport)
 const slidePart = "ppt/slides/slide1.xml"
@@ -37,6 +38,7 @@ async function undone(page: Page, shape: Locator, field: Locator, before: string
 
 test("a person picks a hex colour, a colour already in the deck and a theme tint, undoes each, and the export writes the rgb and the slot with lumMod and lumOff @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
@@ -88,7 +90,7 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   await expect.poll(() => filled(rectangle)).toBe(tinted)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(tinted)
   await expect.poll(() => filled(shapeAt(page, "5"))).toBe(navy)
   panel = await fillPanel(page, shapeAt(page, "4"))

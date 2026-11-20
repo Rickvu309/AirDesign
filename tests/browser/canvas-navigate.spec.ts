@@ -1,9 +1,8 @@
-import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { covers } from "./gesture"
 import { entry, openGrid } from "./slide-grid-deck"
+import { test } from "./deck-test"
 
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const slideWide = 12_192_000
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 const layerMiddle = { x: (start.x + start.cx / 2) / slideWide, y: (start.y + start.cy / 2) / 6_858_000 }
@@ -11,16 +10,6 @@ const layerMiddle = { x: (start.x + start.cx / 2) / slideWide, y: (start.y + sta
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 type Row = { property?: string; value: unknown; node?: string }
-
-async function openClean(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(clean)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 async function boxes(page: Page): Promise<{ x: number; y: number }[]> {
   const rows = await page.evaluate(
@@ -78,9 +67,10 @@ async function zoomWheel(page: Page, at: { x: number; y: number }, turns: number
 
 test("Ctrl+scroll zooms about the layer under the cursor, Space pans, Shift+2 and Shift+1 fit, and a drag lands under the pointer", async ({
   page,
+  decks,
 }) => {
   covers("pan", "zoom-selection", "zoom-fit", "zoom-actual")
-  await openClean(page)
+  await decks.open()
   const fit = await percent(page)
   const before = await slideBox(page)
   const cursor = {
@@ -154,8 +144,8 @@ test("Ctrl+scroll zooms about the layer under the cursor, Space pans, Shift+2 an
   expect(Math.abs((moved?.y ?? 0) - (start.y + 70 * perPixel))).toBeLessThanOrEqual(perPixel)
 })
 
-test("Space types a space while editing text and does not pan", async ({ page }) => {
-  await openClean(page)
+test("Space types a space while editing text and does not pan", async ({ page, decks }) => {
+  await decks.open()
   const text = page.locator('[contenteditable="true"]')
   await text.dblclick()
   await page.keyboard.press("End")
@@ -168,8 +158,9 @@ test("Space types a space while editing text and does not pan", async ({ page })
 
 test("a pinch keeps the slide laid out until the gesture rests, then lays it out once at the new zoom", async ({
   page,
+  decks,
 }) => {
-  await openClean(page)
+  await decks.open()
   const fit = await percent(page)
   const before = await slideBox(page)
   const at = { x: before.x + before.width / 2, y: before.y + before.height / 2 }
@@ -204,8 +195,9 @@ test("a pinch keeps the slide laid out until the gesture rests, then lays it out
 
 test("Safari gesture events zoom slide view about the cursor, prevent default, lay out once on gestureend, and never double-zoom with ctrl+wheel", async ({
   page,
+  decks,
 }) => {
-  await openClean(page)
+  await decks.open()
   const fit = await percent(page)
   const before = await slideBox(page)
   const cursor = {
@@ -321,8 +313,9 @@ test("Safari gesture events zoom slide view about the cursor, prevent default, l
 
 test("Safari gesture events zoom grid view about the cursor, prevent default, and do not double-zoom with ctrl+wheel", async ({
   page,
+  decks,
 }) => {
-  await openClean(page)
+  await decks.open()
   await openGrid(page)
   const before = (await entry(page, 1).boundingBox())!
   const beforePercent = await percent(page)

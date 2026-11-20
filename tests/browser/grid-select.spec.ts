@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { expect, type Page } from "@playwright/test"
+import { entry, manySlides, openGrid } from "./slide-grid-deck"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 type ZipLibrary = {
   readonly ZipReader: new (reader: unknown) => {
@@ -34,10 +35,10 @@ function selectedCount(page: Page) {
 
 test("a person selects several slides with the mouse and the keyboard, and exports just those", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("select-all")
-  test.setTimeout(120_000)
-  await openFile(page, { name: "six.pptx", mimeType: "application/octet-stream", buffer: await manySlides(6) })
+  await decks.open({ name: "six.pptx", mimeType: "application/octet-stream", buffer: await manySlides(6) })
   await openGrid(page)
   await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
   await entry(page, 3).click({ modifiers: ["ControlOrMeta"] })
@@ -83,8 +84,8 @@ test("a person selects several slides with the mouse and the keyboard, and expor
   expect(await slidePartsOf(file)).toBe(2)
 })
 
-test("a slide command acts on the slide remaining after a Ctrl or Cmd toggle", async ({ page }) => {
-  await openFile(page, { name: "three.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
+test("a slide command acts on the slide remaining after a Ctrl or Cmd toggle", async ({ page, decks }) => {
+  await decks.open({ name: "three.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
   await openGrid(page)
   await entry(page, 3).click({ modifiers: ["ControlOrMeta"] })
   await entry(page, 3).click({ modifiers: ["ControlOrMeta"] })
@@ -96,8 +97,8 @@ test("a slide command acts on the slide remaining after a Ctrl or Cmd toggle", a
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
-test("a slide taken out of the selection with Ctrl or Cmd does not stay the current slide", async ({ page }) => {
-  await openFile(page, { name: "five.pptx", mimeType: "application/octet-stream", buffer: await manySlides(5) })
+test("a slide taken out of the selection with Ctrl or Cmd does not stay the current slide", async ({ page, decks }) => {
+  await decks.open({ name: "five.pptx", mimeType: "application/octet-stream", buffer: await manySlides(5) })
   await openGrid(page)
   await entry(page, 3).click({ modifiers: ["ControlOrMeta"] })
   await entry(page, 5).click({ modifiers: ["ControlOrMeta"] })

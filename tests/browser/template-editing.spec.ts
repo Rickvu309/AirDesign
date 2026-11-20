@@ -4,10 +4,11 @@ import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck, settled, typeColor } from "./design-panel"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { openDeck, typeColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { filled, partsOf, shapeAt } from "./shape-fills"
+import { test } from "./deck-test"
 
 const exported = "exported-template-editing.pptx"
 const accent = "5"
@@ -25,8 +26,8 @@ async function paint(page: Page): Promise<string> {
 
 test("remixes template colours, adds a colour, deletes an unused template, and keeps that through undo, reload and export @export", async ({
   page,
+  decks,
 }, info) => {
-  test.setTimeout(180_000)
   const judged = join(process.cwd(), "tests/browser", exported)
   await rm(judged, { force: true })
   await openDeck(page, "two-templates.pptx")
@@ -64,7 +65,7 @@ test("remixes template colours, adds a colour, deletes an unused template, and k
   await expect(popup.locator("[data-template-style]")).toHaveCount(1)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await expect.poll(() => paint(page)).toBe(remixed)
   await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()

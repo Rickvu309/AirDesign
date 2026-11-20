@@ -1,11 +1,12 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { shapeExportName, shapeOriginalName, shapeSlidePart } from "../../scripts/shape-export.mjs"
 import { exportFromDialog } from "./export-dialog"
 import { importTitleDeck } from "./new-deck"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -35,13 +36,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 function frame(page: Page, shape: number) {
   return page.locator(`[data-slide-paint] [data-canvas-element="${shapeSlidePart}#${String(shape)}"]`)
 }
@@ -64,10 +58,11 @@ async function clickLine(page: Page, shape: number): Promise<void> {
 
 test("the Shapes tray has every shape on, and More shapes opens a grid of every preset a keyboard can pick", async ({
   page,
+  decks,
 }) => {
   await page.goto("/")
   await importTitleDeck(page)
-  await settled(page)
+  await decks.ready()
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   const tray = page.locator("[data-shape-tray]")
   await expect(tray).toBeVisible()
@@ -89,10 +84,13 @@ test("the Shapes tray has every shape on, and More shapes opens a grid of every 
   await expect(painted(page, 4)).toHaveCount(0)
 })
 
-test("a star, a triangle and an arrow are inserted, undone, redone and kept through a reload", async ({ page }) => {
+test("a star, a triangle and an arrow are inserted, undone, redone and kept through a reload", async ({
+  page,
+  decks,
+}) => {
   await page.goto("/")
   await importTitleDeck(page)
-  await settled(page)
+  await decks.ready()
   await insert(page, "Star")
   await insert(page, "Triangle")
   await insert(page, "Arrow")
@@ -102,18 +100,16 @@ test("a star, a triangle and an arrow are inserted, undone, redone and kept thro
   await page.getByRole("button", { name: "Redo add shape", exact: true }).click()
   await expect(painted(page, 6)).toBeVisible()
   await page.reload()
-  await settled(page)
+  await decks.ready()
   for (const shape of [4, 5, 6]) await expect(painted(page, shape)).toBeVisible()
 })
 
 test("a rectangle, an ellipse, a line, a star, a triangle and an arrow are inserted, moved, resized, deleted and undone, and export with only their slide changed @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   await insert(page, "Rectangle")
   await expect(frame(page, 4)).toHaveAttribute("aria-label", "Shape")
   await insert(page, "Ellipse")
@@ -142,7 +138,7 @@ test("a rectangle, an ellipse, a line, a star, a triangle and an arrow are inser
   await page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true }).click()
   await expect(painted(page, 9)).toBeVisible()
   await page.reload()
-  await settled(page)
+  await decks.ready()
   for (const shape of [4, 5, 6, 7, 8, 9]) await expect(painted(page, shape)).toBeVisible()
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -167,16 +163,14 @@ test("a rectangle, an ellipse, a line, a star, a triangle and an arrow are inser
   expect(xml.match(/<p:cxnSp>/g)).toHaveLength(2)
   expect(xml.match(/<a:tailEnd type="triangle"\/>/g)).toHaveLength(1)
   await copyFile(download, judged)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await settled(page)
+  await decks.open(download)
   for (const shape of [4, 5, 6, 7, 8, 9]) await expect(painted(page, shape)).toBeVisible()
 })
 
-test("Undo takes back an inserted shape and Redo brings it back, through a reload", async ({ page }) => {
+test("Undo takes back an inserted shape and Redo brings it back, through a reload", async ({ page, decks }) => {
   await page.goto("/")
   await importTitleDeck(page)
-  await settled(page)
+  await decks.ready()
   await insert(page, "Ellipse")
   await expect(painted(page, 4)).toBeVisible()
   await page.getByRole("button", { name: "Undo add shape", exact: true }).click()
@@ -184,6 +178,6 @@ test("Undo takes back an inserted shape and Redo brings it back, through a reloa
   await page.getByRole("button", { name: "Redo add shape", exact: true }).click()
   await expect(painted(page, 4)).toBeVisible()
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(painted(page, 4)).toBeVisible()
 })

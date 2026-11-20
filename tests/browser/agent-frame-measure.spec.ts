@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 
 type Read = {
   readonly revision: number
@@ -25,11 +25,12 @@ test("an agent's read after it lengthens a frame's text on a slide the person is
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await expect.poll(async () => (await stack.callTool("airdesign_read_deck", { deck }, cookie)).index).toBe("ready")
   let base = (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const added = await edited(stack, cookie, deck, base, { op: "add_slide", after: "256", layout: "256" })

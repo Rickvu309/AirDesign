@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 type Kit = { page: Page; context: BrowserContext; out: string }
 type State = { name: string; design: string | null }
@@ -69,7 +70,13 @@ test("loads product copy through workspace exports under Playwright", async () =
 })
 
 test("every named state of this design shard is reached and scanned in one stack", async ({ browser }) => {
-  test.setTimeout(240_000)
+  test.setTimeout(
+    keptWait(240_000, {
+      why: "sweeps every named design state of its shard in one test, about 110 seconds on ci",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const started = performance.now()
   execFileSync("pnpm", ["--filter", "@airdesign/api", "build"], { cwd: root, stdio: "ignore" })
   const { run, origin } = JSON.parse(

@@ -4,7 +4,7 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { useDeckOpen, type OpeningDeck } from "./use-deck-open"
 import type { DeckPaint } from "./use-deck-paint"
 
-const world = vi.hoisted(() => ({ order: [] as string[] }))
+const world = vi.hoisted(() => ({ order: [] as string[], held: true }))
 
 vi.mock("@/device-copy", () => ({
   deviceCopy: async () => {
@@ -18,7 +18,7 @@ vi.mock("@/device-copy", () => ({
 vi.mock("@/index-deck", () => ({
   backfillIndex: () => {
     world.order.push("index")
-    return new Promise(() => undefined)
+    return world.held ? new Promise(() => undefined) : Promise.resolve()
   },
 }))
 
@@ -35,7 +35,7 @@ vi.mock("@airdesign/live", () => ({
     openDeck: async () => ({ ok: false, refusal: "deck" }),
     flush: () => {
       world.order.push("flush")
-      return new Promise(() => undefined)
+      return world.held ? new Promise(() => undefined) : Promise.resolve({ ok: true })
     },
     pending: async () => [],
   }),
@@ -68,6 +68,7 @@ afterEach(async () => {
   })
   root = null
   world.order.length = 0
+  world.held = true
 })
 
 function opening(): OpeningDeck {
@@ -94,13 +95,16 @@ function opening(): OpeningDeck {
     },
     setTitle: () => undefined,
     setPaintedDeck: () => undefined,
+    setOpenedDeck: (deck) => {
+      if (deck !== undefined) world.order.push(`opened ${deck}`)
+    },
     setRefused: () => undefined,
     setFailure: () => undefined,
     aside: 0,
   }
 }
 
-it("follows a deck from the moment it is shown, while the index is still open", async () => {
+async function openDeck(): Promise<void> {
   const deck = opening()
   function Open() {
     useDeckOpen(deck)
@@ -113,9 +117,20 @@ it("follows a deck from the moment it is shown, while the index is still open", 
     root?.render(createElement(Open))
     for (let tick = 0; tick < 5; tick += 1) await new Promise((done) => setTimeout(done, 0))
   })
+}
+
+it("follows a deck from the moment it is shown, while the index is still open", async () => {
+  await openDeck()
   expect(world.order).toContain("follow")
   expect(world.order.indexOf("shown")).toBeLessThan(world.order.indexOf("follow"))
   expect(world.order.indexOf("follow")).toBeLessThan(world.order.indexOf("index"))
   expect(world.order).not.toContain("flush")
   expect(world.order).not.toContain("upload")
+  expect(world.order).not.toContain("opened deck")
+})
+
+it("marks the deck opened once its index is sent and its edits are flushed", async () => {
+  world.held = false
+  await openDeck()
+  expect(world.order.slice(world.order.indexOf("index"))).toEqual(["index", "flush", "settle", "opened deck", "upload"])
 })

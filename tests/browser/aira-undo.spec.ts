@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, indexed, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -12,13 +12,13 @@ test("an Undo that cannot reach the server says so and keeps Undo, and the next 
   page,
   context,
   stack,
+  decks,
 }) => {
   const { deckRoutes } = await import("../../packages/catalog/src/index.ts")
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
-  await indexed(stack, deck, cookie)
+  const deck = await decks.open()
   const opened = deckRoutes.open.result((await stack.post(deckRoutes.open.path, { deck }, cookie)).json)
   expect(opened.ok).toBe(true)
   if (!opened.ok) return
@@ -39,7 +39,7 @@ test("an Undo that cannot reach the server says so and keeps Undo, and the next 
   const kept = await stack.post(deckRoutes.open.path, { deck }, cookie)
   expect(JSON.stringify(kept.json)).toContain("Hello from Aira")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(log.getByText(airaCopy.undoFailed, { exact: true })).toBeVisible()
   await expect(undo).toBeEnabled()
   await expect(editor).toHaveText("Hello from Aira")

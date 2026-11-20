@@ -1,7 +1,7 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { unfold } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
@@ -24,13 +24,14 @@ test("an agent sets a text box's autofit, anchor and font, which the person sees
   page,
   context,
   stack,
+  decks,
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", exportName)
   await rm(judged, { force: true })
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await expect
     .poll(async () => (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)).index)
     .toBe("ready")

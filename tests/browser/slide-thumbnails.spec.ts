@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const varied = join(fixtures, "doe-heat-pumps.pptx")
@@ -89,20 +90,6 @@ async function fiftySlides(): Promise<Buffer> {
   return Buffer.from(await writer.close())
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
-async function openFile(page: Page, file: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(deckAddress)
-  await settled(page)
-}
-
 async function showSlide(page: Page, number: number): Promise<void> {
   const entry = page.locator(`[data-slide-entry="${number}"]`)
   await entry.click()
@@ -123,8 +110,8 @@ async function blobUrls(page: Page, selector: string): Promise<string[]> {
 
 test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" })
 
-test("slide list entries paint different slides and follow an edit", async ({ page }) => {
-  await openFile(page, varied)
+test("slide list entries paint different slides and follow an edit", async ({ page, decks }) => {
+  await decks.open(varied)
   const first = page.locator('[data-slide-entry="1"] [data-thumb-paint]')
   const second = page.locator('[data-slide-entry="2"] [data-thumb-paint]')
   await expect(first).toContainText("Introduction to Heat Pumps")
@@ -153,7 +140,7 @@ test("slide list entries paint different slides and follow an edit", async ({ pa
   await expect(first).toContainText("Introduction to Heat Pumps today")
 })
 
-test("a picture address is shared by the open slide and its thumbnail", async ({ page }) => {
+test("a picture address is shared by the open slide and its thumbnail", async ({ page, decks }) => {
   await page.addInitScript(() => {
     const made: string[] = []
     Reflect.set(window, "pictureAddresses", { made })
@@ -165,7 +152,7 @@ test("a picture address is shared by the open slide and its thumbnail", async ({
     }
   })
   const addresses = () => page.evaluate(() => Reflect.get(window, "pictureAddresses") as { made: string[] })
-  await openFile(page, varied)
+  await decks.open(varied)
   await expect(page.locator('[data-slide-entry="2"] [data-thumb-paint]')).toContainText(
     "Basic Principles of Heat Pump Operations",
   )
@@ -183,8 +170,8 @@ test("a picture address is shared by the open slide and its thumbnail", async ({
   expect((await addresses()).made.length).toBe(seen)
 })
 
-test("opening a 50-slide deck does not paint every thumbnail", async ({ page }) => {
-  await openFile(page, {
+test("opening a 50-slide deck does not paint every thumbnail", async ({ page, decks }) => {
+  await decks.open({
     name: "fifty.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await fiftySlides(),

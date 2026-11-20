@@ -2,26 +2,17 @@ import { copyFile } from "node:fs/promises"
 import { savedExport } from "./export-dialog"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { connectionCopy } from "../../apps/web/src/copy/connection-copy.ts"
 import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/nasa-1d-cnn.pptx")
 const notes = "Lead with the trend, then the number."
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function opened(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function shown(page: Page) {
   return page.locator("[data-present-show] [data-present-slide]")
@@ -33,9 +24,10 @@ function current(page: Page) {
 
 test("Present shows the deck full screen, steps with the keys a presenter uses and lands where it stopped", async ({
   page,
+  decks,
 }) => {
   covers("show-next", "show-previous", "show-number", "show-go", "show-erase", "show-last", "show-first", "show-stop")
-  await opened(page)
+  await decks.open(fixture)
   await page.locator('[data-slide-entry="2"]').click()
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
@@ -80,9 +72,9 @@ test("Present shows the deck full screen, steps with the keys a presenter uses a
   await expect(page.locator("[data-slide-entry]")).toHaveCount(15)
 })
 
-test("the presenter view shows the speaker notes, the next slide and the time", async ({ page }) => {
+test("the presenter view shows the speaker notes, the next slide and the time", async ({ page, decks }) => {
   covers("present-here", "show-presenter")
-  await opened(page)
+  await decks.open(fixture)
   await page.locator('[data-slide-entry="3"]').click()
   if ((await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).count()) === 0)
     await page.getByRole("button", { name: "Expand presenter notes" }).click()
@@ -105,8 +97,8 @@ test("the presenter view shows the speaker notes, the next slide and the time", 
   await expect(current(page)).toHaveAttribute("data-slide-entry", "3")
 })
 
-test("presenter buttons respond to Enter and Space", async ({ page }) => {
-  await opened(page)
+test("presenter buttons respond to Enter and Space", async ({ page, decks }) => {
+  await decks.open(fixture)
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   await page.keyboard.press("p")
   const pause = page.getByRole("button", { name: presentCopy.pause })
@@ -121,8 +113,9 @@ test("presenter buttons respond to Enter and Space", async ({ page }) => {
 test("a skipped slide survives offline edits, undo and an exported slide show @export", async ({
   page,
   context,
+  decks,
 }, testInfo) => {
-  await opened(page)
+  await decks.open(fixture)
   const entry = page.locator('[data-slide-entry="2"]')
   async function choose(name: string) {
     await entry.click({ button: "right" })

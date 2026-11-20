@@ -5,15 +5,17 @@ import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
-import { openDeck, settled } from "./design-panel"
+import { expect } from "@playwright/test"
+import { openDeck } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const exported = "exported-template-style.pptx"
 
 test("applies a template to one slide, keeps the other slides and placeholders, and survives undo, reload and export @export", async ({
   page,
+  decks,
 }, info) => {
   await rm(join(process.cwd(), "tests/browser", exported), { force: true })
   await openDeck(page, "doe-heat-pumps.pptx")
@@ -38,7 +40,7 @@ test("applies a template to one slide, keeps the other slides and placeholders, 
   await page.getByRole("button", { name: undoCopy.redoNamed.template, exact: true }).click()
   await expect(card).toContainText("Dark slides")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(card).toContainText("Dark slides")
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -59,10 +61,7 @@ test("applies a template to one slide, keeps the other slides and placeholders, 
   )
   expect([...saved.keys()].filter((part) => !original.has(part))).toHaveLength(4)
   await copyFile(file, join(process.cwd(), "tests/browser", exported))
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await expect(page.getByRole("button", { name: designCopy.chooseTemplateStyle, exact: true })).toBeVisible()
 })

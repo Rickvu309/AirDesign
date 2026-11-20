@@ -389,11 +389,10 @@ test("loading status offers no decision before the client is validated", async (
   const asked = page.waitForRequest("**/oauth/client")
   await page.goto(authorizePath())
   await asked
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve))))
+  await expect(page.getByRole("status")).toHaveText("Loading connection request…")
 
   await expect(page.locator("button")).toHaveCount(0)
   await expect(page.getByRole("heading", { name: "Connect an agent", exact: true })).toBeVisible()
-  await expect(page.getByRole("status")).toHaveText("Loading connection request…")
   await expect(page.getByText(claudeConnect.title)).toHaveCount(0)
 
   release()

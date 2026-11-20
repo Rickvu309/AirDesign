@@ -1,6 +1,6 @@
 import { zoomToOf } from "../../apps/web/src/copy/product-copy"
-import { expect, test, type Page } from "@playwright/test"
-import { newBlankDeck } from "./new-deck"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
 const bar = (page: Page) => page.locator("[data-notes-bar]")
 const handle = (page: Page) => page.getByRole("button", { name: /^(Expand|Collapse) presenter notes$/ })
@@ -19,7 +19,7 @@ async function move(page: Page, from: Awaited<ReturnType<typeof start>>, target:
   await page.mouse.move(from.x, from.y + from.height - target)
   await expect.poll(async () => Math.abs((await height(page)) - target)).toBeLessThanOrEqual(2)
 }
-async function settled(page: Page, target: number) {
+async function resized(page: Page, target: number) {
   await expect.poll(() => height(page)).toBeCloseTo(target, 0)
   await expect.poll(() => bar(page).evaluate((e) => e.getAnimations().length)).toBe(0)
 }
@@ -51,10 +51,9 @@ async function catchSettle(page: Page, settle: () => Promise<void>) {
   expect(await bar(page).evaluate((element) => element.getAnimations().length)).toBe(0)
   return point
 }
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, decks }) => {
   await page.setViewportSize({ width: 1470, height: 923 })
-  await page.goto("/")
-  await newBlankDeck(page)
+  await decks.blank()
   await expect(page.locator("[data-slide-paint]")).toBeVisible()
 })
 
@@ -73,17 +72,19 @@ test("tracks the whole range both ways, rubber bands, and snaps by distance", as
   await page.mouse.move(catchPoint.x, catchPoint.y - 5)
   await expect.poll(async () => Math.abs((await height(page)) - catchPoint.height)).toBeLessThanOrEqual(2)
   await page.mouse.up()
-  await settled(page, maximum)
+  await resized(page, maximum)
+  const cdp = await page.context().newCDPSession(page)
   for (const [target, result] of [
     [80, 24],
     [110, 160],
   ]) {
     const point = await start(page)
     await move(page, point, target)
-    await page.waitForTimeout(130)
-    await page.mouse.move(point.x, point.y + point.height - target + 0.1)
-    await page.mouse.up()
-    await settled(page, result)
+    const held = Date.now() / 1000 + 0.13
+    const at = { x: point.x, y: point.y + point.height - target + 0.1, button: "left" as const, timestamp: held }
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", buttons: 1, ...at })
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", buttons: 0, clickCount: 1, ...at })
+    await resized(page, result)
   }
 })
 
@@ -124,9 +125,9 @@ test("snaps by velocity when flicked across a short distance", async ({ page }) 
     })
   }
   await flick(10)
-  await settled(page, 24)
+  await resized(page, 24)
   await flick(-16)
-  await settled(page, 160)
+  await resized(page, 160)
 })
 
 test("catches a settle at its rendered height and keeps keyboard and reduced motion instant", async ({ page }) => {
@@ -191,7 +192,7 @@ test("fits the slide in the same frame and preserves a panned zoom", async ({ pa
     const grip = await start(page)
     await page.mouse.move(grip.x, grip.y + 30, { steps: 5 })
     await page.mouse.up()
-    await page.waitForTimeout(320)
+    await expect.poll(() => bar(page).evaluate((e) => e.getAnimations().length)).toBe(0)
     expect(await stage.evaluate((e) => [e.scrollLeft, e.scrollTop])).toEqual(scroll)
   }
 })

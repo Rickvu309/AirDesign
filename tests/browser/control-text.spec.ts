@@ -1,10 +1,12 @@
-import { expect, test } from "@playwright/test"
-import { designing, openDeck, pendingValues, settled } from "./design-panel"
+import { expect } from "@playwright/test"
+import { designing, openDeck, pendingValues } from "./design-panel"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("typing on the canvas rewrites the element's words in their own size and colour, and Undo brings the words back", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "clean.pptx")
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
@@ -34,6 +36,6 @@ test("typing on the canvas rewrites the element's words in their own size and co
   await words.blur()
   await expect(editor).toHaveText("Kept")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Kept")
 })

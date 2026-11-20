@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test"
-import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 import { stored } from "./device-store"
+import { readyMark } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -8,11 +9,12 @@ test("a second account on the same browser sees nothing of the first, whose unse
   page,
   context,
   stack,
+  decks,
 }) => {
   const first = await stack.signIn()
   await signInBrowser(context, first)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await page.route("**/decks/commit", (route) => route.abort())
   const editor = page.locator('[contenteditable="true"]')
   await editor.dblclick()
@@ -33,14 +35,14 @@ test("a second account on the same browser sees nothing of the first, whose unse
     },
   ])
   await signInBrowser(context, await stack.signIn())
-  await page.addInitScript(() => {
+  await page.addInitScript((mark) => {
     const seen = { ready: false, typed: false }
     Object.assign(window, { seen })
     new MutationObserver(() => {
-      if (document.querySelector(".thin-page[data-deck-ready]") !== null) seen.ready = true
+      if (document.querySelector(".thin-page")?.hasAttribute(mark) === true) seen.ready = true
       if (document.body.textContent.includes("unsent")) seen.typed = true
     }).observe(document, { subtree: true, childList: true, attributes: true, characterData: true })
-  })
+  }, readyMark)
   await page.goto(`/deck/${deck}`)
   await expect(page.locator("[data-deck-refused]")).toBeVisible()
   expect(await page.evaluate(() => (window as unknown as { seen: unknown }).seen)).toEqual({
@@ -52,7 +54,7 @@ test("a second account on the same browser sees nothing of the first, whose unse
   await signInBrowser(context, first)
   await page.unroute("**/decks/commit")
   await page.goto(`/deck/${deck}`)
-  await settled(page)
+  await decks.ready()
   await expect(editor).toHaveText("Hello unsent")
   await expect.poll(async () => JSON.stringify((await stack.saved(deck))?.register ?? {})).toContain("unsent")
 })

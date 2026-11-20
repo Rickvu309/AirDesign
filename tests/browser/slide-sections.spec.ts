@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { openScreen } from "./open-screen"
+import { test } from "./deck-test"
 
 const sectioned = join(process.cwd(), "scripts/pptx-fixtures/sections-before.pptx")
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as {
   readonly ZipReader: new (reader: unknown) => {
     getEntries(): Promise<{ filename: string; getData(writer: unknown): Promise<Uint8Array> }[]>
@@ -31,17 +31,6 @@ type Section = {
 }
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
-
-async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-  await expect(page.locator("[data-slide-entry='1'] [data-thumb-paint]")).toBeVisible()
-}
 
 async function sections(page: Page): Promise<readonly Section[]> {
   await page.evaluate(async () => {
@@ -114,8 +103,9 @@ async function headings(page: Page): Promise<string[]> {
 
 test("a deck with sections lists each section's name above its slides and numbers the slides straight through", async ({
   page,
+  decks,
 }) => {
-  await open(page, sectioned)
+  await decks.open(sectioned)
   await expect(page.locator("[data-group-head]")).toHaveCount(2)
   expect(await headings(page)).toEqual(["Opening", "Numbers"])
   expect(await numbers(page)).toEqual(["1", "2"])
@@ -127,8 +117,9 @@ test("a deck with sections lists each section's name above its slides and number
 
 test("a new slide joins the section of the slide it comes after, and the sections stay after a reload", async ({
   page,
+  decks,
 }) => {
-  await open(page, sectioned)
+  await decks.open(sectioned)
   await page.locator("[data-slide-entry='1']").click()
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-item]")).toHaveCount(3)
@@ -144,15 +135,16 @@ test("a new slide joins the section of the slide it comes after, and the section
       )
   expect(await rows()).toEqual(["Opening", "1", "2", "Numbers", "3"])
   await page.reload()
-  await page.waitForFunction(() => document.querySelector(".thin-page")?.getAttribute("data-deck-ready") !== null)
+  await decks.ready()
   await expect(page.locator("[data-slide-item]")).toHaveCount(3)
   expect(await rows()).toEqual(["Opening", "1", "2", "Numbers", "3"])
 })
 
 test("a section collapses to its first slide with the range of its slides, opens again, and opens by itself for the slide in view", async ({
   page,
+  decks,
 }) => {
-  await open(page, sectioned)
+  await decks.open(sectioned)
   await page.locator("[data-slide-entry='1']").click()
   await page.getByRole("button", { name: "Add slide" }).click()
   await page.locator("[data-slide-entry='3']").click()
@@ -173,18 +165,19 @@ test("a section collapses to its first slide with the range of its slides, opens
   await expect(opening).toHaveAttribute("aria-expanded", "true")
 })
 
-test("a deck without sections lists its slides with no headings", async ({ page }) => {
-  await open(page, clean)
+test("a deck without sections lists its slides with no headings", async ({ page, decks }) => {
+  await decks.open()
   await expect(page.locator("[data-group-head]")).toHaveCount(0)
   await expect(page.locator("[data-slide-item]")).toHaveCount(1)
 })
 
 test("the real filmstrip draws section headings and a collapsed section where the designed editor puts them", async ({
   page,
+  decks,
 }) => {
   await openScreen(page, designed)
   const design = await sections(page)
-  await open(page, sectioned)
+  await decks.open(sectioned)
   await page.locator("[data-slide-entry='2']").click()
   await page.getByRole("button", { name: "Add slide" }).click()
   await page.getByRole("button", { name: "Add slide" }).click()
@@ -233,8 +226,9 @@ async function sectionList(file: string): Promise<string[]> {
 
 test("a person moves the first slide of a section into the section above and undoes it, and the export lists the sections the file had", async ({
   page,
+  decks,
 }, testInfo) => {
-  await open(page, sectioned)
+  await decks.open(sectioned)
   const rows = () =>
     page
       .locator("[data-slide-list] > *")

@@ -1,10 +1,11 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled, unfold } from "./design-panel"
+import { openDeck, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { test } from "./deck-test"
 
 const exportName = "exported-picture.pptx"
 const slidePart = "ppt/slides/slide1.xml"
@@ -54,9 +55,9 @@ async function typed(input: Locator, value: string) {
 
 test("a person crops, recolours, fades, describes and hides a picture, adds an icon, and the export keeps each @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy.ts")
-  test.setTimeout(90_000)
   const judged = join(process.cwd(), "tests/browser", exportName)
   await rm(judged, { force: true })
   await openDeck(page, "picture-png.pptx")
@@ -118,7 +119,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   const recoloured = await look(photo)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(async () => (await look(canvas(page, photoKey))).filter).toBe(recoloured.filter)
   await expect.poll(async () => (await look(canvas(page, photoKey))).size).toBe(recoloured.size)
   await expect.poll(async () => (await look(canvas(page, iconKey))).image).toContain("blob:")
@@ -143,10 +144,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   expect(changed.sort()).toEqual(["[Content_Types].xml", relsPart, slidePart].sort())
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await expect.poll(async () => (await look(canvas(page, photoKey))).filter).toBe(recoloured.filter)
   await expect.poll(async () => (await look(canvas(page, photoKey))).opacity).toBe("0.6")
   await expect.poll(async () => (await look(canvas(page, iconKey))).image).toContain("blob:")

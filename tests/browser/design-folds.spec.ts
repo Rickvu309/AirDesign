@@ -7,10 +7,11 @@ import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { designing, openDeck, settled, setPanelMode } from "./design-panel"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { designing, openDeck, setPanelMode } from "./design-panel"
 import { shapeAt } from "./shape-fills"
 import { bodyCopy } from "../../apps/web/src/copy/body-copy"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -27,6 +28,7 @@ async function pick(page: Page, element: Locator): Promise<Locator> {
 
 test("a text box's panel leads with Text and folds its rare sections, and a person's folding stays for that kind of element", async ({
   page,
+  decks,
 }) => {
   await openDeck(page, "clean.pptx")
   const panel = await designing(page, shapeAt(page, "2"))
@@ -101,7 +103,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(fold(back, boxCopy.section)).toHaveAttribute("aria-expanded", "true")
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const again = await designing(page, shapeAt(page, "2"))
   await expect(page.locator("[data-design-mode]")).toHaveAttribute("aria-pressed", "false")
   await expect(fold(again, effectsCopy.section)).toHaveCount(0)

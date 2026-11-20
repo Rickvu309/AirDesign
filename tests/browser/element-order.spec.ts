@@ -1,9 +1,10 @@
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -34,13 +35,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 }
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
 
 function frame(page: Page, shape: number) {
   return page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#${String(shape)}"]`)
@@ -118,13 +112,11 @@ async function openBack(page: Page): Promise<void> {
 
 test("a rectangle moves in front of an ellipse, and back, and the export changes only that slide @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("backward")
   await rm(judged, { force: true })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   await insert(page, "Rectangle")
   await insert(page, "Ellipse")
   await expect(frame(page, 4)).toBeVisible()
@@ -155,7 +147,7 @@ test("a rectangle moves in front of an ellipse, and back, and the export changes
   await page.getByRole("button", { name: "Undo send backward", exact: true }).click()
   await paintFront(page, 4, 5)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await paintFront(page, 4, 5)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -170,8 +162,6 @@ test("a rectangle moves in front of an ellipse, and back, and the export changes
   const xml = saved.get(slidePart)?.toString("utf8") ?? ""
   expect(xml.indexOf('<p:cNvPr id="4"')).toBeGreaterThan(xml.indexOf('<p:cNvPr id="5"'))
   await copyFile(download, judged)
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(download)
-  await settled(page)
+  await decks.open(download)
   await paintFront(page, 4, 5)
 })

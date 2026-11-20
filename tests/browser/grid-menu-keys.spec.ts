@@ -1,9 +1,10 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { deckActionsOf } from "../../apps/web/src/copy/product-copy"
-import { clean, entry, openFile, openGrid, sectioned } from "./slide-grid-deck"
+import { clean, entry, openGrid, sectioned } from "./slide-grid-deck"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -27,9 +28,9 @@ async function gridState(page: Page) {
   }))
 }
 
-test("a focused slide menu owns the zoom shortcuts", async ({ page }) => {
+test("a focused slide menu owns the zoom shortcuts", async ({ page, decks }) => {
   covers("slide-menu")
-  await openFile(page, sectioned)
+  await decks.open(sectioned)
   await openGrid(page)
   await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")
   await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
@@ -60,8 +61,8 @@ test("a focused slide menu owns the zoom shortcuts", async ({ page }) => {
 })
 
 for (const overlay of ["zoom", "title", "shapes"]) {
-  test(`${overlay} owns Escape and grid shortcuts before overlay focus settles`, async ({ page }) => {
-    await openFile(page, clean)
+  test(`${overlay} owns Escape and grid shortcuts before overlay focus settles`, async ({ page, decks }) => {
+    await decks.open(clean)
     await openGrid(page)
     await entry(page, 1).focus()
     await page.keyboard.press("Enter")
@@ -100,8 +101,8 @@ for (const overlay of ["zoom", "title", "shapes"]) {
 }
 
 for (const path of ["right", "ContextMenu"] as const) {
-  test(`${path} followed immediately by Escape closes only the slide menu`, async ({ page }) => {
-    await openFile(page, sectioned)
+  test(`${path} followed immediately by Escape closes only the slide menu`, async ({ page, decks }) => {
+    await decks.open(sectioned)
     await openGrid(page)
     await entry(page, 1).focus()
     await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")
@@ -125,8 +126,8 @@ for (const path of ["right", "ContextMenu"] as const) {
   })
 }
 
-test("closing the slide menu rings the slide only when the keyboard closed it", async ({ page }) => {
-  await openFile(page, sectioned)
+test("closing the slide menu rings the slide only when the keyboard closed it", async ({ page, decks }) => {
+  await decks.open(sectioned)
   await openGrid(page)
   const menu = page.getByRole("menu")
   const held = () =>
@@ -159,8 +160,8 @@ test("closing the slide menu rings the slide only when the keyboard closed it", 
   expect(await held()).toEqual({ slide: true, ring: true })
 })
 
-test("Escape from the canvas closes the zoom menu without clearing the selection", async ({ page }) => {
-  await openFile(page, sectioned)
+test("Escape from the canvas closes the zoom menu without clearing the selection", async ({ page, decks }) => {
+  await decks.open(sectioned)
   await openGrid(page)
   await entry(page, 1).focus()
   await page.keyboard.press("ControlOrMeta+a")

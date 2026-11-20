@@ -1,7 +1,8 @@
 import { expect } from "@playwright/test"
 import { forward, test } from "./api-stack"
 import { boxOf, openSaved } from "./grid-reorder-deck"
-import { entry, openGrid, groupNumbers, settled } from "./slide-grid-deck"
+import { entry, openGrid, groupNumbers } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -9,6 +10,7 @@ test("a sectioned import keeps its first-slide slide group starts in Fit, on the
   page,
   context,
   stack,
+  decks,
 }) => {
   const saved = await openSaved(page, context, stack, 6, true)
   const initial = [
@@ -29,7 +31,7 @@ test("a sectioned import keeps its first-slide slide group starts in Fit, on the
   const second = await context.newPage()
   await forward(second, stack)
   await second.goto(page.url())
-  await settled(second)
+  await decksOn(second).ready()
   await openGrid(second)
   await expect.poll(() => groupNumbers(second)).toEqual(initial)
   const { deckRoutes } = await import("../../packages/catalog/src/index.ts")
@@ -50,7 +52,7 @@ test("a sectioned import keeps its first-slide slide group starts in Fit, on the
     .poll(async () => (await stack.post(deckRoutes.open.path, { deck: saved.deck }, saved.cookie)).json.register)
     .toMatchObject({ order: [{ slide: "clone", grid: 3 }] })
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await expect.poll(() => groupNumbers(page)).toEqual(edited)
 })

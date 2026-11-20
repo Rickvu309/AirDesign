@@ -1,11 +1,12 @@
 import { copyFile, readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { storedValues } from "./device-store"
 import { toolbarWords } from "./color-words"
 import { savedExport } from "./export-dialog.ts"
 import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
+import { decksOn, test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const exported = join(process.cwd(), "tests/browser/exported-text-format.pptx")
@@ -42,18 +43,8 @@ async function changedParts(before: string, after: string): Promise<string[]> {
   return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(deckAddress)
-  await settled(page)
+  await decksOn(page).open(file)
 }
 
 async function selectText(run: Locator, start: number, end: number): Promise<void> {
@@ -70,6 +61,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("font size, theme colour, alignment and bullets survive reload, undo and export @export", async ({
   page,
+  decks,
 }, testInfo) => {
   const download = testInfo.outputPath("exported-text-format.pptx")
   const names = await toolbarWords("clean.pptx")
@@ -108,7 +100,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
     )
     .toBe(true)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const reloaded = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(reloaded.locator("[data-run]").filter({ hasText: /^world$/ })).toHaveAttribute("data-size", "3300")
   await expect(reloaded.locator("[data-color='scheme:accent2']")).toHaveText("world")

@@ -1,7 +1,7 @@
-import { expect, test, type Page } from "@playwright/test"
-import { openDeck, settled } from "./design-panel"
-import { newBlankDeck } from "./new-deck"
+import { expect, type Page } from "@playwright/test"
+import { openDeck } from "./design-panel"
 import { holdDevice, holdableDevice, openDevice } from "./slow-device"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -10,13 +10,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 async function blankDeck(page: Page): Promise<void> {
-  await page.goto("/")
-  await newBlankDeck(page)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
+  await decksOn(page).blank()
 }
 
 test("keys typed at once after Add text box land in the new box, before and after it paints", async ({ page }) => {
@@ -38,7 +32,7 @@ test("keys typed at once after Add text box land in the new box, before and afte
   await expect(texts.last()).toHaveText("Big title")
 })
 
-test("typing after selecting an imported table leaves its cells unchanged", async ({ page }) => {
+test("typing after selecting an imported table leaves its cells unchanged", async ({ page, decks }) => {
   await openDeck(page, "table-added.pptx")
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   const before = await table.textContent()
@@ -50,7 +44,7 @@ test("typing after selecting an imported table leaves its cells unchanged", asyn
   await expect(table).toHaveText(before ?? "")
   await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect(table).toHaveText(before ?? "")
 })
 

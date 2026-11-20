@@ -1,22 +1,24 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { adjustToneCopy } from "../../apps/web/src/copy/adjust-tone-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { colorWords } from "./color-words"
-import { fixtures, openDeck, pickColor, settled } from "./design-panel"
+import { fixtures, openDeck, pickColor } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("selects three matching footers, updates them while offline, and undoes each panel edit across slides", async ({
   page,
   context,
+  decks,
 }, testInfo) => {
   covers("select-matching")
   await openDeck(page, "clean.pptx")
@@ -69,7 +71,7 @@ test("selects three matching footers, updates them while offline, and undoes eac
 
   await context.setOffline(false)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   for (const entry of await entries.all()) await expect(entry).toContainText("Company footer")
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await footer.click({ position: { x: 4, y: 4 } })
@@ -85,6 +87,7 @@ test("selects three matching footers, updates them while offline, and undoes eac
 
 test("replaces a picture file through the title action and keeps its frame through undo, reload and export", async ({
   page,
+  decks,
 }, testInfo) => {
   const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy")
   await openDeck(page, "picture-png.pptx")
@@ -115,7 +118,7 @@ test("replaces a picture file through the title action and keeps its frame throu
   await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
   await expect.poll(source).toBe("image/jpeg")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(source).toBe("image/jpeg")
   const exported = testInfo.outputPath("replaced.pptx")
   await savedExport(page, exported)

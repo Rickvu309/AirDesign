@@ -1,7 +1,8 @@
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { expect, test, type Locator } from "@playwright/test"
+import { expect, type Locator } from "@playwright/test"
+import { test } from "./deck-test"
 import { store } from "./home-store.ts"
 import { newBlankDeck } from "./new-deck.ts"
 
@@ -72,9 +73,9 @@ test("a menu opened with Enter and closed with Escape does not move", async ({ p
   )
 })
 
-test("editor menus and popovers that pass duration-0 open without motion", async ({ page }) => {
+test("editor menus and popovers that pass duration-0 open without motion", async ({ page, decks }) => {
   await newBlankDeck(page)
-  await expect(page.locator(".thin-page")).toBeVisible()
+  await decks.ready()
   await page.locator("[data-zoom-readout]").click()
   const zoom = page.getByRole("menu").filter({ has: page.getByRole("menuitemradio", { name: "Zoom to 100%" }) })
   await expect(zoom).toBeVisible()

@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { stored, storedValues } from "./device-store"
 import { savedExport } from "./export-dialog.ts"
 import { covers } from "./gesture"
+import { decksOn, test } from "./deck-test"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const slide = "ppt/slides/slide1.xml"
@@ -40,18 +41,8 @@ async function changedParts(before: string, after: string): Promise<string[]> {
   return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(deckAddress)
-  await settled(page)
+  await decksOn(page).open(file)
 }
 
 async function selectText(run: Locator, start: number, end: number): Promise<void> {
@@ -80,7 +71,10 @@ const unformatted = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Hello" }
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a word made bold, italic and underlined survives reload, export and import", async ({ page }, testInfo) => {
+test("a word made bold, italic and underlined survives reload, export and import", async ({
+  page,
+  decks,
+}, testInfo) => {
   covers("italic")
   const download = testInfo.outputPath("formatted.pptx")
   await open(page, fixture)
@@ -104,7 +98,7 @@ test("a word made bold, italic and underlined survives reload, export and import
     .poll(async () => (await storedValues(page)).some((value) => value.includes('"underline":true')))
     .toBe(true)
   await page.reload()
-  await settled(page)
+  await decks.ready()
   const reloaded = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(reloaded).toHaveText("Hello world")
   await expect.poll(() => looks(reloaded.locator("[data-run]").filter({ hasText: /^world$/ }))).toEqual(formatted)

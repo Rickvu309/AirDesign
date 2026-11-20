@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -34,13 +35,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 function frame(page: Page, shape: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
 }
@@ -51,12 +45,10 @@ async function counted(shapes: readonly Locator[], count: number): Promise<void>
 
 test("Delete takes every chosen shape away as one step, one undo brings them all back, and the export keeps them", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("select-add", "delete")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(blank)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(blank)
   for (const name of ["Rectangle", "Ellipse"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()
     await page.getByRole("button", { name, exact: true }).click()
@@ -79,7 +71,7 @@ test("Delete takes every chosen shape away as one step, one undo brings them all
   await counted(shapes, 1)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await counted(shapes, 1)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)

@@ -1,12 +1,13 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { colorWords } from "./color-words"
-import { openDeck, setPanelMode, settled } from "./design-panel"
+import { openDeck, setPanelMode } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { boxFillPanel, partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const part = "ppt/slides/slide1.xml"
 const pictureKey = `${part}#4`
@@ -39,8 +40,7 @@ function overlaid(painted: Locator): Promise<boolean> {
   )
 }
 
-test("a person lays a colour over a picture and blurs it @export", async ({ page }) => {
-  test.setTimeout(90_000)
+test("a person lays a colour over a picture and blurs it @export", async ({ page, decks }) => {
   const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy")
   const names = await colorWords("picture-png.pptx")
   await openDeck(page, "picture-png.pptx")
@@ -95,7 +95,7 @@ test("a person lays a colour over a picture and blurs it @export", async ({ page
   await expect.poll(() => blurred(picture(page))).toBe(true)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => overlaid(picture(page))).toBe(true)
   await expect.poll(() => blurred(picture(page))).toBe(true)
 

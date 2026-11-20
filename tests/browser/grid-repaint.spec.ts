@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import type { ReadDeckAnswer } from "../../packages/engine/src/index.ts"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -16,11 +16,12 @@ test("a grid thumbnail repaints while the grid is open after an agent's edit, an
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   await page.getByRole("button", { name: "Grid" }).click()
   await expect(gridThumb(page, 1)).toBeVisible()
   const read = (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as ReadDeckAnswer

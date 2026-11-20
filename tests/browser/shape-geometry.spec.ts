@@ -2,11 +2,12 @@ import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, placed, settled, unfold } from "./design-panel"
+import { openDeck, placed, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 import { outline, pickShape, shapePanel, turned } from "./shape-turns"
+import { test } from "./deck-test"
 
 const exportName = "exported-shape-geometry.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -17,6 +18,7 @@ test.use({ viewport: { width: 1470, height: 923 } })
 
 test("a person rotates, flips, reshapes, adjusts and centres a shape, and it survives Undo, a reload, the export and a new import @export", async ({
   page,
+  decks,
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "clean.pptx")
@@ -58,7 +60,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
   await expect.poll(() => turned(shape)).toBe("rotate(45deg) scale(-1, 1)")
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await actualSize(page)
   await expect.poll(() => turned(shapeAt(page, "2"))).toBe("rotate(45deg) scale(-1, 1)")
   await expect.poll(() => outline(shapeAt(page, "2"))).toBe(reshaped)
@@ -78,10 +80,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
   expect(changed.map(([name]) => name).sort()).toEqual([slidePart])
   await copyFile(file, judged)
 
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(file)
   await actualSize(page)
   await expect.poll(() => turned(shapeAt(page, "2"))).toBe("rotate(45deg) scale(-1, 1)")
   await expect.poll(() => outline(shapeAt(page, "2"))).toBe(reshaped)

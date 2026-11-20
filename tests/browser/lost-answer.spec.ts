@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -71,13 +71,14 @@ test("a deck stuck with a landed new slide still pending on this device opens an
   page,
   context,
   stack,
+  decks,
 }) => {
   const errors: string[] = []
   page.on("pageerror", (error) => errors.push(error.message))
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   let landed = false
   const committing = (url: URL) => url.pathname === "/decks/commit"
   await page.route(committing, async (route) => {
@@ -100,7 +101,7 @@ test("a deck stuck with a landed new slide still pending on this device opens an
   await page.unroute(committing)
   for (const round of [1, 2]) {
     await page.reload()
-    await expect(page.locator(".thin-page"), `reload ${String(round)}`).toHaveAttribute("data-deck-ready", deck)
+    expect(await decks.ready(), `reload ${String(round)}`).toBe(deck)
     await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   }
   await expect
@@ -114,11 +115,12 @@ test("a new slide another writer's slide took the place of is set aside, and the
   page,
   context,
   stack,
+  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decks.open()
   const committing = (url: URL) => url.pathname === "/decks/commit"
   await page.route(committing, (route) => route.abort())
   await page.getByRole("button", { name: "Add slide" }).click()
@@ -144,6 +146,6 @@ test("a new slide another writer's slide took the place of is set aside, and the
   const saved = await stack.post("/decks/open", { deck }, cookie)
   expect(saved.json.revision).toBe(1)
   await page.reload()
-  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
+  expect(await decks.ready()).toBe(deck)
   await expect(page.getByText("Unable to save some edits", { exact: false })).toHaveCount(0)
 })

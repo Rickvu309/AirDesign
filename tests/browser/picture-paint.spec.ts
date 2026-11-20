@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { PNG } from "pngjs"
+import { test } from "./deck-test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx")
 const otherDeck = join(process.cwd(), "scripts/pptx-fixtures/nasa-1d-cnn.pptx")
@@ -67,15 +68,6 @@ async function croppedDeck(): Promise<Buffer> {
   return Buffer.from(await writer.close())
 }
 
-async function settled(page: Page, before: string | null = null): Promise<string> {
-  const handle = await page.waitForFunction((previous) => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    const ready = document.querySelector(".thin-page")?.getAttribute("data-deck-ready")
-    return id !== undefined && ready === id && id !== previous ? id : false
-  }, before)
-  return (await handle.jsonValue()) as string
-}
-
 async function showSlide(page: Page, number: number): Promise<void> {
   const entry = page.locator(`[data-slide-entry="${number}"]`)
   await entry.click()
@@ -106,20 +98,18 @@ async function shares(page: Page): Promise<Shares> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a cropped picture paints the part of the picture its crop keeps", async ({ page }) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles({
+test("a cropped picture paints the part of the picture its crop keeps", async ({ page, decks }) => {
+  await decks.open({
     name: "cropped.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await croppedDeck(),
   })
-  await settled(page)
   await showSlide(page, 4)
   await expect.poll(async () => (await shares(page)).kept).toBeGreaterThan(0.9)
   expect((await shares(page)).cropped).toBe(0)
 })
 
-test("a deck reuses picture addresses across slide switches and navigation releases them", async ({ page }) => {
+test("a deck reuses picture addresses across slide switches and navigation releases them", async ({ page, decks }) => {
   await page.addInitScript(() => {
     const made: string[] = []
     const released: string[] = []
@@ -138,9 +128,7 @@ test("a deck reuses picture addresses across slide switches and navigation relea
   })
   const addresses = () =>
     page.evaluate(() => Reflect.get(window, "pictureAddresses") as { made: string[]; released: string[] })
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(deck)
-  const first = await settled(page)
+  await decks.open(deck)
   await showSlide(page, 4)
   await showSlide(page, 5)
   const seen = (await addresses()).made.length
@@ -149,9 +137,7 @@ test("a deck reuses picture addresses across slide switches and navigation relea
   await showSlide(page, 5)
   expect((await addresses()).made.length).toBe(seen)
   const previous = (await addresses()).made
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(otherDeck)
-  await settled(page, first)
+  await decks.open(otherDeck)
   expect(
     await page.evaluate(async (urls) => {
       return Promise.all(

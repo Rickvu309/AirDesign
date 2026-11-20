@@ -2,9 +2,10 @@ import { undoCopy } from "../../apps/web/src/copy/undo-copy.js"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { covers } from "./gesture"
+import { test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string
@@ -36,13 +37,6 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
   return parts
 }
 
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
 function frame(page: Page, shape: number): Locator {
   return page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
 }
@@ -66,12 +60,10 @@ function shifted(from: readonly Spot[], to: readonly Spot[]): string[] {
 
 test("three selected shapes move by one drag and one nudge, each undone in one step, and the export keeps the file @export", async ({
   page,
+  decks,
 }, testInfo) => {
   covers("move", "nudge-far")
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
+  await decks.open(fixture)
   const shapes = [frame(page, 4), frame(page, 5), frame(page, 3)]
   const start = await spots(shapes)
   await shapes[0]!.click()

@@ -1,17 +1,9 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx")
 const heraDeck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-hera-analog-lessons.pptx")
-
-async function open(page: Page, file = deck): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
-  })
-}
 
 async function showSlide(page: Page, number: number): Promise<void> {
   const entry = page.locator(`[data-slide-entry="${number}"]`)
@@ -21,8 +13,8 @@ async function showSlide(page: Page, number: number): Promise<void> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a numbered list paints its numbers outside the editable words", async ({ page }) => {
-  await open(page)
+test("a numbered list paints its numbers outside the editable words", async ({ page, decks }) => {
+  await decks.open(deck)
   await showSlide(page, 17)
   const painted = await page.locator("[data-slide-paint]").evaluate((root) =>
     [...root.querySelectorAll<HTMLElement>("[data-paragraph]")].map((block) => ({
@@ -39,8 +31,8 @@ test("a numbered list paints its numbers outside the editable words", async ({ p
   ).toBe(true)
 })
 
-test("an underlined run paints its line", async ({ page }) => {
-  await open(page)
+test("an underlined run paints its line", async ({ page, decks }) => {
+  await decks.open(deck)
   await showSlide(page, 10)
   const lined = await page
     .locator("[data-slide-paint]")
@@ -52,8 +44,11 @@ test("an underlined run paints its line", async ({ page }) => {
   expect(lined).toBe(true)
 })
 
-test("an empty paragraph paints no bullet until someone types in its box, as PowerPoint does", async ({ page }) => {
-  await open(page)
+test("an empty paragraph paints no bullet until someone types in its box, as PowerPoint does", async ({
+  page,
+  decks,
+}) => {
+  await decks.open(deck)
   await showSlide(page, 13)
   const body = page.locator('[data-slide-paint] [contenteditable="true"]', { hasText: "Declared by the manufacturer" })
   const emptyBullets = () =>
@@ -67,8 +62,11 @@ test("an empty paragraph paints no bullet until someone types in its box, as Pow
   expect(await emptyBullets()).toEqual(['"•"', '"•"'])
 })
 
-test("a bullet keeps its line as tall as its paragraph's tight line height, as PowerPoint does", async ({ page }) => {
-  await open(page, heraDeck)
+test("a bullet keeps its line as tall as its paragraph's tight line height, as PowerPoint does", async ({
+  page,
+  decks,
+}) => {
+  await decks.open(heraDeck)
   await showSlide(page, 7)
   const body = page.locator('[data-slide-paint] [contenteditable="true"]', { hasText: "Limiting resupply" })
   const heights = await body.evaluate((box) => {

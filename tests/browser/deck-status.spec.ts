@@ -1,7 +1,7 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { stored } from "./device-store"
-import { openFixture } from "./fixture-deck"
+import { test } from "./deck-test"
 
 const offlineWords = "You're offline. Edits are saved on this device."
 const unreachedWords = "Unable to reach AirDesign. Edits are saved on this device."
@@ -17,6 +17,7 @@ async function typeAtEnd(page: Page, text: string): Promise<void> {
 
 test("a device that stayed online says AirDesign cannot be reached, and the words go when a commit is answered 404", async ({
   page,
+  decks,
 }) => {
   let status: number | null = null
   await page.route("**/decks/{open,index}", async (route) => {
@@ -33,7 +34,7 @@ test("a device that stayed online says AirDesign cannot be reached, and the word
     }
     await route.fulfill({ status, contentType: "text/html", body: "<html><body>Not found</body></html>" })
   })
-  await openFixture(page)
+  await decks.open()
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   await typeAtEnd(page, "!")
   await stored(page, "Hello!")

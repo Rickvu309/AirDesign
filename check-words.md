@@ -106,6 +106,14 @@ _Avoid_: approval, sign-off, review
 
 ## How a change is shown to work
 
+**ready**:
+A deck the editor marks with `data-deck-ready`: painted, opened with the server, its fonts and the thumbnails in view loaded, and no zoom settling. A browser test opens and waits for it with the `decks` fixture in `tests/browser/deck-test.ts`.
+_Avoid_: loaded, a local settled helper
+
+**kept wait**:
+A fixed wait in a browser test that no event can replace, written `keptWait(wait, { why, until, approval })`. The `no-blind-wait` lint counts them per file, and a person approves each one.
+_Avoid_: sleep, allowed timeout
+
 **proof**:
 The commands a builder ran for a change and what they printed.
 _Avoid_: evidence, verification, validation

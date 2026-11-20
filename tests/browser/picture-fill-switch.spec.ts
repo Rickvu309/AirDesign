@@ -1,12 +1,13 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { openDeck, setPanelMode, settled } from "./design-panel"
+import { openDeck, setPanelMode } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { filled, partsOf } from "./shape-fills"
+import { test } from "./deck-test"
 
 const part = "ppt/slides/slide1.xml"
 const pictureKey = `${part}#4`
@@ -29,8 +30,7 @@ async function designed(page: Page): Promise<Locator> {
   return panel
 }
 
-test("a person switches an imported photo to a solid, and back to the same photo @export", async ({ page }) => {
-  test.setTimeout(90_000)
+test("a person switches an imported photo to a solid, and back to the same photo @export", async ({ page, decks }) => {
   await openDeck(page, "picture-png.pptx")
   const panel = await designed(page)
   await expect(panel).toHaveAttribute("data-panel-kind", "picture")
@@ -54,7 +54,7 @@ test("a person switches an imported photo to a solid, and back to the same photo
   await expect(panel.locator("[data-design-head]")).toContainText(designCopy.square)
 
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await expect.poll(() => photo(page)).not.toContain("url(")
   const again = await designed(page)
   await expect(again).toHaveAttribute("data-panel-kind", "shape")

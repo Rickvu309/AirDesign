@@ -29,6 +29,9 @@ for (const target of [
 }
 const keyWords = copyWords(file, 'export const connectionCopy = { end: "End" }')
 assert.deepEqual(literalFaults("tests/browser/keys.spec.ts", "", 'await text.press("End")', keyWords), [])
+const slashWords = copyWords(file, 'export const shortcutCopy = { slash: "/" }')
+assert.deepEqual(literalFaults("tests/browser/home.spec.ts", "", 'await page.goto("/")', slashWords), [])
+assert.equal(literalFaults("tests/browser/home.spec.ts", "", 'page.getByText("/")', slashWords).length, 1)
 assert.deepEqual(literalFaults("tests/browser/keys.spec.ts", "", "await page.keyboard.press(`End`)", keyWords), [])
 assert.equal(
   literalFaults("tests/browser/keys.spec.ts", "", 'page.getByRole("button", { name: "End" }).press("End")', keyWords)

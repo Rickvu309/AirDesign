@@ -6,7 +6,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { forward, test } from "./api-stack"
 import { boxOf, openSaved } from "./grid-reorder-deck"
-import { entry, fixtures, openFile, openGrid } from "./slide-grid-deck"
+import { entry, fixtures, openGrid } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -53,14 +53,14 @@ test("skips two Grid slides, presents past them and undoes the edit once in both
   await expect(mark(other)).toHaveCount(0)
 })
 
-test("exports a skipped slide and unskips it after re-import @export", async ({ page, context, stack }) => {
+test("exports a skipped slide and unskips it after re-import @export", async ({ page, context, stack, decks }) => {
   await openSaved(page, context, stack, join(fixtures, "blank.pptx"))
   await entry(page, 1).click({ button: "right" })
   await page.getByRole("menuitem", { name: slideListCopy.skip, exact: true }).click()
   await expect(entry(page, 1)).toHaveAttribute("data-slide-skipped", "true")
   const hidden = join(process.cwd(), "tests/browser/exported-slide-hidden.pptx")
   await savedExport(page, hidden)
-  await openFile(page, hidden)
+  await decks.open(hidden)
   await openGrid(page)
   await expect(entry(page, 1)).toHaveAttribute("data-slide-skipped", "true")
   await entry(page, 1).click({ button: "right" })

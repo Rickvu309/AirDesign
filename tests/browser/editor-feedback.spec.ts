@@ -1,13 +1,12 @@
-import { expect, test } from "@playwright/test"
-import { newBlankDeck } from "./new-deck"
+import { expect } from "@playwright/test"
 import { holdableDevice, holdDevice, openDevice } from "./slow-device"
+import { test } from "./deck-test"
 
 const titleName = /^Rename deck: /
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, decks }) => {
   await holdableDevice(page)
-  await page.goto("/")
-  await newBlankDeck(page)
+  await decks.blank()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
 })
 

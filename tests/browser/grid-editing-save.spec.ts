@@ -3,8 +3,9 @@ import { zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { currentBox, currentValue, elementId, readTextValue, type Box } from "../../packages/document/src/index.ts"
-import { forward, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { entry, openGrid } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 const node = elementId("256.2")
 const start: Box = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
@@ -56,7 +57,7 @@ async function signedIn(page: Page, context: import("@playwright/test").BrowserC
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  const deck = await openClean(page)
+  const deck = await decksOn(page).open()
   await openGrid(page)
   return { cookie, deck }
 }
@@ -109,6 +110,7 @@ test("text typed in Grid saves and survives a reload, and Grid and Slides view u
   page,
   context,
   stack,
+  decks,
 }) => {
   const { cookie, deck } = await signedIn(page, context, stack)
   const thumb = page.locator('[data-editor-grid] [data-thumb-node="256.2"]')
@@ -131,7 +133,7 @@ test("text typed in Grid saves and survives a reload, and Grid and Slides view u
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect.poll(() => savedText(stack, cookie, deck)).toBe("Typed in Grid")
   await page.reload()
-  await settled(page)
+  await decks.ready()
   await openGrid(page)
   await expect(thumb).toContainText("Typed in Grid")
 })

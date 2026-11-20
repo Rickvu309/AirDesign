@@ -1,10 +1,11 @@
 import { expect, test, type Page } from "@playwright/test"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, manySlides, openGrid } from "./slide-grid-deck"
+import { decksOn } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 async function atZoom(page: Page, percent: number) {
-  await openFile(page, { name: "overview.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
+  await decksOn(page).open({ name: "overview.pptx", mimeType: "application/octet-stream", buffer: await manySlides(3) })
   await openGrid(page)
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill(String(percent))

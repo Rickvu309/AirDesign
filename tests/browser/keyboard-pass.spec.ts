@@ -1,10 +1,8 @@
 import { productCopy, zoomCopy } from "../../apps/web/src/copy/product-copy"
-import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { store } from "./home-store.ts"
 import { covers } from "./gesture"
-
-const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -43,25 +41,14 @@ test("Tab goes from Grid view and List view to the next control, not into New de
   await expect(page.getByRole("link", { name: "List view" })).toBeFocused()
 })
 
-async function open(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(clean)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-  await expect(page.locator("[data-slide-entry='1'] [data-thumb-paint]")).toContainText("Hello")
-}
-
 async function percent(page: Page): Promise<number> {
   const text = (await page.locator("[data-zoom-readout]").textContent()) ?? ""
   return Number(text.replace("%", ""))
 }
 
-test("Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 zooms to 100% and Shift+1 returns to Fit", async ({ page }) => {
+test("Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 zooms to 100% and Shift+1 returns to Fit", async ({ page, decks }) => {
   covers("zoom-in", "zoom-out", "zoom-fit", "zoom-actual")
-  await open(page)
+  await decks.open()
   const fit = await percent(page)
   await page.locator("[data-canvas-stage]").click({ position: { x: 5, y: 5 } })
   await page.keyboard.press("ControlOrMeta+=")
@@ -81,8 +68,9 @@ test("Ctrl+= and Ctrl+- zoom the canvas, Ctrl+0 zooms to 100% and Shift+1 return
 
 test("the zoom menu opens on its percent field, then Zoom in, Zoom out, fit and the three presets", async ({
   page,
+  decks,
 }) => {
-  await open(page)
+  await decks.open()
   const fit = await percent(page)
   await page.locator("[data-zoom-readout]").click()
   const field = page.getByRole("textbox", { name: zoomCopy.field })
@@ -120,8 +108,9 @@ test("the zoom menu opens on its percent field, then Zoom in, Zoom out, fit and 
 
 test("a percent typed into the zoom field sets the zoom, and text that is not a percent is put back", async ({
   page,
+  decks,
 }) => {
-  await open(page)
+  await decks.open()
   const fit = await percent(page)
   await page.locator("[data-zoom-readout]").click()
   const field = page.getByRole("textbox", { name: zoomCopy.field })
@@ -137,8 +126,8 @@ test("a percent typed into the zoom field sets the zoom, and text that is not a 
   await expect(page.locator("[data-zoom-readout]")).toBeFocused()
 })
 
-test("Ctrl+= inside a text box is left to the browser", async ({ page }) => {
-  await open(page)
+test("Ctrl+= inside a text box is left to the browser", async ({ page, decks }) => {
+  await decks.open()
   const fit = await percent(page)
   await page.locator("[data-slide-entry='1']").click()
   const title = page.locator('[contenteditable="true"]').first()
@@ -147,8 +136,8 @@ test("Ctrl+= inside a text box is left to the browser", async ({ page }) => {
   expect(await percent(page)).toBe(fit)
 })
 
-test("Expand presenter notes is one tab stop", async ({ page }) => {
-  await open(page)
+test("Expand presenter notes is one tab stop", async ({ page, decks }) => {
+  await decks.open()
   await page.getByRole("button", { name: "Collapse presenter notes" }).click()
   const expand = page.getByRole("button", { name: "Expand presenter notes" })
   await expect(expand).toHaveCount(1)

@@ -1,6 +1,7 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { clean, entry, fifty, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { clean, entry, fifty, manySlides, openGrid } from "./slide-grid-deck"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -50,9 +51,10 @@ test.describe("with motion", () => {
 
   test("opening a slide carries its card to the canvas, and the grid carries the canvas back to its card", async ({
     page,
+    decks,
   }) => {
     await recordOpenings(page)
-    await openFile(page, clean)
+    await decks.open(clean)
     await page.getByRole("button", { name: "Add slide", exact: true }).click()
     await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
     await openGrid(page)
@@ -83,10 +85,10 @@ test.describe("with motion", () => {
 
 test("with reduced motion the grid opens and closes with no transition, back on the slide that was open", async ({
   page,
+  decks,
 }) => {
-  test.setTimeout(120_000)
   await recordOpenings(page)
-  await openFile(page, {
+  await decks.open({
     name: "fifty.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(fifty),
