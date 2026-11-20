@@ -108,7 +108,6 @@ for (const window of windows) {
   }) => {
     await page.setViewportSize(window)
     await openDeck(page, "clean.pptx")
-    await designing(page, page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" }))
     await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
     await expect(page.locator("[data-editor-toolbar] [data-text-format]")).toBeVisible()
     const canvas = await boxOf(page, "[data-editor-canvas]")
@@ -134,20 +133,21 @@ for (const window of windows) {
   })
 }
 
-test("with a text box selected in a 1470x923 window, the toolbar keeps Table, Chart and Icon beside the text controls", async ({
+test("with a text box selected and the Design panel open, the toolbar keeps every insert tool and leaves the text properties to the panel", async ({
   page,
 }) => {
   const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy.ts")
   await openDeck(page, "clean.pptx")
-  const text = page.locator('[data-slide-paint] [contenteditable="true"]').first()
-  await text.click()
-  await text.press("ControlOrMeta+a")
+  await designing(page, page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" }))
+  await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
   const toolbar = page.locator("[data-editor-toolbar]")
-  for (const name of ["Add text", shapeCopy.tool, tableCopy.tool, chartCopy.tool, pictureCopy.add, pictureCopy.addIcon])
+  for (const name of [shapeCopy.tool, tableCopy.tool, chartCopy.tool, pictureCopy.add, pictureCopy.addIcon])
     await expect(toolbar.getByRole("button", { name, exact: true })).toBeVisible()
-  await expect(toolbar.getByRole("button", { name: formatCopy.named.bold })).toBeVisible()
-  await toolbar.getByRole("button", { name: tableCopy.tool, exact: true }).click()
-  await expect(page.getByLabel(tableCopy.size, { exact: true })).toBeVisible()
+  await expect(toolbar.locator("[data-text-format]")).toHaveCount(0)
+  await expect(toolbar.getByRole("button", { name: toolbarCopy.more, exact: true })).toHaveCount(0)
+  await expect(page.locator("[data-design-panel]").getByRole("button", { name: formatCopy.named.bold })).toBeVisible()
+  await toolbar.getByRole("button", { name: chartCopy.tool, exact: true }).click()
+  await expect(page.getByRole("button", { name: chartCopy.kinds.bar, exact: true })).toBeVisible()
 })
 
 test("in a 1280x720 window the controls that do not fit sit in More, reached and used by keyboard", async ({
@@ -159,8 +159,7 @@ test("in a 1280x720 window the controls that do not fit sit in More, reached and
   await text.click()
   await text.press("ControlOrMeta+a")
   const toolbar = page.locator("[data-editor-toolbar]")
-  await expect(toolbar.getByRole("button", { name: tableCopy.tool, exact: true })).toBeVisible()
-  await expect(toolbar.getByRole("button", { name: formatCopy.named.bold })).toHaveCount(0)
+  await expect(toolbar.getByRole("button", { name: "Bold" })).toBeVisible()
   await expect(toolbar.getByRole("button", { name: formatCopy.bullets })).toHaveCount(0)
   await toolbar.getByRole("button", { name: "More", exact: true }).focus()
   await page.keyboard.press("Enter")
@@ -181,13 +180,14 @@ test("in a 1280x720 window the controls that do not fit sit in More, reached and
   await expect(more).toBeHidden()
 })
 
-test("in a 1280x720 window a shape added from the toolbar while text is aimed lands on the slide", async ({ page }) => {
+test("in a 1280x720 window a shape added through More while text is aimed lands on the slide", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await openDeck(page, "clean.pptx")
   await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
   const elements = page.locator("[data-slide-paint] [data-canvas-element]")
   const before = await elements.count()
-  await page.locator("[data-editor-toolbar]").getByRole("button", { name: shapeCopy.tool, exact: true }).click()
+  await page.locator("[data-editor-toolbar]").getByRole("button", { name: "More", exact: true }).click()
+  await page.locator("[data-toolbar-more]").getByRole("button", { name: "Shapes", exact: true }).click()
   await page.locator("[data-shape-tray]").getByRole("button", { name: "Rectangle", exact: true }).click()
   await expect(elements).toHaveCount(before + 1)
 })

@@ -30,6 +30,7 @@ import {
   formatParts,
   insertParts,
   toolbarFold,
+  toolbarParts,
   type ActionPart,
   type FormatPart,
   type InsertPart,
@@ -345,11 +346,14 @@ export function EditorToolbar({
   const pointerOn = pointer !== undefined ? pointer.tool !== "text" : activeTool === "move"
   const live = useLiveFormat(formatting, deckColors)
   const format = live ?? (formats === undefined ? null : { shown: formats })
-  const available = insertParts.filter((part) => part !== "number" || onSlideNumber !== undefined)
   const toneReady = useToneReady(tone)
-  const withFormat = format === null ? available : [...available, ...formatParts]
   const fold = useFold(
-    format !== null && formatting !== undefined && toneReady ? [...withFormat, ...actionParts] : withFormat,
+    toolbarParts({
+      panel,
+      slideNumber: onSlideNumber !== undefined,
+      format: format !== null,
+      actions: formatting !== undefined && toneReady,
+    }),
   )
   const inserts: Inserts = {
     activeTool,
