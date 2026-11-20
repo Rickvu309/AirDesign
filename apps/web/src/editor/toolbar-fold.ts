@@ -14,11 +14,6 @@ export type ToolbarPart = InsertPart | FormatPart | ActionPart
 
 export const foldOrder: readonly ToolbarPart[] = [
   "actions",
-  "bullets",
-  "align",
-  "color",
-  "size",
-  "styles",
   "icon",
   "chart",
   "table",
@@ -26,6 +21,11 @@ export const foldOrder: readonly ToolbarPart[] = [
   "shape",
   "number",
   "text",
+  "bullets",
+  "align",
+  "color",
+  "size",
+  "styles",
 ]
 
 export type ToolbarFold = { readonly row: readonly ToolbarPart[]; readonly more: readonly ToolbarPart[] }
@@ -36,4 +36,20 @@ export function toolbarFold(present: readonly ToolbarPart[], fold: number): Tool
     row: present.filter((part) => !folded.has(part)),
     more: present.filter((part) => folded.has(part)),
   }
+}
+
+export function toolbarParts({
+  panel,
+  slideNumber,
+  format,
+  actions,
+}: {
+  readonly panel: "agent" | "design" | "none"
+  readonly slideNumber: boolean
+  readonly format: boolean
+  readonly actions: boolean
+}): readonly ToolbarPart[] {
+  const inserts = insertParts.filter((part) => part !== "number" || slideNumber)
+  if (!format || panel === "design") return inserts
+  return actions ? [...inserts, ...formatParts, ...actionParts] : [...inserts, ...formatParts]
 }
