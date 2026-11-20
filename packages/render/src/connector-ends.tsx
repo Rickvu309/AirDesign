@@ -1,10 +1,15 @@
 import { route, type Bound, type ElementId, type Place, type Spot } from "@airdesign/document"
-import { useState, type CSSProperties, type PointerEvent } from "react"
-import { ownBox, travelled } from "./box-gesture.js"
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react"
+import { emuOf, ownBox, travelled, type Point } from "./box-gesture.js"
 import { aimAt, endsOf, paintPlace, type Aim, type End } from "./connector-drag.js"
+import { snapConnectorEnd, type EndModifiers } from "./connector-snap.js"
+import { snapTargets } from "./drag-snap.js"
+import type { GuideBoard } from "./guide-layer.js"
 import { liveBox } from "./live-box.js"
 import { useBox } from "./element-view.js"
+import { oncePerFrame } from "./once-per-frame.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
+import { reachOf, type Guide } from "./snapping.js"
 import type { PaintStore } from "./store.js"
 import type { Scaled } from "./text-look.js"
 
@@ -13,7 +18,7 @@ const ends: readonly End[] = ["start", "end"]
 
 type Aiming = { readonly end: End; readonly from: Spot; readonly at: Spot; readonly aim: Aim | null }
 
-type Client = { readonly clientX: number; readonly clientY: number }
+type ResolvedEnd = Aiming & { readonly guides: readonly Guide[] }
 
 export type EndDrop = Bound | Place
 
@@ -41,11 +46,14 @@ export function ConnectorEnds(props: {
   readonly id: ElementId
   readonly scaled: Scaled
   readonly width: number
+  readonly guides?: GuideBoard
   readonly onConnect: (id: ElementId, end: End, to: EndDrop) => void
 }) {
-  const { store, slide, element, id, scaled, width, onConnect } = props
+  const { store, slide, element, id, scaled, width, guides, onConnect } = props
   const box = ownBox(element, useBox(store, id))
   const [aiming, setAiming] = useState<Aiming | null>(null)
+  const cancelling = useRef<(() => void) | null>(null)
+  useEffect(() => () => cancelling.current?.(), [])
   if (box === null) return null
   const spots = endsOf(box)
   const reach = (reachPixels * slide.width) / width
@@ -56,42 +64,110 @@ export function ConnectorEnds(props: {
     if (event.button !== 0 || surface === null) return
     event.preventDefault()
     event.stopPropagation()
+    cancelling.current?.()
+    guides?.show([])
     const pointer = event.pointerId
-    const pressed = { x: event.clientX, y: event.clientY }
+    const pressed: Point = { x: event.clientX, y: event.clientY }
     const from = end === "start" ? spots.end : spots.start
-    const aimed = (client: Client): Aiming => {
+    const targets = snapTargets(slide, store, [id])
+    const snapReachEmu = reachOf(width, slide.width)
+    let lastPoint = pressed
+    let lastModifiers: EndModifiers = { shiftKey: event.shiftKey, ctrlKey: event.ctrlKey }
+    let moved = false
+
+    const resolve = (point: Point, modifiers: EndModifiers, active: boolean): ResolvedEnd => {
       const frame = surface.getBoundingClientRect()
-      const at = {
-        x: ((client.clientX - frame.left) * slide.width) / width,
-        y: ((client.clientY - frame.top) * slide.width) / width,
+      const raw: Spot = {
+        x: emuOf(point.x - frame.left, width, slide),
+        y: emuOf(point.y - frame.top, width, slide),
       }
-      return { end, from, at, aim: aimAt(slide.elements, element, at, reach, placed) }
+      if (!active) return { end, from, at: raw, aim: null, guides: [] }
+      const aim = modifiers.ctrlKey || modifiers.shiftKey ? null : aimAt(slide.elements, element, raw, reach, placed)
+      if (aim !== null && aim.site !== null) {
+        const spot = aim.sites[aim.site]
+        return { end, from, at: spot ?? raw, aim, guides: [] }
+      }
+      const snapped = snapConnectorEnd(from, raw, targets, snapReachEmu, modifiers)
+      return { end, from, at: snapped.at, aim, guides: snapped.guides }
     }
+
+    const apply = (point: Point, modifiers: EndModifiers) => {
+      const next = resolve(point, modifiers, moved)
+      setAiming({ end: next.end, from: next.from, at: next.at, aim: next.aim })
+      guides?.show(next.guides)
+    }
+
+    const painting = oncePerFrame(
+      ({ point, modifiers }: { readonly point: Point; readonly modifiers: EndModifiers }) => {
+        apply(point, modifiers)
+      },
+    )
+
     const document = surface.ownerDocument
-    function move(next: globalThis.PointerEvent) {
-      if (next.pointerId === pointer) setAiming(aimed(next))
-    }
+
     function stop() {
+      painting.drop()
       document.removeEventListener("pointermove", move)
       document.removeEventListener("pointerup", up)
       document.removeEventListener("pointercancel", lost)
+      document.removeEventListener("keydown", keyed, true)
+      document.removeEventListener("keyup", keyed, true)
+      cancelling.current = null
+      guides?.show([])
       setAiming(null)
     }
+
+    function move(next: globalThis.PointerEvent) {
+      if (next.pointerId !== pointer) return
+      lastPoint = { x: next.clientX, y: next.clientY }
+      lastModifiers = { shiftKey: next.shiftKey, ctrlKey: next.ctrlKey }
+      if (!moved && travelled(pressed, lastPoint)) moved = true
+      painting.push({ point: lastPoint, modifiers: lastModifiers })
+    }
+
+    function keyed(next: globalThis.KeyboardEvent) {
+      if (next.type === "keydown" && next.key === "Escape") {
+        next.preventDefault()
+        next.stopPropagation()
+        stop()
+        return
+      }
+      if (next.key !== "Shift" && next.key !== "Control") return
+      lastModifiers = { shiftKey: next.shiftKey, ctrlKey: next.ctrlKey }
+      if (!moved) return
+      painting.drop()
+      apply(lastPoint, lastModifiers)
+    }
+
     function up(next: globalThis.PointerEvent) {
       if (next.pointerId !== pointer) return
-      const { aim, at } = aimed(next)
+      const upPoint: Point = { x: next.clientX, y: next.clientY }
+      const upModifiers: EndModifiers = { shiftKey: next.shiftKey, ctrlKey: next.ctrlKey }
+      const dragged = moved || travelled(pressed, upPoint)
+      const resolved = resolve(upPoint, upModifiers, dragged)
       stop()
-      if (aim !== null && aim.site !== null) onConnect(id, end, { node: aim.node, site: aim.site })
-      else if (box !== null && travelled(pressed, { x: next.clientX, y: next.clientY }))
-        onConnect(id, end, end === "start" ? route(paintPlace(box), at, from) : route(paintPlace(box), from, at))
+      if (!dragged) return
+      if (resolved.aim !== null && resolved.aim.site !== null)
+        onConnect(id, end, { node: resolved.aim.node, site: resolved.aim.site })
+      else if (box !== null)
+        onConnect(
+          id,
+          end,
+          end === "start" ? route(paintPlace(box), resolved.at, from) : route(paintPlace(box), from, resolved.at),
+        )
     }
+
     function lost(next: globalThis.PointerEvent) {
       if (next.pointerId === pointer) stop()
     }
+
+    cancelling.current = stop
     document.addEventListener("pointermove", move)
     document.addEventListener("pointerup", up)
     document.addEventListener("pointercancel", lost)
-    setAiming(aimed(event))
+    document.addEventListener("keydown", keyed, true)
+    document.addEventListener("keyup", keyed, true)
+    setAiming({ end, from, at: spots[end], aim: null })
   }
 
   const aim = aiming?.aim ?? null
