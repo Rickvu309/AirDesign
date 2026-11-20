@@ -87,6 +87,10 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
           restore-keys: spec-results-
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'source'
+        uses: ./.github/actions/vitest-cache
+        with:
+          phase: restore
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/postgres
       - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
@@ -104,6 +108,10 @@ jobs:
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'source' && !cancelled()
+        uses: ./.github/actions/vitest-cache
+        with:
+          phase: save
       - if: github.event_name == 'merge_group' && matrix.part == 'source'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         continue-on-error: true
