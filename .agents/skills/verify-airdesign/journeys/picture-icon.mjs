@@ -91,7 +91,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const design = read.elements.find((element) => element.node === node)?.design
   expect(design).toBe("fills image · fills.source rocket · identity.alt A rocket lifting off")
   note(`read_deck prints ${node} as: ${design}`)
-  await expect.poll(async () => (await look(shape)).image).toContain("blob:")
+  await expect.poll(async () => (await look(shape)).image).toContain("data:image/svg+xml")
   await expect.poll(async () => (await look(shape)).label).toBe("A rocket lifting off")
   await capture("agent-icon")
   note("The open editor painted the agent's rocket icon as a vector, named by its alt text, before any reload")
@@ -163,7 +163,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.locator("input[type=file]").setInputFiles(exported)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
-  await expect.poll(async () => (await look(shape)).image).toContain("blob:")
+  await expect.poll(async () => (await look(shape)).image).toContain("data:image/svg+xml")
   await expect.poll(async () => (await look("4")).filter).toBe("grayscale(1)")
   await capture("reopened")
   note("The exported file opened again with both icons painted and the photo cropped and gray")

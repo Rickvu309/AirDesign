@@ -1,4 +1,4 @@
-import { drawablePicture, rasterDimensions, type PaintElement } from "@airdesign/pptx"
+import { drawablePicture, iconOfPart, rasterDimensions, type PaintElement } from "@airdesign/pptx"
 import { reweighedIcon } from "@/icon-weight"
 
 export type PictureImage = NonNullable<PaintElement["image"]>
@@ -35,6 +35,12 @@ const browserAddress: PictureAddress = {
 
 type Made = { readonly bytes: Uint8Array; readonly url: string; size?: Dimensions | null }
 
+const iconPrefix = "data:image/svg+xml;charset=utf-8,"
+
+function iconAddress(bytes: Uint8Array): string {
+  return `${iconPrefix}${encodeURIComponent(new TextDecoder().decode(bytes))}`
+}
+
 function copied(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)
@@ -59,6 +65,11 @@ export function pictureSources(
     const type = image.contentType?.toLowerCase() ?? ""
     const bytes = parts.get(image.part) ?? reweighedIcon(image.part, parts)
     if (bytes === undefined) return null
+    if (iconOfPart(image.part) !== null && type === "image/svg+xml") {
+      const url = iconAddress(bytes)
+      made.set(image.part, { bytes, url })
+      return url
+    }
     const blob = drawable.has(type) ? new Blob([copied(bytes)], { type }) : drawnBlob(bytes)
     if (blob === null) return null
     const url = address.create(blob)
@@ -75,7 +86,7 @@ export function pictureSources(
   return {
     src,
     release() {
-      for (const each of made.values()) address.revoke(each.url)
+      for (const each of made.values()) if (!each.url.startsWith(iconPrefix)) address.revoke(each.url)
       made.clear()
     },
     carried(next) {

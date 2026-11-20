@@ -33,5 +33,5 @@ Preconditions:
 ## Gotchas
 
 - `page.waitForEvent("filechooser")` before the click or the Enter, then `setFiles`.
-- A painted picture is a frame whose `background-image` is a `blob:` address; poll for it with `getComputedStyle`, not for an `img`.
+- A painted picture is a frame whose `background-image` is a `blob:` address, or a `data:image/svg+xml` address for an icon; poll for it with `getComputedStyle`, not for an `img`.
 - On a slide already holding a title, a subtitle and a table, `picture.png` has no clear space and covers the title; click elements under it through the slide list and the keyboard, or add the picture last.
