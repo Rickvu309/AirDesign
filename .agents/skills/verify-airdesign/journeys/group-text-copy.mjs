@@ -4,7 +4,6 @@ import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
 import { productCopy, readPictureToolCopy, shortcutCopy, transitionCopy, undoCopy } from "../bin/product-copy.mjs"
 
-const iconCopy = readPictureToolCopy()
 const shift = shortcutCopy.chord.other.shift
 const exportName = shortcutCopy.gestures.export
 
@@ -12,6 +11,7 @@ const words = "Market context and sizing"
 const part = "ppt/slides/slide1.xml"
 
 export default async function drive({ repo, page, signIn, capture, note }) {
+  const iconCopy = readPictureToolCopy()
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   await signIn()
   await page.goto("/")

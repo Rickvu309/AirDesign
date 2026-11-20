@@ -1,12 +1,11 @@
 import { expect } from "@playwright/test"
 import { productCopy, readPictureToolCopy, transitionCopy } from "../../bin/product-copy.mjs"
 
-const iconCopy = readPictureToolCopy()
-
 const words = "Market context and sizing"
 const label = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#7"]'
 
 async function drive(kit) {
+  const iconCopy = readPictureToolCopy()
   const { page } = kit
   await kit.signIn()
   await page.goto(".")
