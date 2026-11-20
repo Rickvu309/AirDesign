@@ -19,6 +19,7 @@ export const elementNames: Readonly<Record<Exclude<ElementChange["change"], "ord
   ungroup: "ungroup",
   frame: "add-auto-layout",
   join: "layer-order",
+  "plain-frame": "frame",
 }
 
 export const stackNames: Readonly<Record<StackMove, UndoName>> = {

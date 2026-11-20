@@ -46,6 +46,7 @@ for (const name of [
   "shape-insert",
   "element-order",
   "layers-panel",
+  "layer-shortcuts",
   "slide-background",
   "shape-fill",
   "border-style",

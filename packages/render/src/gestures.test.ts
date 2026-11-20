@@ -7,7 +7,7 @@ function pressOf(keys: Keys): KeyLike {
   return {
     key: "key" in keys ? keys.key : "",
     code: "code" in keys ? keys.code : "",
-    metaKey: false,
+    metaKey: keys.meta === true,
     ctrlKey: keys.mod === true || keys.ctrl === true,
     altKey: keys.alt === true,
     shiftKey: keys.shift === true,
@@ -96,7 +96,30 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "}", code: "BracketRight", ctrlKey: true, shiftKey: true }, "element")).toBe(
       "front",
     )
+    expect(gestureFor({ ...plain, key: "]", code: "BracketRight" }, "element")).toBe("front")
+    expect(gestureFor({ ...plain, key: "[", code: "BracketLeft" }, "element")).toBe("back")
+    expect(gestureFor({ ...plain, key: "’", code: "BracketRight", metaKey: true, altKey: true }, "element")).toBe(
+      "front",
+    )
+    expect(gestureFor({ ...plain, key: "“", code: "BracketLeft", metaKey: true, altKey: true }, "element")).toBe("back")
+    expect(gestureFor({ ...plain, key: "]", code: "BracketRight", ctrlKey: true, altKey: true }, "element")).toBeNull()
+    expect(gestureFor({ ...plain, key: "[", code: "BracketLeft", ctrlKey: true, altKey: true }, "element")).toBeNull()
+    expect(gestureFor({ ...plain, key: "}", code: "BracketRight", shiftKey: true }, "element")).toBeNull()
+    expect(gestureFor({ ...plain, key: "]", code: "BracketRight" }, "text")).toBeNull()
+    expect(gestureFor({ ...plain, key: "[", code: "BracketLeft" }, "text")).toBeNull()
     expect(gestureFor({ ...plain, key: "G", code: "KeyG", metaKey: true, shiftKey: true }, "element")).toBe("ungroup")
+  })
+
+  it("frames the selection with Ctrl+Alt+G or Cmd+Option+G and renames with Cmd or Ctrl+R", () => {
+    expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "element")).toBe("frame")
+    expect(gestureFor({ ...plain, key: "©", code: "KeyG", metaKey: true, altKey: true }, "element")).toBe("frame")
+    expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "text")).toBeNull()
+    expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "r", code: "KeyR", ctrlKey: true }, "editor")).toBe("rename")
+    expect(gestureFor({ ...plain, key: "r", code: "KeyR", metaKey: true }, "editor")).toBe("rename")
+    expect(gestureFor({ ...plain, key: "R", code: "KeyR", ctrlKey: true, shiftKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "r", code: "KeyR", ctrlKey: true, altKey: true }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "r", code: "KeyR", ctrlKey: true }, "text")).toBeNull()
   })
 
   it("moves a slide earlier or later with command or control and a bracket", () => {

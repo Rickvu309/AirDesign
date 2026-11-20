@@ -336,8 +336,10 @@ export function refrozenRows(register: Register, node: ElementId): readonly Plac
   const origin = frameOrigin(register, node, made)
   return frameMembers(register, node).flatMap((member): PlacedRow[] => {
     const sides = traitNow(register, member.node, "box")
-    if (typeof sides.x !== "number" || typeof sides.y !== "number") return []
-    return [{ node: member.node, patch: { box: { x: { set: sides.x - origin.x }, y: { set: sides.y - origin.y } } } }]
+    const box: Record<string, FieldEdit<number>> = {}
+    if (typeof sides.x === "number") box.x = { set: sides.x - origin.x }
+    if (typeof sides.y === "number") box.y = { set: sides.y - origin.y }
+    return Object.keys(box).length === 0 ? [] : [{ node: member.node, patch: { box } }]
   })
 }
 

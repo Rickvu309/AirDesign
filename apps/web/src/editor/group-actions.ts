@@ -6,6 +6,7 @@ import {
   elementId,
   groupOf,
   nextElementId,
+  plainFrameTurn,
   readSlideId,
   shapeOf,
   slideUndoable,
@@ -30,6 +31,7 @@ export type GroupChange =
   | { readonly change: "group"; readonly nodes: readonly ElementId[] }
   | { readonly change: "ungroup"; readonly node: ElementId }
   | { readonly change: "frame"; readonly nodes: readonly ElementId[] }
+  | { readonly change: "plain-frame"; readonly nodes: readonly ElementId[] }
 
 function reflowRows(register: Register, nodes: readonly ElementId[]): readonly Command[] | null {
   const [frame] = nodes
@@ -64,6 +66,7 @@ export function groupCommands(parts: Parts, register: Register, change: GroupCha
     return command === null ? null : [{ command: "slide", file, edit: command }]
   }
   const backdrop = elementId(`${slide}.${String(Number(shapeOf(node).shape) + 1)}`)
+  if (change.change === "plain-frame") return plainFrameTurn(register, file, slide, node, backdrop, change.nodes)
   const framed = changeLayout(register, { wrap: change.nodes, slide, node, backdrop })
   return framed === null || !("slide" in framed) ? null : [{ command: "slide", file, edit: framed.slide }]
 }

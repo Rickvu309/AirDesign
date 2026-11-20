@@ -223,7 +223,11 @@ describe("canvas keyboard", () => {
     await press(frame, "keydown", "{", { code: "BracketLeft", ctrlKey: true, shiftKey: true })
     await press(frame, "keydown", "]", { code: "BracketRight", metaKey: true, shiftKey: true })
     await press(frame, "keydown", "]", { code: "BracketRight", ctrlKey: true, altKey: true })
-    expect(ordered).toEqual(["front", "forward", "backward", "back", "front"])
+    await press(frame, "keydown", "]", { code: "BracketRight" })
+    await press(frame, "keydown", "[", { code: "BracketLeft" })
+    await press(frame, "keydown", "’", { code: "BracketRight", metaKey: true, altKey: true })
+    await press(frame, "keydown", "“", { code: "BracketLeft", metaKey: true, altKey: true })
+    expect(ordered).toEqual(["front", "forward", "backward", "back", "front", "front", "back", "front", "back"])
     expect(announced(host)).toBe("Brought to front")
     await act(async () => {
       root.render(
@@ -240,6 +244,54 @@ describe("canvas keyboard", () => {
     const text = host.querySelector<HTMLElement>("[contenteditable='true']")
     if (text === null) throw new Error("no text")
     await press(text, "keydown", "}", { code: "BracketRight", ctrlKey: true, shiftKey: true })
-    expect(ordered).toEqual(["front", "forward", "backward", "back", "front"])
+    await press(text, "keydown", "]", { code: "BracketRight" })
+    await press(text, "keydown", "[", { code: "BracketLeft" })
+    expect(ordered).toEqual(["front", "forward", "backward", "back", "front", "front", "back", "front", "back"])
+  })
+
+  it("wraps the selection in a plain frame on Ctrl+Alt+G or Cmd+Option+G and leaves text editing alone", async () => {
+    const framed: (readonly ElementId[])[] = []
+    const store = paintStore()
+    store.publish({ id, kind: "shape", text: "Quarterly results" })
+    const host = document.createElement("div")
+    document.body.append(host)
+    const root = createRoot(host)
+    hosts.push({ host, root })
+    const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements: [shape] }
+    await act(async () => {
+      root.render(
+        createElement(SlideCanvas, {
+          store,
+          slide,
+          width: 800,
+          onBoxes: () => undefined,
+          onPlainFrame: (ids: readonly ElementId[]) => framed.push(ids),
+        }),
+      )
+    })
+    const frame = host.querySelector<HTMLElement>(`[data-canvas-element="${key}"]`)
+    if (frame === null) throw new Error("no frame")
+    await act(async () => {
+      frame.focus()
+    })
+    await press(frame, "keydown", "g", { code: "KeyG", ctrlKey: true, altKey: true })
+    await press(frame, "keydown", "©", { code: "KeyG", metaKey: true, altKey: true })
+    expect(framed).toEqual([[id], [id]])
+    await act(async () => {
+      root.render(
+        createElement(SlideCanvas, {
+          store,
+          slide: { ...slide, elements: [{ ...shape, editable: true }] },
+          width: 800,
+          onBoxes: () => undefined,
+          onEdit: () => undefined,
+          onPlainFrame: (ids: readonly ElementId[]) => framed.push(ids),
+        }),
+      )
+    })
+    const text = host.querySelector<HTMLElement>("[contenteditable='true']")
+    if (text === null) throw new Error("no text")
+    await press(text, "keydown", "g", { code: "KeyG", ctrlKey: true, altKey: true })
+    expect(framed).toEqual([[id], [id]])
   })
 })

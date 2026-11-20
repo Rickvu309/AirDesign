@@ -1,6 +1,12 @@
 export type Where = "slide" | "element" | "text" | "slides" | "grid" | "editor" | "show"
 
-type Chord = { readonly mod?: true; readonly ctrl?: true; readonly shift?: true; readonly alt?: true }
+type Chord = {
+  readonly mod?: true
+  readonly ctrl?: true
+  readonly meta?: true
+  readonly shift?: true
+  readonly alt?: true
+}
 
 export type Keys = Chord & ({ readonly key: string } | { readonly code: string })
 
@@ -139,11 +145,31 @@ export const gestures = [
   { id: "flip-vertical", group: "size", keys: [{ code: "KeyV", shift: true }], where: ["element"] },
   { id: "forward", group: "arrange", keys: [{ code: "BracketRight", mod: true }], where: ["element"] },
   { id: "backward", group: "arrange", keys: [{ code: "BracketLeft", mod: true }], where: ["element"] },
-  { id: "front", group: "arrange", keys: [{ code: "BracketRight", mod: true, shift: true }], where: ["element"] },
-  { id: "back", group: "arrange", keys: [{ code: "BracketLeft", mod: true, shift: true }], where: ["element"] },
+  {
+    id: "front",
+    group: "arrange",
+    keys: [
+      { code: "BracketRight" },
+      { code: "BracketRight", mod: true, shift: true },
+      { code: "BracketRight", meta: true, alt: true },
+    ],
+    where: ["element"],
+  },
+  {
+    id: "back",
+    group: "arrange",
+    keys: [
+      { code: "BracketLeft" },
+      { code: "BracketLeft", mod: true, shift: true },
+      { code: "BracketLeft", meta: true, alt: true },
+    ],
+    where: ["element"],
+  },
   { id: "group", group: "arrange", keys: [{ code: "KeyG", mod: true }], where: ["element"] },
   { id: "ungroup", group: "arrange", keys: [{ code: "KeyG", mod: true, shift: true }], where: ["element"] },
+  { id: "frame", group: "arrange", keys: [{ code: "KeyG", mod: true, alt: true }], where: ["element"] },
   { id: "auto-layout", group: "arrange", keys: [{ code: "KeyA", shift: true }], where: ["element"] },
+  { id: "rename", group: "arrange", keys: [{ code: "KeyR", mod: true }], where: ["editor"] },
   { id: "hide", group: "arrange", keys: [{ code: "KeyH", mod: true, shift: true }], where: ["editor"] },
   { id: "lock", group: "arrange", keys: [{ code: "KeyL", mod: true, shift: true }], where: ["editor"] },
   { id: "undo", group: "history", keys: [{ key: "z", mod: true }], where: ["editor"] },
@@ -257,7 +283,12 @@ function printed(key: string): boolean {
 
 function chorded(keys: Keys, event: KeyLike): boolean {
   const mod = event.metaKey || event.ctrlKey
-  const held = keys.ctrl === true ? event.ctrlKey && !event.metaKey : mod === (keys.mod === true)
+  const held =
+    keys.ctrl === true
+      ? event.ctrlKey && !event.metaKey
+      : keys.meta === true
+        ? event.metaKey && !event.ctrlKey
+        : mod === (keys.mod === true)
   return held && event.altKey === (keys.alt === true)
 }
 

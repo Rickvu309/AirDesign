@@ -8,7 +8,7 @@ import { deviceScope } from "@/design/trait-edit"
 import { layerTree, type Layer } from "@/editor/layer-tree"
 import { setLayerFlag } from "@/editor/layer-flags"
 import { layerJoins } from "@/editor/layer-join"
-import { LayersPanel, type LayerPick } from "@/editor/layers-panel"
+import { LayersPanel, type LayerPick, type RenameRequest } from "@/editor/layers-panel"
 import { fieldsOf } from "@/editor/panel-fields"
 import { slideLayerRows, type LayerLook } from "@/editor/slide-layers"
 import type { ElementChange } from "@/element-edit"
@@ -67,9 +67,13 @@ function canvasFrame(slide: CanvasSlide | null, node: ElementId): HTMLElement | 
 export function LiveLayers({
   deck,
   onHover,
+  rename,
+  onRenameStarted,
 }: {
   readonly deck: LayeringDeck
   readonly onHover: (node: ElementId | null) => void
+  readonly rename?: RenameRequest | null
+  readonly onRenameStarted?: () => void
 }) {
   const tree = useSlideTree(deck)
   const canvas = deck.shown.canvases.current(deck.shown.current)
@@ -93,6 +97,8 @@ export function LiveLayers({
       layers={{
         tree,
         selected: selection.ids,
+        ...(rename === undefined ? {} : { rename }),
+        ...(onRenameStarted === undefined ? {} : { onRenameStarted }),
         onSelect: select,
         onHover,
         onRename: (node, name) => changeDesign(deck, () => ({ target: { node }, identity: { name } })),
@@ -102,6 +108,8 @@ export function LiveLayers({
           const register = deck.shown.shownRegister.current
           return register !== null && layerJoins(deck.shown.shownParts.current, register, node, parent)
         },
+        onStack: (node, move) => void deck.changeElement({ change: "order", node, move }),
+        onFrame: (nodes) => void deck.changeElement({ change: "plain-frame", nodes }),
         onFlag: (nodes, flag, on) => setLayerFlag(deck, nodes, flag, on),
       }}
     />

@@ -24,6 +24,7 @@ export type UndoName =
   | "layer-order"
   | "group"
   | "ungroup"
+  | "frame"
   | "add-auto-layout"
   | "remove-auto-layout"
   | "template"
@@ -82,6 +83,7 @@ export const undoCopy = {
     "layer-order": "Undo layer order",
     group: "Undo group",
     ungroup: "Undo ungroup",
+    frame: "Undo frame selection",
     "add-auto-layout": "Undo add auto layout",
     "remove-auto-layout": "Undo remove auto layout",
     template: "Undo template style",
@@ -137,6 +139,7 @@ export const undoCopy = {
     "layer-order": "Redo layer order",
     group: "Redo group",
     ungroup: "Redo ungroup",
+    frame: "Redo frame selection",
     "add-auto-layout": "Redo add auto layout",
     "remove-auto-layout": "Redo remove auto layout",
     template: "Redo template style",

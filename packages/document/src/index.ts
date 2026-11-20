@@ -220,6 +220,7 @@ export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 export { fittedBox } from "./group-space.js"
 export { spotNow } from "./group-join.js"
+export { plainFrameTurn } from "./plain-frame.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
 export { measureDue, measureOwed, measureStale } from "./frame-measure.js"
 export { regroupTurn, ungroupTurn } from "./group-turn.js"
