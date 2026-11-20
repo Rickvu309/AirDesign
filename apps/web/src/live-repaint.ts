@@ -17,10 +17,12 @@ import type { NumberedText } from "@/numbered-text"
 export type BusyElements = {
   readonly hold: (id: ElementId) => () => void
   readonly has: (id: ElementId) => boolean
+  readonly missed: (id: ElementId) => void
 }
 
-export function busyElements(): BusyElements {
+export function busyElements(freed: (id: ElementId) => void = () => undefined): BusyElements {
   const holds = new Map<ElementId, number>()
+  const skipped = new Set<ElementId>()
   return {
     hold(id) {
       holds.set(id, (holds.get(id) ?? 0) + 1)
@@ -29,11 +31,18 @@ export function busyElements(): BusyElements {
         if (!held) return
         held = false
         const left = (holds.get(id) ?? 1) - 1
-        if (left > 0) holds.set(id, left)
-        else holds.delete(id)
+        if (left > 0) {
+          holds.set(id, left)
+          return
+        }
+        holds.delete(id)
+        if (skipped.delete(id)) freed(id)
       }
     },
     has: (id) => holds.has(id),
+    missed(id) {
+      if (holds.has(id)) skipped.add(id)
+    },
   }
 }
 
@@ -72,15 +81,21 @@ export function liveRepaint(
 ): (register: Register, from?: "person") => void {
   const landed = new Map<ElementId, Landed>()
   for (const [id, file] of files)
-    landed.set(id, { text: numberText(id, shownValue(painted, id, file)), box: landedBox(painted, id) })
+    if (!busy.has(id))
+      landed.set(id, { text: numberText(id, shownValue(painted, id, file)), box: landedBox(painted, id) })
   return (register, from) => {
     for (const [id, file] of files) {
       const record = store.getElement(id)
-      if (record === null || (from !== "person" && busy.has(id))) continue
+      if (record === null) continue
+      if (from !== "person" && busy.has(id)) {
+        busy.missed(id)
+        landed.delete(id)
+        continue
+      }
       const before = from === "person" ? { text: record.text, box: store.getBox(id) } : landed.get(id)
       const text = numberText(id, shownValue(register, id, file))
       const box = landedBox(register, id)
-      if (before?.text !== text) store.publish({ ...record, text })
+      if ((before?.text ?? record.text) !== text) store.publish({ ...record, text })
       if (before === undefined || !sameBox(before.box, box)) store.placeBox(id, box)
       landed.set(id, { text, box })
     }

@@ -61,7 +61,8 @@ export function useDeckPaint(
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
   const painted = useRef<Painted | null>(null)
-  const busy = useRef(busyElements())
+  const freed = useRef<() => void>(() => undefined)
+  const busy = useRef(busyElements(() => freed.current()))
   const structure = useRef("")
   const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
@@ -129,6 +130,13 @@ export function useDeckPaint(
     void pictureTool.store.load(id, register, next.display).then((more) => {
       if (more && structure.current === structureOf(framed, bound.current)) showRegister(shownRegister.current)
     })
+  }
+
+  freed.current = () => void showFreed()
+
+  async function showFreed() {
+    const next = await connect(memoryRemote()).openDeck(id)
+    if (next.ok) repaint.current(next.register)
   }
 
   async function showEdited(currentIndex: number, whole?: "whole") {
