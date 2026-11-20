@@ -139,6 +139,7 @@ test("pinch paints immediately and writes storage once after thirty events", asy
 })
 
 test("Shift wheel and arrows with no slide focused pan, while focused arrows move between slides", async ({ page }) => {
+  covers("pan-arrows")
   await openFile(page, { name: "seven.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   const host = page.locator("[data-grid-viewport]")

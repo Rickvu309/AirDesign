@@ -6,6 +6,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { connectionCopy } from "../../apps/web/src/copy/connection-copy.ts"
 import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
+import { covers } from "./gesture"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/nasa-1d-cnn.pptx")
 const notes = "Lead with the trend, then the number."
@@ -33,6 +34,7 @@ function current(page: Page) {
 test("Present shows the deck full screen, steps with the keys a presenter uses and lands where it stopped", async ({
   page,
 }) => {
+  covers("show-next", "show-previous", "show-number", "show-go", "show-erase", "show-last", "show-first", "show-stop")
   await opened(page)
   await page.locator('[data-slide-entry="2"]').click()
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
@@ -79,6 +81,7 @@ test("Present shows the deck full screen, steps with the keys a presenter uses a
 })
 
 test("the presenter view shows the speaker notes, the next slide and the time", async ({ page }) => {
+  covers("present-here", "show-presenter")
   await opened(page)
   await page.locator('[data-slide-entry="3"]').click()
   if ((await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).count()) === 0)

@@ -10,6 +10,7 @@ import { colorWords } from "./color-words"
 import { fixtures, openDeck, pickColor, settled } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
+import { covers } from "./gesture"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -17,6 +18,7 @@ test("selects three matching footers, updates them while offline, and undoes eac
   page,
   context,
 }, testInfo) => {
+  covers("select-matching")
   await openDeck(page, "clean.pptx")
   const names = await colorWords("clean.pptx")
   const footer = shapeAt(page, "2")

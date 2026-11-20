@@ -1,4 +1,4 @@
-import type { PaintBox } from "@airdesign/render"
+import { gestureFor, releases, type PaintBox } from "@airdesign/render"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
   createElement,
@@ -53,8 +53,6 @@ function unionBounds(boxes: readonly { left: number; top: number; width: number;
   }
   return { left, top, width: right - left, height: bottom - top }
 }
-
-const arrowKeys = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"])
 
 function typing(target: Element): boolean {
   return (
@@ -178,8 +176,7 @@ export function useGridViewport({
     }
     function down(event: KeyboardEvent) {
       if (!editorOwnsKey(event)) return
-      if (event.ctrlKey || event.metaKey || event.altKey) return
-      if (event.code === "Space") {
+      if (gestureFor(event, "editor") === "pan") {
         if (!spacePans(event.target, viewport.current)) return
         event.preventDefault()
         event.stopPropagation()
@@ -187,13 +184,13 @@ export function useGridViewport({
         setSpace(true)
         return
       }
-      if (event.shiftKey || !arrowKeys.has(event.key) || !canvasKeyTarget(event.target, viewport.current)) return
+      if (gestureFor(event, "grid") !== "pan-arrows" || !canvasKeyTarget(event.target, viewport.current)) return
       event.preventDefault()
       paint(arrowGrid(view.current, event.key))
       settle()
     }
     function up(event: KeyboardEvent) {
-      if (event.code === "Space") release()
+      if (releases(event, "pan")) release()
     }
     window.addEventListener("keydown", down, true)
     window.addEventListener("keyup", up, true)

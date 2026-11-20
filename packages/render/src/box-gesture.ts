@@ -1,5 +1,6 @@
 import type { Box, ElementId } from "@airdesign/document"
 import type { PaintBox } from "./record.js"
+import { arrowOf } from "./gestures.js"
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
@@ -20,13 +21,6 @@ export const minimumSide = 228_600
 export const nudgeStep = 12_700
 export const largeNudgeStep = 127_000
 export const dragThreshold = 3
-
-const arrows = new Map<string, Point>([
-  ["ArrowLeft", { x: -1, y: 0 }],
-  ["ArrowRight", { x: 1, y: 0 }],
-  ["ArrowUp", { x: 0, y: -1 }],
-  ["ArrowDown", { x: 0, y: 1 }],
-])
 
 const upright = { rotation: 0, flipH: false, flipV: false }
 
@@ -75,17 +69,9 @@ export function movedBoxes(
   return new Map([...starts].map(([id, start]) => [id, { ...start, x: start.x + across, y: start.y + down }]))
 }
 
-export function isArrow(key: string): boolean {
-  return arrows.has(key)
-}
-
-export function arrowOf(key: string): Point | null {
-  return arrows.get(key) ?? null
-}
-
 export function nudgedBox(start: Box, key: string, large: boolean, slide: SlideSize): Box | null {
-  const arrow = arrows.get(key)
-  if (arrow === undefined) return null
+  const arrow = arrowOf(key)
+  if (arrow === null) return null
   const step = large ? largeNudgeStep : nudgeStep
   return movedBox(start, arrow.x * step, arrow.y * step, slide)
 }
@@ -96,8 +82,8 @@ export function nudgedBoxes(
   large: boolean,
   slide: SlideSize,
 ): ReadonlyMap<ElementId, Box> | null {
-  const arrow = arrows.get(key)
-  if (arrow === undefined) return null
+  const arrow = arrowOf(key)
+  if (arrow === null) return null
   const step = large ? largeNudgeStep : nudgeStep
   return movedBoxes(starts, arrow.x * step, arrow.y * step, slide)
 }

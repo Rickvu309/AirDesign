@@ -1,4 +1,4 @@
-export type Where = "slide" | "element" | "text" | "slides" | "editor"
+export type Where = "slide" | "element" | "text" | "slides" | "grid" | "editor" | "show"
 
 type Chord = { readonly mod?: true; readonly ctrl?: true; readonly shift?: true; readonly alt?: true }
 
@@ -16,7 +16,7 @@ export type Pointing = {
 
 export type GestureRow = {
   readonly id: string
-  readonly group: "select" | "move" | "size" | "arrange" | "view" | "history" | "text" | "slides"
+  readonly group: "select" | "move" | "size" | "arrange" | "view" | "history" | "text" | "slides" | "present"
   readonly keys: readonly Keys[]
   readonly pointing?: readonly Pointing[]
   readonly where: readonly Where[]
@@ -31,7 +31,18 @@ export type KeyLike = {
   readonly shiftKey: boolean
 }
 
+export type ArrowStep = { readonly x: number; readonly y: number }
+
+const arrowSteps = new Map<string, ArrowStep>([
+  ["ArrowLeft", { x: -1, y: 0 }],
+  ["ArrowRight", { x: 1, y: 0 }],
+  ["ArrowUp", { x: 0, y: -1 }],
+  ["ArrowDown", { x: 0, y: 1 }],
+])
+
 const arrows = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"] as const
+
+const digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const
 
 export const gestures = [
   { id: "select", group: "select", keys: [], pointing: [{ on: "element", drag: false }], where: ["slide"] },
@@ -63,6 +74,13 @@ export const gestures = [
     ],
     where: ["slide"],
   },
+  {
+    id: "select-matching",
+    group: "select",
+    keys: [{ code: "KeyA", mod: true, alt: true }],
+    where: ["editor"],
+  },
+  { id: "select-all", group: "select", keys: [{ key: "a", mod: true }], where: ["grid"] },
   { id: "select-next", group: "select", keys: [{ key: "Tab" }, { key: "Tab", shift: true }], where: ["element"] },
   {
     id: "step-in",
@@ -165,6 +183,7 @@ export const gestures = [
   { id: "tool-move", group: "view", keys: [{ key: "v" }], where: ["editor"] },
   { id: "tool-hand", group: "view", keys: [{ key: "h" }], where: ["editor"] },
   { id: "pan", group: "view", keys: [{ code: "Space" }], where: ["editor"] },
+  { id: "pan-arrows", group: "view", keys: arrows.map((key) => ({ key })), where: ["grid"] },
   { id: "bold", group: "text", keys: [{ key: "b", mod: true }], where: ["element", "text"] },
   { id: "italic", group: "text", keys: [{ key: "i", mod: true }], where: ["element", "text"] },
   { id: "underline", group: "text", keys: [{ key: "u", mod: true }], where: ["element", "text"] },
@@ -188,6 +207,44 @@ export const gestures = [
     ],
     where: ["slides"],
   },
+  { id: "slide-open", group: "slides", keys: [{ key: "Enter" }], where: ["grid"] },
+  { id: "slide-earlier", group: "slides", keys: [{ key: "ArrowLeft", alt: true }], where: ["grid"] },
+  { id: "slide-later", group: "slides", keys: [{ key: "ArrowRight", alt: true }], where: ["grid"] },
+  {
+    id: "slide-menu",
+    group: "slides",
+    keys: [{ key: "ContextMenu" }, { key: "F10", shift: true }],
+    where: ["slides"],
+  },
+  { id: "present", group: "present", keys: [{ key: "F5" }], where: ["editor"] },
+  {
+    id: "present-here",
+    group: "present",
+    keys: [
+      { key: "F5", shift: true },
+      { key: "Enter", mod: true },
+    ],
+    where: ["editor"],
+  },
+  {
+    id: "show-next",
+    group: "present",
+    keys: [{ key: "ArrowRight" }, { key: "ArrowDown" }, { key: "PageDown" }, { key: " " }, { key: "n" }],
+    where: ["show"],
+  },
+  {
+    id: "show-previous",
+    group: "present",
+    keys: [{ key: "ArrowLeft" }, { key: "ArrowUp" }, { key: "PageUp" }],
+    where: ["show"],
+  },
+  { id: "show-first", group: "present", keys: [{ key: "Home" }], where: ["show"] },
+  { id: "show-last", group: "present", keys: [{ key: "End" }], where: ["show"] },
+  { id: "show-number", group: "present", keys: digits.map((key) => ({ key })), where: ["show"] },
+  { id: "show-go", group: "present", keys: [{ key: "Enter" }], where: ["show"] },
+  { id: "show-erase", group: "present", keys: [{ key: "Backspace" }], where: ["show"] },
+  { id: "show-stop", group: "present", keys: [{ key: "Escape" }], where: ["show"] },
+  { id: "show-presenter", group: "present", keys: [{ key: "p" }], where: ["show"] },
 ] as const satisfies readonly GestureRow[]
 
 export type GestureId = (typeof gestures)[number]["id"]
@@ -213,4 +270,17 @@ function pressed(keys: Keys, event: KeyLike): boolean {
 
 export function gestureFor(event: KeyLike, where: Where): GestureId | null {
   return rows.find((row) => row.where.includes(where) && row.keys.some((keys) => pressed(keys, event)))?.id ?? null
+}
+
+export function releases(event: { readonly key: string; readonly code?: string }, id: GestureId): boolean {
+  const row = rows.find((each) => each.id === id)
+  return (
+    row?.keys.some((keys) =>
+      "code" in keys ? event.code === keys.code : event.key.toLowerCase() === keys.key.toLowerCase(),
+    ) ?? false
+  )
+}
+
+export function arrowOf(key: string): ArrowStep | null {
+  return arrowSteps.get(key) ?? null
 }

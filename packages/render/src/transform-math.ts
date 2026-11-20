@@ -1,5 +1,6 @@
 import type { Box, ElementId } from "@airdesign/document"
-import { arrowOf, minimumSide, nudgeStep, type Corner, type Point } from "./box-gesture.js"
+import { minimumSide, nudgeStep, type Corner, type Point } from "./box-gesture.js"
+import { arrowOf } from "./gestures.js"
 
 export { minimumSide, type Corner, type Point } from "./box-gesture.js"
 

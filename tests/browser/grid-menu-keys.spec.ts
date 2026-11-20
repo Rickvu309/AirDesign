@@ -3,6 +3,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { deckActionsOf } from "../../apps/web/src/copy/product-copy"
 import { clean, entry, openFile, openGrid, sectioned } from "./slide-grid-deck"
+import { covers } from "./gesture"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -27,6 +28,7 @@ async function gridState(page: Page) {
 }
 
 test("a focused slide menu owns the zoom shortcuts", async ({ page }) => {
+  covers("slide-menu")
   await openFile(page, sectioned)
   await openGrid(page)
   await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")

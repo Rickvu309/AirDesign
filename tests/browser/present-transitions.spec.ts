@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
+import { covers } from "./gesture"
 
 type ZipEntry = {
   readonly filename: string
@@ -99,6 +100,7 @@ test("with reduced motion the next slide comes in with no transition", async ({ 
 })
 
 test("starting from the beginning skips a hidden first slide", async ({ page }) => {
+  covers("present")
   await presented(page)
   await page.keyboard.press("Escape")
   await page.keyboard.press("F5")

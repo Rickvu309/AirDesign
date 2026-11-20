@@ -1,5 +1,5 @@
 import { editorOwnsKey, gridEscapeFromControl } from "@/editor/editor-key-ownership"
-import { noSelection, type Selection } from "@airdesign/render"
+import { gestureFor, noSelection, type Selection } from "@airdesign/render"
 import { limits } from "@airdesign/document"
 import { toast } from "@/components/ui/toast"
 import { useCallback, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
@@ -286,14 +286,14 @@ export function EditorGrid({
       event.target.closest("[data-grid-edit], [data-add-gap], [data-group-handle]") !== null
     )
       return
-    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+    if (gestureFor(event, "slides") === "slide-menu") {
       const card = document.activeElement?.closest<HTMLElement>("[data-slide-entry]")
       if (card === null || card === undefined) return
       event.preventDefault()
       slideMenu.open(Number(card.dataset.slideEntry) - 1, card, false)
       return
     }
-    if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "a") {
+    if (gestureFor(event, "grid") === "select-all") {
       event.preventDefault()
       const all = pickAll(count, current)
       edit.step({ kind: "pick", pick: all })
