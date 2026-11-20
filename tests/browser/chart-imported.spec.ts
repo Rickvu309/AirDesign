@@ -60,9 +60,16 @@ test("selects an imported PowerPoint pie, moves it, and edits its numbers in pla
     "true",
   )
   const value = data.getByRole("textbox", { name: chartCopy.value(1, 1), exact: true })
-  await value.fill("42")
+  await expect(value).toHaveValue("44.4%")
+  const label = data.getByRole("textbox", { name: chartCopy.category(1), exact: true })
+  await expect(label).toHaveValue("    Inside principal cities")
+  const shown = await label.evaluate(
+    (field) => field.scrollHeight <= field.clientHeight + 1 && field.scrollWidth <= field.clientWidth,
+  )
+  expect(shown, "a long category name shows in full").toBe(true)
+  await value.fill("42%")
   await value.press("Enter")
-  await expect(value).toHaveValue("42")
+  await expect(value).toHaveValue("42.0%")
   await expect(page.locator("[data-slide-paint] [data-chart-text]").filter({ hasText: "Under 18" })).toHaveCount(1)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)

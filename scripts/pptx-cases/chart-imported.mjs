@@ -18,7 +18,7 @@ function editedLines(pptx, before, after) {
     lines.push(`imported chart export changed ${changed.join(", ") || "no chart part"}, not one chart and its workbook`)
   const xml = charts.length === 1 ? new TextDecoder().decode(after.get(charts[0])) : ""
   const kept = new TextDecoder().decode(before.get(charts[0]) ?? new Uint8Array())
-  for (const marker of ['<c:showCatName val="1"/>', "<c:v>42</c:v>"])
+  for (const marker of ['<c:showCatName val="1"/>', "<c:v>0.42</c:v>"])
     if (!xml.includes(marker)) lines.push(`imported chart export chart part lacks ${marker}`)
   if (xml.length - kept.length > 8) lines.push("imported chart export rewrote more than the edited number")
   lines.push(...pptx.chartWorkbookErrors(after).map((error) => `imported chart export ${error}`))

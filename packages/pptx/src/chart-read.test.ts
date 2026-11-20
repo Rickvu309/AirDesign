@@ -1,6 +1,6 @@
 import { openingChart, type ChartValue } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { chartValueOf } from "./chart-read.js"
+import { chartFormatsOf, chartValueOf } from "./chart-read.js"
 import { chartSpaceXml } from "./chart-space.js"
 import { chartWorkbookErrors } from "./chart-workbook-check.js"
 import { encodeUtf8 } from "./package-bytes.js"
@@ -75,4 +75,17 @@ it("reads data labels that follow their numbers' own format, as PowerPoint links
     .replace('<c:numFmt formatCode="General" sourceLinked="0"/><c:spPr><a:noFill/>', "<c:spPr><a:noFill/>")
     .replaceAll("<c:formatCode>General</c:formatCode>", "<c:formatCode>0.0%</c:formatCode>")
   expect(chartValueOf(encodeUtf8(xml))?.labels).toBe("0.0%")
+})
+
+it("reads each series' own number format, so the Data grid can show numbers as the chart does", async () => {
+  const file = process
+    .getBuiltinModule("node:fs")
+    .readFileSync(`${process.cwd()}/scripts/pptx-fixtures/census-updating-spm.pptx`)
+  const read = await readPackage(file)
+  if (!read.ok) throw new Error("census")
+  const formats = ["chart1", "chart2", "chart3", "chart4"].map((name) =>
+    chartFormatsOf(read.parts.get(`ppt/charts/${name}.xml`)!),
+  )
+  expect(formats).toEqual([["General"], ["General"], ["0%"], ["0%"]])
+  expect(chartFormatsOf(encodeUtf8(chartSpaceXml(consulting, "rId1")))).toEqual(["General", "General"])
 })

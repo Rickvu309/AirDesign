@@ -1,6 +1,6 @@
 import type { Bound, ElementId, Place, PlacedRow, Register, SetChange } from "@airdesign/document"
 import { connect } from "@airdesign/live"
-import { fileChartValue, readShapes, type ReadShape } from "@airdesign/pptx"
+import { fileChartFormats, fileChartValue, readShapes, type ReadShape } from "@airdesign/pptx"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { designCopy } from "@/copy/design-copy"
@@ -30,6 +30,12 @@ function fileShape(parts: ReadonlyMap<string, Uint8Array>, node: ElementId): Rea
     fileShapes.set(parts, shapes)
   }
   return shapes.get(node)
+}
+
+export function fileChartFormatsOf(shown: DeckPaint, node: ElementId): readonly string[] {
+  const parts = shown.editParts.current
+  const shape = shown.shapes.current.get(node) ?? fileShape(parts, node)
+  return shape?.contentKind === "chart" ? (fileChartFormats(parts, shape.part, shape.shape) ?? []) : []
 }
 
 export function fileValue(shown: DeckPaint, node: ElementId): string | null {
