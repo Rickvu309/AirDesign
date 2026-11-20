@@ -59,7 +59,7 @@ const visuallyHidden = {
 
 export { unshownFill } from "./unshown-fill.js"
 
-export type Entering = { readonly id: ElementId; readonly keys?: HeldKeys }
+export type Entering = { readonly id: ElementId; readonly keys?: HeldKeys; readonly selects?: true }
 
 export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly store: PaintStore
@@ -233,7 +233,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return
     if (host.querySelector(`[data-canvas-element="${entering.key}"]`) === null) return
     entered.current = entering.id
-    enterElement(host, entering, keys?.take() ?? "")
+    enterElement(host, entering, keys?.take() ?? "", props.entering?.selects === true)
   }
   useLayoutEffect(enterPainted, [entering, keys])
   const tileScale = { "--tile-slide-scale": scaled(9525) }

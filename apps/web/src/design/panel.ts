@@ -40,6 +40,7 @@ import {
   hidden,
   loneRows,
   panelKind,
+  wordless,
   panelOrder,
   panelPlaces,
   sectionInMode,
@@ -240,7 +241,9 @@ function readsSize(reads: TraitReads): number {
 
 export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const routed = view.facts.kind === "connector" && joined(shown)
-  const taken = takes(view.facts).filter(
+  const blank = view.facts.text && wordless(view) && panelKind(view, shown) === "shape"
+  const facts = blank ? { ...view.facts, text: false } : view.facts
+  const taken = takes(facts).filter(
     (field) =>
       (shown.moves || !field.startsWith("box.")) && !(routed && (field === "box.flipH" || field === "box.flipV")),
   )

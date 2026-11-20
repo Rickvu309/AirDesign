@@ -119,6 +119,9 @@ const shapeStyle =
 const lineStyle =
   '<p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="0"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="tx1"/></a:fontRef></p:style>'
 
+const shapeText =
+  '<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody>'
+
 const drawnNames: Readonly<Partial<Record<Geometry, string>>> = {
   rect: "Rectangle",
   ellipse: "Oval",
@@ -141,6 +144,7 @@ export function addDrawnShape(
   geometry: Geometry,
   box: ShapeBox,
   id?: number,
+  holdsText = false,
 ): { readonly xml: string; readonly id: number } {
   return appendShape(
     slideXml,
@@ -149,7 +153,7 @@ export function addDrawnShape(
       const properties = drawnProperties(geometry, box)
       if (lineGeometries.includes(geometry))
         return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
-      return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}</p:sp>`
+      return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}${holdsText ? shapeText : ""}</p:sp>`
     },
     id,
   )

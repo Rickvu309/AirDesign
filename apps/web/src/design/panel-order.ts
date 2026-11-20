@@ -1,4 +1,4 @@
-import { paintSlots, type ScopedElement } from "@airdesign/document"
+import { paintSlots, readTextValue, type ScopedElement } from "@airdesign/document"
 import type { PanelReads, PanelSection, SectionName } from "./panel"
 
 export type PanelKind =
@@ -175,6 +175,18 @@ function drawn(shown: PanelReads): boolean {
   return read.value === undefined || read.value === null ? read.own : !rectangle(read.value)
 }
 
+function filled(shown: PanelReads): boolean {
+  const value = shown.fields?.["fills.p0"]?.value
+  return typeof value === "object" && value !== null && !("none" in value)
+}
+
+export function wordless(view: ScopedElement): boolean {
+  if (view.value === null) return true
+  const text = readTextValue(view.value)
+  if (text === null) return view.value === ""
+  return text.every((paragraph) => paragraph.runs.every((run) => run.text === ""))
+}
+
 function imaged(shown: PanelReads): boolean {
   return paintSlots.some((slot) => {
     const value = shown.fields?.[`fills.${slot}`]?.value
@@ -186,7 +198,7 @@ export function panelKind(view: ScopedElement, shown: PanelReads): PanelKind | n
   const { kind, text } = view.facts
   if (view.facts.frame !== undefined) return "frame"
   if (kind === "shape" && !text && imaged(shown)) return "picture"
-  if (kind === "shape") return text && !drawn(shown) ? "text" : "shape"
+  if (kind === "shape") return text && !drawn(shown) && !(wordless(view) && filled(shown)) ? "text" : "shape"
   return panelKinds.includes(kind) ? (kind as PanelKind) : null
 }
 

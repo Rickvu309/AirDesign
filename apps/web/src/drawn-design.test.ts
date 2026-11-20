@@ -20,7 +20,7 @@ async function blank(): Promise<Uint8Array> {
 }
 
 describe("a drawn layer's design", () => {
-  it("is what its exported markup reads as, for every preset a person or an agent can draw", async () => {
+  it("is what its exported markup reads as, for every preset a person or an agent can draw, holding text or not", async () => {
     const parts = await readParts(await blank())
     const index = designedParts(parts)
     const slide = readSlideId(index.slides[0]?.id)
@@ -33,15 +33,17 @@ describe("a drawn layer's design", () => {
     for (const geometry of new Set([...presets, ...lineGeometries])) {
       const line = lineGeometries.includes(geometry)
       const box = { x: 914_400, y: 914_400, cx: 1_828_800, cy: line ? 0 : 914_400 }
-      const element = { node, kind: line ? "connector" : "shape", value: null, box, grouped: false } as const
-      const drawn = decide(opened, {
-        command: "slide",
-        file: [slide],
-        edit: { slide: "element-add", id: slide, element, geometry },
-      })
-      if (drawn.decision !== "apply") throw new Error(`${geometry}: ${drawn.code}`)
-      const read = designedParts(exportedParts(parts, drawn.register)).elements.find((each) => each.node === node)
-      expect([geometry, read?.design]).toEqual([geometry, drawnDesign(geometry, box)])
+      for (const value of line ? [null] : [null, ""]) {
+        const element = { node, kind: line ? "connector" : "shape", value, box, grouped: false } as const
+        const drawn = decide(opened, {
+          command: "slide",
+          file: [slide],
+          edit: { slide: "element-add", id: slide, element, geometry },
+        })
+        if (drawn.decision !== "apply") throw new Error(`${geometry}: ${drawn.code}`)
+        const read = designedParts(exportedParts(parts, drawn.register)).elements.find((each) => each.node === node)
+        expect([geometry, value, read?.design]).toEqual([geometry, value, drawnDesign(geometry, box, value === "")])
+      }
     }
   })
 })

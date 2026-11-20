@@ -196,10 +196,10 @@ it("adds a rectangle, an ellipse and a line on the slide under the next free id,
   expect(shape("rect")).toEqual({
     slide: "element-add",
     id: "256",
-    element: { node: "256.4", kind: "shape", value: null, box: { x: 450, y: 200, cx: 100, cy: 100 }, grouped: false },
+    element: { node: "256.4", kind: "shape", value: "", box: { x: 450, y: 200, cx: 100, cy: 100 }, grouped: false },
     geometry: "rect",
   })
-  expect(shape("ellipse")).toMatchObject({ element: { kind: "shape", value: null }, geometry: "ellipse" })
+  expect(shape("ellipse")).toMatchObject({ element: { kind: "shape", value: "" }, geometry: "ellipse" })
   expect(shape("line")).toEqual({
     slide: "element-add",
     id: "256",

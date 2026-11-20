@@ -173,7 +173,7 @@ export function elementCommand(
     const wanted = line ? { cx: Math.round(change.size.width * lineShare), cy: 0 } : { cx: side, cy: side }
     const box = placeNewBox(change.size, taken, wanted)
     const kind = line ? "connector" : "shape"
-    const element = { node, kind, value: null, box, grouped: false } as const
+    const element = { node, kind, value: line ? null : "", box, grouped: false } as const
     return { slide: "element-add", id: slide.id, element, geometry: change.geometry }
   }
   const room = placeNewBox(change.size, taken)

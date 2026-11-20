@@ -12,6 +12,25 @@ export function editingText(target: EventTarget, frame: HTMLElement): boolean {
   return typing !== null && typing !== undefined && frame.closest(slidePaint)?.contains(typing) === true
 }
 
+type PointerAt = {
+  readonly target: EventTarget
+  readonly clientX: number
+  readonly clientY: number
+  preventDefault(): void
+  stopPropagation(): void
+}
+
+function restingText(target: EventTarget, frame: HTMLElement): boolean {
+  const text = target instanceof Element ? target.closest(editableText) : null
+  return text !== null && frame.contains(text) && !editingText(target, frame)
+}
+
+export function pressOutOfText(event: PointerAt, frame: HTMLElement | null): void {
+  if (frame === null || !restingText(event.target, frame)) return
+  event.preventDefault()
+  frame.focus()
+}
+
 function caretAt(text: HTMLElement, at: Point | undefined): Range {
   const document = text.ownerDocument
   const position = at === undefined ? null : (document.caretPositionFromPoint?.(at.x, at.y) ?? null)
@@ -42,9 +61,17 @@ export function enterText(frame: HTMLElement, at?: Point): boolean {
   return true
 }
 
-export function enterElement(slide: HTMLElement, element: CanvasElement, typed: string): void {
+export function enterTextAt(event: PointerAt, frame: HTMLElement): void {
+  if (editingText(event.target, frame)) return
+  if (enterText(frame, { x: event.clientX, y: event.clientY })) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+}
+
+export function enterElement(slide: HTMLElement, element: CanvasElement, typed: string, selects = false): void {
   const frame = slide.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`)
   if (frame === null) return
-  if (enterText(frame)) typeHeld(slide.ownerDocument, typed)
+  if (!selects && enterText(frame)) typeHeld(slide.ownerDocument, typed)
   else frame.focus()
 }

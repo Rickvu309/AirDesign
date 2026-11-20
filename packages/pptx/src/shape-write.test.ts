@@ -51,6 +51,14 @@ describe("addDrawnShape", () => {
   it("leaves a rectangle to its theme outline", () => {
     expect(addDrawnShape(slide, "rect", box).xml).not.toMatch(/<a:ln[ >]/)
   })
+
+  it("gives a shape that holds text the empty centred text PowerPoint gives an inserted shape, and an older add or a line none", () => {
+    const empty =
+      '</p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>'
+    expect(addDrawnShape(slide, "ellipse", box, undefined, true).xml).toContain(empty)
+    expect(addDrawnShape(slide, "ellipse", box).xml).not.toContain("txBody")
+    expect(addDrawnShape(slide, "line", box).xml).not.toContain("txBody")
+  })
 })
 
 describe("a new text box with no opening text", () => {

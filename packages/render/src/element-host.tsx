@@ -272,12 +272,14 @@ function formatReach(
   id: ElementId,
   moves: Moves | null,
   element: CanvasElement,
+  wordless: boolean,
 ) {
   if (formatting === undefined) return {}
   return {
     onFocus: (event: FocusEvent<HTMLElement>) => {
       moves?.select(id)
-      if (event.target instanceof HTMLElement) formatting.aim(id, event.target)
+      const aimed = event.target instanceof HTMLElement && !(wordless && event.target === event.currentTarget)
+      if (aimed && event.target instanceof HTMLElement) formatting.aim(id, event.target)
     },
     onBlur: (event: FocusEvent<HTMLElement>) => {
       const next = event.relatedTarget
@@ -458,7 +460,7 @@ function PlacedText(props: {
         ...(moves === null || typing || !grabbed(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
       {...(moves === null ? {} : reach(element, id, name, moves, typing))}
-      {...(typing ? formatReach(formatting, id, moves, element) : {})}
+      {...(typing ? formatReach(formatting, id, moves, element, empty && element.filled) : {})}
     >
       <LayerArt
         element={painted}
