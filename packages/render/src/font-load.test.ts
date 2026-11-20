@@ -18,12 +18,19 @@ it("waits for the requested face and shares one load across case variants", asyn
     )
   }
   const loader = new FontLoader(document, network, async () => installed)
+  let heard = 0
+  loader.subscribe(() => {
+    heard += 1
+  })
   const loaded = loader.load("Montserrat")
   expect(loader.load("montserrat")).toBe(loaded)
   expect(loader.ready("Montserrat")).toBe(false)
+  expect(loader.faces("Montserrat")).toBeUndefined()
   finish()
   expect(await loaded).toBeNull()
   expect(loader.ready("Montserrat")).toBe(true)
+  expect([heard, loader.settledCount()]).toEqual([2, 1])
+  expect(loader.faces("montserrat")).toEqual([{ style: "normal", weight: "100 900" }])
   expect(requests).toEqual(["/fonts/family?family=Montserrat"])
 })
 

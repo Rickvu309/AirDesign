@@ -20,8 +20,7 @@ export const textWire: TraitWire<"text"> = {
     },
     size: { description: "Points.", example: { text: { size: 28 } } },
     font: {
-      description:
-        "Typeface, such as Georgia or portable Lato Light, Thin, ExtraLight, Medium, SemiBold, ExtraBold or Black.",
+      description: "Typeface, such as Georgia. A weight besides bold is the family's face, such as Inter SemiBold.",
       example: { text: { font: "Georgia" } },
     },
     bold: { example: { text: { bold: true } } },

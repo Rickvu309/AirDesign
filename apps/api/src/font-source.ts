@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises"
 import {
-  portableFace,
+  holdsWeight,
+  namedFace,
   fontFaces,
   fontRevision,
   fontRoutes,
@@ -89,16 +90,17 @@ export class FontSource {
     const faces = await this.ready(family)
     const url = (file: string) =>
       `${fontRoutes.file.path}?family=${encodeURIComponent(family.family)}&file=${encodeURIComponent(file)}&v=${fontRevision}`
-    const portable = portableFace(name)
+    const named = namedFace(name)
     const chosen =
-      portable === undefined
+      named === undefined
         ? faces
         : faces
-            .filter((face) => face.file === portable.file || face.file === portable.italic)
-            .map((face) => ({ ...face, weight: "400" }))
+            .filter((face) => holdsWeight(face, named.weight))
+            .map((face) => ({ ...face, weight: face.weight.includes(" ") ? String(named.weight) : "400" }))
+    if (chosen.length === 0) return { ok: false, refusal: "unknown", family: name } as const
     return {
       ok: true,
-      family: portable?.typeface ?? family.family,
+      family: named?.typeface ?? family.family,
       license: family.license,
       notice: url(family.notice),
       faces: chosen.map((face) => ({ ...face, url: url(face.file) })),

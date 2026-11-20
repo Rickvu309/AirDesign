@@ -113,3 +113,21 @@ test("Alt+/ removes a layer's fill, Shift+/ its border, and Ctrl+Shift+7 numbers
   await page.keyboard.press("ControlOrMeta+Shift+Digit7")
   await expect.poll(bullet).not.toBe("none")
 })
+
+test("Ctrl+Alt+> and Ctrl+Alt+< step a text layer to the family's next weight", async ({ page }) => {
+  covers("weight-up", "weight-down")
+  await openDeck(page, "clean.pptx")
+  const hello = page.locator("[data-slide-paint] [data-canvas-element]").first()
+  await hello.click()
+  const weight = () =>
+    hello
+      .locator("[data-run]")
+      .first()
+      .evaluate((node) => getComputedStyle(node).fontWeight)
+  expect(await weight()).toBe("400")
+  await page.keyboard.press("ControlOrMeta+Alt+Shift+Period")
+  await expect.poll(weight).toBe("700")
+  await page.keyboard.press("ControlOrMeta+Alt+Shift+Period")
+  await page.keyboard.press("ControlOrMeta+Alt+Shift+Comma")
+  await expect.poll(weight).toBe("400")
+})

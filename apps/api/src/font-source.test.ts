@@ -28,7 +28,7 @@ it("fetches each licensed family once, stores it and serves it after a restart",
   expect(fetched).toHaveLength(3)
 })
 
-it("serves a verified portable face under its native family with independent italic", async () => {
+it("serves a static named face under its own typeface with independent italic", async () => {
   const network: typeof fetch = async (input) => {
     if (String(input).endsWith("METADATA.pb"))
       return new Response(
@@ -46,4 +46,24 @@ it("serves a verified portable face under its native family with independent ita
       { file: "Lato-LightItalic.ttf", weight: "400", style: "italic" },
     ],
   })
+})
+
+it("serves a variable family's named face pinned to its weight and refuses a weight the family lacks", async () => {
+  const network: typeof fetch = async (input) => {
+    if (String(input).endsWith("METADATA.pb"))
+      return new Response(
+        'name: "Inter"\nlicense: "OFL"\nfonts {\n style: "normal"\n weight: 400\n filename: "Inter[opsz,wght].ttf"\n}\nfonts {\n style: "italic"\n weight: 400\n filename: "Inter-Italic[opsz,wght].ttf"\n}\naxes {\n tag: "wght"\n min_value: 100.0\n max_value: 600.0\n}',
+      )
+    return new Response(new Uint8Array([0, 1, 0, 0]))
+  }
+  const source = new FontSource(new LocalOriginalStore(), network)
+  expect(await source.family("Inter SemiBold")).toMatchObject({
+    ok: true,
+    family: "Inter SemiBold",
+    faces: [
+      { file: "Inter[opsz,wght].ttf", weight: "600", style: "normal" },
+      { file: "Inter-Italic[opsz,wght].ttf", weight: "600", style: "italic" },
+    ],
+  })
+  expect(await source.family("Inter Black")).toEqual({ ok: false, refusal: "unknown", family: "Inter Black" })
 })

@@ -2,4 +2,15 @@ export { fontNames, resolveFont, fontRevision, type FontFamily } from "./source.
 export { fontFaces, type FontFile } from "./metadata.js"
 export { fontFamily, fontRoutes } from "./family.js"
 
-export { portableFace, portableFaces } from "./portable-face.js"
+export {
+  boldWeight,
+  familyStyles,
+  holdsWeight,
+  namedFace,
+  readStyleName,
+  regularWeight,
+  styleName,
+  styleTypeface,
+  type FontStyle,
+  type ServedFace,
+} from "./named-face.js"

@@ -1,7 +1,7 @@
-import { fontRoutes } from "@airdesign/fonts"
+import { fontRoutes, type ServedFace } from "@airdesign/fonts"
 
 export type FontIssue = { readonly family: string; readonly refusal: "unknown" | "unavailable" }
-type Face = { readonly url: string; readonly style: string; readonly weight: string }
+type Face = ServedFace & { readonly url: string }
 type Manifest = { readonly ok: true; readonly family: string; readonly faces: readonly Face[] }
 
 function manifest(raw: unknown): raw is Manifest {
@@ -48,6 +48,7 @@ export class FontLoader {
   private readonly pending = new Map<string, Promise<FontIssue | null>>()
   private readonly settled = new Set<string>()
   private readonly watchers = new Set<() => void>()
+  private readonly served = new Map<string, readonly ServedFace[]>()
   private readonly network: typeof fetch
   private readonly install: (family: Manifest) => Promise<void>
 
@@ -62,6 +63,14 @@ export class FontLoader {
 
   ready(name: string): boolean {
     return this.settled.has(name.toLowerCase())
+  }
+
+  faces(name: string): readonly ServedFace[] | undefined {
+    return this.served.get(name.toLowerCase())
+  }
+
+  settledCount(): number {
+    return this.settled.size
   }
 
   busy(): boolean {
@@ -108,6 +117,10 @@ export class FontLoader {
     const raw: unknown = await response.json()
     if (!manifest(raw)) throw new Error("font manifest")
     await this.install(raw)
+    this.served.set(
+      name.toLowerCase(),
+      raw.faces.map(({ style, weight }) => ({ style, weight })),
+    )
     return null
   }
 }
