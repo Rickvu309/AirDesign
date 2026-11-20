@@ -1,3 +1,4 @@
+import { browserSpec, deckStateNote } from "./deck-state-file.mjs"
 import { failedCauses, failedScripts, failedSteps, failedTests } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 
@@ -78,9 +79,9 @@ export const failureLines = ({ repository, run, gh, read }) => {
   if (tests.length === 0 && causes.length === 0)
     lines.push("  no failed test was named in the log. Read it with: gh run view " + run.id + " --log-failed")
   const artifacts = gh(["api", `repos/${repository}/actions/runs/${run.id}/artifacts`, "--jq", ".artifacts[].name"])
-  for (const name of artifacts.stdout.split("\n").filter((line) => line.startsWith("test-results"))) {
-    lines.push(`kept test results: ${name} (gh run download ${run.id} -n ${name})`)
-  }
+  const kept = artifacts.stdout.split("\n").filter((line) => line.startsWith("test-results"))
+  for (const name of kept) lines.push(`kept test results: ${name} (gh run download ${run.id} -n ${name})`)
+  if (kept.length > 0 && tests.some((test) => browserSpec(test.file))) lines.push(`  ${deckStateNote}`)
   return { lines, files: [...new Set(tests.map((test) => test.file))] }
 }
 
