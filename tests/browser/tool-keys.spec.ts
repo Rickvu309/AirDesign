@@ -13,7 +13,7 @@ test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 test("T arms the Text tool and a click places text, R, O, L and Shift+L arm a shape tool that Enter places, Shift+Ctrl+K adds an image, from the slide and not from a button", async ({
   page,
 }) => {
-  covers("tool-text", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow", "place-image")
+  covers("tool-text", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow", "place-shape", "place-image")
   await openDeck(page, "clean.pptx")
   const slide = page.locator("[data-slide-paint]")
   const layers = slide.locator("[data-canvas-element]")
