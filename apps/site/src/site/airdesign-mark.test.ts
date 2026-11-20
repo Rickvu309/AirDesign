@@ -5,8 +5,9 @@ import { markBar, markStem } from "./airdesign-mark-art"
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8")
 const strokesOf = (svg: string) => [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((match) => match[1])
 
-it("draws the site mark at the logo's weight, the same strokes as the studio icon", () => {
+it("draws the site mark and favicon at the logo's weight, the same strokes as the studio icon", () => {
   expect([markStem, markBar]).toEqual(strokesOf(read("../../../web/public/favicon-art.svg")))
+  expect([markStem, markBar]).toEqual(strokesOf(read("../../public/favicon-art.svg")))
 })
 
 it("draws the mark in the landing demo at the logo's weight for its 16.98 px size", () => {
