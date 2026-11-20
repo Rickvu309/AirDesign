@@ -1,9 +1,7 @@
 import {
   elementStacks,
   groupCommand,
-  groupFrame,
   groupNode,
-  groupParent,
   landedPatch,
   madeGroup,
   plainGroup,
@@ -18,15 +16,7 @@ import {
   type TraitPatch,
 } from "@airdesign/document"
 import { arrangeSlide } from "./element-stack-route.js"
-import {
-  fitGroup,
-  joinShape,
-  regroupSaved,
-  shapePlace,
-  unwrapGroup,
-  wrapGroup,
-  type SavedGroup,
-} from "./group-write.js"
+import { joinShape, regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
 import { requireMarkup } from "./part-markup.js"
 import { removeShape } from "./slide-route.js"
@@ -108,7 +98,6 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
     if (command.slide === "element-join") {
       const { frame, before, member } = command
       if (frame !== null && passed.has(shapeOf(frame).shape)) continue
-      const left = groupParent(prefix, member.node)
       const own = shapeOf(member.node).shape
       const placed = joinShape(
         bytesOf(next, part),
@@ -121,11 +110,6 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
       if (frame !== null && plainGroup(after, frame)) {
         const filed = shapePlace(bytesOf(next, part), own)
         next = writeTrait(next, where(own), "box", boxPatch(keptTurn(memberPlace(member), filed)))
-      }
-      for (const group of new Set([left, frame])) {
-        const fitted = typeof group === "string" && plainGroup(after, group) ? groupFrame(after, group) : null
-        if (typeof group === "string" && fitted !== null)
-          next = withPart(next, part, fitGroup(bytesOf(next, part), shapeOf(group).shape, fitted))
       }
       continue
     }

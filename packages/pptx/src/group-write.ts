@@ -220,9 +220,11 @@ export function placeFrame(bytes: Uint8Array, shape: string, box: ShapeBox): Uin
   return spliceBytes(bytes, [{ start: xfrm.start, end: xfrm.end, next }])
 }
 
-function groupOf(elements: readonly MarkupElement[], unit: MarkupElement): MarkupElement | null {
-  const parent = elements[unit.parent]
-  return parent?.kind === "p:grpSp" ? parent : null
+function slideUnit(elements: readonly MarkupElement[], unit: MarkupElement): MarkupElement {
+  let current = unit
+  for (let parent = elements[current.parent]; parent?.kind === "p:grpSp"; parent = elements[current.parent])
+    current = parent
+  return current
 }
 
 function closeAt(children: MarkupChildren, group: MarkupElement): number {
@@ -235,12 +237,11 @@ export function joinShape(bytes: Uint8Array, shape: string, frame: string | null
   const children = markupChildren(elements)
   const unit = treeUnit(elements, shapeById(elements, shape))
   const moved = bytes.slice(unit.start, unit.end)
-  const left = groupOf(elements, unit)
   const at =
     before !== null
       ? treeUnit(elements, shapeById(elements, before)).start
       : frame === null
-        ? (left?.end ?? unit.end)
+        ? slideUnit(elements, unit).end
         : closeAt(children, shapeById(elements, frame))
   const edits: ByteEdit[] = [
     { start: unit.start, end: unit.end, next: new Uint8Array() },

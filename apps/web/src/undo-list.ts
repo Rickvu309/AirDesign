@@ -151,6 +151,10 @@ async function sent(
   return { ...entry, undoable: turn.undoable }
 }
 
+function structural(undoable: Undoable): boolean {
+  return "group" in undoable || "joined" in undoable
+}
+
 export async function turnBack(
   link: UndoLink,
   deck: string,
@@ -163,7 +167,7 @@ export async function turnBack(
   const opened = await link.openDeck(deck)
   const rest = list[direction].slice(0, -1)
   const left: UndoList = direction === "undo" ? { undo: rest, redo: list.redo } : { undo: list.undo, redo: rest }
-  const register = !opened.ok ? null : "group" in entry.undoable ? grouped(opened.register) : opened.register
+  const register = !opened.ok ? null : structural(entry.undoable) ? grouped(opened.register) : opened.register
   const turned = register === null ? null : await sent(link, deck, register, entry, direction)
   if (turned === null) return { outcome: "changed", list: left, entry }
   const other = direction === "undo" ? "redo" : "undo"

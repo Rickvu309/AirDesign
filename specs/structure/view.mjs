@@ -45,6 +45,9 @@ export const step = (action, from) => {
   if (action === "LeaveGroup")
     return "the person drags the child out of the group in the layers panel, and it stays where it shows"
   if (action === "UndoLeave") return "the person undoes that, and the child joins its frame or group where it was"
+  if (action === "EmptyGroup")
+    return "the person drags the group's other layer out too, and the emptied group deletes itself"
+  if (action === "UndoEmpty") return "the person undoes that, and the group comes back holding its other layer"
   if (action === "MoveInFrame") return "the person moves the child inside the frame without auto layout, or undoes that"
   if (action === "RunUndo" && from.touched !== true && from.own === from.inside)
     return "the run's Undo ungroups the agent's group"
@@ -55,6 +58,7 @@ export const step = (action, from) => {
 export const group = (v) => {
   if (v.grouped === "formed") return "Grouped"
   if (v.grouped === "dissolved") return "Ungrouped"
+  if (v.grouped === "emptied") return "Emptied"
   if (v.record === "add") return "Added"
   if (v.record === "remove") return "Removed"
   return "Unchanged"
@@ -66,6 +70,7 @@ export const colors = {
   Removed: "purple",
   Grouped: "green",
   Ungrouped: "red",
+  Emptied: "gray",
 }
 
 export const title =

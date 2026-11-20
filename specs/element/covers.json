@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "cf1c679e4600",
-      "blob": "7b5f7a312fac399d98f9659090854e896c184829"
+      "digest": "9885b67ef3e0",
+      "blob": "d953eff47194d83d0d24ff3faa3b462d30b561cf"
     },
     {
       "file": "packages/document/src/person-undo.ts",

@@ -4,14 +4,14 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "9274b3183f99",
-      "blob": "d7e04dca50a07ba025ff31ccea245dea8bea523f"
+      "digest": "05bb311706f6",
+      "blob": "114b1283c48003538508869113c268a9d5822a56"
     },
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "201a4632d6e3",
-      "blob": "04cd11075db5c0156c7699bb7fdb00d0e6f5a214"
+      "digest": "245b1b88be6c",
+      "blob": "ad18e25defd96e960670fe0f0b63dfa00f69b8db"
     },
     {
       "file": "packages/document/src/group-turn.ts",
@@ -22,14 +22,14 @@
     {
       "file": "packages/document/src/group-space.ts",
       "names": ["*"],
-      "digest": "5ec3333d9db6",
-      "blob": "82ee39b701bdbc3fa4368df29f24573ffc9ca2c5"
+      "digest": "ff2d7e30c4b2",
+      "blob": "276381f470125eaf99070023f63bf6c5b126ced6"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone", "stepCommands"],
       "digest": "48fefcd9c918",
-      "blob": "7ed527442e35b154bfa1538fcc341f2d47d6e9ef"
+      "blob": "f53394fc17a3f1606438a2547bd6d01d8f714cdf"
     },
     {
       "file": "packages/document/src/frame-layout.ts",
@@ -39,15 +39,21 @@
     },
     {
       "file": "packages/document/src/group-join.ts",
-      "names": ["joinTurn", "spotNow"],
-      "digest": "79f9b266340e",
-      "blob": "e6d3c3ed40cff85fcfb9ad18329292fb7fc0014e"
+      "names": ["joinTurn", "joinEdit", "spotNow", "placedRows", "removedGroups", "emptiedGroups"],
+      "digest": "d938e08b16f5",
+      "blob": "37c122202b5dd5821932f35244caeb3aa79ff07f"
     },
     {
       "file": "packages/document/src/group-refusal.ts",
       "names": ["*"],
-      "digest": "cbe075875cd9",
-      "blob": "e806aaf642cfe23ec697997aa2a151d75ba589ef"
+      "digest": "2cb78b1f9616",
+      "blob": "2c9892f127ee151339c4ba3470e813a09b8ad33b"
+    },
+    {
+      "file": "packages/document/src/element-order.ts",
+      "names": ["elementRefusal"],
+      "digest": "da012ed719bf",
+      "blob": "d953eff47194d83d0d24ff3faa3b462d30b561cf"
     }
   ]
 }
