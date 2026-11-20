@@ -193,7 +193,19 @@ export const followPull = async ({
     } else {
       speak(`${summary(pull)}; ${queueLine(pull)}${removalLine(pull) === undefined ? "" : `; ${removalLine(pull)}`}`)
     }
-    if (!pull.queued && armedSeen && !pull.armed) {
+    if (!pull.hasQueue && !pull.queued && pull.armed) {
+      say(`follow: ${queueLine(pull)}`)
+      const disarmed = gh(["pr", "merge", String(number), "--disable-auto"])
+      if (disarmed.status !== 0) {
+        say(
+          `follow: auto-merge could not be switched off: ${`${disarmed.stdout}${disarmed.stderr}`.trim()}. Switch it off: gh pr merge ${number} --disable-auto, then pnpm land --watch`,
+        )
+        return 1
+      }
+      await sleep(interval / 6)
+      continue
+    }
+    if (pull.hasQueue && !pull.queued && armedSeen && !pull.armed) {
       say(`follow: auto-merge on pull request ${number} was switched off. Arm it again: pnpm land`)
       return 1
     }

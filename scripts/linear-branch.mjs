@@ -25,7 +25,7 @@ export const linearFault = ({ merges, branch }) => {
     `${merges.length} merge ${merges.length === 1 ? "commit" : "commits"} in ${branch ?? "this branch"} since origin/main:`,
     ...shown,
     ...(merges.length > listed ? [`  and ${merges.length - listed} more`] : []),
-    "The merge queue rebases commit by commit and cannot replay a merge commit, so it drops this pull request as merge_conflict.",
+    "A rebase merge, in the merge queue or by pnpm land with no queue, replays commit by commit and cannot replay a merge commit: the queue drops this pull request as merge_conflict, and GitHub refuses the rebase.",
     `Rebuild the net change of the branch as one commit on the main you tested: ${rebuildCommand}`,
     "Add --message <title> to name the commit; it keeps the subject of the last commit by default. pnpm land does this for you before its checks.",
   ].join("\n")

@@ -1,4 +1,4 @@
-import { awaitChecks, enqueue, parsePull, queueLine, removalLine } from "./merge-queue.mjs"
+import { awaitChecks, enqueue, parsePull, pullArgs, queueLine, removalLine } from "./merge-queue.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -14,6 +14,8 @@ const answer = ({
   contexts = [],
   others = [],
   timeline = [],
+  queue = true,
+  enforcement = "ACTIVE",
 } = {}) =>
   JSON.stringify({
     data: {
@@ -32,7 +34,17 @@ const answer = ({
           commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS", contexts: { nodes: contexts } } } }] },
           timelineItems: { nodes: timeline },
         },
-        mergeQueue: { entries: { nodes: others.map((number, at) => ({ position: at + 1, pullRequest: { number } })) } },
+        mergeQueue: queue
+          ? { entries: { nodes: others.map((number, at) => ({ position: at + 1, pullRequest: { number } })) } }
+          : null,
+        ref: {
+          rules: {
+            nodes:
+              enforcement === null
+                ? []
+                : [{ type: "MERGE_QUEUE", repositoryRuleset: { databaseId: 26940915, enforcement } }],
+          },
+        },
       },
     },
   })
@@ -243,4 +255,43 @@ same(
   "a queued pull request needs no wait",
   (await waiting({ reads: [answer({ entry: { position: 1, state: "QUEUED" } })] })).reads(),
   1,
+)
+
+same("main has a merge queue when its queue exists and an active ruleset holds it", parsePull(answer()).hasQueue, true)
+same(
+  "main has no merge queue when GitHub answers mergeQueue null",
+  parsePull(answer({ queue: false, enforcement: null })).hasQueue,
+  false,
+)
+same(
+  "main has no merge queue once its ruleset is disabled, even while GitHub still answers a queue",
+  parsePull(answer({ enforcement: "DISABLED" })).hasQueue,
+  false,
+)
+same(
+  "a ruleset only evaluated does not hold a queue either",
+  parsePull(answer({ enforcement: "EVALUATE" })).hasQueue,
+  false,
+)
+same(
+  "main has no merge queue when no rule on main is a merge queue",
+  parsePull(answer({ enforcement: null })).hasQueue,
+  false,
+)
+same(
+  "the one query reads the rules on main beside the queue",
+  pullArgs("Rickvu309/AirDesign", 394)
+    .at(-1)
+    .includes('ref(qualifiedName:"refs/heads/main"){rules(first:50){nodes{type repositoryRuleset{enforcement}}}}'),
+  true,
+)
+same(
+  "with no queue, the queue line says land merges the head itself",
+  queueLine(parsePull(answer({ queue: false, enforcement: null }))),
+  "main has no merge queue; land merges the head itself once ci passes and the recheck passes",
+)
+same(
+  "with no queue, an armed pull request is named as one GitHub would merge without the recheck",
+  queueLine(parsePull(answer({ armed: true, enforcement: "DISABLED" }))),
+  "main has no merge queue, and auto-merge is armed, so GitHub would merge it without the recheck; land switches it off",
 )

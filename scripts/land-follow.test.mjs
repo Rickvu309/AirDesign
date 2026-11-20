@@ -1,5 +1,6 @@
 import fs from "node:fs"
 import { followPull } from "./land-follow.mjs"
+import { mainRules } from "./land-harness.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -20,6 +21,7 @@ const answer = ({
   contexts = pass,
   mergeable = "MERGEABLE",
   timeline = [],
+  queue = true,
 } = {}) =>
   JSON.stringify({
     data: {
@@ -37,14 +39,15 @@ const answer = ({
           commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS", contexts: { nodes: contexts } } } }] },
           timelineItems: { nodes: timeline },
         },
-        mergeQueue: { entries: { nodes: [] } },
+        mergeQueue: queue ? { entries: { nodes: [] } } : null,
+        ref: mainRules(queue),
       },
     },
   })
 
 const queuedAt = (position) => answer({ entry: { position, state: "QUEUED" } })
 
-const follow = async ({ reads, runs = [] }) => {
+const follow = async ({ reads, runs = [], merge }) => {
   const said = []
   const asked = []
   let clock = 0
@@ -71,6 +74,7 @@ const follow = async ({ reads, runs = [] }) => {
     interval: 30000,
     graceMs: 120000,
     limitMs: 3600000,
+    merge,
   })
   return { code, said, asked }
 }
@@ -158,3 +162,27 @@ const waiting = await follow({ reads: [answer({ contexts: running })] })
 same("a pull request that never merges stops at the limit", waiting.code, 1)
 if (!waiting.said.at(-1).includes("not merged after 60 minutes"))
   throw new Error(`the limit is not said: ${waiting.said.at(-1)}`)
+
+const mergedBy = []
+const disarmed = await follow({
+  reads: [answer({ queue: false, armed: true, contexts: running }), answer({ queue: false, armed: false })],
+  merge: async (pull) => {
+    mergedBy.push(pull.head)
+    return 0
+  },
+})
+same(
+  "with no merge queue, an armed pull request still lands through the recheck",
+  [disarmed.code, mergedBy],
+  [0, ["aaaa1111"]],
+)
+same(
+  "its auto-merge is switched off first, so GitHub cannot merge it without the recheck",
+  disarmed.asked.filter((call) => call.startsWith("pr merge")),
+  ["pr merge 394 --disable-auto"],
+)
+same(
+  "and switching it off is not read as someone else disarming it",
+  disarmed.said.some((line) => line.includes("was switched off. Arm it again")),
+  false,
+)

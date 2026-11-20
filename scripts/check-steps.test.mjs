@@ -23,6 +23,16 @@ assert.equal(planted.mayPush(["planted"], true), false)
 assert.equal(planted.stampable(["planted"], true), false)
 assert.equal(planted.rerunsAlone("planted"), false)
 for (const event of ["", "pull_request", "merge_group", "push"]) assert.equal(planted.warns("planted", event), false)
+const afterPr = defineCheckSteps([{ ...row, verdict: "warn-after-pr" }])
+for (const [event, warns] of [
+  ["", false],
+  ["pull_request", false],
+  ["merge_group", true],
+  ["push", true],
+])
+  assert.equal(afterPr.warns("planted", event), warns, `warn-after-pr on ${event || "this machine"}`)
+assert.equal(checkSteps.warns("file-growth", "push"), true, "file-growth warns on a push to main with no queue run")
+assert.equal(checkSteps.warns("file-growth", "pull_request"), false, "file-growth blocks on a pull request")
 
 const anotherStage = { ...row, name: "summary", part: "scripts", after: "work" }
 const withAnotherStage = defineCheckSteps([row, anotherStage])
@@ -44,7 +54,7 @@ for (const [change, fix] of [
   [{ command: undefined }, "set command to an executable"],
   [{ part: [] }, "name one or more distinct parts, or use all"],
   [{ where: "remote" }, "set where to everywhere, local, or ci"],
-  [{ verdict: "ignore" }, "set verdict to block, warn, or warn-in-queue"],
+  [{ verdict: "ignore" }, "set verdict to block, warn, or warn-after-pr"],
   [{ kind: "report", verdict: "block" }, "remove verdict from the report"],
   [{ where: "ci", gate: { order: 1 } }, "remove gate or allow this step locally"],
   [{ preflight: true, lane: "outputs" }, "remove preflight or run outside the lane and stage barrier"],
