@@ -194,4 +194,14 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "Backspace", metaKey: true }, "element")).toBe("ungroup")
     expect(gestureFor({ ...plain, key: "Backspace" }, "element")).toBe("delete")
   })
+
+  it("opens the eyedropper with I on a selected layer without colliding with italic or typing", () => {
+    expect(gestureFor({ ...plain, key: "i", code: "KeyI" }, "element")).toBe("tool-eyedropper")
+    expect(gestureFor({ ...plain, key: "I", code: "KeyI" }, "element")).toBe("tool-eyedropper")
+    expect(gestureFor({ ...plain, key: "i", code: "KeyI", ctrlKey: true }, "element")).toBe("italic")
+    expect(gestureFor({ ...plain, key: "i", code: "KeyI", metaKey: true }, "element")).toBe("italic")
+    expect(gestureFor({ ...plain, key: "i", code: "KeyI" }, "text")).toBeNull()
+    expect(gestureFor({ ...plain, key: "I", code: "KeyI", shiftKey: true }, "element")).toBeNull()
+    expect(gestureFor({ ...plain, key: "i", code: "KeyI", altKey: true }, "element")).toBeNull()
+  })
 })

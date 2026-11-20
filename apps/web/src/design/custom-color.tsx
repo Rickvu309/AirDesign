@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button"
 import { colorCopy } from "@/copy/color-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { hexOf, hsvOf, shownHex, typedColor, type Hsv, type Palette } from "@/design/color-choices"
+import { dropperOf, pickScreenColor } from "@/design/eyedropper"
 import { EditorIcon } from "@/editor/editor-icons"
-
-type Dropper = { open(): Promise<{ readonly sRGBHex: string }> }
 
 const hueStops = [0, 60, 120, 180, 240, 300, 360]
 const hueTrack = `linear-gradient(to right, ${hueStops.map((hue) => `#${hexOf({ hue, saturation: 1, value: 1 })}`).join(", ")})`
@@ -55,11 +54,6 @@ function Slider({
       />
     </div>
   )
-}
-
-function dropperOf(): (new () => Dropper) | undefined {
-  if (typeof window === "undefined") return undefined
-  return (window as { EyeDropper?: new () => Dropper }).EyeDropper
 }
 
 function clamp(value: number): number {
@@ -179,17 +173,12 @@ export function CustomColor({
   }
 
   function dropped() {
-    if (Eyedropper === undefined) return
-    new Eyedropper()
-      .open()
-      .then((result) => {
-        const color = typedColor(result.sRGBHex)
-        if (color === null || !("rgb" in color)) return
-        edited.current = true
-        show(hsvOf(color.rgb))
-        commit(true)
-      })
-      .catch(() => undefined)
+    void pickScreenColor().then((color) => {
+      if (color === null || !("rgb" in color)) return
+      edited.current = true
+      show(hsvOf(color.rgb))
+      commit(true)
+    })
   }
 
   const hex = hexOf(hsv)

@@ -15,6 +15,7 @@ import { useDeckOpen } from "@/editor/use-deck-open"
 import { useKeptPanel } from "@/editor/kept-panel"
 import { shownNotice } from "@/editor/use-deck-status"
 import { useDesignKeys } from "@/editor/design-keys"
+import { SlideEyedropper, useDeckEyedropper } from "@/editor/eyedropper-tool"
 import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
 import { useUndoTurn } from "@/editor/use-undo"
@@ -68,7 +69,9 @@ export function ThinDeck({ id }: { id: string }) {
     }
     return false
   }
-  useDesignKeys({ ...deck, selectedSlides }, deck.paintedDeck === id)
+  const designing = { ...deck, selectedSlides }
+  useDesignKeys(designing, deck.paintedDeck === id)
+  const eyedropper = useDeckEyedropper(designing, deck.paintedDeck === id)
   useLayerKeys(deck.paintedDeck === id, {
     onFlag: (flag) => toggleLayerFlag(deck, deck.selection.ids, flag),
     onRename: startLayerRename,
@@ -192,6 +195,7 @@ export function ThinDeck({ id }: { id: string }) {
               }
             />
           )}
+          overlay={<SlideEyedropper state={eyedropper} />}
           slideLabel={String(shown.current + 1)}
           title={deck.title}
         />

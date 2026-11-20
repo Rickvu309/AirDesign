@@ -83,6 +83,7 @@ export const shortcutCopy = {
     "tool-line": "Add a line",
     "tool-arrow": "Add an arrow",
     "place-image": "Add an image",
+    "tool-eyedropper": "Eyedropper",
     "layers-panel": "Show layers",
     "hide-ui": "Show or hide the editor around the slide",
     "slide-list": "Show or hide the slide list",
