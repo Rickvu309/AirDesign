@@ -1,7 +1,7 @@
 import { readElementId, shapeOf, type ElementId } from "./element-id.js"
 import { limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
-import { flows, layoutAligns, sizings } from "./trait-layout.js"
+import { flows, layoutAligns } from "./trait-layout.js"
 import { coordinates } from "./box.js"
 
 export type FramingLayout = {
@@ -9,8 +9,6 @@ export type FramingLayout = {
   readonly gap: number
   readonly padding: readonly [number, number, number, number]
   readonly align: (typeof layoutAligns)[number]
-  readonly width?: (typeof sizings)[number]
-  readonly height?: (typeof sizings)[number]
 }
 
 export type Framing = {
@@ -25,8 +23,7 @@ function size(raw: unknown): raw is number {
 
 function readFramingLayout(raw: unknown): FramingLayout | null {
   const row = record(raw)
-  const sized = ["width", "height"].filter((key) => row?.[key] !== undefined)
-  if (row === null || !onlyKeys(row, ["flow", "gap", "padding", "align", ...sized])) return null
+  if (row === null || !onlyKeys(row, ["flow", "gap", "padding", "align"])) return null
   const flow = flows.find((each) => each === row.flow)
   const align = layoutAligns.find((each) => each === row.align)
   const sides = Array.isArray(row.padding) && row.padding.length === 4 ? row.padding.filter(size) : []
@@ -34,18 +31,7 @@ function readFramingLayout(raw: unknown): FramingLayout | null {
   if (sides.length !== 4 || left === undefined || top === undefined || right === undefined || bottom === undefined)
     return null
   if (flow === undefined || align === undefined || !size(row.gap)) return null
-  const width = sizings.find((each) => each === row.width)
-  const height = sizings.find((each) => each === row.height)
-  if ((row.width !== undefined && width === undefined) || (row.height !== undefined && height === undefined))
-    return null
-  return {
-    flow,
-    gap: row.gap,
-    padding: [left, top, right, bottom],
-    align,
-    ...(width === undefined ? {} : { width }),
-    ...(height === undefined ? {} : { height }),
-  }
+  return { flow, gap: row.gap, padding: [left, top, right, bottom], align }
 }
 
 export function readFraming(raw: unknown, node: ElementId): Framing | null {

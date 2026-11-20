@@ -184,8 +184,6 @@ describe("the one table of traits", () => {
       "layout.padding",
       "layout.align",
       "layout.opacity",
-      "layout.width",
-      "layout.height",
     ])
     expect(alphaKeys).toEqual(["fills.alpha", "border.alpha", "text.alpha", "layout.opacity"])
   })

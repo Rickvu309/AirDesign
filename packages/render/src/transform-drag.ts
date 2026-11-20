@@ -65,6 +65,7 @@ export function canResizeElement(element: CanvasElement): boolean {
     element.movable === true &&
     element.box !== null &&
     element.connection === undefined &&
+    element.frame !== "auto" &&
     element.inFrame !== "auto"
   )
 }
@@ -72,7 +73,6 @@ export function canResizeElement(element: CanvasElement): boolean {
 export function canRotateElement(element: CanvasElement): boolean {
   return (
     canResizeElement(element) &&
-    element.frame !== "auto" &&
     element.kind !== "table" &&
     element.kind !== "chart" &&
     element.group?.frame === undefined &&

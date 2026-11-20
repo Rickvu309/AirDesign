@@ -6,15 +6,13 @@ const backdropSections: readonly PanelSection["trait"][] = ["fills", "corners", 
 
 export function layoutFields(view: LayoutView | null): PanelReads["fields"] {
   if (view === null) return {}
-  const { flow, gap, padding, align, opacity, width, height } = view
+  const { flow, gap, padding, align, opacity } = view
   return {
     "layout.flow": { value: flow, own: true },
     "layout.gap": { value: gap, own: true },
     "layout.padding": { value: padding, own: true },
     "layout.align": { value: align, own: true },
     "layout.opacity": { value: opacity, own: true },
-    "layout.width": { value: width, own: true },
-    "layout.height": { value: height, own: true },
   }
 }
 

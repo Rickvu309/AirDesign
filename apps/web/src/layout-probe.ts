@@ -14,32 +14,14 @@ function laidOut(parts: Parts, at: At): string {
   )
 }
 
-const dragged: Readonly<Record<string, Readonly<Record<string, { readonly set: number }>>>> = {
-  width: { w: { set: 6_000_000 } },
-  height: { h: { set: 2_000_000 } },
-}
-
 export const layoutProbe: Probe<"layout"> = {
   deck: "frame.pptx",
   kind: "group",
   opening: () => ({
     v: format,
-    patch: {
-      layout: {
-        flow: "opening",
-        gap: "opening",
-        padding: "opening",
-        align: "opening",
-        width: "opening",
-        height: "opening",
-      },
-      box: { w: "opening", h: "opening" },
-    },
+    patch: { layout: { flow: "opening", gap: "opening", padding: "opening", align: "opening" } },
   }),
-  edit: (_, field, value) => ({
-    v: format,
-    patch: { layout: { [field]: { set: value } }, ...(field in dragged ? { box: dragged[field] } : {}) },
-  }),
+  edit: (_, field, value) => ({ v: format, patch: { layout: { [field]: { set: value } } } }),
   painted: laidOut,
   fields: {
     flow: { file: (parts, at) => framing(parts, at)?.flow, shows: (value) => value },
@@ -49,7 +31,5 @@ export const layoutProbe: Probe<"layout"> = {
       shows: (value) => [value.left, value.top, value.right, value.bottom],
     },
     align: { file: (parts, at) => framing(parts, at)?.align, shows: (value) => value },
-    width: { file: (parts, at) => framing(parts, at)?.width, shows: (value) => value },
-    height: { file: (parts, at) => framing(parts, at)?.height, shows: (value) => value },
   },
 }

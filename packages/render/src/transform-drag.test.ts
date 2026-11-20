@@ -1,8 +1,7 @@
 import { elementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import type { Point } from "./box-gesture.js"
-import type { CanvasElement } from "./record.js"
-import { canResizeElement, evaluateTransform } from "./transform-drag.js"
+import { evaluateTransform } from "./transform-drag.js"
 import type { TransformGrip } from "./transform-math.js"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
@@ -45,33 +44,5 @@ describe("evaluateTransform", () => {
       cx: 5_638_800,
       cy: 1_905_000,
     })
-  })
-})
-
-describe("canResizeElement", () => {
-  const painted = { x: 10, y: 10, width: 100, height: 40, rotation: 0, flipH: false, flipV: false }
-  const frame: CanvasElement = {
-    key: "ppt/slides/slide1.xml#20",
-    id: elementId("256.20"),
-    kind: "group",
-    box: painted,
-    editable: false,
-    movable: true,
-    placeholder: false,
-    filled: false,
-    fill: null,
-    line: null,
-    outline: "box",
-    text: null,
-    frame: "auto",
-  }
-
-  it("resizes an auto layout frame, whose side then turns Fixed", () => {
-    expect(canResizeElement(frame)).toBe(true)
-  })
-
-  it("keeps the size of a layer the auto layout frame places", () => {
-    const { frame: _, ...layer } = frame
-    expect(canResizeElement({ ...layer, id: elementId("256.3"), kind: "shape", inFrame: "auto" })).toBe(false)
   })
 })

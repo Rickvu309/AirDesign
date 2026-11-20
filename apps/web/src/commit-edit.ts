@@ -8,8 +8,6 @@ import {
   type ElementPatch,
   type Preset,
   type Row,
-  type Sides,
-  sidesPatch,
   type TraitPatch,
 } from "@airdesign/document"
 import { httpRemote, memoryRemote, type Remote } from "@airdesign/live"
@@ -95,17 +93,10 @@ export type BoxCommit = {
   readonly element: TextBox
   readonly corners?: { readonly before: CornersShape; readonly after: CornersShape }
   readonly sizing?: { readonly before: TextSizing; readonly after: TextSizing }
-  readonly sides?: { readonly before: Sides; readonly after: Sides }
 }
 
-export function cornersPatch(
-  box: Box,
-  shape: CornersShape | undefined,
-  sizing?: TextSizing,
-  sides: Sides = {},
-): ElementPatch {
-  const sized = { ...boxPatch(box), ...sidesPatch(sides) }
-  const corners = shape === undefined ? sized : { ...sized, geometry: { shape: { set: shape } } }
+export function cornersPatch(box: Box, shape: CornersShape | undefined, sizing?: TextSizing): ElementPatch {
+  const corners = shape === undefined ? boxPatch(box) : { ...boxPatch(box), geometry: { shape: { set: shape } } }
   return sizing === undefined ? corners : { ...corners, body: sizing }
 }
 
@@ -118,14 +109,14 @@ export async function storeBoxes(
 ): Promise<CommitOutcome | "stored"> {
   const kept: ElementId[] = []
   let refusal: CommitOutcome = "refused"
-  for (const { box, element, corners, sizing, sides } of boxes) {
+  for (const { box, element, corners, sizing } of boxes) {
     const link = open(memoryRemote())
     const result =
-      corners === undefined && sizing === undefined && sides === undefined
+      corners === undefined && sizing === undefined
         ? await link.enqueueBox(deckId, box, element.id, element.file)
         : await link.enqueueRow(
             deckId,
-            { v: format, patch: cornersPatch(box, corners?.after, sizing?.after, sides?.after) },
+            { v: format, patch: cornersPatch(box, corners?.after, sizing?.after) },
             element.id,
             element.file,
           )

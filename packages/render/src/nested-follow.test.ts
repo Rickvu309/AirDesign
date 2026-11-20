@@ -58,18 +58,3 @@ describe("a layer two groups deep while a group above it is dragged", () => {
     expect(liveBox(store, leafElement)).toMatchObject({ x: 170, y: 190, width: 50, height: 50 })
   })
 })
-
-describe("an auto layout frame while a side handle resizes it", () => {
-  const frameBox = painted(100, 100, 200, 60)
-  const carry = { id: outer, box: frameBox, frame: "auto" as const }
-  const { nestedIn: _, ...loose } = leafElement
-  const backdrop: CanvasElement = { ...loose, id: inner, box: frameBox, backdrop: true, group: carry, parent: outer }
-  const child: CanvasElement = { ...loose, box: painted(100, 100, 80, 60), group: carry, parent: outer }
-
-  it("grows its fill with the frame and keeps its layers' sizes", () => {
-    const store = paintStore()
-    store.placeBox(outer, { x: 100, y: 100, cx: 320, cy: 60 })
-    expect(liveBox(store, backdrop)).toMatchObject({ x: 100, y: 100, width: 320, height: 60 })
-    expect(liveBox(store, child)).toMatchObject({ x: 100, y: 100, width: 80, height: 60 })
-  })
-})

@@ -374,28 +374,3 @@ describe("a wrap replayed over an index read from the parts it already wrote", (
     expect(elementGone(after, node(3))).toBe(false)
   })
 })
-
-describe("a fixed-width auto layout frame in PowerPoint", () => {
-  const fixedFrame = () =>
-    ran(gapped(wrapped(opened), 50800), [
-      {
-        command: "person",
-        v: 13,
-        patch: { layout: { width: { set: "fixed" }, align: { set: "top" } }, box: { w: { set: 1_000_000 } } },
-        node: node(20),
-      },
-    ])
-
-  it("writes the frame at its fixed width with the row centred along it, and reads Fixed back from its tag", () => {
-    const shown = exported(fixedFrame())
-    expect(painted(shown, 21)).toMatchObject({ x: 100000, width: 1_000_000 })
-    expect(painted(shown, 3).x).toBe(100000 + (1_000_000 - 350800) / 2)
-    expect(decodeUtf8(shown.get("ppt/tags/tag1.xml") ?? new Uint8Array())).toContain(";a=top;w=f;")
-    const reread = indexPackage(shown).elements.find((element) => element.node === node(20))
-    expect(reread?.framing?.layout).toMatchObject({ align: "top", width: "fixed" })
-    expect(reread?.framing?.layout.height).toBeUndefined()
-    expect(
-      exportParts(shown, { ...openRegister("", ""), index: { ...indexPackage(shown), total: 0, pages: [] } }),
-    ).toBe(shown)
-  })
-})

@@ -155,7 +155,7 @@ A group with its own fill, opacity, corners, border and shadow; fill, corners an
 _Avoid_: container
 
 **auto layout**:
-A frame's rule that lays its children out in order, in a row or column, a gap apart in its padding, by Alignment; each side hugs them or is Fixed. Shift+A wraps the selection; Remove auto layout keeps each child where it is.
+A frame's rule that lays its children out in order, in a row or column, a gap apart inside its padding, aligned across, and makes the frame hug them. Shift+A wraps the selection; Remove auto layout keeps each child where it is.
 _Avoid_: stack
 
 **backdrop**:

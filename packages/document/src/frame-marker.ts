@@ -37,8 +37,6 @@ export function layoutMarker(view: LayoutView): string {
     `g=${String(view.gap)}`,
     `p=${[left, top, right, bottom].map(String).join(",")}`,
     `a=${view.align}`,
-    ...(view.width === "fixed" ? ["w=f"] : []),
-    ...(view.height === "fixed" ? ["h=f"] : []),
     `c=${view.children.map((child) => shapeOf(child.node).shape).join(",")}`,
     `s=${seal(view.box, view.children)}`,
   ].join(";")
@@ -68,9 +66,7 @@ function layoutOf(fields: ReadonlyMap<string, string>): FramingLayout | null {
   const [left, top, right, bottom] = sizes(fields.get("p"), 4) ?? []
   if (flow === undefined || align === undefined || gap === undefined) return null
   if (left === undefined || top === undefined || right === undefined || bottom === undefined) return null
-  const sized = (key: string) =>
-    fields.get(key) === "f" ? ({ [key === "w" ? "width" : "height"]: "fixed" } as const) : {}
-  return { flow, gap, padding: [left, top, right, bottom], align, ...sized("w"), ...sized("h") }
+  return { flow, gap, padding: [left, top, right, bottom], align }
 }
 
 export function layoutFromFile(marker: string | null, seen: SeenGroup): Framing | null {

@@ -24,7 +24,6 @@ import { followsGroups, shownPlace, storedPlace } from "./group-space.js"
 import { boxFields, type Spot } from "./change-box.js"
 import { cornersOf, cornersRefusals, roundedPatch } from "./change-corners.js"
 import { framedNow, readLayout } from "./frame-layout.js"
-import { huggedOf, sizedPatch, type Hugged } from "./frame-sizing.js"
 import { addedGeometry, elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
@@ -88,7 +87,6 @@ export type ScopedElement = {
   readonly backdrop?: ElementId
   readonly origin?: Box
   readonly shown?: Place
-  readonly hugged?: Hugged
 }
 
 export type Scope = {
@@ -255,7 +253,6 @@ function planNode(
     named.map(([trait, input]) => [trait, traitPatch(trait, input, trait === "box" ? (placed ?? input) : input, view)]),
   )
   Object.assign(patch, roundedPatch(change, view, placed))
-  Object.assign(patch, sizedPatch(view.hugged, patch))
   const opacity = change.opacity
   if (opacity !== undefined)
     for (const [trait, field] of opacityFields(view.facts).map(fieldOf))
@@ -421,7 +418,6 @@ export function registerScope(register: Register): Scope {
         ...cornersOf(geometry?.shape, opening, box, added),
         parent: groupParent(register, node) ?? null,
         ...(facts.frame === undefined ? {} : backdropOf(register, node)),
-        ...(facts.frame === "auto" ? huggedOf(register, node) : {}),
       }
     },
   }

@@ -96,12 +96,6 @@
     "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
   },
   {
-    "page": "frame-fixed",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"]",
-    "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
-  },
-  {
     "page": "frame-nested",
     "detector": "invisible-control",
     "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#9\"]",

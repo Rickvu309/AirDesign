@@ -30,7 +30,6 @@ assert.deepEqual(
     "element-order.mjs",
     "frame-group.mjs",
     "frame-nested.mjs",
-    "frame-sizing.mjs",
     "frame.mjs",
     "gradient-kept.mjs",
     "group-duplicate.mjs",
