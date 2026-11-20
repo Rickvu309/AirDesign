@@ -1,4 +1,4 @@
-import { toast as sonner, type ExternalToast } from "sonner"
+import { toast as sonner, type ExternalToast, type ToastT } from "sonner"
 import { XIcon } from "lucide-react"
 import { productCopy } from "@/copy/product-copy"
 
@@ -8,22 +8,58 @@ const figmaNotice = 3000
 
 let nextId = 0
 
-function identified(options?: ExternalToast): ExternalToast {
-  const revision = nextId++
-  const id = options?.id ?? `airdesign-${revision}`
-  return { ...options, id, testId: `airdesign-toast-${JSON.stringify(id)}/${revision}` }
+type ToastId = string | number
+
+const showing = new Map<ToastId, ToastId>()
+const named = new Map<ToastId, ToastId>()
+
+function closing(name: ToastId, gone: ToastId) {
+  if ((showing.get(name) ?? name) !== gone) return
+  const fresh = `${String(name)}/${String(nextId++)}`
+  showing.set(name, fresh)
+  named.set(fresh, name)
 }
 
-function dismiss(id?: string | number) {
+function identified(options?: ExternalToast): ExternalToast {
+  const revision = nextId++
+  const name = options?.id
+  const id = name === undefined ? `airdesign-${revision}` : (showing.get(name) ?? name)
+  if (name !== undefined && !showing.has(name)) showing.set(name, id)
+  const left = (shown: ToastT) => {
+    if (name !== undefined) closing(name, shown.id)
+  }
+  return {
+    ...options,
+    id,
+    testId: `airdesign-toast-${JSON.stringify(name ?? id)}/${revision}`,
+    onDismiss(shown) {
+      left(shown)
+      options?.onDismiss?.(shown)
+    },
+    onAutoClose(shown) {
+      left(shown)
+      options?.onAutoClose?.(shown)
+    },
+  }
+}
+
+function dismiss(id?: ToastId) {
+  const name = id === undefined ? undefined : (named.get(id) ?? id)
   if (typeof document !== "undefined") {
     for (const element of document.querySelectorAll<HTMLElement>("[data-sonner-toast]")) {
-      if (id === undefined || element.dataset.testid?.startsWith(`airdesign-toast-${JSON.stringify(id)}/`)) {
+      if (name === undefined || element.dataset.testid?.startsWith(`airdesign-toast-${JSON.stringify(name)}/`)) {
         element.inert = true
         element.setAttribute("aria-hidden", "true")
       }
     }
   }
-  return sonner.dismiss(id)
+  if (name === undefined) {
+    for (const [each, shown] of showing) closing(each, shown)
+    return sonner.dismiss()
+  }
+  const shown = showing.get(name) ?? name
+  closing(name, shown)
+  return sonner.dismiss(shown)
 }
 
 export const toast = {

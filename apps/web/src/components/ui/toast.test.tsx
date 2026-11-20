@@ -7,7 +7,7 @@ import { elementId, openRegister } from "@airdesign/document"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { toast as sonner, type ToastT } from "sonner"
-import { afterEach, expect, it } from "vitest"
+import { afterEach, expect, it, vi } from "vitest"
 import { toast } from "./toast"
 
 afterEach(() => sonner.dismiss())
@@ -101,4 +101,40 @@ it("keeps one notice when an animated element is repeatedly refused deletion", a
   expect(
     sonner.getToasts().filter((entry) => "title" in entry && entry.title === elementCopy.removeRefusedTitle),
   ).toHaveLength(1)
+})
+
+function shown(id: string | number): ToastT | undefined {
+  return sonner
+    .getHistory()
+    .filter((entry): entry is ToastT => !("dismiss" in entry))
+    .findLast((entry) => entry.id === id)
+}
+
+it("shows a notice again as a new toast once the person closed it, so the closing one cannot take it away", () => {
+  const first = toast.error("Unable to save presenter notes", { id: "notes-refused" })
+  const closed = shown(first)
+  if (closed === undefined) throw new Error("no notice")
+  closed.onDismiss?.(closed)
+  const again = toast.error("Unable to save presenter notes", { id: "notes-refused" })
+  expect(again).not.toBe(first)
+  expect(shown(again)).toMatchObject({ title: "Unable to save presenter notes", duration: Infinity })
+  expect(toast.error("Unable to save presenter notes", { id: "notes-refused" })).toBe(again)
+  vi.stubGlobal("requestAnimationFrame", (frame: FrameRequestCallback) => {
+    frame(0)
+    return 0
+  })
+  try {
+    toast.dismiss("notes-refused")
+  } finally {
+    vi.unstubAllGlobals()
+  }
+  expect(sonner.getToasts().some((entry) => entry.id === again)).toBe(false)
+})
+
+it("shows a notice again as a new toast once it closed by itself", () => {
+  const first = toast.refusal("Unable to delete", { id: "remove-refused" })
+  const closed = shown(first)
+  if (closed === undefined) throw new Error("no notice")
+  closed.onAutoClose?.(closed)
+  expect(toast.refusal("Unable to delete", { id: "remove-refused" })).not.toBe(first)
 })
