@@ -9,6 +9,7 @@ import {
 import { spliceBytes, contentSpans, decodedXmlText, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { noTemplate, paragraphBytes, type TemplateIndent } from "./paragraph-format.js"
+import { shownLetters } from "./letter-case.js"
 import { formatEdits, formattedInline, runProperties } from "./run-format.js"
 import { xmlText } from "./shape-write.js"
 
@@ -317,14 +318,15 @@ export function textValueEdits(
   children: MarkupChildren,
   bytes: Uint8Array,
   shape: MarkupElement,
-  value: TextValue,
+  typed: TextValue,
   numbers?: SlideNumbers,
   fieldId: (paragraph: number, run: number) => string = () => "{00000000-0000-4000-8000-000000000000}",
   template: TemplateIndent = noTemplate,
 ): readonly ByteEdit[] {
   const paragraphs = sourceBody(children, bytes, shape)
   if (paragraphs === null) throw new Error("text-body")
-  if (value.length === 0) throw new Error("text-empty")
+  if (typed.length === 0) throw new Error("text-empty")
+  const value = shownLetters(typed)
   const edits: ByteEdit[] = []
   const seen = new Set<number>()
   let pending: Uint8Array[] = []

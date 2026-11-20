@@ -162,6 +162,7 @@ function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined
   if (key === "color") return { value: { scheme: "tx1" }, mixed: false, inherited: true }
   if (key === "list") return ownHeld("none")
   if (key === "letterSpacing") return ownHeld(0)
+  if (key === "case") return ownHeld("none")
   const off = key === "bold" || key === "italic" || key === "underline" || key === "strike"
   return ownHeld(off ? false : undefined)
 }

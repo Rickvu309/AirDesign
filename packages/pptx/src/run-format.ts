@@ -3,6 +3,7 @@ import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "
 import { encodeUtf8 } from "./package-bytes.js"
 import { paintRunColor, withRunChild } from "./run-color.js"
 import { fillMarkup } from "./fill-markup.js"
+import { capOf } from "./letter-case.js"
 import { withRunFill } from "./run-color.js"
 import { xmlAttribute } from "./shape-write.js"
 import type { SourceInline } from "./text-value-route.js"
@@ -28,6 +29,7 @@ function settings(run: TextRun): readonly (readonly [string, string])[] {
     ...formats,
     ...(run.size === undefined ? [] : [["sz", String(run.size)] as const]),
     ...(run.letterSpacing === undefined ? [] : [["spc", String(run.letterSpacing)] as const]),
+    ...(run.case === undefined ? [] : [["cap", capOf[run.case]] as const]),
   ]
 }
 

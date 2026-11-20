@@ -36,7 +36,7 @@ it("describes each element kind", async () => {
       "A shape takes identity (name, alt, hidden, locked, mask), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape, corners), fills (paint, source, weight, color, mode, tileScale, crop, recolor, overlay, blur), border (fill, width, dash, cap, compound, join, head, tail), effects (shadow, innerShadow, drop1, drop2, drop3, inner1, inner2, inner3, glow, softEdge, blur), body (insets, anchor, wrap, autofit, vertical, columns), text (value, fill, color, size, font",
     )
     expect(instructions).toContain(
-      "letterSpacing, lineHeight, spaceBefore, style, spaceAfter), link (target) and opacity.",
+      "letterSpacing, case, lineHeight, spaceBefore, style, spaceAfter), link (target) and opacity.",
     )
     expect(instructions).toContain(
       "A line takes identity (name, alt, hidden, locked), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape, corners), border (fill, width, dash",

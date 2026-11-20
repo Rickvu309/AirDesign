@@ -1,4 +1,8 @@
 import {
+  ALargeSmall,
+  CaseLower,
+  CaseSensitive,
+  CaseUpper,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -141,6 +145,12 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
         options: { left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify },
       }),
       placed("list", hidden, { form: "segments", options: { none: Minus, bullets: List, numbers: ListOrdered } }),
+    ],
+    [
+      placed("case", hidden, {
+        form: "segments",
+        options: { none: Minus, upper: CaseUpper, lower: CaseLower, title: CaseSensitive, small: ALargeSmall },
+      }),
     ],
     [placed("fill", hidden, { options: fills })],
     [placed("color", hidden, { control: "canvas" })],

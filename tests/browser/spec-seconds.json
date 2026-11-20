@@ -161,6 +161,7 @@
     "layers-drag-nested.spec.ts": 4.6,
     "layers-drag.spec.ts": 3,
     "layers-panel.spec.ts": 8.2,
+    "letter-case.spec.ts": 3.1,
     "live-cache.spec.ts": 2.2,
     "live-repaint.spec.ts": 6.3,
     "lost-answer.spec.ts": 4.3,

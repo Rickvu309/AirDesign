@@ -311,6 +311,7 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["lineHeight", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
+    ["case"],
   ])
   const spacing = panel.sections.find((section) => section.trait === "paragraphSpacing")
   expect(spacing?.strips.map((strip) => strip.map((control) => control.field))).toEqual([["spaceBefore", "spaceAfter"]])
@@ -318,6 +319,7 @@ it("arranges a text box into strips with resolved names and choices", () => {
   expect(text?.strips[2]?.[0]?.look.name.show).toBe("above")
   expect(text?.strips[5]?.[0]?.look.form).toBe("segments")
   expect(text?.strips[5]?.[0]?.look.options.left).toBeDefined()
+  expect(Object.keys(text?.strips[6]?.[0]?.look.options ?? {})).toEqual(["none", "upper", "lower", "title", "small"])
 })
 
 it("resolves box actions and letter names in the shape's strips", () => {

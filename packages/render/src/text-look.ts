@@ -98,6 +98,10 @@ function shift(run: CanvasRunStyle): number {
   return run.baseline ?? 0
 }
 
+const transforms = { all: "uppercase", lower: "lowercase", title: "capitalize", small: "none", none: "none" } as const
+
+const capsOf = { upper: "all", lower: "lower", title: "title", small: "small", none: "none" } as const
+
 function styleOf(run: CanvasRunStyle, scaled: Scaled, colors: readonly CanvasTemplateColor[] = []): Look {
   return {
     fontFamily: familyOf(run.font),
@@ -112,7 +116,7 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled, colors: readonly CanvasTem
       : { background: run.picture, backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" }),
     lineHeight: singleLine,
     textRendering: "geometricPrecision",
-    textTransform: run.caps === "all" ? "uppercase" : "none",
+    textTransform: transforms[run.caps ?? "none"],
     fontVariantCaps: run.caps === "small" ? "small-caps" : "normal",
   }
 }
@@ -254,6 +258,7 @@ function formatted(
     italic: format.italic ?? style.italic,
     strike: format.strike ?? style.strike === true,
     ...(format.letterSpacing === undefined ? {} : { letterSpacing: format.letterSpacing * scale }),
+    ...(format.case === undefined ? {} : { caps: capsOf[format.case] }),
     underline: format.underline ?? style.underline === true,
     ...(format.size === undefined ? {} : { size: format.size * emuPerHundredth * scale, points: format.size }),
     ...(format.color === undefined ? {} : { color: paintedColor(format.color, colors, style.color) }),

@@ -8,6 +8,8 @@ import {
   type Color,
   type ColorTransform,
   type RunFormat,
+  caseNames,
+  type TextCase,
 } from "@airdesign/document"
 
 type RunPaint = RunFormat & {
@@ -17,6 +19,7 @@ type RunPaint = RunFormat & {
   readonly color?: Color
   readonly font?: string
   readonly letterSpacing?: number
+  readonly case?: TextCase
 }
 
 const sizeFloor = 100
@@ -73,6 +76,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
     if (set !== undefined) span.dataset[name] = String(set)
   }
   if (format.letterSpacing !== undefined) span.dataset.letterSpacing = String(format.letterSpacing)
+  if (format.case !== undefined) span.dataset.case = format.case
   if (format.fill !== undefined) span.dataset.fill = JSON.stringify(format.fill)
   if (format.size !== undefined) span.dataset.size = String(format.size)
   if (format.color !== undefined) {
@@ -91,6 +95,8 @@ export function readFormat(span: HTMLElement): RunPaint {
   const letterSpacing = span.dataset.letterSpacing
   if (letterSpacing !== undefined && integer.test(letterSpacing))
     format = { ...format, letterSpacing: Number(letterSpacing) }
+  const letters = caseNames.find((name) => name === span.dataset.case)
+  if (letters !== undefined) format = { ...format, case: letters }
   const rawLink = span.dataset.link
   if (rawLink !== undefined) {
     try {

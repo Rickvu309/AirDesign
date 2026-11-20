@@ -11,6 +11,7 @@ export const textCopy = {
   font: "Font",
   fonts: "Fonts",
   letterSpacing: "Letter spacing",
+  case: "Letter case",
   list: "List",
   lineHeight: "Line height",
   auto: "Auto",
@@ -25,4 +26,9 @@ export const textWords = {
   numbers: "Numbered list",
   "list.bullets": "Bulleted list",
   "list.numbers": "Numbered list",
+  "case.none": "As typed",
+  upper: "Uppercase",
+  lower: "Lowercase",
+  title: "Title case",
+  small: "Small caps",
 } as const

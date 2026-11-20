@@ -1,4 +1,4 @@
-import { alignNames, type TextFill, type ParagraphAlign } from "@airdesign/document"
+import { alignNames, type TextCase, type TextFill, type ParagraphAlign } from "@airdesign/document"
 import { child, inside, whole, type Held } from "./markup-held.js"
 import { paintAttribute } from "./paint-color.js"
 import { paintReader } from "./paint-reader.js"
@@ -13,6 +13,7 @@ export type TextStyleValues = {
   readonly font: string
   readonly strike: boolean
   readonly letterSpacing: number
+  readonly case: TextCase
   readonly list: "none" | "bullets" | "numbers"
   readonly align: ParagraphAlign
   readonly lineHeight: number | { readonly points: number }
@@ -21,6 +22,8 @@ export type TextStyleValues = {
 }
 
 export type TextStyleField = keyof TextStyleValues
+
+const caseOf = { all: "upper", small: "small", none: "none" } as const
 
 export type ShownTextStyle = {
   readonly [F in TextStyleField]: { readonly value: TextStyleValues[F] | null; readonly own: boolean }
@@ -103,6 +106,7 @@ export function shownTextStyle(parts: ReadonlyMap<string, Uint8Array>, at: TextS
     font: { value: style.font, own: runs.some(tagged("a:latin")) },
     strike: { value: style.strike, own: runs.some(attribute("strike")) },
     letterSpacing: { value: style.letterSpacing ?? 0, own: runs.some(attribute("spc")) },
+    case: { value: caseOf[style.caps ?? "none"], own: runs.some(attribute("cap")) },
     list: {
       value: paragraph.bullet === null ? "none" : "autoNumber" in paragraph.bullet ? "numbers" : "bullets",
       own: paragraphs.some((held) =>
