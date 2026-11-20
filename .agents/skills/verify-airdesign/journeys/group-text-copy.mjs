@@ -18,7 +18,10 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
   await page.getByRole("menuitem", { name: productCopy.blankDeck, exact: true }).click()
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const deck = new URL(page.url()).pathname.split(/\W/).at(-1)
+  const deck = page
+    .url()
+    .split(/\/deck\//)
+    .at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.locator("[data-design-mode]").click()
