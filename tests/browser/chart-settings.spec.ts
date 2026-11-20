@@ -58,12 +58,15 @@ test("sets a chart's title, data labels, axis, gridlines, gap, colour and legend
   }
   await settings.getByRole("combobox", { name: chartCopy.format, exact: true }).click()
   await page.getByRole("option", { name: chartCopy.formats["$#,##0.0"], exact: true }).click()
+  await expect(page.getByRole("option")).toHaveCount(0)
   await expect(canvas.locator("[data-chart-text]").filter({ hasText: "$4.1" })).toHaveCount(1)
   await settings.getByRole("combobox", { name: chartCopy.legend, exact: true }).click()
   await page.getByRole("option", { name: chartCopy.legends.top, exact: true }).click()
+  await expect(page.getByRole("option")).toHaveCount(0)
   const gap = settings.getByRole("textbox", { name: chartCopy.gap })
   await gap.fill("40")
   await gap.press("Enter")
+  await expect(page.getByRole("listbox")).toHaveCount(0)
   const navy = "1F4E79"
   await typeColor(page, settings.getByLabel("Series 1", { exact: true }).getByRole("button").first(), navy)
   await expect(canvas.locator(`svg[data-chart] [fill="#${navy}"]`).first()).toBeVisible()
