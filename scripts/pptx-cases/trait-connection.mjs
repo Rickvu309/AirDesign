@@ -7,6 +7,7 @@ const elbowExported = "exported-elbow.pptx"
 const elbowSlide = "ppt/slides/slide1.xml"
 const arrowOriginal = "shapes-added.pptx"
 const arrowExported = "exported-agent-arrow.pptx"
+const underExported = "exported-agent-elbow.pptx"
 const clearance = 228600
 const slide = "ppt/slides/slide10.xml"
 const untouched = ["ppt/slides/slide7.xml", "ppt/slides/slide8.xml", "ppt/slides/slide9.xml"]
@@ -100,15 +101,36 @@ function arrowLines(answers, decode) {
   return lines
 }
 
-function near(left, right) {
-  return Math.abs(left.x - right.x) <= 1 && Math.abs(left.y - right.y) <= 1
+function underLines(answers, decode) {
+  const kept = [...(answers.parts.get(arrowOriginal)?.keys() ?? [])].filter((name) => name !== elbowSlide)
+  const lines = slideExportLines({ ...answers, original: arrowOriginal, exported: underExported, kept }).map((line) =>
+    line.replace(/^slide export/, "agent elbow"),
+  )
+  const after = decode(underExported, elbowSlide)
+  if (!after.includes('<a:stCxn id="4" idx="2"/><a:endCxn id="5" idx="4"/>'))
+    lines.push("agent elbow did not bind the rectangle's bottom site to the oval's bottom site")
+  if (!after.includes('<a:prstGeom prst="bentConnector3">')) lines.push("agent elbow is not an elbow connector")
+  const rectangle = placeOf(after, "4")
+  const oval = placeOf(after, "5")
+  const ends = endsOf(placeOf(after, "7"))
+  if (!near(ends.start, { x: rectangle.x + rectangle.cx / 2, y: rectangle.y + rectangle.cy }, halfPoint))
+    lines.push("agent elbow left its start more than half a point off the rectangle's bottom site")
+  if (!near(ends.end, { x: oval.x + oval.cx / 2, y: oval.y + oval.cy }, halfPoint))
+    lines.push("agent elbow left its end more than half a point off the oval's bottom site")
+  return lines
+}
+
+const halfPoint = 6350
+
+function near(left, right, within = 1) {
+  return Math.round(Math.abs(left.x - right.x)) <= within && Math.round(Math.abs(left.y - right.y)) <= within
 }
 
 export default {
   specs: ["tests/browser/connector-ends.spec.ts", "tests/browser/agent-arrow.spec.ts"],
-  exports: [exported, elbowExported, arrowExported],
+  exports: [exported, elbowExported, arrowExported, underExported],
   originals: [elbowOriginal, arrowOriginal],
-  renders: [exported, elbowExported, arrowExported],
+  renders: [exported, elbowExported, arrowExported, underExported],
   covers: ["connection.start", "connection.end"],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => name !== slide)
@@ -142,6 +164,6 @@ export default {
       if (was === null || JSON.stringify(was) !== JSON.stringify(now))
         lines.push(`connection changed the connector PowerPoint routed on ${part}`)
     }
-    return [...lines, ...elbowLines(answers, decode), ...arrowLines(answers, decode)]
+    return [...lines, ...elbowLines(answers, decode), ...arrowLines(answers, decode), ...underLines(answers, decode)]
   },
 }

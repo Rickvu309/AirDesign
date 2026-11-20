@@ -20,15 +20,17 @@ import { decided, ready } from "./agent-elements.js"
 import { applySet, openedRegister, type Applied } from "./apply-change.js"
 import type { Deck } from "./call.js"
 
-export type WireLine = Extract<WireAdd, { readonly kind: "line" | "arrow" }>
+export type WireLine = Extract<WireAdd, { readonly kind: "line" | "arrow" | "elbow" }>
 
 export function drawsLine(edit: WireSet | WireAdd): edit is WireLine {
-  return edit.op === "add" && (edit.kind === "line" || edit.kind === "arrow")
+  return edit.op === "add" && (edit.kind === "line" || edit.kind === "arrow" || edit.kind === "elbow")
 }
 
 type End = NonNullable<NonNullable<WireLine["connection"]>["start"]>
 
 const upright = { rot: 0, flipH: false, flipV: false }
+
+const drawn = { line: "line", arrow: "straightConnector1", elbow: "bentConnector3" } as const
 
 function tieOf(register: Register, slide: SlideId, end: End | undefined): Tie | null | "site" {
   if (end === undefined || !("shape" in end)) return null
@@ -59,7 +61,7 @@ export function addLine(deck: Deck, change: WireLine, runId: string, base: numbe
   if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
   const measure = slideMeasure(register, change.slide)
   if (measure === undefined) return { ok: false, refusal: "dead" }
-  const geometry = change.kind === "arrow" ? "straightConnector1" : "line"
+  const geometry = drawn[change.kind]
   const place = linePlace(register, change, geometry)
   if (place === null) return { ok: false, refusal: "site" }
   const node = nextElementId(register, change.slide, measure.free)
@@ -67,7 +69,8 @@ export function addLine(deck: Deck, change: WireLine, runId: string, base: numbe
   const edit = { slide: "element-add", id: change.slide, element, geometry, runId } as const
   const added = decided(register, opened.file, edit, runId)
   if (!added.ok) return added
-  const turned = place.flipH || place.flipV ? { box: { flipH: place.flipH, flipV: place.flipV } } : {}
+  const { rot, flipH, flipV } = place
+  const turned = rot !== 0 || flipH || flipV ? { box: { ...(rot === 0 ? {} : { rot }), flipH, flipV } } : {}
   const rows: Omit<SetChange, "target"> = {
     ...(change.connection === undefined ? {} : { connection: change.connection }),
     ...turned,

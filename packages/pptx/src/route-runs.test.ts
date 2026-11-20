@@ -32,7 +32,7 @@ for (const name of ["blank.pptx", "nasa-1d-cnn.pptx"]) {
 }
 
 for (const name of ["blank.pptx", "nasa-1d-cnn.pptx"]) {
-  it(`judges every shape the tray inserts, added to the first slide of ${name}, each touching only that slide`, async () => {
+  it(`judges every shape the tray or an agent draws, added to the first slide of ${name}, each touching only that slide`, async () => {
     const parts = await readParts(readFileSync(`${folder}/${name}`))
     const runs = drawnRuns(parts)
     const geometries = [
@@ -40,6 +40,7 @@ for (const name of ["blank.pptx", "nasa-1d-cnn.pptx"]) {
       "ellipse",
       "line",
       "straightConnector1",
+      "bentConnector3",
       "diamond",
       "triangle",
       "star5",
@@ -57,7 +58,7 @@ for (const name of ["blank.pptx", "nasa-1d-cnn.pptx"]) {
       expect(touchMatches(parts, run.parts, run.touch)).toBe(true)
       const before = new Set(readShapes(parts).map((shape) => `${shape.part}#${shape.shape}`))
       const added = readShapes(run.parts).filter((shape) => !before.has(`${shape.part}#${shape.shape}`))
-      const connector = run === runs[2] || run === runs[3]
+      const connector = run === runs[2] || run === runs[3] || run === runs[4]
       expect(added.map((shape) => shape.kind)).toEqual([connector ? "p:cxnSp" : "p:sp"])
     }
   })

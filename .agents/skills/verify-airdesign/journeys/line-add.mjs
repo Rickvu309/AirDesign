@@ -39,6 +39,21 @@ export default async function drive({ origin, page, signIn, post, capture, note,
   await expect(arrow.locator("[data-canvas-line]")).toBeVisible()
   await capture("arrow-added")
 
+  const turned = await saved()
+  aira([{ name: "elbow.sse", fill: { deck, base: String(turned.revision), slide: id } }, { name: "elbowed.sse" }])
+  await page.getByRole("textbox", { name: airaCopy.askAira }).fill("Join the bottoms of the rectangle and the oval")
+  await page.keyboard.press("Enter")
+  const joined = "An elbow line now joins their bottoms, under both."
+  await expect(panel.getByText(joined).or(retry).or(refused).first()).toBeVisible()
+  const elbow = (await saved()).register.order.find((command) => command.geometry === "bentConnector3")
+  if (elbow === undefined) {
+    await capture("elbow-added")
+    note("This build has no agent elbow. Aira's add of an elbow was refused.")
+    return
+  }
+  await expect(element(8).locator("[data-canvas-line]")).toBeVisible()
+  await capture("elbow-added")
+
   const placed = await placement(7)
   const oval = await element(5).boundingBox()
   if (oval === null) throw new Error("no oval")

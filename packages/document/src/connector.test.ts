@@ -112,6 +112,18 @@ describe("an elbow connector's route", () => {
     })
   })
 
+  it("keeps a U under two shapes at one height a point wide, so its bend stays a finite share of that width", () => {
+    const left = square(1_000_000, 1_000_000)
+    const right = square(4_000_000, 1_000_000)
+    const route = routed(elbow, "bentConnector3", {}, tie(left, 2), tie(right, 2))
+    if (route === null) throw new Error("no route")
+    expect(route.place.box.cx).toBe(12_700)
+    expect(route.adjust).toEqual({ adj1: Math.round(((12_700 + elbowClearance) * 100_000) / 12_700) })
+    const ends = connectorEnds(route.place)
+    expect(Math.abs(ends.start.x - 1_500_000) + Math.abs(ends.start.y - 2_000_000)).toBeLessThanOrEqual(6_350)
+    expect(Math.abs(ends.end.x - 4_500_000) + Math.abs(ends.end.y - 2_000_000)).toBeLessThanOrEqual(6_350)
+  })
+
   it("turns a quarter when it leaves a bottom site for a top site, with PowerPoint's turn and flips", () => {
     const top = square(1_000_000, 1_000_000)
     const below = square(3_000_000, 4_000_000)

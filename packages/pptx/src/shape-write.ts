@@ -1,4 +1,4 @@
-import type { Geometry } from "@airdesign/document"
+import { lineGeometries, type Geometry } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
@@ -121,6 +121,7 @@ const drawnNames: Readonly<Partial<Record<Geometry, string>>> = {
   ellipse: "Oval",
   line: "Straight Connector",
   straightConnector1: "Straight Arrow Connector",
+  bentConnector3: "Elbow Connector",
 }
 
 const lineWeight = 28575
@@ -128,7 +129,7 @@ const lineStroke = `<a:ln w="${String(lineWeight)}"/>`
 const arrowEnd = `<a:ln w="${String(lineWeight)}"><a:tailEnd type="triangle"/></a:ln>`
 
 function drawnProperties(geometry: Geometry, box: ShapeBox): string {
-  const end = geometry === "straightConnector1" ? arrowEnd : geometry === "line" ? lineStroke : ""
+  const end = geometry === "straightConnector1" ? arrowEnd : lineGeometries.includes(geometry) ? lineStroke : ""
   return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="${geometry}"><a:avLst/></a:prstGeom>${end}</p:spPr>`
 }
 
@@ -143,7 +144,7 @@ export function addDrawnShape(
     (idText) => {
       const name = `<p:cNvPr id="${idText}" name="${drawnNames[geometry] ?? "Shape"} ${idText}"/>`
       const properties = drawnProperties(geometry, box)
-      if (geometry === "line" || geometry === "straightConnector1")
+      if (lineGeometries.includes(geometry))
         return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
       return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}</p:sp>`
     },

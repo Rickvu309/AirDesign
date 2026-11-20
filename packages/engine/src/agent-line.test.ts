@@ -1,5 +1,13 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, landedPatch, placeOf, type DeckIndex, type IndexElement, type Register } from "@airdesign/document"
+import {
+  connectorEnds,
+  elementId,
+  landedPatch,
+  placeOf,
+  type DeckIndex,
+  type IndexElement,
+  type Register,
+} from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { call, openDeck, readDeckPage, type Deck } from "./index.js"
 
@@ -108,5 +116,21 @@ describe("an agent adds a line or an arrow", () => {
       ok: false,
       refusal: "site",
     })
+  })
+
+  it("adds an elbow from a parent's bottom site to a child's top site, its ends on both sites", () => {
+    const tree = { start: { shape: { node: "258.2", site: 2 } }, end: { shape: { node: "258.3", site: 0 } } }
+    const deck = landed(edit(indexed(), { op: "add", kind: "elbow", slide: "258", connection: tree }))
+    const added = deck.register.order.find((command) => command.slide === "element-add")
+    expect(added).toMatchObject({ geometry: "bentConnector3", element: { kind: "connector", value: null } })
+    const place = placeOf(deck.register, node(9))
+    if (place === null) throw new Error("no place")
+    expect(connectorEnds(place)).toEqual({ start: { x: 1_500_000, y: 2_000_000 }, end: { x: 4_500_000, y: 3_000_000 } })
+    expect(patchOf(deck.register, 9).connection).toEqual({
+      start: { set: { shape: { node: node(2), site: 2 } } },
+      end: { set: { shape: { node: node(3), site: 0 } } },
+    })
+    const read = readDeckPage(deck, { runId: "run", slide: "258" }).elements.find((each) => each.node === "258.9")
+    expect(read?.design).toContain("geometry bentConnector3")
   })
 })
