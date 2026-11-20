@@ -36,7 +36,7 @@ export type PlacingLink = {
 
 export type PlacingDeck = {
   readonly id: string
-  readonly held: { current: PlacedText | null }
+  readonly held: { current: readonly PlacedText[] }
   readonly parts: () => Parts
   readonly room: () => SlideRoom | null
   readonly index: () => number
@@ -46,10 +46,11 @@ export type PlacingDeck = {
   readonly lane: StoreLane
 }
 
-export function placedOn(register: Register, placed: PlacedText | null): Register {
-  if (placed === null || placed.kept !== null) return register
-  const decision = decide(register, { command: "slide", file: placed.file, edit: placed.add })
-  return decision.decision === "apply" ? decision.register : register
+export function placedOn(register: Register, placed: readonly PlacedText[]): Register {
+  return placed.reduce((shown, each) => {
+    const decision = decide(shown, { command: "slide", file: each.file, edit: each.add })
+    return decision.decision === "apply" ? decision.register : shown
+  }, register)
 }
 
 export function hasWords(value: string): boolean {
@@ -68,18 +69,20 @@ export function placingText(deck: PlacingDeck, link: PlacingLink) {
         keys.stop()
         return
       }
-      const add = elementCommand(parts, opened.register, { change: "text", index: deck.index(), size: room, place })
+      const shown = placedOn(opened.register, held.current)
+      const add = elementCommand(parts, shown, { change: "text", index: deck.index(), size: room, place })
       if (add?.slide !== "element-add") {
         keys.stop()
         return
       }
-      const file = fileSlides(parts, opened.register)
-      if (decide(opened.register, { command: "slide", file, edit: add }).decision !== "apply") {
+      const file = fileSlides(parts, shown)
+      if (decide(shown, { command: "slide", file, edit: add }).decision !== "apply") {
         keys.stop()
         return
       }
       const node = add.element.node
-      held.current = { node, file, add, undoable: slideUndoable(opened.register, file, add), kept: null }
+      const placed = { node, file, add, undoable: slideUndoable(shown, file, add), kept: null }
+      held.current = [...held.current, placed]
       await deck.showSaved()
       deck.enter(node, keys)
     })
@@ -87,7 +90,7 @@ export function placingText(deck: PlacingDeck, link: PlacingLink) {
 
   async function keep(placed: PlacedText): Promise<boolean> {
     const stored = await deck.lane(() => link.enqueueSlide(id, placed.file, placed.add))
-    if (held.current?.node === placed.node) held.current = null
+    held.current = held.current.filter((each) => each.node !== placed.node)
     if (!stored.ok) {
       await deck.showSaved()
       return false
@@ -96,24 +99,29 @@ export function placingText(deck: PlacingDeck, link: PlacingLink) {
     return true
   }
 
+  function heldAt(node: ElementId): PlacedText | undefined {
+    return held.current.find((each) => each.node === node)
+  }
+
   function stored(node: ElementId): Promise<boolean> {
-    const placed = held.current
-    if (placed === null || placed.node !== node) return Promise.resolve(true)
+    const placed = heldAt(node)
+    if (placed === undefined) return Promise.resolve(true)
     return placed.kept ?? Promise.resolve(false)
   }
 
   function typed(node: ElementId, value: string): Promise<boolean> {
-    const placed = held.current
-    if (placed?.node === node && placed.kept === null && hasWords(value))
-      held.current = { ...placed, kept: keep(placed) }
+    const placed = heldAt(node)
+    if (placed !== undefined && placed.kept === null && hasWords(value)) {
+      const keeping = { ...placed, kept: keep(placed) }
+      held.current = held.current.map((each) => (each.node === node ? keeping : each))
+    }
     return stored(node)
   }
 
   function left(node: ElementId): boolean {
-    const placed = held.current
-    if (placed === null || placed.node !== node) return false
-    if (placed.kept !== null) return false
-    held.current = null
+    const placed = heldAt(node)
+    if (placed === undefined || placed.kept !== null) return false
+    held.current = held.current.filter((each) => each.node !== node)
     void deck.showSaved()
     return true
   }

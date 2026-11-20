@@ -3,6 +3,7 @@ import { readSlideState } from "../../packages/document/src/index.ts"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { decksOn } from "./deck-test"
+import { holdDeviceStore } from "./device-store"
 
 async function serverAdds(stack: Stack, deck: string, cookie: string): Promise<number> {
   const opened = (await stack.post("/decks/open", { deck }, cookie)).json as { register: unknown }
@@ -66,4 +67,69 @@ test("text placed with the Text tool and left with no words is removed, with no 
   await page.keyboard.press("ControlOrMeta+z")
   await expect(texts.last()).toHaveText("")
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()
+})
+
+test("text placed with the Text tool while the device is still storing keeps each box's own words, through a reload", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await decksOn(page).open()
+  const slide = await slideBox(page)
+  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
+  const months = ["Jan", "Feb", "Mar"]
+  await page
+    .locator("[data-slide-paint]")
+    .first()
+    .click({ position: { x: 4, y: 4 } })
+
+  const release = await holdDeviceStore(page)
+  for (const [index, month] of months.entries()) {
+    await page.keyboard.press("t")
+    await page.mouse.click(slide.x + 160 + index * 200, slide.y + slide.height - 120)
+    await page.keyboard.type(month)
+    await page.keyboard.press("Escape")
+  }
+  await release()
+
+  await expect(texts).toHaveText(["Hello", ...months])
+  await expect.poll(() => serverAdds(stack, deck, cookie)).toBe(months.length)
+  await page.reload()
+  expect(await decksOn(page).ready()).toBe(deck)
+  await expect(texts).toHaveText(["Hello", ...months])
+})
+
+test("a shape added while placed text waits for the device takes its own element, and the text keeps its words through a reload", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await decksOn(page).open()
+  const slide = await slideBox(page)
+  const paint = page.locator("[data-slide-paint]").first()
+  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await paint.click({ position: { x: 4, y: 4 } })
+  const before = await paint.locator("[data-canvas-element]").count()
+
+  const release = await holdDeviceStore(page)
+  await page.keyboard.press("t")
+  await page.mouse.click(slide.x + 160, slide.y + slide.height - 120)
+  await page.keyboard.type("Jan")
+  await page.keyboard.press("Escape")
+  await page.keyboard.press("r")
+  await release()
+
+  const typed = texts.filter({ hasText: /^Jan$/ })
+  await expect(typed).toHaveCount(1)
+  await expect.poll(() => serverAdds(stack, deck, cookie)).toBe(2)
+  await page.reload()
+  expect(await decksOn(page).ready()).toBe(deck)
+  await expect(paint.locator("[data-canvas-element]")).toHaveCount(before + 2)
+  await expect(typed).toHaveCount(1)
 })

@@ -20,7 +20,7 @@ function placingDeck(lane = storeLane()) {
   let saved = 0
   let stops = 0
   let register = openRegister("", "")
-  const held: { current: PlacedText | null } = { current: null }
+  const held: { current: readonly PlacedText[] } = { current: [] }
   const link = {
     openDeck: async () => ({ ok: true as const, register }),
     enqueueSlide: async (_deck: string, file: readonly SlideId[], edit: SlideCommand) => {
@@ -66,7 +66,7 @@ it("drops placed text left with no words: nothing stored, no undo step, and the 
   await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
   expect(await deck.placing.typed(elementId("256.4"), empty)).toBe(false)
   deck.placing.left(elementId("256.4"))
-  expect(deck.held.current).toBeNull()
+  expect(deck.held.current).toEqual([])
   expect(deck.saved()).toBe(2)
   expect(deck.shown.at(-1)?.order).toEqual([])
   expect(deck.stored).toEqual([])
@@ -76,7 +76,7 @@ it("drops placed text left with no words: nothing stored, no undo step, and the 
 it("stores the add with its first words in one undo step, once, however many keys arrive before it lands", async () => {
   const deck = placingDeck()
   await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
-  const node = deck.held.current?.node
+  const node = deck.held.current[0]?.node
   if (node === undefined) throw new Error("not placed")
   const first = deck.placing.typed(node, words)
   const second = deck.placing.typed(node, words)
@@ -135,11 +135,52 @@ it("gives text placed while an earlier insert is still being stored its own elem
   await new Promise((later) => setTimeout(later, 0))
   store()
   await Promise.all([square, placed])
-  const node = deck.held.current?.node
+  const node = deck.held.current[0]?.node
   if (node === undefined) throw new Error("not placed")
   expect(await deck.placing.typed(node, words)).toBe(true)
   expect(deck.stored.map((edit) => (edit.slide === "element-add" ? String(edit.element.node) : edit.slide))).toEqual([
     "256.4",
     "256.5",
+  ])
+})
+
+it("gives each text placed while the device is still storing its own element, and keeps the words typed in each", async () => {
+  const lane = storeLane()
+  const deck = placingDeck(lane)
+  let release = () => undefined as void
+  const busy = lane(() => new Promise<void>((done) => (release = done)))
+  const first = deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  const second = deck.placing.place({ x: 3_048_000, y: 762_000 }, deck.keys)
+  await new Promise((later) => setTimeout(later, 0))
+  release()
+  await Promise.all([busy, first, second])
+  expect(deck.entered).toEqual(["256.4", "256.5"])
+  const painted = deck.shown.at(-1)?.order.filter((command) => command.slide === "element-add") ?? []
+  expect(painted.map((command) => (command.slide === "element-add" ? String(command.element.node) : ""))).toEqual([
+    "256.4",
+    "256.5",
+  ])
+  expect(await deck.placing.typed(elementId("256.4"), words)).toBe(true)
+  expect(await deck.placing.typed(elementId("256.5"), words)).toBe(true)
+  expect(deck.stored.map((edit) => (edit.slide === "element-add" ? String(edit.element.node) : edit.slide))).toEqual([
+    "256.4",
+    "256.5",
+  ])
+  expect(deck.recorded.map((entry) => entry.name)).toEqual(["add-box", "add-box"])
+  expect(deck.held.current).toEqual([])
+})
+
+it("keeps placed text's element when an insert read with the held placements is stored before its first words", async () => {
+  const deck = placingDeck()
+  await deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  const opened = await deck.link.openDeck()
+  const seen = placedOn(opened.register, deck.held.current)
+  const square = elementCommand(deck.parts, seen, { change: "shape", geometry: "rect", index: 0, size: room })
+  if (square === null) throw new Error("no square")
+  expect((await deck.link.enqueueSlide("deck-one", fileSlides(deck.parts, seen), square)).ok).toBe(true)
+  expect(await deck.placing.typed(elementId("256.4"), words)).toBe(true)
+  expect(deck.stored.map((edit) => (edit.slide === "element-add" ? String(edit.element.node) : edit.slide))).toEqual([
+    "256.5",
+    "256.4",
   ])
 })
