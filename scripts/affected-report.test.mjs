@@ -89,7 +89,7 @@ try {
   const related = []
   const chosen = () =>
     checkSteps.affectedGateStages({
-      tests: testsFor({ plan, related }),
+      tests: testsFor({ map: { unitTests: [] }, related, inventory: [], changed }).files,
       tooling: plan.steps.find((s) => s.kind === "script-tests").files,
       packages: packagesFor(changed),
     })

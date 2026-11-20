@@ -1,3 +1,3 @@
-# The gate runs reached unit files up to 40. Above 40 or for a full-suite plan, it runs changed unit files only
+# The gate picks its unit tests with the change map ci uses, within a seconds budget, and names what only ci runs
 
-`scripts/gate.test.mjs` checks selection. Isolation makes the subset sound. ci runs all files. `scripts/selected-unit-tests.test.mjs` checks exact paths
+`scripts/gate.mjs` maps the diff with `scripts/change-map.mjs`. It runs the changed unit test files in the map's folders, then the files Vitest relates to the change in those folders, cheapest first, until 15 estimated seconds: each file counts 1 s plus half the seconds Vitest recorded for it on this machine. Script tests run only when the map turns on `scripts`. The last line, `CI will also run: …`, names the unit files left out and each part the map turned on. Isolation makes the subset sound (`scripts/gate.test.mjs`, `scripts/selected-unit-tests.test.mjs`)
