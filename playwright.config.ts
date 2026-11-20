@@ -1,11 +1,9 @@
-import { createHash } from "node:crypto"
 import { availableParallelism } from "node:os"
 import { defineConfig } from "@playwright/test"
 import { onCi, workerLimit, workerOverrideName } from "./tests/browser-workers.ts"
+import { previewOrigin, previewPortPattern, startingPort } from "./tests/browser/preview-port.ts"
 
-const checkout = createHash("sha256").update(process.cwd()).digest().readUInt16BE(0)
-const port = Number(process.env.AIRDESIGN_PORT || 4400 + (checkout % 600))
-const origin = `http://127.0.0.1:${port}`
+const start = startingPort(process.cwd(), process.env)
 
 export default defineConfig({
   testDir: "tests/browser",
@@ -20,7 +18,7 @@ export default defineConfig({
   }),
   reporter: [["line"], ["./scripts/browser-timings.mjs"]],
   use: {
-    baseURL: origin,
+    baseURL: previewOrigin(process.env),
     browserName: "chromium",
     screenshot: "only-on-failure",
     storageState: {
@@ -40,10 +38,10 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: `node tests/browser/font-preview.mjs ${port}`,
+    command: `node tests/browser/font-preview.mjs ${String(start)}`,
     stdout: "pipe",
     stderr: "pipe",
-    url: origin,
+    wait: { stdout: previewPortPattern },
     reuseExistingServer: false,
     timeout: 120_000,
   },

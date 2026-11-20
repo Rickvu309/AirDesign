@@ -2,11 +2,11 @@ import { randomBytes } from "node:crypto"
 import { spawn } from "node:child_process"
 import { access, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises"
 import { constants, watch } from "node:fs"
-import { createServer } from "node:net"
 import os from "node:os"
 import path from "node:path"
 import { Client } from "pg"
 
+import { onFreePort } from "./free-port.js"
 import { removeLeftoverClusters } from "./leftover-clusters.js"
 import { createRole } from "./provision.js"
 import { applySchema } from "./schema.js"
@@ -102,26 +102,6 @@ async function findPostgres(): Promise<{ bin: string; library: string | null }> 
   throw new Error(`PostgreSQL 18 was not found. ${errors.join(" ")}`)
 }
 
-function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer()
-    server.on("error", reject)
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address()
-      if (address === null || typeof address === "string") {
-        server.close()
-        reject(new Error("port"))
-        return
-      }
-      const { port } = address
-      server.close((error) => {
-        if (error) reject(error)
-        else resolve(port)
-      })
-    })
-  })
-}
-
 function roleUrl(port: number, role: string, password: string): string {
   return `postgres://${encodeURIComponent(role)}:${encodeURIComponent(password)}@127.0.0.1:${String(port)}/api`
 }
@@ -143,13 +123,13 @@ async function prepare(
 
 async function launch(
   verifyPasswords: boolean,
+  pick?: () => Promise<number>,
 ): Promise<{ found: { bin: string; library: string | null }; dir: string; port: number }> {
   const found = await findPostgres()
   const root = path.join(os.homedir(), "tmp")
   await mkdir(root, { recursive: true })
   await removeLeftoverClusters(root)
   const dir = await mkdtemp(path.join(root, "airdesign-api-"))
-  const port = await freePort()
   await capture(
     path.join(found.bin, "initdb"),
     [
@@ -171,20 +151,33 @@ async function launch(
       "local all all trust\nhost all postgres 127.0.0.1/32 trust\nhost all all 127.0.0.1/32 scram-sha-256\n",
     )
   }
-  await capture(
-    path.join(found.bin, "pg_ctl"),
-    [
-      "-D",
-      path.join(dir, "data"),
-      "-l",
-      path.join(dir, "server.log"),
-      "-w",
-      "start",
-      "-o",
-      `-p ${String(port)} -k ${dir} -c listen_addresses=127.0.0.1 -c max_connections=${String(testWorkerConnections(os.availableParallelism()))} -c synchronous_commit=on -c fsync=off -c full_page_writes=off`,
-    ],
-    found.library,
-  )
+  const log = path.join(dir, "server.log")
+  const port = await onFreePort({
+    pick,
+    start: async (picked) => {
+      await rm(log, { force: true })
+      try {
+        await capture(
+          path.join(found.bin, "pg_ctl"),
+          [
+            "-D",
+            path.join(dir, "data"),
+            "-l",
+            log,
+            "-w",
+            "start",
+            "-o",
+            `-p ${String(picked)} -k ${dir} -c listen_addresses=127.0.0.1 -c max_connections=${String(testWorkerConnections(os.availableParallelism()))} -c synchronous_commit=on -c fsync=off -c full_page_writes=off`,
+          ],
+          found.library,
+        )
+      } catch (error) {
+        const why = await readFile(log, "utf8").catch(() => "")
+        throw new Error(`${error instanceof Error ? error.message : String(error)}\n${why}`)
+      }
+      return picked
+    },
+  })
   const bootstrap = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(port)}/postgres` })
   await bootstrap.connect()
   await bootstrap.query("create database api")
@@ -198,8 +191,8 @@ export type EmptyCluster = {
   readonly stop: () => Promise<void>
 }
 
-export async function startEmptyCluster(): Promise<EmptyCluster> {
-  const { found, dir, port } = await launch(true)
+export async function startEmptyCluster(pick?: () => Promise<number>): Promise<EmptyCluster> {
+  const { found, dir, port } = await launch(true, pick)
   const info: Info = {
     dir,
     bin: found.bin,
