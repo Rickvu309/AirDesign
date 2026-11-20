@@ -23,7 +23,7 @@ import { canDrag, canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { leadOf } from "./selection.js"
-import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
+import { keepsFormat, runTextKey, textKeyOf, type TextFormatting } from "./text-formatting.js"
 import { FillLayers } from "./fill-layers.js"
 import { unshownFill } from "./unshown-fill.js"
 import { textHeight, useTextFit } from "./text-fit.js"
@@ -281,13 +281,13 @@ function formatReach(
       formatting.aim(null)
     },
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-      const format = formatKey(event)
-      if (format === null) {
+      const text = textKeyOf(event)
+      if (text === null) {
         moves?.key(event, element)
         return
       }
       event.preventDefault()
-      formatting.toggle(format)
+      runTextKey(formatting, text)
     },
   }
 }

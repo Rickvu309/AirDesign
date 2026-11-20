@@ -8,7 +8,7 @@ import type {
   SizeStep,
   TextFormat,
 } from "@airdesign/document"
-import { gestureFor, type KeyLike } from "./gestures.js"
+import { gestureFor, type GestureId, type KeyLike } from "./gestures.js"
 import type { CanvasTemplateColor } from "./record.js"
 
 export type FormatTarget = {
@@ -56,9 +56,35 @@ export type TextFormatting = {
 export const keepsFormat = "[data-keeps-format]"
 const stillAimed = `${keepsFormat}, [data-canvas-element]`
 
-export function formatKey(event: KeyLike): TextFormat | null {
+export type TextKey =
+  | { readonly toggle: TextFormat }
+  | { readonly resize: SizeStep }
+  | { readonly place: ParagraphAlign }
+  | { readonly bullets: true }
+
+const textKeys: Partial<Readonly<Record<GestureId, TextKey>>> = {
+  bold: { toggle: "bold" },
+  italic: { toggle: "italic" },
+  underline: { toggle: "underline" },
+  strike: { toggle: "strike" },
+  "size-up": { resize: 1 },
+  "size-down": { resize: -1 },
+  "text-left": { place: "left" },
+  "text-center": { place: "center" },
+  "text-right": { place: "right" },
+  bullets: { bullets: true },
+}
+
+export function textKeyOf(event: KeyLike): TextKey | null {
   const gesture = gestureFor(event, "text")
-  return gesture === "bold" || gesture === "italic" || gesture === "underline" ? gesture : null
+  return gesture === null ? null : (textKeys[gesture] ?? null)
+}
+
+export function runTextKey(formatting: TextFormatting, key: TextKey) {
+  if ("toggle" in key) formatting.toggle(key.toggle)
+  else if ("resize" in key) formatting.resize(key.resize)
+  else if ("place" in key) formatting.place(key.place)
+  else formatting.bullets()
 }
 
 export function textFormatting(fresh: () => void = () => undefined): TextFormatting {
