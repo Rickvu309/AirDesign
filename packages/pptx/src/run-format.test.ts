@@ -162,7 +162,7 @@ describe("a paragraph's spacing in the file", () => {
       index === 1 ? { ...each, spaceBefore: 0, list: "bullets" } : each,
     )
     expect(written(value)).toContain(
-      '<a:p><a:pPr><a:spcBef><a:spcPts val="0"/></a:spcBef><a:buChar char="•"/></a:pPr><a:r><a:t>no format</a:t>',
+      '<a:p><a:pPr marL="285750" indent="-285750"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:buChar char="•"/></a:pPr><a:r><a:t>no format</a:t>',
     )
   })
 })

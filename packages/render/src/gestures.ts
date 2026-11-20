@@ -315,6 +315,21 @@ export const gestures = [
   { id: "text-center", group: "text", keys: [{ code: "KeyT", mod: true, alt: true }], where: ["element", "text"] },
   { id: "text-right", group: "text", keys: [{ code: "KeyR", mod: true, alt: true }], where: ["element", "text"] },
   { id: "bullets", group: "text", keys: [{ code: "Digit8", mod: true, shift: true }], where: ["element", "text"] },
+  {
+    id: "list-indent",
+    group: "text",
+    keys: [{ key: "Tab" }, { code: "BracketRight", mod: true }],
+    where: ["text"],
+  },
+  {
+    id: "list-outdent",
+    group: "text",
+    keys: [
+      { key: "Tab", shift: true },
+      { code: "BracketLeft", mod: true },
+    ],
+    where: ["text"],
+  },
   { id: "slide-duplicate", group: "slides", keys: [{ key: "d", mod: true }], where: ["slides"] },
   { id: "slide-delete", group: "slides", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["slides"] },
   {

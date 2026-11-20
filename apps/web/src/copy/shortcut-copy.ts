@@ -111,6 +111,8 @@ export const shortcutCopy = {
     "text-center": "Align text center",
     "text-right": "Align text right",
     bullets: "Bulleted list",
+    "list-indent": "Indent list item",
+    "list-outdent": "Outdent list item",
     "slide-duplicate": "Duplicate slide",
     "slide-delete": "Delete slide",
     "slide-up": "Move slide up",

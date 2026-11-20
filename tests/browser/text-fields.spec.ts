@@ -62,7 +62,7 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
           editor
             .locator("[data-paragraph]")
             .last()
-            .evaluate((paragraph) => parseFloat(getComputedStyle(paragraph, "::before").marginInlineEnd)),
+            .evaluate((paragraph) => parseFloat(getComputedStyle(paragraph, "::before").minWidth)),
         )
         .toBeGreaterThan(0)
       await expect

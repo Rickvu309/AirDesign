@@ -11,8 +11,12 @@ export type FileSize = (paragraph: number, run: number) => number | null
 export type FileColor = (paragraph: number, run: number) => Color | null
 export type FileAlign = (paragraph: number) => ParagraphAlign | null
 export type FileList = (paragraph: number) => TextList
+export type FileLevel = (paragraph: number) => number
 
 export type SizeStep = 1 | -1
+export type LevelStep = 1 | -1
+
+const lastTypedLevel = 4
 
 type Piece = { readonly run: TextRun; readonly covered: boolean }
 
@@ -294,4 +298,22 @@ export function linkState(value: TextValue, range: TextRange | null): ElementLin
     coveredRuns(value, range).map(({ run }) => run.link ?? ({ kind: "none" } as const)),
     (a, b) => JSON.stringify(a) === JSON.stringify(b),
   )
+}
+
+export function levelRange(
+  value: TextValue,
+  range: TextRange,
+  step: LevelStep,
+  file: FileLevel,
+  fileList: FileList,
+): TextValue | null {
+  const listed = (paragraph: TextParagraph) => (paragraph.list ?? fileList(paragraph.from)) !== "none"
+  if (!value.some((paragraph, index) => bounds(range, index) !== null && listed(paragraph))) return null
+  return applyParagraphs(value, range, (paragraph) => {
+    if (!listed(paragraph)) return paragraph
+    const { level: _dropped, ...rest } = paragraph
+    const current = paragraph.level ?? file(paragraph.from)
+    const level = step > 0 ? (current < lastTypedLevel ? current + 1 : current) : Math.max(0, current - 1)
+    return level === file(paragraph.from) ? rest : { ...rest, level }
+  })
 }

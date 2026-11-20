@@ -41,3 +41,10 @@ it("refuses a size or a colour the file cannot store", () => {
   expect(textProblem(floors, [{ node, value: size, readAt: 1 }])?.code).toBe("field")
   expect(textProblem(floors, [{ node, value: color, readAt: 1 }])?.code).toBe("field")
 })
+
+it("lets an agent indent a list item the way Tab does and refuses a level PowerPoint cannot hold", () => {
+  const value = writeTextValue([{ from: 0, list: "bullets", level: 2, runs: [{ from: 0, text: "One" }] }])
+  expect(textProblem(floors, [{ node, value, readAt: 1 }])).toBeUndefined()
+  const deep = '[{"from":0,"list":"bullets","level":9,"runs":[{"from":0,"text":"One"}]}]'
+  expect(textProblem(floors, [{ node, value: deep, readAt: 1 }])?.code).toBe("field")
+})

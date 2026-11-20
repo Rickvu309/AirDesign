@@ -61,6 +61,7 @@ for (const name of [
   "text-fill-image",
   "text-style-weight",
   "text-weight-faces",
+  "text-list-levels",
   "dynamic-fonts",
   "picture-icon",
   "theme",

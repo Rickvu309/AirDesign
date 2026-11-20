@@ -29,6 +29,7 @@ export const letterSpacingFloor = -400_000
 export const letterSpacingCeiling = 400_000
 export const listNames = ["none", "bullets", "numbers"] as const
 export type TextList = (typeof listNames)[number]
+export const lastListLevel = 8
 export const lineHeightFloor = 10_000
 export const lineHeightCeiling = 1_000_000
 export const spaceCeiling = 158_400
@@ -58,6 +59,7 @@ export type TextParagraph = {
   readonly from: number
   readonly align?: ParagraphAlign
   readonly list?: TextList
+  readonly level?: number
   readonly runs: readonly TextRun[]
 } & ParagraphSpacing
 export type TextValue = readonly TextParagraph[]
@@ -68,7 +70,7 @@ const spacingRange: Readonly<Record<(typeof spacingNames)[number], readonly [num
   spaceBefore: [0, spaceCeiling],
   spaceAfter: [0, spaceCeiling],
 }
-const paragraphKeys = new Set<string>(["from", "runs", "align", "list", "bullet", ...spacingNames])
+const paragraphKeys = new Set<string>(["from", "runs", "align", "list", "level", "bullet", ...spacingNames])
 const runKeys = new Set<string>([
   "from",
   "text",
@@ -187,6 +189,12 @@ function readParagraph(value: unknown): TextParagraph | null {
   if (list !== undefined && !listNames.some((name) => name === list)) return null
   const spacing = readSpacing(paragraph)
   if (spacing === null) return null
+  const level = paragraph.level
+  if (
+    level !== undefined &&
+    (typeof level !== "number" || !Number.isInteger(level) || level < 0 || level > lastListLevel)
+  )
+    return null
   const runs: TextRun[] = []
   for (const item of paragraph.runs) {
     const run = readRun(item)
@@ -196,6 +204,7 @@ function readParagraph(value: unknown): TextParagraph | null {
   let read: TextParagraph = { from, runs }
   if (align !== undefined && align !== null) read = { ...read, align }
   if (list === "none" || list === "bullets" || list === "numbers") read = { ...read, list }
+  if (typeof level === "number") read = { ...read, level }
   return { ...read, ...spacing }
 }
 
@@ -241,6 +250,7 @@ function writtenParagraph(paragraph: TextParagraph): Record<string, unknown> {
   const written: Record<string, unknown> = { from: paragraph.from }
   if (paragraph.align !== undefined) written.align = paragraph.align
   if (paragraph.list !== undefined) written.list = paragraph.list
+  if (paragraph.level !== undefined) written.level = paragraph.level
   for (const name of spacingNames) if (paragraph[name] !== undefined) written[name] = paragraph[name]
   written.runs = paragraph.runs.map(writtenRun)
   return written

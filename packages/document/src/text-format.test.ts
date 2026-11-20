@@ -9,18 +9,20 @@ import {
   formatRange,
   formatState,
   formatWhole,
+  levelRange,
   sizeRange,
   sizeState,
   steppedSize,
   stepSize,
   typedSize,
   type FileAlign,
+  type FileLevel,
   type FileList,
   type FileColor,
   type FileFormat,
   type FileSize,
 } from "./text-format.js"
-import type { TextValue } from "./text-value.js"
+import type { TextParagraph, TextValue } from "./text-value.js"
 
 const plain: FileFormat = () => false
 const boldFile: FileFormat = (paragraph, run, format) => paragraph === 0 && run === 1 && format === "bold"
@@ -270,5 +272,50 @@ describe("size, colour, alignment and bullets", () => {
     expect(bulletState(value, null, bulletedFile)).toBe("mixed")
     expect(bulletState(value, first, noBullet)).toBe("off")
     expect(colorState(value, first, noColor)).toBeNull()
+  })
+})
+
+describe("levelRange", () => {
+  const plain: TextParagraph = { from: 0, runs: [{ from: 0, text: "Plain" }] }
+  const first: TextParagraph = { from: 1, runs: [{ from: 0, text: "First" }] }
+  const second: TextParagraph = { from: 2, runs: [{ from: 0, text: "Second" }] }
+  const list: TextValue = [plain, first, second]
+  const fileList: FileList = (paragraph) => (paragraph === 0 ? "none" : "bullets")
+  const flat: FileLevel = () => 0
+  const caret = (paragraph: number) => ({
+    start: { paragraph, offset: 1 },
+    end: { paragraph, offset: 1 },
+  })
+
+  it("indents the list item under the caret one level, as Tab does in Figma", () => {
+    expect(levelRange(list, caret(2), 1, flat, fileList)).toEqual([plain, first, { ...second, level: 1 }])
+  })
+
+  it("indents every list item a range touches and leaves plain paragraphs alone", () => {
+    const range = { start: { paragraph: 0, offset: 2 }, end: { paragraph: 2, offset: 1 } }
+    expect(levelRange(list, range, 1, flat, fileList)).toEqual([plain, { ...first, level: 1 }, { ...second, level: 1 }])
+  })
+
+  it("refuses a caret outside a list so Tab keeps its own meaning there", () => {
+    expect(levelRange(list, caret(0), 1, flat, fileList)).toBeNull()
+  })
+
+  it("stops at Figma's fifth level and at the first, and keeps a deeper imported level on indent", () => {
+    const at = (level: number) => [plain, first, { ...second, level }]
+    expect(levelRange(at(4), caret(2), 1, flat, fileList)).toEqual(at(4))
+    expect(levelRange(list, caret(2), -1, flat, fileList)).toEqual(list)
+    expect(levelRange(at(6), caret(2), 1, flat, fileList)).toEqual(at(6))
+    expect(levelRange(at(6), caret(2), -1, flat, fileList)).toEqual(at(5))
+  })
+
+  it("omits a level that matches the file, so outdenting back keeps the file's bytes", () => {
+    const deep: FileLevel = (paragraph) => (paragraph === 2 ? 1 : 0)
+    expect(levelRange(list, caret(2), 1, deep, fileList)).toEqual([plain, first, { ...second, level: 2 }])
+    expect(levelRange([plain, first, { ...second, level: 2 }], caret(2), -1, deep, fileList)).toEqual(list)
+  })
+
+  it("reads a list set in the value before the file's", () => {
+    const one: TextParagraph = { from: 0, list: "numbers", runs: [{ from: 0, text: "One" }] }
+    expect(levelRange([one], caret(0), 1, flat, () => "none")).toEqual([{ ...one, level: 1 }])
   })
 })
