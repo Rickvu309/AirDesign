@@ -145,7 +145,7 @@ export default async function drive(kit) {
   const stopped = await tool("airdesign_stop_run", { deck, runId: edited.runId })
   expect(stopped.ok).toBe(true)
   await expect(canvas.locator("[data-run]").first()).toHaveCSS("font-family", /Calibri Light/)
-  await canvas.click({ position: { x: 4, y: 4 } })
+  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", node)
   await expect(textStyle).toContainText(placeholderRoles.ctrTitle)
   await capture("agent-applied-title")
   note(

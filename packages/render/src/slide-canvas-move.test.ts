@@ -213,14 +213,14 @@ describe("SlideCanvas boxes", () => {
     expect(selection(host)).toBeNull()
   })
 
-  it("clears the selection when focus leaves the slide", async () => {
+  it("keeps the selection when focus leaves the slide, as Figma does", async () => {
     const { host } = await mounted([element(id)])
     const outside = host.ownerDocument.createElement("button")
     host.ownerDocument.body.append(outside)
     await focus(frameOf(host))
     expect(selection(host)?.dataset.selection).toBe(id)
     await focus(outside)
-    expect(selection(host)).toBeNull()
+    expect(selection(host)?.dataset.selection).toBe(id)
     outside.remove()
   })
 
