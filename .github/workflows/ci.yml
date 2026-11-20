@@ -132,7 +132,9 @@ jobs:
           key: spec-results-${{ hashFiles('specs/**') }}
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         id: pptx
-        run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/pptx-cases scripts/pptx-cases.mjs scripts/pptx-memo.mjs scripts/pptx-phases.mjs scripts/pptx-validator.mjs scripts/keyed-cache.mjs scripts/local-image.mjs scripts/browser-export.mjs scripts/paragraph-export.mjs scripts/slide-export.mjs scripts/slide-edits.mjs scripts/blank-export.mjs scripts/diagram-edits.mjs scripts/chart-edits.mjs scripts/pptx-render.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/reference-fonts.json scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/pptx-corpus.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/pptx-changed
+        with:
+          base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
@@ -199,9 +201,25 @@ jobs:
     needs: check
     if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     uses: ./.github/workflows/design-findings.yml
+  changes:
+    name: changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      pptx: ${{ steps.pptx.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - id: pptx
+        uses: ./.github/actions/pptx-changed
+        with:
+          base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
   corpus:
     name: corpus (${{ matrix.shard }}/2)
-    if: github.event_name == 'push' || github.event_name == 'merge_group'
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.pptx == '1') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -318,7 +336,7 @@ jobs:
     uses: ./.github/workflows/journeys.yml
   ci:
     name: ci
-    needs: [check, corpus, journeys]
+    needs: [check, changes, corpus, journeys]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -332,6 +350,7 @@ jobs:
           fi
       - run: |
           test "${{ needs.check.result }}" = success
+          test "${{ needs.changes.result }}" = success || test "${{ needs.changes.result }}" = skipped
           test "${{ needs.corpus.result }}" = success || test "${{ needs.corpus.result }}" = skipped
           test "${{ needs.journeys.result }}" = success || test "${{ needs.journeys.result }}" = skipped
       - if: github.event_name == 'push'

@@ -82,7 +82,7 @@ same(
   browserTests(["thin-deck.spec.ts"]).toSorted(),
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
-same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "corpus", "journeys"])
+same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "changes", "corpus", "journeys"])
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
@@ -126,9 +126,9 @@ const ciSteps = workflow.jobs.ci.steps
 
 const corpus = workflow.jobs.corpus
 same(
-  "the corpus job runs in the merge queue and ci waits for it",
+  "the corpus job runs in the merge queue and on main, and on a pull request that changed what it judges",
   corpus.if,
-  "github.event_name == 'push' || github.event_name == 'merge_group'",
+  "${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.pptx == '1') }}",
 )
 same("corpus uses two independent runners", corpus.strategy, { "fail-fast": false, matrix: { shard: [1, 2] } })
 const rerunGuard = ciSteps[0]
@@ -145,17 +145,22 @@ same(
 )
 same("a later rerun fails the rerun guard too", runsGuard("10").status, 1)
 same("the rerun guard runs on every event and before every other ci step", workflow.jobs.ci.if, "${{ always() }}")
-const passes = (check, corpusResult, journeysResult = "skipped") =>
+const passes = (check, corpusResult, journeysResult = "skipped", changesResult = "success") =>
   spawnSync("bash", [
     "-e",
     "-c",
     verdict
       .replaceAll("${{ needs.check.result }}", check)
+      .replaceAll("${{ needs.changes.result }}", changesResult)
       .replaceAll("${{ needs.corpus.result }}", corpusResult)
       .replaceAll("${{ needs.journeys.result }}", journeysResult),
   ]).status === 0
 same("ci passes when every part passed and the corpus passed", passes("success", "success"), true)
-same("ci passes on a pull request, where the corpus is skipped", passes("success", "skipped"), true)
+same(
+  "ci passes on a pull request that changed nothing the corpus judges, where the corpus is skipped",
+  passes("success", "skipped"),
+  true,
+)
 same("ci fails when the corpus failed", passes("success", "failure"), false)
 same("ci fails when the corpus was cancelled", passes("success", "cancelled"), false)
 same("ci fails when a part failed", passes("failure", "success"), false)
