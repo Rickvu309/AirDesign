@@ -26,17 +26,8 @@ import { heldGroups, groupAt } from "@/editor/collapsed-groups"
 import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/slide-layout"
 import { cn } from "@/lib/class-names"
-import { gridMoveAt } from "@/editor/editor-grid-keys"
-import { gridGroups } from "@/editor/grid-group"
-import { gridDrop } from "@/editor/grid-drop"
-import { gridMoveMessage } from "@/editor/grid-group-frame"
-import { gridChange } from "@/editor/grid-menu"
-import type { GridPick } from "@/editor/grid-selection"
-import { gridSlideActions } from "@/editor/grid-slide-actions"
-import { heldSlides, livePick, pressedPick, setDropPlace, type SlidePress } from "@/editor/slide-list-pick"
-import type { SlideMenuSet } from "@/editor/slide-menu"
-
-const setDirection: Readonly<Record<"up" | "down", "earlier" | "later">> = { up: "earlier", down: "later" }
+import { setDropPlace } from "@/editor/slide-list-pick"
+import { useSlideListSet } from "@/editor/use-slide-list-set"
 
 export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
 
@@ -185,54 +176,11 @@ function DeckStrip({
     [],
   )
   useSlideSay(strip.say, announce)
-  const [picked, setPicked] = useState<GridPick>(null)
-  const live = livePick(picked, strip.current, strip.count, strip.slideIds)
-  const held = heldSlides(live, strip.current)
-  const heldKey = held.join(",")
-  const onSelection = strip.onSelection
-  useLayoutEffect(() => {
-    const slides = heldKey.split(",").map(Number)
-    onSelection?.(slides)
-    onSlideSelection?.(slides.length)
-  }, [onSelection, onSlideSelection, heldKey])
-  const press = (index: number, how: SlidePress) => {
-    const next = pressedPick(live, index, strip.current, how)
-    setPicked(next.pick)
-    if (next.pick !== null && how !== "menu") announce(slideListCopy.selected(next.pick.slides.size))
-    strip.onSelect(next.current)
-  }
-  const moveSlides = (moved: readonly number[], at: number, side: GridMoveSide) => {
-    const groupRanges = gridGroups(strip)
-    const first = gridDrop(groupRanges, moved, at, side)
-    if (first === null || strip.onMoveMany === undefined) return
-    following.current = true
-    strip.onMoveMany(moved, at, side)
-    setPicked(moved.length > 1 ? { anchor: first, slides: new Set(moved.map((_, offset) => first + offset)) } : null)
-    announce(gridMoveMessage(groupRanges, moved, at, false))
-  }
-  const actOnSet = gridSlideActions(strip, live, {
-    follow: () => {
-      following.current = true
-    },
-    pick: setPicked,
-    open: strip.onSelect,
-    moveSlides,
+  const { held, press, moveSlides, inSet, setChange, menuSet, drop } = useSlideListSet(strip, {
+    following,
     announce,
+    onSlideSelection,
   })
-  const inSet = (index: number) => live?.slides.has(index) === true
-  const setChange = (index: number): ((change: SlideKey) => void) | null =>
-    inSet(index) ? (change) => actOnSet(gridChange[change], index) : null
-  const menuSet: SlideMenuSet | undefined =
-    live === null
-      ? undefined
-      : {
-          size: held.length,
-          skipped: held.every((index) => strip.skipped?.[index] === true),
-          allowed: (change) => {
-            if (change === "clone" || change === "remove") return strip.onChangeSet !== undefined
-            return strip.onMoveMany !== undefined && gridMoveAt(held, strip.count, setDirection[change]) !== null
-          },
-        }
   const [seen, setSeen] = useState(strip.current)
   if (seen !== strip.current) {
     setSeen(strip.current)
@@ -338,7 +286,7 @@ function DeckStrip({
           const key = event.target.getAttribute("data-stop")
           if (key !== null) setStop(key)
         }}
-        onKeyDown={(event) => onListKey(event, strip, () => setPicked(null))}
+        onKeyDown={(event) => onListKey(event, strip, drop)}
         onKeyDownCapture={(event) => {
           if (slideKey(event) !== null) following.current = true
         }}
