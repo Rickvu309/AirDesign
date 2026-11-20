@@ -24,6 +24,7 @@ import {
   type ElementCommand,
   type StackMove,
   type Box,
+  type ElementPatch,
   type ElementId,
   type Geometry,
   type PlacedChart,
@@ -34,7 +35,7 @@ import {
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { applyRoute, freeShapeId, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
-import { boxOf, type Copied, type Moved, type PaintBox } from "@airdesign/render"
+import { boxOf, type Copied, type Moved, type PaintBox, type ShapeDrawn } from "@airdesign/render"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { elementCopy, type CopyRefusal, type RemovalRefusal } from "@/copy/element-copy"
@@ -94,7 +95,13 @@ export type ElementChange =
   | { readonly change: "text"; readonly index: number; readonly size: SlideRoom; readonly place?: TextPlace }
   | ({ readonly change: "table"; readonly index: number; readonly size: SlideRoom } & TableSize)
   | { readonly change: "chart"; readonly kind: ChartKind; readonly index: number; readonly size: SlideRoom }
-  | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
+  | {
+      readonly change: "shape"
+      readonly geometry: Geometry
+      readonly index: number
+      readonly size: SlideRoom
+      readonly drawn?: ShapeDrawn
+    }
   | { readonly change: "remove"; readonly nodes: readonly ElementId[]; readonly emptied?: true }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove | LayerSpot }
   | GroupChange
@@ -203,9 +210,16 @@ export function elementCommand(
     const line = lineGeometries.includes(change.geometry)
     const side = Math.round(change.size.height * shapeShare)
     const wanted = line ? { cx: Math.round(change.size.width * lineShare), cy: 0 } : { cx: side, cy: side }
-    const box = placeNewBox(change.size, taken, wanted)
+    const { box, opening } = drawnPlace(change.drawn, wanted, line) ?? { box: placeNewBox(change.size, taken, wanted) }
     const kind = line ? "connector" : "shape"
-    const element = { node, kind, value: line ? null : "", box, grouped: false } as const
+    const element = {
+      node,
+      kind,
+      value: line ? null : "",
+      box,
+      grouped: false,
+      ...(opening === undefined ? {} : { opening }),
+    } as const
     return { slide: "element-add", id: slide.id, element, geometry: change.geometry }
   }
   const { place } = change
@@ -215,6 +229,19 @@ export function elementCommand(
   const opening = textOpening(drawn ? "fixed" : "auto-width")
   const element = { node, kind: "shape", value: "", box, grouped: false, opening } as const
   return { slide: "element-add", id: slide.id, element }
+}
+
+function drawnPlace(
+  drawn: ShapeDrawn | undefined,
+  wanted: { readonly cx: number; readonly cy: number },
+  line: boolean,
+): { readonly box: Box; readonly opening?: ElementPatch } | null {
+  if (drawn === undefined) return null
+  if ("at" in drawn) return { box: { ...drawn.at, ...wanted } }
+  const { x, y, cx, cy, flipH, flipV } = drawn.box
+  const box = line ? { x, y, cx, cy } : { x, y, cx: Math.max(1, cx), cy: Math.max(1, cy) }
+  const flips = { ...(flipH ? { flipH: { set: true } } : {}), ...(flipV ? { flipV: { set: true } } : {}) }
+  return Object.keys(flips).length === 0 ? { box } : { box, opening: { box: flips } }
 }
 
 export async function commitElement(

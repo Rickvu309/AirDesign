@@ -1,10 +1,16 @@
+import type { Geometry } from "@airdesign/document"
 import { editorOwnsKey, toolKeyPlace } from "@/editor/editor-key-ownership"
 import { gestureFor } from "@airdesign/render"
 import { useEffect, useState } from "react"
 
 export type PointerTool = "move" | "hand" | "text"
 
-export type ToolPick = { readonly tool: PointerTool; readonly pick: (tool: PointerTool) => void }
+export type ToolPick = {
+  readonly tool: PointerTool
+  readonly pick: (tool: PointerTool) => void
+  readonly shape: Geometry | null
+  readonly arm: (shape: Geometry) => void
+}
 
 export function typing(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -25,18 +31,36 @@ function toolForKey(event: KeyboardEvent, placesText: boolean): PointerTool | nu
 }
 
 export function usePointerTool(working: boolean, placesText: boolean): ToolPick {
-  const [tool, pick] = useState<PointerTool>("move")
-  if (!placesText && tool === "text") pick("move")
+  const [tool, choose] = useState<PointerTool>("move")
+  const [shape, setShape] = useState<Geometry | null>(null)
+  if (!placesText && tool === "text") choose("move")
+  if (!placesText && shape !== null) setShape(null)
   useEffect(() => {
     if (!working) return
     function onKey(event: KeyboardEvent) {
-      if (gestureFor(event, "element") === "deselect") pick((now) => (now === "text" ? "move" : now))
+      if (gestureFor(event, "element") === "deselect") {
+        choose((now) => (now === "text" ? "move" : now))
+        setShape(null)
+      }
       if (!editorOwnsKey(event)) return
       const next = toolForKey(event, placesText)
-      if (next !== null) pick(next)
+      if (next === null) return
+      choose(next)
+      setShape(null)
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [working, placesText])
-  return { tool, pick }
+  return {
+    tool,
+    shape,
+    pick(next) {
+      choose(next)
+      setShape(null)
+    },
+    arm(next) {
+      choose("move")
+      setShape(next)
+    },
+  }
 }

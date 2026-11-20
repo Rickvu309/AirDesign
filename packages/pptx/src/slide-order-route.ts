@@ -105,6 +105,21 @@ function openedBody(
   return body === undefined ? parts : writeTrait(parts, { slide: "", part, shape }, "body", body)
 }
 
+function openedFlips(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  shape: string,
+  element: IndexElement,
+): ReadonlyMap<string, Uint8Array> {
+  const box = element.opening?.box
+  if (box?.flipH === undefined && box?.flipV === undefined) return parts
+  const flips = {
+    ...(box.flipH === undefined ? {} : { flipH: box.flipH }),
+    ...(box.flipV === undefined ? {} : { flipV: box.flipV }),
+  }
+  return writeTrait(parts, { slide: "", part, shape }, "box", flips)
+}
+
 function elementAdded(
   parts: ReadonlyMap<string, Uint8Array>,
   part: string,
@@ -125,15 +140,20 @@ function elementAdded(
   if (icon !== null)
     return addPicture(parts, part, { id, box, source: openedIcon(parts, part, icon, element.opening?.fills) })
   if (shown.geometry !== undefined)
-    return applyStructuralRoute(parts, {
-      name: "spTree.add",
+    return openedFlips(
+      applyStructuralRoute(parts, {
+        name: "spTree.add",
+        part,
+        id,
+        text: "",
+        geometry: shown.geometry,
+        ...box,
+        ...(element.value === "" ? { holdsText: true as const } : {}),
+      }),
       part,
-      id,
-      text: "",
-      geometry: shown.geometry,
-      ...box,
-      ...(element.value === "" ? { holdsText: true as const } : {}),
-    })
+      shape,
+      element,
+    )
   if (element.kind === "chart") return chartAdded(parts, part, id, box, element.value)
   if (element.kind !== "table") {
     const align = element.opening?.body === undefined ? {} : { align: "left" as const }

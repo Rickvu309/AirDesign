@@ -27,15 +27,15 @@ import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-s
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToneSource } from "@/editor/tone-link"
-import { gestureFor, type Selection, type TextFormatting } from "@airdesign/render"
+import { gestureFor, type Selection, type ShapeDrawing, type TextFormatting } from "@airdesign/render"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import type { Geometry } from "@airdesign/document"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useShortcutsKey } from "@/editor/shortcuts-key"
 import { useToolKeys } from "@/editor/tool-keys"
+import { shapeDrawing, useArmedShapeEnter, type ShapeAdd } from "@/editor/shape-draw-tool"
 import type { TextPlace } from "@/element-edit"
 import { useChromeKeys } from "@/editor/chrome-keys"
 import type { PartsWatch } from "@/editor/use-deck-paint"
@@ -64,7 +64,12 @@ export type EditorDeck = {
   readonly id?: string
   readonly slides: SlideStrip
   readonly size: SlideSize | null
-  readonly slide: (width: number, shown?: GuidesShown, onPlaceText?: (place: TextPlace) => void) => ReactNode
+  readonly slide: (
+    width: number,
+    shown?: GuidesShown,
+    onPlaceText?: (place: TextPlace) => void,
+    drawShape?: ShapeDrawing,
+  ) => ReactNode
   readonly rulers?: () => ReactNode
   readonly displayed?: Pick<PartsWatch, "subscribe" | "version">
   readonly onExport: (request?: ExportRequest) => Promise<void> | void
@@ -81,7 +86,7 @@ export type EditorDeck = {
   readonly tone?: ToneSource
   readonly deckColors?: readonly string[]
   readonly onPicture?: (file: File) => void
-  readonly onShape?: (geometry: Geometry) => void
+  readonly onShape?: ShapeAdd
   readonly onIcon?: (name: string) => void
   readonly save?: SaveStatus | null
   readonly notesOf?: (index: number) => string
@@ -181,9 +186,10 @@ export function EditorShell({
   )
   useToolKeys(deck !== undefined && !gridOpen && present.show === null, {
     onTablePicker: deck?.onTable === undefined ? undefined : () => setTablePicking(true),
-    onShape: deck?.onShape,
+    onShape: deck?.onShape === undefined ? undefined : pointer.arm,
     onPicture: deck?.onPicture,
   })
+  useArmedShapeEnter(pointer, deck?.onShape)
   useChromeKeys(deck !== undefined && !gridOpen && present.show === null, {
     onHideAll: () => setBare((now) => !now),
     onSlideList: () => setListHidden((now) => !now),
@@ -258,7 +264,7 @@ export function EditorShell({
     ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),
     ...(formats === undefined ? {} : { formats }),
     ...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture }),
-    ...(deck?.onShape === undefined ? {} : { onShape: deck.onShape }),
+    ...(deck?.onShape === undefined ? {} : { onShape: pointer.arm }),
     ...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon }),
     ...(onPanel === undefined ? {} : { onPanel }),
     ...(designMode === undefined ? {} : { designMode }),
@@ -385,6 +391,7 @@ export function EditorShell({
                       pointer.pick("move")
                       deck.onText?.(place)
                     },
+                shapeDrawing(pointer, deck.onShape),
               )
             )}
           </div>
