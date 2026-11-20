@@ -7,7 +7,7 @@ export type WireSlide = SlideCommand & { readonly file: readonly SlideId[] }
 
 const keysFor = {
   "element-add": ["slide", "id", "element", "media", "geometry", "file"],
-  "element-clone": ["slide", "id", "source", "element", "file"],
+  "element-clone": ["slide", "id", "source", "element", "layers", "file"],
   "element-remove": ["slide", "id", "node", "file"],
   "element-restore": ["slide", "id", "node", "file"],
   "element-order": ["slide", "id", "node", "before", "among", "file"],
@@ -80,8 +80,10 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
     const geometry = edit.geometry === undefined ? {} : { geometry: edit.geometry }
     return { slide: "element-add", id: edit.id, element: edit.element, ...media, ...geometry }
   }
-  if (edit.slide === "element-clone")
-    return { slide: "element-clone", id: edit.id, source: edit.source, element: edit.element }
+  if (edit.slide === "element-clone") {
+    const layers = edit.layers === undefined ? {} : { layers: edit.layers }
+    return { slide: "element-clone", id: edit.id, source: edit.source, element: edit.element, ...layers }
+  }
   if (edit.slide === "element-remove") return { slide: "element-remove", id: edit.id, node: edit.node }
   if (edit.slide === "element-restore") return { slide: "element-restore", id: edit.id, node: edit.node }
   if (edit.slide === "element-order") {

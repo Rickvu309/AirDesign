@@ -121,7 +121,7 @@ describe("element clone", () => {
     ])
   })
 
-  it("refuses a copy of a group or a layer whose group's own space is unknown, a chart, a gone layer, a used id or another slide's layer", () => {
+  it("refuses a copy of a group or a layer whose group's own space is unknown, a chart, a gone layer or a used id", () => {
     const refused = (edit: SlideCommand) => decide(indexed, { command: "slide", file, edit }).decision
     const cloned = cloneOf(indexed, title, copy, box)
     if (!cloned.ok) throw new Error(cloned.refusal)
@@ -136,10 +136,8 @@ describe("element clone", () => {
     expect(refused({ ...made, element: { ...made.element, kind: "table" } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, node: elementId("256.3") } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, node: elementId("257.9") } })).toBe("refuse")
-    expect(refused({ ...made, source: elementId("257.2") })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, box: null } })).toBe("refuse")
     const gone = applied(indexed, { slide: "element-remove", id: file[0]!, node: title })
-    expect(decide(gone, { command: "slide", file, edit: made }).decision).toBe("refuse")
     expect(cloneOf(gone, title, copy, box)).toEqual({ ok: false, refusal: "dead" })
   })
 
@@ -150,6 +148,6 @@ describe("element clone", () => {
     const stored = JSON.parse(JSON.stringify({ file, order: [made] })) as unknown
     expect(readSlideState(stored)?.order).toEqual([made])
     expect(newerSlideCommand(made)).toBe(false)
-    expect(readSlideState({ file, order: [{ ...made, source: "257.2" }] })).toBeUndefined()
+    expect(readSlideState({ file, order: [{ ...made, source: "257" }] })).toBeUndefined()
   })
 })

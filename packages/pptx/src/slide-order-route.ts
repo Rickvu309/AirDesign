@@ -6,6 +6,7 @@ import {
   groupCommand,
   openingIcon,
   presentSlides,
+  readSlideId,
   readTableValue,
   hasSlideNumber,
   plainSlideNumber,
@@ -28,7 +29,7 @@ import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
-import { groupsReplayed, type GroupedState } from "./group-route.js"
+import { groupsReplayed, type GroupedState, type PasteSource } from "./group-route.js"
 
 function idsOf(parts: ReadonlyMap<string, Uint8Array>): string[] {
   return slideAddresses(parts).map((address) => address.slide)
@@ -155,7 +156,8 @@ function elementsShown(
 
 function replayedShapes(state: GroupedState, from: SlideId, upTo: number): ReadonlySet<string> {
   const nodes = state.order.slice(0, upTo).flatMap((command) => {
-    if (command.slide === "element-clone" && command.id === from) return [command.source, command.element.node]
+    if (command.slide === "element-clone" && command.id === from)
+      return shapeOf(command.source).slide === from ? [command.source, command.element.node] : [command.element.node]
     if (!groupCommand(command) || command.id !== from) return []
     if (command.slide === "element-group") return command.members.map((member) => member.node)
     return command.slide === "element-join" ? [command.member.node] : []
@@ -163,19 +165,46 @@ function replayedShapes(state: GroupedState, from: SlideId, upTo: number): Reado
   return new Set(nodes.map((node) => shapeOf(node).shape))
 }
 
+type Slided = {
+  readonly state: GroupedState
+  readonly media: MediaBytes
+  readonly pasted: PasteSource
+}
+
+function slideBuilt(
+  parts: ReadonlyMap<string, Uint8Array>,
+  minted: string,
+  from: SlideId,
+  upTo: number,
+  shapes: ReadonlyMap<string, Shown> | undefined,
+  slided: Slided,
+): ReadonlyMap<string, Uint8Array> {
+  const added = elementsShown(parts, minted, shapes, slided.media, true, replayedShapes(slided.state, from, upTo))
+  return groupsReplayed(added, minted, from, slided.state, upTo, slided.pasted)
+}
+
 function slideShown(
   parts: ReadonlyMap<string, Uint8Array>,
   minted: string,
   from: SlideId,
-  state: GroupedState,
   upTo: number,
   shapes: ReadonlyMap<string, Shown> | undefined,
-  media: MediaBytes,
+  slided: Slided,
 ): ReadonlyMap<string, Uint8Array> {
-  const members = replayedShapes(state, from, upTo)
-  const added = elementsShown(parts, minted, shapes, media, true, members)
-  const grouped = groupsReplayed(added, minted, from, state, upTo)
-  return elementsShown(grouped, minted, shapes, media, false, members)
+  const grouped = slideBuilt(parts, minted, from, upTo, shapes, slided)
+  return elementsShown(grouped, minted, shapes, slided.media, false, replayedShapes(slided.state, from, upTo))
+}
+
+function pendingUpTo(state: SlideState, slide: SlideId, upTo: number): ReadonlyMap<string, Shown> | undefined {
+  const pending: Pending = new Map()
+  for (const command of state.order.slice(0, upTo))
+    if (elementCommand(command) && command.id === slide) pendingAfter(pending, command)
+  return pending.get(slide)
+}
+
+function pastedFrom(command: Extract<SlideCommand, { readonly slide: "element-clone" }>): SlideId | null {
+  const source = readSlideId(shapeOf(command.source).slide)
+  return source === undefined || source === command.id ? null : source
 }
 
 function needed(state: SlideState): ReadonlySet<SlideId> {
@@ -184,6 +213,11 @@ function needed(state: SlideState): ReadonlySet<SlideId> {
     if (!kept.has(command.id)) continue
     if (command.slide === "add") kept.add(command.after).add(command.layout)
     if (command.slide === "clone") kept.add(command.source)
+  }
+  for (const command of state.order.toReversed()) {
+    if (command.slide !== "element-clone" || !kept.has(command.id)) continue
+    const source = pastedFrom(command)
+    if (source !== null) kept.add(source)
   }
   return kept
 }
@@ -215,6 +249,25 @@ export function orderedParts(
   const kept = needed(state)
   const pending: Pending = new Map()
   let next: ReadonlyMap<string, Uint8Array> = parts
+  let built = parts
+  const sources = new Map<string, { readonly parts: ReadonlyMap<string, Uint8Array>; readonly part: string }>()
+  const slided: Slided = {
+    state,
+    media,
+    pasted(command, at) {
+      const slide = pastedFrom(command)
+      const id = slide === null ? undefined : minted.get(slide)
+      if (slide === null || id === undefined) throw new Error("slide")
+      const key = `${slide}@${String(at)}`
+      const known = sources.get(key)
+      if (known !== undefined) return known
+      const shown = slideBuilt(built, id, slide, at, pendingUpTo(state, slide, at), slided)
+      const part = slidePart(shown, id)
+      if (part === null) throw new Error("slide")
+      sources.set(key, { parts: shown, part })
+      return { parts: shown, part }
+    },
+  }
   for (const [at, edit] of state.order.entries()) {
     if (elementCommand(edit)) {
       if (kept.has(edit.id)) pendingAfter(pending, edit)
@@ -234,7 +287,8 @@ export function orderedParts(
       const id = createdId(before, idsOf(next))
       minted.set(command.id, id)
       if (command.slide === "clone") {
-        next = slideShown(next, id, command.source, state, at + 1, pending.get(command.source), media)
+        built = next
+        next = slideShown(next, id, command.source, at + 1, pending.get(command.source), slided)
         const prefix = {
           file: state.file,
           order: state.order.slice(0, at + 1),
@@ -248,10 +302,11 @@ export function orderedParts(
     }
   }
   const shaped = new Set<SlideId>([...pending.keys(), ...state.order.filter(groupCommand).map((command) => command.id)])
+  built = next
   for (const slide of shaped) {
     const id = minted.get(slide)
     if (id === undefined || !kept.has(slide)) continue
-    next = slideShown(next, id, slide, state, state.order.length, pending.get(slide), media)
+    next = slideShown(next, id, slide, state.order.length, pending.get(slide), slided)
   }
   if (state.order.some((command) => command.slide === "element-order")) {
     const stacks = elementStacks(state)

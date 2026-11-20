@@ -227,6 +227,10 @@ export const gestures = [
   { id: "hide", group: "arrange", keys: [{ code: "KeyH", mod: true, shift: true }], where: ["editor"] },
   { id: "lock", group: "arrange", keys: [{ code: "KeyL", mod: true, shift: true }], where: ["editor"] },
   { id: "undo", group: "history", keys: [{ key: "z", mod: true }], where: ["editor"] },
+  { id: "copy", group: "history", keys: [{ code: "KeyC", mod: true }], where: ["editor"] },
+  { id: "cut", group: "history", keys: [{ code: "KeyX", mod: true }], where: ["editor"] },
+  { id: "paste", group: "history", keys: [{ code: "KeyV", mod: true }], where: ["editor"] },
+  { id: "paste-over", group: "history", keys: [{ code: "KeyV", mod: true, shift: true }], where: ["editor"] },
   { id: "copy-properties", group: "history", keys: [{ code: "KeyC", mod: true, alt: true }], where: ["editor"] },
   { id: "paste-properties", group: "history", keys: [{ code: "KeyV", mod: true, alt: true }], where: ["editor"] },
   {

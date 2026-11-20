@@ -13,6 +13,7 @@ import {
   shownPlace,
   slideMeasure,
   ungroupRows,
+  type Box,
   type ElementId,
   type Command,
   type Register,
@@ -117,15 +118,33 @@ function ungrouped(deck: Deck, group: ElementId, runId: string, base: number): A
   return { ok: true, register }
 }
 
-function duplicated(deck: Deck, elements: readonly ElementId[], runId: string, base: number): Applied {
+function shownBox(register: Register, source: ElementId): Box | null {
+  return shownPlace(register, source)?.box ?? readLayout(register, source)?.box ?? null
+}
+
+function offsetTo(register: Register, change: WireGroup): { readonly x: number; readonly y: number } | null {
+  if (change.x === undefined || change.y === undefined) return { x: 0, y: 0 }
+  const boxes = change.elements.map((source) => shownBox(register, source))
+  if (boxes.some((box) => box === null)) return null
+  const placed = boxes.filter((box) => box !== null)
+  return {
+    x: change.x - Math.min(...placed.map((box) => box.x)),
+    y: change.y - Math.min(...placed.map((box) => box.y)),
+  }
+}
+
+function duplicated(deck: Deck, change: WireGroup, runId: string, base: number): Applied {
   let register = deck.register
-  for (const source of elements) {
-    const slide = readSlideId(shapeOf(source).slide)
+  const by = offsetTo(register, change)
+  if (by === null) return dead
+  for (const source of change.elements) {
+    const slide = change.slide ?? readSlideId(shapeOf(source).slide)
     const opened = ready({ deck: deck.id, base }, deck, slide, runId)
     if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
     const measure = slide === undefined ? undefined : slideMeasure(register, slide)
-    const box = shownPlace(register, source)?.box ?? readLayout(register, source)?.box ?? null
-    if (slide === undefined || measure === undefined || box === null) return dead
+    const shown = shownBox(register, source)
+    if (slide === undefined || measure === undefined || shown === null) return dead
+    const box = { ...shown, x: shown.x + by.x, y: shown.y + by.y }
     const cloned = cloneOf(register, source, nextElementId(register, slide, measure.free), box)
     if (!cloned.ok) return { ok: false, refusal: cloned.refusal }
     const landed = decided(register, opened.file, { ...cloned.command, runId }, runId)
@@ -136,7 +155,7 @@ function duplicated(deck: Deck, elements: readonly ElementId[], runId: string, b
 }
 
 export function applyGroup(deck: Deck, change: WireGroup, runId: string, base: number): Applied {
-  if (change.op === "duplicate") return duplicated(deck, change.elements, runId, base)
+  if (change.op === "duplicate") return duplicated(deck, change, runId, base)
   if (change.op === "group") return grouped(deck, change.elements, runId, base)
   if (change.op === "frame") return framed(deck, change.elements, runId, base)
   const [first, ...rest] = change.elements

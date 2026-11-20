@@ -11,6 +11,7 @@ import {
   shapeOf,
   slideUndoable,
   stackTarget,
+  type CopiedRows,
   type ElementClone,
   type ElementCommand,
   type StackMove,
@@ -19,6 +20,7 @@ import {
   type Geometry,
   type Register,
   type SlideCommand,
+  type SlideId,
   type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
@@ -212,10 +214,12 @@ async function commitRemovals(
   return flushPending(connect, deckId)
 }
 
+export type CopyAsked = Moved & { readonly onto?: SlideId; readonly rows?: CopiedRows }
+
 export function copyCommands(
   parts: Parts,
   register: Register,
-  copies: readonly Moved[],
+  copies: readonly CopyAsked[],
 ): { readonly edits: readonly ElementClone[]; readonly refused: readonly CopyRefusal[] } {
   const base = slideBase(parts, register)
   const slides = readSlides(base)
@@ -223,11 +227,12 @@ export function copyCommands(
   let current = indexedRegister(parts, register)
   const edits: ElementClone[] = []
   const refused: CopyRefusal[] = []
-  for (const { id: source, box } of copies) {
-    const found = slides.find((each) => each.slide === shapeOf(source).slide)
+  for (const { id: source, box, onto, rows } of copies) {
+    const found = slides.find((each) => each.slide === (onto ?? shapeOf(source).slide))
     const slide = found === undefined ? undefined : readSlideId(found.slide)
     if (found === undefined || slide === undefined) continue
-    const cloned = cloneOf(current, source, nextElementId(current, slide, freeShapeId(base, found.part)), box)
+    const node = nextElementId(current, slide, freeShapeId(base, found.part))
+    const cloned = cloneOf(current, source, node, box, rows)
     if (!cloned.ok) {
       if (cloned.refusal !== "dead" && !refused.includes(cloned.refusal)) refused.push(cloned.refusal)
       continue
@@ -244,15 +249,13 @@ export async function commitCopies(
   deckId: string,
   parts: Parts,
   register: Register,
-  copies: readonly Moved[],
+  copies: readonly CopyAsked[],
   paint: (undoable: Undoable | null) => Promise<void>,
+  title: string = elementCopy.copyRefusedTitle,
 ): Promise<{ readonly copies: readonly Copied[]; readonly flushed: Promise<CommitOutcome> }> {
   const { edits, refused } = copyCommands(parts, register, copies)
   for (const refusal of refused)
-    toast.error(elementCopy.copyRefusedTitle, {
-      id: `copy-refused-${refusal}`,
-      description: elementCopy.copyRefusedBody[refusal],
-    })
+    toast.error(title, { id: `copy-refused-${refusal}`, description: elementCopy.copyRefusedBody[refusal] })
   const file = fileSlides(parts, register)
   const went: ElementClone[] = []
   for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) went.push(edit)

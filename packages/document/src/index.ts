@@ -138,7 +138,15 @@ export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { type FileSection } from "./section-order.js"
 export { slideGroups } from "./slide-groups.js"
-export { clonedLayer, floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
+export {
+  clonedLayer,
+  floorFor,
+  floorNodes,
+  floorOpening,
+  newSlideElement,
+  openingElement,
+  readFloor,
+} from "./slide-floor.js"
 export { type TransitionValue } from "./trait-transition.js"
 export { widestEffect } from "./trait-effects.js"
 export {
@@ -194,13 +202,14 @@ export { siteCount, siteSpot, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"
-export { cloneOf } from "./element-clone.js"
+export { cloneOf, type CopiedRows } from "./element-clone.js"
 export {
   addedPictures,
   elementCommand,
   elementGone,
   nextElementId,
   openingIcon,
+  type ClonedLayer,
   type ElementClone,
   type ElementCommand,
   type Geometry,

@@ -1,5 +1,7 @@
 export { boxOf, ownBox, sameBox, type Moved } from "./box-gesture.js"
 export type { Copied } from "./layer-copies.js"
+export { pastedOffset, pastedOver } from "./paste-place.js"
+export type { LayerClipboard, LayerPaste, PasteMode } from "./use-canvas-clipboard.js"
 export type { Turned } from "./transform-drag.js"
 export type { FlippedLayer } from "./transform-math.js"
 export { ElementView, OpenSlide, useElement } from "./element-view.js"

@@ -22,6 +22,7 @@ import type { PaintStore } from "./store.js"
 import type { TextEditKind } from "./passage.js"
 import { ensureTextRule, type Scaled } from "./text-look.js"
 import type { TextFormatting } from "./text-formatting.js"
+import { useCanvasClipboard, type LayerClipboard } from "./use-canvas-clipboard.js"
 import { useHoverOutline } from "./use-hover-outline.js"
 import { useSlideMarquee, type OwnsKey } from "./use-slide-marquee.js"
 import { canResizeElement, canRotateElement, type Turned } from "./transform-drag.js"
@@ -74,6 +75,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly formatting?: TextFormatting
   readonly slideName?: string
   readonly ownsKey?: OwnsKey
+  readonly clipboard?: LayerClipboard
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
@@ -131,6 +133,15 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     },
   })
   startMarquee.current = marquee.start
+  useCanvasClipboard({
+    surface,
+    enabled: moving !== null,
+    clipboard: props.clipboard,
+    slide,
+    selection: moves.latest,
+    paste: moves.paste,
+    ownsKey: props.ownsKey,
+  })
   const hover = useHoverOutline({
     surface,
     enabled: moving !== null,

@@ -13,6 +13,7 @@ type Awaited = {
   readonly ids: readonly ElementId[]
   readonly grips: readonly BoxGrip[]
   readonly from: HTMLElement | null
+  readonly verb: string
 }
 
 export type LayerCopies = {
@@ -24,6 +25,7 @@ export type LayerCopies = {
   ) => { readonly copySnap?: DragSnap; readonly onCopying?: (copying: boolean) => void }
   readonly land: (starts: ReadonlyMap<ElementId, Box>, grips: readonly BoxGrip[], from: HTMLElement | null) => void
   readonly duplicate: (starts: ReadonlyMap<ElementId, Box>, from: HTMLElement) => boolean
+  readonly paste: (made: Promise<readonly Copied[]>, from: HTMLElement | null) => void
 }
 
 function labelOf(ids: readonly ElementId[], from: HTMLElement | null): string {
@@ -65,7 +67,7 @@ export function useLayerCopies(options: {
     const next = { ids: waiting.ids, inside: lead === undefined ? null : parentOf(shown.current, lead) }
     chosen.current.choose(next)
     if (waiting.from?.isConnected === true) chosen.current.focus(waiting.from, next)
-    chosen.current.say(`Duplicated ${labelOf(waiting.ids, waiting.from)}`)
+    chosen.current.say(`${waiting.verb} ${labelOf(waiting.ids, waiting.from)}`)
     if (!queued.current) return
     queued.current = false
     const starts = new Map(
@@ -88,8 +90,16 @@ export function useLayerCopies(options: {
   }
 
   function send(copies: readonly Moved[], grips: readonly BoxGrip[], from: HTMLElement | null) {
+    awaitCopies(onDuplicate === undefined ? Promise.resolve([]) : onDuplicate(copies), grips, from, "Duplicated")
+  }
+
+  function awaitCopies(
+    sent: Promise<readonly Copied[]>,
+    grips: readonly BoxGrip[],
+    from: HTMLElement | null,
+    verb: string,
+  ) {
     landing.current = true
-    const sent = onDuplicate === undefined ? Promise.resolve([]) : onDuplicate(copies)
     function lost() {
       landing.current = false
       queued.current = false
@@ -102,7 +112,7 @@ export function useLayerCopies(options: {
         return
       }
       last.current = made
-      awaited.current = { ids: made.map((each) => each.copy), grips, from }
+      awaited.current = { ids: made.map((each) => each.copy), grips, from, verb }
       settle()
     }, lost)
   }
@@ -144,6 +154,9 @@ export function useLayerCopies(options: {
         return true
       }
       return copyInPlace(starts, from)
+    },
+    paste(made, from) {
+      awaitCopies(made, [], from, "Pasted")
     },
   }
 }

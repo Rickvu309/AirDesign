@@ -432,6 +432,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
     <section
       className="flex max-h-[50%] min-h-0 shrink-0 flex-col border-t border-line"
       data-layers-panel
+      data-layer-clipboard
       data-keeps-selection
     >
       <h2 className="flex shrink-0 px-1.5 pt-1.5 pb-0.5">

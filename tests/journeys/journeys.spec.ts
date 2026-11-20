@@ -75,6 +75,7 @@ for (const name of [
   "snap-drag",
   "snap-resize",
   "layer-duplicate",
+  "layer-clipboard",
   "busy-drag",
   "canvas-select",
   "transform-canvas",

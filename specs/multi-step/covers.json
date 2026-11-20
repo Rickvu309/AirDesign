@@ -17,13 +17,13 @@
       "file": "apps/web/src/element-edit.ts",
       "names": ["removals", "commitElement"],
       "digest": "9f8cfac86540",
-      "blob": "916b82e1a8be43dc7379f537ff5e161eaf6d2a33"
+      "blob": "75e15a119694f6538787ff1acf729de0bef5c342"
     },
     {
       "file": "packages/render/src/slide-moves.ts",
       "names": ["useMoves"],
-      "digest": "c397a6142a6b",
-      "blob": "eefaa3b0735b1a180b845f9482d4a99795c43ba9"
+      "digest": "2bf43fff5117",
+      "blob": "5f6d0e82dd47c0bdcfe15a2d66ccd7fb6b4f850a"
     }
   ]
 }

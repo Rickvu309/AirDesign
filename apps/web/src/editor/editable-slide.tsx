@@ -1,6 +1,16 @@
 import { boxPatch, format, type ElementId, type SetChange, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
-import { SlideCanvas, type Copied, type FlippedLayer, type Moved, type Selection, type Turned } from "@airdesign/render"
+import {
+  boxOf,
+  SlideCanvas,
+  type Copied,
+  type FlippedLayer,
+  type LayerClipboard,
+  type LayerPaste,
+  type Moved,
+  type Selection,
+  type Turned,
+} from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
@@ -11,7 +21,11 @@ import { changeDesign, endChange, type DesignDeck } from "@/design/design-change
 import { valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
-import type { ElementChange } from "@/element-edit"
+import { toast } from "@/components/ui/toast"
+import { elementCopy } from "@/copy/element-copy"
+import type { CopyAsked, ElementChange } from "@/element-edit"
+import { readClipboardCopy, readLayerCopy, writeLayerCopy, type LayerCopy } from "@/layer-clipboard"
+import { layerCopyOf, pastedCopies, slideIdAt } from "@/layer-paste"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { framedOf, storedBox } from "@/frame-boxes"
 import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
@@ -26,10 +40,14 @@ import { boxName } from "@/undo-names"
 export type EditableDeck = DesignDeck & {
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
   readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
+  readonly pasteLayers?: (copies: readonly CopyAsked[]) => Promise<readonly Copied[]>
+  readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
   readonly selection: Selection
   readonly select: (selection: Selection) => void
   readonly hovered?: ElementId | null
 }
+
+const noCut: Promise<"refused"> = Promise.resolve("refused")
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
@@ -249,6 +267,60 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     return changeElement({ change: "order", node, move })
   }
 
+  function shownBoxes(ids: readonly ElementId[]): readonly Moved[] {
+    const canvas = canvases.current(current)
+    return ids.flatMap((target) => {
+      const painted = canvas?.elements.find((each) => each.id === target)?.box ?? null
+      const box = store.current.getBox(target) ?? (painted === null ? null : boxOf(painted))
+      return box === null ? [] : [{ id: target, box }]
+    })
+  }
+
+  function pasted(copy: LayerCopy | null, paste: LayerPaste): Promise<readonly Copied[]> {
+    const { pasteLayers } = deck
+    const register = deck.shown.shownRegister.current
+    const canvas = canvases.current(current)
+    if (copy === null || pasteLayers === undefined || register === null || canvas === null) return Promise.resolve([])
+    if (copy.deck !== id) {
+      toast.error(elementCopy.pasteElsewhereTitle, {
+        id: "paste-elsewhere",
+        description: elementCopy.pasteElsewhereBody,
+      })
+      return Promise.resolve([])
+    }
+    const onto = slideIdAt(deck.shown.shownParts.current, register, current)
+    if (onto === null) return Promise.resolve([])
+    const selected = shownBoxes(paste.selection).map((each) => each.box)
+    return pasteLayers(pastedCopies(copy, { mode: paste.mode, onto, slide: canvas, view: paste.view, selected }))
+  }
+
+  const clipboard: LayerClipboard | undefined =
+    deck.pasteLayers === undefined
+      ? undefined
+      : {
+          copy(ids, data, cut) {
+            const register = deck.shown.shownRegister.current
+            if (register === null) return false
+            const made = layerCopyOf(id, deck.shown.shownParts.current, register, shownBoxes(ids))
+            for (const refusal of made.refused)
+              toast.error(elementCopy.clipRefusedTitle, {
+                id: `clip-refused-${refusal}`,
+                description: elementCopy.copyRefusedBody[refusal],
+              })
+            const copy = made.copy
+            if (copy === null || copy.layers.length === 0) return false
+            writeLayerCopy(copy, data)
+            const sources = copy.layers.map((layer) => layer.source)
+            if (cut && deck.cutLayers !== undefined) void holding(sources, () => deck.cutLayers?.(sources) ?? noCut)
+            return true
+          },
+          paste(paste) {
+            if (paste.data === null) return readClipboardCopy().then((copy) => pasted(copy, paste))
+            const copy = readLayerCopy(paste.data.getData("text/html"))
+            return copy === null ? null : pasted(copy, paste)
+          },
+        }
+
   function measured(width: number) {
     const shownRegister = deck.shown.shownRegister.current
     const owed = framedOf(
@@ -310,6 +382,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
                 })}
             onOrder={order}
             ownsKey={editorOwnsKey}
+            {...(clipboard === undefined ? {} : { clipboard })}
             selection={selection}
             onSelection={select}
             onConnect={(node, end, to) => {
