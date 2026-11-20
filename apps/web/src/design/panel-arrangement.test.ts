@@ -1,4 +1,4 @@
-import { slotted, traitNames, traits } from "@airdesign/document"
+import { alignNames, slotted, traitNames, traits } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { shownPlace } from "./panel"
 import { sectionStrips } from "./panel-arrangement"
@@ -41,4 +41,9 @@ it("places Figma's size, spacing, format and paragraph strips in order", () => {
     ["color"],
     ["spaceBefore", "spaceAfter"],
   ])
+})
+
+it("draws an icon for every text alignment a paragraph can hold, justify included", () => {
+  const align = sectionStrips.text.flat().find((control) => control.field === "align")
+  expect(Object.keys(align?.options ?? {})).toEqual([...alignNames])
 })

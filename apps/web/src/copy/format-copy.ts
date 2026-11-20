@@ -21,7 +21,7 @@ export const formatCopy = {
     accent6: "Accent 6",
   },
   alignGroup: "Alignment",
-  align: { left: "Align left", center: "Align center", right: "Align right" },
+  align: { left: "Align left", center: "Align center", right: "Align right", justify: "Justify" },
   bullets: "Bulleted list",
 } as const satisfies {
   readonly group: string

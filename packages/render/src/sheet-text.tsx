@@ -11,8 +11,6 @@ import type { CanvasBullet } from "./text-record.js"
 import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
 import { listNumbers } from "./paragraph-list.js"
 
-type ShownAlign = ParagraphAlign | "justify"
-
 type ShownRun = {
   readonly link?: ElementLink
   readonly from: number
@@ -32,17 +30,13 @@ type ShownParagraph = {
   readonly from: number
   readonly list?: TextList
   readonly level?: unknown
-  readonly align?: ShownAlign
+  readonly align?: ParagraphAlign
   readonly bullet?: boolean | CanvasBullet | null
   readonly runs: readonly ShownRun[]
   readonly lineHeight?: unknown
   readonly lineHeightPoints?: unknown
   readonly spaceBefore?: unknown
   readonly spaceAfter?: unknown
-}
-
-function placed(align: ShownAlign | undefined): ParagraphAlign | undefined {
-  return align === "left" || align === "center" || align === "right" ? align : undefined
 }
 
 function overlayOf(run: ShownRun): RunPaint {
@@ -92,7 +86,7 @@ export function SheetText(props: {
     <div data-text-body="" style={look.body}>
       {text.paragraphs.map((paragraph, index) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
-        const align = placed(paragraph.align)
+        const align = paragraph.align
         const list = paragraph.list
         const level = typeof paragraph.level === "number" ? paragraph.level : undefined
         const number = nextNumber(paragraph.from, list, level)

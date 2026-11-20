@@ -1,9 +1,11 @@
 import {
+  alignNames,
   lastListLevel,
   levelRange,
   spacingNames,
   writeTextValue,
   type LevelStep,
+  type ParagraphAlign,
   type ParagraphSpacing,
   type TextParagraph,
   type TextList,
@@ -77,7 +79,7 @@ function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: numbe
 
 type ReadParagraph = {
   from: number
-  align?: "left" | "center" | "right"
+  align?: ParagraphAlign
   list?: TextList
   level?: number
   runs: TextRun[]
@@ -85,8 +87,8 @@ type ReadParagraph = {
 
 function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadParagraph {
   let paragraph: ReadParagraph = { from, runs }
-  const align = node.dataset.align
-  if (align === "left" || align === "center" || align === "right") paragraph = { ...paragraph, align }
+  const align = alignNames.find((name) => name === node.dataset.align)
+  if (align !== undefined) paragraph = { ...paragraph, align }
   const list = node.dataset.list
   if (list === "none" || list === "bullets" || list === "numbers") paragraph = { ...paragraph, list }
   const level = node.dataset.level

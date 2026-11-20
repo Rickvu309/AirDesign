@@ -10,7 +10,7 @@ function style(node: Locator, name: "textDecorationLine" | "fontSize" | "textAli
 }
 
 test("Figma's text keys strike, resize, align and bullet the selected text layer", async ({ page }) => {
-  covers("strike", "size-up", "size-down", "text-left", "text-center", "text-right", "bullets")
+  covers("strike", "size-up", "size-down", "text-left", "text-center", "text-right", "text-justify", "bullets")
   await openDeck(page, "clean.pptx")
   const layer = page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#2"]')
   await layer.click()
@@ -31,6 +31,7 @@ test("Figma's text keys strike, resize, align and bullet the selected text layer
   for (const [key, align] of [
     ["ControlOrMeta+Alt+KeyT", "center"],
     ["ControlOrMeta+Alt+KeyR", "right"],
+    ["ControlOrMeta+Alt+KeyJ", "justify"],
     ["ControlOrMeta+Alt+KeyL", "left"],
   ] as const) {
     await page.keyboard.press(key)

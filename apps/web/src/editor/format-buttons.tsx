@@ -1,6 +1,5 @@
 import { designCopy } from "@/copy/design-copy"
 import {
-  alignNames,
   formatNames,
   typedSize,
   type FormatState,
@@ -28,7 +27,9 @@ export type FormatShown = Readonly<Record<Exclude<TextFormat, "strike">, FormatS
 type Swatch = { readonly scheme: SchemeName; readonly css: string }
 
 const keys: Readonly<Record<Exclude<TextFormat, "strike">, string>> = { bold: "B", italic: "I", underline: "U" }
-const alignIcons: Readonly<Record<ParagraphAlign, EditorIconName>> = {
+const placedAligns = ["left", "center", "right"] as const satisfies readonly ParagraphAlign[]
+
+const alignIcons: Readonly<Record<(typeof placedAligns)[number], EditorIconName>> = {
   left: "alignLeft",
   center: "alignCenter",
   right: "alignRight",
@@ -118,9 +119,9 @@ function moveAlign(
   const target = event.target
   if (!(target instanceof HTMLElement)) return
   event.preventDefault()
-  const current = alignNames.find((name) => name === target.dataset.place)
-  const index = current === undefined ? (forward ? -1 : alignNames.length) : alignNames.indexOf(current)
-  const next = alignNames[(index + (forward ? 1 : alignNames.length - 1)) % alignNames.length]
+  const current = placedAligns.find((name) => name === target.dataset.place)
+  const index = current === undefined ? (forward ? -1 : placedAligns.length) : placedAligns.indexOf(current)
+  const next = placedAligns[(index + (forward ? 1 : placedAligns.length - 1)) % placedAligns.length]
   if (next === undefined || next === align) return
   onAlign?.(next)
   const button = target.parentElement?.querySelector(`[data-place="${next}"]`)
@@ -166,7 +167,7 @@ export function FormatButtons({
   const templateColors = namedByColor(swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches)
   const value = colorShown === null || colorShown === "mixed" ? undefined : colorShown
   const bar = value === undefined ? null : `#${shownHex(value, templateColors)}`
-  const checked = alignShown === "left" || alignShown === "center" || alignShown === "right" ? alignShown : null
+  const checked = placedAligns.find((name) => name === alignShown) ?? null
   const showing = (part: FormatPart) => parts.includes(part)
   return (
     <>
@@ -259,7 +260,7 @@ export function FormatButtons({
           className="flex items-center gap-0.5"
           onKeyDown={(event) => moveAlign(event, alignShown, onAlign)}
         >
-          {alignNames.map((name) => (
+          {placedAligns.map((name) => (
             <button
               key={name}
               type="button"

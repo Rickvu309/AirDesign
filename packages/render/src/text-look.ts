@@ -1,6 +1,7 @@
 import { gradientLook, keptTextFill, paintedColor, schemeOf } from "./text-fill-look.js"
 import { fontFamily } from "@airdesign/fonts"
 import {
+  alignNames,
   levelNumbering,
   listIndent,
   type ListIndent,
@@ -416,7 +417,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     },
     fileAlign(from) {
       const align = paragraphs.get(from)?.align
-      return align === "left" || align === "center" || align === "right" ? align : null
+      return alignNames.find((name) => name === align) ?? null
     },
     fileList(from) {
       const bullet = paragraphs.get(from)?.bullet

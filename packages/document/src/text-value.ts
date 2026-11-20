@@ -20,7 +20,7 @@ export const schemeNames = [
   "accent5",
   "accent6",
 ] as const
-export const alignNames = ["left", "center", "right"] as const
+export const alignNames = ["left", "center", "right", "justify"] as const
 import { sizeFloor, sizeCeiling } from "./text-size.js"
 export { sizeFloor, sizeCeiling } from "./text-size.js"
 export const sizeDefault = 1800

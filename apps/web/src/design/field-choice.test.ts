@@ -1,4 +1,4 @@
-import { traitNames, traits, type Desc } from "@airdesign/document"
+import { alignNames, traitNames, traits, type Desc } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { optionWord } from "@/copy/option-copy"
 import { choiceLayout } from "./panel-arrangement"
@@ -15,6 +15,10 @@ function choices(desc: Desc, field: string): readonly (readonly [string, readonl
       return []
   }
 }
+
+it("names every text alignment, justify included", () => {
+  expect(alignNames.map((option) => optionWord("align", option))).toEqual(["Left", "Center", "Right", "Justify"])
+})
 
 it("names autofit's choices in PowerPoint's words", () => {
   expect(["none", "shrink", "grow"].map((option) => optionWord("autofit", option))).toEqual([

@@ -163,7 +163,10 @@ describe("size, colour, alignment and bullets", () => {
   })
 
   it("refuses a bad alignment or bullet", () => {
-    expect(readTextValue('[{"from":0,"align":"justify","runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"align":"distributed","runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"align":"justify","runs":[{"from":0,"text":"a"}]}]')).toEqual([
+      { from: 0, align: "justify", runs: [{ from: 0, text: "a" }] },
+    ])
     expect(readTextValue('[{"from":0,"bullet":"yes","runs":[{"from":0,"text":"a"}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"align":"left","runs":[{"from":0,"text":"a"}]}]')).toEqual([
       { from: 0, align: "left", runs: [{ from: 0, text: "a" }] },
