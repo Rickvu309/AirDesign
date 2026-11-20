@@ -135,3 +135,32 @@ it("routes a text box's Fill to its letters and keeps its box fill folded", () =
       .some((control) => control.field === "fill" || control.field === "color"),
   ).toBe(false)
 })
+
+it("keeps the weight when the new family has it and falls back to Regular when it does not", () => {
+  const served: Readonly<Record<string, readonly { style: string; weight: string }[]>> = {
+    inter: [
+      { style: "normal", weight: "100 900" },
+      { style: "italic", weight: "100 900" },
+    ],
+    montserrat: [{ style: "normal", weight: "100 900" }],
+    abel: [{ style: "normal", weight: "400" }],
+  }
+  type Faces = (family: string) => readonly { style: string; weight: string }[] | undefined
+  const font = (runs: readonly TextRun[], faces: Faces = (family) => served[family.toLowerCase()]) =>
+    panelOf({ ...shape, value: writeTextValue([{ from: 0, runs }]) }, { reads: {}, moves: true, faces })
+      .sections.find((section) => section.trait === "text")
+      ?.strips.flat()
+      .find((control) => control.field === "font")
+  const semibold = font([{ from: 0, text: "A", font: "Inter SemiBold" }])
+  expect(semibold?.change("Montserrat").text).toEqual({ font: "Montserrat SemiBold" })
+  expect(semibold?.change("Abel").text).toEqual({ font: "Abel" })
+  expect(semibold?.change("Arial").text).toEqual({ font: "Arial" })
+  expect(semibold?.change("Montserrat Light").text).toEqual({ font: "Montserrat Light" })
+  const boldItalic = font([{ from: 0, text: "A", font: "Inter", bold: true, italic: true }])
+  expect(boldItalic?.change("Arial").text).toEqual({ font: "Arial" })
+  expect(boldItalic?.change("Montserrat").text).toEqual({ font: "Montserrat", bold: false, italic: false })
+  const unloaded = font([{ from: 0, text: "A", font: "Inter SemiBold" }], (family) =>
+    family === "Inter" ? served.inter : undefined,
+  )
+  expect(unloaded?.change("Montserrat").text).toEqual({ font: "Montserrat" })
+})

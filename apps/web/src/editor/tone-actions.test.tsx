@@ -50,6 +50,7 @@ const target: Target = {
   place: () => undefined,
   bullet: () => "off",
   bullets: () => undefined,
+  weight: () => undefined,
   swatches: () => [],
 }
 

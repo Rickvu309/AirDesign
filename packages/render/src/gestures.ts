@@ -430,13 +430,13 @@ export const gestures = [
     id: "weight-up",
     group: "text",
     keys: [{ code: "Period", mod: true, alt: true, shift: true }],
-    where: ["element"],
+    where: ["element", "text"],
   },
   {
     id: "weight-down",
     group: "text",
     keys: [{ code: "Comma", mod: true, alt: true, shift: true }],
-    where: ["element"],
+    where: ["element", "text"],
   },
 ] as const satisfies readonly GestureRow[]
 

@@ -1,7 +1,8 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react"
 import type { CanvasLine, CanvasTable, CanvasText, PaintBox } from "./record.js"
 import { SheetText } from "./sheet-text.js"
-import { anchored, textLook, type Scaled } from "./text-look.js"
+import { anchored } from "./text-body-look.js"
+import { textLook, type Scaled } from "./text-look.js"
 
 export type Cell = CanvasTable["rows"][number]["cells"][number]
 

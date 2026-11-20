@@ -1,6 +1,7 @@
 import { textCopy } from "@/copy/text-copy"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { fontNames } from "@airdesign/fonts"
+import { servedFaces } from "@/design/served-faces"
 import {
   bytesOf,
   cellText,
@@ -60,6 +61,11 @@ function useTextProblem(words: string, max: number, message = designCopy.tooLong
   return { problemId, problem, correction }
 }
 
+function preloadFamily(typed: string): void {
+  const family = fontNames.find((name) => name.toLowerCase() === typed.trim().toLowerCase())
+  if (family !== undefined) servedFaces(family)
+}
+
 function WordsField({ control, onChange, max }: ControlProps & { readonly max: number }) {
   const font = control.trait === "text" && control.field === "font"
   const shown = typeof control.value === "string" ? control.value : ""
@@ -101,7 +107,10 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
           aria-describedby={problem !== null ? problemId : undefined}
           value={draft ?? shown}
           placeholder={control.mixed ? designCopy.mixed : undefined}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setDraft(event.target.value)
+            if (font) preloadFamily(event.target.value)
+          }}
           onBlur={(event) => {
             if (draft !== null) commit(event.currentTarget.value)
           }}

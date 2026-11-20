@@ -48,6 +48,7 @@ function targetWith(held: { bold: "on" | "off"; size: number }): Target {
     place: () => undefined,
     bullet: () => "off",
     bullets: () => undefined,
+    weight: () => undefined,
     swatches: () => [],
   }
 }

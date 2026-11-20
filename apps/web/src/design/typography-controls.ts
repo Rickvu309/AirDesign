@@ -1,11 +1,11 @@
 import {
   boldWeight,
-  familyStyles,
   fontFamily,
+  listedStyles,
   namedFace,
+  plainStyles,
   readStyleName,
   regularWeight,
-  resolveFont,
   styleName,
   styleTypeface,
   type FontStyle,
@@ -16,15 +16,8 @@ import { textCopy } from "@/copy/text-copy"
 import type { PanelControl, PanelReads } from "./panel"
 import { resolveControl } from "./panel-arrangement"
 
-const plainStyles: readonly FontStyle[] = [regularWeight, boldWeight].flatMap((weight) => [
-  { weight, italic: false },
-  { weight, italic: true },
-])
-
 function stylesOf(family: string | undefined, current: FontStyle | undefined, shown: PanelReads) {
-  const served = family !== undefined && resolveFont(family)?.family.toLowerCase() === family.toLowerCase()
-  const faces = served ? shown.faces?.(family) : undefined
-  const listed = faces === undefined ? plainStyles : familyStyles(faces)
+  const listed = family === undefined ? plainStyles : listedStyles(family, (name) => shown.faces?.(name))
   const all = current === undefined || listed.some((style) => sameStyle(style, current)) ? listed : [...listed, current]
   return [...all].sort((left, right) => left.weight - right.weight || Number(left.italic) - Number(right.italic))
 }
@@ -87,7 +80,26 @@ export function typographyControls(
   return [
     ...controls.map((control) => {
       if (control.field === "font" && typeof typeface === "string")
-        return { ...control, value: named?.family ?? typeface }
+        return {
+          ...control,
+          value: named?.family ?? typeface,
+          change: (value: unknown) => {
+            if (typeof value !== "string" || current === undefined || namedFace(value) !== undefined)
+              return control.change(value)
+            const kept = stylesOf(value, undefined, shown).some((style) => sameStyle(style, current))
+            const wanted = kept ? current : { weight: regularWeight, italic: false }
+            const emboldened = wanted.weight === boldWeight
+            const face = styleTypeface(value, wanted.weight)
+            return {
+              ...control.change(face),
+              text: {
+                font: face,
+                ...(bold?.value !== emboldened ? { bold: emboldened } : {}),
+                ...(italic?.value !== wanted.italic ? { italic: wanted.italic } : {}),
+              },
+            }
+          },
+        }
       if (control.field === "bold" && named !== undefined)
         return {
           ...control,

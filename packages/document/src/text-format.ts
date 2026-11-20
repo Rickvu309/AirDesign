@@ -141,7 +141,7 @@ export function formatState(
   return states.has(true) ? "on" : "off"
 }
 
-function applyRuns(
+export function applyRuns(
   value: TextValue,
   range: TextRange | null,
   change: (paragraph: TextParagraph, run: TextRun) => TextRun,
