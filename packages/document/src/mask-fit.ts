@@ -12,10 +12,12 @@ function flagEdit(register: Register, node: ElementId, flag: Flag): FieldEdit<un
 }
 
 function flagNow(register: Register, node: ElementId, flag: Flag): boolean {
-  const edit = flagEdit(register, node, flag)
-  if (typeof edit === "object") return edit.set === true
-  if (edit === "inherit") return false
-  return openingElement(register, node)?.design?.[`identity.${flag}`]?.[0] === true
+  const opening = openingElement(register, node)
+  for (const edit of [flagEdit(register, node, flag), opening?.opening?.identity?.[flag]]) {
+    if (typeof edit === "object") return edit.set === true
+    if (edit === "inherit") return false
+  }
+  return opening?.design?.[`identity.${flag}`]?.[0] === true
 }
 
 export function shownMask(register: Register, node: ElementId): boolean {
