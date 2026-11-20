@@ -4,6 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { browserJobs, browserReach, browserSpec, designScans, inBrowser } from "./browser-change-map.mjs"
 import { browserExportTag } from "./pptx-cases.mjs"
+import { readersOf, scriptTestReads } from "./script-test-reads.mjs"
 import { readSpecSeconds } from "./spec-seconds.mjs"
 
 export const ciParts = ["source", "scripts", "design", "browser", "journeys", "pptx", "corpus", "model-check"]
@@ -123,6 +124,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       return runEverything(`${file} changes how every part runs`)
     if (setup.has(file)) return runEverything(`${file} is shared test setup`)
     turnOn("source", file)
+    if (readersOf(graph.reads ?? {}, file).length > 0) turnOn("scripts", file)
     const gone = goneNode(file)
     if (
       listed(file, graph.pptxPaths) ||
@@ -313,6 +315,7 @@ export const readChangeGraph = (root) => {
     exportSpecs: [...exportSpecs],
     packages,
     imports: readImports(root, files, packages),
+    reads: scriptTestReads(root, files),
     pptxPaths: fs.readFileSync(path.join(root, pptxPathsFile), "utf8").split("\n").filter(Boolean),
   }
 }

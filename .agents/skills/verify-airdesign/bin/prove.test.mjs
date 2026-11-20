@@ -36,6 +36,12 @@ const facts = {
     "scripts/check.test.mjs": ["scripts/check.mjs"],
     "scripts/land.test.mjs": [],
   },
+  reads: {
+    "scripts/rule-table.test.mjs": ["AGENTS.md", "COMMANDS.md"],
+    "scripts/affected-report.test.mjs": [".github/workflows/ci.yml"],
+    "scripts/ci-queued.test.mjs": [".github/workflows/ci.yml", ".github/actions/queued/action.yml"],
+    "scripts/check-specs.test.mjs": ["specs/edit/"],
+  },
   browser: {
     "tests/browser/design-panel.ts": [],
     "tests/browser/person-undo.spec.ts": [],
@@ -89,6 +95,25 @@ describe("proofPlan", () => {
       "scripts/metrics.test.mjs",
     ])
     expect(step(["scripts/land.test.mjs"], "script-tests").files).toEqual(["scripts/land.test.mjs"])
+  })
+
+  it("plans each script test that reads a changed file, though no script changed", () => {
+    expect(step(["AGENTS.md"], "script-tests").files).toEqual(["scripts/rule-table.test.mjs"])
+    expect(step([".github/workflows/ci.yml"], "script-tests").files).toEqual([
+      "scripts/affected-report.test.mjs",
+      "scripts/ci-queued.test.mjs",
+    ])
+    expect(step(["specs/edit/Edit.tla"], "script-tests").files).toEqual(["scripts/check-specs.test.mjs"])
+    expect(step(["specs/run/Run.tla"], "script-tests")).toBeUndefined()
+    expect(step(["README.md"], "script-tests")).toBeUndefined()
+  })
+
+  it("joins the tests that import a changed script with the tests that read a changed file", () => {
+    expect(step(["scripts/metrics.mjs", "AGENTS.md"], "script-tests").files).toEqual([
+      "scripts/check.test.mjs",
+      "scripts/metrics.test.mjs",
+      "scripts/rule-table.test.mjs",
+    ])
   })
 
   it("looks at the states whose design screen sits in a touched area", () => {
