@@ -5,6 +5,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import { frameCopy, layoutWords } from "../../apps/web/src/copy/frame-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, setPanelMode } from "./design-panel"
 import { covers } from "./gesture"
@@ -134,6 +135,12 @@ test("design mode's Auto layout section sets direction, gap, padding and alignme
     .getByRole("group", { name: frameCopy.flow })
     .getByRole("button", { name: layoutWords["flow.vertical"] })
     .click()
+  await expect
+    .poll(async () => (await boxOf(oval)).y > (await boxOf(square)).y + (await boxOf(square)).height - 1)
+    .toBe(true)
+  await page.getByRole("button", { name: undoCopy.undoNamed["auto-layout"], exact: true }).click()
+  await expect.poll(async () => Math.abs((await boxOf(oval)).y - (await boxOf(square)).y) <= 1.5).toBe(true)
+  await page.getByRole("button", { name: undoCopy.redoNamed["auto-layout"], exact: true }).click()
   await expect
     .poll(async () => (await boxOf(oval)).y > (await boxOf(square)).y + (await boxOf(square)).height - 1)
     .toBe(true)
