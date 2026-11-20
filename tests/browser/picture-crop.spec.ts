@@ -5,7 +5,9 @@ import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
 import { unfold } from "./design-panel"
+import { covers } from "./gesture"
 import { holdableDevice } from "./slow-device"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const slidePart = "ppt/slides/slide1.xml"
@@ -68,4 +70,36 @@ test("two crop sides typed one after another on a slow device both land, on the 
   await savedExport(page, file)
   const slide = (await partsOf(file)).get(slidePart)?.toString("utf8") ?? ""
   expect(slide).toContain('<a:srcRect l="10000" r="10000"/>')
+})
+
+test("a crop dragged on the canvas lands in one step, and one undo restores the frame through a reload", async ({
+  page,
+  context,
+  stack,
+  decks,
+}) => {
+  covers("crop")
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  await decks.open(join(fixtures, "picture-png.pptx"))
+  const photo = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
+  await cropped(page, photo)
+  const framed = await width(photo)
+  await photo.dblclick()
+  const right = page.locator('[data-crop-grip="e"]')
+  await expect(right).toBeVisible()
+  const grip = await right.boundingBox()
+  if (grip === null) throw new Error("no crop grip")
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(grip.x + grip.width / 2 - framed / 4, grip.y + grip.height / 2, { steps: 5 })
+  await page.mouse.up()
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-crop-frame]")).toHaveCount(0)
+  await expect.poll(async () => Math.round(((await width(photo)) / framed) * 100)).toBe(75)
+  await page.getByRole("button", { name: undoCopy.undoNamed.crop, exact: true }).click()
+  await expect.poll(() => width(photo)).toBe(framed)
+  await page.reload()
+  await expect.poll(() => width(page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`))).toBe(framed)
 })

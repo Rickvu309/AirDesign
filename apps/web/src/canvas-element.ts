@@ -1,6 +1,7 @@
 import { paintKind, type PaintElement } from "@airdesign/pptx"
 import {
   unshownFill,
+  type CanvasCrop,
   type CanvasElement,
   type CanvasLayer,
   type CanvasLine,
@@ -79,6 +80,17 @@ function layersOf(row: PaintElement, src: PictureSource): readonly CanvasLayer[]
   return plan.flatMap((layer, at) => (layer.kind === "inner" ? [] : [canvasLayer(layer, src, at > 0)]))
 }
 
+function cropOf(row: PaintElement, src: PictureSource): { readonly crop?: CanvasCrop } {
+  if (row.kind !== "p:pic") return {}
+  const images = fillPlan(row).flatMap((layer) => (layer.kind === "image" && !layer.placed.tile ? [layer] : []))
+  const [only] = images
+  if (images.length !== 1 || only === undefined || only.placed.tile) return {}
+  const url = src(only.image)
+  if (url === null) return {}
+  const { x, y, width, height } = only.placed
+  return { crop: { url, image: { x, y, width, height } } }
+}
+
 function framedFill(layers: readonly CanvasLayer[] | null): string | null | undefined {
   if (layers === null || !layers.every(plain)) return undefined
   return layers.length === 0
@@ -126,5 +138,6 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     ...(spec.geometry === undefined ? {} : { geometry: spec.geometry }),
     text: heldText(spec.text, shape),
     ...(spec.table === undefined ? {} : { table: spec.table }),
+    ...cropOf(row, ctx.src),
   }
 }
