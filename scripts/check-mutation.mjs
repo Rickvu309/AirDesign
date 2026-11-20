@@ -22,6 +22,10 @@ export const changedSources = (nameStatus) =>
     return chosen ? [file] : []
   })
 
+const reExport = /export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s+from\s+["'][^"']+["']\s*;?/g
+
+export const holdsNoCode = (source) => source.replace(reExport, "").trim() === ""
+
 export const linkedPaths = (stagedFiles) =>
   stagedFiles.split("\n").flatMap((row) => {
     const [mode] = row.split(" ")
@@ -79,11 +83,15 @@ const reportChanged = async (base) => {
     cwd: root,
     encoding: "utf8",
   })
-  const files = changedSources(nameStatus)
+  const changed = changedSources(nameStatus)
+  const files = changed.filter((file) => !holdsNoCode(readFileSync(path.join(root, file), "utf8")))
   if (files.length === 0) {
     console.log(`No source file to mutate changed since ${base}.`)
     return
   }
+  const bare = changed.filter((file) => !files.includes(file))
+  if (bare.length > 0)
+    console.log(`left out, they only re-export and hold no mutant, but every test imports them: ${bare.join(" ")}`)
   console.log(`mutating ${files.length} changed: ${files.join(" ")}`)
   const started = Date.now()
   const mutants = (await runMutants(files)).map(relativeToRoot)

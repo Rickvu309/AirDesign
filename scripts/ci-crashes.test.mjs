@@ -27,6 +27,30 @@ same("a mutation run that finished passes its step", exitOf(0), 0)
 same("a mutation run that crashed fails its step", exitOf(1), 1)
 same("a mutation run that hit its time limit warns and passes", [exitOf(124), exitOf(137)], [0, 0])
 
+const fixturePath = path.join(root, "scripts/land-fixtures/job-mutation-dry-run-timeout.log")
+const printing = (file, code) =>
+  spawnSync(
+    "bash",
+    [
+      "-e",
+      "-c",
+      mutation.run.replace(
+        /timeout [^\n|]*check-mutation\.mjs[^\n|]*/,
+        `(cat ${JSON.stringify(file)}; exit ${code}) > "$log" 2>&1`,
+      ),
+    ],
+    { encoding: "utf8" },
+  )
+const timedOut = printing(fixturePath, 1)
+same("a first run of the tests that hit Stryker's time limit warns and passes", timedOut.status, 0)
+same(
+  "a first run that hit its time limit still prints what it found",
+  timedOut.stdout.includes("Initial test run timed out!"),
+  true,
+)
+const crashLog = path.join(root, "scripts/land-fixtures/job-mutation-test-runner-crashed.log")
+same("a first run whose test runner crashed fails its step", printing(crashLog, 1).status, 1)
+
 const paintWorkflow = parse(fs.readFileSync(path.join(root, ".github/workflows/paint-fidelity.yml"), "utf8"))
 const paint = paintWorkflow.jobs["paint-fidelity"].steps.find((step) => step.name === "paint-fidelity")
 same("a paint-fidelity run that fails fails its job", paint["continue-on-error"], undefined)

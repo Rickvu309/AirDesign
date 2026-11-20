@@ -1,0 +1,28 @@
+2026-11-17T14:46:05.0845881Z mutating 25 changed: packages/catalog/src/catalog.ts packages/catalog/src/register-answer.ts packages/catalog/src/slide-wire.ts packages/document/src/element-order.ts pack
+2026-11-17T14:51:18.0420659Z 14:51:18 (2433) ERROR DryRunExecutor One or more tests resulted in an error:
+2026-11-17T14:51:18.0421996Z 	Test runner crashed. Tried twice to restart it without any luck. Last time the error message was: Error: Process 
+2026-11-17T14:51:18.0422457Z Error: Process 
+2026-11-17T14:51:18.0423318Z     at ChildProcess.handleUnexpectedExit (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@st
+2026-11-17T14:51:18.0424133Z     at ChildProcess.emit (node:events:514:28)
+2026-11-17T14:51:18.0424490Z     at maybeClose (node:internal/child_process:1172:16)
+2026-11-17T14:51:18.0424959Z     at Socket.<anonymous> (node:internal/child_process:527:11)
+2026-11-17T14:51:18.0425325Z     at Socket.emit (node:events:514:28)
+2026-11-17T14:51:18.0425630Z     at Pipe.<anonymous> (node:net:362:12)
+2026-11-17T14:51:18.0426480Z 14:51:18 (2433) ERROR Stryker Unexpected error occurred while running Stryker Error: Something went wrong in the initial test run
+2026-11-17T14:51:18.0427906Z     at DryRunExecutor.validateResultCompleted (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_module
+2026-11-17T14:51:18.0429440Z     at DryRunExecutor.executeDryRun (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker
+2026-11-17T14:51:18.0430399Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-11-17T14:51:18.0431376Z     at async WorkItem.execute (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutat
+2026-11-17T14:51:18.0432622Z     at async file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/c
+2026-11-17T14:51:18.2073547Z node:internal/modules/run_main:107
+2026-11-17T14:51:18.2074052Z     triggerUncaughtException(
+2026-11-17T14:51:18.2074317Z     ^
+2026-11-17T14:51:18.2074424Z 
+2026-11-17T14:51:18.2074617Z Error: Something went wrong in the initial test run
+2026-11-17T14:51:18.2075732Z     at DryRunExecutor.validateResultCompleted (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_module
+2026-11-17T14:51:18.2077167Z     at DryRunExecutor.executeDryRun (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker
+2026-11-17T14:51:18.2077974Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-11-17T14:51:18.2078628Z     at async WorkItem.execute (file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutat
+2026-11-17T14:51:18.2079402Z     at async file:///home/runner/work/AirDesign/AirDesign/node_modules/.pnpm/@stryker-mutator+core@10.1.1_@types+node@24.19.2/node_modules/@stryker-mutator/core/dist/src/c
+2026-11-17T14:51:18.2079767Z 
+2026-11-17T14:51:18.2079831Z Node.js v24.22.2
