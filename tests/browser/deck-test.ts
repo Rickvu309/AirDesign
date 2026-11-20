@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, test as base, type Locator, type Page } from "@playwright/test"
+import { watchDeckState, type DeckState } from "./deck-state"
 import { newBlankDeck } from "./new-deck"
 
 export const cleanFixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
@@ -48,7 +49,15 @@ export function decksOn(page: Page): Decks {
   }
 }
 
-export const test = base.extend<{ decks: Decks }>({
+export const test = base.extend<{ decks: Decks; deckState: DeckState }>({
+  deckState: [
+    async ({ context }, use, testInfo) => {
+      const state = await watchDeckState(context)
+      await use(state)
+      if (testInfo.status !== testInfo.expectedStatus) await state.attach(testInfo)
+    },
+    { auto: true },
+  ],
   decks: async ({ page }, use) => {
     await use(decksOn(page))
   },

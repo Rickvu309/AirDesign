@@ -1,3 +1,4 @@
+import { deckStateFile, deckStateNote } from "./deck-state-file.mjs"
 import { agentHeader, raceTitle, recordRace } from "./race-issue.mjs"
 
 const same = (what, actual, expected) => {
@@ -212,6 +213,28 @@ same(
   "with two fixed issues for one test, the later fix is the one judged",
   [twoFixes.compares().map((call) => call.args[1]), twoFixes.did()],
   [[`repos/${repository}/compare/${newerThanFix}...${oldBase}`], ["issue comment 1190"]],
+)
+
+const written = (track) => track.calls.filter((call) => call.args[0] === "issue" && call.input !== undefined)
+const filed = tracker({})
+recordRace({ ...failure(oldBase), gh: filed.gh })
+same(
+  "a new browser race issue points at the test's deck-state.json",
+  written(filed).map((call) => call.input.includes(deckStateNote)),
+  [true],
+)
+recordRace({ ...failure(newerThanFix), gh: openToo.gh })
+same(
+  "each comment on a browser race points at the run's deck-state.json",
+  written(openToo).map((call) => call.input.includes(deckStateNote)),
+  [true, true],
+)
+const unitRace = tracker({})
+recordRace({ ...failure(oldBase), test: { file: "apps/web/src/deck-paint.test.ts", name: "paints" }, gh: unitRace.gh })
+same(
+  "a unit test race names no deck-state.json",
+  written(unitRace).map((call) => call.input.includes(deckStateFile)),
+  [false],
 )
 
 console.log("race-issue tests passed")

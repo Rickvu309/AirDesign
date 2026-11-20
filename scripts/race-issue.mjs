@@ -1,3 +1,4 @@
+import { browserSpec, deckStateNote } from "./deck-state-file.mjs"
 import { plainLog } from "./failed-tests.mjs"
 
 export const agentHeader = "🤖 **AI Agent responding on behalf of Quan Vu**"
@@ -37,6 +38,8 @@ export const failureExcerpt = (log, test) => {
 
 export const output = (excerpt) => ["~~~text", excerpt, "~~~"]
 
+const deckState = (test) => (browserSpec(test.file) ? [deckStateNote, ""] : [])
+
 const raceBody = ({ test, excerpt, commit, seen }) =>
   [
     agentHeader,
@@ -45,11 +48,12 @@ const raceBody = ({ test, excerpt, commit, seen }) =>
     "",
     `A test that fails beside other work and passes on its own has found a race, in the test or in the code it covers. ${forceTheGap} Close this issue with the pull request that fixes the race. Each later failure of this test adds a comment here.`,
     "",
+    ...deckState(test),
     ...output(excerpt),
   ].join("\n")
 
-const raceComment = ({ excerpt, commit, seen }) =>
-  [agentHeader, "", `Failed again ${seen}, at commit ${commit}.`, "", ...output(excerpt)].join("\n")
+const raceComment = ({ test, excerpt, commit, seen }) =>
+  [agentHeader, "", `Failed again ${seen}, at commit ${commit}.`, "", ...deckState(test), ...output(excerpt)].join("\n")
 
 const said = (answer) => (answer.stderr || answer.stdout).trim()
 
@@ -124,21 +128,23 @@ const hasFix = ({ gh, git, repository, commit, merge }) => {
   return { has: ["ahead", "identical"].includes(compared.stdout.trim()) }
 }
 
-const predatesFixComment = ({ excerpt, commit, seen, fix }) =>
+const predatesFixComment = ({ test, excerpt, commit, seen, fix }) =>
   [
     agentHeader,
     "",
     `Failed ${seen}, at commit ${commit}. That failure predates the fix: #${fix.pull} merged as ${fix.merge.slice(0, 7)}, and ${commit.slice(0, 7)} does not contain it. Nothing was filed.`,
     "",
+    ...deckState(test),
     ...output(excerpt),
   ].join("\n")
 
-const fixDidNotHoldComment = ({ excerpt, commit, seen, fix }) =>
+const fixDidNotHoldComment = ({ test, excerpt, commit, seen, fix }) =>
   [
     agentHeader,
     "",
     `Failed ${seen}, at commit ${commit}, which contains the fix: #${fix.pull} merged as ${fix.merge.slice(0, 7)}. The fix did not hold, so this issue is open again.`,
     "",
+    ...deckState(test),
     ...output(excerpt),
   ].join("\n")
 
@@ -147,7 +153,7 @@ const commentOn = ({ gh, repository, number, body, url }) => {
   return commented.status === 0 ? { url } : { why: `gh issue comment failed: ${said(commented)}` }
 }
 
-const afterFix = ({ gh, git, repository, fix, excerpt, commit, seen }) => {
+const afterFix = ({ gh, git, repository, fix, test, excerpt, commit, seen }) => {
   const judged = hasFix({ gh, git, repository, commit, merge: fix.merge })
   if (judged.why !== undefined) return judged
   if (!judged.has) {
@@ -156,7 +162,7 @@ const afterFix = ({ gh, git, repository, fix, excerpt, commit, seen }) => {
       repository,
       number: fix.issue.number,
       url: fix.issue.url,
-      body: predatesFixComment({ excerpt, commit, seen, fix }),
+      body: predatesFixComment({ test, excerpt, commit, seen, fix }),
     })
   }
   const reopened = gh(["issue", "reopen", String(fix.issue.number), "--repo", repository])
@@ -166,7 +172,7 @@ const afterFix = ({ gh, git, repository, fix, excerpt, commit, seen }) => {
     repository,
     number: fix.issue.number,
     url: fix.issue.url,
-    body: fixDidNotHoldComment({ excerpt, commit, seen, fix }),
+    body: fixDidNotHoldComment({ test, excerpt, commit, seen, fix }),
   })
 }
 
@@ -190,7 +196,7 @@ const fixOfTest = ({ gh, git, repository, test, excerpt, commit, seen }) => {
   const closed = fixesOf({ gh, repository, test })
   if (closed.why !== undefined) return closed
   if (closed.fixes.length === 0) return undefined
-  return afterFix({ gh, git, repository, fix: closed.fixes[0], excerpt, commit, seen })
+  return afterFix({ gh, git, repository, fix: closed.fixes[0], test, excerpt, commit, seen })
 }
 
 export const recordRace = ({ gh, git, repository, test, excerpt, commit, seen }) =>
@@ -199,6 +205,6 @@ export const recordRace = ({ gh, git, repository, test, excerpt, commit, seen })
     repository,
     title: raceTitle(test),
     body: raceBody({ test, excerpt, commit, seen }),
-    comment: raceComment({ excerpt, commit, seen }),
+    comment: raceComment({ test, excerpt, commit, seen }),
     beforeCreate: () => fixOfTest({ gh, git, repository, test, excerpt, commit, seen }),
   })

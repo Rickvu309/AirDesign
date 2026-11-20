@@ -1,4 +1,5 @@
 import fs from "node:fs"
+import { deckStateFile, deckStateNote } from "./deck-state-file.mjs"
 import { ciFailureLines } from "./land-report.mjs"
 
 const same = (what, actual, expected) => {
@@ -108,6 +109,37 @@ const reportFor = (jobName, log) =>
     },
     git: (args) => (args[0] === "rev-list" ? ok("0\n") : args[0] === "merge-base" ? ok(`${args[1]}\n`) : ok("")),
   })
+
+const browserReport = (artifacts) =>
+  ciFailureLines({
+    repository: "Rickvu309/AirDesign",
+    run: queueRun,
+    gh: (args) => {
+      if (args[0] === "api" && args[1].endsWith("/jobs?per_page=100")) return ok('[{"id":1,"name":"check (browser)"}]')
+      if (args[0] === "api" && args[1].endsWith("/jobs/1/logs")) return ok(fixture("job-playwright-failed.log"))
+      if (args[0] === "api" && args[1].endsWith("/artifacts")) return ok(artifacts)
+      throw new Error(`unexpected gh ${args.join(" ")}`)
+    },
+    git: (args) => (args[0] === "rev-list" ? ok("0\n") : args[0] === "merge-base" ? ok(`${args[1]}\n`) : ok("")),
+  })
+const keptLine =
+  "kept test results: test-results-check-browser-3 (gh run download 43261070420 -n test-results-check-browser-3)"
+const keptBrowser = browserReport("test-results-check-browser-3\n")
+same(
+  "a failed browser test with kept results points at its deck-state.json",
+  keptBrowser.slice(keptBrowser.indexOf(keptLine), keptBrowser.indexOf(keptLine) + 2),
+  [keptLine, `  ${deckStateNote}`],
+)
+same(
+  "with no kept results there is nothing to point at",
+  browserReport("").some((line) => line.includes(deckStateFile)),
+  false,
+)
+same(
+  "a failed unit test names no deck-state.json",
+  fixed.out.some((line) => line.includes(deckStateFile)),
+  false,
+)
 
 const script = reportFor("check (scripts)", fixture("job-script-test-failed.log"))
 same("a failed script test is named with the file and the error it threw", script.slice(0, 3), [
