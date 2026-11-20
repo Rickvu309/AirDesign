@@ -68,7 +68,7 @@ const rows = [
     gate: { order: 3 },
     showOnSuccess: true,
   },
-  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 11 } },
+  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 12 } },
   {
     name: "test-imports",
     kind: "rule",
@@ -78,7 +78,7 @@ const rows = [
     preflight: true,
     gate: { order: 1 },
   },
-  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 10 } },
+  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 11 } },
   {
     name: "unit-tests",
     kind: "tests",
@@ -117,6 +117,14 @@ const rows = [
     verdict: "warn-in-queue",
   },
   {
+    name: "rule-rows",
+    kind: "rule",
+    command: "node",
+    args: ["scripts/rule-rows.mjs"],
+    preflight: true,
+    gate: { order: 10 },
+  },
+  {
     name: "tsconfig-references",
     kind: "rule",
     command: "node",
@@ -137,7 +145,7 @@ const rows = [
     kind: "report",
     command: "node",
     args: ["scripts/sweep.mjs"],
-    gate: { order: 12 },
+    gate: { order: 13 },
     showOnSuccess: true,
   },
   {

@@ -10,6 +10,7 @@
     "check": "node scripts/check.mjs",
     "land": "node scripts/land.mjs",
     "gate": "node scripts/gate.mjs",
+    "rules": "node scripts/rules.mjs",
     "sweep": "node scripts/sweep.mjs",
     "detach": "node scripts/detach.mjs",
     "new:package": "node scripts/new-package.mjs",

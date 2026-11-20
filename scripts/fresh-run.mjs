@@ -1,5 +1,6 @@
 import { failedSteps, failedTests } from "./failed-tests.mjs"
 import { enqueue, readPull } from "./merge-queue.mjs"
+import { ruleFileSuffix } from "./rules.mjs"
 
 export const agentHeader = "🤖 **AI Agent responding on behalf of Quan Vu**"
 export const browserStep = "browser-tests"
@@ -25,7 +26,9 @@ export const outsideTheDiff = ({ jobs, files }) => {
     if (fault !== undefined) return { outside: false, why: fault }
   }
   if (files === undefined) return { outside: false, why: "the files this pull request changes could not be read" }
-  const touched = files.find((file) => browserTestPaths.some((pattern) => pattern.test(file)))
+  const touched = files.find(
+    (file) => !file.endsWith(ruleFileSuffix) && browserTestPaths.some((pattern) => pattern.test(file)),
+  )
   if (touched !== undefined) return { outside: false, why: `this pull request changes ${touched}` }
   const tests = jobs.flatMap((job) => failedTests(job.log))
   const changed = tests.find((test) => files.includes(test.file))

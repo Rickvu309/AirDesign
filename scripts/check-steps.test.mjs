@@ -1,8 +1,10 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
+import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
 import { stepsOf } from "./check.mjs"
 import { checkSteps, defineCheckSteps } from "./check-steps.mjs"
+import { ruleFiles } from "./rules.mjs"
 
 const row = { name: "planted", kind: "rule", command: "node" }
 const planted = defineCheckSteps([row])
@@ -104,7 +106,7 @@ assert.deepEqual(
   [],
   "ci.yml conditions and commands name declared parts",
 )
-for (const file of ["CHECKS.md", "COMMANDS.md"]) {
+for (const file of ["CHECKS.md", "COMMANDS.md", ...ruleFiles(fileURLToPath(new URL("..", import.meta.url)))]) {
   const docs = read(file)
   const steps = [...docs.matchAll(/step `([\w-]+)`|`([\w-]+)` step\b/g)].map(([, before, after]) => before ?? after)
   const parts = [...docs.matchAll(/part `([\w-]+)`|`([\w-]+)` part\b|--part=([\w-]+)/g)].map(

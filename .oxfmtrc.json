@@ -7,7 +7,6 @@
   "sortPackageJson": false,
   "ignorePatterns": [
     "AGENTS.md",
-    "CHECK-QUEUE.md",
     "CHECKS.md",
     "COMMANDS.md",
     "pnpm-lock.yaml",
