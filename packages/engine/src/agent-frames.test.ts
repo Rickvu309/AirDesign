@@ -160,6 +160,20 @@ describe("an agent nests one auto layout frame in another through edit_deck", ()
   })
 })
 
+describe("an agent wraps children of a frame in a frame inside it through edit_deck", () => {
+  it("puts the new frame in their place in the row, keeps every place, and undo_run puts them back", () => {
+    const row = landed(edit(framed(), { op: "join", elements: ["258.9", "258.4"] }))
+    const before = listed(row)
+    const deck = landed(edit(row, { op: "frame", elements: ["258.3", "258.4"] }))
+    const read = listed(deck)
+    expect(read.get("258.11")).toMatchObject({ kind: "group", frame: "auto", grouped: true })
+    for (const each of ["258.2", "258.3", "258.4"]) expect(read.get(each)?.box).toEqual(before.get(each)?.box)
+    const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
+    expect(groupFormed(undone.register, node(11))).toBe(false)
+    expect(groupFormed(undone.register, node(9))).toBe(false)
+  })
+})
+
 describe("an agent moves a layer into and out of a plain group through edit_deck", () => {
   it("joins a shape to a group where it shows, and leave puts it back on the slide", () => {
     const group = landed(edit(indexed(), { op: "group", elements: ["258.2", "258.3"] }))
