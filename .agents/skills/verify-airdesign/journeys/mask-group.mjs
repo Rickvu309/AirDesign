@@ -5,6 +5,8 @@ import { shapeCopy, shortcutCopy, transitionCopy } from "../bin/product-copy.mjs
 
 const fixture = "scripts/pptx-fixtures/picture-png.pptx"
 const slide = "ppt/slides/slide1.xml"
+const slideWidthPt = 960
+const largeNudgePt = 10
 
 export default async function drive({ page, signIn, post, capture, note, deckRoutes, repo }) {
   const { cookie } = await signIn()
@@ -50,8 +52,10 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
 
   await page.mouse.dblclick(middle(mask).x, middle(mask).y)
   await expect(selection).toHaveAttribute("data-selection", /\.4$/)
-  for (let step = 0; step < 4; step += 1) await page.keyboard.press("Shift+ArrowRight")
-  await expect.poll(async () => (await boxOf(picture)).x).toBeGreaterThan(wide.x + 20)
+  const nudges = 4
+  const travel = ((await boxOf(canvas)).width * nudges * largeNudgePt) / slideWidthPt
+  for (let step = 0; step < nudges; step += 1) await page.keyboard.press("Shift+ArrowRight")
+  await expect.poll(async () => (await boxOf(picture)).x - wide.x).toBeCloseTo(travel, 0)
   await capture("masked-layer-moved")
 
   const paint = await boxOf(canvas)
@@ -101,6 +105,6 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   })
   expect(diff).toContain("0 added, 0 removed")
   note(
-    `picture-png.pptx: a circle over the picture and the picture, masked with Ctrl+Alt+M, made one group whose selection frame is the circle's box (${Math.round(mask.width)} px wide), not the picture's (${Math.round(wide.width)} px). The picture moved 40 px right inside the group by double-click and Shift+Arrow, and the group's frame stayed on the circle. The layers panel and the server copy name the group "Mask group". After a reload the frame still fits the circle, and the export ${path.basename(exported)} changes only ${slide}.`,
+    `picture-png.pptx: a circle over the picture and the picture, masked with Ctrl+Alt+M, made one group whose selection frame is the circle's box (${Math.round(mask.width)} px wide), not the picture's (${Math.round(wide.width)} px). The picture moved ${Math.round(travel)} px right inside the group by double-click and four presses of Shift+Arrow, and the group's frame stayed on the circle. The layers panel and the server copy name the group "Mask group". After a reload the frame still fits the circle, and the export ${path.basename(exported)} changes only ${slide}.`,
   )
 }
