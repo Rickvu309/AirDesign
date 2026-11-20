@@ -106,5 +106,11 @@
     "detector": "invisible-control",
     "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"], [data-canvas-element=\"ppt/slides/slide1.xml#3\"]",
     "reason": "A group's own layer is where a person grabs the group, so it paints nothing of its own; the layers it holds paint under it."
+  },
+  {
+    "page": "frame-wrapped-inside",
+    "detector": "invisible-control",
+    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#7\"]",
+    "reason": "The outer auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the frames and shapes it holds paint under it."
   }
 ]
