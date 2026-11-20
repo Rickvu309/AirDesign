@@ -21,7 +21,7 @@ export function pptxPaths(list) {
 export function suiteRules(repo) {
   const web = workspaceDirs(repo, "apps/web")
   const api = workspaceDirs(repo, "apps/api")
-  const watched = readFileSync(path.join(repo, ".github/actions/pptx-changed/paths.txt"), "utf8")
+  const watched = readFileSync(path.join(repo, ".github/actions/ci-changes/pptx-paths.txt"), "utf8")
   return [
     { name: "check", script: ["check"], paths: [""] },
     {

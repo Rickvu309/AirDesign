@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { checkSteps, onCi, partOf, shardOf } from "./check-steps.mjs"
+import { changesFrom, checkSteps, onCi, partOf, shardOf } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { failedTests } from "./failed-tests.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
@@ -177,7 +177,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     result = await runCheck({
       eventName,
-      chosen: checkSteps.stagesFor(part, ci, shardOf(process.argv)),
+      chosen: checkSteps.stagesFor(part, ci, shardOf(process.argv), changesFrom(process.env)),
       all: process.argv.includes("--all"),
       tree: checkedTree,
       failedFiles,
