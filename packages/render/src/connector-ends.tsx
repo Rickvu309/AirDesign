@@ -68,8 +68,11 @@ export function ConnectorEnds(props: {
     cancelling.current?.()
     guides?.show([])
     const pointer = event.pointerId
-    const resting = surface.querySelector<HTMLElement>(`[data-canvas-element="${CSS.escape(element.key)}"]`)
-    if (resting !== null) resting.style.visibility = "hidden"
+    const resting = [
+      surface.querySelector<HTMLElement>(`[data-canvas-element="${CSS.escape(element.key)}"]`),
+      surface.querySelector<HTMLElement>(`[data-selection="${CSS.escape(id)}"]`),
+    ].filter((each) => each !== null)
+    for (const each of resting) each.style.visibility = "hidden"
     const pressed: Point = { x: event.clientX, y: event.clientY }
     const from = end === "start" ? spots.end : spots.start
     const targets = snapTargets(slide, store, [id])
@@ -118,7 +121,7 @@ export function ConnectorEnds(props: {
       cancelling.current = null
       guides?.show([])
       setAiming(null)
-      if (resting !== null) resting.style.visibility = ""
+      for (const each of resting) each.style.visibility = ""
     }
 
     function move(next: globalThis.PointerEvent) {
