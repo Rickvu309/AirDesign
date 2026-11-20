@@ -1,4 +1,5 @@
 import { newBlankDeck } from "../bin/new-deck.mjs"
+import { placeText } from "../bin/text-place.mjs"
 
 const editable = '[data-slide-paint] [contenteditable="true"]'
 const letter = "Q"
@@ -31,7 +32,7 @@ export default {
       },
       { editable, letter },
     )
-    await page.getByRole("button", { name: "Add text", exact: true }).click()
+    await placeText(page)
     await page.keyboard.type(letter, { delay: 0 })
     return page.evaluate(() => window.benchAnswer)
   },

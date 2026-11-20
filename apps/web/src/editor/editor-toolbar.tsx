@@ -6,6 +6,7 @@ import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { EditorMenuContent, EditorMenuRow } from "@/editor/editor-menu"
 import { FormatButtons, useLiveFormat, type FormatProps, type FormatShown } from "@/editor/format-buttons"
 import { PanelSwitch } from "@/editor/panel-switch"
+import type { TextPlace } from "@/element-edit"
 import type { PointerTool, ToolPick } from "@/editor/pointer-tool"
 import { ToneActions, useToneReady } from "@/editor/tone-actions"
 import type { ToneSource } from "@/editor/tone-link"
@@ -63,6 +64,8 @@ function isPointerTool(value: unknown): value is PointerTool {
   return value === "move" || value === "hand"
 }
 
+const lastPointer = (tool: PointerTool | undefined): PointerTool => (tool === "hand" ? "hand" : "move")
+
 function isInsertPart(part: ToolbarPart): part is InsertPart {
   return insertParts.some((each) => each === part)
 }
@@ -86,8 +89,9 @@ function Divider() {
 type Inserts = {
   readonly activeTool: EditorTool
   readonly pointer: ToolPick | undefined
+  readonly textTool: boolean
   readonly onSlideNumber: (() => void) | undefined
-  readonly onText: (() => void) | undefined
+  readonly onText: ((place?: TextPlace) => void) | undefined
   readonly onTable: ((size: TableSize) => void) | undefined
   readonly tablePicker: TablePicker | undefined
   readonly onChart: ((kind: ChartKind) => void) | undefined
@@ -96,9 +100,40 @@ type Inserts = {
   readonly onIcon: ((name: string) => void) | undefined
 }
 
+function TextTool({ pointer }: { pointer: ToolPick }) {
+  const on = pointer.tool === "text"
+  return (
+    <Button
+      type="button"
+      variant={on ? "default" : "ghost"}
+      size="icon"
+      aria-label="Add text"
+      aria-pressed={on}
+      onClick={() => pointer.pick(on ? "move" : "text")}
+      className={cn(
+        "size-9 rounded-lg active:translate-y-0",
+        on ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",
+      )}
+    >
+      <EditorIcon name={toolIcons.text} size={18} />
+    </Button>
+  )
+}
+
 function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
-  const { activeTool, pointer, onText, onTable, tablePicker, onChart, onPicture, onShape, onIcon, onSlideNumber } =
-    inserts
+  const {
+    activeTool,
+    pointer,
+    textTool,
+    onText,
+    onTable,
+    tablePicker,
+    onChart,
+    onPicture,
+    onShape,
+    onIcon,
+    onSlideNumber,
+  } = inserts
   if (tool === "number")
     return (
       <Button
@@ -116,9 +151,15 @@ function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
   if (tool === "table" && onTable !== undefined) return <TableTool onTable={onTable} picker={tablePicker} />
   if (tool === "chart" && onChart !== undefined) return <ChartTool onChart={onChart} />
   if (tool === "icon" && onIcon !== undefined) return <IconTool onIcon={onIcon} />
+  if (tool === "text" && textTool && pointer !== undefined && onText !== undefined)
+    return <TextTool pointer={pointer} />
   const on = pointer === undefined && activeTool === tool
   const run =
-    tool === "text" ? onText : tool === "image" && onPicture !== undefined ? () => pickPicture(onPicture) : undefined
+    tool === "text" && onText !== undefined
+      ? () => onText()
+      : tool === "image" && onPicture !== undefined
+        ? () => pickPicture(onPicture)
+        : undefined
   const label = tool === "text" ? "Add text" : tool === "icon" ? pictureCopy.addIcon : pictureCopy.add
   return (
     <Button
@@ -261,6 +302,7 @@ export function EditorToolbar({
   menuOpen = false,
   panel = "agent",
   pointer,
+  textTool = false,
   undo,
   onPanel,
   designMode,
@@ -281,10 +323,11 @@ export function EditorToolbar({
   menuOpen?: boolean
   panel?: EditorPanel
   pointer?: ToolPick
+  textTool?: boolean
   undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
   designMode?: DesignMode
-  onText?: () => void
+  onText?: (place?: TextPlace) => void
   onSlideNumber?: () => void
   formatting?: TextFormatting
   tone?: ToneSource
@@ -297,9 +340,9 @@ export function EditorToolbar({
   onShape?: (geometry: Geometry) => void
   onIcon?: (name: string) => void
 }) {
-  const chosen = pointer?.tool ?? "move"
+  const chosen = lastPointer(pointer?.tool)
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
-  const pointerOn = pointer !== undefined || activeTool === "move"
+  const pointerOn = pointer !== undefined ? pointer.tool !== "text" : activeTool === "move"
   const live = useLiveFormat(formatting, deckColors)
   const format = live ?? (formats === undefined ? null : { shown: formats })
   const available = insertParts.filter((part) => part !== "number" || onSlideNumber !== undefined)
@@ -311,6 +354,7 @@ export function EditorToolbar({
   const inserts: Inserts = {
     activeTool,
     pointer,
+    textTool,
     onText,
     onTable,
     tablePicker,

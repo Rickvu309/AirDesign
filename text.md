@@ -27,6 +27,10 @@ _Avoid_: exact line spacing, absolute line height
 How a text layer's box follows its words, with Figma's three names. **Auto width** grows and shrinks the box both ways as a person types, one line long; **Auto height** keeps the width and grows or shrinks the height; **Fixed size** keeps both, and words that do not fit draw past the box. A PowerPoint file keeps them in `bodyPr`: Auto width is `wrap="none"` with `spAutoFit`, Auto height is `wrap="square"` with `spAutoFit`, Fixed size has no autofit. The open tab measures the words and saves the box it draws as a row that sets only the box's height, or its width and height (`measuredOnly`), which neither guards a run nor counts as the person's writing. An imported box keeps its file's size until someone edits it.
 _Avoid_: autosize, shrink-wrap
 
+**Text tool**:
+The tool T or Add text arms, as Figma's Text tool. A click on the slide places Auto width text with its top left at the click, a drag of three pixels or more draws a Fixed size box, and either goes back to Move. Esc or V puts the tool down. In grid view Add text still adds text to the chosen slide at once. Resizing a text layer's box by hand makes it Fixed size, in the same undo step, as Figma does.
+_Avoid_: text box tool, insert text
+
 **text layer inset**:
 The room between a text layer's box and its words. Text a person or an agent adds in AirDesign has none, as a Figma text layer has no padding, and its file writes `lIns="0" tIns="0" rIns="0" bIns="0"` so PowerPoint does not add its 7.2 pt and 3.6 pt. Imported text keeps its own inset.
 _Avoid_: padding, margin (the design panel's Margins fields set it)

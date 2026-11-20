@@ -3,6 +3,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { placeText } from "../bin/text-place.mjs"
 
 const typed = "My first deck"
 
@@ -54,7 +55,7 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
   await expect(page.locator("aside").first()).toContainText(productCopy.blankDeck)
   await capture("blank-created-offline")
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await expect(title).toBeFocused()
   await title.pressSequentially(typed, { delay: 50 })
   await expect(title).toHaveText(typed)

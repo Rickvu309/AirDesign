@@ -10,7 +10,7 @@ import { covers } from "./gesture"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("T, R, O, L, Shift+L and Shift+Ctrl+K add a text box, shapes and an image from the slide, and not from a button", async ({
+test("T arms the Text tool and a click places text, R, O, L, Shift+L and Shift+Ctrl+K add shapes and an image, from the slide and not from a button", async ({
   page,
 }) => {
   covers("tool-text", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow", "place-image")
@@ -21,8 +21,11 @@ test("T, R, O, L, Shift+L and Shift+Ctrl+K add a text box, shapes and an image f
   await page.getByRole("button", { name: presentCopy.present, exact: true }).focus()
   await page.keyboard.press("r")
   await page.keyboard.press("t")
+  await expect(page.locator("[data-text-placing]")).toHaveCount(0)
   await slide.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("t")
+  await page.locator("[data-text-placing]").click({ position: { x: 200, y: 300 } })
+  await expect(page.locator("[data-text-placing]")).toHaveCount(0)
   await expect(slide.locator('[contenteditable="true"]:focus')).toHaveCount(1)
   expect(await layers.count()).toBe(initial + 1)
   for (const [step, key] of ["r", "o", "l", "Shift+L"].entries()) {

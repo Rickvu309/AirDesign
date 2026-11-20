@@ -1,4 +1,4 @@
-export { boxOf, ownBox, sameBox, type Moved } from "./box-gesture.js"
+export { boxOf, dragThreshold, ownBox, sameBox, type Moved } from "./box-gesture.js"
 export type { Copied } from "./layer-copies.js"
 export { pastedOffset, pastedOver } from "./paste-place.js"
 export type { LayerClipboard, LayerPaste, PasteMode } from "./use-canvas-clipboard.js"

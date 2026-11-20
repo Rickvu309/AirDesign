@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { tableCopy } from "../../apps/web/src/copy/table-copy"
 import { holdDevice, holdableDevice, openDevice } from "./slow-device"
 import { decksOn, test } from "./deck-test"
+import { placeText } from "./text-place"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -18,7 +19,7 @@ test("keys typed at once after Add text box land in the new box, before and afte
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(0)
   await holdDevice(page)
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await page.keyboard.type("Big tx", { delay: 0 })
   await page.keyboard.press("Backspace")
   await expect(texts).toHaveCount(0)
@@ -62,7 +63,7 @@ test("the first text box takes focus while its font is still arriving, and the k
     await route.fulfill({ status: 404, body: "" })
   })
   await blankDeck(page)
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await loading
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(1)

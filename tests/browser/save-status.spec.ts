@@ -3,6 +3,7 @@ import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { forward, signInBrowser, test } from "./api-stack"
+import { placeText } from "./text-place"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -208,9 +209,9 @@ test("going offline and back while a resend is on the wire reads Saved once it l
   await expect(saveStatus(page)).toHaveText(saved)
 })
 
-for (const [step, button] of [
-  ["an added slide", "Add slide"],
-  ["an added text box", "Add text"],
+for (const [step, add] of [
+  ["an added slide", (page: Page) => page.getByRole("button", { name: "Add slide", exact: true }).click()],
+  ["an added text box", (page: Page) => placeText(page)],
 ] as const) {
   test(`${step} reads Saving while its commit waits and Saved once the server takes it`, async ({
     page,
@@ -230,7 +231,7 @@ for (const [step, button] of [
       await route.fallback()
     })
     try {
-      await page.getByRole("button", { name: button, exact: true }).click()
+      await add(page)
       await held.promise
       await expect(saveStatus(page)).toHaveText(saving)
     } finally {

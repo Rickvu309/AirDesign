@@ -266,3 +266,26 @@ it("writes a new text layer with no inset, as an auto width box that hugs its te
   expect(shape).toContain('<a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" wrap="none"><a:spAutoFit/></a:bodyPr>')
   expect(shape).not.toContain("algn=")
 })
+
+it("starts a clicked text layer at the point as auto width, and a dragged one as the fixed size box it framed", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const slide = { width: 12_192_000, height: 6_858_000 }
+  const clicked = elementCommand(parts, openRegister("", ""), {
+    change: "text",
+    index: 0,
+    size: slide,
+    place: { x: 1_000_000, y: 2_000_000 },
+  })
+  expect(clicked).toMatchObject({
+    element: { box: { x: 1_000_000, y: 2_000_000, cx: 274_320, cy: 274_320 }, opening: textOpening("auto-width") },
+  })
+  const dragged = elementCommand(parts, openRegister("", ""), {
+    change: "text",
+    index: 0,
+    size: slide,
+    place: { x: 1_000_000, y: 2_000_000, cx: 3_000_000, cy: 500_000 },
+  })
+  expect(dragged).toMatchObject({
+    element: { box: { x: 1_000_000, y: 2_000_000, cx: 3_000_000, cy: 500_000 }, opening: textOpening("fixed") },
+  })
+})

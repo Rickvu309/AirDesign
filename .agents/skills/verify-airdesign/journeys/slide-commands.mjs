@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import { newBlankDeck } from "../bin/new-deck.mjs"
+import { placeText } from "../bin/text-place.mjs"
 
 export default async function drive({ page, signIn, post, capture, note, deckRoutes }) {
   const { cookie } = await signIn()
@@ -13,7 +14,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(entries).toHaveCount(1)
   await page.getByRole("button", { name: "Add slide" }).first().click()
   await expect(entries).toHaveCount(2)
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   const title = page.locator('[data-slide-paint] [contenteditable="true"]').first()
   await expect(title).toBeFocused()
   await title.pressSequentially("Second slide", { delay: 30 })

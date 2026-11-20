@@ -59,8 +59,10 @@ export type TableSize = { readonly rows: number; readonly columns: number }
 
 export type LayerSpot = { readonly before: ElementId | null }
 
+export type TextPlace = { readonly x: number; readonly y: number; readonly cx?: number; readonly cy?: number }
+
 export type ElementChange =
-  | { readonly change: "text"; readonly index: number; readonly size: SlideRoom }
+  | { readonly change: "text"; readonly index: number; readonly size: SlideRoom; readonly place?: TextPlace }
   | ({ readonly change: "table"; readonly index: number; readonly size: SlideRoom } & TableSize)
   | { readonly change: "chart"; readonly kind: ChartKind; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
@@ -176,9 +178,12 @@ export function elementCommand(
     const element = { node, kind, value: line ? null : "", box, grouped: false } as const
     return { slide: "element-add", id: slide.id, element, geometry: change.geometry }
   }
-  const room = placeNewBox(change.size, taken)
-  const box = { x: room.x, y: room.y, cx: textLine, cy: textLine }
-  const element = { node, kind: "shape", value: "", box, grouped: false, opening: textOpening("auto-width") } as const
+  const { place } = change
+  const room = place ?? placeNewBox(change.size, taken)
+  const drawn = place?.cx !== undefined && place.cy !== undefined
+  const box = { x: room.x, y: room.y, cx: drawn ? place.cx : textLine, cy: drawn ? place.cy : textLine }
+  const opening = textOpening(drawn ? "fixed" : "auto-width")
+  const element = { node, kind: "shape", value: "", box, grouped: false, opening } as const
   return { slide: "element-add", id: slide.id, element }
 }
 

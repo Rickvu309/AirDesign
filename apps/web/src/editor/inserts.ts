@@ -16,6 +16,7 @@ import {
   type CopyAsked,
   type ElementChange,
   type TableSize,
+  type TextPlace,
 } from "@/element-edit"
 import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
@@ -135,9 +136,10 @@ export function deckInserts(deck: InsertingDeck) {
     return changeElement({ change: "remove", nodes }, "cut-layer")
   }
 
-  function addText() {
+  function addText(place?: TextPlace) {
     const size = canvases.current(current)
-    if (size !== null) void changeElement({ change: "text", index: current, size })
+    if (size !== null)
+      void changeElement({ change: "text", index: current, size, ...(place === undefined ? {} : { place }) })
   }
 
   function addTable(size: TableSize) {

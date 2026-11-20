@@ -7,6 +7,7 @@ import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
 import { decksOn } from "./deck-test"
+import { placeText } from "./text-place"
 
 const doe = join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx")
 const typed = "Every letter stays"
@@ -75,7 +76,7 @@ async function openFile(page: Page, file: string | undefined): Promise<{ address
 async function addAndType(page: Page, text: string): Promise<Locator> {
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   const before = await texts.count()
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await expect(texts).toHaveCount(before + 1)
   const added = texts.last()
   await expect(added).toBeFocused()

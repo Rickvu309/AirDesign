@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
 import { test } from "./deck-test"
+import { placeText } from "./text-place"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -60,7 +61,7 @@ test("new text has no inset and hugs its text as it is typed, and the box it sho
   const judged = join(process.cwd(), "tests/browser", hugExport)
   await rm(judged, { force: true })
   await decks.open()
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   const text = page.locator('[data-slide-paint] [contenteditable="true"]').last()
   await expect(text).toBeFocused()
   await page.keyboard.type("Hi", { delay: 20 })

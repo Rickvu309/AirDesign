@@ -6,6 +6,7 @@ import { forward, signInBrowser, test } from "./api-stack"
 import { exportFromDialog } from "./export-dialog"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { cleanFixture } from "./deck-test"
+import { placeText } from "./text-place"
 
 type ZipEntry = {
   readonly filename: string
@@ -55,7 +56,7 @@ test("an export after every edit is undone changes no part of the original", asy
   await page.mouse.move(slide.x + 330, slide.y + 180, { steps: 8 })
   await page.mouse.up()
   await expect(page.getByRole("button", { name: "Undo move" })).toBeEnabled()
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Add slide" }).first().click()
