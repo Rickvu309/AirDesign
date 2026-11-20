@@ -1,6 +1,6 @@
 # Charts
 
-A person inserts a bar, line or pie chart from the toolbar and edits its numbers in a grid in the Design panel. An agent adds one with its numbers through `airdesign_edit_deck`. Charts made in AirDesign paint, move, resize and export as native PowerPoint charts. A chart the deck was imported with stays read-only (see `slide-paint.md`).
+A person inserts a bar, line or pie chart from the toolbar and edits its numbers in a grid in the Design panel. An agent adds one with its numbers through `airdesign_edit_deck`. Charts made in AirDesign paint, move, resize and export as native PowerPoint charts. A chart the deck was imported with moves like any layer. When it is a clustered column, a standard line or a pie, its numbers open in the Data grid, and editing them changes only those numbers in its chart part and workbook.
 
 Figma Slides has no chart. The tool copies the closest documented pattern, the table: a chart's numbers sit in a small table-like grid, and Insert chart sits in the toolbar beside Insert table.
 
@@ -25,7 +25,8 @@ Open a deck, click Insert chart in the toolbar and pick Bar, Line or Pie, then o
 - `tests/browser/chart-tool.spec.ts` inserts a chart, edits its data, reloads and judges the export.
 - `chart-place` (recorded Aira) adds two charts with no box to an empty slide and finds them side by side at one width, then sets the first chart's W in Position and size and checks the exported frame.
 - `tests/browser/chart-settings.spec.ts` sets every Chart setting and judges the export; `tests/browser/chart-place.spec.ts` inserts a second chart beside one moved to the left.
-- Look states `chart-data-panel`, `chart-settings-panel` and `chart-placed-beside`.
+- `slide-charts` selects an imported census pie, deletes and restores it, edits its first number and checks that the export changed only that chart and its workbook. `tests/browser/chart-imported.spec.ts` does the same with a move.
+- Look states `chart-data-panel`, `chart-settings-panel`, `chart-placed-beside` and `chart-imported-selected`.
 
 ## Gotchas
 

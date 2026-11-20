@@ -125,7 +125,10 @@ function labelsOf(read: Read, group: MarkupElement, first: MarkupElement, kind: 
   if (holder === undefined || on(read, holder, "c:delete") === true) return undefined
   const percent = kind === "pie" && on(read, holder, "c:showPercent") === true
   if (on(read, holder, "c:showVal") !== true && !percent) return undefined
-  const code = attribute(kid(read, holder, "c:numFmt"), "formatCode")
+  const own = kid(read, holder, "c:numFmt")
+  const linked = own === undefined || ["1", "true"].includes(attribute(own, "sourceLinked") ?? "0")
+  const cache = kid(read, kid(read, kid(read, first, "c:val"), "c:numRef"), "c:numCache")
+  const code = linked ? holderText(read.bytes, kid(read, cache, "c:formatCode")) : attribute(own, "formatCode")
   const known = chartFormats.find((format) => format === code)
   if (percent) return known?.includes("%") === true ? known : percentFormat
   return known ?? "General"

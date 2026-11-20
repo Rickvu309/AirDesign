@@ -59,7 +59,7 @@ function targets(rels: Read | null, owner: string): ReadonlyMap<string, { type: 
   return found
 }
 
-function unzipped(bytes: Uint8Array): Parts | null {
+export function unzipped(bytes: Uint8Array): Parts | null {
   try {
     const files = new Map<string, Uint8Array>()
     for (const record of readContainer(bytes)) {
@@ -159,9 +159,9 @@ function columnLetters(number: number): string {
   return name
 }
 
-type Span = { readonly sheet: string; readonly cells: readonly string[] }
+export type Span = { readonly sheet: string; readonly cells: readonly string[] }
 
-function spanOf(formula: string): Span | null {
+export function spanOf(formula: string): Span | null {
   const found = formulaPattern.exec(formula.trim())
   if (found === null) return null
   const [, quoted, plain, fromColumn = "", fromRow = "", toColumn, toRow] = found

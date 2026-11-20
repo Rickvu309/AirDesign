@@ -220,7 +220,7 @@ export function paint(
   const inGroups = movableInGroups(laid)
   const placed = {
     has: (id: ElementId) => framed.children.has(id) || inGroups.has(id),
-    charted: (id: ElementId) => heldChart(register, id) !== null,
+    charted: (id: ElementId) => heldChart(laid, id) !== null,
   }
   const placedKey = `${framed.key}|${[...inGroups].join(",")}`
   const slides = read.map(({ slide, part }): PaintedSlide => {

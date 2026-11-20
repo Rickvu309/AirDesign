@@ -118,7 +118,11 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const held = opening.value ?? fileValue(shown, node)
   const kept = opening.facts.kind === "table" && readTableValue(text ?? "") === null
   const value =
-    opening.facts.kind === "chart" ? heldChart(shown.shownRegister.current, node) : kept ? held : (text ?? held)
+    opening.facts.kind === "chart"
+      ? (heldChart(shown.shownRegister.current, node) ?? held)
+      : kept
+        ? held
+        : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
   const register = shown.shownRegister.current
   const laid = register === null ? null : indexedRegister(shown.shownParts.current, register)

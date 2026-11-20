@@ -14,7 +14,7 @@ import { useState, useSyncExternalStore, type KeyboardEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { chartCopy } from "@/copy/chart-copy"
-import { changeDesign, type DesignDeck } from "@/design/design-change"
+import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
 import { DesignSection } from "@/editor/design-panel"
 import { cn } from "@/lib/class-names"
 import { heldChart } from "@/live-repaint"
@@ -98,7 +98,7 @@ export type ChartEdit = (edit: (fresh: ChartValue) => ChartValue) => void
 
 export function useHeldChart(deck: DesignDeck, node: ElementId): { chart: ChartValue | null; save: ChartEdit } {
   const { shown } = deck
-  const held = () => heldChart(shown.shownRegister.current, node)
+  const held = () => heldChart(shown.shownRegister.current, node) ?? fileValue(shown, node)
   const shownValue = useSyncExternalStore(shown.store.current.slideSubscribe(slideId(shapeOf(node).slide)), held)
   const chart = shownValue === null ? null : readChartValue(shownValue)
   const save: ChartEdit = (edit) =>
