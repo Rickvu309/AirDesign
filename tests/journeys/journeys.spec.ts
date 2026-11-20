@@ -44,6 +44,7 @@ for (const name of [
   "element-edits",
   "picture-add",
   "shape-insert",
+  "shape-draw",
   "element-order",
   "layers-panel",
   "layer-shortcuts",

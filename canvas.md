@@ -12,6 +12,14 @@ _Avoid_: move gesture, pointer move
 The box a layer has when no gesture holds it. During a drag the canvas shows the dragged box, while the filmstrip and the design panel keep the resting box and catch up once the drag lands. The design panel's X, Y, Width and Height follow the dragged box.
 _Avoid_: settled box, committed box, saved box
 
+**shape tool**:
+The tool R (Rectangle), O (Ellipse), L (Line), Shift+L (Arrow) or a pick in the Shapes menu arms, as Figma's shape tools. A drag on the slide draws the shape at the size dragged, its dragged corner snapping as a resize does and Control turning that off; Shift keeps it square or round, or a line to 45° steps, and Alt draws from the press as the centre. A click places the shape's default size with its top left at the click, and Enter places it where an added shape used to land, with no pointer. Either goes back to Move; Esc or V puts the tool down. The add is the same `element-add` an agent sends; a line drawn up or to the left keeps its start where the drag began through the box's flips.
+_Avoid_: shape insert, drop a shape
+
+**line end drag**:
+Dragging one end of a line or connector. The line itself moves with the end, painted in its own stroke, while the resting line and its selection ring are hidden; it lands as one connection or box edit when the pointer comes up.
+_Avoid_: aim preview, dashed preview
+
 **duplicate**:
 A copy of a layer, directly above it in the layer order, that becomes the selection. Ctrl+D (Cmd+D on a Mac) copies the selection in place, or the same distance further on when the selection is the copies a duplicate just made. Holding Alt (Option on a Mac) while dragging leaves the layer in place and moves a copy; letting go of Alt before the pointer comes up moves the layer itself. Each copy is one `element-clone` slide edit, and one undo takes away every copy one gesture made. An agent sends the same edit as `duplicate`. A copy of a group or frame copies every layer in it, and a copy of a layer inside a group lands in that group just above it; Ctrl+D on a layers-panel row copies the selection the same way. In a PowerPoint file a copy is the layer's shape with a new id, and a group's copy gives every shape inside it a new id too.
 _Avoid_: clone (in product copy), copy-paste
