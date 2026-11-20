@@ -82,6 +82,7 @@ for (const name of [
   "navigate-zoom-pan",
   "snap-drag",
   "snap-resize",
+  "line-end-snap",
   "layer-duplicate",
   "layer-clipboard",
   "busy-drag",
