@@ -68,6 +68,56 @@ describe("a tool's input schema says each repeated subschema once", () => {
     expect(inlinedSchema(sharedSchemas(schema))).toEqual(schema)
   })
 
+  it("shares a small subschema when that makes the schema shorter, and leaves one that would not", () => {
+    const points = { type: "number", minimum: 0, maximum: 4032 }
+    const flag = { type: "boolean" }
+    const schema = {
+      type: "object",
+      properties: { w: points, h: points, gap: points, size: points, hidden: flag, locked: flag },
+    }
+    const shared = sharedSchemas(schema)
+    expect(shared).toEqual({
+      type: "object",
+      properties: {
+        w: { $ref: "#/$defs/gap" },
+        h: { $ref: "#/$defs/gap" },
+        gap: { $ref: "#/$defs/gap" },
+        size: { $ref: "#/$defs/gap" },
+        hidden: flag,
+        locked: flag,
+      },
+      $defs: { gap: points },
+    })
+    expect(JSON.stringify(shared).length).toBeLessThan(JSON.stringify(schema).length)
+    expect(inlinedSchema(shared)).toEqual(schema)
+  })
+
+  it("says a description that several uses share once, in the shared subschema, and keeps a different one beside its reference", () => {
+    const slide = { type: "string", pattern: "^(?:[0-9]{1,10}|n[0-9a-z]{12})$" }
+    const named = { ...slide, description: "Slide id from airdesign_read_deck." }
+    const schema = {
+      type: "object",
+      properties: {
+        slide: named,
+        start: named,
+        stop: named,
+        template: { ...slide, description: "Its template's slide." },
+      },
+    }
+    const shared = sharedSchemas(schema)
+    expect(shared).toEqual({
+      type: "object",
+      properties: {
+        slide: { $ref: "#/$defs/slide" },
+        start: { $ref: "#/$defs/slide" },
+        stop: { $ref: "#/$defs/slide" },
+        template: { $ref: "#/$defs/slide", description: "Its template's slide." },
+      },
+      $defs: { slide: named },
+    })
+    expect(inlinedSchema(shared)).toEqual(schema)
+  })
+
   it("leaves a schema with nothing repeated as it is, and never shares a properties map", () => {
     const schema = { type: "object", properties: { one: color } }
     expect(sharedSchemas(schema)).toBe(schema)

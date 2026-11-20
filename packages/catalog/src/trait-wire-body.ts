@@ -1,10 +1,10 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const bodyWire: TraitWire<"body"> = {
-  description: "How a layer lays out its text. Fields stand alone.",
+  description: "How the text sits in its box.",
   fields: {
     insets: {
-      description: "Space between each edge and the text, in points.",
+      description: "Points from each edge to the text.",
       example: { body: { insets: { left: 9, top: 9, right: 9, bottom: 9 } } },
     },
     anchor: { description: "Where the text sits: t top, ctr middle, b bottom.", example: { body: { anchor: "b" } } },
@@ -17,6 +17,6 @@ export const bodyWire: TraitWire<"body"> = {
       description: "vert turns the text a quarter clockwise, vert270 anticlockwise.",
       example: { body: { vertical: "vert" } },
     },
-    columns: { description: "How many columns the text flows through.", example: { body: { columns: 2 } } },
+    columns: { example: { body: { columns: 2 } } },
   },
 }
