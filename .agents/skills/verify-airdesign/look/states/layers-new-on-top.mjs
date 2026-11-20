@@ -34,7 +34,7 @@ async function drive(kit) {
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.locator("[data-design-mode]").click()
   const layers = page.locator("[data-layers-panel]")
-  await expect(layers.getByRole("treeitem").first()).toBeVisible()
+  await expect(layers.getByRole("treeitem")).toHaveCount(3)
 }
 
 export default { name: "layers-new-on-top", design: "/screens/s43-10-editor-tools-layers", drive }
