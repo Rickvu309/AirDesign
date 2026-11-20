@@ -1,5 +1,11 @@
 import { expect, it } from "vitest"
-import type { CanvasChart, CanvasChartAxis, CanvasChartFrame, CanvasChartSeries } from "./chart-record.js"
+import type {
+  CanvasChart,
+  CanvasChartAxis,
+  CanvasChartCategoryAxis,
+  CanvasChartFrame,
+  CanvasChartSeries,
+} from "./chart-record.js"
 import { chartLayout, sliceAngles, type ChartShape } from "./chart-layout.js"
 
 const look = { size: 10, bold: false, color: "rgb(64, 64, 64)", font: "Calibri" }
@@ -39,7 +45,7 @@ const base: CanvasChart = {
   line: null,
   plot: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
   valueAxis: axis(0, 12, 2),
-  categoryAxis: frame,
+  categoryAxis: { ...frame, reversed: false },
 }
 
 type Rect = Extract<ChartShape, { kind: "rect" }>
@@ -141,6 +147,24 @@ it("lays bars along the value axis from the left, first category at the bottom",
   expect(first.x).toBeCloseTo(40, 6)
   expect(last.width / first.width).toBeCloseTo(5 / 3, 6)
   expect(first.y).toBeGreaterThan(last.y)
+})
+
+it("lists categories from the top when the category axis runs in reverse, as a ranked bar chart reads", () => {
+  const categoryAxis: CanvasChartCategoryAxis = { ...frame, reversed: true }
+  const shapes = chartLayout({ ...base, kind: "bar", categoryAxis }, 400, 300)
+  const first = rect(shapes, "bar 0 0")
+  const last = rect(shapes, "bar 0 1")
+  expect(first.y).toBeLessThan(last.y)
+  const word = (text: string) =>
+    shapes.find((shape) => shape.kind === "text" && shape.lines.join("") === text && shape.key.startsWith("category"))
+  const top = word("2023")
+  const bottom = word("2024")
+  if (top?.kind !== "text" || bottom?.kind !== "text") throw new Error("categories")
+  expect(top.y).toBeLessThan(bottom.y)
+  expect(rect(shapes, "bar 0 0").y).toBeLessThan(rect(shapes, "bar 1 0").y)
+  const columns = chartLayout({ ...base, categoryAxis }, 400, 300)
+  expect(rect(columns, "bar 0 0").x).toBeGreaterThan(rect(columns, "bar 0 1").x)
+  expect(rect(columns, "bar 0 0").x).toBeGreaterThan(rect(columns, "bar 1 0").x)
 })
 
 it("breaks a line where a value is missing", () => {

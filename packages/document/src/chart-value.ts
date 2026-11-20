@@ -1,13 +1,15 @@
 import { readColor, writtenColor, type Color } from "./color.js"
 import { record } from "./plain-object.js"
 
-export const chartKinds = ["bar", "line", "pie"] as const
+export const chartKinds = ["bar", "stacked", "stacked100", "horizontal", "line", "pie"] as const
+export const chartBarKinds = ["bar", "stacked", "stacked100", "horizontal"] as const
 export const chartLegends = ["bottom", "top", "right", "left", "none"] as const
 export const chartFormats = ["General", "#,##0", "#,##0.0", "#,##0.00", "0%", "0.0%", "$#,##0", "$#,##0.0"] as const
 export const chartLimits = { categories: 24, series: 8, label: 80, title: 120, gap: 500 } as const
 export const chartGap = 80
 
 export type ChartKind = (typeof chartKinds)[number]
+export type ChartBarKind = (typeof chartBarKinds)[number]
 export type ChartLegend = (typeof chartLegends)[number]
 export type ChartFormat = (typeof chartFormats)[number]
 export type ChartSeries = {
@@ -141,6 +143,10 @@ const chartAccents = ["accent1", "accent2", "accent3", "accent4", "accent5", "ac
 
 export function chartAccent(at: number): Color {
   return { scheme: chartAccents[at % chartAccents.length] ?? "accent1" }
+}
+
+export function chartBars(kind: ChartKind): kind is ChartBarKind {
+  return chartBarKinds.some((each) => each === kind)
 }
 
 export function chartLegend(chart: ChartValue): Exclude<ChartLegend, "none"> | null {

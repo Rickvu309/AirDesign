@@ -1,4 +1,5 @@
 import {
+  chartBars,
   chartFormats,
   chartGap,
   chartLegend,
@@ -154,7 +155,7 @@ export function ChartSettingsSection(props: {
             </div>
           </div>
         )}
-        {chart.kind === "bar" ? (
+        {chartBars(chart.kind) ? (
           <NumberField
             control={gap}
             palette={props.palette}

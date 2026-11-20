@@ -1,4 +1,4 @@
-import { chartGap, chartLegend, sameColor, type ChartValue, type Color } from "@airdesign/document"
+import { chartBars, chartGap, chartLegend, sameColor, type ChartValue, type Color } from "@airdesign/document"
 import { solidFillXml } from "./color-xml.js"
 import {
   axisTitleLook,
@@ -6,7 +6,9 @@ import {
   barPointXml,
   chartGridlinesXml,
   chartLabelsXml,
+  chartLabelInk,
   chartLineWidth,
+  chartValueAxisUpright,
   seriesFillXml,
 } from "./chart-space.js"
 import {
@@ -26,11 +28,12 @@ import {
   treeXml,
   type ChartTree,
 } from "./chart-tree.js"
+import type { ChartInk } from "./chart-ink.js"
 import type { ByteEdit, MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { xmlAttribute, xmlText } from "./shape-write.js"
 
-type Pass = (tree: ChartTree, before: ChartValue, after: ChartValue) => readonly ByteEdit[] | null
+type Pass = (tree: ChartTree, before: ChartValue, after: ChartValue, ink: ChartInk) => readonly ByteEdit[] | null
 
 const titleLook = '<a:defRPr sz="1400" b="1"/>'
 const legendPlaces = { bottom: "b", top: "t", right: "r", left: "l" } as const
@@ -129,7 +132,7 @@ function sharesOf(chart: ChartValue): boolean {
   return chart.kind === "pie" && chart.labels?.includes("%") === true
 }
 
-const labelsPass: Pass = (tree, before, after) => {
+const labelsPass: Pass = (tree, before, after, ink) => {
   if (before.labels === after.labels) return []
   const group = chartGroup(tree)
   if (group === undefined) return null
@@ -147,14 +150,14 @@ const labelsPass: Pass = (tree, before, after) => {
     ...(after.kind === "pie" ? [["c:showPercent", share ? "1" : "0"] as const] : []),
   ])
   const format = `<c:numFmt formatCode="${xmlAttribute(labels)}" sourceLinked="0"/>`
-  return series.flatMap((each) => {
+  return series.flatMap((each, at) => {
     const holder = treeKid(tree, each, "c:dLbls")
     const usable =
       holder !== undefined &&
       treeValue(treeKid(tree, holder, "c:delete")) !== "1" &&
       treeKid(tree, holder, "c:showVal") !== undefined
     if (!usable) {
-      const xml = chartLabelsXml(after)
+      const xml = chartLabelsXml(after, chartLabelInk(after, at, ink))
       return [holder === undefined ? placedAfter(tree, each, beforeSeriesLabels, xml) : replaced(holder, xml)]
     }
     const own = treeKid(tree, holder, "c:numFmt")
@@ -196,7 +199,7 @@ const gridlinesPass: Pass = (tree, before, after) => {
 
 const gapPass: Pass = (tree, before, after) => {
   const gap = after.gap ?? chartGap
-  if (after.kind !== "bar" || (before.gap ?? chartGap) === gap) return []
+  if (!chartBars(after.kind) || (before.gap ?? chartGap) === gap) return []
   const group = chartGroup(tree)
   if (group === undefined) return null
   const own = treeKid(tree, group, "c:gapWidth")
@@ -234,7 +237,16 @@ function fillEdit(tree: ChartTree, holder: MarkupElement, fill: string, after: r
   return own === undefined ? placedAfter(tree, holder, after, fill) : replaced(own, fill)
 }
 
-const colorsPass: Pass = (tree, before, after) => {
+function labelInkEdits(tree: ChartTree, series: MarkupElement, slot: string): readonly ByteEdit[] {
+  const paragraph = treeKid(tree, treeKid(tree, treeKid(tree, series, "c:dLbls"), "c:txPr"), "a:p")
+  const look = treeKid(tree, treeKid(tree, paragraph, "a:pPr"), "a:defRPr")
+  const scheme = treeKid(tree, treeKid(tree, look, "a:solidFill"), "a:schemeClr")
+  const held = treeValue(scheme)
+  if (scheme === undefined || held === slot || (held !== "tx1" && held !== "bg1")) return []
+  return [attributeSet(tree, scheme, "val", slot)]
+}
+
+const colorsPass: Pass = (tree, before, after, ink) => {
   if (after.kind === "pie") return []
   const listed = orderedSeries(tree, chartGroup(tree))
   return after.series.flatMap((series, at) => {
@@ -242,11 +254,12 @@ const colorsPass: Pass = (tree, before, after) => {
     if (sameColor(before.series[at]?.color, series.color) || element === undefined) return []
     const fill = seriesFillXml(series, at)
     const properties = treeKid(tree, element, "c:spPr")
-    if (after.kind === "bar")
+    if (chartBars(after.kind))
       return [
         properties === undefined
           ? placedAfter(tree, element, ["c:idx", "c:order", "c:tx"], `<c:spPr>${fill}</c:spPr>`)
           : fillEdit(tree, properties, fill, ["a:xfrm", "a:custGeom", "a:prstGeom"]),
+        ...labelInkEdits(tree, element, chartLabelInk(after, at, ink)),
       ]
     const line = treeKid(tree, properties, "a:ln")
     const stroke = `<a:ln w="${String(chartLineWidth)}" cap="rnd">${fill}<a:round/></a:ln>`
@@ -272,7 +285,7 @@ const pointColorsPass: Pass = (tree, before, after) => {
   return after.series.flatMap((series, at) => {
     const element = listed[at]
     const pointed = series.colors !== undefined || before.series[at]?.colors !== undefined
-    if (element === undefined || (after.kind === "bar" && !pointed) || (after.kind === "pie" && at > 0)) return []
+    if (element === undefined || (chartBars(after.kind) && !pointed) || (after.kind === "pie" && at > 0)) return []
     const singles = treeKids(tree, element, "c:dPt")
     const added: string[] = []
     const edits: ByteEdit[] = []
@@ -305,9 +318,10 @@ function axisOf(tree: ChartTree, kind: string): MarkupElement | undefined {
 
 const axisTitlesPass: Pass = (tree, before, after) => {
   if (after.kind === "pie") return []
+  const upright = chartValueAxisUpright(after.kind)
   const axes = [
-    ["c:valAx", before.valueTitle, after.valueTitle, true],
-    ["c:catAx", before.categoryTitle, after.categoryTitle, false],
+    ["c:valAx", before.valueTitle, after.valueTitle, upright],
+    ["c:catAx", before.categoryTitle, after.categoryTitle, !upright],
   ] as const
   const edits: ByteEdit[] = []
   for (const [kind, had, wanted, upright] of axes) {
@@ -341,11 +355,16 @@ const passes: readonly Pass[] = [
   axisTitlesPass,
 ]
 
-export function lookPatched(bytes: Uint8Array, before: ChartValue, after: ChartValue): Uint8Array | null {
+export function lookPatched(
+  bytes: Uint8Array,
+  before: ChartValue,
+  after: ChartValue,
+  ink: ChartInk = () => "tx1",
+): Uint8Array | null {
   let tree = chartTree(bytes)
   for (const pass of passes) {
     if (tree === null) return null
-    const edits = pass(tree, before, after)
+    const edits = pass(tree, before, after, ink)
     if (edits === null) return null
     tree = treeEdited(tree, edits)
   }

@@ -288,6 +288,7 @@ export {
   type TableSide,
 } from "./table-cells.js"
 export {
+  chartBars,
   chartFormats,
   chartGap,
   chartKinds,
@@ -298,6 +299,7 @@ export {
   openingChart,
   readChartValue,
   writeChartValue,
+  type ChartBarKind,
   type ChartFormat,
   type ChartKind,
   type ChartLegend,

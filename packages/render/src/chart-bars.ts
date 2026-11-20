@@ -136,7 +136,9 @@ export function barShapes(chart: CanvasChart, room: ChartBox, manual: boolean): 
       ? plot.x + ((clamp(value) - valueAxis.min) / span) * plot.width
       : plot.y + plot.height - ((clamp(value) - valueAxis.min) / span) * plot.height
   const band = (horizontal ? plot.height : plot.width) / count
-  const bandStart = (at: number) => (horizontal ? plot.y + plot.height - (at + 1) * band : plot.x + at * band)
+  const placed = (at: number) => (categoryAxis.reversed ? count - 1 - at : at)
+  const bandStart = (at: number) =>
+    horizontal ? plot.y + plot.height - (placed(at) + 1) * band : plot.x + placed(at) * band
   const cross = (position: number, key: string, line: CanvasChartLine): ChartShape =>
     horizontal
       ? across(key, [position, plot.y], [position, plot.y + plot.height], line)
@@ -219,9 +221,12 @@ export function barShapes(chart: CanvasChart, room: ChartBox, manual: boolean): 
         const offset = (band - group) / 2 + (stacked ? 0 : row * width * (1 - overlap))
         const low = Math.min(along(from), along(to))
         const high = Math.max(along(from), along(to))
+        const near = bandStart(at) + offset
+        const far = bandStart(at) + band - offset - width
+        const fromStart = horizontal === categoryAxis.reversed
         const box = horizontal
-          ? { x: low, y: bandStart(at) + band - offset - width, width: high - low, height: width }
-          : { x: bandStart(at) + offset, y: low, width, height: high - low }
+          ? { x: low, y: fromStart ? near : far, width: high - low, height: width }
+          : { x: fromStart ? near : far, y: low, width, height: high - low }
         const mark = series.points[at] ?? { fill: null, line: null }
         shapes.push({ kind: "rect", key: `bar ${row} ${at}`, box, ...mark })
         const label = series.labels[at]

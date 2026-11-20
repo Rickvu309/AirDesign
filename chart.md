@@ -4,6 +4,10 @@ A layer that draws numbers as bars, a line or a pie. Figma Slides has no chart, 
 
 ## Language
 
+**chart kind**:
+How a chart draws its numbers: `bar` (columns side by side), `stacked` (each category's series piled in one column), `stacked100` (each column scaled to 100%), `horizontal` (bars laid sideways, the first category on top), `line` or `pie`. In a PowerPoint file the four bar kinds are one `c:barChart` with its `c:barDir` and `c:grouping`.
+_Avoid_: chart type (except as the Data section's label), chart style
+
 **chart value**:
 A chart's kind, its categories and its series of numbers, as JSON in the `chart.value` field. The Design panel's Data section edits it, and an agent sends it with `op: add, kind: chart`.
 _Avoid_: chart data, chart spec

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   chartFormats,
+  chartKinds,
   chartLegends,
   chartLimits,
   openingChart,
@@ -21,7 +22,8 @@ describe("chart value", () => {
 
   it("reads back what it writes, and opens each kind with sample data a person replaces", () => {
     expect(readChartValue(writeChartValue(revenue))).toEqual(revenue)
-    for (const kind of ["bar", "line", "pie"] as const) {
+    expect(chartKinds).toEqual(["bar", "stacked", "stacked100", "horizontal", "line", "pie"])
+    for (const kind of chartKinds) {
       const opened = openingChart(kind)
       expect(opened.kind).toBe(kind)
       expect(opened.series.every((series) => series.values.length === opened.categories.length)).toBe(true)
