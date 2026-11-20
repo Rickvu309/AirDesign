@@ -4,6 +4,7 @@ import { first, second, store } from "./home-store.ts"
 import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
 import { toolbarCopy } from "../../apps/web/src/copy/toolbar-copy.ts"
 import { chartCopy } from "../../apps/web/src/copy/chart-copy.ts"
+import { shapeCopy } from "../../apps/web/src/copy/shape-copy.ts"
 import { tableCopy } from "../../apps/web/src/copy/table-copy.ts"
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
@@ -133,7 +134,7 @@ for (const window of windows) {
   })
 }
 
-test("with a text box selected in a 1470x923 window, the toolbar keeps Table, Chart and Icon and folds the text controls", async ({
+test("with a text box selected in a 1470x923 window, the toolbar keeps Table, Chart and Icon beside the text controls", async ({
   page,
 }) => {
   const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy.ts")
@@ -142,11 +143,11 @@ test("with a text box selected in a 1470x923 window, the toolbar keeps Table, Ch
   await text.click()
   await text.press("ControlOrMeta+a")
   const toolbar = page.locator("[data-editor-toolbar]")
-  for (const name of ["Add text", "Shapes", tableCopy.tool, chartCopy.tool, pictureCopy.add, pictureCopy.addIcon])
+  for (const name of ["Add text", shapeCopy.tool, tableCopy.tool, chartCopy.tool, pictureCopy.add, pictureCopy.addIcon])
     await expect(toolbar.getByRole("button", { name, exact: true })).toBeVisible()
-  await expect(toolbar.getByRole("button", { name: "Bold" })).toBeVisible()
+  await expect(toolbar.getByRole("button", { name: formatCopy.named.bold })).toBeVisible()
   await toolbar.getByRole("button", { name: tableCopy.tool, exact: true }).click()
-  await expect(page.getByRole("group", { name: tableCopy.size })).toBeVisible()
+  await expect(page.getByLabel(tableCopy.size, { exact: true })).toBeVisible()
 })
 
 test("in a 1280x720 window the controls that do not fit sit in More, reached and used by keyboard", async ({
@@ -159,7 +160,7 @@ test("in a 1280x720 window the controls that do not fit sit in More, reached and
   await text.press("ControlOrMeta+a")
   const toolbar = page.locator("[data-editor-toolbar]")
   await expect(toolbar.getByRole("button", { name: tableCopy.tool, exact: true })).toBeVisible()
-  await expect(toolbar.getByRole("button", { name: "Bold" })).toHaveCount(0)
+  await expect(toolbar.getByRole("button", { name: formatCopy.named.bold })).toHaveCount(0)
   await expect(toolbar.getByRole("button", { name: formatCopy.bullets })).toHaveCount(0)
   await toolbar.getByRole("button", { name: "More", exact: true }).focus()
   await page.keyboard.press("Enter")
@@ -186,7 +187,7 @@ test("in a 1280x720 window a shape added from the toolbar while text is aimed la
   await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
   const elements = page.locator("[data-slide-paint] [data-canvas-element]")
   const before = await elements.count()
-  await page.locator("[data-editor-toolbar]").getByRole("button", { name: "Shapes", exact: true }).click()
+  await page.locator("[data-editor-toolbar]").getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   await page.locator("[data-shape-tray]").getByRole("button", { name: "Rectangle", exact: true }).click()
   await expect(elements).toHaveCount(before + 1)
 })
