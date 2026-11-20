@@ -205,9 +205,20 @@ export {
   lineGeometries,
 } from "./element-order.js"
 export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
-export { groupCommand, groupedNow, groupFormed, groupNode, madeGroup, type Member } from "./element-group.js"
+export {
+  groupCommand,
+  groupedNow,
+  groupFormed,
+  groupFrame,
+  groupParent,
+  groupNode,
+  madeGroup,
+  plainGroup,
+  type Member,
+} from "./element-group.js"
 export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
+export { fittedBox } from "./group-space.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
 export { measureDue, measureOwed, measureStale } from "./frame-measure.js"
 export { regroupTurn, ungroupTurn } from "./group-turn.js"

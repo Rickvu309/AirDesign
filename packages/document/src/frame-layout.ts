@@ -10,12 +10,16 @@ import {
   groupBounds,
   groupParent,
   frameSource,
+  groupFlow,
+  groupFrame,
+  plainGroup,
   type ElementGroup,
   type FrameSource,
   type ElementJoin,
   type Member,
 } from "./element-group.js"
 import { memberOf, placeOf, type PlacedRow } from "./group-place.js"
+import { fittedBox, groupSpace, intoSpace, outOfSpace } from "./group-space.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { floorOf, openingElement } from "./slide-floor.js"
 import type { Framing } from "./frame-index.js"
@@ -52,7 +56,12 @@ export type LayoutIntent =
   | { readonly remove: ElementId }
   | { readonly reflow: ElementId }
   | { readonly place: ElementId; readonly box: Box; readonly file: readonly SlideId[] }
-  | { readonly move: ElementId; readonly frame: ElementId | null; readonly file: readonly SlideId[] }
+  | {
+      readonly move: ElementId
+      readonly frame: ElementId | null
+      readonly before?: ElementId | null
+      readonly file: readonly SlideId[]
+    }
 
 const point = 12_700
 const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -357,8 +366,10 @@ export function changeLayout(
   }
   if ("move" in intent) {
     const now = spotNow(register, intent.move)
-    const box = now === null ? null : intent.frame === null ? now.box : (placeOf(register, intent.move)?.box ?? null)
-    const spot = box === null ? null : { frame: intent.frame, before: null, box }
+    const inPlain = now?.frame !== null && now?.frame !== undefined && plainGroup(register, now.frame)
+    const box =
+      now === null ? null : intent.frame === null || inPlain ? now.box : (placeOf(register, intent.move)?.box ?? null)
+    const spot = box === null ? null : { frame: intent.frame, before: intent.before ?? null, box }
     const turn = spot === null ? null : joinTurn(register, intent.file, intent.move, spot)
     return turn === null ? null : { turn }
   }
@@ -394,10 +405,20 @@ function landedTurn(register: Register, commands: readonly Command[]): boolean {
   return true
 }
 
+function boxRow(node: ElementId, box: Box): PlacedRow {
+  return { node, patch: { box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } } } }
+}
+
+function boxIn(register: Register, frame: ElementId | null, box: Box): Box | null {
+  if (frame === null || !plainGroup(register, frame)) return box
+  const space = groupSpace(register, frame)
+  return space === null ? null : intoSpace(box, space)
+}
+
 function spotRows(register: Register, node: ElementId, spot: Spot): readonly PlacedRow[] {
   const { box } = spot
-  if (spot.frame === null)
-    return [{ node, patch: { box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } } } }]
+  if (spot.frame === null) return [boxRow(node, box)]
+  if (plainGroup(register, spot.frame)) return []
   const view = readLayout(register, spot.frame)
   if (view === null || view.flow !== "none") return []
   return [{ node, patch: { box: { x: { set: box.x - view.box.x }, y: { set: box.y - view.box.y } } } }]
@@ -406,8 +427,9 @@ function spotRows(register: Register, node: ElementId, spot: Spot): readonly Pla
 export function joinEdit(register: Register, node: ElementId, spot: Spot): ElementJoin | null {
   const slide = readSlideId(shapeOf(node).slide)
   const place = placeOf(register, node)
-  if (slide === undefined || place === null) return null
-  const member = memberOf(node, { ...place, box: spot.box })
+  const box = boxIn(register, spot.frame, spot.box)
+  if (slide === undefined || place === null || box === null) return null
+  const member = memberOf(node, { ...place, box })
   return { slide: "element-join", id: slide, member, frame: spot.frame, before: spot.before }
 }
 
@@ -419,8 +441,29 @@ export function joinTurn(
 ): readonly Command[] | null {
   const edit = joinEdit(register, node, spot)
   if (edit === null) return null
-  const commands = [{ command: "slide" as const, file, edit }, ...personRows(spotRows(register, node, spot))]
+  const joined = decide(register, { command: "slide", file, edit })
+  if (joined.decision !== "apply") return null
+  const fitted = fittedRows(register, joined.register, [groupParent(register, node), spot.frame])
+  const commands = [
+    { command: "slide" as const, file, edit },
+    ...personRows([...spotRows(register, node, spot), ...fitted]),
+  ]
   return landedTurn(register, commands) ? commands : null
+}
+
+function fittedRows(
+  register: Register,
+  joined: Register,
+  groups: readonly (ElementId | null | undefined)[],
+): readonly PlacedRow[] {
+  return [...new Set(groups)].flatMap((group): PlacedRow[] => {
+    if (typeof group !== "string" || !plainGroup(joined, group)) return []
+    const place = placeOf(register, group)
+    const frame = groupFrame(register, group)
+    const fitted = groupFrame(joined, group)
+    if (place === null || frame === null || fitted === null) return []
+    return [boxRow(group, fittedBox(place.box, frame, fitted))]
+  })
 }
 
 function centre(box: Box): { readonly x: number; readonly y: number } {
@@ -439,6 +482,13 @@ function nextInFlow(view: LayoutView, node: ElementId, box: Box): ElementId | nu
 
 export function spotNow(register: Register, node: ElementId): Spot | null {
   const parent = groupParent(register, node)
+  if (typeof parent === "string" && plainGroup(register, parent)) {
+    const space = groupSpace(register, parent)
+    const place = placeOf(register, node)
+    if (space === null || place === null) return null
+    const flow = groupFlow(register, parent)
+    return { frame: parent, before: flow[flow.indexOf(node) + 1] ?? null, box: outOfSpace(place.box, space) }
+  }
   const laid = parent === null || parent === undefined ? undefined : readLayout(register, parent)
   if (laid === null || laid === undefined) {
     const place = placeOf(register, node)
@@ -452,7 +502,7 @@ export function spotNow(register: Register, node: ElementId): Spot | null {
 
 function dropSpot(register: Register, node: ElementId, box: Box): Spot | "kept" | null {
   const now = spotNow(register, node)
-  if (now === null) return null
+  if (now === null || (now.frame !== null && plainGroup(register, now.frame))) return null
   const point = centre(box)
   const slide = shapeOf(node).slide
   const frames = layoutNodes(register).flatMap((frame) => {

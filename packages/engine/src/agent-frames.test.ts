@@ -127,3 +127,15 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     expect(listed(moved).get("258.3")?.box).toMatchObject({ x: 200 * 12_700, y: 100 * 12_700 })
   })
 })
+
+describe("an agent moves a layer into and out of a plain group through edit_deck", () => {
+  it("joins a shape to a group where it shows, and leave puts it back on the slide", () => {
+    const group = landed(edit(indexed(), { op: "group", elements: ["258.2", "258.3"] }))
+    const joined = landed(edit(group, { op: "join", elements: ["258.9", "258.4"] }))
+    expect(listed(joined).get("258.4")).toMatchObject({ grouped: true, box: elements[2]?.box })
+    expect(listed(joined).get("258.9")?.box).toEqual({ x: 100_000, y: 100_000, cx: 900_000, cy: 900_000 })
+    const left = landed(edit(joined, { op: "leave", elements: ["258.4"] }))
+    expect(listed(left).get("258.4")).toMatchObject({ grouped: false, box: elements[2]?.box })
+    expect(listed(left).get("258.9")?.box).toEqual({ x: 100_000, y: 100_000, cx: 400_000, cy: 350_000 })
+  })
+})

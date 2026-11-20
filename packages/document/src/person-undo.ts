@@ -260,7 +260,7 @@ function turnCommands(
   if ("joined" in undoable) {
     const now = spotNow(register, undoable.joined)
     const was = undoable[from]
-    if (now === null || now.frame !== was.frame || now.before !== was.before) return null
+    if (now === null || now.frame !== was.frame) return null
     return joinTurn(register, file, undoable.joined, undoable[to])
   }
   if ("group" in undoable) {

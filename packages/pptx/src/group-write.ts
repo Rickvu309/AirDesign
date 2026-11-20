@@ -1,4 +1,4 @@
-import type { Place } from "@airdesign/document"
+import { fittedBox, type Place } from "@airdesign/document"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { requireMarkup } from "./part-markup.js"
@@ -237,11 +237,11 @@ export function joinShape(bytes: Uint8Array, shape: string, frame: string | null
   const moved = bytes.slice(unit.start, unit.end)
   const left = groupOf(elements, unit)
   const at =
-    frame === null
-      ? (left?.end ?? unit.end)
-      : before === null
-        ? closeAt(children, shapeById(elements, frame))
-        : treeUnit(elements, shapeById(elements, before)).start
+    before !== null
+      ? treeUnit(elements, shapeById(elements, before)).start
+      : frame === null
+        ? (left?.end ?? unit.end)
+        : closeAt(children, shapeById(elements, frame))
   const edits: ByteEdit[] = [
     { start: unit.start, end: unit.end, next: new Uint8Array() },
     { start: at, end: at, next: moved },
@@ -258,4 +258,23 @@ export function childSpace(bytes: Uint8Array, shape: string): { readonly box: Sh
   const xfrm = transformOf(children, shapeById(elements, shape))
   const box = xfrm === undefined ? null : boxAt(children, xfrm, "a:chOff", "a:chExt")
   return box === null ? null : { box }
+}
+
+export function fitGroup(bytes: Uint8Array, shape: string, frame: ShapeBox): Uint8Array {
+  const { elements } = requireMarkup(bytes)
+  const children = markupChildren(elements)
+  const group = shapeById(elements, shape)
+  if (group.kind !== "p:grpSp") throw new Error("p:grpSp")
+  const xfrm = transformOf(children, group)
+  const place = xfrm === undefined ? null : boxAt(children, xfrm, "a:off", "a:ext")
+  const space = xfrm === undefined ? null : boxAt(children, xfrm, "a:chOff", "a:chExt")
+  const first = xfrm === undefined ? undefined : children[xfrm.index]?.[0]
+  if (xfrm === undefined || place === null || space === null || first === undefined) throw new Error("a:xfrm")
+  const box = fittedBox(place, space, frame)
+  const next = encodeUtf8(
+    `<a:off x="${box.x}" y="${box.y}"/><a:ext cx="${box.cx}" cy="${box.cy}"/>` +
+      `<a:chOff x="${frame.x}" y="${frame.y}"/><a:chExt cx="${frame.cx}" cy="${frame.cy}"/>`,
+  )
+  const close = xfrm.end - encodeUtf8("</a:xfrm>").byteLength
+  return spliceBytes(bytes, [{ start: first.start, end: close, next }])
 }
