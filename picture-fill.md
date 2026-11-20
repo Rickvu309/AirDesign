@@ -19,3 +19,7 @@ _Avoid_: thickness, line width, stroke
 **icon color**:
 The color of an icon's lines, `fills.color`: a template color or any other color, drawn into the icon's SVG and PNG. A new icon takes the template's text color, Text 1, so it reads like the text beside it and turns light on a dark template. The Fill section shows it as Color beside Weight. The export keeps a plain template color's slot in the icon's file name, so the deck reads it back as that slot.
 _Avoid_: tint, ink, stroke color
+
+**icon size**:
+The side of a new icon: 1.5 times the body text size of its slide, the lower middle of the text sizes there, the way Figma's 24 px icons sit beside 16 px text. A slide with no text gives one inch. A person's Add icon and an agent's `add` with `icon` and no `box` both use it.
+_Avoid_: icon scale, default box

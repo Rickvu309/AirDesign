@@ -1,5 +1,6 @@
 import {
   fitNewBox,
+  iconSideOn,
   iconTextColor,
   iconWeights,
   limits,
@@ -24,6 +25,7 @@ import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { takenBoxes, type SlideRoom } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
 import { iconBytes } from "@/icon-fallback"
+import { indexedRegister } from "@/indexed-register"
 import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -76,10 +78,8 @@ export function pictureCommand(
   return { slide: "element-add", id, element: { ...element, opening } }
 }
 
-export const iconSide = 914_400
-
-export function placedIcon(slide: SlideRoom): Box {
-  return fitNewBox(slide, takenBoxes(slide), { cx: iconSide, cy: iconSide })
+export function placedIcon(slide: SlideRoom, side: number): Box {
+  return fitNewBox(slide, takenBoxes(slide), { cx: side, cy: side })
 }
 
 export async function readPicture(file: Blob): Promise<PictureFile | PictureRefusal> {
@@ -141,7 +141,8 @@ export async function commitIcon(
   })
   if (made === null) return "refused"
   for (const [part, bytes] of made) at.keep(part, bytes)
-  const edit = pictureCommand(parts, register, at.index, { icon: name }, placedIcon(at.slide))
+  const side = iconSideOn(indexedRegister(parts, register).index?.elements ?? [], slide?.slide ?? "")
+  const edit = pictureCommand(parts, register, at.index, { icon: name }, placedIcon(at.slide, side))
   if (edit === null || edit.slide !== "element-add") return "refused"
   const file = fileSlides(parts, register)
   const undoable = slideUndoable(register, file, edit)

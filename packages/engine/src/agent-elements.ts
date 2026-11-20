@@ -1,5 +1,6 @@
 import type { CallRefusal, WireDelete } from "@airdesign/catalog"
 import {
+  iconSideOn,
   iconTextColor,
   currentBox,
   decide,
@@ -149,8 +150,6 @@ export function addTable(
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 
-export const iconSide = 914_400
-
 export function addIcon(
   head: Head,
   deck: Deck,
@@ -167,7 +166,8 @@ export function addIcon(
     return { ok: false, refusal: "dead" }
   }
   const size = measure.size ?? { width: 0, height: 0 }
-  const box = wanted ?? placeNewBox(size, takenBoxes(register, slide), { cx: iconSide, cy: iconSide })
+  const side = iconSideOn(register.index?.elements ?? [], slide)
+  const box = wanted ?? placeNewBox(size, takenBoxes(register, slide), { cx: side, cy: side })
   const node = nextElementId(register, slide, measure.free)
   const opening = {
     fills: { p0: { set: { image: true } }, source: { set: icon }, color: { set: iconTextColor } },

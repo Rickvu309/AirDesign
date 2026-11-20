@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, writeTextValue } from "@airdesign/document"
+import { elementId, writeTextValue, type IndexElement } from "@airdesign/document"
 import { indexDeck, openDeck, readDeckPage } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
@@ -8,7 +8,7 @@ import { createServer, emptyLog, memoryTurns, type Session } from "./index.js"
 const size = { width: 12_192_000, height: 6_858_000 }
 const box = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
 
-function session(): Session {
+function session(texts: readonly IndexElement[] = []): Session {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error("deck")
   const title = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Title" }] }])
@@ -19,9 +19,9 @@ function session(): Session {
       deck: "deck",
       once: "index",
       offset: 0,
-      total: 1,
+      total: 1 + texts.length,
       slides: [{ id: "256", position: 0, size, free: 5, animated: [], layout: [] }],
-      elements: [{ node: elementId("256.2"), kind: "shape", value: title, box, grouped: false }],
+      elements: [{ node: elementId("256.2"), kind: "shape", value: title, box, grouped: false }, ...texts],
     },
   )
   if (!indexed.ok) throw new Error(indexed.refusal)
@@ -121,5 +121,38 @@ describe("an agent places a Lucide icon by name", () => {
       expect(JSON.stringify(painted.content)).toContain("Close names: rocket")
     })
     expect(held.deck.register.order).toEqual([])
+  })
+
+  it("sizes an icon added with no box at 1.5 times the slide's body text", async () => {
+    const lines = { x: 1_524_000, y: 3_600_000, cx: 9_144_000, cy: 1_000_000 }
+    const texts: readonly IndexElement[] = [
+      {
+        node: elementId("256.3"),
+        kind: "shape",
+        value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Lead" }] }]),
+        box: lines,
+        grouped: false,
+        design: { "text.size": [44] },
+      },
+      {
+        node: elementId("256.4"),
+        kind: "shape",
+        value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Body" }] }]),
+        box: { ...lines, y: 4_800_000 },
+        grouped: false,
+        design: { "text.size": [24, "master"] },
+      },
+    ]
+    const held = session(texts)
+    await withClient(held, async (client) => {
+      const added = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ op: "add", kind: "shape", slide: "256", icon: "rocket" }] },
+      })
+      expect(added.isError).not.toBe(true)
+      const command = held.deck.register.order.at(-1)
+      const placed = command?.slide === "element-add" ? command.element.box : null
+      expect(placed).toMatchObject({ cx: 36 * 12_700, cy: 36 * 12_700 })
+    })
   })
 })
