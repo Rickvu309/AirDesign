@@ -143,7 +143,7 @@ describe("frame members", () => {
     expect(changeLayout(after, { place: d, box: { x: 310, y: 150, cx: 300, cy: 120 }, file })).toBeNull()
   })
 
-  it("deletes a child of a frame, which then lays out without it, and refuses the backdrop and a frame inside a frame", () => {
+  it("deletes a child of a frame, which then lays out without it, refuses the backdrop and takes a frame dropped on it", () => {
     const before = wrapped()
     const removed = ran(before, [{ command: "slide", file, edit: { slide: "element-remove", id: slide, node: b } }])
     expect(order(removed)).toEqual([a, c])
@@ -153,9 +153,11 @@ describe("frame members", () => {
     const second = changeLayout(removed, { wrap: [d], slide, node: elementId("256.30"), backdrop: elementId("256.31") })
     if (second === null || !("slide" in second)) throw new Error("wrap")
     const two = ran(removed, [{ command: "slide", file, edit: second.slide }])
-    expect(
-      changeLayout(two, { place: elementId("256.30"), box: { x: 100, y: 100, cx: 300, cy: 120 }, file }),
-    ).toBeNull()
+    const dropped = changeLayout(two, { place: elementId("256.30"), box: { x: 100, y: 100, cx: 300, cy: 120 }, file })
+    expect(dropped !== null && "turn" in dropped ? dropped.turn[0] : null).toMatchObject({
+      command: "slide",
+      edit: { slide: "element-join", frame, before: c },
+    })
   })
 })
 

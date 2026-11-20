@@ -16,7 +16,7 @@ import {
   type Member,
 } from "./element-group.js"
 import { takes, type ElementFacts } from "./element-takes.js"
-import { readLayout } from "./frame-layout.js"
+import { huggedSize, readLayout } from "./frame-layout.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { openingElement } from "./slide-floor.js"
 import type { FieldKey } from "./traits.js"
@@ -139,8 +139,16 @@ function samePlace(left: Place | null, right: Place): boolean {
   return boxed && left.rot === right.rot && left.flipH === right.flipH && left.flipV === right.flipV
 }
 
+export function huggedPlace(register: Register, node: ElementId, place: Place): Place {
+  const size = huggedSize(register, node)
+  return size === null ? place : { ...place, box: { ...place.box, cx: size.cx, cy: size.cy } }
+}
+
 export function rowsKept(register: Register, command: ElementGroup): boolean {
-  return command.members.every((member) => samePlace(rowPlace(register, member.node), memberPlace(member)))
+  return command.members.every((member) => {
+    const place = rowPlace(register, member.node)
+    return samePlace(place === null ? null : huggedPlace(register, member.node, place), memberPlace(member))
+  })
 }
 
 export function groupOf(

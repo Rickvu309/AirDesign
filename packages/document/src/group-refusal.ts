@@ -160,7 +160,6 @@ function joinRefusal(state: Indexed, command: ElementJoin): SlideRefusal | null 
   const node = command.member.node
   if (slideKind(node) !== null || elementGone(state, node)) return "dead"
   if (backdropOf(state, node)) return "kind"
-  if (frameBackdrop(state, node) !== null && command.frame !== null && !plainGroup(state, command.frame)) return "kind"
   const opening = openingElement(state, node)
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   if (!groupable.includes(opening.kind) || opening.role !== undefined) return "kind"

@@ -29,6 +29,7 @@ assert.deepEqual(
     "diagram-edits.mjs",
     "element-order.mjs",
     "frame-group.mjs",
+    "frame-nested.mjs",
     "frame.mjs",
     "gradient-kept.mjs",
     "group-duplicate.mjs",
@@ -157,8 +158,8 @@ assert.deepEqual(caseExports([writing, good]), good.exports)
 assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
 assert.deepEqual(caseWritten(entries).slice(0, 3), [
   "written-frame-group.pptx",
+  "written-frame-nested.pptx",
   "written-group-duplicate.pptx",
-  "written-group-join.pptx",
 ])
 
 const out = scenario({})

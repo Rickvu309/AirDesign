@@ -12,7 +12,7 @@ import {
 } from "./element-group.js"
 import { elementGone } from "./element-order.js"
 import { takes } from "./element-takes.js"
-import { layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
+import { layoutDepth, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 import { format } from "./format.js"
 import { memberOf, memberPlace, placeOf, rowPlace, type Place, type PlacedRow } from "./group-place.js"
 import { shownPlace, slideAligned, storedPlaceIn } from "./group-space.js"
@@ -193,16 +193,24 @@ export function spotNow(register: Register, node: ElementId): Spot | null {
   return { frame: laid.node, before: laid.children[at + 1]?.node ?? null, box }
 }
 
+function inside(register: Register, frame: ElementId, node: ElementId): boolean {
+  for (let above: ElementId | null | undefined = frame; typeof above === "string"; above = groupParent(register, above))
+    if (above === node) return true
+  return false
+}
+
 export function dropSpot(register: Register, node: ElementId, box: Box): Spot | "kept" | null {
   const now = spotNow(register, node)
   if (now === null || (now.frame !== null && plainGroup(register, now.frame))) return null
   const point = centre(box)
   const slide = shapeOf(node).slide
   const frames = layoutNodes(register).flatMap((frame) => {
-    const view = frame === node || shapeOf(frame).slide !== slide ? null : readLayout(register, frame)
-    return view !== null && holds(view.box, point) ? [view] : []
+    const view = shapeOf(frame).slide !== slide || inside(register, frame, node) ? null : readLayout(register, frame)
+    return view !== null && holds(view.box, point) ? [{ view, depth: layoutDepth(register, frame) }] : []
   })
-  const target = frames.find((view) => view.node === now.frame) ?? frames.at(-1)
+  const deepest = Math.max(...frames.map(({ depth }) => depth))
+  const innermost = frames.filter(({ depth }) => depth === deepest).map(({ view }) => view)
+  const target = innermost.find((view) => view.node === now.frame) ?? innermost.at(-1)
   if (target === undefined) return now.frame === null ? null : { frame: null, before: null, box }
   if (target.flow === "none") return target.node === now.frame ? null : { frame: target.node, before: null, box }
   const before = nextInFlow(target, node, box)

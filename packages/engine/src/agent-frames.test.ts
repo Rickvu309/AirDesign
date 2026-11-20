@@ -128,6 +128,38 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
   })
 })
 
+describe("an agent nests one auto layout frame in another through edit_deck", () => {
+  it("wraps a frame and a shape in a new frame, read_deck lists both with the inner children inside, undo_run unwraps both", () => {
+    const deck = landed(edit(framed(), { op: "frame", elements: ["258.9", "258.4"] }))
+    const read = listed(deck)
+    expect(read.get("258.11")).toMatchObject({ kind: "group", frame: "auto" })
+    expect(read.get("258.9")).toMatchObject({ kind: "group", frame: "auto", grouped: true })
+    const [outer, inner, first, beside] = ["258.11", "258.9", "258.2", "258.4"].map((each) => read.get(each)?.box)
+    if (outer == null || inner == null || first == null || beside == null) throw new Error("boxes")
+    expect(first).toMatchObject({ x: inner.x, y: inner.y })
+    expect(beside.y).toBeGreaterThan(inner.y + inner.cy)
+    expect(outer).toEqual({ x: inner.x, y: inner.y, cx: inner.cx, cy: beside.y + beside.cy - inner.y })
+    const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
+    expect([node(9), node(11)].map((each) => groupFormed(undone.register, each))).toEqual([false, false])
+  })
+
+  it("grows the inner frame with set layout and moves the outer frame's next child", () => {
+    const nested = landed(edit(framed(), { op: "frame", elements: ["258.9", "258.4"] }))
+    const before = listed(nested).get("258.4")?.box
+    const deck = landed(set(nested, "258.9", { layout: { flow: "vertical", gap: 10 } }))
+    const after = listed(deck).get("258.4")?.box
+    if (before == null || after == null) throw new Error("boxes")
+    expect(after.y - before.y).toBe(100_000 + 127_000)
+  })
+
+  it("joins a frame to another frame with join, and refuses a frame joining a frame inside it", () => {
+    const outer = landed(edit(framed(), { op: "frame", elements: ["258.4"] }))
+    const joined = landed(edit(outer, { op: "join", elements: ["258.11", "258.9"] }))
+    expect(listed(joined).get("258.9")).toMatchObject({ grouped: true, frame: "auto" })
+    expect(edit(joined, { op: "join", elements: ["258.9", "258.11"] })).toMatchObject({ ok: false })
+  })
+})
+
 describe("an agent moves a layer into and out of a plain group through edit_deck", () => {
   it("joins a shape to a group where it shows, and leave puts it back on the slide", () => {
     const group = landed(edit(indexed(), { op: "group", elements: ["258.2", "258.3"] }))

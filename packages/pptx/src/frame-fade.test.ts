@@ -106,3 +106,25 @@ describe("a faded frame in PowerPoint", () => {
     )
   })
 })
+
+describe("a faded frame inside a faded frame in PowerPoint", () => {
+  function nested(): Register {
+    const inner = framed(50_000 as Alpha)
+    const changed = changeLayout(inner, { wrap: [node(20)], slide, node: node(22), backdrop: node(23) })
+    if (changed === null || !("slide" in changed)) throw new Error("wrap")
+    const fade: Command = {
+      command: "person",
+      v: 13,
+      patch: { layout: { opacity: { set: 50_000 as Alpha } } },
+      node: node(22),
+    }
+    return ran(inner, [{ command: "slide", file, edit: changed.slide }, fade])
+  }
+
+  it("multiplies both frames' opacity into the inner frame's backdrop and children", () => {
+    const shown = written(nested())
+    expect(shownAlphas(shown, at(21)).fills).toBe(25_000)
+    expect(shownAlphas(shown, at(3))).toEqual({ fills: 25_000, border: null, text: 25_000 })
+    expect(shownAlphas(shown, at(5)).fills).toBe(20_000)
+  })
+})

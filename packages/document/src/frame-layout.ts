@@ -15,7 +15,7 @@ import {
   type FrameSource,
   type Member,
 } from "./element-group.js"
-import { memberOf, placeOf, type PlacedRow } from "./group-place.js"
+import { huggedPlace, memberOf, placeOf, type PlacedRow } from "./group-place.js"
 import { dropSpot, joinTurn, spotNow } from "./group-join.js"
 import { rebased } from "./group-space.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
@@ -130,10 +130,59 @@ function boxNow(register: Register, node: ElementId, fallback: Box): Box {
 
 type Settled = (node: ElementId) => Box | null
 
+type Mode = "settled" | "unsettled"
+
 const unsettled: Settled = () => null
 
-function childBox(register: Register, member: Member, settled: Settled): Box {
-  const own = settled(member.node) ?? boxNow(register, member.node, member.box)
+function settledOf(register: Register, mode: Mode): Settled {
+  if (mode === "unsettled") return unsettled
+  return (child) => (groupFrame(register, child) === null ? null : (rebased(register, child)?.place.box ?? null))
+}
+
+function holderOf(register: Register, node: ElementId): ElementId | null {
+  const parent = groupParent(register, node)
+  return typeof parent === "string" && frameBackdrop(register, parent) !== null ? parent : null
+}
+
+function memo<T>(
+  kept: WeakMap<Register, Map<ElementId, T | null>>,
+  register: Register,
+  node: ElementId,
+  made: () => T | null,
+) {
+  const known = kept.get(register) ?? new Map<ElementId, T | null>()
+  kept.set(register, known)
+  if (known.has(node)) return known.get(node) ?? null
+  known.set(node, null)
+  const found = made()
+  known.set(node, found)
+  return found
+}
+
+const views: Readonly<Record<Mode, WeakMap<Register, Map<ElementId, LayoutView | null>>>> = {
+  settled: new WeakMap(),
+  unsettled: new WeakMap(),
+}
+
+const sizes: Readonly<Record<Mode, WeakMap<Register, Map<ElementId, Box | null>>>> = {
+  settled: new WeakMap(),
+  unsettled: new WeakMap(),
+}
+
+function frameSize(register: Register, node: ElementId, mode: Mode): Box | null {
+  return memo(sizes[mode], register, node, () => {
+    const made = frameSource(register, node)
+    return made === null ? null : (arranged(register, node, boxNow(register, node, made.box), mode)?.box ?? null)
+  })
+}
+
+function sizeOf(register: Register, member: Member, mode: Mode): Box {
+  const framed = frameBackdrop(register, member.node) === null ? null : frameSize(register, member.node, mode)
+  return framed ?? settledOf(register, mode)(member.node) ?? boxNow(register, member.node, member.box)
+}
+
+function childBox(register: Register, member: Member, mode: Mode): Box {
+  const own = sizeOf(register, member, mode)
   return { ...member.box, cx: own.cx, cy: own.cy }
 }
 
@@ -141,8 +190,12 @@ function hiddenNow(register: Register, node: ElementId): boolean {
   return traitNow(register, node, "identity").hidden === true
 }
 
-function frameOrigin(register: Register, node: ElementId, made: FrameSource): Box {
-  return boxNow(register, node, made.box)
+function originOf(register: Register, node: ElementId, made: FrameSource, mode: Mode): Box {
+  const own = boxNow(register, node, made.box)
+  const holder = holderOf(register, node)
+  const slot =
+    holder === null ? undefined : layoutIn(register, holder, mode)?.children.find((each) => each.node === node)
+  return slot === undefined ? own : { ...slot.box, cx: own.cx, cy: own.cy }
 }
 
 function laidOut(
@@ -150,7 +203,7 @@ function laidOut(
   made: FrameSource,
   members: readonly Member[],
   origin: Box,
-  settled: Settled,
+  mode: Mode,
   fields: {
     readonly flow: Exclude<Flow, "none">
     readonly gap: number
@@ -161,7 +214,7 @@ function laidOut(
   const horizontal = fields.flow === "horizontal"
   const shown = members.filter((member) => !hiddenNow(register, member.node))
   const slots = shown.map((member) => {
-    const box = childBox(register, member, settled)
+    const box = childBox(register, member, mode)
     const bounds = groupBounds([{ ...member, box }])
     return { member, box, bounds }
   })
@@ -183,7 +236,7 @@ function laidOut(
   }
   const opened = made.box
   for (const member of members.filter((each) => !shown.includes(each))) {
-    const box = childBox(register, member, settled)
+    const box = childBox(register, member, mode)
     children.push({
       node: member.node,
       box: { ...box, x: origin.x + box.x - opened.x, y: origin.y + box.y - opened.y },
@@ -206,27 +259,20 @@ function heldFree(
   made: FrameSource,
   members: readonly Member[],
   origin: Box,
-  settled: Settled,
+  mode: Mode,
 ): readonly LayoutChild[] {
   const opened = made.box
   return members.map((member) => {
-    const fitted = settled(member.node)
+    const framed = frameBackdrop(register, member.node) === null ? null : frameSize(register, member.node, mode)
+    const fitted = framed === null ? settledOf(register, mode)(member.node) : null
     if (fitted !== null) return { node: member.node, box: fitted }
     const box = boxNow(register, member.node, { ...member.box, x: member.box.x - opened.x, y: member.box.y - opened.y })
-    return { node: member.node, box: { ...box, x: origin.x + box.x, y: origin.y + box.y } }
+    const size = framed ?? box
+    return { node: member.node, box: { x: origin.x + box.x, y: origin.y + box.y, cx: size.cx, cy: size.cy } }
   })
 }
 
-export function unsettledLayout(register: Register, node: ElementId): LayoutView | null {
-  return readLayout(register, node, unsettled)
-}
-
-export function readLayout(
-  register: Register,
-  node: ElementId,
-  settled: Settled = (child) =>
-    groupFrame(register, child) === null ? null : (rebased(register, child)?.place.box ?? null),
-): LayoutView | null {
+function arranged(register: Register, node: ElementId, origin: Box, mode: Mode): LayoutView | null {
   const backdrop = frameBackdrop(register, node)
   const made = frameSource(register, node)
   if (backdrop === null || made === null) return null
@@ -236,11 +282,35 @@ export function readLayout(
   const padding = sidesOf(fields.padding)
   const align = layoutAligns.find((each) => each === fields.align) ?? "topLeft"
   const opacity = (typeof fields.opacity === "number" ? fields.opacity : opaque) as Alpha
-  const origin = frameOrigin(register, node, made)
   const view = { node, backdrop, flow, gap, padding, align, opacity }
   const members = frameMembers(register, node)
-  if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin, settled) }
-  return { ...view, ...laidOut(register, made, members, origin, settled, { flow, gap, padding, align }) }
+  if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin, mode) }
+  return { ...view, ...laidOut(register, made, members, origin, mode, { flow, gap, padding, align }) }
+}
+
+function layoutIn(register: Register, node: ElementId, mode: Mode): LayoutView | null {
+  return memo(views[mode], register, node, () => {
+    const made = frameSource(register, node)
+    return made === null ? null : arranged(register, node, originOf(register, node, made, mode), mode)
+  })
+}
+
+export function unsettledLayout(register: Register, node: ElementId): LayoutView | null {
+  return layoutIn(register, node, "unsettled")
+}
+
+export function readLayout(register: Register, node: ElementId): LayoutView | null {
+  return layoutIn(register, node, "settled")
+}
+
+export function huggedSize(register: Register, node: ElementId): Box | null {
+  return frameBackdrop(register, node) === null ? null : frameSize(register, node, "settled")
+}
+
+export function layoutDepth(register: Register, node: ElementId): number {
+  let depth = 0
+  for (let holder = holderOf(register, node); holder !== null; holder = holderOf(register, holder)) depth += 1
+  return depth
 }
 
 export function layoutNodes(register: Register): readonly ElementId[] {
@@ -317,8 +387,7 @@ function wrapped(register: Register, intent: Extract<LayoutIntent, { readonly wr
   for (const node of intent.wrap) {
     const place = placeOf(register, node)
     if (place === null || shapeOf(node).slide !== intent.slide || groupParent(register, node) !== null) return null
-    if (frameBackdrop(register, node) !== null) return null
-    members.push(memberOf(node, place))
+    members.push(memberOf(node, huggedPlace(register, node, place)))
   }
   if (members.length === 0 || new Set(intent.wrap).size !== intent.wrap.length) return null
   const { flow, gap, align, order } = guessed(members)
@@ -331,17 +400,20 @@ function wrapped(register: Register, intent: Extract<LayoutIntent, { readonly wr
   return { slide: "element-group", id: intent.slide, element, members: order, backdrop }
 }
 
+function ownBox(register: Register, node: ElementId, box: Box): Readonly<Record<string, FieldEdit<number>>> {
+  const size = { w: { set: box.cx }, h: { set: box.cy } }
+  const holder = holderOf(register, node)
+  const above = holder === null ? null : readLayout(register, holder)
+  if (above !== null && above.flow !== "none") return size
+  const [x, y] = above === null ? [box.x, box.y] : [box.x - above.box.x, box.y - above.box.y]
+  return { x: { set: x }, y: { set: y }, ...size }
+}
+
 function frozen(register: Register, node: ElementId): readonly PlacedRow[] | null {
   const view = readLayout(register, node)
   if (view === null || view.flow === "none") return null
   const { box } = view
-  const frame: PlacedRow = {
-    node,
-    patch: {
-      layout: { flow: { set: "none" } },
-      box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } },
-    },
-  }
+  const frame: PlacedRow = { node, patch: { layout: { flow: { set: "none" } }, box: ownBox(register, node, box) } }
   const children = view.children.map((child): PlacedRow => ({
     node: child.node,
     patch: { box: { x: { set: child.box.x - box.x }, y: { set: child.box.y - box.y } } },
@@ -352,7 +424,7 @@ function frozen(register: Register, node: ElementId): readonly PlacedRow[] | nul
 export function refrozenRows(register: Register, node: ElementId): readonly PlacedRow[] {
   const made = frameSource(register, node)
   if (made === null || frameNow(register, node) !== "free") return []
-  const origin = frameOrigin(register, node, made)
+  const origin = originOf(register, node, made, "settled")
   return frameMembers(register, node).flatMap((member): PlacedRow[] => {
     const sides = traitNow(register, member.node, "box")
     const box: Record<string, FieldEdit<number>> = {}

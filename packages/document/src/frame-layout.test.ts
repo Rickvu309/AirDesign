@@ -277,7 +277,7 @@ describe("frame without auto layout", () => {
 })
 
 describe("auto layout added back", () => {
-  it("lays a frame without auto layout out again from where its children sit, and refuses an auto layout frame", () => {
+  it("lays a frame without auto layout out again from where its children sit, and wraps an auto layout frame in a new one", () => {
     const before = set(wrapped(), frame, { layout: { gap: { set: 50 } } })
     const removed = changeLayout(before, { remove: frame })
     if (removed === null || !("rows" in removed)) throw new Error("remove")
@@ -297,8 +297,14 @@ describe("auto layout added back", () => {
     )
     expect(readLayout(after, frame)?.children.map((child) => child.box.x)).toEqual([100, 300, 400])
     expect(changeLayout(after, { reflow: frame })).toBeNull()
-    expect(
-      changeLayout(after, { wrap: [frame], slide, node: elementId("256.30"), backdrop: elementId("256.31") }),
-    ).toBeNull()
+    const nested = changeLayout(after, {
+      wrap: [frame],
+      slide,
+      node: elementId("256.30"),
+      backdrop: elementId("256.31"),
+    })
+    expect(nested !== null && "slide" in nested ? nested.slide.members.map((member) => member.node) : null).toEqual([
+      frame,
+    ])
   })
 })
