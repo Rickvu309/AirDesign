@@ -1,7 +1,7 @@
-import { decide, elementId, openRegister, type Command, type Register } from "@airdesign/document"
+import { decide, elementId, openRegister, slideId, type Command, type Register } from "@airdesign/document"
 import { paintStore } from "@airdesign/render"
 import { expect, it } from "vitest"
-import { busyElements, liveRepaint } from "./live-repaint"
+import { busyElements, liveRepaint, shownValue } from "./live-repaint"
 
 const node = elementId("256.2")
 const other = elementId("256.3")
@@ -124,4 +124,27 @@ it("paints an undo of an element whose own edit is still on its way to the serve
   repaint(openRegister("", "deck"), "person")
   expect(store.getElement(node)?.text).toBe("Hello")
   expect(store.getBox(node)).toBeNull()
+})
+
+it("shows the words of a text layer copied inside a group, not the empty text its file holds", () => {
+  const words = '[{"from":0,"runs":[{"from":0,"text":"Label"}]}]'
+  const layer = elementId("256.7")
+  const register: Register = {
+    ...openRegister("", "deck"),
+    order: [
+      {
+        slide: "element-clone",
+        id: slideId("256"),
+        source: elementId("256.4"),
+        element: { node: elementId("256.5"), kind: "group", value: null, box, grouped: false },
+        layers: [
+          {
+            source: elementId("256.3"),
+            element: { node: layer, kind: "shape", value: words, box, grouped: true, group: elementId("256.5") },
+          },
+        ],
+      },
+    ],
+  }
+  expect(shownValue(register, layer, "")).toBe(words)
 })
