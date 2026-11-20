@@ -1,0 +1,9 @@
+2026-11-17T07:27:51.1008230Z ##[error]apps/web build: src/design/controls/text.test.tsx(158,43): error TS2769: No overload matches this call.
+2026-11-17T07:27:51.1021444Z apps/web build:   The last overload gave the following error.
+2026-11-17T07:27:51.1028720Z apps/web build:     Object literal may only specify known properties, and 'behind' does not exist in type 'Palette'.
+2026-11-17T07:27:51.1045555Z ##[error]apps/web build: src/design/controls/text.test.tsx(223,43): error TS2769: No overload matches this call.
+2026-11-17T07:27:51.1047689Z apps/web build:   The last overload gave the following error.
+2026-11-17T07:27:51.1049008Z apps/web build:     Object literal may only specify known properties, and 'behind' does not exist in type 'Palette'.
+2026-11-17T07:27:51.1050014Z apps/web build: Failed
+2026-11-17T07:27:51.1054785Z fail build 5.9s
+2026-11-17T07:29:20.5656401Z failed: build

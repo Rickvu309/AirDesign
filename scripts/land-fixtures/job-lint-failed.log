@@ -1,0 +1,7 @@
+2026-11-17T09:09:17.7451743Z packages/catalog lint: Found 1 warning and 0 errors.
+2026-11-17T09:09:17.7529016Z apps/web lint: ::error file=src/font-notice.ts,line=1,endLine=1,col=10,endColumn=15,title=eslint(no-restricted-imports)::src/font-notice.ts:1:10: 'toast' import from 'sonner' is restricted.
+2026-11-17T09:09:17.7659965Z apps/web lint: Found 50 warnings and 1 error.
+2026-11-17T09:09:17.7664809Z apps/api lint: Found 1 warning and 0 errors.
+2026-11-17T09:09:17.7666675Z apps/web lint: Failed
+2026-11-17T09:09:17.7671471Z fail lint 1.5s
+2026-11-17T09:09:17.9344418Z failed: lint

@@ -1,4 +1,4 @@
-import { failedSteps, failedTests } from "./failed-tests.mjs"
+import { failedCauses, failedScripts, failedSteps, failedTests } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 
 const queueBase = (branch) => /^gh-readonly-queue\/main\/pr-\d+-([0-9a-f]{40})$/.exec(branch)?.[1]
@@ -55,7 +55,8 @@ const snapshotLines = ({ repository, run, git, gh, files }) => {
 export const ciFailureLines = ({ repository, run, gh, git, read = failedJobLogs({ repository, run, gh }) }) => {
   const { logs, warnings } = read
   const steps = [...new Set(logs.flatMap(failedSteps))]
-  const tests = failedTests(logs.join("\n"))
+  const joined = logs.join("\n")
+  const tests = [...failedTests(joined), ...failedScripts(joined)]
   const lines = [
     `ci run ${run.id} (${run.event}) failed in ${steps.length > 0 ? steps.join(", ") : "a step that left no name"}.`,
     ...warnings.map((warning) => `  ${warning}`),
@@ -65,7 +66,16 @@ export const ciFailureLines = ({ repository, run, gh, git, read = failedJobLogs(
     lines.push(`  ${where}: ${test.name}`)
     if (test.error !== "") lines.push(`    ${test.error}`)
   }
-  if (tests.length === 0)
+  const causes = tests.length === 0 ? failedCauses(joined) : []
+  for (const cause of causes) {
+    if (cause.lines.length === 1 && cause.more === 0) {
+      lines.push(`  ${cause.step}: ${cause.lines[0]}`)
+      continue
+    }
+    lines.push(`  ${cause.step}:`, ...cause.lines.map((line) => `    ${line}`))
+    if (cause.more > 0) lines.push(`    and ${cause.more} more`)
+  }
+  if (tests.length === 0 && causes.length === 0)
     lines.push("  no failed test was named in the log. Read it with: gh run view " + run.id + " --log-failed")
   const artifacts = gh(["api", `repos/${repository}/actions/runs/${run.id}/artifacts`, "--jq", ".artifacts[].name"])
   for (const name of artifacts.stdout.split("\n").filter((line) => line.startsWith("test-results"))) {
