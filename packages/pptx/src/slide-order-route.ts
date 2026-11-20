@@ -146,6 +146,7 @@ function elementsShown(
   let next = parts
   for (const [shape, shown] of shapes ?? []) {
     const passing = !shown.start && !shown.now && replayed.has(shape)
+    if (now && shown.source !== undefined) continue
     if (!passing && (shown.start === shown.now || shown.now !== now)) continue
     next = now ? elementAdded(next, part, shape, shown, media) : applyRoute(next, { name: "remove", part, shape })
   }
@@ -154,7 +155,7 @@ function elementsShown(
 
 function replayedShapes(state: GroupedState, from: SlideId, upTo: number): ReadonlySet<string> {
   const nodes = state.order.slice(0, upTo).flatMap((command) => {
-    if (command.slide === "element-clone" && command.id === from) return [command.source]
+    if (command.slide === "element-clone" && command.id === from) return [command.source, command.element.node]
     if (!groupCommand(command) || command.id !== from) return []
     if (command.slide === "element-group") return command.members.map((member) => member.node)
     return command.slide === "element-join" ? [command.member.node] : []

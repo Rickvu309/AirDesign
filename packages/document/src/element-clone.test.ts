@@ -121,7 +121,7 @@ describe("element clone", () => {
     ])
   })
 
-  it("refuses a copy of a group, a layer inside one, a chart, a gone layer, a used id or another slide's layer", () => {
+  it("refuses a copy of a group or a layer whose group's own space is unknown, a chart, a gone layer, a used id or another slide's layer", () => {
     const refused = (edit: SlideCommand) => decide(indexed, { command: "slide", file, edit }).decision
     const cloned = cloneOf(indexed, title, copy, box)
     if (!cloned.ok) throw new Error(cloned.refusal)

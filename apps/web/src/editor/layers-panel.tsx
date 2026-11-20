@@ -56,6 +56,7 @@ export type LayersSource = {
   readonly joins?: (node: ElementId, parent: ElementId | null) => boolean
   readonly onStack?: (node: ElementId, move: StackMove) => void
   readonly onFrame?: (nodes: readonly ElementId[]) => void
+  readonly onDuplicate?: (nodes: readonly ElementId[]) => void
   readonly onFlag?: (nodes: readonly ElementId[], flag: LayerFlag, on: boolean) => void
 }
 
@@ -140,6 +141,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
     joins,
     onStack,
     onFrame,
+    onDuplicate,
     onFlag,
   } = layers
   const list = useRef<HTMLDivElement>(null)
@@ -241,6 +243,11 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
     if (gesture === "frame" && onFrame !== undefined && selected.length > 0 && editorOwnsKey(event)) {
       event.preventDefault()
       onFrame(selected)
+      return
+    }
+    if (gesture === "duplicate" && onDuplicate !== undefined && editorOwnsKey(event)) {
+      event.preventDefault()
+      onDuplicate(selected.includes(layer.node) ? selected : [layer.node])
     }
   }
 

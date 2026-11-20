@@ -1,5 +1,5 @@
 import { openRegister, readLayout, type ElementId } from "@airdesign/document"
-import type { CanvasSlide, Selection } from "@airdesign/render"
+import { boxOf, type CanvasSlide, type Copied, type Moved, type Selection } from "@airdesign/render"
 import { useEffect, useMemo, useRef } from "react"
 import type { CommitOutcome } from "@/commit-edit"
 import { changeDesign, type DesignDeck } from "@/design/design-change"
@@ -18,9 +18,19 @@ export type LayeringDeck = DesignDeck & {
   readonly selection: Selection
   readonly select: (selection: Selection) => void
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
+  readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
 }
 
-function insideOf(slide: CanvasSlide | null, node: ElementId): ElementId | null {
+function copiesOf(deck: LayeringDeck, slide: CanvasSlide | null, nodes: readonly ElementId[]): readonly Moved[] {
+  const store = deck.shown.store.current
+  return nodes.flatMap((id) => {
+    const painted = slide?.elements.find((each) => each.id === id)?.box ?? null
+    const box = store.getBox(id) ?? (painted === null ? null : boxOf(painted))
+    return box === null ? [] : [{ id, box }]
+  })
+}
+
+function insideOf(slide: CanvasSlide | null, node: ElementId | null): ElementId | null {
   return slide?.elements.find((each) => each.id === node)?.group?.id ?? null
 }
 
@@ -113,6 +123,12 @@ export function LiveLayers({
         },
         onStack: (node, move) => void deck.changeElement({ change: "order", node, move }),
         onFrame: (nodes) => void deck.changeElement({ change: "plain-frame", nodes }),
+        onDuplicate: (nodes) => {
+          const inside = insideOf(canvas, nodes[0] ?? null)
+          void deck.duplicateLayers?.(copiesOf(deck, canvas, nodes)).then((made) => {
+            if (made.length > 0) deck.select({ ids: made.map((each) => each.copy), inside })
+          })
+        },
         onFlag: (nodes, flag, on) => setLayerFlag(deck, nodes, flag, on),
       }}
     />

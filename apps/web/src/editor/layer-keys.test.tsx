@@ -246,4 +246,32 @@ describe("LayersPanel shortcuts", () => {
     ])
     expect(framed).toEqual([[topId]])
   })
+
+  it("duplicates the selection with Ctrl or Cmd+D on a focused row instead of letting the browser bookmark it", async () => {
+    const copied: (readonly ElementId[])[] = []
+    const host = document.createElement("div")
+    document.body.append(host)
+    const root = createRoot(host)
+    hosts.push({ host, root })
+    await act(async () => {
+      root.render(
+        createElement(LayersPanel, {
+          layers: { tree, selected: [topId, frameId], onDuplicate: (nodes) => copied.push(nodes) },
+        }),
+      )
+    })
+    const row = host.querySelector<HTMLElement>(`[data-layer-row="${topId}"]`)
+    if (row === null) throw new Error("no row")
+    const events: KeyboardEvent[] = []
+    await act(async () => {
+      row.focus()
+      events.push(keydown(row, "d", { code: "KeyD", ctrlKey: true }))
+      events.push(keydown(row, "d", { code: "KeyD", metaKey: true }))
+    })
+    expect(events.map((event) => event.defaultPrevented)).toEqual([true, true])
+    expect(copied).toEqual([
+      [topId, frameId],
+      [topId, frameId],
+    ])
+  })
 })

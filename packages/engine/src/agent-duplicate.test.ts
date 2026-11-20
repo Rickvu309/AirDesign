@@ -76,14 +76,26 @@ describe("an agent duplicates layers through edit_deck", () => {
     expect(elementGone(undone.register, node(2))).toBe(false)
   })
 
-  it("refuses a group, a layer inside a group and a layer it cannot find, and changes nothing", () => {
-    const deck = indexed()
-    const refusal = (elements: readonly string[]) => {
-      const result = edit(deck, { op: "duplicate", elements })
-      return result.ok ? "landed" : result.refusal
-    }
-    expect(refusal(["258.4"])).toBe("kind")
-    expect(refusal(["258.5"])).toBe("group-box")
-    expect(refusal(["258.2", "258.40"])).toBe("dead")
+  it("copies a group with its layers, and a layer inside a group into that group just above it", () => {
+    const deck = landed(edit(indexed(), { op: "duplicate", elements: ["258.4", "258.5"] }))
+    expect(deck.register.order).toMatchObject([
+      {
+        runId: "run",
+        source: "258.4",
+        element: { node: "258.9", kind: "group", box: elements[2]?.box },
+        layers: [
+          { source: "258.5", element: { node: "258.10", group: "258.9" } },
+          { source: "258.6", element: { node: "258.11", group: "258.9" } },
+        ],
+      },
+      { runId: "run", source: "258.5", element: { node: "258.12", group: "258.4", box: elements[3]?.box } },
+    ])
+    const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
+    for (const copy of [9, 10, 11, 12]) expect(elementGone(undone.register, node(copy))).toBe(true)
+  })
+
+  it("refuses a layer it cannot find, and changes nothing", () => {
+    const result = edit(indexed(), { op: "duplicate", elements: ["258.2", "258.40"] })
+    expect(result.ok ? "landed" : result.refusal).toBe("dead")
   })
 })

@@ -138,7 +138,7 @@ export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { type FileSection } from "./section-order.js"
 export { slideGroups } from "./slide-groups.js"
-export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
+export { clonedLayer, floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { type TransitionValue } from "./trait-transition.js"
 export { widestEffect } from "./trait-effects.js"
 export {
@@ -218,7 +218,7 @@ export {
   plainGroup,
   type Member,
 } from "./element-group.js"
-export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
+export { groupOf, openingPlace, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
 export { followsGroups, rebased, rebasedGroups, shownPlace, storedPlace } from "./group-space.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 export { fittedPlace } from "./group-space.js"

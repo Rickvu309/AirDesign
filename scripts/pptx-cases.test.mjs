@@ -30,6 +30,7 @@ assert.deepEqual(
     "element-order.mjs",
     "frame.mjs",
     "gradient-kept.mjs",
+    "group-duplicate.mjs",
     "group-join.mjs",
     "group-transform.mjs",
     "group.mjs",
@@ -148,9 +149,9 @@ assert.deepEqual(caseSpecs([writing, good]), good.specs)
 assert.deepEqual(caseExports([writing, good]), good.exports)
 assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
 assert.deepEqual(caseWritten(entries).slice(0, 3), [
+  "written-group-duplicate.pptx",
   "written-group-join.pptx",
   "written-group-transform.pptx",
-  "written-section-split.pptx",
 ])
 
 const out = scenario({})

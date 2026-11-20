@@ -3,11 +3,13 @@ import {
   groupCommand,
   groupNode,
   landedPatch,
+  openingPlace,
   madeGroup,
   plainGroup,
   shapeOf,
   throughGroup,
   type DeckIndex,
+  type ElementClone,
   type Member,
   type Place,
   type Register,
@@ -18,6 +20,7 @@ import {
 import { arrangeSlide } from "./element-stack-route.js"
 import { joinShape, regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
+import { applyStructuralRoute } from "./structural-route.js"
 import { requireMarkup } from "./part-markup.js"
 import { removeShape } from "./slide-route.js"
 import { writeTrait } from "./trait-xml.js"
@@ -71,12 +74,33 @@ function holds(bytes: Uint8Array, shapes: readonly string[]): boolean {
   return shapes.every((shape) => elements.some((mark) => mark.kind === "p:cNvPr" && mark.id === shape))
 }
 
+function clonedLayers(parts: Parts, minted: string, part: string, command: ElementClone): Parts {
+  const layers = command.layers ?? []
+  const ids = layers.map(({ source, element }) => [shapeOf(source).shape, Number(shapeOf(element.node).shape)] as const)
+  const copy = Number(shapeOf(command.element.node).shape)
+  const source = shapeOf(command.source).shape
+  let next: Parts = applyStructuralRoute(parts, { name: "spTree.clone", part, shape: source, id: copy, ids })
+  const grouped = command.element.grouped ? [command.element] : []
+  for (const element of [...grouped, ...layers.map((layer) => layer.element)]) {
+    const place = openingPlace(element)
+    const where = { slide: minted, part, shape: shapeOf(element.node).shape }
+    if (place !== null && element.framing === undefined) next = writeTrait(next, where, "box", boxPatch(place))
+  }
+  return next
+}
+
 export function groupsReplayed(parts: Parts, minted: string, from: SlideId, state: GroupedState, upTo: number): Parts {
   const saved = new Map<string, SavedGroup>()
   const passed = new Set<string>()
   let next = parts
   for (let at = 0; at < upTo; at += 1) {
     const command = state.order[at]
+    if (command?.slide === "element-clone" && command.id === from) {
+      const part = slidePart(next, minted)
+      if (part === null) throw new Error("slide")
+      if (holds(bytesOf(next, part), [shapeOf(command.source).shape])) next = clonedLayers(next, minted, part, command)
+      continue
+    }
     if (command === undefined || !groupCommand(command) || command.id !== from) continue
     const part = slidePart(next, minted)
     if (part === null) throw new Error("slide")

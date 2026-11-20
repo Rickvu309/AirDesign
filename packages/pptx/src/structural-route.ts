@@ -22,7 +22,13 @@ export type StructuralEdit =
     } & ShapeBox)
   | { readonly name: "spTree.remove"; readonly part: string; readonly shape: string }
   | { readonly name: "spTree.order"; readonly part: string; readonly shape: string; readonly before: string }
-  | { readonly name: "spTree.clone"; readonly part: string; readonly shape: string; readonly id?: number }
+  | {
+      readonly name: "spTree.clone"
+      readonly part: string
+      readonly shape: string
+      readonly id?: number
+      readonly ids?: readonly (readonly [string, number])[]
+    }
   | { readonly name: "sldIdLst.add"; readonly after: string; readonly id?: string; readonly layout?: string }
   | { readonly name: "sldIdLst.remove"; readonly slide: string }
   | { readonly name: "sldIdLst.order"; readonly slide: string; readonly before: string }
@@ -64,7 +70,7 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       editPart(next, route.part, (bytes) => orderShape(bytes, route.shape, route.before))
       return { parts: next, id: null }
     case "spTree.clone":
-      editPart(next, route.part, (bytes) => cloneShape(bytes, route.shape, route.id))
+      editPart(next, route.part, (bytes) => cloneShape(bytes, route.shape, route.id, new Map(route.ids ?? [])))
       return { parts: next, id: null }
     case "sldIdLst.add":
       return { parts: next, id: addSlide(next, route.after, false, route.id, route.layout) }

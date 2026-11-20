@@ -19,16 +19,40 @@ export function orderShape(bytes: Uint8Array, shape: string, before: string): Ui
   return moveBytes(bytes, shapeById(document.elements, shape), shapeById(document.elements, before))
 }
 
-export function cloneShape(bytes: Uint8Array, shape: string, id?: number): Uint8Array {
+const connectionEnds = new Set(["a:stCxn", "a:endCxn"])
+
+function reconnected(piece: Uint8Array, copies: ReadonlyMap<string, string>): Uint8Array {
+  const edits = requireMarkup(piece).elements.flatMap((element) => {
+    if (!connectionEnds.has(element.kind)) return []
+    const id = element.attributes.find((item) => item.name === "id")
+    const copy = id === undefined ? undefined : copies.get(id.value)
+    return id === undefined || copy === undefined
+      ? []
+      : [{ start: id.valueStart, end: id.valueEnd, next: encodeUtf8(copy) }]
+  })
+  return spliceBytes(piece, edits)
+}
+
+export function cloneShape(
+  bytes: Uint8Array,
+  shape: string,
+  id?: number,
+  ids: ReadonlyMap<string, number> = new Map(),
+): Uint8Array {
   const document = requireMarkup(bytes)
   const found = shapeById(document.elements, shape)
   let piece: Uint8Array = new Uint8Array(bytes.subarray(found.start, found.end))
   const marks = requireMarkup(piece).elements.filter((element) => element.kind === "p:cNvPr" && element.id !== null)
-  let next = Math.max(nextShapeId(decodeUtf8(bytes)), id === undefined ? 0 : id + 1)
+  const named = [...ids.values(), ...(id === undefined ? [] : [id])]
+  let next = Math.max(nextShapeId(decodeUtf8(bytes)), ...named.map((each) => each + 1))
+  const copies = new Map<string, string>()
   for (const mark of marks.slice().reverse()) {
     if (mark.id === null) continue
-    piece = replaceShapeId(piece, mark.id, String(id !== undefined && mark.id === shape ? id : next))
-    if (id === undefined || mark.id !== shape) next += 1
+    const given = id !== undefined && mark.id === shape ? id : ids.get(mark.id)
+    const copy = given ?? next
+    piece = replaceShapeId(piece, mark.id, String(copy))
+    copies.set(mark.id, String(copy))
+    if (given === undefined) next += 1
   }
-  return insertAt(bytes, found.end, piece)
+  return insertAt(bytes, found.end, reconnected(piece, copies))
 }

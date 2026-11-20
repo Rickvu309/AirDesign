@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "05bb311706f6",
-      "blob": "114b1283c48003538508869113c268a9d5822a56"
+      "digest": "585c5d6297f8",
+      "blob": "a30e60c7cb9a2eaa6ca10094306612d71038c6ba"
     },
     {
       "file": "packages/document/src/group-place.ts",
@@ -52,8 +52,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal"],
-      "digest": "da012ed719bf",
-      "blob": "d953eff47194d83d0d24ff3faa3b462d30b561cf"
+      "digest": "dab51710f9b7",
+      "blob": "60bb1137ce7a37da010ed1a38b2182fad0cc657f"
     }
   ]
 }

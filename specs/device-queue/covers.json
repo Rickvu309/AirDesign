@@ -4,14 +4,14 @@
     {
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
-      "digest": "b401ec0af045",
-      "blob": "33b096a1cfaaa16080c7258ef5a120988c14059b"
+      "digest": "ac2b3ba85ed1",
+      "blob": "8af14e1c5da945aac922912b0a0bee6ef0696347"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
       "digest": "b561187b2f9c",
-      "blob": "24fcb6f4210eb285da143a4316d59ce92a822358"
+      "blob": "e7734f71603a19d5a05bed06fa87fd4e5bafd5db"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
@@ -22,8 +22,8 @@
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack", "sent", "sentCommand", "recorded"],
-      "digest": "995e796e5312",
-      "blob": "099e57517effc643b12289a6fa768e9c039a63a9"
+      "digest": "e4664f459c4a",
+      "blob": "787c0bc93b538c9c5838a7561f7f216184647994"
     },
     {
       "file": "apps/web/src/commit-edit.ts",
@@ -41,7 +41,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf"],
       "digest": "7e4cd4c8fc38",
-      "blob": "8d92ad7d0dc4c6280072daf9b2987a9dc575cede"
+      "blob": "f53394fc17a3f1606438a2547bd6d01d8f714cdf"
     },
     {
       "file": "packages/live/src/cache.ts",
@@ -53,7 +53,7 @@
       "file": "packages/live/src/held.ts",
       "names": ["sealRows", "confirmRows", "setAside", "takeAside"],
       "digest": "50057fb616a2",
-      "blob": "f832cf83221d4c8aa4acb4368cd0d6a13879861b"
+      "blob": "8245f3986054625d1edc292f6d6ffe0762d25640"
     },
     {
       "file": "packages/live/src/slide-replay.ts",

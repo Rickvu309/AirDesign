@@ -2,15 +2,15 @@ import type { WireGroup } from "@airdesign/catalog"
 import {
   changeLayout,
   cloneOf,
-  currentBox,
   decide,
   elementId,
   format,
   groupOf,
   nextElementId,
-  openingElement,
+  readLayout,
   readSlideId,
   shapeOf,
+  shownPlace,
   slideMeasure,
   ungroupRows,
   type ElementId,
@@ -124,8 +124,7 @@ function duplicated(deck: Deck, elements: readonly ElementId[], runId: string, b
     const opened = ready({ deck: deck.id, base }, deck, slide, runId)
     if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
     const measure = slide === undefined ? undefined : slideMeasure(register, slide)
-    const body = register.elements[source]
-    const box = (body === undefined ? null : currentBox(body)) ?? openingElement(register, source)?.box ?? null
+    const box = shownPlace(register, source)?.box ?? readLayout(register, source)?.box ?? null
     if (slide === undefined || measure === undefined || box === null) return dead
     const cloned = cloneOf(register, source, nextElementId(register, slide, measure.free), box)
     if (!cloned.ok) return { ok: false, refusal: cloned.refusal }

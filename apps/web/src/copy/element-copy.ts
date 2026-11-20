@@ -10,8 +10,8 @@ export const elementCopy = {
   },
   copyRefusedTitle: "Unable to duplicate this layer",
   copyRefusedBody: {
-    kind: "It is a group, chart or table, and AirDesign can't duplicate those yet.",
-    "group-box": "It is part of a group, and AirDesign can't duplicate those yet.",
+    kind: "It is a chart or table, or a group that holds one, and AirDesign can't duplicate those yet.",
+    "group-box": "It is inside a frame, and AirDesign can't duplicate layers in a frame yet.",
     present: "It shows the slide number, and each slide has one.",
   },
 } as const satisfies {
