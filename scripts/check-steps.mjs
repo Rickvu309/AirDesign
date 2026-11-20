@@ -68,7 +68,7 @@ const rows = [
     gate: { order: 3 },
     showOnSuccess: true,
   },
-  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 12 } },
+  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 13 } },
   {
     name: "test-imports",
     kind: "rule",
@@ -78,7 +78,7 @@ const rows = [
     preflight: true,
     gate: { order: 1 },
   },
-  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 11 } },
+  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 12 } },
   {
     name: "unit-tests",
     kind: "tests",
@@ -145,7 +145,7 @@ const rows = [
     kind: "report",
     command: "node",
     args: ["scripts/sweep.mjs"],
-    gate: { order: 13 },
+    gate: { order: 14 },
     showOnSuccess: true,
   },
   {
@@ -155,6 +155,15 @@ const rows = [
     args: ["scripts/commit-authors.mjs"],
     preflight: true,
     gate: { order: 7 },
+    showOnSuccess: true,
+  },
+  {
+    name: "linear-branch",
+    kind: "rule",
+    command: "node",
+    args: ["scripts/linear-branch.mjs"],
+    preflight: true,
+    gate: { order: 11 },
     showOnSuccess: true,
   },
   { name: "commit-titles", kind: "rule", command: "node", args: ["scripts/commit-titles.mjs"], verdict: "warn" },

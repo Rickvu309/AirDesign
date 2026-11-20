@@ -12,7 +12,8 @@ const landWith = async ({ body, pullBody, changedFiles = "", args = ["--check"] 
   const git = (command) => {
     const [name] = command
     if (name === "rev-parse") return ok("work\n")
-    if (name === "status" || name === "fetch" || name === "cat-file" || name === "merge-base") return ok()
+    if (name === "status" || name === "fetch" || name === "cat-file" || name === "merge-base" || name === "log")
+      return ok()
     if (name === "diff") return ok(command.includes("--name-only") ? changedFiles : "")
     if (name === "merge-tree") return { status: 1, stdout: "tree\nAGENTS.md\n\nCONFLICT\n", stderr: "" }
     throw new Error(`unexpected git ${command.join(" ")}`)

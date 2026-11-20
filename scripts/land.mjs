@@ -13,6 +13,7 @@ import { judgeCheck } from "./land-check.mjs"
 import { followPull } from "./land-follow.mjs"
 import { behindMain, conflictsWithMain, currentBranch, dirtyFiles, runner, succeeds } from "./land-git.mjs"
 import { statusLines } from "./land-status.mjs"
+import { mergesSince, rebuildBranch, rebuildLine } from "./linear-branch.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
@@ -185,6 +186,12 @@ export const land = async (ctx) => {
       const retitle = args.title === undefined ? ` Retitle it: pnpm land --title "...".` : ""
       if (fault !== undefined) stop("title", `${named} is ${fault}. ${titleAdvice}${retitle}`)
       line("title", `${[...title].length} characters, within the limit of ${titleLimit}`)
+    }
+    if (mergesSince(git).length === 0) line("linear", "no merge commit since origin/main")
+    else {
+      const rebuilt = rebuildBranch(git, { message: title })
+      if (!rebuilt.ok) stop("linear", rebuilt.why)
+      line("linear", rebuildLine(rebuilt))
     }
     const bodyFromFile = readBody(readText, args.bodyFile, stop)
     const body = bodyFromFile ?? pull?.body

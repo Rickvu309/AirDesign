@@ -62,6 +62,7 @@ export const harness = (options = {}) => {
     mainMigrations = migrationsOf("a", "b"),
     headMigrations = migrationsOf("a", "b", "c"),
     markerFiles = [],
+    merges: mergeSubjects = [],
     staleDiff = "",
     staleLog = "",
     checkRuns = [{ status: 0, output: "ok lint 1s\n" }],
@@ -78,7 +79,9 @@ export const harness = (options = {}) => {
   const git = (command) => {
     log.push(`git ${command.join(" ")}`)
     const [name] = command
-    if (name === "rev-parse") return ok(`${branch}\n`)
+    if (name === "rev-parse") return ok(command.some((word) => word.endsWith("^{tree}")) ? "tree\n" : `${branch}\n`)
+    if (name === "commit-tree") return ok("rebuilt1111\n")
+    if (name === "reset") return ok()
     if (name === "status") return ok(dirty)
     if (name === "fetch") return ok()
     if (name === "merge-tree")
@@ -96,6 +99,9 @@ export const harness = (options = {}) => {
     if (name === "cat-file") return ok()
     if (name === "diff") return ok(command.includes("--raw") ? staleDiff : "")
     if (name === "merge-base") return ok("base\n")
+    if (name === "log" && command.includes("--merges"))
+      return ok(mergeSubjects.map((subject, at) => `${String(at + 1).repeat(40)}\0${subject}\n`).join(""))
+    if (name === "log" && command.includes("--no-merges")) return ok("Finish the work\n")
     if (name === "log") return ok(command.includes("--raw") ? staleLog : "")
     throw new Error(`unexpected ${command.join(" ")}`)
   }
