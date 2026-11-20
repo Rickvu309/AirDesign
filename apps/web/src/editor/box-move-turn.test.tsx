@@ -1,6 +1,7 @@
 import {
   decide,
   elementId,
+  maskTurn,
   openRegister,
   placeOf,
   plainFrameTurn,
@@ -102,14 +103,15 @@ function Deck(props: { readonly selected: Selection; readonly exposed: (deck: Ex
   })(800)
 }
 
-async function boxDeck(start: Register, node: ElementId, inside: ElementId | null) {
+async function boxDeck(start: Register, node: ElementId, inside: ElementId | null, beforeBox?: () => Promise<void>) {
   let register = start
   const sends: (() => void)[] = []
   device.link = {
     openDeck: async () => ({ ok: true, register }),
-    enqueueBox(_deck: string, box: Box, target: ElementId) {
+    async enqueueBox(_deck: string, box: Box, target: ElementId) {
+      await beforeBox?.()
       register = applied(register, { command: "person", node: target, property: "box", value: box })
-      return Promise.resolve({ ok: true, painted: box })
+      return { ok: true, painted: box }
     },
     enqueueRow(_deck: string, row: Row, target: ElementId) {
       register = applied(register, { command: "person", node: target, v: row.v, patch: row.patch })
@@ -190,6 +192,14 @@ afterAll(() => {
   window.close()
 })
 
+function heldAnswer() {
+  let answer: () => void = () => undefined
+  const waiting = new Promise<void>((resolve) => {
+    answer = resolve
+  })
+  return { waiting, answer }
+}
+
 it("undoes a nudge when Undo comes straight after it, before the device has stored the nudge", async () => {
   const start = opened()
   const moving = await boxDeck(start, wide, null)
@@ -216,4 +226,43 @@ it("lets the next turn run while the server has not answered a nudge that takes 
   expect(moving.exposed().undo.undoList.current.undo.map((entry) => entry.name)).toEqual(["move"])
   expect(moving.sends.length).toBeGreaterThan(0)
   expect(next).toBe(true)
+})
+
+it("keeps every nudge inside a mask while earlier nudges repaint", async () => {
+  const register = opened()
+  const masked = maskTurn(register, [slide], slide, frame, [small, wide], small)
+  if (masked === null) throw new Error("mask group")
+  const start = masked.commands.reduce(applied, register)
+  const first = heldAnswer()
+  const second = heldAnswer()
+  const writingSecond = heldAnswer()
+  let writes = 0
+  const moving = await boxDeck(start, wide, frame, async () => {
+    writes += 1
+    if (writes === 1) await first.waiting
+    if (writes === 2) {
+      writingSecond.answer()
+      await second.waiting
+    }
+  })
+  const before = boxOn(start, wide)
+  if (before === null) throw new Error("missing masked layer")
+  await act(async () => {
+    moving.nudge("ArrowRight", true)
+    moving.nudge("ArrowRight", true)
+    moving.nudge("ArrowRight", true)
+    first.answer()
+    await writingSecond.waiting
+  })
+  await act(async () => {
+    moving.nudge("ArrowRight", true)
+    second.answer()
+    await moving.exposed().undo.turning.current
+  })
+  expect(boxOn(moving.register(), wide)).toEqual({ ...before, x: before.x + 4 * 127_000 })
+  await act(async () => {
+    moving.exposed().buttons.onUndo()
+    await moving.exposed().undo.turning.current
+  })
+  expect(boxOn(moving.register(), wide)).toEqual({ ...before, x: before.x + 3 * 127_000 })
 })

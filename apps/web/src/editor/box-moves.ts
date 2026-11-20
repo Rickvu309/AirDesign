@@ -1,0 +1,138 @@
+import type { Box, ElementId, Register } from "@airdesign/document"
+import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
+import type { Moved, PaintStore } from "@airdesign/render"
+import { cornersPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
+import type { DesignDeck } from "@/design/design-change"
+import { deviceRegister } from "@/device-copy"
+import { commitPlace } from "@/editor/group-actions"
+import { landedBox, paintedBox, shownBox } from "@/element-move"
+import { storedBox } from "@/frame-boxes"
+import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
+import { indexedRegister } from "@/indexed-register"
+import { resizedCorners } from "@/resized-corners"
+import { boxName } from "@/undo-names"
+
+type RestBox = (target: ElementId, box: Box | null) => void
+
+const movesInFlight = new WeakMap<PaintStore, Map<ElementId, Box>>()
+
+export function boxMoves({ id, shown, undo, settle }: DesignDeck): (moved: readonly Moved[]) => Promise<void> {
+  const { store, movables, shapes, canvases, current, bound, shownParts, shownRegister, showEdited } = shown
+  const { record } = undo
+
+  async function placed(only: Moved, rest: RestBox): Promise<"moved" | "kept" | "refused" | "stored"> {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) return "moved"
+    const parts = shownParts.current
+    const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
+      if (undoable !== null) record({ name: "move", undoable })
+      await showEdited(current)
+    })
+    if (outcome === "kept") rest(only.id, landedBox(await deviceRegister(id), only.id))
+    const register = shownRegister.current
+    if (outcome === "stored" && register !== null) rest(only.id, landedBox(indexedRegister(parts, register), only.id))
+    return outcome
+  }
+
+  async function storeMoved(
+    moved: readonly Moved[],
+    boxes: readonly BoxCommit[],
+    framing: Register | null,
+    rest: RestBox,
+  ): Promise<CommitOutcome | "stored" | null> {
+    const [only] = moved
+    const place = moved.length === 1 && only !== undefined ? await placed(only, rest) : "moved"
+    if (place === "kept") return null
+    if (place !== "moved") return place
+    const opening = connect(memoryRemote()).openDeck(id)
+    async function refused(target: ElementId) {
+      rest(target, landedBox(await deviceRegister(id), target))
+    }
+    for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
+    const stored = await storeBoxes(
+      connect,
+      id,
+      boxes,
+      async (kept) => {
+        const opened = await opening
+        const beforeRegister = opened.ok ? indexedRegister(shownParts.current, opened.register) : framing
+        const steps = boxes.flatMap(({ box, element, corners }) => {
+          const target = element.id
+          if (!kept.includes(target)) return []
+          const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
+          const shown = shownBox(opened.ok ? opened.register : null, target, file)
+          const before =
+            storedGroupBoxNow(beforeRegister, target) ??
+            (shown === null ? null : storedBox(beforeRegister, target, shown))
+          if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
+            void showEdited(current)
+          const name = before === null ? null : boxName(before, box)
+          return before === null || name === null
+            ? []
+            : [
+                {
+                  name,
+                  step: {
+                    node: target,
+                    before: cornersPatch(before, corners?.before),
+                    after: cornersPatch(box, corners?.after),
+                  },
+                },
+              ]
+        })
+        const [first] = steps
+        if (first === undefined) return
+        const name = steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
+        record({
+          name,
+          undoable: { steps: steps.map((each) => each.step) },
+        })
+      },
+      refused,
+    )
+    const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
+    if (grouped.length > 0) {
+      await showEdited(current)
+      for (const each of grouped) rest(each.id, null)
+    }
+    return stored
+  }
+
+  async function onBoxes(moved: readonly Moved[]): Promise<void> {
+    const latest = new Map(moved.map(({ id: target, box }) => [target, box]))
+    const paint = store.current
+    const inFlight = movesInFlight.get(paint) ?? new Map<ElementId, Box>()
+    movesInFlight.set(paint, inFlight)
+    for (const [target, box] of latest) inFlight.set(target, box)
+    const isLatest = (target: ElementId) => inFlight.get(target) === latest.get(target)
+    const rest: RestBox = (target, box) => {
+      if (isLatest(target)) paint.placeBox(target, box)
+    }
+    const register = shownRegister.current
+    const framing = register === null ? null : indexedRegister(shownParts.current, register)
+    const painted = canvases.current(current)?.elements
+    const boxes = moved.flatMap(({ id: target, box }) => {
+      const element = movables.current.get(target)
+      const stored = storedGroupBox(framing, target, box) ?? storedBox(framing, target, box)
+      const corners = resizedCorners(
+        painted?.find((each) => each.id === target),
+        box,
+      )
+      return element === undefined ? [] : [{ box: stored, element, ...corners }]
+    })
+    const release = noteBoxes(
+      id,
+      boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
+    )
+    const stored = await undo
+      .turnAfter(() => storeMoved(moved, boxes, framing, rest))
+      .finally(() => {
+        release()
+        for (const target of latest.keys()) if (isLatest(target)) inFlight.delete(target)
+      })
+    if (stored === "stored") settle(await flushPending(connect, id))
+    else if (stored !== null) settle(stored)
+  }
+
+  return onBoxes
+}

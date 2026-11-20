@@ -1,5 +1,5 @@
 import { format, type ElementId, type Register, type StackMove } from "@airdesign/document"
-import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
+import { connect, memoryRemote } from "@airdesign/live"
 import {
   boxOf,
   SlideCanvas,
@@ -15,10 +15,9 @@ import {
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import { commitPlace } from "@/editor/group-actions"
-import { commitEdit, cornersPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
+import { boxMoves } from "@/editor/box-moves"
+import { commitEdit, flushPending, type CommitOutcome } from "@/commit-edit"
 import { latestFit } from "@/editor/latest-fit"
-import { resizedCorners } from "@/resized-corners"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { canvasCropChange } from "@/design/crop-change"
 import { flipChanges, turnChanges } from "@/editor/turn-changes"
@@ -33,9 +32,8 @@ import type { CopyAsked, ElementChange } from "@/element-edit"
 import { readClipboardCopy, readLayerCopy, writeLayerCopy, type LayerCopy } from "@/layer-clipboard"
 import { layerCopyOf, pastedCopies, slideIdAt, type PastePlace } from "@/layer-paste"
 import { layersPng } from "@/layers-png"
-import { landedBox, paintedBox, shownBox } from "@/element-move"
-import { framedOf, storedBox } from "@/frame-boxes"
-import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
+import { landedBox } from "@/element-move"
+import { framedOf } from "@/frame-boxes"
 import { MeasuredSlides, owingSlides } from "@/editor/measured-slides"
 import { guidedCanvas, type GuidesShown } from "@/editor/slide-guides"
 import { indexedRegister } from "@/indexed-register"
@@ -44,7 +42,6 @@ import { showText, shownValue } from "@/live-repaint"
 import { shownTable } from "@/table-hook"
 import { tableCanvas, type TableCanvasDeck } from "@/editor/table-canvas"
 import type { UndoName } from "@/copy/undo-copy"
-import { boxName } from "@/undo-names"
 
 export type EditableDeck = DesignDeck &
   TableCanvasDeck & {
@@ -71,7 +68,8 @@ const noGuidesShown: GuidesShown = { rulers: false, layoutGuides: true }
 
 export function editableSlide(deck: EditableDeck): (width: number, shown?: GuidesShown) => ReactNode {
   const { id, settle, changeElement, selection, select } = deck
-  const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
+  const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
+  const onBoxes = boxMoves(deck)
   const { typed, sessions, records, formatting, record } = deck.undo
 
   async function textBefore(target: ElementId): Promise<string> {
@@ -149,104 +147,6 @@ export function editableSlide(deck: EditableDeck): (width: number, shown?: Guide
     if (shownRegister !== null && latest())
       store.current.placeBox(node, landedBox(indexedRegister(deck.shown.shownParts.current, shownRegister), node))
     settle(await flushPending(connect, id))
-  }
-
-  async function placed(only: Moved): Promise<"moved" | "kept" | "refused" | "stored"> {
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return "moved"
-    const parts = deck.shown.shownParts.current
-    const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
-      if (undoable !== null) record({ name: "move", undoable })
-      await deck.shown.showEdited(current)
-    })
-    if (outcome === "kept") store.current.placeBox(only.id, landedBox(await deviceRegister(id), only.id))
-    const shownRegister = deck.shown.shownRegister.current
-    if (outcome === "stored" && shownRegister !== null)
-      store.current.placeBox(only.id, landedBox(indexedRegister(parts, shownRegister), only.id))
-    return outcome
-  }
-
-  async function storeMoved(
-    moved: readonly Moved[],
-    boxes: readonly BoxCommit[],
-    framing: Register | null,
-  ): Promise<CommitOutcome | "stored" | null> {
-    const [only] = moved
-    const place = moved.length === 1 && only !== undefined ? await placed(only) : "moved"
-    if (place === "kept") return null
-    if (place !== "moved") return place
-    const opening = connect(memoryRemote()).openDeck(id)
-    async function refused(target: ElementId) {
-      store.current.placeBox(target, landedBox(await deviceRegister(id), target))
-    }
-    for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
-    const stored = await storeBoxes(
-      connect,
-      id,
-      boxes,
-      async (kept) => {
-        const opened = await opening
-        const steps = boxes.flatMap(({ box, element, corners }) => {
-          const target = element.id
-          if (!kept.includes(target)) return []
-          const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
-          const shown = shownBox(opened.ok ? opened.register : null, target, file)
-          const before =
-            storedGroupBoxNow(framing, target) ?? (shown === null ? null : storedBox(framing, target, shown))
-          if (bound.current.has(target) || (before !== null && (before.cx !== box.cx || before.cy !== box.cy)))
-            void deck.shown.showEdited(current)
-          const name = before === null ? null : boxName(before, box)
-          return before === null || name === null
-            ? []
-            : [
-                {
-                  name,
-                  step: {
-                    node: target,
-                    before: cornersPatch(before, corners?.before),
-                    after: cornersPatch(box, corners?.after),
-                  },
-                },
-              ]
-        })
-        const [first] = steps
-        if (first === undefined) return
-        const name = steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
-        record({
-          name,
-          undoable: { steps: steps.map((each) => each.step) },
-        })
-      },
-      refused,
-    )
-    const grouped = moved.filter(({ id: target }) => storedGroupBoxNow(framing, target) !== undefined)
-    if (grouped.length > 0) {
-      await deck.shown.showEdited(current)
-      for (const each of grouped) store.current.placeBox(each.id, null)
-    }
-    return stored
-  }
-
-  async function onBoxes(moved: readonly Moved[]): Promise<void> {
-    const shownRegister = deck.shown.shownRegister.current
-    const framing = shownRegister === null ? null : indexedRegister(deck.shown.shownParts.current, shownRegister)
-    const painted = canvases.current(current)?.elements
-    const boxes = moved.flatMap(({ id: target, box }) => {
-      const element = movables.current.get(target)
-      const stored = storedGroupBox(framing, target, box) ?? storedBox(framing, target, box)
-      const corners = resizedCorners(
-        painted?.find((each) => each.id === target),
-        box,
-      )
-      return element === undefined ? [] : [{ box: stored, element, ...corners }]
-    })
-    const release = noteBoxes(
-      id,
-      boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
-    )
-    const stored = await deck.undo.turnAfter(() => storeMoved(moved, boxes, framing)).finally(release)
-    if (stored === "stored") settle(await flushPending(connect, id))
-    else if (stored !== null) settle(stored)
   }
 
   function holding<T>(targets: readonly ElementId[], work: () => Promise<T>): Promise<T> {
