@@ -24,6 +24,7 @@ Checks block gate or CI; review needs judgment.
 | Untouched PowerPoint content survives byte for byte; edits change only their parts and add no validator error | `pnpm check:pptx`: untouched bytes; Microsoft validator against original. With `ci`, it is the whole merge test: no PowerPoint hand check |
 | Elements with no native PowerPoint form export as pictures; AirDesign looks come first | review; exporter and tests pending |
 | Every lint rule has a test and is switched on | `lint-rules` step |
+| Tests compare a document stamp or the current format to a floor, an ordering or a related value | lint: `no-stamp-literal` |
 | Rule code in `tooling/` stays under 10 percent of product code | `lint-rules` step |
 | Finished worktrees and branches are swept safely | `pnpm sweep` lists merged, closed and scratch work; `--apply` removes it. `scripts/worktrees.mjs` guards live processes, dirty files and 3-hour activity; tests cover each |
 | Stashes are shared; recover only yours | `scripts/worktrees.mjs` warns on missing stash sources during `pnpm check`; read-only |

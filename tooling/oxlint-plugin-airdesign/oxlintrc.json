@@ -26,6 +26,7 @@
     "airdesign/no-raw": "error",
     "airdesign/no-route-literal": "error",
     "airdesign/no-run-literal": "error",
+    "airdesign/no-stamp-literal": "error",
     "airdesign/no-xml-search": "error"
   }
 }
