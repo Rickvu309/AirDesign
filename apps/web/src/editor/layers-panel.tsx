@@ -1,4 +1,5 @@
-import { bytesOf, nameBytes, type ElementId } from "@airdesign/document"
+import type { ElementId, StackMove } from "@airdesign/document"
+import { gestureFor } from "@airdesign/render"
 import { Eye, EyeOff, Lock, LockOpen } from "lucide-react"
 import {
   useEffect,
@@ -11,11 +12,12 @@ import {
   type ReactNode,
 } from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
-import { designCopy } from "@/copy/design-copy"
 import { layersCopy } from "@/copy/layers-copy"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { depthAt, scrollNearEdge, zoneAt } from "@/editor/layer-drag"
 import { useFlagStroke } from "@/editor/layer-flag-stroke"
+import { LayerNameField } from "@/editor/layer-name-field"
 import {
   frontOf,
   holdsLayers,
@@ -34,9 +36,13 @@ import { cn } from "@/lib/class-names"
 
 export type LayerPick = "pointer" | "keys"
 
+export type RenameRequest = { readonly node: ElementId; readonly at: number }
+
 export type LayersSource = {
   readonly tree: readonly Layer[]
   readonly selected: readonly ElementId[]
+  readonly rename?: RenameRequest | null
+  readonly onRenameStarted?: () => void
   readonly onSelect?: (nodes: readonly ElementId[], pick: LayerPick) => void
   readonly onHover?: (node: ElementId | null) => void
   readonly onRename?: (node: ElementId, name: string) => void
@@ -48,6 +54,8 @@ export type LayersSource = {
     from: ElementId | null,
   ) => void
   readonly joins?: (node: ElementId, parent: ElementId | null) => boolean
+  readonly onStack?: (node: ElementId, move: StackMove) => void
+  readonly onFrame?: (nodes: readonly ElementId[]) => void
   readonly onFlag?: (nodes: readonly ElementId[], flag: LayerFlag, on: boolean) => void
 }
 
@@ -71,12 +79,6 @@ function iconOf(layer: Layer): EditorIconName {
 
 function rowOf(list: HTMLElement | null, node: ElementId): HTMLElement | null {
   return list?.querySelector<HTMLElement>(`[data-layer-row="${node}"]`) ?? null
-}
-
-function sizeOf(words: string) {
-  let bytes = 0
-  for (const letter of words) bytes += bytesOf(letter)
-  return { bytes, wide: bytes > [...words].length }
 }
 
 function FlagButton({
@@ -124,62 +126,22 @@ function FlagButton({
   )
 }
 
-function NameEdit({ name, onDone }: { readonly name: string; readonly onDone: (name: string | null) => void }) {
-  const [draft, setDraft] = useState(name)
-  const problemId = useId()
-  const finished = useRef(false)
-  const size = sizeOf(draft.trim())
-  const problem = size.bytes > nameBytes ? designCopy.tooLong(nameBytes, size.wide) : null
-  function finish(keep: boolean) {
-    if (finished.current) return
-    finished.current = true
-    const typed = draft.trim()
-    onDone(keep && problem === null && typed !== "" && typed !== name ? typed : null)
-  }
-  return (
-    <span className="relative flex min-w-0 flex-1">
-      <input
-        autoFocus
-        data-layer-name-field
-        aria-label={layersCopy.rename(name)}
-        aria-invalid={problem === null ? undefined : true}
-        aria-describedby={problem === null ? undefined : problemId}
-        value={draft}
-        onFocus={(event) => event.currentTarget.select()}
-        onChange={(event) => setDraft(event.currentTarget.value)}
-        onBlur={() => finish(true)}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
-        onDoubleClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => {
-          event.stopPropagation()
-          if (event.nativeEvent.isComposing) return
-          if (event.key === "Enter" && problem === null) {
-            event.preventDefault()
-            finish(true)
-          }
-          if (event.key === "Escape") {
-            event.preventDefault()
-            finish(false)
-          }
-        }}
-        className="h-6 w-full min-w-0 flex-1 rounded-[var(--shape-control)] bg-background px-1 [--focus-ring-offset:0px] text-[length:var(--type-caption)] text-foreground shadow-[0_0_0_1px_var(--ring)] aria-invalid:shadow-[0_0_0_2px_var(--destructive)]"
-      />
-      {problem === null ? null : (
-        <span
-          id={problemId}
-          role="alert"
-          className="absolute top-7 left-0 z-10 w-max max-w-[200px] rounded-[var(--shape-control)] bg-background px-2 py-1.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] text-danger-text shadow-[0_0_0_1px_var(--field-edge),0_4px_12px_var(--black-6)]"
-        >
-          {problem}
-        </span>
-      )}
-    </span>
-  )
-}
-
 export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
-  const { tree, selected, onSelect, onHover, onRename, onOrder, onMove, joins, onFlag } = layers
+  const {
+    tree,
+    selected,
+    rename,
+    onRenameStarted,
+    onSelect,
+    onHover,
+    onRename,
+    onOrder,
+    onMove,
+    joins,
+    onStack,
+    onFrame,
+    onFlag,
+  } = layers
   const list = useRef<HTMLDivElement>(null)
   const anchor = useRef<ElementId | null>(null)
   const dragged = useRef<ElementId | null>(null)
@@ -188,6 +150,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
   const [open, setOpen] = useState<ReadonlySet<ElementId>>(() => openedFor(tree, selected))
   const [seen, setSeen] = useState(selected)
   const [renaming, setRenaming] = useState<ElementId | null>(null)
+  const [handledRename, setHandledRename] = useState<number | null>(null)
   const [spot, setSpot] = useState<LayerPlace["mark"] | null>(null)
   const [stop, setStop] = useState<ElementId | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
@@ -198,6 +161,16 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
     const above = [...openedFor(tree, selected)].filter((node) => !open.has(node))
     if (above.length > 0) setOpen(new Set([...open, ...above]))
   }
+  if (rename !== undefined && rename !== null && rename.at !== handledRename) {
+    setHandledRename(rename.at)
+    const above = [...openedFor(tree, [rename.node])].filter((node) => !open.has(node))
+    if (above.length > 0) setOpen(new Set([...open, ...above]))
+    if (folded) setFolded(false)
+    if (onRename !== undefined) setRenaming(rename.node)
+  }
+  useEffect(() => {
+    if (rename !== undefined && rename !== null && rename.at === handledRename) onRenameStarted?.()
+  }, [rename, handledRename, onRenameStarted])
   const shown = shownLayers(tree, open)
   const inside = layersUnder(tree, selected)
   const lead = selected.at(-1) ?? null
@@ -237,22 +210,38 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
   }
 
   function onRowKey(event: KeyboardEvent<HTMLElement>, row: ShownLayer, at: number) {
-    if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey) return
+    if (event.target !== event.currentTarget || event.nativeEvent.isComposing) return
     const { layer, open: opened } = row
-    const keys: Readonly<Record<string, () => void>> = {
-      ArrowDown: () => focusRow(shownIds[at + 1]),
-      ArrowUp: () => focusRow(shownIds[at - 1]),
-      Home: () => focusRow(shownIds[0]),
-      End: () => focusRow(shownIds.at(-1)),
-      ArrowRight: () => (opened === false ? toggle(layer.node, true) : opened ? focusRow(shownIds[at + 1]) : undefined),
-      ArrowLeft: () => (opened === true ? toggle(layer.node, false) : focusRow(layer.parent ?? undefined)),
-      Enter: () => (onRename === undefined ? undefined : setRenaming(layer.node)),
-      F2: () => (onRename === undefined ? undefined : setRenaming(layer.node)),
+    if (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+      const keys: Readonly<Record<string, () => void>> = {
+        ArrowDown: () => focusRow(shownIds[at + 1]),
+        ArrowUp: () => focusRow(shownIds[at - 1]),
+        Home: () => focusRow(shownIds[0]),
+        End: () => focusRow(shownIds.at(-1)),
+        ArrowRight: () =>
+          opened === false ? toggle(layer.node, true) : opened ? focusRow(shownIds[at + 1]) : undefined,
+        ArrowLeft: () => (opened === true ? toggle(layer.node, false) : focusRow(layer.parent ?? undefined)),
+        Enter: () => (onRename === undefined ? undefined : setRenaming(layer.node)),
+        F2: () => (onRename === undefined ? undefined : setRenaming(layer.node)),
+      }
+      const run = keys[event.key]
+      if (run !== undefined) {
+        event.preventDefault()
+        run()
+        return
+      }
     }
-    const run = keys[event.key]
-    if (run === undefined || event.shiftKey) return
-    event.preventDefault()
-    run()
+    const gesture = gestureFor(event, "element")
+    if (gesture === "front" || gesture === "forward" || gesture === "backward" || gesture === "back") {
+      if (onStack === undefined || !editorOwnsKey(event)) return
+      event.preventDefault()
+      onStack(layer.node, gesture)
+      return
+    }
+    if (gesture === "frame" && onFrame !== undefined && selected.length > 0 && editorOwnsKey(event)) {
+      event.preventDefault()
+      onFrame(selected)
+    }
   }
 
   function joinsTo(node: ElementId, parent: ElementId | null): boolean {
@@ -375,7 +364,7 @@ export function LayersPanel({ layers }: { readonly layers: LayersSource }) {
         </span>
         <EditorIcon name={iconOf(layer)} size={14} className={cn("shrink-0", dim ? "text-faint" : "text-quiet")} />
         {editing ? (
-          <NameEdit
+          <LayerNameField
             name={layer.name}
             onDone={(name) => {
               setRenaming(null)

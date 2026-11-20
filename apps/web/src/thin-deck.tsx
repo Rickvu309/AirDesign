@@ -1,10 +1,10 @@
-import { slideNode, type ElementId } from "@airdesign/document"
+import { shapeOf, slideNode, type ElementId } from "@airdesign/document"
 import { changeDesign } from "@/design/design-change"
 import { PresentLinks } from "@/present/present-links"
 import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
 import { storeNewer, watchNewer } from "@airdesign/live"
-import { useState, useSyncExternalStore } from "react"
+import { useRef, useState, useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -24,6 +24,7 @@ import { AiraPanel } from "@/aira-panel"
 import { colorsIn } from "@/editor/deck-colors"
 import { LiveDesignPanel } from "@/editor/live-design-panel"
 import { LiveLayers } from "@/editor/live-layers"
+import type { RenameRequest } from "@/editor/layers-panel"
 import { useLayerKeys } from "@/editor/layer-keys"
 import { toggleLayerFlag } from "@/editor/layer-flags"
 import { toneLink } from "@/editor/tone-link"
@@ -37,14 +38,37 @@ export function ThinDeck({ id }: { id: string }) {
   const [panel, setPanel] = useKeptPanel(id)
   const [mode, setMode] = useState<PanelMode>("slides")
   const [hovered, setHovered] = useState<ElementId | null>(null)
+  const [renameRequest, setRenameRequest] = useState<RenameRequest | null>(null)
+  const renameCount = useRef(0)
   const [tone] = useState(toneLink)
   useDeckOpen(deck)
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
-  useLayerKeys(deck.paintedDeck === id, (flag) => toggleLayerFlag(deck, deck.selection.ids, flag))
   const newer = useSyncExternalStore(watchNewer, storeNewer)
   const { shown, notesBar, exported } = deck
   const currentSlide = shown.store.current.slides()[shown.current]?.id
+  const currentCanvas = shown.canvases.current(shown.current)
+  function startLayerRename(): boolean {
+    if (currentCanvas === null || currentSlide === undefined) return false
+    const present = new Set([
+      ...currentCanvas.elements.flatMap((each) => (each.id === null ? [] : [each.id])),
+      ...(currentCanvas.unpainted ?? []),
+    ])
+    for (let at = deck.selection.ids.length - 1; at >= 0; at -= 1) {
+      const node = deck.selection.ids[at]
+      if (node !== undefined && present.has(node) && shapeOf(node).slide === currentSlide) {
+        setMode("design")
+        renameCount.current += 1
+        setRenameRequest({ node, at: renameCount.current })
+        return true
+      }
+    }
+    return false
+  }
+  useLayerKeys(deck.paintedDeck === id, {
+    onFlag: (flag) => toggleLayerFlag(deck, deck.selection.ids, flag),
+    onRename: startLayerRename,
+  })
 
   if (newer) {
     return (
@@ -111,7 +135,14 @@ export function ThinDeck({ id }: { id: string }) {
               },
             },
             slide: editableSlide({ ...deck, hovered: mode === "design" ? hovered : null }),
-            layers: <LiveLayers deck={deck} onHover={setHovered} />,
+            layers: (
+              <LiveLayers
+                deck={deck}
+                onHover={setHovered}
+                rename={renameRequest}
+                onRenameStarted={() => setRenameRequest(null)}
+              />
+            ),
             presentPaint: (index, width, go) => (
               <PresentLinks parts={shown.displayParts.current} index={index} width={width} go={go}>
                 {slideCommands(deck, false).thumb(index, width)}

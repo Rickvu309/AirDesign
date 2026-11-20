@@ -64,6 +64,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onGroup?: (ids: readonly ElementId[]) => void
   readonly onUngroup?: (id: ElementId) => void
   readonly onFrame?: (ids: readonly ElementId[]) => void
+  readonly onPlainFrame?: (ids: readonly ElementId[]) => void
   readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
   readonly notice?: string
   readonly entering?: Entering | null
@@ -103,6 +104,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
       ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
       ...(props.onFrame === undefined ? {} : { onFrame: props.onFrame }),
+      ...(props.onPlainFrame === undefined ? {} : { onPlainFrame: props.onPlainFrame }),
     },
     {
       ...(props.onRotate === undefined ? {} : { onRotate: props.onRotate }),

@@ -169,7 +169,12 @@ export async function commitElement(
   change: ElementChange,
   paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  if (change.change === "group" || change.change === "ungroup" || change.change === "frame")
+  if (
+    change.change === "group" ||
+    change.change === "ungroup" ||
+    change.change === "frame" ||
+    change.change === "plain-frame"
+  )
     return commitGroup(deckId, parts, register, change, paint)
   if (change.change === "remove") return commitRemovals(deckId, parts, register, change.nodes, paint)
   if (change.change === "join") return commitJoin(deckId, parts, register, change, paint)

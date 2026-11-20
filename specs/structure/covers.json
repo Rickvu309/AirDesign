@@ -28,8 +28,8 @@
     {
       "file": "packages/document/src/frame-layout.ts",
       "names": ["readLayout", "changeLayout", "refrozenRows", "framedNow", "frameNow"],
-      "digest": "324eeb4cee42",
-      "blob": "f4ae39a8564b6fb8007cc73676078397d45032f4"
+      "digest": "d72d46b5dd6e",
+      "blob": "dc782c9467960945a19de74636faa30ff5125e98"
     },
     {
       "file": "packages/document/src/group-join.ts",

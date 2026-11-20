@@ -110,6 +110,14 @@ export function ArrangeMenu(props: {
           <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut.group}</span>
         </ContextMenuItem>
         <ContextMenuItem
+          data-group-action="plain-frame"
+          disabled={props.selection.ids.length < 1}
+          onClick={() => group({ change: "plain-frame", nodes: props.selection.ids })}
+        >
+          <span>{groupCopy.label["plain-frame"]}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut["plain-frame"]}</span>
+        </ContextMenuItem>
+        <ContextMenuItem
           disabled={props.selection.ids.length < 1}
           onClick={() => group({ change: "frame", nodes: props.selection.ids })}
         >

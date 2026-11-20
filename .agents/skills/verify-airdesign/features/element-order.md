@@ -4,7 +4,7 @@ On an open deck, a right-click on an element opens Bring to front, Bring forward
 
 ## Sub-features
 
-- `element-order` the menu on the element, and Ctrl+Shift+], Ctrl+], Ctrl+[ and Ctrl+Shift+[ when the browser delivers them. The server's `register.order` gets a `slide: "element-order"` row. The canvas and the thumbnail paint the new order at once.
+- `element-order` the menu on the element, and `]` / `[` (plus Mac Cmd+Option+]/[, Windows Ctrl+Shift+]/[) and Cmd/Ctrl+]/[ when the browser delivers them. The server's `register.order` gets a `slide: "element-order"` row. The canvas and the thumbnail paint the new order at once.
 - `element-order-export` the export changes only that slide's part. The moved shape's own XML stays as it was, and a group or a table in the same tree stays whole.
 - A shape inside a group moves only among that group's children. It is not pulled out of the group.
 
@@ -29,4 +29,4 @@ Preconditions:
 
 - The menu is on the element. A right-click on empty slide keeps the browser's own menu.
 - A build without the menu still reaches `element-ordered` so the before side of a comparison has a picture: the ellipse still covers part of the rectangle.
-- Ctrl+Shift+[ may be taken by the browser. The menu still sends the shape to the back.
+- Cmd+Shift+[ / Cmd+Shift+] are taken by macOS browsers for tab switching; bare `[` and `]` (and Cmd+Option+[ / Cmd+Option+]) avoid that clash.

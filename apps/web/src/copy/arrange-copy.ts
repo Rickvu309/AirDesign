@@ -14,10 +14,10 @@ export const arrangeCopy = {
     back: "Sent to back",
   },
   shortcut: {
-    front: "Ctrl+Shift+]",
+    front: "]",
     forward: "Ctrl+]",
     backward: "Ctrl+[",
-    back: "Ctrl+Shift+[",
+    back: "[",
   },
 } as const satisfies {
   readonly label: Record<StackMove, string>
@@ -28,7 +28,7 @@ export const arrangeCopy = {
 export const arrangeMoves = ["front", "forward", "backward", "back"] as const satisfies readonly StackMove[]
 
 export const groupCopy = {
-  label: { group: "Group", ungroup: "Ungroup", frame: "Add auto layout" },
-  said: { group: "Grouped", ungroup: "Ungrouped", frame: "Added auto layout" },
-  shortcut: { group: "Ctrl+G", ungroup: "Ctrl+Shift+G", frame: "Shift+A" },
+  label: { group: "Group", ungroup: "Ungroup", "plain-frame": "Frame selection", frame: "Add auto layout" },
+  said: { group: "Grouped", ungroup: "Ungrouped", "plain-frame": "Framed", frame: "Added auto layout" },
+  shortcut: { group: "Ctrl+G", ungroup: "Ctrl+Shift+G", "plain-frame": "Ctrl+Alt+G", frame: "Shift+A" },
 } as const

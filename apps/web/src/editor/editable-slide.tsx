@@ -311,6 +311,10 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               clear()
               group({ change: "frame", nodes })
             }}
+            onPlainFrame={(nodes) => {
+              clear()
+              group({ change: "plain-frame", nodes })
+            }}
             onRemove={(targets) => {
               clear()
               void holding(targets, () => changeElement({ change: "remove", nodes: targets }))

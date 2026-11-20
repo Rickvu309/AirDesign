@@ -10,6 +10,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
+import { handleArrangeKey, type Grouping } from "./arrange-keys.js"
 import { boxOf, nudgedBoxes, sameBox, type Moved, type Nudge } from "./box-gesture.js"
 import { snapTargets } from "./drag-snap.js"
 import { gestureFor, releases } from "./gestures.js"
@@ -50,11 +51,7 @@ import { hudChannel, type HudChannel } from "./transform-hud.js"
 import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 
-export type Grouping = {
-  readonly onFrame?: (ids: readonly ElementId[]) => void
-  readonly onGroup?: (ids: readonly ElementId[]) => void
-  readonly onUngroup?: (id: ElementId) => void
-}
+export type { Grouping } from "./arrange-keys.js"
 
 export type Picking = {
   readonly selection?: Selection
@@ -446,25 +443,7 @@ export function useMoves(
       transforms.onFlip(flips)
       return
     }
-    if (gesture === "auto-layout") {
-      if (now !== null || grouping?.onFrame === undefined) return
-      event.preventDefault()
-      grouping.onFrame(latest.current.ids)
-      return
-    }
-    if (gesture === "group" || gesture === "ungroup") {
-      if (now !== null) return
-      const ids = latest.current.ids
-      if (gesture === "group" && ids.length >= 2 && grouping?.onGroup !== undefined) {
-        event.preventDefault()
-        grouping.onGroup(ids)
-      }
-      if (gesture === "ungroup" && element.kind === "group" && grouping?.onUngroup !== undefined) {
-        event.preventDefault()
-        grouping.onUngroup(id)
-      }
-      return
-    }
+    if (now === null && handleArrangeKey(event, gesture, element, id, latest.current.ids, grouping, onOrder)) return
     if (gesture === "edit-text") {
       if (now !== null) return
       const children = childrenSelection(size, latest.current)
@@ -476,12 +455,6 @@ export function useMoves(
         return
       }
       if (enterText(frame)) event.preventDefault()
-      return
-    }
-    if (gesture === "front" || gesture === "forward" || gesture === "backward" || gesture === "back") {
-      if (onOrder === undefined || now !== null) return
-      event.preventDefault()
-      onOrder(id, gesture)
       return
     }
     if (gesture === "delete" && now === null) {
