@@ -1,10 +1,10 @@
-import type { Bound, ElementId, Place, PlacedRow, Register, SetChange } from "@airdesign/document"
-import { connect } from "@airdesign/live"
+import type { Bound, Command, ElementId, Place, PlacedRow, Register, SetChange } from "@airdesign/document"
+import { connect, memoryRemote } from "@airdesign/live"
 import { fileChartFormats, fileChartValue, readShapes, type ReadShape } from "@airdesign/pptx"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { designCopy } from "@/copy/design-copy"
-import { applyChange, applyRows, valueFits, type ChangingDeck } from "@/design/trait-edit"
+import { applyChange, applyRows, changeAhead, rowsAhead, valueFits, type ChangingDeck } from "@/design/trait-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
@@ -61,7 +61,7 @@ function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
     hold: () => undo.records.current.hold(),
     record: (entry) => deck.record(session === null ? entry : { ...entry, session }),
     show: (register) => {
-      const framed = withFileFloors(register, shown.shownParts.current)
+      const framed = withFileFloors(shown.paintedOf(register), shown.shownParts.current)
       if (shown.structure.current !== structureOf(framed, shown.bound.current)) shown.showRegister(register)
       shown.repaint.current(register, "person")
     },
@@ -78,6 +78,17 @@ export function endChange(node: ElementId, end: "start" | "end", to: Bound | Pla
   }
 }
 
+function paintedAhead(deck: DesignDeck, commands: (register: Register) => readonly Command[] | null): () => void {
+  const register = deck.shown.shownRegister.current
+  const ahead = register === null ? null : commands(register)
+  return ahead === null ? () => undefined : deck.shown.ahead.paint(ahead)
+}
+
+async function showDevice(deck: DesignDeck, changing: ChangingDeck) {
+  const opened = await connect(memoryRemote()).openDeck(deck.id)
+  if (opened.ok) changing.show(opened.register)
+}
+
 export function changeDesign(
   deck: DesignDeck,
   change: () => SetChange | readonly SetChange[],
@@ -85,12 +96,20 @@ export function changeDesign(
   onRefused?: () => void,
 ) {
   const session = deck.undo.focused.current
+  const changing = changingDeck(deck, session)
+  const asked = change()
+  const written = paintedAhead(deck, (register) => changeAhead(changing, register, asked))
   deck.undo.turnAfter(async () => {
-    if (await applyChange(changingDeck(deck, session), change())) {
-      afterPaint?.()
-      void flushPending(connect, deck.id).then(deck.settle)
-      return
+    try {
+      if (await applyChange(changing, asked, written)) {
+        afterPaint?.()
+        void flushPending(connect, deck.id).then(deck.settle)
+        return
+      }
+    } finally {
+      written()
     }
+    await showDevice(deck, changing)
     onRefused?.()
     toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
     deck.settle("refused")
@@ -103,12 +122,19 @@ export function changeRows(
   name: UndoName,
 ) {
   const session = deck.undo.focused.current
+  const changing = changingDeck(deck, session)
+  const written = paintedAhead(deck, (register) => rowsAhead(changing, register, plan))
   deck.undo.turnAfter(async () => {
-    await deck.undo.records.current.landed()
-    if (await applyRows(changingDeck(deck, session), plan, name)) {
-      void flushPending(connect, deck.id).then(deck.settle)
-      return
+    try {
+      await deck.undo.records.current.landed()
+      if (await applyRows(changing, plan, name, written)) {
+        void flushPending(connect, deck.id).then(deck.settle)
+        return
+      }
+    } finally {
+      written()
     }
+    await showDevice(deck, changing)
     toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
     deck.settle("refused")
   })

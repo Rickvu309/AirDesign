@@ -39,7 +39,7 @@ export function useDeckOpen(deck: OpeningDeck) {
 
   function reconcile(register: Register) {
     const before = store.current.slides().map((slide) => slide.id)
-    const framed = withFileFloors(register, shown.shownParts.current)
+    const framed = withFileFloors(shown.paintedOf(register), shown.shownParts.current)
     if (
       (gridSectionStarts(shown.shownRegister.current ?? {}) === undefined) !==
         (gridSectionStarts(register) === undefined) ||

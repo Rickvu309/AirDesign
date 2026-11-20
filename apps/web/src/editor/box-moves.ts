@@ -1,4 +1,12 @@
-import { placedByFrame, resizedSides, type Box, type ElementId, type Register } from "@airdesign/document"
+import {
+  format,
+  placedByFrame,
+  resizedSides,
+  type Box,
+  type Command,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
 import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import type { Moved, PaintStore } from "@airdesign/render"
 import { commitPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
@@ -12,9 +20,21 @@ import { indexedRegister } from "@/indexed-register"
 import { resizedCorners } from "@/resized-corners"
 import { resizedSizing } from "@/resized-sizing"
 import { boxName } from "@/undo-names"
+import { personCommands } from "@/editor/painted-ahead"
 import { draggedSize, relaidBoxes } from "@/editor/live-layout"
 
 type RestBox = (target: ElementId, box: Box | null) => void
+
+function movedAhead(register: Register, boxes: readonly BoxCommit[]): readonly Command[] {
+  return boxes.flatMap((commit) => {
+    const { box, element } = commit
+    const plain = Object.keys(commit).every((key) => key === "box" || key === "element")
+    const edit = plain
+      ? { property: "box" as const, value: box }
+      : { v: format, patch: commitPatch(box, commit, "after") }
+    return personCommands(register, element.id, element.file, edit)
+  })
+}
 
 const movesInFlight = new WeakMap<PaintStore, Map<ElementId, Box>>()
 
@@ -127,9 +147,12 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
       id,
       boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
     )
+    const register = shownRegister.current
+    const written = register === null ? () => undefined : shown.ahead.hold(movedAhead(register, boxes))
     const stored = await undo
       .turnAfter(() => storeMoved(moved, boxes, framing, rest))
       .finally(() => {
+        written()
         release()
         for (const target of latest.keys()) if (isLatest(target)) inFlight.delete(target)
       })

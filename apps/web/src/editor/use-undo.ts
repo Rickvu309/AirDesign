@@ -140,7 +140,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const before = slideId === null ? -1 : store.current.slides().findIndex((slide) => slide.id === slideId)
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
-    const framed = withFileFloors(next.register, shownParts.current)
+    const framed = withFileFloors(shown.paintedOf(next.register), shownParts.current)
     if ("slide" in undoable || "spots" in undoable || structure.current !== structureOf(framed, bound.current))
       showRegister(next.register)
     repaint.current(next.register, "person")

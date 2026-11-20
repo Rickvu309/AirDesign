@@ -35,3 +35,7 @@ _Avoid_: dropped edit, broken edit, failed edit
 **painted row height**:
 The height a table row shows on the canvas: its own height, or more while its text needs more. The table's frame follows it while a person types, a row border drag stops at the row's text, and the export writes it as the row's height in the file. Figma's plugin API calls the least height a row's "minimum size".
 _Avoid_: auto row height, row fit
+
+**painted ahead**:
+An edit the canvas shows before the device stored it. The editor keeps these edits in the order the person made them and lays them over every deck it paints from the device, and drops each one once the device wrote its rows. Typing, every Design panel change and a drag's boxes paint ahead, so an edit never waits for an earlier save to paint, and an edit made straight after one plans against what the person sees; the save order stays the order of the edits.
+_Avoid_: optimistic update, preview, pending paint

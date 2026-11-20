@@ -1,10 +1,13 @@
 ---- MODULE DeviceQueue ----
 \* A person sets one field of one element twice in the design panel, a line's width, then presses
-\* Undo and Redo, while the server has not answered. Each click queues one link on the editor's
-\* chain (turnAfter in apps/web/src/editor/use-undo.ts), and the link does only the device's work:
-\* it plans against the deck on the device, writes a pending row, records the undo step and paints
-\* (applyChange in apps/web/src/design/trait-edit.ts, turnBack in apps/web/src/undo-list.ts). So a
-\* click and its link are one step. The send to the server starts after the link and settles on
+\* Undo and Redo, while the server has not answered. A panel change paints at once from what the
+\* canvas shows, ahead of the device (changeDesign in apps/web/src/design/design-change.ts,
+\* paintingAhead in apps/web/src/editor/painted-ahead.ts). Each click queues one link on the
+\* editor's chain (turnAfter in apps/web/src/editor/use-undo.ts), and the link does only the
+\* device's work: it plans against the deck on the device, writes a pending row, records the undo
+\* step and paints the device's deck (applyChange in apps/web/src/design/trait-edit.ts, turnBack
+\* in apps/web/src/undo-list.ts). A link the device refuses paints the device's deck too. A click
+\* and its link are one step here, so a state never holds a change painted ahead of its link. The send to the server starts after the link and settles on
 \* its own (changeDesign in apps/web/src/design/design-change.ts, useUndoTurn). flush in
 \* packages/live/src/cache.ts sends the pending rows one batch at a time, seals a batch with a once
 \* before its first send, and confirms its rows when the answer comes. An agent may delete the
@@ -99,10 +102,12 @@ Wrote(width) ==
   /\ told' = FALSE
 
 \* A panel change plans against the device's deck. On an element the device reads as gone it is
-\* refused and nothing changes; otherwise it records the step from what the device showed.
+\* refused, writes nothing, and the canvas paints the device's deck in place of the width it
+\* painted ahead; otherwise it records the step from what the device showed.
 Change(width) ==
   IF Device = Gone
-  THEN UNCHANGED <<wrote, shown, told, undo, redo>>
+  THEN /\ shown' = Device
+       /\ UNCHANGED <<wrote, told, undo, redo>>
   ELSE /\ Wrote(width)
        /\ undo' = Push(undo, Device * 10 + width)
        /\ redo' = 0

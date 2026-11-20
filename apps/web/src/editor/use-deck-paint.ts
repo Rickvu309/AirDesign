@@ -18,6 +18,7 @@ import { layoutChoices } from "@/slide-layout"
 import { structureOf } from "@/table-hook"
 import { placedOn, type PlacedText } from "@/editor/placed-text"
 import { shownSlideAfter, type ShownSlide } from "@/editor/shown-slide"
+import { paintingAhead } from "@/editor/painted-ahead"
 
 export type DeckPaint = ReturnType<typeof useDeckPaint>
 
@@ -68,6 +69,16 @@ export function useDeckPaint(
   const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
   const placed = useRef<readonly PlacedText[]>([])
+  const showAhead = useRef<(register: Register) => void>(() => undefined)
+  const [ahead] = useState(() =>
+    paintingAhead({
+      shown: () => shownRegister.current,
+      keep: (register) => {
+        shownRegister.current = register
+      },
+      show: (register) => showAhead.current(register),
+    }),
+  )
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const displayed = useRef(partsWatch())
   const [entering, setEntering] = useState<Entering | null>(null)
@@ -98,8 +109,12 @@ export function useDeckPaint(
     setCurrent(0)
   }
 
+  function paintedOf(saved: Register): Register {
+    return ahead.on(placedOn(saved, placed.current))
+  }
+
   function showRegister(saved: Register | null, whole?: "whole") {
-    const register = saved === null ? null : placedOn(saved, placed.current)
+    const register = saved === null ? null : paintedOf(saved)
     const before = whole === "whole" ? null : painted.current
     const framed = register === null ? null : withFileFloors(register, shownParts.current)
     const next = paint(store.current, shownParts.current, framed, busy.current, pictureTool.store.bytes, before)
@@ -122,8 +137,9 @@ export function useDeckPaint(
     const laid = framed === null ? null : indexedRegister(shownParts.current, framed)
     const paintChanges = liveRepaint(store.current, next.files, laid, busy.current, next.numberText)
     repaint.current = (changed, from) => {
-      shownRegister.current = changed
-      paintChanges(indexedRegister(shownParts.current, changed), from)
+      const register = ahead.on(changed)
+      shownRegister.current = register
+      paintChanges(indexedRegister(shownParts.current, register), from)
     }
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
@@ -138,6 +154,12 @@ export function useDeckPaint(
   async function showFreed() {
     const next = await connect(memoryRemote()).openDeck(id)
     if (next.ok) repaint.current(next.register)
+  }
+
+  showAhead.current = (register) => {
+    if (structure.current !== structureOf(withFileFloors(register, shownParts.current), bound.current))
+      showRegister(register)
+    repaint.current(register, "person")
   }
 
   async function showEdited(wanted: ShownSlide, whole?: "whole") {
@@ -176,6 +198,8 @@ export function useDeckPaint(
     showOpened,
     showRegister,
     showEdited,
+    ahead,
+    paintedOf,
     saySlide,
   }
 }

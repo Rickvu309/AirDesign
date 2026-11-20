@@ -16,6 +16,8 @@ import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { flushPending, server as deckServer, type CommitOutcome } from "./commit-edit"
 import { changeDesign } from "./design/design-change"
 import type { UndoButtonsState } from "./editor/undo-buttons"
+import { paintingAhead } from "./editor/painted-ahead"
+import { until, within } from "./replay-waits"
 import type { DeckPaint } from "./editor/use-deck-paint"
 import { useUndoList, useUndoTurn, type UndoList as UndoHooks } from "./editor/use-undo"
 import { structureOf } from "./table-hook"
@@ -60,7 +62,6 @@ const slide = slideId("256")
 const node = elementId("256.2")
 const widths = [0, 0, 25400, 50800]
 const firstAccount = "a".repeat(32)
-const patience = 10_000
 
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
@@ -80,22 +81,6 @@ async function specGraph(name: string, module: string): Promise<Graph> {
   const { parseDot } = (await import(graphs)) as { parseDot: (dot: string) => Graph }
   const topic = decodeURIComponent(new URL(`../../../specs/${name}`, import.meta.url).pathname)
   return parseDot(specs.dumpSpec(topic, specs.javaBin(), specs.jarPath(), `${module}.tla`, `${module}.cfg`).graph)
-}
-
-function within<T>(work: Promise<T>, said: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const hung = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${said} did not finish`)), patience)
-  })
-  return Promise.race([work, hung]).finally(() => clearTimeout(timer))
-}
-
-async function until(reached: () => boolean, said: string): Promise<void> {
-  const deadline = Date.now() + patience
-  while (!reached()) {
-    if (Date.now() > deadline) throw new Error(`${said} never came`)
-    await new Promise((done) => setTimeout(done, 1))
-  }
 }
 
 function widthCode(edit: unknown): number {
@@ -197,8 +182,15 @@ async function queueDeck() {
   const painted: { register: Register | null } = { register: null }
   const bound: ReadonlySet<string> = new Set()
   const structure = { current: structureOf(null, bound) }
+  const ahead = paintingAhead({
+    shown: () => painted.register,
+    keep: (register) => {
+      painted.register = register
+    },
+    show: (register) => showRegister(register),
+  })
   const showRegister = (register: Register | null) => {
-    painted.register = register
+    painted.register = register === null ? null : ahead.on(register)
     structure.current = structureOf(register, bound)
   }
   const paint = {
@@ -213,6 +205,13 @@ async function queueDeck() {
     repaint: { current: () => undefined },
     setCurrent: () => undefined,
     saySlide: { current: () => undefined },
+    shownRegister: {
+      get current() {
+        return painted.register
+      },
+    },
+    ahead,
+    paintedOf: ahead.on,
     showRegister,
   } as unknown as DeckPaint
   showRegister(opened.register)
