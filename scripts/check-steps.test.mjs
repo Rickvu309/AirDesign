@@ -192,3 +192,66 @@ assert.deepEqual(
 assert.throws(() => defineCheckSteps([{ ...row, narrow: "yes" }]), {
   message: "planted: make narrow a function on a step outside the preflight and the lanes.",
 })
+
+const sourceStepNames = (shard, changes = everyChange) =>
+  checkSteps
+    .stagesFor("source", true, shard, changes)
+    .flat()
+    .flatMap(stepsOf)
+    .map(([name]) => name)
+const unitShardSteps = ["unit-tests", "metrics"]
+const noUnitTests = { ...everyChange, unitTests: [] }
+const wholeSource = sourceStepNames(undefined)
+const restOfSource = sourceStepNames(undefined, noUnitTests)
+assert.deepEqual(
+  restOfSource.toSorted(),
+  wholeSource.filter((name) => name !== "unit-tests").toSorted(),
+  "a source job told to run no unit test runs every other step of the part",
+)
+const shards = [1, 2].map((current) => sourceStepNames({ current, total: 2 }))
+for (const shard of shards)
+  assert.deepEqual(shard, unitShardSteps, "a source shard runs the unit tests and their metrics")
+for (const name of wholeSource.filter((step) => !unitShardSteps.includes(step)))
+  assert.equal(
+    [...restOfSource, ...shards.flat()].filter((step) => step === name).length,
+    1,
+    `${name} runs in exactly one source job of a full run`,
+  )
+const stepOf = (name, shard) =>
+  checkSteps
+    .stagesFor("source", true, shard, everyChange)
+    .flat()
+    .flatMap(stepsOf)
+    .find(([step]) => step === name)
+assert.deepEqual(
+  stepOf("unit-tests", { current: 2, total: 3 }).at(2).slice(-1),
+  ["--shard=2/3"],
+  "a shard hands its place to Vitest",
+)
+assert.equal(
+  stepOf("unit-tests", undefined)
+    .at(2)
+    .some((word) => word.startsWith("--shard")),
+  false,
+  "no shard runs the whole suite",
+)
+assert.equal(
+  stepOf("unit-tests", undefined).at(3).AIRDESIGN_REPLAY_ONLY,
+  "1",
+  "a whole run waits for the spec dumps its model check makes",
+)
+assert.equal(
+  stepOf("unit-tests", { current: 1, total: 2 }).at(3).AIRDESIGN_REPLAY_ONLY,
+  undefined,
+  "a shard has no model check beside it, so a replay with no cached dump makes its own",
+)
+assert.equal(
+  stepOf("metrics", { current: 2, total: 3 }).at(3).AIRDESIGN_UNIT_SHARD,
+  "2/3",
+  "metrics learns which part of the unit run it read",
+)
+assert.equal(
+  checkSteps.stagesFor("browser", true, { current: 2, total: 8 }, everyChange).flat().flatMap(stepsOf).length > 1,
+  true,
+  "a part with no split step runs all its steps in every shard",
+)

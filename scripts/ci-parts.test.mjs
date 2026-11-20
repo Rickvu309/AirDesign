@@ -27,10 +27,12 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 const checkJobsFile = workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs-file"]
 const entries = JSON.parse(fs.readFileSync(path.join(root, checkJobsFile), "utf8"))
 same(
-  "the check job runs the source, scripts and pptx parts and the browser tests in eight shards beside the design shards",
+  "the check job runs the source part and the browser tests in shards, the scripts and pptx parts, beside the design shards",
   entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
   [
     "source",
+    "source 1/2",
+    "source 2/2",
     "scripts",
     "browser 1/8",
     "browser 2/8",

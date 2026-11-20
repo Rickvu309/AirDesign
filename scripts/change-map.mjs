@@ -343,8 +343,22 @@ export const readChangeGraph = (root) => {
   }
 }
 
+const wholeSourceJob = (job) =>
+  Object.fromEntries(Object.entries(job).filter(([key]) => key !== "shard" && key !== "unitTests"))
+
+const oneSourceJob = (active, result) => {
+  if (result.unitTests === "all") return active
+  const firstSource = active.findIndex((job) => job.part === "source")
+  return active.flatMap((job, index) =>
+    job.part === "source" ? (index === firstSource ? [wholeSourceJob(job)] : []) : [job],
+  )
+}
+
 export const checkJobsFor = (result, jobs) => {
-  const active = jobs.filter((job) => result.parts[job.part] === true)
+  const active = oneSourceJob(
+    jobs.filter((job) => result.parts[job.part] === true),
+    result,
+  )
   if (result.browserSpecs === "all" || result.browserSpecs.length === 0) return active
   const firstBrowser = active.findIndex((job) => job.part === "browser")
   if (firstBrowser === -1) return active

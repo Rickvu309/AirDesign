@@ -3,9 +3,19 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { measuredHere, measures, overLimit, readMetrics as readEvery, reportedMetrics, timeMetric } from "./metrics.mjs"
+import {
+  measuredHere,
+  measures,
+  overLimit,
+  metricLines,
+  readFromUnitRun,
+  readMetrics as readEvery,
+  reportedMetrics,
+  timeMetric,
+} from "./metrics.mjs"
 import { timedMetrics, timedOnCi } from "./metrics.mjs"
 
+const fromUnitMeasures = Object.fromEntries([...readFromUnitRun].map((name) => [name, true]))
 const offline = Object.fromEntries(Object.entries(measures).filter(([name]) => name !== "import-parse"))
 const readMetrics = (at) => readEvery(at, offline)
 
@@ -283,7 +293,6 @@ const proveVitest = () => {
 
 proveVitest()
 
-const { metricLines } = await import("./metrics.mjs")
 record(1, 2)
 cache(3, 1)
 const more = await readMetrics(root)
@@ -332,5 +341,54 @@ if (names.includes("known-failures") || names.includes("slides-repainted"))
   throw new Error("a run of only the unit tests its change reaches must not read the whole unit run")
 if (fromNarrowRun.drift.some((line) => /known-failures|slides-repainted/.test(line)))
   throw new Error(`a narrowed run must not call the unit run's metrics unmeasured\n${fromNarrowRun.drift.join("\n")}`)
+
+const unitShard = (current) => ({ AIRDESIGN_UNIT_TESTS: "all", AIRDESIGN_UNIT_SHARD: `${current}/3` })
+const inShard = (current) =>
+  Object.fromEntries(Object.entries(measuredHere(unitShard(current))).filter(([name]) => name in offline))
+const unitRow = (read, name) => read.rows.find((row) => row.name === name)
+
+seedList([{ seed: 1, kind: "one kind", deck: "a.pptx", what: "slide 1" }])
+cache(2, 1, {})
+const secondShard = await readEvery(root, inShard(2))
+const measuredRows = (read) => read.rows.filter((row) => !("limit" in row))
+if (
+  measuredRows(secondShard)
+    .map((row) => row.name)
+    .join() !== "known-failures"
+)
+  throw new Error(
+    `a later shard reads only the unit run's metrics: ${measuredRows(secondShard).map((row) => row.name)}`,
+  )
+if (unitRow(secondShard, "known-failures")?.now !== 1)
+  throw new Error("a later shard counts its own faults and none of the repo's static ones")
+if (!unitRow(secondShard, "known-failures")?.note?.includes("unit shard 2/3"))
+  throw new Error("a shard's known-failures line says it is one part of the sum")
+if (metricLines(secondShard.rows).length !== 1 || !metricLines(secondShard.rows)[0].includes("unit shard 2/3"))
+  throw new Error("a shard prints the note beside its number")
+cache(2, 3, { "slides-repainted": 7 })
+const thirdShard = await readEvery(root, inShard(3))
+if (unitRow(thirdShard, "slides-repainted")?.now !== 7) throw new Error("the shard that ran the paint test reports it")
+cache(2, 2, {})
+const firstShard = await readEvery(root, inShard(1))
+if (measuredRows(firstShard).some((row) => !(row.name in fromUnitMeasures)))
+  throw new Error("a shard measures only the unit run's metrics, since another source job measures the rest")
+if (unitRow(firstShard, "known-failures")?.now !== 2 + 1)
+  throw new Error(
+    `the first shard adds the repo's static faults to its own: ${unitRow(firstShard, "known-failures")?.now}`,
+  )
+if (unitRow(firstShard, "slides-repainted") !== undefined)
+  throw new Error("a shard that did not run the paint test must not fail for it")
+if (measuredHere({ ...unitShard(1), AIRDESIGN_UNIT_SHARD: "1/1" }) !== measures)
+  throw new Error("one shard is the whole run")
+if (
+  Object.keys(measuredHere({ AIRDESIGN_UNIT_TESTS: '["packages/oauth/"]', AIRDESIGN_UNIT_SHARD: "2/3" })).some(
+    (name) => name in fromUnitMeasures,
+  )
+)
+  throw new Error("a narrowed run measures nothing from the unit run, shards or not")
+
+const deckPaintTest = "apps/web/src/deck-paint.test.ts"
+if (!fs.readFileSync(path.join(repoRoot, deckPaintTest), "utf8").includes('"slides-repainted"'))
+  throw new Error(`${deckPaintTest} must measure slides-repainted, since a split run reads it from one shard`)
 
 console.log("metrics tests passed")

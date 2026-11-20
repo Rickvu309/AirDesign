@@ -156,7 +156,7 @@ same(
 same("a file rerun alone runs niced on two workers in the small lane", checkSteps.aloneCommand(file), [
   "nice",
   ["-n", "10", "node", "scripts/selected-unit-tests.mjs", "2", file],
-  { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache },
+  { AIRDESIGN_SPEC_CACHE: specCache, AIRDESIGN_REPLAY_ONLY: "1" },
 ])
 
 const [saveStatus] = failedTests(saveStatusLog)

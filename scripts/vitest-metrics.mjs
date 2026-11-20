@@ -1,5 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
+import { refreshedSpecSeconds } from "./spec-seconds.mjs"
+import { testFilesByProject, unitSecondsFile } from "./unit-test-files.mjs"
 
 export const resultFile = (root) => path.join(root, "node_modules/.cache/vitest-metrics.json")
 
@@ -49,13 +51,56 @@ export const readMeasured = (root, name) => {
   return value
 }
 
+export const moduleSeconds = (mod) => {
+  const {
+    environmentSetupDuration = 0,
+    prepareDuration = 0,
+    collectDuration = 0,
+    setupDuration = 0,
+    duration = 0,
+  } = mod.diagnostic()
+  return environmentSetupDuration + prepareDuration + collectDuration + setupDuration + duration
+}
+
+export const recordUnitSeconds = (root, modules) => {
+  const file = path.join(root, unitSecondsFile)
+  const before = fs.readFileSync(file, "utf8")
+  const scheduled = new Map(modules.map((mod) => [path.relative(root, mod.moduleId), 1]))
+  const tests = modules.map((mod) => ({
+    file: path.relative(root, mod.moduleId),
+    status: mod.state(),
+    expectedStatus: "passed",
+    duration: moduleSeconds(mod),
+  }))
+  const { seconds } = refreshedSpecSeconds({
+    record: { seconds: JSON.parse(before), export: {} },
+    scheduled,
+    tests,
+    exists: (name) => fs.existsSync(path.join(root, name)),
+  })
+  const after = `${JSON.stringify(seconds, null, 2)}\n`
+  if (after !== before) fs.writeFileSync(file, after)
+}
+
+const wholeLocalRun = (config, modules, reason) =>
+  reason === "passed" &&
+  !process.env.CI &&
+  config.shard === undefined &&
+  modules.length === Object.values(testFilesByProject(config.root)).flat().length
+
 export default class VitestMetrics {
   onInit(ctx) {
     this.root = ctx.config.root
+    this.config = ctx.config
   }
 
   onTestRunEnd(modules, errors = [], reason) {
     writeRun(this.root, countRun(modules))
+    try {
+      if (wholeLocalRun(this.config, modules, reason)) recordUnitSeconds(this.root, modules)
+    } catch (error) {
+      console.error(`unit seconds not recorded: ${error.message}`)
+    }
     try {
       const tests = modules.map((mod) => ({
         file: path.relative(this.root, mod.moduleId),
