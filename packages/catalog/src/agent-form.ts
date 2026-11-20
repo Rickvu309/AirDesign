@@ -373,7 +373,12 @@ export function agentSchema(desc: Desc): JsonSchema {
         properties: Object.fromEntries(Object.entries(desc.fields).map(([name, field]) => [name, agentSchema(field)])),
       }
     case "list":
-      return { type: "array", items: agentSchema(desc.item), minItems: desc.min, maxItems: desc.max }
+      return {
+        type: "array",
+        items: agentSchema(desc.item),
+        ...(desc.min === 0 ? {} : { minItems: desc.min }),
+        maxItems: desc.max,
+      }
     case "named":
       return { type: "object", additionalProperties: agentSchema(desc.item), maxProperties: desc.max }
     case "union":

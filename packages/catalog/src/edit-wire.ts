@@ -182,10 +182,10 @@ const boxChange = z.strictObject({
   property: z.literal("box").describe("Moves or resizes the layer instead of writing its text."),
   value: z
     .strictObject({
-      x: coordinateInput.describe("Left edge."),
-      y: coordinateInput.describe("Top edge."),
-      cx: extentInput.describe("Width."),
-      cy: extentInput.describe("Height."),
+      x: coordinateInput,
+      y: coordinateInput,
+      cx: extentInput,
+      cy: extentInput,
     })
     .describe("The layer's box on the slide in EMU. 914400 EMU is one inch."),
   node: nodeInput,
@@ -220,14 +220,13 @@ const deleteChange = agentForm(readDeleteChange, deleteChangeSchema())
 export const readAgentEdit = readInput(
   z.strictObject({
     deck: deckInput,
-    base: wholeInput.describe("Revision from airdesign_read_deck."),
+    base: wholeInput,
     changes: z
       .array(
         z.union([textChange, boxChange, setChange, addChange, groupChange, diagramChange, slideChange, deleteChange]),
       )
       .min(1)
-      .max(limits.batch)
-      .describe("Changes to land."),
+      .max(limits.batch),
   }),
   (issues, raw): FieldRefusal | DeckRefusal | BaseRefusal | BatchRefusal => {
     if (issues.some((issue) => issue.path.length === 0 || issue.path[0] === "deck")) return inputRefusal(issues, raw)
