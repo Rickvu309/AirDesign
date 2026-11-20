@@ -112,6 +112,11 @@ function foldTree(state: Indexed): Tree {
   const vacated = new Set<ElementId>()
   const rejoined = new Set<ElementId>()
   for (const command of state.order) {
+    if (command.slide === "element-clone") {
+      if (command.element.group !== undefined) rejoined.add(command.element.group)
+      for (const copy of [command.element, ...(command.layers ?? []).map((layer) => layer.element)])
+        if (copy.kind === "group" && copy.framing === undefined) rejoined.add(copy.node)
+    }
     if (command.slide === "element-group") {
       const node = command.element.node
       parent.set(node, null)

@@ -4,7 +4,7 @@ import { boxOf, type Moved } from "./box-gesture.js"
 import type { DragSnap } from "./drag-snap.js"
 import { copiesInPlace, copyBoard, copySnap, lastOffset, type Copied, type CopyBoard } from "./layer-copies.js"
 import type { CanvasSlide } from "./record.js"
-import type { Selection } from "./selection.js"
+import { parentOf, type Selection } from "./selection.js"
 import type { BoxGrip, PaintStore } from "./store.js"
 
 export type Duplicate = (copies: readonly Moved[]) => Promise<readonly Copied[]>
@@ -61,7 +61,8 @@ export function useLayerCopies(options: {
     landing.current = false
     for (const grip of waiting.grips) grip.release()
     board.show([])
-    const next = { ids: waiting.ids, inside: null }
+    const [lead] = waiting.ids
+    const next = { ids: waiting.ids, inside: lead === undefined ? null : parentOf(shown.current, lead) }
     chosen.current.choose(next)
     if (waiting.from?.isConnected === true) chosen.current.focus(waiting.from, next)
     chosen.current.say(`Duplicated ${labelOf(waiting.ids, waiting.from)}`)

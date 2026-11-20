@@ -1,6 +1,7 @@
 import { assetIcon, mediaTypes, type Media } from "./asset-ref.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { floorOf, openingElement, readFloor } from "./slide-floor.js"
 import { slideMeasure } from "./slide-measure.js"
@@ -9,7 +10,7 @@ import type { SlideState } from "./slide-order.js"
 import { hasSlideNumber, openingSlideNumber } from "./text-value.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
-import { frameBackdrop, groupedNow, groupEmptied, groupParent } from "./element-group.js"
+import { frameBackdrop, groupChildren, groupedNow, groupEmptied, groupParent, plainGroup } from "./element-group.js"
 import type { Kind } from "./kinds.js"
 
 export const geometries = presets
@@ -46,16 +47,19 @@ export type ElementOrder = {
   readonly among: readonly ElementId[]
 }
 
+export type ClonedLayer = { readonly source: ElementId; readonly element: IndexElement }
+
 export type ElementClone = {
   readonly slide: "element-clone"
   readonly id: SlideId
   readonly source: ElementId
   readonly element: IndexElement
+  readonly layers?: readonly ClonedLayer[]
 }
 
 export type ElementCommand = ElementAdd | ElementClone | ElementRemove | ElementRestore | ElementOrder
 
-export const clonedKinds: readonly Kind[] = ["shape", "connector"]
+export const clonedKinds: readonly Kind[] = ["shape", "connector", "group"]
 
 export function elementCommand(command: { readonly slide: string }): command is ElementCommand {
   return (
@@ -97,6 +101,8 @@ export function elementGone(state: SlideState, node: ElementId): boolean {
   let frame: ElementId | null = state.index === undefined ? null : (filedBackdrops(state.index).get(node) ?? null)
   for (const command of state.order) {
     if (command.slide === "element-group" && command.backdrop?.node === node) frame = command.element.node
+    if (command.slide === "element-clone" && command.layers?.some((layer) => layer.element.node === node))
+      frame = command.element.node
     const named = "node" in command && (command.node === node || command.node === frame)
     if ((command.slide === "element-remove" || command.slide === "element-ungroup") && named) gone = true
     if ((command.slide === "element-restore" || command.slide === "element-regroup") && named) gone = false
@@ -114,6 +120,8 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
     if (!("id" in command) || command.id !== slide) continue
     if (command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group")
       next = Math.max(next, shapeNumber(command.element.node) + 1)
+    if (command.slide === "element-clone")
+      for (const layer of command.layers ?? []) next = Math.max(next, shapeNumber(layer.element.node) + 1)
     if (command.slide === "element-group" && command.backdrop !== undefined)
       next = Math.max(next, shapeNumber(command.backdrop.node) + 1)
     if (command.slide === "element-remove" || command.slide === "element-restore")
@@ -175,17 +183,53 @@ type Refusal = "dead" | "present" | "group-box" | "locked" | "kind"
 
 export type CloneRefusal = Exclude<Refusal, "locked">
 
-export function cloneRefusal(state: Indexed, command: ElementClone): CloneRefusal | null {
-  const { element, source } = command
-  if (shapeOf(element.node).slide !== command.id || shapeOf(source).slide !== command.id) return "dead"
+function freshCopy(state: Indexed, element: IndexElement, id: SlideId): CloneRefusal | null {
+  const number = shapeNumber(element.node)
+  if (shapeOf(element.node).slide !== id) return "dead"
   if (openingElement(state, element.node) !== undefined || elementGone(state, element.node)) return "present"
-  if (!freshShape(element) || elementGone(state, source)) return "dead"
+  if (!Number.isInteger(number) || number <= 1 || number > highestShape || element.box === null) return "dead"
   if (hasSlideNumber(element.value)) return "present"
-  if (!clonedKinds.includes(element.kind)) return "kind"
+  return clonedKinds.includes(element.kind) ? null : "kind"
+}
+
+function copiedFrom(state: Indexed, source: ElementId, element: IndexElement): CloneRefusal | null {
+  if (elementGone(state, source) || shapeOf(source).slide !== shapeOf(element.node).slide) return "dead"
   const opening = openingElement(state, source)
   if (opening === undefined) return indexComplete(state) ? "dead" : null
-  if (opening.kind !== element.kind) return "kind"
-  return groupedNow(state, source) ? "group-box" : null
+  return opening.kind === element.kind ? null : "kind"
+}
+
+function layersRefusal(state: Indexed, command: ElementClone): CloneRefusal | null {
+  const copies = new Map<ElementId, ElementId>([[command.source, command.element.node]])
+  for (const layer of command.layers ?? []) {
+    const parent = groupParent(state, layer.source)
+    const above = typeof parent === "string" ? copies.get(parent) : undefined
+    if (above === undefined || copies.has(layer.source) || layer.element.group !== above) return "dead"
+    if (!layer.element.grouped || [...copies.values()].includes(layer.element.node)) return "dead"
+    const refusal = freshCopy(state, layer.element, command.id) ?? copiedFrom(state, layer.source, layer.element)
+    if (refusal !== null) return refusal
+    copies.set(layer.source, layer.element.node)
+  }
+  const held = (group: ElementId): readonly ElementId[] =>
+    groupChildren(state, group).flatMap((child) => (elementGone(state, child) ? [] : [child, ...held(child)]))
+  return held(command.source).every((child) => copies.has(child)) ? null : "kind"
+}
+
+export function cloneRefusal(state: Indexed, command: ElementClone): CloneRefusal | null {
+  const { element, source } = command
+  if (shapeOf(source).slide !== command.id) return "dead"
+  const fresh = freshCopy(state, element, command.id) ?? copiedFrom(state, source, element)
+  if (fresh !== null) return fresh
+  const parent = groupParent(state, source)
+  if (parent === undefined) return indexComplete(state) ? "dead" : null
+  if (parent !== null && (!plainGroup(state, parent) || element.group !== parent || !element.grouped))
+    return "group-box"
+  if (parent === null && element.grouped) return "dead"
+  return layersRefusal(state, command)
+}
+
+function cloned(state: Indexed, node: ElementId): boolean {
+  return state.order.some((command) => command.slide === "element-clone" && command.element.node === node)
 }
 
 export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, ElementOrder>): Refusal | null {
@@ -206,6 +250,7 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   if (command.slide === "element-restore") return removedNow(state, node) ? null : "dead"
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
+  if (cloned(state, node)) return null
   const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
   if (groupEmptied(state, node)) return animated ? "locked" : null
   const parent = groupParent(state, node)
@@ -216,12 +261,28 @@ export function elementRefusal(state: Indexed, command: Exclude<ElementCommand, 
   return animated ? "locked" : "kind"
 }
 
+function readLayers(raw: unknown, id: SlideId): readonly ClonedLayer[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > limits.elements) return undefined
+  const layers: ClonedLayer[] = []
+  for (const item of raw) {
+    const row = record(item)
+    if (row === null || !onlyKeys(row, ["source", "element"])) return undefined
+    const source = readElementId(row.source)
+    const element = readFloor([row.element], id)?.[0]
+    if (source === undefined || element === undefined || shapeOf(source).slide !== id) return undefined
+    layers.push({ source, element })
+  }
+  return layers
+}
+
 export function readElementCommand(raw: Record<string, unknown>, id: SlideId): ElementCommand | undefined {
   if (raw.slide === "element-clone") {
     const element = readFloor([raw.element], id)?.[0]
     const source = readElementId(raw.source)
     if (element === undefined || source === undefined || shapeOf(source).slide !== id) return undefined
-    return { slide: "element-clone", id, source, element }
+    if (raw.layers === undefined) return { slide: "element-clone", id, source, element }
+    const layers = readLayers(raw.layers, id)
+    return layers === undefined ? undefined : { slide: "element-clone", id, source, element, layers }
   }
   if (raw.slide === "element-add") {
     const element = readFloor([raw.element], id)?.[0]

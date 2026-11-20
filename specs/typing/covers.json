@@ -4,8 +4,8 @@
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["recordsInFlight", "joined", "recorded", "turnBack"],
-      "digest": "b0e6fe2566b1",
-      "blob": "099e57517effc643b12289a6fa768e9c039a63a9"
+      "digest": "4ce863e77683",
+      "blob": "787c0bc93b538c9c5838a7561f7f216184647994"
     },
     {
       "file": "apps/web/src/live-repaint.ts",
@@ -28,8 +28,8 @@
     {
       "file": "packages/render/src/passage.tsx",
       "names": ["Passage"],
-      "digest": "316dbc33ec11",
-      "blob": "74169d83a01bd7f2ce39feda9358000b7e13e32d"
+      "digest": "5dab169ac15c",
+      "blob": "f831697cad14ddb42e3f1cabc780d7885dbca21b"
     },
     {
       "file": "apps/web/src/editor/notes-bar.tsx",

@@ -28,7 +28,9 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 }
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
-  if (command.slide === "element-add" || command.slide === "element-clone") return [command.element]
+  if (command.slide === "element-add") return [command.element]
+  if (command.slide === "element-clone")
+    return [command.element, ...(command.layers ?? []).map((layer) => layer.element)]
   if (command.slide === "element-group")
     return command.backdrop === undefined ? [command.element] : [command.element, command.backdrop]
   return slideBirths(command).flatMap((birth) => birth.floor ?? [])
@@ -66,6 +68,13 @@ export function newSlideElement(state: Floored | null, node: ElementId): IndexEl
   const added = state.order.find((command) => command.slide === "element-add" && command.element.node === node)
   if (added?.slide !== "element-add") return undefined
   return hasSlideNumber(added.element.value) ? added.element : undefined
+}
+
+export function clonedLayer(state: Floored, node: ElementId): IndexElement | undefined {
+  for (const command of state.order)
+    if (command.slide === "element-clone")
+      for (const layer of command.layers ?? []) if (layer.element.node === node) return layer.element
+  return undefined
 }
 
 export function floorNodes(state: Floored): readonly ElementId[] {

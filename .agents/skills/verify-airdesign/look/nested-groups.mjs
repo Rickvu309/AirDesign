@@ -74,3 +74,34 @@ export async function turnedEmptied(kit) {
       .catch(() => undefined)
   }
 }
+
+const beside = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#6"]'
+
+export async function scaledCopied(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, fixture)
+  const box = await kit.page.locator(beside).boundingBox()
+  if (box === null) throw new Error("no beside")
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2]
+  await kit.page.mouse.move(x, y)
+  await kit.page.keyboard.down("AltLeft")
+  await kit.page.mouse.down()
+  await kit.page.mouse.move(x, y + 150, { steps: 6 })
+  await kit.page.mouse.up()
+  await kit.page.keyboard.up("AltLeft")
+  await kit.page
+    .locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#8"]')
+    .waitFor({ timeout: 3000 })
+    .catch(() => undefined)
+}
+
+export async function leafCopiedInPanel(kit) {
+  await layersOpened(kit)
+  await row(kit.page, 4).click()
+  await row(kit.page, 4).focus()
+  await kit.page.keyboard.press("ControlOrMeta+KeyD")
+  await row(kit.page, 8)
+    .waitFor({ timeout: 3000 })
+    .catch(() => undefined)
+}

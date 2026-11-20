@@ -7,6 +7,7 @@ import {
   netPatch,
   readLayout,
   rebasedGroups,
+  clonedLayer,
   newSlideElement,
   rowOf,
   shapeOf,
@@ -242,7 +243,7 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
     if (node === templateStylesNode) continue
     if (node.includes(".") && (slideGone(register, shapeOf(node).slide) || elementGone(register, node))) continue
     const body = register.nodes.includes(node) ? register.elements[node] : undefined
-    const opening = newSlideElement(register, node)
+    const opening = newSlideElement(register, node) ?? clonedLayer(register, node)
     const kind = slideKind(node)
     const index = templateStyleIndex(node)
     if (index !== null) {
