@@ -1,4 +1,5 @@
 import {
+  alignNames,
   lastListLevel,
   spacingNames,
   type Color,
@@ -26,10 +27,15 @@ export type ParagraphPaint = {
   readonly firstRun?: RunPaint & { readonly from: number }
 } & ParagraphSpacing
 
+function alignOf(raw: string | undefined): Pick<ParagraphPaint, "align"> {
+  const align = alignNames.find((name) => name === raw)
+  return align === undefined ? {} : { align }
+}
+
 export function paragraphPaint(dataset: DOMStringMap): ParagraphPaint {
   const { align, list, level } = dataset
   let paint: ParagraphPaint = {
-    ...(align === "left" || align === "center" || align === "right" ? { align } : {}),
+    ...alignOf(align),
     ...(list === "none" || list === "bullets" || list === "numbers" ? { list } : {}),
     ...(level !== undefined && /^\d$/.test(level) && Number(level) <= lastListLevel ? { level: Number(level) } : {}),
   }

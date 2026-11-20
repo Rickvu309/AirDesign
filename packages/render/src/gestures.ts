@@ -334,6 +334,7 @@ export const gestures = [
   { id: "text-left", group: "text", keys: [{ code: "KeyL", mod: true, alt: true }], where: ["element", "text"] },
   { id: "text-center", group: "text", keys: [{ code: "KeyT", mod: true, alt: true }], where: ["element", "text"] },
   { id: "text-right", group: "text", keys: [{ code: "KeyR", mod: true, alt: true }], where: ["element", "text"] },
+  { id: "text-justify", group: "text", keys: [{ code: "KeyJ", mod: true, alt: true }], where: ["element", "text"] },
   { id: "bullets", group: "text", keys: [{ code: "Digit8", mod: true, shift: true }], where: ["element", "text"] },
   {
     id: "list-indent",

@@ -117,6 +117,7 @@ export const shortcutCopy = {
     "text-left": "Align text left",
     "text-center": "Align text center",
     "text-right": "Align text right",
+    "text-justify": "Justify text",
     bullets: "Bulleted list",
     "list-indent": "Indent list item",
     "list-outdent": "Outdent list item",
