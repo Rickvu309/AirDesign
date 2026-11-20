@@ -112,6 +112,7 @@ for (const name of [
   "auto-layout-measure",
   "auto-layout-nested",
   "group-transform",
+  "group-text-copy",
   "mask-group",
   "eyedropper",
   "resize-to-fit",
