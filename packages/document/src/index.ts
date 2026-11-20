@@ -177,6 +177,7 @@ export {
 export { listedPaints, listedSlots, type FillsListEdit } from "./fills-list.js"
 export { nameBytes } from "./trait-identity.js"
 export { assetIcon, assetMedia, iconNamePattern, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
+export { iconSideOn } from "./icon-size.js"
 export { mediaSize, mediaTypeOf, overPixelLimit } from "./media-bytes.js"
 export {
   arrowheads,

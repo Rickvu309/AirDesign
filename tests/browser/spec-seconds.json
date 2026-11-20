@@ -139,6 +139,7 @@
     "home-stars.spec.ts": 13.5,
     "home.spec.ts": 22.9,
     "icon-color.spec.ts": 7.3,
+    "icon-size.spec.ts": 4,
     "icon-weight.spec.ts": 9.9,
     "import-progress.spec.ts": 1.6,
     "imported-table.spec.ts": 2.2,
