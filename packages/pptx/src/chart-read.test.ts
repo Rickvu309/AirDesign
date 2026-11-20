@@ -69,3 +69,10 @@ it("reads PowerPoint's own pie charts, and finds their caches match their workbo
   )
   expect(chartWorkbookErrors(read.parts)).toEqual([])
 })
+
+it("reads data labels that follow their numbers' own format, as PowerPoint links them", () => {
+  const xml = chartSpaceXml({ ...consulting, labels: "General" }, "rId1")
+    .replace('<c:numFmt formatCode="General" sourceLinked="0"/><c:spPr><a:noFill/>', "<c:spPr><a:noFill/>")
+    .replaceAll("<c:formatCode>General</c:formatCode>", "<c:formatCode>0.0%</c:formatCode>")
+  expect(chartValueOf(encodeUtf8(xml))?.labels).toBe("0.0%")
+})

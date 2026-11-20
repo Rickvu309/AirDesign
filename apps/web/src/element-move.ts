@@ -6,8 +6,12 @@ import { laidBox } from "@/frame-boxes"
 
 const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp", "p:grpSp"])
 
+function movableKind(shape: ReadShape): boolean {
+  return movableKinds.has(shape.kind) || (shape.kind === "p:graphicFrame" && shape.contentKind === "chart")
+}
+
 export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape, placed = false): boolean {
-  if (!movableKinds.has(shape.kind) || shape.locked || (shape.grouped && !placed)) return false
+  if (!movableKind(shape) || shape.locked || (shape.grouped && !placed)) return false
   const { part } = shape
   try {
     applyRoute(parts, { name: "move", part, shape: shape.shape, x: 0, y: 0 })

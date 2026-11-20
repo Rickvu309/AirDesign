@@ -1,5 +1,6 @@
 import type { Bound, ElementId, Place, PlacedRow, Register, SetChange } from "@airdesign/document"
 import { connect } from "@airdesign/live"
+import { fileChartValue, readShapes, type ReadShape } from "@airdesign/pptx"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { designCopy } from "@/copy/design-copy"
@@ -20,8 +21,21 @@ export type DesignDeck = {
   readonly settle: (outcome: CommitOutcome) => void
 }
 
+const fileShapes = new WeakMap<ReadonlyMap<string, Uint8Array>, ReadonlyMap<string, ReadShape>>()
+
+function fileShape(parts: ReadonlyMap<string, Uint8Array>, node: ElementId): ReadShape | undefined {
+  let shapes = fileShapes.get(parts)
+  if (shapes === undefined) {
+    shapes = new Map(readShapes(parts).map((shape) => [`${shape.slide}.${shape.shape}`, shape]))
+    fileShapes.set(parts, shapes)
+  }
+  return shapes.get(node)
+}
+
 export function fileValue(shown: DeckPaint, node: ElementId): string | null {
-  const shape = shown.shapes.current.get(node)
+  const parts = shown.editParts.current
+  const shape = shown.shapes.current.get(node) ?? fileShape(parts, node)
+  if (shape?.contentKind === "chart") return fileChartValue(parts, shape.part, shape.shape)
   return shape?.contentKind === "table" ? fileTableValue(shown.editParts.current, shape) : null
 }
 
@@ -32,7 +46,12 @@ function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
     parts: () => shown.shownParts.current,
     floor: (node) => shown.boxes.current.get(node)?.file ?? shown.movables.current.get(node)?.file ?? "",
     file: (node) => fileValue(shown, node),
-    fits: (node, value) => valueFits(shown.editParts.current, shown.shapes.current.get(node), value),
+    fits: (node, value) =>
+      valueFits(
+        shown.editParts.current,
+        shown.shapes.current.get(node) ?? fileShape(shown.editParts.current, node),
+        value,
+      ),
     hold: () => undo.records.current.hold(),
     record: (entry) => deck.record(session === null ? entry : { ...entry, session }),
     show: (register) => {

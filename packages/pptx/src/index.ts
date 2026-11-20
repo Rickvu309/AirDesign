@@ -1,6 +1,7 @@
 export { browserExportFailures, paragraphExportFailures, routeExportFailures } from "./browser-export.js"
 export { branchOrderErrors } from "./child-order.js"
 export { chartValueOf } from "./chart-read.js"
+export { fileChartValue } from "./trait-xml-chart.js"
 export { chartWorkbookErrors } from "./chart-workbook-check.js"
 export { exportPackage } from "./export-package.js"
 export { indexPackage } from "./index-package.js"

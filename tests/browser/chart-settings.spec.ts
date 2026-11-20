@@ -64,7 +64,9 @@ test("sets a chart's title, data labels, axis, gridlines, gap, colour and legend
   const gap = settings.getByRole("textbox", { name: chartCopy.gap })
   await gap.fill("40")
   await gap.press("Enter")
-  await typeColor(page, settings.getByLabel("Series 1", { exact: true }).getByRole("button").first(), "1F4E79")
+  const navy = "1F4E79"
+  await typeColor(page, settings.getByLabel("Series 1", { exact: true }).getByRole("button").first(), navy)
+  await expect(canvas.locator(`svg[data-chart] [fill="#${navy}"]`).first()).toBeVisible()
   await expect(settings.getByRole("checkbox", { name: chartCopy.gridlines, exact: true })).not.toBeChecked()
   await page.reload()
   await decks.ready()
