@@ -11,7 +11,7 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { indexPackage, orderedParts } from "@airdesign/pptx"
+import { indexPackage } from "@airdesign/pptx"
 import { shownBox } from "@/element-move"
 import { slideBase } from "@/exported-parts"
 import { shownValue } from "@/live-repaint"
@@ -31,7 +31,7 @@ export function flooredEdit(
   if (edit.slide === "add") {
     return {
       ...edit,
-      floor: slideRows(orderedParts(parts, { ...register, file, order: [...register.order, edit] }), edit.id),
+      floor: slideRows(slideBase(parts, { ...register, file, order: [...register.order, edit] }), edit.id),
     }
   }
   if (edit.slide !== "clone") return edit

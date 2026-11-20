@@ -131,6 +131,9 @@ export const productCopy = {
   editsTooLarge:
     "Unable to save. These edits are larger than a deck allows, so they stay on this device. Export to keep a copy.",
   editsSetAside: "Unable to save some edits. The deck changed, so make them again if you need them.",
+  editsLeftOut: "Unable to show some edits",
+  editsLeftOutBody:
+    "AirDesign can't write them into this deck's PowerPoint file, so the slides and an export leave them out. Your other edits still save.",
   editSetAsideTooLarge:
     "Unable to save an edit. It was too large to save, so an export of this deck does not include it.",
   editTooLarge: "Unable to save edits to this layer. It is too large to send, so it stays as it was.",
