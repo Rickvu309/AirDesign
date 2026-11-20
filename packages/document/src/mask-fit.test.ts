@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  cloneOf,
   decide,
   elementId,
   format,
@@ -93,5 +94,21 @@ describe("A mask group fits its mask, as in Figma", () => {
   it("fits every layer while the mask is hidden, since a hidden mask clips nothing", () => {
     const hidden = ran(masked(), [row(mask, { identity: { hidden: { set: true } } })])
     expect(shownPlace(hidden, made)?.box).toEqual(photoBox)
+  })
+
+  it("fits the mask of a mask group pasted onto another slide, whose mask flag came with the copy", () => {
+    const other = slideId("257")
+    const twoSlides: Register = {
+      ...indexed,
+      index: {
+        ...indexed.index!,
+        slides: [...indexed.index!.slides, { id: "257", position: 1, free: 20, animated: [] }],
+      },
+    }
+    const grouped = ran(twoSlides, maskTurn(twoSlides, [slide, other], slide, made, [photo, mask], mask)!.commands)
+    const pasted = cloneOf(grouped, made, elementId("257.20"), maskBox)
+    if (!pasted.ok) throw new Error(pasted.refusal)
+    const after = ran(grouped, [{ command: "slide", file: [slide, other], edit: pasted.command }])
+    expect(shownPlace(after, elementId("257.20"))?.box).toEqual(maskBox)
   })
 })
