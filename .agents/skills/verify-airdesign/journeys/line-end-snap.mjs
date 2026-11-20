@@ -18,7 +18,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await page.goto("./")
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/shapes-added.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const deck = page.url().split("/").at(-1)
+  const deck = page.url().match(/\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   const canvas = page.locator("[data-slide-paint]")
   const guide = (name) => page.locator(`[data-guides] [data-guide="${name}"]`)
