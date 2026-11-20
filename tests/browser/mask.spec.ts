@@ -30,7 +30,7 @@ async function placed(page: Page, name: string) {
   await page.getByRole("button", { name, exact: true }).click()
   await page.keyboard.press("Enter")
   await expect(layers).toHaveCount(before + 1)
-  const shape = (await layers.last().getAttribute("data-canvas-element"))?.split("#")[1] ?? ""
+  const shape = (await layers.last().getAttribute("data-canvas-element"))?.split(/#/)[1] ?? ""
   const added = page.locator("[data-slide-paint] [data-selection]")
   await expect(added).toHaveAttribute("data-selection", new RegExp(`\\.${shape}$`))
   return added
