@@ -24,6 +24,7 @@ import {
 const outer = elementId("7.9")
 const inner = elementId("7.8")
 const backdrop = elementId("7.10")
+const innerBackdrop = elementId("7.11")
 const first = elementId("7.2")
 const second = elementId("7.3")
 const deep = elementId("7.5")
@@ -88,6 +89,37 @@ describe("a click", () => {
     const opened = { ids: [first], inside: outer }
     expect(picked(slide, opened, second)).toEqual({ ids: [second], inside: outer })
     expect(picked(slide, opened, loose)).toEqual({ ids: [loose], inside: null })
+  })
+})
+
+describe("layers that name their top group and their own parent, as the canvas paints them", () => {
+  const painted = slideOf([
+    element(outer, undefined, { kind: "group", frame: "auto", filled: false }),
+    element(backdrop, outer, { backdrop: true, parent: outer }),
+    element(first, outer, { parent: outer }),
+    element(inner, outer, { kind: "group", frame: "auto", filled: false, parent: outer }),
+    element(innerBackdrop, outer, { backdrop: true, parent: inner }),
+    element(deep, outer, { parent: inner }),
+    element(second, outer, { parent: inner }),
+  ])
+
+  it("steps in one level at a time, so a double-click on a nested leaf picks the inner frame first", () => {
+    expect(picked(painted, noSelection, deep)).toEqual({ ids: [outer], inside: null })
+    const opened = steppedIn(painted, many(outer), deep)
+    expect(opened).toEqual({ ids: [inner], inside: outer })
+    expect(steppedIn(painted, opened!, deep)).toEqual({ ids: [deep], inside: inner })
+  })
+
+  it("resolves a press on the inner frame's backdrop to the frame at the selection's level", () => {
+    expect(unitOf(painted, noSelection, innerBackdrop)).toBe(outer)
+    expect(unitOf(painted, { ids: [inner], inside: outer }, innerBackdrop)).toBe(inner)
+  })
+
+  it("goes back up one level, down to the children, across siblings and over the whole level by the parent", () => {
+    expect(parentSelection(painted, { ids: [deep], inside: inner })).toEqual({ ids: [inner], inside: outer })
+    expect(childrenSelection(painted, { ids: [inner], inside: outer })).toEqual({ ids: [deep, second], inside: inner })
+    expect(siblingSelection(painted, { ids: [deep], inside: inner }, 1)).toEqual({ ids: [second], inside: inner })
+    expect(allSelection(painted, { ids: [deep], inside: inner })).toEqual({ ids: [deep, second], inside: inner })
   })
 })
 

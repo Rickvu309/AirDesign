@@ -100,5 +100,11 @@
     "detector": "invisible-control",
     "selector": "[data-table-text]",
     "reason": "An empty table cell is where a person types after a double-click, so it paints nothing of its own; the table's grid lines and fills around it show the cell, as an empty cell in PowerPoint or Figma Slides does."
+  },
+  {
+    "page": "group-stepped-in",
+    "detector": "invisible-control",
+    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"], [data-canvas-element=\"ppt/slides/slide1.xml#3\"]",
+    "reason": "A group's own layer is where a person grabs the group, so it paints nothing of its own; the layers it holds paint under it."
   }
 ]

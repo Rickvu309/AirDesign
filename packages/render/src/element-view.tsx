@@ -1,4 +1,4 @@
-import { memo, useSyncExternalStore } from "react"
+import { memo, useCallback, useMemo, useSyncExternalStore } from "react"
 import type { Box, ElementId, SlideId } from "@airdesign/document"
 import type { ElementRecord } from "./record.js"
 import type { PaintStore } from "./store.js"
@@ -23,6 +23,30 @@ export function useBox(store: PaintStore, id: ElementId, read: BoxRead = shownBo
     () => read(store, id),
     () => read(store, id),
   )
+}
+
+function boxText(box: Box | null): string {
+  return box === null ? "-" : `${String(box.x)},${String(box.y)},${String(box.cx)},${String(box.cy)}`
+}
+
+export function useBoxes(
+  store: PaintStore,
+  ids: readonly ElementId[],
+  read: BoxRead = shownBox,
+): readonly (Box | null)[] {
+  const key = ids.join(" ")
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      const stops = ids.map((id) => store.boxSubscribe(id)(listener))
+      return () => {
+        for (const stop of stops) stop()
+      }
+    },
+    [store, key],
+  )
+  const snapshot = () => ids.map((id) => boxText(read(store, id))).join(" ")
+  const shown = useSyncExternalStore(subscribe, snapshot, snapshot)
+  return useMemo(() => ids.map((id) => read(store, id)), [store, key, shown, read])
 }
 
 export function useRotation(store: PaintStore, id: ElementId): number | null {

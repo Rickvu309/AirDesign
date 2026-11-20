@@ -31,7 +31,8 @@ function copiesOf(deck: LayeringDeck, slide: CanvasSlide | null, nodes: readonly
 }
 
 function insideOf(slide: CanvasSlide | null, node: ElementId | null): ElementId | null {
-  return slide?.elements.find((each) => each.id === node)?.group?.id ?? null
+  const found = slide?.elements.find((each) => each.id === node)
+  return found?.parent ?? found?.group?.id ?? null
 }
 
 function layerSelection(slide: CanvasSlide | null, nodes: readonly ElementId[]): Selection {

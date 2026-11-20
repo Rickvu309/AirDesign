@@ -1,7 +1,7 @@
 import type { ElementId } from "@airdesign/document"
 import { travelled, type Point } from "./box-gesture.js"
 import type { CanvasElement, CanvasSlide, PaintBox } from "./record.js"
-import { noSelection, parentOf, selectionOf, type Selection } from "./selection.js"
+import { noSelection, parentIn, parentOf, selectionOf, type Selection } from "./selection.js"
 
 export type MarqueeRect = {
   readonly left: number
@@ -65,8 +65,9 @@ function outermostUnit(slide: CanvasSlide, present: ReadonlySet<ElementId>, id: 
 function containerIds(slide: CanvasSlide): ReadonlySet<ElementId> {
   const containers = new Set<ElementId>()
   for (const each of slide.elements) {
-    if (each.id === null || each.backdrop === true || each.group === undefined) continue
-    containers.add(each.group.id)
+    const parent = parentIn(each)
+    if (each.id === null || each.backdrop === true || parent === null) continue
+    containers.add(parent)
   }
   return containers
 }

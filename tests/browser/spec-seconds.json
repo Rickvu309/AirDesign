@@ -162,6 +162,7 @@
     "mask.spec.ts": 12.9,
     "menu-motion.spec.ts": 2.9,
     "nav-pill.spec.ts": 1.1,
+    "nested-step-in.spec.ts": 5,
     "new-slide-prompts.spec.ts": 8.8,
     "newer-deck.spec.ts": 2.5,
     "not-found.spec.ts": 9,

@@ -107,6 +107,16 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   expect(nested[triangle].y).toBeGreaterThan(nested[4].y + nested[4].height - 1)
   await capture("nested")
 
+  await page.keyboard.press("Escape")
+  await element(4).click()
+  await expect(chosen()).toHaveAttribute("data-selection", outer)
+  await element(4).dblclick()
+  await expect(chosen()).toHaveAttribute("data-selection", inner)
+  await element(4).dblclick()
+  await expect(chosen()).toHaveAttribute("data-selection", id(4))
+  await page.keyboard.press("Escape")
+  await expect(chosen()).toHaveAttribute("data-selection", inner)
+  await capture("stepped-into-inner")
   const frameRow = (node) => layers.getByRole("treeitem", { name: `Frame ${node.split(".")[1]}`, exact: true })
   const pickInner = async () => {
     await frameRow(outer).click()
@@ -195,6 +205,6 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await capture("reimported")
 
   note(
-    `A square and a circle became an auto layout frame (${inner}) with Shift+A. That frame and a triangle under it, chosen with Shift+click, became a second auto layout frame (${outer}) with Shift+A: a column holding the row and the triangle, the panel reading Auto layout frame with Direction Vertical. The inner frame, picked in the layers panel, turned to a column with Direction Vertical; the circle went under the square and the triangle moved down with it, and Undo and Redo moved them back and forth. A diamond dragged between the square and the circle joined the inner frame there (an element-join into ${inner} before the circle), pushing the circle and the triangle down. A reload kept every place, and the export ${path.basename(exported)} re-imported with both frames read back as auto layout frames, the inner one still a column, every shape where it was.`,
+    `A square and a circle became an auto layout frame (${inner}) with Shift+A. That frame and a triangle under it, chosen with Shift+click, became a second auto layout frame (${outer}) with Shift+A: a column holding the row and the triangle, the panel reading Auto layout frame with Direction Vertical. A click on the square picked the outer frame, a double-click the inner frame, another the square, and Escape the inner frame again. The inner frame, picked in the layers panel, turned to a column with Direction Vertical; the circle went under the square and the triangle moved down with it, and Undo and Redo moved them back and forth. A diamond dragged between the square and the circle joined the inner frame there (an element-join into ${inner} before the circle), pushing the circle and the triangle down. A reload kept every place, and the export ${path.basename(exported)} re-imported with both frames read back as auto layout frames, the inner one still a column, every shape where it was.`,
   )
 }

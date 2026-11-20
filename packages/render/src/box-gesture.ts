@@ -134,21 +134,30 @@ export function ownBox(
   return paintedAt(element.box, box, rotation)
 }
 
+type Holder = { readonly box: PaintBox | null; readonly frame?: unknown }
+
 export function memberAt(
   element: {
     readonly box: PaintBox | null
     readonly connection?: unknown
     readonly movable?: boolean
-    readonly group?: { readonly box: PaintBox | null; readonly frame?: unknown }
+    readonly group?: Holder
+    readonly nestedIn?: readonly Holder[]
   },
   own: Box | null,
   rotation: number | null,
   carried: Box | null,
+  nestedCarried: readonly (Box | null)[] = [],
 ): PaintBox | null {
   const placed = ownBox(element, own, rotation)
   const group = element.group
   if (group === undefined || (own !== null && element.movable === true && group.frame === undefined)) return placed
-  return followed(placed, group.box, carried, group.frame === undefined)
+  const holders = element.nestedIn ?? []
+  const nested = holders.reduce(
+    (child, holder, at) => followed(child, holder.box, nestedCarried[at] ?? null, holder.frame === undefined),
+    placed,
+  )
+  return followed(nested, group.box, carried, group.frame === undefined)
 }
 
 export function followed(

@@ -1,7 +1,7 @@
 import type { PaintElement, PaintTie } from "@airdesign/pptx"
 import type { CanvasElement } from "@airdesign/render"
 import { paintFrame } from "@/canvas-frame"
-import { groupsOf, paintGroup, withHeld } from "@/canvas-group"
+import { groupsOf, holdersOf, paintGroup, withHeld } from "@/canvas-group"
 import { paintPicture } from "@/canvas-picture"
 import { paintPreset } from "@/preset-paint"
 import type { CanvasSource } from "@/canvas-source"
@@ -54,6 +54,7 @@ export function paintElements(
   const seen = new Map<string, number>()
   const elements: (readonly [CanvasElement, PaintElement])[] = []
   const tops = groupsOf(rows, source)
+  const holders = holdersOf(rows, source)
   const locked = lockedShapes(rows)
   for (const row of rows) {
     const kind = paintKindOf(row)
@@ -62,7 +63,13 @@ export function paintElements(
     seen.set(name, count + 1)
     const key = count === 0 ? name : `${name}#${count}`
     const group = row.from === "slide" ? tops.get(row.shape) : undefined
-    const carried = group === undefined ? {} : { group }
+    const parent = row.from === "slide" && row.group !== null ? source.shapes.get(row.group)?.id : undefined
+    const nestedIn = row.from === "slide" ? holders.get(row.shape) : undefined
+    const carried = {
+      ...(group === undefined ? {} : { group }),
+      ...(parent === undefined ? {} : { parent }),
+      ...(nestedIn === undefined ? {} : { nestedIn }),
+    }
     const lock = row.from === "slide" && locked.has(row.shape) ? ({ locked: true, movable: false } as const) : {}
     if (kind === "group") {
       const painted = paintGroup(row, source, key)

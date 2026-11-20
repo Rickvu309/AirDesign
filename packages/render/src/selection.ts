@@ -18,13 +18,19 @@ function findElement(slide: CanvasSlide, id: ElementId): CanvasElement | undefin
   return slide.elements.find((each) => each.id === id)
 }
 
+export function parentIn(element: CanvasElement): ElementId | null {
+  return element.parent ?? element.group?.id ?? null
+}
+
 export function parentOf(slide: CanvasSlide, id: ElementId): ElementId | null {
-  return findElement(slide, id)?.group?.id ?? null
+  const element = findElement(slide, id)
+  return element === undefined ? null : parentIn(element)
 }
 
 export function ownerOf(slide: CanvasSlide, id: ElementId): ElementId {
   const element = findElement(slide, id)
-  return element?.backdrop === true && element.group !== undefined ? element.group.id : id
+  const owner = element?.backdrop === true ? parentIn(element) : null
+  return owner ?? id
 }
 
 function unitIn(slide: CanvasSlide, inside: ElementId | null, pressed: ElementId): ElementId {
@@ -105,7 +111,8 @@ export function childrenSelection(slide: CanvasSlide, selection: Selection): Sel
   const children: ElementId[] = []
   for (const each of slide.elements) {
     if (each.id === null || each.backdrop === true) continue
-    if (each.group !== undefined && parents.has(each.group.id) && !children.includes(each.id)) children.push(each.id)
+    const parent = parentIn(each)
+    if (parent !== null && parents.has(parent) && !children.includes(each.id)) children.push(each.id)
   }
   return children.length === 0 ? null : selectionOf(slide, children)
 }
@@ -116,7 +123,7 @@ export function siblingSelection(slide: CanvasSlide, selection: Selection, step:
   const siblings: ElementId[] = []
   for (const each of slide.elements) {
     if (each.id === null || each.backdrop === true) continue
-    if ((each.group?.id ?? null) === scope) siblings.push(each.id)
+    if (parentIn(each) === scope) siblings.push(each.id)
   }
   if (siblings.length === 0) return null
   const anchor = step === 1 ? lead : (selection.ids[0] ?? null)
@@ -134,9 +141,7 @@ function levelOf(slide: CanvasSlide, selection: Selection): ElementId | null {
 
 function layersAt(slide: CanvasSlide, level: ElementId | null): readonly ElementId[] {
   return slide.elements.flatMap((each) =>
-    each.id === null || each.backdrop === true || each.locked === true || (each.group?.id ?? null) !== level
-      ? []
-      : [each.id],
+    each.id === null || each.backdrop === true || each.locked === true || parentIn(each) !== level ? [] : [each.id],
   )
 }
 
