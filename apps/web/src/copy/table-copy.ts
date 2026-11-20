@@ -10,7 +10,7 @@ export const tableCopy = {
   textColor: "Text color",
   bold: "Bold",
   italic: "Italic",
-  align: "Align",
+  align: "Text align",
   addRow: "Add row",
   addColumn: "Add column",
   insertRow: (row: number) => `Add row below row ${String(row)}`,
