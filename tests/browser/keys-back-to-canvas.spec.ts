@@ -21,6 +21,9 @@ test("Tab while typing in plain text keeps the caret in that text layer, as in F
   const initial = await layers.count()
   await slide.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("t")
+  const placing = page.locator("[data-text-placing]")
+  const room = await placing.boundingBox()
+  await placing.click({ position: { x: (room?.width ?? 0) * 0.2, y: (room?.height ?? 0) * 0.8 } })
   const typing = slide.locator('[contenteditable="true"]:focus')
   await expect(typing).toHaveCount(1)
   const key = await typing.evaluate((node) =>

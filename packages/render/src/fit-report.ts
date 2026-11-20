@@ -48,7 +48,8 @@ export function useFitReport(
     if (!answers && (!sizeMoved(size, stored, unit) || reported.current === key)) return
     answered.current = owed
     reported.current = key
-    if (placed.inFrame === undefined && placed.group === undefined && painted.box !== null) place(painted.box)
+    if (placed.inFrame === undefined && placed.group === undefined)
+      place({ ...stored, width: size.width ?? stored.width, height: size.height })
     report(size)
   })
 }

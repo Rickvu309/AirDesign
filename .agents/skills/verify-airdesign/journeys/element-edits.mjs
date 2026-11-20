@@ -1,6 +1,7 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { newBlankDeck } from "../bin/new-deck.mjs"
+import { placeText } from "../bin/text-place.mjs"
 
 export default async function drive({ page, signIn, post, capture, note, deckRoutes }) {
   const { cookie } = await signIn()
@@ -9,13 +10,13 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page, { x: 0.2, y: 0.3 })
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(1)
   await expect(texts.first()).toBeFocused()
   await page.keyboard.type("Remove me")
   await capture("before-add")
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page, { x: 0.2, y: 0.6 })
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toBeFocused()
   await capture("added-box")

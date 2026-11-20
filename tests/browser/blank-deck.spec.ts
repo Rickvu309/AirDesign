@@ -5,6 +5,7 @@ import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
 import { test } from "./deck-test"
+import { placeText } from "./text-place"
 
 type ZipLibrary = {
   ZipReader: new (reader: unknown) => {
@@ -42,7 +43,7 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   const title = page.locator('[contenteditable="true"]').first()
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(0)
   await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(1)
   await expect(title).toHaveText("")
   await expect(title).toBeFocused()

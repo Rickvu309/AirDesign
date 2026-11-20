@@ -6,6 +6,7 @@ import { forward, signInBrowser, test, type Stack } from "./api-stack"
 import { holdWriteOf, holdWrites, readwrites, releaseWrite, writeHeld } from "./held-write"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { decksOn } from "./deck-test"
+import { placeText } from "./text-place"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const title = "ppt/slides/slide1.xml#2"
@@ -46,7 +47,7 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   await expect(texts).toHaveCount(1)
   const start = await placed(page, title)
 
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page, { x: 0.2, y: 0.8 })
   await expect(texts).toHaveCount(2)
   await page.keyboard.type("Added", { delay: 20 })
   await expect(texts.last()).toHaveText("Added")
@@ -97,7 +98,7 @@ test("an undo of an added text box an agent wrote in changes nothing, says so an
   await forward(page, stack)
   const deck = await decks.open()
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page, { x: 0.2, y: 0.8 })
   await expect(texts).toHaveCount(2)
   await page.keyboard.press("Escape")
   await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()

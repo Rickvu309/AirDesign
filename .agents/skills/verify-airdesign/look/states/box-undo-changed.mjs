@@ -3,6 +3,7 @@ import path from "node:path"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 import { openDeck } from "../open-deck.mjs"
+import { placeText } from "../../bin/text-place.mjs"
 
 async function drive(kit) {
   const { cookie } = await kit.signIn()
@@ -25,7 +26,7 @@ async function drive(kit) {
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
   const deck = kit.page.url().split("/").at(-1)
   const texts = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
-  await kit.page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(kit.page)
   await expect(texts).toHaveCount(2)
   await kit.page.keyboard.press("Escape")
   await expect(kit.page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()

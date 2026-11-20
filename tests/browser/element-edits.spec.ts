@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
 import { test } from "./deck-test"
+import { placeText } from "./text-place"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -31,12 +32,12 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   decks,
 }, testInfo) => {
   await decks.blank()
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page, { x: 0.2, y: 0.3 })
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(1)
   await expect(texts.first()).toBeFocused()
   await page.keyboard.type("Remove me")
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page, { x: 0.2, y: 0.6 })
   await expect(texts).toHaveCount(2)
   const added = texts.last()
   await expect(added).toBeFocused()
@@ -74,7 +75,7 @@ test("text typed straight after Add text box keeps its first letters", async ({ 
   await decks.blank()
   const boxes = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(boxes).toHaveCount(0)
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await page.keyboard.type("Typed fast", { delay: 20 })
   await expect(boxes).toHaveCount(1)
   await expect(boxes.last()).toHaveText("Typed fast")

@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test"
 import { newBlankDeck } from "../../bin/new-deck.mjs"
 import { editor } from "../editor-screen.mjs"
+import { placeText } from "../../bin/text-place.mjs"
 
 async function drive({ page, context, signIn }) {
   await signIn()
@@ -11,7 +12,7 @@ async function drive({ page, context, signIn }) {
   await expect(texts).toHaveCount(0)
   const device = await context.newCDPSession(page)
   await device.send("Emulation.setCPUThrottlingRate", { rate: 4 })
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
+  await placeText(page)
   await page.keyboard.type("Typed at once", { delay: 0 })
   await expect(texts).toHaveCount(1)
   await expect(texts.last()).toBeFocused()

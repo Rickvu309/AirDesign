@@ -36,6 +36,8 @@ import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useShortcutsKey } from "@/editor/shortcuts-key"
 import { useToolKeys } from "@/editor/tool-keys"
+import { TextPlacing } from "@/editor/text-placing"
+import type { TextPlace } from "@/element-edit"
 import { useChromeKeys } from "@/editor/chrome-keys"
 import type { PartsWatch } from "@/editor/use-deck-paint"
 import { useKeptView } from "@/editor/kept-view"
@@ -70,7 +72,7 @@ export type EditorDeck = {
   readonly undo: UndoButtonsState
   readonly selection?: Selection
   readonly select?: (selection: Selection) => void
-  readonly onText?: () => void
+  readonly onText?: (place?: TextPlace) => void
   readonly onTable?: (size: TableSize) => void
   readonly onChart?: (kind: ChartKind) => void
   readonly onSlideNumber?: () => void
@@ -153,7 +155,7 @@ export function EditorShell({
   const version = watched?.version ?? unchanged
   useSyncExternalStore(watched?.subscribe ?? unwatched, version, version)
   const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
-  const pointer = usePointerTool(deck !== undefined)
+  const pointer = usePointerTool(deck !== undefined, !gridOpen)
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
   const working = run === "working" || run === "own"
@@ -177,7 +179,6 @@ export function EditorShell({
     present.start(from === "first" ? 0 : (strip?.current ?? 0)),
   )
   useToolKeys(deck !== undefined && !gridOpen && present.show === null, {
-    onText: deck?.onText,
     onTablePicker: deck?.onTable === undefined ? undefined : () => setTablePicking(true),
     onShape: deck?.onShape,
     onPicture: deck?.onPicture,
@@ -375,6 +376,15 @@ export function EditorShell({
             ) : (
               deck.slide(width, { rulers, layoutGuides })
             )}
+            {deck?.onText === undefined || size === null || pointer.tool !== "text" ? null : (
+              <TextPlacing
+                slide={size}
+                onPlace={(place) => {
+                  pointer.pick("move")
+                  deck.onText?.(place)
+                }}
+              />
+            )}
           </div>
         </CanvasStage>
         <div
@@ -395,7 +405,7 @@ export function EditorShell({
           )}
           {bare ? null : (
             <div className="w-full px-4">
-              <EditorToolbar {...tools} />
+              <EditorToolbar {...tools} textTool />
             </div>
           )}
         </div>

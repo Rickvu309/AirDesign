@@ -63,6 +63,16 @@ export type ElementPaintProps = {
   readonly targets?: Targets | undefined
 } & TableEditing
 
+function resizing(placed: CanvasElement, resting: CanvasElement): boolean {
+  const { box } = placed
+  const before = resting.box
+  return box !== null && before !== null && (box.width !== before.width || box.height !== before.height)
+}
+
+function fitHeld(text: CanvasText | null): CanvasText | null {
+  return text?.fit?.kind !== "grow" ? text : { ...text, fit: { kind: "grow", held: true } }
+}
+
 function turned(box: PaintBox): string | undefined {
   const turns: string[] = []
   if (box.rotation !== 0) turns.push(`rotate(${box.rotation}deg)`)
@@ -425,10 +435,12 @@ function PlacedText(props: {
   const record = useElement(store, id)
   const shown = record?.text ?? ""
   const placed = usePlaced(store, props.element, id, props.targets)
-  const { element, layer } = useTextFit(placed, scaled, shown)
+  const resting = usePlaced(store, props.element, id, props.targets, restingBox)
+  const held = useMemo(() => fitHeld(placed.text), [placed.text])
+  const { element, layer } = useTextFit(resizing(placed, resting) ? { ...placed, text: held } : placed, scaled, shown)
   useFitReport(
     layer,
-    placed,
+    resting,
     element,
     scaled,
     (size) => props.onFit?.(id, size),
