@@ -230,3 +230,16 @@ it("uses distinct marker addresses when the same deck element paints twice", asy
   const ids = [...host.querySelectorAll("[id]")].map((node) => node.id)
   expect(new Set(ids).size).toBe(ids.length)
 })
+
+it("veils a shaded face of a filled cube in black or white over its fill", async () => {
+  const host = await canvas([{ ...shape, fill: "red", geometry: { preset: "cube", adjusts: {} } }])
+  const veils = [...host.querySelectorAll("[data-canvas-path] path[data-shade]")].map((path) => [
+    path.getAttribute("data-shade"),
+    path.getAttribute("fill"),
+    path.getAttribute("fill-opacity"),
+  ])
+  expect(veils).toEqual([
+    ["darkenLess", "black", "0.2"],
+    ["lightenLess", "white", "0.2"],
+  ])
+})

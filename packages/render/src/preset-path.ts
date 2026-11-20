@@ -36,6 +36,7 @@ export function presetOutline(
       ),
       fill: path.fill,
       stroke: path.stroke,
+      ...(path.shade === undefined ? {} : { shade: path.shade }),
     }))
   } catch {
     return null

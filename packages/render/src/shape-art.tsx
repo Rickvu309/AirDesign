@@ -1,5 +1,6 @@
 import { useId } from "react"
 import { presetOutline } from "./preset-path.js"
+import type { Shade } from "./preset-rule.js"
 import type { CanvasElement, CanvasLine } from "./record.js"
 import type { CanvasGeometry } from "./element-paint.js"
 import type { CanvasArrowSize } from "./line-record.js"
@@ -105,6 +106,19 @@ function ArrowMarker(props: {
       )}
     </marker>
   )
+}
+
+const veils: Readonly<Record<Shade, readonly [string, number]>> = {
+  lighten: ["white", 0.4],
+  lightenLess: ["white", 0.2],
+  darken: ["black", 0.4],
+  darkenLess: ["black", 0.2],
+}
+
+function ShadeVeil(props: { readonly d: string; readonly shade: Shade | undefined }) {
+  if (props.shade === undefined) return null
+  const [color, opacity] = veils[props.shade]
+  return <path data-shade={props.shade} d={props.d} fill={color} fillOpacity={opacity} />
 }
 
 const grabWidth = 10
@@ -227,13 +241,17 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
       ? null
       : paths.map((path, index) =>
           path.fill && fill !== null && element.outline !== "line" ? (
-            <path key={index} d={path.d} fill={fill} {...soft} />
+            <g key={index} {...soft}>
+              <path d={path.d} fill={fill} />
+              <ShadeVeil d={path.d} shade={path.shade} />
+            </g>
           ) : path.fill &&
             fill === null &&
             (element.fill !== null || element.layers !== undefined) &&
             element.outline !== "line" ? (
             <g key={index} {...soft}>
               <CssFill element={element} width={width} height={height} clip={`url(#${id}-fill-${index})`} />
+              <ShadeVeil d={path.d} shade={path.shade} />
             </g>
           ) : null,
         )

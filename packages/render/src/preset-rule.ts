@@ -1,5 +1,7 @@
 export { presetGuides } from "@airdesign/document"
 
+export type Shade = "lighten" | "lightenLess" | "darken" | "darkenLess"
+
 export type PresetRule = {
   readonly area?: string
   readonly adjusts: readonly string[]
@@ -7,6 +9,7 @@ export type PresetRule = {
   readonly paths: readonly {
     readonly data: string
     readonly fill: boolean
+    readonly shade?: Shade
     readonly stroke: boolean
     readonly width?: number
     readonly height?: number

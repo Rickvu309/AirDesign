@@ -173,3 +173,13 @@ it("keeps every preset's text area inside its box, at any size and adjust", () =
         expect(area.top + area.bottom, preset).toBeLessThanOrEqual(height + 1e-9)
       }
 })
+
+it("shades a cube's side and top and a can's top as PowerPoint's path fills say", () => {
+  expect(presetOutline("cube", 100, 100)?.map((path) => path.shade)).toEqual([
+    undefined,
+    "darkenLess",
+    "lightenLess",
+    undefined,
+  ])
+  expect(presetOutline("can", 100, 100)?.map((path) => path.shade)).toEqual([undefined, "lighten", undefined])
+})

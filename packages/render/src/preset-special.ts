@@ -240,6 +240,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       {
         data: "M l y1 A wd2 y1 cd2 cd2 A wd2 y1 0 cd2 Z",
         fill: true,
+        shade: "lighten",
         stroke: false,
       },
       {
@@ -271,11 +272,13 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       {
         data: "M x4 y1 L r t L r y4 L x4 b Z",
         fill: true,
+        shade: "darkenLess",
         stroke: false,
       },
       {
         data: "M l y1 L y1 t L r t L x4 y1 Z",
         fill: true,
+        shade: "lightenLess",
         stroke: false,
       },
       {
