@@ -1,7 +1,6 @@
-import { elementId, format, openRegister, slideId, writeTextValue, type Register } from "@airdesign/document"
 import { iconParts } from "@airdesign/pptx"
 import { expect, it, onTestFinished, vi } from "vitest"
-import { iconMarkup, iconPng, iconSvg, missingIcons, registerIcons } from "./icon-fallback"
+import { iconMarkup, iconPng, iconSvg, missingIcons } from "./icon-fallback"
 
 const ink = "000000"
 
@@ -19,58 +18,35 @@ it("draws a Lucide icon as a black-stroked SVG of its nodes, and knows no icon b
   expect(await iconSvg("rocketship")).toBeNull()
 })
 
-it("finds every icon a register shows: added icons, rows that set one, and icon fills", () => {
-  const slide = slideId("256")
-  const added = {
-    slide: "element-add",
-    id: slide,
-    element: {
-      node: elementId("256.5"),
-      kind: "shape",
-      value: null,
-      box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
-      grouped: false,
-      opening: { fills: { p0: { set: { image: true } }, source: { set: "rocket" } } },
-    },
-  } as const
-  const opened = openRegister("", "deck")
-  const root = opened.elements[opened.nodes[0]!]!
-  const node = elementId("256.2")
-  const landed = [
-    {
-      actor: "person",
-      visible: true,
-      v: format,
-      patch: { fills: { p0: { set: { image: true } }, source: { set: "star" } } },
-    },
-    { actor: "person", visible: true, v: format, patch: { fills: { source: { set: "leaf" } } } },
-  ] as const
-  const register: Register = {
-    ...opened,
-    order: [added],
-    nodes: [...opened.nodes, node],
-    elements: { ...opened.elements, [node]: { ...root, landed } },
-  }
-  expect([...registerIcons(register)].sort()).toEqual(["leaf", "rocket", "star"])
-  const held = new Map([
-    [iconParts("rocket").svg, new Uint8Array()],
-    [iconParts("rocket").png, new Uint8Array()],
-  ])
-  expect([...missingIcons(register, held)].sort()).toEqual(["leaf", "star"])
+it("draws an icon at its weight, Lucide's 2 unless a weight is given", () => {
+  const nodes = [["path", { d: "M1 2h3" }]] as const
+  expect(iconMarkup(nodes)).toContain('stroke-width="2"')
+  expect(iconMarkup(nodes, 150)).toContain('stroke-width="1.5"')
+  expect(iconMarkup(nodes, 275)).toContain('stroke-width="2.75"')
 })
 
-it("finds an icon that fills text, so an export can embed it", () => {
-  const opened = openRegister("", "deck")
-  const root = opened.elements[opened.nodes[0]!]!
-  const node = elementId("256.2")
-  const value = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Moon", fill: { image: "moon" } }] }])
-  const landed = [{ actor: "person", visible: true, v: format, patch: { text: { value: { set: value } } } }] as const
-  const register: Register = {
-    ...opened,
-    nodes: [...opened.nodes, node],
-    elements: { ...opened.elements, [node]: { ...root, landed } },
-  }
-  expect(registerIcons(register)).toEqual(["moon"])
+it("finds every icon the written slides link but neither the file nor the device holds", () => {
+  const link = (id: number, target: string) =>
+    `<Relationship Id="rId${String(id)}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="${target}"/>`
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${[
+    "../media/icon-rocket.w150.png",
+    "../media/icon-rocket.w150.svg",
+    "../media/icon-star.png",
+    "../media/icon-star.svg",
+    "../media/icon-leaf.svg",
+    "../media/image1.png",
+  ]
+    .map((target, at) => link(at + 1, target))
+    .join("")}</Relationships>`
+  const painted = new Map([
+    ["ppt/slides/_rels/slide1.xml.rels", new TextEncoder().encode(rels)],
+    [iconParts("leaf").svg, new Uint8Array()],
+  ])
+  const held = new Map([
+    [iconParts("star").svg, new Uint8Array()],
+    [iconParts("star").png, new Uint8Array()],
+  ])
+  expect(missingIcons(painted, held)).toEqual([{ name: "rocket", weight: 150 }])
 })
 
 it("makes an icon's PNG while the tab stays busy, since toBlob answers only when the browser goes idle", async () => {

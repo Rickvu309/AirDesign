@@ -15,6 +15,10 @@ export const fillsWire: TraitWire<"fills"> = {
       description: "Lucide icon name.",
       example: { fills: { source: "rocket" } },
     },
+    weight: {
+      description: "Icon line weight on Lucide's 24 grid.",
+      example: { fills: { weight: 1.5 } },
+    },
     mode: {
       description: "Fill covers, Fit contains, Crop clips, Tile repeats, Stretch distorts.",
       example: { fills: { mode: "fit" } },

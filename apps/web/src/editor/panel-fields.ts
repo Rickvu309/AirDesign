@@ -63,6 +63,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
             "fills.mode": { value: shownPictureMode(parts, at), own: true },
             "fills.tileScale": { value: shownTileScale(parts, at), own: true },
             "fills.source": { value: image.source, own: true },
+            "fills.weight": { value: image.weight, own: true },
             "fills.recolor": { value: image.recolor, own: true },
             "fills.blur": { value: image.blur === null ? null : Math.min(image.blur, 100_000), own: true },
           }),

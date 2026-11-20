@@ -138,10 +138,16 @@ export function appearanceSections(
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
   const mode = controls.find((control) => control.trait === "image" && control.field === "mode")
   const tileScale = controls.find((control) => control.trait === "image" && control.field === "tileScale")
+  const weight = controls.find(
+    (control) => control.trait === "image" && control.field === "weight" && typeof control.value === "number",
+  )
   const placement =
     mode === undefined
       ? []
-      : [[modeList(mode)], ...present([mode.value === "tile" ? tileScale : undefined]).map((control) => [control])]
+      : [
+          [modeList(mode)],
+          ...present([mode.value === "tile" ? tileScale : undefined, weight]).map((control) => [control]),
+        ]
   const overlay = controls.find((control) => control.trait === "image" && control.field === "overlay")
   const blur = controls.find((control) => control.trait === "image" && control.field === "blur")
   const adjust = [overlay, blur].filter((control) => control !== undefined)
@@ -239,7 +245,7 @@ export function appearanceSections(
           .map((strip) =>
             strip.filter((control) => {
               if (shapePanel) return false
-              return !["mode", "tileScale", "overlay", "blur"].includes(control.field)
+              return !["mode", "tileScale", "weight", "overlay", "blur"].includes(control.field)
             }),
           )
           .filter((strip) => strip.length > 0),

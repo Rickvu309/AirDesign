@@ -11,6 +11,7 @@ import {
   list,
   mark,
   pictureSource,
+  pointsWithin,
   record,
   union,
   type ValueOf,
@@ -94,6 +95,10 @@ export const recolors = union({ none: mark, grayscale: mark, duotone: record({ d
 
 export const fillModes = ["fill", "fit", "crop", "tile", "stretch"] as const
 
+export const iconWeights = { lightest: 50, lucide: 200, heaviest: 300 } as const
+
+const iconWeight = pointsWithin(iconWeights.lightest, iconWeights.heaviest)
+
 const shownPaint = union({ ...fillCases, image: mark, group: mark }, "solid")
 
 const slotPaint = union({ ...fillCases, image: mark, group: mark, hidden: shownPaint }, "solid")
@@ -116,13 +121,14 @@ export type PaintSlot = (typeof paintSlots)[number]
 
 export const fills = trait(
   "whole",
-  { version: 14, shape: "d908b195" },
+  { version: 15, shape: "58bfc1f7" },
   {
     p0: slotPaint,
     p1: slotPaint,
     p2: slotPaint,
     p3: slotPaint,
     source: pictureSource,
+    weight: iconWeight,
     mode: choice(fillModes),
     tileScale: fractionWithin(1000, 1_000_000),
     crop: record({ l: fraction, t: fraction, r: fraction, b: fraction }),

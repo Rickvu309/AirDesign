@@ -28,6 +28,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   connector: [masks],
   group: [masks],
   slide: [
+    "fills.weight",
     "fills.mode",
     "fills.tileScale",
     "fills.crop",

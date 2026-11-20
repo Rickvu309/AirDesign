@@ -6,7 +6,12 @@ import { busyElements } from "@/live-repaint"
 import { pictureStore } from "@/picture-tool"
 import type { PictureBytes } from "@/exported-parts"
 
-export type FirstSlide = { readonly slide: CanvasSlide; readonly store: PaintStore; release(): void }
+export type FirstSlide = {
+  readonly slide: CanvasSlide
+  readonly store: PaintStore
+  readonly display: ReadonlyMap<string, Uint8Array>
+  release(): void
+}
 
 export function firstSlideOf(
   parts: ReadonlyMap<string, Uint8Array>,
@@ -20,7 +25,7 @@ export function firstSlideOf(
     painted.pictures.release()
     return null
   }
-  return { slide, store, release: () => painted.pictures.release() }
+  return { slide, store, display: painted.display, release: () => painted.pictures.release() }
 }
 
 export async function deviceFirstSlide(deck: string): Promise<FirstSlide | null> {
@@ -30,5 +35,8 @@ export async function deviceFirstSlide(deck: string): Promise<FirstSlide | null>
   const register = opened.ok ? opened.register : null
   const pictures = pictureStore()
   await pictures.load(deck, register).catch(() => false)
+  const first = firstSlideOf(stored.parts, register, pictures.bytes)
+  if (first === null || !(await pictures.load(deck, register, first.display).catch(() => false))) return first
+  first.release()
   return firstSlideOf(stored.parts, register, pictures.bytes)
 }

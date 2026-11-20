@@ -1,8 +1,8 @@
-import { assetIcon, assetMedia, type Alpha, type FieldValue } from "@airdesign/document"
+import { assetIcon, assetMedia, iconWeights, type Alpha, type FieldValue } from "@airdesign/document"
 import { blipPieces, blipWritten, blipXml, partDeclares, withEmbed, type BlipPieces } from "./blip-edit.js"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { blurRadius } from "./picture-adjust.js"
-import { linkedSource, svgExt, svgExtension } from "./picture-write.js"
+import { linkedSource, svgExt, svgExtension, type AddedPicture } from "./picture-write.js"
 import { shownImage, type Overlay, type Recolor } from "./picture-read.js"
 import { whole, type ElementAt, type FieldXml, type Parts } from "./xml-codec.js"
 
@@ -32,15 +32,10 @@ function withEffect(pieces: BlipPieces, drop: readonly string[], kind: string, x
   return { ...pieces, effects }
 }
 
-function writtenSource(parts: Parts, at: ElementAt, ref: string): Parts {
-  const media = assetMedia(ref)
-  const bytes = media === null ? undefined : at.media?.(media.sha256)
-  if (media === null && assetIcon(ref) === null) throw new Error("image-source")
-  if (media !== null && bytes === undefined) return parts
-  const mode = media === null ? null : shownPictureMode(parts, at)
+function linkedBlip(parts: Parts, at: ElementAt, source: AddedPicture["source"]): Parts {
   const next = new Map(parts)
-  const linked = linkedSource(next, at.part, media === null ? { icon: ref } : { media, bytes })
-  const written = blipWritten(next, at, (found, blip) => {
+  const linked = linkedSource(next, at.part, source)
+  return blipWritten(next, at, (found, blip) => {
     const pieces = blipPieces(found, blip)
     const exts = pieces.exts.filter((each) => each.uri !== svgExtension)
     const open = withEmbed(found, blip, linked.embed, partDeclares(found.bytes))
@@ -50,7 +45,22 @@ function writtenSource(parts: Parts, at: ElementAt, ref: string): Parts {
       exts: linked.svg === null ? exts : [...exts, { uri: svgExtension, xml: svgExt(linked.svg) }],
     })
   })
+}
+
+function writtenSource(parts: Parts, at: ElementAt, ref: string): Parts {
+  const media = assetMedia(ref)
+  const bytes = media === null ? undefined : at.media?.(media.sha256)
+  if (media === null && assetIcon(ref) === null) throw new Error("image-source")
+  if (media !== null && bytes === undefined) return parts
+  const mode = media === null ? null : shownPictureMode(parts, at)
+  const weight = shownImage(parts, at)?.weight ?? iconWeights.lucide
+  const written = linkedBlip(parts, at, media === null ? { icon: ref, weight } : { media, bytes })
   return mode === "fill" || mode === "fit" ? writtenPictureMode(written, at, mode) : written
+}
+
+function writtenWeight(parts: Parts, at: ElementAt, weight: number): Parts {
+  const icon = shownImage(parts, at)?.source ?? null
+  return icon === null ? parts : linkedBlip(parts, at, { icon, weight })
 }
 
 function writtenAlpha(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
@@ -89,6 +99,7 @@ function writtenRecolor(parts: Parts, at: ElementAt, recolor: Recolor): Parts {
 
 export const imageFieldsXml = {
   source: whole({ read: (parts, at) => shownImage(parts, at)?.source ?? null, write: writtenSource }),
+  weight: whole({ read: (parts, at) => shownImage(parts, at)?.weight ?? null, write: writtenWeight }),
   mode: whole({ read: shownPictureMode, write: writtenPictureMode }),
   recolor: whole({ read: (parts, at) => shownImage(parts, at)?.recolor ?? null, write: writtenRecolor }),
   blur: whole({
@@ -98,7 +109,7 @@ export const imageFieldsXml = {
     },
     write: writtenBlur,
   }),
-} satisfies { readonly [F in "source" | "mode" | "recolor" | "blur"]: FieldXml<FieldValue<"fills", F>> }
+} satisfies { readonly [F in "source" | "weight" | "mode" | "recolor" | "blur"]: FieldXml<FieldValue<"fills", F>> }
 
 export function blipOverlay(parts: Parts, at: ElementAt): Overlay | null {
   const overlay = shownImage(parts, at)?.overlay ?? null

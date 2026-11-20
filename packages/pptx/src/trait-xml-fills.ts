@@ -68,7 +68,7 @@ function backgroundIcon(parts: Parts, part: string): string | null {
     "a:blipFill",
   )
   const blip = inside(fill?.index, "a:blip")
-  return blip === undefined || embedded(blip) === null ? null : iconOf(parts, part, children, blip)
+  return blip === undefined || embedded(blip) === null ? null : (iconOf(parts, part, children, blip)?.name ?? null)
 }
 
 function shownSource(parts: Parts, at: ElementAt): string | null {
@@ -196,6 +196,7 @@ const settingsXml = {
     mode: imageFieldsXml.mode,
     tileScale: tileScaleXml,
     source: imageFieldsXml.source,
+    weight: imageFieldsXml.weight,
     alpha: whole({
       read: (parts, at) => {
         const shown = fillAlpha(parts, at)
@@ -267,6 +268,7 @@ export const fillsXml: TraitXml<"fills"> = {
       read: shownSource,
       write: (parts, at, value) => writtenFills(parts, at, { source: { set: value } }),
     }),
+    weight: settingsXml.fields.weight,
     mode: settingsXml.fields.mode,
     tileScale: settingsXml.fields.tileScale,
     crop: settingsXml.fields.crop,

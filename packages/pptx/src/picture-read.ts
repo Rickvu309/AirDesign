@@ -1,4 +1,4 @@
-import type { Color, CropRead, FieldValue, RecolorRead } from "@airdesign/document"
+import { iconWeights, type Color, type CropRead, type FieldValue, type RecolorRead } from "@airdesign/document"
 import { shownLocked } from "./shape-locks.js"
 import { shownMask } from "./mask-extension.js"
 import { blurPercent } from "./picture-adjust.js"
@@ -6,7 +6,7 @@ import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./b
 import { colorsIn } from "./color-read.js"
 import { decodedXmlText, type MarkupElement } from "./element-span.js"
 import { whole, type Held } from "./markup-held.js"
-import { iconOfPart } from "./picture-write.js"
+import { iconOfPart, type IconRef } from "./picture-write.js"
 import { requireMarkup } from "./part-markup.js"
 import type { Drawn, Sheet } from "./paint-sheet.js"
 import type { MarkupChildren } from "./text-value-route.js"
@@ -18,6 +18,7 @@ export type CropRect = FieldValue<"fills", "crop">
 
 export type ShownImage = {
   readonly source: string | null
+  readonly weight: number | null
   readonly alpha: number
   readonly recolor: Recolor
   readonly blur: number | null
@@ -38,13 +39,13 @@ function effect(found: PictureFill, blip: MarkupElement, kind: string): MarkupEl
   return found.children[blip.index]?.find((each) => each.kind === kind)
 }
 
-export function iconOf(parts: Parts, part: string, children: MarkupChildren, blip: MarkupElement): string | null {
+export function iconOf(parts: Parts, part: string, children: MarkupChildren, blip: MarkupElement): IconRef | null {
   const id = svgEmbed(children, blip)
   const target = id === null ? null : linkTarget(parts, part, id)
   return target === null ? null : iconOfPart(target)
 }
 
-export function heldIcon(parts: Parts, part: string, held: Held): string | null {
+export function heldIcon(parts: Parts, part: string, held: Held): IconRef | null {
   const blip = held.children[held.element.index]?.find((each) => each.kind === "a:blip")
   return blip === undefined ? null : iconOf(parts, part, held.children, blip)
 }
@@ -93,8 +94,10 @@ export function shownImage(parts: Parts, at: ElementAt): ShownImage | null {
   const recolor = recolorOf(found, blip)
   const alpha = blipAlpha(found, blip)
   if (recolor === null || alpha === null) return null
+  const icon = embedded(blip) === null ? null : iconOf(parts, at.part, found.children, blip)
   return {
-    source: embedded(blip) === null ? null : iconOf(parts, at.part, found.children, blip),
+    source: icon?.name ?? null,
+    weight: icon?.weight ?? null,
     alpha,
     recolor,
     blur: blipBlur(found, blip),
@@ -144,6 +147,7 @@ const altShown = 60
 export type PictureReads = {
   fills?: { readonly value: "image" }
   "fills.source"?: { readonly value: string }
+  "fills.weight"?: { readonly value: number }
   "fills.recolor"?: { readonly value: RecolorRead }
   "fills.crop"?: { readonly value: CropRead }
   "identity.alt"?: { readonly value: string }
@@ -162,7 +166,8 @@ export function pictureReads(parts: Parts, sheet: Sheet, item: Drawn): PictureRe
   if (fill === undefined || blip === undefined) return reads
   reads.fills = { value: "image" }
   const icon = iconOf(parts, sheet.part, sheet.children, blip)
-  if (icon !== null) reads["fills.source"] = { value: icon }
+  if (icon !== null) reads["fills.source"] = { value: icon.name }
+  if (icon !== null && icon.weight !== iconWeights.lucide) reads["fills.weight"] = { value: icon.weight }
   const found = { bytes: sheet.bytes, elements: sheet.elements, children: sheet.children, fill, blip }
   const recolor = recolorOf(found, blip)
   if (recolor !== null && "grayscale" in recolor) reads["fills.recolor"] = { value: "grayscale" }
