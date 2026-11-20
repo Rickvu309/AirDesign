@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
-      "digest": "2021008d1845",
-      "blob": "5cb88b4221fb0bcad8a21120426394a6880de4de"
+      "digest": "862a6e3e52de",
+      "blob": "c427c990336275b44e68d26de3e2c2be8e8fed37"
     },
     {
       "file": "packages/live/src/held.ts",
@@ -40,20 +40,20 @@
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "d414df951ae5",
-      "blob": "884f4194567de70892671caace0cc22eaaf92c3a"
+      "digest": "7efab0ad6786",
+      "blob": "81ce47babdda5160b70a411f2a454020a1840dba"
     },
     {
       "file": "apps/web/src/device-copy.ts",
       "names": ["deviceCopy"],
       "digest": "22e573bd728a",
-      "blob": "77ba425c171a341e0587352aa003da16ff80bb9e"
+      "blob": "2b57fd4ebb30e65b917ed00b2d3e52d9a507882a"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange"],
-      "digest": "a121795dd85c",
-      "blob": "24fcb6f4210eb285da143a4316d59ce92a822358"
+      "digest": "002e1c5436c8",
+      "blob": "1c6cbe7e6f96b7ca6f4d8512cc2f506ec484b8dc"
     }
   ]
 }

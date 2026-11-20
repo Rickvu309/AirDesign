@@ -163,6 +163,7 @@ async function typingDeck() {
     repaint: { current: liveRepaint(store, new Map([[box, oldText]]), null, busy) },
     setCurrent: () => undefined,
     showRegister: () => (turn.painted = true),
+    paintedOf: (register: Register) => register,
   } as unknown as DeckPaint
   function record(entry: UndoEntry) {
     if ("steps" in entry.undoable && entry.undoable.steps.some((step) => step.node === notesNode)) count.nRec += 1

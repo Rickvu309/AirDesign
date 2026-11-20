@@ -27,6 +27,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { canvasCropChange } from "@/design/crop-change"
 import { flipChanges, turnChanges } from "@/editor/turn-changes"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
+import { personCommands } from "@/editor/painted-ahead"
 import { toggleLayerFlag } from "@/editor/layer-flags"
 import { valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
@@ -102,15 +103,26 @@ export function editableSlide(
     return shown(await deviceRegister(id), target, file)
   }
 
+  function typedAhead(target: ElementId, value: string): () => void {
+    const register = deck.shown.shownRegister.current
+    const file = boxes.current.get(target)?.file
+    if (register === null || file === undefined) return () => undefined
+    return deck.shown.ahead.hold(personCommands(register, target, file, { value }))
+  }
+
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
     const release = records.current.hold()
     const together = formatting.current.together()
+    const written = typedAhead(target, value)
     const placed = deck.placedText?.typed(target, value) ?? Promise.resolve(true)
     return placed
       .then((stored): Promise<CommitOutcome> | "empty" =>
-        stored ? editText(target, value, name, release, together) : "empty",
+        stored ? editText(target, value, name, { release, written }, together) : "empty",
       )
-      .finally(release)
+      .finally(() => {
+        written()
+        release()
+      })
   }
 
   function sessionOf(target: ElementId, name: UndoName, together: object | null): Typing {
@@ -133,7 +145,7 @@ export function editableSlide(
     target: ElementId,
     value: string,
     name: UndoName,
-    release: () => void,
+    { release, written }: { readonly release: () => void; readonly written: () => void },
     together: object | null = null,
   ): Promise<CommitOutcome> {
     const { session, before: started } = sessionOf(target, name, together)
@@ -155,6 +167,7 @@ export function editableSlide(
       value,
       box,
       async () => {
+        written()
         const before = await started
         const holder = shape?.contentKind === "table" ? "table" : "text"
         record({
@@ -172,7 +185,10 @@ export function editableSlide(
         })
         release()
       },
-      refused,
+      async () => {
+        written()
+        await refused()
+      },
     )
     settle(outcome)
     return outcome

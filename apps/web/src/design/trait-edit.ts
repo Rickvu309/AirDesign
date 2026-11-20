@@ -13,6 +13,7 @@ import {
   valueHolder,
   type ElementId,
   type ElementPatch,
+  type Command,
   type FieldEdit,
   type FormatOneValue,
   type NodeStep,
@@ -33,6 +34,7 @@ import { valueStorable } from "@/slide-paint"
 import { tableEditName } from "@/table-edit"
 import type { UndoEntry } from "@/undo-list"
 import { boxName } from "@/undo-names"
+import { personCommands } from "@/editor/painted-ahead"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -233,19 +235,57 @@ async function stored(deck: ChangingDeck, row: Planned): Promise<boolean> {
   return true
 }
 
-export async function applyChange(deck: ChangingDeck, change: SetChange | readonly SetChange[]): Promise<boolean> {
+function plannedRows(
+  deck: ChangingDeck,
+  register: Register,
+  change: SetChange | readonly SetChange[],
+): readonly Planned[] | null {
+  const changes = Array.isArray(change) ? change : [change]
+  const plans = changes.map((each) => planned(deck, register, each))
+  return plans.some((plan) => plan === null) ? null : plans.flatMap((plan) => plan ?? [])
+}
+
+function rowCommands(deck: ChangingDeck, register: Register, row: Planned): readonly Command[] {
+  const floor = deck.floor(row.node)
+  if ("row" in row) return personCommands(register, row.node, floor, row.row)
+  return row.values.flatMap((value) => personCommands(register, row.node, floor, value))
+}
+
+export function changeAhead(
+  deck: ChangingDeck,
+  register: Register,
+  change: SetChange | readonly SetChange[],
+): readonly Command[] | null {
+  const rows = plannedRows(deck, register, change)
+  return rows === null || rows.length === 0 ? null : rows.flatMap((row) => rowCommands(deck, register, row))
+}
+
+export function rowsAhead(
+  deck: ChangingDeck,
+  register: Register,
+  plan: (register: Register) => readonly PlacedRow[] | null,
+): readonly Command[] | null {
+  const rows = plan(indexed(deck.parts(), register))
+  if (rows === null || rows.length === 0) return null
+  return rows.flatMap(({ node, patch }) => personCommands(register, node, deck.floor(node), { v: format, patch }))
+}
+
+export async function applyChange(
+  deck: ChangingDeck,
+  change: SetChange | readonly SetChange[],
+  written: () => void = () => undefined,
+): Promise<boolean> {
   const release = deck.hold()
   try {
     const opened = await connect(memoryRemote()).openDeck(deck.id)
-    const changes = Array.isArray(change) ? change : [change]
-    const plans = opened.ok ? changes.map((each) => planned(deck, opened.register, each)) : [null]
-    const rows = plans.some((plan) => plan === null) ? null : plans.flatMap((plan) => plan ?? [])
+    const rows = opened.ok ? plannedRows(deck, opened.register, change) : null
     if (rows === null || rows.length === 0) return false
     const steps: NodeStep[] = []
     for (const row of rows) {
       if (!(await stored(deck, row))) break
       steps.push(row.step)
     }
+    written()
     const name = rows[0]?.name
     if (name !== undefined && steps.length > 0) deck.record({ name, undoable: { steps } })
     const next = await connect(memoryRemote()).openDeck(deck.id)
@@ -260,6 +300,7 @@ export async function applyRows(
   deck: ChangingDeck,
   plan: (register: Register) => readonly PlacedRow[] | null,
   name: UndoName,
+  written: () => void = () => undefined,
 ): Promise<boolean> {
   const release = deck.hold()
   try {
@@ -275,6 +316,7 @@ export async function applyRows(
       if (!(await live.enqueueRow(deck.id, { v: format, patch }, node, deck.floor(node))).ok) break
       steps.push({ node, before, after: patch })
     }
+    written()
     if (steps.length > 0) deck.record({ name, undoable: { steps } })
     const next = await live.openDeck(deck.id)
     if (next.ok) deck.show(next.register)

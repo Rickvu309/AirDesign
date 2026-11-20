@@ -4,38 +4,38 @@
     {
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
-      "digest": "ac2b3ba85ed1",
-      "blob": "8497f89b1fb2d898fb19d43c02d3d273df8d393a"
+      "digest": "7105c71883f4",
+      "blob": "16e491037aae32f63d89be4f52938f8e045efd34"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
-      "digest": "2b6a64f497bc",
-      "blob": "bdf9ce3509a33d52ccb0ad593eda77b0fd099d11"
+      "digest": "d5eadc4a3bd5",
+      "blob": "1c6cbe7e6f96b7ca6f4d8512cc2f506ec484b8dc"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoList", "useUndoTurn"],
-      "digest": "f65cf2a57df8",
-      "blob": "f0296c464d624b5bc2bc8c8d8674822b83c5dea7"
+      "digest": "666bef00554b",
+      "blob": "1a37193abecfd95d13b199138cde75f6b84e0be2"
     },
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack", "sent", "sentCommand", "recorded"],
       "digest": "f9987969b77d",
-      "blob": "fda449a501688ee11767cdea256f8cf9e5aeffb8"
+      "blob": "4a0559876f5e8a36b75aae2e4562a3e34be29c31"
     },
     {
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
       "digest": "93acf5940101",
-      "blob": "c70a6fa5d2b3f7c2d47ac7c15f1bd8ee0b9bf4fa"
+      "blob": "0cdffef0a871cfe9e96a5bdfa76864ad0914b1b1"
     },
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "9359d9fe4854",
-      "blob": "960a2123de0a74e1f5d840778bd7f0e86d3e4dc4"
+      "digest": "7efab0ad6786",
+      "blob": "81ce47babdda5160b70a411f2a454020a1840dba"
     },
     {
       "file": "packages/document/src/person-undo.ts",
