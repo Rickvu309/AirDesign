@@ -12,9 +12,11 @@ function entry(page: Page, number: number) {
 }
 
 async function addSlides(page: Page, count: number): Promise<void> {
-  for (let added = 0; added < count; added += 1) {
+  const slides = page.locator("[data-slide-entry]")
+  const before = await slides.count()
+  for (let added = 1; added <= count; added += 1) {
     await page.getByRole("button", { name: "Add slide" }).click()
-    await expect(page.locator("[data-slide-entry]")).toHaveCount(2 + added)
+    await expect(slides).toHaveCount(before + added)
   }
 }
 
