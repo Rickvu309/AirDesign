@@ -317,6 +317,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       {selected?.id === undefined || selected.id === null || onConnect === undefined ? null : (
         <ConnectorEnds
           element={selected}
+          {...(moving === null ? {} : { guides: moving.guides })}
           id={selected.id}
           onConnect={onConnect}
           scaled={scaled}
