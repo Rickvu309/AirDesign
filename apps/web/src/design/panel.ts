@@ -26,7 +26,7 @@ import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { boxSides } from "./box-held"
-import { cropChange } from "./crop-change"
+import { cropChange, cropTurn } from "./crop-change"
 import { lineHeightChange } from "./line-height-change"
 import { textShown } from "./text-shown"
 import { fillsList } from "./fills-list"
@@ -272,7 +272,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
           : trait === "text" && field === "lineHeight"
             ? lineHeightChange(view)
             : key === "fills.crop" && taken.includes("box.w")
-              ? cropChange(view, held.value)
+              ? cropChange(view, held.value, cropTurn(shown.fields))
               : (value: unknown) =>
                   ({
                     target: { node: view.node },

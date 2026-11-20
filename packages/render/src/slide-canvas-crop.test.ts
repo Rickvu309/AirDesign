@@ -157,3 +157,38 @@ describe("a person crops an image on the canvas", () => {
     expect(host.querySelector("[data-crop-frame]")).toBeNull()
   })
 })
+
+describe("the editor opens the crop on the canvas", () => {
+  it("shows the crop handles for the selected image the editor names, and tells it when the crop ends", async () => {
+    const store = paintStore()
+    store.publish({ id, kind: "shape", text: "" })
+    const asked: (ElementId | null)[] = []
+    const host = document.createElement("div")
+    document.body.append(host)
+    const root = createRoot(host)
+    hosts.push({ host, root })
+    const render = async (cropping: ElementId | null) => {
+      await act(async () => {
+        root.render(
+          createElement(SlideCanvas, {
+            store,
+            slide: { width: slideWidth, height: 6_858_000, background: null, elements: [picture] },
+            width,
+            onBoxes: () => {},
+            onCrop: () => {},
+            selection: { ids: [id], inside: null },
+            cropping,
+            onCropping: (next: ElementId | null) => asked.push(next),
+          }),
+        )
+      })
+    }
+    await render(null)
+    expect(host.querySelector("[data-crop-frame]")).toBeNull()
+    await render(id)
+    const crop = host.querySelector<HTMLElement>(`[data-crop-frame="${id}"]`)
+    expect(crop).not.toBeNull()
+    await press(crop as HTMLElement, "Escape")
+    expect(asked).toEqual([null])
+  })
+})

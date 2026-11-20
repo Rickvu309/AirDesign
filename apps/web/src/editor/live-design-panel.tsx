@@ -236,8 +236,11 @@ function LiveElementDesign({
             deck.chooseFillImage?.(node)
             return
           }
-          changeDesign(deck, () =>
-            rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, chosen.value),
+          const opensCrop = control.trait === "image" && control.field === "mode" && chosen.value === "crop"
+          changeDesign(
+            deck,
+            () => rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, chosen.value),
+            opensCrop ? () => deck.shown.setCropping(node) : undefined,
           )
         }}
       />
