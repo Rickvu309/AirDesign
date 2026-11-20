@@ -33,7 +33,9 @@ import { airaUsageRoute } from "./aira-usage-route.js"
 import { deckListAnswers } from "./deck-list.js"
 import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
+import { DeckFindings } from "./deck-findings.js"
 import { DeckFollowers } from "./deck-followers.js"
+import { findingsRoute } from "./findings-route.js"
 import { heldRevision } from "./deck-watch.js"
 import { DeckListen } from "./listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./deck-answer.js"
@@ -46,6 +48,7 @@ import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 import { sameSecret } from "./secrets.js"
 import { checkedResource, readUrl } from "./resource.js"
+import { requireDomain, requireOrigin } from "./start-origins.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
 import { savedAnswers } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
@@ -75,7 +78,11 @@ export type ApiOptions = {
 
 const measureLimit = 5_000
 
-type ServedOptions = ApiOptions & { readonly closing: Closing; readonly followers: DeckFollowers }
+type ServedOptions = ApiOptions & {
+  readonly closing: Closing
+  readonly followers: DeckFollowers
+  readonly findings: DeckFindings
+}
 
 type Context = {
   readonly options: ServedOptions
@@ -107,20 +114,6 @@ const unservedMethod = "This address does not answer that method."
 const unreadHost = "The request host could not be read."
 const mcpMethods = ["GET", "POST", "DELETE"]
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
-
-const plainHost = /^[A-Za-z0-9.-]+$/
-
-export function requireOrigin(name: string, value: string): void {
-  const parsed = readUrl(value)
-  if (parsed?.protocol !== "https:" || parsed.origin !== value) {
-    throw new Error(`${name} is not an https origin`)
-  }
-}
-
-export function requireDomain(cookieDomain: string | undefined): void {
-  if (cookieDomain === undefined) return
-  if (!plainHost.test(cookieDomain)) throw new Error("cookieDomain is not a plain host name")
-}
 
 type Cookie = string | readonly string[]
 
@@ -444,6 +437,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
         listen: options.listen,
         following: (deck) => options.followers.following(deck),
         limit: options.measureLimit ?? measureLimit,
+        findings: options.findings,
       },
       images: { store: options.originals, net: options.imageNet ?? nodeNet },
     },
@@ -498,6 +492,7 @@ export const routes: readonly Route[] = [
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
   ...answeredDeckRoutes(deckAnswers, deckRoute),
   { method: "POST", path: deckRoutes.watch.path, serve: watchRoute },
+  findingsRoute({ signedIn, answerSize, parsedJson, sendJson }),
   ...accountRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
 ]
 
@@ -559,6 +554,7 @@ export function createApi(given: ApiOptions): Server {
     ...given,
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
     followers: new DeckFollowers(given.now ?? Date.now),
+    findings: new DeckFindings(),
   }
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)

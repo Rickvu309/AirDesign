@@ -13,6 +13,7 @@ export function readDeckTool(raw: unknown, session: Session, runId: string | nul
     runId,
     ...(parsed.slide === undefined ? {} : { slide: parsed.slide }),
     ...(parsed.cursor === undefined ? {} : { cursor: parsed.cursor }),
+    ...(session.findings?.deck === before.id ? { findings: session.findings } : {}),
   })
   const lead = readLead(reported.revision)
   return {

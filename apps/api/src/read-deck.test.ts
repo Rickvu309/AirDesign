@@ -128,6 +128,7 @@ describe("an agent reads only decks its account owns", () => {
       slides: [],
       groups: [],
       index: "missing",
+      findings: "missing",
     })
     const listed = await mcp(cookie, "airdesign_list_decks", {})
     expect(listed.status).toBe(200)

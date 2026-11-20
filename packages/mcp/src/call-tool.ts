@@ -1,6 +1,6 @@
 import type { NamedImages } from "./named-image.js"
 import { editDeck } from "./edit-tool.js"
-import { catalog, projectTools, readRun, type AgentOp, type WireRefusal } from "@airdesign/catalog"
+import { catalog, projectTools, readRun, type AgentOp, type FindingsReport, type WireRefusal } from "@airdesign/catalog"
 import {
   call,
   type Caller,
@@ -28,6 +28,7 @@ export type Session = {
   readonly idleWindow?: number
   owned?: readonly OwnedDeck[]
   images?: NamedImages
+  findings?: FindingsReport | undefined
 }
 
 export type ToolContent = {

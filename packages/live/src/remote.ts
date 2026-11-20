@@ -12,6 +12,7 @@ import {
   type OpenResult,
   type CommitResult,
   type WatchResult,
+  type FindingsReport,
 } from "@airdesign/catalog"
 import {
   answeredRegister,
@@ -42,6 +43,9 @@ export type Remote = {
     readonly once?: string
   }): Promise<CommitResult>
   watch(body: { readonly deck: string; readonly cursor: number | null }): Promise<WatchResult>
+  findings?(
+    body: FindingsReport,
+  ): Promise<{ readonly ok: true; readonly deck: DeckId } | { readonly ok: false; readonly refusal: WireRefusal }>
 }
 
 type StoredDeck = { readonly revision: number; readonly register: Register }
@@ -188,5 +192,6 @@ export function httpRemote(): Remote {
     open: async (body) => deckRoutes.open.result(await post(deckRoutes.open.path, body)),
     commit: async (body) => deckRoutes.commit.result(await post(deckRoutes.commit.path, body)),
     watch: async (body) => deckRoutes.watch.result(await post(deckRoutes.watch.path, body)),
+    findings: async (body) => deckRoutes.findings.result(await post(deckRoutes.findings.path, body)),
   }
 }

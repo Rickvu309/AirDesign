@@ -1,5 +1,5 @@
 import { checkedResource } from "./resource.js"
-import { requireDomain, requireOrigin } from "./server.js"
+import { requireDomain, requireOrigin } from "./start-origins.js"
 import type { R2Settings } from "./r2-original-store.js"
 
 const databaseNames = ["SESSION_DATABASE_URL", "DECK_DATABASE_URL", "LISTEN_DATABASE_URL"] as const

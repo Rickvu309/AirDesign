@@ -176,6 +176,7 @@ it("decodes deleted on every deck route", () => {
     "mediaUpload",
     "media",
     "undo",
+    "findings",
   ])
 })
 
@@ -209,6 +210,7 @@ it("refuses missing and malformed success fields for every deck route", () => {
     mediaUpload: [{ ok: true }, { ok: true, url: "url", expires: "date", headers: { length: 1 } }],
     media: [{ ok: true }, { ok: true, url: "url", expires: "date", bytes: 1, sha256: "a" }],
     undo: [{ ...revision }, { ...revision, key: "deck:9" }],
+    findings: [{ ok: true }, { ok: true, deck: "bad deck" }],
   } satisfies Record<keyof typeof deckRoutes, unknown[]>
   for (const [name, route] of Object.entries(deckRoutes)) {
     const cases = Object.entries(wrong).find(([key]) => key === name)?.[1] ?? []

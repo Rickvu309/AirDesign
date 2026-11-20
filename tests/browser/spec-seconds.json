@@ -4,6 +4,7 @@
     "agent-after-open.spec.ts": 12.5,
     "agent-arrow.spec.ts": 7.8,
     "agent-frame-measure.spec.ts": 1.9,
+    "agent-overflow.spec.ts": 6.6,
     "agent-text-box.spec.ts": 1.5,
     "agents.spec.ts": 2.7,
     "aira-history-reopen.spec.ts": 2.1,
