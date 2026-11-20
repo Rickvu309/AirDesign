@@ -43,6 +43,20 @@ export async function following(kit) {
   return shown
 }
 
+export async function around(kit) {
+  const shown = await opened(kit)
+  const { page } = kit
+  await shown.element(3).click({ position: { x: 20, y: 20 } })
+  const box = await shown.element(3).boundingBox()
+  if (box === null) throw new Error("no element box")
+  const from = await shown.point(6_477_000, 4_381_500)
+  const to = await shown.point(1_828_800, 5_334_000)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2 + to.x - from.x, box.y + box.height / 2 + to.y - from.y, { steps: 8 })
+  return shown
+}
+
 export async function freed(kit) {
   const shown = await opened(kit)
   const { page } = kit

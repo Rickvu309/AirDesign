@@ -199,6 +199,7 @@ export {
   siteTie,
   type Bound,
   type Outline,
+  type Routed,
   type Tie,
 } from "./connector.js"
 export { followedPlace } from "./connector-place.js"

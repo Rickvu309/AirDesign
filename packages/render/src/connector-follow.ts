@@ -58,7 +58,11 @@ export function followedConnector(
   )
   return route === null
     ? connector
-    : { ...connector, box: placedBox(route.place), geometry: { ...geometry, adjusts: route.adjust } }
+    : {
+        ...connector,
+        box: placedBox(route.place),
+        geometry: { ...geometry, preset: route.preset, adjusts: route.adjust },
+      }
 }
 
 function tiedIds(connector: CanvasElement, targets: Targets | undefined): readonly ElementId[] {

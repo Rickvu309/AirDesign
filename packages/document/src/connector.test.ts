@@ -21,7 +21,11 @@ describe("a connector bound to two shapes", () => {
     const start = sitePoint(picture, rect, 2)
     const bottom = siteTie(picture, rect, 2)
     expect(bottom?.spot).toEqual(start)
-    expect(routed(line, "line", {}, bottom, siteTie(card, rect, 0))).toEqual({ place: line, adjust: {} })
+    expect(routed(line, "line", {}, bottom, siteTie(card, rect, 0))).toEqual({
+      place: line,
+      preset: "line",
+      adjust: {},
+    })
     const moved = { ...card, box: { ...card.box, x: card.box.x + 254000 } }
     expect(routed(line, "line", {}, bottom, siteTie(moved, rect, 0))?.place).toEqual({
       box: { x: 4659637, y: 3957097, cx: 146400, cy: 771566 },
@@ -39,6 +43,7 @@ describe("a connector bound to two shapes", () => {
     expect(
       routed(free, "straightConnector1", {}, null, siteTie(snipped, { preset: "snip2DiagRect", adjust: {} }, 2)),
     ).toEqual({
+      preset: "straightConnector1",
       place: free,
       adjust: {},
     })
@@ -89,11 +94,13 @@ describe("an elbow connector's route", () => {
     const left = square(1_000_000, 1_000_000)
     const right = square(4_000_000, 2_000_000)
     expect(routed(elbow, "bentConnector3", { adj1: 20_000 }, tie(left, 3), tie(right, 1))).toEqual({
+      preset: "bentConnector3",
       place: { box: { x: 2_000_000, y: 1_500_000, cx: 2_000_000, cy: 1_000_000 }, ...upright },
       adjust: { adj1: 50_000 },
     })
     const above = square(4_000_000, 0)
     expect(routed(elbow, "bentConnector3", {}, tie(left, 3), tie(above, 1))).toEqual({
+      preset: "bentConnector3",
       place: { box: { x: 2_000_000, y: 500_000, cx: 2_000_000, cy: 1_000_000 }, rot: 0, flipH: false, flipV: true },
       adjust: { adj1: 50_000 },
     })
@@ -104,6 +111,7 @@ describe("an elbow connector's route", () => {
     const right = square(4_000_000, 2_000_000)
     const place = { box: { x: 2_000_000, y: 1_500_000, cx: 3_000_000, cy: 1_000_000 }, ...upright }
     expect(routed(elbow, "bentConnector3", {}, tie(left, 3), tie(right, 3))).toEqual({
+      preset: "bentConnector3",
       place,
       adjust: { adj1: Math.round(((3_000_000 + elbowClearance) * 100_000) / 3_000_000) },
     })
@@ -150,6 +158,7 @@ describe("an elbow connector's route", () => {
     const behind = square(1_000_000, 3_000_000)
     const w = 4_000_000
     expect(routed(elbow, "bentConnector5", {}, tie(ahead, 3), tie(behind, 1))).toEqual({
+      preset: "bentConnector5",
       place: { box: { x: 1_000_000, y: 1_500_000, cx: w, cy: 2_000_000 }, rot: 0, flipH: true, flipV: false },
       adjust: {
         adj1: Math.round((-elbowClearance * 100_000) / w),
@@ -163,6 +172,7 @@ describe("an elbow connector's route", () => {
     const left = square(1_000_000, 1_000_000)
     const below = square(4_000_000, 4_000_000)
     expect(routed(elbow, "bentConnector2", {}, tie(left, 3), tie(below, 0))).toEqual({
+      preset: "bentConnector2",
       place: { box: { x: 2_000_000, y: 1_500_000, cx: 2_500_000, cy: 2_500_000 }, ...upright },
       adjust: {},
     })
@@ -170,5 +180,41 @@ describe("an elbow connector's route", () => {
     const { place } = routed(free, "bentConnector3", {}, tie(left, 3), null) ?? {}
     if (place === undefined) throw new Error("route")
     expect(connectorEnds(place)).toEqual({ start: { x: 2_000_000, y: 1_500_000 }, end: { x: 6_000_000, y: 2_500_000 } })
+  })
+})
+
+describe("an elbow connector's segment count", () => {
+  const ends = (start: Tie, end: Tie, preset = "bentConnector3") => {
+    const route = routed(elbow, preset, {}, start, end)
+    if (route === null) throw new Error("route")
+    return { preset: route.preset, ...connectorEnds(route.place) }
+  }
+
+  it("goes around in five segments when a bottom site leads to a top site above it, as PowerPoint draws it", () => {
+    const low = square(1_000_000, 3_000_000)
+    const high = square(3_000_000, 0)
+    expect(ends(tie(low, 2), tie(high, 0))).toEqual({
+      preset: "bentConnector5",
+      start: { x: 1_500_000, y: 4_000_000 },
+      end: { x: 3_500_000, y: 0 },
+    })
+  })
+
+  it("turns once when a right site leads to a top site ahead and below, and three times when it lies behind", () => {
+    const left = square(1_000_000, 1_000_000)
+    expect(ends(tie(left, 3), tie(square(4_000_000, 4_000_000), 0)).preset).toBe("bentConnector2")
+    expect(ends(tie(left, 3), tie(square(-2_000_000, 4_000_000), 0)).preset).toBe("bentConnector4")
+  })
+
+  it("keeps three segments between facing sites with room, and under two sites that face the same way", () => {
+    const left = square(1_000_000, 1_000_000)
+    expect(ends(tie(left, 3), tie(square(4_000_000, 2_000_000), 1), "bentConnector5").preset).toBe("bentConnector3")
+    expect(ends(tie(left, 2), tie(square(4_000_000, 1_000_000), 2)).preset).toBe("bentConnector3")
+  })
+
+  it("counts a curved connector's segments the same way, and keeps the file's count while an end is free", () => {
+    const left = square(1_000_000, 1_000_000)
+    expect(ends(tie(left, 3), tie(square(4_000_000, 4_000_000), 0), "curvedConnector3").preset).toBe("curvedConnector2")
+    expect(routed(elbow, "bentConnector3", {}, tie(left, 3), null)?.preset).toBe("bentConnector3")
   })
 })

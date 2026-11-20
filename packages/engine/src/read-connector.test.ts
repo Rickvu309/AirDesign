@@ -171,5 +171,8 @@ describe("an agent reads a connector where it paints", () => {
     expect(read(moved, 4)?.design).toContain("box.flipV")
     expect(read(moved, 5)?.box).toEqual({ x: 3_810_000, y: 762_000, cx: 1_524_000, cy: 3_810_000 })
     expect(read(moved, 5)?.design).toContain("box.rot 90 · box.flipH · box.flipV")
+    const behind = set(indexed(file), "258.3", { box: { x: 0, y: 360 } })
+    expect(read(behind, 4)?.design).toContain("geometry bentConnector5")
+    expect(read(behind, 5)?.design).toContain("geometry bentConnector3")
   })
 })
