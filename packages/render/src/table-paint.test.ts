@@ -23,6 +23,14 @@ afterEach(async () => {
 })
 
 const id = elementId("256.4")
+const words = {
+  addRow: "Add row",
+  addColumn: "Add column",
+  insertRow: (row: number) => `Insert row below row ${String(row)}`,
+  insertColumn: (column: number) => `Insert column after column ${String(column)}`,
+  row: (row: number) => `Row ${String(row)}`,
+  column: (column: number) => `Column ${String(column)}`,
+}
 const empty = { gridSpan: 1, rowSpan: 1, hMerge: false, vMerge: false, fill: null, text: null }
 const borders = { left: null, right: null, top: null, bottom: null }
 
@@ -82,6 +90,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
           onBoxes: (moved: readonly { id: ElementId; box: Box }[]) => boxes.push(...moved.map(({ box }) => box)),
           onRemove: (targets: readonly ElementId[]) => removed.push(...targets),
           onTable: (_: ElementId, change: TableChange) => changes.push(change),
+          tableWords: words,
         }),
       )
     })
@@ -100,6 +109,23 @@ async function typed(target: HTMLElement, text: string) {
     target.textContent = text
     target.dispatchEvent(new InputEvent("input", { bubbles: true }))
   })
+}
+
+function named(host: HTMLElement, label: string): HTMLElement {
+  const found = host.querySelector<HTMLElement>(`[aria-label="${label}"]`)
+  if (found === null) throw new Error(label)
+  return found
+}
+
+async function clicked(target: HTMLElement) {
+  await act(async () => target.click())
+}
+
+async function selected(host: HTMLElement) {
+  const frame = host.querySelector<HTMLElement>("[data-canvas-table]")
+  if (frame === null) throw new Error("table")
+  await act(async () => frame.focus())
+  return frame
 }
 
 async function doubleClick(target: HTMLElement) {
@@ -155,6 +181,7 @@ describe("SlideCanvas table", () => {
     if (frame === null) throw new Error("table")
     await act(async () => frame.focus())
     expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
+    expect(frame.style.outlineColor).toBe("transparent")
     const target = host.querySelector<HTMLElement>('[data-table-cell="1.1"]')
     if (target === null) throw new Error("cell")
     await doubleClick(target)
@@ -213,6 +240,80 @@ describe("SlideCanvas table", () => {
     const undo = new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "historyUndo" })
     typing.dispatchEvent(undo)
     expect(undo.defaultPrevented).toBe(true)
+  })
+
+  it("adds a row or a column at the end from the bars at the table's edges, only while it is selected", async () => {
+    const { host, changes } = await mounted(null)
+    expect(host.querySelector('[aria-label="Add row"]')).toBeNull()
+    await selected(host)
+    await clicked(named(host, "Add column"))
+    await clicked(named(host, "Add row"))
+    expect(changes).toEqual([
+      { change: "column", column: 1, place: "after" },
+      { change: "row", row: 1, place: "below" },
+    ])
+  })
+
+  it("inserts a row or a column between two with the plus at their boundary", async () => {
+    const { host, changes } = await mounted(null)
+    await selected(host)
+    await clicked(named(host, "Insert column after column 1"))
+    await clicked(named(host, "Insert row below row 1"))
+    expect(host.querySelector('[aria-label="Insert column after column 2"]')).toBeNull()
+    expect(changes).toEqual([
+      { change: "column", column: 0, place: "after" },
+      { change: "row", row: 0, place: "below" },
+    ])
+  })
+
+  it("selects a row or a column with its handle, and Delete removes it rather than the table", async () => {
+    const { host, changes, removed } = await mounted(null)
+    await selected(host)
+    const row = named(host, "Row 2")
+    await clicked(row)
+    expect(row.getAttribute("aria-pressed")).toBe("true")
+    expect(host.querySelectorAll("[data-table-picked]")).toHaveLength(2)
+    await key(row, "Delete")
+    const column = named(host, "Column 1")
+    await clicked(column)
+    await key(column, "Backspace")
+    expect(changes).toEqual([
+      { change: "remove-row", row: 1 },
+      { change: "remove-column", column: 0 },
+    ])
+    expect(removed).toEqual([])
+    await clicked(named(host, "Column 2"))
+    await key(named(host, "Column 2"), "Escape")
+    expect(host.querySelectorAll("[data-table-picked]")).toHaveLength(0)
+  })
+
+  it("drags the border between two columns to move width from one to the other, and sends the widths once", async () => {
+    const { host, changes } = await mounted(null)
+    await selected(host)
+    const border = host.querySelector<HTMLElement>('[data-column-border="0"]')
+    if (border === null) throw new Error("border")
+    await pointer(border, "pointerdown", 200, 50)
+    await pointer(border, "pointermove", 210, 50)
+    await pointer(border, "pointermove", 220, 50)
+    const art = host.querySelector<HTMLElement>("[aria-colcount]")
+    expect(art?.style.gridTemplateColumns).toBe("200px 160px")
+    await pointer(border, "pointerup", 220, 50)
+    expect(changes).toEqual([{ change: "widths", widths: [111_111, 88_889] }])
+  })
+
+  it("drags the border under a row to move height from it to the next, and sends the heights once", async () => {
+    const { host, changes } = await mounted(null)
+    await selected(host)
+    const border = host.querySelector<HTMLElement>('[data-row-border="0"]')
+    if (border === null) throw new Error("border")
+    await pointer(border, "pointerdown", 100, 60)
+    await pointer(border, "pointermove", 100, 66)
+    await pointer(border, "pointerup", 100, 66)
+    const [change] = changes
+    expect(change?.change).toBe("heights")
+    if (change?.change !== "heights") return
+    expect(change.heights[0]! + change.heights[1]!).toBe(741_680)
+    expect(change.heights[0]).toBeGreaterThan(370_840)
   })
 
   it("paints a table the deck cannot edit with no text to type in, and Delete removes it", async () => {
