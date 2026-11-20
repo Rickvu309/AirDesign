@@ -9,7 +9,25 @@ const same = (name, actual, expected) => assert.deepEqual(actual, expected, name
 const workflow = parse(fs.readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"))
 const ciSteps = workflow.jobs.ci.steps
 const timing = ciSteps.find((step) => step.name === "ci-duration")
-same("the ci job times the merge queue's run", timing?.if, "github.event_name == 'merge_group'")
+same(
+  "the ci job times the merge queue's run, and the push run on main when no queue run passed for that commit",
+  timing?.if,
+  "github.event_name != 'pull_request' && needs.changes.outputs.queued != 'true'",
+)
+same("the ci job reads what changes found", workflow.jobs.ci.needs.includes("changes"), true)
+const changes = workflow.jobs.changes
+const lookup = changes.steps.find((step) => step.id === "queued")
+same(
+  "changes asks the queued action whether a queue run passed for this commit",
+  lookup?.uses,
+  "./.github/actions/queued",
+)
+same("and hands its answer on", changes.outputs.queued, "${{ steps.queued.outputs.passed }}")
+same(
+  "the warning names the run it timed, not only a queue run",
+  timing.run.includes("The merge queue's ci run took"),
+  false,
+)
 same("ci-duration is timed after ci passed", ciSteps.indexOf(timing) > 0, true)
 same("a slow or unread ci-duration warns and never fails ci", timing["continue-on-error"], true)
 

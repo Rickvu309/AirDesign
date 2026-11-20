@@ -159,21 +159,52 @@ export const scratchGate =
 
 export const mergeArgs = (number, head) => ["pr", "merge", String(number), "--rebase", "--match-head-commit", head]
 
+export const mergeAttempts = 3
+
+const mainHeadOn = (gh, repository) => {
+  const answer = gh(["api", `repos/${repository}/git/ref/heads/main`, "--jq", ".object.sha"])
+  return answer.status === 0 ? answer.stdout.trim() : undefined
+}
+
 export const mergeAfterRecheck =
-  ({ recheck, gh, read, repository, number, say }) =>
+  ({ recheck, gh, read, repository, number, say, attempts = mergeAttempts }) =>
   async (pull) => {
     say(`recheck: ci passed on ${short(pull.head)}; checking it against the newest main before the merge`)
-    const checked = await recheck({ number, head: pull.head })
-    for (const each of checked.lines) say(`recheck: ${each}`)
-    if (!checked.ok) return 1
-    const asked = gh(mergeArgs(number, pull.head))
-    const after = readPull({ read, repository, number })
-    if (after.merged) {
-      say(`follow: merged ${short(pull.head)}, the head the recheck tested. pull request ${number} is on main.`)
-      return 0
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const checked = await recheck({ number, head: pull.head })
+      for (const each of checked.lines) say(`recheck: ${each}`)
+      if (!checked.ok) return 1
+      const tried = `${attempt} of ${attempts}`
+      if (checked.main !== undefined) {
+        const main = mainHeadOn(gh, repository)
+        if (main !== undefined && main !== checked.main) {
+          say(
+            `recheck: main moved to ${short(main)} while the recheck tested ${short(checked.main)}; rechecking on the newer main (${tried})`,
+          )
+          continue
+        }
+      }
+      const asked = gh(mergeArgs(number, pull.head))
+      const after = readPull({ read, repository, number })
+      if (after.merged) {
+        say(`follow: merged ${short(pull.head)}, the head the recheck tested. pull request ${number} is on main.`)
+        return 0
+      }
+      const refusal = `${asked.stdout}${asked.stderr}`.trim() || "gh said nothing"
+      if (after.head !== pull.head) {
+        say(
+          `follow: pull request ${number} did not merge: its head moved from ${short(pull.head)} to ${short(after.head)}, so the new head needs its own ci. Run pnpm land --watch`,
+        )
+        return 1
+      }
+      if (after.state === "CLOSED") {
+        say(`follow: pull request ${number} did not merge and is closed: ${refusal}`)
+        return 1
+      }
+      say(`follow: pull request ${number} did not merge: ${refusal}. Rechecking on the newest main (${tried})`)
     }
     say(
-      `follow: pull request ${number} did not merge: ${`${asked.stdout}${asked.stderr}`.trim() || "gh said nothing"}. If its head moved, run pnpm land again.`,
+      `follow: pull request ${number} is not merged after ${attempts} rechecks, because main kept moving or GitHub kept refusing the merge. Nothing merged untested. Run pnpm land --watch to recheck and merge again.`,
     )
     return 1
   }

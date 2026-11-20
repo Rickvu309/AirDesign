@@ -8,10 +8,14 @@ export const same = (what, actual, expected) => {
 }
 export const fixture = (name) => fs.readFileSync(new URL(`./land-fixtures/${name}`, import.meta.url), "utf8")
 export const ok = (stdout = "") => ({ status: 0, stdout, stderr: "" })
-const no = (stderr = "", status = 1) => ({ status, stdout: "", stderr })
+export const no = (stderr = "", status = 1) => ({ status, stdout: "", stderr })
 
 const mark = "<".repeat(7)
 export const migrationsOf = (...hashes) => JSON.stringify(hashes.map((sha256, at) => ({ id: at + 1, sha256 })))
+
+export const mainRules = (queue = true) => ({
+  rules: { nodes: queue ? [{ type: "MERGE_QUEUE", repositoryRuleset: { enforcement: "ACTIVE" } }] : [] },
+})
 
 const checkRun = [{ __typename: "CheckRun", name: "check (source)", conclusion: null, status: "IN_PROGRESS" }]
 
@@ -23,6 +27,7 @@ export const pullAnswer = ({
   base = "main",
   timeline = [],
   queue = true,
+  head = "aaaa1111",
 } = {}) =>
   JSON.stringify({
     data: {
@@ -31,7 +36,7 @@ export const pullAnswer = ({
           state: merged ? "MERGED" : "OPEN",
           merged,
           baseRefName: base,
-          headRefOid: "aaaa1111",
+          headRefOid: head,
           mergeable: "MERGEABLE",
           mergeStateStatus: "CLEAN",
           isInMergeQueue: entry !== null,
@@ -41,6 +46,7 @@ export const pullAnswer = ({
           timelineItems: { nodes: timeline },
         },
         mergeQueue: queue ? { entries: { nodes: [] } } : null,
+        ref: mainRules(queue),
       },
     },
   })
@@ -76,12 +82,14 @@ export const harness = (options = {}) => {
     merges = [ok()],
     reads = [pullAnswer({ armed: true }), pullAnswer({ merged: true })],
     recheck = unmoved,
+    mainHeads = [],
   } = options
   const log = []
   const said = []
   let readAt = 0
   let mergeAt = 0
   let checkAt = 0
+  let mainAt = 0
   const git = (command) => {
     log.push(`git ${command.join(" ")}`)
     const [name] = command
@@ -130,6 +138,8 @@ export const harness = (options = {}) => {
     if (command[0] === "pr" && command[1] === "view") return ok(JSON.stringify(pull))
     if (command[0] === "pr" && command[1] === "create") return ok("https://github.com/Rickvu309/AirDesign/pull/394\n")
     if (command[0] === "pr" && command[1] === "merge") return merges[Math.min(mergeAt++, merges.length - 1)]
+    if (command[0] === "api" && command[1]?.endsWith("/git/ref/heads/main"))
+      return ok(`${mainHeads[Math.min(mainAt++, mainHeads.length - 1)]}\n`)
     if (command[0] === "run" && command[1] === "view") return ok(fixture("vitest-failed.log"))
     if (command[1]?.includes("/actions/workflows/")) return ok("[]")
     if (command[1]?.endsWith("/artifacts")) return ok("")

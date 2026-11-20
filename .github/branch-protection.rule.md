@@ -1,3 +1,3 @@
-# `main` takes only a commit that passed `ci` on top of the latest `main`
+# `main` takes a commit only after a green `ci` and `bar` on its PR and a recheck on the current `main`, and every push to `main` runs all of `ci`, with a bot that reverts a red `main`
 
-branch protection and the merge queue
+Branch protection requires `ci` and `bar` with `strict: false`. `pnpm land` rechecks the head merged with the newest `main` right before the merge (`scripts/premerge-recheck.mjs`), merges with `gh pr merge --rebase --match-head-commit`, and rechecks again when `main` moved (`scripts/merge-race.rule.md`). With no merge queue run for the commit, the push to `main` runs every part (`.github/actions/queued`), and `.github/workflows/red-main-revert.yml` reverts the first red commit (`scripts/red-main-revert.rule.md`). While the ruleset "merge queue on main" (id 26940915) is active, the queue tests each PR on top of the latest `main` too. Rollback: set that ruleset back to `active` with `gh api -X PUT repos/Rickvu309/AirDesign/rulesets/26940915 -f enforcement=active`; `pnpm land` reads the queue from GitHub and queues again with no other change

@@ -19,11 +19,11 @@ One agent builds, proves and lands its own change, and starts no review agent, e
 2. Write the failing test first, at the lowest layer that fails. Tests never retry. A test that fails only under load has found a race: fix the race.
 3. For anything a person sees or the API answers, drive the real app with the `verify-airdesign` skill and judge it as a design, with `look` and `compare` on each state you touched.
 4. `pnpm gate` stamps the commit, and `git push` refuses a commit with no stamp. Never `--no-verify`.
-5. `pnpm land --title "<title>" --body-file <file>` opens the PR, queues it and follows it to merged. The title is an imperative verb and the one outcome, in at most 72 characters. The body has the sections of `.github/pull_request_template.md`: write it with the `pr` skill (`~/.agents/skills/pr`), and keep the annotated `## Before / after` image from `verify-airdesign`. `pnpm land` refuses a bad title or body and says why.
+5. `pnpm land --title "<title>" --body-file <file>` opens the PR and follows it to merged, through the merge queue or its own recheck and merge. The title is an imperative verb and the one outcome, in at most 72 characters. The body has the sections of `.github/pull_request_template.md`: write it with the `pr` skill (`~/.agents/skills/pr`), and keep the annotated `## Before / after` image from `verify-airdesign`. `pnpm land` refuses a bad title or body and says why.
 
-`ci` on the PR, and again in the merge queue, is the judge. When it fails, fix the step it names and land again. Rebase only when GitHub reports a conflict. `main` deploys itself once `ci` passes.
+`ci` on the PR, the recheck on the newest `main`, and `ci` on the push to `main` are the judge. When it fails, fix the step it names and land again. Rebase only when GitHub reports a conflict. `main` deploys itself once `ci` passes.
 
-Land finished work now as its own PR, since the queue keeps the order. To wait on a PR, call `watch_pull_request`. A thread that hands out work ends its turn, and the reports wake it.
+Land finished work now as its own PR; `pnpm land` rechecks against whatever merged first. To wait on a PR, call `watch_pull_request`. A thread that hands out work ends its turn, and the reports wake it.
 
 ## Where to look
 

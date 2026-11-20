@@ -32,10 +32,15 @@ jobs:
       model-check: ${{ steps.map.outputs.model-check }}
       unit-tests: ${{ steps.map.outputs.unit-tests }}
       check: ${{ steps.map.outputs.check }}
+      queued: ${{ steps.queued.outputs.passed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 2
+      - id: queued
+        uses: ./.github/actions/queued
+        with:
+          part: source
       - id: map
         uses: ./.github/actions/ci-changes
         with:
@@ -343,7 +348,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           if [ "$RUN_ATTEMPT" -gt 1 ]; then
-            echo "::error title=ci was rerun::A failed ci run is never rerun. Push a fix, or run \`pnpm land\` again so the merge queue builds a fresh run."
+            echo "::error title=ci was rerun::A failed ci run is never rerun. Push a fix, or run \`pnpm land\` again."
             exit 1
           fi
       - env:
@@ -368,7 +373,7 @@ jobs:
             gh issue close "$open" --repo "$GITHUB_REPOSITORY" --comment "ci passed on main at ${GITHUB_SHA::7}. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi
       - name: ci-duration
-        if: github.event_name == 'merge_group'
+        if: github.event_name != 'pull_request' && needs.changes.outputs.queued != 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -380,7 +385,7 @@ jobs:
           echo "$line"
           echo "$line" >> "$GITHUB_STEP_SUMMARY"
           if awk -v now="$minutes" -v limit="$limit" 'BEGIN { exit !(now > limit) }'; then
-            echo "::warning title=ci-duration::ci-duration is $minutes and its limit is $limit. The merge queue's ci run took $minutes minutes."
+            echo "::warning title=ci-duration::ci-duration is $minutes and its limit is $limit."
           fi
   mutation:
     name: mutation

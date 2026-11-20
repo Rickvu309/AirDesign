@@ -1,4 +1,4 @@
-import { fixture, ok, same } from "./land-harness.mjs"
+import { fixture, mainRules, ok, same } from "./land-harness.mjs"
 import { followPull } from "./land-follow.mjs"
 
 const repository = "Rickvu309/AirDesign"
@@ -24,6 +24,7 @@ const answer = ({ contexts = passed, merged = false, entry = null, armed = true,
           timelineItems: { nodes: timeline },
         },
         mergeQueue: { entries: { nodes: [] } },
+        ref: mainRules(),
       },
     },
   })

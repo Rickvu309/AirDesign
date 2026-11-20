@@ -1,0 +1,3 @@
+# With no merge queue, `pnpm land` merges only on the `main` its recheck tested, and retries a bounded number of times
+
+After the recheck passes, land reads `main` again. When another pull request merged meanwhile, it rechecks on the newer `main` instead of merging. It merges with `gh pr merge --rebase --match-head-commit <head>`, so a moved head is refused, never merged; then the new head needs its own ci and land stops. When GitHub refuses the merge for another reason, such as `Base branch was modified`, land rechecks on the newest `main` and asks again. After 3 rechecks it stops, merges nothing, and says to run `pnpm land --watch` (`mergeAfterRecheck` in `scripts/premerge-recheck.mjs`, `land-recheck.test.mjs`)

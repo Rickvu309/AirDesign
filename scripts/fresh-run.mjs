@@ -101,8 +101,8 @@ const awaitNewRun = async ({ read, repository, number, sleep, now, interval }) =
   const started = now()
   for (;;) {
     const pull = readPull({ read, repository, number })
-    if (pull.state !== "CLOSED" && pull.checks.running.length > 0) return true
-    if (now() - started >= startLimitMs) return false
+    if (pull.state !== "CLOSED" && pull.checks.running.length > 0) return pull
+    if (now() - started >= startLimitMs) return undefined
     await sleep(interval)
   }
 }
@@ -131,8 +131,10 @@ export const takeFreshRun = async ({
     const reopened = gh(["pr", "reopen", String(number)])
     if (reopened.status !== 0)
       return `gh pr reopen failed: ${reopened.stderr.trim()}. Reopen it: gh pr reopen ${number}`
-    if (!(await awaitNewRun({ read, repository, number, sleep, now, interval })))
+    const started = await awaitNewRun({ read, repository, number, sleep, now, interval })
+    if (started === undefined)
       return `no ci run started within ${startLimitMs / 60000} minutes of the reopen. Look at: gh pr checks ${number}`
+    if (!started.hasQueue) return undefined
   }
   const queued = enqueue({ merge: gh, read, repository, number })
   return queued.ok ? undefined : queued.message

@@ -1,0 +1,3 @@
+# Every duty the merge queue did still happens on the push to `main` when no queue run passed for that commit
+
+A ci step or job that runs only on `merge_group` fails `queue-free.test.mjs` unless it has a duty on the push: the spec results and corpus validations a queue run handed to `main` are saved by the push run itself, `ci-duration` times the push run when `changes` says no queue run passed (`.github/actions/queued`), `file-growth` warns on the push as it did in the queue, `bar` judges every PR on `pull_request_target`, and `ci-failure-report` reads push runs. Only the `queue-drop` comment is queue-only (`scripts/queue-free.test.mjs`, `ci-duration.test.mjs`, `ci-queued.test.mjs`)

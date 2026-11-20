@@ -42,7 +42,7 @@ export const verifierSteps = (number) => [
   `start a verifier that did not write pull request ${number}, with delegate_task or a fresh agent, and give it only this brief:`,
   `  Countersign pull request ${number}. Run node scripts/countersign.mjs ${number} for the bar's list and the head. Read the diff with gh pr diff ${number} and judge the diff and its effects. Do not read the pull request's body or comments. Then run node scripts/countersign.mjs ${number} <head> right "<one line: why lowering the bar here is right>", or the same with wrong "<one line: what is wrong>".`,
   "that command posts the comment countersign <head> right: <reason>, and a new push makes it stale",
-  "the comment starts the bar check again; auto-merge queues the pull request once it passes. Follow it with pnpm land --watch",
+  "the comment starts the bar check again. Then run pnpm land --watch: with a merge queue it follows the armed pull request in, and with none it rechecks the head on the newest main and merges it",
 ]
 
 export const commentsArgs = (repository, number) => [

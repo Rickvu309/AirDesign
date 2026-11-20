@@ -166,7 +166,7 @@ const rows = [
     args: ["scripts/file-size.mjs"],
     preflight: true,
     gate: { order: 4 },
-    verdict: "warn-in-queue",
+    verdict: "warn-after-pr",
   },
   {
     name: "rule-rows",
@@ -380,8 +380,8 @@ const validate = (rows) => {
       refuse("name one or more distinct parts, or use all")
     if (!["everywhere", "local", "ci"].includes(where)) refuse("set where to everywhere, local, or ci")
     if (kind === "report" && verdict !== undefined) refuse("remove verdict from the report")
-    if (verdict !== undefined && !["block", "warn", "warn-in-queue"].includes(verdict))
-      refuse("set verdict to block, warn, or warn-in-queue")
+    if (verdict !== undefined && !["block", "warn", "warn-after-pr"].includes(verdict))
+      refuse("set verdict to block, warn, or warn-after-pr")
     if (after !== undefined && after !== "work") refuse("set after to work or omit it")
     if (preflight && (lane !== undefined || after !== undefined))
       refuse("remove preflight or run outside the lane and stage barrier")
@@ -449,7 +449,7 @@ export const defineCheckSteps = (rows) => {
     stampable: (failed, ran) => ran && failed.every((name) => byName.get(name)?.stampOnFailure === true),
     warns: (name, event) => {
       const verdict = byName.get(name)?.verdict
-      return verdict === "warn" || (verdict === "warn-in-queue" && event === "merge_group")
+      return verdict === "warn" || (verdict === "warn-after-pr" && (event === "merge_group" || event === "push"))
     },
   }
 }

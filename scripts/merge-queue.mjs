@@ -1,4 +1,4 @@
-const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} timelineItems(last:30,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT,HEAD_REF_FORCE_PUSHED_EVENT,PULL_REQUEST_COMMIT]){nodes{__typename ... on RemovedFromMergeQueueEvent{createdAt reason}}} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{databaseId name conclusion status} ... on StatusContext{context state}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}}}}`
+const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} timelineItems(last:30,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT,HEAD_REF_FORCE_PUSHED_EVENT,PULL_REQUEST_COMMIT]){nodes{__typename ... on RemovedFromMergeQueueEvent{createdAt reason}}} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{databaseId name conclusion status} ... on StatusContext{context state}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}} ref(qualifiedName:"refs/heads/main"){rules(first:50){nodes{type repositoryRuleset{enforcement}}}}}}`
 
 export const pullArgs = (repository, number) => {
   const [owner, name] = repository.split("/")
@@ -48,8 +48,13 @@ const latestRemoval = (items) => {
     : undefined
 }
 
+const queueRuleActive = (ref) =>
+  (ref?.rules?.nodes ?? []).some(
+    (rule) => rule.type === "MERGE_QUEUE" && (rule.repositoryRuleset?.enforcement ?? "ACTIVE") === "ACTIVE",
+  )
+
 export const parsePull = (text) => {
-  const { pullRequest, mergeQueue } = JSON.parse(text).data.repository
+  const { pullRequest, mergeQueue, ref } = JSON.parse(text).data.repository
   const rollup = pullRequest.commits.nodes[0]?.commit.statusCheckRollup
   return {
     state: pullRequest.state,
@@ -64,11 +69,15 @@ export const parsePull = (text) => {
     checks: sortChecks(rollup?.contexts.nodes ?? []),
     removal: latestRemoval(pullRequest.timelineItems.nodes),
     queue: (mergeQueue?.entries.nodes ?? []).map((entry) => entry.pullRequest.number),
-    hasQueue: mergeQueue !== null && mergeQueue !== undefined,
+    hasQueue: mergeQueue !== null && mergeQueue !== undefined && queueRuleActive(ref),
   }
 }
 
 export const queueLine = (pull) => {
+  if (!pull.hasQueue && !pull.queued)
+    return pull.armed
+      ? "main has no merge queue, and auto-merge is armed, so GitHub would merge it without the recheck; land switches it off"
+      : "main has no merge queue; land merges the head itself once ci passes and the recheck passes"
   if (pull.queued) return `in the merge queue at position ${pull.position}`
   if (pull.armed) return "auto-merge is armed, and the queue takes it when checks pass"
   return "not in the merge queue and auto-merge is not armed"

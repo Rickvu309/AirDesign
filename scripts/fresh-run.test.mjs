@@ -1,6 +1,6 @@
 import { freshRunMark, outsideTheDiff } from "./fresh-run.mjs"
 import { followPull } from "./land-follow.mjs"
-import { fixture, ok, same } from "./land-harness.mjs"
+import { fixture, mainRules, ok, same } from "./land-harness.mjs"
 import { forceTheGap } from "./race-issue.mjs"
 
 const browserLog = fixture("job-playwright-failed.log")
@@ -56,7 +56,15 @@ const failed = [
 const fresh = [
   { __typename: "CheckRun", databaseId: 2, name: "check (browser 2/4)", conclusion: null, status: "QUEUED" },
 ]
-const pullAnswer = ({ contexts = failed, state = "OPEN", merged = false, armed = true, entry = null, removal } = {}) =>
+const pullAnswer = ({
+  contexts = failed,
+  state = "OPEN",
+  merged = false,
+  armed = true,
+  entry = null,
+  removal,
+  queue = true,
+} = {}) =>
   JSON.stringify({
     data: {
       repository: {
@@ -78,7 +86,8 @@ const pullAnswer = ({ contexts = failed, state = "OPEN", merged = false, armed =
                 : [{ __typename: "RemovedFromMergeQueueEvent", reason: removal, createdAt: "t" }],
           },
         },
-        mergeQueue: { entries: { nodes: [] } },
+        mergeQueue: queue ? { entries: { nodes: [] } } : null,
+        ref: mainRules(queue),
       },
     },
   })
@@ -246,3 +255,17 @@ const conflicted = await follow({
 same("a queue drop for another reason is not queued again", [conflicted.code, conflicted.posted.length], [1, 0])
 
 console.log("fresh-run tests passed")
+
+const unqueued = await follow({
+  reads: [
+    pullAnswer({ queue: false, armed: false }),
+    pullAnswer({ queue: false, armed: false, contexts: [...failed, ...fresh] }),
+    pullAnswer({ queue: false, merged: true }),
+  ],
+})
+same("with no merge queue, a failure outside the diff still takes its fresh run", unqueued.code, 0)
+same(
+  "the pull request is closed and reopened, and auto-merge is not armed, since with no queue it would merge without the recheck",
+  unqueued.asked.filter((call) => /^pr (close|reopen|merge)|^run rerun|\/rerun/.test(call)),
+  ["pr close 394", "pr reopen 394"],
+)

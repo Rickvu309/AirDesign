@@ -330,8 +330,9 @@ if (allEvents.join() !== "format,lock,unit-tests,release")
   throw new Error("--all must finish checks after preflight fails")
 
 for (const eventName of [undefined, "", "pull_request", "push", "merge_group"]) {
+  const afterPullRequest = eventName === "merge_group" || eventName === "push"
   for (const name of everyStep) {
-    const shouldWarn = warningSteps.includes(name) || (name === "file-growth" && eventName === "merge_group")
+    const shouldWarn = warningSteps.includes(name) || (name === "file-growth" && afterPullRequest)
     const result = await runCheck({
       eventName,
       chosen: [[[name]]],
@@ -350,11 +351,13 @@ for (const eventName of [undefined, "", "pull_request", "push", "merge_group"]) 
     run: stepRunner({ eventName, limitOf: () => undefined, say: (line) => printed.push(line) }),
     lock: async () => () => {},
   })
-  const status = eventName === "merge_group" ? "warn" : "fail"
+  const status = afterPullRequest ? "warn" : "fail"
   if (!printed.join("").includes(`deck.ts is over the limit\n${status} file-growth `))
     throw new Error(`file-growth must print its diagnostic and ${status} on ${eventName}`)
   if (stampable(result.failed, result.ranSteps) !== (status === "warn"))
-    throw new Error(`file-growth must allow check to finish only in the merge queue`)
+    throw new Error(
+      `file-growth must allow check to finish only after the pull request, in the merge queue or on the push to main`,
+    )
 }
 
 const collected = new Set()
