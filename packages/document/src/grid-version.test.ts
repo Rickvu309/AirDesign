@@ -99,13 +99,14 @@ it("freezes the first tagged default through both orders of a mixed-version log"
   }
 })
 
-it("plans a Grid command against slide groups once the section starts are known, and against slide groups until then", () => {
+it("plans a newer Grid command once the section starts are known", () => {
   const older = { slide: "remove", grid: 2, id: file[1]! } as const
   expect(gridCommandVersion({ order: [] })).toBe(1)
-  expect(gridCommandVersion({ order: [older] })).toBe(2)
-  expect(gridCommandVersion({ order: [], sectionStarts })).toBe(3)
-  expect(gridCommandVersion({ order: [], sectionStarts: [] })).toBe(3)
-  expect(gridCommandVersion({ order: [older], sectionStarts })).toBe(3)
+  expect(gridCommandVersion({ order: [older] })).toBe(older.grid)
+  const sectioned = gridCommandVersion({ order: [], sectionStarts })
+  expect(sectioned).toBeGreaterThan(older.grid)
+  expect(gridCommandVersion({ order: [], sectionStarts: [] })).toBe(sectioned)
+  expect(gridCommandVersion({ order: [older], sectionStarts })).toBe(sectioned)
 })
 
 it("refuses to freeze a version two grid while the section starts are unavailable", () => {

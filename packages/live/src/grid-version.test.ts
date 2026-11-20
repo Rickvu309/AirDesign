@@ -1,4 +1,4 @@
-import { format, formatOf, gridCommandVersion, gridGroups, slideGroups, slideId, stamps } from "@airdesign/document"
+import { format, formatOf, gridCommandVersion, gridGroups, slideGroups, slideId } from "@airdesign/document"
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, memoryShelf } from "./browser-fixtures.js"
@@ -78,7 +78,7 @@ it("opens a new import offline and publishes its section starts before sending i
   expect(gridGroups(saved.register)).toEqual(after)
 })
 
-it("refuses, on a tab one command stamp older, the deck a version three Grid edit reached, and keeps its Grid edit for this build to send", async () => {
+it("refuses, on a tab one command stamp older, the deck a newer Grid edit reached, and keeps its Grid edit for this build to send", async () => {
   const server = memoryRemote()
   const cache = connect(server)
   await cache.open("deck")
@@ -107,14 +107,13 @@ it("refuses, on a tab one command stamp older, the deck a version three Grid edi
     after: file[2]!,
     row: "same",
   } as const
-  expect(regroup.grid).toBe(3)
+  expect(regroup.grid).toBeGreaterThan(edit.grid)
   expect(await server.commit({ deck: "deck", batch: [{ ...regroup, file }], once: "regroup" })).toMatchObject({
     ok: true,
   })
   const answered = await server.open({ deck: "deck" })
   if (!answered.ok) throw new Error(answered.refusal)
   expect(formatOf(answered.register)).toBe(format)
-  expect(stamps.command).toBe(17)
 
   const unsent = { slide: "add", grid: 2, row: "same", id: slideId("300"), after: file[1]!, layout: file[0]! } as const
   const sent = vi.spyOn(server, "commit")

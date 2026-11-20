@@ -237,7 +237,7 @@ export {
   type SlideCommand,
   type SlideState,
 } from "./slide-order.js"
-export { format, formatOf, newerFormat, stamps, type StoredRead } from "./format.js"
+export { format, formatOf, newerFormat, type StoredRead } from "./format.js"
 export { readRegister, readRow, readStoredEdit, type StoredEdit } from "./stored.js"
 export {
   cellText,

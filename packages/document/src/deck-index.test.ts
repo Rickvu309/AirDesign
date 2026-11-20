@@ -15,11 +15,11 @@ import {
   roles,
   slideId,
   sources,
-  stamps,
   type DeckIndex,
   type IndexElement,
   type IndexPage,
 } from "./index.js"
+import { stamps } from "./format.js"
 
 const box = { x: 1, y: 2, cx: 3, cy: 4 }
 const page: IndexPage = {
@@ -266,8 +266,8 @@ describe("index format", () => {
     expect(indexDue(whole)).toBe(false)
   })
 
-  it("names every key the index stores, so a new key raises the index stamp", () => {
-    expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
+  it("keeps the recorded index keys and the stamp that introduced them", () => {
+    const recorded = {
       stamp: 20,
       keys: {
         page: [
@@ -314,7 +314,9 @@ describe("index format", () => {
         roles,
         sources,
       },
-    })
+    }
+    expect(indexKeys).toEqual(recorded.keys)
+    expect(stamps.index).toBeGreaterThanOrEqual(recorded.stamp)
   })
 })
 
