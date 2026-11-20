@@ -1,9 +1,11 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { shortcutCopy } from "../bin/product-copy.mjs"
 
 const part = "ppt/slides/slide1.xml"
 const emuPerPixel = 15_240
 const slideWidth = 12_192_000
+const shift = shortcutCopy.chord.other.shift
 
 function lastEndBox(register, node) {
   const rows = register?.elements?.[node]?.landed ?? []
@@ -58,7 +60,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await page.keyboard.up("Control")
   await expect(guide("snap x 450")).toHaveCount(1)
 
-  await page.keyboard.down("Shift")
+  await page.keyboard.down(shift)
   const slanted = await point(600, 318)
   await page.mouse.move(slanted.x, slanted.y, { steps: 8 })
   await expect.poll(previewEnd).toEqual(["600", "300"])
@@ -78,7 +80,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await page.mouse.move(slanted.x, slanted.y, { steps: 8 })
   await expect.poll(previewEnd).toEqual(["600", "300"])
   await page.mouse.up()
-  await page.keyboard.up("Shift")
+  await page.keyboard.up(shift)
   await expect(page.locator("[data-guides]")).toHaveCount(0)
   await expect(page.locator("[data-connector-aim]")).toHaveCount(0)
   const level = { x: 300 * emuPerPixel, y: 300 * emuPerPixel, w: 300 * emuPerPixel, h: 0 }
