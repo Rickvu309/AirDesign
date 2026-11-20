@@ -5,7 +5,7 @@ import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
 import { groupedNow } from "./element-group.js"
-import { frameNow, framedNow } from "./frame-layout.js"
+import { backdropNow, frameNow, framedNow } from "./frame-layout.js"
 import { measuredOnly } from "./measured-row.js"
 import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
@@ -330,6 +330,7 @@ export function elementFacts(register: Register, node: ElementId): ElementFacts 
     grouped: groupedNow(register, node),
     ...(frame === null ? {} : { frame }),
     ...(framed === null ? {} : { framed }),
+    ...(framed !== null && backdropNow(register, node) ? { backdrop: true } : {}),
   }
 }
 

@@ -10,7 +10,10 @@ export const layoutWire: TraitWire<"layout"> = {
       example: { layout: { padding: { left: 8, top: 8, right: 8, bottom: 8 } } },
     },
     align: { description: "Where the children sit.", example: { layout: { align: "center" } } },
-    width: { description: "hug, or fixed to box.w.", example: { layout: { width: "fixed" } } },
+    width: {
+      description: "hug, fixed to box.w, or fill: a child takes the frame's free space; start_run its frame too.",
+      example: { layout: { width: "fixed" } },
+    },
     height: { example: { layout: { height: "fixed" } } },
   },
 }

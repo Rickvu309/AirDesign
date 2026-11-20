@@ -79,13 +79,13 @@ export const kindTraits = {
   section: [],
   slide: ["fills", "templateStyle", "show", "transition", "guides"],
   notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link"],
+  shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link", "layout"],
   connector: ["identity", "box", "geometry", "border", "effects", "connection"],
   group: ["identity", "box", "effects", "layout"],
-  table: ["identity", "box", "table"],
+  table: ["identity", "box", "table", "layout"],
   row: [],
   cell: [],
-  chart: ["identity", "box", "chart"],
+  chart: ["identity", "box", "chart", "layout"],
   kept: ["identity"],
 } as const satisfies { readonly [K in Kind]: readonly TraitName[] }
 

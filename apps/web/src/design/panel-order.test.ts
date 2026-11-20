@@ -8,8 +8,6 @@ const panelled = (Object.keys(kindTraits) as Kind[]).filter((kind) =>
   (kindTraits[kind] as readonly string[]).includes("identity"),
 )
 
-const frameOnly: Readonly<Partial<Record<PanelKind, readonly string[]>>> = { group: ["layout"] }
-
 function panelsOf(kind: Kind): readonly PanelKind[] {
   return kind === "shape" ? ["text", "shape"] : [kind as PanelKind]
 }
@@ -40,7 +38,7 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
           )
           .map((section) => (section === "boxFill" ? "fills" : section))
           .toSorted(),
-      }).toEqual({ panel, placed: wanted.filter((trait) => !(frameOnly[panel] ?? []).includes(trait)) })
+      }).toEqual({ panel, placed: wanted })
     }
   }
 })

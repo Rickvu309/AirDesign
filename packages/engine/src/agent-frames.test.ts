@@ -94,6 +94,28 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     expect(second.x).toBe(first.x)
   })
 
+  it("makes a child fill the frame with set layout width fill, which fixes a hugging frame at its size", () => {
+    const hugging = listed(framed()).get("258.9")?.box
+    const elements = [{ node: "258.3" }, { node: "258.9" }]
+    const started = landed(call("start_run", framed(), agent, { deck: "deck", runId: "run", elements }))
+    const fenced = edit(
+      landed(call("start_run", framed(), agent, { deck: "deck", runId: "run", elements: [elements[0]] })),
+      {
+        op: "set",
+        target: "258.3",
+        layout: { width: "fill" },
+      },
+    )
+    expect(fenced.ok).toBe(false)
+    const filled = landed(edit(started, { op: "set", target: "258.3", layout: { width: "fill" } }))
+    expect(listed(filled).get("258.9")?.box).toEqual(hugging)
+    const wide = landed(edit(filled, { op: "set", target: "258.9", box: { w: 100 } }))
+    const [frame, child] = [listed(wide).get("258.9")?.box, listed(wide).get("258.3")?.box]
+    if (frame == null || child == null) throw new Error("frame")
+    expect(frame.cx).toBe(1_270_000)
+    expect(child.x + child.cx).toBe(frame.x + frame.cx)
+  })
+
   it("paints the frame's fill on its backdrop and refuses moving a child of an auto layout frame", () => {
     const deck = landed(set(framed(), "258.9", { fills: { paint: `#${crimson}` } }))
     expect(deck.register.elements[node(10)]?.landed.at(-1)).toMatchObject({ actor: "agent", runId: "run" })

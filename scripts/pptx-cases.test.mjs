@@ -29,6 +29,7 @@ assert.deepEqual(
     "color-transforms.mjs",
     "diagram-edits.mjs",
     "element-order.mjs",
+    "frame-fill.mjs",
     "frame-group.mjs",
     "frame-nested.mjs",
     "frame-sizing.mjs",

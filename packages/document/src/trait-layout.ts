@@ -3,7 +3,7 @@ import { alphaOver, choice, record, size } from "./value-kind.js"
 
 export const flows = ["none", "horizontal", "vertical"] as const
 
-export const sizings = ["hug", "fixed"] as const
+export const sizings = ["hug", "fixed", "fill"] as const
 
 export const layoutAligns = [
   "topLeft",
@@ -19,7 +19,7 @@ export const layoutAligns = [
 
 export const layout = trait(
   "own",
-  { version: 3, shape: "8af7d84b" },
+  { version: 4, shape: "3bb2a4db" },
   {
     flow: choice(flows),
     gap: size,

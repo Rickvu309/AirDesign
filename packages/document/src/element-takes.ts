@@ -10,6 +10,7 @@ export type ElementFacts = {
   readonly animated: boolean
   readonly frame?: "auto" | "free"
   readonly framed?: "auto" | "free"
+  readonly backdrop?: true
 }
 
 const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
@@ -17,6 +18,8 @@ const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
 const placed: readonly FieldKey[] = ["box.x", "box.y", "box.w", "box.h"]
 
 const sized: readonly FieldKey[] = ["box.w", "box.h"]
+
+const sizes: readonly FieldKey[] = ["layout.width", "layout.height"]
 
 const chosenStyle: FieldKey = "templateStyle.id"
 
@@ -48,7 +51,12 @@ const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept"
 
 export function takes(facts: ElementFacts): readonly FieldKey[] {
   const fields = kindTraits[facts.kind].flatMap((trait): readonly FieldKey[] => {
-    if (trait === "layout") return facts.frame === undefined ? [] : fieldKeys(trait)
+    if (trait === "layout")
+      return facts.frame !== undefined
+        ? fieldKeys(trait)
+        : facts.framed === "auto" && facts.backdrop !== true
+          ? sizes
+          : []
     if (trait === "box" && facts.framed !== undefined) return facts.framed === "free" ? placed : sized
     return fieldKeys(trait)
   })

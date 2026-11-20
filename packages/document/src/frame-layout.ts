@@ -20,17 +20,18 @@ import { dropSpot, joinTurn, spotNow } from "./group-join.js"
 import { rebased } from "./group-space.js"
 import type { ElementPatch, FieldEdit } from "./row.js"
 import { floorOf, openingElement } from "./slide-floor.js"
-import type { Framing } from "./frame-index.js"
+import { filedFill, type Framing, type FramingFill } from "./frame-index.js"
 import { flows, layoutAligns, sizings } from "./trait-layout.js"
 import type { Alpha } from "./value-kind.js"
 import { guessed } from "./layout-guess.js"
+import { flowPlaced, type FlowChild, type FlowFields, type FlowSlot } from "./frame-flow.js"
 
 export type Flow = (typeof flows)[number]
 export type LayoutAlign = (typeof layoutAligns)[number]
 export type Sizing = (typeof sizings)[number]
 export type Sides = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
 
-export type LayoutChild = { readonly node: ElementId; readonly box: Box }
+export type LayoutChild = FlowChild
 
 export type LayoutView = {
   readonly node: ElementId
@@ -70,7 +71,10 @@ const noPadding: Sides = { left: 0, top: 0, right: 0, bottom: 0 }
 type Fields = Readonly<Record<string, unknown>>
 
 function traitNow(register: Register, node: ElementId, trait: "layout" | "identity" | "box"): Fields {
-  const filed = trait === "layout" ? filedLayout(openingElement(register, node)?.framing) : undefined
+  const filed =
+    trait === "layout"
+      ? filled(filedLayout(openingElement(register, node)?.framing), filedFill(register.index?.elements ?? [], node))
+      : undefined
   const opening: Readonly<Record<string, FieldEdit<unknown>>> =
     filed ?? openingElement(register, node)?.opening?.[trait] ?? {}
   const body = Object.hasOwn(register.elements, node) ? register.elements[node] : undefined
@@ -82,6 +86,18 @@ function traitNow(register: Register, node: ElementId, trait: "layout" | "identi
     if (typeof edit === "object") now[field] = edit.set
   }
   return now
+}
+
+function filled(
+  layout: Readonly<Record<string, FieldEdit<unknown>>> | undefined,
+  fill: FramingFill | undefined,
+): Readonly<Record<string, FieldEdit<unknown>>> | undefined {
+  if (fill === undefined) return layout
+  return {
+    ...layout,
+    ...(fill.width ? { width: { set: "fill" } } : {}),
+    ...(fill.height ? { height: { set: "fill" } } : {}),
+  }
 }
 
 function filedLayout(framing: Framing | undefined): Readonly<Record<string, FieldEdit<unknown>>> | undefined {
@@ -111,12 +127,6 @@ function sidesOf(value: unknown): Sides {
     right: sides.right ?? 0,
     bottom: sides.bottom ?? 0,
   }
-}
-
-function shareAcross(align: LayoutAlign, horizontal: boolean): number {
-  const name = align.toLowerCase()
-  if (horizontal) return name.endsWith("left") ? 0 : name.endsWith("right") ? 1 : 0.5
-  return name.startsWith("top") ? 0 : name.startsWith("bottom") ? 1 : 0.5
 }
 
 function whole(value: unknown, fallback: number): number {
@@ -200,7 +210,13 @@ function originOf(register: Register, node: ElementId, made: FrameSource, mode: 
   const holder = holderOf(register, node)
   const slot =
     holder === null ? undefined : layoutIn(register, holder, mode)?.children.find((each) => each.node === node)
-  return slot === undefined ? own : { ...slot.box, cx: own.cx, cy: own.cy }
+  if (slot === undefined) return own
+  const sized = traitNow(register, node, "layout")
+  return {
+    ...slot.box,
+    cx: sized.width === "fill" ? slot.box.cx : own.cx,
+    cy: sized.height === "fill" ? slot.box.cy : own.cy,
+  }
 }
 
 function laidOut(
@@ -209,58 +225,27 @@ function laidOut(
   members: readonly Member[],
   origin: Box,
   mode: Mode,
-  fields: {
-    readonly flow: Exclude<Flow, "none">
-    readonly gap: number
-    readonly padding: Sides
-    readonly align: LayoutAlign
-    readonly width: Sizing
-    readonly height: Sizing
-  },
+  fields: Omit<FlowFields, "horizontal"> & { readonly flow: Exclude<Flow, "none"> },
 ): { readonly box: Box; readonly children: readonly LayoutChild[] } {
-  const horizontal = fields.flow === "horizontal"
   const shown = members.filter((member) => !hiddenNow(register, member.node))
-  const slots = shown.map((member) => {
-    const box = childBox(register, member, mode)
-    const bounds = groupBounds([{ ...member, box }])
-    return { member, box, bounds }
-  })
-  const along = (box: Box) => (horizontal ? box.cx : box.cy)
-  const across = (box: Box) => (horizontal ? box.cy : box.cx)
-  const thickest = Math.max(0, ...slots.map(({ bounds }) => across(bounds)))
-  const { padding, gap } = fields
-  const [start, end] = horizontal ? [padding.left, padding.right] : [padding.top, padding.bottom]
-  const [crossStart, crossEnd] = horizontal ? [padding.top, padding.bottom] : [padding.left, padding.right]
-  const [fixedAlong, fixedAcross] = horizontal ? [fields.width, fields.height] : [fields.height, fields.width]
-  const content = slots.reduce((sum, { bounds }) => sum + along(bounds), 0) + gap * Math.max(0, slots.length - 1)
-  const length = fixedAlong === "fixed" ? along(origin) : start + content + end
-  const thickness = fixedAcross === "fixed" ? across(origin) : crossStart + thickest + crossEnd
-  const room = thickness - crossStart - crossEnd
-  const share = shareAcross(fields.align, !horizontal)
-  const children: LayoutChild[] = []
-  let cursor = start + Math.round((length - start - end - content) * shareAcross(fields.align, horizontal))
-  for (const { member, box, bounds } of slots) {
-    const cross = crossStart + Math.round((room - across(bounds)) * share)
-    const slotX = origin.x + (horizontal ? cursor : cross)
-    const slotY = origin.y + (horizontal ? cross : cursor)
-    children.push({ node: member.node, box: { ...box, x: slotX + box.x - bounds.x, y: slotY + box.y - bounds.y } })
-    cursor += along(bounds) + gap
-  }
-  const opened = made.box
-  for (const member of members.filter((each) => !shown.includes(each))) {
-    const box = childBox(register, member, mode)
-    children.push({
+  const slots = shown.map((member): FlowSlot => {
+    const own = traitNow(register, member.node, "layout")
+    return {
       node: member.node,
-      box: { ...box, x: origin.x + box.x - opened.x, y: origin.y + box.y - opened.y },
+      box: childBox(register, member, mode),
+      bounds: (box) => groupBounds([{ ...member, box }]),
+      fills: { width: own.width === "fill", height: own.height === "fill" },
+    }
+  })
+  const placed = flowPlaced(slots, origin, { ...fields, horizontal: fields.flow === "horizontal" })
+  const opened = made.box
+  const hidden = members
+    .filter((each) => !shown.includes(each))
+    .map((member): LayoutChild => {
+      const box = childBox(register, member, mode)
+      return { node: member.node, box: { ...box, x: origin.x + box.x - opened.x, y: origin.y + box.y - opened.y } }
     })
-  }
-  const box = {
-    x: origin.x,
-    y: origin.y,
-    cx: horizontal ? length : thickness,
-    cy: horizontal ? thickness : length,
-  }
-  return { box, children }
+  return { box: placed.box, children: [...placed.children, ...hidden] }
 }
 
 function heldFree(
@@ -291,8 +276,8 @@ function arranged(register: Register, node: ElementId, origin: Box, mode: Mode):
   const padding = sidesOf(fields.padding)
   const align = layoutAligns.find((each) => each === fields.align) ?? "topLeft"
   const opacity = (typeof fields.opacity === "number" ? fields.opacity : opaque) as Alpha
-  const width: Sizing = fields.width === "fixed" ? "fixed" : "hug"
-  const height: Sizing = fields.height === "fixed" ? "fixed" : "hug"
+  const width = sizings.find((each) => each === fields.width) ?? "hug"
+  const height = sizings.find((each) => each === fields.height) ?? "hug"
   const view = { node, backdrop, flow, gap, padding, align, opacity, width, height }
   const members = frameMembers(register, node)
   if (flow === "none") return { ...view, box: origin, children: heldFree(register, made, members, origin, mode) }
@@ -340,6 +325,11 @@ function made(register: Register): readonly ElementId[] {
       ? [command.element.node]
       : [],
   )
+}
+
+export function backdropNow(register: Register, node: ElementId): boolean {
+  const parent = groupParent(register, node)
+  return parent !== null && parent !== undefined && frameBackdrop(register, parent) === node
 }
 
 export function framedNow(register: Register, node: ElementId): Framed | null {

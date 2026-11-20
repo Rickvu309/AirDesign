@@ -21,6 +21,8 @@ import type { TypedUnit } from "./typed-number"
 import { spacingUnits } from "./spacing-units"
 import type { CSSProperties, ReactNode } from "react"
 import { fillCopy } from "@/copy/fill-copy"
+import { frameCopy } from "@/copy/frame-copy"
+import { directions } from "./layout-options"
 import { pictureCopy } from "@/copy/picture-copy"
 import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
@@ -219,11 +221,6 @@ export type PanelReads = {
   readonly role?: string
 }
 
-function directions(trait: TraitName, field: string, desc: Desc): Desc {
-  if (trait !== "layout" || field !== "flow" || desc.kind !== "choice") return desc
-  return { ...desc, options: desc.options.filter((option) => option !== "none").reverse() }
-}
-
 function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
   if (desc.kind !== "union" || grouped || (typeof value === "object" && value !== null && "group" in value)) return desc
   return { ...desc, cases: Object.fromEntries(Object.entries(desc.cases).filter(([name]) => name !== "group")) }
@@ -283,6 +280,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         trait,
         field,
         shownDesc(kind, view.facts.grouped && view.facts.framed === undefined, held.value),
+        view.facts,
       )
       const label = copy?.label ?? ""
       const text = readTextValue(view.value ?? "")
@@ -315,7 +313,8 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         return [{ trait: place, label: sectionLabel(place, labels), open: true, strips: arrange(place, placed) }]
       })
     const strips = arrange(trait, visible)
-    const section = { trait, label: labels.section ?? "", open: true, strips }
+    const resizing = trait === "layout" && view.facts.frame === undefined
+    const section = { trait, label: resizing ? frameCopy.resizing : (labels.section ?? ""), open: true, strips }
     if (trait !== "text") return [section]
     const spacing = visible.filter(({ field }) => field === "spaceBefore" || field === "spaceAfter")
     if (spacing.length === 0) return [section]
