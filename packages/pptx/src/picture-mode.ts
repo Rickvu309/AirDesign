@@ -14,7 +14,10 @@ type Mode = FieldValue<"fills", "mode">
 
 export function shownPictureMode(parts: Parts, at: ElementAt): Mode | null {
   const found = pictureAt(parts, at)
-  if (found === null) return null
+  return found === null ? null : fillMode(found)
+}
+
+export function fillMode(found: PictureFill): Mode {
   const inside = found.children[found.fill.index] ?? []
   if (inside.some((item) => item.kind === "a:tile")) return "tile"
   if (inside.some((item) => item.kind === "a:srcRect")) return "crop"

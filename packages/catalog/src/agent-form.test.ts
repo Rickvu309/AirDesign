@@ -390,3 +390,20 @@ describe("a text that shows a template font", () => {
     })
   })
 })
+
+describe("foldDesign shows an image's fill mode", () => {
+  it("prints the mode a file holds in the opened design line", () => {
+    const read = { reads: { fills: { value: "image" }, "fills.mode": { value: "fit" } }, kept: [] }
+    expect(designOf(read as Parameters<typeof designOf>[0]).design).toEqual({ fills: ["image"], "fills.mode": ["fit"] })
+  })
+
+  it("names Fill, Fit, Crop and Tile after an agent or a person sets them, and drops Stretch", () => {
+    expect(foldDesign({ fills: ["image"] }, { fills: { mode: { set: "fit" } } })).toEqual({
+      fills: ["image"],
+      "fills.mode": ["fit"],
+    })
+    expect(foldDesign({ fills: ["image"], "fills.mode": ["fit"] }, { fills: { mode: { set: "stretch" } } })).toEqual({
+      fills: ["image"],
+    })
+  })
+})
