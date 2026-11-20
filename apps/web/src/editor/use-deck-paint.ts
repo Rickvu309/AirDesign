@@ -1,8 +1,10 @@
-import { type ElementId, type Register } from "@airdesign/document"
+import { type ElementId, type Register, type SlideCommand } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { boundTargets, type ReadShape } from "@airdesign/pptx"
 import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
+import { toast } from "@/components/ui/toast"
+import { productCopy } from "@/copy/product-copy"
 import { indexedRegister } from "@/indexed-register"
 import { type SlideCanvases } from "@/canvas-slide"
 import type { StripGroup } from "@/editor/slide-sidebar"
@@ -41,6 +43,8 @@ function partsWatch(): PartsWatch {
   }
 }
 
+const leftOutNotice = "edits-left-out"
+
 export function useDeckPaint(
   id: string,
   pictureTool: { readonly store: PictureStore },
@@ -68,6 +72,19 @@ export function useDeckPaint(
   const [groups, setSections] = useState<readonly StripGroup[]>([])
   const [current, setCurrent] = useState(0)
   const saySlide = useRef<(text: string) => void>(() => undefined)
+  const noticedLeftOut = useRef(new Set<string>())
+
+  function noticeLeftOut(leftOut: readonly SlideCommand[]) {
+    if (leftOut.length === 0) {
+      if (noticedLeftOut.current.size > 0) toast.dismiss(leftOutNotice)
+      noticedLeftOut.current.clear()
+      return
+    }
+    const fresh = leftOut.map((command) => JSON.stringify(command)).filter((key) => !noticedLeftOut.current.has(key))
+    if (fresh.length === 0) return
+    for (const key of fresh) noticedLeftOut.current.add(key)
+    toast.error(productCopy.editsLeftOut, { id: leftOutNotice, description: productCopy.editsLeftOutBody })
+  }
 
   function showOpened(parts: ReadonlyMap<string, Uint8Array>, register: Register | null) {
     shownParts.current = parts
@@ -80,6 +97,7 @@ export function useDeckPaint(
     const before = whole === "whole" ? null : painted.current
     const framed = register === null ? null : withFileFloors(register, shownParts.current)
     const next = paint(store.current, shownParts.current, framed, busy.current, pictureTool.store.bytes, before)
+    noticeLeftOut(next.leftOut)
     painted.current = next
     boxes.current = next.boxes
     movables.current = next.movables

@@ -6,7 +6,7 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { exportParts, fadedFrames, orderedParts, withMedia } from "@airdesign/pptx"
+import { exportParts, fadedFrames, withMedia, writtenDeck, type WrittenDeck } from "@airdesign/pptx"
 import { patchImages } from "@/patch-images"
 
 export { newSlideElement } from "@airdesign/document"
@@ -21,8 +21,13 @@ export function storedText(value: TextValue): string {
   return value.length === 0 ? "" : writeTextValue(value)
 }
 
+export function writtenBase(parts: Parts, register: Register, pictures: PictureBytes = noPictures): WrittenDeck {
+  if (register.order.length === 0) return { parts, register, leftOut: [] }
+  return writtenDeck(parts, register, (sha256) => pictures.get(sha256))
+}
+
 export function slideBase(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return register.order.length === 0 ? parts : orderedParts(parts, register, (sha256) => pictures.get(sha256))
+  return writtenBase(parts, register, pictures).parts
 }
 
 export function missingPictures(register: Register, pictures: PictureBytes): readonly string[] {
@@ -44,5 +49,6 @@ export function editedParts(base: Parts, register: Register, pictures: PictureBy
 }
 
 export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return fadedFrames(editedParts(slideBase(parts, register, pictures), register, pictures), register)
+  const written = writtenBase(parts, register, pictures)
+  return fadedFrames(editedParts(written.parts, written.register, pictures), written.register)
 }

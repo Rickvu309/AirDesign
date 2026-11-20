@@ -6,6 +6,7 @@ import {
   type Box,
   type ElementId,
   type Register,
+  type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
 import { paintReader, readShapes, readSlides, slideNumbering, themeSwatches, type ReadShape } from "@airdesign/pptx"
@@ -15,7 +16,7 @@ import type { StripGroup } from "@/editor/slide-sidebar"
 import { stripGroups } from "@/strip-groups"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
-import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
+import { editedParts, newSlideElement, writtenBase, type PictureBytes } from "@/exported-parts"
 import { framedOf } from "@/frame-boxes"
 import { movableInGroups } from "@/group-boxes"
 import { indexedRegister } from "@/indexed-register"
@@ -64,6 +65,7 @@ export type Painted = {
   readonly from: Parts
   readonly shared: Parts
   readonly slides: readonly PaintedSlide[]
+  readonly leftOut: readonly SlideCommand[]
 }
 
 export function elementIds(parts: Parts): readonly ElementId[] {
@@ -175,13 +177,15 @@ function changedStyleParts(base: Parts, display: Parts): Parts {
 export function paint(
   store: PaintStore,
   parts: Parts,
-  register: Register | null,
+  given: Register | null,
   busy: BusyElements,
   pictureBytes: PictureBytes = new Map(),
   previous: Painted | null = null,
 ): Painted {
   const earlier = previous?.from === parts ? previous : null
-  const base = sameIdentity(register === null ? parts : slideBase(parts, register, pictureBytes), earlier?.base)
+  const written = given === null ? null : writtenBase(parts, given, pictureBytes)
+  const register = written?.register ?? null
+  const base = sameIdentity(written?.parts ?? parts, earlier?.base)
   const floored = register === null ? null : withFileFloors(register, base)
   const cover = floored !== null && sizeChanged(floored)
   const edited =
@@ -274,5 +278,6 @@ export function paint(
     from: parts,
     shared,
     slides,
+    leftOut: written?.leftOut ?? [],
   }
 }

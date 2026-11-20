@@ -1,7 +1,9 @@
-import { elementId, writeTextValue } from "@airdesign/document"
+import { elementId, slideId, writeTextValue, type SlideCommand } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
+import { toast } from "@/components/ui/toast"
+import { productCopy } from "@/copy/product-copy"
 import { editedRegister, onSlide, twoBoxSlide, xml } from "../slide-fixtures"
 import { useDeckPaint, type DeckPaint } from "./use-deck-paint"
 
@@ -60,4 +62,32 @@ it("pictures that finish loading after an edit painted keep the edit on the slid
   expect(shown.store.current.getElement(title)?.text).toBe(said("Hello from Aira"))
   await act(async () => loads.shift()?.(true))
   expect(shown.store.current.getElement(title)?.text).toBe(said("Hello from Aira"))
+})
+
+it("leaves out an edit the device cannot write with one notice, paints the edits after it, and takes the notice down once every edit writes", async () => {
+  const error = vi.spyOn(toast, "error")
+  const seen: { shown: DeckPaint | null } = { shown: null }
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  root = createRoot(host)
+  await act(async () => root?.render(createElement(Deck, { load: () => Promise.resolve(false), seen })))
+  const shown = seen.shown
+  if (shown === null) throw new Error("not rendered")
+  const box = { x: 0, y: 0, cx: 1000, cy: 1000 }
+  const element = { node: elementId("256.9"), kind: "table", value: "not a table", box, grouped: false } as const
+  const unwritable: SlideCommand = { slide: "element-add", id: slideId("256"), element }
+  const edited = editedRegister([["256.2", said("Hello again")]])
+  const register = { ...edited, file: [slideId("256")], order: [unwritable] }
+  await act(async () => shown.showOpened(onSlide(xml(twoBoxSlide)), register))
+  expect(shown.store.current.getElement(title)?.text).toBe(said("Hello again"))
+  expect(shown.store.current.getElement(elementId("256.9"))).toBeNull()
+  await act(async () => shown.showOpened(onSlide(xml(twoBoxSlide)), register))
+  expect(error.mock.calls).toEqual([
+    [productCopy.editsLeftOut, { id: "edits-left-out", description: productCopy.editsLeftOutBody }],
+  ])
+  const dismiss = vi.spyOn(toast, "dismiss").mockImplementation((id) => id ?? "")
+  await act(async () => shown.showOpened(onSlide(xml(twoBoxSlide)), edited))
+  expect(dismiss.mock.calls).toEqual([["edits-left-out"]])
+  error.mockRestore()
+  dismiss.mockRestore()
 })

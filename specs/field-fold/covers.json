@@ -23,13 +23,13 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "caa722abc1dd",
-      "blob": "f53394fc17a3f1606438a2547bd6d01d8f714cdf"
+      "blob": "911cc43ff15c9b26d77ce626b8afe1af8eabd550"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
       "digest": "a022f6949f23",
-      "blob": "e7734f71603a19d5a05bed06fa87fd4e5bafd5db"
+      "blob": "92f065aac610d9cae168fcb7d6c60ae8b48a6034"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -39,9 +39,15 @@
     },
     {
       "file": "apps/web/src/design/panel.ts",
-      "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "37e0d9152e74",
-      "blob": "71fa67f3cd9e0bd1664f96f68e277c0df2faa6cb"
+      "names": ["panelOf", "shownOf", "fallbackOf"],
+      "digest": "c48f261328e1",
+      "blob": "30deb3dd91b43bb65d821c3e7c08655e4fa43fc6"
+    },
+    {
+      "file": "apps/web/src/design/text-shown.ts",
+      "names": ["textShown"],
+      "digest": "1f2875e6f662",
+      "blob": "f765df063fb557af711fa1b241182286522d448c"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,8 +58,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["elementDesign", "nodeDesign"],
-      "digest": "61091889e5ad",
-      "blob": "363bc6a3ba81eff135bbff38404afbfb09fbc009"
+      "digest": "8863d7ed22a0",
+      "blob": "d2a42fa0f21b412d9230a95e5aa670527ea88525"
     },
     {
       "file": "apps/web/src/editor/panel-fields.ts",
@@ -70,20 +76,20 @@
     {
       "file": "apps/web/src/exported-parts.ts",
       "names": ["editedParts", "exportedParts"],
-      "digest": "d20a04aee6f9",
-      "blob": "f80c575699f40f4a0e8de6b26a5fed6baa47fb28"
+      "digest": "a53a4fc4e02c",
+      "blob": "fc1b99fc2e4bde694efc38ac9602b064a6c85acc"
     },
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "eeadb61b13dd",
-      "blob": "6bb52ca44a92c1ce1458ce581ee71e1c7c1a0ff1"
+      "digest": "23bc1bb224f5",
+      "blob": "831d0fffed3a50d3b8968ee9b3ac4e70c396f0e5"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
       "digest": "b0b471a44685",
-      "blob": "1de8ed6f8bce256350de475efdb466ca66c9ae49"
+      "blob": "c99f5995a97b55914cce8d74e872fc5d260a42df"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
