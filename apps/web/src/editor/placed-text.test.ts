@@ -1,6 +1,9 @@
 import { decide, elementId, openRegister, type Register, type SlideCommand, type SlideId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { hasWords, placedOn, placingText, type PlacedText } from "./placed-text"
+import { storeLane } from "./store-lane"
+import { elementCommand } from "@/element-edit"
+import { fileSlides } from "@/slide-edit"
 import { onSlide, twoBoxSlide, xml } from "@/slide-fixtures"
 import type { UndoEntry } from "@/undo-list"
 
@@ -8,7 +11,7 @@ const room = { width: 12_192_000, height: 6_858_000 }
 const words = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Hi" }] }])
 const empty = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "" }] }])
 
-function placingDeck() {
+function placingDeck(lane = storeLane()) {
   const parts = onSlide(xml(twoBoxSlide))
   const stored: SlideCommand[] = []
   const recorded: UndoEntry[] = []
@@ -41,11 +44,12 @@ function placingDeck() {
       },
       enter: (node) => entered.push(node),
       record: (entry) => recorded.push(entry),
+      lane,
     },
     link,
   )
   const keys = { stop: () => (stops += 1), take: () => "" }
-  return { placing, keys, stored, recorded, shown, entered, held, saved: () => saved, stops: () => stops }
+  return { placing, keys, stored, recorded, shown, entered, held, link, parts, saved: () => saved, stops: () => stops }
 }
 
 it("paints and enters text placed with the Text tool without storing an add or an undo step", async () => {
@@ -113,4 +117,29 @@ it("keeps placed text painted through a repaint from the saved register, and let
   expect(adds(placedOn(saved, deck.held.current))).toBe(1)
   deck.placing.left(elementId("256.4"))
   expect(adds(placedOn(saved, deck.held.current))).toBe(0)
+})
+
+it("gives text placed while an earlier insert is still being stored its own element, so both adds are kept", async () => {
+  const lane = storeLane()
+  const deck = placingDeck(lane)
+  let store = () => undefined as void
+  const square = lane(async (stored) => {
+    const opened = await deck.link.openDeck()
+    await new Promise<void>((done) => (store = done))
+    const add = elementCommand(deck.parts, opened.register, { change: "shape", geometry: "rect", index: 0, size: room })
+    if (add === null) throw new Error("no square")
+    await deck.link.enqueueSlide("deck-one", fileSlides(deck.parts, opened.register), add)
+    stored()
+  })
+  const placed = deck.placing.place({ x: 1_524_000, y: 762_000 }, deck.keys)
+  await new Promise((later) => setTimeout(later, 0))
+  store()
+  await Promise.all([square, placed])
+  const node = deck.held.current?.node
+  if (node === undefined) throw new Error("not placed")
+  expect(await deck.placing.typed(node, words)).toBe(true)
+  expect(deck.stored.map((edit) => (edit.slide === "element-add" ? String(edit.element.node) : edit.slide))).toEqual([
+    "256.4",
+    "256.5",
+  ])
 })
