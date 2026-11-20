@@ -2,10 +2,13 @@ import {
   cloneOf,
   decide,
   elementId,
+  maskTurn,
   openRegister,
   orderKeyBetween,
   slideId,
   type Command,
+  type ElementId,
+  type Media,
   type Register,
   type SlideCommand,
 } from "@airdesign/document"
@@ -138,5 +141,96 @@ describe("element paste export", () => {
     const after = exported(parts, deleted)
     expect(readShapes(after).map((shape) => [shape.slide, shape.shape])).toContainEqual(["257", "9"])
     expect(readShapes(after).some((shape) => shape.slide === "256")).toBe(false)
+  })
+})
+
+describe("a layer holding a picture added on this device pastes onto another slide", () => {
+  const photo = elementId("256.5")
+  const oval = elementId("256.6")
+  const group = elementId("256.7")
+  const media: Media = { sha256: "c3".repeat(32), type: "image/png" }
+  const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
+  const named = `ppt/media/picture-${"c3".repeat(8)}.png`
+  const box = { x: 0, y: 0, cx: 3048000, cy: 2032000 }
+
+  function decided(register: Register, command: Command): Register {
+    const decision = decide(register, command)
+    if (decision.decision === "refuse") throw new Error(decision.code)
+    return decision.register
+  }
+
+  function ran(register: Register, commands: readonly Command[]): Register {
+    return commands.reduce((current, command) => {
+      const node = command.command === "person" ? command.node : undefined
+      const known = node === undefined || current.nodes.includes(node)
+      const named = known ? current : decided(current, { command: "add", node, floor: "", route: "" })
+      return decided(named, command)
+    }, register)
+  }
+
+  function onAnotherSlide(register: Register, source: ElementId): Register {
+    const blank = landed(register, [newSlide])
+    const made = cloneOf(blank, source, pasted, at)
+    if (!made.ok) throw new Error(made.refusal)
+    return landed(blank, [made.command])
+  }
+
+  async function photographed(): Promise<{ parts: Parts; register: Register }> {
+    const parts = await fixture("picture-png.pptx")
+    const element = { node: photo, kind: "shape", value: null, box, grouped: false } as const
+    const shape = { node: oval, kind: "shape", value: null, box, grouped: false } as const
+    const register = landed(opened(parts), [
+      { slide: "element-add", id: first, element, media },
+      { slide: "element-add", id: first, element: shape, geometry: "ellipse" },
+    ])
+    return { parts, register }
+  }
+
+  function linked(parts: Parts, slide: string): boolean {
+    const part = partOfSlide(parts, slide)
+    return decodeUtf8(parts.get(part.replace("slides/", "slides/_rels/") + ".rels")!).includes(
+      `Target="../${named.slice("ppt/".length)}"`,
+    )
+  }
+
+  it("links a pasted picture whose bytes this device has not read yet, and writes the image once they arrive", async () => {
+    const { parts, register } = await photographed()
+    const pasting = onAnotherSlide(register, photo)
+    const waiting = orderedParts(parts, pasting)
+    expect([linked(waiting, "256"), linked(waiting, "257"), waiting.has(named)]).toEqual([true, true, false])
+    const read = orderedParts(parts, pasting, (sha256) => (sha256 === media.sha256 ? png : undefined))
+    expect([linked(read, "256"), linked(read, "257")]).toEqual([true, true])
+    expect(read.get(named)).toEqual(png)
+  })
+
+  it("links a pasted icon to the same icon parts, whose bytes the device adds on export", async () => {
+    const parts = await fixture("picture-png.pptx")
+    const opening = { fills: { source: { set: "rocket" } } }
+    const element = { node: photo, kind: "shape", value: null, box, grouped: false, opening } as const
+    const pasting = onAnotherSlide(landed(opened(parts), [{ slide: "element-add", id: first, element }]), photo)
+    const waiting = orderedParts(parts, pasting)
+    const rels = decodeUtf8(waiting.get(partOfSlide(waiting, "257").replace("slides/", "slides/_rels/") + ".rels")!)
+    expect(rels).toContain('Target="../media/icon-rocket.png"')
+    expect(rels).toContain('Target="../media/icon-rocket.svg"')
+  })
+
+  it("pastes a mask group around that picture with both its layers and the image link", async () => {
+    const { parts, register } = await photographed()
+    const turn = maskTurn(register, [first], first, group, [photo, oval], oval)
+    if (turn === null) throw new Error("mask")
+    const pasting = onAnotherSlide(ran(register, turn.commands), group)
+    const waiting = orderedParts(parts, pasting)
+    expect(
+      readShapes(waiting)
+        .filter((shape) => shape.slide === "257")
+        .map((shape) => shape.shape),
+    ).toEqual(expect.arrayContaining(["9", "10", "11"]))
+    expect(linked(waiting, "257")).toBe(true)
+    const read = exportParts(
+      orderedParts(parts, pasting, () => png),
+      pasting,
+    )
+    expect(linked(read, "257")).toBe(true)
+    expect(read.get(named)).toEqual(png)
   })
 })
