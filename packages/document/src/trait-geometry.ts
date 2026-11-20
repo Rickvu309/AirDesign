@@ -1,5 +1,5 @@
-import { trait, type NoInputs } from "./trait-decl.js"
-import { choice, count, named, record } from "./value-kind.js"
+import { trait } from "./trait-decl.js"
+import { choice, count, named, record, size } from "./value-kind.js"
 
 export const presetAdjusts = {
   rect: [],
@@ -67,11 +67,9 @@ export const adjustLimit = 8
 
 const guide = count(-2_147_483_647, 2_147_483_647)
 
-const noInputs: NoInputs = {}
-
 export const geometry = trait(
   "whole",
   { version: 1, shape: "bd526818" },
   { shape: record({ preset: choice(presets), adjust: named(guide, adjustLimit) }) },
-  noInputs,
+  { corners: size },
 )

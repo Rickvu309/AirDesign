@@ -1,8 +1,9 @@
-import { adjustLimit, presetAdjusts, presets, type FieldValue } from "@airdesign/document"
+import type { FieldValue } from "@airdesign/document"
 import { child, inside, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
 import { ownersOf, propertiesOf, sheetOf } from "./trait-read.js"
+import { geometryOf } from "./preset-geometry-read.js"
 
 export type Geometry = FieldValue<"geometry", "shape">
 
@@ -10,28 +11,8 @@ export type ShownGeometry = { readonly value: Geometry | null; readonly own: boo
 
 export type GeometryAt = { readonly part: string; readonly shape: string }
 
-const guide = /^val [+-]?\d+$/
-
 function geometryIn(properties: Held | undefined): Held | undefined {
   return child(properties, "a:prstGeom") ?? child(properties, "a:custGeom")
-}
-
-export function geometryOf(held: Held): Geometry | null {
-  if (held.element.kind !== "a:prstGeom") return null
-  const preset = presets.find((each) => each === paintAttribute(held.element, "prst"))
-  if (preset === undefined) return null
-  const named: readonly string[] = presetAdjusts[preset]
-  const list = child(held, "a:avLst")
-  const adjust: Record<string, number> = {}
-  for (const element of list === undefined ? [] : inside(list)) {
-    const name = paintAttribute(element, "name")
-    const formula = paintAttribute(element, "fmla")
-    if (element.kind !== "a:gd" || name === null || formula === null || !guide.test(formula)) return null
-    const value = Number(formula.slice(4))
-    if (!named.includes(name) || !Number.isSafeInteger(value) || Object.hasOwn(adjust, name)) return null
-    adjust[name] = value
-  }
-  return Object.keys(adjust).length > adjustLimit ? null : { preset, adjust }
 }
 
 function subpathOpen(commands: readonly { readonly kind: string }[]): boolean {

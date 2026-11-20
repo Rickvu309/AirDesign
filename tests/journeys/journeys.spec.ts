@@ -130,6 +130,7 @@ test.describe("recorded Aira", () => {
     "agent-after-open",
     "group-elements",
     "auto-layout-agent",
+    "corners-agent",
     "connector-diagram",
     "line-add",
     "table-insert",

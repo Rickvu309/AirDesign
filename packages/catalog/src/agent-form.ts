@@ -32,6 +32,7 @@ import {
   type TemplateFont,
   type TraitReads,
 } from "@airdesign/document"
+import { cornersAgents, foldCorners, type Size } from "./agent-corners.js"
 import { effectAgents, foldEffects } from "./agent-effects.js"
 import { foldIdentity, identityAgents } from "./agent-identity.js"
 import { fontReferences } from "./template-font.js"
@@ -70,6 +71,7 @@ type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>[
 
 const agent: Agent = {
   geometry: (value) => value,
+  ...cornersAgents,
   fills: agentFill,
   "border.width": (value) => tenths(value / emuPerPoint),
   "border.fill": agentFill,
@@ -218,7 +220,7 @@ function dashShown(value: Exclude<FieldValue<"border", "dash">, string>): string
   return value.custom.flatMap(({ dash, gap }) => [dash / 1000, gap / 1000]).join(", ")
 }
 
-export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
+export function foldDesign(design: Design | undefined, patch: ElementPatch, box?: Size): Design | undefined {
   const border = patch.border
   const before = design ?? {}
   let next = folded(before, "fills", patch.fills?.p0, agentFillValue)
@@ -230,6 +232,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "border.head", border?.head, arrowShown)
   next = folded(next, "border.tail", border?.tail, arrowShown)
   next = folded(next, "geometry", patch.geometry?.shape, (value) => (value.preset === "rect" ? null : value.preset))
+  next = foldCorners(next, patch, box)
   next = folded(next, "box.rot", patch.box?.rot, (value) => (value === 0 ? null : tenths(value / anglePerDegree)))
   next = folded(next, "box.flipH", patch.box?.flipH, (value) => (value ? true : null))
   next = folded(next, "box.flipV", patch.box?.flipV, (value) => (value ? true : null))

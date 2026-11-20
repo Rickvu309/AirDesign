@@ -31,6 +31,10 @@ import { referenceOf } from "./style-reference.js"
 import { isShapeTag, shapeTags } from "./shape-tree.js"
 import { endOf } from "./trait-xml-connection.js"
 
+export { propertiesOf } from "./shape-properties.js"
+import { cornersReads } from "./corners-read.js"
+import { propertiesOf } from "./shape-properties.js"
+
 export type DeckTraits = {
   readonly palettes: readonly Palette[]
   readonly slides: ReadonlyMap<string, number>
@@ -73,12 +77,6 @@ const autofits = new Map([
 const fontReference = /^\+m([jn])-lt$/
 const read = <Value>(value: Value, source: Source | undefined): Read<Value> =>
   source === undefined ? { value } : { value, source }
-
-export function propertiesOf(held: Held): Held | undefined {
-  if (!isShapeTag(held.element.kind)) return undefined
-  const properties = shapeTags[held.element.kind].properties
-  return properties === null ? undefined : child(held, properties)
-}
 
 function shapeReads(
   owners: readonly Held[],
@@ -400,6 +398,7 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
       const kept: DesignKey[] = []
       shapeReads(owners, styles, reads, kept)
       const placed = transformReads(owners, reads)
+      cornersReads(owners, reads)
       bodyReads(owners, reads)
       textReads(owners, item.placeholder?.type ?? null, chain, fonts, reads)
       Object.assign(reads, pictureReads(parts, sheet, item))

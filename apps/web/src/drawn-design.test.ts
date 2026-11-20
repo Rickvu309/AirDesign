@@ -41,7 +41,7 @@ describe("a drawn layer's design", () => {
       })
       if (drawn.decision !== "apply") throw new Error(`${geometry}: ${drawn.code}`)
       const read = designedParts(exportedParts(parts, drawn.register)).elements.find((each) => each.node === node)
-      expect([geometry, read?.design]).toEqual([geometry, drawnDesign(geometry)])
+      expect([geometry, read?.design]).toEqual([geometry, drawnDesign(geometry, box)])
     }
   })
 })

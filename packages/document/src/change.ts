@@ -22,6 +22,7 @@ import { frameBackdrop, groupParent } from "./element-group.js"
 import type { Place } from "./group-place.js"
 import { followsGroups, shownPlace, storedPlace } from "./group-space.js"
 import { boxFields, type Spot } from "./change-box.js"
+import { cornersOf, cornersRefusals, roundedPatch } from "./change-corners.js"
 import { framedNow, readLayout } from "./frame-layout.js"
 import { addedGeometry, elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
@@ -92,6 +93,7 @@ export type ScopedElement = {
   readonly box: Box | null
   readonly placed?: Box
   readonly outline?: Outline | null
+  readonly corners?: number
   readonly parent?: ElementId | null
   readonly backdrop?: ElementId
   readonly origin?: Box
@@ -131,6 +133,7 @@ function inputOf(trait: TraitName, key: string): boolean {
 export function writtenField(trait: TraitName, key: string): FieldKey {
   if (!inputOf(trait, key)) return `${trait}.${key}` as FieldKey
   if (trait === "box") return "box.x"
+  if (trait === "geometry") return "geometry.shape"
   if (trait === "fills" && key === "overlay") return "fills.p3"
   const [slot] = traits[trait].slots as readonly string[]
   return `${trait}.${slot ?? "value"}` as FieldKey
@@ -155,7 +158,9 @@ function refusalOf(view: ScopedElement, trait: TraitName, input: Loose): PlanRef
   const unset = Object.entries(input).some(([key, value]) => value === null && !inheritable(trait, key))
   if (unset || Object.keys(input).some((key) => !taken.includes(writtenField(trait, key))))
     return view.facts.grouped && trait === "box" ? "group-box" : "kind"
-  return Object.keys(input).some((key) => keptRefuses(view.kept, trait, key)) ? "kept" : null
+  return Object.keys(input).some((key) => keptRefuses(view.kept, trait, trait === "geometry" ? "shape" : key))
+    ? "kept"
+    : null
 }
 
 function traitPatch(
@@ -250,6 +255,7 @@ function planNode(
   if (runLinks.some((slide) => !priorLinks.includes(slide) && scope.expand({ slide }).length === 0))
     refusals.push({ node: view.node, trait: "text", code: "dead" })
   if (change.opacity !== undefined) refusals.push(...opacityRefusals(view))
+  if (refusals.length === 0) refusals.push(...cornersRefusals(view, change.geometry))
   if (refusals.length > 0) return refusals
   const boxInput = named.find(([trait]) => trait === "box")?.[1]
   const placed = boxInput === undefined ? null : boxFields(view, boxInput, spot, scope)
@@ -257,6 +263,7 @@ function planNode(
   const patch: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = Object.fromEntries(
     named.map(([trait, input]) => [trait, traitPatch(trait, input, trait === "box" ? (placed ?? input) : input, view)]),
   )
+  Object.assign(patch, roundedPatch(change, view, placed))
   const opacity = change.opacity
   if (opacity !== undefined)
     for (const [trait, field] of opacityFields(view.facts).map(fieldOf))
@@ -403,6 +410,9 @@ export function registerScope(register: Register): Scope {
       const body = register.nodes.includes(node) ? register.elements[node] : undefined
       const framed = framedBox(register, node)
       const shown = followsGroups(register, node) ? shownPlace(register, node) : null
+      const box = shown?.box ?? framed?.box ?? (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null
+      const geometry = body === undefined ? undefined : landedPatch(body, "text").geometry
+      const added = addedGeometry(register, node)
       return {
         node,
         facts,
@@ -411,15 +421,12 @@ export function registerScope(register: Register): Scope {
         textStyleEdits: storedTextStyleEdits(body),
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
-        box: shown?.box ?? framed?.box ?? (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
+        box,
         ...(framed === null ? {} : { origin: framed.origin }),
         ...(shown === null ? {} : { shown }),
         ...(opening?.placed === undefined ? {} : { placed: opening.placed }),
-        outline: outlineNow(
-          body === undefined ? undefined : landedPatch(body, "text").geometry,
-          opening,
-          addedGeometry(register, node),
-        ),
+        outline: outlineNow(geometry, opening, added),
+        ...cornersOf(geometry?.shape, opening, box, added),
         parent: groupParent(register, node) ?? null,
         ...(facts.frame === undefined ? {} : backdropOf(register, node)),
       }
