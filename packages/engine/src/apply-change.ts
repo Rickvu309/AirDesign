@@ -1,4 +1,5 @@
 import { webImage, type CallRefusal, type WireAdd, type WireRunElement, type WireSet } from "@airdesign/catalog"
+import { applyStack } from "./agent-stack.js"
 import {
   decide,
   openingSlideNumber,
@@ -181,6 +182,10 @@ function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, ima
   return withAdded(added.register, runId, inputs)
 }
 
+function hasTraits(change: SetChange): boolean {
+  return Object.keys(change).some((key) => key !== "op" && key !== "target")
+}
+
 export function applyAgentChange(
   deck: Deck,
   change: WireSet | ShapeAdd,
@@ -190,6 +195,11 @@ export function applyAgentChange(
 ): Applied {
   if (!readFresh(deck, runId, base)) return { ok: false, refusal: "stale" }
   if (change.op !== "set") return applyAdd(deck, change, runId, base, images)
-  const sourced = withMedia(change, images)
-  return sourced === null ? { ok: false, refusal: "image" } : applySet(deck.register, sourced, runId)
+  const { stack, ...traits } = change
+  const sourced = withMedia(traits, images)
+  if (sourced === null) return { ok: false, refusal: "image" }
+  if (stack === undefined || !("node" in change.target)) return applySet(deck.register, sourced, runId)
+  const ordered = applyStack(deck, change.target.node, stack, runId, base)
+  if (!ordered.ok || !hasTraits(sourced)) return ordered
+  return applySet(ordered.register, sourced, runId)
 }
