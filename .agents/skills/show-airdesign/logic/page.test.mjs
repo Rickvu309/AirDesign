@@ -129,7 +129,9 @@ describe("a logic page", () => {
       { resolves: () => true },
     ).tree
     const html = toHtml(flow)
-    expect(html).toContain('<section class="flow loops"><i class="loop-over"></i><i class="loop-back"></i>')
+    expect(html).toContain(
+      '<section class="flow loops"><i class="loop-over" style="left:110px"></i><i class="loop-back"></i>',
+    )
     expect(html.match(/<i class="arrow"><\/i>/g)).toHaveLength(1)
     expect(html).not.toContain('class="tree"')
     expect(html).toContain('<div class="box d1 unbuilt step">')
@@ -164,6 +166,10 @@ describe("a logic page", () => {
     expect(toHtml(flow, "", { "b.png": "data:image/png;base64,AA==" })).toContain(
       '<li class="unbuilt"><b>B2</b>Check it looks right<img class="thumb" src="data:image/png;base64,AA==" alt=""></li>',
     )
+    const withPhoto = toHtml(flow, "", { "b.png": "data:image/png;base64,AA==" })
+    expect(withPhoto).toContain('<div class="box d1 step with-photo"><span class="badge">B</span>')
+    expect(withPhoto).toContain('<div class="box d1 step"><span class="badge">A</span>')
+    expect(withPhoto).not.toContain("max-height")
     expect(html).toContain("Dashed: not built yet")
   })
 
@@ -176,4 +182,25 @@ describe("a logic page", () => {
     expect(shortRef("https://github.com/Rickvu309/AirDesign/pull/1200")).toBe("PR 1200")
     expect(shortRef("look/a-very-long-file-name-for-a-test.mjs:180")).toBe("…me-for-a-test.mjs:180")
   })
+})
+
+it("starts the loop's return arrow over the middle of the first step, wide or not", () => {
+  const flow = (ref) =>
+    readTree(
+      {
+        kind: "explain",
+        question: "How does a round of work go?",
+        answer: {
+          claim: "Show the plan, then prove it",
+          group: { axis: "steps", covers: "one round of work", loop: true },
+          children: [
+            { claim: "Show the plan first", evidence: [{ ref, source: "Observed" }] },
+            { claim: "Prove the change with Verify", evidence: [{ ref: "proof.md", source: "Observed" }] },
+          ],
+        },
+      },
+      { resolves: () => true },
+    ).tree
+  expect(toHtml(flow("plan.md"))).toContain('<i class="loop-over" style="left:110px"></i>')
+  expect(toHtml(flow("https://example.test/plan.png"))).toContain('<i class="loop-over" style="left:165px"></i>')
 })
