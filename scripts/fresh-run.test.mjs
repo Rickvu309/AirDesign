@@ -189,8 +189,8 @@ same(
   "after a passing fresh run, the issue names both runs, the head and the failure output",
   taken.raised.map((issue) => [
     issue.title,
-    issue.body.includes("https://github.com/Rickvu309/AirDesign/actions/runs/77"),
-    issue.body.includes("https://github.com/Rickvu309/AirDesign/actions/runs/78"),
+    issue.body.split(/[\s,]+/).includes("https://github.com/Rickvu309/AirDesign/actions/runs/77"),
+    issue.body.split(/[\s,]+/).includes("https://github.com/Rickvu309/AirDesign/actions/runs/78"),
     issue.body.includes(head),
     issue.body.includes('Received: "Saved"'),
   ]),
