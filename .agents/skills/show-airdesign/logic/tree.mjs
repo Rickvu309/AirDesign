@@ -112,9 +112,19 @@ function readNode(node, place, context) {
     refuse("horizontal", label, "only a steps split can loop, and loop is true or false")
   if (depth === 0 && axes.includes(group.axis) && !axesFor[kind].includes(group.axis))
     refuse("vertical", label, `a ${kind} question splits first by ${axesFor[kind].join(" or ")}, not ${group.axis}`)
-  const children = node.children.map((child, index) =>
-    readNode(child, { label: labelOf(label, index, depth + 1), depth: depth + 1 }, context),
-  )
+  const picked = node.children.filter((child) => child?.chosen === true).length
+  if (depth === 0 && kind === "decide" && picked !== 1)
+    refuse(
+      "vertical",
+      label,
+      `a decide answer marks exactly one option "chosen": true; this one marks ${String(picked)}`,
+    )
+  if (picked > 0 && !(depth === 0 && kind === "decide"))
+    refuse("vertical", label, "only the options of a decide answer can be chosen")
+  const children = node.children.map((child, index) => ({
+    ...readNode(child, { label: labelOf(label, index, depth + 1), depth: depth + 1 }, context),
+    ...(child?.chosen === true ? { chosen: true } : {}),
+  }))
   return {
     label,
     claim: node.claim,

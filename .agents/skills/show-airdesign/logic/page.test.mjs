@@ -45,21 +45,64 @@ describe("a logic page", () => {
     )
   })
 
-  it("draws the tree left to right under a header per column, the decision first, and escapes every claim", () => {
+  it("draws a lean tree to skim: claims and marks only, headers by axis, the first picture as a thumbnail", () => {
     const html = toHtml(tree)
     const order = ["Before-after no longer calls", "Any failure on &lt;main&gt;", "Three real runs show"].map((text) =>
       html.indexOf(text),
     )
     expect(order.every((at, index) => at > 0 && (index === 0 || at > order[index - 1]))).toBe(true)
-    expect(html).toContain('<span class="verdict open">… Open</span>')
+    expect(html).toContain('<span class="mark open">○ Open</span>')
     expect(html.match(/class="box d1"/g)).toHaveLength(2)
-    expect(html).toContain(">Reasons (2)</div>")
-    expect(html).toContain(">The old fault and the proof</div>")
-    expect(html).toContain('<span class="badge">A</span>')
-    expect(html).not.toContain("Observed")
+    expect(html).toContain(">Reasons</div>")
+    expect(html).toContain('<img class="thumb" src="https://github.com/o/r/releases/download/proof-4/run.png"')
+    for (const left of ["The old fault and the proof", "Observed", "before-after.mjs", "verdict"])
+      expect(html).not.toContain(left)
   })
 
-  it("draws a steps split as a flow, loops back when asked, and leaves out the verdict note when nothing has one", () => {
+  it("shows a picture once even when several claims rest on it", () => {
+    const shared = readTree(
+      {
+        kind: "assure",
+        question: "Does every screen get one honest label?",
+        answer: {
+          claim: "Every screen now gets one honest label",
+          group: { axis: "reasons", covers: "every way a screen can turn out" },
+          children: ["Shown when the screen loaded", "New when main never had it"].map((claim) => ({
+            claim,
+            evidence: [{ ref: "https://example.test/proof.png", source: "Observed", verdict: "passed" }],
+          })),
+        },
+      },
+      { resolves: () => true },
+    ).tree
+    expect(toHtml(shared).match(/class="thumb"/g)).toHaveLength(1)
+  })
+
+  it("marks the chosen option of a decision and greys the options it beat", () => {
+    const plan = readTree(
+      {
+        kind: "decide",
+        question: "How should the picture label a broken screen?",
+        answer: {
+          claim: "Call it failed and keep new for real new screens",
+          group: { axis: "options", covers: "every label it could get" },
+          children: [
+            { claim: "Keep calling every such screen new", evidence: [{ ref: "a.md", source: "Observed" }] },
+            { claim: "Call it failed unless it is new", evidence: [{ ref: "b.md", source: "Proposal" }], chosen: true },
+          ],
+        },
+      },
+      { resolves: () => true },
+    ).tree
+    const html = toHtml(plan)
+    expect(html).toContain('<div class="box d1 passed-over"><span class="badge">A</span>')
+    expect(html).toContain(
+      '<div class="box d1 unbuilt chosen"><span class="badge">B</span><span class="tag">Chosen</span>',
+    )
+    expect(toMarkdown(plan)).toContain("- **B.** Call it failed unless it is new (chosen)")
+  })
+
+  it("draws a steps split as a flow, loops back when asked, and dashes a step that is not built yet", () => {
     const flow = readTree(
       {
         kind: "explain",
@@ -79,9 +122,8 @@ describe("a logic page", () => {
     expect(html).toContain('<section class="flow loops"><i class="loop-over"></i><i class="loop-back"></i>')
     expect(html.match(/<i class="arrow"><\/i>/g)).toHaveLength(1)
     expect(html).not.toContain('class="tree"')
-    expect(html).not.toContain("Each verdict is the weakest")
-    expect(html).toContain("<b>Proposal</b>")
-    expect(html).toContain("Not yet run: Proposal 1")
+    expect(html).toContain('<div class="box d1 unbuilt step">')
+    expect(html).toContain("Dashed: not built yet")
   })
 
   it("shortens a reference to what a reader recognises", () => {

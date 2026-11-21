@@ -106,8 +106,26 @@ describe("the rules a tree must keep", () => {
   })
 
   it("vertical: the first split must answer the kind of question", () => {
-    expect(rules(result({ kind: "decide" }))).toEqual(["vertical"])
+    expect(rules(result({ kind: "decide" }))).toEqual(["vertical", "vertical"])
     expect(rules(result({ kind: "explain" }))).toEqual(["vertical"])
+  })
+
+  it("vertical: a decision marks exactly one option as chosen, and nothing else can be", () => {
+    const plan = {
+      kind: "decide",
+      question: "How should the picture label a broken screen?",
+      answer: {
+        claim: "Call it failed and keep new for real new screens",
+        group: { axis: "options", covers: "every label it could get" },
+        children: [leaf("Keep calling every such screen new"), leaf("Call it failed unless it is truly new")],
+      },
+    }
+    expect(rules(plan)).toEqual(["vertical"])
+    plan.answer.children[1].chosen = true
+    expect(readTree(plan, { resolves }).tree.children.map((child) => child.chosen === true)).toEqual([false, true])
+    const input = result()
+    input.answer.children[0].chosen = true
+    expect(rules(input)).toEqual(["vertical"])
   })
 
   it("horizontal: every split names its axis and what it covers", () => {
@@ -148,7 +166,10 @@ describe("the rules a tree must keep", () => {
         group: { axis: "options", covers: "every label a failed base could get" },
         children: [
           leaf("Keep calling every failure new", [{ ref: "look/fragment.mjs:24", source: "Observed" }]),
-          leaf("Split failed from new by the state list", [{ ref: "plan.md", source: "Proposal" }]),
+          {
+            ...leaf("Split failed from new by the state list", [{ ref: "plan.md", source: "Proposal" }]),
+            chosen: true,
+          },
         ],
       },
     }
