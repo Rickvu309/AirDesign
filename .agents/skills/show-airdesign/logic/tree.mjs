@@ -5,6 +5,23 @@ const axes = ["options", "steps", "parts", "reasons"]
 const strength = { failed: 0, open: 1, passed: 2 }
 const deepestBranch = 2
 const wordsIn = (text) => String(text).trim().split(/\s+/).filter(Boolean).length
+const codeWords = [
+  /`/,
+  /\b[\w.-]+\/[\w./-]+\b/,
+  /\.(m?js|ts|tsx|json|md|tla|cfg)\b/,
+  /\b[a-z]+[A-Z]\w*/,
+  /\b\w+_\w+/,
+  /\(\)|=>/,
+]
+const longest = { answer: 22, claim: 16, covers: 14, question: 16 }
+
+export function unplain(text, limit) {
+  if (typeof text !== "string") return null
+  if (wordsIn(text) > limit) return `keep it to ${String(limit)} words; this has ${String(wordsIn(text))}`
+  if (codeWords.some((pattern) => pattern.test(text)))
+    return "write it the way you would say it to the owner, and leave code names to the evidence"
+  return null
+}
 
 export function weakest(verdicts) {
   const present = verdicts.filter((verdict) => verdict !== null)
@@ -55,6 +72,8 @@ function readNode(node, place, context) {
     refuse("weakest", label, "a verdict lives on evidence; the tree rolls it up and a claim never states it")
   if (typeof node.claim !== "string" || wordsIn(node.claim) < 3)
     refuse("sentence", label, "write the claim as a sentence of at least three words, not a topic")
+  const loud = unplain(node.claim, depth === 0 ? longest.answer : longest.claim)
+  if (loud) refuse("plain", label, loud)
   const branch = Array.isArray(node.children)
   const leaf = Array.isArray(node.evidence)
   if (branch === leaf) {
@@ -75,6 +94,8 @@ function readNode(node, place, context) {
   if (!axes.includes(group.axis)) refuse("horizontal", label, `name the split's axis: one of ${axes.join(", ")}`)
   if (typeof group.covers !== "string" || group.covers.trim() === "")
     refuse("horizontal", label, "say what the split covers, so a reader can see whether a branch is missing")
+  else if (unplain(group.covers, longest.covers))
+    refuse("plain", label, `covers: ${unplain(group.covers, longest.covers)}`)
   if ("loop" in group && (group.axis !== "steps" || typeof group.loop !== "boolean"))
     refuse("horizontal", label, "only a steps split can loop, and loop is true or false")
   if (depth === 0 && axes.includes(group.axis) && !axesFor[kind].includes(group.axis))
@@ -100,6 +121,8 @@ export function readTree(input, { resolves }) {
     refuse("one-question", "answer", "a tree needs a kind (decide, explain or assure), one question and one answer")
     return { refusals, tree: null }
   }
+  const hard = unplain(input.question, longest.question)
+  if (hard) refuse("plain", "question", hard)
   const answer = readNode(input.answer, { label: "answer", depth: 0 }, { kind: input.kind, resolves, refuse })
   return { refusals, tree: refusals.length === 0 ? { kind: input.kind, question: input.question, ...answer } : null }
 }

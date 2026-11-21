@@ -11,6 +11,8 @@ const linked = (ref) => /^https?:\/\//.test(ref)
 const longestRef = 22
 
 export function shortRef(ref) {
+  const pull = ref.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/)
+  if (pull) return `PR ${pull[1]}`
   const short = linked(ref)
     ? decodeURIComponent(new URL(ref).pathname.split("/").filter(Boolean).at(-1) ?? ref)
     : (ref.split("/").at(-1) ?? ref)
@@ -32,7 +34,8 @@ function markdownNode(node, indent) {
   for (const piece of node.evidence ?? []) {
     const ref = linked(piece.ref) ? `[${shortRef(piece.ref)}](${piece.ref})` : `\`${piece.ref}\``
     const verdictWord = piece.verdict ? `, ${piece.verdict}` : ""
-    lines.push(`${pad}  - ${piece.source}${verdictWord}: ${ref}`)
+    const tag = piece.source === "Observed" ? "" : `${piece.source}: `
+    lines.push(`${pad}  - ${tag}${ref}${piece.verdict ? ` (${piece.verdict})` : ""}`)
   }
   for (const child of node.children ?? []) lines.push(...markdownNode(child, indent + 1))
   return lines
@@ -63,7 +66,7 @@ function evidenceHtml(evidence) {
   if (!evidence) return ""
   const pieces = evidence.map(
     (piece) =>
-      `<span class="ref ${piece.verdict ?? ""}"><b>${piece.source}</b><span class="path">${escape(shortRef(piece.ref))}</span></span>`,
+      `<span class="ref ${piece.verdict ?? ""}">${piece.source === "Observed" ? "" : `<b>${piece.source}</b>`}<span class="path">${escape(shortRef(piece.ref))}</span></span>`,
   )
   return `<div class="refs">${pieces.join("")}</div>`
 }
@@ -183,7 +186,7 @@ function flowHtml(tree) {
 
 export function toHtml(tree, css = "") {
   const evidence = evidenceOf(tree)
-  const counts = ["Observed", "Prototype", "Proposal"]
+  const counts = ["Prototype", "Proposal"]
     .map((source) => [source, evidence.filter((piece) => piece.source === source).length])
     .filter(([, count]) => count > 0)
     .map(([source, count]) => `${source} ${String(count)}`)
@@ -193,6 +196,6 @@ export function toHtml(tree, css = "") {
 <div class="kind">${kindWords[tree.kind].toUpperCase()}</div>
 <h1>${escape(tree.question)}</h1>
 ${tree.group.axis === "steps" ? flowHtml(tree) : `${columns.head}<section class="tree">${nodeHtml(tree, 0)}</section>${columns.foot}`}
-<footer><span>Evidence: ${counts}</span>${tree.verdict === null ? "" : "<span>Each verdict is the weakest one beneath it</span>"}</footer>
+<footer><span>${counts === "" ? "" : `Not yet run: ${counts}`}</span>${tree.verdict === null ? "" : "<span>Each verdict is the weakest one beneath it</span>"}</footer>
 </main></body></html>`
 }
