@@ -1,4 +1,6 @@
 import type { PaintStore } from "@airdesign/render"
+import { toast } from "@/components/ui/toast"
+import { productCopy } from "@/copy/product-copy"
 import type { PaintAhead } from "@/editor/painted-ahead"
 import type { DeckFailure } from "@/editor/use-deck-status"
 import { exportDeck, ExportStopped, type ExportRequest, type ExportStop } from "@/export/export-deck"
@@ -42,8 +44,10 @@ export function useExport(deck: ExportingDeck) {
     try {
       const painted = { fits: paint.current.fits(), rows: paint.current.rows() }
       const shown = Promise.all([records.current.landed(), ahead.stored()]).then(() => undefined)
-      await exportDeck(id, shown, pictureTool.store, request, painted)
+      const exported = await exportDeck(id, shown, pictureTool.store, request, painted)
       setFailure(null)
+      if (exported.leftOut > 0)
+        toast.error(productCopy.editsLeftOut, { id: "edits-left-out", description: productCopy.editsLeftOutBody })
     } catch (error) {
       setFailure(exportFailure(error))
     }

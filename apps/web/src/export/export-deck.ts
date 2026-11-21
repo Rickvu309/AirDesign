@@ -51,7 +51,7 @@ export async function exportDeck(
   pictures: PictureStore,
   request?: ExportRequest,
   painted: Painted = { fits: new Map(), rows: new Map() },
-): Promise<void> {
+): Promise<{ readonly leftOut: number }> {
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
   await ready
@@ -60,15 +60,18 @@ export async function exportDeck(
   const opened = await connect(memoryRemote()).openDeck(id)
   if (!opened.ok) throw new ExportStopped("edits")
   await exportablePictures(pictures, id, opened.register)
+  let leftOut = 0
   const bytes = await written(stored.file, async () => {
-    const icons = await withIcons(pictures, id, opened.register, (held) =>
-      chosenParts(stored.parts, opened.register, slides, held),
-    )
+    const icons = await withIcons(pictures, id, opened.register, (held) => {
+      const chosen = chosenParts(stored.parts, opened.register, slides, held)
+      leftOut = chosen.leftOut.length
+      return chosen.parts
+    })
     const chosen = bakeRows(bakeFits(icons, opened.register, painted.fits), opened.register, painted.rows)
     const masked = await bakeMasks(chosen, maskPicture())
     return bakeShadows(await bakeFills(masked, opened.register))
   })
-  if (request?.signal?.aborted === true) return
+  if (request?.signal?.aborted === true) return { leftOut }
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)
   const url = URL.createObjectURL(new Blob([copy]))
@@ -79,4 +82,5 @@ export async function exportDeck(
   link.click()
   link.remove()
   URL.revokeObjectURL(url)
+  return { leftOut }
 }

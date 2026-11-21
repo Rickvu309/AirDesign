@@ -253,17 +253,26 @@ function laidOutFrames(parts: Parts, register: Register): Parts {
   return next
 }
 
-export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
+const noneSkipped: ReadonlySet<ElementId> = new Set()
+
+export function exportParts(
+  parts: Parts,
+  register: Register,
+  media?: ElementAt["media"],
+  skipped: ReadonlySet<ElementId> = noneSkipped,
+): Parts {
   const shapes = readShapes(parts)
   const numbers = slideNumbering(parts)
   const textNamed = textNamedLayers(register)
   let next = writtenTheme(
     parts,
-    register.nodes.includes(templateStylesNode) ? register.elements[templateStylesNode] : undefined,
+    register.nodes.includes(templateStylesNode) && !skipped.has(templateStylesNode)
+      ? register.elements[templateStylesNode]
+      : undefined,
   )
   const styles = register.index?.templateStyles ?? templateStyles(parts)
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
-    if (node === templateStylesNode) continue
+    if (node === templateStylesNode || skipped.has(node)) continue
     if (node.includes(".") && (slideGone(register, shapeOf(node).slide) || elementGone(register, node))) continue
     const body = register.nodes.includes(node) ? register.elements[node] : undefined
     const opening = newSlideElement(register, node) ?? clonedLayer(register, node)

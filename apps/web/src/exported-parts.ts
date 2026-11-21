@@ -6,7 +6,7 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { exportParts, fadedFrames, withMedia, writtenDeck, type WrittenDeck } from "@airdesign/pptx"
+import { fadedFrames, keptExport, withMedia, writtenDeck, type KeptExport, type WrittenDeck } from "@airdesign/pptx"
 import { patchImages } from "@/patch-images"
 
 export { newSlideElement } from "@airdesign/document"
@@ -43,12 +43,26 @@ export function missingPictures(register: Register, pictures: PictureBytes): rea
   return [...hashes].filter((sha256) => !pictures.has(sha256))
 }
 
+export function editedDeck(base: Parts, register: Register, pictures: PictureBytes = noPictures): KeptExport {
+  const kept = keptExport(base, register, (sha256) => pictures.get(sha256))
+  return pictures.size === 0 ? kept : { ...kept, parts: withMedia(kept.parts, (part) => pictures.get(part)) }
+}
+
 export function editedParts(base: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  const edited = exportParts(base, register, (sha256) => pictures.get(sha256))
-  return pictures.size === 0 ? edited : withMedia(edited, (part) => pictures.get(part))
+  return editedDeck(base, register, pictures).parts
+}
+
+export type ExportedDeck = {
+  readonly parts: Parts
+  readonly leftOut: readonly (WrittenDeck["leftOut"][number] | KeptExport["leftOut"][number])[]
+}
+
+export function exportedDeck(parts: Parts, register: Register, pictures: PictureBytes = noPictures): ExportedDeck {
+  const written = writtenBase(parts, register, pictures)
+  const edited = editedDeck(written.parts, written.register, pictures)
+  return { parts: fadedFrames(edited.parts, written.register), leftOut: [...written.leftOut, ...edited.leftOut] }
 }
 
 export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  const written = writtenBase(parts, register, pictures)
-  return fadedFrames(editedParts(written.parts, written.register, pictures), written.register)
+  return exportedDeck(parts, register, pictures).parts
 }

@@ -9,14 +9,22 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { paintReader, readShapes, readSlides, slideNumbering, themeSwatches, type ReadShape } from "@airdesign/pptx"
+import {
+  paintReader,
+  readShapes,
+  readSlides,
+  slideNumbering,
+  themeSwatches,
+  type LeftOutEdit,
+  type ReadShape,
+} from "@airdesign/pptx"
 import type { ElementRecord, PaintStore } from "@airdesign/render"
 import type { SlideCanvases } from "@/canvas-slide"
 import type { StripGroup } from "@/editor/slide-sidebar"
 import { stripGroups } from "@/strip-groups"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
-import { editedParts, newSlideElement, writtenBase, type PictureBytes } from "@/exported-parts"
+import { editedDeck, newSlideElement, writtenBase, type PictureBytes } from "@/exported-parts"
 import { framedOf } from "@/frame-boxes"
 import { movableInGroups } from "@/group-boxes"
 import { indexedRegister } from "@/indexed-register"
@@ -65,7 +73,7 @@ export type Painted = {
   readonly from: Parts
   readonly shared: Parts
   readonly slides: readonly PaintedSlide[]
-  readonly leftOut: readonly SlideCommand[]
+  readonly leftOut: readonly (SlideCommand | LeftOutEdit)[]
 }
 
 export function elementIds(parts: Parts): readonly ElementId[] {
@@ -205,9 +213,9 @@ export function paint(
       imageTexts(floored).length > 0 ||
       cover ||
       rebasedGroups(indexedRegister(parts, floored)).length > 0)
-      ? editedParts(base, indexedRegister(parts, floored), pictureBytes)
-      : base
-  const display = sameIdentity(edited, earlier?.display)
+      ? editedDeck(base, indexedRegister(parts, floored), pictureBytes)
+      : { parts: base, leftOut: [] }
+  const display = sameIdentity(edited.parts, earlier?.display)
   const read = readSlides(display)
   const numberText = numberedText(slideNumbering(display))
   const slideParts = new Set(read.map((each) => each.part))
@@ -293,6 +301,6 @@ export function paint(
     from: parts,
     shared,
     slides,
-    leftOut: written?.leftOut ?? [],
+    leftOut: [...(written?.leftOut ?? []), ...edited.leftOut],
   }
 }

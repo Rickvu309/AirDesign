@@ -161,3 +161,34 @@ describe("every input the agent tools accept, the store reads back and the tab w
     expect(result.faults).toEqual([])
   })
 })
+
+it.each(["shape", "table"])("op: set on a %s the agent added", { timeout: 60_000 }, async (kind) => {
+  const parts = await deckParts("blank.pptx")
+  const start = opened(parts)
+  const slide = start.index?.slides[0]?.id ?? ""
+  const at = session(start)
+  const added = sent(at, [
+    kind === "table"
+      ? {
+          op: "add",
+          kind,
+          slide,
+          table: {
+            value: JSON.stringify({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: 0, text: "A" }] }]] }] }),
+          },
+        }
+      : { op: "add", kind, slide, text: { value: "One" } },
+  ])
+  if (added === null) throw new Error("add")
+  const node =
+    added.order.flatMap((command) => (command.slide === "element-add" ? [command.element.node] : []))[0] ?? ""
+  const field = kind === "table" ? "table" : "text"
+  const values = samples(propertiesOf("set")[field] ?? {}, defs, { slide, node }, field)
+  const result = tried(
+    parts,
+    () => session(added),
+    values.map((value) => ({ op: "set", target: node, [field]: value })),
+  )
+  expect(result.landed).toBeGreaterThan(0)
+  expect(result.faults).toEqual([])
+})

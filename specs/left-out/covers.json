@@ -1,0 +1,35 @@
+{
+  "check": "checks-left-out.md#left-out",
+  "covers": [
+    {
+      "file": "packages/pptx/src/kept-export.ts",
+      "names": ["keptExport", "firstUnwritable"],
+      "digest": "1d009a6d02c8",
+      "blob": "1318e5eadea6ba00f05394fabd56398c9f3200c5"
+    },
+    {
+      "file": "packages/pptx/src/written-deck.ts",
+      "names": ["writtenDeck", "firstUnwritable"],
+      "digest": "a466f644b00e",
+      "blob": "a53762083ac3a9c9053382827aead949fe49d0df"
+    },
+    {
+      "file": "apps/web/src/exported-parts.ts",
+      "names": ["exportedDeck", "editedDeck"],
+      "digest": "450cd849dc6a",
+      "blob": "f1ddb3a0ea05fc14f0d2a4163c5923b4d3c7dda6"
+    },
+    {
+      "file": "apps/web/src/deck-paint.ts",
+      "names": ["paint"],
+      "digest": "0c17433fd38a",
+      "blob": "81282ff2a5cde3d9e193c9a750a024cbd3011270"
+    },
+    {
+      "file": "apps/web/src/export/export-deck.ts",
+      "names": ["exportDeck"],
+      "digest": "370676e0f110",
+      "blob": "f616bc3fe0e3dc8707b3f828a7a9d46c416fbe55"
+    }
+  ]
+}
