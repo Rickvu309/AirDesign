@@ -24,7 +24,7 @@ export type TextLayout = {
   readonly lines: readonly TextLine[]
 }
 
-export type Unjudged = "vertical" | "face" | "glyph" | "tab" | "script"
+export type Unjudged = "vertical" | "style" | "face" | "glyph" | "tab" | "script"
 
 type Sized = { readonly size: number; readonly face: FontFace | undefined; readonly line: number }
 type Glyph = { readonly char: string; readonly width: number; readonly run: number }
@@ -297,6 +297,7 @@ export function layText(
   widths: FontWidths,
 ): TextLayout | Unjudged {
   if (text.vertical) return "vertical"
+  if (text.unmeasured === true) return "style"
   const { insets } = text
   const inner = (box.cx - insets.left - insets.right) / emuPerPoint
   const room = (box.cy - insets.top - insets.bottom) / emuPerPoint

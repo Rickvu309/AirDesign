@@ -3,7 +3,7 @@ import { readPackage } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
 import { withFileFloors } from "@/deck-paint"
 import { exportedParts } from "@/exported-parts"
-import { judgedDeck, judgedOf } from "./use-findings-report"
+import { judgedDeck, judgedOf, reportOf } from "./use-findings-report"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -34,13 +34,32 @@ it("judges the words a deck holds now and re-reads only the slide an edit change
   const opened = openRegister("", "deck")
   const first = judgedOf(exportedParts(parts, opened), kept)
   expect(first.length).toBeGreaterThan(40)
-  const target = first.find((each) => each.slide === "ppt/slides/slide3.xml")
-  if (target === undefined) throw new Error("no judged text on slide 3")
-  const held = new Map([...kept.slides].map(([part, slide]) => [part, slide.texts]))
+  const slide = first.find((each) => each.elements.some((element) => element.from === "slide" && element.text !== null))
+  const target = slide?.elements.find((element) => element.from === "slide" && element.text !== null)
+  if (slide === undefined || target === undefined) throw new Error("no slide with text")
+  const held = new Map([...kept.slides].map(([part, judged]) => [part, judged.resolved]))
   const words = "Words an agent wrote into this box"
   const second = judgedOf(exportedParts(parts, withFileFloors(typed(opened, target.node, words), parts)), kept)
-  const shown = second.find((each) => each.node === target.node)
-  expect(shown?.element.text?.paragraphs[0]?.runs.map((run) => run.text).join("")).toBe(words)
-  const reread = [...kept.slides].filter(([part, slide]) => held.get(part) !== slide.texts).map(([part]) => part)
-  expect(reread).toEqual(["ppt/slides/slide3.xml"])
+  const shown = second.flatMap((each) => each.elements).find((element) => element.node === target.node)
+  expect(shown?.text?.paragraphs[0]?.runs.map((run) => run.text).join("")).toBe(words)
+  const reread = [...kept.slides].filter(([part, judged]) => held.get(part) !== judged.resolved).map(([part]) => part)
+  expect(reread).toHaveLength(1)
+})
+
+it("says a revision is broken when the tab cannot export it, instead of reporting nothing", async () => {
+  const opened = openRegister("", "deck")
+  const first = judgedOf(exportedParts(parts, opened), judgedDeck())
+  const target = first
+    .flatMap((slide) => slide.elements)
+    .find((element) => element.from === "slide" && element.text !== null)
+  if (target === undefined) throw new Error("no text")
+  const broken = {
+    ...opened,
+    nodes: [...opened.nodes, target.node],
+    elements: { [target.node]: null },
+  } as unknown as Register
+  expect(() => exportedParts(parts, broken)).toThrow()
+  expect(await reportOf(parts, broken, judgedDeck(), async () => ({}))).toEqual({ findings: [], broken: true })
+  const fine = await reportOf(parts, opened, judgedDeck(), async () => ({}))
+  expect(fine).not.toHaveProperty("broken")
 })

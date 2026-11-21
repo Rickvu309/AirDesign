@@ -5,7 +5,9 @@ import { useEffect } from "react"
 import { server } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
 import { measuredWidths } from "@/font-widths"
-import { judgedTexts, overflowFindings, type JudgedText } from "@/text-overflow"
+import { resolvedSlide, slideTexts, wireFindings } from "@/judged-slide"
+import type { FontWidths, Register, ResolvedSlide, ResolvedText } from "@airdesign/document"
+import type { WireFinding } from "@airdesign/catalog"
 
 export const reportEvery = 500
 export const quietFor = 1_000
@@ -16,7 +18,7 @@ type Parts = ReadonlyMap<string, Uint8Array>
 type JudgedSlide = {
   readonly slide: Uint8Array | undefined
   readonly rels: Uint8Array | undefined
-  readonly texts: readonly JudgedText[]
+  readonly resolved: ResolvedSlide | null
 }
 
 export type JudgedDeck = { template: readonly (Uint8Array | undefined)[]; slides: Map<string, JudgedSlide> }
@@ -36,7 +38,7 @@ function sameParts(left: readonly (Uint8Array | undefined)[], right: readonly (U
   return left.length === right.length && left.every((bytes, at) => bytes === right[at])
 }
 
-export function judgedOf(exported: Parts, kept: JudgedDeck): readonly JudgedText[] {
+export function judgedOf(exported: Parts, kept: JudgedDeck): readonly ResolvedSlide[] {
   const template = [...exported.keys()]
     .filter((name) => templatePart.test(name))
     .sort()
@@ -52,12 +54,30 @@ export function judgedOf(exported: Parts, kept: JudgedDeck): readonly JudgedText
     const slide = exported.get(source.part)
     const rels = exported.get(relsOf(source.part))
     const held = kept.slides.get(source.part)
-    const texts =
-      held !== undefined && held.slide === slide && held.rels === rels ? held.texts : judgedTexts([source], reader)
-    next.set(source.part, { slide, rels, texts })
+    const resolved =
+      held !== undefined && held.slide === slide && held.rels === rels ? held.resolved : resolvedSlide(source, reader)
+    next.set(source.part, { slide, rels, resolved })
   }
   kept.slides = next
-  return [...next.values()].flatMap(({ texts }) => texts)
+  return [...next.values()].flatMap(({ resolved }) => (resolved === null ? [] : [resolved]))
+}
+
+type Report = { readonly findings: readonly WireFinding[]; readonly broken?: true }
+
+export async function reportOf(
+  parts: Parts,
+  register: Register,
+  kept: JudgedDeck,
+  measure: (texts: readonly ResolvedText[]) => Promise<FontWidths>,
+): Promise<Report> {
+  let slides: readonly ResolvedSlide[]
+  try {
+    slides = judgedOf(exportedParts(parts, register), kept)
+  } catch {
+    return { findings: [], broken: true }
+  }
+  const widths = await measure(slideTexts(slides))
+  return { findings: slides.flatMap((slide) => wireFindings(slide, widths)) }
 }
 
 export async function sendFindings(
@@ -72,18 +92,8 @@ export async function sendFindings(
   if (!parsed.ok || remote.findings === undefined) return reported
   const served = await servedDeck(remote, deck)
   if (!served.ok || served.revision === reported) return reported
-  let texts: readonly JudgedText[]
-  try {
-    texts = judgedOf(exportedParts(parts, served.register), kept)
-  } catch {
-    return served.revision
-  }
-  const widths = await measuredWidths(
-    doc,
-    texts.flatMap(({ element }) => (element.text === null ? [] : [element.text])),
-  )
-  const overflow = overflowFindings(texts, widths)
-  const sent = await remote.findings({ deck: parsed.deck, revision: served.revision, overflow })
+  const report = await reportOf(parts, served.register, kept, (texts) => measuredWidths(doc, texts))
+  const sent = await remote.findings({ deck: parsed.deck, revision: served.revision, ...report })
   return sent.ok ? served.revision : reported
 }
 

@@ -415,7 +415,7 @@ export { fontFace, layText, type FontWidths } from "./text-fit.js"
 export { findingLimits, type Finding } from "./finding.js"
 export { contrast, readableText } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
-export { elementOverflow, slideFindings, type SlideFindings } from "./slide-findings.js"
+export { slideFindings, type SlideFindings } from "./slide-findings.js"
 
 export {
   defaultGrid1,

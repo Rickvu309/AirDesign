@@ -123,27 +123,6 @@ describe("readDeckPage", () => {
     expect(read.get("259.2")).not.toHaveProperty("box")
   })
 
-  it("marks the text a tab measured as overflowing only while the deck is still at that revision", () => {
-    const deck = held()
-    const overflow = { needed: 86.4, room: 64.8, fix: { size: 28, height: 93.6 } }
-    const report = { deck: deck.id, revision: 7, overflow: [{ node: title, ...overflow }] }
-    const ready = readDeckPage(deck, { runId: "mine", findings: report })
-    expect(ready.findings).toBe("ready")
-    expect(byNode(ready).get("258.7")).toEqual({
-      node: title,
-      slide: "258",
-      value: "Before",
-      version: 2,
-      box: shown,
-      overflow,
-    })
-    expect(byNode(ready).get("258.8")).not.toHaveProperty("overflow")
-    const older = readDeckPage(deck, { runId: "mine", findings: { ...report, revision: 6 } })
-    expect(older.findings).toBe("pending")
-    expect(byNode(older).get("258.7")).not.toHaveProperty("overflow")
-    expect(readDeckPage(deck, { runId: "mine" }).findings).toBe("missing")
-  })
-
   it("closes every running element when this caller has no turn", () => {
     const answer = readDeckPage(held(), { runId: null })
     const read = byNode(answer)

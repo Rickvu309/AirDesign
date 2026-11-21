@@ -191,6 +191,7 @@ describe("layText", () => {
   it("does not judge text it cannot lay out the way the painter does", () => {
     const box = { cx: 100 * point, cy: 100 * point }
     expect(layText(text([paragraph([run("aa")])], { vertical: true }), box, widths)).toBe("vertical")
+    expect(layText(text([paragraph([run("aa")])], { unmeasured: true }), box, widths)).toBe("style")
     expect(layText(text([paragraph([run("aa", 10, { font: "Other" })])]), box, widths)).toBe("face")
     expect(layText(text([paragraph([run("aZ")])]), box, widths)).toBe("glyph")
     expect(layText(text([paragraph([run("a\tb")])]), box, widths)).toBe("tab")

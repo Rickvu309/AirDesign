@@ -1,5 +1,13 @@
-import type { DeckId, FindingsReport, Overflow, PointBox, PointSize } from "@airdesign/catalog"
-import { pointSize, readDeckId } from "@airdesign/catalog"
+import {
+  agentFindings,
+  pointSize,
+  readDeckId,
+  type AgentFinding,
+  type DeckId,
+  type FindingsReport,
+  type PointBox,
+  type PointSize,
+} from "@airdesign/catalog"
 import {
   slideGroups,
   bytesOf,
@@ -51,7 +59,6 @@ export type ReadElement = {
   readonly design?: string
   readonly closed?: true
   readonly frame?: "auto" | "free"
-  readonly overflow?: Overflow
 }
 
 export type ReadTemplateStyle = TemplateStyle & {
@@ -81,7 +88,7 @@ export type ReadDeckAnswer = {
   readonly palettes?: readonly Palette[]
   readonly templateStyle?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
-  readonly findings: "missing" | "pending" | "ready"
+  readonly findings: readonly AgentFinding[] | "missing" | `pending ${number}` | `broken ${number}`
   readonly cursor?: string
 }
 
@@ -188,12 +195,8 @@ type ReadHead = Pick<
 
 function findingsOf(revision: number, report: FindingsReport | undefined): ReadDeckAnswer["findings"] {
   if (report === undefined) return "missing"
-  return report.revision === revision ? "ready" : "pending"
-}
-
-function overflowsOf(revision: number, report: FindingsReport | undefined): ReadonlyMap<ElementId, Overflow> {
-  if (report === undefined || report.revision !== revision) return new Map()
-  return new Map(report.overflow.map(({ node, ...overflow }) => [node, overflow]))
+  if (report.revision !== revision) return `pending ${revision}`
+  return report.broken === true ? `broken ${revision}` : agentFindings(report.findings, () => true)
 }
 
 function styleFields(register: Register, node = templateStylesNode): Readonly<Record<string, string>> {
@@ -265,8 +268,11 @@ function styledHead(palettes: readonly Palette[] | undefined, set: Readonly<Reco
 }
 
 function readAnswer(head: ReadHead, elements: readonly ReadElement[], cursor?: string): ReadDeckAnswer {
-  if (cursor === undefined) return { ok: true, ...head, elements }
-  return { ok: true, ...head, elements, cursor }
+  const shown = new Set(elements.map(({ node }) => node))
+  const findings =
+    typeof head.findings === "string" ? head.findings : head.findings.filter(({ node }) => shown.has(node))
+  const answer = { ok: true, ...head, findings, elements } as const
+  return cursor === undefined ? answer : { ...answer, cursor }
 }
 
 function nextWanted(nodes: readonly ElementId[], from: number, wanted: (node: ElementId) => boolean): number {
@@ -315,7 +321,6 @@ export function readDeckPage(
     readonly findings?: FindingsReport
   },
 ): ReadDeckAnswer {
-  const overflows = overflowsOf(deck.revision, query.findings)
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const framed = readFrames(deck.register)
@@ -466,9 +471,7 @@ export function readDeckPage(
     },
     (node) => {
       const shown = (each: ElementId) => readElement(deck.register, each, query.runId, fontsOf(shapeOf(each).slide))
-      const read = framedElement(shown(node), framed, shown)
-      const overflow = overflows.get(node)
-      return overflow === undefined ? read : { ...read, overflow }
+      return framedElement(shown(node), framed, shown)
     },
   )
 }

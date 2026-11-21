@@ -9,12 +9,15 @@ import { DeckListen, openPool, type Mail } from "./index.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const title = "258.7"
-const overflow = { needed: 86.4, room: 64.8, fix: { size: 28, height: 93.6 } }
-
-type Read = {
-  readonly findings?: string
-  readonly elements?: readonly { readonly node: string; readonly overflow?: unknown }[]
+const overflow = { code: "overflow", node: title, needed: 86.4, room: 64.8, size: 28, height: 93.6 }
+const told = {
+  code: "overflow",
+  node: title,
+  measure: "text 86.4 pt, room 64.8",
+  fix: { op: "set", target: title, text: { size: 28 } },
 }
+
+type Read = { readonly findings?: unknown }
 
 describe("POST /decks/findings keeps the owner's tab report for the agent's read", () => {
   const mails: Mail[] = []
@@ -73,25 +76,24 @@ describe("POST /decks/findings keeps the owner's tab report for the agent's read
     return { cookie, deck, agent, revision }
   }
 
-  const report = (deck: string, revision: number) => ({ deck, revision, overflow: [{ node: title, ...overflow }] })
+  const report = (deck: string, revision: number) => ({ deck, revision, findings: [overflow] })
 
-  it("marks the overflowing layer while the deck stays at the reported revision", async () => {
+  it("lists the tab's findings with a fix to send while the deck stays at the reported revision", async () => {
     const { cookie, deck, agent, revision } = await typed()
     expect(((await agent("airdesign_read_deck", { deck })) as Read).findings).toBe("missing")
     const sent = await ask(base, "POST", deckRoutes.findings.path, report(deck, revision), cookie)
     expect(sent.json).toEqual({ ok: true, deck })
     const read = (await agent("airdesign_read_deck", { deck })) as Read
-    expect(read.findings).toBe("ready")
-    expect(read.elements?.find((element) => element.node === title)?.overflow).toEqual(overflow)
+    expect(read.findings).toEqual([told])
     const older = await ask(
       base,
       "POST",
       deckRoutes.findings.path,
-      { ...report(deck, revision - 1), overflow: [] },
+      { ...report(deck, revision - 1), findings: [] },
       cookie,
     )
     expect(older.json).toEqual({ ok: true, deck })
-    expect(((await agent("airdesign_read_deck", { deck })) as Read).elements?.[0]?.overflow).toEqual(overflow)
+    expect(((await agent("airdesign_read_deck", { deck })) as Read).findings).toEqual([told])
     const ahead = await ask(base, "POST", deckRoutes.findings.path, report(deck, revision + 1), cookie)
     expect(ahead.json).toEqual({ ok: false, refusal: "stale" })
   })
@@ -103,18 +105,16 @@ describe("POST /decks/findings keeps the owner's tab report for the agent's read
     const landed = (await agent("airdesign_edit_deck", { deck, base: revision, changes })) as { readonly ok: boolean }
     expect(landed.ok).toBe(true)
     const pending = (await agent("airdesign_read_deck", { deck })) as Read
-    expect(pending.findings).toBe("pending")
-    expect(pending.elements?.[0]).not.toHaveProperty("overflow")
+    expect(pending.findings).toBe(`pending ${String(revision + 1)}`)
     const watching = ask(base, "POST", deckRoutes.watch.path, { deck, cursor: revision + 1 }, cookie)
     await new Promise((resolve) => setTimeout(resolve, 100))
     const started = Date.now()
     const reading = agent("airdesign_read_deck", { deck })
     await new Promise((resolve) => setTimeout(resolve, 300))
-    await ask(base, "POST", deckRoutes.findings.path, { deck, revision: revision + 1, overflow: [] }, cookie)
+    await ask(base, "POST", deckRoutes.findings.path, { deck, revision: revision + 1, findings: [] }, cookie)
     const fresh = (await reading) as Read
     expect(Date.now() - started).toBeLessThan(3_000)
-    expect(fresh.findings).toBe("ready")
-    expect(fresh.elements?.[0]).not.toHaveProperty("overflow")
+    expect(fresh.findings).toEqual([])
     await ask(base, "POST", deckRoutes.commit.path, { deck, batch: [{ node: title, value: "Mine" }] }, cookie)
     expect((await watching).json).toMatchObject({ ok: true, deck })
   })
@@ -143,10 +143,10 @@ describe("POST /decks/findings keeps the owner's tab report for the agent's read
     await new Promise((resolve) => setTimeout(resolve, 300))
     await ask(base, "POST", deckRoutes.commit.path, { deck, batch: [{ node: "258.8", value: "Measured" }] }, cookie)
     expect((await watching).json).toMatchObject({ ok: true, deck, revision: revision + 2 })
-    await ask(base, "POST", deckRoutes.findings.path, { ...report(deck, revision + 2), overflow: [] }, cookie)
+    await ask(base, "POST", deckRoutes.findings.path, { ...report(deck, revision + 2), findings: [] }, cookie)
     const fresh = (await reading) as Read & { readonly revision: number }
     expect(fresh.revision).toBe(revision + 2)
-    expect(fresh.findings).toBe("ready")
+    expect(fresh.findings).toEqual([])
   })
 
   it("refuses another account's deck, a missing deck, a malformed report and no session", async () => {
