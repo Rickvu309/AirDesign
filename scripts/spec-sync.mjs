@@ -130,7 +130,7 @@ export const driftLines = (moved) => {
     }
     if (own.some((entry) => entry.reason === "changed")) {
       lines.push(
-        `  Read .agents/skills/verify-airdesign-formal/${own[0].check}, replay the model against the code (pnpm check:specs ${spec}, then its replay test), then run node scripts/spec-sync.mjs --sync ${spec}.`,
+        `  Read .agents/skills/verify-airdesign/rules/${own[0].check}, replay the model against the code (pnpm check:specs ${spec}, then its replay test), then run node scripts/spec-sync.mjs --sync ${spec}.`,
       )
     }
   }
