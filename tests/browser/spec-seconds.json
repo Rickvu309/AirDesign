@@ -264,6 +264,7 @@
     "table-rows-columns.spec.ts": 7.2,
     "table-tool.spec.ts": 5.7,
     "template-editing.spec.ts": 4,
+    "template-picker.spec.ts": 12.4,
     "template-style.spec.ts": 16.1,
     "text-columns.spec.ts": 11.8,
     "text-fields.spec.ts": 6.5,

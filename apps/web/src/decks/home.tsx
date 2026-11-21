@@ -27,6 +27,7 @@ import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
 import { blankDeck } from "@/decks/blank-deck"
+import { TemplatePicker } from "@/decks/template-picker"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { deckTime } from "@/decks/deck-time"
@@ -122,6 +123,7 @@ export function Home({
   const [deleteFailed, setDeleteFailed] = useState(false)
   const [importing, setImporting] = useState<Importing | null>(null)
   const [said, setSaid] = useState("")
+  const [choosing, setChoosing] = useState(false)
   const result = useRef("")
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
@@ -283,13 +285,29 @@ export function Home({
       }}
       search={{ value: query, onChange: search }}
       starred={listing?.decks.filter((deck) => deck.starred === true)}
-      newDeck={{ onImport: () => picker.current?.click(), onBlank: () => void blankDeck().then(choose) }}
+      newDeck={{
+        onImport: () => picker.current?.click(),
+        onBlank: () => void blankDeck().then(choose),
+        onTemplate: () => setChoosing(true),
+      }}
       onSignOut={() => void signOut()}
       onNavigate={navigate}
       trailing={
         trash ? <EmptyTrashButton disabled={decks.length === 0} onClick={() => setDeleting([...decks])} /> : undefined
       }
     >
+      <TemplatePicker
+        open={choosing}
+        onOpenChange={setChoosing}
+        onScratch={() => {
+          setChoosing(false)
+          void blankDeck().then(choose)
+        }}
+        onChoose={(template, slide) => {
+          setChoosing(false)
+          void import("@/decks/template-decks").then(({ templateDeck }) => templateDeck(template, slide)).then(choose)
+        }}
+      />
       <input
         className="hidden"
         ref={picker}

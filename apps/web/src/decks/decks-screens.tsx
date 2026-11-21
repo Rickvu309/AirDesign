@@ -9,6 +9,7 @@ import { NewDeckMenuScreen } from "@/decks/screens/new-deck-menu"
 import { NotFound } from "@/decks/not-found"
 import { RecentsGrid } from "@/decks/screens/recents-grid"
 import { RecentsList } from "@/decks/screens/recents-list"
+import { TemplatePickerScreen, TemplateSlidesScreen } from "@/decks/screens/template-picker"
 import { TrashList } from "@/decks/screens/trash-list"
 
 export const screens = {
@@ -20,6 +21,8 @@ export const screens = {
   [deckRoutes.newDeckMenu]: NewDeckMenuScreen,
   [deckRoutes.importing]: Importing,
   [deckRoutes.importFailed]: ImportFailed,
+  [deckRoutes.templatePicker]: TemplatePickerScreen,
+  [deckRoutes.templateSlides]: TemplateSlidesScreen,
   [deckRoutes.deckMoved]: DeckMovedToast,
   [deckRoutes.deckNotFound]: function DeckNotFound() {
     return <NotFound kind="deck" />
