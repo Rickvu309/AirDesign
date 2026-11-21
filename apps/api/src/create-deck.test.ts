@@ -137,6 +137,15 @@ describe("an agent creates a deck", () => {
     ])
   })
 
+  it("makes a new deck for each call that carries no retry key", async () => {
+    const cookie = await signInByCode(base, mails, "create-keyless@example.com")
+    const first = await mcp(cookie, "airdesign_create_deck", {})
+    const second = await mcp(cookie, "airdesign_create_deck", {})
+    expect(first.deck).toMatch(/^[0-9a-f]{32}$/)
+    expect(second.deck).toMatch(/^[0-9a-f]{32}$/)
+    expect(second.deck).not.toBe(first.deck)
+  })
+
   it("gives another account its own deck for the same retry key", async () => {
     const one = await signInByCode(base, mails, "create-one@example.com")
     const two = await signInByCode(base, mails, "create-two@example.com")

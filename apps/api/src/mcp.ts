@@ -187,10 +187,10 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       if (name === "airdesign_create_deck") {
         const asked = readCreateDeck(raw)
         if (!asked.ok) return asked
-        const once = session.once ?? host.mint()
-        const made = await createDeck(host.deck, host.originals, host.email, { once, name: asked.name }).catch(
-          () => ({ ok: false, refusal: "store" }) as const,
-        )
+        const made = await createDeck(host.deck, host.originals, host.email, {
+          once: session.once,
+          name: asked.name,
+        }).catch(() => ({ ok: false, refusal: "store" }) as const)
         if (!made.ok) return made
         await turns.load(made.deck.id).catch(() => undefined)
         loaded = made.deck
