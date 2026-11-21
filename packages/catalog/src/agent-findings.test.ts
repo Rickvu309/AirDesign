@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
-import { agentFindings, readFindingsReport, type WireFinding } from "./index.js"
+import { agentFindings, findingsAt } from "./agent-findings.js"
+import { readFindingsReport, type FindingsReport, type WireFinding } from "./index.js"
 
 const green = "1A7A33"
 
@@ -79,4 +80,20 @@ it("keeps only the findings on the layers the answer shows", () => {
     { code: "small-text", node: "259.2", size: 8, min: 10, uniform: true },
   ])
   expect(agentFindings(found, (node) => node.startsWith("259.")).map(({ node }) => node)).toEqual(["259.2"])
+})
+
+function report(raw: object): FindingsReport {
+  const read = readFindingsReport({ deck: "deck", revision: 4, ...raw })
+  if (!read.ok) throw new Error(read.refusal)
+  return read
+}
+
+it("says what the tab knows about a revision in one short word when it has no list for it", () => {
+  const found = report({ findings: [{ code: "small-text", node: "258.14", size: 8, min: 10, uniform: true }] })
+  const all = () => true
+  expect(findingsAt(undefined, 4, all)).toBe("missing")
+  expect(findingsAt(found, 5, all)).toBe("pending 5")
+  expect(findingsAt(report({ findings: [], broken: true }), 4, all)).toBe("broken 4")
+  expect(findingsAt(found, 4, all)).toMatchObject([{ code: "small-text", node: "258.14" }])
+  expect(findingsAt(found, 4, () => false)).toEqual([])
 })

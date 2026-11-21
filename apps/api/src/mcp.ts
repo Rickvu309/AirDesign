@@ -8,6 +8,7 @@ import {
   agentCaller,
   createServer,
   dropGoneTurn,
+  editFindings,
   editRefusal,
   emptyLog,
   imageAddresses,
@@ -209,16 +210,16 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       } catch {
         return { ok: false, refusal: "store" }
       }
-      return prior === undefined ? { ok: true } : { answered: storedAnswer(loaded, prior.answer) }
+      if (prior === undefined) return { ok: true }
+      return { answered: editFindings(storedAnswer(loaded, prior.answer), host.measures?.findings?.latest(named.deck)) }
     },
-    commit: (result) =>
-      commitEdit(
-        host.deck,
-        loaded,
-        storedIndex,
-        result,
-        session.once === undefined ? undefined : { email: host.email, once: session.once },
-      ),
+    commit: async (result) => {
+      const once = session.once === undefined ? undefined : { email: host.email, once: session.once }
+      const committed = await commitEdit(host.deck, loaded, storedIndex, result, once)
+      if ("lost" in committed || !committed.ok || committed.deck === loaded) return committed
+      const { id, revision } = committed.deck
+      return editFindings(committed, await freshFindings(host.measures, id, revision))
+    },
     refund: () => refundCaller(host.session, host.email, "tool", host.agentKey),
     turnSaved: () => turns.saved(),
   }

@@ -8,6 +8,7 @@ export { admit, emptyLog, refund, type Admission, type CallerLog, type LimitKind
 export { callTool, type AgentCaller, type Session, type ToolResult } from "./call-tool.js"
 export { wantedSlides, type ReadPictures } from "./slide-pictures.js"
 export { editLanded, editRefusal } from "./edit-answer.js"
+export { editFindings } from "./edit-findings.js"
 export { editNext, runNext, type EditCode } from "./edit-next.js"
 export { imageAddresses, imagesPerCall, type ImageRefusal, type NamedImage } from "./named-image.js"
 export { kindInstructions } from "./kind-refusal.js"

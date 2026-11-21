@@ -82,7 +82,7 @@ export { readDiagramChange, type WireDiagram } from "./diagram-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
 export { readFindingsReport, type FindingsReport, type WireFinding } from "./findings-wire.js"
-export { agentFindings, type AgentFinding } from "./agent-findings.js"
+export { findingsAt, type AgentFindings } from "./agent-findings.js"
 export {
   pictureBytes,
   pictureType,
