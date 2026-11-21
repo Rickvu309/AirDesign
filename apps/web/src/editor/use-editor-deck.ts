@@ -113,7 +113,14 @@ export function useEditorDeck(id: string) {
   const onCells = useCallback((node: ElementId, cells: CellRange | null) => {
     setTableCells((now) => (cells !== null ? { node, cells } : now?.node === node ? null : now))
   }, [])
-  const exported = useExport({ id, records, pictureTool, paint: shown.store, setFailure: status.setFailure })
+  const exported = useExport({
+    id,
+    records,
+    pictureTool,
+    paint: shown.store,
+    ahead: shown.ahead,
+    setFailure: status.setFailure,
+  })
   return {
     ...status,
     painting,
