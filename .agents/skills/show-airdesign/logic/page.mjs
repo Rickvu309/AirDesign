@@ -82,7 +82,8 @@ function boxClass(node, depth, choosing) {
 function nodeHtml(node, depth, images, choosing = false) {
   const badge = depth === 0 ? "" : `<span class="badge">${node.label}</span>`
   const tag = choosing && node.chosen ? '<span class="tag">Chosen</span>' : ""
-  const box = `<div class="${boxClass(node, depth, choosing)}">${badge}${tag}<p class="claim">${escape(node.claim)}${mark(node.verdict)}</p>${thumbnail(node, images)}</div>`
+  const photo = thumbnail(node, images)
+  const box = `<div class="${boxClass(node, depth, choosing)}${photo ? " with-photo" : ""}">${badge}${tag}<p class="claim">${escape(node.claim)}${mark(node.verdict)}</p>${photo}</div>`
   const decide = depth === 0 && node.group?.axis === "options"
   const children = node.children
     ? `<div class="kids">${node.children.map((child) => nodeHtml(child, depth + 1, images, decide)).join("")}</div>`
@@ -144,7 +145,8 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .d0 .claim{font-size:18px;line-height:24px;font-weight:720}
 .mark{font-size:12px;font-weight:650;white-space:nowrap}
 .mark.passed{color:#9a9a9a}.mark.open{color:#8a6d00}.mark.failed{color:#a32020}
-.thumb{display:block;width:100%;height:96px;object-fit:cover;object-position:top;margin-top:9px;border:1px solid #d6d6d6;border-radius:3px}
+.thumb{display:block;width:100%;height:auto;max-height:300px;object-fit:contain;object-position:left top;margin-top:10px}
+.with-photo{--width:330px}
 .kids{display:flex;flex-direction:column;position:relative;padding-left:${String(gap)}px}
 .kids::before{content:"";position:absolute;left:0;top:50%;width:${String(gap / 2)}px;border-top:2px solid ${ink};filter:url(#rough)}
 .kids>.node{position:relative;padding:8px 0}
