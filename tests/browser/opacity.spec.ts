@@ -108,6 +108,7 @@ test("a person fades a shape whose fill and line come from its style, and a line
   await expect.poll(() => stroke(connector)).toMatch(/^#[0-9A-F]{6}66$/i)
   const fadedLine = await stroke(connector)
 
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(faded)
@@ -176,6 +177,7 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   await pickColor(page, panel.getByRole("group", { name: fillWords.color, exact: true }), names.accent2)
   const after = "rgb(96, 96, 96)"
   await expect.poll(() => filled(rectangle)).toBe(after)
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(after)

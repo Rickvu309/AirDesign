@@ -32,6 +32,7 @@ test("a choice aligns every paragraph of the element, shows the pick, and Undo p
   await expect(alignment.getByRole("button", { name: "Center", exact: true })).toHaveAttribute("aria-pressed", "false")
   await alignment.getByRole("button", { name: "Right", exact: true }).click()
   await expect.poll(aligned).toBe("right")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect

@@ -113,7 +113,7 @@ export function ThinDeck({ id }: { id: string }) {
   return (
     <div
       className="thin-page"
-      data-deck-ready={deck.paintedDeck === id && deck.openedDeck === id && settled ? id : undefined}
+      data-deck-ready={deck.paintedDeck === id && deck.openedDeck === id && settled && !deck.painting ? id : undefined}
     >
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
       <EditorFrame fills>

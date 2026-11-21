@@ -176,6 +176,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   expect(taller.top).toBeCloseTo(loose.top, 0)
   expect(taller.textBottom).toBeLessThanOrEqual(taller.bottom + 1)
 
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await actualSize(page)

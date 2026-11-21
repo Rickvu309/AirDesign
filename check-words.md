@@ -123,7 +123,7 @@ _Avoid_: approval, sign-off, review
 ## How a change is shown to work
 
 **ready**:
-A deck the editor marks with `data-deck-ready`: painted, opened with the server, its fonts and the thumbnails in view loaded, and no zoom settling. A browser test opens and waits for it with the `decks` fixture in `tests/browser/deck-test.ts`.
+A deck the editor marks with `data-deck-ready`: painted, opened with the server, its fonts and the thumbnails in view loaded, no zoom settling, and no edit painted ahead of the device. A browser test opens and waits for it with the `decks` fixture in `tests/browser/deck-test.ts`, and waits for it again before a reload or a second page, so every edit it made is stored.
 _Avoid_: loaded, a local settled helper
 
 **kept wait**:

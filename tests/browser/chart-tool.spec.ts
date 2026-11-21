@@ -56,6 +56,7 @@ test("inserts a chart, edits its data in the Design panel, keeps it through a re
     .locator("[data-slide-paint] [data-canvas-element]")
     .filter({ has: page.locator("svg[data-chart]") })
   await expect(frame).not.toContainText("{")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(painted).toHaveAttribute("data-chart", "line")

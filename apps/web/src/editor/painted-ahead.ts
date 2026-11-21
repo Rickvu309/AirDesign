@@ -4,6 +4,8 @@ export type PaintAhead = {
   readonly on: (register: Register) => Register
   readonly hold: (commands: readonly Command[]) => () => void
   readonly paint: (commands: readonly Command[]) => () => void
+  readonly holding: () => boolean
+  readonly watch: (listener: () => void) => () => void
 }
 
 type AheadCanvas = {
@@ -32,17 +34,28 @@ function played(register: Register, edits: readonly (readonly Command[])[]): Reg
 
 export function paintingAhead(canvas: AheadCanvas): PaintAhead {
   let ahead: readonly (readonly Command[])[] = []
+  const listeners = new Set<() => void>()
+  function changed(next: readonly (readonly Command[])[]) {
+    if (next.length === ahead.length) return
+    ahead = next
+    for (const listener of [...listeners]) listener()
+  }
   function hold(commands: readonly Command[]): () => void {
-    ahead = [...ahead, commands]
+    changed([...ahead, commands])
     const shown = canvas.shown()
     if (shown !== null) canvas.keep(played(shown, [commands]))
-    return () => {
-      ahead = ahead.filter((each) => each !== commands)
-    }
+    return () => changed(ahead.filter((each) => each !== commands))
   }
   return {
     on: (register) => played(register, ahead),
     hold,
+    holding: () => ahead.length > 0,
+    watch(listener) {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
     paint(commands) {
       const written = hold(commands)
       const shown = canvas.shown()

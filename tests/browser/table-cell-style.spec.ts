@@ -50,6 +50,7 @@ test("styles a picked row's cells from the Design panel and the export carries t
     .poll(() => header.evaluate((node) => getComputedStyle(node.querySelector("span") ?? node).fontWeight))
     .toBe("700")
   await expect(table.locator('[data-table-cell="1.0"]')).not.toHaveCSS("background-color", "rgb(31, 78, 121)")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect.poll(() => header.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe("rgb(31, 78, 121)")
@@ -90,6 +91,7 @@ test("styles every cell once Escape leaves a typed cell, and a Shift-click range
     "aria-pressed",
     "true",
   )
+  await decks.ready()
   await page.reload()
   await decks.ready()
   const saving = page.waitForEvent("download")

@@ -71,6 +71,7 @@ test("sets a chart's title, data labels, axis, gridlines, gap, colour and legend
   await typeColor(page, settings.getByLabel("Series 1", { exact: true }).getByRole("button").first(), navy)
   await expect(canvas.locator(`svg[data-chart] [fill="#${navy}"]`).first()).toBeVisible()
   await expect(settings.getByRole("checkbox", { name: chartCopy.gridlines, exact: true })).not.toBeChecked()
+  await decks.ready()
   await page.reload()
   await decks.ready()
   const frame = canvas.locator("[data-canvas-element]").filter({ has: page.locator("svg[data-chart]") })

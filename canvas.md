@@ -37,5 +37,5 @@ The height a table row shows on the canvas: its own height, or more while its te
 _Avoid_: auto row height, row fit
 
 **painted ahead**:
-An edit the canvas shows before the device stored it. The editor keeps these edits in the order the person made them and lays them over every deck it paints from the device, and drops each one once the device wrote its rows. Typing, every Design panel change, a drag's boxes, text the Text tool places, and every inserted, removed, grouped or duplicated layer paint ahead, so an edit never waits for an earlier save to paint; the save order stays the order of the edits.
+An edit the canvas shows before the device stored it. The editor keeps these edits in the order the person made them and lays them over every deck it paints from the device, and drops each one once the device wrote its rows. Typing, every Design panel change, a drag's boxes, text the Text tool places, and every inserted, removed, grouped or duplicated layer paint ahead, so an edit never waits for an earlier save to paint; the save order stays the order of the edits. While any edit is painted ahead or still waits to reach AirDesign, the editor says Saving… and the browser asks before the tab reloads or closes, as Figma does with changes it has not synced.
 _Avoid_: optimistic update, preview, pending paint

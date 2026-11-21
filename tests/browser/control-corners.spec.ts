@@ -24,6 +24,7 @@ test("Corners rounds a rectangle in pixels, agrees with Shape type, persists and
   await expect(corners).toHaveValue("21.5")
   await unfold(panel, geometryCopy.section)
   await expect(panel.locator('[data-control="preset"]')).toContainText(geometryWords.roundRect ?? "")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await shape.click({ position: { x: 30, y: 30 } })

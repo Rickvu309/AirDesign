@@ -64,6 +64,7 @@ test("remixes template colours, adds a colour, deletes an unused template, and k
   await page.locator("[data-design-panel] [data-template-style]").click()
   await expect(popup.locator("[data-template-style]")).toHaveCount(1)
 
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await page.getByRole("button", { name: "Design", exact: true }).click()

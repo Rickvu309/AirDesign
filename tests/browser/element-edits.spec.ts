@@ -55,6 +55,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await page.keyboard.press("Delete")
   await expect(texts).toHaveCount(1)
   await expect(texts.last()).toHaveText("Added text")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(texts).toHaveCount(1)

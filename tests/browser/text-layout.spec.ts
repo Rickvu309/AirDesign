@@ -126,6 +126,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   await expect.poll(async () => (await shown(shape)).columns).toBe("2")
   const laid = await shown(shape)
 
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await actualSize(page)
