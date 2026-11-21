@@ -117,7 +117,6 @@ describe("createServer", () => {
       const changes = schema.properties?.changes?.items?.anyOf ?? []
       expect(changes.map((change) => change.required)).toEqual([
         expect.arrayContaining(["node", "readAt"]),
-        expect.arrayContaining(["node", "readAt"]),
         ["op", "target"],
         ["op", "kind", "slide"],
         ["op", "elements"],
@@ -158,7 +157,7 @@ describe("createServer", () => {
     })
   })
 
-  it("advertises exactly what every tool reader accepts", async () => {
+  it("advertises every shape each tool reader takes, and leaves to the reader the limits an agent never meets", async () => {
     const change = { value: "21", node: "258.7", readAt: 0 }
     const edit = { deck: "deck", base: 0, changes: [change] }
     const inputs: unknown[] = [
@@ -181,14 +180,11 @@ describe("createServer", () => {
       { base: 0, changes: [change] },
       { ...edit, base: -1 },
       { ...edit, base: 0.5 },
-      { ...edit, base: Number.MAX_SAFE_INTEGER + 1 },
       { ...edit, changes: "21" },
       { ...edit, changes: [] },
       { ...edit, changes: Array.from({ length: 101 }, () => change) },
       ...[
         { ...change, value: 7 },
-        { ...change, value: "\u0000" },
-        { ...change, value: "\ud800" },
         { ...change, value: "😀" },
         { ...change, floor: "old" },
         { ...change, floor: 7 },
@@ -198,6 +194,11 @@ describe("createServer", () => {
         { ...change, readAt: -1 },
         { ...change, readAt: 0.5 },
       ].map((item) => ({ ...edit, changes: [item] })),
+    ]
+    const readerOnly: unknown[] = [
+      { ...edit, base: Number.MAX_SAFE_INTEGER + 1 },
+      { ...edit, changes: [{ ...change, value: "\u0000" }] },
+      { ...edit, changes: [{ ...change, value: "\ud800" }] },
     ]
     await withClient(sessionFor(opened()), async (client) => {
       const { tools } = await client.listTools()
@@ -210,6 +211,11 @@ describe("createServer", () => {
           expect(!checked.issues?.length, `${tool.name}: ${JSON.stringify(input)}`).toBe(
             catalog[tool.op].read(input).ok,
           )
+        }
+        for (const input of readerOnly) {
+          const checked = await schema["~standard"].validate(input)
+          expect(catalog[tool.op].read(input).ok, `${tool.name}: ${JSON.stringify(input)}`).toBe(false)
+          if (tool.op === "edit_deck") expect(checked.issues?.length ?? 0, JSON.stringify(input)).toBe(0)
         }
       }
     })

@@ -1,6 +1,7 @@
 import { colorPattern, hexPattern } from "./agent-color.js"
 import * as z from "zod/v4"
 
+import { advertisedSchema } from "./advertised-schema.js"
 import { readAgentEdit } from "./edit-wire.js"
 import { readDeckQuery, readListDecks } from "./read-wire.js"
 import { sharedSchemas } from "./shared-schema.js"
@@ -111,7 +112,7 @@ function sharedColors(schema: unknown): unknown {
 const inputSchemas = new Map<AgentOp, Readonly<Record<string, unknown>>>()
 
 function builtInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
-  const schema = z.toJSONSchema(catalog[op].read.input, { io: "input" })
+  const schema = advertisedSchema(z.toJSONSchema(catalog[op].read.input, { io: "input" }))
   const shared = sharedColors(schema) as Readonly<Record<string, unknown>>
   const text = JSON.stringify(shared)
   const used = Object.entries(colorSchemas).filter(([name]) => text.includes(`"#/$defs/${name}"`))

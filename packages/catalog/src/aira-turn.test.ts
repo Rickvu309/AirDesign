@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { airaMessageCap, airaTextCap, airaTools, readStop, readTurn } from "./aira-turn.js"
+import { advertisedSchema } from "./advertised-schema.js"
 import { catalog, projectTools } from "./catalog.js"
 import * as z from "zod/v4"
 
@@ -46,7 +47,7 @@ describe("Aira's tools", () => {
       projectTools(catalog).map((tool) => ({
         name: tool.name,
         description: tool.description,
-        input_schema: z.toJSONSchema(catalog[tool.op].read.input, { io: "input" }),
+        input_schema: advertisedSchema(z.toJSONSchema(catalog[tool.op].read.input, { io: "input" })),
       })),
     )
     expect(JSON.stringify(airaTools)).not.toMatch(/"\$ref"|"\$defs"/)

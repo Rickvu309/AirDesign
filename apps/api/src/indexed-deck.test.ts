@@ -150,7 +150,7 @@ it("uploads paged floors at revision zero, replays, grants an agent, reads every
       arguments: {
         deck,
         base: answer.revision,
-        changes: [{ node: elements[0]!.node, readAt: 0, property: "box", value: box }],
+        changes: [{ op: "set", target: elements[0]!.node, box: { x: box.x / 12_700, y: box.y / 12_700 } }],
       },
     })
     expect(group.structuredContent).toMatchObject({ ok: false, refusal: "group-box" })

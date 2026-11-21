@@ -15,7 +15,10 @@ export function bodyIs(kind: Kind | "photo"): (register: Register) => Register {
   })
 }
 
-export function boxed(deck: string, box: Box, node: ElementId = elements.body, readAt = 0): Attempt {
+const emuPerPoint = 12_700
+
+export function boxed(deck: string, box: Box, node: ElementId = elements.body): Attempt {
   const call = edit(deck, [])
-  return [{ name: call.name, raw: { deck, base: 0, changes: [{ node, readAt, property: "box", value: box }] } }]
+  const points = { x: box.x / emuPerPoint, y: box.y / emuPerPoint, w: box.cx / emuPerPoint, h: box.cy / emuPerPoint }
+  return [{ name: call.name, raw: { deck, base: 0, changes: [{ op: "set", target: node, box: points }] } }]
 }
