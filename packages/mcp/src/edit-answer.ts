@@ -1,3 +1,4 @@
+import type { AgentFindings } from "@airdesign/catalog"
 import { pointBox, type PointBox, type WireChange } from "@airdesign/catalog"
 import { openingElement, currentBox, currentValue, version, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
@@ -18,6 +19,7 @@ export type EditAnswer =
       readonly runId: string
       readonly elements: readonly EditElement[]
       readonly slides?: readonly string[]
+      readonly findings?: AgentFindings
     }
   | {
       readonly ok: false

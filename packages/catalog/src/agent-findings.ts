@@ -1,5 +1,5 @@
 import type { ElementId } from "@airdesign/document"
-import type { WireFinding } from "./findings-wire.js"
+import type { FindingsReport, WireFinding } from "./findings-wire.js"
 
 type Change =
   | { readonly op: "set"; readonly target: ElementId; readonly [field: string]: unknown }
@@ -64,4 +64,16 @@ export function agentFindings(
   return findings
     .filter(({ node }) => shown(node))
     .map((finding) => ({ code: finding.code, node: finding.node, ...told(finding) }))
+}
+
+export type AgentFindings = readonly AgentFinding[] | "missing" | `pending ${number}` | `broken ${number}`
+
+export function findingsAt(
+  report: FindingsReport | undefined,
+  revision: number,
+  shown: (node: ElementId) => boolean,
+): AgentFindings {
+  if (report === undefined) return "missing"
+  if (report.revision !== revision) return `pending ${revision}`
+  return report.broken === true ? `broken ${revision}` : agentFindings(report.findings, shown)
 }

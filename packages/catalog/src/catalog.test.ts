@@ -32,7 +32,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). Pass the returned runId to airdesign_stop_run when done.",
+        "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). The answer's findings cover the slides it touched, as in airdesign_read_deck. Pass the returned runId to airdesign_stop_run when done.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,

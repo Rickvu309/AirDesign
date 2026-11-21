@@ -4,7 +4,7 @@ export function landedAnswer(
   elements: readonly { node: string; value: string; version: number }[],
   runId: unknown = expect.any(String),
 ) {
-  return { ok: true, revision, runId, elements }
+  return { ok: true, revision, runId, elements, findings: "missing" }
 }
 
 export function landedContent(

@@ -1,8 +1,8 @@
 import {
-  agentFindings,
+  findingsAt,
   pointSize,
   readDeckId,
-  type AgentFinding,
+  type AgentFindings,
   type DeckId,
   type FindingsReport,
   type PointBox,
@@ -88,7 +88,7 @@ export type ReadDeckAnswer = {
   readonly palettes?: readonly Palette[]
   readonly templateStyle?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
-  readonly findings: readonly AgentFinding[] | "missing" | `pending ${number}` | `broken ${number}`
+  readonly findings: AgentFindings
   readonly cursor?: string
 }
 
@@ -194,9 +194,7 @@ type ReadHead = Pick<
 >
 
 function findingsOf(revision: number, report: FindingsReport | undefined): ReadDeckAnswer["findings"] {
-  if (report === undefined) return "missing"
-  if (report.revision !== revision) return `pending ${revision}`
-  return report.broken === true ? `broken ${revision}` : agentFindings(report.findings, () => true)
+  return findingsAt(report, revision, () => true)
 }
 
 function styleFields(register: Register, node = templateStylesNode): Readonly<Record<string, string>> {

@@ -119,6 +119,35 @@ describe("POST /decks/findings keeps the owner's tab report for the agent's read
     expect((await watching).json).toMatchObject({ ok: true, deck })
   })
 
+  it("lists the findings on the slides an edit touched in its answer, waiting for the tab that follows the deck", async () => {
+    const { cookie, deck, agent, revision } = await typed()
+    await ask(base, "POST", deckRoutes.findings.path, report(deck, revision), cookie)
+    const watching = ask(base, "POST", deckRoutes.watch.path, { deck, cursor: revision }, cookie)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    const changes = [{ node: title, value: "Still long enough to wrap past its box", readAt: 1 }]
+    const editing = agent("airdesign_edit_deck", { deck, base: revision, changes })
+    await watching
+    const elsewhere = { ...overflow, node: "259.2" }
+    await ask(
+      base,
+      "POST",
+      deckRoutes.findings.path,
+      { deck, revision: revision + 1, findings: [overflow, elsewhere] },
+      cookie,
+    )
+    const edited = (await editing) as { readonly ok: boolean; readonly findings?: unknown }
+    expect(edited.ok).toBe(true)
+    expect(edited.findings).toEqual([told])
+    const quiet = (await agent("airdesign_edit_deck", {
+      deck,
+      base: revision + 1,
+      changes: [{ ...changes[0], readAt: 2 }],
+    })) as {
+      readonly findings?: unknown
+    }
+    expect(quiet.findings).toBe(`pending ${String(revision + 2)}`)
+  })
+
   it("answers at once while a watch follows a deck no tab has reported on", async () => {
     const { cookie, deck, agent, revision } = await typed()
     const watching = ask(base, "POST", deckRoutes.watch.path, { deck, cursor: revision }, cookie)
