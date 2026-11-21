@@ -5,8 +5,7 @@ import { expect } from "@playwright/test"
 import { openDeck } from "../look/open-deck.mjs"
 
 export default async function drive(kit) {
-  const { page, repo, origin, note, capture } = kit
-  const { mcpRoutes } = await import(pathToFileURL(path.join(repo, "packages/catalog/dist/index.js")).href)
+  const { page, repo, origin, note, capture, mcpRoutes, fontRoutes, holdReply } = kit
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const { cookie } = await kit.signIn()
   const requests = []
@@ -40,14 +39,8 @@ export default async function drive(kit) {
       return read.index
     })
     .toBe("ready")
-  let release = () => {}
-  const blocked = new Promise((resolve) => {
-    release = resolve
-  })
-  await page.route("**/fonts/family?family=Montserrat", async (route) => {
-    await blocked
-    await route.continue()
-  })
+  const search = "?family=Montserrat"
+  const { release } = await holdReply(fontRoutes.family, { search })
   const edited = await tool("airdesign_edit_deck", {
     deck,
     base: read.revision,
@@ -55,8 +48,10 @@ export default async function drive(kit) {
   })
   await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toBeAttached()
   await expect(page.locator("[data-slide-paint] [data-paragraph]")).toBeVisible()
-  const family = page.waitForResponse("**/fonts/family?family=Montserrat")
-  release()
+  const family = page.waitForResponse(
+    (response) => response.url() === new URL(fontRoutes.family.path + search, origin).href,
+  )
+  await release()
   expect((await family).ok()).toBe(true)
   await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toHaveCount(0)
   const font = await page

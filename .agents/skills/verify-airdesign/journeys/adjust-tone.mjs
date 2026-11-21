@@ -19,7 +19,7 @@ function readText(value) {
 }
 
 export default async function drive(kit) {
-  const { repo, page, context, signIn, post, capture, note, deckRoutes, mcpRoutes, airaRoutes, aira } = kit
+  const { repo, page, context, signIn, post, capture, note, deckRoutes, mcpRoutes, airaRoutes, aira, failReply } = kit
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const { cookie } = await signIn()
   const fixture = path.join(repo, "scripts/pptx-fixtures/clean.pptx")
@@ -165,12 +165,12 @@ export default async function drive(kit) {
   expect(requests).toHaveLength(4)
   await page.unroute(usagePath)
 
-  await page.route(usagePath, (route) => route.fulfill({ status: 401, json: { ok: false, refusal: "session" } }))
+  const restoreUsage = await failReply(airaRoutes.usage, { status: 401, json: { ok: false, refusal: "session" } })
   await page.keyboard.press("Escape")
   await trigger.click()
   await expect(tone.getByRole("status")).toHaveText(airaCopy.signIn)
   expect(requests).toHaveLength(4)
-  await page.unroute(usagePath)
+  await restoreUsage()
   await page.keyboard.press("Escape")
   await trigger.click()
   const dial = tone.getByRole("button", { name: new RegExp(`^${words.dial}`) })

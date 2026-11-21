@@ -2,21 +2,14 @@ import { accountCopy } from "../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 
 export default async function drive(kit) {
-  const { page, capture, post, accountRoutes, note } = kit
+  const { page, capture, post, accountRoutes, note, holdReply, failReply } = kit
   const { cookie } = await kit.signIn()
   await page.goto("/settings/account")
   await expect(page.getByLabel(accountCopy.name, { exact: true })).toHaveValue("Verify")
   await capture("account-name-before")
   const save = page.getByRole("button", { name: accountCopy.nameSave, exact: true })
   await expect(save).toBeDisabled()
-  let release
-  const pending = new Promise((resolve) => {
-    release = resolve
-  })
-  await page.route(`**${accountRoutes.name.path}`, async (route) => {
-    await pending
-    await route.continue()
-  })
+  const { release } = await holdReply(accountRoutes.name)
   await page.getByLabel(accountCopy.name, { exact: true }).fill("  Nguyễn Quân  ")
   await save.focus()
   await save.press("Enter")
@@ -25,10 +18,9 @@ export default async function drive(kit) {
   await expect(save).toHaveText(accountCopy.nameSave)
   await expect(page.getByLabel(accountCopy.name, { exact: true })).toHaveAttribute("readonly", "")
   await capture("account-name-saving")
-  release()
+  await release()
   await expect(page.getByRole("status")).toHaveText(accountCopy.nameSaved)
   await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
-  await page.unroute(`**${accountRoutes.name.path}`)
   const saved = await post(accountRoutes.profile, {}, cookie)
   expect(saved.json.account.name).toBe("Nguyễn Quân")
   await capture("account-name-saved")
@@ -38,15 +30,13 @@ export default async function drive(kit) {
   await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
   await capture("account-name-home")
   await page.goto("/settings/account")
-  await page.route(`**${accountRoutes.name.path}`, (route) =>
-    route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
-  )
+  const restoreName = await failReply(accountRoutes.name, { status: 503, json: {} })
   await page.getByLabel(accountCopy.name, { exact: true }).fill("Another name")
   await page.getByRole("button", { name: accountCopy.nameSave, exact: true }).click()
   await expect(page.getByRole("alert")).toHaveText(accountCopy.nameFailed)
   await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
   await capture("account-name-failed")
-  await page.unroute(`**${accountRoutes.name.path}`)
+  await restoreName()
   await page.getByLabel(accountCopy.name, { exact: true }).fill("林")
   await page.getByRole("button", { name: accountCopy.nameSave, exact: true }).click()
   await expect(page.locator("[data-account-name]")).toHaveText("林")

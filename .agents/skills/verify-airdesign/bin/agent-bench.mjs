@@ -148,14 +148,15 @@ function tokensSince(file, from) {
 async function score({ repo, page, task, original, file, validate }) {
   const pptx = await fromRepo(repo, "packages/pptx/dist/index.js")
   const { slideFindings } = await fromRepo(repo, "packages/document/dist/index.js")
-  const { slideWidths } = await fromRepo(repo, "tests/browser/font-widths.ts")
+  const { fontFamily } = await fromRepo(repo, "packages/fonts/dist/index.js")
+  const { slideWidths } = await fromRepo(repo, "tests/browser/measure-fonts.ts")
   const parts = {
     before: await pptx.readParts(new Uint8Array(readFileSync(original))),
     after: await pptx.readParts(new Uint8Array(readFileSync(file))),
   }
   const before = { slides: await resolvedSlides(repo, pptx, parts.before) }
   const after = { slides: await resolvedSlides(repo, pptx, parts.after) }
-  const widths = await slideWidths(page, [...before.slides, ...after.slides])
+  const widths = await slideWidths(page, [...before.slides, ...after.slides], fontFamily)
   const judge = (slide) => slideFindings(slide, widths)
   const decoder = new TextDecoder()
   const side = (deck, name) => ({

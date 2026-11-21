@@ -13,6 +13,7 @@ import { designContext, openBrowser, settle } from "./browser.mjs"
 import { alive, commandLine, newRun, ownsServe, removeLeftoverRuns } from "./leftover-runs.mjs"
 import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
+import { replyRoutes } from "./reply-routes.mjs"
 import { usage } from "./usage.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -231,13 +232,14 @@ export function productionStandIn(url) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes, countryHeader } =
+  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes, fontRoutes, countryHeader } =
     await catalog(state)
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   await context.route(productionHosts, (route) =>
     route.fulfill({ contentType: "text/html", body: productionStandIn(route.request().url()) }),
   )
+  const { releaseHeldReplies, ...replies } = replyRoutes(page, state.origin, state.siteOrigin)
   let step = 0
   const kit = {
     repo,
@@ -253,6 +255,8 @@ export async function journeyKit({ run, name, page, context }) {
     oauthRoutes,
     airaRoutes,
     mcpRoutes,
+    fontRoutes,
+    ...replies,
     countryHeader,
     aira(scripts) {
       writeFileSync(airaPath(run), JSON.stringify({ at: Date.now(), scripts }))
@@ -305,7 +309,14 @@ export async function journeyKit({ run, name, page, context }) {
       proof(run, `- ${name}: ${line}`)
     },
   }
-  return { kit, out }
+  async function runJourney(drive) {
+    try {
+      await drive(kit)
+    } finally {
+      await releaseHeldReplies()
+    }
+  }
+  return { kit, out, runJourney }
 }
 
 export function journeyFile(name) {
@@ -332,11 +343,11 @@ async function journey(run, given) {
   const browser = await openBrowser()
   const context = await browser.newContext({ baseURL: state.origin, ...designContext })
   const page = await context.newPage()
-  const { kit, out } = await journeyKit({ run, name, page, context })
+  const { kit, out, runJourney } = await journeyKit({ run, name, page, context })
   const { default: drive } = await import(pathToFileURL(file).href)
   let passed = false
   try {
-    await drive(kit)
+    await runJourney(drive)
     passed = true
   } catch (error) {
     await kit.capture("failure").catch(() => undefined)

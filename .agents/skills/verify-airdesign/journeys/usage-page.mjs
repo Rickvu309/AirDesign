@@ -3,7 +3,7 @@ import { expect } from "@playwright/test"
 
 const { settingsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/settings-copy.ts")
 
-export default async function drive({ page, signIn, post, capture, note, airaRoutes }) {
+export default async function drive({ page, signIn, post, capture, note, airaRoutes, failReply }) {
   const { cookie, email } = await signIn()
   await page.goto("/")
   await page.getByRole("button", { name: email }).click()
@@ -26,11 +26,11 @@ export default async function drive({ page, signIn, post, capture, note, airaRou
   await page.goto("/")
   await page.getByRole("link", { name: "Settings" }).click()
   await expect(page).toHaveURL(/\/settings\/usage$/)
-  await page.route(`**${airaRoutes.usage.path}`, (route) => route.abort("connectionfailed"))
+  const restoreUsage = await failReply(airaRoutes.usage)
   await page.reload()
   await expect(page.getByRole("alert")).toContainText("Unable to load your usage")
   await capture("usage-failed")
-  await page.unroute(`**${airaRoutes.usage.path}`)
+  await restoreUsage()
   await page.getByRole("alert").getByRole("button", { name: "Try again" }).click()
   await expect(page.getByText(/\d+% used/)).toBeVisible()
   note(

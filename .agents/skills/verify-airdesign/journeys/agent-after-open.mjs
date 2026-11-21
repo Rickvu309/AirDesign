@@ -2,7 +2,19 @@ import { airaStepWords } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
-export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes, mcpRoutes, aira }) {
+export default async function drive({
+  repo,
+  origin,
+  page,
+  signIn,
+  post,
+  capture,
+  note,
+  deckRoutes,
+  mcpRoutes,
+  aira,
+  holdReply,
+}) {
   const { cookie } = await signIn()
   let id = 0
   async function tool(name, args) {
@@ -29,15 +41,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const slide = page.locator("[data-slide-paint]")
 
   await page.goto("/")
-  let release = () => undefined
-  const held = new Promise((resolve) => {
-    release = resolve
-  })
-  const indexing = (url) => url.pathname === deckRoutes.index.path
-  await page.route(indexing, async (route) => {
-    await held
-    await route.fallback()
-  })
+  const indexing = await holdReply(deckRoutes.index)
   const opened = page.waitForResponse((response) => new URL(response.url()).pathname === deckRoutes.open.path)
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/blank.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
@@ -57,10 +61,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(log.getByText(airaStepWords.edit_deck.working)).toBeVisible()
   await expect(log.getByText(airaStepWords.edit_deck.refused)).toHaveCount(0)
   await capture("adding-while-indexing")
-  release()
+  await indexing.release()
   await expect(log.getByText(airaStepWords.edit_deck.done)).toBeVisible({ timeout: 30_000 })
   await expect(entries).toHaveCount(2, { timeout: 30_000 })
-  await page.unroute(indexing)
   await capture("added-after-indexing")
   note(
     "with the deck's index held, an outside add_slide was refused indexing and Aira's step stayed Editing slides; once the index landed it read Edited slides and the deck had two slides",
@@ -114,31 +117,16 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(title).toHaveText("Hello")
   const base = (await post(deckRoutes.open, { deck: fresh }, cookie)).json.revision
   aira([{ name: "edit.sse", fill: { deck: fresh, base: String(base), node: "256.2" } }, { name: "edited.sse" }])
-  let answer = () => undefined
-  const answered = new Promise((resolve) => {
-    answer = resolve
-  })
-  let reach = () => undefined
-  const reached = new Promise((resolve) => {
-    reach = resolve
-  })
-  const calling = (url) => url.pathname === mcpRoutes.mcp.path
-  await page.route(calling, async (route) => {
-    const landed = await route.fetch()
-    reach()
-    await answered
-    await route.fulfill({ response: landed }).catch(() => undefined)
-  })
+  const calling = await holdReply(mcpRoutes.mcp, { afterServer: true })
   await composer.fill("Change the title to Hello from Aira")
   await composer.press("Enter")
-  await reached
+  await calling.received
   await side.getByRole("button", { name: "Stop" }).click()
-  answer()
+  await calling.release()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(log.getByText(airaStepWords.edit_deck.done, { exact: true })).toBeVisible()
   await expect(title).toHaveText("Hello from Aira")
   await expect(side.getByRole("button", { name: "Undo", exact: true })).toBeEnabled()
-  await page.unroute(calling)
   const stored = (await post(deckRoutes.open, { deck: fresh }, cookie)).json.register.elements["256.2"]
   await capture("stopped-after-landing")
   note(
