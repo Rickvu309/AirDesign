@@ -73,6 +73,7 @@ export function addLine(deck: Deck, change: WireLine, runId: string, base: numbe
   const turned = rot !== 0 || flipH || flipV ? { box: { ...(rot === 0 ? {} : { rot }), flipH, flipV } } : {}
   const rows: Omit<SetChange, "target"> = {
     ...(change.connection === undefined ? {} : { connection: change.connection }),
+    ...(change.border === undefined ? {} : { border: change.border }),
     ...turned,
   }
   if (Object.keys(rows).length === 0) return added
