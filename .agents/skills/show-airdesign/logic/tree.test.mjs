@@ -91,6 +91,18 @@ describe("the rules a tree must keep", () => {
     expect(rules(input)).toEqual(["shape"])
   })
 
+  it("shape: the answer always has branches, and is never chosen itself", () => {
+    const flat = result()
+    flat.answer = {
+      claim: "Before-after no longer calls a broken base new",
+      evidence: [{ ref: "a.md", source: "Observed", verdict: "passed" }],
+    }
+    expect(rules(flat)).toEqual(["shape"])
+    const picked = result()
+    picked.answer.chosen = true
+    expect(rules(picked)).toEqual(["vertical"])
+  })
+
   it("shape: a tree is at most three levels below the answer", () => {
     const input = result()
     const deep = (depth) =>

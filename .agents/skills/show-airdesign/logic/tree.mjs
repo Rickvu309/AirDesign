@@ -152,6 +152,9 @@ export function readTree(input, { resolves }) {
   }
   const hard = unplain(input.question, longest.question)
   if (hard) refuse("plain", "question", hard)
+  if (Array.isArray(input.answer.evidence) && !Array.isArray(input.answer.children))
+    refuse("shape", "answer", "the answer needs two to four branches beneath it")
+  if (input.answer.chosen === true) refuse("vertical", "answer", "only the options of a decide answer can be chosen")
   const answer = readNode(input.answer, { label: "answer", depth: 0 }, { kind: input.kind, resolves, refuse })
   return { refusals, tree: refusals.length === 0 ? { kind: input.kind, question: input.question, ...answer } : null }
 }
