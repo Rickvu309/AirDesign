@@ -257,6 +257,7 @@ export function applyPattern(deck: Deck, change: WireDiagram, area: Box, runId: 
       runId,
       scale: typeScale(measure.size, styles, step),
     }
+    if (!build.scale.readable) break
     try {
       draw(build, area, change.items ?? [], change.labels)
       return { ok: true, register: build.register }
