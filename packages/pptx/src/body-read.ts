@@ -2,6 +2,7 @@ import { anchors, mostColumns, verticals, type FieldName, type FieldValue } from
 import { child, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
+import { drawnShape } from "./paint-sheet.js"
 import { ownersOf, sheetOf } from "./trait-read.js"
 
 export type BodyField = FieldName<"body">
@@ -12,7 +13,7 @@ export type ShownBody = {
 
 export type BodyAt = { readonly part: string; readonly shape: string }
 
-type Level = { readonly frame: Held; readonly own: boolean }
+export type BodyLevel = { readonly frame: Held; readonly own: boolean }
 
 type Reader<V> = (frame: Held) => V | null | undefined
 
@@ -24,13 +25,15 @@ export const insetNames = { left: "lIns", top: "tIns", right: "rIns", bottom: "b
 
 export const fitTags = { none: "a:noAutofit", shrink: "a:normAutofit", grow: "a:spAutoFit" } as const
 
-function levelsOf(parts: ReadonlyMap<string, Uint8Array>, at: BodyAt): readonly Level[] | null {
-  const sheet = sheetOf(parts, at.part)
-  const item = sheet?.drawn.find((each) => each.shape === at.shape)
-  if (sheet === null || item === undefined) return null
-  const layout = sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
+const insetEntries = Object.entries(insetNames) as readonly (readonly [keyof Insets, string])[]
+const fitEntries = Object.entries(fitTags) as readonly (readonly [keyof typeof fitTags, string])[]
+
+export function bodyLevels(parts: ReadonlyMap<string, Uint8Array>, at: BodyAt): readonly BodyLevel[] | null {
+  const item = drawnShape(parts, at.part, at.shape)
+  if (item === null) return null
+  const layout = item.placeholder === null ? null : sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
   const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
-  const owners = ownersOf(item, { sheet, layout, master, theme: null })
+  const owners = ownersOf(item, { sheet: item, layout, master })
   if (child(owners[0], "p:txBody") === undefined) return null
   return owners.flatMap((owner, at) => {
     const frame = child(child(owner, "p:txBody"), "a:bodyPr")
@@ -38,7 +41,7 @@ function levelsOf(parts: ReadonlyMap<string, Uint8Array>, at: BodyAt): readonly 
   })
 }
 
-function first<V>(levels: readonly Level[], pick: Reader<V>, fallback: V) {
+function first<V>(levels: readonly BodyLevel[], pick: Reader<V>, fallback: V) {
   for (const level of levels) {
     const value = pick(level.frame)
     if (value !== undefined) return { value, own: level.own }
@@ -68,9 +71,8 @@ const wrap: Reader<boolean> = (frame) => {
 }
 
 const autofit: Reader<FieldValue<"body", "autofit">> = (frame) => {
-  const tags = Object.entries(fitTags)
-  const found = inside(frame).find((item) => tags.some(([, tag]) => tag === item.kind))
-  return found === undefined ? undefined : (tags.find(([, tag]) => tag === found.kind)?.[0] as keyof typeof fitTags)
+  const found = inside(frame).find((item) => fitEntries.some(([, tag]) => tag === item.kind))
+  return found === undefined ? undefined : fitEntries.find(([, tag]) => tag === found.kind)?.[0]
 }
 
 const columns: Reader<number> = (frame) => {
@@ -79,24 +81,34 @@ const columns: Reader<number> = (frame) => {
   return value === undefined || value < 1 || value > mostColumns ? null : value
 }
 
-function insetsOf(levels: readonly Level[]) {
-  const sides = Object.entries(insetNames).map(
-    ([side, name]) => [side, first(levels, inset(name), standardInsets[side as keyof Insets])] as const,
-  )
+const anchorReader = oneOf("anchor", anchors)
+const verticalReader = oneOf("vert", verticals)
+
+function insetsOf(levels: readonly BodyLevel[]) {
+  const sides = insetEntries.map(([side, name]) => [side, first(levels, inset(name), standardInsets[side])] as const)
   const known = sides.every(([, shown]) => shown.value !== null)
   const value = known ? (Object.fromEntries(sides.map(([side, shown]) => [side, shown.value])) as Insets) : null
   return { value, own: sides.some(([, shown]) => shown.own) }
 }
 
+export function bodyFieldFrom<F extends BodyField>(levels: readonly BodyLevel[], name: F): ShownBody[F] {
+  if (name === "insets") return insetsOf(levels) as ShownBody[F]
+  if (name === "anchor") return first(levels, anchorReader, "t") as ShownBody[F]
+  if (name === "wrap") return first(levels, wrap, true) as ShownBody[F]
+  if (name === "autofit") return first(levels, autofit, "none") as ShownBody[F]
+  if (name === "vertical") return first(levels, verticalReader, "horz") as ShownBody[F]
+  return first(levels, columns, 1) as ShownBody[F]
+}
+
 export function shownBody(parts: ReadonlyMap<string, Uint8Array>, at: BodyAt): ShownBody | null {
-  const levels = levelsOf(parts, at)
+  const levels = bodyLevels(parts, at)
   if (levels === null) return null
   return {
     insets: insetsOf(levels),
-    anchor: first(levels, oneOf("anchor", anchors), "t"),
+    anchor: first(levels, anchorReader, "t"),
     wrap: first(levels, wrap, true),
     autofit: first(levels, autofit, "none"),
-    vertical: first(levels, oneOf("vert", verticals), "horz"),
+    vertical: first(levels, verticalReader, "horz"),
     columns: first(levels, columns, 1),
   }
 }

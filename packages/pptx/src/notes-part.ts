@@ -90,16 +90,30 @@ function relationshipsXml(rows: readonly (readonly [string, string])[]): string 
   return `${declaration}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${items}</Relationships>`
 }
 
+const linkedByRels = new WeakMap<Uint8Array, Map<string, string | null>>()
+
 export function linkedPart(parts: Parts, source: string, type: string): string | null {
   const rels = parts.get(relsOf(source))
   if (rels === undefined) return null
+  let known = linkedByRels.get(rels)
+  const key = `${source}\0${type}`
+  if (known !== undefined && known.has(key)) return known.get(key) ?? null
+  let found: string | null = null
   for (const element of requireMarkup(rels).elements) {
     if (element.kind !== "Relationship" || value(element, "TargetMode") === "External") continue
     if (!(value(element, "Type") ?? "").endsWith(`/${type}`)) continue
     const target = value(element, "Target")
-    if (target !== null && target !== "") return partOf(source, target)
+    if (target !== null && target !== "") {
+      found = partOf(source, target)
+      break
+    }
   }
-  return null
+  if (known === undefined) {
+    known = new Map<string, string | null>()
+    linkedByRels.set(rels, known)
+  }
+  known.set(key, found)
+  return found
 }
 
 export function freePart(parts: Parts, prefix: string): string {

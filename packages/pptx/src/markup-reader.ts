@@ -75,7 +75,7 @@ function isUtf8(bytes: Uint8Array): boolean {
   const length = bytes.length
   let at = 0
   while (at < length) {
-    const first = bytes[at] ?? 0
+    const first = bytes[at]!
     if (first < 0x80) {
       at += 1
       continue
@@ -92,10 +92,11 @@ function isUtf8(bytes: Uint8Array): boolean {
       if (first === 0xf0) low = 0x90
       if (first === 0xf4) high = 0x8f
     } else return false
-    const second = bytes[at + 1] ?? 0
+    if (at + width > length) return false
+    const second = bytes[at + 1]!
     if (second < low || second > high) return false
     for (let extra = 2; extra < width; extra += 1) {
-      const next = bytes[at + extra] ?? 0
+      const next = bytes[at + extra]!
       if (next < 0x80 || next > 0xbf) return false
     }
     at += width
@@ -144,8 +145,9 @@ function foreignInName(byte: number): boolean {
 }
 
 function tagNameEnd(bytes: Uint8Array, from: number): number {
-  for (let at = from; at < bytes.length; at += 1) {
-    const byte = bytes[at] ?? 0
+  const length = bytes.length
+  for (let at = from; at < length; at += 1) {
+    const byte = bytes[at]!
     if (
       byte === greaterThan ||
       byte === slash ||
@@ -162,8 +164,9 @@ function tagNameEnd(bytes: Uint8Array, from: number): number {
 }
 
 function attributeNameEnd(bytes: Uint8Array, from: number): number {
-  for (let at = from; at < bytes.length; at += 1) {
-    const byte = bytes[at] ?? 0
+  const length = bytes.length
+  for (let at = from; at < length; at += 1) {
+    const byte = bytes[at]!
     if (byte === equals || byte === greaterThan || byte === space || byte === tab || byte === lineFeed) return at
     if (foreignInName(byte)) return -1
   }
@@ -171,15 +174,17 @@ function attributeNameEnd(bytes: Uint8Array, from: number): number {
 }
 
 function blankAfter(bytes: Uint8Array, from: number): number {
+  const length = bytes.length
   let at = from
-  while (at < bytes.length && (bytes[at] ?? 0) < 33) at += 1
+  while (at < length && bytes[at]! < 33) at += 1
   return at
 }
 
 function spaceAfter(bytes: Uint8Array, from: number): number {
+  const length = bytes.length
   let at = from
-  while (at < bytes.length) {
-    const byte = bytes[at] ?? 0
+  while (at < length) {
+    const byte = bytes[at]!
     if (byte !== space && byte !== tab && byte !== lineFeed && byte !== carriageReturn) break
     at += 1
   }
@@ -187,14 +192,21 @@ function spaceAfter(bytes: Uint8Array, from: number): number {
 }
 
 function text(bytes: Uint8Array, start: number, end: number): string {
+  const span = end - start
+  if (span === 0) return ""
+  if (span > 64) {
+    for (let at = start; at < end; at += 1) {
+      if (bytes[at]! >= 0x80) return decodeUtf8(bytes.subarray(start, end))
+    }
+    return decodeLatin1(bytes.subarray(start, end))
+  }
   let value = ""
   for (let at = start; at < end; at += 1) {
-    const byte = bytes[at] ?? 0
+    const byte = bytes[at]!
     if (byte >= 0x80) return decodeUtf8(bytes.subarray(start, end))
-    if (end - start > 64) continue
     value += String.fromCharCode(byte)
   }
-  return end - start > 64 ? decodeLatin1(bytes.subarray(start, end)) : value
+  return value
 }
 
 function sameText(bytes: Uint8Array, start: number, end: number, known: string): boolean {
@@ -208,7 +220,7 @@ function sameText(bytes: Uint8Array, start: number, end: number, known: string):
 function name(bytes: Uint8Array, start: number, end: number): string {
   let key = end - start
   for (let at = start; at < end; at += 1) {
-    const byte = bytes[at] ?? 0
+    const byte = bytes[at]!
     if (byte >= 0x80) return decodeUtf8(bytes.subarray(start, end))
     key = (Math.imul(key, 31) + byte) | 0
   }
@@ -349,9 +361,12 @@ export function readMarkup(bytes: Uint8Array, full: boolean): MarkupDocument {
       const open = stack.pop()
       if (open !== undefined) {
         open.end = after
-        const found = closeStart(bytes, after, open.kind)
-        if (found < 0) wellFormed = false
-        else open.closeStart = found
+        if (after - at === open.kind.length + 3 && bytes[after - 1] === greaterThan) open.closeStart = at
+        else {
+          const found = closeStart(bytes, after, open.kind)
+          if (found < 0) wellFormed = false
+          else open.closeStart = found
+        }
       }
     } else if (next < 0 || next === greaterThan) return refused()
     else if (!nameStartAt(bytes, at + 1)) after = at + 2

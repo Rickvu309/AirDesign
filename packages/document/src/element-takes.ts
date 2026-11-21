@@ -49,7 +49,12 @@ const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.valu
 
 const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept", "group"]
 
+const takesCache = new Map<string, readonly FieldKey[]>()
+
 export function takes(facts: ElementFacts): readonly FieldKey[] {
+  const key = `${facts.kind}|${facts.text ? 1 : 0}|${facts.grouped ? 1 : 0}|${facts.frame ?? ""}|${facts.framed ?? ""}|${facts.backdrop ? 1 : 0}`
+  const cached = takesCache.get(key)
+  if (cached !== undefined) return cached
   const fields = kindTraits[facts.kind].flatMap((trait): readonly FieldKey[] => {
     if (trait === "layout")
       return facts.frame !== undefined
@@ -60,11 +65,13 @@ export function takes(facts: ElementFacts): readonly FieldKey[] {
     if (trait === "box" && facts.framed !== undefined) return facts.framed === "free" ? placed : sized
     return fieldKeys(trait)
   })
-  return fields.filter(
+  const kept = fields.filter(
     (field) =>
       !(unwritten[facts.kind]?.includes(field) ?? false) &&
       (facts.text || !(textFields.includes(field) || field.startsWith("body."))),
   )
+  takesCache.set(key, kept)
+  return kept
 }
 
 export function opacityFields(facts: ElementFacts): readonly FieldKey[] {

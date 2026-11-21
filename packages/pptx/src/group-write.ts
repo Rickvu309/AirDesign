@@ -108,11 +108,21 @@ function gathered(bytes: Uint8Array, units: readonly MarkupElement[], wrap: (ins
   return spliceBytes(bytes, edits)
 }
 
-function backdropXml(id: number, box: ShapeBox): string {
+export function backdropXml(id: number, box: ShapeBox): string {
   const transform = `<a:xfrm><a:off x="${box.x}" y="${box.y}"/><a:ext cx="${box.cx}" cy="${box.cy}"/></a:xfrm>`
   return (
     `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Backdrop ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>` +
     `<p:spPr>${transform}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`
+  )
+}
+
+export function groupOpenXml(id: number, box: ShapeBox, framed: boolean): string {
+  const offset = `x="${box.x}" y="${box.y}"`
+  const extent = `cx="${box.cx}" cy="${box.cy}"`
+  const name = framed ? "Frame" : "Group"
+  return (
+    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="${name} ${id}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
+    `<p:grpSpPr><a:xfrm><a:off ${offset}/><a:ext ${extent}/><a:chOff ${offset}/><a:chExt ${extent}/></a:xfrm></p:grpSpPr>`
   )
 }
 
@@ -124,13 +134,8 @@ export function wrapGroup(
   backdrop?: number,
 ): Uint8Array {
   const units = unitsOf(bytes, members)
-  const offset = `x="${box.x}" y="${box.y}"`
-  const extent = `cx="${box.cx}" cy="${box.cy}"`
-  const name = backdrop === undefined ? "Group" : "Frame"
   const open = encodeUtf8(
-    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="${name} ${id}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
-      `<p:grpSpPr><a:xfrm><a:off ${offset}/><a:ext ${extent}/><a:chOff ${offset}/><a:chExt ${extent}/></a:xfrm></p:grpSpPr>` +
-      (backdrop === undefined ? "" : backdropXml(backdrop, box)),
+    groupOpenXml(id, box, backdrop !== undefined) + (backdrop === undefined ? "" : backdropXml(backdrop, box)),
   )
   const close = encodeUtf8("</p:grpSp>")
   return gathered(bytes, units, (inside) => joined([open, inside, close]))

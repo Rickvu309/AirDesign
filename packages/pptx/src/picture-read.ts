@@ -134,8 +134,26 @@ export function shownCrop(parts: Parts, at: ElementAt): CropRect | null {
   return l == null || t == null || r == null || b == null ? null : { l, t, r, b }
 }
 
+const nonVisualByElements = new WeakMap<readonly MarkupElement[], ReadonlyMap<string, MarkupElement>>()
+const indexedNonVisualThreshold = 64
+
 export function nonVisualOf(elements: readonly MarkupElement[], shape: string): MarkupElement | undefined {
-  return elements.find((each) => each.kind === "p:cNvPr" && each.id === shape)
+  if (elements.length < indexedNonVisualThreshold) {
+    for (const each of elements) {
+      if (each.kind === "p:cNvPr" && each.id === shape) return each
+    }
+    return undefined
+  }
+  let known = nonVisualByElements.get(elements)
+  if (known === undefined) {
+    const found = new Map<string, MarkupElement>()
+    for (const each of elements) {
+      if (each.kind === "p:cNvPr" && each.id !== null && !found.has(each.id)) found.set(each.id, each)
+    }
+    nonVisualByElements.set(elements, found)
+    known = found
+  }
+  return known.get(shape)
 }
 
 function text(element: MarkupElement, name: string): string {

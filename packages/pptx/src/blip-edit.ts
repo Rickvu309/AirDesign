@@ -2,7 +2,8 @@ import { decodedXmlText, spliceBytes, type MarkupElement } from "./element-span.
 import { partOf, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
-import { declaresRelationships, relationshipsAttribute, svgExtension } from "./picture-write.js"
+import { declaresRelationshipsBytes, relationshipsAttribute, svgExtension } from "./picture-write.js"
+import { nonVisualOf } from "./picture-read.js"
 import { shapeById } from "./shape-tree.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
@@ -29,7 +30,7 @@ function attributeOf(element: MarkupElement, name: string): string | null {
 export function pictureFill(bytes: Uint8Array, shape: string): PictureFill | null {
   const { elements } = requireMarkup(bytes)
   const children = markupChildren(elements)
-  if (!elements.some((each) => each.kind === "p:cNvPr" && each.id === shape)) return null
+  if (nonVisualOf(elements, shape) === undefined) return null
   const element = shapeById(elements, shape)
   const props = children[element.index]?.find((each) => each.kind === "p:spPr")
   const fill =
@@ -109,7 +110,7 @@ export function withEmbed(found: PictureFill, blip: MarkupElement, embed: string
 }
 
 export function partDeclares(bytes: Uint8Array): boolean {
-  return declaresRelationships(decodeUtf8(bytes))
+  return declaresRelationshipsBytes(bytes)
 }
 
 export function blipWritten(

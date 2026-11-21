@@ -1,5 +1,5 @@
 import type { MarkupElement } from "./element-span.js"
-import { markupDocument } from "./element-span.js"
+import { markupDocument, withPersistentMarkup } from "./element-span.js"
 import { isShapeTag, shapeTags, type ShapeKind } from "./shape-tree.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 import type { PaintBox, PaintElement } from "./paint-reader.js"
@@ -54,6 +54,21 @@ export type Sheet = {
   readonly part: string
   readonly showsMaster: boolean
   readonly drawn: readonly Drawn[]
+  readonly byShape: ReadonlyMap<string, Drawn>
+}
+
+export type DrawnShape = {
+  readonly bytes: Uint8Array
+  readonly elements: readonly MarkupElement[]
+  readonly children: MarkupChildren
+  readonly element: MarkupElement
+  readonly placeholder: Placeholder | null
+}
+
+export type ShapeChain = {
+  readonly sheet: Pick<Sheet, "children">
+  readonly layout: Sheet | null
+  readonly master: Sheet | null
 }
 
 type Visit = {
@@ -306,23 +321,123 @@ const treeOf = (children: MarkupChildren, root: MarkupElement | undefined): Mark
   return body === undefined ? undefined : childOf(children, body, "p:spTree")
 }
 
-export const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
-  const { elements } = markupDocument(bytes)
-  const root = elements[0]
-  const children = markupChildren(elements)
+const sheetsByElements = new WeakMap<readonly MarkupElement[], Map<string, Sheet>>()
+const directShapeMaxBytes = 8192
+
+function shapeMap(drawn: readonly Drawn[]): ReadonlyMap<string, Drawn> {
+  const byShape = new Map<string, Drawn>()
+  for (const item of drawn) {
+    if (!byShape.has(item.shape)) byShape.set(item.shape, item)
+  }
+  return byShape
+}
+
+function validDrawnAncestors(
+  elements: readonly MarkupElement[],
+  children: MarkupChildren,
+  shape: MarkupElement,
+): boolean {
+  let parentIndex = shape.parent
+  while (parentIndex >= 0) {
+    const parent = elements[parentIndex]
+    if (parent === undefined) return false
+    if (parent.kind === "p:spTree") {
+      const cSld = elements[parent.parent]
+      return cSld !== undefined && cSld.kind === "p:cSld" && cSld.parent === 0
+    }
+    if (parent.kind === "p:grpSp") {
+      const nonVisual = childOf(children, parent, "p:nvGrpSpPr")
+      const identity = nonVisual === undefined ? undefined : childOf(children, nonVisual, "p:cNvPr")
+      if (identity === undefined || identity.id === null) return false
+      parentIndex = parent.parent
+      continue
+    }
+    if (parent.kind === "mc:Choice") {
+      const alt = elements[parent.parent]
+      if (alt === undefined || alt.kind !== "mc:AlternateContent" || childOf(children, alt, "mc:Choice") !== parent) {
+        return false
+      }
+      parentIndex = alt.parent
+      continue
+    }
+    return false
+  }
+  return false
+}
+
+export const drawnShape = (parts: ReadonlyMap<string, Uint8Array>, part: string, shape: string): DrawnShape | null => {
+  const bytes = parts.get(part)
+  if (bytes === undefined) return null
+  if (bytes.length < directShapeMaxBytes) {
+    const { elements } = markupDocument(bytes)
+    let first: MarkupElement | undefined
+    for (let index = 0; index < elements.length; index += 1) {
+      const each = elements[index]!
+      if (each.kind === "p:cNvPr" && each.id === shape) {
+        first = each
+        break
+      }
+    }
+    if (first === undefined) return null
+    const nonVisual = first.parent >= 0 ? elements[first.parent] : undefined
+    const owner = nonVisual !== undefined && nonVisual.parent >= 0 ? elements[nonVisual.parent] : undefined
+    if (
+      owner !== undefined &&
+      isShapeTag(owner.kind) &&
+      nonVisual !== undefined &&
+      nonVisual.kind === shapeTags[owner.kind].nonVisual
+    ) {
+      const children = markupChildren(elements)
+      if (
+        childOf(children, owner, nonVisual.kind) === nonVisual &&
+        childOf(children, nonVisual, "p:cNvPr") === first &&
+        validDrawnAncestors(elements, children, owner)
+      ) {
+        return { bytes, elements, children, element: owner, placeholder: placeholderOf(children, nonVisual) }
+      }
+    }
+  }
+  const sheet = sheetFrom(part, bytes)
+  const item = sheet.byShape.get(shape)
+  if (item === undefined) return null
   return {
+    bytes: sheet.bytes,
+    elements: sheet.elements,
+    children: sheet.children,
+    element: item.element,
+    placeholder: item.placeholder,
+  }
+}
+
+export const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
+  const { elements } = withPersistentMarkup(() => markupDocument(bytes))
+  let byPart = sheetsByElements.get(elements)
+  const kept = byPart?.get(part)
+  if (kept !== undefined) return kept
+  const children = withPersistentMarkup(() => markupChildren(elements))
+  const root = elements[0]
+  const drawn = drawnIn(treeOf(children, root), children)
+  const sheet: Sheet = {
     bytes,
     elements,
     children,
     part,
     showsMaster: root === undefined || !isFalse(attr(root, "showMasterSp")),
-    drawn: drawnIn(treeOf(children, root), children),
+    drawn,
+    byShape: shapeMap(drawn),
   }
+  if (byPart === undefined) {
+    byPart = new Map<string, Sheet>()
+    sheetsByElements.set(elements, byPart)
+  }
+  byPart.set(part, sheet)
+  return sheet
 }
 
 export const drawingFrom = (part: string, bytes: Uint8Array, elements: readonly MarkupElement[]): Sheet => {
   const children = markupChildren(elements)
   const root = elements[0]
   const tree = root === undefined ? undefined : childOf(children, root, "p:spTree")
-  return { bytes, elements, children, part, showsMaster: false, drawn: drawnIn(tree, children) }
+  const drawn = drawnIn(tree, children)
+  return { bytes, elements, children, part, showsMaster: false, drawn, byShape: shapeMap(drawn) }
 }

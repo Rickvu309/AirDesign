@@ -103,8 +103,35 @@ function sameIds(left: readonly SlideId[], right: readonly SlideId[]): boolean {
   return true
 }
 
+type SlidesCache = {
+  readonly file: readonly SlideId[]
+  readonly sectionStarts: readonly SlideId[] | undefined
+  readonly spots: readonly FoldedSlide[]
+  readonly gone: ReadonlySet<string>
+}
+
+const foldedSlides = new WeakMap<readonly SlideCommand[], WeakMap<object, SlidesCache>>()
+const noSlideIndex = {}
+
+function slidesOf(state: SlideState): SlidesCache {
+  let byIndex = foldedSlides.get(state.order)
+  if (byIndex === undefined) {
+    byIndex = new WeakMap<object, SlidesCache>()
+    foldedSlides.set(state.order, byIndex)
+  }
+  const key = state.index ?? noSlideIndex
+  const kept = byIndex.get(key)
+  if (kept !== undefined && kept.file === state.file && kept.sectionStarts === state.sectionStarts) return kept
+  const spots = foldGrid(state).spots
+  const gone = new Set<string>()
+  for (const spot of spots) if (!spot.present) gone.add(spot.id)
+  const built: SlidesCache = { file: state.file, sectionStarts: state.sectionStarts, spots, gone }
+  byIndex.set(key, built)
+  return built
+}
+
 export function foldSlides(state: SlideState): readonly FoldedSlide[] {
-  return foldGrid(state).spots
+  return slidesOf(state).spots
 }
 
 export function presentSlides(state: SlideState): readonly FoldedSlide[] {
@@ -127,8 +154,7 @@ export function nextSlideId(ids: readonly string[]): SlideId {
 }
 
 export function slideGone(state: SlideState, id: string): boolean {
-  const spot = foldSlides(state).find((item) => item.id === id)
-  return spot !== undefined && !spot.present
+  return slidesOf(state).gone.has(id)
 }
 
 function known(state: SlideState, id: SlideId): boolean {

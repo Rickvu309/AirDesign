@@ -27,10 +27,12 @@ import {
 import { deckLayouts } from "./deck-layouts.js"
 import { slideAddresses, slidePart } from "./package-address.js"
 import { withFileSections, writeSlideGroups } from "./slide-group-write.js"
-import { addPicture, linkedSource } from "./picture-write.js"
+import { addPicture, linkedSource, pictureShapeXml } from "./picture-write.js"
 import { openedIcon } from "./trait-xml-image.js"
 import { addChart } from "./chart-write.js"
 import { pasteMarkup } from "./shape-paste.js"
+import { drawnShapeXml, textShapeXml } from "./shape-write.js"
+import { SlideEditor } from "./slide-editor.js"
 import { writeTrait } from "./trait-xml.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
@@ -220,24 +222,103 @@ function pastedLayers(
   return writeTrait(placed, at, "box", { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } })
 }
 
-function elementsShown(
-  parts: ReadonlyMap<string, Uint8Array>,
-  slide: string,
+function elementAddedOn(editor: SlideEditor, part: string, shape: string, shown: Shown, media: MediaBytes): void {
+  const { element } = shown
+  const box = element?.box ?? null
+  if (element === undefined || box === null) throw new Error("box")
+  const id = Number(shape)
+  if (
+    shown.source !== undefined ||
+    shown.pasted !== undefined ||
+    element.kind === "chart" ||
+    element.kind === "table"
+  ) {
+    editor.editWhole(part, (current) => elementAdded(current, part, shape, shown, media))
+    return
+  }
+  if (shown.media !== undefined) {
+    const source = { media: shown.media, bytes: media(shown.media.sha256) }
+    editor.appendWithParts(
+      part,
+      id,
+      (parts, declared) => pictureShapeXml(parts, part, declared, { id, box, source }, shape),
+      (current) => elementAdded(current, part, shape, shown, media),
+    )
+    return
+  }
+  const icon = element.kind === "shape" && element.value === null ? openingIcon(element) : null
+  if (icon !== null) {
+    editor.appendWithParts(
+      part,
+      id,
+      (parts, declared) =>
+        pictureShapeXml(
+          parts,
+          part,
+          declared,
+          { id, box, source: openedIcon(parts, part, icon, element.opening?.fills) },
+          shape,
+        ),
+      (current) => elementAdded(current, part, shape, shown, media),
+    )
+    return
+  }
+  if (shown.geometry !== undefined) {
+    const xml = drawnShapeXml(shape, shown.geometry, box, element.value === "")
+    const hasFlips = element.opening?.box?.flipH !== undefined || element.opening?.box?.flipV !== undefined
+    editor.appendShape(part, id, xml, hasFlips ? (scoped) => openedFlips(scoped, part, shape, element) : undefined)
+    return
+  }
+  const align = element.opening?.body === undefined ? "center" : "left"
+  const xml = textShapeXml(shape, "", box, align)
+  const hasBody = element.opening?.body !== undefined
+  const numbered = hasSlideNumber(element.value)
+  editor.appendShape(
+    part,
+    id,
+    xml,
+    hasBody || numbered
+      ? (scoped) => {
+          const withBody = hasBody ? openedBody(scoped, part, shape, element) : scoped
+          return numbered
+            ? applyRoute(withBody, {
+                name: "text",
+                part,
+                shape,
+                value: [{ from: 0, runs: [{ from: -1, text: "1", slideNumber: plainSlideNumber }] }],
+              })
+            : withBody
+        }
+      : undefined,
+  )
+}
+
+function elementsAdded(
+  editor: SlideEditor,
+  part: string,
   shapes: ReadonlyMap<string, Shown> | undefined,
   media: MediaBytes,
-  now: boolean,
   replayed: ReadonlySet<string>,
-): ReadonlyMap<string, Uint8Array> {
-  const part = slidePart(parts, slide)
-  if (part === null) throw new Error("slide")
-  let next = parts
+): void {
   for (const [shape, shown] of shapes ?? []) {
     const passing = !shown.start && !shown.now && replayed.has(shape)
-    if (now && shown.source !== undefined) continue
-    if (!passing && (shown.start === shown.now || shown.now !== now)) continue
-    next = now ? elementAdded(next, part, shape, shown, media) : applyRoute(next, { name: "remove", part, shape })
+    if (shown.source !== undefined) continue
+    if (!passing && (shown.start === shown.now || !shown.now)) continue
+    elementAddedOn(editor, part, shape, shown, media)
   }
-  return next
+}
+
+function elementsRemoved(
+  editor: SlideEditor,
+  part: string,
+  shapes: ReadonlyMap<string, Shown> | undefined,
+  replayed: ReadonlySet<string>,
+): void {
+  for (const [shape, shown] of shapes ?? []) {
+    const passing = !shown.start && !shown.now && replayed.has(shape)
+    if (!passing && (shown.start === shown.now || shown.now)) continue
+    editor.removeShape(part, shape)
+  }
 }
 
 function replayedShapes(state: GroupedState, from: SlideId, upTo: number): ReadonlySet<string> {
@@ -265,8 +346,13 @@ function slideBuilt(
   shapes: ReadonlyMap<string, Shown> | undefined,
   slided: Slided,
 ): ReadonlyMap<string, Uint8Array> {
-  const added = elementsShown(parts, minted, shapes, slided.media, true, replayedShapes(slided.state, from, upTo))
-  return groupsReplayed(added, minted, from, slided.state, upTo, slided.pasted)
+  const part = slidePart(parts, minted)
+  if (part === null) throw new Error("slide")
+  const editor = new SlideEditor(parts)
+  const replayed = replayedShapes(slided.state, from, upTo)
+  elementsAdded(editor, part, shapes, slided.media, replayed)
+  groupsReplayed(editor, minted, part, from, slided.state, upTo, slided.pasted)
+  return editor.flush()
 }
 
 function slideShown(
@@ -277,8 +363,14 @@ function slideShown(
   shapes: ReadonlyMap<string, Shown> | undefined,
   slided: Slided,
 ): ReadonlyMap<string, Uint8Array> {
-  const grouped = slideBuilt(parts, minted, from, upTo, shapes, slided)
-  return elementsShown(grouped, minted, shapes, slided.media, false, replayedShapes(slided.state, from, upTo))
+  const part = slidePart(parts, minted)
+  if (part === null) throw new Error("slide")
+  const editor = new SlideEditor(parts)
+  const replayed = replayedShapes(slided.state, from, upTo)
+  elementsAdded(editor, part, shapes, slided.media, replayed)
+  groupsReplayed(editor, minted, part, from, slided.state, upTo, slided.pasted)
+  elementsRemoved(editor, part, shapes, replayed)
+  return editor.flush()
 }
 
 function pendingUpTo(state: SlideState, slide: SlideId, upTo: number): ReadonlyMap<string, Shown> | undefined {

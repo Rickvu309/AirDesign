@@ -44,6 +44,7 @@ type Parent = ElementId | null | "unknown"
 
 type Tree = {
   readonly parent: ReadonlyMap<ElementId, Parent>
+  readonly children: ReadonlyMap<ElementId, readonly ElementId[]>
   readonly dissolved: ReadonlySet<ElementId>
   readonly former: ReadonlyMap<ElementId, readonly ElementId[]>
   readonly made: ReadonlyMap<ElementId, ElementGroup>
@@ -203,12 +204,22 @@ function foldTree(state: Indexed): Tree {
       flow.set(above, replacedIn(flow.get(above) ?? [], back, [command.node]))
     dissolved.delete(command.node)
   }
-  return { parent, dissolved, former, made, joined, flow, vacated, rejoined }
+  const children = new Map<ElementId, ElementId[]>()
+  for (const [child, above] of parent) {
+    if (typeof above !== "string" || above === "unknown") continue
+    const list = children.get(above)
+    if (list === undefined) children.set(above, [child])
+    else list.push(child)
+  }
+  return { parent, children, dissolved, former, made, joined, flow, vacated, rejoined }
 }
 
 function treeOf(state: Indexed): Tree {
-  const byIndex = trees.get(state.order) ?? new WeakMap<object, Tree>()
-  trees.set(state.order, byIndex)
+  let byIndex = trees.get(state.order)
+  if (byIndex === undefined) {
+    byIndex = new WeakMap<object, Tree>()
+    trees.set(state.order, byIndex)
+  }
   const key = state.index ?? noIndex
   const kept = byIndex.get(key)
   if (kept !== undefined) return kept
@@ -229,7 +240,7 @@ export function groupedNow(state: Indexed, node: ElementId): boolean {
 }
 
 export function groupChildren(state: Indexed, node: ElementId): readonly ElementId[] {
-  return childrenIn(treeOf(state).parent, node)
+  return treeOf(state).children.get(node) ?? []
 }
 
 export function formerChildren(state: Indexed, node: ElementId): readonly ElementId[] {

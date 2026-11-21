@@ -1,6 +1,14 @@
-import { shownLink, writtenLink } from "./trait-xml-link.js"
+import { shownRunLink, writtenLink, type RelationshipsRead } from "./trait-xml-link.js"
 import { writtenRunImage } from "./text-fill-write.js"
-import { namesAlpha, readTextValue, writeTextValue, type Alpha, type Color, type TextValue } from "@airdesign/document"
+import {
+  namesAlpha,
+  opaque,
+  readTextValue,
+  writeTextValue,
+  type Alpha,
+  type Color,
+  type TextValue,
+} from "@airdesign/document"
 import { agreed, alphaKept, fadedBytes, fragmentAlpha, type Faded } from "./alpha-codec.js"
 import { fillIn } from "./color-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
@@ -8,6 +16,7 @@ import { child, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { presentationPart } from "./package-address.js"
 import { encodeUtf8 } from "./package-bytes.js"
+import { drawnShape, type Sheet } from "./paint-sheet.js"
 import { requireMarkup } from "./part-markup.js"
 import { withRunFill } from "./run-color.js"
 import { shapeById } from "./shape-tree.js"
@@ -74,58 +83,89 @@ function joined(chunks: readonly Uint8Array[]): Uint8Array {
 }
 
 function runSpots(parts: Parts, at: ElementAt): { readonly bytes: Uint8Array; readonly spots: readonly Spot[] } | null {
-  const sheet = sheetOf(parts, at.part)
-  const item = sheet?.drawn.find((each) => each.shape === at.shape)
-  if (sheet === null || item === undefined) return null
-  const layout = sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
-  const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
-  const owners = ownersOf(item, { sheet, layout, master, theme: null })
-  const bytesOf = (held: Held) =>
-    (held.source === "layout" ? layout : held.source === "master" ? master : sheet)?.bytes ?? sheet.bytes
-  const body = child(owners[0], "p:txBody")
-  if (body === undefined) return { bytes: sheet.bytes, spots: [] }
-  const presentation = parts.get(presentationPart)
-  const defaults = presentation === undefined ? undefined : child(rootOf(presentation), "p:defaultTextStyle")
-  const styles =
-    master === null
-      ? undefined
-      : child(child(rootOf(master.bytes), "p:txStyles"), textStyleKind(item.placeholder?.type ?? null))
-  const reference = child(child(owners[0], "p:style"), "a:fontRef")
-  const color = reference === undefined ? undefined : inside(reference).find((each) => colorKinds.includes(each.kind))
-  const referenced =
-    color === undefined
-      ? null
-      : joined([
-          encodeUtf8("<a:solidFill>"),
-          sheet.bytes.subarray(color.start, color.end),
-          encodeUtf8("</a:solidFill>"),
-        ])
-  const spots: Spot[] = []
-  for (const element of inside(body).filter((each) => each.kind === "a:p")) {
+  const item = drawnShape(parts, at.part, at.shape)
+  if (item === null) return null
+  const ownHeld: Held = { element: item.element, children: item.children }
+  const body = child(ownHeld, "p:txBody")
+  if (body === undefined) return { bytes: item.bytes, spots: [] }
+  const paragraphs = inside(body).filter((each) => each.kind === "a:p")
+  const active: { readonly paragraph: Held; readonly runs: readonly MarkupElement[] }[] = []
+  for (const element of paragraphs) {
     const paragraph = { ...body, element }
-    const properties = child(paragraph, "a:pPr")
-    const level = levelOf(properties)
-    const own = child(properties, "a:defRPr")
-    const near: Layer[] = [
-      ...(own === undefined ? [] : [{ held: own, bytes: sheet.bytes }]),
-      ...owners.flatMap((owner) =>
-        listLevels(child(child(owner, "p:txBody"), "a:lstStyle"), level).map((held) => ({
-          held,
-          bytes: bytesOf(owner),
-        })),
-      ),
-    ]
-    const far: Layer[] = [
-      ...(master === null ? [] : listLevels(styles, level).map((held) => ({ held, bytes: master.bytes }))),
-      ...(presentation === undefined ? [] : listLevels(defaults, level).map((held) => ({ held, bytes: presentation }))),
-    ]
-    const inherited = firstFill(near) ?? referenced ?? firstFill(far) ?? textColor
-    for (const run of inside(paragraph).filter((each) => runKinds.includes(each.kind) && !each.selfClosing)) {
+    const runs = inside(paragraph).filter((each) => runKinds.includes(each.kind) && !each.selfClosing)
+    if (runs.length > 0) active.push({ paragraph, runs })
+  }
+  if (active.length === 0) return { bytes: item.bytes, spots: [] }
+  let loaded = false
+  let layout: Sheet | null = null
+  let master: Sheet | null = null
+  let owners: readonly Held[] = [ownHeld]
+  let presentation: Uint8Array | undefined
+  let defaults: Held | undefined
+  let styles: Held | undefined
+  let referenced: Uint8Array | null = null
+  const loadChain = () => {
+    if (loaded) return
+    loaded = true
+    layout = sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
+    master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
+    owners = ownersOf(item, { sheet: item, layout, master })
+    presentation = parts.get(presentationPart)
+    defaults = presentation === undefined ? undefined : child(rootOf(presentation), "p:defaultTextStyle")
+    styles =
+      master === null || master.elements[0] === undefined
+        ? undefined
+        : child(
+            child({ element: master.elements[0], children: master.children }, "p:txStyles"),
+            textStyleKind(item.placeholder?.type ?? null),
+          )
+    const reference = child(child(owners[0], "p:style"), "a:fontRef")
+    const color = reference === undefined ? undefined : inside(reference).find((each) => colorKinds.includes(each.kind))
+    referenced =
+      color === undefined
+        ? null
+        : joined([
+            encodeUtf8("<a:solidFill>"),
+            item.bytes.subarray(color.start, color.end),
+            encodeUtf8("</a:solidFill>"),
+          ])
+  }
+  const bytesOf = (held: Held) =>
+    (held.source === "layout" ? layout : held.source === "master" ? master : item)?.bytes ?? item.bytes
+  const spots: Spot[] = []
+  for (const { paragraph, runs } of active) {
+    let inherited: Uint8Array | null | undefined
+    const resolveInherited = (): Uint8Array | null => {
+      if (inherited !== undefined) return inherited
+      loadChain()
+      const properties = child(paragraph, "a:pPr")
+      const level = levelOf(properties)
+      const own = child(properties, "a:defRPr")
+      const near: Layer[] = [
+        ...(own === undefined ? [] : [{ held: own, bytes: item.bytes }]),
+        ...owners.flatMap((owner) =>
+          listLevels(child(child(owner, "p:txBody"), "a:lstStyle"), level).map((held) => ({
+            held,
+            bytes: bytesOf(owner),
+          })),
+        ),
+      ]
+      const far: Layer[] = [
+        ...(master === null ? [] : listLevels(styles, level).map((held) => ({ held, bytes: master!.bytes }))),
+        ...(presentation === undefined
+          ? []
+          : listLevels(defaults, level).map((held) => ({ held, bytes: presentation! }))),
+      ]
+      inherited = firstFill(near) ?? referenced ?? firstFill(far) ?? textColor
+      return inherited
+    }
+    for (const run of runs) {
       const held = child({ ...paragraph, element: run }, "a:rPr")
-      spots.push({ run, properties: held?.element, own: fillIn(held)?.element, inherited })
+      const own = fillIn(held)?.element
+      spots.push({ run, properties: held?.element, own, inherited: own === undefined ? resolveInherited() : null })
     }
   }
-  return { bytes: sheet.bytes, spots }
+  return { bytes: item.bytes, spots }
 }
 
 export function textAlpha(parts: Parts, at: ElementAt): Faded {
@@ -134,7 +174,8 @@ export function textAlpha(parts: Parts, at: ElementAt): Faded {
   return agreed(
     found.spots.map((spot) => {
       const fill = spot.own === undefined ? spot.inherited : found.bytes.subarray(spot.own.start, spot.own.end)
-      return fill === null ? null : fragmentAlpha(fill)
+      if (fill === null) return null
+      return fill === textColor ? (opaque as Alpha) : fragmentAlpha(fill)
     }),
   )
 }
@@ -182,12 +223,15 @@ const textValue: PartCodec<string> = {
     if (bytes === undefined) return null
     try {
       const { elements } = requireMarkup(bytes)
-      const value = shapeTextValue(markupChildren(elements), bytes, shapeById(elements, at.shape))
+      const children = markupChildren(elements)
+      const shape = shapeById(elements, at.shape)
+      const value = shapeTextValue(children, bytes, shape)
+      const relationships: RelationshipsRead = new Map()
       return storedText(
         value.map((paragraph, i) => ({
           ...paragraph,
           runs: paragraph.runs.map((run, j) => {
-            const link = shownLink(parts, { ...at, paragraph: i, run: j })
+            const link = shownRunLink(parts, at.part, bytes, children, shape, i, j, relationships)
             return link === null || link.kind === "none" ? run : { ...run, link }
           }),
         })),

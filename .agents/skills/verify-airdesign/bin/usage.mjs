@@ -14,7 +14,7 @@ export const usage = [
   "verify-airdesign states                     list the named states and their design screens",
   "verify-airdesign before-after <callouts.json> [--base ref] [--head ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
   "                                            the same states on the base and on this change; annotated image and table",
-  "verify-airdesign bench [--cases add-text,type-41,switch-41,drag,open-41,open-50,import-<deck>|all] [--runs 7] [--base ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
+  "verify-airdesign bench [--cases add-text,add-text-170,type-41,switch-41,drag,open-41,open-50,import-<deck>|all] [--runs 7] [--base ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
   "verify-airdesign agent-bench run --model-key-env NAME [--tasks 'glob,...'] [--trials 3] [--model m] [--effort e] [--run run] [--keep] [--out dir]",
   "verify-airdesign agent-bench compare <run-dir> [<run-dir or published name>]  paired by task; b defaults to the newest published run",
   "verify-airdesign agent-bench publish <run-dir>  puts summary.json on the bench release",

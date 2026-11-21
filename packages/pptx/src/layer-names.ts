@@ -69,8 +69,9 @@ export function textNamedLayers(register: Register): ReadonlySet<ElementId> {
 
 export function textNamedNow(register: Register): ReadonlySet<ElementId> {
   const named = new Set<ElementId>()
+  const nodes = new Set(register.nodes)
   for (const node of textNamedLayers(register)) {
-    const body = register.nodes.includes(node) ? register.elements[node] : undefined
+    const body = nodes.has(node) ? register.elements[node] : undefined
     const renamed = body !== undefined && landedPatch(body, "text").identity?.name !== undefined
     if (!renamed) named.add(node)
   }

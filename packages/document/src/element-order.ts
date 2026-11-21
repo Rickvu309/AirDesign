@@ -80,16 +80,14 @@ type Indexed = SlideState & { readonly index?: DeckIndex }
 
 const highestShape = 4294967295
 
-function removedNow(state: SlideState, node: ElementId): boolean {
-  let gone = false
-  for (const command of state.order) {
-    if (command.slide === "element-remove" && command.node === node) gone = true
-    if (command.slide === "element-restore" && command.node === node) gone = false
-  }
-  return gone
+type ElementLife = {
+  readonly removed: ReadonlySet<ElementId>
+  readonly ownGone: ReadonlySet<ElementId>
 }
 
 const backdrops = new WeakMap<DeckIndex, ReadonlyMap<ElementId, ElementId>>()
+const lives = new WeakMap<readonly unknown[], WeakMap<object, ElementLife>>()
+const noLifeIndex = {}
 
 function filedBackdrops(index: DeckIndex): ReadonlyMap<ElementId, ElementId> {
   const kept = backdrops.get(index)
@@ -101,29 +99,78 @@ function filedBackdrops(index: DeckIndex): ReadonlyMap<ElementId, ElementId> {
   return found
 }
 
+function foldLife(state: Indexed): ElementLife {
+  const removed = new Set<ElementId>()
+  const ownGone = new Set<ElementId>()
+  const frameOf = new Map<ElementId, ElementId>()
+  const childrenOfFrame = new Map<ElementId, Set<ElementId>>()
+  const attach = (child: ElementId, frame: ElementId) => {
+    const previous = frameOf.get(child)
+    if (previous !== undefined) childrenOfFrame.get(previous)?.delete(child)
+    frameOf.set(child, frame)
+    let group = childrenOfFrame.get(frame)
+    if (group === undefined) {
+      group = new Set<ElementId>()
+      childrenOfFrame.set(frame, group)
+    }
+    group.add(child)
+  }
+  if (state.index !== undefined) {
+    for (const [backdrop, frame] of filedBackdrops(state.index)) attach(backdrop, frame)
+  }
+  for (const command of state.order) {
+    if (command.slide === "element-group" && command.backdrop !== undefined)
+      attach(command.backdrop.node, command.element.node)
+    if (command.slide === "element-clone" && command.layers !== undefined)
+      for (const layer of command.layers) attach(layer.element.node, command.element.node)
+    if (command.slide === "element-add" && command.pasted !== undefined)
+      for (const child of pastedNodes(command.pasted)) attach(child, command.element.node)
+    if (!("node" in command)) continue
+    const target = command.node
+    if (command.slide === "element-remove") removed.add(target)
+    if (command.slide === "element-restore") removed.delete(target)
+    if (command.slide === "element-remove" || command.slide === "element-ungroup") {
+      ownGone.add(target)
+      const children = childrenOfFrame.get(target)
+      if (children !== undefined) for (const child of children) ownGone.add(child)
+    }
+    if (command.slide === "element-restore" || command.slide === "element-regroup") {
+      ownGone.delete(target)
+      const children = childrenOfFrame.get(target)
+      if (children !== undefined) for (const child of children) ownGone.delete(child)
+    }
+  }
+  return { removed, ownGone }
+}
+
+function lifeOf(state: Indexed): ElementLife {
+  let byIndex = lives.get(state.order)
+  if (byIndex === undefined) {
+    byIndex = new WeakMap<object, ElementLife>()
+    lives.set(state.order, byIndex)
+  }
+  const key = state.index ?? noLifeIndex
+  const kept = byIndex.get(key)
+  if (kept !== undefined) return kept
+  const built = foldLife(state)
+  byIndex.set(key, built)
+  return built
+}
+
+function removedNow(state: SlideState, node: ElementId): boolean {
+  return lifeOf(state).removed.has(node)
+}
+
 function inRemovedGroup(state: Indexed, node: ElementId): boolean {
+  const { removed } = lifeOf(state)
+  if (removed.size === 0) return false
   for (let above = groupParent(state, node); typeof above === "string"; above = groupParent(state, above))
-    if (removedNow(state, above)) return true
+    if (removed.has(above)) return true
   return false
 }
 
 export function elementGone(state: SlideState, node: ElementId): boolean {
-  return ownGone(state, node) || inRemovedGroup(state, node)
-}
-
-function ownGone(state: SlideState, node: ElementId): boolean {
-  let gone = false
-  let frame: ElementId | null = state.index === undefined ? null : (filedBackdrops(state.index).get(node) ?? null)
-  for (const command of state.order) {
-    if (command.slide === "element-group" && command.backdrop?.node === node) frame = command.element.node
-    if (command.slide === "element-clone" && command.layers?.some((layer) => layer.element.node === node))
-      frame = command.element.node
-    if (command.slide === "element-add" && pastedNodes(command.pasted).includes(node)) frame = command.element.node
-    const named = "node" in command && (command.node === node || command.node === frame)
-    if ((command.slide === "element-remove" || command.slide === "element-ungroup") && named) gone = true
-    if ((command.slide === "element-restore" || command.slide === "element-regroup") && named) gone = false
-  }
-  return gone
+  return lifeOf(state).ownGone.has(node) || inRemovedGroup(state, node)
 }
 
 function shapeNumber(node: ElementId): number {

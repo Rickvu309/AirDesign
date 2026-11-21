@@ -15,6 +15,7 @@ import { fillValueOf } from "./fill-read.js"
 import { child, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
+import { drawnShape } from "./paint-sheet.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf } from "./trait-read.js"
 
 export type BorderField = Exclude<FieldName<"border">, "alpha">
@@ -30,21 +31,25 @@ type Level = { readonly line: Held; readonly placed: Color | null; readonly own:
 type Arrow = FieldValue<"border", "head">
 
 function levelsOf(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt): readonly Level[] | null {
-  const sheet = sheetOf(parts, at.part)
-  const item = sheet?.drawn.find((each) => each.shape === at.shape)
-  if (sheet === null || item === undefined) return null
-  const layout = sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
+  const item = drawnShape(parts, at.part, at.shape)
+  if (item === null) return null
+  const layout = item.placeholder === null ? null : sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
   const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
-  const theme = master === null ? null : sheetOf(parts, linkedPart(parts, master.part, "theme"))
-  const owners = ownersOf(item, { sheet, layout, master, theme })
+  const owners = ownersOf(item, { sheet: item, layout, master })
   const levels: Level[] = owners.flatMap((owner, at) => {
     const line = child(propertiesOf(owner), "a:ln")
     return line === undefined ? [] : [{ line, placed: null, own: at === 0 }]
   })
   const reference = owners.map((owner) => child(child(owner, "p:style"), "a:lnRef")).find((each) => each !== undefined)
   const index = reference === undefined ? 0 : (whole(reference.element, "idx") ?? 0)
-  const entry = index < 1 ? undefined : stylesOf(theme).lines[index - 1]
-  if (entry !== undefined) levels.push({ line: entry, placed: colorIn(reference, null), own: false })
+  if (index >= 1) {
+    const resolvedLayout = layout ?? sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
+    const resolvedMaster =
+      master ?? (resolvedLayout === null ? null : sheetOf(parts, linkedPart(parts, resolvedLayout.part, "slideMaster")))
+    const theme = resolvedMaster === null ? null : sheetOf(parts, linkedPart(parts, resolvedMaster.part, "theme"))
+    const entry = stylesOf(theme).lines[index - 1]
+    if (entry !== undefined) levels.push({ line: entry, placed: colorIn(reference, null), own: false })
+  }
   return levels
 }
 
@@ -102,6 +107,26 @@ function arrowOf(levels: readonly Level[], tag: "a:headEnd" | "a:tailEnd") {
   return { value, own: levels[0]?.own === true && child(levels[0].line, tag) !== undefined }
 }
 
+const capReader = attribute("cap", borderCaps)
+const compoundReader = attribute("cmpd", borderCompounds)
+
+export function shownBorderField<F extends BorderField>(
+  parts: ReadonlyMap<string, Uint8Array>,
+  at: BorderAt,
+  name: F,
+): ShownBorder[F] | null {
+  const levels = levelsOf(parts, at)
+  if (levels === null) return null
+  if (name === "width") return first(levels, width, null) as ShownBorder[F]
+  if (name === "fill") return first(levels, fill, { none: true }) as ShownBorder[F]
+  if (name === "dash") return first(levels, ({ line }) => readDash(line), "solid") as ShownBorder[F]
+  if (name === "cap") return first(levels, capReader, "flat") as ShownBorder[F]
+  if (name === "compound") return first(levels, compoundReader, "sng") as ShownBorder[F]
+  if (name === "join") return first(levels, join, "round") as ShownBorder[F]
+  if (name === "head") return arrowOf(levels, "a:headEnd") as ShownBorder[F]
+  return arrowOf(levels, "a:tailEnd") as ShownBorder[F]
+}
+
 export function shownBorder(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt): ShownBorder | null {
   const levels = levelsOf(parts, at)
   if (levels === null) return null
@@ -109,8 +134,8 @@ export function shownBorder(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt
     width: first(levels, width, null),
     fill: first(levels, fill, { none: true }),
     dash: first(levels, ({ line }) => readDash(line), "solid"),
-    cap: first(levels, attribute("cap", borderCaps), "flat"),
-    compound: first(levels, attribute("cmpd", borderCompounds), "sng"),
+    cap: first(levels, capReader, "flat"),
+    compound: first(levels, compoundReader, "sng"),
     join: first(levels, join, "round"),
     head: arrowOf(levels, "a:headEnd"),
     tail: arrowOf(levels, "a:tailEnd"),

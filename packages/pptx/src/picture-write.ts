@@ -158,9 +158,13 @@ export function mediaTyped(parts: Map<string, Uint8Array>, extension: string, co
   parts.set(contentTypesPart, insertAt(types, rootClose(document, "Types", "types"), encodeUtf8(row)))
 }
 
-export function declaresRelationships(slideXml: string): boolean {
-  const root = markupDocument(encodeUtf8(slideXml)).elements.find((element) => element.parent < 0)
+export function declaresRelationshipsBytes(bytes: Uint8Array): boolean {
+  const root = markupDocument(bytes).elements.find((element) => element.parent < 0)
   return root !== undefined && value(root, "xmlns:r") === relationshipsNamespace
+}
+
+export function declaresRelationships(slideXml: string): boolean {
+  return declaresRelationshipsBytes(encodeUtf8(slideXml))
 }
 
 export const svgExtension = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
@@ -236,19 +240,31 @@ function addedPlacement(bytes: Uint8Array | undefined, box: ShapeBox): string {
   return placementXml("fill", image, { width: box.cx, height: box.cy })
 }
 
+export function pictureShapeXml(
+  parts: Map<string, Uint8Array>,
+  slide: string,
+  declared: boolean,
+  picture: AddedPicture,
+  id: string,
+): string {
+  const linked = linkedSource(parts, slide, picture.source)
+  const blip = blipMarkup(linked, declared)
+  const bytes =
+    "media" in picture.source ? parts.get(mediaName(parts, picture.source.media, picture.source.bytes)) : undefined
+  const placement = addedPlacement(bytes, picture.box)
+  return pictureMarkup(id, blip, picture.box, placement)
+}
+
 export function addPicture(
   parts: ReadonlyMap<string, Uint8Array>,
   slide: string,
   picture: AddedPicture,
 ): ReadonlyMap<string, Uint8Array> {
   const next = new Map(parts)
-  const slideXml = decodeUtf8(partBytes(next, slide))
-  const linked = linkedSource(next, slide, picture.source)
-  const blip = blipMarkup(linked, declaresRelationships(slideXml))
-  const bytes =
-    "media" in picture.source ? next.get(mediaName(next, picture.source.media, picture.source.bytes)) : undefined
-  const placement = addedPlacement(bytes, picture.box)
-  const written = appendShape(slideXml, (id) => pictureMarkup(id, blip, picture.box, placement), picture.id)
+  const slideBytes = partBytes(next, slide)
+  const slideXml = decodeUtf8(slideBytes)
+  const declared = declaresRelationshipsBytes(slideBytes)
+  const written = appendShape(slideXml, (id) => pictureShapeXml(next, slide, declared, picture, id), picture.id)
   next.set(slide, encodeUtf8(written.xml))
   return next
 }

@@ -1,10 +1,11 @@
-import { insertChild } from "./child-order.js"
+import { insertChildAt } from "./child-order.js"
 import { fillKinds } from "./color-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import type { Written } from "./fill-markup.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
+import { markupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
 export type FillHost = "sp" | "pic" | "bg"
@@ -39,12 +40,14 @@ export function writtenFill(parts: Parts, at: ElementAt, written: Written | null
   if (at.shape === "slide") return writtenBackground(parts, at, written)
   const bytes = partBytes(parts, at.part)
   const { elements } = requireMarkup(bytes)
+  const children = markupChildren(elements)
   const shape = shapeById(elements, at.shape)
   if (shape.kind !== "p:sp" && shape.kind !== "p:pic") throw new Error("fill-shape")
-  const properties = elements.filter((item) => item.parent === shape.index && item.kind === "p:spPr")
+  const properties = (children[shape.index] ?? []).filter((item) => item.kind === "p:spPr")
   const spPr = properties[0]
   if (properties.length !== 1 || spPr === undefined) throw new Error("fill-properties")
-  const fills = elements.filter((item) => item.parent === spPr.index && fillKinds.has(item.kind))
+  const spChildren = children[spPr.index] ?? []
+  const fills = spChildren.filter((item) => fillKinds.has(item.kind))
   const fill = fills[0]
   if (fills.length > 1) throw new Error("fill-choice")
   let edit: ByteEdit | null = null
@@ -52,28 +55,23 @@ export function writtenFill(parts: Parts, at: ElementAt, written: Written | null
   else if (written !== null && spPr.selfClosing)
     edit = { start: spPr.openEnd - 2, end: spPr.openEnd, next: encodeUtf8(`>${written.xml}</p:spPr>`) }
   else if (written !== null) {
-    const parent = decodeUtf8(bytes.subarray(spPr.start, spPr.end))
-    edit = {
-      start: spPr.start,
-      end: spPr.end,
-      next: encodeUtf8(insertChild("p:spPr", written.tag, written.xml, parent)),
-    }
+    const spot = insertChildAt("p:spPr", written.tag, spPr, spChildren)
+    edit = { start: spot, end: spot, next: encodeUtf8(written.xml) }
   }
   return changedPart(parts, at.part, bytes, edit)
 }
 
 export function ownFill(bytes: Uint8Array, at: ElementAt): MarkupElement | undefined {
   const { elements } = requireMarkup(bytes)
+  const children = markupChildren(elements)
   const inside = (parent: MarkupElement | undefined, kind: string) =>
-    parent === undefined ? undefined : elements.find((each) => each.parent === parent.index && each.kind === kind)
+    parent === undefined ? undefined : children[parent.index]?.find((each) => each.kind === kind)
   let host: MarkupElement | undefined
   if (at.shape === "slide") {
     const root = elements.find((element) => element.parent < 0)
     host = inside(inside(inside(root, "p:cSld"), "p:bg"), "p:bgPr")
   } else host = inside(shapeById(elements, at.shape), "p:spPr")
-  return host === undefined
-    ? undefined
-    : elements.find((each) => each.parent === host.index && fillKinds.has(each.kind))
+  return host === undefined ? undefined : children[host.index]?.find((each) => fillKinds.has(each.kind))
 }
 
 export function pictureAsShape(parts: Parts, at: ElementAt): Parts {

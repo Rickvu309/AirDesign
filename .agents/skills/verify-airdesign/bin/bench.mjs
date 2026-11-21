@@ -3,6 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import addText from "../bench/add-text.mjs"
+import addText170 from "../bench/add-text-170.mjs"
 import drag from "../bench/drag.mjs"
 import dragBusy from "../bench/drag-busy.mjs"
 import { defaultDecks, importCase, judgedDecks } from "../bench/import.mjs"
@@ -44,6 +45,7 @@ function read(args) {
 export function casesFor(given, repo) {
   const known = [
     addText,
+    addText170,
     typeDeck,
     switchDeck,
     drag,

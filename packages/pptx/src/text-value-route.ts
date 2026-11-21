@@ -6,7 +6,14 @@ import {
   type TextRun,
   type TextValue,
 } from "@airdesign/document"
-import { spliceBytes, contentSpans, decodedXmlText, type ByteEdit, type MarkupElement } from "./element-span.js"
+import {
+  spliceBytes,
+  contentSpans,
+  decodedXmlText,
+  isTransientMarkup,
+  type ByteEdit,
+  type MarkupElement,
+} from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { noTemplate, paragraphBytes, type TemplateIndent } from "./paragraph-format.js"
 import { shownLetters } from "./letter-case.js"
@@ -50,9 +57,29 @@ function joinBytes(chunks: readonly Uint8Array[]): Uint8Array {
   return merged
 }
 
+const childrenByElements = new WeakMap<readonly MarkupElement[], MarkupChildren>()
+let lastChildrenElements: readonly MarkupElement[] | undefined
+let lastChildren: MarkupChildren | undefined
+let prevChildrenElements: readonly MarkupElement[] | undefined
+let prevChildren: MarkupChildren | undefined
+
 export function markupChildren(elements: readonly MarkupElement[]): MarkupChildren {
-  const children: MarkupElement[][] = elements.map(() => [])
-  for (const element of elements) children[element.parent]?.push(element)
+  if (lastChildrenElements === elements) return lastChildren!
+  if (prevChildrenElements === elements) return prevChildren!
+  const known = childrenByElements.get(elements)
+  if (known !== undefined) return known
+  const count = elements.length
+  const children: MarkupElement[][] = []
+  for (let index = 0; index < count; index += 1) children.push([])
+  for (let index = 0; index < count; index += 1) {
+    const element = elements[index]!
+    if (element.parent >= 0) children[element.parent]!.push(element)
+  }
+  if (!isTransientMarkup()) childrenByElements.set(elements, children)
+  prevChildrenElements = lastChildrenElements
+  prevChildren = lastChildren
+  lastChildrenElements = elements
+  lastChildren = children
   return children
 }
 
@@ -108,6 +135,12 @@ export function isSlideNumber(element: MarkupElement): boolean {
   return (
     element.kind === "a:fld" && element.attributes.some((item) => item.name === "type" && item.value === "slidenum")
   )
+}
+
+export function shapeHasText(children: MarkupChildren, shape: MarkupElement): boolean {
+  const body = childrenOf(children, shape).find((part) => part.kind === "p:txBody" || part.kind === "a:txBody")
+  if (body === undefined || body.selfClosing) return false
+  return childrenOf(children, body).some((part) => part.kind === "a:p")
 }
 
 export function shapeTextValue(children: MarkupChildren, bytes: Uint8Array, shape: MarkupElement): TextValue {
@@ -196,9 +229,9 @@ function writtenRun(
   wanted: TextRun,
   again: boolean,
   numbers: SlideNumbers | undefined,
-  id: string,
+  fieldId: () => string,
 ): Uint8Array {
-  if (wanted.slideNumber !== undefined) return numberedRun(bytes, source, wanted, numbers, id)
+  if (wanted.slideNumber !== undefined) return numberedRun(bytes, source, wanted, numbers, fieldId())
   if (wanted.from === -1) {
     refuseBreak(wanted.text)
     return joinBytes([
@@ -258,7 +291,7 @@ function writtenParagraph(
   return joinBytes([
     openTag(bytes, source.element, paragraphOpen),
     propertiesBytes(bytes, source, wanted, template),
-    ...wanted.runs.map((run, at) => writtenRun(bytes, source, run, again, numbers, fieldId(at))),
+    ...wanted.runs.map((run, at) => writtenRun(bytes, source, run, again, numbers, () => fieldId(at))),
     copied(bytes, source.end),
     paragraphClose,
   ])

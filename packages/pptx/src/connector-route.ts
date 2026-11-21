@@ -5,6 +5,7 @@ import { decodeUtf8, sameBytes } from "./package-bytes.js"
 import { requireMarkup } from "./part-markup.js"
 import { readSlides } from "./read-shapes.js"
 import { isShapeTag, shapeTags } from "./shape-tree.js"
+import { SlideEditor } from "./slide-editor.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 import { endOf, type End } from "./trait-xml-connection.js"
 import { presetMarkup, writtenMarkup } from "./trait-xml-geometry.js"
@@ -151,7 +152,7 @@ function routedSlide(file: Parts, parts: Parts, slide: string, part: string, byt
   const before = file.get(part)
   const now = drawnOn(parts, slide, part, bytes)
   const was = before === undefined ? new Map<string, Drawn>() : drawnOn(file, slide, part, before)
-  let next = parts
+  let editor: SlideEditor | null = null
   for (const [id, connector] of now) {
     if (connector.kind !== "p:cxnSp" || connector.place === null || connector.preset === null) continue
     if ("none" in connector.start && "none" in connector.end) continue
@@ -163,19 +164,23 @@ function routedSlide(file: Parts, parts: Parts, slide: string, part: string, byt
     const { place, preset, adjust } = route
     const { box } = place
     const at = { slide, part, shape: id }
-    next = writeTrait(next, at, "box", {
-      x: { set: box.x },
-      y: { set: box.y },
-      w: { set: box.cx },
-      h: { set: box.cy },
-      rot: { set: place.rot },
-      flipH: { set: place.flipH },
-      flipV: { set: place.flipV },
+    editor ??= new SlideEditor(parts)
+    editor.editShape(part, id, (scoped) => {
+      let next = writeTrait(scoped, at, "box", {
+        x: { set: box.x },
+        y: { set: box.y },
+        w: { set: box.cx },
+        h: { set: box.cy },
+        rot: { set: place.rot },
+        flipH: { set: place.flipH },
+        flipV: { set: place.flipV },
+      })
+      if (preset !== connector.preset || bent(connector.adjust, adjust))
+        next = writtenMarkup(next, at, presetMarkup(preset, Object.keys(adjust), adjust))
+      return next
     })
-    if (preset !== connector.preset || bent(connector.adjust, adjust))
-      next = writtenMarkup(next, at, presetMarkup(preset, Object.keys(adjust), adjust))
   }
-  return next
+  return editor === null ? parts : editor.flush()
 }
 
 function binds(bytes: Uint8Array): boolean {
@@ -202,6 +207,7 @@ export function routedParts(file: Parts, parts: Parts): Parts {
     const bytes = parts.get(part)
     const before = file.get(part)
     if (bytes === undefined || bytes === before || (before !== undefined && sameBytes(bytes, before))) continue
+    if (!binds(bytes)) continue
     next = routedSlide(file, next, slide, part, bytes)
   }
   return next
