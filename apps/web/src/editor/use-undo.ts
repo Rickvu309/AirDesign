@@ -53,6 +53,7 @@ export function useUndoList() {
 
   const records = useRef(recordsInFlight((entry) => show(recorded(undoList.current, entry), null)))
   const [lane] = useState(storeLane)
+  const [slideLane] = useState(storeLane)
 
   function turnAfter<Result>(work: () => Promise<Result>): Promise<Result> {
     typed.current = null
@@ -69,6 +70,7 @@ export function useUndoList() {
     undoList,
     turning,
     lane,
+    slideLane,
     undoShown,
     show,
     told: undoShown.told,

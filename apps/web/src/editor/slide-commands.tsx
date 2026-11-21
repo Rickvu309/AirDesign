@@ -23,7 +23,7 @@ export type CommandedDeck = {
   readonly id: string
   readonly matching?: readonly ElementId[]
   readonly shown: DeckPaint
-  readonly undo: Pick<UndoList, "records" | "lane">
+  readonly undo: Pick<UndoList, "records" | "lane" | "slideLane">
   readonly settle: (outcome: CommitOutcome) => void
 }
 
@@ -31,8 +31,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
   const { id, settle } = deck
   const hold = () => deck.undo.records.current.hold()
   const { store, shownParts, canvases, slideCount, groups, current, setCurrent, layouts, showEdited } = deck.shown
-
-  let pending = Promise.resolve()
+  const { slideLane } = deck.undo
 
   async function changeSlide(
     change: SlideChange,
@@ -44,11 +43,12 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
     const anchor = placement === "new" ? sequence[index] : null
     const slot = hold()
     const inserted = deck.undo.lane.stored()
-    await queue(async () => {
+    await slideLane(async (stored) => {
       await inserted
       const opened = await connect(memoryRemote()).openDeck(id)
       if (!opened.ok) return
       const painted = async (currentIndex: number, undoable: Undoable | null) => {
+        stored()
         if (undoable !== null) {
           slot.record({ name: slideNames[change], undoable })
         }
@@ -76,15 +76,6 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
         ),
       )
     }).finally(slot.release)
-  }
-
-  function queue(work: () => Promise<void>) {
-    const run = pending.then(work)
-    pending = run.then(
-      () => undefined,
-      () => undefined,
-    )
-    return run
   }
 
   const register = deck.shown.shownRegister.current
@@ -115,7 +106,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
       if (first === undefined) return
       const anchor = gridAnchor(sequence, held, at, placement)
       const slot = hold()
-      void queue(async () => {
+      void slideLane(async (stored) => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
         const base = {
@@ -132,6 +123,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
         if (edit === null) return
         settle(
           await commitSlideMove(id, file, opened.register, edit, async (currentIndex, undoable) => {
+            stored()
             if (undoable !== null) slot.record({ name: slideNames.move, undoable })
             await showEdited(currentIndex)
           }),
@@ -143,7 +135,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
       const [first, ...rest] = ids
       if (first === undefined) return
       const slot = hold()
-      void queue(async () => {
+      void slideLane(async (stored) => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
         const result = await commitSlideSet(
@@ -153,6 +145,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
           change,
           [first, ...rest],
           async (currentIndex, copies, undoable) => {
+            stored()
             slot.record({ name: slideNames[change], undoable })
             paint(copies)
             await showEdited(currentIndex)
