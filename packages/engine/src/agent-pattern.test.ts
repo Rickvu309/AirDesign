@@ -110,21 +110,38 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     expect("−$148.2M".length * number * 0.52).toBeLessThan(inner)
   })
 
-  it("takes each text's size, font and line height from the deck's text styles by name", () => {
+  const styledDeck = (textStyles: readonly object[]): Deck => {
     const deck = blank()
     const index = deck.register.index
     if (index === undefined) throw new Error("no index")
-    const textStyles = [
+    const slides = index.slides.map((slide) => ({ ...slide, textStyles }))
+    return { ...deck, register: { ...deck.register, index: { ...index, slides } as DeckIndex } }
+  }
+
+  it("keeps its own scale in a deck whose only Body 2 is a master's second body level", () => {
+    const imported = styledDeck([
+      { id: "b1", name: "Body 1", fields: { size: 2800 } },
+      { id: "b2", name: "Body 2", fields: { size: 2400 } },
+    ])
+    const result = edit(imported, {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      items: [
+        { title: "One", points: ["A point"] },
+        { title: "Two", points: ["A point"] },
+      ],
+    })
+    if (!result.ok) throw new Error(result.refusal)
+    expect(JSON.stringify(result.deck.register).replaceAll("\\", "")).toContain('"text":"A point","size":1200')
+  })
+
+  it("takes each text's size, font and line height from the deck's text styles by name", () => {
+    const styled = styledDeck([
       { id: "h", name: "Heading", fields: { size: 2000, font: "+mj-lt", lineHeight: 110_000 } },
       { id: "b", name: "Body 2", fields: { size: 1400, font: "+mn-lt", lineHeight: 125_000, spaceAfter: 600 } },
-    ]
-    const styled: Deck = {
-      ...deck,
-      register: {
-        ...deck.register,
-        index: { ...index, slides: index.slides.map((slide) => ({ ...slide, textStyles })) },
-      },
-    }
+    ])
     const result = edit(styled, {
       op: "diagram",
       slide: "258",
