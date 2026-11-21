@@ -154,6 +154,11 @@ describe("read and list tools", () => {
         { deck: "kept", name: "Kept", trash: false },
         { deck: "bin", name: "", trash: true },
       ],
+      templates: [
+        { id: "neutral", name: "Neutral" },
+        { id: "midnight", name: "Midnight" },
+        { id: "editorial", name: "Editorial" },
+      ],
     })
     expect(result.content[0]?.text).toBe("Decks this account owns.")
     expect(callTool("airdesign_list_decks", {}, sessionFor(opened())).ok).toBe(true)

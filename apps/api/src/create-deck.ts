@@ -5,7 +5,7 @@ import { createRequire } from "node:module"
 import { readDeckId, readDeckIndex, type DeckId } from "@airdesign/catalog"
 import type { Deck } from "@airdesign/engine"
 import type { CreatedDeck } from "@airdesign/mcp"
-import { blankTemplate, startIndexFile, templateFile } from "@airdesign/templates"
+import { startIndexFile, templateFile } from "@airdesign/templates"
 
 import { indexSaved } from "./index-saved.js"
 import type { OriginalStore } from "./original-store.js"
@@ -67,13 +67,13 @@ export async function createDeck(
   db: Sql,
   store: OriginalStore | undefined,
   email: string,
-  asked: { readonly once: string | undefined; readonly name: string },
+  asked: { readonly once: string | undefined; readonly name: string; readonly template: string },
 ): Promise<Created> {
   const id = readDeckId(
     asked.once === undefined ? randomUUID().replaceAll("-", "") : digest(`${email}\n${asked.once}`).slice(0, 32),
   )
   if (store === undefined || !id.ok) return unstored
-  const start = await startDeck(blankTemplate)
+  const start = await startDeck(asked.template)
   const key = `originals/${digest(email)}/${id.deck}/start`
   await store.write(key, start.bytes)
   const opened = await openSaved(db, { deck: id.deck }, email)

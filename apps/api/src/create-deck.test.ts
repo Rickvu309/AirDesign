@@ -61,6 +61,7 @@ type Answer = {
   readonly templateStyles?: readonly unknown[]
   readonly elements?: readonly { readonly node: string; readonly value?: string; readonly role?: string }[]
   readonly decks?: readonly { readonly deck: string; readonly name: string; readonly trash: boolean }[]
+  readonly templates?: readonly { readonly id: string; readonly name: string }[]
 }
 
 async function mcp(cookie: string, name: string, args: unknown, once?: string, at = base): Promise<Answer> {
@@ -149,6 +150,30 @@ describe("an agent creates a deck", () => {
     expect([...store.objects.values()].some((bytes) => Buffer.from(bytes).equals(Buffer.from(startDeck)))).toBe(true)
   })
 
+  it("starts a deck from the template the agent names, and lists the templates it can name", async () => {
+    const cookie = await signInByCode(base, mails, "create-template@example.com")
+    const listed = await mcp(cookie, "airdesign_list_decks", {})
+    expect(listed.templates).toEqual([
+      { id: "neutral", name: "Neutral" },
+      { id: "midnight", name: "Midnight" },
+      { id: "editorial", name: "Editorial" },
+    ])
+    const made = await mcp(cookie, "airdesign_create_deck", { name: "Night", template: "midnight" })
+    expect(made).toMatchObject({ ok: true, name: "Night", index: "ready", slides: [{ id: "256" }] })
+    const midnight = new Uint8Array(
+      readFileSync(new URL("../../../packages/templates/files/midnight-start.pptx", import.meta.url)),
+    )
+    const original = await ask(base, "POST", "/decks/original", { deck: made.deck }, cookie)
+    expect(original.json).toMatchObject({
+      ok: true,
+      bytes: midnight.length,
+      sha256: createHash("sha256").update(midnight).digest("hex"),
+    })
+    const plain = await mcp(cookie, "airdesign_create_deck", { template: "neutral" })
+    const blank = await ask(base, "POST", "/decks/original", { deck: plain.deck }, cookie)
+    expect(blank.json).toMatchObject({ sha256: createHash("sha256").update(startDeck).digest("hex") })
+  })
+
   it("names a deck Blank deck when the agent gives no name", async () => {
     const cookie = await signInByCode(base, mails, "create-unnamed@example.com")
     expect((await mcp(cookie, "airdesign_create_deck", {})).name).toBe("Blank deck")
@@ -187,7 +212,13 @@ describe("an agent creates a deck", () => {
 
   it("refuses a call it cannot read and makes no deck", async () => {
     const cookie = await signInByCode(base, mails, "create-refused@example.com")
-    for (const args of [{ name: "" }, { name: "n".repeat(500) }, { name: 7 }, { template: "neutral" }]) {
+    for (const args of [
+      { name: "" },
+      { name: "n".repeat(500) },
+      { name: 7 },
+      { template: "unknown" },
+      { template: 7 },
+    ]) {
       expect((await mcp(cookie, "airdesign_create_deck", args)).refusal, JSON.stringify(args)).toBe("field")
     }
     expect((await mcp(cookie, "airdesign_list_decks", {})).decks ?? []).toEqual([])

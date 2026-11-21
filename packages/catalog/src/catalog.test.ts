@@ -61,7 +61,7 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.name === "airdesign_list_decks")).toEqual({
       name: "airdesign_list_decks",
       op: "list_decks",
-      description: "List owned decks with id, name, and trash when in Trash.",
+      description: "List owned decks with id, name, and trash when in Trash, and the templates a deck can start from.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,
