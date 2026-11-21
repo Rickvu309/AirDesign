@@ -3,13 +3,13 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { PNG } from "pngjs"
 import { openBrowser } from "./browser.mjs"
 import { proofFolder, publish } from "./publish.mjs"
 import { renderBlocks, themeCss } from "../look/annotate.mjs"
 import { calloutCrops, captureSide, composeBlock, driverFor, fullNames, saveFull } from "../look/before-after.mjs"
 import { readCallouts } from "../look/callouts.mjs"
 import { fragment } from "../look/fragment.mjs"
+import { savePng } from "../look/images.mjs"
 import { find } from "../look/states.mjs"
 
 const self = fileURLToPath(new URL("./verify-airdesign.mjs", import.meta.url))
@@ -131,7 +131,7 @@ function saveCrops(out, state, crops) {
   const byNumber = new Map()
   for (const { number, note, side, png } of crops) {
     const file = path.join(folder, `${state}-${String(number)}-${side}.png`)
-    writeFileSync(file, PNG.sync.write(png))
+    savePng(file, png)
     byNumber.set(number, { ...byNumber.get(number), number, note, [side]: file })
   }
   return [...byNumber.values()]
