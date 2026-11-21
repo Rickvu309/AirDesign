@@ -110,6 +110,57 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     expect("−$148.2M".length * number * 0.52).toBeLessThan(inner)
   })
 
+  it("stretches cards to the height of their box, every card the same height", () => {
+    const result = edit(blank(), {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      items: [long(0), { title: "Short" }],
+    })
+    if (!result.ok) throw new Error(result.refusal)
+    const row = rowOf(result.deck, "horizontal")
+    expect(row?.box.cy).toBe(380 * point)
+    expect(new Set(row?.children.map((child) => child.box.cy))).toEqual(new Set([380 * point]))
+  })
+
+  it("fills the box with a 2x2 of near-square quadrants and names its axes", () => {
+    const result = edit(blank(), {
+      op: "diagram",
+      slide: "258",
+      pattern: "matrix",
+      box: big,
+      labels: ["Impact", "Effort"],
+      items: Array.from({ length: 4 }, (_, at) => ({ title: `Quadrant ${String(at + 1)}` })),
+    })
+    if (!result.ok) throw new Error(result.refusal)
+    const layouts = readDeckPage(result.deck, { runId: "run" }).elements.flatMap((element) => {
+      const layout = readLayout(result.deck.register, element.node as never)
+      return layout === null ? [] : [layout]
+    })
+    const banded = (layout: (typeof layouts)[number]) =>
+      layout.children.every((child) => readLayout(result.deck.register, child.node as never)?.flow === "horizontal")
+    const grid = layouts.find((layout) => layout.flow === "vertical" && banded(layout))
+    const quadrant = readLayout(result.deck.register, grid!.children[0]!.node as never)?.children[0]?.box
+    expect(grid!.box.y + grid!.box.cy).toBeGreaterThan(110 * point + 340 * point)
+    expect(quadrant!.cx).toBeLessThanOrEqual(quadrant!.cy * 1.6 + point)
+    const stored = JSON.stringify(result.deck.register)
+    expect(stored).toContain("Impact")
+    expect(stored).toContain("vert270")
+  })
+
+  it("refuses axis titles on a pattern that has no axes", () => {
+    const result = edit(blank(), {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      labels: ["Impact", "Effort"],
+      items: [{ title: "One" }, { title: "Two" }],
+    })
+    expect(result.ok).toBe(false)
+  })
+
   const item = (at: number) => ({
     title: `Item ${String(at + 1)}`,
     value: `Q${String(at + 1)}`,

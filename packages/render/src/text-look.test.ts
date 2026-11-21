@@ -218,6 +218,18 @@ it("paints a list item a person indents at its level's indent before the file ha
   expect(block.style.getPropertyValue("--bullet")).toBe('"•"')
 })
 
+it("paints a bullet's hang from its text size, the marker just under an em before the text", () => {
+  const { block } = painted(paragraph(), "Item", { list: "bullets" })
+  const span = block.querySelector("span")
+  expect(span).not.toBeNull()
+  const host = block.parentElement
+  if (host === null || span === null) throw new Error("no host")
+  span.dataset.size = "1200"
+  restyle(host, textLook(paragraph(), scaled))
+  expect(Number.parseFloat(block.style.textIndent)).toBeCloseTo(scaled(-137_160), 4)
+  expect(Number.parseFloat(block.style.getPropertyValue("--bullet-hang"))).toBeCloseTo(scaled(137_160), 4)
+})
+
 it("paints an item a person indents in a placeholder at its template's indent for that level", () => {
   const templateIndents = [null, null, { marginLeft: 1_143_000, indent: -228_600 }]
   const { block } = painted({ ...paragraph(), templateIndents }, "Item", { level: "2" })

@@ -81,6 +81,7 @@ function levelAttributes(
   level: number,
   list: TextList,
   template: TemplateIndent,
+  size?: number,
 ): readonly (readonly [string, string | null])[] {
   const lvl = level === 0 ? null : String(level)
   if (template(level) !== null)
@@ -89,7 +90,7 @@ function levelAttributes(
       ["lvl", lvl],
       ["indent", null],
     ]
-  const { marginLeft, indent } = listIndent(level, list)
+  const { marginLeft, indent } = listIndent(level, list, size)
   return [
     ["marL", String(marginLeft)],
     ["lvl", lvl],
@@ -97,13 +98,16 @@ function levelAttributes(
   ]
 }
 
+const firstSize = (paragraph: TextParagraph) =>
+  (paragraph.runs.find((run) => run.text !== "") ?? paragraph.runs[0])?.size
+
 const listed = (list: TextList | undefined) => list === "bullets" || list === "numbers"
 
 function created(paragraph: TextParagraph, template: TemplateIndent): Uint8Array {
   const level =
     paragraph.level === undefined && !listed(paragraph.list)
       ? ""
-      : levelAttributes(paragraph.level ?? 0, paragraph.list ?? "none", template)
+      : levelAttributes(paragraph.level ?? 0, paragraph.list ?? "none", template, firstSize(paragraph))
           .flatMap(([name, value]) => (value === null ? [] : [` ${name}="${value}"`]))
           .join("")
   const align = paragraph.align === undefined ? "" : ` algn="${alignValue[paragraph.align]}"`
@@ -157,10 +161,11 @@ function levelBytes(
   level: number,
   list: TextList | undefined,
   template: TemplateIndent,
+  size?: number,
 ): Uint8Array {
   const held = list ?? heldList(slice)
   let next = slice
-  for (const [name, value] of levelAttributes(level, held, template)) next = attributeBytes(next, name, value)
+  for (const [name, value] of levelAttributes(level, held, template, size)) next = attributeBytes(next, name, value)
   return held === "numbers" && list === undefined ? listBytes(next, "numbers", level) : next
 }
 
@@ -225,7 +230,7 @@ export function paragraphBytes(
   if (properties === undefined) return created(paragraph, template)
   let slice = bytes.subarray(properties.start, properties.end)
   if (paragraph.level !== undefined || listed(paragraph.list))
-    slice = levelBytes(slice, paragraph.level ?? heldLevel(slice), paragraph.list, template)
+    slice = levelBytes(slice, paragraph.level ?? heldLevel(slice), paragraph.list, template, firstSize(paragraph))
   if (paragraph.align !== undefined) slice = alignBytes(slice, paragraph.align)
   for (const name of spaced) {
     const tag = spacingTags[name]

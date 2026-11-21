@@ -6,8 +6,11 @@ const numberings = ["arabicPeriod", "alphaLcPeriod", "romanLcPeriod"] as const
 
 export type ListIndent = { readonly marginLeft: number; readonly indent: number }
 
-export function listIndent(level: number, list: TextList): ListIndent {
-  const hang = hangs[list]
+const bulletEms = 0.9
+const pointEmu = 12_700
+
+export function listIndent(level: number, list: TextList, size?: number): ListIndent {
+  const hang = list === "bullets" && size !== undefined ? Math.round((size / 100) * pointEmu * bulletEms) : hangs[list]
   return { marginLeft: level * levelStep + hang, indent: hang === 0 ? 0 : -hang }
 }
 

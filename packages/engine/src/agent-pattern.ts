@@ -1,10 +1,20 @@
 import type { PatternItem, WireDiagram } from "@airdesign/catalog"
-import { groupOf, nextElementId, slideMeasure, type Box, type ElementId, type SlideId } from "@airdesign/document"
+import {
+  groupOf,
+  nextElementId,
+  slideMeasure,
+  textStylesOf,
+  type Box,
+  type ElementId,
+  type SlideId,
+} from "@airdesign/document"
 import { decided, ready } from "./agent-elements.js"
 import type { Applied } from "./apply-change.js"
 import type { Deck } from "./call.js"
 import { layer, Overflowed, padded, Refused, set, textLayer, wrap, type Build } from "./pattern-build.js"
 import { fittedSize, linesHigh, tones, typeScale, typeSteps, type Line } from "./pattern-type.js"
+
+const point = 12_700
 
 type Part = readonly Line[]
 
@@ -56,7 +66,13 @@ function iconLayer(build: Build, x: number, y: number, icon: string): ElementId 
   })
 }
 
-function row(build: Build, area: Box, cards: readonly Card[], flow: "horizontal" | "vertical" = "horizontal"): Card {
+function row(
+  build: Build,
+  area: Box,
+  cards: readonly Card[],
+  flow: "horizontal" | "vertical" = "horizontal",
+  filled = false,
+): Card {
   const frame = wrap(
     build,
     cards.map((each) => each.frame),
@@ -64,8 +80,9 @@ function row(build: Build, area: Box, cards: readonly Card[], flow: "horizontal"
   const { gap } = build.scale
   const tallest = Math.max(...cards.map((each) => each.high))
   const stacked = cards.reduce((sum, each) => sum + each.high, 0) + gap * (cards.length - 1)
-  const high = flow === "horizontal" ? tallest : stacked
-  if (high > area.cy) throw new Overflowed()
+  const needed = flow === "horizontal" ? tallest : stacked
+  if (needed > area.cy) throw new Overflowed()
+  const high = filled ? area.cy : needed
   set(build, frame, {
     layout: { flow, gap, padding: padded(0), align: "topLeft", width: "fixed", height: "fixed" },
     box: { x: area.x, y: area.y, w: area.cx, h: high },
@@ -111,7 +128,7 @@ function cards(build: Build, area: Box, items: readonly PatternItem[]): void {
       item.icon,
     ),
   )
-  row(build, area, built)
+  row(build, area, built, "horizontal", true)
 }
 
 function compare(build: Build, area: Box, items: readonly PatternItem[]): void {
@@ -124,14 +141,28 @@ function compare(build: Build, area: Box, items: readonly PatternItem[]): void {
       tones.card,
     ),
   )
-  row(build, area, built)
+  row(build, area, built, "horizontal", true)
 }
 
-function matrix(build: Build, area: Box, items: readonly PatternItem[]): void {
+function grouped(build: Build, nodes: readonly ElementId[]): void {
+  const measure = slideMeasure(build.register, build.slide)
+  if (measure === undefined) throw new Refused("dead")
+  const group = groupOf(build.register, build.slide, nextElementId(build.register, build.slide, measure.free), nodes)
+  if (group === null) return
+  const done = decided(build.register, build.file, { ...group, runId: build.runId }, build.runId)
+  if (!done.ok) throw new Refused(done.refusal)
+  build.register = done.register
+}
+
+function matrix(build: Build, area: Box, items: readonly PatternItem[], axes?: readonly string[]): void {
   const { gap } = build.scale
-  const half = Math.floor((area.cy - gap) / 2)
-  const rows = [0, 1].map((line) => {
-    const band = { x: area.x, y: area.y + line * (half + gap), cx: area.cx, cy: half }
+  const strip = axes === undefined ? 0 : Math.round((build.scale.label / 100) * point * 2.6)
+  const tall = area.cy - strip
+  const half = Math.floor((tall - gap) / 2)
+  const wide = Math.min(Math.floor((area.cx - strip - gap) / 2), Math.round(half * 1.6))
+  const grid = { x: area.x + strip, y: area.y, cx: wide * 2 + gap, cy: tall }
+  const bands = [0, 1].map((line) => {
+    const band = { x: grid.x, y: grid.y + line * (half + gap), cx: grid.cx, cy: half }
     const boxes = slots(band, 2, gap)
     const built = [0, 1].map((side) => {
       const item = items[line * 2 + side] ?? {}
@@ -151,10 +182,20 @@ function matrix(build: Build, area: Box, items: readonly PatternItem[]): void {
         lead ? tones.accent : tones.card,
       )
     })
-    return { band, built }
+    return row(build, band, built, "horizontal", true)
   })
-  const bands = rows.map(({ band, built }) => row(build, band, built))
-  row(build, area, bands, "vertical")
+  const quadrants = row(build, grid, bands, "vertical", true).frame
+  if (axes === undefined) return
+  const [across, up] = axes
+  const title = (text: string | undefined): Part =>
+    text === undefined ? [] : [{ text, role: "label", upper: true, center: true }]
+  const x = textLayer(
+    build,
+    { x: grid.x, y: grid.y + grid.cy + Math.round(gap / 3), cx: grid.cx, cy: strip - Math.round(gap / 3) },
+    title(across),
+  )
+  const y = textLayer(build, { x: area.x, y: grid.y, cx: strip, cy: grid.cy }, title(up), "vert270")
+  grouped(build, [quadrants, x, y])
 }
 
 function timeline(build: Build, area: Box, items: readonly PatternItem[]): void {
@@ -194,17 +235,7 @@ function timeline(build: Build, area: Box, items: readonly PatternItem[]): void 
     "line",
   )
   set(build, line, { border: { fill: { solid: tones.accent }, width: 19_050 } } as never)
-  const measure = slideMeasure(build.register, build.slide)
-  if (measure === undefined) throw new Refused("dead")
-  const grouped = groupOf(build.register, build.slide, nextElementId(build.register, build.slide, measure.free), [
-    line,
-    lane,
-  ])
-  if (grouped !== null) {
-    const done = decided(build.register, build.file, { ...grouped, runId: build.runId }, build.runId)
-    if (!done.ok) throw new Refused(done.refusal)
-    build.register = done.register
-  }
+  grouped(build, [line, lane])
 }
 
 const patterns = { kpi, cards, compare, matrix, timeline } as const
@@ -215,7 +246,7 @@ export function applyPattern(deck: Deck, change: WireDiagram, area: Box, runId: 
   if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
   const measure = slideMeasure(deck.register, slide)
   if (measure?.size === undefined) return { ok: false, refusal: "dead" }
-  const palette = deck.register.index?.palettes?.[0]
+  const styles = textStylesOf(deck.register, slide)
   const draw = patterns[change.pattern as keyof typeof patterns]
   if (draw === undefined) return { ok: false, refusal: "dead" }
   for (const step of typeSteps) {
@@ -224,10 +255,10 @@ export function applyPattern(deck: Deck, change: WireDiagram, area: Box, runId: 
       file: opened.file,
       slide: slide as SlideId,
       runId,
-      scale: typeScale(measure.size, palette, step),
+      scale: typeScale(measure.size, styles, step),
     }
     try {
-      draw(build, area, change.items ?? [])
+      draw(build, area, change.items ?? [], change.labels)
       return { ok: true, register: build.register }
     } catch (error) {
       if (error instanceof Refused) return { ok: false, refusal: error.refusal }

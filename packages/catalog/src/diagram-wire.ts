@@ -83,7 +83,14 @@ export function readDiagramChange(raw: unknown): Read {
     return refused("items")
   const read = items.map(readItem)
   if (read.some((item) => item === null)) return refused("items")
-  return { ok: true, change: { op: "diagram", slide, pattern, items: read as PatternItem[], ...placed } }
+  const { labels } = body
+  if (
+    labels !== undefined &&
+    (pattern !== "matrix" || !Array.isArray(labels) || labels.length !== 2 || !labels.every(labelled))
+  )
+    return refused("labels")
+  const axes = labels === undefined ? {} : { labels: labels as string[] }
+  return { ok: true, change: { op: "diagram", slide, pattern, items: read as PatternItem[], ...axes, ...placed } }
 }
 
 export function diagramChangeSchema(): JsonSchema {
@@ -108,7 +115,7 @@ export function diagramChangeSchema(): JsonSchema {
         minItems: diagramLabels.min,
         maxItems: diagramLabels.max,
         items: { type: "string", minLength: 1, maxLength: diagramLabels.length },
-        description: "flow: each shape's words, in order.",
+        description: "flow: each shape's words, in order. matrix: the x then y axis title.",
       },
       items: {
         type: "array",
