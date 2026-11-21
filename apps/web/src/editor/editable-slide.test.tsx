@@ -68,7 +68,7 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const undo = useUndoList()
   const status = useDeckStatus(deck)
   const { settle } = status
-  const shown = useDeckPaint(deck, pictures, notes)
+  const shown = useDeckPaint(deck, pictures, notes, undo.lane)
   const inserts = deckInserts({
     id: deck,
     shown,

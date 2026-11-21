@@ -87,7 +87,7 @@ function Deck(props: { readonly selected: Selection; readonly exposed: (deck: Ex
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = useUndoList()
   const { settle } = useDeckStatus(deck)
-  const shown = useDeckPaint(deck, pictures, notes)
+  const shown = useDeckPaint(deck, pictures, notes, undo.lane)
   const changeElement = async () => "kept" as const
   const buttons = useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing })
   props.exposed({ shown, undo, buttons })
