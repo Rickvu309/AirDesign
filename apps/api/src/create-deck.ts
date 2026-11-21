@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 
@@ -67,9 +67,11 @@ export async function createDeck(
   db: Sql,
   store: OriginalStore | undefined,
   email: string,
-  asked: { readonly once: string; readonly name: string },
+  asked: { readonly once: string | undefined; readonly name: string },
 ): Promise<Created> {
-  const id = readDeckId(digest(`${email}\n${asked.once}`).slice(0, 32))
+  const id = readDeckId(
+    asked.once === undefined ? randomUUID().replaceAll("-", "") : digest(`${email}\n${asked.once}`).slice(0, 32),
+  )
   if (store === undefined || !id.ok) return unstored
   const start = await startDeck(blankTemplate)
   const key = `originals/${digest(email)}/${id.deck}/start`
