@@ -333,7 +333,11 @@ describe("readAddChange reads a new shape on one slide", () => {
     })
     expect(readAddChange({ ...add, kind: "group" })).toEqual({ ok: false, refusal: "field", field: "kind" })
     expect(readAddChange({ ...add, slide: "258.2" })).toEqual({ ok: false, refusal: "field", field: "slide" })
-    expect(readAddChange({ ...add, border: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "border" })
+    expect(readAddChange({ ...add, effects: { shadow: null } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "effects",
+    })
     expect(readAddChange({ ...add, box: { x: 1, y: 1, w: 1, h: 1, rot: 90 } })).toEqual({
       ok: false,
       refusal: "field",

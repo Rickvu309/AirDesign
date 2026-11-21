@@ -160,7 +160,21 @@ function readLineBox(raw: unknown): Box | null {
   return box !== null && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0 ? box : null
 }
 
-const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table", "chart"]
+const styleTraits = ["fills", "geometry", "border", "body"] as const
+
+const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table", "chart", ...styleTraits]
+
+function readStyle(raw: Inputs, allowed: readonly string[]): Read<Inputs> {
+  const read: Record<string, Inputs> = {}
+  for (const trait of styleTraits) {
+    if (raw[trait] === undefined) continue
+    if (!allowed.includes(trait)) return refused(trait)
+    const fields = readTrait(trait, raw[trait])
+    if (!fields.ok) return fields
+    read[trait] = fields.change
+  }
+  return { ok: true, change: read }
+}
 
 function attached(end: unknown): boolean {
   return plainObject(end) && plainObject(end.shape)
@@ -176,6 +190,8 @@ function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: Slide
   if (connection !== undefined && !connection.ok) return connection
   const ends = connection?.change
   if (box === undefined && !(attached(ends?.start) && attached(ends?.end))) return refused("box")
+  const style = readStyle(raw, ["border"])
+  if (!style.ok) return style
   return {
     ok: true,
     change: {
@@ -184,12 +200,13 @@ function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: Slide
       slide,
       ...(box === undefined ? {} : { box }),
       ...(ends === undefined ? {} : { connection: ends }),
+      ...style.change,
     } as WireAdd,
   }
 }
 
 function addedChart(raw: Inputs, slide: SlideId): Read<WireAdd> {
-  const extra = ["text", "icon", "image", "connection", "table"].find((key) => raw[key] !== undefined)
+  const extra = ["text", "icon", "image", "connection", "table", ...styleTraits].find((key) => raw[key] !== undefined)
   if (extra !== undefined) return refused(extra)
   const chart = readTrait("chart", raw.chart)
   if (!chart.ok || typeof chart.change.value !== "string" || readChartValue(chart.change.value) === null)
@@ -204,7 +221,7 @@ function addedChart(raw: Inputs, slide: SlideId): Read<WireAdd> {
 }
 
 function addedTable(raw: Inputs, slide: SlideId): Read<WireAdd> {
-  const extra = ["text", "icon", "image", "connection"].find((key) => raw[key] !== undefined)
+  const extra = ["text", "icon", "image", "connection", ...styleTraits].find((key) => raw[key] !== undefined)
   if (extra !== undefined) return refused(extra)
   const table = readTrait("table", raw.table)
   if (!table.ok || typeof table.change.value !== "string" || readTableValue(table.change.value) === null)
@@ -239,6 +256,9 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
   if (box === null) return refused("box")
   const placed = box === undefined ? {} : { box }
+  const plain = raw.image === undefined && raw.icon === undefined
+  const style = readStyle(raw, plain ? styleTraits : [])
+  if (!style.ok) return style
   if (raw.image !== undefined) {
     const image = raw.image
     if (typeof image !== "string" || !webImage(image)) return refused("image")
@@ -259,6 +279,7 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
       slide,
       ...placed,
       ...(text === undefined ? {} : { text: text.change }),
+      ...style.change,
     } as WireAdd,
   }
 }
@@ -323,13 +344,14 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line, a table or a chart. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
+      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line, a table or a chart. Style traits as in set: a line takes only border. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
       slide: slideSchema,
       box: placedBoxSchema(),
       text: traitSchema("text", null),
+      ...Object.fromEntries(styleTraits.map((trait) => [trait, traitSchema(trait, null)])),
       icon: {
         type: "string",
         pattern: iconNamePattern,

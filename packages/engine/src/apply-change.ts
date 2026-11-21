@@ -176,8 +176,9 @@ function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, ima
   const value = change.text?.value
   const opening = typeof value === "string" && openingSlideNumber(value) ? value : ""
   const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId, opening)
-  if (!added.ok || change.text === undefined) return added
-  return withAdded(added.register, runId, { text: change.text })
+  const { op: _op, kind: _kind, slide: _slide, box: _box, ...inputs } = change
+  if (!added.ok || Object.keys(inputs).length === 0) return added
+  return withAdded(added.register, runId, inputs)
 }
 
 export function applyAgentChange(
