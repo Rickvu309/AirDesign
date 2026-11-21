@@ -1,6 +1,6 @@
 ---
 name: show-airdesign
-description: "Show a person what an agent will do, how part of AirDesign works, or what a change did, as one page: a decision, an issue tree beneath it, and the evidence under each branch. Use when the owner asks to see a plan, an option to choose, how something is organized, or the result and proof of finished work, in chat or in a PR."
+description: "Show a person what an agent will do, how part of AirDesign works, or what a change did, as one page: a decision, an issue tree beneath it, and the evidence under each branch. Use when the owner asks to see a plan, an option to choose, how something is organized, or the result and proof of finished work, in chat or in a PR, including the annotated before and after image a visible change needs."
 ---
 
 # Show AirDesign
@@ -66,6 +66,10 @@ The rules it holds:
 8. **Weakest support.** A verdict lives on evidence only. The tool rolls it up, and each claim takes the weakest verdict beneath it. One open leaf leaves the answer open.
 
 The tool cannot see whether a split truly has no overlap or whether a claim is true. That is your judgment: name the axis and what it covers honestly, and read every claim against its evidence before you show the page.
+
+## When the evidence is a screen
+
+A leaf about something a person sees rests on an image of it. Make that image with [annotate.md](annotate.md): a before and after for the PR, or callouts on one run for a bug or a proposal.
 
 ## Done when
 

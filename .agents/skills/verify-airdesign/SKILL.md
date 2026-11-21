@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign
-description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under the run's ~/tmp/verify-airdesign/ folder), and look at it as a design: ranked design faults, the real page beside its design screen, a contact sheet of every state, and an annotated before and after image for the PR. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
+description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under the run's ~/tmp/verify-airdesign/ folder), and look at it as a design: ranked design faults, the real page beside its design screen, and a contact sheet of every state. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
 ---
 
 # Verify AirDesign
@@ -127,37 +127,15 @@ For every change a person sees:
 2. Run `$V compare <run> <state>` to put the state beside its design screen under `/screens/`.
 3. Open `annotated.png`, `compare.png` and the crops, and read them. Then write two or three sentences on what you see, as a designer would: what draws the eye, what looks off, how it differs from the design.
 4. Fix every finding or explain it. A finding that is meant gets an entry in `look/allow.json` with a reason; a real fault you leave gets a `test.fail` in `tests/browser/design-states.spec.ts`. When you add a state a person can reach, add `look/states/<name>.mjs`, one file.
-5. Publish the images with `$V publish <dir> --pr <number>`, which prints a `proof` release link for each PNG in the folder. Put those links, your sentences, and the finding counts before and after in the PR body. Never a local path: `pnpm land` and the `bar` check refuse a body that names one.
+5. Put your sentences and the finding counts before and after in the PR body, with the images published as [show-airdesign's annotate.md](../show-airdesign/annotate.md) says.
 
 `$V sheet <run>` does all states at once and writes a contact sheet a person can open.
 
 Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, whether words are true for their situation, or whether a flow makes sense; only your reading of the images can. `look/README.md` lists what each detector reads and cannot see.
 
-## Before / after in the PR
+## Show it to a person
 
-Every PR that changes what a person sees gets a `## Before / after` section. When nothing looks different, the section holds one line instead, `No visible change: <why>`, and `bar` prints the reason for the owner. `pnpm land` stops, and the `bar` check fails and labels the PR `needs-before-after`, when the section has neither.
-
-1. Write a callouts file, one block per changed state from `$V states`:
-
-   ```json
-   [
-     {
-       "state": "agent-empty",
-       "title": "Agent panel, empty",
-       "crop": "[data-editor-panel]",
-       "callouts": [{ "at": "[data-aira-welcome] h2", "note": "Empty panel names Aira and what to check (was blank)" }]
-     }
-   ]
-   ```
-
-   `crop` and `at` take CSS selectors or boxes in CSS px. `click` lists selectors to click after reaching the state. Set `"target": "element"` for a border or frame; text is the default. Name the measured change in each note. [Annotation details](look/README.md#before-after-and-annotate) and [design review](look/design-review.md) cover targeting, detail crops, and note examples.
-
-2. Run `$V before-after callouts.json`. It builds and launches the merge base with `origin/main` in a scratch worktree, launches this checkout, drives each state on both with that side's own journey, and writes `annotated-N.png`, each full screenshot, and `before-after.md`. `--base` and `--head` take other commits. `--keep` keeps both stacks and prints their runs, so the next try takes `--before-run` and `--after-run` and costs seconds. Stop them with `$V stop` when done.
-3. Open every `annotated-N.png`. Check each arrow points at the thing its note names on both sides, each note is true, and a stranger sees what changed in ten seconds. A selector missing on one side shows a grey number and says so in the legend; that is right only when the thing is new or gone.
-4. `$V publish <out-dir> --pr <number>` uploads the PNGs to the first `proof`, `proof-2`, … release with room and writes `before-after.published.md`. Paste it into the PR body as is.
-
-`$V annotate <run> callouts.json` draws the same callouts on one run, for a comment or a `look`.
-`$V comment <pr> <markdown-file>` posts a pull request comment prefixed with the agent line `🤖 **AI Agent responding on behalf of Quan Vu**`. Always post PR comments with this command.
+Before / after images, callouts on one run, publishing to the `proof` release and PR comments are Show's job: follow [show-airdesign's annotate.md](../show-airdesign/annotate.md). The commands stay here in `$V`.
 
 ## Saved proof
 
