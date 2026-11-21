@@ -110,6 +110,40 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     expect("−$148.2M".length * number * 0.52).toBeLessThan(inner)
   })
 
+  it("takes each text's size, font and line height from the deck's text styles by name", () => {
+    const deck = blank()
+    const index = deck.register.index
+    if (index === undefined) throw new Error("no index")
+    const textStyles = [
+      { id: "h", name: "Heading", fields: { size: 2000, font: "+mj-lt", lineHeight: 110_000 } },
+      { id: "b", name: "Body 2", fields: { size: 1400, font: "+mn-lt", lineHeight: 125_000, spaceAfter: 600 } },
+    ]
+    const styled: Deck = {
+      ...deck,
+      register: {
+        ...deck.register,
+        index: { ...index, slides: index.slides.map((slide) => ({ ...slide, textStyles })) },
+      },
+    }
+    const result = edit(styled, {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      items: [
+        { title: "One", points: ["A point"] },
+        { title: "Two", points: ["A point"] },
+      ],
+    })
+    if (!result.ok) throw new Error(result.refusal)
+    const stored = JSON.stringify(result.deck.register).replaceAll("\\", "")
+    expect(stored).toContain('"lineHeight":110000,"spaceBefore":0,"spaceAfter":0,"runs":[{"from":-1,"text":"One"')
+    expect(stored).toContain('"text":"One","bold":true,"size":2000')
+    expect(stored).toContain(
+      '"lineHeight":125000,"spaceBefore":0,"spaceAfter":600,"runs":[{"from":-1,"text":"A point","size":1400',
+    )
+  })
+
   it("stretches cards to the height of their box, every card the same height", () => {
     const result = edit(blank(), {
       op: "diagram",
@@ -124,7 +158,7 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     expect(new Set(row?.children.map((child) => child.box.cy))).toEqual(new Set([380 * point]))
   })
 
-  it("fills the box with a 2x2 of near-square quadrants and names its axes", () => {
+  it("fills the box with a 2x2 of equal quadrants and names its axes", () => {
     const result = edit(blank(), {
       op: "diagram",
       slide: "258",
@@ -143,7 +177,9 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     const grid = layouts.find((layout) => layout.flow === "vertical" && banded(layout))
     const quadrant = readLayout(result.deck.register, grid!.children[0]!.node as never)?.children[0]?.box
     expect(grid!.box.y + grid!.box.cy).toBeGreaterThan(110 * point + 340 * point)
-    expect(quadrant!.cx).toBeLessThanOrEqual(quadrant!.cy * 1.6 + point)
+    expect(grid!.box.x + grid!.box.cx).toBeGreaterThan((64 + 832) * point - 2 * point)
+    expect(quadrant!.cx * 2).toBeLessThan(grid!.box.cx)
+    expect(quadrant!.cy * 2).toBeLessThan(grid!.box.cy)
     const stored = JSON.stringify(result.deck.register)
     expect(stored).toContain("Impact")
     expect(stored).toContain("vert270")
