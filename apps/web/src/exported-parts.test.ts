@@ -67,7 +67,7 @@ it("an export writes a stored value with several paragraphs and a value the rout
     new TextDecoder().decode(slide).replace("Line 3", "typed"),
   )
   const outside = writeTextValue([{ from: 9, runs: [{ from: 0, text: "typed" }] }])
-  expect(() => exportedParts(parts, editedRegister([["256.2", outside]]))).toThrow(/text-paragraph/)
+  expect(exportedParts(parts, editedRegister([["256.2", outside]])).get("ppt/slides/slide1.xml")).toEqual(saved)
   expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 

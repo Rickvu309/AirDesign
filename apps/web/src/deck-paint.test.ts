@@ -349,3 +349,19 @@ it("offers an imported PowerPoint chart to move and select, and holds its number
   if (first === undefined) throw new Error("chart")
   expect(readChartValue(fileChartValue(read.parts, first.part, first.shape) ?? "")?.kind).toBe("pie")
 }, 120_000)
+
+it("paints the rest of a deck and names the edit it cannot write, instead of failing", () => {
+  const store = paintStore()
+  const busy = busyElements()
+  const first = paint(store, parts, openRegister("", ""), busy)
+  const texts = [...first.files].filter(([, file]) => file.startsWith("[")).map(([node]) => node)
+  const [broken, kept] = texts
+  if (broken === undefined || kept === undefined) throw new Error("two text layers")
+  const outside = writeTextValue([{ from: 40, runs: [{ from: 0, text: "Nowhere" }] }])
+  const box = { x: 123_456, y: 234_567, cx: 2_000_000, cy: 1_000_000 }
+  const register = person(person(openRegister("", ""), broken, outside), kept, box)
+  const painted = paint(paintStore(), parts, register, busy)
+  expect(painted.leftOut).toEqual([{ node: broken, row: 0 }])
+  const moved = readShapes(painted.display).find((shape) => `${shape.slide}.${shape.shape}` === kept)
+  expect(moved?.box).toMatchObject({ x: box.x, y: box.y })
+})

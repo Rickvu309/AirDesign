@@ -16,7 +16,7 @@ it("keeps only the chosen slide of a deck no slide command has touched yet", asy
   const parts = await fixture("tall-glyph-before.pptx")
   const [first, second] = readSlides(parts)
   if (first === undefined || second === undefined) throw new Error("slides")
-  const chosen = chosenParts(parts, openRegister("", "tall"), [1])
+  const chosen = chosenParts(parts, openRegister("", "tall"), [1]).parts
   expect(readSlides(chosen)).toEqual([second])
   expect(chosen.has(first.part)).toBe(false)
   expect(chosen.get(second.part)).toBe(parts.get(second.part))
@@ -25,7 +25,7 @@ it("keeps only the chosen slide of a deck no slide command has touched yet", asy
 it("exports the whole deck as before when no slide is named", async () => {
   const parts = await fixture("tall-glyph-before.pptx")
   const register = openRegister("", "tall")
-  expect(chosenParts(parts, register, undefined)).toBe(exportedParts(parts, register))
+  expect(chosenParts(parts, register, undefined).parts).toBe(exportedParts(parts, register))
 })
 
 it("keeps a picture added to the chosen slide, with its media part", async () => {
@@ -39,7 +39,7 @@ it("keeps a picture added to the chosen slide, with its media part", async () =>
   if (edit === null) throw new Error("picture")
   const decision = decide(opened, { command: "slide", file: fileSlides(parts, opened), edit })
   if (decision.decision !== "apply") throw new Error(decision.code)
-  const chosen = chosenParts(parts, decision.register, [1], new Map([[media.sha256, png]]))
+  const chosen = chosenParts(parts, decision.register, [1], new Map([[media.sha256, png]])).parts
   expect(readSlides(chosen)).toHaveLength(1)
   expect(readShapes(chosen).filter((shape) => shape.slide === second.slide && shape.kind === "p:pic")).toHaveLength(1)
   expect([...chosen].filter(([name, bytes]) => name.startsWith("ppt/media/") && bytes === png)).toHaveLength(1)

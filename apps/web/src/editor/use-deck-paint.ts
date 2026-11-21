@@ -1,4 +1,4 @@
-import { type ElementId, type Register, type SlideCommand } from "@airdesign/document"
+import { type ElementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { boundTargets, type ReadShape } from "@airdesign/pptx"
 import { paintStore, type Entering } from "@airdesign/render"
@@ -92,7 +92,7 @@ export function useDeckPaint(
   const saySlide = useRef<(text: string) => void>(() => undefined)
   const noticedLeftOut = useRef(new Set<string>())
 
-  function noticeLeftOut(leftOut: readonly SlideCommand[]) {
+  function noticeLeftOut(leftOut: Painted["leftOut"]) {
     if (leftOut.length === 0) {
       if (noticedLeftOut.current.size > 0) toast.dismiss(leftOutNotice)
       noticedLeftOut.current.clear()

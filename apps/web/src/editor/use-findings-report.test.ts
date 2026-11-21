@@ -46,7 +46,7 @@ it("judges the words a deck holds now and re-reads only the slide an edit change
   expect(reread).toHaveLength(1)
 })
 
-it("says a revision is broken when the tab cannot export it, instead of reporting nothing", async () => {
+it("judges a revision as the tab shows it when one of its edits cannot be written", async () => {
   const opened = openRegister("", "deck")
   const first = judgedOf(exportedParts(parts, opened), judgedDeck())
   const target = first
@@ -58,8 +58,7 @@ it("says a revision is broken when the tab cannot export it, instead of reportin
     nodes: [...opened.nodes, target.node],
     elements: { [target.node]: null },
   } as unknown as Register
-  expect(() => exportedParts(parts, broken)).toThrow()
-  expect(await reportOf(parts, broken, judgedDeck(), async () => ({}))).toEqual({ findings: [], broken: true })
   const fine = await reportOf(parts, opened, judgedDeck(), async () => ({}))
+  expect(await reportOf(parts, broken, judgedDeck(), async () => ({}))).toEqual(fine)
   expect(fine).not.toHaveProperty("broken")
 })
