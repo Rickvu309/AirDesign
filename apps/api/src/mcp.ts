@@ -190,6 +190,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
         const made = await createDeck(host.deck, host.originals, host.email, {
           once: session.once,
           name: asked.name,
+          template: asked.template,
         }).catch(() => ({ ok: false, refusal: "store" }) as const)
         if (!made.ok) return made
         await turns.load(made.deck.id).catch(() => undefined)

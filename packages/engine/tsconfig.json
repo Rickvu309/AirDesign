@@ -12,5 +12,5 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../catalog" }, { "path": "../document" }]
+  "references": [{ "path": "../catalog" }, { "path": "../document" }, { "path": "../templates" }]
 }

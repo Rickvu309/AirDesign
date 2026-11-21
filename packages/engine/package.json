@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
-    "@airdesign/document": "workspace:*"
+    "@airdesign/document": "workspace:*",
+    "@airdesign/templates": "workspace:*"
   }
 }

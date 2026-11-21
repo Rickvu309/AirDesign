@@ -1,3 +1,4 @@
+import { deckTemplates } from "@airdesign/templates"
 import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import {
@@ -227,7 +228,8 @@ describe("ownedDecks", () => {
       { deck: "live", name: "Live", trash: false },
     ])
     const listed: ListDeckAnswer = pageOwned(owned)
-    expect(listed).toEqual({ ok: true, decks: owned })
+    expect(listed).toEqual({ ok: true, decks: owned, templates: deckTemplates })
+    expect(pageOwned(owned, "kept").templates).toBeUndefined()
     expect(listed.cursor).toBeUndefined()
     expect(readReport(listLead, listed)).toContain(listLead)
     expect(pageOwned(owned, "missing")).toEqual({ ok: true, decks: [] })

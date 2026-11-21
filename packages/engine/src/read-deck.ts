@@ -1,3 +1,4 @@
+import { deckTemplates } from "@airdesign/templates"
 import { readLayouts, type ReadLayout } from "./read-layouts.js"
 import {
   findingsAt,
@@ -112,6 +113,7 @@ export type ListDeckAnswer = {
   readonly ok: true
   readonly decks: readonly OwnedDeck[]
   readonly cursor?: string
+  readonly templates?: typeof deckTemplates
 }
 
 export function readLead(revision: number): string {
@@ -488,29 +490,33 @@ export function ownedDecks(rows: readonly OwnedRow[], email: string): OwnedDeck[
   return decks
 }
 
-function listAnswer(decks: readonly OwnedDeck[], cursor?: string): ListDeckAnswer {
-  if (cursor === undefined) return { ok: true, decks }
-  return { ok: true, decks, cursor }
+function listAnswer(decks: readonly OwnedDeck[], first: boolean, cursor?: string): ListDeckAnswer {
+  return {
+    ok: true,
+    decks,
+    ...(cursor === undefined ? {} : { cursor }),
+    ...(first ? { templates: deckTemplates } : {}),
+  }
 }
 
-function packList(decks: readonly OwnedDeck[]): ListDeckAnswer {
+function packList(decks: readonly OwnedDeck[], first: boolean): ListDeckAnswer {
   const chosen: OwnedDeck[] = []
   for (const [index, row] of decks.entries()) {
     const more = index + 1 < decks.length
-    const trial = listAnswer([...chosen, row], more ? row.deck : undefined)
+    const trial = listAnswer([...chosen, row], first, more ? row.deck : undefined)
     if (chosen.length > 0 && !withinRead(readReport(listLead, trial))) {
       const last = chosen[chosen.length - 1]
       if (last === undefined) break
-      return listAnswer(chosen, last.deck)
+      return listAnswer(chosen, first, last.deck)
     }
     chosen.push(row)
   }
-  return listAnswer(chosen)
+  return listAnswer(chosen, first)
 }
 
 export function pageOwned(decks: readonly OwnedDeck[], cursor?: string): ListDeckAnswer {
-  if (cursor === undefined) return packList(decks)
+  if (cursor === undefined) return packList(decks, true)
   const at = decks.findIndex((row) => row.deck === cursor)
   if (at < 0) return { ok: true, decks: [] }
-  return packList(decks.slice(at + 1))
+  return packList(decks.slice(at + 1), false)
 }

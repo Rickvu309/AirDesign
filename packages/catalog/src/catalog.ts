@@ -58,7 +58,8 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     read: readCreateDeck,
-    description: "Create a blank deck this account owns. The answer has its deck id and its first airdesign_read_deck.",
+    description:
+      "Create a deck this account owns, blank or from a template. The answer has its deck id and its first airdesign_read_deck.",
   },
   index_deck: { kind: "action", exposure: "web", runsOn: "server" },
   start_run: { kind: "command", exposure: "web" },
@@ -88,7 +89,7 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     read: readListDecks,
-    description: "List owned decks with id, name, and trash when in Trash.",
+    description: "List owned decks with id, name, and trash when in Trash, and the templates a deck can start from.",
   },
   read_deck: {
     kind: "query",

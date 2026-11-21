@@ -21,6 +21,9 @@
     },
     {
       "path": "../fonts"
+    },
+    {
+      "path": "../templates"
     }
   ]
 }

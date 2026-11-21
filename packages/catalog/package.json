@@ -25,6 +25,7 @@
     "@airdesign/device": "workspace:*",
     "@airdesign/document": "workspace:*",
     "zod": "^4.6.7",
-    "@airdesign/fonts": "workspace:*"
+    "@airdesign/fonts": "workspace:*",
+    "@airdesign/templates": "workspace:*"
   }
 }
