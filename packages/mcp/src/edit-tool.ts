@@ -29,6 +29,7 @@ import {
 } from "./run.js"
 import { changeDetail } from "./change-detail.js"
 import { imageLookup, imageProblem } from "./named-image.js"
+import { styleProblem } from "./style-problem.js"
 import { textProblem } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
 
@@ -139,7 +140,7 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   const checked = [...named, ...setTexts(before.register, parsed.changes)]
   const floors = elementFloors(before.register, checked)
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
-  const problem = textProblem(floors.floors, checked)
+  const problem = textProblem(floors.floors, checked) ?? styleProblem(before.register, parsed.changes)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
   const unfetched = imageProblem(parsed.changes, session.images)
   if (unfetched !== undefined) return editRefusal(before, "image", nodes, unfetched)
