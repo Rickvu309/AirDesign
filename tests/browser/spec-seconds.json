@@ -82,6 +82,7 @@
     "drag-feel.spec.ts": 3.6,
     "editor-design-shortcuts.spec.ts": 2.8,
     "editor-feedback.spec.ts": 12.9,
+    "editor-grid-focus.spec.ts": 4,
     "editor-parity.spec.ts": 8.6,
     "editor-tools.spec.ts": 5.2,
     "editor-trust.spec.ts": 78.4,
