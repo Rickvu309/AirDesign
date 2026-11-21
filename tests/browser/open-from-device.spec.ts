@@ -1,7 +1,7 @@
-import { expect, test, type Page, type Route } from "@playwright/test"
+import { expect, type Page, type Route } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 const refusedWords = productCopy.deckNotFoundTitle
 

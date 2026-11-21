@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"

@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import {
   findingLimits,
   layText,

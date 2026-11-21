@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"

@@ -1,5 +1,6 @@
 import { connectionCopy } from "../../apps/web/src/copy/connection-copy"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { openDeck, unfold } from "./design-panel"
 
 test.use({ viewport: { width: 1600, height: 1000 } })

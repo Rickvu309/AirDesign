@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 
 test("presenter controls fit a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 })

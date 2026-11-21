@@ -1,0 +1,3 @@
+# A browser spec takes `test` from `./deck-test` or `./api-stack`, never from `@playwright/test`, so a failed test keeps the deck state
+
+lint: `no-bare-test` on `tests/browser/*.spec.ts`. Only the `test` of `tests/browser/deck-test.ts`, which `./api-stack` extends, attaches `deck-state.json` when a browser test fails. A spec that takes `test` from Playwright fails with no device rows and no server rows, which is how a lost edit in `control-link.spec.ts` stayed a guess for hours. A spec keeps `expect` and the types from `@playwright/test`. `no-bare-test.test.js` replays the import of `control-link.spec.ts` at 111fd513e.

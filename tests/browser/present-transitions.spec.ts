@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { covers } from "./gesture"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 type ZipEntry = {
   readonly filename: string

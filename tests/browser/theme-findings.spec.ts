@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { slideFindings, type ResolvedSlide } from "../../packages/document/src/index.ts"
 import { slideWidths } from "./font-widths.ts"
 

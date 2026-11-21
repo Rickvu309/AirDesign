@@ -1,6 +1,7 @@
 import { copyFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { layersCopy } from "../../apps/web/src/copy/layers-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"

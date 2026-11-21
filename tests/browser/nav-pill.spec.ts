@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { serveSite, type ServedSite } from "./site-server.ts"
 
 let site: ServedSite

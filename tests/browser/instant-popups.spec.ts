@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { openDeck, picker, shownColor } from "./design-panel"
 import { fillPanel, shapeAt } from "./shape-fills"
 

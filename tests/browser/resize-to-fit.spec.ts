@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"

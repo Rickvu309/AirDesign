@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { deckRoutes } from "../../apps/web/src/decks/deck-routes"
 import { settingsRoutes } from "../../apps/web/src/settings/settings-routes"
 import { openScreen } from "./open-screen"

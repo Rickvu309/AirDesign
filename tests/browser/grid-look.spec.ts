@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { entry, manySlides, openGrid } from "./slide-grid-deck"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 

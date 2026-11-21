@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { designing, openDeck, storedRows, unfold } from "./design-panel"
 
 test("keeps a pasted Name and its suffix until it fits, without sending a change", async ({ page, context }) => {

@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { fillWords } from "../../apps/web/src/copy/fill-copy"
 import { colorWords } from "./color-words"
 import { openDeck, pickColor, shownColor } from "./design-panel"

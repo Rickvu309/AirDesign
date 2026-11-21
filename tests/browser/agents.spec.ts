@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 
 test.use({ reducedMotion: "reduce" })

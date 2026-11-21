@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { openDeck, unfold } from "./design-panel"
 import { shapeAt } from "./shape-fills"
 import { keptWait, keptWaitApproval } from "./kept-wait"

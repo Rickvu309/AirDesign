@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { openDeck, sharedNames, unfoldAll } from "./design-panel"
 
 test.use({ viewport: { width: 1600, height: 1000 } })

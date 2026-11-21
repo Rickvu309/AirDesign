@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 
 test("product chrome loads Inter while slide text keeps its font and fallback", async ({ page }) => {
   await page.goto("/")

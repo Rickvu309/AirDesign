@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { join } from "node:path"
 import { store } from "./home-store.ts"
 import { deckRoutes } from "../../apps/web/src/decks/deck-routes.ts"
