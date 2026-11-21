@@ -141,6 +141,18 @@ export async function captureSide({ browser, side, block, runtime }) {
   }
 }
 
+function sharedFrame(shots) {
+  const reached = shots.filter((shot) => !shot.error)
+  const viewportOf = (shot) => shot.viewport ?? designViewport
+  const whole = { x: 0, y: 0, ...(reached[0] ? viewportOf(reached[0]) : designViewport) }
+  const frames = reached.map((shot) => shot.frame ?? { x: 0, y: 0, ...viewportOf(shot) })
+  const x = Math.min(...frames.map((box) => box.x))
+  const y = Math.min(...frames.map((box) => box.y))
+  const right = Math.max(...frames.map((box) => box.x + box.width))
+  const bottom = Math.max(...frames.map((box) => box.y + box.height))
+  return { whole, seen: relative({ x, y, width: right - x, height: bottom - y }, whole) }
+}
+
 export function composeBlock(block, sides, shots) {
   const warnings = []
   const reached = sides.map((side, index) => ({ side, shot: shots[index] })).filter(({ shot }) => !shot.error)
@@ -151,14 +163,8 @@ export function composeBlock(block, sides, shots) {
       warnings.push(`${block.state}: click ${selector} found nothing on ${sides[index].label || sides[index].key}`)
   }
   const viewportOf = (shot) => shot.viewport ?? designViewport
-  const first = reached[0] ? viewportOf(reached[0].shot) : designViewport
-  const whole = { x: 0, y: 0, ...first }
-  const frames = reached.map(({ shot }) => shot.frame ?? { x: 0, y: 0, ...viewportOf(shot) })
-  const x = Math.min(...frames.map((box) => box.x))
-  const y = Math.min(...frames.map((box) => box.y))
-  const right = Math.max(...frames.map((box) => box.x + box.width))
-  const bottom = Math.max(...frames.map((box) => box.y + box.height))
-  const frame = relative({ x, y, width: right - x, height: bottom - y }, whole) ?? whole
+  const { whole, seen } = sharedFrame(shots)
+  const frame = seen ?? whole
   if (block.crop !== null && reached.every(({ shot }) => shot.frame === null))
     warnings.push(`${block.state}: crop ${JSON.stringify(block.crop)} found nothing; showing the whole frame`)
   const drawn = reached.map(({ side, shot }) => {
@@ -201,12 +207,11 @@ export function composeBlock(block, sides, shots) {
 const calloutRoom = 32
 
 export function calloutCrops(block, sides, shots) {
+  const frame = sharedFrame(shots).seen
+  if (frame === null) return []
   return shots.flatMap((shot, at) => {
     if (shot.error) return []
     const image = PNG.sync.read(shot.full)
-    const viewport = shot.viewport ?? designViewport
-    const whole = { x: 0, y: 0, ...viewport }
-    const frame = relative(shot.frame ?? whole, whole) ?? whole
     return shot.boxes.flatMap((box, index) => {
       if (relative(box, frame) === null) return []
       const top = Math.max(frame.y, box.y - calloutRoom)
@@ -217,7 +222,7 @@ export function calloutCrops(block, sides, shots) {
           number: index + 1,
           note: block.callouts[index]?.note,
           side: sides[at].key,
-          png: crop(image, strip, image.width / viewport.width, 0),
+          png: crop(image, strip, image.width / (shot.viewport ?? designViewport).width, 0),
         },
       ]
     })
