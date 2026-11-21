@@ -31,6 +31,7 @@ assert.deepEqual(
     "chart-waterfall.mjs",
     "color-picker.mjs",
     "color-transforms.mjs",
+    "deck-templates.mjs",
     "diagram-edits.mjs",
     "element-order.mjs",
     "emptied-text.mjs",

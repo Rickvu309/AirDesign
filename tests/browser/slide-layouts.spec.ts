@@ -30,7 +30,15 @@ async function blank(page: Page): Promise<void> {
   await decksOn(page).blank()
 }
 
-const layoutNames = ["Title Slide", "Title and Content", "Section Header", "Two Content", "Title Only", "Blank"]
+const layoutNames = [
+  "Title Slide",
+  "Section Header",
+  "Title and Content",
+  "Two Content",
+  "Title Only",
+  "Closing",
+  "Blank",
+]
 const entry = (page: Page, number: number) => page.locator(`[data-slide-entry="${number}"]`)
 const placeholder = (page: Page, part: string, shape: number) =>
   page.locator(`[data-slide-paint] [data-canvas-element="${part}#${String(shape)}"]`)
@@ -45,7 +53,7 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
   await expect(menu.getByRole("menuitem")).toHaveText(layoutNames)
   await menu.getByRole("menuitem", { name: "Two Content", exact: true }).click()
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(4)
   await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(3)
   const heading = placeholder(page, "ppt/slides/slide2.xml", 2).locator('[contenteditable="true"]')
   await heading.click()
@@ -57,7 +65,7 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
   await decks.ready()
   await entry(page, 2).click()
   await expect(heading).toHaveText("Two columns")
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(4)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
   const file = testInfo.outputPath("slide-layouts.pptx")
@@ -71,7 +79,7 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
   await decks.open(file)
   await entry(page, 2).click()
   await expect(heading).toHaveText("Two columns")
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(4)
 })
 
 test("the plus button adds the deck's content layout after a title slide and the same layout after any other", async ({
@@ -101,5 +109,5 @@ test("Undo removes a slide added from the menu and Redo brings it back with its 
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   await page.getByRole("button", { name: /^Redo/ }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(4)
 })
