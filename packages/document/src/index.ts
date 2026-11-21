@@ -334,7 +334,7 @@ export {
 } from "./color.js"
 export { cycledColor, presentSlots } from "./template-remix.js"
 export { fixedLineHeight } from "./text-restyle.js"
-export { paragraphedTable, paragraphedText } from "./line-breaks.js"
+export { filedText, paragraphedTable, paragraphedText } from "./line-breaks.js"
 export { placedTable, placedText } from "./added-text.js"
 export {
   noCharacters,

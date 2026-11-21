@@ -32,7 +32,7 @@ import type { ElementPatch, FieldEdit, Row } from "./row.js"
 import { siteCount } from "./preset-sites.js"
 import { floorNodes, openingElement } from "./slide-floor.js"
 import { presentSlides, slideGone } from "./slide-order.js"
-import { restyled } from "./text-restyle.js"
+import { textInputValue } from "./text-input.js"
 import { readTextValue } from "./text-value.js"
 import { inputFills } from "./trait-fills.js"
 import {
@@ -80,6 +80,7 @@ export type ScopedElement = {
   readonly textStyleEdits?: readonly TextStyleEdit[]
   readonly kept: readonly DesignKey[]
   readonly value: string | null
+  readonly floor?: string | null
   readonly box: Box | null
   readonly placed?: Box
   readonly outline?: Outline | null
@@ -164,9 +165,13 @@ function traitPatch(
   for (const [key, value] of Object.entries(fields))
     if (!inputOf(trait, key)) edits[key] = value === null ? "inherit" : { set: value }
   if (trait === "fills") return { ...edits, ...inputFills(input) }
-  if (trait !== "text" || !Object.keys(input).some((key) => inputOf(trait, key))) return edits
-  const base = typeof input.value === "string" ? input.value : (view.value ?? "")
-  return { ...edits, value: { set: restyled(base, input) } }
+  if (trait !== "text") return edits
+  const value = textInputValue(
+    input,
+    view,
+    Object.keys(input).some((key) => inputOf(trait, key)),
+  )
+  return value === undefined ? edits : { ...edits, value: { set: value } }
 }
 
 function moves(input: Loose): boolean {
@@ -418,6 +423,7 @@ export function registerScope(register: Register): Scope {
         textStyleEdits: storedTextStyleEdits(body),
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
+        floor: opening?.value ?? null,
         box,
         ...(framed === null ? {} : { origin: framed.origin }),
         ...(shown === null ? {} : { shown }),

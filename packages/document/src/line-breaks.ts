@@ -48,3 +48,13 @@ export function paragraphedTable(stored: string): string {
     })),
   })
 }
+
+export function filedText(floor: string | null | undefined, stored: string): string {
+  const file = readTextValue(floor ?? "")
+  const first = file?.[0]
+  if (first === undefined || readTextValue(stored) !== null) return stored
+  const from = first.runs[0]?.from ?? -1
+  return writeTextValue(
+    stored.split(lineBreak).map((line) => ({ from: first.from, runs: line === "" ? [] : [{ from, text: line }] })),
+  )
+}
