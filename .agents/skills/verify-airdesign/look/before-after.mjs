@@ -205,25 +205,22 @@ export function calloutCrops(block, sides, shots) {
     if (shot.error) return []
     const image = PNG.sync.read(shot.full)
     const viewport = shot.viewport ?? designViewport
-    const frame = shot.frame ?? { x: 0, y: 0, ...viewport }
-    const scale = image.width / viewport.width
-    return shot.boxes.flatMap((box, index) =>
-      box === null
-        ? []
-        : [
-            {
-              number: index + 1,
-              note: block.callouts[index]?.note,
-              side: sides[at].key,
-              png: crop(
-                image,
-                { x: frame.x, y: box.y - calloutRoom, width: frame.width, height: box.height + calloutRoom * 2 },
-                scale,
-                0,
-              ),
-            },
-          ],
-    )
+    const whole = { x: 0, y: 0, ...viewport }
+    const frame = relative(shot.frame ?? whole, whole) ?? whole
+    return shot.boxes.flatMap((box, index) => {
+      if (relative(box, frame) === null) return []
+      const top = Math.max(frame.y, box.y - calloutRoom)
+      const bottom = Math.min(frame.y + frame.height, box.y + box.height + calloutRoom)
+      const strip = { x: frame.x, y: top, width: frame.width, height: bottom - top }
+      return [
+        {
+          number: index + 1,
+          note: block.callouts[index]?.note,
+          side: sides[at].key,
+          png: crop(image, strip, image.width / viewport.width, 0),
+        },
+      ]
+    })
   })
 }
 

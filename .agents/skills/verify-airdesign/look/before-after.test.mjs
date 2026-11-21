@@ -134,3 +134,28 @@ it("cuts nothing on a side that was not reached", () => {
   ])
   expect(crops.map(({ side }) => side)).toEqual(["after"])
 })
+
+it("keeps a callout's photo inside the crop frame, and cuts none for a callout the frame does not show", () => {
+  const crops = calloutCrops(
+    {
+      state: "agent-empty",
+      callouts: [
+        { at: "h2", note: "Near the top edge" },
+        { at: "footer", note: "Below the screen" },
+      ],
+    },
+    [{ key: "page" }],
+    [
+      {
+        full: PNG.sync.write(blank(250, 200)),
+        viewport: { width: 250, height: 200 },
+        frame: { x: 50, y: 80, width: 100, height: 60 },
+        boxes: [
+          { x: 60, y: 90, width: 30, height: 10 },
+          { x: 60, y: 900, width: 30, height: 10 },
+        ],
+      },
+    ],
+  )
+  expect(crops.map(({ number, png }) => [number, png.width, png.height])).toEqual([[1, 100, 52]])
+})
