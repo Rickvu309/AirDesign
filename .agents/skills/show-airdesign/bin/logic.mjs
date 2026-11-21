@@ -6,6 +6,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { openBrowser } from "../../verify-airdesign/bin/browser.mjs"
 import { pageWidth, toHtml, toMarkdown } from "../logic/page.mjs"
+import { drawPicture, pictureFaults } from "../logic/picture.mjs"
 import { readTree } from "../logic/tree.mjs"
 
 const usage = "show-airdesign logic <tree.json> [--out dir]"
@@ -59,14 +60,9 @@ async function renderPng(html, file) {
   const browser = await openBrowser()
   try {
     const page = await browser.newPage({ viewport: { width: pageWidth, height: 800 }, deviceScaleFactor: 2 })
-    await page.setContent(html)
-    await page.evaluate(async () => {
-      await document.fonts.load('16px "Inter Variable"')
-      await document.fonts.ready
-      await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)))
-      for (const photo of document.querySelectorAll(".thumb")) photo.style.width = `${String(photo.naturalWidth / 2)}px`
-    })
+    await drawPicture(page, html)
     await page.locator("main").screenshot({ path: file })
+    return await pictureFaults(page)
   } finally {
     await browser.close()
   }
@@ -94,8 +90,9 @@ async function main(args) {
   const html = toHtml(tree, interCss(repo), localImages(tree, repo))
   writeFileSync(files.md, toMarkdown(tree))
   writeFileSync(files.html, html)
-  await renderPng(html, files.png)
-  console.log(JSON.stringify({ verdict: tree.verdict, files }, null, 2))
+  const faults = await renderPng(html, files.png)
+  console.log(JSON.stringify({ verdict: tree.verdict, files, faults }, null, 2))
+  if (faults.length > 0) process.exitCode = 1
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) await main(process.argv.slice(2))
