@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { test, type BrowserContext, type Page } from "@playwright/test"
+import type { BrowserContext, Page } from "@playwright/test"
+import { test } from "../browser/deck-test"
 
 type Kit = { readonly capture: (label: string) => Promise<string> }
 type Journey = (kit: Kit) => Promise<void>
