@@ -188,3 +188,15 @@ export async function watchDeckState(context: BrowserContext, now: () => number 
     },
   }
 }
+
+export const deckStateFixture: [
+  (given: { context: BrowserContext }, use: (state: DeckState) => Promise<void>, testInfo: TestInfo) => Promise<void>,
+  { auto: true },
+] = [
+  async ({ context }, use, testInfo) => {
+    const state = await watchDeckState(context)
+    await use(state)
+    if (testInfo.status !== testInfo.expectedStatus) await state.attach(testInfo)
+  },
+  { auto: true },
+]

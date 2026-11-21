@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import type { BrowserContext, Page } from "@playwright/test"
-import { test } from "../browser/deck-test"
+import { test as base, type BrowserContext, type Page } from "@playwright/test"
+import { deckStateFixture, type DeckState } from "../browser/deck-state"
 
 type Kit = { readonly capture: (label: string) => Promise<string> }
 type Journey = (kit: Kit) => Promise<void>
@@ -18,6 +18,8 @@ type Helper = {
 
 const run = process.env.VERIFY_AIRDESIGN_RUN ?? ""
 const helperFile = join(process.cwd(), ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs")
+
+const test = base.extend<{ deckState: DeckState }>({ deckState: deckStateFixture })
 
 test.use({ baseURL: process.env.VERIFY_AIRDESIGN_ORIGIN })
 
