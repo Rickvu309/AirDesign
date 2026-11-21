@@ -47,8 +47,9 @@ Land finished work now as its own PR; `pnpm land` rechecks against whatever merg
   - `device` decides whether the user's open tab can take device work now.
   - `oauth` is the grant state machine.
   - `usage` is the Claude spend ledger and its allowance.
-  - `fonts` names each font family and the files our server serves for it.
+  - `fonts` names each font family and the files we serve for it.
   - `theme` holds the tokens for color, type, space and motion.
+  - `templates` holds the templates a deck starts from.
 - `specs/<topic>` holds a TLA+ spec for each state machine. A rule a person cares about is an invariant there.
 - `tooling/` holds rules that constrain code. `scripts/` holds runners and generators.
 

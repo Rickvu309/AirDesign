@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { shareOut, validationKey, validatorCode, validatorLine, validatorLists } from "./pptx-validator.mjs"
+import { namedLists, shareOut, validationKey, validatorCode, validatorLine, validatorLists } from "./pptx-validator.mjs"
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-validator-"))
 process.on("exit", () => fs.rmSync(folder, { recursive: true, force: true }))
@@ -116,3 +116,12 @@ assert.notEqual(
 )
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
 assert.match(validatorCode(root), /^[0-9a-f]{64}$/)
+
+const byFile = new Map([
+  ["a.pptx", ["Error: a"]],
+  ["neutral.pptx", []],
+])
+const named = namedLists(byFile, ["a.pptx", "../../packages/templates/files/neutral.pptx"])
+assert.deepEqual(named.get("a.pptx"), ["Error: a"])
+assert.deepEqual(named.get("../../packages/templates/files/neutral.pptx"), [])
+assert.deepEqual(named.get("neutral.pptx"), [])
