@@ -21,7 +21,7 @@ export type Load = {
 
 export type DeckState = {
   readonly loads: () => readonly Load[]
-  readonly attach: (testInfo: TestInfo) => Promise<void>
+  readonly attach: (testInfo: Pick<TestInfo, "status" | "outputPath" | "attach">) => Promise<void>
 }
 
 type Loaded = {
@@ -169,6 +169,7 @@ export async function watchDeckState(context: BrowserContext, now: () => number 
     loads: () => [...loads],
     async attach(testInfo) {
       const pages = context.pages().filter((page) => !page.isClosed() && /^https?:/.test(page.url()))
+      if (pages.length === 0 && loads.length === 0) return
       const reader = pages[0]
       const device = reader === undefined ? { error: "no page of the app was open" } : await reading(reader)
       const server: Record<string, unknown>[] = []
