@@ -90,7 +90,7 @@ The tool cannot see whether a split truly has no overlap, whether a claim is tru
 
 ## When the evidence is a screen
 
-A leaf about something a person sees rests on an image of it. Make that image with [annotate.md](annotate.md): a before and after for the PR, or callouts on one run for a bug or a proposal. Put the image's path or published link in the leaf's evidence; the picture embeds the photo in that box, at a size you can read, the first time it appears. Crop it close to the part that matters, so it reads at box size; never name the file instead.
+A leaf about something a person sees rests on an image of it. Make that image with [annotate.md](annotate.md): a before and after for the PR, or callouts on one run for a bug or a proposal. Put the image's path or published link in the leaf's evidence; the picture embeds the photo in that box, at a size you can read, the first time it appears. Crop it close to the part that matters; the picture draws a 2x capture at its true size, never wider than the box, and never names the file instead.
 
 ## Done when
 

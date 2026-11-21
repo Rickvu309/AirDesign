@@ -64,6 +64,7 @@ async function renderPng(html, file) {
       await document.fonts.load('16px "Inter Variable"')
       await document.fonts.ready
       await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)))
+      for (const photo of document.querySelectorAll(".thumb")) photo.style.width = `${String(photo.naturalWidth / 2)}px`
     })
     await page.locator("main").screenshot({ path: file })
   } finally {
