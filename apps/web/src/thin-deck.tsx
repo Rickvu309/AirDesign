@@ -50,7 +50,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [tone] = useState(toneLink)
   useDeckOpen(deck)
   useNetwork(deck)
-  useFindingsReport(id, deck.shown.shownParts, deck.openedDeck === id)
+  useFindingsReport(id, deck.shown.shownParts, deck.openedDeck === id, deck.pictureTool.store)
   const undoButtons = useUndoTurn(deck)
   const newer = useSyncExternalStore(watchNewer, storeNewer)
   const settled = useSettled()

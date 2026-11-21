@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { notifyKey, readDeckId, readNamedDeck, type DeckId, type FindingsReport } from "@airdesign/catalog"
-import { measureOwed } from "@airdesign/document"
+import { measureOwed, readSlideId } from "@airdesign/document"
 import { openDeck, ownedDecks, type Deck } from "@airdesign/engine"
 import {
   afterWrite,
@@ -14,6 +14,7 @@ import {
   imagesPerCall,
   type NamedImage,
   type Host,
+  type ReadPictures,
   type Lost,
   type Session,
   type ToolResult,
@@ -28,6 +29,8 @@ import type { OriginalStore } from "./original-store.js"
 import { admitCaller, refundCaller } from "./caller-log.js"
 import { readOwnedDecks } from "./deck-list.js"
 import type { DeckFindings } from "./deck-findings.js"
+import type { DeckPictures } from "./deck-pictures.js"
+import { readPictures } from "./read-pictures.js"
 import type { DeckListen } from "./listen.js"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved, readStoredOnce, uniqueOnce, writeRevision } from "./saved.js"
@@ -51,6 +54,7 @@ export type Measures = {
   readonly following: (deck: string) => boolean
   readonly limit: number
   readonly findings?: Pick<DeckFindings, "latest" | "wait">
+  readonly pictures?: Pick<DeckPictures, "shot" | "wait">
 }
 
 type Saved = Awaited<ReturnType<typeof readSaved>>
@@ -110,6 +114,20 @@ async function freshFindings(
   const until = AbortSignal.timeout(measures.limit)
   while (behind() && !until.aborted) await findings.wait(deck, until)
   return findings.latest(deck)
+}
+
+function argsOf(raw: unknown): Readonly<Record<string, unknown>> {
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {}
+}
+
+function picturesAsked(name: string, raw: unknown): boolean {
+  return name === "airdesign_read_deck" && argsOf(raw).picture === true
+}
+
+async function shownPictures(measures: Measures | undefined, deck: Deck, raw: unknown): Promise<ReadPictures> {
+  const pictures = measures?.pictures
+  const watch = measures === undefined || pictures === undefined ? undefined : { ...measures, pictures }
+  return readPictures(watch, deck, readSlideId(argsOf(raw).slide))
 }
 
 async function savedAt(db: Sql, deck: DeckId, email: string, revision: number): Promise<Deck | undefined> {
@@ -180,6 +198,8 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
         loaded = (await savedAt(host.deck, named.deck, host.email, findings.revision)) ?? loaded
       session.deck = loaded
       session.findings = findings
+      if (picturesAsked(name, raw)) session.pictures = await shownPictures(host.measures, loaded, raw)
+      else delete session.pictures
       dropGoneTurn(session, seen)
       if (name === "airdesign_edit_deck") await fetchedImages(host, session, named.deck, raw)
       if (session.once === undefined) return { ok: true }

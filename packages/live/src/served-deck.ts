@@ -6,7 +6,7 @@ import { indexedGridOpening } from "./grid-opening.js"
 import type { Remote } from "./remote.js"
 
 export type ServedDeck =
-  | { readonly ok: true; readonly revision: number; readonly register: Register }
+  | { readonly ok: true; readonly revision: number; readonly register: Register; readonly saved: Register }
   | { readonly ok: false; readonly refusal: WireRefusal }
 
 const knownByRemote = new WeakMap<Remote, Map<DeckId, number>>()
@@ -32,5 +32,5 @@ export async function servedDeck(remote: Remote, deck: string): Promise<ServedDe
   }
   const rows = rowsFromRegister(parsed.deck, opened.register)
   const shown = view(parsed.deck, rows, indexedGridOpening(opened.register.index))
-  return { ok: true, revision: opened.revision, register: shown.register }
+  return { ok: true, revision: opened.revision, register: shown.register, saved: opened.register }
 }

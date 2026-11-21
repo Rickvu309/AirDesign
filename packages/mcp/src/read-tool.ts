@@ -1,8 +1,10 @@
 import { readDeckQuery, readListDecks } from "@airdesign/catalog"
+import { readSlideId } from "@airdesign/document"
 import { listLead, pageOwned, readDeckPage, readLead } from "@airdesign/engine"
 
 import type { Session, ToolResult } from "./call-tool.js"
 import { editRefusal } from "./edit-answer.js"
+import { pictureBlocks } from "./slide-pictures.js"
 
 export function readDeckTool(raw: unknown, session: Session, runId: string | null): ToolResult {
   const before = session.deck
@@ -16,6 +18,10 @@ export function readDeckTool(raw: unknown, session: Session, runId: string | nul
     ...(session.findings?.deck === before.id ? { findings: session.findings } : {}),
   })
   const lead = readLead(reported.revision)
+  const pictures =
+    parsed.picture === true
+      ? pictureBlocks(session.pictures, before.register, readSlideId(parsed.slide), before.revision)
+      : []
   return {
     ok: true,
     deck: before,
@@ -24,6 +30,7 @@ export function readDeckTool(raw: unknown, session: Session, runId: string | nul
       { type: "text", text: lead },
       { type: "text", text: JSON.stringify(reported) },
     ],
+    ...(pictures.length === 0 ? {} : { pictures }),
   }
 }
 

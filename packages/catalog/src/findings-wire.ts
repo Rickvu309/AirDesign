@@ -1,4 +1,5 @@
 import { limits, readElementId, type ElementId } from "@airdesign/document"
+import { readSlidePictures, type SlidePictures } from "./slide-pictures-wire.js"
 import { fieldRefusal, knownKeys, readDeckId, recordOf, type DeckId, type FieldRefusal } from "./wire.js"
 
 export type WireFinding = { readonly node: ElementId } & (
@@ -33,6 +34,7 @@ export type FindingsReport = {
   readonly revision: number
   readonly findings: readonly WireFinding[]
   readonly broken?: true
+  readonly pictures?: SlidePictures
 }
 
 type Body = Readonly<Record<string, unknown>>
@@ -146,7 +148,8 @@ export function readFindingsReport(
   raw: unknown,
 ): ({ readonly ok: true } & FindingsReport) | FieldRefusal | Exclude<ReturnType<typeof readDeckId>, { ok: true }> {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "revision", "findings", "broken"])) return fieldRefusal
+  if (body === undefined || !knownKeys(body, ["deck", "revision", "findings", "broken", "pictures"]))
+    return fieldRefusal
   if (!Object.hasOwn(body, "deck") || !Array.isArray(body.findings)) return fieldRefusal
   const deck = readDeckId(body.deck)
   if (!deck.ok) return deck
@@ -161,5 +164,14 @@ export function readFindingsReport(
     if (read === undefined) return fieldRefusal
     findings.push(read)
   }
-  return { ok: true, deck: deck.deck, revision, findings, ...(body.broken === true ? { broken: true as const } : {}) }
+  const report = {
+    ok: true as const,
+    deck: deck.deck,
+    revision,
+    findings,
+    ...(body.broken === true ? { broken: true as const } : {}),
+  }
+  if (!Object.hasOwn(body, "pictures")) return report
+  const pictures = readSlidePictures(body.pictures)
+  return pictures === undefined ? fieldRefusal : { ...report, pictures }
 }

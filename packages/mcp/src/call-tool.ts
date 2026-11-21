@@ -1,3 +1,4 @@
+import type { ReadPictures } from "./slide-pictures.js"
 import type { NamedImages } from "./named-image.js"
 import { editDeck } from "./edit-tool.js"
 import { catalog, projectTools, readRun, type AgentOp, type FindingsReport, type WireRefusal } from "@airdesign/catalog"
@@ -19,6 +20,7 @@ import { liveTurn, type Turn, type Turns } from "./turn.js"
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
 export type Session = {
+  pictures?: ReadPictures
   readonly caller: AgentCaller
   deck: Deck
   log: CallerLog
@@ -36,6 +38,8 @@ export type ToolContent = {
   readonly text: string
 }
 
+export type PictureBlock = ToolContent | { readonly type: "image"; readonly data: string; readonly mimeType: string }
+
 export type ToolResult =
   | {
       readonly ok: true
@@ -43,6 +47,7 @@ export type ToolResult =
       readonly content: readonly ToolContent[]
       readonly answer?: EditAnswer
       readonly reported?: ReadDeckAnswer | ListDeckAnswer
+      readonly pictures?: readonly PictureBlock[]
     }
   | {
       readonly ok: false

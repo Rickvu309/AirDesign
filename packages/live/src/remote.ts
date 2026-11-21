@@ -25,6 +25,7 @@ import {
   storedValue,
   type IndexPage,
   type Register,
+  type SlideId,
 } from "@airdesign/document"
 
 export type { OpenResult, CommitResult, WatchResult } from "@airdesign/catalog"
@@ -45,7 +46,10 @@ export type Remote = {
   watch(body: { readonly deck: string; readonly cursor: number | null }): Promise<WatchResult>
   findings?(
     body: FindingsReport,
-  ): Promise<{ readonly ok: true; readonly deck: DeckId } | { readonly ok: false; readonly refusal: WireRefusal }>
+  ): Promise<
+    | { readonly ok: true; readonly deck: DeckId; readonly missing?: readonly SlideId[] }
+    | { readonly ok: false; readonly refusal: WireRefusal }
+  >
 }
 
 type StoredDeck = { readonly revision: number; readonly register: Register }

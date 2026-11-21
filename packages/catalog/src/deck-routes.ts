@@ -1,6 +1,6 @@
 import { creditsRoutes } from "./credits-routes.js"
 import { unreachable } from "@airdesign/device"
-import { readRegister, refusals, type Register } from "@airdesign/document"
+import { readRegister, readSlideId, refusals, type Register, type SlideId } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
 import { readFindingsReport } from "./findings-wire.js"
 import { readDeckIndex } from "./index-wire.js"
@@ -144,6 +144,12 @@ function deckAnswer(raw: unknown): raw is { readonly deck: DeckId } & Record<str
   return recordAnswer(raw) && readCapture({ deck: raw.deck }).ok
 }
 
+function findingsAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly missing?: readonly SlideId[] } {
+  if (!deckAnswer(raw)) return false
+  const { missing } = raw
+  return missing === undefined || (Array.isArray(missing) && missing.every((slide) => readSlideId(slide) !== undefined))
+}
+
 function renameAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly name: string } {
   return deckAnswer(raw) && typeof raw.name === "string"
 }
@@ -202,7 +208,7 @@ export const deckRoutes = {
   mediaUpload: { path: "/decks/media/upload", read: readOriginalUpload, result: decode(uploadAnswer) },
   media: { path: "/decks/media", read: readMediaRequest, result: decode(originalAnswer) },
   undo: { path: "/decks/undo", read: readRun, result: decode(commitAnswer) },
-  findings: { path: "/decks/findings", read: readFindingsReport, result: decode(deckAnswer) },
+  findings: { path: "/decks/findings", read: readFindingsReport, result: decode(findingsAnswer) },
 } as const
 
 export const airaRoutes = {
