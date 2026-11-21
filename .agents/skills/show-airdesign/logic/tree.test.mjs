@@ -155,6 +155,21 @@ describe("the rules a tree must keep", () => {
     expect(readTree(plan, { resolves })).toMatchObject({ refusals: [], tree: { verdict: null } })
   })
 
+  it("plain: a claim is short and has no code in it", () => {
+    const input = result()
+    input.answer.children[0].claim = "The fresh flag in before-after.mjs set the badge on every error"
+    input.answer.children[1].claim = "readCallouts and captureSide now agree"
+    input.answer.children[2].claim =
+      "Three real runs against a planted base show that only the state main lacks is ever called new by the tool"
+    expect(rules(input)).toEqual(["plain", "plain", "plain"])
+  })
+
+  it("plain: the question and what a split covers stay short and plain too", () => {
+    const input = result({ question: "Does `composeBlock` badge a failed base?" })
+    input.answer.group.covers = "the old fault, the new rule, the proof, and every edge case we found along the way"
+    expect(rules(input)).toEqual(["plain", "plain"])
+  })
+
   it("weakest support: a verdict lives on evidence, never on a claim", () => {
     const input = result()
     input.answer.verdict = "passed"

@@ -19,26 +19,39 @@ Verify proves a change to the agent. Show makes it plain to a person, fast enoug
 | "How does this work?"               | `explain` | `steps` in time order, drawn as a flow; add `"loop": true` when the last step feeds the first. Or `parts` |
 | "Is it done and right?"             | `assure`  | `reasons`, each resting on Verify's evidence                                                              |
 
-## Write the tree
+## Write for the person reading it
+
+The owner reads the boxes, not the code. Write every question, claim and caption the way you would say it to them across a table, as the `bro` and `teach` skills ask.
+
+- **Use their words.** Say what a person sees or gets: "the picture", "the slide", "the save". Leave code names, file names and flags to the evidence chips.
+- **One idea per box, in one short sentence.** Lead with the point. If a sentence needs a comma to hold two ideas, it is two boxes.
+- **One name per thing.** Pick a word and keep it across the page. A "screen" in one box is not a "state" in the next.
+- **Say the mechanism, not a label for it.** "Main has never had this screen" beats "Absent from the registry".
+- **Read the page aloud.** If a box would make the owner ask "what does that mean?", rewrite it.
+
+| Instead of                                      | Write                                                 |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| Any base that failed to capture was labeled new | Before, any screen main failed to show was called new |
+| New only when main's state list lacks it        | New: main has never had this screen                   |
 
 Write the tree as JSON, then run `logic` on it. The tool refuses a tree that breaks a rule and names the rule, the place and the fix.
 
 ```json
 {
   "kind": "assure",
-  "question": "Can a reviewer trust what before-after says about main?",
+  "question": "Can I trust what the before and after picture says about main?",
   "answer": {
-    "claim": "Before-after no longer calls a broken base New in this PR",
-    "group": { "axis": "reasons", "covers": "the fault, the new rule, and the proof" },
+    "claim": "The picture no longer calls a screen new when main simply failed to show it",
+    "group": { "axis": "reasons", "covers": "what went wrong, the new rule, and the proof" },
     "children": [
       {
-        "claim": "Any base that failed to capture was labeled new",
+        "claim": "Before, any screen main failed to show was called new",
         "evidence": [
           { "ref": ".agents/skills/verify-airdesign/look/fragment.mjs:24", "source": "Observed", "verdict": "passed" }
         ]
       },
       {
-        "claim": "CI has not judged the change yet",
+        "claim": "CI has not checked the change yet",
         "evidence": [
           { "ref": "https://github.com/Rickvu309/AirDesign/pull/<n>", "source": "Observed", "verdict": "open" }
         ]
@@ -62,10 +75,11 @@ The rules it holds:
 4. **Vertical.** The first split fits the kind: `decide` by options, `explain` by steps or parts, `assure` by reasons.
 5. **Horizontal.** Every split names its `axis` and what it `covers`, so a reader sees whether a branch is missing.
 6. **Grounded.** Every leaf has evidence, and every `ref` opens: a repo file, a file at a line it has, or an `https` link.
-7. **Source.** Each piece of evidence is `Proposal` (an idea), `Prototype` (tried under a setup) or `Observed` (the real app, the code, a check). A proposal never passes. An `assure` tree rests only on what ran, with a verdict on every piece.
+7. **Source.** Each piece of evidence is `Proposal` (an idea), `Prototype` (tried under a setup) or `Observed` (the real app, the code, a check). A proposal never passes. An `assure` tree rests only on what ran, with a verdict on every piece. The page tags only `Proposal` and `Prototype`; `Observed` is the default and stays untagged, so a tag always means "not yet run for real".
 8. **Weakest support.** A verdict lives on evidence only. The tool rolls it up, and each claim takes the weakest verdict beneath it. One open leaf leaves the answer open.
+9. **Plain.** The question and each claim stay short (16 words, 22 for the answer, 14 for what a split covers) and carry no code: no backticks, file names, paths, camelCase or snake_case.
 
-The tool cannot see whether a split truly has no overlap or whether a claim is true. That is your judgment: name the axis and what it covers honestly, and read every claim against its evidence before you show the page.
+The tool cannot see whether a split truly has no overlap, whether a claim is true, or whether a plain word is still jargon to the owner. That is your judgment: name the axis and what it covers honestly, and read every claim against its evidence before you show the page.
 
 ## When the evidence is a screen
 

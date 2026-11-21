@@ -37,9 +37,9 @@ describe("a logic page", () => {
         "Split by reasons. Covers the old fault and the proof.",
         "",
         "- **A.** Any failure on <main> was labeled new (Passed)",
-        "  - Observed, passed: `look/before-after.mjs:180`",
+        "  - `look/before-after.mjs:180` (passed)",
         "- **B.** Three real runs show only the new state says new (Open)",
-        "  - Observed, open: [run.png](https://github.com/o/r/releases/download/proof-4/run.png)",
+        "  - [run.png](https://github.com/o/r/releases/download/proof-4/run.png) (open)",
         "",
       ].join("\n"),
     )
@@ -56,7 +56,7 @@ describe("a logic page", () => {
     expect(html).toContain(">Reasons (2)</div>")
     expect(html).toContain(">The old fault and the proof</div>")
     expect(html).toContain('<span class="badge">A</span>')
-    expect(html).toContain("Evidence: Observed 2")
+    expect(html).not.toContain("Observed")
   })
 
   it("draws a steps split as a flow, loops back when asked, and leaves out the verdict note when nothing has one", () => {
@@ -80,6 +80,8 @@ describe("a logic page", () => {
     expect(html.match(/<i class="arrow"><\/i>/g)).toHaveLength(1)
     expect(html).not.toContain('class="tree"')
     expect(html).not.toContain("Each verdict is the weakest")
+    expect(html).toContain("<b>Proposal</b>")
+    expect(html).toContain("Not yet run: Proposal 1")
   })
 
   it("shortens a reference to what a reader recognises", () => {
@@ -88,6 +90,7 @@ describe("a logic page", () => {
     expect(
       shortRef("https://github.com/o/r/releases/download/proof-4/branch-capture-outcomes-proof-2652c25e03.png"),
     ).toBe("…-proof-2652c25e03.png")
+    expect(shortRef("https://github.com/Rickvu309/AirDesign/pull/1200")).toBe("PR 1200")
     expect(shortRef("look/a-very-long-file-name-for-a-test.mjs:180")).toBe("…me-for-a-test.mjs:180")
   })
 })
