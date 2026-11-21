@@ -32,10 +32,12 @@ const leading: Readonly<Record<Role, number>> = {
 const styleNames: Readonly<Record<Role, readonly string[]>> = {
   number: ["Big number"],
   heading: ["Heading"],
-  point: ["Body 2", "Body", "Body 1"],
+  point: ["Body 2", "Body"],
   caption: ["Caption"],
   label: ["Label"],
 }
+
+const scaleMark = "Heading"
 
 export const typeSteps = [1, 0.9, 0.8, 0.7, 0.6] as const
 
@@ -47,8 +49,9 @@ function namedStyle(styles: readonly TextStyle[], role: Role): TextStyle | undef
 
 export function typeScale(size: SlideSize, styles: readonly TextStyle[], step: number = 1): TypeScale {
   const unit = (size.height / point / 540) * step
+  const scaled = styles.some((style) => style.name === scaleMark) ? styles : []
   const entries = roles.map((role) => {
-    const style = namedStyle(styles, role)?.fields
+    const style = namedStyle(scaled, role)?.fields
     const strong = role === "number" || role === "heading"
     const wanted = Math.max(
       800,
