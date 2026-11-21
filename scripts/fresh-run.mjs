@@ -20,7 +20,7 @@ const jobFault = (job) => {
   return other === undefined ? undefined : `step ${other} failed, and it is not a browser or journeys step`
 }
 
-export const outsideTheDiff = ({ jobs, files }) => {
+export const outsideTheDiff = ({ jobs, files, byMap = false }) => {
   if (jobs.length === 0) return { outside: false, why: "no failed job log could be read" }
   for (const job of jobs) {
     const fault = jobFault(job)
@@ -35,10 +35,12 @@ export const outsideTheDiff = ({ jobs, files }) => {
   const changed = tests.find((test) => files.includes(test.file))
   if (changed !== undefined)
     return { outside: false, owned: true, why: `this pull request changes the failed test ${changed.file}` }
-  const reaches = jobsReachedBy(files)
-  const reached = jobs.find((job) => reaches(job.name))
-  if (reached !== undefined)
-    return { outside: false, owned: true, why: `the change map says this pull request can affect ${reached.name}` }
+  if (byMap) {
+    const reaches = jobsReachedBy(files)
+    const reached = jobs.find((job) => reaches(job.name))
+    if (reached !== undefined)
+      return { outside: false, owned: true, why: `the change map says this pull request can affect ${reached.name}` }
+  }
   return { outside: true, tests }
 }
 
@@ -88,7 +90,10 @@ export const recordRaces = ({ gh, repository, run, head, tests, jobs, passed }) 
       test,
       excerpt: failureExcerpt(log, test),
       commit: head,
-      seen: `in ci run ${runUrl(repository, run.id)}, where the change map rules out the pull request's diff${passed === undefined ? "" : `, and passed in the fresh run ${runUrl(repository, passed)} on the same head`}`,
+      seen:
+        passed === undefined
+          ? `in ci run ${runUrl(repository, run.id)}, where the change map rules out the pull request's diff`
+          : `in ci run ${runUrl(repository, run.id)}, on a diff that leaves the test alone, and passed in the fresh run ${runUrl(repository, passed)} on the same head`,
     })
     if (kept.why !== undefined) return { why: kept.why }
     urls.push(kept.url)
@@ -96,17 +101,23 @@ export const recordRaces = ({ gh, repository, run, head, tests, jobs, passed }) 
   return { urls: [...new Set(urls)] }
 }
 
-export const freshRunComment = ({ repository, run, head, tests, queue, races = [] }) =>
+const freshRunReason = ({ byMap, races }) => {
+  if (!byMap)
+    return "One fresh run on this head will tell. Land records a race only if these tests pass in it, and stops for a fix if they fail again."
+  return races.length === 0
+    ? "Land records a race only after the failed tests pass in a fresh run on this head."
+    : `The red-main bot recorded the races in ${races.join(", ")}.`
+}
+
+export const freshRunComment = ({ repository, run, head, tests, queue, races = [], byMap = false }) =>
   [
     agentHeader,
     "",
-    `ci failed on head ${head.slice(0, 7)} in jobs the change map says this diff cannot reach. ${runUrl(repository, run.id)}`,
+    `ci failed on head ${head.slice(0, 7)} in ${byMap ? "jobs the change map says this diff cannot reach" : "tests this pull request does not edit"}. ${runUrl(repository, run.id)}`,
     "",
     ...tests.map((test) => `- ${test.line === undefined ? test.file : `${test.file}:${test.line}`}: ${test.name}`),
     "",
-    races.length === 0
-      ? "Land records a race only after the failed tests pass in a fresh run on this head."
-      : `The red-main bot recorded the races in ${races.join(", ")}.`,
+    freshRunReason({ byMap, races }),
     "",
     `Taking a fresh ci run with run attempt 1 by ${queue ? "entering the merge queue again" : "closing and reopening the pull request"}. If the fresh run fails, stop for a fix.`,
     "",
@@ -114,8 +125,8 @@ export const freshRunComment = ({ repository, run, head, tests, queue, races = [
     `<!-- fresh-ci-after: ${run.id} -->`,
   ].join("\n")
 
-export const freshRunVerdict = ({ gh, repository, number, head, jobs }) => {
-  const judged = outsideTheDiff({ jobs, files: pullFiles({ gh, repository, number }) })
+export const freshRunVerdict = ({ gh, repository, number, head, jobs, byMap = false }) => {
+  const judged = outsideTheDiff({ jobs, files: pullFiles({ gh, repository, number }), byMap })
   if (!judged.outside) return { take: false, owned: judged.owned === true, why: judged.why }
   const state = freshRunState({ gh, repository, number, head })
   if (state === undefined) return { take: false, why: "the pull request's comments could not be read" }
@@ -152,6 +163,16 @@ export const confirmFreshRaces = ({ gh, repository, number, head, runs }) => {
   const judged = outsideTheDiff({ jobs: read.jobs, files: pullFiles({ gh, repository, number }) })
   if (!judged.outside) return {}
   return recordRaces({ gh, repository, run: first, head, tests: judged.tests, jobs: read.jobs, passed: fresh.id })
+}
+
+export const failedTwice = ({ gh, repository, after, jobs }) => {
+  const first = failedJobLogs({ repository, gh, run: { id: after } })
+  if (first.warnings.length > 0) return []
+  const before = new Set(first.jobs.flatMap((job) => failedTests(job.log)).map(raceTitle))
+  const again = new Map()
+  for (const test of jobs.flatMap((job) => failedTests(job.log)))
+    if (before.has(raceTitle(test))) again.set(raceTitle(test), test)
+  return [...again.values()]
 }
 
 export const reopenPull = ({ gh, number, repository }) => {
