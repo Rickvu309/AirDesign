@@ -1,4 +1,4 @@
-export const pageWidth = 900
+export const pageWidth = 1080
 
 const kindWords = { decide: "Decision", explain: "How it works", assure: "Result" }
 const verdictWords = { passed: "Passed", open: "Open", failed: "Failed" }
@@ -63,41 +63,43 @@ function evidenceHtml(evidence) {
   return `<div class="refs">${pieces.join("")}</div>`
 }
 
-function itemHtml(node) {
+function nodeHtml(node, depth) {
+  const label = depth === 0 ? "" : `<span class="label">${node.label}</span>`
   const split = node.group ? `<p class="split">${escape(splitLine(node.group))}</p>` : ""
-  const children = node.children ? `<ul>${node.children.map(itemHtml).join("")}</ul>` : ""
-  return `<li><span class="label">${node.label}</span><div><p class="claim">${escape(node.claim)} ${chip(node.verdict)}</p>${split}${evidenceHtml(node.evidence)}${children}</div></li>`
-}
-
-function branchHtml(node) {
-  const split = node.group ? `<p class="split">${escape(splitLine(node.group))}</p>` : ""
-  const children = node.children ? `<ul>${node.children.map(itemHtml).join("")}</ul>` : ""
-  return `<article><header><span class="label big">${node.label}</span>${chip(node.verdict)}</header><h2>${escape(node.claim)}</h2>${split}${evidenceHtml(node.evidence)}${children}</article>`
+  const box = `<div class="box d${String(depth)}"><div class="head">${label}${chip(node.verdict)}</div><p class="claim">${escape(node.claim)}</p>${split}${evidenceHtml(node.evidence)}</div>`
+  const children = node.children
+    ? `<div class="kids">${node.children.map((child) => nodeHtml(child, depth + 1)).join("")}</div>`
+    : ""
+  return `<div class="node">${box}${children}</div>`
 }
 
 const style = `*{box-sizing:border-box}html,body{margin:0;background:var(--canvas)}
 body{width:${String(pageWidth)}px;font-family:"Geist Variable",system-ui,sans-serif;color:var(--foreground);-webkit-font-smoothing:antialiased}
-main{margin:16px;background:var(--background);border:1px solid var(--line);border-radius:10px;padding:24px 26px 18px}
+main{width:max-content;min-width:640px;margin:16px;background:var(--background);border:1px solid var(--line);border-radius:10px;padding:24px 26px 18px}
 .kind{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-foreground)}
 .question{margin:4px 0 0;font-size:13px;line-height:18px;color:var(--muted-foreground)}
-h1{margin:6px 0 0;font-size:22px;line-height:28px;font-weight:650;color:var(--navy);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-.rule{height:2px;background:var(--navy);margin:14px 0 10px}
-main>.split{margin:0;text-align:center;font-size:12px;color:var(--muted-foreground)}
-.stem{width:0;height:12px;margin:6px auto 0;border-left:1.5px solid var(--navy)}
-.branches{display:grid;grid-template-columns:repeat(var(--count),minmax(0,1fr));gap:14px;position:relative;padding-top:14px}
-.branches::before{content:"";position:absolute;top:0;left:calc(50% / var(--count));right:calc(50% / var(--count));border-top:1.5px solid var(--navy)}
-article{position:relative;min-width:0;border:1px solid var(--line);border-radius:8px;padding:12px 12px 10px;background:var(--background)}
-article::before{content:"";position:absolute;top:-15px;left:50%;height:14px;border-left:1.5px solid var(--navy)}
-article header{display:flex;justify-content:space-between;align-items:center}
-h2{margin:8px 0 0;font-size:14px;line-height:19px;font-weight:620}
-.label{flex:none;font-size:11px;font-weight:700;color:var(--navy);min-width:22px}
-.label.big{width:24px;height:24px;border-radius:50%;background:var(--navy);color:var(--background);display:flex;align-items:center;justify-content:center;font-size:12px}
-.split{margin:6px 0 0;font-size:11px;line-height:15px;color:var(--muted-foreground)}
-ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
-ul ul{margin-top:7px;padding-left:4px;border-left:1px solid var(--line)}
-li{display:flex;gap:6px;align-items:flex-start}
-li>div{min-width:0;flex:1}
-.claim{margin:0;font-size:12.5px;line-height:17px}
+.tree{display:flex;margin-top:16px}
+.node{display:flex;align-items:center}
+.box{flex:none;width:var(--width);min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 10px 10px;background:var(--background)}
+.d0{--width:200px;background:var(--navy);border-color:var(--navy);color:var(--background)}
+.d1{--width:240px}.d2{--width:230px}.d3{--width:210px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.head:empty{display:none}
+.d0 .head{justify-content:flex-start}
+.label{flex:none;width:24px;height:20px;border-radius:5px;background:var(--navy);color:var(--background);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.claim{margin:6px 0 0;font-size:12.5px;line-height:17px;font-weight:560}
+.d0 .claim{font-size:15px;line-height:20px;font-weight:650}
+.d1 .claim{font-size:13.5px;line-height:18px;font-weight:620}
+.split{margin:6px 0 0;font-size:10.5px;line-height:14px;color:var(--muted-foreground)}
+.d0 .split{color:color-mix(in srgb,var(--background) 72%,transparent)}
+.d0 .verdict{background:var(--background)}
+.kids{display:flex;flex-direction:column;position:relative;padding-left:30px}
+.kids::before{content:"";position:absolute;left:0;top:50%;width:15px;border-top:1.5px solid var(--navy)}
+.kids>.node{position:relative;padding:5px 0}
+.kids>.node::before{content:"";position:absolute;left:-15px;top:50%;width:15px;border-top:1.5px solid var(--navy)}
+.kids>.node::after{content:"";position:absolute;left:-15px;top:0;bottom:0;border-left:1.5px solid var(--navy)}
+.kids>.node:first-child::after{top:50%}
+.kids>.node:last-child::after{bottom:50%}
 .refs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .ref{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;line-height:14px;font-family:ui-monospace,monospace;color:var(--muted-foreground);border:1px solid var(--line);border-radius:4px;padding:1px 5px;max-width:100%;min-width:0}
 .path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -120,11 +122,7 @@ export function toHtml(tree, css = "") {
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}${style}</style></head><body><main>
 <div class="kind">${kindWords[tree.kind]}</div>
 <p class="question">${escape(tree.question)}</p>
-<h1>${escape(tree.claim)} ${chip(tree.verdict)}</h1>
-<div class="rule"></div>
-<p class="split">${escape(splitLine(tree.group))}</p>
-<div class="stem"></div>
-<section class="branches" style="--count:${String(tree.children.length)}">${tree.children.map(branchHtml).join("")}</section>
+<section class="tree">${nodeHtml(tree, 0)}</section>
 <footer><span>Evidence: ${counts}</span><span>Each verdict is the weakest one beneath it</span></footer>
 </main></body></html>`
 }
