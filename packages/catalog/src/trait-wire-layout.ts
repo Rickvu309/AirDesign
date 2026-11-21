@@ -11,7 +11,7 @@ export const layoutWire: TraitWire<"layout"> = {
     },
     align: { description: "Where the children sit.", example: { layout: { align: "center" } } },
     width: {
-      description: "hug, fixed to box.w, or fill: a child takes the frame's free space; start_run its frame too.",
+      description: "hug, fixed to box.w, or fill: a child takes the frame's free space.",
       example: { layout: { width: "fixed" } },
     },
     height: { example: { layout: { height: "fixed" } } },

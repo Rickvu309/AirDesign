@@ -69,3 +69,20 @@ it("gives a slide an agent adds from a slide a person added from an unused layou
   expect(added).toMatchObject({ slide: "add", id: "259", layout: "258" })
   expect(added && "floor" in added ? added.floor : undefined).toEqual(floorFor(floor, slideId("259")))
 })
+
+it("adds a slide after the last one with its layout when the agent names neither", () => {
+  const result = changeCall("add_slide", opened(), actor, { deck: "deck", base: 0 })
+  if (!result.ok) throw new Error(result.refusal)
+  expect(result.deck.register.order.at(-1)).toMatchObject({ slide: "add", id: "258", after: "257", layout: "257" })
+  expect(presentSlides(result.deck.register).map((slide) => slide.id)).toEqual(["256", "257", "258"])
+})
+
+it("uses the layout of the slide it follows when the agent names only after", () => {
+  const result = changeCall("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256" })
+  if (!result.ok) throw new Error(result.refusal)
+  const added = result.deck.register.order.at(-1)
+  expect(added).toMatchObject({ slide: "add", after: "256", layout: "256" })
+  expect(added && "floor" in added ? added.floor : undefined).toEqual(
+    floorFor([row("256.2", "Click to add title")], slideId("258")),
+  )
+})

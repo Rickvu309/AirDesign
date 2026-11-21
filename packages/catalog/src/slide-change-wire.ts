@@ -22,7 +22,7 @@ export type WireSlideChange =
       readonly group: GridSide | "keep"
     }
   | { readonly op: "duplicate_slides" | "delete_slides"; readonly slides: readonly [SlideId, ...SlideId[]] }
-  | { readonly op: "add_slide"; readonly after: SlideId; readonly layout: SlideId; readonly group?: GridSide }
+  | { readonly op: "add_slide"; readonly after?: SlideId; readonly layout?: SlideId; readonly group?: GridSide }
   | { readonly op: "duplicate_slide" | "delete_slide"; readonly slide: SlideId }
   | { readonly op: "move_slide"; readonly slide: SlideId; readonly after: SlideId | null }
 
@@ -33,7 +33,7 @@ type Read<Change> =
   | { readonly ok: false; readonly refusal: "field"; readonly field: string }
 
 const fieldsOf = {
-  add_slide: ["after", "layout"],
+  add_slide: [],
   duplicate_slide: ["slide"],
   delete_slide: ["slide"],
   move_slide: ["slide", "after"],
@@ -41,6 +41,8 @@ const fieldsOf = {
   duplicate_slides: ["slides"],
   delete_slides: ["slides"],
 } as const satisfies Record<SlideOp, readonly string[]>
+
+const addSlideKeys: readonly string[] = ["after", "layout", "group"]
 
 function refused(field: string): { readonly ok: false; readonly refusal: "field"; readonly field: string } {
   return { ok: false, refusal: "field", field }
@@ -61,18 +63,26 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
   const body = named.fields
   const fields: readonly string[] = fieldsOf[op]
   const extra = Object.keys(body).find(
-    (key) => key !== "op" && !fields.includes(key) && !(op === "add_slide" && key === "group"),
+    (key) => key !== "op" && !fields.includes(key) && !(op === "add_slide" && addSlideKeys.includes(key)),
   )
   if (extra !== undefined) return refused(extra)
   const missing = fields.find((key) => !Object.hasOwn(body, key))
   if (missing !== undefined) return refused(missing)
   if (op === "add_slide") {
-    const after = readSlideId(body.after)
-    const layout = readSlideId(body.layout)
-    if (after === undefined) return refused("after")
-    if (layout === undefined) return refused("layout")
+    const after = body.after === undefined ? undefined : readSlideId(body.after)
+    const layout = body.layout === undefined ? undefined : readSlideId(body.layout)
+    if (body.after !== undefined && after === undefined) return refused("after")
+    if (body.layout !== undefined && layout === undefined) return refused("layout")
     if (body.group !== undefined && body.group !== "same" && body.group !== "new") return refused("group")
-    return { ok: true, change: { op, after, layout, ...(body.group === undefined ? {} : { group: body.group }) } }
+    return {
+      ok: true,
+      change: {
+        op,
+        ...(after === undefined ? {} : { after }),
+        ...(layout === undefined ? {} : { layout }),
+        ...(body.group === undefined ? {} : { group: body.group }),
+      },
+    }
   }
   if (op === "move_slides" || op === "duplicate_slides" || op === "delete_slides") {
     if (!Array.isArray(body.slides) || body.slides.length > limits.slides) return refused("slides")
@@ -118,9 +128,9 @@ export function slideChangeSchema(): JsonSchema {
       slides: { type: "array", items: slideSchema, minItems: 1, maxItems: limits.slides, uniqueItems: true },
       after: {
         anyOf: [slideSchema, { type: "null" }],
-        description: "Place it after this slide id; with move_slide, null for the beginning.",
+        description: "After this slide id (add_slide: the last by default); move_slide: null for the beginning.",
       },
-      layout: { ...slideSchema, description: "Use the layout of this slide id." },
+      layout: { ...slideSchema, description: "This slide's layout, by default after's." },
       group: {
         type: "string",
         enum: ["same", "new", "keep"],

@@ -69,3 +69,16 @@ it("reads plural slide lifecycle changes without placement or duplicate ids", ()
     expect(readSlideChange({ ...change, after: "257" })).toMatchObject({ ok: false, field: "after" })
   }
 })
+
+it("reads add_slide with neither after nor layout, for the engine to place after the last slide", () => {
+  expect(readSlideChange({ op: "add_slide" })).toEqual({ ok: true, change: { op: "add_slide" } })
+  expect(readSlideChange({ op: "add_slide", after: "256" })).toEqual({
+    ok: true,
+    change: { op: "add_slide", after: "256" },
+  })
+  expect(readSlideChange({ op: "add_slide", layout: "bad id" })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "layout",
+  })
+})

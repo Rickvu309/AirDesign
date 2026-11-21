@@ -6,7 +6,8 @@ export type EditCode = EditRefusal
 const valueBytes = limits.valueBytes.toLocaleString("en-US")
 
 export const editNext = {
-  stale: "The layer changed since it was read. Use the value and version in this answer and send the change again.",
+  stale:
+    "The deck moved past base, or a layer past readAt, and nothing landed. Use the revision in this answer as base and each layer's version as readAt, and send the change again.",
   "person-protected":
     "A person edited this layer during this run. It is closed to this run. Do not send this change again.",
   held: "Another agent is working on this layer in its turn, and nothing landed. Its turn ends when it stops or after ten minutes without a call. Change other layers, then read this one again before you change it.",
