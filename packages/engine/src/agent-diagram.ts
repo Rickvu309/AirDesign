@@ -17,6 +17,7 @@ import {
 } from "@airdesign/document"
 import { decided, ready, takenBoxes } from "./agent-elements.js"
 import { applySet, openedRegister, type Applied } from "./apply-change.js"
+import { applyPattern } from "./agent-pattern.js"
 import type { Deck } from "./call.js"
 
 const dead: Applied = { ok: false, refusal: "dead" }
@@ -93,11 +94,13 @@ function arrowChange(from: ElementId, to: ElementId): Omit<SetChange, "target"> 
 }
 
 export function applyDiagram(deck: Deck, change: WireDiagram, runId: string, base: number): Applied {
-  const { slide, labels } = change
+  const { slide } = change
+  const labels = change.labels ?? []
   const opened = ready({ deck: deck.id, base }, deck, slide, runId)
   if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
   const area = areaFor(deck.register, slide, change.box)
   if (area === null) return dead
+  if (change.pattern !== undefined && change.pattern !== "flow") return applyPattern(deck, change, area, runId, base)
   const boxes = labelBoxes(area, labels.length)
   let register = deck.register
   const shapes: ElementId[] = []

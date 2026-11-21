@@ -13,7 +13,7 @@ export const editNext = {
   held: "Another agent is working on this layer in its turn, and nothing landed. Its turn ends when it stops or after ten minutes without a call. Change other layers, then read this one again before you change it.",
   "run-fenced":
     "This turn's run has ended on a layer this call names, or another run holds one of them, and nothing landed. Call airdesign_stop_run with the runId your edit answers carried to end the turn, then edit in a new turn.",
-  limit: `The value is over ${valueBytes} bytes, or the deck is at its size, layer or slide limit. Send a shorter value, or tell the person the deck is full.`,
+  limit: `The value is over ${valueBytes} bytes, the pattern's words do not fit its box at the smallest type, or the deck is at its size, layer or slide limit. Send shorter words, fewer items or a bigger box, or tell the person the deck is full.`,
   dead: "The deck has no layer with this id. Check the layer id.",
   "group-box":
     "This layer is inside a group, and nothing landed. Ungroup that group first to group or delete this layer on its own, or to move a layer of a frame that sits in a group.",
