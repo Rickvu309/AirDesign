@@ -21,7 +21,7 @@ it("rotates numbers, letters and roman numerals with each level, as Figma does",
   ])
 })
 
-it("hangs a bullet's text just under an em after the marker, scaled to the text's size, as Figma does", () => {
+it("hangs a bullet whose text has a size just under an em of that size after the marker", () => {
   expect(listIndent(0, "bullets", 1200)).toEqual({ marginLeft: 137_160, indent: -137_160 })
   expect(listIndent(1, "bullets", 2400)).toEqual({ marginLeft: 731_520, indent: -274_320 })
   expect(listIndent(0, "numbers", 1200)).toEqual({ marginLeft: 457_200, indent: -457_200 })
