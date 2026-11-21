@@ -230,6 +230,13 @@ function wireOf(slide: ResolvedSlide, finding: Finding): WireFinding | null {
       if (other === undefined || at === null) return null
       return { code: "overlap", node, other, by: finding.by, x: at.x + finding.fix.dx, y: at.y + finding.fix.dy }
     }
+    case "misaligned": {
+      const other = readElementId(finding.other)
+      if (other === undefined) return null
+      const x = "x" in finding.fix ? finding.fix.x : null
+      const y = "y" in finding.fix ? finding.fix.y : null
+      return { code: "misaligned", node, other, edge: finding.edge, by: finding.by, x, y }
+    }
     case "small-text":
       return { code: "small-text", node, size: finding.size, min: finding.fix.size, uniform: uniform(text) }
     case "low-contrast":

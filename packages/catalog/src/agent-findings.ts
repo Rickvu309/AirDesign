@@ -42,6 +42,11 @@ function told(finding: WireFinding): Omit<AgentFinding, "code" | "node"> {
         measure: `${finding.by === "cover" ? "under" : "crosses"} ${finding.other}`,
         fix: set(finding.other, { box: { x: tenths(finding.x), y: tenths(finding.y) } }),
       }
+    case "misaligned":
+      return {
+        measure: `${tenths(finding.by)} pt off ${finding.other}'s ${finding.edge}`,
+        fix: set(node, { box: finding.x === null ? { y: tenths(finding.y ?? 0) } : { x: tenths(finding.x) } }),
+      }
     case "small-text":
       return {
         measure: `${tenths(finding.size)} pt, under ${finding.min}`,

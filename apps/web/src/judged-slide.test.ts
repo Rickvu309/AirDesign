@@ -187,3 +187,11 @@ it("names small type with the size to set, and an empty placeholder to delete", 
     { code: "empty-placeholder", node: "256.3", placeholder: "subTitle" },
   ])
 })
+
+it("moves a card a point or two out of its column back into line", () => {
+  const card = (shape: string, x: number, y: number) =>
+    row(shape, { text: null, fill: solid("DDDDDD"), box: { ...box, x: x * point, y: y * point, height: 60 * point } })
+  expect(found([card("2", 72, 100), card("3", 72, 200), card("4", 73.5, 300)])).toEqual([
+    { code: "misaligned", node: "256.4", other: "256.3", edge: "left", by: 1.5, x: 72, y: null },
+  ])
+})
