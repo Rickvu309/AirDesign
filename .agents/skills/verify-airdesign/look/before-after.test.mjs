@@ -1,7 +1,10 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
 import { expect, it } from "vitest"
 import { PNG } from "pngjs"
 import { blank } from "./images.mjs"
-import { composeBlock, fullNames } from "./before-after.mjs"
+import { composeBlock, driverFor, fullNames } from "./before-after.mjs"
 
 it("names each block's full screenshots apart when blocks share a state", () => {
   expect(fullNames([{ state: "design-autofit" }, { state: "agent-empty" }, { state: "design-autofit" }])).toEqual([
@@ -58,4 +61,45 @@ it("preserves moved frames and reports a partly clipped target", () => {
   expect(block.sides[0].boxes[0]).toEqual({ x: 0, y: 10, width: 20, height: 20 })
   expect(warnings).toHaveLength(2)
   expect(warnings[0]).toContain("clipped by the crop on before")
+})
+
+const shotOf = () => ({
+  full: PNG.sync.write(blank(500, 400)),
+  viewport: { width: 500, height: 400 },
+  frame: null,
+  boxes: [],
+})
+const pair = [
+  { key: "before", name: "main" },
+  { key: "after", name: "this PR" },
+]
+const block = { state: "agent-empty", title: "Agent panel", crop: null, callouts: [] }
+
+it("badges a base that failed to capture as failed, not new", () => {
+  const { block: drawn } = composeBlock(block, pair, [{ error: "Timeout 20000ms", outcome: "failed" }, shotOf()])
+  expect(drawn.badge).toEqual({ text: "Failed on main", outcome: "failed" })
+})
+
+it("badges a state main does not have as new", () => {
+  const { block: drawn } = composeBlock(block, pair, [{ error: "no such button", outcome: "new" }, shotOf()])
+  expect(drawn.badge).toEqual({ text: "New in this PR", outcome: "new" })
+})
+
+it("knows a state is new only when the base's own state list lacks it", async () => {
+  const repo = mkdtempSync(path.join(tmpdir(), "base-states-"))
+  const look = path.join(repo, ".agents/skills/verify-airdesign/look")
+  mkdirSync(look, { recursive: true })
+  writeFileSync(
+    path.join(look, "states.mjs"),
+    'export const states = [{ name: "agent-empty" }]\nexport const find = (name) => ({ name })\nexport const reach = async () => {}\n',
+  )
+  const driver = await driverFor(repo)
+  expect(driver.lacks("agent-empty")).toBe(false)
+  expect(driver.lacks("agent-new")).toBe(true)
+})
+
+it("never calls a state new when the base has no state list to check", async () => {
+  const repo = mkdtempSync(path.join(tmpdir(), "base-bare-"))
+  const driver = await driverFor(repo)
+  expect(driver.lacks("agent-new")).toBe(false)
 })

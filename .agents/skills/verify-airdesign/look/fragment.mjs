@@ -21,7 +21,8 @@ export function fragment({ images, rows, labels, link = (file) => file }) {
   )
   const cell = (row, side) => {
     if (row[side] !== null) return picture(`${labels[side]}: ${row.title}`, row[side], link)
-    return side === "before" ? "New in this PR" : "Not reached in this PR"
+    if (side === "after") return "Not reached in this PR"
+    return row.beforeOutcome === "new" ? "New in this PR" : `Failed on ${plain(labels.before)}`
   }
   const table = [
     `| ${plain(labels.before)} | ${plain(labels.after)} |`,

@@ -107,12 +107,13 @@ export function cleanUp(cleanup, keep, runtime) {
 
 export const mergeBase = (runtime) => gitIn(runtime.repo)(["merge-base", "HEAD", "origin/main"])
 
-async function sideOf({ key, label, missing, run, ref, runtime, cleanup }) {
+async function sideOf({ key, name, label, missing, run, ref, runtime, cleanup }) {
   const at = stackFor({ run, ref, runtime, cleanup })
   const state = runtime.readState(at)
   const repo = state.repo ?? runtime.repo
   return {
     key,
+    name,
     label,
     missing,
     run: at,
@@ -135,7 +136,12 @@ async function shoot({ blocks, sides, runtime, out }) {
       const last = shots.at(-1)
       if (last.error) throw new Error(`${block.state} was not reached on ${sides.at(-1).label}: ${last.error}`)
       const files = sides.map((side, at) => saveFull(out, names[index], side, shots[at]))
-      rows.push({ title: block.title, before: sides.length > 1 ? files[0] : null, after: files.at(-1) })
+      rows.push({
+        title: block.title,
+        before: sides.length > 1 ? files[0] : null,
+        beforeOutcome: sides.length > 1 ? shots[0].outcome : null,
+        after: files.at(-1),
+      })
       const done = composeBlock(block, sides, shots)
       warnings.push(...done.warnings)
       composed.push(done.block)
@@ -168,10 +174,11 @@ async function beforeAfter(command, values, flags, runtime) {
   const labels = { before: flags.base ? `${flags.base}` : "main", after: flags.head ?? "this PR" }
   try {
     const sides = annotate
-      ? [await sideOf({ key: "page", label: "", missing: "not on this page", run: first, runtime, cleanup })]
+      ? [await sideOf({ key: "page", name: "", label: "", missing: "not on this page", run: first, runtime, cleanup })]
       : [
           await sideOf({
             key: "before",
+            name: labels.before,
             label: `BEFORE (${labels.before})`,
             missing: `not in ${labels.before}`,
             run: flags["before-run"],
@@ -181,6 +188,7 @@ async function beforeAfter(command, values, flags, runtime) {
           }),
           await sideOf({
             key: "after",
+            name: labels.after,
             label: `AFTER (${labels.after})`,
             missing: `not in ${labels.after}`,
             run: flags["after-run"],
@@ -197,6 +205,7 @@ async function beforeAfter(command, values, flags, runtime) {
       rows: shot.rows.map((row) => ({
         title: row.title,
         before: row.before && relative(row.before),
+        beforeOutcome: row.beforeOutcome,
         after: relative(row.after),
       })),
       sides: Object.fromEntries(sides.map((side) => [side.key, { run: side.run, commit: side.commit }])),
