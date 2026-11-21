@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { airaRoutes, countryHeader, readStop } from "@airdesign/catalog"
 
-import { airaBodyCap, airaTurn, type AiraLine, type AiraSettings } from "./aira.js"
+import { airaTurn, airaTurnCap, type AiraLine, type AiraSettings } from "./aira.js"
 import type { Closing } from "./aira-closing.js"
 import { filterForwardedHeaders } from "./forward-secret.js"
 import type { Sql } from "./pool.js"
@@ -62,7 +62,7 @@ export function airaRouteList<Visit extends AiraVisit>(http: AiraHttp<Visit>): r
     {
       method: "POST",
       path: airaRoutes.turn.path,
-      cap: airaBodyCap,
+      cap: airaTurnCap,
       serve: async (visit) => {
         const { options, now, mint, req, res } = visit
         filterForwardedHeaders(req.headers, options.forwardSecret)

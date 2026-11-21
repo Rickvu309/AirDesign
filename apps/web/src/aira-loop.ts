@@ -5,12 +5,14 @@ import {
   mcpRoutes,
   onceMeta,
   projectTools,
+  sentWithoutPictures,
   type AgentOp,
   type ModelMessage,
   type ReplyBlock,
   type ToolAnswer,
   type ToolCall,
 } from "@airdesign/catalog"
+import { cappedPictures, toolAnswer } from "@/aira-answers"
 import { airaLine, bodyLines, fieldsOf, toolOutcome, weekUsage, type WeekUsage } from "@/aira-wire"
 
 export type ToolState = "working" | "done" | "refused" | "stopped"
@@ -186,7 +188,7 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
     case "replied": {
       const next: AiraChat = {
         ...chat,
-        history: [...chat.history, event.sent, { role: "assistant", content: event.content }],
+        history: [...chat.history, sentWithoutPictures(event.sent), { role: "assistant", content: event.content }],
         answers: [],
         usage: event.usage,
       }
@@ -220,7 +222,8 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
   }
 }
 
-function userMessage(answers: readonly ToolAnswer[], text: string | undefined): ModelMessage {
+function userMessage(given: readonly ToolAnswer[], text: string | undefined): ModelMessage {
+  const answers = cappedPictures(given)
   if (answers.length === 0) return { role: "user", content: text ?? "" }
   return { role: "user", content: text === undefined ? answers : [...answers, { type: "text", text }] }
 }
@@ -265,12 +268,6 @@ async function takeTurn(
     return signal.aborted ? { kind: "ended", end: "stopped" } : cut
   }
   return signal.aborted ? { kind: "ended", end: "stopped" } : cut
-}
-
-function toolAnswer(id: string, text: string, ok: boolean): ToolAnswer {
-  return ok
-    ? { type: "tool_result", tool_use_id: id, content: text }
-    : { type: "tool_result", tool_use_id: id, content: text, is_error: true }
 }
 
 async function sendTool(
@@ -355,7 +352,7 @@ async function callTool(
     }
     const run = outcome.fields?.runId
     const edited = outcome.ok && changes(call) && typeof run === "string"
-    const answer = toolAnswer(call.id, outcome.text, outcome.ok)
+    const answer = toolAnswer(call.id, outcome.text, outcome.ok, outcome.pictures)
     const refusal = outcome.fields?.refusal
     if (outcome.ok || typeof refusal !== "string") return { answer, ok: outcome.ok, run: edited ? run : undefined }
     return { answer, ok: false, run: undefined, refusal }

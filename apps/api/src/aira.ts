@@ -1,6 +1,16 @@
 import { createHmac } from "node:crypto"
 
-import { airaTools, readTurn, type ModelMessage, type ModelTool, type ReplyBlock } from "@airdesign/catalog"
+import {
+  airaPictureBytes,
+  airaPictureCap,
+  airaTools,
+  pictureTokenCeiling,
+  picturesIn,
+  readTurn,
+  type ModelMessage,
+  type ModelTool,
+  type ReplyBlock,
+} from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
 import { admit, kindInstructions } from "@airdesign/mcp"
 import { usage } from "@airdesign/usage"
@@ -19,6 +29,7 @@ export type AiraEffort = (typeof airaEfforts)[number]
 export const airaEffort: AiraEffort = "low"
 export const airaMaxTokens = 8192
 export const airaBodyCap = 262_144
+export const airaTurnCap = airaBodyCap + airaPictureBytes + airaPictureCap * 128
 export const staleTurn = 900_000
 
 const framing = 64
@@ -118,8 +129,14 @@ export function accountId(secret: string, account: string): string {
   return createHmac("sha256", secret).update(account).digest("hex")
 }
 
+function wordBytes(messages: readonly ModelMessage[]): number {
+  const pictures = picturesIn(messages)
+  return bytesOf(JSON.stringify(messages)) - pictures.reduce((total, { source }) => total + source.data.length, 0)
+}
+
 function inputCeiling(system: string, messages: readonly ModelMessage[]): number {
-  return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + bytesOf(JSON.stringify(messages)) + framing
+  const pictures = picturesIn(messages).length * pictureTokenCeiling
+  return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + wordBytes(messages) + pictures + framing
 }
 
 function refuse(status: number, refusal: string, extra: Record<string, unknown> = {}): AiraAnswer {
@@ -301,6 +318,7 @@ export async function airaTurn(
   if (!airaOffered(country)) return refuse(403, "country")
   const parsed = readTurn(raw)
   if (!parsed.ok) return refuse(400, "body")
+  if (wordBytes(parsed.messages) > airaBodyCap) return refuse(413, "size")
   const followed = await host.closing.follow(account, parsed.ask, left)
   let answer: AiraAnswer | AiraStream | undefined
   try {

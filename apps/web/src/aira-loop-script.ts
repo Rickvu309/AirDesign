@@ -12,7 +12,12 @@ type Turn =
   | { readonly lines: readonly unknown[]; readonly then?: "drop" | "hold" }
   | { readonly status: number; readonly body: unknown }
 
-type Answer = { readonly structuredContent?: unknown; readonly isError?: boolean; readonly text?: string }
+type Answer = {
+  readonly structuredContent?: unknown
+  readonly isError?: boolean
+  readonly text?: string
+  readonly content?: readonly unknown[]
+}
 
 type Sent = { readonly path: string; readonly body: Record<string, unknown> }
 
