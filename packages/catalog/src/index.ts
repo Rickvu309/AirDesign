@@ -78,7 +78,7 @@ export {
 export { readAgentEdit, readCommit, readEdit, type AgentChange, type WireChange, type WireEdit } from "./edit-wire.js"
 export { readAddChange, readSetChange, readTarget, type WireAdd, type WireSet } from "./set-wire.js"
 export { groupOps, readGroupChange, type WireGroup } from "./group-wire.js"
-export { readDiagramChange, type WireDiagram } from "./diagram-wire.js"
+export { readDiagramChange, type PatternItem, type WireDiagram } from "./diagram-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
 export { readFindingsReport, type FindingsReport, type WireFinding } from "./findings-wire.js"
