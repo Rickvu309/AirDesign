@@ -1,7 +1,7 @@
 import { fontFace, type FontWidths, type ResolvedText } from "@airdesign/document"
 import { fontFamily } from "@airdesign/fonts"
 import { fontsFor } from "@airdesign/render"
-import { pageFont } from "@/text-overflow"
+import { pageFont } from "@/judged-slide"
 
 type Face = { readonly font: string; readonly bold: boolean; readonly italic: boolean }
 type Need = { readonly face: Face; readonly chars: Set<string>; readonly pairs: Set<string> }

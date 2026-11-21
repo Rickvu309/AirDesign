@@ -39,6 +39,7 @@ export type ResolvedText = {
   readonly fontScale: number
   readonly lineReduction: number
   readonly vertical: boolean
+  readonly unmeasured?: true
   readonly edgeSpacing?: boolean
 }
 

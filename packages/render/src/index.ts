@@ -32,7 +32,7 @@ export {
   type PaintBox,
 } from "./record.js"
 export { holdKeys, type HeldKeys } from "./held-keys.js"
-export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
+export { adjustDefaults, openPreset, presetOutline, presetTextArea } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
 export type { TextPlace } from "./text-placing.js"
 export type { ShapeDrawing, ShapeDrawn, ShapeLook } from "./shape-drawing.js"

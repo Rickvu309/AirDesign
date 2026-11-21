@@ -1,70 +1,165 @@
 import { limits, readElementId, type ElementId } from "@airdesign/document"
 import { fieldRefusal, knownKeys, readDeckId, recordOf, type DeckId, type FieldRefusal } from "./wire.js"
 
-export type Overflow = {
-  readonly needed: number
-  readonly room: number
-  readonly fix: { readonly size: number | null; readonly height: number }
-}
-
-export type OverflowFinding = { readonly node: ElementId } & Overflow
+export type WireFinding = { readonly node: ElementId } & (
+  | {
+      readonly code: "overflow"
+      readonly needed: number
+      readonly room: number
+      readonly size: number | null
+      readonly height: number
+    }
+  | {
+      readonly code: "off-slide"
+      readonly past: number
+      readonly whole: boolean
+      readonly x: number | null
+      readonly y: number | null
+    }
+  | {
+      readonly code: "overlap"
+      readonly other: ElementId
+      readonly by: "cover" | "text"
+      readonly x: number
+      readonly y: number
+    }
+  | { readonly code: "small-text"; readonly size: number; readonly min: number; readonly uniform: boolean }
+  | { readonly code: "low-contrast"; readonly ratio: number; readonly needs: number; readonly color: string | null }
+  | { readonly code: "empty-placeholder"; readonly placeholder: string }
+)
 
 export type FindingsReport = {
   readonly deck: DeckId
   readonly revision: number
-  readonly overflow: readonly OverflowFinding[]
+  readonly findings: readonly WireFinding[]
+  readonly broken?: true
 }
+
+type Body = Readonly<Record<string, unknown>>
 
 const pointsCeiling = 100_000
 const sizeCeiling = 4_000
+const hexColor = /^[0-9A-F]{6}$/
+const placeholderName = /^[A-Za-z]{1,32}$/
+const findingsCeiling = limits.elements * 4
 
 function pointsOf(raw: unknown): number | undefined {
   return typeof raw === "number" && Number.isFinite(raw) && raw >= 0 && raw <= pointsCeiling ? raw : undefined
 }
 
-function sizeOf(raw: unknown): number | null | undefined {
-  if (raw === null) return null
+function placeOf(raw: unknown): number | undefined {
+  return typeof raw === "number" && Number.isFinite(raw) && Math.abs(raw) <= pointsCeiling ? raw : undefined
+}
+
+function sizeOf(raw: unknown): number | undefined {
   return typeof raw === "number" && Number.isInteger(raw) && raw >= 1 && raw <= sizeCeiling ? raw : undefined
 }
 
-function readFix(raw: unknown): Overflow["fix"] | undefined {
-  const fix = recordOf(raw)
-  if (fix === undefined || !knownKeys(fix, ["size", "height"]) || !Object.hasOwn(fix, "size")) return undefined
-  const size = sizeOf(fix.size)
-  const height = pointsOf(fix.height)
-  return size === undefined || height === undefined ? undefined : { size, height }
+function ratioOf(raw: unknown): number | undefined {
+  return typeof raw === "number" && Number.isFinite(raw) && raw >= 1 && raw <= 21 ? raw : undefined
 }
 
-function readOverflow(raw: unknown): OverflowFinding | undefined {
+function nodeOf(raw: unknown): ElementId | undefined {
+  return typeof raw === "string" ? readElementId(raw) : undefined
+}
+
+function defined<T extends Body>(read: T): T | undefined {
+  return Object.values(read).every((value) => value !== undefined) ? read : undefined
+}
+
+const readers: Readonly<Record<WireFinding["code"], readonly [readonly string[], (body: Body) => Body | undefined]>> = {
+  overflow: [
+    ["needed", "room", "size", "height"],
+    (body) =>
+      defined({
+        needed: pointsOf(body.needed),
+        room: pointsOf(body.room),
+        size: body.size === null ? null : sizeOf(body.size),
+        height: pointsOf(body.height),
+      }),
+  ],
+  "off-slide": [
+    ["past", "whole", "x", "y"],
+    (body) => {
+      const spot =
+        body.x === null && body.y === null ? { x: null, y: null } : defined({ x: placeOf(body.x), y: placeOf(body.y) })
+      const whole = typeof body.whole === "boolean" ? body.whole : undefined
+      return spot === undefined ? undefined : defined({ past: pointsOf(body.past), whole, ...spot })
+    },
+  ],
+  overlap: [
+    ["other", "by", "x", "y"],
+    (body) =>
+      defined({
+        other: nodeOf(body.other),
+        by: body.by === "cover" || body.by === "text" ? body.by : undefined,
+        x: placeOf(body.x),
+        y: placeOf(body.y),
+      }),
+  ],
+  "small-text": [
+    ["size", "min", "uniform"],
+    (body) =>
+      defined({
+        size: pointsOf(body.size),
+        min: sizeOf(body.min),
+        uniform: typeof body.uniform === "boolean" ? body.uniform : undefined,
+      }),
+  ],
+  "low-contrast": [
+    ["ratio", "needs", "color"],
+    (body) =>
+      defined({
+        ratio: ratioOf(body.ratio),
+        needs: ratioOf(body.needs),
+        color:
+          body.color === null
+            ? null
+            : typeof body.color === "string" && hexColor.test(body.color)
+              ? body.color
+              : undefined,
+      }),
+  ],
+  "empty-placeholder": [
+    ["placeholder"],
+    (body) =>
+      defined({
+        placeholder:
+          typeof body.placeholder === "string" && placeholderName.test(body.placeholder) ? body.placeholder : undefined,
+      }),
+  ],
+}
+
+function readFinding(raw: unknown): WireFinding | undefined {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["node", "needed", "room", "fix"])) return undefined
-  const node = typeof body.node === "string" ? readElementId(body.node) : undefined
-  const needed = pointsOf(body.needed)
-  const room = pointsOf(body.room)
-  const fix = readFix(body.fix)
-  if (node === undefined || needed === undefined || room === undefined || fix === undefined) return undefined
-  return { node, needed, room, fix }
+  const code = body?.code
+  if (body === undefined || typeof code !== "string" || !Object.hasOwn(readers, code)) return undefined
+  const [fields, read] = readers[code as WireFinding["code"]]
+  if (!knownKeys(body, ["code", "node", ...fields]) || !fields.every((field) => Object.hasOwn(body, field)))
+    return undefined
+  const node = nodeOf(body.node)
+  const rest = read(body)
+  return node === undefined || rest === undefined ? undefined : ({ code, node, ...rest } as WireFinding)
 }
 
 export function readFindingsReport(
   raw: unknown,
 ): ({ readonly ok: true } & FindingsReport) | FieldRefusal | Exclude<ReturnType<typeof readDeckId>, { ok: true }> {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "revision", "overflow"])) return fieldRefusal
-  if (!Object.hasOwn(body, "deck") || !Array.isArray(body.overflow)) return fieldRefusal
+  if (body === undefined || !knownKeys(body, ["deck", "revision", "findings", "broken"])) return fieldRefusal
+  if (!Object.hasOwn(body, "deck") || !Array.isArray(body.findings)) return fieldRefusal
   const deck = readDeckId(body.deck)
   if (!deck.ok) return deck
   const { revision } = body
   if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0) return fieldRefusal
-  const rows: unknown[] = body.overflow
-  if (rows.length > limits.elements) return fieldRefusal
-  const overflow: OverflowFinding[] = []
-  const nodes = new Set<ElementId>()
+  const rows: unknown[] = body.findings
+  if (Object.hasOwn(body, "broken") && (body.broken !== true || rows.length > 0)) return fieldRefusal
+  if (rows.length > findingsCeiling) return fieldRefusal
+  const findings: WireFinding[] = []
   for (const row of rows) {
-    const read = readOverflow(row)
-    if (read === undefined || nodes.has(read.node)) return fieldRefusal
-    nodes.add(read.node)
-    overflow.push(read)
+    const read = readFinding(row)
+    if (read === undefined) return fieldRefusal
+    findings.push(read)
   }
-  return { ok: true, deck: deck.deck, revision, overflow }
+  return { ok: true, deck: deck.deck, revision, findings, ...(body.broken === true ? { broken: true as const } : {}) }
 }

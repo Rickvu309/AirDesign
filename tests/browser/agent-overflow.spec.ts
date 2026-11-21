@@ -1,13 +1,23 @@
 import { expect } from "@playwright/test"
 import { forward, signInBrowser, test } from "./api-stack"
 
-type Overflow = { readonly needed: number; readonly room: number; readonly fix: { readonly size: number | null } }
+type Finding = {
+  readonly code: string
+  readonly node: string
+  readonly measure: string
+  readonly fix?: { readonly op: string; readonly target?: string; readonly text?: { readonly size?: number } }
+}
 
 type Read = {
   readonly revision: number
-  readonly findings: string
-  readonly elements: readonly { readonly node: string; readonly version: number; readonly overflow?: Overflow }[]
+  readonly findings: readonly Finding[] | string
+  readonly elements: readonly { readonly node: string; readonly version: number }[]
 }
+
+const overflowOf = (read: Read) =>
+  typeof read.findings === "string"
+    ? undefined
+    : read.findings.find((each) => each.code === "overflow" && each.node === node)
 
 const node = "256.2"
 const longer =
@@ -15,7 +25,7 @@ const longer =
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("an agent's read names the text the open tab measured past its box and the size that fits, and the size clears it", async ({
+test("an agent's read names the text the open tab measured past its box with a fix, and sending the fix clears it", async ({
   page,
   context,
   stack,
@@ -28,10 +38,10 @@ test("an agent's read names the text the open tab measured past its box and the 
   await expect.poll(async () => (await stack.callTool("airdesign_read_deck", { deck }, cookie)).index).toBe("ready")
   const read = async () =>
     (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as unknown as Read
-  await expect.poll(async () => (await read()).findings).toBe("ready")
+  await expect.poll(async () => Array.isArray((await read()).findings)).toBe(true)
   const fits = await read()
   const shown = fits.elements.find((each) => each.node === node)
-  expect(shown).not.toHaveProperty("overflow")
+  expect(overflowOf(fits)).toBeUndefined()
   const typed = await stack.callTool(
     "airdesign_edit_deck",
     {
@@ -45,22 +55,21 @@ test("an agent's read names the text the open tab measured past its box and the 
   )
   expect(typed).toMatchObject({ ok: true })
   const over = await read()
-  expect(over.findings).toBe("ready")
-  const overflow = over.elements.find((each) => each.node === node)?.overflow
-  expect(overflow?.room).toBeCloseTo(136.8, 0)
-  expect(overflow?.needed ?? 0).toBeGreaterThan(overflow?.room ?? 0)
-  const size = overflow?.fix.size ?? 0
+  const overflow = overflowOf(over)
+  expect(overflow?.measure).toMatch(/^text [\d.]+ pt, room 136\.8$/)
+  const size = overflow?.fix?.text?.size ?? 0
+  expect(overflow?.fix).toEqual({ op: "set", target: node, text: { size } })
   expect(size).toBeGreaterThan(8)
   expect(size).toBeLessThan(32)
   const sized = await stack.callTool(
     "airdesign_edit_deck",
-    { deck, base: over.revision, changes: [{ op: "set", target: node, text: { size } }] },
+    { deck, base: over.revision, changes: [overflow?.fix] },
     cookie,
   )
   expect(sized).toMatchObject({ ok: true })
   const cleared = await read()
-  expect(cleared.findings).toBe("ready")
-  expect(cleared.elements.find((each) => each.node === node)).not.toHaveProperty("overflow")
+  expect(Array.isArray(cleared.findings)).toBe(true)
+  expect(overflowOf(cleared)).toBeUndefined()
   const painted = await page.locator(`[data-slide-paint] [data-canvas-element$="#2"]`).evaluate((frame) => {
     const body = frame.querySelector<HTMLElement>("[data-text-body]")
     return body === null

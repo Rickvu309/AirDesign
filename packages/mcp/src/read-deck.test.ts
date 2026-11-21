@@ -76,21 +76,30 @@ describe("read and list tools", () => {
     expect(withinRead(readReport(result.content[0]?.text ?? "", result.reported))).toBe(true)
   })
 
-  it("tells the agent which text a tab measured as overflowing at the revision it reads", () => {
+  it("tells the agent what a tab found on the layers it reads, at the revision it reads", () => {
     const deck = withNode(opened(), [
       { command: "add", node, floor: "", route: "slide" },
       { command: "person", node, value: "A title that wraps past its box" },
     ])
-    const overflow = { needed: 86.4, room: 64.8, fix: { size: 28, height: 93.6 } }
-    const session = { ...sessionFor(deck), findings: { deck: deck.id, revision: 0, overflow: [{ node, ...overflow }] } }
+    const overflow = { code: "overflow", node, needed: 86.4, room: 64.8, size: 28, height: 93.6 } as const
+    const session = { ...sessionFor(deck), findings: { deck: deck.id, revision: 0, findings: [overflow] } }
     const result = callTool("airdesign_read_deck", { deck: "deck" }, session)
     if (!result.ok || result.reported === undefined || !("elements" in result.reported)) throw new Error("read")
-    expect(result.reported).toMatchObject({ findings: "ready", elements: [{ node: "258.7", overflow }] })
+    expect(result.reported).toMatchObject({
+      findings: [
+        {
+          code: "overflow",
+          node,
+          measure: "text 86.4 pt, room 64.8",
+          fix: { op: "set", target: node, text: { size: 28 } },
+        },
+      ],
+    })
+    expect(result.reported.elements[0]).not.toHaveProperty("overflow")
     const unmeasured = callTool("airdesign_read_deck", { deck: "deck" }, sessionFor(deck))
     if (!unmeasured.ok || unmeasured.reported === undefined || !("elements" in unmeasured.reported))
       throw new Error("read")
     expect(unmeasured.reported).toMatchObject({ findings: "missing" })
-    expect(unmeasured.reported.elements[0]).not.toHaveProperty("overflow")
   })
 
   it("closes an element held by a run other than this turn, including the caller run", () => {

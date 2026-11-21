@@ -9,10 +9,10 @@ function deck(name: string) {
   return parsed.deck
 }
 
-const overflow = [{ node: elementId("256.2"), needed: 80, room: 60, fix: { size: 24, height: 87.2 } }]
+const findings = [{ code: "overflow", node: elementId("256.2"), needed: 80, room: 60, size: 24, height: 87.2 }] as const
 
 function report(name: string, revision: number): FindingsReport {
-  return { deck: deck(name), revision, overflow }
+  return { deck: deck(name), revision, findings }
 }
 
 it("keeps the newest report per deck and never goes back to an older revision", () => {
@@ -21,7 +21,7 @@ it("keeps the newest report per deck and never goes back to an older revision", 
   findings.keep(report("deck", 3))
   findings.keep(report("deck", 2))
   expect(findings.latest(deck("deck"))?.revision).toBe(3)
-  const again = { ...report("deck", 3), overflow: [] }
+  const again = { ...report("deck", 3), findings: [] }
   findings.keep(again)
   expect(findings.latest(deck("deck"))).toBe(again)
   findings.keep(report("deck", 4))
