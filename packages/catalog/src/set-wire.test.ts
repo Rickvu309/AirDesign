@@ -353,7 +353,7 @@ describe("the set and add schemas derive from the agent forms", () => {
     expect(flat(setChangeSchema())).toBe(true)
     expect(flat(addChangeSchema())).toBe(true)
     const properties = setChangeSchema().properties as Readonly<Record<string, unknown>>
-    expect(Object.keys(properties)).toEqual(["op", "target", "opacity", ...wired])
+    expect(Object.keys(properties)).toEqual(["op", "target", "opacity", "stack", ...wired])
     expect(properties.opacity).toMatchObject({ type: "number", minimum: 0, maximum: 100 })
   })
 

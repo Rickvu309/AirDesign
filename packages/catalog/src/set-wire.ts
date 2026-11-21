@@ -23,9 +23,10 @@ import { knownIcon } from "./icon-names.js"
 import { imageAddressLength, imageAddressPattern, webImage } from "./image-address.js"
 import { canonicalFields, canonicalTraits } from "./field-alias.js"
 import { opacityWire } from "./opacity-wire.js"
+import { readStack, stackSchema, type Stack } from "./stack-wire.js"
 import { traitWire } from "./trait-wire.js"
 
-export type WireSet = SetChange & { readonly op: "set" }
+export type WireSet = SetChange & { readonly op: "set"; readonly stack?: Stack }
 export type WireAdd = AddChange & { readonly op: "add" }
 
 type Refused = { readonly ok: false; readonly refusal: "field"; readonly field: string }
@@ -135,10 +136,13 @@ export function readSetChange(raw: unknown): Read<WireSet> {
   if (target === null) return refused("target")
   const opacity = readOpacity(raw)
   if (!opacity.ok) return opacity
-  const read = readTraits(raw, ["op", "target", "opacity"])
+  const stack = raw.stack === undefined ? undefined : readStack(raw.stack, target)
+  if (stack === null) return refused("stack")
+  const read = readTraits(raw, ["op", "target", "opacity", "stack"])
   if (!read.ok) return read
-  if (Object.keys(read.change).length === 0 && Object.keys(opacity.change).length === 0) return refused("set")
-  return { ok: true, change: { op: "set", target, ...opacity.change, ...read.change } as WireSet }
+  const extras = { ...opacity.change, ...(stack === undefined ? {} : { stack }) }
+  if (Object.keys(read.change).length === 0 && Object.keys(extras).length === 0) return refused("set")
+  return { ok: true, change: { op: "set", target, ...extras, ...read.change } as WireSet }
 }
 
 function boxOf(raw: unknown): Box | null {
@@ -320,6 +324,7 @@ export function setChangeSchema(): JsonSchema {
         description: "Layer (258.7, 258.notes), slide ID, slide.role (258.title), *.role, or deck.templateStyles.",
       },
       opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
+      stack: stackSchema,
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
     },
   }

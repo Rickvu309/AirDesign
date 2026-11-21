@@ -105,3 +105,4 @@ export {
   readAutoReset,
   type Credits,
 } from "./credits-routes.js"
+export { type Stack } from "./stack-wire.js"

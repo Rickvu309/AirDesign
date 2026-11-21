@@ -227,7 +227,14 @@ export {
   type Geometry,
   lineGeometries,
 } from "./element-order.js"
-export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
+export {
+  elementStacks,
+  slideLayers,
+  sitsBefore,
+  stackTarget,
+  type ElementStack,
+  type StackMove,
+} from "./element-stack.js"
 export {
   groupCommand,
   groupedNow,
