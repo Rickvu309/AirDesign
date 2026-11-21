@@ -23,7 +23,7 @@ export type CommandedDeck = {
   readonly id: string
   readonly matching?: readonly ElementId[]
   readonly shown: DeckPaint
-  readonly undo: Pick<UndoList, "records">
+  readonly undo: Pick<UndoList, "records" | "lane">
   readonly settle: (outcome: CommitOutcome) => void
 }
 
@@ -43,7 +43,9 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
   ) {
     const anchor = placement === "new" ? sequence[index] : null
     const slot = hold()
+    const inserted = deck.undo.lane.stored()
     await queue(async () => {
+      await inserted
       const opened = await connect(memoryRemote()).openDeck(id)
       if (!opened.ok) return
       const painted = async (currentIndex: number, undoable: Undoable | null) => {
