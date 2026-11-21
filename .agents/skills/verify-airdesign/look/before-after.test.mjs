@@ -159,3 +159,36 @@ it("keeps a callout's photo inside the crop frame, and cuts none for a callout t
   )
   expect(crops.map(({ number, png }) => [number, png.width, png.height])).toEqual([[1, 100, 52]])
 })
+
+it("cuts each side's photo from the frame the annotated image shares, so a callout that image shows always has one", () => {
+  const side = (frame, box) => ({
+    full: PNG.sync.write(blank(250, 200)),
+    viewport: { width: 250, height: 200 },
+    frame,
+    boxes: [box],
+  })
+  const crops = calloutCrops({ state: "decks-list", callouts: [{ at: "button", note: "Moved" }] }, pair, [
+    side({ x: 0, y: 0, width: 100, height: 60 }, { x: 10, y: 100, width: 30, height: 10 }),
+    side({ x: 0, y: 80, width: 100, height: 60 }, { x: 10, y: 100, width: 30, height: 10 }),
+  ])
+  expect(crops.map(({ side: key, png }) => [key, png.width, png.height])).toEqual([
+    ["before", 100, 72],
+    ["after", 100, 72],
+  ])
+})
+
+it("cuts no photo when the crop frame is entirely off the screen", () => {
+  const crops = calloutCrops(
+    { state: "decks-list", callouts: [{ at: "button", note: "Moved" }] },
+    [{ key: "page" }],
+    [
+      {
+        full: PNG.sync.write(blank(250, 200)),
+        viewport: { width: 250, height: 200 },
+        frame: { x: 0, y: 900, width: 100, height: 60 },
+        boxes: [{ x: 10, y: 100, width: 30, height: 10 }],
+      },
+    ],
+  )
+  expect(crops).toEqual([])
+})
