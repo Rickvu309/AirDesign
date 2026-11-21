@@ -23,7 +23,8 @@ import { fillsFormat, fillsIndex, imageFormat, imageIndex } from "./fills-conver
 import { templateStyleFormat, templateStyleIndex } from "./template-style-conversion.js"
 import { readIndexArrangement, type IndexArrangement } from "./index-slide-arrangement.js"
 import { bytesOf, limits } from "./limits.js"
-import { onlyKeys, record } from "./plain-object.js"
+import { onlyKeys, record, same } from "./plain-object.js"
+import { readIndexLayouts, type IndexLayout } from "./index-layout.js"
 import { kinds, type Kind } from "./kinds.js"
 import type { ElementPatch } from "./row.js"
 import { readFraming, type Framing } from "./frame-index.js"
@@ -65,6 +66,7 @@ export type IndexPage = {
   readonly sectionStarts?: readonly SlideId[]
   readonly templateStyles?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
+  readonly layouts?: readonly IndexLayout[]
   readonly slides: readonly IndexSlide[]
   readonly elements: readonly IndexElement[]
 }
@@ -74,6 +76,7 @@ type BuiltIndex = {
   readonly sectionStarts?: readonly SlideId[]
   readonly templateStyles?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
+  readonly layouts?: readonly IndexLayout[]
   readonly slides: readonly IndexSlide[]
   readonly elements: readonly IndexElement[]
   readonly pages: readonly { readonly once: string; readonly offset: number; readonly count: number }[]
@@ -81,7 +84,18 @@ type BuiltIndex = {
 export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 
 export const indexKeys = {
-  page: ["format", "once", "offset", "total", "palettes", "templateStyles", "sectionStarts", "slides", "elements"],
+  page: [
+    "format",
+    "once",
+    "offset",
+    "total",
+    "palettes",
+    "templateStyles",
+    "sectionStarts",
+    "layouts",
+    "slides",
+    "elements",
+  ],
   palette: ["slots", "map", "fonts"],
   slide: [
     "id",
@@ -202,14 +216,19 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
     ...arrangement,
   }
   if (row.layout === undefined) return { id: row.id, position, ...measures }
-  if (!Array.isArray(row.layout) || row.layout.length > limits.batch) return null
+  const layout = readLayoutFloor(row.layout, row.id)
+  return layout === null ? null : { id: row.id, position, ...measures, layout }
+}
+
+function readLayoutFloor(raw: unknown, slide: string): IndexElement[] | null {
+  if (!Array.isArray(raw) || raw.length > limits.batch) return null
   const layout: IndexElement[] = []
-  for (const raw of row.layout) {
-    const element = readElement(raw, new Set([row.id]))
+  for (const item of raw) {
+    const element = readElement(item, new Set([slide]))
     if (element === null || layout.some((kept) => kept.node === element.node)) return null
     layout.push(element)
   }
-  return { id: row.id, position, ...measures, layout }
+  return layout
 }
 
 const elementKeys: readonly string[] = indexKeys.element
@@ -311,8 +330,7 @@ export function readIndexPage(raw: unknown): IndexPage | null {
       row,
       pageKeys.filter(
         (key) =>
-          (key !== "format" && key !== "palettes" && key !== "templateStyles" && key !== "sectionStarts") ||
-          row[key] !== undefined,
+          !["format", "palettes", "templateStyles", "sectionStarts", "layouts"].includes(key) || row[key] !== undefined,
       ),
     )
   )
@@ -341,6 +359,10 @@ export function readIndexPage(raw: unknown): IndexPage | null {
   }
   const sectionStarts = row.sectionStarts === undefined ? undefined : readSectionStarts(row.sectionStarts, slides)
   if (sectionStarts === null) return null
+  const first = slides[0]?.id ?? ""
+  const layouts =
+    row.layouts === undefined ? undefined : readIndexLayouts(row.layouts, (floor) => readLayoutFloor(floor, first))
+  if (layouts === null) return null
   if (!Array.isArray(row.elements) || row.elements.length > limits.batch) return null
   if (row.elements.length === 0 && (row.total !== 0 || row.offset !== 0)) return null
   if (row.offset + row.elements.length > row.total) return null
@@ -359,21 +381,10 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     ...(palettes === undefined ? {} : { palettes }),
     ...(styles === undefined ? {} : { templateStyles: styles }),
     ...(sectionStarts === undefined ? {} : { sectionStarts }),
+    ...(layouts === undefined ? {} : { layouts }),
     slides,
     elements,
   }
-}
-
-function same(left: unknown, right: unknown): boolean {
-  if (left === right) return true
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return left.length === right.length && left.every((item, n) => same(item, right[n]))
-  }
-  const a = record(left)
-  const b = record(right)
-  if (a === null || b === null) return false
-  const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && same(a[key], b[key]))
 }
 
 function sameOpening(stored: readonly IndexElement[], sent: readonly IndexElement[]): boolean {
@@ -449,6 +460,7 @@ function appendBuilt(current: BuiltIndex | undefined, page: IndexPage): Appended
     }
   }
   const elements = current?.elements ?? []
+  const layouts = page.layouts ?? current?.layouts
   if (page.offset !== elements.length) return { ok: false, refusal: "stale" }
   if (page.elements.some((row) => elements.some((kept) => kept.node === row.node)))
     return { ok: false, refusal: "present" }
@@ -460,6 +472,7 @@ function appendBuilt(current: BuiltIndex | undefined, page: IndexPage): Appended
       ...(page.palettes === undefined ? {} : { palettes: page.palettes }),
       ...(page.templateStyles === undefined ? {} : { templateStyles: page.templateStyles }),
       ...(page.sectionStarts === undefined ? {} : { sectionStarts: page.sectionStarts }),
+      ...(layouts === undefined ? {} : { layouts }),
       slides: page.slides,
       elements: [...elements, ...page.elements],
       pages: [...(current?.pages ?? []), { once: page.once, offset: page.offset, count: page.elements.length }],

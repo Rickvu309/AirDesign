@@ -19,6 +19,7 @@ export {
   type SlideId,
 } from "./element-id.js"
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
+export { type IndexLayout } from "./index-layout.js"
 export { answeredRegister } from "./answered-register.js"
 export {
   appendIndex,

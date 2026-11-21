@@ -22,7 +22,13 @@ export type WireSlideChange =
       readonly group: GridSide | "keep"
     }
   | { readonly op: "duplicate_slides" | "delete_slides"; readonly slides: readonly [SlideId, ...SlideId[]] }
-  | { readonly op: "add_slide"; readonly after?: SlideId; readonly layout?: SlideId; readonly group?: GridSide }
+  | {
+      readonly op: "add_slide"
+      readonly after?: SlideId
+      readonly layout?: SlideId
+      readonly layoutAt?: number
+      readonly group?: GridSide
+    }
   | { readonly op: "duplicate_slide" | "delete_slide"; readonly slide: SlideId }
   | { readonly op: "move_slide"; readonly slide: SlideId; readonly after: SlideId | null }
 
@@ -54,6 +60,17 @@ function bodyOf(raw: unknown): Readonly<Record<string, unknown>> | undefined {
     : undefined
 }
 
+const layoutIdPattern = /^L([1-9][0-9]?)$/
+
+export function layoutId(at: number): string {
+  return `L${String(at + 1)}`
+}
+
+function readLayoutId(raw: unknown): number | undefined {
+  const found = typeof raw === "string" ? layoutIdPattern.exec(raw) : null
+  return found === null ? undefined : Number(found[1]) - 1
+}
+
 export function readSlideChange(raw: unknown): Read<WireSlideChange> {
   const sent = bodyOf(raw)
   const op = slideOps.find((each) => each === sent?.op)
@@ -70,9 +87,10 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
   if (missing !== undefined) return refused(missing)
   if (op === "add_slide") {
     const after = body.after === undefined ? undefined : readSlideId(body.after)
-    const layout = body.layout === undefined ? undefined : readSlideId(body.layout)
+    const layoutAt = readLayoutId(body.layout)
+    const layout = body.layout === undefined || layoutAt !== undefined ? undefined : readSlideId(body.layout)
     if (body.after !== undefined && after === undefined) return refused("after")
-    if (body.layout !== undefined && layout === undefined) return refused("layout")
+    if (body.layout !== undefined && layout === undefined && layoutAt === undefined) return refused("layout")
     if (body.group !== undefined && body.group !== "same" && body.group !== "new") return refused("group")
     return {
       ok: true,
@@ -80,6 +98,7 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
         op,
         ...(after === undefined ? {} : { after }),
         ...(layout === undefined ? {} : { layout }),
+        ...(layoutAt === undefined ? {} : { layoutAt }),
         ...(body.group === undefined ? {} : { group: body.group }),
       },
     }
@@ -130,7 +149,11 @@ export function slideChangeSchema(): JsonSchema {
         anyOf: [slideSchema, { type: "null" }],
         description: "After this slide id (add_slide: the last by default); move_slide: null for the beginning.",
       },
-      layout: { ...slideSchema, description: "This slide's layout, by default after's." },
+      layout: {
+        type: "string",
+        description:
+          "A layouts id from airdesign_read_deck, or a slide id for that slide's layout; by default after's.",
+      },
       group: {
         type: "string",
         enum: ["same", "new", "keep"],
