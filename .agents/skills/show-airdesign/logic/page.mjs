@@ -110,18 +110,30 @@ function headsHtml(tree) {
   return `<div class="heads">${cells.join("")}</div>`
 }
 
+const photoWidth = 330
+
 function stepHtml(node, images) {
-  const points = node.children
-    ? `<ul class="points">${node.children.map((child) => `<li${unbuilt(child) ? ' class="unbuilt"' : ""}><b>${child.label}</b>${escape(child.claim)}${mark(child.verdict)}${thumbnail(child, images)}</li>`).join("")}</ul>`
-    : ""
-  return `<div class="${boxClass(node, 1, false)} step"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}${mark(node.verdict)}</p>${thumbnail(node, images)}${points}</div>`
+  const photo = thumbnail(node, images)
+  const points = (node.children ?? []).map((child) => ({ child, photo: thumbnail(child, images) }))
+  const list =
+    points.length === 0
+      ? ""
+      : `<ul class="points">${points.map(({ child, photo: own }) => `<li${unbuilt(child) ? ' class="unbuilt"' : ""}><b>${child.label}</b>${escape(child.claim)}${mark(child.verdict)}${own}</li>`).join("")}</ul>`
+  const wide = photo !== "" || points.some((point) => point.photo !== "")
+  return {
+    wide,
+    html: `<div class="${boxClass(node, 1, false)} step${wide ? " with-photo" : ""}"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}${mark(node.verdict)}</p>${photo}${list}</div>`,
+  }
 }
 
 function flowHtml(tree, images) {
-  const steps = tree.children.map((child) => stepHtml(child, images)).join('<i class="arrow"></i>')
-  const loop = tree.group.loop ? '<i class="loop-over"></i><i class="loop-back"></i>' : ""
+  const steps = tree.children.map((child) => stepHtml(child, images))
+  const anchor = (steps[0].wide ? photoWidth : widths[1]) / 2
+  const loop = tree.group.loop
+    ? `<i class="loop-over" style="left:${String(anchor)}px"></i><i class="loop-back"></i>`
+    : ""
   return `<p class="answer">${escape(tree.claim)}${mark(tree.verdict)}</p>
-<section class="flow${tree.group.loop ? " loops" : ""}">${loop}${steps}</section>`
+<section class="flow${tree.group.loop ? " loops" : ""}">${loop}${steps.map((step) => step.html).join('<i class="arrow"></i>')}</section>`
 }
 
 const style = `*{box-sizing:border-box}html,body{margin:0;background:#fff}
@@ -145,8 +157,8 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .d0 .claim{font-size:18px;line-height:24px;font-weight:720}
 .mark{font-size:12.5px;font-weight:700;white-space:nowrap}
 .mark.passed{color:#1f8a3b;font-size:14px}.mark.open{color:#8a6d00}.mark.failed{color:#a32020}
-.thumb{display:block;width:100%;max-width:100%;height:auto;max-height:300px;object-fit:contain;object-position:left top;margin-top:10px}
-.with-photo{--width:330px}
+.thumb{display:block;width:100%;max-width:100%;height:auto;margin-top:10px}
+.with-photo,.step.with-photo{--width:${String(photoWidth)}px}
 .kids{display:flex;flex-direction:column;position:relative;padding-left:${String(gap)}px}
 .kids::before{content:"";position:absolute;left:0;top:50%;width:${String(gap / 2)}px;border-top:2px solid ${ink};filter:url(#rough)}
 .kids>.node{position:relative;padding:8px 0}
@@ -160,7 +172,7 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .step{display:flex;flex-direction:column;justify-content:center;--width:${String(widths[1])}px}
 .arrow{flex:none;align-self:center;position:relative;width:50px;height:0;border-top:2.2px solid ${ink};filter:url(#rough)}
 .arrow::after{content:"";position:absolute;right:-2px;top:-7.5px;border:6.5px solid transparent;border-left:11px solid ${ink};border-right:0}
-.loop-over{position:absolute;top:-48px;left:${String(widths[1] / 2)}px;right:-28px;height:48px;border:2.2px solid ${ink};border-bottom:0;border-radius:10px 10px 0 0;filter:url(#rough)}
+.loop-over{position:absolute;top:-48px;right:-28px;height:48px;border:2.2px solid ${ink};border-bottom:0;border-radius:10px 10px 0 0;filter:url(#rough)}
 .loop-over::after{content:"";position:absolute;left:-8px;bottom:-2px;border:6.5px solid transparent;border-top:11px solid ${ink};border-bottom:0}
 .loop-back{position:absolute;top:-2px;right:-28px;width:28px;height:50%;border-right:2.2px solid ${ink};border-bottom:2.2px solid ${ink};border-radius:0 0 10px 0;filter:url(#rough)}
 .points{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:17px;color:#444}
