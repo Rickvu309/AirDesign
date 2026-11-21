@@ -142,7 +142,7 @@ function applyAgentEdits(
       const applied =
         "elements" in edit
           ? applyGroup(current, edit, runId, base)
-          : "labels" in edit
+          : edit.op === "diagram"
             ? applyDiagram(current, edit, runId, base)
             : edit.op === "delete"
               ? deleteElement(current, edit, runId, base)
