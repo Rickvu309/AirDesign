@@ -218,6 +218,7 @@ it("lands mixed slide and element changes in one revision or none", async () => 
     expect(result.structuredContent).toMatchObject({ ok: true, revision: 1, slides: ["257"] })
     expect(readDeckPage(held.deck, { runId: "run" }).slides.map((slide) => slide.id)).toEqual(["257", "256"])
     expect((await client.listTools()).tools.map((tool) => tool.name).sort()).toEqual([
+      "airdesign_create_deck",
       "airdesign_edit_deck",
       "airdesign_list_decks",
       "airdesign_read_deck",

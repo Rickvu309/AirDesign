@@ -8,15 +8,23 @@ describe("run operations in the catalog", () => {
     expect(catalog.undo_run).toEqual({ kind: "command", exposure: "web" })
     expect(catalog.list_decks).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(catalog.read_deck).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
-    expect(projectTools(catalog).map((tool) => tool.op)).toEqual(["edit_deck", "list_decks", "read_deck", "stop_run"])
+    expect(catalog.create_deck).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
+    expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
+      "create_deck",
+      "edit_deck",
+      "list_decks",
+      "read_deck",
+      "stop_run",
+    ])
   })
 })
 
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(4)
+    expect(tools).toHaveLength(5)
     expect(tools.map((tool) => tool.name)).toEqual([
+      "airdesign_create_deck",
       "airdesign_edit_deck",
       "airdesign_list_decks",
       "airdesign_read_deck",

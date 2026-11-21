@@ -6,6 +6,7 @@ import { suite as writtenSuite, type SuiteRow } from "./suite.js"
 
 export { admit, emptyLog, refund, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolResult } from "./call-tool.js"
+export { type CreatedDeck } from "./create-tool.js"
 export { wantedSlides, type ReadPictures } from "./slide-pictures.js"
 export { editLanded, editRefusal } from "./edit-answer.js"
 export { editFindings } from "./edit-findings.js"

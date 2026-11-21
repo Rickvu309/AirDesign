@@ -52,6 +52,7 @@ describe("Aira's tools", () => {
     )
     expect(JSON.stringify(airaTools)).not.toMatch(/"\$ref"|"\$defs"/)
     expect(airaTools.map((tool) => tool.name)).toEqual([
+      "airdesign_create_deck",
       "airdesign_edit_deck",
       "airdesign_list_decks",
       "airdesign_read_deck",
