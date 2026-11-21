@@ -45,14 +45,17 @@ describe("a logic page", () => {
     )
   })
 
-  it("draws the tree left to right, the decision first, and escapes every claim", () => {
+  it("draws the tree left to right under a header per column, the decision first, and escapes every claim", () => {
     const html = toHtml(tree)
     const order = ["Before-after no longer calls", "Any failure on &lt;main&gt;", "Three real runs show"].map((text) =>
       html.indexOf(text),
     )
     expect(order.every((at, index) => at > 0 && (index === 0 || at > order[index - 1]))).toBe(true)
-    expect(html).toContain('<div class="box d0"><div class="head"><span class="verdict open">Open</span></div>')
+    expect(html).toContain('<span class="verdict open">… Open</span>')
     expect(html.match(/class="box d1"/g)).toHaveLength(2)
+    expect(html).toContain(">Reasons (2)</div>")
+    expect(html).toContain(">The old fault and the proof</div>")
+    expect(html).toContain('<span class="badge">A</span>')
     expect(html).toContain("Evidence: Observed 2")
   })
 

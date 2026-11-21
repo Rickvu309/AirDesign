@@ -5,11 +5,18 @@ import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { openBrowser } from "../../verify-airdesign/bin/browser.mjs"
-import { themeCss } from "../../verify-airdesign/look/annotate.mjs"
 import { pageWidth, toHtml, toMarkdown } from "../logic/page.mjs"
 import { readTree } from "../logic/tree.mjs"
 
 const usage = "show-airdesign logic <tree.json> [--out dir]"
+const interFile = "apps/web/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2"
+
+export function interCss(repo) {
+  const file = path.join(repo, interFile)
+  if (!existsSync(file)) return ""
+  const data = readFileSync(file).toString("base64")
+  return `@font-face{font-family:"Inter Variable";font-weight:100 900;src:url(data:font/woff2;base64,${data}) format("woff2")}`
+}
 
 export function resolverFor(repo) {
   return (ref) => {
@@ -28,7 +35,10 @@ async function renderPng(html, file) {
   try {
     const page = await browser.newPage({ viewport: { width: pageWidth, height: 800 }, deviceScaleFactor: 2 })
     await page.setContent(html)
-    await page.evaluate(() => document.fonts.ready)
+    await page.evaluate(async () => {
+      await document.fonts.load('16px "Inter Variable"')
+      await document.fonts.ready
+    })
     await page.locator("main").screenshot({ path: file })
   } finally {
     await browser.close()
@@ -54,7 +64,7 @@ async function main(args) {
     html: path.join(out, `${name}.html`),
     png: path.join(out, `${name}.png`),
   }
-  const html = toHtml(tree, themeCss(repo))
+  const html = toHtml(tree, interCss(repo))
   writeFileSync(files.md, toMarkdown(tree))
   writeFileSync(files.html, html)
   await renderPng(html, files.png)
