@@ -1,7 +1,7 @@
-import { spliceBytes } from "./element-span.js"
+import { decodedXmlText, spliceBytes } from "./element-span.js"
 import { sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
-import { nonVisualOf, shownIdentity, type ShownIdentity } from "./picture-read.js"
+import { nonVisualOf } from "./picture-read.js"
 import { attributeEdit } from "./markup-attribute.js"
 import { lockedWritten, shownLocked } from "./shape-locks.js"
 import { maskWritten, shownMask } from "./mask-extension.js"
@@ -21,16 +21,31 @@ function written<V>(name: string, text: (value: V) => string | null) {
   }
 }
 
-function shown<K extends keyof ShownIdentity>(key: K) {
-  return (parts: Parts, at: ElementAt): ShownIdentity[K] | null => shownIdentity(parts, at)?.[key] ?? null
+function readTextAttribute(parts: Parts, at: ElementAt, name: string): string | null {
+  const bytes = parts.get(at.part)
+  const element = bytes === undefined ? undefined : nonVisualOf(requireMarkup(bytes).elements, at.shape)
+  if (element === undefined) return null
+  const found = element.attributes.find((each) => each.name === name)
+  return found === undefined ? "" : decodedXmlText(found.value)
+}
+
+function readHidden(parts: Parts, at: ElementAt): boolean | null {
+  const value = readTextAttribute(parts, at, "hidden")
+  return value === null ? null : value === "1" || value === "true"
 }
 
 export const identityXml: TraitXml<"identity"> = {
   slot: null,
   fields: {
-    name: whole({ read: shown("name"), write: written("name", (value: string) => value) }),
-    alt: whole({ read: shown("alt"), write: written("descr", (value: string) => (value === "" ? null : value)) }),
-    hidden: whole({ read: shown("hidden"), write: written("hidden", (value: boolean) => (value ? "1" : null)) }),
+    name: whole({
+      read: (parts, at) => readTextAttribute(parts, at, "name"),
+      write: written("name", (value: string) => value),
+    }),
+    alt: whole({
+      read: (parts, at) => readTextAttribute(parts, at, "descr"),
+      write: written("descr", (value: string) => (value === "" ? null : value)),
+    }),
+    hidden: whole({ read: readHidden, write: written("hidden", (value: boolean) => (value ? "1" : null)) }),
     locked: whole({ read: shownLocked, write: lockedWritten }),
     mask: whole({ read: shownMask, write: maskWritten }),
   },

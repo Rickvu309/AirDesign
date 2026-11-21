@@ -2,6 +2,7 @@ import type { FieldValue } from "@airdesign/document"
 import { child, inside, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
+import { drawnShape } from "./paint-sheet.js"
 import { ownersOf, propertiesOf, sheetOf } from "./trait-read.js"
 import { geometryOf } from "./preset-geometry-read.js"
 
@@ -43,12 +44,11 @@ function geometryOpen(held: Held): boolean {
 }
 
 export function shownGeometry(parts: ReadonlyMap<string, Uint8Array>, at: GeometryAt): ShownGeometry | null {
-  const sheet = sheetOf(parts, at.part)
-  const item = sheet?.drawn.find((each) => each.shape === at.shape)
-  if (sheet === null || item === undefined) return null
-  const layout = sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
+  const item = drawnShape(parts, at.part, at.shape)
+  if (item === null) return null
+  const layout = item.placeholder === null ? null : sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
   const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
-  const owners = ownersOf(item, { sheet, layout, master, theme: null })
+  const owners = ownersOf(item, { sheet: item, layout, master })
   const found = owners.findIndex((owner) => geometryIn(propertiesOf(owner)) !== undefined)
   const owner = owners[found]
   const held = owner === undefined ? undefined : geometryIn(propertiesOf(owner))

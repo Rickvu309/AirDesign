@@ -1,4 +1,4 @@
-import { markupDocument } from "./element-span.js"
+import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { shapePart } from "./shape-id.js"
 
@@ -169,6 +169,20 @@ export function branchOrderErrors(parts: ReadonlyMap<string, Uint8Array>): reado
     if (shapePart.test(part)) errors.push(...partBranchOrderErrors(part, bytes))
   }
   return errors
+}
+
+export function insertChildAt<P extends OrderedParent>(
+  parent: P,
+  tag: ChildOf<P>,
+  host: MarkupElement,
+  children: readonly MarkupElement[],
+): number {
+  const insertRank = rank(parent, tag)
+  let at = host.openEnd
+  for (const child of children) {
+    if (rank(parent, child.kind) <= insertRank) at = child.end
+  }
+  return at
 }
 
 export function insertChild<P extends OrderedParent>(

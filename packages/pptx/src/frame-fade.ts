@@ -12,9 +12,10 @@ import { scaledBytes } from "./alpha-codec.js"
 import type { MarkupElement } from "./element-span.js"
 import { changedPart } from "./fill-host.js"
 import { withFiledFrames } from "./filed-frames.js"
-import { slidePart } from "./package-address.js"
+import { slideAddresses } from "./package-address.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
+import { SlideEditor } from "./slide-editor.js"
 import { markupChildren } from "./text-value-route.js"
 import { shownAlphas, writeTrait } from "./trait-xml.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
@@ -67,14 +68,22 @@ function layersIn(register: Register, view: LayoutView): readonly ElementId[] {
 
 export function fadedFrames(parts: Parts, opened: Register): Parts {
   const register = withFiledFrames(parts, opened)
-  let next = parts
-  for (const node of layoutNodes(register)) {
+  const nodes = layoutNodes(register)
+  if (nodes.length === 0) return parts
+  let slideParts: ReadonlyMap<string, string> | null = null
+  let editor: SlideEditor | null = null
+  for (const node of nodes) {
     const view = readLayout(register, node)
+    if (view === null || view.opacity >= opaque) continue
+    slideParts ??= new Map(slideAddresses(parts).map((address) => [address.slide, address.part]))
     const slide = shapeOf(node).slide
-    const part = slidePart(next, slide)
-    if (view === null || view.opacity >= opaque || part === null) continue
-    for (const layer of layersIn(register, view))
-      next = fadedLayer(next, { slide, part, shape: shapeOf(layer).shape }, view.opacity)
+    const part = slideParts.get(slide)
+    if (part === undefined) continue
+    editor ??= new SlideEditor(parts)
+    for (const layer of layersIn(register, view)) {
+      const shape = shapeOf(layer).shape
+      editor.editShape(part, shape, (scoped) => fadedLayer(scoped, { slide, part, shape }, view.opacity))
+    }
   }
-  return next
+  return editor === null ? parts : editor.flush()
 }

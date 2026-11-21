@@ -1,5 +1,4 @@
 import { lineGeometries, type Geometry } from "@airdesign/document"
-import { insertChild } from "./child-order.js"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId, shapeIdsIn } from "./shape-id.js"
@@ -48,26 +47,16 @@ export function xmlText(value: string): string {
 export type NewTextAlign = "left" | "center"
 
 function paragraph(text: string, align: NewTextAlign): string {
-  let xml = "<a:p></a:p>"
-  if (align === "center") xml = insertChild("a:p", "a:pPr", `<a:pPr algn="ctr"/>`, xml)
-  xml = insertChild("a:p", "a:r", `<a:r><a:t>${xmlText(text)}</a:t></a:r>`, xml)
-  xml = insertChild("a:p", "a:endParaRPr", `<a:endParaRPr lang="en-US"/>`, xml)
-  return xml
+  const properties = align === "center" ? `<a:pPr algn="ctr"/>` : ""
+  return `<a:p>${properties}<a:r><a:t>${xmlText(text)}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>`
 }
 
 function textBody(text: string, align: NewTextAlign): string {
-  let xml = "<p:txBody></p:txBody>"
-  xml = insertChild("p:txBody", "a:bodyPr", "<a:bodyPr/>", xml)
-  xml = insertChild("p:txBody", "a:lstStyle", "<a:lstStyle/>", xml)
-  xml = insertChild("p:txBody", "a:p", paragraph(text, align), xml)
-  return xml
+  return `<p:txBody><a:bodyPr/><a:lstStyle/>${paragraph(text, align)}</p:txBody>`
 }
 
 function shapeProperties(box: ShapeBox): string {
-  let xml = "<p:spPr></p:spPr>"
-  xml = insertChild("p:spPr", "a:xfrm", shapeBox(box), xml)
-  xml = insertChild("p:spPr", "a:prstGeom", `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`, xml)
-  return xml
+  return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>`
 }
 
 export function appendShape(
@@ -99,6 +88,10 @@ export function shapeBox(box: ShapeBox): string {
   return `<a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`
 }
 
+export function textShapeXml(idText: string, text: string, box: ShapeBox, align: NewTextAlign = "center"): string {
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="${newTextName}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text, align)}</p:sp>`
+}
+
 export function addTextShape(
   slideXml: string,
   text: string,
@@ -106,12 +99,7 @@ export function addTextShape(
   id?: number,
   align: NewTextAlign = "center",
 ): { readonly xml: string; readonly id: number } {
-  return appendShape(
-    slideXml,
-    (idText) =>
-      `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="${newTextName}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text, align)}</p:sp>`,
-    id,
-  )
+  return appendShape(slideXml, (idText) => textShapeXml(idText, text, box, align), id)
 }
 
 const shapeStyle =
@@ -132,6 +120,14 @@ function drawnProperties(geometry: Geometry, box: ShapeBox): string {
   return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="${geometry}"><a:avLst/></a:prstGeom>${end}</p:spPr>`
 }
 
+export function drawnShapeXml(idText: string, geometry: Geometry, box: ShapeBox, holdsText = false): string {
+  const name = `<p:cNvPr id="${idText}" name="${newShapeName(geometry, idText)}"/>`
+  const properties = drawnProperties(geometry, box)
+  if (lineGeometries.includes(geometry))
+    return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
+  return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}${holdsText ? shapeText : ""}</p:sp>`
+}
+
 export function addDrawnShape(
   slideXml: string,
   geometry: Geometry,
@@ -139,15 +135,5 @@ export function addDrawnShape(
   id?: number,
   holdsText = false,
 ): { readonly xml: string; readonly id: number } {
-  return appendShape(
-    slideXml,
-    (idText) => {
-      const name = `<p:cNvPr id="${idText}" name="${newShapeName(geometry, idText)}"/>`
-      const properties = drawnProperties(geometry, box)
-      if (lineGeometries.includes(geometry))
-        return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
-      return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}${holdsText ? shapeText : ""}</p:sp>`
-    },
-    id,
-  )
+  return appendShape(slideXml, (idText) => drawnShapeXml(idText, geometry, box, holdsText), id)
 }

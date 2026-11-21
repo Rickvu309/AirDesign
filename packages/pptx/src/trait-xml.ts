@@ -1,6 +1,6 @@
 import { linkXml } from "./trait-xml-link.js"
 import type { TraitName, TraitPatch } from "@airdesign/document"
-import { bodyXml } from "./trait-xml-body.js"
+import { bodyXml, writtenBody } from "./trait-xml-body.js"
 import { boxXml } from "./trait-xml-box.js"
 import { connectionXml } from "./trait-xml-connection.js"
 import { effectsXml } from "./trait-xml-effects.js"
@@ -44,6 +44,7 @@ export const traitXml: { readonly [T in Written]: TraitXml<T> } = {
 
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {
   if (trait === "fills") return writtenFills(parts, at, patch as TraitPatch<"fills">)
+  if (trait === "body") return writtenBody(parts, at, patch as TraitPatch<"body">)
   if (trait === "layout") return parts
   const next = writeFields(parts, at, traitXml[trait as Written], patch as TraitPatch<Written>)
   if (trait !== "box" || next === parts) return next

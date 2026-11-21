@@ -211,11 +211,13 @@ const settingsXml = {
 }
 
 function same(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
+  return left === right || JSON.stringify(left) === JSON.stringify(right)
 }
 
 export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fills">): Parts {
-  const shown = shownSlots(parts, at)
+  const stack = shownStack(parts, at)
+  const openingNative = stack === null ? nativeSlots(parts, at) : null
+  const shown = openingNative ?? [stack![0] ?? none, stack![1] ?? none, stack![2] ?? none, stack![3] ?? none]
   const wanted = paintSlots.map((slot, at): Wanted => {
     const edit = patch[slot]
     if (edit === undefined || edit === "opening") return shown[at] ?? null
@@ -224,8 +226,8 @@ export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fil
   const source = typeof patch.source === "object" ? patch.source.set : undefined
   const moved = wanted.some((paint, slot) => !same(paint, shown[slot] ?? null))
   const background = hostOf(parts, at) === "bg" && source !== undefined && source !== shownSource(parts, at)
-  const base = moved ? withoutOverlay(parts, at) : parts
-  const native = nativeSlots(base, at)
+  const base = moved && (openingNative === null || openingNative[3] !== none) ? withoutOverlay(parts, at) : parts
+  const native = base === parts && openingNative !== null ? openingNative : nativeSlots(base, at)
   const visible = wanted.map((paint): Shown =>
     paint === null || paint === "inherit" || !("hidden" in paint) ? paint : none,
   )
@@ -240,11 +242,18 @@ export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fil
   const painted =
     written === null
       ? { parts, sourced: false }
-      : { ...written, parts: writtenStack(written.parts, at, listed, written.stacked === true) }
+      : {
+          ...written,
+          parts:
+            stack === null && listed === null
+              ? written.parts
+              : writtenStack(written.parts, at, listed, written.stacked === true),
+        }
   const { p0: _p0, p1: _p1, p2: _p2, p3: _p3, source: _source, ...rest } = patch
   const imaged = wanted.some(pictured)
   const kept = imaged ? rest : { ...(rest.alpha === undefined ? {} : { alpha: rest.alpha }) }
   const settings = painted.sourced || patch.source === undefined || !imaged ? kept : { ...kept, source: patch.source }
+  if (Object.keys(settings).length === 0) return painted.parts
   return writeFields(painted.parts, at, settingsXml as unknown as TraitXml<"fills">, settings as TraitPatch<"fills">)
 }
 

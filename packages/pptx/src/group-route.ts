@@ -18,12 +18,11 @@ import {
   type TraitPatch,
 } from "@airdesign/document"
 import { arrangeSlide, raisedToTop } from "./element-stack-route.js"
-import { joinShape, regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
-import { slidePart } from "./package-address.js"
+import { joinShape, regroupSaved, shapePlace, unwrapGroup, type SavedGroup } from "./group-write.js"
 import { pasteShape } from "./shape-paste.js"
 import { applyStructuralRoute } from "./structural-route.js"
-import { requireMarkup } from "./part-markup.js"
 import { removeShape } from "./slide-route.js"
+import { SlideEditor } from "./slide-editor.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -68,11 +67,6 @@ function bytesOf(parts: Parts, part: string): Uint8Array {
 function rowsOf(state: GroupedState, node: Parameters<typeof shapeOf>[0]): TraitPatch<"box"> | undefined {
   const body = state.elements === undefined || !Object.hasOwn(state.elements, node) ? undefined : state.elements[node]
   return body === undefined ? undefined : landedPatch(body, "text").box
-}
-
-function holds(bytes: Uint8Array, shapes: readonly string[]): boolean {
-  const { elements } = requireMarkup(bytes)
-  return shapes.every((shape) => elements.some((mark) => mark.kind === "p:cNvPr" && mark.id === shape))
 }
 
 export type PasteSource = (command: ElementClone, at: number) => { readonly parts: Parts; readonly part: string }
@@ -127,82 +121,87 @@ function noPaste(): never {
 }
 
 export function groupsReplayed(
-  parts: Parts,
+  editor: SlideEditor,
   minted: string,
+  part: string,
   from: SlideId,
   state: GroupedState,
   upTo: number,
   pasted: PasteSource = noPaste,
-): Parts {
+): void {
   const saved = new Map<string, SavedGroup>()
   const passed = new Set<string>()
-  let next = parts
   let pastedOnTop = false
+  let hasOrder = false
+  const where = (shape: string) => ({ slide: minted, part, shape })
   for (let at = 0; at < upTo; at += 1) {
     const command = state.order[at]
+    if (command?.slide === "element-order" && command.id === from) {
+      hasOrder = true
+      continue
+    }
     if (command?.slide === "element-add" && command.id === from && pastedOnTop) {
-      next = raisedToTop(next, minted, shapeOf(command.element.node).shape)
+      const shape = shapeOf(command.element.node).shape
+      editor.editWhole(part, (current) => raisedToTop(current, minted, shape))
       continue
     }
     if (command?.slide === "element-clone" && command.id === from) {
-      const part = slidePart(next, minted)
-      if (part === null) throw new Error("slide")
       if (shapeOf(command.source).slide !== from) {
-        next = pastedLayers(next, minted, part, command, pasted, at)
+        editor.editWhole(part, (current) => pastedLayers(current, minted, part, command, pasted, at))
         pastedOnTop = true
-      } else if (holds(bytesOf(next, part), [shapeOf(command.source).shape]))
-        next = clonedLayers(next, minted, part, command)
+      } else if (editor.holds(part, [shapeOf(command.source).shape])) {
+        editor.editWhole(part, (current) => clonedLayers(current, minted, part, command))
+      }
       continue
     }
     if (command === undefined || !groupCommand(command) || command.id !== from) continue
-    const part = slidePart(next, minted)
-    if (part === null) throw new Error("slide")
     const members = command.slide === "element-group" ? command.members.map((member) => shapeOf(member.node).shape) : []
-    if (command.slide === "element-group" && !holds(bytesOf(next, part), members))
-      passed.add(shapeOf(groupNode(command)).shape)
+    if (command.slide === "element-group" && !editor.holds(part, members)) passed.add(shapeOf(groupNode(command)).shape)
     if (passed.has(shapeOf(groupNode(command)).shape)) continue
     const prefix = {
       file: state.file,
       order: state.order.slice(0, at),
       ...(state.index === undefined ? {} : { index: state.index }),
     }
-    next = arrangeSlide(
-      next,
-      minted,
-      elementStacks(prefix).filter((stack) => stack.slide === from),
-    )
-    const where = (shape: string) => ({ slide: minted, part, shape })
+    if (hasOrder) {
+      const stacks = elementStacks(prefix).filter((stack) => stack.slide === from)
+      if (stacks.length > 0) editor.editWhole(part, (current) => arrangeSlide(current, minted, stacks))
+    }
     if (command.slide === "element-join") {
       const { frame, before, member } = command
       if (frame !== null && passed.has(shapeOf(frame).shape)) continue
       const own = shapeOf(member.node).shape
-      const placed = joinShape(
-        bytesOf(next, part),
-        own,
-        frame === null ? null : shapeOf(frame).shape,
-        before === null ? null : shapeOf(before).shape,
-      )
-      next = withPart(next, part, placed)
-      const after = { ...prefix, order: state.order.slice(0, at + 1) }
-      if (frame !== null && plainGroup(after, frame)) {
-        const filed = shapePlace(bytesOf(next, part), own)
-        next = writeTrait(next, where(own), "box", boxPatch(keptTurn(memberPlace(member), filed)))
-      }
+      editor.editWhole(part, (current) => {
+        const placed = joinShape(
+          bytesOf(current, part),
+          own,
+          frame === null ? null : shapeOf(frame).shape,
+          before === null ? null : shapeOf(before).shape,
+        )
+        let next = withPart(current, part, placed)
+        const after = { ...prefix, order: state.order.slice(0, at + 1) }
+        if (frame !== null && plainGroup(after, frame)) {
+          const filed = shapePlace(bytesOf(next, part), own)
+          next = writeTrait(next, where(own), "box", boxPatch(keptTurn(memberPlace(member), filed)))
+        }
+        return next
+      })
       continue
     }
     if (command.slide === "element-group") {
       const { element } = command
       if (element.box === null) throw new Error("box")
       const backdrop = command.backdrop === undefined ? undefined : Number(shapeOf(command.backdrop.node).shape)
-      next = withPart(
-        next,
-        part,
-        wrapGroup(bytesOf(next, part), Number(shapeOf(element.node).shape), element.box, members, backdrop),
-      )
+      editor.wrapGroup(part, Number(shapeOf(element.node).shape), element.box, members, backdrop)
       for (const member of command.members) {
         const shape = shapeOf(member.node).shape
-        const filed = shapePlace(bytesOf(next, part), shape)
-        next = writeTrait(next, where(shape), "box", boxPatch(keptTurn(memberPlace(member), filed)))
+        const filed = editor.readShape(part, shape, (bytes) => shapePlace(bytes, shape))
+        editor.editShape(
+          part,
+          shape,
+          (scoped) => writeTrait(scoped, where(shape), "box", boxPatch(keptTurn(memberPlace(member), filed))),
+          { touchesChildren: true },
+        )
       }
       continue
     }
@@ -210,28 +209,30 @@ export function groupsReplayed(
     if (command.slide === "element-regroup") {
       const kept = saved.get(shape)
       if (kept === undefined) throw new Error("p:grpSp")
-      next = withPart(next, part, regroupSaved(bytesOf(next, part), kept))
+      editor.editWhole(part, (current) => withPart(current, part, regroupSaved(bytesOf(current, part), kept)))
       continue
     }
     const backdrop = madeGroup(prefix, command.node)?.backdrop?.node
     const rows = rowsOf(state, command.node)
-    if (rows !== undefined && backdrop === undefined) next = writeTrait(next, where(shape), "box", rows)
-    const unwrapped = unwrapGroup(bytesOf(next, part), shape)
-    next = withPart(next, part, unwrapped.bytes)
-    if (backdrop !== undefined) {
-      const dropped = shapeOf(backdrop).shape
-      const children = unwrapped.saved.children.filter((child) => child !== dropped)
-      saved.set(shape, { ...unwrapped.saved, children })
-      next = withPart(next, part, removeShape(bytesOf(next, part), dropped))
-      continue
-    }
-    saved.set(shape, unwrapped.saved)
-    const { frame, place } = unwrapped
-    if (frame === null || place === null) continue
-    for (const child of unwrapped.children) {
-      const own = shapePlace(bytesOf(next, part), child)
-      if (own !== null) next = writeTrait(next, where(child), "box", boxPatch(throughGroup(own, place, frame)))
-    }
+    editor.editWhole(part, (current) => {
+      let next = current
+      if (rows !== undefined && backdrop === undefined) next = writeTrait(next, where(shape), "box", rows)
+      const unwrapped = unwrapGroup(bytesOf(next, part), shape)
+      next = withPart(next, part, unwrapped.bytes)
+      if (backdrop !== undefined) {
+        const dropped = shapeOf(backdrop).shape
+        const children = unwrapped.saved.children.filter((child) => child !== dropped)
+        saved.set(shape, { ...unwrapped.saved, children })
+        return withPart(next, part, removeShape(bytesOf(next, part), dropped))
+      }
+      saved.set(shape, unwrapped.saved)
+      const { frame, place } = unwrapped
+      if (frame === null || place === null) return next
+      for (const child of unwrapped.children) {
+        const own = shapePlace(bytesOf(next, part), child)
+        if (own !== null) next = writeTrait(next, where(child), "box", boxPatch(throughGroup(own, place, frame)))
+      }
+      return next
+    })
   }
-  return next
 }

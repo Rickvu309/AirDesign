@@ -15,22 +15,36 @@ export function openTag(bytes: Uint8Array, element: MarkupElement): string {
   return decodeUtf8(bytes.subarray(element.start, element.openEnd - (element.selfClosing ? 2 : 1))).trimEnd()
 }
 
-export function withAttribute(name: string, text: string | null): Slot {
+export function withAttributes(pairs: readonly (readonly [string, string | null])[]): Slot {
   return (slot) => {
     const root = slotRoot(slot)
-    const at = root.attributes.findIndex((each) => each.name === name)
-    const attribute = root.attributes[at]
-    if (attribute === undefined) {
-      if (text === null) return slot
-      const end = root.openEnd - (root.selfClosing ? 2 : 1)
-      return spliceBytes(slot, [{ start: end, end, next: encodeUtf8(` ${name}="${text}"`) }])
+    const edits: ByteEdit[] = []
+    let appended = ""
+    for (const [name, text] of pairs) {
+      const at = root.attributes.findIndex((each) => each.name === name)
+      const attribute = root.attributes[at]
+      if (attribute === undefined) {
+        if (text !== null) appended += ` ${name}="${text}"`
+        continue
+      }
+      if (text !== null) {
+        edits.push({ start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(text) })
+        continue
+      }
+      const before = root.attributes[at - 1]
+      const start = before === undefined ? root.start + 1 + root.kind.length : before.valueEnd + 1
+      edits.push({ start, end: attribute.valueEnd + 1, next: new Uint8Array() })
     }
-    if (text !== null)
-      return spliceBytes(slot, [{ start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(text) }])
-    const before = root.attributes[at - 1]
-    const start = before === undefined ? root.start + 1 + root.kind.length : before.valueEnd + 1
-    return spliceBytes(slot, [{ start, end: attribute.valueEnd + 1, next: new Uint8Array() }])
+    if (appended !== "") {
+      const end = root.openEnd - (root.selfClosing ? 2 : 1)
+      edits.push({ start: end, end, next: encodeUtf8(appended) })
+    }
+    return edits.length === 0 ? slot : spliceBytes(slot, edits)
   }
+}
+
+export function withAttribute(name: string, text: string | null): Slot {
+  return withAttributes([[name, text]])
 }
 
 export function withChild<P extends OrderedParent>(

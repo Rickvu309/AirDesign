@@ -43,39 +43,89 @@ export function floorFits(state: Floored, command: SlideCommand): boolean {
   return opened + floorOf(command).length <= limits.elements
 }
 
-export function openingElement(state: Floored, node: ElementId): IndexElement | undefined {
-  const indexed = state.index?.elements.find((element) => element.node === node)
-  if (indexed !== undefined || !node.includes(".")) return indexed
-  const slide = shapeOf(node).slide
-  for (const command of state.order) {
-    const onSlide =
-      command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group"
-        ? command.id === slide
-        : slideBirths(command).some((birth) => birth.id === slide)
-    if (!onSlide) continue
-    const found = floorOf(command).find((element) => element.node === node)
-    if (found !== undefined) return found
+type FloorIndex = {
+  readonly opening: ReadonlyMap<ElementId, IndexElement>
+  readonly bornSlides: ReadonlySet<string>
+  readonly clonedElement: ReadonlyMap<ElementId, IndexElement>
+  readonly addedElement: ReadonlyMap<ElementId, IndexElement>
+  readonly clonedLayers: ReadonlyMap<ElementId, IndexElement>
+}
+
+const floorIndexes = new WeakMap<readonly SlideCommand[], WeakMap<object, FloorIndex>>()
+const noFloorIndex = {}
+
+function buildFloorIndex(state: Floored): FloorIndex {
+  const opening = new Map<ElementId, IndexElement>()
+  const bornSlides = new Set<string>()
+  const clonedElement = new Map<ElementId, IndexElement>()
+  const addedElement = new Map<ElementId, IndexElement>()
+  const clonedLayers = new Map<ElementId, IndexElement>()
+  for (const element of state.index?.elements ?? []) {
+    if (!opening.has(element.node)) opening.set(element.node, element)
   }
-  return undefined
+  for (const command of state.order) {
+    const direct =
+      command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group"
+    let bornOnCommand: Set<string> | null = null
+    if (!direct) {
+      const births = slideBirths(command)
+      if (births.length > 0) {
+        bornOnCommand = new Set<string>()
+        for (const birth of births) {
+          bornSlides.add(birth.id)
+          bornOnCommand.add(birth.id)
+        }
+      }
+    }
+    if (direct || bornOnCommand !== null) {
+      for (const element of floorOf(command)) {
+        if (!element.node.includes(".") || opening.has(element.node)) continue
+        const slide = shapeOf(element.node).slide
+        if (direct ? command.id === slide : bornOnCommand!.has(slide)) opening.set(element.node, element)
+      }
+    }
+    if (command.slide === "element-clone") {
+      if (!clonedElement.has(command.element.node)) clonedElement.set(command.element.node, command.element)
+      for (const layer of command.layers ?? []) {
+        if (!clonedLayers.has(layer.element.node)) clonedLayers.set(layer.element.node, layer.element)
+      }
+    } else if (command.slide === "element-add") {
+      if (!addedElement.has(command.element.node)) addedElement.set(command.element.node, command.element)
+    }
+  }
+  return { opening, bornSlides, clonedElement, addedElement, clonedLayers }
+}
+
+function floorIndexOf(state: Floored): FloorIndex {
+  let byIndex = floorIndexes.get(state.order)
+  if (byIndex === undefined) {
+    byIndex = new WeakMap<object, FloorIndex>()
+    floorIndexes.set(state.order, byIndex)
+  }
+  const key = state.index ?? noFloorIndex
+  const kept = byIndex.get(key)
+  if (kept !== undefined) return kept
+  const built = buildFloorIndex(state)
+  byIndex.set(key, built)
+  return built
+}
+
+export function openingElement(state: Floored, node: ElementId): IndexElement | undefined {
+  return floorIndexOf(state).opening.get(node)
 }
 
 export function newSlideElement(state: Floored | null, node: ElementId): IndexElement | undefined {
   if (state === null || !node.includes(".")) return undefined
-  const slide = shapeOf(node).slide
-  const born = state.order.some((command) => slideBirths(command).some((birth) => birth.id === slide))
-  if (born) return openingElement(state, node)
-  const cloned = state.order.find((command) => command.slide === "element-clone" && command.element.node === node)
-  if (cloned?.slide === "element-clone") return cloned.element
-  const added = state.order.find((command) => command.slide === "element-add" && command.element.node === node)
-  if (added?.slide !== "element-add") return undefined
-  return hasSlideNumber(added.element.value) ? added.element : undefined
+  const index = floorIndexOf(state)
+  if (index.bornSlides.has(shapeOf(node).slide)) return index.opening.get(node)
+  const cloned = index.clonedElement.get(node)
+  if (cloned !== undefined) return cloned
+  const added = index.addedElement.get(node)
+  return added !== undefined && hasSlideNumber(added.value) ? added : undefined
 }
 
 export function clonedLayer(state: Floored, node: ElementId): IndexElement | undefined {
-  for (const command of state.order)
-    if (command.slide === "element-clone")
-      for (const layer of command.layers ?? []) if (layer.element.node === node) return layer.element
-  return undefined
+  return floorIndexOf(state).clonedLayers.get(node)
 }
 
 export function floorNodes(state: Floored): readonly ElementId[] {

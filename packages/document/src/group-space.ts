@@ -109,8 +109,19 @@ function shownSpace(register: Register, group: ElementId): Space | null {
   return place === null || frame === null ? null : { place, frame }
 }
 
+const nodeSets = new WeakMap<readonly ElementId[], ReadonlySet<ElementId>>()
+
+function hasNode(register: Register, node: ElementId): boolean {
+  let known = nodeSets.get(register.nodes)
+  if (known === undefined) {
+    known = new Set(register.nodes)
+    nodeSets.set(register.nodes, known)
+  }
+  return known.has(node)
+}
+
 function boxMoved(register: Register, node: ElementId): boolean {
-  if (!register.nodes.includes(node)) return false
+  if (!hasNode(register, node)) return false
   const body = register.elements[node]
   const edits = body === undefined ? {} : (landedPatch(body, "text").box ?? {})
   return Object.values(edits).some((edit) => typeof edit === "object")
@@ -123,8 +134,11 @@ function fittedFrame(members: readonly Member[], space: Space): Box {
 const rebases = new WeakMap<Register, Map<ElementId, Rebased | null>>()
 
 export function rebased(register: Register, group: ElementId): Rebased | null {
-  const known = rebases.get(register) ?? new Map<ElementId, Rebased | null>()
-  rebases.set(register, known)
+  let known = rebases.get(register)
+  if (known === undefined) {
+    known = new Map<ElementId, Rebased | null>()
+    rebases.set(register, known)
+  }
   if (known.has(group)) return known.get(group) ?? null
   known.set(group, null)
   const found = rebasedNow(register, group)

@@ -83,7 +83,9 @@ function sorted(value: unknown): unknown {
 }
 
 function same(left: unknown, right: unknown): boolean {
-  return left === right || JSON.stringify(sorted(left)) === JSON.stringify(sorted(right))
+  if (left === right) return true
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false
+  return JSON.stringify(sorted(left)) === JSON.stringify(sorted(right))
 }
 
 function withPart(parts: Parts, part: string, bytes: Uint8Array): Parts {
@@ -205,17 +207,32 @@ function innerWrite<V>(field: Extract<FieldXml<V>, { at: "inner" }>, value: V): 
   }
 }
 
+const traitSpecs = new WeakMap<
+  TraitXml<TraitName>,
+  { readonly fields: readonly (readonly [string, FieldXml<unknown>])[]; readonly order: readonly string[] }
+>()
+
+function traitSpec<T extends TraitName>(xml: TraitXml<T>) {
+  let cached = traitSpecs.get(xml as TraitXml<TraitName>)
+  if (cached === undefined) {
+    const fields = Object.entries(xml.fields) as [string, FieldXml<unknown>][]
+    const order = [
+      ...new Set(fields.flatMap(([, field]) => (field.at === "inner" && field.tag !== null ? [field.tag] : []))),
+    ]
+    cached = { fields, order }
+    traitSpecs.set(xml as TraitXml<TraitName>, cached)
+  }
+  return cached
+}
+
 export function writeFields<T extends TraitName>(
   parts: Parts,
   at: ElementAt,
   xml: TraitXml<T>,
   patch: TraitPatch<T>,
 ): Parts {
-  const fields = Object.entries(xml.fields) as [string, FieldXml<unknown>][]
+  const { fields, order } = traitSpec(xml)
   const edits = patch as Readonly<Record<string, FieldEdit<unknown> | undefined>>
-  const order = [
-    ...new Set(fields.flatMap(([, field]) => (field.at === "inner" && field.tag !== null ? [field.tag] : []))),
-  ]
   const writes: InnerWrite[] = []
   let next = parts
   for (const [name, field] of fields) {

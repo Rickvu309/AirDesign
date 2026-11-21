@@ -23,7 +23,15 @@ import { child, flag, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { pictureReads } from "./picture-read.js"
 import { paintAttribute } from "./paint-color.js"
-import { layoutMatch, masterMatch, sheetFrom, type Drawn, type Sheet } from "./paint-sheet.js"
+import {
+  layoutMatch,
+  masterMatch,
+  sheetFrom,
+  type Drawn,
+  type DrawnShape,
+  type ShapeChain,
+  type Sheet,
+} from "./paint-sheet.js"
 import { effectReads, extraEffectReads } from "./effect-reads.js"
 import { standRecords } from "./stand-read.js"
 import { readSlides } from "./read-shapes.js"
@@ -342,7 +350,7 @@ function paletteOf(chain: Chain, fonts: Fonts): Palette {
   return fonts.size === 0 ? { slots, map } : { slots, map, fonts: Object.fromEntries(fonts) }
 }
 
-export function ownersOf(item: Drawn, chain: Chain): readonly Held[] {
+export function ownersOf(item: Drawn | DrawnShape, chain: ShapeChain): readonly Held[] {
   const owners: Held[] = [{ element: item.element, children: chain.sheet.children }]
   const wanted = item.placeholder
   if (wanted === null) return owners

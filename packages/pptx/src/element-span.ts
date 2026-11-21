@@ -103,12 +103,54 @@ export function contentSpans(bytes: Uint8Array, element: MarkupElement): readonl
 }
 
 const readDocuments = new WeakMap<Uint8Array, MarkupDocument>()
+let lastDocumentBytes: Uint8Array | undefined
+let lastDocument: MarkupDocument | undefined
+let prevDocumentBytes: Uint8Array | undefined
+let prevDocument: MarkupDocument | undefined
+let transientDepth = 0
+
+export function isTransientMarkup(): boolean {
+  return transientDepth > 0
+}
+
+export function withTransientMarkup<T>(run: () => T): T {
+  transientDepth += 1
+  try {
+    return run()
+  } finally {
+    transientDepth -= 1
+    if (transientDepth === 0) {
+      lastDocumentBytes = undefined
+      lastDocument = undefined
+      prevDocumentBytes = undefined
+      prevDocument = undefined
+    }
+  }
+}
+
+export function withPersistentMarkup<T>(run: () => T): T {
+  const saved = transientDepth
+  transientDepth = 0
+  try {
+    return run()
+  } finally {
+    transientDepth = saved
+  }
+}
 
 export function markupDocument(bytes: Uint8Array): MarkupDocument {
+  if (lastDocumentBytes === bytes) return lastDocument!
+  if (prevDocumentBytes === bytes) return prevDocument!
   const known = readDocuments.get(bytes)
   if (known !== undefined) return known
   const document = readMarkup(bytes, true)
-  if (document.wellFormed) readDocuments.set(bytes, document)
+  if (document.wellFormed) {
+    if (transientDepth === 0) readDocuments.set(bytes, document)
+    prevDocumentBytes = lastDocumentBytes
+    prevDocument = lastDocument
+    lastDocumentBytes = bytes
+    lastDocument = document
+  }
   return document
 }
 
@@ -118,17 +160,43 @@ export function markupLimits(bytes: Uint8Array, keep = false): MarkupDocument {
 
 export function spliceBytes(bytes: Uint8Array, edits: readonly ByteEdit[]): Uint8Array {
   if (edits.length === 0) return bytes
+  if (edits.length === 1) {
+    const edit = edits[0]!
+    if (edit.start < 0 || edit.end < edit.start || edit.end > bytes.length) throw new Error("span")
+    const merged = new Uint8Array(bytes.length - (edit.end - edit.start) + edit.next.length)
+    if (edit.start > 0) merged.set(bytes.subarray(0, edit.start), 0)
+    if (edit.next.length > 0) merged.set(edit.next, edit.start)
+    if (edit.end < bytes.length) merged.set(bytes.subarray(edit.end), edit.start + edit.next.length)
+    return merged
+  }
   const ordered = edits.slice().sort((left, right) => right.start - left.start)
-  let next = bytes
-  let cursor = next.length
+  const pieces: Uint8Array[] = []
+  let cursor = bytes.length
+  let total = 0
   for (const edit of ordered) {
     if (edit.start < 0 || edit.end < edit.start || edit.end > cursor) throw new Error("span")
-    const merged = new Uint8Array(edit.start + edit.next.length + next.length - edit.end)
-    merged.set(next.subarray(0, edit.start), 0)
-    merged.set(edit.next, edit.start)
-    merged.set(next.subarray(edit.end), edit.start + edit.next.length)
-    next = merged
+    if (cursor > edit.end) {
+      const tail = bytes.subarray(edit.end, cursor)
+      pieces.push(tail)
+      total += tail.length
+    }
+    if (edit.next.length > 0) {
+      pieces.push(edit.next)
+      total += edit.next.length
+    }
     cursor = edit.start
   }
-  return next
+  if (cursor > 0) {
+    const head = bytes.subarray(0, cursor)
+    pieces.push(head)
+    total += head.length
+  }
+  const merged = new Uint8Array(total)
+  let offset = 0
+  for (let index = pieces.length - 1; index >= 0; index -= 1) {
+    const piece = pieces[index]!
+    merged.set(piece, offset)
+    offset += piece.length
+  }
+  return merged
 }

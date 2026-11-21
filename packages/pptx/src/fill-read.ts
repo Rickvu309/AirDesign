@@ -5,9 +5,9 @@ import { child, flag, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute } from "./paint-color.js"
-import type { Sheet } from "./paint-sheet.js"
+import { drawnShape, type Sheet } from "./paint-sheet.js"
 import { requireMarkup } from "./part-markup.js"
-import { ownersOf, propertiesOf, sheetOf, stylesOf, type Chain } from "./trait-read.js"
+import { ownersOf, propertiesOf, sheetOf, stylesOf } from "./trait-read.js"
 
 export type SlotFill = FieldValue<"fills", "p0">
 
@@ -114,41 +114,51 @@ function styleReference(owners: readonly Held[], theme: Sheet | null): Reference
   return "none"
 }
 
-type Owned = { readonly chain: Chain; readonly owners: readonly Held[] }
+type Owned = {
+  readonly bytes: Uint8Array
+  readonly layout: Sheet | null
+  readonly master: Sheet | null
+  readonly theme: Sheet | null
+  readonly owners: readonly Held[]
+}
 
 function ownedOf(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): Owned | null {
-  const sheet = sheetOf(parts, at.part)
-  const item = sheet?.drawn.find((each) => each.shape === at.shape)
-  if (sheet === null || item === undefined) return null
+  const item = drawnShape(parts, at.part, at.shape)
+  if (item === null) return null
+  if (item.placeholder === null) {
+    const own: Held = { element: item.element, children: item.children }
+    if (fillIn(propertiesOf(own)) !== undefined || child(child(own, "p:style"), "a:fillRef") === undefined) {
+      return { bytes: item.bytes, layout: null, master: null, theme: null, owners: [own] }
+    }
+  }
   const layout = sheetOf(parts, linkedPart(parts, at.part, "slideLayout"))
   const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
   const theme = master === null ? null : sheetOf(parts, linkedPart(parts, master.part, "theme"))
-  const chain = { sheet, layout, master, theme }
-  return { chain, owners: ownersOf(item, chain) }
+  return { bytes: item.bytes, layout, master, theme, owners: ownersOf(item, { sheet: item, layout, master }) }
 }
 
 export function shownFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): ShownFill | null {
   const owned = ownedOf(parts, at)
   if (owned === null) return null
-  const { chain, owners } = owned
+  const { theme, owners } = owned
   const filled = owners.findIndex((owner) => fillIn(propertiesOf(owner)) !== undefined)
   const held = fillIn(propertiesOf(owners[filled] ?? owners[0]!))
   if (held !== undefined && held.element.kind === "a:blipFill") return { value: { image: true }, own: filled === 0 }
   if (held !== undefined) return { value: fillValueOf(held, null), own: filled === 0 }
-  const style = styleReference(owners, chain.theme)
+  const style = styleReference(owners, theme)
   if (style === "none") return { value: { none: true }, own: false }
   const value = style.entry === undefined ? null : fillValueOf(style.entry, colorIn(style.reference, null))
   return { value, own: false }
 }
 
-function sheetFor(chain: Chain, held: Held): Sheet | null {
-  if (held.source === "layout") return chain.layout
-  if (held.source === "master") return chain.master
-  return chain.sheet
+function bytesFor(owned: Owned, held: Held): Uint8Array | null {
+  if (held.source === "layout") return owned.layout?.bytes ?? null
+  if (held.source === "master") return owned.master?.bytes ?? null
+  return owned.bytes
 }
 
-function sliceOf(sheet: Sheet | null, element: MarkupElement): Uint8Array | null {
-  return sheet === null ? null : sheet.bytes.subarray(element.start, element.end)
+function sliceOf(bytes: Uint8Array | null, element: MarkupElement): Uint8Array | null {
+  return bytes === null ? null : bytes.subarray(element.start, element.end)
 }
 
 const colorKinds = new Set(["a:schemeClr", "a:srgbClr", "a:sysClr", "a:prstClr", "a:scrgbClr", "a:hslClr"])
@@ -185,17 +195,17 @@ export function placedBytes(entry: Uint8Array, placed: Uint8Array | null): Uint8
 export function inheritedFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): Uint8Array | null {
   const owned = ownedOf(parts, at)
   if (owned === null) return null
-  const { chain, owners } = owned
+  const { theme, owners } = owned
   const filled = owners.findIndex((owner) => fillIn(propertiesOf(owner)) !== undefined)
   const owner = owners[filled]
   const held = owner === undefined ? undefined : fillIn(propertiesOf(owner))
   if (filled === 0) return null
-  if (owner !== undefined && held !== undefined) return sliceOf(sheetFor(chain, owner), held.element)
-  const style = styleReference(owners, chain.theme)
+  if (owner !== undefined && held !== undefined) return sliceOf(bytesFor(owned, owner), held.element)
+  const style = styleReference(owners, theme)
   if (style === "none" || style.entry === undefined) return null
-  const entry = sliceOf(chain.theme, style.entry.element)
+  const entry = sliceOf(theme?.bytes ?? null, style.entry.element)
   const color = inside(style.reference).find((each) => colorKinds.has(each.kind))
-  const placed = color === undefined ? null : sliceOf(sheetFor(chain, style.owner), color)
+  const placed = color === undefined ? null : sliceOf(bytesFor(owned, style.owner), color)
   return entry === null ? null : placedBytes(entry, placed)
 }
 

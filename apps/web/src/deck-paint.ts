@@ -155,21 +155,31 @@ export function withFileFloors(register: Register, parts: Parts): Register {
   })
   if (missing.length === 0) return register
   const floors = fileFloors(parts)
-  const elements = missing.reduce((elements, node) => {
+  let next: Record<string, (typeof register.elements)[ElementId]> | null = null
+  for (const node of missing) {
     const floor = floors.get(node)
-    const body = elements[node]
-    if (floor === undefined || body === undefined) return elements
-    return { ...elements, [node]: { ...body, floorBox: floor } }
-  }, register.elements)
-  return elements === register.elements ? register : { ...register, elements }
+    const body = register.elements[node]
+    if (floor === undefined || body === undefined) continue
+    next ??= { ...register.elements }
+    next[node] = { ...body, floorBox: floor }
+  }
+  return next === null ? register : { ...register, elements: next }
 }
 
+const addedByOrder = new WeakMap<readonly SlideCommand[], ReadonlySet<ElementId>>()
+
 function addedLayer(register: Register | null, id: ElementId): boolean {
-  return (
-    register?.order.some(
-      (command) => command.slide === "element-add" && command.element.node === id && command.pasted === undefined,
-    ) === true
-  )
+  if (register === null) return false
+  let added = addedByOrder.get(register.order)
+  if (added === undefined) {
+    const found = new Set<ElementId>()
+    for (const command of register.order) {
+      if (command.slide === "element-add" && command.pasted === undefined) found.add(command.element.node)
+    }
+    addedByOrder.set(register.order, found)
+    added = found
+  }
+  return added.has(id)
 }
 
 function refitted(register: Register | null, { id, file, opening }: SlideShape): boolean {

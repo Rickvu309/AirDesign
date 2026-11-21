@@ -35,9 +35,10 @@ import { markFrame } from "./frame-tag.js"
 import { withFiledFrames } from "./filed-frames.js"
 import type { ShapeBox } from "./shape-write.js"
 import { dropUnusedTemplates } from "./template-drop.js"
-import { slidePart } from "./package-address.js"
+import { slideAddresses, slidePart } from "./package-address.js"
 import { partBytes } from "./part-markup.js"
-import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
+import { readShapeFacts, shapeKind, type ShapeFact } from "./read-shapes.js"
+import { SlideEditor } from "./slide-editor.js"
 import { frameSize, scaledGrid } from "./table-size.js"
 import { writeTrait } from "./trait-xml.js"
 import { templateStyles } from "./template-style.js"
@@ -143,25 +144,51 @@ function writtenTheme(parts: Parts, body: NodeRegister | undefined): Parts {
   return next
 }
 
+const takenSets = new WeakMap<readonly FieldKey[], ReadonlySet<FieldKey>>()
+
+function takenSet(keys: readonly FieldKey[]): ReadonlySet<FieldKey> {
+  let set = takenSets.get(keys)
+  if (set === undefined) {
+    set = new Set(keys)
+    takenSets.set(keys, set)
+  }
+  return set
+}
+
+function fillsTouchRelationships(fields: Fields | undefined): boolean {
+  if (fields === undefined) return false
+  if (fields.source !== undefined) return true
+  for (const key of ["p0", "p1", "p2", "p3"] as const) {
+    const edit = fields[key]
+    if (
+      typeof edit === "object" &&
+      edit !== null &&
+      typeof edit.set === "object" &&
+      edit.set !== null &&
+      "image" in edit.set
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 function writtenElement(
-  parts: Parts,
-  shapes: readonly ReadShape[],
-  node: ElementId,
+  editor: SlideEditor,
+  shape: ShapeFact | undefined,
   body: NodeRegister | undefined,
   opening: IndexElement | undefined,
   media: ElementAt["media"],
   numbering: ReadonlyMap<string, SlideNumbers>,
   textNamed: boolean,
-): Parts {
-  const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === node)
-  const shape = named.length === 1 ? named[0] : undefined
+): void {
   const rows = body === undefined ? {} : landedPatch(body, shape?.contentKind === "table" ? "table" : "text")
   const facts = shape && {
     kind: shapeKind(shape),
-    text: shape.text.length > 0 || shape.contentKind === "chart",
+    text: shape.hasText || shape.contentKind === "chart",
     grouped: shape.grouped === true,
   }
-  const taken = facts === undefined ? null : takes({ ...facts, animated: false })
+  const taken = facts === undefined ? null : takenSet(takes({ ...facts, animated: false }))
   const opened = shape === undefined || shape.locked ? {} : openingPatch(opening)
   const written = new Map<TraitName, Fields>()
   for (const [trait, fields] of entries(opened)) {
@@ -172,14 +199,15 @@ function writtenElement(
     for (const [field, edit] of Object.entries(fields)) {
       if (edit === "opening" && kept[field] !== undefined) continue
       delete kept[field]
-      if (taken !== null && !taken.includes(`${trait}.${field}` as FieldKey)) continue
+      if (taken !== null && !taken.has(`${trait}.${field}` as FieldKey)) continue
       if (shape === undefined || (shape.locked && shape.contentKind !== "table")) throw new Error(`${trait}-shape`)
       kept[field] = edit
     }
     written.set(trait, kept)
   }
-  if (shape === undefined) return parts
+  if (shape === undefined) return
   if (textNamed) namedByText(written)
+  if (written.size === 0) return
   const numbers = numbering.get(shape.slide)
   const at = {
     slide: shape.slide,
@@ -188,10 +216,27 @@ function writtenElement(
     ...(media === undefined ? {} : { media }),
     ...(numbers === undefined ? {} : { numbers }),
   }
-  if (shape.contentKind === "table") return writtenTable(parts, at, written, boxLast(body))
-  let next = parts
-  for (const [trait, fields] of written) next = writeTrait(next, at, trait, fields)
-  return next
+  const deferText =
+    shape.kind === "p:sp" &&
+    written.size > 1 &&
+    written.has("text") &&
+    !written.has("link") &&
+    !fillsTouchRelationships(written.get("fills"))
+  editor.editShape(
+    shape.part,
+    shape.shape,
+    (scoped) => {
+      if (shape.contentKind === "table") return writtenTable(scoped, at, written, boxLast(body))
+      let next = scoped
+      for (const [trait, fields] of written) {
+        if (deferText && trait === "text") continue
+        next = writeTrait(next, at, trait, fields)
+      }
+      if (deferText) next = writeTrait(next, at, "text", written.get("text")!)
+      return next
+    },
+    { touchesChildren: shape.kind === "p:grpSp" && written.has("box") },
+  )
 }
 
 function namedByText(written: Map<TraitName, Fields>): void {
@@ -215,42 +260,75 @@ function framePlaced(bytes: Uint8Array, shape: string, box: ShapeBox): boolean {
   return sameBox(shapePlace(bytes, shape), box) && sameBox(childSpace(bytes, shape), box)
 }
 
-function laidOutFrame(parts: Parts, register: Register, node: ElementId): Parts {
+function laidOutFrame(
+  editor: SlideEditor,
+  register: Register,
+  node: ElementId,
+  slideParts: ReadonlyMap<string, string>,
+  madeGroups: ReadonlySet<ElementId>,
+  nodeSet: ReadonlySet<ElementId>,
+): void {
   const view = readLayout(register, node)
   const slide = shapeOf(node).slide
-  const part = slidePart(parts, slide)
-  if (view === null || part === null || slideGone(register, slide)) return parts
-  let next = parts
+  const part = slideParts.get(slide)
+  if (view === null || part === undefined || slideGone(register, slide)) return
+  const frameShape = shapeOf(node).shape
   const shapes = [view.backdrop, ...view.children.map((child) => child.node)].map((each) => shapeOf(each).shape)
   const boxes = [view.box, ...view.children.map((child) => child.box)]
-  let moved = !framePlaced(partBytes(next, part), shapeOf(node).shape, view.box)
-  if (moved) next = new Map([...next, [part, placeFrame(partBytes(next, part), shapeOf(node).shape, view.box)]])
+  let moved = !editor.readShape(part, frameShape, (bytes) => framePlaced(bytes, frameShape, view.box))
+  if (moved) {
+    editor.editShape(part, frameShape, (scoped) => {
+      const next = new Map(scoped)
+      next.set(part, placeFrame(partBytes(scoped, part), frameShape, view.box))
+      return next
+    })
+  }
   for (const [at, shape] of shapes.entries()) {
     const box = boxes[at]
-    if (box === undefined || sameBox(shapePlace(partBytes(next, part), shape), box)) continue
+    if (
+      box === undefined ||
+      sameBox(
+        editor.readShape(part, shape, (bytes) => shapePlace(bytes, shape)),
+        box,
+      )
+    )
+      continue
     moved = true
-    next = writeTrait(next, { slide, part, shape }, "box", boxFields(box))
+    editor.editShape(part, shape, (scoped) => writeTrait(scoped, { slide, part, shape }, "box", boxFields(box)), {
+      touchesChildren: true,
+    })
   }
-  const made = register.order.some((command) => command.slide === "element-group" && command.element.node === node)
-  if (!moved && !made && !register.nodes.includes(node)) return next
-  return markFrame(next, part, shapeOf(node).shape, layoutMarker(view))
+  if (!moved && !madeGroups.has(node) && !nodeSet.has(node)) return
+  editor.editShape(part, frameShape, (scoped) => markFrame(scoped, part, frameShape, layoutMarker(view)))
 }
 
-function followedGroups(parts: Parts, register: Register): Parts {
-  let next = parts
+function followedGroups(editor: SlideEditor, register: Register, slideParts: ReadonlyMap<string, string>): void {
   for (const { node, frame } of rebasedGroups(register)) {
     const slide = shapeOf(node).slide
-    const part = slidePart(next, slide)
-    if (part === null || slideGone(register, slide)) continue
-    next = new Map([...next, [part, fitGroup(partBytes(next, part), shapeOf(node).shape, frame)]])
+    const part = slideParts.get(slide)
+    if (part === undefined || slideGone(register, slide)) continue
+    const shape = shapeOf(node).shape
+    editor.editShape(part, shape, (scoped) => {
+      const next = new Map(scoped)
+      next.set(part, fitGroup(partBytes(scoped, part), shape, frame))
+      return next
+    })
   }
-  return next
 }
 
-function laidOutFrames(parts: Parts, register: Register): Parts {
-  let next = parts
-  for (const node of layoutNodes(register)) next = laidOutFrame(next, register, node)
-  return next
+function laidOutFrames(
+  editor: SlideEditor,
+  register: Register,
+  slideParts: ReadonlyMap<string, string>,
+  nodeSet: ReadonlySet<ElementId>,
+): void {
+  const frames = layoutNodes(register)
+  if (frames.length === 0) return
+  const madeGroups = new Set<ElementId>()
+  for (const command of register.order) {
+    if (command.slide === "element-group") madeGroups.add(command.element.node)
+  }
+  for (const node of frames) laidOutFrame(editor, register, node, slideParts, madeGroups, nodeSet)
 }
 
 const noneSkipped: ReadonlySet<ElementId> = new Set()
@@ -261,20 +339,28 @@ export function exportParts(
   media?: ElementAt["media"],
   skipped: ReadonlySet<ElementId> = noneSkipped,
 ): Parts {
-  const shapes = readShapes(parts)
+  const shapes = readShapeFacts(parts)
+  const shapeByNode = new Map<string, ShapeFact | null>()
+  for (const shape of shapes) {
+    const key = `${shape.slide}.${shape.shape}`
+    shapeByNode.set(key, shapeByNode.has(key) ? null : shape)
+  }
+  const slideParts = new Map(slideAddresses(parts).map((address) => [address.slide, address.part]))
   const numbers = slideNumbering(parts)
   const textNamed = textNamedLayers(register)
-  let next = writtenTheme(
+  const nodeSet = new Set(register.nodes)
+  const themed = writtenTheme(
     parts,
-    register.nodes.includes(templateStylesNode) && !skipped.has(templateStylesNode)
+    nodeSet.has(templateStylesNode) && !skipped.has(templateStylesNode)
       ? register.elements[templateStylesNode]
       : undefined,
   )
+  const editor = new SlideEditor(themed)
   const styles = register.index?.templateStyles ?? templateStyles(parts)
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
     if (node === templateStylesNode || skipped.has(node)) continue
     if (node.includes(".") && (slideGone(register, shapeOf(node).slide) || elementGone(register, node))) continue
-    const body = register.nodes.includes(node) ? register.elements[node] : undefined
+    const body = nodeSet.has(node) ? register.elements[node] : undefined
     const opening = newSlideElement(register, node) ?? clonedLayer(register, node)
     const kind = slideKind(node)
     const index = templateStyleIndex(node)
@@ -282,17 +368,26 @@ export function exportParts(
       const id = styles[index]?.id
       const fields = body === undefined ? undefined : landedPatch(body, "text").templateStyle
       const removed = typeof fields?.removed === "object" && fields.removed.set === true
-      if (id !== undefined && fields !== undefined && !removed && next.has(id))
-        next = writeTrait(next, { slide: "", part: id, shape: "theme" }, "templateStyle", fields)
+      if (id !== undefined && fields !== undefined && !removed) {
+        editor.editAny((current) =>
+          current.has(id)
+            ? writeTrait(current, { slide: "", part: id, shape: "theme" }, "templateStyle", fields)
+            : current,
+        )
+      }
       continue
     }
-    next =
-      kind === "notes"
-        ? writtenNotes(next, node, body, opening)
-        : kind === "slide"
-          ? writtenSlide(next, node, body, opening)
-          : writtenElement(next, shapes, node, body, opening, media, numbers, textNamed.has(node))
+    if (kind === "notes") {
+      editor.editAny((current) => writtenNotes(current, node, body, opening))
+    } else if (kind === "slide") {
+      const part = slideParts.get(shapeOf(node).slide)
+      if (part === undefined) throw new Error("fill-slide")
+      editor.editWhole(part, (current) => writtenSlide(current, node, body, opening))
+    } else {
+      writtenElement(editor, shapeByNode.get(node) ?? undefined, body, opening, media, numbers, textNamed.has(node))
+    }
   }
-  const followed = followedGroups(next, register)
-  return dropUnusedTemplates(routedParts(parts, laidOutFrames(followed, withFiledFrames(parts, register))), register)
+  followedGroups(editor, register, slideParts)
+  laidOutFrames(editor, withFiledFrames(parts, register), slideParts, nodeSet)
+  return dropUnusedTemplates(routedParts(parts, editor.flush()), register)
 }

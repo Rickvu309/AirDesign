@@ -22,18 +22,45 @@ export const isShapeTag = (kind: string): kind is ShapeKind => Object.hasOwn(sha
 
 export const paintKind = (kind: ShapeKind): Kind => shapeTags[kind].documentKind
 
-export function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
-  for (const mark of elements) {
-    if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
-    let parent = mark.parent
-    while (parent >= 0) {
-      const ancestor = elements[parent]
-      if (ancestor === undefined) break
-      if (isShapeTag(ancestor.kind)) return ancestor
-      parent = ancestor.parent
-    }
+const shapesByElements = new WeakMap<readonly MarkupElement[], ReadonlyMap<string, MarkupElement>>()
+const indexedShapeThreshold = 64
+
+function shapeOwner(elements: readonly MarkupElement[], mark: MarkupElement): MarkupElement | undefined {
+  let parent = mark.parent
+  while (parent >= 0) {
+    const ancestor = elements[parent]
+    if (ancestor === undefined) return undefined
+    if (isShapeTag(ancestor.kind)) return ancestor
+    parent = ancestor.parent
   }
-  throw new Error("shape")
+  return undefined
+}
+
+function shapeIndex(elements: readonly MarkupElement[]): ReadonlyMap<string, MarkupElement> {
+  const known = shapesByElements.get(elements)
+  if (known !== undefined) return known
+  const found = new Map<string, MarkupElement>()
+  for (const mark of elements) {
+    if (mark.kind !== "p:cNvPr" || mark.id === null || found.has(mark.id)) continue
+    const owner = shapeOwner(elements, mark)
+    if (owner !== undefined) found.set(mark.id, owner)
+  }
+  shapesByElements.set(elements, found)
+  return found
+}
+
+export function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
+  if (elements.length < indexedShapeThreshold) {
+    for (const mark of elements) {
+      if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
+      const owner = shapeOwner(elements, mark)
+      if (owner !== undefined) return owner
+    }
+    throw new Error("shape")
+  }
+  const found = shapeIndex(elements).get(id)
+  if (found === undefined) throw new Error("shape")
+  return found
 }
 
 export function owns(elements: readonly MarkupElement[], index: number, shape: MarkupElement): boolean {
