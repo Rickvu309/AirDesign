@@ -82,12 +82,28 @@ export function fittedSize(texts: readonly string[], width: number, most: number
   return Math.max(least, Math.min(most, fits))
 }
 
+function wrappedLines(text: string, fits: number): number {
+  let lines = 1
+  let used = 0
+  for (const word of text.split(/\s+/).filter((each) => each.length > 0)) {
+    const wanted = used === 0 ? word.length : used + 1 + word.length
+    if (wanted <= fits) {
+      used = wanted
+      continue
+    }
+    lines += used === 0 ? 0 : 1
+    lines += Math.floor(Math.max(0, word.length - 1) / fits)
+    used = word.length % fits || fits
+  }
+  return lines
+}
+
 export function linesHigh(lines: readonly Line[], scale: TypeScale, width: number): number {
   return lines.reduce((total, line) => {
     const size = (line.size ?? scale[line.role]) / 100
     const room = Math.max(1, width - (line.bullet === true ? size * 1.4 * point : 0))
-    const wide = line.text.length * size * (line.upper === true ? 0.62 : 0.52) * point
-    const count = Math.max(1, Math.ceil(wide / room))
+    const letter = size * (line.upper === true ? 0.62 : 0.52) * point
+    const count = wrappedLines(line.text, Math.max(1, Math.floor(room / letter)))
     const after = line.bullet === true ? (scale.body * 0.35 * point) / 100 : 0
     return total + count * size * 1.22 * point + after
   }, 0)
