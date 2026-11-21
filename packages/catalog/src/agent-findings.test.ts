@@ -23,6 +23,7 @@ it("names each finding with a short measure and a change to send that fixes it",
     { code: "low-contrast", node: "258.16", ratio: 2.87, needs: 4.5, color: "1A7A33" },
     { code: "low-contrast", node: "258.17", ratio: 1, needs: 3, color: null },
     { code: "empty-placeholder", node: "258.18", placeholder: "subTitle" },
+    { code: "misaligned", node: "258.19", other: "258.20", edge: "top", by: 1.96, x: null, y: 100 },
   ])
   expect(agentFindings(found, () => true)).toEqual([
     {
@@ -71,6 +72,13 @@ it("names each finding with a short measure and a change to send that fixes it",
     },
     { code: "low-contrast", node: "258.17", measure: "1:1, needs 3:1" },
     { code: "empty-placeholder", node: "258.18", measure: "empty subTitle", fix: { op: "delete", node: "258.18" } },
+
+    {
+      code: "misaligned",
+      node: "258.19",
+      measure: "2 pt off 258.20's top",
+      fix: { op: "set", target: "258.19", box: { y: 100 } },
+    },
   ])
 })
 

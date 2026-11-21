@@ -55,6 +55,14 @@ export type Finding = About &
         readonly fix: { readonly color: string }
       }
     | {
+        readonly code: "misaligned"
+        readonly level: "fault"
+        readonly other: string
+        readonly edge: "left" | "right" | "top" | "bottom"
+        readonly by: number
+        readonly fix: { readonly x: number } | { readonly y: number }
+      }
+    | {
         readonly code: "empty-placeholder"
         readonly level: "note"
         readonly placeholder: string

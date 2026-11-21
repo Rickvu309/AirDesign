@@ -13,6 +13,7 @@ const findings = [
   { code: "low-contrast", node: "258.14", ratio: 2.87, needs: 4.5, color: "1A7A33" },
   { code: "low-contrast", node: "258.15", ratio: 2.87, needs: 4.5, color: null },
   { code: "empty-placeholder", node: "258.16", placeholder: "subTitle" },
+  { code: "misaligned", node: "258.17", other: "258.18", edge: "left", by: 1.5, x: 72, y: null },
 ]
 const report = { deck: "deck", revision: 3, findings }
 
@@ -63,6 +64,9 @@ it("refuses a report it cannot trust", () => {
     { ...report, findings: [{ ...findings[6], color: `#${"1A7A33"}` }] },
     { ...report, findings: [{ ...findings[6], ratio: 30 }] },
     { ...report, findings: [{ ...findings[8], placeholder: "" }] },
+    { ...report, findings: [{ ...findings[9], y: 30 }] },
+    { ...report, findings: [{ ...findings[9], x: null }] },
+    { ...report, findings: [{ ...findings[9], edge: "centre" }] },
   ])
     expect(readFindingsReport(raw)).toEqual(field)
 })

@@ -24,6 +24,14 @@ export type WireFinding = { readonly node: ElementId } & (
       readonly x: number
       readonly y: number
     }
+  | {
+      readonly code: "misaligned"
+      readonly other: ElementId
+      readonly edge: (typeof alignEdges)[number]
+      readonly by: number
+      readonly x: number | null
+      readonly y: number | null
+    }
   | { readonly code: "small-text"; readonly size: number; readonly min: number; readonly uniform: boolean }
   | { readonly code: "low-contrast"; readonly ratio: number; readonly needs: number; readonly color: string | null }
   | { readonly code: "empty-placeholder"; readonly placeholder: string }
@@ -39,6 +47,7 @@ export type FindingsReport = {
 
 type Body = Readonly<Record<string, unknown>>
 
+const alignEdges = ["left", "right", "top", "bottom"] as const
 const pointsCeiling = 100_000
 const sizeCeiling = 4_000
 const hexColor = /^[0-9A-F]{6}$/
@@ -98,6 +107,16 @@ const readers: Readonly<Record<WireFinding["code"], readonly [readonly string[],
         x: placeOf(body.x),
         y: placeOf(body.y),
       }),
+  ],
+  misaligned: [
+    ["other", "edge", "by", "x", "y"],
+    (body) => {
+      const x = body.x === null ? null : placeOf(body.x)
+      const y = body.y === null ? null : placeOf(body.y)
+      if ((x === null) === (y === null)) return undefined
+      const edge = alignEdges.find((each) => each === body.edge)
+      return defined({ other: nodeOf(body.other), edge, by: pointsOf(body.by), x, y })
+    },
   ],
   "small-text": [
     ["size", "min", "uniform"],
