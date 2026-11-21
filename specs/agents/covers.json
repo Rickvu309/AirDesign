@@ -23,13 +23,13 @@
       "file": "packages/mcp/src/call-tool.ts",
       "names": ["stopRun"],
       "digest": "280d7a16b2fd",
-      "blob": "6999e942f139d71b5221bcc2497ee9417bb9bffc"
+      "blob": "d9d5b82dfd27e33d051468715f815b336b05adad"
     },
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeck", "addTurn"],
-      "digest": "6c5d59e34060",
-      "blob": "40c3d9b05884498ed45df6e9cf587457578e5960"
+      "digest": "6b1698ca9ae1",
+      "blob": "eeecbcba01d7a409d301071fd436d6a9998ba1b5"
     },
     {
       "file": "apps/api/src/agent-turn.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/api/src/server.ts",
       "names": ["caller", "mcpRoute"],
-      "digest": "c374632e2208",
-      "blob": "d1f3ef948189752aafafdeccae553531ddacd846"
+      "digest": "17799c46215f",
+      "blob": "a095a6645b055b4968ee831e50af0202fd812236"
     },
     {
       "file": "packages/mcp/src/admit.ts",

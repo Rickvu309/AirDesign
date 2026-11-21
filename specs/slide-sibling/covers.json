@@ -10,14 +10,14 @@
     {
       "file": "packages/engine/src/agent-elements.ts",
       "names": ["deleteElement", "addTextBox", "ready"],
-      "digest": "2d697b43e8be",
-      "blob": "2e5f988c86938c1c8a63fe435cf91488bfb69c6a"
+      "digest": "c9159de1b9f8",
+      "blob": "a8ebbc88b1aa37aabc48a800ce28dfd655a6e6f8"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["landed", "wroteBy"],
       "digest": "900b9d918b02",
-      "blob": "f1016912bd374dad687c28003db95489d7d47854"
+      "blob": "ff4b96649d8f74e7954fbc3c77249e2bbd995d4a"
     },
     {
       "file": "packages/mcp/src/server.ts",
@@ -28,8 +28,8 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "ac73e3611c9d",
-      "blob": "49386cda45a22a0ce5a1ad57fff9c9d3c582da4d"
+      "digest": "bd7ea9d0aee1",
+      "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
     },
     {
       "file": "apps/api/src/saved.ts",

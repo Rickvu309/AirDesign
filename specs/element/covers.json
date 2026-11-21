@@ -39,7 +39,7 @@
       "file": "packages/engine/src/agent-elements.ts",
       "names": ["deleteElement"],
       "digest": "9b56b13446a8",
-      "blob": "066bb9a815f440b05ddff9219368dd31382a5b31"
+      "blob": "a8ebbc88b1aa37aabc48a800ce28dfd655a6e6f8"
     },
     {
       "file": "packages/document/src/slide-order.ts",
@@ -56,8 +56,8 @@
     {
       "file": "packages/document/src/table-value.ts",
       "names": ["changedTable", "openedTable"],
-      "digest": "8b8a43a69cb9",
-      "blob": "d43a1e9bb70effebc142d8bf7568f52424081625"
+      "digest": "8fe13696301e",
+      "blob": "62448b4f543f36e7798e308e903e946dc175aa98"
     },
     {
       "file": "packages/document/src/traits.ts",
@@ -68,8 +68,8 @@
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
-      "digest": "7f4b4f1df9c0",
-      "blob": "891aa7324d884dfc755acb4a22bcc8960c4c98ab"
+      "digest": "908cccbbc3ac",
+      "blob": "4544283f2e34dfa59e36e7e8e3b9f3b4557baaea"
     }
   ]
 }
