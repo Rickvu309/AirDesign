@@ -128,16 +128,16 @@ describe("edit_deck moves a layer inside a group by its place on the slide", () 
     expect(deck.register.nodes).not.toContain(elementId("258.7"))
     const read = readDeckPage(deck, { runId: "run" }).elements
     expect(read.find((each) => each.node === "258.8")?.box).toEqual({
-      x: 1_828_800,
-      y: 457_200,
-      cx: 914_400,
-      cy: 914_400,
+      x: 144,
+      y: 36,
+      w: 72,
+      h: 72,
     })
     expect(read.find((each) => each.node === "258.7")?.box).toEqual({
-      x: 1_828_800,
-      y: 457_200,
-      cx: 914_400,
-      cy: 914_400,
+      x: 144,
+      y: 36,
+      w: 72,
+      h: 72,
     })
   })
 
@@ -157,10 +157,10 @@ describe("edit_deck moves a layer inside a group by its place on the slide", () 
   it("reads a grouped layer's box where it sits on the slide", () => {
     const read = readDeckPage(grouped(), { runId: "run" }).elements
     expect(read.find((each) => each.node === "258.8")?.box).toEqual({
-      x: 914_400,
-      y: 457_200,
-      cx: 914_400,
-      cy: 914_400,
+      x: 72,
+      y: 36,
+      w: 72,
+      h: 72,
     })
   })
 })

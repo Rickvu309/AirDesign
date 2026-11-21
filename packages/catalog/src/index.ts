@@ -11,6 +11,7 @@ export {
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { readAccountName, accountNameLimit } from "./account-name.js"
 export { deckName, readDeckName } from "./deck-name.js"
+export { pointBox, pointSize, type PointBox, type PointSize } from "./agent-box.js"
 export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign } from "./agent-form.js"
 export { templateFontDesign } from "./template-font.js"
 export { closeIcons, iconNames, knownIcon } from "./icon-names.js"

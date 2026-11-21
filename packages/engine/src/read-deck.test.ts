@@ -62,7 +62,8 @@ function text(node: ElementId, value: string): Command {
   return { command: "person", node, value }
 }
 
-const box = { x: 10, y: 20, cx: 30, cy: 40 }
+const box = { x: 127_000, y: 254_000, cx: 381_000, cy: 508_000 }
+const shown = { x: 10, y: 20, w: 30, h: 40 }
 const title = elementId("258.7")
 const body = elementId("258.8")
 const note = elementId("259.1")
@@ -112,7 +113,7 @@ describe("readDeckPage", () => {
       slide: "258",
       value: "Before",
       version: 2,
-      box,
+      box: shown,
     })
     expect(read.get("258.7")).not.toHaveProperty("closed")
     expect(read.get("258.8")).toMatchObject({ slide: "258", value: "Other", version: 1, closed: true })
@@ -133,7 +134,7 @@ describe("readDeckPage", () => {
       slide: "258",
       value: "Before",
       version: 2,
-      box,
+      box: shown,
       overflow,
     })
     expect(byNode(ready).get("258.8")).not.toHaveProperty("overflow")
@@ -214,7 +215,7 @@ describe("readDeckPage", () => {
       grown([
         added(big),
         text(big, "m".repeat(limits.valueBytes)),
-        { command: "person", node: big, property: "box", value: { x: 1, y: 2, cx: 3, cy: 4 } },
+        { command: "person", node: big, property: "box", value: { x: 12_700, y: 25_400, cx: 38_100, cy: 50_800 } },
         added(small),
         text(small, "tail"),
       ]),
@@ -224,7 +225,7 @@ describe("readDeckPage", () => {
     expect(answer.elements[0]).toMatchObject({
       node: big,
       value: "m".repeat(limits.valueBytes),
-      box: { x: 1, y: 2, cx: 3, cy: 4 },
+      box: { x: 1, y: 2, w: 3, h: 4 },
     })
     const rest = answer.cursor === undefined ? answer : readDeckPage(deck, { runId: null, cursor: answer.cursor })
     expect(rest.elements.some((element) => element.node === small)).toBe(true)
@@ -333,7 +334,7 @@ describe("design lines", () => {
       kind: "shape",
       grouped: false,
       version: 0,
-      box,
+      box: shown,
       role: "title",
       design: "text.size 36 (master) · text.color tx1 (master) · body.anchor b (layout)",
     })
@@ -462,7 +463,7 @@ describe("design lines", () => {
       box: { rot: 45, flipV: true },
     })
     expect(byNode(readDeckPage(turned, { runId: "run" })).get("259.7")?.design).toBe(
-      "geometry roundRect · fills accent1 (style) · border.width 1 (style) · box.rot 45 · box.flipV",
+      "geometry roundRect · geometry.corners 9 · fills accent1 (style) · border.width 1 (style) · box.rot 45 · box.flipV",
     )
     const back = set(turned, { geometry: { shape: { preset: "rect", adjust: {} } }, box: { rot: 0, flipV: false } })
     expect(byNode(readDeckPage(back, { runId: "run" })).get("259.7")?.design).toBe(

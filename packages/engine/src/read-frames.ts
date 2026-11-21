@@ -1,3 +1,4 @@
+import { pointBox } from "@airdesign/catalog"
 import {
   floorNodes,
   followedPlace,
@@ -54,7 +55,7 @@ export function framedElement(
   shown: (node: ElementId) => ReadElement,
 ): ReadElement {
   const box = framed.boxes.get(element.node)
-  const laid = box === undefined ? element : { ...element, box }
+  const laid = box === undefined ? element : { ...element, box: pointBox(box) }
   const frame = framed.frames.get(element.node)
   if (frame === undefined) return laid
   const faded = frame.opacity < opaque ? `opacity ${String(frame.opacity / 1000)}` : undefined

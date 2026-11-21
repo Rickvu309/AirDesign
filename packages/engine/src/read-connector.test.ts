@@ -68,15 +68,15 @@ function read(deck: Deck, shape: number) {
 
 describe("an agent reads a connector where it paints", () => {
   it("reads an untouched connector at its file box, even where its ends miss their sites", () => {
-    expect(read(indexed(), 5)?.box).toEqual({ x: 2_000_000, y: 1_500_000, cx: 1_900_000, cy: 0 })
+    expect(read(indexed(), 5)?.box).toEqual({ x: 157.5, y: 118.1, w: 149.6, h: 0 })
   })
 
   it("reads a connector between its sites once an agent moves the shape it ends on, flipped when it climbs, and back at its file box after Undo", () => {
     const moved = set(indexed(), "258.4", { box: { y: 254_000 / emuPerPoint } })
-    expect(read(moved, 5)?.box).toEqual({ x: 2_000_000, y: 754_000, cx: 2_000_000, cy: 746_000 })
+    expect(read(moved, 5)?.box).toEqual({ x: 157.5, y: 59.4, w: 157.5, h: 58.7 })
     expect(read(moved, 5)?.design).toContain("box.flipV")
     const undone = landed(call("undo_run", moved, person, { deck: "deck", runId: "run" }))
-    expect(read(undone, 5)?.box).toEqual({ x: 2_000_000, y: 1_500_000, cx: 1_900_000, cy: 0 })
+    expect(read(undone, 5)?.box).toEqual({ x: 157.5, y: 118.1, w: 149.6, h: 0 })
     expect(read(undone, 5)?.design ?? "").not.toContain("box.flip")
   })
 
@@ -90,7 +90,7 @@ describe("an agent reads a connector where it paints", () => {
     })
     if (decision.decision !== "apply") throw new Error(decision.code)
     const moved = { ...deck, revision: deck.revision + 1, register: decision.register }
-    expect(read(moved, 5)?.box).toEqual({ x: 2_500_000, y: 1_500_000, cx: 1_500_000, cy: 0 })
+    expect(read(moved, 5)?.box).toEqual({ x: 196.9, y: 118.1, w: 118.1, h: 0 })
     expect(read(moved, 5)?.design ?? "").not.toContain("box.flip")
   })
 
@@ -106,9 +106,11 @@ describe("an agent reads a connector where it paints", () => {
     const moved = set(made, "258.10", { box: { y: 100 } })
     const build = read(moved, 10)?.box
     if (build == null) throw new Error("no build")
-    const start = { x: plan.x + plan.cx, y: Math.round(plan.y + plan.cy / 2) }
-    const end = { x: build.x, y: Math.round(build.y + build.cy / 2) }
-    expect(read(moved, 11)?.box).toEqual({ x: start.x, y: end.y, cx: end.x - start.x, cy: start.y - end.y })
+    const start = { x: plan.x + plan.w, y: plan.y + plan.h / 2 }
+    const end = { x: build.x, y: build.y + build.h / 2 }
+    const arrow = read(moved, 11)?.box
+    const wanted = { x: start.x, y: end.y, w: end.x - start.x, h: start.y - end.y }
+    for (const side of ["x", "y", "w", "h"] as const) expect(arrow?.[side]).toBeCloseTo(wanted[side], 0)
     expect(read(moved, 11)?.design).toContain("box.flipV")
   })
 
@@ -167,9 +169,9 @@ describe("an agent reads a connector where it paints", () => {
       },
     ]
     const moved = set(indexed(file), "258.3", { box: { y: 60 } })
-    expect(read(moved, 4)?.box).toEqual({ x: 3_810_000, y: 1_333_500, cx: 1_524_000, cy: 1_524_000 })
+    expect(read(moved, 4)?.box).toEqual({ x: 300, y: 105, w: 120, h: 120 })
     expect(read(moved, 4)?.design).toContain("box.flipV")
-    expect(read(moved, 5)?.box).toEqual({ x: 3_810_000, y: 762_000, cx: 1_524_000, cy: 3_810_000 })
+    expect(read(moved, 5)?.box).toEqual({ x: 300, y: 60, w: 120, h: 300 })
     expect(read(moved, 5)?.design).toContain("box.rot 90 · box.flipH · box.flipV")
     const behind = set(indexed(file), "258.3", { box: { x: 0, y: 360 } })
     expect(read(behind, 4)?.design).toContain("geometry bentConnector5")

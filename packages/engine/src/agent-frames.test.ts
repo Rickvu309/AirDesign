@@ -15,21 +15,21 @@ const elements: readonly IndexElement[] = [
     node: node(2),
     kind: "shape",
     value: "",
-    box: { x: 100_000, y: 100_000, cx: 200_000, cy: 100_000 },
+    box: { x: 127_000, y: 127_000, cx: 254_000, cy: 127_000 },
     grouped: false,
   },
   {
     node: node(3),
     kind: "shape",
     value: "",
-    box: { x: 400_000, y: 300_000, cx: 100_000, cy: 150_000 },
+    box: { x: 508_000, y: 381_000, cx: 127_000, cy: 190_500 },
     grouped: false,
   },
   {
     node: node(4),
     kind: "shape",
     value: "",
-    box: { x: 900_000, y: 900_000, cx: 100_000, cy: 100_000 },
+    box: { x: 1_143_000, y: 1_143_000, cx: 127_000, cy: 127_000 },
     grouped: false,
   },
 ]
@@ -78,11 +78,11 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     expect(read.has("258.10")).toBe(false)
     const [first, second] = [read.get("258.2")?.box, read.get("258.3")?.box]
     if (first == null || second == null) throw new Error("children")
-    expect(second.x).toBeGreaterThan(first.x + first.cx)
+    expect(second.x).toBeGreaterThan(first.x + first.w)
     expect(read.get("258.2")).toMatchObject({ grouped: true })
     const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
     expect(groupFormed(undone.register, node(9))).toBe(false)
-    expect(listed(undone).get("258.3")?.box).toEqual(elements[1]?.box)
+    expect(listed(undone).get("258.3")?.box).toEqual({ x: 40, y: 30, w: 10, h: 15 })
   })
 
   it("turns the row into a column with set layout, and lays the children one under the other", () => {
@@ -90,7 +90,7 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     const read = listed(deck)
     const [first, second] = [read.get("258.2")?.box, read.get("258.3")?.box]
     if (first == null || second == null) throw new Error("children")
-    expect(second.y).toBe(first.y + first.cy + 127_000)
+    expect(second.y).toBe(first.y + first.h + 10)
     expect(second.x).toBe(first.x)
   })
 
@@ -112,8 +112,8 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     const wide = landed(edit(filled, { op: "set", target: "258.9", box: { w: 100 } }))
     const [frame, child] = [listed(wide).get("258.9")?.box, listed(wide).get("258.3")?.box]
     if (frame == null || child == null) throw new Error("frame")
-    expect(frame.cx).toBe(1_270_000)
-    expect(child.x + child.cx).toBe(frame.x + frame.cx)
+    expect(frame.w).toBe(100)
+    expect(child.x + child.w).toBe(frame.x + frame.w)
   })
 
   it("paints the frame's fill on its backdrop and refuses moving a child of an auto layout frame", () => {
@@ -140,13 +140,13 @@ describe("an agent makes and fills an auto layout frame through edit_deck", () =
     const [second, third] = [read.get("258.3")?.box, read.get("258.4")?.box]
     if (second == null || third == null) throw new Error("children")
     expect(read.get("258.4")).toMatchObject({ grouped: true })
-    expect(third.x).toBeGreaterThan(second.x + second.cx)
+    expect(third.x).toBeGreaterThan(second.x + second.w)
   })
 
   it("moves a child of a frame without auto layout to the slide point the agent names", () => {
     const free = landed(set(framed(), "258.9", { layout: { flow: "none" } }))
     const moved = landed(set(free, "258.3", { box: { x: 200, y: 100 } }))
-    expect(listed(moved).get("258.3")?.box).toMatchObject({ x: 200 * 12_700, y: 100 * 12_700 })
+    expect(listed(moved).get("258.3")?.box).toMatchObject({ x: 200, y: 100 })
   })
 })
 
@@ -159,8 +159,8 @@ describe("an agent nests one auto layout frame in another through edit_deck", ()
     const [outer, inner, first, beside] = ["258.11", "258.9", "258.2", "258.4"].map((each) => read.get(each)?.box)
     if (outer == null || inner == null || first == null || beside == null) throw new Error("boxes")
     expect(first).toMatchObject({ x: inner.x, y: inner.y })
-    expect(beside.y).toBeGreaterThan(inner.y + inner.cy)
-    expect(outer).toEqual({ x: inner.x, y: inner.y, cx: inner.cx, cy: beside.y + beside.cy - inner.y })
+    expect(beside.y).toBeGreaterThan(inner.y + inner.h)
+    expect(outer).toEqual({ x: inner.x, y: inner.y, w: inner.w, h: beside.y + beside.h - inner.y })
     const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
     expect([node(9), node(11)].map((each) => groupFormed(undone.register, each))).toEqual([false, false])
   })
@@ -171,7 +171,7 @@ describe("an agent nests one auto layout frame in another through edit_deck", ()
     const deck = landed(set(nested, "258.9", { layout: { flow: "vertical", gap: 10 } }))
     const after = listed(deck).get("258.4")?.box
     if (before == null || after == null) throw new Error("boxes")
-    expect(after.y - before.y).toBe(100_000 + 127_000)
+    expect(after.y - before.y).toBe(10 + 10)
   })
 
   it("joins a frame to another frame with join, and refuses a frame joining a frame inside it", () => {
@@ -200,10 +200,10 @@ describe("an agent moves a layer into and out of a plain group through edit_deck
   it("joins a shape to a group where it shows, and leave puts it back on the slide", () => {
     const group = landed(edit(indexed(), { op: "group", elements: ["258.2", "258.3"] }))
     const joined = landed(edit(group, { op: "join", elements: ["258.9", "258.4"] }))
-    expect(listed(joined).get("258.4")).toMatchObject({ grouped: true, box: elements[2]?.box })
-    expect(listed(joined).get("258.9")?.box).toEqual({ x: 100_000, y: 100_000, cx: 900_000, cy: 900_000 })
+    expect(listed(joined).get("258.4")).toMatchObject({ grouped: true, box: { x: 90, y: 90, w: 10, h: 10 } })
+    expect(listed(joined).get("258.9")?.box).toEqual({ x: 10, y: 10, w: 90, h: 90 })
     const left = landed(edit(joined, { op: "leave", elements: ["258.4"] }))
-    expect(listed(left).get("258.4")).toMatchObject({ grouped: false, box: elements[2]?.box })
-    expect(listed(left).get("258.9")?.box).toEqual({ x: 100_000, y: 100_000, cx: 400_000, cy: 350_000 })
+    expect(listed(left).get("258.4")).toMatchObject({ grouped: false, box: { x: 90, y: 90, w: 10, h: 10 } })
+    expect(listed(left).get("258.9")?.box).toEqual({ x: 10, y: 10, w: 40, h: 35 })
   })
 })

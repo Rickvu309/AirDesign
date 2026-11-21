@@ -61,9 +61,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const read = await tool("airdesign_read_deck", { deck })
   const titles = read.elements.filter((element) => element.role === "title")
   expect(titles.length).toBeGreaterThan(5)
-  for (const title of titles) expect(title.box.x + title.box.cx).toBe(width)
+  for (const title of titles) expect(title.box.x + title.box.w).toBeCloseTo(width / 12_700, 0)
   note(
-    `align right landed on ${edited.structuredContent.elements.length} titles; each title's right edge is at ${width} EMU, the slide's width`,
+    `align right landed on ${edited.structuredContent.elements.length} titles; each title's right edge is at ${width / 12_700} pt, the slide's width`,
   )
 
   const firstTitle = titles[0]

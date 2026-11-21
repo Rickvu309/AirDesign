@@ -6,7 +6,7 @@ type Read = {
   readonly elements: readonly {
     readonly node: string
     readonly version: number
-    readonly box: { readonly y: number; readonly cy: number }
+    readonly box: { readonly y: number; readonly h: number }
   }[]
 }
 
@@ -74,8 +74,8 @@ test("an agent's read after it lengthens a frame's text on a slide the person is
     value: JSON.stringify([{ from: 0, runs: [{ from: -1, text: longer }] }]),
   })
   const after = await read()
-  const grew = (after.top?.cy ?? 0) - (before.top?.cy ?? 0)
-  expect(grew).toBeGreaterThan(100_000)
-  expect((after.next?.y ?? 0) - (before.next?.y ?? 0)).toBe(grew)
+  const grew = (after.top?.h ?? 0) - (before.top?.h ?? 0)
+  expect(grew).toBeGreaterThan(7)
+  expect((after.next?.y ?? 0) - (before.next?.y ?? 0)).toBeCloseTo(grew, 0)
   await expect(page.locator("[data-measure-paint]")).toHaveCount(0)
 })

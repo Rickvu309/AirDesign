@@ -14,7 +14,7 @@ const mails: Mail[] = []
 let cookie = ""
 let stranger = ""
 const deck = "indexed-deck"
-const box = { x: 10, y: 20, cx: 30, cy: 40 }
+const box = { x: 127_000, y: 254_000, cx: 381_000, cy: 508_000 }
 const slides = [
   { id: "259", position: 0 },
   { id: "258", position: 1 },
@@ -144,7 +144,11 @@ it("uploads paged floors at revision zero, replays, grants an agent, reads every
     const after = await client.callTool({ name: "airdesign_read_deck", arguments: { deck, slide: "259" } })
     const answer = after.structuredContent as ReadDeckAnswer
     expect(answer.revision).toBeGreaterThan(0)
-    expect(answer.elements.find((element) => element.node === node)).toMatchObject({ value: "After", version: 1, box })
+    expect(answer.elements.find((element) => element.node === node)).toMatchObject({
+      value: "After",
+      version: 1,
+      box: { x: 10, y: 20, w: 30, h: 40 },
+    })
     const group = await client.callTool({
       name: "airdesign_edit_deck",
       arguments: {

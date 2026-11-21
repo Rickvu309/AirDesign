@@ -74,7 +74,7 @@ describe("an agent adds a line or an arrow", () => {
       end: { set: { shape: { node: node(3), site: 1 } } },
     })
     const read = readDeckPage(deck, { runId: "run", slide: "258" }).elements.find((each) => each.node === "258.9")
-    expect(read).toMatchObject({ kind: "connector", box: { x: 2_000_000, y: 1_500_000, cx: 2_000_000, cy: 2_000_000 } })
+    expect(read).toMatchObject({ kind: "connector", box: { x: 157.5, y: 118.1, w: 157.5, h: 157.5 } })
     expect(read?.design).toContain("connection.start 258.2 site 3 · connection.end 258.3 site 1")
     const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
     expect(readDeckPage(undone, { runId: "run", slide: "258" }).elements.map((each) => each.node)).not.toContain(

@@ -126,7 +126,9 @@ async function deviceMeasures(owned: Owned): Promise<void> {
   expect(wrote).toBe(true)
 }
 
-type ReadBox = { readonly x: number; readonly y: number; readonly cx: number; readonly cy: number }
+type ReadBox = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+
+const points = (emu: number) => Math.round((emu / 12_700) * 10) / 10
 
 function boxes(body: Record<string, unknown> | undefined): ReadonlyMap<string, ReadBox> {
   const elements = (body?.elements ?? []) as readonly { readonly node: string; readonly box: ReadBox }[]
@@ -144,14 +146,14 @@ it("answers an agent's read after its own text edit with the frame laid out at t
   await waited
   await deviceMeasures(owned)
   const read = boxes((await reading).body)
-  expect(read.get(top)?.cy).toBe(tall)
-  expect(read.get(next)?.y).toBe(1_000_000 + tall + gap)
+  expect(read.get(top)?.h).toBe(points(tall))
+  expect(read.get(next)?.y).toBe(points(1_000_000 + tall + gap))
 })
 
 it("answers at once with the heights last measured when no tab follows the deck", async () => {
   const owned = await cards(false)
   await framedAndTyped(owned)
   const read = boxes((await wholeCall(steps, owned, "run", "read_deck", { deck: owned.deck })).body)
-  expect(read.get(top)?.cy).toBe(400_000)
-  expect(read.get(next)?.y).toBe(1_000_000 + 400_000 + gap)
+  expect(read.get(top)?.h).toBe(points(400_000))
+  expect(read.get(next)?.y).toBe(points(1_000_000 + 400_000 + gap))
 })

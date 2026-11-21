@@ -66,7 +66,7 @@ describe("add_text_box through MCP", () => {
               op: "add",
               kind: "shape",
               slide: "256",
-              box: { x: 5 / 12700, y: 6 / 12700, w: 700 / 12700, h: 80 / 12700 },
+              box: { x: 5, y: 6, w: 70, h: 8 },
             },
           ],
         },
@@ -76,7 +76,7 @@ describe("add_text_box through MCP", () => {
         ok: true,
         revision: 1,
         runId: "run",
-        elements: [{ node: "256.5", value: "", version: 0, box: { x: 5, y: 6, cx: 700, cy: 80 } }],
+        elements: [{ node: "256.5", value: "", version: 0, box: { x: 5, y: 6, w: 70, h: 8 } }],
       })
       const edit = await client.callTool({
         name: "airdesign_edit_deck",

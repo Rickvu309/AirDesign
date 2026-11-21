@@ -69,5 +69,5 @@ it("sets the layout and fill of a frame read from a PowerPoint file", () => {
   const read = new Map(readDeckPage(edited.deck, { runId: "run" }).elements.map((each) => [each.node, each]))
   expect(read.get(node(2))).toMatchObject({ frame: "auto" })
   expect(read.has(node(3))).toBe(false)
-  expect(read.get(node(5))?.box?.y).toBe(1_000_000 + 1_000_000 + 24 * 12_700)
+  expect(read.get(node(5))?.box?.y).toBe(Math.round(((1_000_000 + 1_000_000) / 12_700 + 24) * 10) / 10)
 })
