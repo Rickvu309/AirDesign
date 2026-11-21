@@ -302,6 +302,17 @@ same(
   fs.readFileSync(path.join(root, ".github/actions/ci-changes/pptx-paths.txt"), "utf8").split("\n").filter(Boolean),
 )
 same(
+  "in the repo, a deck template and its generator reach pptx and corpus, since new decks ship those files",
+  ["packages/templates/files/neutral-start.pptx", "scripts/deck-templates/neutral.mjs"].map((file) => {
+    const parts = real([file]).parts
+    return [parts.pptx, parts.corpus]
+  }),
+  [
+    [true, true],
+    [true, true],
+  ],
+)
+same(
   "in the repo, a look state reaches design, since design-states loads the look scan",
   real([".agents/skills/verify-airdesign/look/scan.mjs"]).parts.design,
   true,
