@@ -198,6 +198,35 @@ export function composeBlock(block, sides, shots) {
   }
 }
 
+const calloutRoom = 32
+
+export function calloutCrops(block, sides, shots) {
+  return shots.flatMap((shot, at) => {
+    if (shot.error) return []
+    const image = PNG.sync.read(shot.full)
+    const viewport = shot.viewport ?? designViewport
+    const frame = shot.frame ?? { x: 0, y: 0, ...viewport }
+    const scale = image.width / viewport.width
+    return shot.boxes.flatMap((box, index) =>
+      box === null
+        ? []
+        : [
+            {
+              number: index + 1,
+              note: block.callouts[index]?.note,
+              side: sides[at].key,
+              png: crop(
+                image,
+                { x: frame.x, y: box.y - calloutRoom, width: frame.width, height: box.height + calloutRoom * 2 },
+                scale,
+                0,
+              ),
+            },
+          ],
+    )
+  })
+}
+
 export function fullNames(blocks) {
   const seen = new Map()
   return blocks.map(({ state }) => {

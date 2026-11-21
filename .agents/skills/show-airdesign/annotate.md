@@ -31,5 +31,7 @@ Every PR that changes what a person sees gets a `## Before / after` section. Whe
 3. Open every `annotated-N.png`. Check each arrow points at the thing its note names on both sides, each note is true, and a stranger sees what changed in ten seconds. A selector missing on one side shows a grey number and says so in the legend; that is right only when the thing is new or gone. A `Failed on main` tag means the base never reached that state: fix that journey or say why before you publish.
 4. `$V publish <out-dir> --pr <number>` uploads the PNGs to the first `proof`, `proof-2`, … release with room and writes `before-after.published.md`. Paste it into the PR body as is.
 
+Every `before-after` and `annotate` run also cuts a photo of each callout, a strip of the crop at the callout's height with whole lines above and below, on each side it was found: `callouts/<state>-<n>-before.png` and `-after.png` (`-page.png` for `annotate`). `before-after.json` lists them under each row's `callouts` with the callout's note. Use these as the evidence of a `logic` leaf about something a person sees, so the page shows that spot and never a whole screen.
+
 `$V annotate <run> callouts.json` draws the same callouts on one run, for a comment, a bug, or a `logic` leaf.
 `$V comment <pr> <markdown-file>` posts a pull request comment prefixed with the agent line `🤖 **AI Agent responding on behalf of Quan Vu**`. Always post PR comments with this command.

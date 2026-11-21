@@ -3,10 +3,11 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { PNG } from "pngjs"
 import { openBrowser } from "./browser.mjs"
 import { proofFolder, publish } from "./publish.mjs"
 import { renderBlocks, themeCss } from "../look/annotate.mjs"
-import { captureSide, composeBlock, driverFor, fullNames, saveFull } from "../look/before-after.mjs"
+import { calloutCrops, captureSide, composeBlock, driverFor, fullNames, saveFull } from "../look/before-after.mjs"
 import { readCallouts } from "../look/callouts.mjs"
 import { fragment } from "../look/fragment.mjs"
 import { find } from "../look/states.mjs"
@@ -124,6 +125,18 @@ async function sideOf({ key, name, label, missing, run, ref, runtime, cleanup })
   }
 }
 
+function saveCrops(out, state, crops) {
+  const folder = path.join(out, "callouts")
+  mkdirSync(folder, { recursive: true })
+  const byNumber = new Map()
+  for (const { number, note, side, png } of crops) {
+    const file = path.join(folder, `${state}-${String(number)}-${side}.png`)
+    writeFileSync(file, PNG.sync.write(png))
+    byNumber.set(number, { ...byNumber.get(number), number, note, [side]: file })
+  }
+  return [...byNumber.values()]
+}
+
 async function shoot({ blocks, sides, runtime, out }) {
   const browser = await openBrowser()
   try {
@@ -136,11 +149,13 @@ async function shoot({ blocks, sides, runtime, out }) {
       const last = shots.at(-1)
       if (last.error) throw new Error(`${block.state} was not reached on ${sides.at(-1).label}: ${last.error}`)
       const files = sides.map((side, at) => saveFull(out, names[index], side, shots[at]))
+      const callouts = saveCrops(out, names[index], calloutCrops(block, sides, shots))
       rows.push({
         title: block.title,
         before: sides.length > 1 ? files[0] : null,
         beforeOutcome: sides.length > 1 ? shots[0].outcome : null,
         after: files.at(-1),
+        callouts,
       })
       const done = composeBlock(block, sides, shots)
       warnings.push(...done.warnings)
@@ -207,6 +222,11 @@ async function beforeAfter(command, values, flags, runtime) {
         before: row.before && relative(row.before),
         beforeOutcome: row.beforeOutcome,
         after: relative(row.after),
+        callouts: row.callouts.map(({ number, note, ...files }) => ({
+          number,
+          note,
+          ...Object.fromEntries(Object.entries(files).map(([side, file]) => [side, relative(file)])),
+        })),
       })),
       sides: Object.fromEntries(sides.map((side) => [side.key, { run: side.run, commit: side.commit }])),
       warnings: [...warnings, ...shot.warnings],
