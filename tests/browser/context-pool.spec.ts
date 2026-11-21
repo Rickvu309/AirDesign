@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test, type Browser, type BrowserContext } from "@playwright/test"
+import { expect, type Browser, type BrowserContext } from "@playwright/test"
+import { test } from "./deck-test"
 
 type Pool = {
   take: () => Promise<BrowserContext>

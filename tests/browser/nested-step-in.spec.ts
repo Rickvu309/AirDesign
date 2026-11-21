@@ -1,5 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { decksOn } from "./deck-test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { decksOn, test } from "./deck-test"
 import { openDeck } from "./design-panel"
 
 const slidePart = "ppt/slides/slide1.xml"

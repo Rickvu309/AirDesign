@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 
 type Finding = { detector: string; selector: string; box: { width: number; height: number }; message: string }
 type Scanned = { findings: Finding[]; used: number[] }

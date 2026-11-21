@@ -15,6 +15,7 @@
     }
   ],
   "rules": {
+    "airdesign/no-bare-test": "error",
     "airdesign/no-blind-wait": [
       "error",
       {

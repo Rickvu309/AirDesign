@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { fillWords } from "../../apps/web/src/copy/fill-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"

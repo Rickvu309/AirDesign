@@ -1,4 +1,5 @@
-import { expect, test, type Locator } from "@playwright/test"
+import { expect, type Locator } from "@playwright/test"
+import { test } from "./deck-test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { designing, openDeck, unfold } from "./design-panel"
 import { textCopy } from "../../apps/web/src/copy/text-copy.ts"

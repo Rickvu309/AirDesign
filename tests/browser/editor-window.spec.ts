@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { designing, openDeck } from "./design-panel"
 import { first, second, store } from "./home-store.ts"
 import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"

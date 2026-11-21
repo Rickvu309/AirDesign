@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 

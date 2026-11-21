@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { cssFamily, measureFaces } from "./font-widths.ts"
 
 test("font measurement leaves the agent tool catalog loadable by native modules", async ({ page }) => {

@@ -1,10 +1,10 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 import { openDeck } from "./design-panel"
 
 const slidePart = "ppt/slides/slide1.xml"

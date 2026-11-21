@@ -1,6 +1,7 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 
 for (const width of [320, 480, 735]) {
   test(`Trash Undo and pointer Close fit at ${width}px`, async ({ page }) => {

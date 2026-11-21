@@ -1,7 +1,7 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { entry, manySlides, openGrid, groupSizes } from "./slide-grid-deck"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 

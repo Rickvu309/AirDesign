@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { openDeck } from "./design-panel"
 import { boxFillPanel, filled, shapeAt } from "./shape-fills"

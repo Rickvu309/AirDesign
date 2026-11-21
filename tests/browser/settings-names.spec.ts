@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 
 test("each Account preference names its choice by its row", async ({ page }) => {

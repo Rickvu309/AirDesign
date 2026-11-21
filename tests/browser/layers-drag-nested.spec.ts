@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { openDeck } from "./design-panel"

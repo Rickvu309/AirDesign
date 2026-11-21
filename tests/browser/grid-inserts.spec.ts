@@ -1,10 +1,10 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { entry, fixtures, manySlides, openGrid } from "./slide-grid-deck"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 

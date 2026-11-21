@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test"
+import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { keptWait, keptWaitApproval } from "./kept-wait"
 
 type Kit = { page: Page; context: BrowserContext; out: string }

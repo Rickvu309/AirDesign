@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises"
-import { chromium, expect, test } from "@playwright/test"
+import { chromium, expect } from "@playwright/test"
+import { test } from "./deck-test"
 
 async function launch(directory: string, baseURL: string) {
   const context = await chromium.launchPersistentContext(directory, { baseURL })

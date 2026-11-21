@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { signInCopy } from "../../apps/site/src/access/sign-in-copy.ts"
 import { serveSite, signedOut, type ServedSite } from "./site-server.ts"
 

@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { snapReach } from "../../packages/render/src/snapping.ts"
 import { busyDeck, busyKey, cardId } from "./busy-deck.ts"
 import { dragFeel, type Feel } from "./drag-feel.ts"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 

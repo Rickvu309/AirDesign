@@ -1,6 +1,6 @@
 import { join } from "node:path"
-import { expect, test, type Locator, type Page } from "@playwright/test"
-import { decksOn } from "./deck-test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { decksOn, test } from "./deck-test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-conjunction-assessment.pptx")
 const broken = "CA can be performed only against well tracked objects in the catalog"

@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 
 test("recents grid shows recent decks", async ({ page }) => {
   await page.goto("/screens/s31-02-decks-browse-recents-grid")

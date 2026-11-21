@@ -1,10 +1,10 @@
 import { copyFile, readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import { stored } from "./device-store"
 import { exportFromDialog } from "./export-dialog.ts"
-import { decksOn } from "./deck-test"
+import { decksOn, test } from "./deck-test"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

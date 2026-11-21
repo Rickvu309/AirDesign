@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { identityCopy } from "../../apps/web/src/copy/identity-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { many, store } from "./home-store.ts"

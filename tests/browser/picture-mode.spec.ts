@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { openDeck, unfold } from "./design-panel"
 import { savedExport } from "./export-dialog"

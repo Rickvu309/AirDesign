@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { placeholderRoles } from "../../apps/web/src/copy/placeholder-copy"
 import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { designing, openDeck } from "./design-panel"

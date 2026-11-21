@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test"
+import { expect } from "@playwright/test"
+import { test } from "./deck-test"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { effectsCopy } from "../../apps/web/src/copy/effects-copy"

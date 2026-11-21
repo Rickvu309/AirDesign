@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { test } from "./deck-test"
 import { format, openRegister } from "../../packages/document/src/index.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
