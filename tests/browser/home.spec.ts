@@ -1,7 +1,6 @@
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { expect } from "@playwright/test"
-import { test } from "./deck-test"
+import { expect, test } from "./deck-test"
 import { join } from "node:path"
 import { first, now, second, store } from "./home-store.ts"
 import { accountCopy } from "../../apps/web/src/copy/account-copy.ts"
