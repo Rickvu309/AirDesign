@@ -33,7 +33,7 @@ export function useEditorDeck(id: string) {
   const { typed, sessions, records } = undo
   const pictures = { store: usePictureStore() }
   const notesBar = useNotes({ id, typed, sessions, records, settle })
-  const shown = useDeckPaint(id, pictures, notesBar)
+  const shown = useDeckPaint(id, pictures, notesBar, undo.lane)
   const { painting, unsent } = useLeaveGuard(status.pending, shown.ahead)
   const save = saveStatus({ ...status, pending: unsent })
   const slides = shown.store.current.slides()

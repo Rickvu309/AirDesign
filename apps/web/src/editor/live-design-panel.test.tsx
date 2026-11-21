@@ -60,7 +60,7 @@ function Panel(
   const nothing = () => undefined
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = editor.useUndoList()
-  const shown = editor.useDeckPaint(deck, pictures, { show: nothing })
+  const shown = editor.useDeckPaint(deck, pictures, { show: nothing }, undo.lane)
   const [mode, setMode] = useState<PanelMode>(props.node === null ? "slides" : "design")
   props.exposed(shown)
   const { toneFor, ...title } = props.title ?? {}

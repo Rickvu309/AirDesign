@@ -19,6 +19,7 @@ import { structureOf } from "@/table-hook"
 import { placedOn, type PlacedText } from "@/editor/placed-text"
 import { shownSlideAfter, type ShownSlide } from "@/editor/shown-slide"
 import { paintingAhead } from "@/editor/painted-ahead"
+import type { StoreLane } from "@/editor/store-lane"
 
 export type DeckPaint = ReturnType<typeof useDeckPaint>
 
@@ -52,6 +53,7 @@ export function useDeckPaint(
   id: string,
   pictureTool: { readonly store: PictureStore },
   notesBar: { readonly show: (notes: readonly ShownNotes[]) => void },
+  lane: StoreLane,
 ) {
   const store = useRef(paintStore())
   const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
@@ -137,7 +139,7 @@ export function useDeckPaint(
     const laid = framed === null ? null : indexedRegister(shownParts.current, framed)
     const paintChanges = liveRepaint(store.current, next.files, laid, busy.current, next.numberText)
     repaint.current = (changed, from, only) => {
-      const register = ahead.on(changed)
+      const register = paintedOf(changed)
       shownRegister.current = register
       paintChanges(indexedRegister(shownParts.current, register), from, only)
     }
@@ -151,9 +153,11 @@ export function useDeckPaint(
 
   freed.current = () => void showFreed()
 
-  async function showFreed() {
-    const next = await connect(memoryRemote()).openDeck(id)
-    if (next.ok) repaint.current(next.register)
+  function showFreed() {
+    return lane(async () => {
+      const next = await connect(memoryRemote()).openDeck(id)
+      if (next.ok) repaint.current(next.register)
+    })
   }
 
   showAhead.current = (register, nodes) => {
