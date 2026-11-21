@@ -1,5 +1,5 @@
 import { bytesOf } from "@airdesign/document"
-import { readTurn, type ModelMessage, type ToolAnswer } from "@airdesign/catalog"
+import { readTurn, sentWithoutPictures, withoutPictures, type ModelMessage, type ToolAnswer } from "@airdesign/catalog"
 import {
   airaChat,
   airaStep,
@@ -95,8 +95,8 @@ export function savedChat(
     asked,
     started: at.started,
     updated: at.updated,
-    history: chat.history,
-    answers: chat.answers,
+    history: chat.history.map(sentWithoutPictures),
+    answers: chat.answers.map(withoutPictures),
     exchanges: chat.exchanges,
   })
 }

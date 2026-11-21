@@ -3,9 +3,17 @@ import Anthropic from "@anthropic-ai/sdk"
 
 import type { ModelCall, ModelOpen, Transport } from "./aira.js"
 
+type Block = Exclude<ModelMessage["content"], string>[number]
+
+function blockParam(block: Block): Anthropic.ContentBlockParam {
+  if (block.type !== "tool_result") return block
+  const { content } = block
+  return { ...block, content: typeof content === "string" ? content : content.map((each) => ({ ...each })) }
+}
+
 function messageParam(message: ModelMessage): Anthropic.MessageParam {
   if (typeof message.content === "string") return { role: message.role, content: message.content }
-  return { role: message.role, content: [...message.content] }
+  return { role: message.role, content: message.content.map(blockParam) }
 }
 
 function toolParam(tool: ModelTool): Anthropic.Tool {
