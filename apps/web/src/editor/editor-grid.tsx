@@ -156,13 +156,14 @@ export function EditorGrid({
   useSlideSay(strip.say, announce)
   const order = strip.slideIds?.join(",")
   useLayoutEffect(() => {
+    const focusRemoved = focusedEntry.current?.isConnected === false && document.activeElement === document.body
     if (gridTurn.current !== tools.undo?.gridTurn) {
       const index = [...selected][0] ?? current
       gridTurn.current = tools.undo?.gridTurn
       setStop(index)
       const card = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${index + 1}"]`)
       if (card) viewport.focus(card, tools.undo?.gridFocusVisible === true)
-    } else if (following.current) {
+    } else if (following.current || focusRemoved) {
       const next = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${current + 1}"]`)
       setStop(current)
       if (next && next === document.activeElement) viewport.reveal(next)
