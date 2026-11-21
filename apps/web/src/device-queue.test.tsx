@@ -233,7 +233,6 @@ async function queueDeck() {
     id: deck,
     shown: paint,
     undo: hooks().undo,
-    record: hooks().undo.record,
     settle,
   })
   const widthChange = (code: number): SetChange => ({ target: { node }, border: { width: widths[code] } }) as SetChange

@@ -48,7 +48,7 @@ import { showText, shownValue } from "@/live-repaint"
 import { shownTable } from "@/table-hook"
 import { tableCanvas, type TableCanvasDeck } from "@/editor/table-canvas"
 import type { UndoName } from "@/copy/undo-copy"
-import type { Typing } from "@/undo-list"
+import type { RecordHold, Typing } from "@/undo-list"
 
 export type EditableDeck = DesignDeck &
   TableCanvasDeck & {
@@ -95,7 +95,7 @@ export function editableSlide(
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
   const { onBoxes, relayout } = boxMoves(deck)
   const { cropping, setCropping } = deck.shown
-  const { typed, sessions, records, formatting, record } = deck.undo
+  const { typed, sessions, records, formatting } = deck.undo
 
   async function textBefore(target: ElementId): Promise<string> {
     const file = boxes.current.get(target)?.file ?? ""
@@ -111,17 +111,17 @@ export function editableSlide(
   }
 
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
-    const release = records.current.hold()
+    const placed = deck.placedText?.typed(target, value) ?? Promise.resolve(true)
+    const slot = records.current.hold()
     const together = formatting.current.together()
     const written = typedAhead(target, value)
-    const placed = deck.placedText?.typed(target, value) ?? Promise.resolve(true)
     return placed
       .then((stored): Promise<CommitOutcome> | "empty" =>
-        stored ? editText(target, value, name, { release, written }, together) : "empty",
+        stored ? editText(target, value, name, { slot, written }, together) : "empty",
       )
       .finally(() => {
         written()
-        release()
+        slot.release()
       })
   }
 
@@ -145,7 +145,7 @@ export function editableSlide(
     target: ElementId,
     value: string,
     name: UndoName,
-    { release, written }: { readonly release: () => void; readonly written: () => void },
+    { slot, written }: { readonly slot: RecordHold; readonly written: () => void },
     together: object | null = null,
   ): Promise<CommitOutcome> {
     const { session, before: started } = sessionOf(target, name, together)
@@ -170,7 +170,7 @@ export function editableSlide(
         written()
         const before = await started
         const holder = shape?.contentKind === "table" ? "table" : "text"
-        record({
+        slot.record({
           name,
           session,
           undoable: {
@@ -183,7 +183,6 @@ export function editableSlide(
             ],
           },
         })
-        release()
       },
       async () => {
         written()

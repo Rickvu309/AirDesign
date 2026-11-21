@@ -31,9 +31,9 @@ export function useEditorDeck(id: string) {
   const [matched, setMatched] = useState<readonly ElementId[]>([])
   const rename = useDeckTitle(id, title, setTitle)
   const undo = useUndoList()
-  const { typed, sessions, records, record } = undo
+  const { typed, sessions, records } = undo
   const pictures = { store: usePictureStore() }
-  const notesBar = useNotes({ id, typed, sessions, records, record, settle })
+  const notesBar = useNotes({ id, typed, sessions, records, settle })
   const shown = useDeckPaint(id, pictures, notesBar)
   const slides = shown.store.current.slides()
   const local = slides[shown.current]?.elements
@@ -77,7 +77,6 @@ export function useEditorDeck(id: string) {
     id,
     shown,
     pictureTool: pictures,
-    record,
     hold: () => undo.records.current.hold(),
     settle,
     lane,
@@ -90,7 +89,7 @@ export function useEditorDeck(id: string) {
         pictures.store.keep(sha256, picture.bytes)
         const ref = `${picture.type}:${sha256}`
         changeDesign(
-          { id, shown, undo, record, settle },
+          { id, shown, undo, settle },
           () =>
             paint
               ? { target: { node }, fills: { paint: { image: ref } } }
@@ -130,7 +129,6 @@ export function useEditorDeck(id: string) {
     chooseFillImage,
     rename,
     undo,
-    record,
     pictureTool,
     notesBar,
     shown,

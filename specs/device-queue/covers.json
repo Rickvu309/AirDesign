@@ -4,26 +4,26 @@
     {
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
-      "digest": "7105c71883f4",
-      "blob": "16e491037aae32f63d89be4f52938f8e045efd34"
+      "digest": "a1f0ac6eb2a9",
+      "blob": "f9bc9837c48b7e4217e2d546efe8775b87049a94"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
-      "digest": "d5eadc4a3bd5",
-      "blob": "1c6cbe7e6f96b7ca6f4d8512cc2f506ec484b8dc"
+      "digest": "3ffc52fbb1cc",
+      "blob": "348ffc5c15612166dd5fb1ccea108f096ccff5f7"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoList", "useUndoTurn"],
-      "digest": "666bef00554b",
-      "blob": "1a37193abecfd95d13b199138cde75f6b84e0be2"
+      "digest": "db6afb741cd5",
+      "blob": "e259101ef9074dcd32dd9a69ccca76f881ddcc23"
     },
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack", "sent", "sentCommand", "recorded"],
       "digest": "f9987969b77d",
-      "blob": "4a0559876f5e8a36b75aae2e4562a3e34be29c31"
+      "blob": "d7e800bdf3c53dde30aa623c4cd05d46f6d3eb41"
     },
     {
       "file": "apps/web/src/commit-edit.ts",

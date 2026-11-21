@@ -4,8 +4,8 @@
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["recordsInFlight", "joined", "recorded", "turnBack"],
-      "digest": "395b83220741",
-      "blob": "4a0559876f5e8a36b75aae2e4562a3e34be29c31"
+      "digest": "e75717dafa52",
+      "blob": "d7e800bdf3c53dde30aa623c4cd05d46f6d3eb41"
     },
     {
       "file": "apps/web/src/live-repaint.ts",
@@ -16,8 +16,8 @@
     {
       "file": "apps/web/src/notes-edit.ts",
       "names": ["useNotes"],
-      "digest": "7efcddf41ad3",
-      "blob": "c8b26e8f0836ae7372f158ccb3d205e25360be31"
+      "digest": "f5807f678e4b",
+      "blob": "b96ff185b21138e729ce1e69463b9aa10d672ec0"
     },
     {
       "file": "apps/web/src/editor/undo-keys.ts",
@@ -41,13 +41,13 @@
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoTurn"],
       "digest": "daee2c2c00d1",
-      "blob": "1a37193abecfd95d13b199138cde75f6b84e0be2"
+      "blob": "e259101ef9074dcd32dd9a69ccca76f881ddcc23"
     },
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "19f06339b8de",
-      "blob": "aed6bfa3fc1adee2d329f457aea93014cd39f4ab"
+      "digest": "ab442e13ad54",
+      "blob": "86779fe35d8658957685e2eb3728447be47c3e1d"
     },
     {
       "file": "packages/live/src/held.ts",

@@ -11,7 +11,7 @@ import { textValue, type HeldKeys } from "@airdesign/render"
 import { elementCommand, type SlideRoom, type TextPlace } from "@/element-edit"
 import type { StoreLane } from "@/editor/store-lane"
 import { fileSlides } from "@/slide-edit"
-import type { UndoEntry } from "@/undo-list"
+import type { RecordHold } from "@/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -41,7 +41,7 @@ export type PlacingDeck = {
   readonly show: () => void
   readonly showSaved: () => Promise<void>
   readonly enter: (node: ElementId, keys: HeldKeys) => void
-  readonly record: (entry: UndoEntry) => void
+  readonly hold: () => RecordHold
   readonly lane: StoreLane
 }
 
@@ -86,14 +86,19 @@ export function placingText(deck: PlacingDeck, link: PlacingLink) {
   }
 
   async function keep(placed: PlacedText): Promise<boolean> {
-    const stored = await deck.lane(() => link.enqueueSlide(id, placed.file, placed.add))
-    held.current = held.current.filter((each) => each.node !== placed.node)
-    if (!stored.ok) {
-      await deck.showSaved()
-      return false
+    const slot = deck.hold()
+    try {
+      const stored = await deck.lane(() => link.enqueueSlide(id, placed.file, placed.add))
+      held.current = held.current.filter((each) => each.node !== placed.node)
+      if (!stored.ok) {
+        await deck.showSaved()
+        return false
+      }
+      if (placed.undoable !== null) slot.record({ name: "add-box", undoable: placed.undoable })
+      return true
+    } finally {
+      slot.release()
     }
-    if (placed.undoable !== null) deck.record({ name: "add-box", undoable: placed.undoable })
-    return true
   }
 
   function heldAt(node: ElementId): PlacedText | undefined {

@@ -4,6 +4,7 @@ import { paintStore, type CanvasSlide, type Selection } from "@airdesign/render"
 import { describe, expect, it } from "vitest"
 import { eyedropperChanges, hasEyedropperTarget } from "@/editor/eyedropper-changes"
 import type { DesigningDeck } from "@/editor/live-design-panel"
+import { recordsInFlight } from "@/undo-list"
 
 const xml = (value: string) => Uint8Array.from(value, (ch) => ch.charCodeAt(0))
 const part = "ppt/slides/slide1.xml"
@@ -55,11 +56,10 @@ function makeDeck(parts: ReadonlyMap<string, Uint8Array>, register: Register, se
   return {
     id: "deck-1",
     selection,
-    record: () => undefined,
     settle: () => undefined,
     undo: {
       focused: { current: null },
-      records: { current: { hold: () => () => undefined } },
+      records: { current: recordsInFlight() },
       turnAfter: (work: () => Promise<void>) => {
         void work()
       },

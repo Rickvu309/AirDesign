@@ -95,7 +95,6 @@ function Deck(props: { readonly selected: Selection; readonly exposed: (deck: Ex
     id: deck,
     shown,
     undo,
-    record: nothing,
     settle,
     changeElement,
     selection,

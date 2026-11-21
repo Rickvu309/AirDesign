@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/toast"
 import { useState, type RefObject } from "react"
 import { commitKept, type CommitOutcome } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
-import type { RecordsInFlight, Typing, UndoEntry } from "@/undo-list"
+import type { RecordsInFlight, Typing } from "@/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -16,7 +16,6 @@ export type NotesDeck = {
   readonly typed: RefObject<Typing | null>
   readonly sessions: RefObject<number>
   readonly records: RefObject<RecordsInFlight>
-  readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
 }
 
@@ -46,18 +45,17 @@ export function useNotes(deck: NotesDeck) {
     }
     const { session, before } = deck.typed.current
     setNotes((shown) => [...shown.filter((row) => row.slide !== slide), { slide, text: value }])
-    const release = deck.records.current.hold()
+    const slot = deck.records.current.hold()
     const kept = connect(memoryRemote()).enqueue(deck.id, value, node, floor)
     void commitKept(connect, deck.id, kept, async () => {
       const from = await before
-      deck.record({
+      slot.record({
         name: "notes",
         session,
         undoable: {
           steps: [{ node, before: { notes: { value: { set: from } } }, after: { notes: { value: { set: value } } } }],
         },
       })
-      release()
     })
       .then((outcome) => {
         if (outcome === "refused")
@@ -67,7 +65,7 @@ export function useNotes(deck: NotesDeck) {
           })
         deck.settle(outcome)
       })
-      .finally(release)
+      .finally(slot.release)
   }
 
   return { notes, show, edit }

@@ -50,7 +50,7 @@ function placingDeck(lane = storeLane()) {
         shown.push(placedOn(register, held.current))
       },
       enter: (node) => entered.push(node),
-      record: (entry) => recorded.push(entry),
+      hold: () => ({ record: (entry) => recorded.push(entry), release: () => undefined }),
       lane,
     },
     link,

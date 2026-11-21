@@ -11,13 +11,11 @@ import type { UndoList } from "@/editor/use-undo"
 import { withFileFloors } from "@/deck-paint"
 import { fileTableValue } from "@/table-edit"
 import { structureOf } from "@/table-hook"
-import type { UndoEntry } from "@/undo-list"
 
 export type DesignDeck = {
   readonly id: string
   readonly shown: DeckPaint
   readonly undo: UndoList
-  readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
 }
 
@@ -58,8 +56,13 @@ function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
         shown.shapes.current.get(node) ?? fileShape(shown.editParts.current, node),
         value,
       ),
-    hold: () => undo.records.current.hold(),
-    record: (entry) => deck.record(session === null ? entry : { ...entry, session }),
+    hold: () => {
+      const slot = undo.records.current.hold()
+      return {
+        record: (entry) => slot.record(session === null ? entry : { ...entry, session }),
+        release: slot.release,
+      }
+    },
     show: (register) => {
       const framed = withFileFloors(shown.paintedOf(register), shown.shownParts.current)
       if (shown.structure.current !== structureOf(framed, shown.bound.current)) shown.showRegister(register)

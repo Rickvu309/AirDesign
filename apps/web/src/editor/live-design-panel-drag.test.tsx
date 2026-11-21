@@ -33,7 +33,6 @@ function Panel(props: { readonly nodes: readonly ElementId[]; readonly exposed: 
       shown,
       undo,
       selection: { ids: props.nodes, inside: null },
-      record: nothing,
       settle: nothing,
     },
   })

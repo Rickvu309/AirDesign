@@ -36,7 +36,6 @@ export function useUndoList() {
   const typed = useRef<Typing | null>(null)
   const sessions = useRef(0)
   const focused = useRef<number | null>(null)
-  const records = useRef(recordsInFlight())
   const formatting = useRef(
     textFormatting(() => {
       typed.current = null
@@ -51,9 +50,7 @@ export function useUndoList() {
     setUndoShown(next)
   }, [])
 
-  function record(entry: UndoEntry) {
-    show(recorded(undoList.current, entry), null)
-  }
+  const records = useRef(recordsInFlight((entry) => show(recorded(undoList.current, entry), null)))
 
   function turnAfter<Result>(work: () => Promise<Result>): Promise<Result> {
     typed.current = null
@@ -76,7 +73,6 @@ export function useUndoList() {
     focused,
     records,
     formatting,
-    record,
     turnAfter,
   }
 }
