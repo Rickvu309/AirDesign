@@ -82,18 +82,36 @@ export function fittedSize(texts: readonly string[], width: number, most: number
   return Math.max(least, Math.min(most, fits))
 }
 
-function wrappedLines(text: string, fits: number): number {
+const letterWidths: readonly (readonly [RegExp, number])[] = [
+  [/[ijl.,:;'!|]/, 0.24],
+  [/[ft \-()[\]r/]/, 0.31],
+  [/[mw]/, 0.83],
+  [/[MW%]/, 0.9],
+  [/[A-Z]/, 0.7],
+  [/[0-9$a-z]/, 0.55],
+]
+
+function wordWidth(word: string, upper: boolean): number {
+  let total = 0
+  for (const letter of upper ? word.toUpperCase() : word)
+    total += letterWidths.find(([kind]) => kind.test(letter))?.[1] ?? 0.9
+  return total
+}
+
+function wrappedLines(text: string, room: number, upper: boolean): number {
+  const space = wordWidth(" ", upper)
   let lines = 1
   let used = 0
   for (const word of text.split(/\s+/).filter((each) => each.length > 0)) {
-    const wanted = used === 0 ? word.length : used + 1 + word.length
-    if (wanted <= fits) {
+    const wide = wordWidth(word, upper)
+    const wanted = used === 0 ? wide : used + space + wide
+    if (wanted <= room) {
       used = wanted
       continue
     }
-    lines += used === 0 ? 0 : 1
-    lines += Math.floor(Math.max(0, word.length - 1) / fits)
-    used = word.length % fits || fits
+    if (used > 0) lines += 1
+    lines += Math.floor(Math.max(0, wide - 0.001) / room)
+    used = wide % room || room
   }
   return lines
 }
@@ -101,9 +119,10 @@ function wrappedLines(text: string, fits: number): number {
 export function linesHigh(lines: readonly Line[], scale: TypeScale, width: number): number {
   return lines.reduce((total, line) => {
     const size = (line.size ?? scale[line.role]) / 100
-    const room = Math.max(1, width - (line.bullet === true ? size * 1.4 * point : 0))
-    const letter = size * (line.upper === true ? 0.62 : 0.52) * point
-    const count = wrappedLines(line.text, Math.max(1, Math.floor(room / letter)))
+    const room = Math.max(1, width - (line.bullet === true ? size * 1.9 * point : 0))
+    const strong = line.role === "number" || line.role === "heading"
+    const em = size * point * (strong ? 1.07 : 1) + (line.upper === true ? 0.6 * point : 0)
+    const count = wrappedLines(line.text, room / em, line.upper === true)
     const after = line.bullet === true ? (scale.body * 0.35 * point) / 100 : 0
     return total + count * size * 1.22 * point + after
   }, 0)
