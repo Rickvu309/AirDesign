@@ -74,6 +74,8 @@ node .agents/skills/show-airdesign/bin/logic.mjs tree.json [--out dir]
 
 It writes `tree.md` for a chat or a PR body, `tree.html`, and `tree.png` for `verify-airdesign publish`. It prints the answer's verdict.
 
+It then reads its own picture and prints `faults`: a photo drawn smaller than its size or not loaded, text past its box, a part past the picture's edge, text too faint to read. With a fault it exits 1. Crop the photo or shorten the words, and run it again.
+
 The rules it holds:
 
 1. **One question.** `kind`, `question` and `answer` are all there.
@@ -94,4 +96,4 @@ A leaf about something a person sees rests on an image of it. Make that image wi
 
 ## Done when
 
-The page answers the person's question in its decision, the tool printed a verdict, and you read the PNG as a design. Put the PNG through `verify-airdesign publish` before it goes in a PR, never a local path.
+The page answers the person's question in its decision, the tool printed a verdict and no faults, and you read the PNG as a design. Put the PNG through `verify-airdesign publish` before it goes in a PR, never a local path.

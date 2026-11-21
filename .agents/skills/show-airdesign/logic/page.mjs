@@ -140,7 +140,7 @@ const style = `*{box-sizing:border-box}html,body{margin:0;background:#fff}
 body{width:${String(pageWidth)}px;font-family:"Inter Variable",system-ui,sans-serif;color:${ink};-webkit-font-smoothing:antialiased}
 main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .kicker{font-size:13px;line-height:18px;color:#6b6b6b}
-.heads{display:flex;margin-top:20px;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:#8a8a8a}
+.heads{display:flex;margin-top:20px;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:#6b6b6b}
 .head{flex:none}
 .tree{display:flex;margin-top:8px}
 .node{display:flex;align-items:center}
@@ -149,14 +149,14 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .d0{--width:${String(widths[0])}px}.d0::before{border-width:3.4px}
 .d1{--width:${String(widths[1])}px}.d2{--width:${String(widths[2])}px}.d3{--width:${String(widths[3])}px}
 .unbuilt::before{border-style:dashed;border-width:2px}
-.passed-over{color:#9a9a9a}.passed-over::before{border-color:#c4c4c4}.passed-over .claim{color:#9a9a9a;font-weight:500}.passed-over .badge{background:#bdbdbd}
+.passed-over{color:#707070}.passed-over::before{border-color:#c4c4c4}.passed-over .claim{color:#707070;font-weight:500}.passed-over .badge{background:#707070}
 .chosen::before{border-width:3.6px}
 .tag{position:absolute;top:-8px;left:10px;background:#fff;color:${ink};font-size:10.5px;font-weight:750;letter-spacing:.1em;line-height:14px;padding:0 5px;text-transform:uppercase}
 .badge{position:absolute;top:-12px;right:-10px;width:26px;height:26px;border-radius:50%;background:${ink};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 0 0 3px #fff}
 .claim{margin:0;font-size:14px;line-height:19px;font-weight:560}
 .d0 .claim{font-size:18px;line-height:24px;font-weight:720}
 .mark{font-size:12.5px;font-weight:700;white-space:nowrap}
-.mark.passed{color:#1f8a3b;font-size:14px}.mark.open{color:#8a6d00}.mark.failed{color:#a32020}
+.mark.passed{color:#1a7f37;font-size:14px}.mark.open{color:#8a6d00}.mark.failed{color:#a32020}
 .thumb{display:block;width:100%;max-width:100%;height:auto;margin-top:10px}
 .with-photo,.step.with-photo{--width:${String(photoWidth)}px}
 .kids{display:flex;flex-direction:column;position:relative;padding-left:${String(gap)}px}
@@ -178,7 +178,7 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .points{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:17px;color:#444}
 .points li.unbuilt{border:1.6px dashed #9a9a9a;border-radius:4px;padding:2px 6px}
 .points b{display:inline-block;min-width:22px;font-size:11px;color:${ink}}
-.legend{margin-top:16px;font-size:12px;color:#8a8a8a}`
+.legend{margin-top:16px;font-size:12px;color:#6b6b6b}`
 
 const rough = `<svg width="0" height="0" style="position:absolute"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter></svg>`
 
