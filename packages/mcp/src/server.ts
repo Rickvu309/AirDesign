@@ -18,7 +18,8 @@ function inputSchema(json: Readonly<Record<string, unknown>>) {
 }
 
 function mcpResult(result: ToolResult) {
-  const content = result.content.map((block) => ({ type: "text" as const, text: block.text }))
+  const pictures = result.ok ? (result.pictures ?? []) : []
+  const content = [...result.content.map((block) => ({ type: "text" as const, text: block.text })), ...pictures]
   const body = result.ok && result.reported !== undefined ? result.reported : result.answer
   const structured = body === undefined ? {} : { structuredContent: body }
   if (result.ok) return { content, ...structured }

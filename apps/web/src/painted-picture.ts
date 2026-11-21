@@ -15,9 +15,8 @@ function frames(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 }
 
-async function dataUrl(url: string): Promise<string> {
-  const blob = await (await fetch(url)).blob()
-  return await new Promise((resolve, reject) => {
+function blobDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result))
     reader.onerror = () => reject(new Error("painted-picture"))
@@ -25,13 +24,36 @@ async function dataUrl(url: string): Promise<string> {
   })
 }
 
-async function inlined(text: string, cache: Map<string, Promise<string>>): Promise<string> {
+async function dataUrl(url: string): Promise<string> {
+  return blobDataUrl(await (await fetch(url)).blob())
+}
+
+async function shrunkUrl(url: string, longest: number): Promise<string> {
+  const blob = await (await fetch(url)).blob()
+  if (!blob.type.startsWith("image/") || blob.type === "image/svg+xml") return blobDataUrl(blob)
+  const bitmap = await createImageBitmap(blob).catch(() => null)
+  if (bitmap === null) return blobDataUrl(blob)
+  const scale = longest / Math.max(bitmap.width, bitmap.height)
+  if (scale >= 1) {
+    bitmap.close()
+    return blobDataUrl(blob)
+  }
+  const canvas = new OffscreenCanvas(
+    Math.max(1, Math.round(bitmap.width * scale)),
+    Math.max(1, Math.round(bitmap.height * scale)),
+  )
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  return blobDataUrl(await canvas.convertToBlob({ type: "image/webp", quality: 0.9 }))
+}
+
+async function inlined(text: string, cache: Map<string, Promise<string>>, longest: number): Promise<string> {
   const found = [...text.matchAll(/blob:[^"')\s&]+/g)].map((match) => match[0])
   let next = text
   for (const url of new Set(found)) {
     let pending = cache.get(url)
     if (pending === undefined) {
-      pending = dataUrl(url)
+      pending = shrunkUrl(url, longest)
       cache.set(url, pending)
     }
     next = next.replaceAll(url, await pending)
@@ -39,17 +61,86 @@ async function inlined(text: string, cache: Map<string, Promise<string>>): Promi
   return next
 }
 
-async function fontRules(): Promise<string> {
+type Face = ReturnType<typeof installedFaces>[number]
+
+type UsedFaces = { readonly families: ReadonlySet<string>; readonly looks: ReadonlySet<string> }
+
+const faceSources = new Map<string, Promise<string | null>>()
+
+function familyName(name: string): string {
+  return name.trim().replace(/^["']|["']$/g, "")
+}
+
+function lookOf(family: string, weight: string, style: string): string {
+  return `${family}|${weight}|${style}`
+}
+
+export function usedFaces(root: Element, installed: ReadonlySet<string>): UsedFaces {
+  const families = new Set<string>()
+  const looks = new Set<string>()
+  const view = root.ownerDocument.defaultView
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    const parent = node.parentElement
+    if (parent === null || view === null || (node.textContent ?? "").trim() === "") continue
+    const style = view.getComputedStyle(parent)
+    const family = style.fontFamily
+      .split(",")
+      .map(familyName)
+      .find((name) => installed.has(name))
+    if (family === undefined) continue
+    families.add(family)
+    looks.add(lookOf(family, style.fontWeight, style.fontStyle))
+  }
+  return { families, looks }
+}
+
+function weightIn(face: string, weight: number): boolean {
+  const [low = Number.NaN, high = low] = face.split(/\s+/).map(Number)
+  return weight >= low && weight <= high
+}
+
+function faceCovers(face: Face, look: string): boolean {
+  const [family, weight, style] = look.split("|")
+  return familyName(face.family) === family && face.style === style && weightIn(face.weight, Number(weight))
+}
+
+export function neededFaces(faces: readonly Face[], used: UsedFaces): readonly Face[] {
+  const unique = [
+    ...new Map(
+      faces.map((face) => [`${familyName(face.family)}|${face.style}|${face.weight}|${face.url}`, face]),
+    ).values(),
+  ]
+  const needed = new Set<Face>()
+  for (const look of used.looks) {
+    const family = look.split("|")[0]
+    const exact = unique.filter((face) => faceCovers(face, look))
+    const kin = unique.filter((face) => familyName(face.family) === family)
+    for (const face of exact.length > 0 ? exact : kin) needed.add(face)
+  }
+  return [...needed]
+}
+
+async function fontRules(root: Element): Promise<string> {
+  const faces = installedFaces(document)
+  const used = usedFaces(root, new Set(faces.map((face) => familyName(face.family))))
   const rules = await Promise.all(
-    installedFaces(document).map(async (face) => {
-      const source = await dataUrl(face.url).catch(() => null)
+    neededFaces(faces, used).map(async (face) => {
+      let pending = faceSources.get(face.url)
+      if (pending === undefined) {
+        pending = dataUrl(face.url).catch(() => null)
+        faceSources.set(face.url, pending)
+      }
+      const source = await pending
       return source === null
         ? ""
-        : `@font-face{font-family:${JSON.stringify(face.family)};font-style:${face.style};font-weight:${face.weight};src:url(${source})}`
+        : `@font-face{font-family:${JSON.stringify(familyName(face.family))};font-style:${face.style};font-weight:${face.weight};src:url(${source})}`
     }),
   )
   return rules.join("")
 }
+
+const editableWrap = "\n[data-text-body]{overflow-wrap:break-word;line-break:after-white-space}"
 
 function pageRules(): string {
   const rules: string[] = []
@@ -63,12 +154,12 @@ function pageRules(): string {
   return rules.join("\n")
 }
 
-async function svgOf(root: Element, width: number, height: number): Promise<string> {
+async function svgOf(root: Element, width: number, height: number, background: boolean): Promise<string> {
   const cache = new Map<string, Promise<string>>()
   const copy = root.cloneNode(true)
-  if (copy instanceof HTMLElement) copy.style.background = "transparent"
-  const body = await inlined(new XMLSerializer().serializeToString(copy), cache)
-  const style = `<style><![CDATA[${((await fontRules()) + pageRules()).replaceAll("]]>", "")}]]></style>`
+  if (copy instanceof HTMLElement && !background) copy.style.background = "transparent"
+  const body = await inlined(new XMLSerializer().serializeToString(copy), cache, Math.max(width, height))
+  const style = `<style><![CDATA[${((await fontRules(root)) + pageRules() + editableWrap).replaceAll("]]>", "")}]]></style>`
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject x="0" y="0" width="${width}" height="${height}"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px">${style}${body}</div></foreignObject></svg>`
 }
 
@@ -84,6 +175,7 @@ export async function paintedPicture(
   slide: CanvasSlide,
   elements: readonly CanvasElement[],
   scale: number,
+  background = false,
 ): Promise<PaintedPicture> {
   const width = Math.ceil(slide.width * scale)
   const height = Math.ceil(slide.height * scale)
@@ -96,7 +188,7 @@ export async function paintedPicture(
     root.render(
       createElement(SlideCanvas, {
         store,
-        slide: { ...slide, background: null, elements },
+        slide: { ...slide, background: background ? slide.background : null, elements },
         width,
         quiet: true,
       }),
@@ -107,7 +199,7 @@ export async function paintedPicture(
     await frames()
     const painted = host.firstElementChild
     if (painted === null) throw new Error("painted-picture")
-    return { image: await drawn(await svgOf(painted, width, height)), width, height }
+    return { image: await drawn(await svgOf(painted, width, height, background)), width, height }
   } finally {
     root.unmount()
     host.remove()

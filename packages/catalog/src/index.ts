@@ -83,6 +83,13 @@ export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
 export { readFindingsReport, type FindingsReport, type WireFinding } from "./findings-wire.js"
 export { agentFindings, type AgentFinding } from "./agent-findings.js"
+export {
+  pictureBytes,
+  pictureType,
+  type SlideKey,
+  type SlidePicture,
+  type SlidePictures,
+} from "./slide-pictures-wire.js"
 export { slideEditCommand, type WireSlide } from "./slide-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"

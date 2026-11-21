@@ -3,11 +3,12 @@ import type { ServerResponse } from "node:http"
 import { deckRoutes } from "@airdesign/catalog"
 
 import type { DeckFindings } from "./deck-findings.js"
+import type { DeckPictures } from "./deck-pictures.js"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved } from "./saved.js"
 
 type FindingsVisit = {
-  readonly options: { readonly deck: Sql; readonly findings: DeckFindings }
+  readonly options: { readonly deck: Sql; readonly findings: DeckFindings; readonly pictures: DeckPictures }
   readonly res: ServerResponse
   readonly body: () => Promise<Buffer | undefined>
 }
@@ -48,9 +49,10 @@ export function findingsRoute<Visit extends FindingsVisit>(
         http.sendJson(visit.res, 200, { ok: false, refusal: "stale" })
         return
       }
-      const { ok: _read, ...report } = parsed
+      const { ok: _read, pictures, ...report } = parsed
       visit.options.findings.keep(report)
-      http.sendJson(visit.res, 200, { ok: true, deck: parsed.deck })
+      const missing = pictures === undefined ? [] : visit.options.pictures.keep(parsed.deck, parsed.revision, pictures)
+      http.sendJson(visit.res, 200, { ok: true, deck: parsed.deck, ...(pictures === undefined ? {} : { missing }) })
     },
   }
 }

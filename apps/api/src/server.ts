@@ -34,6 +34,7 @@ import { deckListAnswers } from "./deck-list.js"
 import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
 import { DeckFindings } from "./deck-findings.js"
+import { DeckPictures } from "./deck-pictures.js"
 import { DeckFollowers } from "./deck-followers.js"
 import { findingsRoute } from "./findings-route.js"
 import { heldRevision } from "./deck-watch.js"
@@ -82,6 +83,7 @@ type ServedOptions = ApiOptions & {
   readonly closing: Closing
   readonly followers: DeckFollowers
   readonly findings: DeckFindings
+  readonly pictures: DeckPictures
 }
 
 type Context = {
@@ -438,6 +440,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
         following: (deck) => options.followers.following(deck),
         limit: options.measureLimit ?? measureLimit,
         findings: options.findings,
+        pictures: options.pictures,
       },
       images: { store: options.originals, net: options.imageNet ?? nodeNet },
     },
@@ -555,6 +558,7 @@ export function createApi(given: ApiOptions): Server {
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
     followers: new DeckFollowers(given.now ?? Date.now),
     findings: new DeckFindings(),
+    pictures: new DeckPictures(),
   }
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)
