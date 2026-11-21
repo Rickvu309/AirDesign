@@ -71,7 +71,29 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
   }
   const big = { x: 64, y: 110, w: 832, h: 380 }
 
-  it("steps the type down until six long cards fit inside the box", () => {
+  const pointSizes = (deck: Deck) =>
+    [
+      ...JSON.stringify(deck.register)
+        .replaceAll("\\", "")
+        .matchAll(/"text":"Point[^"]*","size":(\d+)/g),
+    ].map((found) => Number(found[1]))
+  const wordy = (at: number, points: number) => ({ ...long(at), points: long(at).points.slice(0, points) })
+
+  it("steps the type down so five long cards fit, and no point drops below 10 pt", () => {
+    const result = edit(blank(), {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      items: Array.from({ length: 5 }, (_, at) => wordy(at, 3)),
+    })
+    if (!result.ok) throw new Error(result.refusal)
+    expect(rowOf(result.deck, "horizontal")?.box.cy).toBeLessThanOrEqual(380 * point)
+    expect(Math.min(...pointSizes(result.deck))).toBeGreaterThanOrEqual(1000)
+    expect(Math.max(...pointSizes(result.deck))).toBeLessThan(1200)
+  })
+
+  it("refuses six long cards that would only fit below 10 pt", () => {
     const result = edit(blank(), {
       op: "diagram",
       slide: "258",
@@ -79,8 +101,7 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
       box: big,
       items: Array.from({ length: 6 }, (_, at) => long(at)),
     })
-    if (!result.ok) throw new Error(result.refusal)
-    expect(rowOf(result.deck, "horizontal")?.box.cy).toBeLessThanOrEqual(380 * point)
+    expect(result).toMatchObject({ ok: false, refusal: "limit" })
   })
 
   it("refuses with limit when the words cannot fit the box at the smallest type", () => {
@@ -135,6 +156,31 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     })
     if (!result.ok) throw new Error(result.refusal)
     expect(JSON.stringify(result.deck.register).replaceAll("\\", "")).toContain('"text":"A point","size":1200')
+  })
+
+  it("never steps a point below the deck's Caption size, and refuses what would need it", () => {
+    const scale = [
+      { id: "h", name: "Heading", fields: { size: 2000 } },
+      { id: "b", name: "Body 2", fields: { size: 1400 } },
+      { id: "c", name: "Caption", fields: { size: 1100 } },
+    ]
+    const fits = edit(styledDeck(scale), {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      items: Array.from({ length: 4 }, (_, at) => wordy(at, 2)),
+    })
+    if (!fits.ok) throw new Error(fits.refusal)
+    expect(Math.min(...pointSizes(fits.deck))).toBeGreaterThanOrEqual(1100)
+    const tight = edit(styledDeck(scale), {
+      op: "diagram",
+      slide: "258",
+      pattern: "cards",
+      box: big,
+      items: Array.from({ length: 6 }, (_, at) => long(at)),
+    })
+    expect(tight).toMatchObject({ ok: false, refusal: "limit" })
   })
 
   it("takes each text's size, font and line height from the deck's text styles by name", () => {
@@ -233,7 +279,8 @@ describe("an agent builds a laid-out slide part with op diagram and a pattern", 
     ),
   )("lands %s with %i items", (pattern, count) => {
     const items = Array.from({ length: count }, (_, at) => item(at))
-    const result = edit(blank(), { op: "diagram", slide: "258", pattern, box: area, items })
+    const box = pattern === "matrix" ? big : area
+    const result = edit(blank(), { op: "diagram", slide: "258", pattern, box, items })
     if (!result.ok) throw new Error(result.refusal)
     const { index, ...stored } = result.deck.register
     expect(readRegister(JSON.parse(JSON.stringify(stored)), JSON.parse(JSON.stringify(index)))).toMatchObject({

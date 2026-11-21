@@ -17,6 +17,7 @@ type RoleLook = {
 export type TypeScale = Readonly<Record<Role, number>> & {
   readonly gap: number
   readonly pad: number
+  readonly readable: boolean
   readonly looks: Readonly<Record<Role, RoleLook>>
 }
 
@@ -38,6 +39,7 @@ const styleNames: Readonly<Record<Role, readonly string[]>> = {
 }
 
 const scaleMark = "Heading"
+const plainFloor = 10
 
 export const typeSteps = [1, 0.9, 0.8, 0.7, 0.6] as const
 
@@ -72,7 +74,16 @@ export function typeScale(size: SlideSize, styles: readonly TextStyle[], step: n
   })
   const sized = Object.fromEntries(entries.map(([role, value]) => [role, value])) as Record<Role, number>
   const looks = Object.fromEntries(entries.map(([role, , look]) => [role, look])) as Record<Role, RoleLook>
-  return { ...sized, gap: Math.round(size.width * 0.015), pad: Math.round(size.width * 0.02), looks }
+  const caption = namedStyle(scaled, "caption")?.fields.size
+  const whole = namedStyle(scaled, "point")?.fields.size ?? Math.round(sizes.point * (unit / step)) * 100
+  const floor = Math.min(whole, caption ?? Math.round(plainFloor * (unit / step)) * 100)
+  return {
+    ...sized,
+    gap: Math.round(size.width * 0.015),
+    pad: Math.round(size.width * 0.02),
+    readable: sized.point >= floor,
+    looks,
+  }
 }
 
 const scheme = (name: string): Color => ({ scheme: name }) as Color
