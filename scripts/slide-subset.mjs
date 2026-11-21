@@ -14,7 +14,7 @@ function slideCount(parts) {
   return [...parts.keys()].filter((name) => slideName.test(name)).length
 }
 
-function subsetLines({ pptx, parts, lists, ids, orders }, { label, original, exported, slides }) {
+export function subsetLines({ pptx, parts, lists, ids, orders }, { label, original, exported, slides }) {
   const before = parts.get(original)
   const after = parts.get(exported)
   if (before === undefined || after === undefined) throw new Error(label)

@@ -22,6 +22,9 @@ export const { airaCopy, airaStepWords } = createRequire(import.meta.url)("../..
 export const { adjustToneCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/adjust-tone-copy.ts")
 export const { toolbarCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/toolbar-copy.ts")
 export const { undoCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/undo-copy.ts")
+export const { templatePickerCopy } = createRequire(import.meta.url)(
+  "../../../../apps/web/src/copy/template-picker-copy.ts",
+)
 
 export const { fillCopy, fillWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/fill-copy.ts")
 export const { colorCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/color-copy.ts")

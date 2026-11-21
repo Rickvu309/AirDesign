@@ -1,12 +1,18 @@
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { productCopy } from "@/copy/product-copy"
+import { templatePickerCopy } from "@/copy/template-picker-copy"
 
 const itemClass = "h-8 gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground"
 
-export type NewDeckActions = { onImport?: () => void; onBlank?: () => void; open?: boolean }
+export type NewDeckActions = {
+  onImport?: () => void
+  onBlank?: () => void
+  onTemplate?: () => void
+  open?: boolean
+}
 
-export function NewDeckMenu({ onImport, onBlank, open = false }: NewDeckActions) {
+export function NewDeckMenu({ onImport, onBlank, onTemplate, open = false }: NewDeckActions) {
   return (
     <DropdownMenu modal={false} defaultOpen={open}>
       <DropdownMenuTrigger
@@ -39,6 +45,27 @@ export function NewDeckMenu({ onImport, onBlank, open = false }: NewDeckActions)
             />
           </svg>
           {productCopy.blankDeck}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onTemplate} className={itemClass}>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <rect
+              x="1.1"
+              y="2.1"
+              width="11.8"
+              height="9.8"
+              rx="1.4"
+              fill="none"
+              stroke="var(--muted-foreground)"
+              strokeWidth="1.1"
+            />
+            <path
+              d="M3.5 5 H10.5 M3.5 7.4 H7.6 M3.5 9.4 H6.4"
+              stroke="var(--muted-foreground)"
+              strokeWidth="1.1"
+              strokeLinecap="round"
+            />
+          </svg>
+          {templatePickerCopy.fromTemplate}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onImport} className={itemClass}>
           <svg width="14" height="14" viewBox="8 9 14 14" aria-hidden="true">

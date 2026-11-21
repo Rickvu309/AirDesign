@@ -7,6 +7,8 @@ export const deckRoutes = {
   newDeckMenu: "/screens/s32-01-decks-new-deck-menu-open",
   importing: "/screens/s32-02-decks-new-deck-importing",
   importFailed: "/screens/s32-03-decks-new-deck-import-failed",
+  templatePicker: "/screens/s32-04-decks-new-deck-template-picker",
+  templateSlides: "/screens/s32-05-decks-new-deck-template-slides",
   deckMoved: "/screens/s33-01-decks-trash-deck-moved-toast",
   trash: "/screens/s33-02-decks-trash-list",
   emptyTrashConfirm: "/screens/s33-03-decks-trash-empty-trash-confirm",

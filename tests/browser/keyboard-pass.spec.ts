@@ -1,4 +1,5 @@
 import { productCopy, zoomCopy } from "../../apps/web/src/copy/product-copy"
+import { templatePickerCopy } from "../../apps/web/src/copy/template-picker-copy"
 import { expect, type Page } from "@playwright/test"
 import { store } from "./home-store.ts"
 import { covers } from "./gesture"
@@ -18,10 +19,14 @@ test("New deck opens a menu that takes the focus, moves by arrow and gives the f
   const menu = page.getByRole("menu", { name: productCopy.newDeck })
   await expect(menu).toBeVisible()
   const blank = menu.getByRole("menuitem", { name: productCopy.blankDeck, exact: true })
+  const template = menu.getByRole("menuitem", { name: templatePickerCopy.fromTemplate, exact: true })
   const importing = menu.getByRole("menuitem", { name: "Import PowerPoint", exact: true })
   await expect(blank).toBeFocused()
   await page.keyboard.press("ArrowDown")
+  await expect(template).toBeFocused()
+  await page.keyboard.press("ArrowDown")
   await expect(importing).toBeFocused()
+  await page.keyboard.press("ArrowUp")
   await page.keyboard.press("ArrowUp")
   await expect(blank).toBeFocused()
   await page.keyboard.press("Escape")
