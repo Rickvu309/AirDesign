@@ -6,6 +6,7 @@ import { deleteElement } from "./agent-elements.js"
 import { emptiedNow } from "./emptied-text.js"
 import { inGroupSpace } from "./grouped-box.js"
 import { agentSlide } from "./agent-slides.js"
+import { writableEdit } from "./writable-edit.js"
 import {
   bytesOf,
   decide,
@@ -134,7 +135,8 @@ function applyAgentEdits(
   images: ImageLookup,
 ): CallResult {
   let register = deck.register
-  for (const edit of edits) {
+  for (const sent of edits) {
+    const edit = writableEdit(register, sent)
     if ("op" in edit) {
       const current = { ...deck, register }
       const applied =
