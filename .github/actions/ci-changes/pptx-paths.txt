@@ -14,6 +14,7 @@ scripts/paragraph-export.mjs
 scripts/slide-export.mjs
 scripts/slide-edits.mjs
 scripts/blank-export.mjs
+scripts/deck-templates
 scripts/diagram-edits.mjs
 scripts/chart-edits.mjs
 scripts/pptx-render.mjs
@@ -27,6 +28,7 @@ scripts/pptx-fixtures
 apps/web
 packages/live
 packages/render
+packages/templates
 scripts/pptx-route-judge.mjs
 scripts/pptx-corpus.mjs
 scripts/metrics.mjs
