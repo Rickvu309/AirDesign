@@ -141,9 +141,9 @@ describe("edit_deck moves a layer inside a group by its place on the slide", () 
     })
   })
 
-  it("stores an agent's whole-box edit of a grouped layer in its group's space, and refuses one whose group is unknown", () => {
-    const value = { x: 1_828_800, y: 457_200, cx: 914_400, cy: 914_400 }
-    const deck = landed(edit(grouped(), { node: "258.8", readAt: 0, property: "box", value }))
+  it("stores an agent's whole box of a grouped layer in its group's space, and refuses one whose group is unknown", () => {
+    const box = { x: 144, y: 36, w: 72, h: 72 }
+    const deck = landed(edit(grouped(), { op: "set", target: "258.8", box }))
     expect(currentBox(nodeBody(deck.register, elementId("258.8")))).toEqual({
       x: 457_200,
       y: 0,
@@ -151,10 +151,7 @@ describe("edit_deck moves a layer inside a group by its place on the slide", () 
       cy: 457_200,
     })
     const lost = started(indexed(), "258.5")
-    expect(edit(lost, { node: "258.5", readAt: 0, property: "box", value })).toEqual({
-      ok: false,
-      refusal: "group-box",
-    })
+    expect(edit(lost, { op: "set", target: "258.5", box })).toEqual({ ok: false, refusal: "group-box" })
   })
 
   it("reads a grouped layer's box where it sits on the slide", () => {

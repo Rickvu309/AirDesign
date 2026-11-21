@@ -604,6 +604,6 @@ export const suite: readonly SuiteRow[] = [
       want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { body: [] } },
     },
     reference: boxed("widened", { ...placed, cx: placed.cx * 2 }),
-    wrong: { attempt: boxed("widened", { ...placed, cx: placed.cx * 2 }, elements.title, 1), reason: "touched" },
+    wrong: { attempt: boxed("widened", { ...placed, cx: placed.cx * 2 }, elements.title), reason: "touched" },
   },
 ]

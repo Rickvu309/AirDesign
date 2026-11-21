@@ -113,7 +113,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
           changes: [
             { node: "256.2", readAt: 0, value: text },
             { node: "256.4", readAt: 0, value: text },
-            { node: "256.8", readAt: 0, property: "box", value: { ...box, cx: 1 } },
+            { op: "set", target: "256.8", box: { w: 1 } },
           ],
         },
       })
@@ -187,12 +187,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
         arguments: {
           deck: "deck",
           base: 0,
-          changes: ["256.4", "256.5", "256.6"].map((node) => ({
-            node,
-            readAt: 0,
-            property: "box",
-            value: { ...box, x: 0 },
-          })),
+          changes: ["256.4", "256.5", "256.6"].map((target) => ({ op: "set", target, box: { x: 0 } })),
         },
       })
       expect(landed.isError).toBeFalsy()

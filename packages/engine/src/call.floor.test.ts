@@ -41,14 +41,6 @@ it.each([
   }
 })
 
-it("lets an agent start a run on and move a box whose imported text is over the value limit", () => {
-  const started = call("start_run", opened(), agent, { deck: "deck", runId: "run", elements: [{ node, floor }] })
-  if (!started.ok) throw new Error(started.refusal)
-  const changes = [{ node, floor, readAt: 0, property: "box", value: { ...box, x: 100 } }]
-  const moved = call("edit_deck", started.deck, agent, { deck: "deck", base: started.deck.revision, changes })
-  expect(moved.ok).toBe(true)
-})
-
 it("keeps the value limit on typing that leaves the text over it", () => {
   expect(call("commit_edits", opened(), person, { deck: "deck", batch: [{ node, floor, value: floor }] })).toEqual({
     ok: false,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
+import { advertisedSchema } from "./advertised-schema.js"
 import { agentSchema } from "./agent-form.js"
 import { catalog, toolInputSchema } from "./catalog.js"
 import { inlinedSchema, sharedSchemas } from "./shared-schema.js"
@@ -183,12 +184,12 @@ describe("a schema for a caller that may not follow references", () => {
     })
   })
 
-  it("gives back every tool's input schema as zod wrote it, with no reference left", () => {
+  it("gives back every tool's advertised schema, with no reference left", () => {
     for (const op of ["edit_deck", "read_deck"] as const) {
       const inlined = inlinedSchema(toolInputSchema(op))
       expect(references(inlined)).toEqual([])
       expect(inlined).not.toHaveProperty("$defs")
-      expect(inlined).toEqual(z.toJSONSchema(catalog[op].read.input, { io: "input" }))
+      expect(inlined).toEqual(advertisedSchema(z.toJSONSchema(catalog[op].read.input, { io: "input" })))
     }
   })
 })

@@ -1,6 +1,5 @@
-import { coordinates, decide, elementId, format, openRegister } from "@airdesign/document"
+import { decide, elementId, format, openRegister } from "@airdesign/document"
 import { expect, it } from "vitest"
-import * as z from "zod/v4"
 import { deckRoutes, readAgentEdit, readCommit, readEdit, toolInputSchema } from "./index.js"
 
 const node = elementId("258.7")
@@ -63,37 +62,19 @@ it("reads a person's row of trait fields, which a fill needs, and refuses one it
   }
 })
 
-it("reads an agent box change beside a text change and refuses a box change that is not a whole box", () => {
-  const changes = [
-    { node: "258.7", readAt: 2, property: "box", value: box, floor: "old" },
-    { node: "258.7", readAt: 2, value: "hi", floor: "old" },
-  ]
-  expect(readAgentEdit({ deck: "deck", base: 1, changes })).toEqual({
-    ok: true,
+it("moves an agent's layer only in points, through op set, and refuses the box form in EMU", () => {
+  expect(
+    readAgentEdit({ deck: "deck", base: 1, changes: [{ node: "258.7", readAt: 2, property: "box", value: box }] }),
+  ).toEqual(field)
+  const moved = readAgentEdit({
     deck: "deck",
     base: 1,
-    changes: [
-      { node, readAt: 2, property: "box", value: box, floor: "old" },
-      { node, readAt: 2, value: "hi", floor: "old" },
-    ],
+    changes: [{ op: "set", target: "258.7", box: { x: 72, w: 144 } }],
   })
-  for (const change of [
-    { node: "258.7", readAt: 2, property: "box", value: box, floor: 7 },
-    { node: "258.7", readAt: 2, property: "box", value: { ...box, cy: coordinates.highest + 1 } },
-    { node: "258.7", readAt: 2, property: "box", value: { ...box, y: coordinates.lowest - 1 } },
-    { node: "258.7", readAt: 2, property: "box", value: "box" },
-    { node: "258.7", property: "box", value: box },
-  ]) {
-    expect(readAgentEdit({ deck: "deck", base: 1, changes: [change] })).toEqual(field)
-  }
-})
-
-it("offers the agent a box change whose bounds are the ones the document reads", () => {
-  const schema = JSON.stringify(z.toJSONSchema(readAgentEdit.input, { io: "input" }))
-  expect(schema).toContain('"const":"box"')
-  expect(schema).toContain(String(coordinates.lowest))
-  expect(schema).toContain(String(coordinates.highest))
-  expect(schema).toContain("EMU")
+  expect(moved.ok).toBe(true)
+  const schema = JSON.stringify(toolInputSchema("edit_deck"))
+  expect(schema).not.toContain('"const":"box"')
+  expect(schema).not.toContain("EMU")
 })
 
 it("decodes a stored register holding a box row and refuses a box row that holds text", () => {

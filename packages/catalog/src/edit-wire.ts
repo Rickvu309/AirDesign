@@ -1,5 +1,4 @@
 import {
-  coordinates,
   elementId,
   elementPattern,
   limits,
@@ -166,29 +165,12 @@ const nodeInput = z
   .transform((value) => elementId(value))
   .describe("Layer id, <slide>.<shape>, such as 258.7.")
 const readAtInput = wholeInput.describe("Version of that layer from airdesign_read_deck; 0 if that read omitted it.")
-const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
-const extentInput = z.int().min(0).max(coordinates.highest)
 const textChange = z.strictObject({
   value: textInput.describe("Text to write: plain text, or a JSON text value when the file's text is one."),
   node: nodeInput,
   readAt: readAtInput,
   floor: textInput.exactOptional().describe("Opening text of the layer."),
 })
-const boxChange = z.strictObject({
-  property: z.literal("box").describe("Moves or resizes the layer instead of writing its text."),
-  value: z
-    .strictObject({
-      x: coordinateInput,
-      y: coordinateInput,
-      cx: extentInput,
-      cy: extentInput,
-    })
-    .describe("The layer's box on the slide in EMU. 914400 EMU is one inch."),
-  node: nodeInput,
-  readAt: readAtInput,
-  floor: textInput.exactOptional().describe("Opening text of the layer."),
-})
-
 function agentForm<Change>(
   read: (
     raw: unknown,
@@ -218,9 +200,7 @@ export const readAgentEdit = readInput(
     deck: deckInput,
     base: wholeInput,
     changes: z
-      .array(
-        z.union([textChange, boxChange, setChange, addChange, groupChange, diagramChange, slideChange, deleteChange]),
-      )
+      .array(z.union([textChange, setChange, addChange, groupChange, diagramChange, slideChange, deleteChange]))
       .min(1)
       .max(limits.batch),
   }),
