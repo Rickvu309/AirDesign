@@ -18,6 +18,31 @@ export function interCss(repo) {
   return `@font-face{font-family:"Inter Variable";font-weight:100 900;src:url(data:font/woff2;base64,${data}) format("woff2")}`
 }
 
+const imageTypes = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+}
+
+export function localImages(tree, repo) {
+  const refs = []
+  const walk = (node) => {
+    for (const piece of node.evidence ?? []) refs.push(piece.ref)
+    for (const child of node.children ?? []) walk(child)
+  }
+  walk(tree)
+  const images = {}
+  for (const ref of refs) {
+    const type = imageTypes[path.extname(ref).toLowerCase()]
+    if (type === undefined || /^https:\/\//.test(ref)) continue
+    const full = path.resolve(repo, ref.replace(/^~(?=\/)/, os.homedir()))
+    if (existsSync(full)) images[ref] = `data:${type};base64,${readFileSync(full).toString("base64")}`
+  }
+  return images
+}
+
 export function resolverFor(repo) {
   return (ref) => {
     if (/^https:\/\/\S+$/.test(ref)) return true
@@ -38,6 +63,7 @@ async function renderPng(html, file) {
     await page.evaluate(async () => {
       await document.fonts.load('16px "Inter Variable"')
       await document.fonts.ready
+      await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)))
     })
     await page.locator("main").screenshot({ path: file })
   } finally {
@@ -64,7 +90,7 @@ async function main(args) {
     html: path.join(out, `${name}.html`),
     png: path.join(out, `${name}.png`),
   }
-  const html = toHtml(tree, interCss(repo))
+  const html = toHtml(tree, interCss(repo), localImages(tree, repo))
   writeFileSync(files.md, toMarkdown(tree))
   writeFileSync(files.html, html)
   await renderPng(html, files.png)
