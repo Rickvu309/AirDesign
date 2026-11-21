@@ -24,7 +24,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const file = path.join(out, "blank-slides.pptx")
   await (await saving).saveAs(file)
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
-  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "apps/web/src/decks/blank.pptx")))
+  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "packages/templates/files/neutral-start.pptx")))
   const after = await pptx.readParts(fs.readFileSync(file))
   expect(
     pptx.slideExportFailures(

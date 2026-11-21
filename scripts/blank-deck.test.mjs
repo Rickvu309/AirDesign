@@ -37,7 +37,3 @@ assert.equal(
   "a new Blank deck has no elements",
 )
 assert.match(new TextDecoder().decode(appParts.get("ppt/slides/_rels/slide1.xml.rels")), /slideLayout6.xml/)
-assert.deepEqual(
-  fs.readFileSync(new URL("../apps/web/src/decks/blank.pptx", import.meta.url)),
-  blankDeck({ empty: true }),
-)

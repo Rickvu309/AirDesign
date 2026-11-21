@@ -1,9 +1,10 @@
+import { blankOriginalName } from "./blank-export.mjs"
 import { slideExportLines } from "./slide-export.mjs"
 
 export const currentSlideOriginalName = "doe-heat-pumps.pptx"
 export const currentSlideExportName = "exported-current-slide.pptx"
 export const currentSlidePart = "ppt/slides/slide7.xml"
-export const blankRangeOriginalName = "empty.pptx"
+export const blankRangeOriginalName = blankOriginalName
 export const blankRangeExportName = "exported-blank-range.pptx"
 
 const structure = new Set(["[Content_Types].xml", "ppt/presentation.xml", "ppt/_rels/presentation.xml.rels"])
