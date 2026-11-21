@@ -1,5 +1,14 @@
 import type { WireChange } from "@airdesign/catalog"
-import { readTextValue, slideKind, type ElementId, type TextRun, type TextValue } from "@airdesign/document"
+import {
+  readTableValue,
+  readTextValue,
+  slideKind,
+  tableColumns,
+  type ElementId,
+  type TableValue,
+  type TextRun,
+  type TextValue,
+} from "@airdesign/document"
 
 export type TextProblem = { readonly code: "field" | "text-from"; readonly detail: string }
 
@@ -35,6 +44,25 @@ export function runProblem(file: TextValue, next: TextValue): TextProblem | unde
   return undefined
 }
 
+const emptyCell: TextValue = [{ from: 0, runs: [] }]
+
+export function cellProblem(file: TableValue, next: TableValue): TextProblem | undefined {
+  const columns = tableColumns(next)
+  for (const row of next.rows) {
+    const source = file.rows.find((each) => each.from === row.from)
+    for (const [at, cell] of row.cells.entries()) {
+      const column = columns[at] ?? -1
+      const problem = runProblem(
+        source === undefined || column < 0 ? emptyCell : (source.cells[column] ?? emptyCell),
+        cell,
+      )
+      if (problem !== undefined)
+        return { code: problem.code, detail: `Row ${String(row.from)}, cell ${String(at)}: ${problem.detail}` }
+    }
+  }
+  return undefined
+}
+
 export function textProblem(
   floors: ReadonlyMap<ElementId, string>,
   changes: readonly WireChange[],
@@ -43,6 +71,13 @@ export function textProblem(
     if (change.property === "box" || slideKind(change.node) !== null) continue
     const floor = floors.get(change.node)
     if (floor === undefined) continue
+    const table = readTableValue(floor)
+    const sent = table === null ? null : readTableValue(change.value)
+    if (table !== null && sent !== null) {
+      const problem = cellProblem(table, sent)
+      if (problem !== undefined) return problem
+      continue
+    }
     const file = readTextValue(floor)
     if (file === null) continue
     const next = readTextValue(change.value)
