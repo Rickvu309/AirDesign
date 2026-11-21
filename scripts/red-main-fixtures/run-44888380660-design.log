@@ -1,0 +1,12 @@
+2026-11-21T09:14:47.0312957Z   1) tests/browser/design-states.spec.ts:72:1 › every named state of this design shard is reached and scanned in one stack
+2026-11-21T09:14:47.0313852Z
+2026-11-21T09:14:47.0314161Z     Error: every named state is reached
+2026-11-21T09:14:47.0314466Z
+2026-11-21T09:14:47.0314671Z     expect(received).toEqual(expected) // deep equality
+2026-11-21T09:14:47.0314986Z
+2026-11-21T09:14:47.0315185Z     - Expected  - 1
+2026-11-21T09:14:47.0315652Z     + Received  + 6
+2026-11-21T09:14:47.0315866Z
+2026-11-21T09:14:47.0315964Z     - Array []
+2026-11-21T09:14:47.0318105Z     +     "page": "slide-added-title",
+2026-11-21T09:14:47.1946449Z failed: browser-tests

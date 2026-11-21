@@ -54,6 +54,7 @@ jobs:
           RED_MAIN_TOKEN: ${{ secrets.RED_MAIN_TOKEN }}
           DRILL_SHA: ${{ inputs.drill_sha }}
           RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           RUN_EVENT: ${{ github.event.workflow_run.event }}
           RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
           RUN_SHA: ${{ github.event.workflow_run.head_sha }}

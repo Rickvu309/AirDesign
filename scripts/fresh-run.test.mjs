@@ -1,3 +1,5 @@
+import { failedTests } from "./failed-tests.mjs"
+import { history, logs } from "./red-main-replay.mjs"
 import { freshRunMark, outsideTheDiff } from "./fresh-run.mjs"
 import { followPull } from "./land-follow.mjs"
 import { fixture, mainRules, ok, same } from "./land-harness.mjs"
@@ -12,9 +14,9 @@ const journeysLog = [
 const browserJob = { name: "check (browser 2/4)", log: browserLog }
 
 same(
-  "a browser step failing on a test the diff leaves alone is outside the diff",
+  "a change to app code reaches a browser job even when it leaves the failed file alone",
   outsideTheDiff({ jobs: [browserJob], files: ["apps/web/src/editor/save.ts"] }).outside,
-  true,
+  false,
 )
 same(
   "a journeys job is outside the diff without a failed: line",
@@ -64,6 +66,7 @@ const failed = [
 const fresh = [
   { __typename: "CheckRun", databaseId: 2, name: "changes", conclusion: null, status: "QUEUED", checkSuite: suite(78) },
 ]
+const passed = [{ ...failed[0], databaseId: 3, conclusion: "SUCCESS", checkSuite: suite(78) }]
 const pullAnswer = ({
   contexts = failed,
   state = "OPEN",
@@ -100,16 +103,25 @@ const pullAnswer = ({
     },
   })
 
-const prRun = { id: 77, event: "pull_request", branch: "fix", head, conclusion: "failure", createdAt: "t" }
+const prRun = { id: 77, event: "pull_request", branch: "fix", head, attempt: 1, conclusion: "failure", createdAt: "t" }
+const freshRun = { ...prRun, id: 78, conclusion: "success" }
 const queueRun = { ...prRun, id: 78, event: "merge_group", branch: `gh-readonly-queue/main/pr-394-${"b".repeat(40)}` }
 
 const follow = async ({
   reads,
   comments = "",
-  files = "apps/web/src/editor/save.ts\n",
+  files = "README.md\n",
   job = browserJob,
   runs = [prRun],
   issues = ok("[]"),
+  freshJobs = [
+    { name: "ci", conclusion: "success" },
+    {
+      name: browserJob.name,
+      conclusion: "success",
+      steps: [{ name: "Run pnpm check --part=browser --shard=2/4", conclusion: "success" }],
+    },
+  ],
 }) => {
   const asked = []
   const said = []
@@ -131,10 +143,14 @@ const follow = async ({
         return ok("https://github.com/Rickvu309/AirDesign/issues/990\n")
       }
       if (call.includes("/actions/workflows/ci.yml/runs")) return ok(JSON.stringify(runs))
+      if (call.includes("/runs/78/attempts/1/jobs") && call.endsWith(".jobs")) return ok(JSON.stringify(freshJobs))
       if (call.includes("/jobs?per_page=100")) return ok(JSON.stringify([{ id: 5, name: job.name }]))
       if (call.includes("/jobs/5/logs")) return ok(job.log)
       if (call.includes("/pulls/394/files")) return ok(files)
-      if (call.includes("/issues/394/comments") && !call.includes("POST")) return ok(comments)
+      if (call.includes("/issues/394/comments")) {
+        if (!call.includes("POST")) return ok(comments)
+        comments += `\n${args.at(-1).slice(5)}\n`
+      }
       return ok("")
     },
     git: (args) => ({ status: 0, stdout: args[0] === "rev-list" ? "0\n" : "", stderr: "" }),
@@ -146,14 +162,18 @@ const follow = async ({
     interval: 30000,
     graceMs: 120000,
     limitMs: 3600000,
+    merge: () => 0,
   })
   const posted = asked.filter((call) => call.startsWith("api -X POST repos/Rickvu309/AirDesign/issues/394/comments"))
   return { code, said, asked, posted, raised }
 }
 
-const taken = await follow({
-  reads: [pullAnswer(), pullAnswer({ armed: false, contexts: [...failed, ...fresh] }), pullAnswer({ merged: true })],
-})
+const reopened = [
+  pullAnswer({ queue: false, armed: false }),
+  pullAnswer({ queue: false, armed: false, contexts: [...failed, ...fresh] }),
+  pullAnswer({ queue: false, armed: false, contexts: passed }),
+]
+const taken = await follow({ reads: reopened, runs: [freshRun, prRun] })
 same("a failure outside the diff takes its fresh run and merges", taken.code, 0)
 same("one comment is posted", taken.posted.length, 1)
 same(
@@ -166,10 +186,11 @@ same(
   [true, true, true],
 )
 same(
-  "before the fresh run, the save-status race is recorded as an issue with the run, the head and the failure output",
+  "after a passing fresh run, the issue names both runs, the head and the failure output",
   taken.raised.map((issue) => [
     issue.title,
-    issue.body.split(/\s/).some((word) => word === "https://github.com/Rickvu309/AirDesign/actions/runs/77"),
+    issue.body.includes("https://github.com/Rickvu309/AirDesign/actions/runs/77"),
+    issue.body.includes("https://github.com/Rickvu309/AirDesign/actions/runs/78"),
     issue.body.includes(head),
     issue.body.includes('Received: "Saved"'),
   ]),
@@ -179,34 +200,61 @@ same(
       true,
       true,
       true,
+      true,
     ],
   ],
 )
 same(
-  "the comment links the race's issue",
-  taken.posted[0]
-    .split("\n")
-    .some((line) => line === "Each one is a race, recorded in https://github.com/Rickvu309/AirDesign/issues/990."),
+  "the issue is opened only after the pull request reopens and fresh ci passes",
+  taken.asked.findIndex((call) => call.startsWith("issue create")) >
+    taken.asked.findIndex((call) => call.startsWith("pr reopen")),
   true,
 )
+const unrecorded = await follow({
+  reads: reopened,
+  runs: [freshRun, prRun],
+  issues: { status: 1, stdout: "", stderr: "HTTP 503" },
+})
 same(
-  "the issue is opened before the pull request is closed",
-  taken.asked.findIndex((call) => call.startsWith("issue create")) <
-    taken.asked.findIndex((call) => call.startsWith("pr close")),
-  true,
+  "a race that cannot be recorded after the fresh run stops land",
+  [unrecorded.code, unrecorded.posted.length],
+  [1, 1],
 )
-const unrecorded = await follow({ reads: [pullAnswer()], issues: { status: 1, stdout: "", stderr: "HTTP 503" } })
-same("a race that cannot be recorded takes no fresh run", [unrecorded.code, unrecorded.posted.length], [1, 0])
 same(
   "and says why",
-  unrecorded.said.some((line) => line.includes("no fresh run") && line.includes("HTTP 503")),
+  unrecorded.said.some((line) => line.includes("could not record the race") && line.includes("HTTP 503")),
   true,
 )
 same(
-  "the pull request is closed, reopened and armed again, never rerun",
+  "the pull request is closed and reopened once",
   taken.asked.filter((call) => /^pr (close|reopen|merge)|^run rerun|\/rerun/.test(call)),
-  ["pr close 394", "pr reopen 394", "pr merge 394 --auto --rebase"],
+  ["pr close 394", "pr reopen 394"],
 )
+
+const skipped = await follow({
+  reads: reopened,
+  runs: [freshRun, prRun],
+  freshJobs: [{ name: "ci", conclusion: "success" }],
+})
+same("a green ci that skipped the failed job does not establish a race", [skipped.code, skipped.raised], [0, []])
+const failedAgain = await follow({
+  reads: [
+    ...reopened.slice(0, 2),
+    pullAnswer({
+      queue: false,
+      armed: false,
+      contexts: [{ ...failed[0], databaseId: 3, checkSuite: suite(78) }],
+    }),
+  ],
+  runs: [prRun],
+})
+same(
+  "a second failure stops and records no race",
+  [failedAgain.code, failedAgain.raised, failedAgain.posted.length],
+  [1, [], 1],
+)
+const wrongHead = await follow({ reads: reopened, runs: [{ ...freshRun, head: "bbbb2222" }, prRun] })
+same("a green run on another head cannot establish a race", wrongHead.raised, [])
 
 const second = await follow({ reads: [pullAnswer()], comments: `${freshRunMark(head)}\n` })
 same("a second fresh run on the same head is refused", second.code, 1)
@@ -277,4 +325,24 @@ same(
   "the pull request is closed and reopened, and auto-merge is not armed, since with no queue it would merge without the recheck",
   unqueued.asked.filter((call) => /^pr (close|reopen|merge)|^run rerun|\/rerun/.test(call)),
   ["pr close 394", "pr reopen 394"],
+)
+
+const agentRead = "bb45f06d944ab3f17c42637b701939415b73a561"
+const brokenReads = logs[44895953428]
+same(
+  "run 44895953428: the agent read change can reach all six failed browser and journeys tests, even though their files are untouched",
+  [
+    brokenReads.flatMap(({ log }) => failedTests(log)).length,
+    outsideTheDiff({ jobs: brokenReads, files: history.commits[agentRead].files }).outside,
+  ],
+  [6, false],
+)
+const agentReadRun = await follow({
+  reads: [pullAnswer({ queue: false, armed: false })],
+  files: history.commits[agentRead].files.join("\n"),
+})
+same(
+  "an app-code pull request takes no fresh run or race issue for a browser job it can affect",
+  [agentReadRun.code, agentReadRun.posted.length, agentReadRun.raised],
+  [1, 0, []],
 )

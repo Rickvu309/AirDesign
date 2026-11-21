@@ -58,6 +58,9 @@ _Avoid_: soft fail, advisory, non-blocking
 A test that fails beside other work and passes on its own. It has found a fault in the test or the code it covers, and the fix forces the gap: a delay that makes the old code fail every time.
 _Avoid_: flake, flaky test, machine load
 
+**fresh run**:
+A new ci run on the same pull request head, started by reopening the pull request or entering the merge queue again. Its run attempt is 1.
+
 **green rerun**:
 One failed test of a red push run on `main`, run again alone at the last green commit, the parent of the first red commit, with the fast-check seed and path the red log printed. The revert bot reverts for a unit, script or confirmed browser test only when it passes its green rerun.
 _Avoid_: parent replay, bisect, retry

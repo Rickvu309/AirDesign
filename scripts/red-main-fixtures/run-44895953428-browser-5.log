@@ -1,0 +1,11 @@
+2026-11-21T10:47:49.9992644Z   1) tests/browser/agent-frame-measure.spec.ts:24:1 › an agent's read after it lengthens a frame's text on a slide the person is not viewing shows the height the open tab measured
+2026-11-21T10:47:49.9996242Z
+2026-11-21T10:47:49.9997024Z     Error: expect(received).toBeGreaterThan(expected)
+2026-11-21T10:47:49.9997303Z
+2026-11-21T10:47:49.9997409Z     Expected: > 100000
+2026-11-21T10:47:49.9997654Z     Received:   0
+2026-11-21T10:47:49.9997786Z
+2026-11-21T10:47:49.9997913Z       76 |   const after = await read()
+2026-11-21T10:47:49.9998341Z       77 |   const grew = (after.top?.cy ?? 0) - (before.top?.cy ?? 0)
+2026-11-21T10:47:49.9998731Z     > 78 |   expect(grew).toBeGreaterThan(100_000)
+2026-11-21T10:49:56.3293461Z failed: browser-tests

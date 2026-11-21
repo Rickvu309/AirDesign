@@ -22,6 +22,15 @@ export const logs = {
   43769961904: [{ name: "check (main)", log: fixture("run-43769961904-check-main.log") }],
   43778249943: [{ name: "corpus", log: fixture("run-43778249943-corpus.log") }],
   44748130700: [{ name: "check (browser 8/8)", log: fixture("run-44748130700-check-browser-8.log") }],
+  44887944405: [{ name: "check (pptx)", log: fixture("run-44887944405-pptx.log") }],
+  44887430866: [{ name: "check (browser 2/8)", log: fixture("run-44887430866-browser.log") }],
+  44888380660: [{ name: "check (design 3/3)", log: fixture("run-44888380660-design.log") }],
+  44895953428: [
+    { name: "check (browser 6/8)", log: fixture("run-44895953428-browser-6.log") },
+    { name: "check (browser 5/8)", log: fixture("run-44895953428-browser-5.log") },
+    { name: "journeys / journeys (2/2)", log: fixture("run-44895953428-journeys-2.log") },
+    { name: "journeys / journeys (1/2)", log: fixture("run-44895953428-journeys-1.log") },
+  ],
   44764886281: [
     { name: "check (source 1/2)", log: fixture("run-44764886281-check-source-1.log") },
     { name: "check (browser 1/8)", log: fixture("run-44764886281-check-browser-1.log") },

@@ -681,6 +681,105 @@
         "tests/browser/frame-wrap-inside.spec.ts",
         "tests/browser/spec-seconds.json"
       ]
+    },
+    "08f379ea50913987d08196c9f97ac98cd990fcf6": {
+      "title": "Share reply faults across verification journeys",
+      "files": [
+        ".agents/skills/verify-airdesign/SKILL.md",
+        ".agents/skills/verify-airdesign/bin/agent-bench.mjs",
+        ".agents/skills/verify-airdesign/bin/journey-kit.test.mjs",
+        ".agents/skills/verify-airdesign/bin/reply-routes.mjs",
+        ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs",
+        ".agents/skills/verify-airdesign/journey-suite.md",
+        ".agents/skills/verify-airdesign/journeys/account-name.mjs",
+        ".agents/skills/verify-airdesign/journeys/adjust-tone.mjs",
+        ".agents/skills/verify-airdesign/journeys/agent-after-open.mjs",
+        ".agents/skills/verify-airdesign/journeys/agent-bench-recorded.mjs",
+        ".agents/skills/verify-airdesign/journeys/aira-head.mjs",
+        ".agents/skills/verify-airdesign/journeys/aira-panel.mjs",
+        ".agents/skills/verify-airdesign/journeys/commit-once.mjs",
+        ".agents/skills/verify-airdesign/journeys/deck-stars.mjs",
+        ".agents/skills/verify-airdesign/journeys/dynamic-fonts.mjs",
+        ".agents/skills/verify-airdesign/journeys/typed-reload.mjs",
+        ".agents/skills/verify-airdesign/journeys/usage-page.mjs",
+        "tests/browser/font-widths.ts",
+        "tests/browser/measure-fonts.ts",
+        "tests/journeys/journeys.spec.ts"
+      ]
+    },
+    "09291803a7a41bedb020f65e8b06c8a684d0d2d1": {
+      "title": "Draw a steps split as a flow of boxes and arrows, with a loop back when it repeats",
+      "files": [
+        ".agents/skills/show-airdesign/SKILL.md",
+        ".agents/skills/show-airdesign/logic/page.mjs",
+        ".agents/skills/show-airdesign/logic/page.test.mjs",
+        ".agents/skills/show-airdesign/logic/tree.mjs",
+        ".agents/skills/show-airdesign/logic/tree.test.mjs"
+      ]
+    },
+    "4585a7e9227734040d5470dcd1f7df15008aeb7b": {
+      "title": "Ask for plain writing on every logic page and refuse code words and long sentences",
+      "files": [
+        ".agents/skills/show-airdesign/SKILL.md",
+        ".agents/skills/show-airdesign/logic/page.mjs",
+        ".agents/skills/show-airdesign/logic/page.test.mjs",
+        ".agents/skills/show-airdesign/logic/tree.mjs",
+        ".agents/skills/show-airdesign/logic/tree.test.mjs"
+      ]
+    },
+    "111fd513e84aabd8ee0e9c3983a72927d423bddc": {
+      "title": "Organize verify-airdesign by the question it answers and fold the formal checks into it",
+      "files": [
+        ".agents/skills/verify-airdesign/SKILL.md",
+        ".agents/skills/verify-airdesign/rules/README.md",
+        ".agents/skills/verify-airdesign/rules/checks-connection.md",
+        ".agents/skills/verify-airdesign/rules/checks-credits.md",
+        ".agents/skills/verify-airdesign/rules/checks-device-queue.md",
+        ".agents/skills/verify-airdesign/rules/checks-document.md",
+        ".agents/skills/verify-airdesign/rules/checks-element.md",
+        ".agents/skills/verify-airdesign/rules/checks-field-fold.md",
+        ".agents/skills/verify-airdesign/rules/checks-grid.md",
+        ".agents/skills/verify-airdesign/rules/checks-lost-answer.md",
+        ".agents/skills/verify-airdesign/rules/checks-server.md",
+        ".agents/skills/verify-airdesign/rules/checks-slides.md",
+        ".agents/skills/verify-airdesign/rules/checks-structure.md",
+        ".agents/skills/verify-airdesign/rules/checks-tabs.md",
+        ".agents/skills/verify-airdesign/rules/checks-typing-planted.md",
+        ".agents/skills/verify-airdesign/rules/checks-undo.md",
+        ".claude/skills/verify-airdesign-formal",
+        "scripts/spec-sync.mjs"
+      ]
+    },
+    "bb45f06d944ab3f17c42637b701939415b73a561": {
+      "title": "Read the slide size and every box in points, and give the palette once",
+      "files": [
+        "apps/api/src/indexed-deck.test.ts",
+        "apps/api/src/mcp-measure.test.ts",
+        "apps/api/src/read-deck.test.ts",
+        "packages/catalog/src/agent-box.test.ts",
+        "packages/catalog/src/agent-box.ts",
+        "packages/catalog/src/index.ts",
+        "packages/engine/src/agent-frames-filed.test.ts",
+        "packages/engine/src/agent-frames.test.ts",
+        "packages/engine/src/agent-line.test.ts",
+        "packages/engine/src/apply-change.test.ts",
+        "packages/engine/src/call.element.test.ts",
+        "packages/engine/src/call.picture.test.ts",
+        "packages/engine/src/call.table.test.ts",
+        "packages/engine/src/indexed-deck.test.ts",
+        "packages/engine/src/read-connector.test.ts",
+        "packages/engine/src/read-deck.test.ts",
+        "packages/engine/src/read-deck.ts",
+        "packages/engine/src/read-element.ts",
+        "packages/engine/src/read-frames.ts",
+        "packages/engine/src/read-place.test.ts",
+        "packages/engine/src/read-slides.test.ts",
+        "packages/mcp/src/call-tool.box.test.ts",
+        "packages/mcp/src/edit-answer.ts",
+        "packages/mcp/src/element-tool.test.ts",
+        "packages/mcp/src/kind-refusal.ts",
+        "packages/mcp/src/line-add.test.ts"
+      ]
     }
   },
   "windows": [
@@ -846,6 +945,40 @@
           "sha": "f5d76511041572d19949cf08bcda3572898ece39",
           "status": "completed",
           "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "commits": [
+        "08f379ea50913987d08196c9f97ac98cd990fcf6",
+        "09291803a7a41bedb020f65e8b06c8a684d0d2d1",
+        "4585a7e9227734040d5470dcd1f7df15008aeb7b",
+        "111fd513e84aabd8ee0e9c3983a72927d423bddc"
+      ],
+      "runs": [
+        {
+          "id": 44887302435,
+          "sha": "08f379ea50913987d08196c9f97ac98cd990fcf6",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 44887430866,
+          "sha": "09291803a7a41bedb020f65e8b06c8a684d0d2d1",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "id": 44887813925,
+          "sha": "4585a7e9227734040d5470dcd1f7df15008aeb7b",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 44887944405,
+          "sha": "111fd513e84aabd8ee0e9c3983a72927d423bddc",
+          "status": "completed",
+          "conclusion": "failure"
         }
       ]
     }

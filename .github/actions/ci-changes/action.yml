@@ -1,5 +1,5 @@
 name: ci-changes
-description: Says which ci parts this change can affect, read by scripts/change-map.mjs. A pull request maps its own diff, and every other event runs every part.
+description: Says which ci parts this change can affect. A new or updated pull request maps its diff. Reopened pull requests and other events select every part.
 inputs:
   check-jobs-file:
     description: Path to the JSON list of check jobs.
@@ -37,6 +37,7 @@ runs:
       shell: bash
       env:
         EVENT_NAME: ${{ github.event_name }}
+        EVENT_ACTION: ${{ github.event.action }}
         CHECK_JOBS_FILE: ${{ inputs.check-jobs-file }}
       run: |
         set -uo pipefail
@@ -45,7 +46,7 @@ runs:
           node scripts/change-map.mjs --jobs "$check_jobs" "$@" | tee -a "$GITHUB_OUTPUT"
           exit "${PIPESTATUS[0]}"
         }
-        if [ "$EVENT_NAME" != pull_request ]; then
+        if [ "$EVENT_NAME" != pull_request ] || [ "$EVENT_ACTION" = reopened ]; then
           decide --full
         fi
         if git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed-paths"; then

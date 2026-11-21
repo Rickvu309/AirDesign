@@ -1,0 +1,12 @@
+2026-11-21T09:09:26.5871678Z browser export spec failed; browser export spec wrote no tests/browser/exported-element-link.pptx
+2026-11-21T09:09:26.5872513Z 1) tests/browser/control-link.spec.ts:10:1 › a person saves and removes a whole text element URL @export
+2026-11-21T09:09:26.5872779Z
+2026-11-21T09:09:26.5873026Z     Error: expect(locator).toHaveValue(expected) failed
+2026-11-21T09:09:26.5873224Z
+2026-11-21T09:09:26.5873514Z     Locator:  locator('[data-design-element]').getByRole('textbox', { name: 'Add URL or slide number' })
+2026-11-21T09:09:26.5873955Z     Expected: "https://example.com"
+2026-11-21T09:09:26.5874241Z     Received: ""
+2026-11-21T09:09:26.5874547Z     Timeout:  5000ms
+2026-11-21T09:09:26.5874869Z
+2026-11-21T09:09:26.5874982Z     Call log:
+2026-11-21T09:09:27.9403076Z 1 pptx checks failed
