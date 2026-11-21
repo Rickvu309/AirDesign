@@ -24,6 +24,13 @@ function tags(html: string, pattern: RegExp): string[] {
 }
 
 describe("slide list", () => {
+  it("enables Add slide once the deck's first slide has painted", () => {
+    const onAdd = () => undefined
+    const add = (html: string) => tags(html, /<button[^>]*aria-label="Add slide"[^>]*>/g)[0]
+    expect(add(markup({ count: 0, groups: [], onAdd }))).toMatch(/ disabled(?:=|[ >])/)
+    expect(add(markup({ onAdd }))).not.toMatch(/ disabled(?:=|[ >])/)
+  })
+
   it("is one named group, and each slide says its number and how many there are", () => {
     const html = markup()
     expect(html).toContain('role="group" aria-label="Slides"')
