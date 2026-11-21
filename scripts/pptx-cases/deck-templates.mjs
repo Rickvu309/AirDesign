@@ -28,14 +28,13 @@ export default {
       const changed = [...new Set([...before.keys(), ...after.keys()])].filter(
         (name) => !Buffer.from(before.get(name) ?? []).equals(Buffer.from(after.get(name) ?? [])),
       )
-      const errors = [
-        ...(answers.lists.get(`${folder}${each.original}`) ?? []),
-        ...(answers.lists.get(each.exported) ?? []),
-      ]
-      return [
-        ...(changed.length === 0 ? [] : [`${each.original} export changed ${changed.join(", ")}`]),
-        ...errors.map((error) => `${each.original} validator ${error}`),
-      ]
+      const validated = [`${folder}${each.original}`, each.exported].flatMap((name) => {
+        const errors = answers.lists.get(name)
+        return errors === undefined
+          ? [`${name} has no validator result`]
+          : errors.map((error) => `${each.original} validator ${error}`)
+      })
+      return [...(changed.length === 0 ? [] : [`${each.original} export changed ${changed.join(", ")}`]), ...validated]
     })
   },
 }
