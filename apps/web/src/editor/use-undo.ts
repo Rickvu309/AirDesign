@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { indexedRegister } from "@/indexed-register"
+import { storeLane } from "@/editor/store-lane"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { slideTurnSaid } from "@/editor/slide-said"
 import { withFileFloors } from "@/deck-paint"
@@ -51,10 +52,12 @@ export function useUndoList() {
   }, [])
 
   const records = useRef(recordsInFlight((entry) => show(recorded(undoList.current, entry), null)))
+  const [lane] = useState(storeLane)
 
   function turnAfter<Result>(work: () => Promise<Result>): Promise<Result> {
     typed.current = null
-    const turn = turning.current.then(work)
+    const inserted = lane.stored()
+    const turn = turning.current.then(() => inserted).then(work)
     turning.current = turn.then(
       () => undefined,
       () => undefined,
@@ -65,6 +68,7 @@ export function useUndoList() {
   return {
     undoList,
     turning,
+    lane,
     undoShown,
     show,
     told: undoShown.told,

@@ -131,3 +131,33 @@ it("runs the next turn after one fails, and hands the failure to the caller of t
   await next
   expect(ran).toBe(true)
 })
+
+it("starts a turn only once every insert queued before it was stored, never waiting for a later one", async () => {
+  const seen = await deck()
+  const undo = seen.undo
+  if (undo === null) throw new Error("not rendered")
+  const order: string[] = []
+  const stores: (() => void)[] = []
+  const insert = (name: string) =>
+    undo.lane(async (stored) => {
+      await new Promise<void>((done) => stores.push(done))
+      order.push(name)
+      stored()
+    })
+  let turned: Promise<void> = Promise.resolve()
+  await act(async () => {
+    void insert("insert")
+    turned = undo.turnAfter(async () => {
+      order.push("turn")
+    })
+    void insert("later insert")
+  })
+  expect(order).toEqual([])
+  await act(async () => {
+    stores.shift()?.()
+    await turned
+  })
+  expect(order).toEqual(["insert", "turn"])
+  await act(async () => stores.shift()?.())
+  expect(order).toEqual(["insert", "turn", "later insert"])
+})

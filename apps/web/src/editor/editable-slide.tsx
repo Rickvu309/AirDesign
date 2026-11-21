@@ -111,13 +111,14 @@ export function editableSlide(
   }
 
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
+    const inserted = deck.undo.lane.stored()
     const placed = deck.placedText?.typed(target, value) ?? Promise.resolve(true)
     const slot = records.current.hold()
     const together = formatting.current.together()
     const written = typedAhead(target, value)
     return placed
       .then((stored): Promise<CommitOutcome> | "empty" =>
-        stored ? editText(target, value, name, { slot, written }, together) : "empty",
+        stored ? editText(target, value, name, { slot, written, inserted }, together) : "empty",
       )
       .finally(() => {
         written()
@@ -145,7 +146,11 @@ export function editableSlide(
     target: ElementId,
     value: string,
     name: UndoName,
-    { slot, written }: { readonly slot: RecordHold; readonly written: () => void },
+    {
+      slot,
+      written,
+      inserted,
+    }: { readonly slot: RecordHold; readonly written: () => void; readonly inserted: Promise<void> },
     together: object | null = null,
   ): Promise<CommitOutcome> {
     const { session, before: started } = sessionOf(target, name, together)
@@ -161,6 +166,7 @@ export function editableSlide(
       return "refused"
     }
     showText(store.current, target, value)
+    await inserted
     const outcome = await commitEdit(
       connect,
       id,
@@ -208,7 +214,9 @@ export function editableSlide(
   }
 
   async function fitted(node: ElementId, size: FitSize) {
+    const inserted = deck.undo.lane.stored()
     if (!(await (deck.placedText?.stored(node) ?? true))) return
+    await inserted
     const floor = boxes.current.get(node)?.file ?? movables.current.get(node)?.file ?? ""
     const width = size.width === undefined ? {} : { w: { set: size.width } }
     const row = { v: format, patch: { box: { ...width, h: { set: size.height } } } }

@@ -11,12 +11,10 @@ import {
 } from "@airdesign/document"
 import { noSelection } from "@airdesign/render"
 import { act, createElement } from "react"
-import { useState } from "react"
 import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { editableSlide } from "./editable-slide"
 import { deckInserts } from "./inserts"
-import { storeLane } from "./store-lane"
 import { useDeckPaint, type DeckPaint } from "./use-deck-paint"
 import { saveStatus, useDeckStatus, type SaveStatus } from "./use-deck-status"
 import { useUndoList, useUndoTurn, type UndoList } from "./use-undo"
@@ -71,14 +69,13 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const status = useDeckStatus(deck)
   const { settle } = status
   const shown = useDeckPaint(deck, pictures, notes)
-  const [lane] = useState(storeLane)
   const inserts = deckInserts({
     id: deck,
     shown,
     pictureTool: pictures,
     hold: () => undo.records.current.hold(),
     settle,
-    lane,
+    lane: undo.lane,
   })
   const { changeElement } = inserts
   useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing })
@@ -257,5 +254,27 @@ it("keeps a placed text box beneath the words typed into it", async () => {
   await typing.type(4, "Market context")
   await typing.answer()
   expect(typing.undone()).toEqual(["add-box", "text"])
+  await typing.close()
+})
+
+it("stores a keystroke only after an insert queued before it was stored", async () => {
+  const typing = await typingDeck()
+  let store = () => undefined as void
+  await act(async () => {
+    void typing.deck().undo.lane(async (stored) => {
+      await new Promise<void>((done) => {
+        store = done
+      })
+      stored()
+    })
+  })
+  await typing.type(2, "Hello there")
+  expect(typing.unanswered()).toBe(0)
+  await act(async () => {
+    store()
+    await new Promise((done) => setTimeout(done, 0))
+  })
+  expect(typing.unanswered()).toBe(1)
+  await typing.answer()
   await typing.close()
 })
