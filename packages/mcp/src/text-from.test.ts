@@ -4,6 +4,7 @@ import { currentValue, decide, elementId, readTextValue, version, writeTextValue
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { callTool, createServer, editNext, emptyLog, memoryTurns, type Session } from "./index.js"
+import { notTextValue } from "./text-from.js"
 
 const floor = writeTextValue([
   {
@@ -23,9 +24,6 @@ const created = elementId("258.9")
 const missingRun = "Paragraph 0 of the file has runs 0 and 1. Use one of them, or -1 for a new run."
 const missingParagraph = "The file has paragraphs 0 and 1."
 const missingSecondParagraph = "Paragraph 1 of the file has runs 0. Use one of them, or -1 for a new run."
-const notText =
-  "Send a JSON text value for this layer. Each from must be one the file has, and -1 is a new run. The file has paragraphs 0 and 1."
-
 function opened(): Deck {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error(id.refusal)
@@ -238,24 +236,25 @@ describe("editText", () => {
     expect(elementBody(deck).landed).toEqual([])
   })
 
-  it("refuses a value that is not a text value", () => {
+  it("writes plain words into the file's first paragraph and run", () => {
     const deck = textDeck()
     const result = edit(deck, [{ value: "21", node: "258.7" }])
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(readTextValue(currentValue(elementBody(result.deck)))).toEqual([
+      { from: 0, runs: [{ from: 0, text: "21" }] },
+    ])
+  })
+
+  it("refuses a value that looks like JSON and is not a text value", () => {
+    const deck = textDeck()
+    const result = edit(deck, [{ value: '[{"from":-1,"runs":[]}]', node: "258.7" }])
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.refusal).toBe("field")
     expect(result.deck).toBe(deck)
-    const before = version(elementBody(deck))
     expect(result.content[0]).toEqual({ type: "text", text: editNext["field"] })
-    expect(result.content[1]).toEqual({ type: "text", text: notText })
-    expect(readAnswer(result)).toEqual({
-      ok: false,
-      revision: 0,
-      refusal: "field",
-      elements: [{ node: "258.7", value: floor, version: before }],
-    })
-    expect(version(elementBody(deck))).toBe(before)
-    expect(elementBody(deck).landed).toEqual([])
+    expect(result.content[1]).toEqual({ type: "text", text: notTextValue })
   })
 
   it("lands a plain string and returns the current value", () => {

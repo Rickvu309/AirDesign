@@ -1,10 +1,12 @@
 import type { AgentChange } from "@airdesign/catalog"
 import {
+  filedText,
   openingElement,
   paragraphedTable,
   paragraphedText,
   placedTable,
   placedText,
+  readTextValue,
   slideKind,
   type Register,
 } from "@airdesign/document"
@@ -27,12 +29,14 @@ export function writableEdit(register: Register, edit: AgentChange): AgentChange
       return "text" in edit && edit.text !== undefined ? { ...edit, text: written(edit.text, addedText) } : edit
     }
     if (edit.op !== "set") return edit
-    const typed = edit.text === undefined ? edit : { ...edit, text: written(edit.text, paragraphedText) }
-    return typed.table === undefined ? typed : { ...typed, table: written(typed.table, paragraphedTable) }
+    return edit.table === undefined ? edit : { ...edit, table: written(edit.table, paragraphedTable) }
   }
   if (edit.property === "box" || slideKind(edit.node) !== null) return edit
-  const kind = openingElement(register, edit.node)?.kind
-  if (kind === "shape") return { ...edit, value: paragraphedText(edit.value) }
+  const opening = openingElement(register, edit.node)
+  const kind = opening?.kind
+  const floor = opening?.value ?? (register.elements[edit.node] as { readonly floor?: string } | undefined)?.floor
+  if (kind === "shape" || (kind === undefined && readTextValue(floor ?? "") !== null))
+    return { ...edit, value: paragraphedText(filedText(floor, edit.value)) }
   if (kind === "table") return { ...edit, value: paragraphedTable(edit.value) }
   return edit
 }

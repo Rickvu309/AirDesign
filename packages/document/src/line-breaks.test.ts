@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { paragraphedTable, paragraphedText } from "./line-breaks.js"
+import { filedText, paragraphedTable, paragraphedText } from "./line-breaks.js"
 import { readTableValue } from "./table-value.js"
 import { readTextValue, writeTextValue } from "./text-value.js"
 
@@ -77,5 +77,31 @@ describe("a line break starts a new paragraph, as Enter does", () => {
   it("leaves a table with no line break as it was sent", () => {
     const table = JSON.stringify({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text: "Owner" }] }]] }] })
     expect(paragraphedTable(table)).toBe(table)
+  })
+})
+
+describe("plain words go into the paragraph and run the file has", () => {
+  const file = writeTextValue([
+    { from: 2, align: "center", runs: [{ from: 1, text: "Old", bold: true }] },
+    { from: 3, runs: [{ from: 0, text: "More" }] },
+  ])
+
+  it("names the file's first paragraph and its first run, one paragraph per line", () => {
+    expect(readTextValue(filedText(file, "New\nwords"))).toEqual([
+      { from: 2, runs: [{ from: 1, text: "New" }] },
+      { from: 2, runs: [{ from: 1, text: "words" }] },
+    ])
+  })
+
+  it("adds a run when the file's first paragraph has none", () => {
+    const empty = writeTextValue([{ from: 0, runs: [] }])
+    expect(readTextValue(filedText(empty, "Title"))).toEqual([{ from: 0, runs: [{ from: -1, text: "Title" }] }])
+  })
+
+  it("leaves a text value, and plain words for a layer with no file text, as sent", () => {
+    const value = writeTextValue([{ from: 3, runs: [{ from: 0, text: "Kept" }] }])
+    expect(filedText(file, value)).toBe(value)
+    expect(filedText("", "Words")).toBe("Words")
+    expect(filedText(null, "Words")).toBe("Words")
   })
 })

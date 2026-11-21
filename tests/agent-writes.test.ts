@@ -3,7 +3,7 @@ import { openRegister, presentSlides, readSlideId, type Register } from "@airdes
 import { callTool, emptyLog, memoryTurns, type Session } from "@airdesign/mcp"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { describe, expect, it } from "vitest"
-import { exportedParts } from "@/exported-parts"
+import { exportedDeck } from "@/exported-parts"
 import { indexedParts } from "@/index-deck"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -45,7 +45,9 @@ function slideXml(parts: Parts, at = 0): string {
 }
 
 function written(parts: Parts, session: Session, at = 0): string {
-  return slideXml(exportedParts(parts, session.deck.register), at)
+  const exported = exportedDeck(parts, session.deck.register)
+  expect(exported.leftOut).toEqual([])
+  return slideXml(exported.parts, at)
 }
 
 const box = { x: 64, y: 60, w: 400, h: 60 }
@@ -118,5 +120,38 @@ describe("what the agent tools land, the tab writes", () => {
     landed(session, [{ op: "add", kind: "shape", slide, box, text: { value } }])
     const xml = written(parts, session)
     for (const word of ["Revenue", " up", "$16.8M"]) expect(xml).toContain(`<a:t>${word}</a:t>`)
+  })
+  it("writes plain text on a layer of the file, keeping the first run's look, in each form", async () => {
+    const { parts, session, slide } = await opened()
+    const title = `${slide}.2`
+    landed(session, [{ op: "set", target: title, text: { value: "Set title\nSecond line" } }])
+    expect(written(parts, session)).toContain("<a:t>Second line</a:t>")
+    landed(session, [{ node: title, readAt: 1, value: "Value title" }])
+    expect(written(parts, session)).toContain("<a:t>Value title</a:t>")
+  })
+
+  it("refuses text that looks like JSON and is not a text value, in every form, and never writes it as words", async () => {
+    const { session, slide } = await opened()
+    const node = landed(session, [{ op: "add", kind: "shape", slide, box, text: { value: "One" } }]).elements[0]?.node
+    const newParagraph = JSON.stringify([{ from: -1, runs: [{ from: -1, text: "B" }] }])
+    for (const value of [
+      newParagraph,
+      '[{"from":0,"runs":[{"from":-1,"text":"A"}',
+      JSON.stringify({ text: "Hello" }),
+    ]) {
+      for (const change of [
+        { op: "add", kind: "shape", slide, box, text: { value } },
+        { op: "set", target: node, text: { value } },
+        { node, readAt: 1, value },
+      ]) {
+        const result = callTool(
+          "airdesign_edit_deck",
+          { deck: "deck", base: session.deck.revision, changes: [change] },
+          session,
+        )
+        expect(result.ok, JSON.stringify(change)).toBe(false)
+        expect(JSON.stringify(result.content)).toContain("looks like JSON")
+      }
+    }
   })
 })

@@ -27,10 +27,6 @@ function runSentence(paragraphFrom: number, runs: readonly TextRun[]): string {
   return `${name} has runs ${indexed(runs.map((run) => run.from))}. Use one of them, or -1 for a new run.`
 }
 
-function notText(file: TextValue): string {
-  return `Send a JSON text value for this layer. Each from must be one the file has, and -1 is a new run. ${paragraphSentence(file)}`
-}
-
 export function runProblem(file: TextValue, next: TextValue): TextProblem | undefined {
   for (const paragraph of next) {
     const source = file.find((item) => item.from === paragraph.from)
@@ -44,9 +40,36 @@ export function runProblem(file: TextValue, next: TextValue): TextProblem | unde
   return undefined
 }
 
+export function looksLikeJson(value: string): boolean {
+  const first = value.trimStart()[0]
+  return first === "[" || first === "{"
+}
+
+export const notTextValue =
+  "The text looks like JSON and is not a text value, so nothing landed. A text value is [{from, runs:[{from, text}]}]: a paragraph's from is one the layer has, repeated for another paragraph, and a run's from is one it has or -1. Send plain text for plain words."
+
+const newLayer: TextValue = [{ from: 0, runs: [{ from: 0, text: "" }] }]
 const emptyCell: TextValue = [{ from: 0, runs: [] }]
 
+function gridProblem(file: TableValue, next: TableValue): TextProblem | undefined {
+  const width = file.rows[0]?.cells.length ?? 0
+  const row = next.rows.find((each) => each.from >= file.rows.length)
+  if (row !== undefined)
+    return {
+      code: "text-from",
+      detail: `The file's table has rows ${indexed(file.rows.map((each) => each.from))}. Use one of them, or -1 for a new row.`,
+    }
+  if (tableColumns(next).some((from) => from >= width))
+    return {
+      code: "text-from",
+      detail: `The file's table has ${String(width)} columns, numbered from 0. Use one of them in columns, or -1 for a new column.`,
+    }
+  return undefined
+}
+
 export function cellProblem(file: TableValue, next: TableValue): TextProblem | undefined {
+  const grid = gridProblem(file, next)
+  if (grid !== undefined) return grid
   const columns = tableColumns(next)
   for (const row of next.rows) {
     const source = file.rows.find((each) => each.from === row.from)
@@ -78,10 +101,11 @@ export function textProblem(
       if (problem !== undefined) return problem
       continue
     }
-    const file = readTextValue(floor)
+    const file = floor === "" ? newLayer : readTextValue(floor)
     if (file === null) continue
     const next = readTextValue(change.value)
-    if (next === null) return { code: "field", detail: notText(file) }
+    if (next === null && looksLikeJson(change.value)) return { code: "field", detail: notTextValue }
+    if (next === null) continue
     const problem = runProblem(file, next)
     if (problem !== undefined) return problem
   }

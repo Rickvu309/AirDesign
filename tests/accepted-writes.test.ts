@@ -2,7 +2,7 @@ import { readDeckId, toolInputSchema, traitWire } from "@airdesign/catalog"
 import { presentSlides, readRegister, type Kind, type Register, type TraitName } from "@airdesign/document"
 import { callTool, emptyLog, memoryTurns, type Session } from "@airdesign/mcp"
 import { describe, expect, it } from "vitest"
-import { exportedParts } from "@/exported-parts"
+import { exportedDeck } from "@/exported-parts"
 import { indexedParts } from "@/index-deck"
 import { deckParts, indexed, placed, type Parts } from "@/parity-probe"
 import { probes } from "@/trait-probes"
@@ -43,8 +43,8 @@ function unwritable(parts: Parts, register: Register): string | null {
   const stored = readRegister(JSON.parse(JSON.stringify(register)))
   if (!stored.ok) return `store reader: ${stored.refusal}`
   try {
-    exportedParts(parts, stored.value)
-    return null
+    const left = exportedDeck(parts, stored.value).leftOut
+    return left.length === 0 ? null : `tab writer left out ${JSON.stringify(left)}`
   } catch (error) {
     return `tab writer: ${String(error instanceof Error ? error.message : error)}`
   }
