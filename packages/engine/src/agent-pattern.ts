@@ -95,7 +95,7 @@ function row(
 }
 
 const points = (item: PatternItem): Part =>
-  (item.points ?? []).map((text) => ({ text, role: "body", bullet: true }) as const)
+  (item.points ?? []).map((text) => ({ text, role: "point", bullet: true }) as const)
 
 function kpi(build: Build, area: Box, items: readonly PatternItem[]): void {
   const { scale } = build
@@ -159,7 +159,7 @@ function matrix(build: Build, area: Box, items: readonly PatternItem[], axes?: r
   const strip = axes === undefined ? 0 : Math.round((build.scale.label / 100) * point * 2.6)
   const tall = area.cy - strip
   const half = Math.floor((tall - gap) / 2)
-  const wide = Math.min(Math.floor((area.cx - strip - gap) / 2), Math.round(half * 1.6))
+  const wide = Math.floor((area.cx - strip - gap) / 2)
   const grid = { x: area.x + strip, y: area.y, cx: wide * 2 + gap, cy: tall }
   const bands = [0, 1].map((line) => {
     const band = { x: grid.x, y: grid.y + line * (half + gap), cx: grid.cx, cy: half }
@@ -176,7 +176,7 @@ function matrix(build: Build, area: Box, items: readonly PatternItem[], axes?: r
             ? []
             : [{ text: item.title, role: "heading", ...(ink === undefined ? {} : { color: ink }) }],
           (item.points ?? []).map(
-            (text) => ({ text, role: "body", bullet: true, ...(ink === undefined ? {} : { color: ink }) }) as const,
+            (text) => ({ text, role: "point", bullet: true, ...(ink === undefined ? {} : { color: ink }) }) as const,
           ),
         ],
         lead ? tones.accent : tones.card,
