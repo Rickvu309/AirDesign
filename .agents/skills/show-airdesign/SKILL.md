@@ -13,11 +13,11 @@ Verify proves a change to the agent. Show makes it plain to a person, fast enoug
 
 ## Pick the job
 
-| The person asks                     | Kind      | The first split                                 |
-| ----------------------------------- | --------- | ----------------------------------------------- |
-| "What will you do?" "Which option?" | `decide`  | `options`, the chosen one named in the decision |
-| "How does this work?"               | `explain` | `steps` in time order, or `parts`               |
-| "Is it done and right?"             | `assure`  | `reasons`, each resting on Verify's evidence    |
+| The person asks                     | Kind      | The first split                                                                                           |
+| ----------------------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| "What will you do?" "Which option?" | `decide`  | `options`, the chosen one named in the decision                                                           |
+| "How does this work?"               | `explain` | `steps` in time order, drawn as a flow; add `"loop": true` when the last step feeds the first. Or `parts` |
+| "Is it done and right?"             | `assure`  | `reasons`, each resting on Verify's evidence                                                              |
 
 ## Write the tree
 
