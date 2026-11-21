@@ -170,19 +170,6 @@ describe("the rules a tree must keep", () => {
     expect(rules(input)).toEqual(["plain", "plain"])
   })
 
-  it("plain: a box may explain its claim in a short plain detail, and the detail is kept", () => {
-    const input = result()
-    input.answer.detail = "A failed load on main used to look new. Now the picture says which it is."
-    input.answer.children[0].detail =
-      "The fresh flag in `composeBlock` was set on every error from the old side of the comparison run."
-    expect(rules(input)).toEqual(["plain"])
-    input.answer.children[0].detail = "The tool saw any error on main and stamped the screen as new."
-    expect(readTree(input, { resolves }).tree).toMatchObject({
-      detail: "A failed load on main used to look new. Now the picture says which it is.",
-      children: [{ detail: "The tool saw any error on main and stamped the screen as new." }, {}, {}],
-    })
-  })
-
   it("weakest support: a verdict lives on evidence, never on a claim", () => {
     const input = result()
     input.answer.verdict = "passed"

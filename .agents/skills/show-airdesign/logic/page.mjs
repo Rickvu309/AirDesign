@@ -30,7 +30,6 @@ function markdownNode(node, indent) {
   const pad = "  ".repeat(indent)
   const verdict = node.verdict ? ` (${verdictWords[node.verdict]})` : ""
   const lines = [`${pad}- **${node.label}.** ${node.claim}${verdict}`]
-  if (node.detail) lines.push(`${pad}  ${node.detail}`)
   if (node.group) lines.push(`${pad}  ${splitLine(node.group)}`)
   for (const piece of node.evidence ?? []) {
     const ref = linked(piece.ref) ? `[${shortRef(piece.ref)}](${piece.ref})` : `\`${piece.ref}\``
@@ -46,7 +45,6 @@ export function toMarkdown(tree) {
   const verdict = tree.verdict ? ` (${verdictWords[tree.verdict]})` : ""
   return [
     `**${kindWords[tree.kind]}.** ${tree.claim}${verdict}`,
-    ...(tree.detail ? ["", tree.detail] : []),
     "",
     `*${tree.question}*`,
     "",
@@ -73,11 +71,9 @@ function evidenceHtml(evidence) {
   return `<div class="refs">${pieces.join("")}</div>`
 }
 
-const detailHtml = (node) => (node.detail ? `<p class="detail">${escape(node.detail)}</p>` : "")
-
 function nodeHtml(node, depth) {
   const badge = depth === 0 ? "" : `<span class="badge">${node.label}</span>`
-  const box = `<div class="box d${String(depth)}">${badge}<p class="claim">${escape(node.claim)}</p>${detailHtml(node)}${chip(node.verdict)}${evidenceHtml(node.evidence)}</div>`
+  const box = `<div class="box d${String(depth)}">${badge}<p class="claim">${escape(node.claim)}</p>${chip(node.verdict)}${evidenceHtml(node.evidence)}</div>`
   const children = node.children
     ? `<div class="kids">${node.children.map((child) => nodeHtml(child, depth + 1)).join("")}</div>`
     : ""
@@ -169,25 +165,21 @@ h1{margin:6px 0 0;text-align:center;font-size:28px;line-height:34px;font-weight:
 .details b{display:inline-block;min-width:24px;font-size:11px;font-weight:700;color:${ink}}
 .details .verdict{margin:4px 0 0 0;display:block;width:max-content}
 .caption{margin:18px 0 0;text-align:center;font-size:13px;color:#666}
-.detail{margin:6px 0 0;font-size:13px;line-height:18px;font-weight:400;color:#555}
-.d0 .detail{font-size:14px;line-height:20px}
-.details .detail{display:block;margin:2px 0 0 24px;font-size:12px;line-height:16px}
-.answer-detail{margin:6px auto 0;max-width:640px;text-align:center;font-size:14px;line-height:20px;color:#555}
 footer{margin-top:22px;display:flex;justify-content:space-between;gap:24px;font-size:12px;color:#777}`
 
 const rough = `<svg width="0" height="0" style="position:absolute"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="2.6"/></filter></svg>`
 
 function stepHtml(node) {
   const details = node.children
-    ? `<ul class="details">${node.children.map((child) => `<li><b>${child.label}</b><span>${escape(child.claim)}</span>${child.detail ? `<span class="detail">${escape(child.detail)}</span>` : ""}${chip(child.verdict)}${evidenceHtml(child.evidence)}</li>`).join("")}</ul>`
+    ? `<ul class="details">${node.children.map((child) => `<li><b>${child.label}</b><span>${escape(child.claim)}</span>${chip(child.verdict)}${evidenceHtml(child.evidence)}</li>`).join("")}</ul>`
     : ""
-  return `<div class="box step"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}</p>${detailHtml(node)}${chip(node.verdict)}${evidenceHtml(node.evidence)}${details}</div>`
+  return `<div class="box step"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}</p>${chip(node.verdict)}${evidenceHtml(node.evidence)}${details}</div>`
 }
 
 function flowHtml(tree) {
   const steps = tree.children.map(stepHtml).join('<i class="arrow"></i>')
   const loop = tree.group.loop ? '<i class="loop-over"></i><i class="loop-back"></i>' : ""
-  return `<p class="answer">${escape(tree.claim)} ${chip(tree.verdict)}</p>${tree.detail ? `<p class="answer-detail">${escape(tree.detail)}</p>` : ""}
+  return `<p class="answer">${escape(tree.claim)} ${chip(tree.verdict)}</p>
 <section class="flow${tree.group.loop ? " loops" : ""}">${loop}${steps}</section>
 <p class="caption">${escape(capital(tree.group.covers))}</p>`
 }

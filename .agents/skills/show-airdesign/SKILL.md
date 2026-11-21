@@ -21,22 +21,18 @@ Verify proves a change to the agent. Show makes it plain to a person, fast enoug
 
 ## Write for the person reading it
 
-The owner reads the boxes, not the code. Each box holds two layers:
-
-- **Claim.** What is true, in one short sentence. The point comes first.
-- **Detail.** What it means for the person, or how it works, in one or two plain sentences. Add it whenever the claim alone would make the owner ask "so what?" or "how?".
-
-Write both the way the `bro` skill restates a message: plain, coherent, like one person talking to another, with no jargon. Then hold them to the `teach` skill's writing: name the thing plainly before you explain it, give the concrete mechanism instead of a label for it, keep one name per thing across the page, and keep each sentence to one or two commas.
+The owner reads the boxes, not the code. Write every question, claim and caption the way you would say it to them across a table, as the `bro` and `teach` skills ask.
 
 - **Use their words.** Say what a person sees or gets: "the picture", "the slide", "the save". Leave code names, file names and flags to the evidence chips.
+- **One idea per box, in one short sentence.** Lead with the point. If a sentence needs a comma to hold two ideas, it is two boxes.
+- **One name per thing.** Pick a word and keep it across the page. A "screen" in one box is not a "state" in the next.
+- **Say the mechanism, not a label for it.** "Main has never had this screen" beats "Absent from the registry".
 - **Read the page aloud.** If a box would make the owner ask "what does that mean?", rewrite it.
 
-| Layer  | Instead of                                         | Write                                                          |
-| ------ | -------------------------------------------------- | -------------------------------------------------------------- |
-| Claim  | New only when main's state list lacks it           | New: main has never had this screen                            |
-| Detail | Absent from the base registry, so the badge is set | Main's own list of screens leaves it out, so it really is new. |
-
-## Write the tree
+| Instead of                                      | Write                                                 |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| Any base that failed to capture was labeled new | Before, any screen main failed to show was called new |
+| New only when main's state list lacks it        | New: main has never had this screen                   |
 
 Write the tree as JSON, then run `logic` on it. The tool refuses a tree that breaks a rule and names the rule, the place and the fix.
 
@@ -50,7 +46,6 @@ Write the tree as JSON, then run `logic` on it. The tool refuses a tree that bre
     "children": [
       {
         "claim": "Before, any screen main failed to show was called new",
-        "detail": "The tool saw any error on main and stamped that screen as new.",
         "evidence": [
           { "ref": ".agents/skills/verify-airdesign/look/fragment.mjs:24", "source": "Observed", "verdict": "passed" }
         ]
@@ -82,7 +77,7 @@ The rules it holds:
 6. **Grounded.** Every leaf has evidence, and every `ref` opens: a repo file, a file at a line it has, or an `https` link.
 7. **Source.** Each piece of evidence is `Proposal` (an idea), `Prototype` (tried under a setup) or `Observed` (the real app, the code, a check). A proposal never passes. An `assure` tree rests only on what ran, with a verdict on every piece. The page tags only `Proposal` and `Prototype`; `Observed` is the default and stays untagged, so a tag always means "not yet run for real".
 8. **Weakest support.** A verdict lives on evidence only. The tool rolls it up, and each claim takes the weakest verdict beneath it. One open leaf leaves the answer open.
-9. **Plain.** The question and each claim stay short (16 words, 22 for the answer, 14 for what a split covers, 28 for a detail) and carry no code: no backticks, file names, paths, camelCase or snake_case.
+9. **Plain.** The question and each claim stay short (16 words, 22 for the answer, 14 for what a split covers) and carry no code: no backticks, file names, paths, camelCase or snake_case.
 
 The tool cannot see whether a split truly has no overlap, whether a claim is true, or whether a plain word is still jargon to the owner. That is your judgment: name the axis and what it covers honestly, and read every claim against its evidence before you show the page.
 
