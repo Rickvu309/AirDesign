@@ -28,12 +28,13 @@ export async function driverFor(repo) {
   const theirs = path.join(repo, skillPath, "look/states.mjs")
   const journeys = path.join(repo, skillPath, "journeys")
   const own = (name) => (kit) => reach(find(name), { ...kit, journeys })
-  if (path.resolve(theirs) === ownStates || !existsSync(theirs)) return own
+  if (path.resolve(theirs) === ownStates || !existsSync(theirs)) return { reach: own, lacks: () => false }
   const registry = await import(pathToFileURL(theirs).href)
-  return (name) =>
-    registry.states?.some((each) => each.name === name)
-      ? (kit) => registry.reach(registry.find(name), { ...kit, journeys })
-      : own(name)
+  const has = (name) => registry.states?.some((each) => each.name === name) === true
+  return {
+    reach: (name) => (has(name) ? (kit) => registry.reach(registry.find(name), { ...kit, journeys }) : own(name)),
+    lacks: (name) => Array.isArray(registry.states) && !has(name),
+  }
 }
 
 async function measure(page, places) {
@@ -113,9 +114,12 @@ export async function captureSide({ browser, side, block, runtime }) {
     page.setDefaultTimeout(20_000)
     const { kit, out } = await runtime.journeyKit({ run: side.run, name: `${block.state}-${side.key}`, page, context })
     try {
-      await side.driver(block.state)({ ...kit, out, repo: side.repo })
+      await side.driver.reach(block.state)({ ...kit, out, repo: side.repo })
     } catch (error) {
-      return { error: String(error?.message ?? error).split("\n")[0] }
+      return {
+        error: String(error?.message ?? error).split("\n")[0],
+        outcome: side.driver.lacks(block.state) ? "new" : "failed",
+      }
     }
     const skipped = await clickEach(page, block.click)
     await settle(page)
@@ -131,7 +135,7 @@ export async function captureSide({ browser, side, block, runtime }) {
       index === 0 || block.callouts[index - 1].target === "element" ? place.box : aimAt(place.box, place.ink ?? null),
     )
     const texts = await textBoxes(page)
-    return { full, frame, boxes, texts, skipped, viewport }
+    return { full, frame, boxes, texts, skipped, viewport, outcome: "captured" }
   } finally {
     await context.close()
   }
@@ -176,13 +180,16 @@ export function composeBlock(block, sides, shots) {
       texts: (shot.texts ?? []).map((box) => relative(box, frame)).filter((box) => box !== null),
     }
   })
-  const fresh = sides.length > 1 && shots[0].error !== undefined
+  const badges = { new: "New in this PR", failed: `Failed on ${sides[0].name}` }
   return {
     warnings,
     block: {
       state: block.state,
       title: block.title,
-      badge: fresh ? "New in this PR" : null,
+      badge:
+        sides.length > 1 && badges[shots[0].outcome]
+          ? { text: badges[shots[0].outcome], outcome: shots[0].outcome }
+          : null,
       width: frame.width,
       height: frame.height,
       callouts: block.callouts,

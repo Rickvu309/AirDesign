@@ -27,6 +27,7 @@ main{display:flex;flex-direction:column;gap:${String(between)}px;padding:${Strin
 article{background:var(--background);border:1px solid var(--line);border-radius:10px;padding:${String(padding)}px}
 h2{margin:0 0 10px;font-size:15px;line-height:20px;font-weight:600;display:flex;gap:8px;align-items:center}
 .badge{font-size:11px;font-weight:600;color:var(--background);background:var(--callout);border-radius:999px;padding:1px 8px}
+.badge.failed{color:var(--muted-foreground);background:none;border:1px dashed var(--muted-foreground)}
 .pair{display:flex;flex-direction:column;gap:10px}.pair.beside{flex-direction:row;justify-content:space-between}
 .label{font-size:11px;line-height:14px;font-weight:600;letter-spacing:.04em;color:var(--muted-foreground);margin-bottom:2px}
 .frame{position:relative}.frame img{position:absolute;border:1px solid var(--line);border-radius:4px;display:block}
@@ -107,7 +108,7 @@ export function blockHtml(block) {
     })
     .join("")
   const reason = block.reason ? `<p class="reason">${escape(block.reason)}</p>` : ""
-  return `<article data-block="${escape(block.state)}"><h2>${escape(block.title)}${block.badge ? `<span class="badge">${escape(block.badge)}</span>` : ""}</h2>
+  return `<article data-block="${escape(block.state)}"><h2>${escape(block.title)}${block.badge ? `<span class="badge ${block.badge.outcome}">${escape(block.badge.text)}</span>` : ""}</h2>
 <div class="pair${shape.sideBySide ? " beside" : ""}">${pair}</div>${reason}${legend ? `<ol>${legend}</ol>` : ""}</article>`
 }
 

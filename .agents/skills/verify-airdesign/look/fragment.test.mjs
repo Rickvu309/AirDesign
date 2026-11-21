@@ -10,7 +10,7 @@ describe("before-after fragment", () => {
       images: ["annotated-1.png"],
       rows: [
         { title: "Agent panel, empty", before: "agent-empty-before.png", after: "agent-empty-after.png" },
-        { title: "Agent | panel [new]", before: null, after: "agent-new-after.png" },
+        { title: "Agent | panel [new]", before: null, beforeOutcome: "new", after: "agent-new-after.png" },
       ],
       link: (file) => `https://example.test/${file}`,
     })
@@ -27,6 +27,20 @@ describe("before-after fragment", () => {
         "",
       ].join("\n"),
     )
+  })
+
+  it("says the base failed when main could not be captured, and never calls it new", () => {
+    const text = fragment({
+      labels,
+      images: [],
+      rows: [
+        { title: "Broken on main", before: null, beforeOutcome: "failed", after: "broken-after.png" },
+        { title: "Old summary", before: null, after: "old-after.png" },
+      ],
+    })
+    expect(text).toContain("| Failed on main | ![this PR: Broken on main](broken-after.png) |")
+    expect(text).toContain("| Failed on main | ![this PR: Old summary](old-after.png) |")
+    expect(text).not.toContain("New in this PR")
   })
 
   it("puts each part of a split image in its own paragraph", () => {
