@@ -76,6 +76,13 @@ describe("a logic page", () => {
       { resolves: () => true },
     ).tree
     expect(toHtml(shared).match(/class="thumb"/g)).toHaveLength(1)
+    shared.children[1].evidence.unshift({
+      ref: "https://example.test/proof.png",
+      source: "Observed",
+      verdict: "passed",
+    })
+    shared.children[1].evidence[1] = { ref: "https://example.test/second.png", source: "Observed", verdict: "passed" }
+    expect(toHtml(shared)).toContain('src="https://example.test/second.png"')
   })
 
   it("marks the chosen option of a decision and greys the options it beat", () => {
@@ -100,6 +107,8 @@ describe("a logic page", () => {
       '<div class="box d1 unbuilt chosen"><span class="badge">B</span><span class="tag">Chosen</span>',
     )
     expect(toMarkdown(plan)).toContain("- **B.** Call it failed unless it is new (chosen)")
+    plan.children[1].detail = "Main's own list of screens decides."
+    expect(toMarkdown(plan)).toContain("(chosen)\n\n  Main's own list of screens decides.")
   })
 
   it("draws a steps split as a flow, loops back when asked, and dashes a step that is not built yet", () => {
@@ -123,6 +132,35 @@ describe("a logic page", () => {
     expect(html.match(/<i class="arrow"><\/i>/g)).toHaveLength(1)
     expect(html).not.toContain('class="tree"')
     expect(html).toContain('<div class="box d1 unbuilt step">')
+    expect(html).toContain("Dashed: not built yet")
+    expect(html).toContain('<p class="kicker">How does an agent hand work to the owner?</p>')
+  })
+
+  it("dashes a sub-point inside a flow step when it is not built yet, so the legend matches what is drawn", () => {
+    const flow = readTree(
+      {
+        kind: "explain",
+        question: "How does an agent hand work to the owner?",
+        answer: {
+          claim: "Show the plan, then prove it",
+          group: { axis: "steps", covers: "one round of work" },
+          children: [
+            { claim: "Show the plan first", evidence: [{ ref: "plan.md", source: "Observed" }] },
+            {
+              claim: "Prove the change with Verify",
+              group: { axis: "parts", covers: "right and good to use" },
+              children: [
+                { claim: "Check it is right", evidence: [{ ref: "a.md", source: "Observed" }] },
+                { claim: "Check it looks right", evidence: [{ ref: "b.png", source: "Proposal" }] },
+              ],
+            },
+          ],
+        },
+      },
+      { resolves: () => true },
+    ).tree
+    const html = toHtml(flow)
+    expect(html).toContain('<li class="unbuilt"><b>B2</b>Check it looks right</li>')
     expect(html).toContain("Dashed: not built yet")
   })
 

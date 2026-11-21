@@ -19,22 +19,16 @@ export function shortRef(ref) {
   return short.length > longestRef ? `…${short.slice(-(longestRef - 1))}` : short
 }
 
-function evidenceOf(tree) {
-  if (tree.evidence) return tree.evidence
-  return (tree.children ?? []).flatMap(evidenceOf)
-}
-
 const splitLine = (group) => `Split by ${group.axis}. Covers ${group.covers}.`
 
 function markdownNode(node, indent) {
   const pad = "  ".repeat(indent)
   const verdict = node.verdict ? ` (${verdictWords[node.verdict]})` : ""
   const lines = [`${pad}- **${node.label}.** ${node.claim}${node.chosen ? " (chosen)" : ""}${verdict}`]
-  if (node.detail) lines.push(`${pad}  ${node.detail}`)
-  if (node.group) lines.push(`${pad}  ${splitLine(node.group)}`)
+  if (node.detail) lines.push("", `${pad}  ${node.detail}`)
+  if (node.group) lines.push("", `${pad}  ${splitLine(node.group)}`)
   for (const piece of node.evidence ?? []) {
     const ref = linked(piece.ref) ? `[${shortRef(piece.ref)}](${piece.ref})` : `\`${piece.ref}\``
-    const verdictWord = piece.verdict ? `, ${piece.verdict}` : ""
     const tag = piece.source === "Observed" ? "" : `${piece.source}: `
     lines.push(`${pad}  - ${tag}${ref}${piece.verdict ? ` (${piece.verdict})` : ""}`)
   }
@@ -69,8 +63,8 @@ const mark = (verdict) => {
 }
 
 function thumbnail(node, images) {
-  const picture = (node.evidence ?? []).find((piece) => imageRef.test(piece.ref))
-  if (picture === undefined || images.shown.has(picture.ref)) return ""
+  const picture = (node.evidence ?? []).find((piece) => imageRef.test(piece.ref) && !images.shown.has(piece.ref))
+  if (picture === undefined) return ""
   images.shown.add(picture.ref)
   const source = images.local[picture.ref] ?? (/^https:\/\//.test(picture.ref) ? picture.ref : null)
   return source === null ? "" : `<img class="thumb" src="${escape(source)}" alt="">`
@@ -117,7 +111,7 @@ function headsHtml(tree) {
 
 function stepHtml(node, images) {
   const points = node.children
-    ? `<ul class="points">${node.children.map((child) => `<li><b>${child.label}</b>${escape(child.claim)}${mark(child.verdict)}</li>`).join("")}</ul>`
+    ? `<ul class="points">${node.children.map((child) => `<li${unbuilt(child) ? ' class="unbuilt"' : ""}><b>${child.label}</b>${escape(child.claim)}${mark(child.verdict)}</li>`).join("")}</ul>`
     : ""
   return `<div class="${boxClass(node, 1, false)} step"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}${mark(node.verdict)}</p>${thumbnail(node, images)}${points}</div>`
 }
@@ -133,7 +127,6 @@ const style = `*{box-sizing:border-box}html,body{margin:0;background:#fff}
 body{width:${String(pageWidth)}px;font-family:"Inter Variable",system-ui,sans-serif;color:${ink};-webkit-font-smoothing:antialiased}
 main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .kicker{font-size:13px;line-height:18px;color:#6b6b6b}
-.kicker b{font-weight:650;letter-spacing:.12em;font-size:11px;margin-right:8px;color:#444}
 .heads{display:flex;margin-top:20px;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:#8a8a8a}
 .head{flex:none}
 .tree{display:flex;margin-top:8px}
@@ -169,6 +162,7 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .loop-over::after{content:"";position:absolute;left:-8px;bottom:-2px;border:6.5px solid transparent;border-top:11px solid ${ink};border-bottom:0}
 .loop-back{position:absolute;top:-2px;right:-28px;width:28px;height:50%;border-right:2.2px solid ${ink};border-bottom:2.2px solid ${ink};border-radius:0 0 10px 0;filter:url(#rough)}
 .points{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:17px;color:#444}
+.points li.unbuilt{border:1.6px dashed #9a9a9a;border-radius:4px;padding:2px 6px}
 .points b{display:inline-block;min-width:22px;font-size:11px;color:${ink}}
 .legend{margin-top:16px;font-size:12px;color:#8a8a8a}`
 
@@ -186,7 +180,7 @@ export function toHtml(tree, css = "", local = {}) {
       : `${headsHtml(tree)}<section class="tree">${nodeHtml(tree, 0, images)}</section>`
   const legend = anyUnbuilt(tree) ? '<p class="legend">Dashed: not built yet</p>' : ""
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}${style}</style></head><body>${rough}<main>
-<p class="kicker"><b>${kindWords[tree.kind].toUpperCase()}</b>${escape(tree.question)}</p>
+<p class="kicker">${escape(tree.question)}</p>
 ${body}
 ${legend}
 </main></body></html>`
