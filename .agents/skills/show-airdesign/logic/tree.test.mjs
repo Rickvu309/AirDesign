@@ -73,6 +73,18 @@ describe("the rules a tree must keep", () => {
     expect(rules({ kind: "guess", question: "", answer: null })).toEqual(["one-question"])
   })
 
+  it("one question: a topic or a statement is refused, since the page answers what the owner asked", () => {
+    const { refusals } = readTree(result({ question: "The new outcome of each capture" }), { resolves })
+    expect(refusals).toEqual([
+      {
+        rule: "one-question",
+        at: "question",
+        message:
+          'the question is the one the owner asked, in their words, and ends in "?"; this is a topic or a statement',
+      },
+    ])
+  })
+
   it("sentence: a claim is a sentence, not a topic", () => {
     const input = result()
     input.answer.children[1].claim = "Outcomes"

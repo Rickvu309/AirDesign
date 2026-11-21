@@ -21,6 +21,8 @@ The tool writes two layers from one tree. The **picture** is for skimming: the q
 | "How does this work?"               | `explain` | `steps` in time order, drawn as a flow; add `"loop": true` when the last step feeds the first. Or `parts` |
 | "Is it done and right?"             | `assure`  | `reasons`, each resting on Verify's evidence                                                              |
 
+Start from the question the owner asked, in their own words. "Should I add CI to Verify?" stays that question; never swap it for a title of what you built, such as "The picture check". The answer box then replies to it directly, so the owner reads their question and your answer and can steer.
+
 ## Write for the person reading it
 
 The owner skims the picture and reads the Markdown, never the code. Each node holds two layers:
@@ -76,7 +78,7 @@ It writes `tree.md` for a chat or a PR body, `tree.html`, and `tree.png` for `ve
 
 The rules it holds:
 
-1. **One question.** `kind`, `question` and `answer` are all there.
+1. **One question.** `kind`, `question` and `answer` are all there, and the question ends in "?".
 2. **Sentence.** Every claim is a sentence of at least three words, never a topic.
 3. **Shape.** A node holds children or evidence, never both. A branch holds two to four children, at most three levels below the answer.
 4. **Vertical.** The first split fits the kind: `decide` by options, `explain` by steps or parts, `assure` by reasons. A `decide` answer marks exactly one option `"chosen": true`, and nothing else can be chosen.

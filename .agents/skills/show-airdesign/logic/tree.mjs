@@ -150,6 +150,12 @@ export function readTree(input, { resolves }) {
     refuse("one-question", "answer", "a tree needs a kind (decide, explain or assure), one question and one answer")
     return { refusals, tree: null }
   }
+  if (!input.question.trim().endsWith("?"))
+    refuse(
+      "one-question",
+      "question",
+      'the question is the one the owner asked, in their words, and ends in "?"; this is a topic or a statement',
+    )
   const hard = unplain(input.question, longest.question)
   if (hard) refuse("plain", "question", hard)
   if (Array.isArray(input.answer.evidence) && !Array.isArray(input.answer.children))
