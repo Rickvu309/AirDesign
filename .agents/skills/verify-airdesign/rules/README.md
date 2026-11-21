@@ -1,9 +1,4 @@
----
-name: verify-airdesign-formal
-description: "Check AirDesign's TLA+ specs under specs/ and their replays against the code they describe: run one spec or all with TLC, read a counterexample step by step, tell a code bug from a model error, and keep each spec in step with the code. Use when a change touches edit order, runs, undo, person undo, a Delete of several elements and its undo, undo straight after typing, a design panel change, a reset field and how fields fold, Undo or Redo before the server answers, slides and elements, stored slide groups, the import index, offline replay, a lost answer to a person's command, two tabs or two builds sharing one deck in one browser, the editor following the network and its save status, agent turns, two agents on one account, a run's slide commands and their Stop and Undo, slide sections, Aira stop, Aira's loop in the browser, usage, OAuth or deck ownership, or when a spec or replay fails."
----
-
-# Verify AirDesign formally
+# Holds: check a rule in any order
 
 Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
 
