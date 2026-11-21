@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign
-description: "Prove an AirDesign change is right before you hand it over. Drive the real app (apps/web with the real apps/api on its own Postgres) the way a user does and read what saved, attack the bad moment, check the TLA+ rules and their replays, prove a PowerPoint export against its original, judge each screen as a design, and time the editor. Use for any change a person sees or the API answers, and when a change touches edit order, undo, saving and the save status, offline replay, two tabs, agent turns and runs, slides and elements, the import index, usage, OAuth or deck ownership, or when a spec or replay fails."
+description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under the run's ~/tmp/verify-airdesign/ folder), and look at it as a design: ranked design faults, the real page beside its design screen, and a contact sheet of every state. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
 ---
 
 # Verify AirDesign
@@ -13,31 +13,14 @@ The helper is `.agents/skills/verify-airdesign/bin/verify-airdesign.mjs` (Claude
 V=.agents/skills/verify-airdesign/bin/verify-airdesign.mjs
 ```
 
-Verify answers one question before you hand work over: is my work right? Name what would prove it wrong, run that, and fix what you find. Every check ends in passed, failed or open, with the file that shows it.
-
-```text
-Is my work right?
-├─ A. Correct: does it do the right thing?
-│   ├─ Works    use it like a person, read what saved       Works
-│   ├─ Holds    survives bad timing and any event order     Holds, rules/README.md
-│   └─ Exports  the PowerPoint comes out lossless           Exports
-└─ B. Good to use: would a person want it?
-    ├─ Looks    the screen matches its design, no faults    Looks
-    └─ Fast     no slower than main                         Fast
-```
-
-Under both sit the private app (Run the app) and `prove`, which picks the checks a diff needs (Pick the proof). To show the result to a person, use `show-airdesign`.
-
-## Run the app
-
-### Surfaces
+## Surfaces
 
 - `apps/web`, the product UI. Primary. Home `/`, Trash `/trash`, a deck `/deck/<id>`. Designed screens at `/screens/<id>-<name>` are static sample pages, not the app.
 - `apps/api`, the server. Reached through the same origin for every path in its own route table (`routes` in `apps/api/src/server.ts`), so the browser sends its session cookie the way production does.
 - `apps/site`, marketing and the sign-in pages. Served on a second origin of the same stack (`siteOrigin` in the launch line, `kit.siteOrigin`): its sign-in paths go to the API the way the site's Worker sends them, and its pages come from a build made with a placeholder app address that the front server swaps for the stack's app origin. The app's signed-out redirect goes to `https://airdesign.app/sign-in`, built into `apps/web`; the journey kit answers every `airdesign.app` address with a stand-in page so no journey reaches production, and `kit.useSite()` sends `https://airdesign.app/sign-in` to the site origin instead. See `features/sign-in.md`.
 - `packages/mcp`, the agent tools, mounted by the API at `/mcp`. Secondary. Its tests in `apps/api/src/mcp.test.ts` are the driver today.
 
-### Launch
+## Launch
 
 ```sh
 $V launch
@@ -65,7 +48,7 @@ Keep the `run`. Every other command takes it. Use `$V launch --no-build` only wh
 
 Needs PostgreSQL 18 at `/usr/lib/postgresql/18/bin`, `~/.local/pgsql-18/...`, or `AIRDESIGN_POSTGRES_BIN`, and Playwright's Chromium (`pnpm exec playwright install chromium` once per machine). Run `pnpm install` first in a fresh worktree. On a machine where Chromium's system libraries live in `~/.cache/chromium-libs/root/usr/lib/x86_64-linux-gnu`, every command here, `pnpm test:journeys`, `pnpm test:browser` and `$V suites` add that folder to `LD_LIBRARY_PATH` themselves; set nothing.
 
-### Doctor
+## Doctor
 
 ```sh
 $V doctor <run>
@@ -82,23 +65,7 @@ Doctor also prints `load`, the machine's one-minute load average on its cores. A
 
 Run doctor first whenever anything looks off. Never drive an instance whose doctor fails or that another run started. Gate each drive on it: `$V doctor <run> >/dev/null && $V journey <run> <name>`.
 
-### Cleanup
-
-```sh
-$V stop <run>
-```
-
-Stops only this run: it sends SIGTERM to the recorded `serve` PID after checking its command line names this run, which stops the API, the front server and Postgres. If Postgres outlives it, it signals the recorded postmaster PID after checking its command line names this run's data dir. It then removes the run's cluster dir and scratch dir (`~/tmp/verify-airdesign-scratch/<run>/`). It never kills by name and never touches a process another run or agent started. Before it removes the scratch dir it copies `stack.log` into the evidence dir. It prints `left: []` when nothing of the run is alive and `evidenceKept: true`.
-
-Run `stop` after every run, passed or failed. A failed `launch` prints the run id in its log path; stop that run too. A run killed with its agent is cleaned up anyway: each `launch` first runs `stop` on every run whose `serve` process is gone, and removes run folders with no `state.json` after a day. It prints what it cleaned on stderr as `{"leftover": ...}` and never touches a run whose `serve` is alive.
-
-### Isolation and load
-
-Each run is isolated, and the machine is shared: read [isolation-and-load.md](isolation-and-load.md) before you run anything heavy.
-
-## A. Correct
-
-### Works
+## Drive
 
 Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. Run one with:
 
@@ -143,34 +110,7 @@ $V api <run> open '{"deck":"<id>"}' --cookie '...'
 
 `api` takes a `deckRoutes` key (`open`, `commit`, `watch`, `list`, `rename`, `trash`, `restore`, `delete`, `originalUpload`, `originalDone`, `original`) and saves the answer under the evidence dir.
 
-#### Saved proof
-
-Everything lands in `~/tmp/verify-airdesign/<run>/` and survives `stop`:
-
-- `proof.md`: the commit, the origin, one line per `note`, each journey's PASSED or FAILED, and what `stop` stopped.
-- `<journey>-<ms>/NN-<label>.png` and `.aria.txt`: the screen after each step.
-- `<journey>-<ms>/NN-api-<path>.json` and `api-<route>-<ms>.json`: request and answer bodies.
-
-Proof standards:
-
-- Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
-- Capture the action and the result, not only the last screen.
-- Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
-- The stack has a few stand-ins, each behind a production seam. [stand-ins.md](stand-ins.md) lists them.
-- Put the run id, the journey and the evidence path in your PR or review comment.
-
-### Holds
-
-Attack the moment your change could break: a lost or late server answer, a reload at the wrong step, a second tab. Hold, drop or fail a server answer in a journey with the kit's `holdReply`, `dropReply` and `failReply` (see Works); the stand-ins the stack already uses are in [stand-ins.md](stand-ins.md). For a rule about order (saves, undo, runs, tabs, the save status), check its TLA+ model and replay: [rules/README.md](rules/README.md) has the commands, how to read a counterexample, and every check's coverage.
-
-### Exports
-
-- Prove an export against its original with `node scripts/deck-diff.mjs original.pptx export.pptx --allow <part>`: it counts the byte-identical parts, shows each changed part's XML lines with their shape paths, and exits 1 when a part outside `--allow` changed, was added or removed, or the part order moved. `--json` prints the same as data. Run `pnpm build` first.
-- Score a painted slide against its reference image with `node scripts/slide-diff.mjs reference.png painted.png [--heatmap out.png] [--json]`: it prints the mean similarity, the worst 32 by 32 tile with its position, and the share of changed pixels, and exits 1 when the slide does not match. The heatmap tints each region red where the paint differs and boxes the worst tile. The painted image is scaled to the reference's size first.
-
-## B. Good to use
-
-### Looks
+## Look at it
 
 For feedback about scale, alignment, names, or button borders, follow [the design review](look/design-review.md).
 
@@ -186,13 +126,43 @@ For every change a person sees:
 
 Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, whether words are true for their situation, or whether a flow makes sense; only your reading of the images can. `look/README.md` lists what each detector reads and cannot see.
 
-### Fast
+## Show it to a person
 
-`$V bench` times what a person feels in the editor (Add text box to the first letter painted, frame time while dragging, reopening a 41-slide deck, importing decks) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
+Before / after images, callouts on one run, publishing to the `proof` release and PR comments are Show's job: follow [show-airdesign's annotate.md](../show-airdesign/annotate.md). The commands stay here in `$V`.
 
-[agent-bench.md](agent-bench.md): run Aira’s deck tasks by hand, never in checks.
+## Saved proof
 
-## Pick the proof
+Everything lands in `~/tmp/verify-airdesign/<run>/` and survives `stop`:
+
+- `proof.md`: the commit, the origin, one line per `note`, each journey's PASSED or FAILED, and what `stop` stopped.
+- `<journey>-<ms>/NN-<label>.png` and `.aria.txt`: the screen after each step.
+- `<journey>-<ms>/NN-api-<path>.json` and `api-<route>-<ms>.json`: request and answer bodies.
+
+Proof standards:
+
+- Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
+- Capture the action and the result, not only the last screen.
+- Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
+- The stack has a few stand-ins, each behind a production seam. [stand-ins.md](stand-ins.md) lists them.
+- Prove an export against its original with `node scripts/deck-diff.mjs original.pptx export.pptx --allow <part>`: it counts the byte-identical parts, shows each changed part's XML lines with their shape paths, and exits 1 when a part outside `--allow` changed, was added or removed, or the part order moved. `--json` prints the same as data. Run `pnpm build` first.
+- Score a painted slide against its reference image with `node scripts/slide-diff.mjs reference.png painted.png [--heatmap out.png] [--json]`: it prints the mean similarity, the worst 32 by 32 tile with its position, and the share of changed pixels, and exits 1 when the slide does not match. The heatmap tints each region red where the paint differs and boxes the worst tile. The painted image is scaled to the reference's size first.
+- Put the run id, the journey and the evidence path in your PR or review comment.
+
+## Cleanup
+
+```sh
+$V stop <run>
+```
+
+Stops only this run: it sends SIGTERM to the recorded `serve` PID after checking its command line names this run, which stops the API, the front server and Postgres. If Postgres outlives it, it signals the recorded postmaster PID after checking its command line names this run's data dir. It then removes the run's cluster dir and scratch dir (`~/tmp/verify-airdesign-scratch/<run>/`). It never kills by name and never touches a process another run or agent started. Before it removes the scratch dir it copies `stack.log` into the evidence dir. It prints `left: []` when nothing of the run is alive and `evidenceKept: true`.
+
+Run `stop` after every run, passed or failed. A failed `launch` prints the run id in its log path; stop that run too. A run killed with its agent is cleaned up anyway: each `launch` first runs `stop` on every run whose `serve` process is gone, and removes run folders with no `state.json` after a day. It prints what it cleaned on stderr as `{"leftover": ...}` and never touches a run whose `serve` is alive.
+
+## Isolation and load
+
+Each run is isolated, and the machine is shared: read [isolation-and-load.md](isolation-and-load.md) before you run anything heavy.
+
+## Prove
 
 `pnpm gate` and `pnpm check` skip the browser tests on this machine, and `ci` runs them. Before `pnpm land`, run the proof your diff needs:
 
@@ -203,9 +173,11 @@ pnpm prove --plan     # print the plan as JSON and run nothing
 
 It runs the unit tests the changed sources reach, the script tests that import a changed script, the TLA+ specs whose covered code moved and their replays, a changed browser spec five times under a CPU limit, and `sheet` on the states of each touched screen area. Quote its `proof.md` in the PR's `## Proof`. [prove-and-suites.md](prove-and-suites.md) has the rules, the flags, the lanes, and `$V suites` for the whole suites `ci` runs.
 
-## Show it to a person
+## Bench
 
-Before / after images, callouts on one run, publishing to the `proof` release and PR comments are Show's job: follow [show-airdesign's annotate.md](../show-airdesign/annotate.md). The commands stay here in `$V`.
+`$V bench` times what a person feels in the editor (Add text box to the first letter painted, frame time while dragging, reopening a 41-slide deck, importing decks) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
+
+[agent-bench.md](agent-bench.md): run Aira’s deck tasks by hand, never in checks.
 
 ## Feature map
 
