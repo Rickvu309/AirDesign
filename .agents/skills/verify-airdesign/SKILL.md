@@ -77,17 +77,7 @@ Every file in `journeys/` is a shipped journey, listed in `tests/journeys/journe
 
 A failed journey saves a `failure` screenshot and writes the whole error, with the locator and the call log, to `failure.txt` in its evidence dir; `proof.md` names that file.
 
-## Every journey after every merge
-
-The `journeys` workflow runs every journey on every push to `main`, after the merge, as its own job. It does not run on pull requests and blocks no merge. One command runs the same suite locally from the repo root:
-
-```sh
-pnpm test:journeys
-```
-
-It builds `@airdesign/api` and `apps/web` once, launches one stack with `$V launch --no-build` in Playwright's global setup, runs every journey listed in `tests/journeys/journeys.spec.ts` against that one stack (each signs in its own account), and stops the stack in teardown. Journeys run in parallel, except the `recorded Aira` group: the stack has one queue of recorded model streams, so the journeys that call `kit.aira()` run one after another. Put a new one in that group. Evidence lands under `~/tmp/verify-airdesign/<run>/` as usual. No test retries.
-
-When it fails on `main`, the workflow opens the issue `journey failed on main` (or comments on the open one) with the failed journey, the commit and the run link, through `scripts/red-main.sh`. The next passing push closes it. A known bug is a journey marked `test.fail()` in the spec; `scripts/metrics.mjs` counts it in `known-failures`, and the fix removes the mark.
+For the full suite, CI sharding and recorded Aira grouping, see [journey suite](journey-suite.md).
 
 To prove something no journey covers, write a journey that exports `default async function drive(kit)`: a new file there, or a scratch file anywhere, run by its path (`$V journey <run> ~/tmp/seam.mjs`). The kit gives you:
 
@@ -95,7 +85,10 @@ To prove something no journey covers, write a journey that exports `default asyn
 - `signIn(email?)`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session and account cookies on the browser, as production does. Returns `{ email, cookie }`. An earlier `email` signs that account in again.
 - `expect`: Playwright's, for a scratch journey outside the repo, where `@playwright/test` does not resolve.
 - `post(route, body, cookie, headers)`: POST to a catalog route entry; saves the request and answer as JSON evidence. An NDJSON answer lands in `json.lines`, an event stream in `json.events`.
-- `deckRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`: the catalog tables.
+- `deckRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`, `fontRoutes`: the catalog tables.
+- `holdReply(route, { afterServer, forMs, search }?)`: returns `{ release, received }`. Await `release()` to let requests through and remove the hold. The runner releases outstanding holds on exit. Use `afterServer: true` and await `received` to stop after the server answers. Set `forMs` to open the hold that many milliseconds after the first match, or `search` to match one query string.
+- `dropReply(route)`: sends the first request to the server and drops its reply, then blocks retries. Await `dropped` for `{ request, response }` and `restore()` to allow requests again.
+- `failReply(route, { status, json }?)`: answers with a connection failure or the given HTTP status and JSON. Returns a `restore()` function.
 - `aira(scripts)`: the recorded model streams the next Aira calls play, one per call, the last one repeating. See `features/aira-turn.md`.
 - `mail(to)`: the last mail the stack sent to that address, `{ to, subject, text, html }`, also saved as `mail.json` in the evidence dir.
 - `mailParts(to)`: that mail with its `code` and its `link`, the link already pointing at the stack's app origin so a page can open it.

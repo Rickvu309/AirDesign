@@ -1,7 +1,7 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
 
-export default async function drive({ repo, page, context, signIn, post, capture, note, deckRoutes }) {
+export default async function drive({ repo, page, context, signIn, post, capture, note, deckRoutes, holdReply }) {
   const { cookie } = await signIn()
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/clean.pptx"))
@@ -25,22 +25,13 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await expect.poll(journal).toEqual([])
   note("typed Kept and reloaded in the same breath: the slide and the server read Kept, and the journal is empty")
 
-  let release = () => undefined
-  const held = new Promise((resolve) => {
-    release = resolve
-  })
-  const opening = (url) => url.pathname === deckRoutes.open.path
-  await page.route(opening, async (route) => {
-    await held
-    await route.continue().catch(() => undefined)
-  })
+  const { release } = await holdReply(deckRoutes.open)
   await page.reload()
   await expect(text).toHaveText("Kept")
   await expect(page.locator(".thin-page")).not.toHaveAttribute("data-deck-ready", /.+/)
   await capture("device-paint")
-  release()
+  await release()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
-  await page.unroute(opening)
   note("with the server's open held, the device copy painted Kept, and the deck was ready once the open landed")
 
   await text.dblclick()

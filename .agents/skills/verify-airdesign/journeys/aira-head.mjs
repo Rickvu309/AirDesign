@@ -14,6 +14,7 @@ export default async function drive({
   airaRoutes,
   countryHeader,
   aira,
+  holdReply,
 }) {
   const { cookie } = await signIn()
   await page.goto("/")
@@ -45,30 +46,19 @@ export default async function drive({
 
   const base = (await post(deckRoutes.open, { deck }, cookie)).json.revision
   aira([{ name: "edit.sse", fill: { deck, base: String(base), node: "256.2" } }, { name: "edited.sse" }])
-  let release = () => undefined
-  const gate = new Promise((resolve) => {
-    release = resolve
-  })
-  await page.route(
-    (url) => url.pathname === mcpRoutes.mcp.path,
-    async (route) => {
-      await gate
-      await route.continue()
-    },
-  )
+  const { release } = await holdReply(mcpRoutes.mcp)
   await composer.fill("Change the title to Hello from Aira")
   await page.keyboard.press("Enter")
   await expect(log.locator('[data-step-mark="progress"]')).toBeVisible()
   await side.getByRole("button", { name: "Stop" }).click()
   await capture("stopping")
-  release()
+  await release()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(composer).toBeEditable()
   await expect(log.getByText("Stopped editing slides", { exact: true })).toBeVisible()
   await expect(editor).toHaveText("Hello")
   await expect(log.getByText("The title now reads Hello from Aira.")).toHaveCount(0)
   await capture("stopped")
-  await page.unroute((url) => url.pathname === mcpRoutes.mcp.path)
   const stop = await post(airaRoutes.stop, { ask: "00000000-0000-4000-8000-000000000000" }, cookie)
   expect(stop.status).toBe(200)
   const refused = await post(airaRoutes.stop, { ask: "not an id" }, cookie)

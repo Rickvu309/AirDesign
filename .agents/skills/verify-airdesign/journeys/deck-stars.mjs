@@ -2,7 +2,20 @@ import path from "node:path"
 import { expect } from "@playwright/test"
 
 export default async function drive(kit) {
-  const { repo, page, context, signIn, post, mailParts, capture, note, deckRoutes, signInRoutes } = kit
+  const {
+    repo,
+    page,
+    context,
+    signIn,
+    post,
+    mailParts,
+    capture,
+    note,
+    deckRoutes,
+    signInRoutes,
+    holdReply,
+    failReply,
+  } = kit
   const { cookie, email } = await signIn()
   note(`signed in as ${email} through the emailed code`)
   await page.goto("/")
@@ -31,20 +44,13 @@ export default async function drive(kit) {
   await expect(starredLink).toBeVisible()
   note("after a reload the deck is still under Starred")
 
-  let release = () => {}
-  const held = new Promise((resolve) => {
-    release = resolve
-  })
-  const starPath = (url) => url.pathname === deckRoutes.star.path
-  await page.route(starPath, async (route) => {
-    await held
-    await route.abort()
-  })
+  const restoreStar = await failReply(deckRoutes.star)
+  const { release } = await holdReply(deckRoutes.star)
   await page.getByRole("button", { name: "Remove star from clean" }).click()
   await expect(starred).toContainText("Star a deck to keep it here.")
   await capture("unstar-held")
   expect(await serverStar()).toBe(true)
-  release()
+  await release()
   await page.reload()
   await expect(starred).toContainText("Star a deck to keep it here.")
   expect(await serverStar()).toBe(true)
@@ -52,7 +58,7 @@ export default async function drive(kit) {
   note(
     "Remove star while the send was held, then failed: Home showed no star at once and after a reload; the server still said starred",
   )
-  await page.unroute(starPath)
+  await restoreStar()
   await page.reload()
   await expect.poll(() => serverStar()).toBe(false)
   note(`after the network came back, a reload sent the queued removal: ${deckRoutes.list.path} says starred: false`)

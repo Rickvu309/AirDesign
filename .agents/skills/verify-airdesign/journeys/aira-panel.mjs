@@ -17,7 +17,7 @@ function lastText(register) {
 }
 
 export default async function drive(kit) {
-  const { repo, page, signIn, post, capture, note, deckRoutes, mcpRoutes, aira } = kit
+  const { repo, page, signIn, post, capture, note, deckRoutes, mcpRoutes, aira, holdReply, failReply } = kit
   const { cookie, email } = await signIn()
   note(`signed in as ${email} through the emailed code`)
   await page.goto("/")
@@ -38,17 +38,7 @@ export default async function drive(kit) {
   note(`imported clean.pptx as deck ${deck} at revision ${String(base)}; the Agent panel shows the Ask Aira composer`)
 
   aira([{ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" }])
-  let open = () => undefined
-  const gate = new Promise((resolve) => {
-    open = resolve
-  })
-  await page.route(
-    (url) => url.pathname === mcpRoutes.mcp.path,
-    async (route) => {
-      await gate
-      await route.continue()
-    },
-  )
+  const { release } = await holdReply(mcpRoutes.mcp)
   await composer.fill(asked)
   await capture("typed")
   await page.keyboard.press("Enter")
@@ -62,7 +52,7 @@ export default async function drive(kit) {
     "typed the ask and pressed Enter; the reply streamed and the Editing slides step waits on /mcp with Stop showing",
   )
 
-  open()
+  await release()
   await expect(editor).toHaveText("Hello from Aira")
   await expect(log.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
   await expect(log.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
@@ -80,15 +70,14 @@ export default async function drive(kit) {
   note(`the usage readout reads: ${(await usage.innerText()).replace(/\s+/g, " ")}`)
   await side.getByRole("button", { name: "Weekly usage" }).click()
 
-  const undoing = `**${deckRoutes.undo.path}`
-  await page.route(undoing, (route) => route.abort())
+  const restoreUndo = await failReply(deckRoutes.undo)
   await side.getByRole("button", { name: undoCopy.undo }).click()
   await expect(side.getByText(airaCopy.undoFailed, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: undoCopy.undo })).toBeEnabled()
   await expect(editor).toHaveText("Hello from Aira")
   await capture("undo-failed")
   note("an Undo that could not reach the server says so, keeps Aira's change on the slide, and offers Undo again")
-  await page.unroute(undoing)
+  await restoreUndo()
 
   await side.getByRole("button", { name: undoCopy.undo }).click()
   await expect(editor).toHaveText("Hello")

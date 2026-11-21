@@ -3,13 +3,14 @@ import { pathToFileURL } from "node:url"
 import { test, type BrowserContext, type Page } from "@playwright/test"
 
 type Kit = { readonly capture: (label: string) => Promise<string> }
+type Journey = (kit: Kit) => Promise<void>
 type Helper = {
   readonly journeyKit: (given: {
     run: string
     name: string
     page: Page
     context: BrowserContext
-  }) => Promise<{ kit: Kit; out: string }>
+  }) => Promise<{ kit: Kit; out: string; runJourney: (journey: Journey) => Promise<void> }>
   readonly journeyFile: (name: string) => string
   readonly recordJourney: (run: string, name: string, passed: boolean, out: string) => void
 }
@@ -21,12 +22,12 @@ test.use({ baseURL: process.env.VERIFY_AIRDESIGN_ORIGIN })
 
 async function drive(name: string, page: Page, context: BrowserContext): Promise<void> {
   const { journeyKit, journeyFile, recordJourney } = (await import(pathToFileURL(helperFile).href)) as Helper
-  const { kit, out } = await journeyKit({ run, name, page, context })
+  const { kit, out, runJourney } = await journeyKit({ run, name, page, context })
   const { default: journey } = (await import(pathToFileURL(journeyFile(name)).href)) as {
-    default: (given: Kit) => Promise<void>
+    default: Journey
   }
   try {
-    await journey(kit)
+    await runJourney(journey)
     recordJourney(run, name, true, out)
   } catch (error) {
     await kit.capture("failure").catch(() => undefined)
