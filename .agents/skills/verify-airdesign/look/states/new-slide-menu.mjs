@@ -8,7 +8,7 @@ async function drive(kit) {
   await newBlankDeck(kit.page)
   await expect(kit.page.locator("[data-slide-entry]")).toHaveCount(1)
   await kit.page.getByRole("button", { name: "Choose a layout for the new slide" }).click()
-  await expect(kit.page.getByRole("menuitem")).toHaveCount(6)
+  await expect(kit.page.getByRole("menuitem")).toHaveCount(7)
 }
 
 export default { name: "new-slide-menu", design: editor, drive }
