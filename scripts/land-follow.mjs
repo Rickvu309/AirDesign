@@ -1,4 +1,4 @@
-import { confirmFreshRaces, freshRunVerdict, takeFreshRun } from "./fresh-run.mjs"
+import { confirmFreshRaces, failedTwice, freshRunVerdict, takeFreshRun } from "./fresh-run.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { ciFailureLines } from "./land-report.mjs"
 import { mainGreenComment, mainRedLine, mainsFault } from "./main-red.mjs"
@@ -129,11 +129,19 @@ export const followPull = async ({
     if (failure === undefined) return false
     const verdict = freshRunVerdict({ gh, repository, number, head: pull.head, jobs: failure.jobs })
     if (!verdict.take) {
-      say(`follow: no fresh run: ${verdict.why}.${verdict.owned ? ` ${forceTheGap}` : ""}`)
+      const again =
+        verdict.after !== undefined && failure.run.id !== verdict.after
+          ? failedTwice({ gh, repository, after: verdict.after, jobs: failure.jobs })
+          : []
+      if (again.length > 0)
+        say(
+          `follow: ${again.length} ${again.length === 1 ? "test" : "tests"} failed twice on this head ${pull.head.slice(0, 7)}, in the first run and the fresh run, so this change most likely causes ${again.length === 1 ? "it" : "them"}. No race is recorded. Fix: ${again.map((test) => `${test.file}: ${test.name}`).join("; ")}`,
+        )
+      else say(`follow: no fresh run: ${verdict.why}.${verdict.owned ? ` ${forceTheGap}` : ""}`)
       return false
     }
     say(
-      `follow: ci failed only in tests this diff cannot reach. Taking the one fresh run for head ${pull.head.slice(0, 7)}.`,
+      `follow: ci failed in tests this pull request does not edit. Taking the one fresh run for head ${pull.head.slice(0, 7)}.`,
     )
     const fault = await takeFreshRun({
       gh,

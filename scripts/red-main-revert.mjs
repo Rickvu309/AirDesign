@@ -303,7 +303,7 @@ const followFailedRevert = ({ repository, io, event, target, number, head }) => 
   }
   const { jobs, warnings = [] } = io.jobsOf(event)
   if (warnings.length > 0) return stop(warnings[0])
-  const verdict = freshRunVerdict({ gh: io.gh, repository, number, head, jobs })
+  const verdict = freshRunVerdict({ gh: io.gh, repository, number, head, jobs, byMap: true })
   if (!verdict.take) {
     if (verdict.after === event.id) return { failed: false }
     return stop(verdict.why)
@@ -312,7 +312,7 @@ const followFailedRevert = ({ repository, io, event, target, number, head }) => 
   const { tests } = verdict
   const races = recordRaces({ gh: io.gh, repository, run: event, head, tests, jobs })
   if (races.why !== undefined) return stop(races.why)
-  const body = freshRunComment({ repository, run: event, head, tests, queue: false, races: races.urls })
+  const body = freshRunComment({ repository, run: event, head, tests, queue: false, races: races.urls, byMap: true })
   const fault =
     postFreshRun({ gh: io.gh, repository, number, body }) ?? reopenPull({ gh: io.owner, repository, number })
   if (fault !== undefined) return stop(fault)

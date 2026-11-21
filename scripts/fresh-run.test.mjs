@@ -12,11 +12,24 @@ const journeysLog = [
   "2026-11-19T03:47:39.6830673Z     Error: expect(locator).toBeVisible() failed",
 ].join("\n")
 const browserJob = { name: "check (browser 2/4)", log: browserLog }
+const appFile = "apps/web/src/editor/save.ts"
 
 same(
-  "a change to app code reaches a browser job even when it leaves the failed file alone",
-  outsideTheDiff({ jobs: [browserJob], files: ["apps/web/src/editor/save.ts"] }).outside,
+  "a browser failure is outside the diff when an app change leaves the tests alone",
+  outsideTheDiff({ jobs: [browserJob], files: [appFile] }).outside,
+  true,
+)
+same(
+  "the red-main bot still lets the change map say an app change reaches a browser job",
+  outsideTheDiff({ jobs: [browserJob], files: [appFile], byMap: true }).outside,
   false,
+)
+same(
+  "a pull request that edits the failed test file owns the failure with or without the map",
+  [false, true].map(
+    (byMap) => outsideTheDiff({ jobs: [browserJob], files: ["tests/browser/save-status.spec.ts"], byMap }).owned,
+  ),
+  [true, true],
 )
 same(
   "a journeys job is outside the diff without a failed: line",
@@ -75,6 +88,7 @@ const pullAnswer = ({
   entry = null,
   removal,
   queue = true,
+  prHead = head,
 } = {}) =>
   JSON.stringify({
     data: {
@@ -83,7 +97,7 @@ const pullAnswer = ({
           state: merged ? "MERGED" : state,
           merged,
           baseRefName: "main",
-          headRefOid: head,
+          headRefOid: prHead,
           mergeable: "MERGEABLE",
           mergeStateStatus: "CLEAN",
           isInMergeQueue: entry !== null,
@@ -107,12 +121,15 @@ const prRun = { id: 77, event: "pull_request", branch: "fix", head, attempt: 1, 
 const freshRun = { ...prRun, id: 78, conclusion: "success" }
 const queueRun = { ...prRun, id: 78, event: "merge_group", branch: `gh-readonly-queue/main/pr-394-${"b".repeat(40)}` }
 
+const afterReopen = (after, before) => (asked) => (asked.some((call) => call.startsWith("pr reopen")) ? after : before)
+
 const follow = async ({
   reads,
   comments = "",
   files = "README.md\n",
-  job = browserJob,
   runs = [prRun],
+  failedJobs = [browserJob],
+  jobsByRun = new Map(),
   issues = ok("[]"),
   freshJobs = [
     { name: "ci", conclusion: "success" },
@@ -122,14 +139,16 @@ const follow = async ({
       steps: [{ name: "Run pnpm check --part=browser --shard=2/4", conclusion: "success" }],
     },
   ],
+  number = 394,
 }) => {
   const asked = []
   const said = []
   const raised = []
   let at = 0
   let clock = 0
+  const jobLogs = new Map()
   const code = await followPull({
-    number: 394,
+    number,
     branch: "fix",
     repository: "Rickvu309/AirDesign",
     read: () => reads[Math.min(at++, reads.length - 1)],
@@ -142,12 +161,26 @@ const follow = async ({
         raised.push({ title: args[args.indexOf("--title") + 1], body: input })
         return ok("https://github.com/Rickvu309/AirDesign/issues/990\n")
       }
-      if (call.includes("/actions/workflows/ci.yml/runs")) return ok(JSON.stringify(runs))
+      if (call.includes("/actions/workflows/ci.yml/runs"))
+        return ok(JSON.stringify(typeof runs === "function" ? runs(asked) : runs))
       if (call.includes("/runs/78/attempts/1/jobs") && call.endsWith(".jobs")) return ok(JSON.stringify(freshJobs))
-      if (call.includes("/jobs?per_page=100")) return ok(JSON.stringify([{ id: 5, name: job.name }]))
-      if (call.includes("/jobs/5/logs")) return ok(job.log)
-      if (call.includes("/pulls/394/files")) return ok(files)
-      if (call.includes("/issues/394/comments")) {
+      const run = /\/runs\/(\d+)(?:\/attempts\/\d+)?\/jobs\?/.exec(call)?.[1]
+      if (run !== undefined) {
+        const jobs = jobsByRun.get(Number(run)) ?? failedJobs
+        return ok(
+          JSON.stringify(
+            jobs.map(({ name, log }, index) => {
+              const id = `${run}-${index}`
+              jobLogs.set(id, log)
+              return { id, name }
+            }),
+          ),
+        )
+      }
+      const jobId = /\/jobs\/([\d-]+)\/logs/.exec(call)?.[1]
+      if (jobId !== undefined) return ok(jobLogs.get(jobId))
+      if (call.includes(`/pulls/${number}/files`)) return ok(files)
+      if (call.includes(`/issues/${number}/comments`)) {
         if (!call.includes("POST")) return ok(comments)
         comments += `\n${args.at(-1).slice(5)}\n`
       }
@@ -164,7 +197,9 @@ const follow = async ({
     limitMs: 3600000,
     merge: () => 0,
   })
-  const posted = asked.filter((call) => call.startsWith("api -X POST repos/Rickvu309/AirDesign/issues/394/comments"))
+  const posted = asked.filter((call) =>
+    call.startsWith(`api -X POST repos/Rickvu309/AirDesign/issues/${number}/comments`),
+  )
   return { code, said, asked, posted, raised }
 }
 
@@ -173,8 +208,8 @@ const reopened = [
   pullAnswer({ queue: false, armed: false, contexts: [...failed, ...fresh] }),
   pullAnswer({ queue: false, armed: false, contexts: passed }),
 ]
-const taken = await follow({ reads: reopened, runs: [freshRun, prRun] })
-same("a failure outside the diff takes its fresh run and merges", taken.code, 0)
+const taken = await follow({ reads: reopened, files: appFile, runs: [freshRun, prRun] })
+same("an app-code pull request takes a fresh run for the untouched browser test and merges", taken.code, 0)
 same("one comment is posted", taken.posted.length, 1)
 same(
   "the comment speaks for the owner, names the failed test and marks the head",
@@ -182,8 +217,9 @@ same(
     taken.posted[0].includes("body=🤖 **AI Agent responding on behalf of Quan Vu**"),
     taken.posted[0].includes("tests/browser/save-status.spec.ts:206"),
     taken.posted[0].includes(freshRunMark(head)),
+    taken.posted[0].includes("tests this pull request does not edit"),
   ],
-  [true, true, true],
+  [true, true, true, true],
 )
 same(
   "after a passing fresh run, the issue names both runs, the head and the failure output",
@@ -193,6 +229,7 @@ same(
     issue.body.split(/[\s,]+/).some((word) => word === "https://github.com/Rickvu309/AirDesign/actions/runs/78"),
     issue.body.includes(head),
     issue.body.includes('Received: "Saved"'),
+    issue.body.includes("change map"),
   ]),
   [
     [
@@ -201,13 +238,19 @@ same(
       true,
       true,
       true,
+      false,
     ],
   ],
 )
 same(
   "the issue is opened only after the pull request reopens and fresh ci passes",
   taken.asked.findIndex((call) => call.startsWith("issue create")) >
-    taken.asked.findIndex((call) => call.startsWith("pr reopen")),
+    taken.asked.findIndex((call) => call.includes("/runs/78/attempts/1/jobs")),
+  true,
+)
+same(
+  "land names the recorded race",
+  taken.said.includes("follow: the race is recorded in https://github.com/Rickvu309/AirDesign/issues/990."),
   true,
 )
 const unrecorded = await follow({
@@ -246,12 +289,17 @@ const failedAgain = await follow({
       contexts: [{ ...failed[0], databaseId: 3, checkSuite: suite(78) }],
     }),
   ],
-  runs: [prRun],
+  runs: afterReopen([{ ...freshRun, conclusion: "failure" }, prRun], [prRun]),
 })
 same(
   "a second failure stops and records no race",
   [failedAgain.code, failedAgain.raised, failedAgain.posted.length],
   [1, [], 1],
+)
+same(
+  "and says the test failed twice on this head, so the change most likely causes it",
+  failedAgain.said.some((line) => line.includes("1 test failed twice on this head") && line.includes("most likely")),
+  true,
 )
 const wrongHead = await follow({ reads: reopened, runs: [{ ...freshRun, head: "bbbb2222" }, prRun] })
 same("a green run on another head cannot establish a race", wrongHead.raised, [])
@@ -270,7 +318,7 @@ same(
   true,
 )
 
-const unit = await follow({ reads: [pullAnswer()], job: { name: "check (source)", log: unitLog } })
+const unit = await follow({ reads: [pullAnswer()], failedJobs: [{ name: "check (source)", log: unitLog }] })
 same("a step that is not a browser step is refused", [unit.code, unit.posted.length], [1, 0])
 same(
   "and nothing is closed",
@@ -311,8 +359,6 @@ const conflicted = await follow({
 })
 same("a queue drop for another reason is not queued again", [conflicted.code, conflicted.posted.length], [1, 0])
 
-console.log("fresh-run tests passed")
-
 const unqueued = await follow({
   reads: [
     pullAnswer({ queue: false, armed: false }),
@@ -328,21 +374,42 @@ same(
 )
 
 const agentRead = "bb45f06d944ab3f17c42637b701939415b73a561"
-const brokenReads = logs[44895953428]
+const brokenRun = { ...prRun, id: 44895953428, head: agentRead }
+const repeatedRun = { ...brokenRun, id: brokenRun.id + 1 }
+const brokenReads = logs[brokenRun.id]
 same(
-  "run 44895953428: the agent read change can reach all six failed browser and journeys tests, even though their files are untouched",
+  "run 44895953428: the agent read change leaves all six failed browser and journeys tests untouched",
   [
     brokenReads.flatMap(({ log }) => failedTests(log)).length,
     outsideTheDiff({ jobs: brokenReads, files: history.commits[agentRead].files }).outside,
   ],
-  [6, false],
+  [6, true],
 )
+const agentReadPull = (contexts) => pullAnswer({ contexts, queue: false, armed: false, prHead: agentRead })
+const brokenChecks = { ...failed[0], checkSuite: suite(brokenRun.id) }
 const agentReadRun = await follow({
-  reads: [pullAnswer({ queue: false, armed: false })],
+  number: 1219,
+  reads: [
+    agentReadPull([brokenChecks]),
+    agentReadPull([brokenChecks, { ...fresh[0], checkSuite: suite(repeatedRun.id) }]),
+    agentReadPull([{ ...brokenChecks, databaseId: 3, checkSuite: suite(repeatedRun.id) }]),
+  ],
   files: history.commits[agentRead].files.join("\n"),
+  runs: afterReopen([repeatedRun, brokenRun], [brokenRun]),
+  jobsByRun: new Map([
+    [brokenRun.id, brokenReads],
+    [repeatedRun.id, brokenReads],
+  ]),
 })
 same(
-  "an app-code pull request takes no fresh run or race issue for a browser job it can affect",
-  [agentReadRun.code, agentReadRun.posted.length, agentReadRun.raised],
-  [1, 0, []],
+  "run 44895953428: six repeated failures on pull request 1219 stop land after one fresh run with zero race issues",
+  [agentReadRun.code, agentReadRun.posted.length, agentReadRun.raised, agentReadRun.asked.includes("pr reopen 1219")],
+  [1, 1, [], true],
 )
+same(
+  "land reports that the six tests failed twice on this head",
+  agentReadRun.said.some((line) => line.includes("6 tests failed twice on this head") && line.includes("most likely")),
+  true,
+)
+
+console.log("fresh-run tests passed")
