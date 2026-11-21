@@ -53,18 +53,45 @@ export const emptyUndo: UndoList = { undo: [], redo: [] }
 
 export const emptyShown: UndoShown = { undo: null, redo: null, told: null }
 
-export type RecordsInFlight = { readonly hold: () => () => void; readonly landed: () => Promise<void> }
+export type RecordHold = { readonly record: (entry: UndoEntry) => void; readonly release: () => void }
 
-export function recordsInFlight(): RecordsInFlight {
+export type RecordsInFlight = { readonly hold: () => RecordHold; readonly landed: () => Promise<void> }
+
+export function recordsInFlight(apply: (entry: UndoEntry) => void = () => undefined): RecordsInFlight {
   let all = Promise.resolve()
+  let open = 0
   return {
     hold() {
-      let release: () => void = () => undefined
-      const held = new Promise<undefined>((resolve) => {
-        release = () => resolve(undefined)
+      let earlier: Promise<void> | null = open === 0 ? null : all
+      open += 1
+      let finish: () => void = () => undefined
+      const done = new Promise<void>((resolve) => {
+        finish = resolve
       })
-      all = Promise.all([all, held]).then(() => undefined)
-      return release
+      all = Promise.all([all, done]).then(() => undefined)
+      void earlier?.then(() => {
+        earlier = null
+      })
+      function inTurn(work: () => void) {
+        if (earlier === null) work()
+        else void earlier.then(work)
+      }
+      let released = false
+      function release() {
+        if (released) return
+        released = true
+        inTurn(() => {
+          open -= 1
+          finish()
+        })
+      }
+      return {
+        record(entry) {
+          inTurn(() => apply(entry))
+          release()
+        },
+        release,
+      }
     },
     landed: () => all,
   }

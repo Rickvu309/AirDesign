@@ -155,10 +155,12 @@ const changing: ChangingDeck = {
       shapes().find((shape) => `${shape.slide}.${shape.shape}` === at),
       value,
     ),
-  hold: () => () => undefined,
-  record: (entry: UndoEntry) => {
-    held.world = { ...world(), list: recorded(world().list, entry) }
-  },
+  hold: () => ({
+    record: (entry: UndoEntry) => {
+      held.world = { ...world(), list: recorded(world().list, entry) }
+    },
+    release: () => undefined,
+  }),
   show: () => undefined,
 }
 

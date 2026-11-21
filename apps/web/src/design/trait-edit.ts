@@ -32,7 +32,7 @@ import type { UndoName } from "@/copy/undo-copy"
 import { designedParts } from "@/index-deck"
 import { valueStorable } from "@/slide-paint"
 import { tableEditName } from "@/table-edit"
-import type { UndoEntry } from "@/undo-list"
+import type { RecordHold } from "@/undo-list"
 import { boxName } from "@/undo-names"
 import { personCommands } from "@/editor/painted-ahead"
 
@@ -117,8 +117,7 @@ export type ChangingDeck = {
   readonly floor: (node: ElementId) => string
   readonly file: (node: ElementId) => string | null
   readonly fits: (node: ElementId, value: string) => boolean
-  readonly hold: () => () => void
-  readonly record: (entry: UndoEntry) => void
+  readonly hold: () => RecordHold
   readonly show: (register: Register) => void
 }
 
@@ -275,7 +274,7 @@ export async function applyChange(
   change: SetChange | readonly SetChange[],
   written: () => void = () => undefined,
 ): Promise<boolean> {
-  const release = deck.hold()
+  const slot = deck.hold()
   try {
     const opened = await connect(memoryRemote()).openDeck(deck.id)
     const rows = opened.ok ? plannedRows(deck, opened.register, change) : null
@@ -287,12 +286,12 @@ export async function applyChange(
     }
     written()
     const name = rows[0]?.name
-    if (name !== undefined && steps.length > 0) deck.record({ name, undoable: { steps } })
+    if (name !== undefined && steps.length > 0) slot.record({ name, undoable: { steps } })
     const next = await connect(memoryRemote()).openDeck(deck.id)
     if (next.ok) deck.show(next.register)
     return steps.length === rows.length
   } finally {
-    release()
+    slot.release()
   }
 }
 
@@ -302,7 +301,7 @@ export async function applyRows(
   name: UndoName,
   written: () => void = () => undefined,
 ): Promise<boolean> {
-  const release = deck.hold()
+  const slot = deck.hold()
   try {
     const live = connect(memoryRemote())
     const opened = await live.openDeck(deck.id)
@@ -317,11 +316,11 @@ export async function applyRows(
       steps.push({ node, before, after: patch })
     }
     written()
-    if (steps.length > 0) deck.record({ name, undoable: { steps } })
+    if (steps.length > 0) slot.record({ name, undoable: { steps } })
     const next = await live.openDeck(deck.id)
     if (next.ok) deck.show(next.register)
     return steps.length === rows.length
   } finally {
-    release()
+    slot.release()
   }
 }

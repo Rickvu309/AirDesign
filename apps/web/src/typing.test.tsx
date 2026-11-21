@@ -10,7 +10,7 @@ import { useUndoList, useUndoTurn, type UndoList as UndoHooks } from "./editor/u
 import { busyElements, liveRepaint, showText, shownValue } from "./live-repaint"
 import { useNotes, type NotesDeck } from "./notes-edit"
 import { structureOf } from "./table-hook"
-import type { UndoEntry, UndoList as UndoSides } from "./undo-list"
+import type { RecordHold, UndoEntry, UndoList as UndoSides } from "./undo-list"
 
 const device = vi.hoisted(() => ({ link: null as unknown }))
 
@@ -83,10 +83,14 @@ function Editor(props: {
   readonly paint: DeckPaint
   readonly onEdit: (value: string) => void
   readonly notes: Omit<NotesDeck, "typed" | "sessions" | "records">
+  readonly counted: (slot: RecordHold) => RecordHold
   readonly exposed: (hooks: Hooks) => void
 }) {
   const undo = useUndoList()
-  const notes = useNotes({ ...props.notes, typed: undo.typed, sessions: undo.sessions, records: undo.records })
+  const records = {
+    current: { hold: () => props.counted(undo.records.current.hold()), landed: () => undo.records.current.landed() },
+  }
+  const notes = useNotes({ ...props.notes, typed: undo.typed, sessions: undo.sessions, records })
   const nothing = () => undefined
   useUndoTurn({
     id: deck,
@@ -165,15 +169,20 @@ async function typingDeck() {
     showRegister: () => (turn.painted = true),
     paintedOf: (register: Register) => register,
   } as unknown as DeckPaint
-  function record(entry: UndoEntry) {
-    if ("steps" in entry.undoable && entry.undoable.steps.some((step) => step.node === notesNode)) count.nRec += 1
-    else count.tRec += 1
-    hooks().undo.record(entry)
+  function counted(slot: RecordHold): RecordHold {
+    return {
+      record(entry: UndoEntry) {
+        if ("steps" in entry.undoable && entry.undoable.steps.some((step) => step.node === notesNode)) count.nRec += 1
+        else count.tRec += 1
+        slot.record(entry)
+      },
+      release: slot.release,
+    }
   }
   function onEdit(value: string) {
     const free = busy.hold(box)
     const { records, typed, sessions } = hooks().undo
-    const release = records.current.hold()
+    const slot = counted(records.current.hold())
     count.tTyped += 1
     if (typed.current?.node !== box) {
       sessions.current += 1
@@ -192,7 +201,7 @@ async function typingDeck() {
       { id: box, file: oldText },
       async () => {
         const from = await before
-        record({
+        slot.record({
           name: "text",
           session,
           undoable: {
@@ -201,12 +210,11 @@ async function typingDeck() {
             ],
           },
         })
-        release()
       },
     )
       .then(() => (count.tUp += 1))
       .finally(() => {
-        release()
+        slot.release()
         free()
       })
   }
@@ -231,9 +239,9 @@ async function typingDeck() {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  const notesDeck = { id: deck, record, settle: () => (count.nUp += 1) }
+  const notesDeck = { id: deck, settle: () => (count.nUp += 1) }
   const expose = (current: Hooks) => (exposed.current = current)
-  await settled(() => root.render(createElement(Editor, { paint, onEdit, notes: notesDeck, exposed: expose })))
+  await settled(() => root.render(createElement(Editor, { paint, onEdit, notes: notesDeck, counted, exposed: expose })))
   await settled(() => notes().show([{ slide, text: oldNotes }]))
   const found = host.querySelector("[contenteditable]")
   if (!(found instanceof window.HTMLElement)) throw new Error("no box")

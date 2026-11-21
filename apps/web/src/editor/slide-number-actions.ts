@@ -20,6 +20,7 @@ import { exportedParts, slideBase } from "@/exported-parts"
 import { shownValue } from "@/live-repaint"
 import { fileSlides } from "@/slide-edit"
 import type { InsertingDeck } from "./inserts"
+import type { RecordHold } from "@/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -113,7 +114,16 @@ function additions(
   })
 }
 
-export async function addSlideNumbers(deck: Omit<InsertingDeck, "pictureTool" | "lane" | "hold">, source?: ElementId) {
+export async function addSlideNumbers(deck: Omit<InsertingDeck, "pictureTool" | "lane">, source?: ElementId) {
+  const slot = deck.hold()
+  try {
+    await numbersAdded(deck, slot, source)
+  } finally {
+    slot.release()
+  }
+}
+
+async function numbersAdded(deck: Omit<InsertingDeck, "pictureTool" | "lane">, slot: RecordHold, source?: ElementId) {
   const { id, shown } = deck
   const link = connect(memoryRemote())
   const opened = await link.openDeck(id)
@@ -129,7 +139,7 @@ export async function addSlideNumbers(deck: Omit<InsertingDeck, "pictureTool" | 
     deck.settle("refused")
     return
   }
-  if (undoable !== null) deck.record({ name: "slide-number", undoable })
+  if (undoable !== null) slot.record({ name: "slide-number", undoable })
   await shown.showEdited("kept")
   if (source === undefined) shown.setEntering({ id: first.element.node })
   deck.settle(await flushPending(connect, id))

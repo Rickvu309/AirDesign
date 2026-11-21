@@ -11,6 +11,7 @@ import { connect, memoryRemote, noteBoxes } from "@airdesign/live"
 import type { Moved, PaintStore } from "@airdesign/render"
 import { commitPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutcome } from "@/commit-edit"
 import type { DesignDeck } from "@/design/design-change"
+import type { RecordHold } from "@/undo-list"
 import { deviceRegister } from "@/device-copy"
 import { commitPlace } from "@/editor/group-actions"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
@@ -45,14 +46,17 @@ type BoxMoves = {
 
 export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
   const { store, movables, shapes, canvases, current, bound, shownParts, shownRegister, showEdited } = shown
-  const { record } = undo
 
-  async function placed(only: Moved, rest: RestBox): Promise<"moved" | "kept" | "refused" | "stored"> {
+  async function placed(
+    only: Moved,
+    rest: RestBox,
+    slot: RecordHold,
+  ): Promise<"moved" | "kept" | "refused" | "stored"> {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return "moved"
     const parts = shownParts.current
     const outcome = await commitPlace(id, parts, opened.register, only.id, only.box, async (undoable) => {
-      if (undoable !== null) record({ name: "move", undoable })
+      if (undoable !== null) slot.record({ name: "move", undoable })
       await showEdited("kept")
     })
     if (outcome === "kept") rest(only.id, landedBox(await deviceRegister(id), only.id))
@@ -66,9 +70,10 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
     boxes: readonly BoxCommit[],
     framing: Register | null,
     rest: RestBox,
+    slot: RecordHold,
   ): Promise<CommitOutcome | "stored" | null> {
     const [only] = moved
-    const place = moved.length === 1 && only !== undefined && !resized(only) ? await placed(only, rest) : "moved"
+    const place = moved.length === 1 && only !== undefined && !resized(only) ? await placed(only, rest, slot) : "moved"
     if (place === "kept") return null
     if (place !== "moved") return place
     const opening = connect(memoryRemote()).openDeck(id)
@@ -113,7 +118,7 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
         if (first !== undefined) {
           const name =
             steps.length > 1 ? (steps.some((each) => each.name === "resize") ? "resize" : "move") : first.name
-          record({
+          slot.record({
             name,
             undoable: { steps: steps.map((each) => each.step) },
           })
@@ -150,7 +155,10 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
     const register = shownRegister.current
     const written = register === null ? () => undefined : shown.ahead.hold(movedAhead(register, boxes))
     const stored = await undo
-      .turnAfter(() => storeMoved(moved, boxes, framing, rest))
+      .turnAfter(() => {
+        const slot = undo.records.current.hold()
+        return storeMoved(moved, boxes, framing, rest, slot).finally(slot.release)
+      })
       .finally(() => {
         written()
         release()

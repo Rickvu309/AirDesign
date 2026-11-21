@@ -348,13 +348,32 @@ describe("undo list", () => {
     const waited = records.landed().then(() => {
       landed = true
     })
-    first()
-    first()
+    first.release()
+    first.release()
     await Promise.resolve()
     expect(landed).toBe(false)
-    second()
+    second.release()
     await waited
     expect(landed).toBe(true)
     await records.landed()
+  })
+
+  it("records each entry in the order its hold was taken, whichever is recorded first", async () => {
+    const names: string[] = []
+    const records = recordsInFlight((entry) => names.push(entry.name))
+    const typing = records.hold()
+    const grouping = records.hold()
+    grouping.record({ ...textEdit, name: "group" })
+    const later = records.hold()
+    later.record({ ...textEdit, name: "move" })
+    await Promise.resolve()
+    expect(names).toEqual([])
+    typing.record(textEdit)
+    expect(names).toEqual(["text"])
+    await records.landed()
+    expect(names).toEqual(["text", "group", "move"])
+    const free = records.hold()
+    free.record({ ...textEdit, name: "format" })
+    expect(names).toEqual(["text", "group", "move", "format"])
   })
 })

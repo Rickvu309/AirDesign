@@ -53,7 +53,11 @@ async function deck(): Promise<Seen> {
 }
 
 async function recorded(seen: Seen, entry: UndoEntry): Promise<void> {
-  await act(async () => seen.undo?.record(entry))
+  await act(async () => {
+    const slot = seen.undo?.records.current.hold()
+    slot?.record(entry)
+    slot?.release()
+  })
 }
 
 beforeAll(async () => {

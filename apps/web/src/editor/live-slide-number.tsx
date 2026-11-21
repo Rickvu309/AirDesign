@@ -16,7 +16,7 @@ export function liveSlideNumber(deck: DesigningDeck, node: ElementId, value: str
     <SlideNumberSection
       settings={settings}
       numbers={numbers}
-      onAddAll={() => void addSlideNumbers(deck, node)}
+      onAddAll={() => void addSlideNumbers({ ...deck, hold: () => deck.undo.records.current.hold() }, node)}
       onChange={(next) =>
         changeDesign(deck, () => {
           const scope = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", ""))

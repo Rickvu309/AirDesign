@@ -38,7 +38,6 @@ it("keeps the notes a person is typing when a paint shows the deck's older notes
     typed,
     sessions: { current: 0 },
     records: { current: recordsInFlight() },
-    record: () => undefined,
     settle: () => undefined,
   }
   const held: { current: Notes | null } = { current: null }

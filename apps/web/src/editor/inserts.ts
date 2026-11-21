@@ -33,7 +33,7 @@ import {
 } from "@/element-edit"
 import { commitPicture, iconPlan, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
-import type { UndoEntry } from "@/undo-list"
+import type { RecordHold, UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
 import { placedOn, placingText } from "@/editor/placed-text"
 
@@ -47,13 +47,12 @@ export type InsertingDeck = {
   readonly shown: DeckPaint
   readonly lane: StoreLane
   readonly pictureTool: { readonly store: PictureStore }
-  readonly record: (entry: UndoEntry) => void
-  readonly hold: () => () => void
+  readonly hold: () => RecordHold
   readonly settle: (outcome: CommitOutcome) => void
 }
 
 export function deckInserts(deck: InsertingDeck) {
-  const { id, pictureTool, record, settle, lane } = deck
+  const { id, pictureTool, settle, lane } = deck
   const { shownParts, canvases, current, setEntering, showEdited, store } = deck.shown
   const placedText = placingText(
     {
@@ -66,7 +65,7 @@ export function deckInserts(deck: InsertingDeck) {
       show: () => deck.shown.showRegister(deck.shown.shownRegister.current),
       showSaved: () => showEdited("kept"),
       enter: (node, keys) => setEntering({ id: node, keys }),
-      record,
+      hold: deck.hold,
       lane,
     },
     connect(memoryRemote()),
@@ -89,14 +88,18 @@ export function deckInserts(deck: InsertingDeck) {
     return { ...room, elements }
   }
 
-  function recordAdded(name: UndoName, stored: () => void, keys?: HeldKeys, selects = false, absorbs?: ElementId) {
+  function recordAdded(name: UndoName, slot: RecordHold, stored: () => void, selects = false) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
       stored()
-      if (undoable !== null) record({ name, undoable, ...(absorbs === undefined ? {} : { absorbs }) })
-      const held = keys === undefined ? {} : { keys }
-      setEntering(added === null ? null : { id: added, ...held, ...(selects ? { selects: true as const } : {}) })
+      if (undoable !== null) slot.record({ name, undoable })
+      enterAdded(added, undefined, selects)
       await showEdited("kept")
     }
+  }
+
+  function heldLane<Result>(change: (stored: () => void, slot: RecordHold) => Promise<Result>): Promise<Result> {
+    const slot = deck.hold()
+    return lane((stored) => change(stored, slot)).finally(slot.release)
   }
 
   function painted(): Register | null {
@@ -109,21 +112,22 @@ export function deckInserts(deck: InsertingDeck) {
     setEntering(added === null ? null : { id: added, ...held, ...(selects ? { selects: true as const } : {}) })
   }
 
-  function storeAhead(plan: ElementPlan, recorded: (undoable: Undoable | null) => void): Promise<"stored" | "refused"> {
+  function storeAhead(plan: ElementPlan, entry: (undoable: Undoable) => UndoEntry): Promise<"stored" | "refused"> {
     const written = deck.shown.ahead.paint(plan.commands)
-    const release = deck.hold()
+    const slot = deck.hold()
     return lane(async (stored) => {
       try {
         const went = await storePlan(id, plan)
         written()
         stored()
-        if (went !== null) recorded(plan.undo(went))
-        release()
+        const undoable = went === null ? null : plan.undo(went)
+        if (undoable !== null) slot.record(entry(undoable))
+        slot.release()
         await showEdited("kept")
         return went === null ? "refused" : "stored"
       } finally {
         written()
-        release()
+        slot.release()
       }
     })
   }
@@ -152,9 +156,7 @@ export function deckInserts(deck: InsertingDeck) {
       settle("refused")
       return Promise.resolve("refused")
     }
-    const storing = storeAhead(plan, (undoable) => {
-      if (undoable !== null) record({ name, undoable, ...absorbs })
-    })
+    const storing = storeAhead(plan, (undoable) => ({ name, undoable, ...absorbs }))
     enterAdded(plan.added, keys, change.change === "shape")
     return storing.then((outcome) => {
       if (outcome === "refused") keys?.stop()
@@ -172,17 +174,15 @@ export function deckInserts(deck: InsertingDeck) {
     if (replacing.length === 0 && register !== null) {
       const made = copyPlan(shownParts.current, register, copies, title)
       if (made === null) return Promise.resolve([])
-      void storeAhead(made.plan, (undoable) => {
-        if (undoable !== null) record({ name, undoable })
-      }).then(flushed)
+      void storeAhead(made.plan, (undoable) => ({ name, undoable })).then(flushed)
       return Promise.resolve(made.copies)
     }
-    return lane(async (stored) => {
+    return heldLane(async (stored, slot) => {
       const register = await openPlaced()
       if (register === null) return []
       const paint = async (undoable: Undoable | null) => {
         stored()
-        if (undoable !== null) record({ name, undoable })
+        if (undoable !== null) slot.record({ name, undoable })
         await showEdited("kept")
       }
       const made = await commitCopies(id, shownParts.current, register, copies, paint, title, replacing)
@@ -217,7 +217,7 @@ export function deckInserts(deck: InsertingDeck) {
     places: readonly PastePlace[],
     replacing: readonly ElementId[] = [],
   ): Promise<readonly Copied[]> {
-    return lane(async (stored) => {
+    return heldLane(async (stored, slot) => {
       const register = await openPlaced()
       if (register === null) return []
       const media: (readonly Media[])[] = []
@@ -234,7 +234,7 @@ export function deckInserts(deck: InsertingDeck) {
       stored()
       if (went.length === 0) return []
       const undoable = await replacedUndoable(id, shownParts.current, register, went, replacing)
-      if (undoable !== null) record({ name: replacing.length === 0 ? "paste-layer" : "replace-layer", undoable })
+      if (undoable !== null) slot.record({ name: replacing.length === 0 ? "paste-layer" : "replace-layer", undoable })
       await showEdited("kept")
       void flushMedia(id).then(() => flushPending(connect, id).then(settle))
       return edits.map((edit) => ({ copy: edit.element.node, source: edit.element.node }))
@@ -262,11 +262,11 @@ export function deckInserts(deck: InsertingDeck) {
   function pasteTable(cells: CellTexts) {
     const size = roomAt(current)
     if (size === null) return
-    void lane(async (stored) => {
+    void heldLane(async (stored, slot) => {
       const register = await openPlaced()
       if (register === null) return
       const asked = { index: current, size, cells }
-      const added = recordAdded("paste-layer", stored, undefined, true)
+      const added = recordAdded("paste-layer", slot, stored, true)
       const outcome = await commitPastedTable(id, shownParts.current, register, asked, added)
       if (outcome === "too-large")
         toast.refusal(tableCopy.pasteRefused, {
@@ -293,10 +293,10 @@ export function deckInserts(deck: InsertingDeck) {
     if (slide === null) return
     const at = { index: current, slide, keep: pictureTool.store.keep }
     settle(
-      await lane(async (stored) => {
+      await heldLane(async (stored, slot) => {
         const register = await openPlaced()
         if (register === null) return "refused"
-        return commitPicture(id, shownParts.current, register, picture, at, recordAdded("add-picture", stored))
+        return commitPicture(id, shownParts.current, register, picture, at, recordAdded("add-picture", slot, stored))
       }),
     )
   }
@@ -310,9 +310,7 @@ export function deckInserts(deck: InsertingDeck) {
       settle("refused")
       return
     }
-    const storing = storeAhead(plan, (undoable) => {
-      if (undoable !== null) record({ name: "add-icon", undoable })
-    })
+    const storing = storeAhead(plan, (undoable) => ({ name: "add-icon", undoable }))
     enterAdded(plan.added)
     await flushed(await storing)
   }

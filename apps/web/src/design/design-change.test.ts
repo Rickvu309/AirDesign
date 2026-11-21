@@ -2,6 +2,7 @@ import { elementId, openRegister, type Command, type Register } from "@airdesign
 import { expect, it, vi } from "vitest"
 import { paintingAhead } from "@/editor/painted-ahead"
 import type { DesignDeck } from "./design-change"
+import { recordsInFlight } from "@/undo-list"
 
 const link = vi.hoisted(() => ({ stored: null as null | (() => void), open: () => undefined as void }))
 
@@ -50,13 +51,12 @@ function heldDeck() {
     },
     undo: {
       focused: { current: null },
-      records: { current: { hold: () => () => undefined, landed: () => Promise.resolve() } },
+      records: { current: recordsInFlight() },
       turnAfter: (work: () => Promise<unknown>) => {
         chain = chain.then(work)
         return chain
       },
     },
-    record: () => undefined,
     settle: () => undefined,
   } as unknown as DesignDeck
   return { deck, shown, ahead, settled: () => chain }

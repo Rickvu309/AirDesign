@@ -16,19 +16,20 @@ import type { SlideStrip } from "@/editor/slide-sidebar"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { fileSlides, commitSlideChange, commitSlideMove, commitSlideSet, type SlideChange } from "@/slide-edit"
 import { thumbHeight } from "@/thumb-height"
-import type { UndoEntry } from "@/undo-list"
+import type { UndoList } from "@/editor/use-undo"
 import { slideNames } from "@/undo-names"
 
 export type CommandedDeck = {
   readonly id: string
   readonly matching?: readonly ElementId[]
   readonly shown: DeckPaint
-  readonly record: (entry: UndoEntry) => void
+  readonly undo: Pick<UndoList, "records">
   readonly settle: (outcome: CommitOutcome) => void
 }
 
 export function slideCommands(deck: CommandedDeck, showMatching = true): SlideStrip {
-  const { id, record, settle } = deck
+  const { id, settle } = deck
+  const hold = () => deck.undo.records.current.hold()
   const { store, shownParts, canvases, slideCount, groups, current, setCurrent, layouts, showEdited } = deck.shown
 
   let pending = Promise.resolve()
@@ -41,13 +42,13 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
     placement: GridSide = "same",
   ) {
     const anchor = placement === "new" ? sequence[index] : null
+    const slot = hold()
     await queue(async () => {
       const opened = await connect(memoryRemote()).openDeck(id)
       if (!opened.ok) return
       const painted = async (currentIndex: number, undoable: Undoable | null) => {
         if (undoable !== null) {
-          const entry = { name: slideNames[change], undoable }
-          record(entry)
+          slot.record({ name: slideNames[change], undoable })
         }
         await showEdited(currentIndex)
         if (change === "add") deck.shown.saySlide.current(slideListCopy.added(currentIndex + 1))
@@ -72,7 +73,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
           placement,
         ),
       )
-    })
+    }).finally(slot.release)
   }
 
   function queue(work: () => Promise<void>) {
@@ -111,6 +112,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
       const first = ids[0]
       if (first === undefined) return
       const anchor = gridAnchor(sequence, held, at, placement)
+      const slot = hold()
       void queue(async () => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
@@ -128,16 +130,17 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
         if (edit === null) return
         settle(
           await commitSlideMove(id, file, opened.register, edit, async (currentIndex, undoable) => {
-            if (undoable !== null) record({ name: slideNames.move, undoable })
+            if (undoable !== null) slot.record({ name: slideNames.move, undoable })
             await showEdited(currentIndex)
           }),
         )
-      })
+      }).finally(slot.release)
     },
     onChangeSet: (change, held, paint) => {
       const ids = sequence.filter((_, index) => held.includes(index))
       const [first, ...rest] = ids
       if (first === undefined) return
+      const slot = hold()
       void queue(async () => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
@@ -148,8 +151,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
           change,
           [first, ...rest],
           async (currentIndex, copies, undoable) => {
-            const entry = { name: slideNames[change], undoable }
-            record(entry)
+            slot.record({ name: slideNames[change], undoable })
             paint(copies)
             await showEdited(currentIndex)
           },
@@ -159,7 +161,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
           toast.error(
             result.message === "slideLimit" ? slideListCopy.slideLimit(limits.slides) : slideListCopy[result.message],
           )
-      })
+      }).finally(slot.release)
     },
     say: deck.shown.saySlide,
     thumbHeight: thumbHeight(canvases.current(0)),
