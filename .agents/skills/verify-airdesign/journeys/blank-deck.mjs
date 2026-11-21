@@ -93,8 +93,8 @@ export default async function drive({ repo, page, context, signIn, post, capture
   expect(exported.suggestedFilename()).toBe("Blank deck.pptx")
   const file = path.join(out, "blank-export.pptx")
   await exported.saveAs(file)
-  const original = path.join(repo, "scripts/pptx-fixtures/empty.pptx")
-  fs.copyFileSync(original, path.join(out, "empty.pptx"))
+  const original = path.join(repo, "packages/templates/files/neutral-start.pptx")
+  fs.copyFileSync(original, path.join(out, "neutral-start.pptx"))
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const before = await pptx.readParts(fs.readFileSync(original))
   const after = await pptx.readParts(fs.readFileSync(file))
@@ -109,6 +109,6 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await expect(title).toHaveText(typed)
   await capture("export-reimported")
   note(
-    `export ${file} preserves every untouched part byte for byte and imports with "${typed}"; original ${path.join(out, "empty.pptx")}`,
+    `export ${file} preserves every untouched part byte for byte and imports with "${typed}"; original ${path.join(out, "neutral-start.pptx")}`,
   )
 }

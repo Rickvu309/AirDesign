@@ -129,7 +129,7 @@ export function blankParts({ empty = false } = {}) {
 export const blankDeck = (options) => storedZip(blankParts(options))
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  for (const file of ["blank.pptx", "empty.pptx", "../../apps/web/src/decks/blank.pptx"]) {
+  for (const file of ["blank.pptx", "empty.pptx"]) {
     fs.writeFileSync(new URL(file, import.meta.url), blankDeck({ empty: file !== "blank.pptx" }))
   }
 }
