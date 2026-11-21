@@ -1,13 +1,5 @@
-import type { WireChange } from "@airdesign/catalog"
-import {
-  openingElement,
-  currentBox,
-  currentValue,
-  version,
-  type Box,
-  type ElementId,
-  type Register,
-} from "@airdesign/document"
+import { pointBox, type PointBox, type WireChange } from "@airdesign/catalog"
+import { openingElement, currentBox, currentValue, version, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { editNext, runNext, type EditCode } from "./edit-next.js"
 
@@ -15,7 +7,7 @@ export type EditElement = {
   readonly node: ElementId
   readonly value: string
   readonly version: number
-  readonly box?: Box
+  readonly box?: PointBox
   readonly closed?: true
 }
 
@@ -62,11 +54,12 @@ export function heldElements(register: Register, nodes: readonly ElementId[]): E
     const body = register.nodes.includes(node) ? register.elements[node] : undefined
     if (body === undefined) {
       const opening = openingElement(register, node)
-      return { node, value: opening?.value ?? "", version: 0, ...(opening?.box == null ? {} : { box: opening.box }) }
+      const shown = opening?.box == null ? {} : { box: pointBox(opening.box) }
+      return { node, value: opening?.value ?? "", version: 0, ...shown }
     }
     const box = currentBox(body)
     const value = { node, value: currentValue(body), version: version(body) }
-    const held = box === null ? value : { ...value, box }
+    const held = box === null ? value : { ...value, box: pointBox(box) }
     if (body.phase === "running" && body.guarded) return { ...held, closed: true }
     return held
   })

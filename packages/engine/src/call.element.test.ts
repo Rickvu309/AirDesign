@@ -1,4 +1,4 @@
-import { readDeckId } from "@airdesign/catalog"
+import { pointBox, readDeckId } from "@airdesign/catalog"
 import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { call, openDeck, readDeckPage, type Deck } from "./index.js"
@@ -30,7 +30,9 @@ it("lets a person add a text box, type in it and remove it, and hides it from a 
       ],
     }),
   )
-  expect(readDeckPage(added, { runId: null }).elements).toMatchObject([{ node, value: "Hello", box: element.box }])
+  expect(readDeckPage(added, { runId: null }).elements).toMatchObject([
+    { node, value: "Hello", box: pointBox(element.box) },
+  ])
   const removed = landed(
     call("commit_edits", added, person, { deck: "deck", batch: [{ slide: "element-remove", id: "256", node, file }] }),
   )

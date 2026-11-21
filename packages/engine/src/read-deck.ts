@@ -1,5 +1,5 @@
-import type { DeckId, FindingsReport, Overflow } from "@airdesign/catalog"
-import { readDeckId } from "@airdesign/catalog"
+import type { DeckId, FindingsReport, Overflow, PointBox, PointSize } from "@airdesign/catalog"
+import { pointSize, readDeckId } from "@airdesign/catalog"
 import {
   slideGroups,
   bytesOf,
@@ -19,7 +19,6 @@ import {
   templateStyleNode,
   templateColors,
   textStylesOf,
-  type Box,
   type ElementLink,
   type ElementId,
   type Register,
@@ -47,7 +46,7 @@ export type ReadElement = {
   readonly kind?: Kind
   readonly grouped?: boolean
   readonly version: number
-  readonly box?: Box | null
+  readonly box?: PointBox | null
   readonly role?: Role
   readonly design?: string
   readonly closed?: true
@@ -77,6 +76,7 @@ export type ReadDeckAnswer = {
     | "guides"
     | "layoutGuides"
   >[]
+  readonly size?: PointSize
   readonly templateStyles?: readonly ReadTemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly templateStyle?: Readonly<Record<string, string>>
@@ -183,7 +183,7 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
 
 type ReadHead = Pick<
   ReadDeckAnswer,
-  "revision" | "groups" | "slides" | "palettes" | "templateStyles" | "templateStyle" | "index" | "findings"
+  "revision" | "groups" | "size" | "slides" | "palettes" | "templateStyles" | "templateStyle" | "index" | "findings"
 >
 
 function findingsOf(revision: number, report: FindingsReport | undefined): ReadDeckAnswer["findings"] {
@@ -395,6 +395,7 @@ export function readDeckPage(
     }
   }
   const styled = styledHead(index?.palettes, styleFields(deck.register))
+  let told = templateStyles !== undefined
   if (templateStyles !== undefined) {
     const allPalettes: Palette[] = []
     const slides =
@@ -407,13 +408,20 @@ export function readDeckPage(
       const chosen = chosenStyle?.palette ?? opening
       if (chosen === undefined) continue
       const palette: Palette = { ...chosen, map: opening?.map ?? chosen.map }
+      told = told && chosenStyle !== undefined && JSON.stringify(palette) === JSON.stringify(chosenStyle.palette)
       const found = allPalettes.findIndex((held) => JSON.stringify(held) === JSON.stringify(palette))
       palettes.set(slide.id, found < 0 ? allPalettes.length : found)
       if (found < 0) allPalettes.push(palette)
     }
     styled.palettes = allPalettes
   }
-  const fontsOf = (slide: string) => styled.palettes?.[palettes.get(slide) ?? 0]?.fonts ?? {}
+  const fontPalettes = styled.palettes
+  const fontsOf = (slide: string) => fontPalettes?.[palettes.get(slide) ?? 0]?.fonts ?? {}
+  if (told) {
+    palettes.clear()
+    delete styled.palettes
+  }
+  const sized = index?.slides.find((slide) => slide.size !== undefined)?.size
   return packRead(
     {
       revision: deck.revision,
@@ -427,6 +435,7 @@ export function readDeckPage(
                 return id === undefined ? [] : [id]
               }),
       }).map((group) => ({ first: group.slides[0] })),
+      ...(sized === undefined ? {} : { size: pointSize(sized) }),
       ...(templateStyles === undefined || query.cursor !== undefined ? {} : { templateStyles }),
       slides: (deck.register.order.length === 0
         ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))

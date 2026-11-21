@@ -4,7 +4,7 @@ import { readDeckId } from "@airdesign/catalog"
 import { call, indexDeck, openDeck, readDeckPage } from "./index.js"
 
 const node = elementId("258.7")
-const box = { x: 10, y: 20, cx: 30, cy: 40 }
+const box = { x: 127_000, y: 254_000, cx: 381_000, cy: 508_000 }
 const parsed = readDeckId("indexed")
 if (!parsed.ok) throw new Error("deck")
 const initial = openDeck(parsed.deck)
@@ -26,7 +26,7 @@ it("reads untouched floors at revision and version zero then edits with readAt z
     revision: 0,
     index: "ready",
     slides: page.slides,
-    elements: [{ node, slide: "258", kind: "shape", value: "Title", box, version: 0 }],
+    elements: [{ node, slide: "258", kind: "shape", value: "Title", box: { x: 10, y: 20, w: 30, h: 40 }, version: 0 }],
   })
   const start = call(
     "start_run",
@@ -42,7 +42,9 @@ it("reads untouched floors at revision and version zero then edits with readAt z
     { deck: initial.id, base: start.deck.revision, changes: [{ node, value: "After", readAt: 0 }] },
   )
   if (!edit.ok) throw new Error(edit.refusal)
-  expect(readDeckPage(edit.deck, { runId: "run" }).elements).toMatchObject([{ value: "After", box, version: 1 }])
+  expect(readDeckPage(edit.deck, { runId: "run" }).elements).toMatchObject([
+    { value: "After", box: { x: 10, y: 20, w: 30, h: 40 }, version: 1 },
+  ])
 })
 
 describe("index access and group boxes", () => {

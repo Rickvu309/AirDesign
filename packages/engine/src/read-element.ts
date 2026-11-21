@@ -1,4 +1,4 @@
-import { foldDesign, printDesign, shownDesign, templateFontDesign } from "@airdesign/catalog"
+import { foldDesign, pointBox, printDesign, shownDesign, templateFontDesign } from "@airdesign/catalog"
 import {
   addedGeometry,
   currentBox,
@@ -94,7 +94,7 @@ function elementOf(
         : {}
       : { kind: indexed.kind, grouped: indexed.grouped }),
   }
-  const withBox = box === null && indexed === undefined ? held : { ...held, box }
+  const withBox = box === null && indexed === undefined ? held : { ...held, box: box === null ? null : pointBox(box) }
   const design = designOf(body, indexed, followed, box)
   const line = design === undefined ? "" : printDesign(templateFontDesign(design, fonts))
   const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target

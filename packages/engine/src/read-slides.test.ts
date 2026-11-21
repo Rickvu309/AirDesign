@@ -63,7 +63,8 @@ it("reads current slide order after add, clone, remove and move, without removed
 
 it("reads and edits the opening elements of added and cloned slides, and keeps a clone's copy when its source moves on", () => {
   const key = orderKeyBetween(null, null)
-  const box = { x: 1, y: 2, cx: 3, cy: 4 }
+  const box = { x: 12_700, y: 25_400, cx: 38_100, cy: 50_800 }
+  const shown = { x: 1, y: 2, w: 3, h: 4 }
   const title = { node: "259.2", kind: "shape", value: "256", box, grouped: false }
   let deck = edit(indexed(), [
     {
@@ -104,8 +105,8 @@ it("reads and edits the opening elements of added and cloned slides, and keeps a
   expect(readDeckPage(deck, { runId: "run" }).elements).toEqual([
     { node: "256.2", slide: "256", value: "source moved on", kind: "shape", grouped: false, version: 1, box: null },
     { node: "257.2", slide: "257", value: "257", kind: "shape", grouped: false, version: 0, box: null },
-    { node: "258.3", slide: "258", value: "typed", kind: "shape", grouped: false, version: 1, box },
-    { node: "259.2", slide: "259", value: "256", kind: "shape", grouped: false, version: 0, box },
+    { node: "258.3", slide: "258", value: "typed", kind: "shape", grouped: false, version: 1, box: shown },
+    { node: "259.2", slide: "259", value: "256", kind: "shape", grouped: false, version: 0, box: shown },
     { node: "259.3", slide: "259", value: "256", kind: "shape", grouped: false, version: 0, box: null },
   ])
   deck = edit(deck, [{ slide: "remove", id: "259", file }])

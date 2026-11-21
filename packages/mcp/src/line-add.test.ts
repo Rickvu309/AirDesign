@@ -71,7 +71,7 @@ describe("an agent adds an arrow with one edit", () => {
       const read = readDeckPage(held.deck, { runId: "run", slide: "256" }).elements.find(
         (each) => each.node === "256.5",
       )
-      expect(read).toMatchObject({ kind: "connector", box: { x: 2_000_000, y: 1_500_000, cx: 2_000_000, cy: 0 } })
+      expect(read).toMatchObject({ kind: "connector", box: { x: 157.5, y: 118.1, w: 157.5, h: 0 } })
       expect(read?.design).toContain("connection.start 256.2 site 3 · connection.end 256.3 site 1")
     })
   })

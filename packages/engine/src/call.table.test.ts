@@ -1,4 +1,4 @@
-import { readDeckId } from "@airdesign/catalog"
+import { pointBox, readDeckId } from "@airdesign/catalog"
 import {
   changedTable,
   decide,
@@ -62,7 +62,7 @@ it("takes a person's new table and cell edits, and removes the table as one laye
     ok: true,
   })
   const shown = readDeckPage(added, { runId: null }).elements
-  expect(shown).toMatchObject([{ node, kind: "table", box: element.box }])
+  expect(shown).toMatchObject([{ node, kind: "table", box: pointBox(element.box) }])
   expect(readTableValue(shown[0]?.value ?? "")?.rows.map((row) => row.from)).toEqual([0, -1, 1, 2])
   const removed = landed(
     call("commit_edits", added, person, { deck: "deck", batch: [{ slide: "element-remove", id: "256", node, file }] }),

@@ -1,4 +1,4 @@
-import { readDeckId } from "@airdesign/catalog"
+import { pointBox, readDeckId } from "@airdesign/catalog"
 import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { call, openDeck, readDeckPage, type Deck } from "./index.js"
@@ -21,7 +21,9 @@ function added(): Deck {
 }
 
 it("lets a person add a photo by its hash and media type, and a read lists it as a shape with its box", () => {
-  expect(readDeckPage(added(), { runId: null }).elements).toMatchObject([{ node, kind: "shape", box: picture.box }])
+  expect(readDeckPage(added(), { runId: null }).elements).toMatchObject([
+    { node, kind: "shape", box: pointBox(picture.box) },
+  ])
 })
 
 it("refuses text typed into a photo, which export cannot write", () => {

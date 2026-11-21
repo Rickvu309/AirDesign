@@ -91,18 +91,18 @@ export default async function drive({ page, origin, signIn, post, capture, note,
   note(`airdesign_edit_deck answered ${JSON.stringify(edited.structuredContent).slice(0, 300)}`)
   expect(edited.isError).not.toBe(true)
   const after = cards((await tool("airdesign_read_deck", { deck })).structuredContent)
-  const grew = after.top.box.cy - top.box.cy
-  expect(grew).toBeGreaterThan(300_000)
-  expect(after.next.box.y - next.box.y).toBe(grew)
+  const grew = after.top.box.h - top.box.h
+  expect(grew).toBeGreaterThan(23)
+  expect(after.next.box.y - next.box.y).toBeCloseTo(grew, 0)
   await expect.poll(async () => (await shape(21).boundingBox()).y - paintedBefore.y).toBeGreaterThan(20)
   await capture("agent-text-grew")
   const paintedAfter = await shape(21).boundingBox()
   const width = (await page.locator("[data-slide-paint]").boundingBox()).width
   const slideWidth = 12_192_000
-  const painted = ((paintedAfter.y - paintedBefore.y) * slideWidth) / width
-  expect(Math.abs(painted - grew)).toBeLessThan(slideWidth / width + 1)
+  const painted = ((paintedAfter.y - paintedBefore.y) * slideWidth) / width / 12_700
+  expect(Math.abs(painted - grew)).toBeLessThan(slideWidth / width / 12_700 + 0.2)
   note(
-    `Two growing text boxes wrapped into an auto layout column with Shift+A. An agent set the top card's text to a long line over MCP, and its very next read_deck answered the top card ${top.box.cy} -> ${after.top.box.cy} EMU tall and the next card moved down by the same ${grew} EMU; the open editor painted the next card ${Math.round(paintedAfter.y - paintedBefore.y)} px lower, which is ${Math.round(painted)} EMU at this zoom.`,
+    `Two growing text boxes wrapped into an auto layout column with Shift+A. An agent set the top card's text to a long line over MCP, and its very next read_deck answered the top card ${top.box.h} -> ${after.top.box.h} pt tall and the next card moved down by the same ${grew} pt; the open editor painted the next card ${Math.round(paintedAfter.y - paintedBefore.y)} px lower, which is ${Math.round(painted * 10) / 10} pt at this zoom.`,
   )
   await page.reload()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
@@ -120,8 +120,8 @@ export default async function drive({ page, origin, signIn, post, capture, note,
   await saved.close()
   const placed = (shown) =>
     new RegExp(`<p:cNvPr id="${shown}"[^]*?<a:off x="(\\d+)" y="(\\d+)"/><a:ext cx="(\\d+)" cy="(\\d+)"/>`).exec(xml)
-  expect(Number(placed(20)?.[4])).toBe(after.top.box.cy)
-  expect(Number(placed(21)?.[2])).toBe(after.next.box.y)
+  expect(Number(placed(20)?.[4]) / 12_700).toBeCloseTo(after.top.box.h, 0)
+  expect(Number(placed(21)?.[2]) / 12_700).toBeCloseTo(after.next.box.y, 0)
   note(
     `The export ${path.basename(exported)} writes the top card ${placed(20)?.[4]} EMU tall and the next card at y ${placed(21)?.[2]}, as the agent read them.`,
   )
