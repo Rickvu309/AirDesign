@@ -1,6 +1,7 @@
 import {
   elementGone,
   floorNodes,
+  kindTraits,
   landedPatch,
   layoutMarker,
   layoutNodes,
@@ -91,12 +92,19 @@ function writtenNotes(
   return writeTrait(parts, { slide, part, shape: "notes" }, "notes", patch)
 }
 
+function openedValue(opening: IndexElement): ElementPatch | null {
+  const traits: readonly TraitName[] = kindTraits[opening.kind]
+  const holder = traits.includes("text") ? "text" : traits.includes("table") ? "table" : null
+  return holder === null ? null : rowOf({ value: opening.value ?? "" }, holder).patch
+}
+
 function openingPatch(opening: IndexElement | undefined): ElementPatch {
   if (opening === undefined) return {}
-  const text = rowOf({ value: opening.value ?? "" }, "text")
+  const value = openedValue(opening)
+  const text = value === null ? [] : [{ v: 1, patch: value }]
   const box = opening.box === null || opening.grouped ? [] : [rowOf({ property: "box", value: opening.box }, "text")]
   const floor = opening.opening === undefined ? [] : [{ v: 1, patch: opening.opening }]
-  return netPatch([text, ...box, ...floor])
+  return netPatch([...text, ...box, ...floor])
 }
 
 function heldFields(opened: Readonly<Fields>, rows: Readonly<Fields>): Fields {
