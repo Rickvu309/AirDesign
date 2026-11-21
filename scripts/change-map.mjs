@@ -24,7 +24,7 @@ const sharedTestSetup = ["vitest.config.mts"]
 
 const inert = [/^\.claude\//]
 
-const readByChecks = [/\.md$/, /^metrics\.json$/]
+const readByChecks = [/\.md$/, /^metrics\.json$/, /^scripts\/spec-sync\.mjs$/]
 
 const sourceOnly = [/^\.gitignore$/, /^\.oxfmtrc\.json$/, /^\.railway\//]
 
@@ -340,6 +340,24 @@ export const readChangeGraph = (root) => {
     imports: readImports(root, files, packages),
     reads: scriptTestReads(root, files),
     pptxPaths: fs.readFileSync(path.join(root, pptxPathsFile), "utf8").split("\n").filter(Boolean),
+  }
+}
+
+const jobPart = (job) =>
+  /^journeys(?:$| [(/])/.test(job)
+    ? "journeys"
+    : /^(?:check \(([\w-]+)(?: \d+\/\d+)?\)|([\w-]+)(?: \(\d+\/\d+\))?)$/.exec(job)?.slice(1).find(Boolean)
+
+let currentGraph
+
+export const jobsReachedBy = (files) => {
+  if (files === undefined) return () => true
+  try {
+    currentGraph ??= readChangeGraph(fileURLToPath(new URL("..", import.meta.url)))
+    const { parts } = changeMap(files, currentGraph)
+    return (job) => parts[jobPart(job)] !== false
+  } catch {
+    return () => true
   }
 }
 

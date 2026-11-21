@@ -37,19 +37,22 @@ const recordedLine = ({ repository, event, races, old, suspect }) => {
   const head = `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}`
   return suspect
     ? `${head} on ${parts.join(" and ")}. The bot reverts nothing for them.`
-    : `${head} only on ${parts.join(" and ")}. The bot reverts nothing. The next push to main runs ci again, and if the same test fails there and passes at the last green commit, the bot reverts the first red commit.`
+    : `${head} only on ${parts.join(" and ")}. The bot reverts nothing. The next push to main runs ci again.`
 }
 
-export const recordRun = ({ repository, io, judged, event }) => {
-  if (judged === undefined || judged.verdict === "real") return { failed: false }
+export const recordRun = ({ repository, io, judged, event, ended = false }) => {
+  if (judged === undefined) return { failed: false }
   if (judged.verdict === "unknown") {
     io.redMain(
       `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}, and the bot reverts nothing: ${judged.why}. A person or agent reads the log.`,
+      ended,
     )
     return { failed: false }
   }
-  const suspect = judged.verdict === "suspect"
-  const kept = judged.tests.filter((each) => each.verdict === "old" || (each.verdict === "race" && !suspect))
+  const suspect = judged.verdict === "suspect" || judged.verdict === "real"
+  const kept = judged.tests.filter(
+    (each) => each.verdict === "old" || each.unreachable || (each.verdict === "race" && !suspect),
+  )
   if (kept.length === 0) return { failed: false }
   const log = logOf(io, judged.run)
   const urls = { race: [], old: [] }
@@ -58,12 +61,13 @@ export const recordRun = ({ repository, io, judged, event }) => {
     if (done.why !== undefined) {
       io.redMain(
         `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}, and the bot could not record ${each.title}: ${done.why}`,
+        ended,
       )
       return { failed: true }
     }
     urls[each.verdict].push(done.url)
   }
-  io.redMain(recordedLine({ repository, event, races: urls.race, old: urls.old, suspect }))
+  io.redMain(recordedLine({ repository, event, races: urls.race, old: urls.old, suspect }), ended)
   return { failed: false }
 }
 

@@ -1,0 +1,11 @@
+2026-11-21T10:48:17.6548568Z   1) tests/browser/real-save.spec.ts:9:1 › home import exposes every untouched text box on slide one to the agent API
+2026-11-21T10:48:17.6548977Z
+2026-11-21T10:48:17.6549170Z     Error: expect(received).toEqual(expected) // deep equality
+2026-11-21T10:48:17.6549392Z
+2026-11-21T10:48:17.6549487Z     - Expected  - 4
+2026-11-21T10:48:17.6549685Z     + Received  + 4
+2026-11-21T10:48:17.6549800Z
+2026-11-21T10:48:17.6549909Z     @@ -1,12 +1,12 @@
+2026-11-21T10:48:17.6550110Z       Array [
+2026-11-21T10:48:17.6550292Z         Object {
+2026-11-21T10:50:15.5206045Z failed: browser-tests

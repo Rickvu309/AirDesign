@@ -2,7 +2,9 @@ import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { readLocal, verdict } from "./bar.mjs"
+import { jobsReachedBy } from "./change-map.mjs"
 import { countersignBody } from "./countersign.mjs"
+import { freshRunComment, freshRunVerdict, postFreshRun, recordRaces, reopenPull } from "./fresh-run.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { failureLines } from "./land-report.mjs"
 import { agentHeader, openIssues } from "./race-issue.mjs"
@@ -292,7 +294,33 @@ const closeFixedForward = ({ repository, io, state, green, races }) => {
   return { failed: true }
 }
 
+const followFailedRevert = ({ repository, io, event, target, number, head }) => {
+  const stop = (why) => {
+    io.redMain(
+      `${agentHeader}\n\nci failed on the revert of ${target} in ${runUrl(repository, event.id)}. ${why}. Fix forward on main or fix the revert.`,
+    )
+    return { failed: false }
+  }
+  const { jobs, warnings = [] } = io.jobsOf(event)
+  if (warnings.length > 0) return stop(warnings[0])
+  const verdict = freshRunVerdict({ gh: io.gh, repository, number, head, jobs })
+  if (!verdict.take) {
+    if (verdict.after === event.id) return { failed: false }
+    return stop(verdict.why)
+  }
+  if (io.owner === undefined) return stop("RED_MAIN_TOKEN is missing")
+  const { tests } = verdict
+  const races = recordRaces({ gh: io.gh, repository, run: event, head, tests, jobs })
+  if (races.why !== undefined) return stop(races.why)
+  const body = freshRunComment({ repository, run: event, head, tests, queue: false, races: races.urls })
+  const fault =
+    postFreshRun({ gh: io.gh, repository, number, body }) ?? reopenPull({ gh: io.owner, repository, number })
+  if (fault !== undefined) return stop(fault)
+  return { failed: false }
+}
+
 const followRevert = ({ repository, io, event, say }) => {
+  if (event.attempt !== undefined && event.attempt !== 1) return say("the revert bot follows run attempt 1")
   const target = event.branch.slice(branchPrefix.length)
   const listed = io.gh([
     "pr",
@@ -310,18 +338,6 @@ const followRevert = ({ repository, io, event, say }) => {
   if (pull === undefined || pull.isCrossRepository || pull.headRefOid !== event.sha)
     return say(`no open revert from this repository has head ${event.sha}`)
   const number = String(pull.number)
-  if (event.conclusion !== "success") {
-    io.gh([
-      "pr",
-      "comment",
-      number,
-      "--repo",
-      repository,
-      "--body",
-      `${agentHeader}\n\nci failed on this revert in ${runUrl(repository, event.id)}. The bot never reruns ci, so it leaves this open. Fix forward on main, or fix the revert.`,
-    ])
-    return { failed: false }
-  }
   const state = mainState({ repository, io })
   if (state.why !== undefined) return say(state.why)
   const green = newerGreen({ runs: state.runs, commits: state.commits, target })
@@ -329,7 +345,9 @@ const followRevert = ({ repository, io, event, say }) => {
     closeRevert({ repository, io, number, green })
     return { failed: false }
   }
-  const decision = decide({ ...state, jobsOf: io.jobsOf, filesBetween: filesBetween(io), rerun: io.rerun })
+  if (event.conclusion !== "success")
+    return followFailedRevert({ repository, io, event, target, number, head: pull.headRefOid })
+  const decision = decideMain(state, io)
   if (decision.action !== "revert" || decision.target !== target) {
     io.gh([
       "pr",
@@ -354,7 +372,13 @@ const followRevert = ({ repository, io, event, say }) => {
   return { failed: merged.failed }
 }
 
-const filesBetween = (io) => (from, to) => lines(io.git(["diff", "--name-only", from, to]))
+const filesBetween = (io) => (from, to) => {
+  const answer = io.git(["diff", "--name-only", "--no-renames", from, to])
+  return answer.status === 0 ? lines(answer) : undefined
+}
+
+const decideMain = (state, io) =>
+  decide({ ...state, jobsOf: io.jobsOf, filesBetween: filesBetween(io), rerun: io.rerun, jobsReached: jobsReachedBy })
 
 export const redMainBot = async ({ repository, event, io }) => {
   const said = []
@@ -377,14 +401,22 @@ export const redMainBot = async ({ repository, event, io }) => {
   }
   const state = mainState({ repository, io })
   if (state.why !== undefined) return { said, failed: true, why: state.why }
-  const decision = decide({ ...state, jobsOf: bot.jobsOf, filesBetween: filesBetween(io), rerun: io.rerun })
-  if (decision.action === "green")
-    return { said, ...closeFixedForward({ repository, io: bot, state, green: decision.green, races: decision.races }) }
+  const at = state.commits.indexOf(event.sha)
+  const atEvent = { ...state, runs: state.runs.filter((run) => state.commits.indexOf(run.sha) <= at) }
+  if (event.conclusion === "success") {
+    const green = decideMain(atEvent, bot)
+    if (green.action !== "green") return say(`the passing push at ${event.sha} is not in the ci history yet`)
+    return { said, ...closeFixedForward({ repository, io: bot, state, green: green.green, races: green.races }) }
+  }
+  const decision = decideMain(state, bot)
+  if (decision.action === "green") {
+    const ended = decideMain(atEvent, bot).judged.find((each) => each.run.id === event.id)
+    return { said, ...recordRun({ repository, io: bot, event, judged: ended, ended: true }) }
+  }
   if (decision.action === "wait") return say(`waiting for ci run ${decision.run.id} on ${decision.run.sha}`)
-  if (decision.action === "revert") return { said, ...openRevert({ repository, io: bot, decision, event, say }) }
   const judged = decision.judged.find((each) => each.run.id === event.id)
   const recorded = recordRun({ repository, io: bot, judged, event })
-  if (decision.action !== "suspect") return { said, ...recorded }
+  if (decision.action !== "suspect" && decision.action !== "revert") return { said, ...recorded }
   const opened = openRevert({ repository, io: bot, decision, event, say })
   return { said, failed: recorded.failed || opened.failed }
 }
@@ -428,6 +460,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
         }
       : {
           id: Number(process.env.RUN_ID),
+          attempt: Number(process.env.RUN_ATTEMPT || 1),
           event: process.env.RUN_EVENT,
           branch: process.env.RUN_BRANCH,
           sha: process.env.RUN_SHA,

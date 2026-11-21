@@ -1,0 +1,11 @@
+2026-11-21T09:02:01.3229696Z   1) tests/browser/control-link.spec.ts:10:1 › a person saves and removes a whole text element URL @export
+2026-11-21T09:02:01.3230232Z
+2026-11-21T09:02:01.3230614Z     Error: expect(locator).toHaveValue(expected) failed
+2026-11-21T09:02:01.3231070Z
+2026-11-21T09:02:01.3231698Z     Locator:  locator('[data-design-element]').getByRole('textbox', { name: 'Add URL or slide number' })
+2026-11-21T09:02:01.3232318Z     Expected: "https://example.com"
+2026-11-21T09:02:01.3232858Z     Received: ""
+2026-11-21T09:02:01.3233228Z     Timeout:  5000ms
+2026-11-21T09:02:01.3233467Z
+2026-11-21T09:02:01.3233637Z     Call log:
+2026-11-21T09:04:11.9445463Z failed: browser-tests

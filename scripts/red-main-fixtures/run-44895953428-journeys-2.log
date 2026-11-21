@@ -1,0 +1,30 @@
+2026-11-21T10:47:59.8007522Z   1) tests/journeys/journeys.spec.ts:124:3 › shape-geometry ────────────────────────────────────────
+2026-11-21T10:47:59.8007787Z
+2026-11-21T10:47:59.8007923Z     Error: expect(received).toBe(expected) // Object.is equality
+2026-11-21T10:47:59.8008215Z
+2026-11-21T10:47:59.8008312Z     Expected: 12192000
+2026-11-21T10:47:59.8008513Z     Received: NaN
+2026-11-21T10:47:59.8008628Z
+2026-11-21T10:47:59.8008862Z        at ../../.agents/skills/verify-airdesign/journeys/shape-geometry.mjs:97
+2026-11-21T10:47:59.8009102Z
+2026-11-21T10:47:59.8009324Z        95 |   await page.getByRole("button", { name: "Design", exact: true }).click()
+2026-11-21T10:49:05.9196852Z   2) tests/journeys/journeys.spec.ts:124:3 › auto-layout-measure ───────────────────────────────────
+2026-11-21T10:49:05.9197568Z
+2026-11-21T10:49:05.9201046Z     Error: expect(received).toBeGreaterThan(expected)
+2026-11-21T10:49:05.9201877Z
+2026-11-21T10:49:05.9202372Z     Expected: > 300000
+2026-11-21T10:49:05.9202810Z     Received:   NaN
+2026-11-21T10:49:05.9203104Z
+2026-11-21T10:49:05.9203495Z        at ../../.agents/skills/verify-airdesign/journeys/auto-layout-measure.mjs:123
+2026-11-21T10:49:05.9204008Z
+2026-11-21T10:49:05.9204273Z       121 |   const placed = (shown) =>
+2026-11-21T10:49:18.7353748Z   3) tests/journeys/journeys.spec.ts:149:5 › recorded Aira › element-index ─────────────────────────
+2026-11-21T10:49:18.7354129Z
+2026-11-21T10:49:18.7354316Z     Error: expect(received).toEqual(expected) // deep equality
+2026-11-21T10:49:18.7354536Z
+2026-11-21T10:49:18.7354636Z     - Expected  - 4
+2026-11-21T10:49:18.7354838Z     + Received  + 4
+2026-11-21T10:49:18.7354947Z
+2026-11-21T10:49:18.7355044Z     @@ -1,12 +1,12 @@
+2026-11-21T10:49:18.7355247Z       Array [
+2026-11-21T10:49:18.7355565Z         Object {

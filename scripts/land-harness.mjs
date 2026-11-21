@@ -144,6 +144,7 @@ export const harness = (options = {}) => {
     if (command[0] === "api" && command[1]?.endsWith("/git/ref/heads/main"))
       return ok(`${mainHeads[Math.min(mainAt++, mainHeads.length - 1)]}\n`)
     if (command[0] === "run" && command[1] === "view") return ok(fixture("vitest-failed.log"))
+    if (command[1] === "--paginate" && command[2]?.includes("/issues/394/comments?")) return ok("")
     if (command[1]?.includes("/actions/workflows/")) return ok("[]")
     if (command[1]?.endsWith("/artifacts")) return ok("")
     throw new Error(`unexpected ${command.join(" ")}`)

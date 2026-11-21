@@ -387,3 +387,9 @@ same(
   decide(["--jobs", jobs, "--paths", "/nowhere/paths"], root).said[0].startsWith("every part runs: the map failed:"),
   true,
 )
+
+same(
+  "the spec sync command feeds the proof report, so changing it reaches the script checks but no product tests",
+  on(changeMap(["scripts/spec-sync.mjs"], readChangeGraph(root))),
+  ["source", "scripts"],
+)

@@ -1,9 +1,10 @@
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { jobsReachedBy } from "./change-map.mjs"
 import { greenRerun, rerunProcess } from "./green-rerun.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
-import { jobFailures } from "./red-main-verdict.mjs"
+import { judgeRun } from "./red-main-verdict.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const run = (command) => (args) => {
@@ -17,15 +18,31 @@ export const drillGreenRerun = ({ repository, id, gh, git, rerun, now = Date.now
   const red = JSON.parse(viewed.stdout).headSha
   const green = git(["rev-parse", `${red}^`]).stdout.trim()
   const read = failedJobLogs({ repository, run: { id }, gh, reads: 3 })
-  const tests = read.jobs.flatMap((job) => jobFailures(job).tests)
+  const diff = git(["diff", "--name-only", "--no-renames", green, red])
+  const files = diff.status === 0 && diff.stdout.trim() !== "" ? diff.stdout.trim().split("\n") : undefined
   const started = now()
-  const outcomes = tests.map((test) => ({ test, ...rerun({ at: green, test }) }))
-  for (const { test, result, why } of outcomes)
+  const outcomes = new Map()
+  const rerunTest = (test) => {
+    const outcome = rerun({ at: green, test })
+    outcomes.set(test, { test, ...outcome })
+    return outcome
+  }
+  const judgment = judgeRun({
+    ...read,
+    files,
+    races: new Set(),
+    reaches: jobsReachedBy(files),
+    rerun: rerunTest,
+  })
+  for (const { test, unreachable } of judgment.tests) if (!unreachable && !outcomes.has(test)) rerunTest(test)
+  for (const { title, verdict, why } of judgment.tests) say(`${verdict}: ${title.replace(/^Race: /, "")} (${why})`)
+  if (judgment.verdict === "race" || judgment.verdict === "old") say(`Verdict: ${judgment.verdict}, no revert`)
+  for (const { test, result, why } of outcomes.values())
     say(`${result}: ${test.file} › ${test.name}${why === undefined ? "" : ` (${why})`}`)
   say(
-    `green rerun of run ${id}: ${tests.length} failed tests rerun at ${green}, the parent of ${red}, in ${Math.round((now() - started) / 1000)} s`,
+    `green rerun of run ${id}: ${outcomes.size} failed tests rerun at ${green}, the parent of ${red}, in ${Math.round((now() - started) / 1000)} s`,
   )
-  return { failed: tests.length === 0, outcomes }
+  return { failed: judgment.tests.length === 0, outcomes: [...outcomes.values()] }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

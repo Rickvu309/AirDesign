@@ -46,7 +46,7 @@ const touch = (files, edit = (before) => `${before}\n`) => {
   git(repo, "commit", "-q", "--allow-empty", "-m", "change")
 }
 
-const step = (event) => {
+const step = (event, actionName = "opened") => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-changes-run-"))
   try {
     const output = path.join(temp, "output")
@@ -56,6 +56,7 @@ const step = (event) => {
       env: {
         ...process.env,
         EVENT_NAME: event,
+        EVENT_ACTION: actionName,
         CHECK_JOBS_FILE: checkJobsFile,
         GITHUB_OUTPUT: output,
         RUNNER_TEMP: temp,
@@ -90,6 +91,11 @@ try {
     "895aee5b4, a glossary row, runs only source and scripts, with no unit test folder and no model check",
     [partsOn(docs), jobsOf(docs), docs["unit-tests"], docs["model-check"]],
     [["source", "scripts"], ["source", "scripts"], "[]", "false"],
+  )
+  same(
+    "reopening that docs pull request runs every part so the fresh run can test the original failure",
+    [partsOn(step("pull_request", "reopened")), jobsOf(step("pull_request", "reopened"))],
+    [ciParts, everyJob],
   )
 
   const spec = pullRequest(["tests/browser/grid-last-faults.spec.ts"])

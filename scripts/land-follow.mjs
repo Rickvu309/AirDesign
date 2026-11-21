@@ -1,4 +1,4 @@
-import { freshRunVerdict, recordRaces, takeFreshRun } from "./fresh-run.mjs"
+import { confirmFreshRaces, freshRunVerdict, takeFreshRun } from "./fresh-run.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { ciFailureLines } from "./land-report.mjs"
 import { mainGreenComment, mainRedLine, mainsFault } from "./main-red.mjs"
@@ -7,7 +7,7 @@ import { forceTheGap } from "./race-issue.mjs"
 
 const runsOf = ({ gh, repository, event, branch }) => {
   const fields =
-    "[.workflow_runs[] | {id, event, branch: .head_branch, head: .head_sha, conclusion, createdAt: .created_at}]"
+    "[.workflow_runs[] | {id, event, branch: .head_branch, head: .head_sha, attempt: .run_attempt, conclusion, createdAt: .created_at}]"
   const answer = gh([
     "api",
     `repos/${repository}/actions/workflows/ci.yml/runs?event=${event}&per_page=${event === "merge_group" ? 50 : 20}${event === "merge_group" ? "" : `&branch=${encodeURIComponent(branch)}`}`,
@@ -72,6 +72,7 @@ export const followPull = async ({
   let queuedSeen = false
   let armedSeen = false
   let greenSince
+  let confirmedHead
   let lastLine
   const speak = (line) => {
     if (line !== lastLine) say(`follow: ${line}`)
@@ -131,19 +132,6 @@ export const followPull = async ({
       say(`follow: no fresh run: ${verdict.why}.${verdict.owned ? ` ${forceTheGap}` : ""}`)
       return false
     }
-    const races = recordRaces({
-      gh,
-      repository,
-      run: failure.run,
-      head: pull.head,
-      tests: verdict.tests,
-      jobs: failure.jobs,
-    })
-    if (races.why !== undefined) {
-      say(`follow: no fresh run: the race could not be recorded as an issue: ${races.why}.`)
-      return false
-    }
-    for (const url of races.urls) say(`follow: the race is recorded in ${url}.`)
     say(
       `follow: ci failed only in tests this diff cannot reach. Taking the one fresh run for head ${pull.head.slice(0, 7)}.`,
     )
@@ -155,7 +143,6 @@ export const followPull = async ({
       run: failure.run,
       head: pull.head,
       tests: verdict.tests,
-      races: races.urls,
       queue: event === "merge_group",
       sleep,
       now,
@@ -244,6 +231,21 @@ export const followPull = async ({
       pull.required.running.length === 0 &&
       pull.required.failed.length === 0 &&
       pull.required.passed.length > 0
+    if (green && confirmedHead !== pull.head) {
+      confirmedHead = pull.head
+      const recorded = confirmFreshRaces({
+        gh,
+        repository,
+        number,
+        head: pull.head,
+        runs: () => runsOf({ gh, repository, event: "pull_request", branch }),
+      })
+      if (recorded.why !== undefined) {
+        say(`follow: could not record the race: ${recorded.why}.`)
+        return 1
+      }
+      for (const url of recorded.urls ?? []) say(`follow: the race is recorded in ${url}.`)
+    }
     if (green && !pull.hasQueue && merge !== undefined) return await merge(pull)
     greenSince = green ? (greenSince ?? now()) : undefined
     if (green && now() - greenSince >= graceMs) {
