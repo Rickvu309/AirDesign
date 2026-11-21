@@ -1,5 +1,5 @@
 import { productCopy } from "@/copy/product-copy"
-import blankUrl from "./blank.pptx?url&inline"
+import blankUrl from "@airdesign/templates/files/neutral-start.pptx?url&inline"
 
 export async function blankDeck(): Promise<File> {
   const response = await fetch(blankUrl)

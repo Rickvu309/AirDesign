@@ -5,6 +5,7 @@ import { linkedPart } from "./notes-part.js"
 import { presentationPart } from "./package-address.js"
 import { paintAttribute } from "./paint-color.js"
 import { masterMatch, type Sheet } from "./paint-sheet.js"
+import { textStyleNames } from "./text-style-names.js"
 import { sheetOf, textStyleKind } from "./trait-read.js"
 
 const root = (sheet: Sheet): Held => ({ element: sheet.elements[0]!, children: sheet.children })
@@ -60,6 +61,7 @@ export function slideTextStyles(parts: ReadonlyMap<string, Uint8Array>, slidePar
   const defaults = sheetOf(parts, presentationPart)
   const fallback = defaults === null ? undefined : child(root(defaults), "p:defaultTextStyle")
   const styles = child(root(master), "p:txStyles")
+  const names = textStyleNames(root(master))
   const candidates: TextStyle[] = []
   const add = (id: string, name: string, layers: readonly Held[], local: readonly Held[] = []) => {
     const fields = fieldsOf(layers, local)
@@ -79,11 +81,10 @@ export function slideTextStyles(parts: ReadonlyMap<string, Uint8Array>, slidePar
     if (list === undefined) continue
     for (let level = 0; level < (tag === "p:titleStyle" ? 1 : 9); level += 1) {
       if (child(list, `a:lvl${String(level + 1)}pPr`) === undefined) continue
-      add(
-        `${master.part}/${tag.slice(2)}/${String(level)}`,
-        tag === "p:bodyStyle" ? `${name} ${String(level + 1)}` : level === 0 ? name : `${name} ${String(level + 1)}`,
-        [...levels(list, level), ...levels(fallback, level)],
-      )
+      const ref = `${tag.slice(2)}/${String(level)}`
+      const generic =
+        tag === "p:bodyStyle" ? `${name} ${String(level + 1)}` : level === 0 ? name : `${name} ${String(level + 1)}`
+      add(`${master.part}/${ref}`, names.get(ref) ?? generic, [...levels(list, level), ...levels(fallback, level)])
     }
   }
   if (layout !== null) {

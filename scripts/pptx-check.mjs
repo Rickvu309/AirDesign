@@ -32,6 +32,7 @@ import {
   validatorCode,
   validationFolder,
   validatorLine,
+  namedLists,
   validatorLists as validatedLists,
 } from "./pptx-validator.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
@@ -299,7 +300,10 @@ if (spec.ok) {
 const answered = await Promise.all([...validations, earlyRenders, startRenders()]).finally(() =>
   fs.rmSync(proofFolder, { recursive: true, force: true }),
 )
-const lists = new Map(answered.slice(0, validations.length).flatMap((found) => [...found]))
+const lists = namedLists(new Map(answered.slice(0, validations.length).flatMap((found) => [...found])), [
+  ...names,
+  ...exportNames,
+])
 console.log((await renderCacheReady).line())
 console.log(validatorLine(validatorTally))
 const endJudging = phases.begin("judging")

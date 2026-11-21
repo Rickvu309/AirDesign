@@ -11,11 +11,11 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   const deck = page.url().split("/").at(-1)
   await page.getByRole("button", { name: "Choose a layout for the new slide" }).click()
-  await expect(page.getByRole("menuitem")).toHaveCount(6)
+  await expect(page.getByRole("menuitem")).toHaveCount(7)
   await capture("layout-menu-open")
   await page.getByRole("menuitem", { name: "Two Content", exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(4)
   const heading = page.locator(
     '[data-slide-paint] [data-canvas-element="ppt/slides/slide2.xml#2"] [contenteditable="true"]',
   )
@@ -37,7 +37,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const file = path.join(out, "slide-layouts.pptx")
   await (await saving).saveAs(file)
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
-  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "apps/web/src/decks/blank.pptx")))
+  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "packages/templates/files/neutral-start.pptx")))
   const after = await pptx.readParts(fs.readFileSync(file))
   expect(new TextDecoder().decode(after.get("ppt/slides/_rels/slide2.xml.rels"))).toContain("slideLayout4.xml")
   expect(
@@ -50,6 +50,6 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
     ),
   ).toEqual([])
   note(
-    `Blank deck → New slide menu lists six layouts; Two Content adds slide 2 with three placeholders, takes typing, saves layoutPart to the API, survives reload and exports pointing at slideLayout4 in ${file}; untouched parts match.`,
+    `Blank deck → New slide menu lists seven layouts; Two Content adds slide 2 with three placeholders under its title rule, takes typing, saves layoutPart to the API, survives reload and exports pointing at slideLayout4 in ${file}; untouched parts match.`,
   )
 }

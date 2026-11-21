@@ -1,10 +1,11 @@
+import { blankOriginalName } from "./blank-export.mjs"
 import { slideExportLines } from "./slide-export.mjs"
 
 const shared = ["[Content_Types].xml", "ppt/presentation.xml", "ppt/_rels/presentation.xml.rels"]
 
 export const notesExports = [
   {
-    original: "empty.pptx",
+    original: blankOriginalName,
     exported: "exported-notes.pptx",
     changed: [...shared, "ppt/slides/_rels/slide1.xml.rels"],
     notes: [

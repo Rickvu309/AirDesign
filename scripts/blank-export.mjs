@@ -1,4 +1,4 @@
-export const blankOriginalName = "empty.pptx"
+export const blankOriginalName = "../../packages/templates/files/neutral-start.pptx"
 export const blankExportName = "exported-blank.pptx"
 export const blankTitle = "My first deck"
 export const blankCase = {

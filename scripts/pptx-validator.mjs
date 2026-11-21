@@ -95,3 +95,6 @@ export const judgeRows = (output) =>
 
 export const validatorLine = (tally) =>
   `validator ${tally.files} files, ${tally.distinct} different, ${tally.hits} answered by the cache, ${tally.distinct - tally.hits} validated`
+
+export const namedLists = (lists, names) =>
+  new Map([...lists, ...names.map((name) => [name, lists.get(path.basename(name))])])
