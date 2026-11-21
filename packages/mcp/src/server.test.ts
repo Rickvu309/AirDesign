@@ -120,7 +120,7 @@ describe("createServer", () => {
         ["op", "target"],
         ["op", "kind", "slide"],
         ["op", "elements"],
-        ["op", "slide", "labels"],
+        ["op", "slide"],
         ["op"],
         ["op", "node"],
       ])
