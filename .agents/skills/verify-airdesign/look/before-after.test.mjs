@@ -192,3 +192,16 @@ it("cuts no photo when the crop frame is entirely off the screen", () => {
   )
   expect(crops).toEqual([])
 })
+
+it("cuts no photo on a side whose shorter screen does not reach the callout", () => {
+  const side = (height, box) => ({
+    full: PNG.sync.write(blank(250, height)),
+    viewport: { width: 250, height },
+    boxes: [box],
+  })
+  const crops = calloutCrops({ state: "decks-list", callouts: [{ at: "button", note: "Moved" }] }, pair, [
+    side(400, { x: 10, y: 300, width: 30, height: 10 }),
+    side(200, { x: 10, y: 300, width: 30, height: 10 }),
+  ])
+  expect(crops.map(({ side: key }) => key)).toEqual(["before"])
+})
