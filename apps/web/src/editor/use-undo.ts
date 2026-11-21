@@ -157,8 +157,9 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
 
   function turn(direction: UndoDirection, visible = false) {
     const grid = document.activeElement?.closest("[data-editor-grid]")
+    const earlier = records.current.landed()
     turnAfter(async () => {
-      await records.current.landed()
+      await earlier
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction, (register) =>
         indexedRegister(shownParts.current, register),
       )

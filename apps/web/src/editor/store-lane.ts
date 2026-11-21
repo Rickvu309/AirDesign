@@ -1,8 +1,11 @@
-export type StoreLane = <Result>(change: (stored: () => void) => Promise<Result>) => Promise<Result>
+export type StoreLane = {
+  <Result>(change: (stored: () => void) => Promise<Result>): Promise<Result>
+  readonly stored: () => Promise<void>
+}
 
 export function storeLane(): StoreLane {
   let last: Promise<void> = Promise.resolve()
-  return async (change) => {
+  async function run<Result>(change: (stored: () => void) => Promise<Result>): Promise<Result> {
     const earlier = last
     let stored = () => undefined as void
     last = new Promise((done) => {
@@ -15,4 +18,5 @@ export function storeLane(): StoreLane {
       stored()
     }
   }
+  return Object.assign(run, { stored: () => last })
 }

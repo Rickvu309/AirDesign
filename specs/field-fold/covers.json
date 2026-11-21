@@ -28,8 +28,8 @@
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
-      "digest": "53134a10cc72",
-      "blob": "348ffc5c15612166dd5fb1ccea108f096ccff5f7"
+      "digest": "201308fe8cc8",
+      "blob": "37fa657460cab40db6967a6e4e9ef32184df9f69"
     },
     {
       "file": "apps/web/src/design/rebase.ts",

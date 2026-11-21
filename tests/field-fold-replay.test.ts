@@ -155,14 +155,17 @@ const changing: ChangingDeck = {
       shapes().find((shape) => `${shape.slide}.${shape.shape}` === at),
       value,
     ),
-  hold: () => ({
-    record: (entry: UndoEntry) => {
-      held.world = { ...world(), list: recorded(world().list, entry) }
-    },
-    release: () => undefined,
-  }),
   show: () => undefined,
 }
+
+const slot = {
+  record(entry: UndoEntry) {
+    held.world = { ...world(), list: recorded(world().list, entry) }
+  },
+  release: () => undefined,
+}
+
+const deviceChange = (change: Parameters<typeof applyChange>[1]) => applyChange(changing, change, slot.release, slot)
 
 function painted(register: Register) {
   const shown = paint(paintStore(), file, register, busyElements())
@@ -192,8 +195,7 @@ function controlOf(controls: readonly PanelControl[], trait: string, field: stri
 async function changed(trait: string, field: string, value: unknown): Promise<void> {
   const { controls } = painted(deviceRegister())
   const control = controlOf(controls, trait, field)
-  if (!(await applyChange(changing, rebasedChange(controls, control, value))))
-    throw new Error(`${trait}.${field} refused`)
+  if (!(await deviceChange(rebasedChange(controls, control, value)))) throw new Error(`${trait}.${field} refused`)
 }
 
 const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
@@ -433,10 +435,10 @@ describe("field-fold replay", () => {
   it("undoes mixed color fields across nodes together", async () => {
     held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
     const typed = fileText.replace("Hello", "Already typed")
-    expect(await applyChange(changing, { target: { node }, text: { value: typed } })).toBe(true)
+    expect(await deviceChange({ target: { node }, text: { value: typed } })).toBe(true)
     const recolored = typed.replace('"text":"Already typed"', '"text":"Already typed","color":{"rgb":"C00000"}')
     expect(
-      await applyChange(changing, [
+      await deviceChange([
         { target: { node }, text: { value: recolored }, fills: { paint: { solid: personColour } } },
         { target: { node: templateStylesNode }, templateStyle: { accent2: "FF0000" } },
       ]),

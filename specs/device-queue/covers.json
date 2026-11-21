@@ -4,20 +4,20 @@
     {
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
-      "digest": "a1f0ac6eb2a9",
-      "blob": "f9bc9837c48b7e4217e2d546efe8775b87049a94"
+      "digest": "694ef87df6f0",
+      "blob": "b38cc059eea82196fc39cc926258e045543f430b"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
-      "digest": "3ffc52fbb1cc",
-      "blob": "348ffc5c15612166dd5fb1ccea108f096ccff5f7"
+      "digest": "423101889869",
+      "blob": "37fa657460cab40db6967a6e4e9ef32184df9f69"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoList", "useUndoTurn"],
-      "digest": "db6afb741cd5",
-      "blob": "e259101ef9074dcd32dd9a69ccca76f881ddcc23"
+      "digest": "be4e6b05a4c1",
+      "blob": "13c3993ea90135926533409acfbcfeb9505ea861"
     },
     {
       "file": "apps/web/src/undo-list.ts",

@@ -11,6 +11,7 @@ import type { UndoList } from "@/editor/use-undo"
 import { withFileFloors } from "@/deck-paint"
 import { fileTableValue } from "@/table-edit"
 import { structureOf } from "@/table-hook"
+import type { RecordHold } from "@/undo-list"
 
 export type DesignDeck = {
   readonly id: string
@@ -43,8 +44,8 @@ export function fileValue(shown: DeckPaint, node: ElementId): string | null {
   return shape?.contentKind === "table" ? fileTableValue(shown.editParts.current, shape) : null
 }
 
-function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
-  const { shown, undo } = deck
+function changingDeck(deck: DesignDeck): ChangingDeck {
+  const { shown } = deck
   return {
     id: deck.id,
     parts: () => shown.shownParts.current,
@@ -56,13 +57,6 @@ function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
         shown.shapes.current.get(node) ?? fileShape(shown.editParts.current, node),
         value,
       ),
-    hold: () => {
-      const slot = undo.records.current.hold()
-      return {
-        record: (entry) => slot.record(session === null ? entry : { ...entry, session }),
-        release: slot.release,
-      }
-    },
     show: (register) => {
       const framed = withFileFloors(shown.paintedOf(register), shown.shownParts.current)
       if (shown.structure.current !== structureOf(framed, shown.bound.current)) shown.showRegister(register)
@@ -98,25 +92,16 @@ export function changeDesign(
   afterPaint?: () => void,
   onRefused?: () => void,
 ) {
-  const session = deck.undo.focused.current
-  const changing = changingDeck(deck, session)
+  const changing = changingDeck(deck)
   const asked = change()
-  const written = paintedAhead(deck, (register) => changeAhead(changing, register, asked))
-  deck.undo.turnAfter(async () => {
-    try {
-      if (await applyChange(changing, asked, written)) {
-        afterPaint?.()
-        void flushPending(connect, deck.id).then(deck.settle)
-        return
-      }
-    } finally {
-      written()
-    }
-    await showDevice(deck, changing)
-    onRefused?.()
-    toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
-    deck.settle("refused")
-  })
+  storeDesign(
+    deck,
+    changing,
+    (register) => changeAhead(changing, register, asked),
+    (slot, written) => applyChange(changing, asked, written, slot),
+    afterPaint,
+    onRefused,
+  )
 }
 
 export function changeRows(
@@ -124,20 +109,46 @@ export function changeRows(
   plan: (register: Register) => readonly PlacedRow[] | null,
   name: UndoName,
 ) {
+  const changing = changingDeck(deck)
+  storeDesign(
+    deck,
+    changing,
+    (register) => rowsAhead(changing, register, plan),
+    (slot, written) => applyRows(changing, plan, name, written, slot),
+  )
+}
+
+function storeDesign(
+  deck: DesignDeck,
+  changing: ChangingDeck,
+  commands: (register: Register) => readonly Command[] | null,
+  store: (slot: RecordHold, written: () => void) => Promise<boolean>,
+  afterPaint?: () => void,
+  onRefused?: () => void,
+) {
   const session = deck.undo.focused.current
-  const changing = changingDeck(deck, session)
-  const written = paintedAhead(deck, (register) => rowsAhead(changing, register, plan))
+  const records = deck.undo.records.current
+  const earlier = records.landed()
+  const slot = records.hold()
+  const named: RecordHold = {
+    record: (entry) => slot.record(session === null ? entry : { ...entry, session }),
+    release: slot.release,
+  }
+  const written = paintedAhead(deck, commands)
   deck.undo.turnAfter(async () => {
     try {
-      await deck.undo.records.current.landed()
-      if (await applyRows(changing, plan, name, written)) {
+      await earlier
+      if (await store(named, written)) {
+        afterPaint?.()
         void flushPending(connect, deck.id).then(deck.settle)
         return
       }
     } finally {
       written()
+      slot.release()
     }
     await showDevice(deck, changing)
+    onRefused?.()
     toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
     deck.settle("refused")
   })

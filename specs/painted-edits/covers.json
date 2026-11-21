@@ -1,0 +1,53 @@
+{
+  "check": "checks-device-queue.md#painted-edits",
+  "covers": [
+    {
+      "file": "apps/web/src/design/design-change.ts",
+      "names": ["storeDesign"],
+      "digest": "84b041e7f36e",
+      "blob": "b38cc059eea82196fc39cc926258e045543f430b"
+    },
+    {
+      "file": "apps/web/src/editor/box-moves.ts",
+      "names": ["boxMoves"],
+      "digest": "735480906e4b",
+      "blob": "787319cb632eb7d0c274595a94cdd596b9bf0164"
+    },
+    {
+      "file": "apps/web/src/editor/editable-slide.tsx",
+      "names": ["editableSlide"],
+      "digest": "e5a3c798296c",
+      "blob": "850ca7db74fb4bedb42a3f55bdc9f9851d2826eb"
+    },
+    {
+      "file": "apps/web/src/editor/inserts.ts",
+      "names": ["deckInserts"],
+      "digest": "2c44cad190cf",
+      "blob": "9974acf2d670a5da7386294c36cf769f7a4ebc10"
+    },
+    {
+      "file": "apps/web/src/editor/placed-text.ts",
+      "names": ["placingText"],
+      "digest": "1a588e3b7136",
+      "blob": "f3f653e98616d7ad489c09edeebb296bf2d13752"
+    },
+    {
+      "file": "apps/web/src/editor/store-lane.ts",
+      "names": ["storeLane"],
+      "digest": "2ee61b23cdd3",
+      "blob": "0a48cb34dd383802e75a6527d362f1c9b9f400a0"
+    },
+    {
+      "file": "apps/web/src/editor/use-export.ts",
+      "names": ["useExport"],
+      "digest": "44b46cee1c4d",
+      "blob": "8d5cef0fe94af525e0ee62a3a5df23756e0169d9"
+    },
+    {
+      "file": "apps/web/src/undo-list.ts",
+      "names": ["recordsInFlight"],
+      "digest": "a043ef7fa1e5",
+      "blob": "d7e800bdf3c53dde30aa623c4cd05d46f6d3eb41"
+    }
+  ]
+}

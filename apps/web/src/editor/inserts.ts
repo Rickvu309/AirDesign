@@ -113,16 +113,15 @@ export function deckInserts(deck: InsertingDeck) {
   }
 
   function storeAhead(plan: ElementPlan, entry: (undoable: Undoable) => UndoEntry): Promise<"stored" | "refused"> {
-    const written = deck.shown.ahead.paint(plan.commands)
     const slot = deck.hold()
+    const written = deck.shown.ahead.paint(plan.commands)
     return lane(async (stored) => {
       try {
         const went = await storePlan(id, plan)
         written()
-        stored()
+        if (went !== null) stored()
         const undoable = went === null ? null : plan.undo(went)
         if (undoable !== null) slot.record(entry(undoable))
-        slot.release()
         await showEdited("kept")
         return went === null ? "refused" : "stored"
       } finally {

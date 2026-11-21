@@ -115,9 +115,11 @@ export function editableSlide(
     const slot = records.current.hold()
     const together = formatting.current.together()
     const written = typedAhead(target, value)
+    const fits = valueFits(editParts.current, shapes.current.get(target), value)
+    if (fits) showText(store.current, target, value)
     return placed
       .then((stored): Promise<CommitOutcome> | "empty" =>
-        stored ? editText(target, value, name, { slot, written }, together) : "empty",
+        stored ? editText(target, value, name, fits, { slot, written }, together) : "empty",
       )
       .finally(() => {
         written()
@@ -145,6 +147,7 @@ export function editableSlide(
     target: ElementId,
     value: string,
     name: UndoName,
+    fits: boolean,
     { slot, written }: { readonly slot: RecordHold; readonly written: () => void },
     together: object | null = null,
   ): Promise<CommitOutcome> {
@@ -156,11 +159,10 @@ export function editableSlide(
       showText(store.current, target, shownValue(await deviceRegister(id), target, file))
     }
     const shape = shapes.current.get(target)
-    if (shape === undefined || !valueFits(editParts.current, shape, value)) {
+    if (shape === undefined || !fits) {
       await refused()
       return "refused"
     }
-    showText(store.current, target, value)
     const outcome = await commitEdit(
       connect,
       id,

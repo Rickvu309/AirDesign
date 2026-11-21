@@ -152,15 +152,18 @@ export function boxMoves({ id, shown, undo, settle }: DesignDeck): BoxMoves {
       id,
       boxes.map(({ box, element }) => ({ node: element.id, floor: element.file, box })),
     )
+    const earlier = undo.records.current.landed()
+    const slot = undo.records.current.hold()
     const register = shownRegister.current
     const written = register === null ? () => undefined : shown.ahead.hold(movedAhead(register, boxes))
     const stored = await undo
-      .turnAfter(() => {
-        const slot = undo.records.current.hold()
-        return storeMoved(moved, boxes, framing, rest, slot).finally(slot.release)
+      .turnAfter(async () => {
+        await earlier
+        return storeMoved(moved, boxes, framing, rest, slot)
       })
       .finally(() => {
         written()
+        slot.release()
         release()
         for (const target of latest.keys()) if (isLatest(target)) inFlight.delete(target)
       })

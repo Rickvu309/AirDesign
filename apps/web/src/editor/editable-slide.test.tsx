@@ -15,6 +15,7 @@ import { useState } from "react"
 import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { editableSlide } from "./editable-slide"
+import { boxMoves } from "./box-moves"
 import { deckInserts } from "./inserts"
 import { storeLane } from "./store-lane"
 import { useDeckPaint, type DeckPaint } from "./use-deck-paint"
@@ -179,17 +180,34 @@ async function typingDeck() {
   const parts = onSlide(xml(twoBoxSlide))
   let register = openRegister("", "")
   const answers: Answer[] = []
+  const writes: string[] = []
+  let finishInsert = () => undefined as void
+  const insert = new Promise<void>((done) => {
+    finishInsert = done
+  })
+  let holdInsert = false
   device.link = {
     enqueue(_deck: string, value: string, node: ElementId, floor: string) {
+      writes.push("text")
       if (register.elements[node] === undefined)
         register = applied(register, { command: "add", node, floor, route: "deck" })
       register = applied(register, { command: "person", node, value })
       return new Promise((resolve) => answers.push({ resolve }))
     },
-    enqueueSlide(_deck: string, file: readonly SlideId[], edit: SlideCommand) {
+    async enqueueSlide(_deck: string, file: readonly SlideId[], edit: SlideCommand) {
+      if (holdInsert) await insert
       register = applied(register, { command: "slide", file, edit })
-      return Promise.resolve({ ok: true })
+      writes.push(edit.slide)
+      return { ok: true }
     },
+    async enqueueBox(_deck: string, value: { x: number; y: number; cx: number; cy: number }, node: ElementId) {
+      writes.push("box")
+      const moved = decide(register, { command: "person", property: "box", node, value })
+      if (moved.decision !== "apply") return { ok: false }
+      register = moved.register
+      return { ok: true }
+    },
+    enqueueRow: async () => ({ ok: false }),
     flush: async () => ({ ok: true }),
     pending: async () => [],
     openDeck: async () => ({ ok: true, register }),
@@ -209,6 +227,11 @@ async function typingDeck() {
   })
   return {
     deck,
+    writes,
+    holdInsert() {
+      holdInsert = true
+      return finishInsert
+    },
     async type(shape: number, value: string) {
       const box = host.querySelector<HTMLElement>(
         `[data-canvas-element="ppt/slides/slide1.xml#${shape}"] [contenteditable='true']`,
@@ -257,5 +280,42 @@ it("keeps a placed text box beneath the words typed into it", async () => {
   await typing.type(4, "Market context")
   await typing.answer()
   expect(typing.undone()).toEqual(["add-box", "text"])
+  await typing.close()
+})
+
+it("stores a new layer before storing words typed into it", async () => {
+  const typing = await typingDeck()
+  const release = typing.holdInsert()
+  await act(async () => typing.deck().inserts.addText())
+  await typing.type(4, "Market context")
+  const beforeInsert = [...typing.writes]
+  await act(async () => release())
+  await typing.answer()
+  expect(beforeInsert).toEqual([])
+  expect(typing.writes).toEqual(["element-add", "text"])
+  await typing.close()
+})
+
+it("stores a new layer before storing a move on it", async () => {
+  const typing = await typingDeck()
+  const release = typing.holdInsert()
+  await act(async () => typing.deck().inserts.addShape("rect"))
+  const node = elementId("256.4")
+  const { shown, undo } = typing.deck()
+  const original = shown.shapes.current.get(node)?.box
+  if (original === undefined || original === null) throw new Error("new shape was not painted")
+  const move = { id: node, box: { ...original, x: original.x + 10000 } }
+  const { onBoxes } = boxMoves({ id: deck, shown, undo, settle: () => undefined })
+  let moving = Promise.resolve()
+  await act(async () => {
+    moving = onBoxes([move])
+  })
+  const beforeInsert = [...typing.writes]
+  await act(async () => {
+    release()
+    await moving
+  })
+  expect(beforeInsert).toEqual([])
+  expect(typing.writes).toEqual(["element-add", "box"])
   await typing.close()
 })

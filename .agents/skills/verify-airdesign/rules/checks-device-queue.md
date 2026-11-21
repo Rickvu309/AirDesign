@@ -27,3 +27,15 @@ Planted faults, each put back in the model and then in the code:
 | A send after a lost answer seals its batch with a new once                      | 78 states, `LandsInOrderOnce`: ClickFirst, Send, Apply, Lose, Send, Apply lands the first row twice                                       | `sendBatches` takes `nextOnce()` for every batch: the Send after a lost answer fails, the device's request never came, because `sealRows` keeps a row's first once and seals nothing                            |
 
 Sync: `specs/device-queue/covers.json`.
+
+## painted-edits
+
+This model separates what the canvas shows from what the device has stored. An export snapshots the edits painted when it starts and reads the device after their holds release. A new layer can paint before its insert reaches the device. Typing or dragging the layer can also paint during that gap.
+
+- `ExportIncludesPaintedEdits`: the export contains each edit that painted before the export request. The panel and drag take their record holds before they paint. The export waits on the holds that exist at the request.
+- `LayerEditFollowsInsert`: the device stores the insert before storing typing or a move on the new layer. Typing waits for the earlier insert lane. A move waits for the earlier record holds before it reads and writes the layer.
+- `ExportFinishes`: when local writes finish, the export can finish. A design change or undo snapshots the prior holds so it cannot wait on its own hold or a later turn.
+
+Bounds: one panel edit or one insert and one edit on the new layer, one export, successful local writes, no network. The flags 1 and 2 represent the first and later edit. Run `pnpm check:specs painted-edits`. The controlled-gap tests in `apps/web/src/design/design-change.test.ts` and `apps/web/src/editor/editable-slide.test.tsx` drive the app code through the interleavings that fail when the waits are missing. The device-queue replay above still covers the network and undo after local storage. The model leaves out storage refusals and the file writer itself.
+
+Sync: `specs/painted-edits/covers.json`.

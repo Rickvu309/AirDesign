@@ -107,7 +107,7 @@ export function placingText(deck: PlacingDeck, link: PlacingLink) {
 
   function stored(node: ElementId): Promise<boolean> {
     const placed = heldAt(node)
-    if (placed === undefined) return Promise.resolve(true)
+    if (placed === undefined) return deck.lane.stored().then(() => true)
     return placed.kept ?? Promise.resolve(false)
   }
 

@@ -2,7 +2,10 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-export const unreplayed = {}
+export const unreplayed = {
+  "painted-edits":
+    "the forced-gap traces run in design-change.test.ts and editable-slide.test.tsx, without a graph walk",
+}
 
 const testFolders = ["tests", "apps", "packages"]
 
