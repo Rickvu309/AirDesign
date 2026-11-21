@@ -11,7 +11,7 @@ Verify proves a change to the agent. Show makes it plain to a person, fast enoug
 - **Issue tree.** Two to four branches beneath it, split on one axis, with no overlap and none missing.
 - **Logic.** Under each branch, the reason and the evidence a reader can open.
 
-The tool writes two layers from one tree. The **picture** is for skimming: the question in one small line, the answer as the strongest box, each branch as one short claim with a small mark, and a thumbnail where a claim rests on a picture. The **Markdown** is for reading: every claim with its detail, its evidence links and what each split covers.
+The tool writes two layers from one tree. The **picture** is for skimming: the question in one small line, the answer as the strongest box, each branch as one short claim with a small mark, and the photo itself where a claim rests on one. The **Markdown** is for reading: every claim with its detail, its evidence links and what each split covers.
 
 ## Pick the job
 
@@ -90,7 +90,7 @@ The tool cannot see whether a split truly has no overlap, whether a claim is tru
 
 ## When the evidence is a screen
 
-A leaf about something a person sees rests on an image of it. Make that image with [annotate.md](annotate.md): a before and after for the PR, or callouts on one run for a bug or a proposal. Put the image's path or published link in the leaf's evidence; the picture shows it as a thumbnail the first time it appears.
+A leaf about something a person sees rests on an image of it. Make that image with [annotate.md](annotate.md): a before and after for the PR, or callouts on one run for a bug or a proposal. Put the image's path or published link in the leaf's evidence; the picture embeds the photo in that box, at a size you can read, the first time it appears. Crop it close to the part that matters, so it reads at box size; never name the file instead.
 
 ## Done when
 

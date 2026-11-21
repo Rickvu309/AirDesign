@@ -45,14 +45,15 @@ describe("a logic page", () => {
     )
   })
 
-  it("draws a lean tree to skim: claims and marks only, headers by axis, the first picture as a thumbnail", () => {
+  it("draws a lean tree to skim: claims and marks only, headers by axis, the first photo embedded in its box", () => {
     const html = toHtml(tree)
     const order = ["Before-after no longer calls", "Any failure on &lt;main&gt;", "Three real runs show"].map((text) =>
       html.indexOf(text),
     )
     expect(order.every((at, index) => at > 0 && (index === 0 || at > order[index - 1]))).toBe(true)
     expect(html).toContain('<span class="mark open">○ Open</span>')
-    expect(html.match(/class="box d1"/g)).toHaveLength(2)
+    expect(html.match(/class="box d1/g)).toHaveLength(2)
+    expect(html).toContain('class="box d1 with-photo"')
     expect(html).toContain(">Reasons</div>")
     expect(html).toContain('<img class="thumb" src="https://github.com/o/r/releases/download/proof-4/run.png"')
     for (const left of ["The old fault and the proof", "Observed", "before-after.mjs", "verdict"])
