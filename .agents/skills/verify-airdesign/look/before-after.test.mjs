@@ -4,7 +4,7 @@ import path from "node:path"
 import { expect, it } from "vitest"
 import { PNG } from "pngjs"
 import { blank } from "./images.mjs"
-import { composeBlock, driverFor, fullNames } from "./before-after.mjs"
+import { calloutCrops, composeBlock, driverFor, fullNames } from "./before-after.mjs"
 
 it("names each block's full screenshots apart when blocks share a state", () => {
   expect(fullNames([{ state: "design-autofit" }, { state: "agent-empty" }, { state: "design-autofit" }])).toEqual([
@@ -102,4 +102,35 @@ it("never calls a state new when the base has no state list to check", async () 
   const repo = mkdtempSync(path.join(tmpdir(), "base-bare-"))
   const driver = await driverFor(repo)
   expect(driver.lacks("agent-new")).toBe(false)
+})
+
+it("cuts a strip of the frame at each callout's height on each side it was found, whole lines with room above and below", () => {
+  const shot = (boxes) => ({ full: PNG.sync.write(blank(500, 400)), viewport: { width: 250, height: 200 }, boxes })
+  const crops = calloutCrops(
+    {
+      state: "agent-empty",
+      callouts: [
+        { at: "h2", note: "Names Aira" },
+        { at: "p", note: "Gone" },
+      ],
+    },
+    pair,
+    [shot([{ x: 100, y: 50, width: 40, height: 10 }, null]), shot([{ x: 230, y: 190, width: 40, height: 10 }, null])],
+  )
+  expect(crops.map(({ number, side, png }) => [number, side, png.width, png.height])).toEqual([
+    [1, "before", 500, 148],
+    [1, "after", 500, 84],
+  ])
+})
+
+it("cuts nothing on a side that was not reached", () => {
+  const crops = calloutCrops({ state: "agent-empty", callouts: [{ at: "h2", note: "Names Aira" }] }, pair, [
+    { error: "Timeout", outcome: "failed" },
+    {
+      full: PNG.sync.write(blank(250, 200)),
+      viewport: { width: 250, height: 200 },
+      boxes: [{ x: 10, y: 10, width: 20, height: 10 }],
+    },
+  ])
+  expect(crops.map(({ side }) => side)).toEqual(["after"])
 })
