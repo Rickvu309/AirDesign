@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
-import { designContext, openBrowser } from "./browser.mjs"
+import { designContext, openBrowser, settle } from "./browser.mjs"
 import { pageMatches, readAllow, staleEntries } from "../look/allow.mjs"
 import { captureLook, themeValues } from "../look/capture.mjs"
 import { captureCompare } from "../look/compare.mjs"
@@ -71,8 +71,11 @@ export async function designCommand(command, args, runtime) {
     try {
       const screenPage = await context.newPage()
       const answer = await screenPage.goto(design)
-      if (!answer?.ok() || (await screenPage.locator("[data-not-found-live]").count()) > 0)
+      if (!answer?.ok()) throw new Error(`no design screen at ${design}`)
+      await screenPage.locator("body :visible").first().waitFor({ state: "visible" })
+      if ((await screenPage.locator("[data-not-found-live]").count()) > 0)
         throw new Error(`no design screen at ${design}`)
+      await settle(screenPage)
       return await captureCompare(page, screenPage, folder)
     } finally {
       await context.close()

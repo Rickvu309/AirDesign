@@ -10,8 +10,8 @@
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeck", "addTurn"],
-      "digest": "6c5d59e34060",
-      "blob": "40c3d9b05884498ed45df6e9cf587457578e5960"
+      "digest": "6b1698ca9ae1",
+      "blob": "eeecbcba01d7a409d301071fd436d6a9998ba1b5"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
@@ -23,13 +23,13 @@
       "file": "packages/mcp/src/call-tool.ts",
       "names": ["stopRun"],
       "digest": "280d7a16b2fd",
-      "blob": "6999e942f139d71b5221bcc2497ee9417bb9bffc"
+      "blob": "d9d5b82dfd27e33d051468715f815b336b05adad"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["endOnTouched", "endSlides", "landed"],
       "digest": "4d32375cfed1",
-      "blob": "f1016912bd374dad687c28003db95489d7d47854"
+      "blob": "ff4b96649d8f74e7954fbc3c77249e2bbd995d4a"
     },
     {
       "file": "packages/mcp/src/turn.ts",
@@ -46,8 +46,8 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "ac73e3611c9d",
-      "blob": "49386cda45a22a0ce5a1ad57fff9c9d3c582da4d"
+      "digest": "bd7ea9d0aee1",
+      "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
     }
   ]
 }

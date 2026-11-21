@@ -28,8 +28,8 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "ac73e3611c9d",
-      "blob": "49386cda45a22a0ce5a1ad57fff9c9d3c582da4d"
+      "digest": "bd7ea9d0aee1",
+      "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
     }
   ]
 }

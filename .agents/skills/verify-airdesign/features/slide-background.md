@@ -13,7 +13,7 @@ On an open deck, the Design panel shows the current slide's background and the d
 ## How to get to it (user POV)
 
 - An open deck `/deck/<id>`: `Design` beside `Agent` in the toolbar opens the panel for the slide on the canvas.
-- Template and a picture background show as not available yet.
+- On a slide with no layer selected, the **Template style** card opens the deck's templates. Use `$V look <run> design-template-menu` on the two-template fixture.
 
 ## Driving it with verify-airdesign
 

@@ -10,8 +10,8 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "cd623ab20a32",
-      "blob": "49386cda45a22a0ce5a1ad57fff9c9d3c582da4d"
+      "digest": "eebf80872441",
+      "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
     },
     {
       "file": "apps/api/src/tokens.ts",

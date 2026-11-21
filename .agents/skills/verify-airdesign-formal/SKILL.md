@@ -29,15 +29,14 @@ pnpm check:specs turn index      # only the named specs
 
 Each line says the distinct state count, the verdict and the time. TLC takes 1 to 5 s per spec, mostly JVM start, and about 40 s for the full set. A spec must stay under 500 distinct states. Results are cached by a hash of every `.tla` and `.cfg` file in the folder, so any edit to them reruns TLC, and an unchanged spec answers from the cache. `pnpm check` keeps its cache in `~/.cache/airdesign/spec-results`. To force a fresh run, set `AIRDESIGN_SPEC_CACHE` to an empty folder.
 
-Then run the replays:
+Then find and run the replays:
 
 ```sh
-pnpm vitest run tests/spec-replay.test.ts tests/multi-step-replay.test.ts tests/aira-loop-replay.test.ts tests/field-fold-replay.test.ts packages/live/src/lost-answer-replay.test.ts packages/live/src/tabs-replay.test.ts
-pnpm vitest run apps/api/src/owner.test.ts apps/api/src/turn.test.ts apps/api/src/agents.test.ts apps/api/src/agents-replay-*.test.ts apps/api/src/aira-closing.test.ts apps/api/src/slide-run.test.ts apps/api/src/slide-sibling.test.ts apps/api/src/slide-undo.test.ts
-pnpm vitest run apps/web/src/typing.test.tsx apps/web/src/device-queue.test.tsx apps/web/src/connection.test.tsx
+node scripts/spec-replays.mjs
+pnpm exec vitest run <test-file> # use the path printed for the check
 ```
 
-`node scripts/spec-replays.mjs` lists which test replays each spec. It is the `spec-coverage` step of `pnpm check`, and it warns when a spec has no replay and no listed reason.
+For a full pass, run every distinct test file the command prints. One file can replay several specs. This list is the source for the `spec-coverage` step of `pnpm check`, which warns when a spec has no replay and no listed reason.
 
 ## 3. Read a result
 
@@ -60,6 +59,6 @@ Change the model or replay from the code, before you rerun. One indivisible step
 
 After a pass, break the code the way the property guards against, for example remove a refusal or reorder a step, and see the replay or TLC fail. Then drop the break. A check you have never seen fail proves nothing.
 
-Then update its entry: the covered code, the bounds, the gaps and the replay, and the names in its `covers.json`. Once `pnpm check:specs <topic>` passed and the replay passed, record the sync with `node scripts/spec-sync.mjs --sync <topic>`. It rewrites the digests and refuses a spec with no passing TLC result. Sync only a check whose model you confirmed against the code. Leave one you could not confirm, and say why.
+Then update its entry: the covered code, the bounds, the gaps and the replay, and the names in its `covers.json`. Once `pnpm check:specs <topic>` passed and the replay passed, record the sync with `node scripts/spec-sync.mjs --sync <topic>`. It records a source digest and Git blob per covered file and refuses a spec with no passing TLC result. Use the blobs to compare with the last reviewed declarations. Sync only a check whose model you confirmed against the code. Leave one you could not confirm, and say why.
 
 Finish with `pnpm check`. A change to a spec or replay changes what `ci` judges, and the `bar` check may label the PR.
