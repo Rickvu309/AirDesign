@@ -1,4 +1,5 @@
 import type { PaintStore } from "@airdesign/render"
+import type { PaintAhead } from "@/editor/painted-ahead"
 import type { DeckFailure } from "@/editor/use-deck-status"
 import { exportDeck, ExportStopped, type ExportRequest, type ExportStop } from "@/export/export-deck"
 import { PicturesUploading, type PictureStore } from "@/picture-tool"
@@ -10,6 +11,7 @@ export type ExportingDeck = {
   readonly records: { readonly current: RecordsInFlight }
   readonly pictureTool: { readonly store: PictureStore }
   readonly paint: { readonly current: PaintStore }
+  readonly ahead: Pick<PaintAhead, "stored">
   readonly setFailure: (failure: DeckFailure | null) => void
 }
 
@@ -35,11 +37,12 @@ export function exportFailure(error: unknown): DeckFailure {
 }
 
 export function useExport(deck: ExportingDeck) {
-  const { id, records, pictureTool, paint, setFailure } = deck
+  const { id, records, pictureTool, paint, ahead, setFailure } = deck
   async function onExport(request?: ExportRequest) {
     try {
       const painted = { fits: paint.current.fits(), rows: paint.current.rows() }
-      await exportDeck(id, records.current.landed(), pictureTool.store, request, painted)
+      const shown = Promise.all([records.current.landed(), ahead.stored()]).then(() => undefined)
+      await exportDeck(id, shown, pictureTool.store, request, painted)
       setFailure(null)
     } catch (error) {
       setFailure(exportFailure(error))

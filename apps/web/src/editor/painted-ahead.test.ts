@@ -49,3 +49,20 @@ it("paints a change ahead at once and applies it once over a deck that already h
   expect(text(ahead.on(stored))).toBe(typed)
   expect(ahead.on(stored).nodes.filter((each) => each === node)).toHaveLength(1)
 })
+
+it("tells once every edit painted ahead so far was written, not one painted after", async () => {
+  const { ahead } = canvas()
+  const steps: string[] = []
+  const first = ahead.hold(personCommands(device, node, "", { value: typed }))
+  const second = ahead.paint(personCommands(device, node, "", { value: typed }))
+  const told = ahead.stored().then(() => steps.push("told"))
+  const later = ahead.hold(personCommands(device, node, "", { value: typed }))
+  second()
+  await Promise.resolve()
+  expect(steps).toEqual([])
+  first()
+  await told
+  expect(steps).toEqual(["told"])
+  expect(ahead.holding()).toBe(true)
+  later()
+})
