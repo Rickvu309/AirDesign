@@ -17,7 +17,14 @@ const sampleWords = [
 ]
 
 const deck: EditorDeck = {
-  slides: { count: 2, current: 0, onSelect: () => undefined, thumbHeight: 101, thumb: () => null },
+  slides: {
+    count: 2,
+    current: 0,
+    onSelect: () => undefined,
+    onAdd: () => undefined,
+    thumbHeight: 101,
+    thumb: () => null,
+  },
   size: { width: 12_192_000, height: 6_858_000 },
   slide: (width) => <div data-real-slide={width} />,
   onExport: () => undefined,

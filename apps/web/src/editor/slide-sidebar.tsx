@@ -159,6 +159,7 @@ function DeckStrip({
   const list = useRef<HTMLDivElement>(null)
   const following = useRef(false)
   const { current, count } = strip
+  const canAdd = count > 0 && strip.onAdd !== undefined
   useLayoutEffect(() => {
     if (!following.current) return
     const next = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${current + 1}"]`)
@@ -255,7 +256,7 @@ function DeckStrip({
       <div className="flex px-3 pb-2">
         <div className={cn("flex h-7 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
           <NewSlideMenu
-            layouts={strip.onAdd === undefined ? [] : (strip.layouts ?? [])}
+            layouts={canAdd ? (strip.layouts ?? []) : []}
             onChoose={(part) => {
               strip.onAdd?.(part)
             }}
@@ -266,6 +267,7 @@ function DeckStrip({
             variant="ghost"
             className="h-7 w-8 rounded-l-none rounded-r-lg px-0 text-foreground hover:bg-black/4 active:translate-y-0"
             aria-label="Add slide"
+            disabled={!canAdd}
             onClick={() => {
               following.current = true
               strip.onAdd?.()
