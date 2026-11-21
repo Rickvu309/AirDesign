@@ -1,36 +1,59 @@
-import type { Color, Palette, SlideSize, TextParagraph, TextRun } from "@airdesign/document"
+import type { Color, SlideSize, TextParagraph, TextRun, TextStyle } from "@airdesign/document"
 
 const point = 12_700
 
 export type Role = "number" | "heading" | "body" | "caption" | "label"
 
+type RoleLook = {
+  readonly font: string
+  readonly bold: boolean
+  readonly color?: Color
+  readonly letterSpacing?: number
+}
+
 export type TypeScale = Readonly<Record<Role, number>> & {
   readonly gap: number
   readonly pad: number
-  readonly font: { readonly heading?: string; readonly body?: string }
+  readonly looks: Readonly<Record<Role, RoleLook>>
 }
 
+const roles: readonly Role[] = ["number", "heading", "body", "caption", "label"]
 const sizes: Readonly<Record<Role, number>> = { number: 36, heading: 16, body: 12, caption: 11, label: 10 }
+const styleNames: Readonly<Record<Role, readonly string[]>> = {
+  number: ["Big number"],
+  heading: ["Heading"],
+  body: ["Body", "Body 1"],
+  caption: ["Caption"],
+  label: ["Label"],
+}
 
 export const typeSteps = [1, 0.9, 0.8, 0.7] as const
 
-export function typeScale(size: SlideSize, palette: Palette | undefined, step: number = 1): TypeScale {
+function namedStyle(styles: readonly TextStyle[], role: Role): TextStyle | undefined {
+  return styleNames[role]
+    .map((name) => styles.find((style) => style.name === name))
+    .find((style) => style !== undefined)
+}
+
+export function typeScale(size: SlideSize, styles: readonly TextStyle[], step: number = 1): TypeScale {
   const unit = (size.height / point / 540) * step
-  const scaled = (role: Role) => Math.max(800, Math.round(sizes[role] * unit) * 100)
-  const fonts = palette?.fonts ?? {}
-  return {
-    number: scaled("number"),
-    heading: scaled("heading"),
-    body: scaled("body"),
-    caption: scaled("caption"),
-    label: scaled("label"),
-    gap: Math.round(size.width * 0.015),
-    pad: Math.round(size.width * 0.02),
-    font: {
-      ...(fonts.major === undefined ? {} : { heading: fonts.major }),
-      ...(fonts.minor === undefined ? {} : { body: fonts.minor }),
-    },
-  }
+  const entries = roles.map((role) => {
+    const style = namedStyle(styles, role)?.fields
+    const strong = role === "number" || role === "heading"
+    const wanted = style?.size === undefined ? Math.round(sizes[role] * unit) * 100 : Math.round(style.size * step)
+    const look: RoleLook = {
+      font: style?.font ?? (strong ? "+mj-lt" : "+mn-lt"),
+      bold: style?.bold ?? strong,
+      ...(style?.color === undefined ? {} : { color: style.color }),
+      ...(style?.letterSpacing === undefined || style.letterSpacing === 0
+        ? {}
+        : { letterSpacing: style.letterSpacing }),
+    }
+    return [role, Math.max(800, wanted), look] as const
+  })
+  const sized = Object.fromEntries(entries.map(([role, value]) => [role, value])) as Record<Role, number>
+  const looks = Object.fromEntries(entries.map(([role, , look]) => [role, look])) as Record<Role, RoleLook>
+  return { ...sized, gap: Math.round(size.width * 0.015), pad: Math.round(size.width * 0.02), looks }
 }
 
 const scheme = (name: string): Color => ({ scheme: name }) as Color
@@ -54,16 +77,18 @@ export type Line = {
 }
 
 function runOf(line: Line, scale: TypeScale): TextRun {
-  const strong = line.role === "number" || line.role === "heading"
-  const font = strong ? scale.font.heading : scale.font.body
+  const look = scale.looks[line.role]
+  const quiet = line.role === "caption" || line.role === "label" ? tones.quiet : tones.ink
+  const spacing = look.letterSpacing ?? (line.upper === true ? 60 : undefined)
   return {
     from: -1,
     text: line.text,
     size: line.size ?? scale[line.role],
-    color: line.color ?? (line.role === "caption" || line.role === "label" ? tones.quiet : tones.ink),
-    ...(font === undefined ? {} : { font }),
-    ...(strong ? { bold: true } : {}),
-    ...(line.upper === true ? { case: "upper", letterSpacing: 60 } : {}),
+    color: line.color ?? look.color ?? quiet,
+    font: look.font,
+    ...(look.bold ? { bold: true } : {}),
+    ...(line.upper === true ? { case: "upper" } : {}),
+    ...(spacing === undefined ? {} : { letterSpacing: spacing }),
   }
 }
 
@@ -119,9 +144,10 @@ function wrappedLines(text: string, room: number, upper: boolean): number {
 export function linesHigh(lines: readonly Line[], scale: TypeScale, width: number): number {
   return lines.reduce((total, line) => {
     const size = (line.size ?? scale[line.role]) / 100
-    const room = Math.max(1, width - (line.bullet === true ? size * 1.9 * point : 0))
-    const strong = line.role === "number" || line.role === "heading"
-    const em = size * point * (strong ? 1.07 : 1) + (line.upper === true ? 0.6 * point : 0)
+    const room = Math.max(1, width - (line.bullet === true ? size * 0.9 * point : 0))
+    const look = scale.looks[line.role]
+    const spacing = (look.letterSpacing ?? (line.upper === true ? 60 : 0)) / 100
+    const em = size * point * (look.bold ? 1.07 : 1) + spacing * point
     const count = wrappedLines(line.text, room / em, line.upper === true)
     const after = line.bullet === true ? (scale.body * 0.35 * point) / 100 : 0
     return total + count * size * 1.22 * point + after

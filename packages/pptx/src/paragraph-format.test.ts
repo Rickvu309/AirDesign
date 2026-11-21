@@ -18,3 +18,13 @@ it("writes a justified paragraph as PowerPoint's algn just, new or over another 
   expect(written(`<a:pPr ${namespace} algn="r"/>`)).toContain('algn="just"')
   expect(written(`<a:pPr ${namespace} algn="r"/>`)).not.toContain('algn="r"')
 })
+
+it("writes a new bullet's hang from its text size, the marker just under an em before the text", () => {
+  const out = paragraphBytes(encodeUtf8(`<a:p ${namespace}/>`), undefined, {
+    from: 0,
+    list: "bullets",
+    runs: [{ from: -1, text: "Point", size: 1200 }],
+  })
+  expect(out === null ? "" : decodeUtf8(out)).toContain('marL="137160"')
+  expect(out === null ? "" : decodeUtf8(out)).toContain('indent="-137160"')
+})

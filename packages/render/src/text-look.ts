@@ -277,8 +277,8 @@ function listOf(paragraph: CanvasParagraph): TextList {
   return bullet == null ? "none" : "char" in bullet ? "bullets" : "numbers"
 }
 
-function levelIndent(text: CanvasText, level: number, list: TextList): ListIndent {
-  return text.templateIndents?.[level] ?? listIndent(level, list)
+function levelIndent(text: CanvasText, level: number, list: TextList, size?: number): ListIndent {
+  return text.templateIndents?.[level] ?? listIndent(level, list, size)
 }
 
 function spaced(text: CanvasText, paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): CanvasParagraph {
@@ -289,7 +289,7 @@ function spaced(text: CanvasText, paragraph: CanvasParagraph, overlay: Paragraph
     ...(level === undefined ? {} : { bullet: leveledBullet(text, paragraph, level) }),
     ...(level === undefined && overlay.list !== "bullets" && overlay.list !== "numbers"
       ? {}
-      : levelIndent(text, level ?? paragraph.level ?? 0, overlay.list ?? listOf(paragraph))),
+      : levelIndent(text, level ?? paragraph.level ?? 0, overlay.list ?? listOf(paragraph), overlay.firstRun?.size)),
     ...(lineHeight === undefined ? {} : { lineHeight: { percent: lineHeight / wholePercent } }),
     ...(lineHeightPoints === undefined ? {} : { lineHeight: { length: lineHeightPoints * emuPerHundredth } }),
     ...(spaceBefore === undefined ? {} : { spaceBefore: { length: spaceBefore * emuPerHundredth } }),

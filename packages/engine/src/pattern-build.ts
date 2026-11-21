@@ -86,12 +86,19 @@ export function layer(
 
 const flush = { left: 0, top: 0, right: 0, bottom: 0 }
 
-export function textLayer(build: Build, box: Box, lines: readonly Line[]): ElementId {
+export function textLayer(build: Build, box: Box, lines: readonly Line[], vertical?: "vert270"): ElementId {
   const node = layer(build, "shape", box, "")
   const value = writeTextValue(paragraphsOf(lines, build.scale))
+  const turned = vertical === undefined ? {} : { vertical: { set: vertical } }
   const patch = {
     text: { value: { set: value } },
-    body: { insets: { set: flush }, autofit: { set: "grow" }, anchor: { set: "t" }, wrap: { set: true } },
+    body: {
+      insets: { set: flush },
+      autofit: { set: vertical === undefined ? "grow" : "none" },
+      anchor: { set: vertical === undefined ? "t" : "ctr" },
+      wrap: { set: true },
+      ...turned,
+    },
   }
   build.register = landed(landRow(build.register, node, { v: format, patch } as never, build.runId))
   return node
