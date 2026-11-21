@@ -98,10 +98,17 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
   const id = nextSlideId(foldSlides(state).map((row) => row.id))
   let edit: SlideCommand
   if (parsed.op === "add_slide") {
-    const layoutSpot = spots.find((row) => row.id === parsed.layout)
-    if (!spots.some((spot) => spot.id === parsed.after) || layoutSpot === undefined)
+    const after = parsed.after ?? spots.at(-1)?.id
+    const named = parsed.layout ?? after
+    const layoutSpot = spots.find((row) => row.id === named)
+    if (
+      after === undefined ||
+      named === undefined ||
+      !spots.some((spot) => spot.id === after) ||
+      layoutSpot === undefined
+    )
       return { ok: false, refusal: "dead" }
-    let layout = parsed.layout
+    let layout = named
     let floor: readonly IndexElement[] | undefined
     for (let count = 0; count <= register.order.length; count += 1) {
       const birth = foldSlides(state).find((row) => row.id === layout)?.birth
@@ -118,10 +125,10 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
     edit = {
       slide: "add",
       id,
-      after: parsed.after,
+      after,
       grid,
       row: parsed.group ?? "same",
-      layout: parsed.layout,
+      layout: named,
       floor: floorFor(floor, id),
     }
   } else if (parsed.op === "move_slides") {
