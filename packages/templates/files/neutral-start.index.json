@@ -1,6 +1,6 @@
 [
   {
-    "format": 97,
+    "format": 98,
     "once": "start",
     "offset": 0,
     "total": 0,
@@ -20,8 +20,16 @@
           "hlink": "2F5BD3",
           "folHlink": "7A5AF8"
         },
-        "map": { "bg1": "lt1", "tx1": "dk1", "bg2": "lt2", "tx2": "dk2" },
-        "fonts": { "major": "Inter SemiBold", "minor": "Inter" }
+        "map": {
+          "bg1": "lt1",
+          "tx1": "dk1",
+          "bg2": "lt2",
+          "tx2": "dk2"
+        },
+        "fonts": {
+          "major": "Inter SemiBold",
+          "minor": "Inter"
+        }
       }
     ],
     "templateStyles": [
@@ -43,17 +51,175 @@
             "hlink": "2F5BD3",
             "folHlink": "7A5AF8"
           },
-          "map": { "bg1": "lt1", "tx1": "dk1", "bg2": "lt2", "tx2": "dk2" },
-          "fonts": { "major": "Inter SemiBold", "minor": "Inter" }
+          "map": {
+            "bg1": "lt1",
+            "tx1": "dk1",
+            "bg2": "lt2",
+            "tx2": "dk2"
+          },
+          "fonts": {
+            "major": "Inter SemiBold",
+            "minor": "Inter"
+          }
         }
       }
     ],
     "sectionStarts": [],
+    "layouts": [
+      {
+        "part": "ppt/slideLayouts/slideLayout1.xml",
+        "name": "Title Slide",
+        "floor": [
+          {
+            "node": "256.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "256.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "256.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "subtitle"
+          }
+        ]
+      },
+      {
+        "part": "ppt/slideLayouts/slideLayout2.xml",
+        "name": "Section Header",
+        "floor": [
+          {
+            "node": "256.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "256.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "part": "ppt/slideLayouts/slideLayout3.xml",
+        "name": "Title and Content",
+        "floor": [
+          {
+            "node": "256.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "256.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "part": "ppt/slideLayouts/slideLayout4.xml",
+        "name": "Two Content",
+        "floor": [
+          {
+            "node": "256.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "256.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "256.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "part": "ppt/slideLayouts/slideLayout5.xml",
+        "name": "Title Only",
+        "floor": [
+          {
+            "node": "256.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "part": "ppt/slideLayouts/slideLayout6.xml",
+        "name": "Closing",
+        "floor": [
+          {
+            "node": "256.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "256.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "part": "ppt/slideLayouts/slideLayout7.xml",
+        "name": "Blank",
+        "floor": []
+      }
+    ],
     "slides": [
       {
         "id": "256",
         "position": 0,
-        "size": { "width": 12192000, "height": 6858000 },
+        "size": {
+          "width": 12192000,
+          "height": 6858000
+        },
         "free": 2,
         "animated": [],
         "textStyles": [
@@ -65,7 +231,9 @@
               "size": 2800,
               "bold": false,
               "italic": false,
-              "color": { "scheme": "tx1" },
+              "color": {
+                "scheme": "tx1"
+              },
               "align": "left",
               "letterSpacing": 0,
               "lineHeight": 105000,
@@ -81,7 +249,9 @@
               "size": 1600,
               "bold": false,
               "italic": false,
-              "color": { "scheme": "tx1" },
+              "color": {
+                "scheme": "tx1"
+              },
               "align": "left",
               "letterSpacing": 0,
               "lineHeight": 125000,
@@ -100,8 +270,14 @@
               "color": {
                 "scheme": "tx1",
                 "transforms": [
-                  { "op": "lumMod", "val": 60000 },
-                  { "op": "lumOff", "val": 40000 }
+                  {
+                    "op": "lumMod",
+                    "val": 60000
+                  },
+                  {
+                    "op": "lumOff",
+                    "val": 40000
+                  }
                 ]
               },
               "align": "left",
@@ -122,8 +298,14 @@
               "color": {
                 "scheme": "tx1",
                 "transforms": [
-                  { "op": "lumMod", "val": 60000 },
-                  { "op": "lumOff", "val": 40000 }
+                  {
+                    "op": "lumMod",
+                    "val": 60000
+                  },
+                  {
+                    "op": "lumOff",
+                    "val": 40000
+                  }
                 ]
               },
               "align": "left",
@@ -141,7 +323,9 @@
               "size": 2000,
               "bold": false,
               "italic": false,
-              "color": { "scheme": "tx1" },
+              "color": {
+                "scheme": "tx1"
+              },
               "align": "left",
               "letterSpacing": 0,
               "lineHeight": 110000,
@@ -160,8 +344,14 @@
               "color": {
                 "scheme": "tx1",
                 "transforms": [
-                  { "op": "lumMod", "val": 60000 },
-                  { "op": "lumOff", "val": 40000 }
+                  {
+                    "op": "lumMod",
+                    "val": 60000
+                  },
+                  {
+                    "op": "lumOff",
+                    "val": 40000
+                  }
                 ]
               },
               "align": "left",
@@ -179,7 +369,9 @@
               "size": 1000,
               "bold": false,
               "italic": false,
-              "color": { "scheme": "accent1" },
+              "color": {
+                "scheme": "accent1"
+              },
               "align": "left",
               "letterSpacing": 100,
               "lineHeight": 120000,
@@ -195,7 +387,9 @@
               "size": 5400,
               "bold": false,
               "italic": false,
-              "color": { "scheme": "tx2" },
+              "color": {
+                "scheme": "tx2"
+              },
               "align": "left",
               "letterSpacing": 0,
               "lineHeight": 100000,

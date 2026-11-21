@@ -1,3 +1,4 @@
+import { readLayouts, type ReadLayout } from "./read-layouts.js"
 import {
   findingsAt,
   pointSize,
@@ -85,6 +86,7 @@ export type ReadDeckAnswer = {
   >[]
   readonly size?: PointSize
   readonly templateStyles?: readonly ReadTemplateStyle[]
+  readonly layouts?: readonly ReadLayout[]
   readonly palettes?: readonly Palette[]
   readonly templateStyle?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
@@ -440,6 +442,7 @@ export function readDeckPage(
       }).map((group) => ({ first: group.slides[0] })),
       ...(sized === undefined ? {} : { size: pointSize(sized) }),
       ...(templateStyles === undefined || query.cursor !== undefined ? {} : { templateStyles }),
+      ...(index?.layouts === undefined || query.cursor !== undefined ? {} : { layouts: readLayouts(index.layouts) }),
       slides: (deck.register.order.length === 0
         ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
         : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position))

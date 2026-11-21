@@ -99,7 +99,8 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
   let edit: SlideCommand
   if (parsed.op === "add_slide") {
     const after = parsed.after ?? spots.at(-1)?.id
-    const named = parsed.layout ?? after
+    const chosen = parsed.layoutAt === undefined ? undefined : index.layouts?.[parsed.layoutAt]
+    const named = chosen === undefined && parsed.layoutAt !== undefined ? undefined : (parsed.layout ?? after)
     const layoutSpot = spots.find((row) => row.id === named)
     if (
       after === undefined ||
@@ -109,8 +110,8 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
     )
       return { ok: false, refusal: "dead" }
     let layout = named
-    let floor: readonly IndexElement[] | undefined
-    for (let count = 0; count <= register.order.length; count += 1) {
+    let floor: readonly IndexElement[] | undefined = chosen?.floor
+    for (let count = 0; chosen === undefined && count <= register.order.length; count += 1) {
       const birth = foldSlides(state).find((row) => row.id === layout)?.birth
       if (birth?.from === "blank" && birth.layoutPart !== undefined) {
         floor = openingRows(register, index, layout)
@@ -129,6 +130,7 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       grid,
       row: parsed.group ?? "same",
       layout: named,
+      ...(chosen === undefined ? {} : { layoutPart: chosen.part }),
       floor: floorFor(floor, id),
     }
   } else if (parsed.op === "move_slides") {

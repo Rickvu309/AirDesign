@@ -82,3 +82,16 @@ it("reads add_slide with neither after nor layout, for the engine to place after
     field: "layout",
   })
 })
+
+it("reads add_slide's layout as a slide id or a layout id from the read", () => {
+  expect(readSlideChange({ op: "add_slide", layout: "L3" })).toEqual({
+    ok: true,
+    change: { op: "add_slide", layoutAt: 2 },
+  })
+  expect(readSlideChange({ op: "add_slide", layout: "257" })).toEqual({
+    ok: true,
+    change: { op: "add_slide", layout: "257" },
+  })
+  for (const layout of ["L0", "L100", "l3", "L", 3, "Title"])
+    expect(readSlideChange({ op: "add_slide", layout })).toEqual({ ok: false, refusal: "field", field: "layout" })
+})

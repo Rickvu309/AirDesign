@@ -56,9 +56,10 @@ type Answer = {
   readonly refusal?: string
   readonly index?: string
   readonly size?: { readonly w: number; readonly h: number }
-  readonly slides?: readonly { readonly id: string }[]
+  readonly slides?: readonly ({ readonly id: string } | string)[]
+  readonly layouts?: readonly unknown[]
   readonly templateStyles?: readonly unknown[]
-  readonly elements?: readonly { readonly node: string; readonly value?: string }[]
+  readonly elements?: readonly { readonly node: string; readonly value?: string; readonly role?: string }[]
   readonly decks?: readonly { readonly deck: string; readonly name: string; readonly trash: boolean }[]
 }
 
@@ -105,6 +106,35 @@ describe("an agent creates a deck", () => {
     expect(added, JSON.stringify(added)).toMatchObject({ ok: true })
     const read = await mcp(cookie, "airdesign_read_deck", { deck })
     expect(read.elements?.map((element) => element.value)).toContain("Agenda")
+  })
+
+  it("lists the deck's layouts and adds a slide on the one the agent picks", async () => {
+    const cookie = await signInByCode(base, mails, "create-layouts@example.com")
+    const made = await mcp(cookie, "airdesign_create_deck", {})
+    expect(made.layouts).toEqual([
+      { id: "L1", name: "Title Slide", placeholders: ["body", "title", "subtitle"] },
+      { id: "L2", name: "Section Header", placeholders: ["body", "title"] },
+      { id: "L3", name: "Title and Content", placeholders: ["title", "body"] },
+      { id: "L4", name: "Two Content", placeholders: ["title", "body", "body"] },
+      { id: "L5", name: "Title Only", placeholders: ["title"] },
+      { id: "L6", name: "Closing", placeholders: ["title", "body"] },
+      { id: "L7", name: "Blank", placeholders: [] },
+    ])
+    const deck = made.deck ?? ""
+    const added = await mcp(cookie, "airdesign_edit_deck", {
+      deck,
+      base: made.revision,
+      changes: [{ op: "add_slide", layout: "L4" }],
+    })
+    expect(added, JSON.stringify(added)).toMatchObject({ ok: true, slides: ["257"] })
+    const read = await mcp(cookie, "airdesign_read_deck", { deck, slide: "257" })
+    expect(read.elements?.map((element) => element.role)).toEqual(["title", "body", "body"])
+    const unknown = await mcp(cookie, "airdesign_edit_deck", {
+      deck,
+      base: added.revision,
+      changes: [{ op: "add_slide", layout: "L9" }],
+    })
+    expect(unknown.refusal).toBe("dead")
   })
 
   it("stores the start deck as the original a tab opens", async () => {

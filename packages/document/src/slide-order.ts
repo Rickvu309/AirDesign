@@ -16,6 +16,7 @@ import { groupCommand, readGroupCommand, type GroupCommand } from "./element-gro
 import { groupRefusal } from "./group-refusal.js"
 import { elementCommand, elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
 import { readElementOrder, stackRefusal } from "./element-stack.js"
+import { readLayoutPart } from "./index-layout.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
 import { readFloor } from "./slide-floor.js"
@@ -224,12 +225,6 @@ function slideList(raw: unknown): readonly SlideId[] | undefined {
     ids.push(id)
   }
   return ids
-}
-
-const layoutPartPattern = /^ppt(?:\/[A-Za-z0-9_-]{1,100}){1,4}\.xml$/
-
-function readLayoutPart(raw: unknown): string | undefined {
-  return typeof raw === "string" && layoutPartPattern.test(raw) ? raw : undefined
 }
 
 function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {

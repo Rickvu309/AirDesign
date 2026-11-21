@@ -291,7 +291,7 @@ describe("index format", () => {
 
   it("keeps the recorded index keys and the stamp that introduced them", () => {
     const recorded = {
-      stamp: 22,
+      stamp: 23,
       keys: {
         page: [
           "format",
@@ -301,6 +301,7 @@ describe("index format", () => {
           "palettes",
           "templateStyles",
           "sectionStarts",
+          "layouts",
           "slides",
           "elements",
         ],
