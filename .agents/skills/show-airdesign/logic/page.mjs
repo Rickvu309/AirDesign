@@ -147,9 +147,39 @@ h1{margin:6px 0 0;text-align:center;font-size:28px;line-height:34px;font-weight:
 .kids>.node::after{content:"";position:absolute;left:-${String(gap / 2)}px;top:0;bottom:0;border-left:2.2px solid ${ink};filter:url(#rough)}
 .kids>.node:first-child::after{top:50%}
 .kids>.node:last-child::after{bottom:50%}
+.answer{margin:18px auto 0;max-width:720px;text-align:center;font-size:17px;line-height:24px;font-weight:600;color:#333}
+.answer .verdict{margin:0 0 0 8px;vertical-align:2px}
+.flow{position:relative;display:flex;align-items:stretch;margin-top:36px}
+.flow.loops{margin-top:84px;margin-right:34px}
+.step{display:flex;flex-direction:column;justify-content:center;--width:${String(widths[1])}px}
+.arrow{flex:none;align-self:center;position:relative;width:58px;height:0;border-top:2.4px solid ${ink};filter:url(#rough)}
+.arrow::after{content:"";position:absolute;right:-2px;top:-8px;border:7px solid transparent;border-left:12px solid ${ink};border-right:0}
+.loop-over{position:absolute;top:-52px;left:${String(widths[1] / 2)}px;right:-30px;height:52px;border:2.4px solid ${ink};border-bottom:0;border-radius:10px 10px 0 0;filter:url(#rough)}
+.loop-over::after{content:"";position:absolute;left:-8.5px;bottom:-2px;border:7px solid transparent;border-top:12px solid ${ink};border-bottom:0}
+.loop-back{position:absolute;top:-2px;right:-30px;width:30px;height:50%;border-right:2.4px solid ${ink};border-bottom:2.4px solid ${ink};border-radius:0 0 10px 0;filter:url(#rough)}
+.details{list-style:none;margin:10px 0 0;padding:9px 0 0;border-top:1.4px solid #ccc;display:flex;flex-direction:column;gap:7px}
+.details li{font-size:13px;line-height:18px;color:#333}
+.details b{display:inline-block;min-width:24px;font-size:11px;font-weight:700;color:${ink}}
+.details .verdict{margin:4px 0 0 0;display:block;width:max-content}
+.caption{margin:18px 0 0;text-align:center;font-size:13px;color:#666}
 footer{margin-top:22px;display:flex;justify-content:space-between;gap:24px;font-size:12px;color:#777}`
 
 const rough = `<svg width="0" height="0" style="position:absolute"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="2.6"/></filter></svg>`
+
+function stepHtml(node) {
+  const details = node.children
+    ? `<ul class="details">${node.children.map((child) => `<li><b>${child.label}</b><span>${escape(child.claim)}</span>${chip(child.verdict)}${evidenceHtml(child.evidence)}</li>`).join("")}</ul>`
+    : ""
+  return `<div class="box step"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}</p>${chip(node.verdict)}${evidenceHtml(node.evidence)}${details}</div>`
+}
+
+function flowHtml(tree) {
+  const steps = tree.children.map(stepHtml).join('<i class="arrow"></i>')
+  const loop = tree.group.loop ? '<i class="loop-over"></i><i class="loop-back"></i>' : ""
+  return `<p class="answer">${escape(tree.claim)} ${chip(tree.verdict)}</p>
+<section class="flow${tree.group.loop ? " loops" : ""}">${loop}${steps}</section>
+<p class="caption">${escape(capital(tree.group.covers))}</p>`
+}
 
 export function toHtml(tree, css = "") {
   const evidence = evidenceOf(tree)
@@ -162,9 +192,7 @@ export function toHtml(tree, css = "") {
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}${style}</style></head><body>${rough}<main>
 <div class="kind">${kindWords[tree.kind].toUpperCase()}</div>
 <h1>${escape(tree.question)}</h1>
-${columns.head}
-<section class="tree">${nodeHtml(tree, 0)}</section>
-${columns.foot}
-<footer><span>Evidence: ${counts}</span><span>Each verdict is the weakest one beneath it</span></footer>
+${tree.group.axis === "steps" ? flowHtml(tree) : `${columns.head}<section class="tree">${nodeHtml(tree, 0)}</section>${columns.foot}`}
+<footer><span>Evidence: ${counts}</span>${tree.verdict === null ? "" : "<span>Each verdict is the weakest one beneath it</span>"}</footer>
 </main></body></html>`
 }

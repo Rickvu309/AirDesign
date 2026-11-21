@@ -59,6 +59,29 @@ describe("a logic page", () => {
     expect(html).toContain("Evidence: Observed 2")
   })
 
+  it("draws a steps split as a flow, loops back when asked, and leaves out the verdict note when nothing has one", () => {
+    const flow = readTree(
+      {
+        kind: "explain",
+        question: "How does an agent hand work to the owner?",
+        answer: {
+          claim: "Show the plan, prove it, show the result",
+          group: { axis: "steps", covers: "one round of work", loop: true },
+          children: [
+            { claim: "Show the plan first", evidence: [{ ref: "plan.md", source: "Proposal" }] },
+            { claim: "Prove the change with Verify", evidence: [{ ref: "proof.md", source: "Observed" }] },
+          ],
+        },
+      },
+      { resolves: () => true },
+    ).tree
+    const html = toHtml(flow)
+    expect(html).toContain('<section class="flow loops"><i class="loop-over"></i><i class="loop-back"></i>')
+    expect(html.match(/<i class="arrow"><\/i>/g)).toHaveLength(1)
+    expect(html).not.toContain('class="tree"')
+    expect(html).not.toContain("Each verdict is the weakest")
+  })
+
   it("shortens a reference to what a reader recognises", () => {
     expect(shortRef(".agents/skills/verify-airdesign/look/before-after.mjs:180")).toBe("before-after.mjs:180")
     expect(shortRef("https://github.com/o/r/releases/download/proof-4/a%20b.png")).toBe("a b.png")

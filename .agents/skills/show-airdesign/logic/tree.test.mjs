@@ -116,6 +116,15 @@ describe("the rules a tree must keep", () => {
     expect(rules(input)).toEqual(["horizontal", "horizontal"])
   })
 
+  it("horizontal: only a steps split may loop back to its first step", () => {
+    const input = result()
+    input.answer.group.loop = true
+    expect(rules(input)).toEqual(["horizontal"])
+    const flow = result({ kind: "explain" })
+    flow.answer.group = { axis: "steps", covers: "one round of review", loop: true }
+    expect(rules(flow)).toEqual([])
+  })
+
   it("grounded: every leaf has evidence and every reference opens", () => {
     const input = result()
     input.answer.children[0].evidence = []

@@ -75,6 +75,8 @@ function readNode(node, place, context) {
   if (!axes.includes(group.axis)) refuse("horizontal", label, `name the split's axis: one of ${axes.join(", ")}`)
   if (typeof group.covers !== "string" || group.covers.trim() === "")
     refuse("horizontal", label, "say what the split covers, so a reader can see whether a branch is missing")
+  if ("loop" in group && (group.axis !== "steps" || typeof group.loop !== "boolean"))
+    refuse("horizontal", label, "only a steps split can loop, and loop is true or false")
   if (depth === 0 && axes.includes(group.axis) && !axesFor[kind].includes(group.axis))
     refuse("vertical", label, `a ${kind} question splits first by ${axesFor[kind].join(" or ")}, not ${group.axis}`)
   const children = node.children.map((child, index) =>
