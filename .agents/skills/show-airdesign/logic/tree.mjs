@@ -13,7 +13,7 @@ const codeWords = [
   /\b\w+_\w+/,
   /\(\)|=>/,
 ]
-const longest = { answer: 22, claim: 16, covers: 14, question: 16 }
+const longest = { answer: 22, claim: 16, covers: 14, question: 16, detail: 28 }
 
 export function unplain(text, limit) {
   if (typeof text !== "string") return null
@@ -74,6 +74,12 @@ function readNode(node, place, context) {
     refuse("sentence", label, "write the claim as a sentence of at least three words, not a topic")
   const loud = unplain(node.claim, depth === 0 ? longest.answer : longest.claim)
   if (loud) refuse("plain", label, loud)
+  if ("detail" in node) {
+    const murky =
+      typeof node.detail !== "string" ? "a detail is one or two plain sentences" : unplain(node.detail, longest.detail)
+    if (murky) refuse("plain", label, `detail: ${murky}`)
+  }
+  const said = typeof node.detail === "string" ? { detail: node.detail } : {}
   const branch = Array.isArray(node.children)
   const leaf = Array.isArray(node.evidence)
   if (branch === leaf) {
@@ -85,7 +91,13 @@ function readNode(node, place, context) {
     return { label, claim: node.claim, verdict: null }
   }
   if (leaf)
-    return { label, claim: node.claim, evidence: node.evidence, verdict: readEvidence(node.evidence, label, context) }
+    return {
+      label,
+      claim: node.claim,
+      ...said,
+      evidence: node.evidence,
+      verdict: readEvidence(node.evidence, label, context),
+    }
   const count = node.children.length
   if (count < 2 || count > 4)
     refuse("shape", label, `a branch holds two to four children; this one holds ${String(count)}`)
@@ -103,7 +115,14 @@ function readNode(node, place, context) {
   const children = node.children.map((child, index) =>
     readNode(child, { label: labelOf(label, index, depth + 1), depth: depth + 1 }, context),
   )
-  return { label, claim: node.claim, group, children, verdict: weakest(children.map((child) => child.verdict)) }
+  return {
+    label,
+    claim: node.claim,
+    ...said,
+    group,
+    children,
+    verdict: weakest(children.map((child) => child.verdict)),
+  }
 }
 
 export function readTree(input, { resolves }) {
