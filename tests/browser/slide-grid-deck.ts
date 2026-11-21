@@ -120,6 +120,7 @@ export function entry(page: Page, number: number) {
 export async function openGrid(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Grid" }).click()
   await expect(page.locator("[data-editor-grid]")).toBeVisible()
+  await page.waitForFunction(() => !document.documentElement.matches(":active-view-transition"))
 }
 
 export function groupNumbers(page: Page): Promise<number[][]> {
