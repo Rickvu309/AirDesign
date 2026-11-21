@@ -111,7 +111,7 @@ function headsHtml(tree) {
 
 function stepHtml(node, images) {
   const points = node.children
-    ? `<ul class="points">${node.children.map((child) => `<li${unbuilt(child) ? ' class="unbuilt"' : ""}><b>${child.label}</b>${escape(child.claim)}${mark(child.verdict)}</li>`).join("")}</ul>`
+    ? `<ul class="points">${node.children.map((child) => `<li${unbuilt(child) ? ' class="unbuilt"' : ""}><b>${child.label}</b>${escape(child.claim)}${mark(child.verdict)}${thumbnail(child, images)}</li>`).join("")}</ul>`
     : ""
   return `<div class="${boxClass(node, 1, false)} step"><span class="badge">${node.label}</span><p class="claim">${escape(node.claim)}${mark(node.verdict)}</p>${thumbnail(node, images)}${points}</div>`
 }

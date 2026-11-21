@@ -160,7 +160,9 @@ describe("a logic page", () => {
       { resolves: () => true },
     ).tree
     const html = toHtml(flow)
-    expect(html).toContain('<li class="unbuilt"><b>B2</b>Check it looks right</li>')
+    expect(toHtml(flow, "", { "b.png": "data:image/png;base64,AA==" })).toContain(
+      '<li class="unbuilt"><b>B2</b>Check it looks right<img class="thumb" src="data:image/png;base64,AA==" alt=""></li>',
+    )
     expect(html).toContain("Dashed: not built yet")
   })
 
