@@ -2,6 +2,7 @@ import { colorPattern, hexPattern } from "./agent-color.js"
 import * as z from "zod/v4"
 
 import { advertisedSchema } from "./advertised-schema.js"
+import { readCreateDeck } from "./create-wire.js"
 import { readAgentEdit } from "./edit-wire.js"
 import { readDeckQuery, readListDecks } from "./read-wire.js"
 import { sharedSchemas } from "./shared-schema.js"
@@ -52,6 +53,13 @@ export type AgentTool<Op extends string = AgentOp> = {
 
 export const catalog = {
   commit_edits: { kind: "command", exposure: "web" },
+  create_deck: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    read: readCreateDeck,
+    description: "Create a blank deck this account owns. The answer has its deck id and its first airdesign_read_deck.",
+  },
   index_deck: { kind: "action", exposure: "web", runsOn: "server" },
   start_run: { kind: "command", exposure: "web" },
   stop_run: {

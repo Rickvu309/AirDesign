@@ -23,6 +23,12 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't list your decks",
     stopped: "Stopped listing your decks",
   },
+  create_deck: {
+    working: "Creating a deck",
+    done: "Created a deck",
+    refused: "Couldn't create a deck",
+    stopped: "Stopped creating a deck",
+  },
   stop_run: null,
 }
 

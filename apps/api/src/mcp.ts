@@ -1,6 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { notifyKey, readDeckId, readNamedDeck, type DeckId, type FindingsReport } from "@airdesign/catalog"
+import {
+  notifyKey,
+  readCreateDeck,
+  readDeckId,
+  readNamedDeck,
+  type DeckId,
+  type FindingsReport,
+} from "@airdesign/catalog"
 import { measureOwed, readSlideId } from "@airdesign/document"
 import { openDeck, ownedDecks, type Deck } from "@airdesign/engine"
 import {
@@ -28,6 +35,7 @@ import { fetchImage, type ImageNet } from "./image-fetch.js"
 import { keepMedia } from "./media.js"
 import type { OriginalStore } from "./original-store.js"
 import { admitCaller, refundCaller } from "./caller-log.js"
+import { createDeck } from "./create-deck.js"
 import { readOwnedDecks } from "./deck-list.js"
 import type { DeckFindings } from "./deck-findings.js"
 import type { DeckPictures } from "./deck-pictures.js"
@@ -47,6 +55,7 @@ export type McpHost = {
   readonly bodyCap: number
   readonly fail: (error: unknown) => void
   readonly measures?: Measures
+  readonly originals?: OriginalStore | undefined
   readonly images?: { readonly store: OriginalStore | undefined; readonly net: ImageNet }
 }
 
@@ -173,6 +182,21 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
         } catch {
           return { ok: false, refusal: "store" }
         }
+        return { ok: true }
+      }
+      if (name === "airdesign_create_deck") {
+        const asked = readCreateDeck(raw)
+        if (!asked.ok) return asked
+        const once = session.once ?? host.mint()
+        const made = await createDeck(host.deck, host.originals, host.email, { once, name: asked.name }).catch(
+          () => ({ ok: false, refusal: "store" }) as const,
+        )
+        if (!made.ok) return made
+        await turns.load(made.deck.id).catch(() => undefined)
+        loaded = made.deck
+        storedIndex = made.storedIndex
+        session.deck = loaded
+        session.created = made.created
         return { ok: true }
       }
       const named = readNamedDeck(raw)

@@ -1,5 +1,6 @@
 import type { ReadPictures } from "./slide-pictures.js"
 import type { NamedImages } from "./named-image.js"
+import { createDeckTool, type CreateDeckAnswer, type CreatedDeck } from "./create-tool.js"
 import { editDeck } from "./edit-tool.js"
 import { catalog, projectTools, readRun, type AgentOp, type FindingsReport, type WireRefusal } from "@airdesign/catalog"
 import {
@@ -29,6 +30,7 @@ export type Session = {
   once?: string | undefined
   readonly idleWindow?: number
   owned?: readonly OwnedDeck[]
+  created?: CreatedDeck
   images?: NamedImages
   findings?: FindingsReport | undefined
 }
@@ -46,7 +48,7 @@ export type ToolResult =
       readonly deck: Deck
       readonly content: readonly ToolContent[]
       readonly answer?: EditAnswer
-      readonly reported?: ReadDeckAnswer | ListDeckAnswer
+      readonly reported?: ReadDeckAnswer | ListDeckAnswer | CreateDeckAnswer
       readonly pictures?: readonly PictureBlock[]
     }
   | {
@@ -90,6 +92,11 @@ export const agentOps: Record<
     turnRun: (answer: Extract<EditAnswer, { ok: true }>, held: Turn | undefined) => string | null | undefined
   }
 > = {
+  create_deck: {
+    handle: createDeckTool,
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: () => undefined,
+  },
   edit_deck: {
     handle: editDeck,
     refuse: (deck, code) => editRefusal(deck, code, []),

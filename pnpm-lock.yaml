@@ -240,6 +240,9 @@ importers:
       '@airdesign/oauth':
         specifier: workspace:*
         version: link:../../packages/oauth
+      '@airdesign/templates':
+        specifier: workspace:*
+        version: link:../../packages/templates
       '@airdesign/usage':
         specifier: workspace:*
         version: link:../../packages/usage

@@ -442,6 +442,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
         findings: options.findings,
         pictures: options.pictures,
       },
+      originals: options.originals,
       images: { store: options.originals, net: options.imageNet ?? nodeNet },
     },
     req,
