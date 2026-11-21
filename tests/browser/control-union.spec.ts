@@ -44,6 +44,7 @@ test("a union picks one case of a field, shows the pick and its own controls, an
   await expect.poll(() => filled(shape)).toBe(own)
   await kind("None").click()
   await expect.poll(() => filled(shape)).toBe("rgba(0, 0, 0, 0)")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect.poll(() => filled(shapeAt(page, "2"))).toBe("rgba(0, 0, 0, 0)")

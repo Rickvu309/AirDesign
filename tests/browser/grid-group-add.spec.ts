@@ -200,6 +200,7 @@ test("leaving text editing restores the below add and keeps the text edit", asyn
   await page.getByRole("button", { name: "Add text", exact: true }).click()
   await page.locator('[data-grid-edit] [contenteditable="true"]').first().fill("Text in the new row")
   await entry(page, 1).focus()
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await openGrid(page)

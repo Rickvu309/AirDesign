@@ -68,6 +68,7 @@ test("inserts a waterfall, edits its changes and totals in the Data grid, keeps 
   await total(4).click()
   await expect(label("+9")).toHaveCount(1)
   await expect(label("127")).toHaveCount(1)
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(label("+20")).toHaveCount(1)

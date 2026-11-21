@@ -27,6 +27,7 @@ test("recolours one slice of an imported pie and keeps it through a reload", asy
   const slice = settings.getByLabel("Inside principal cities", { exact: true })
   await typeColor(page, slice.getByRole("button").first(), navy)
   await expect(page.locator(`[data-slide-paint] svg[data-chart=pie] [fill="#${navy}"]`)).toHaveCount(1)
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await page.locator('[data-slide-entry="19"]').click()
@@ -49,6 +50,7 @@ test("names a new bar chart's axes and keeps the titles through a reload", async
     await field.press("Enter")
     await expect(canvas.locator("[data-chart-text]").filter({ hasText: text })).toHaveCount(1)
   }
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(canvas.locator("[data-chart-text]").filter({ hasText: "Revenue ($M)" })).toHaveCount(1)

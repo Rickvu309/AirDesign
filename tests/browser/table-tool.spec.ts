@@ -36,6 +36,7 @@ test("Insert table picks rows and columns by drag or Shift+T, and Tab types acro
   await expect(table.locator('[data-table-text="1.1"]')).toBeFocused()
   await page.keyboard.press("Escape")
   await expect(table).toBeFocused()
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(table).toContainText("Revenue")

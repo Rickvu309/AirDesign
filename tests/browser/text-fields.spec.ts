@@ -75,6 +75,7 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
         .toBe('"2."')
       await editor.press("Escape")
     }
+    await decks.ready()
     await page.reload()
     await decks.ready()
     const file = info.outputPath(`${feature}.pptx`)

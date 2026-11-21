@@ -59,6 +59,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
   const centred = await placed(page, element)
   await expect.poll(() => turned(shape)).toBe("rotate(45deg) scale(-1, 1)")
 
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await actualSize(page)

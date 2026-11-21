@@ -135,6 +135,7 @@ test("a skipped slide survives offline edits, undo and an exported slide show @e
   await expect(entry).not.toHaveAttribute("data-slide-skipped", "true")
   await choose(slideListCopy.skip)
   await expect(entry).toHaveAttribute("data-slide-skipped", "true")
+  await decks.ready()
   await page.reload()
   await expect(entry).toHaveAttribute("data-slide-skipped", "true")
   await page.locator('[data-slide-entry="1"]').click()

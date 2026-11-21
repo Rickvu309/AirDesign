@@ -8,6 +8,7 @@ import { changeDesign } from "@/design/design-change"
 import { selectionMatches } from "@/editor/matching-layers"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deckInserts } from "@/editor/inserts"
+import { useLeaveGuard } from "@/editor/leave-guard"
 import { storeLane } from "@/editor/store-lane"
 import { useDeckPaint } from "@/editor/use-deck-paint"
 import { saveStatus, useDeckStatus } from "@/editor/use-deck-status"
@@ -24,7 +25,6 @@ export type EditorDeck = ReturnType<typeof useEditorDeck>
 
 export function useEditorDeck(id: string) {
   const status = useDeckStatus(id)
-  const save = saveStatus(status)
   const { settle } = status
   const [title, setTitle] = useState("")
   const [selection, setSelection] = useState<Selection>(noSelection)
@@ -35,6 +35,8 @@ export function useEditorDeck(id: string) {
   const pictures = { store: usePictureStore() }
   const notesBar = useNotes({ id, typed, sessions, records, settle })
   const shown = useDeckPaint(id, pictures, notesBar)
+  const { painting, unsent } = useLeaveGuard(status.pending, shown.ahead)
+  const save = saveStatus({ ...status, pending: unsent })
   const slides = shown.store.current.slides()
   const local = slides[shown.current]?.elements
   const matching =
@@ -116,6 +118,7 @@ export function useEditorDeck(id: string) {
   const exported = useExport({ id, records, pictureTool, paint: shown.store, setFailure: status.setFailure })
   return {
     ...status,
+    painting,
     save: status.paintedDeck === id ? save : null,
     id,
     title,

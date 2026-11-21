@@ -119,6 +119,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   await expect.poll(async () => (await look(icon)).image).toContain("data:image/svg+xml")
   const recoloured = await look(photo)
 
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect.poll(async () => (await look(canvas(page, photoKey))).filter).toBe(recoloured.filter)

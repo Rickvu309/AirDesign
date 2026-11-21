@@ -1,6 +1,7 @@
 import { copyFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
+import { decksOn } from "./deck-test"
 import { openDeck, designing } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { shapeAt, partsOf } from "./shape-fills"
@@ -14,6 +15,7 @@ test("a person saves and removes a whole text element URL @export", async ({ pag
   await field.fill("https://example.com")
   await field.press("Enter")
   await expect(field).toHaveValue("https://example.com")
+  await decksOn(page).ready()
   await page.reload()
   await designing(page, shapeAt(page, "2"))
   await expect(field).toHaveValue("https://example.com")
@@ -67,6 +69,7 @@ test("a person links selected words, sees Mixed, and picks a stable slide @expor
   await panel.getByRole("button", { name: linkCopy.slides }).click()
   await page.getByRole("menuitem", { name: `${linkCopy.slide} 1`, exact: true }).click()
   await expect(field).toHaveValue("1")
+  await decksOn(page).ready()
   await page.reload()
   await designing(page, shape)
   await expect(field).toHaveValue("1")

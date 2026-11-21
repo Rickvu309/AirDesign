@@ -66,6 +66,7 @@ test("inserts stacked, 100% stacked and horizontal bar charts, keeps them throug
     "true",
   )
   await expect(page.locator("[data-slide-paint] [data-chart-text]").filter({ hasText: /^100%$/ })).toHaveCount(1)
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(painted).toHaveCount(3)
