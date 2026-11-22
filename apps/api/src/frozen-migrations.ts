@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { readFileSync, writeFileSync } from "node:fs"
 
-import type { Migration } from "./migrations.js"
+import type { Migration } from "./migration.js"
 
 export type FrozenMigration = { readonly id: number; readonly sha256: string }
 
