@@ -10,7 +10,8 @@ import {
   readFrozenMigrations,
   recordFrozenMigrations,
 } from "./frozen-migrations.js"
-import { migrations, type Migration } from "./migrations.js"
+import type { Migration } from "./migration.js"
+import { migrations } from "./migrations.js"
 
 const tempFolders: string[] = []
 

@@ -1,6 +1,5 @@
 import { doomMigrations } from "./doom-migrations.js"
-
-export type Migration = { readonly id: number; readonly sql: string }
+import type { Migration } from "./migration.js"
 
 export const migrations: readonly Migration[] = [
   {

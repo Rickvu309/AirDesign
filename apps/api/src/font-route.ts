@@ -1,6 +1,5 @@
 import { fontRevision, fontRoutes } from "@airdesign/fonts"
 import type { IncomingMessage, ServerResponse } from "node:http"
-import type { Route } from "./server.js"
 import { FontSource } from "./font-source.js"
 import type { OriginalStore } from "./original-store.js"
 
@@ -69,10 +68,16 @@ const answers = [
   { path: fontRoutes.file.path, answer: file },
 ]
 
-export const fontRouteList: readonly Route[] = answers.map(({ path, answer }) => ({
-  method: "GET",
+type FontVisit = {
+  readonly options: { readonly originals?: OriginalStore }
+  readonly query: URLSearchParams
+  readonly res: ServerResponse
+}
+
+export const fontRouteList = answers.map(({ path, answer }) => ({
+  method: "GET" as const,
   path,
-  serve: ({ options, query, res }) => answer({ store: options.originals, query, res }),
+  serve: ({ options, query, res }: FontVisit) => answer({ store: options.originals, query, res }),
 }))
 
 export function fontMiddleware(store: OriginalStore) {
