@@ -22,8 +22,15 @@ export function schemeOf(style: CanvasRunStyle, colors: readonly CanvasTemplateC
   return found === undefined ? null : { scheme: found.scheme }
 }
 
+function slotOf(colors: readonly CanvasTemplateColor[]): (scheme: string) => string | null {
+  return (scheme) =>
+    cssHex(
+      colors.find((swatch) => swatch.scheme === scheme || swatch.mapped?.some((slot) => slot === scheme))?.css ?? null,
+    )
+}
+
 export function paintedColor(color: Color, colors: readonly CanvasTemplateColor[], file: string | null): string | null {
-  const slot = (scheme: string) => cssHex(colors.find((swatch) => swatch.scheme === scheme)?.css ?? null)
+  const slot = slotOf(colors)
   const hex = colorPaint(
     { ...color, transforms: (color.transforms ?? []).filter(({ op }) => !op.startsWith("alpha")) },
     slot,
@@ -38,9 +45,7 @@ export function gradientLook(fill: TextFill | undefined, colors: readonly Canvas
   if (fill === undefined || !("gradient" in fill)) return {}
   const gradient = fill.gradient
   const css = (color: Color) => {
-    const painted = colorPaint(color, (scheme) =>
-      cssHex(colors.find((swatch) => swatch.scheme === scheme)?.css ?? null),
-    )
+    const painted = colorPaint(color, slotOf(colors))
     if (painted === null) return "black"
     const alpha =
       painted.alpha >= 1

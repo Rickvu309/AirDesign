@@ -1,4 +1,4 @@
-import type { ListIndent, TextFill, SchemeName } from "@airdesign/document"
+import type { ListIndent, MappedSlot, TextFill, SchemeName } from "@airdesign/document"
 
 export type CanvasFit =
   | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number; readonly held?: true }
@@ -6,7 +6,11 @@ export type CanvasFit =
 
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
 
-export type CanvasTemplateColor = { readonly scheme: SchemeName; readonly css: string }
+export type CanvasTemplateColor = {
+  readonly scheme: SchemeName
+  readonly css: string
+  readonly mapped?: readonly MappedSlot[]
+}
 
 export type CanvasBullet = {
   readonly font: string | null
