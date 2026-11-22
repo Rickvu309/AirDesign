@@ -1,9 +1,9 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
-import type { AiraEnd, AiraExchange, AiraStep, ToolState } from "@/aira-loop"
-import { ExchangeView } from "@/aira-reply"
-import { stepLine } from "@/aira-steps"
+import type { AiraEnd, AiraExchange, AiraStep, ToolState } from "@/aira/aira-loop"
+import { ExchangeView } from "@/aira/aira-reply"
+import { stepLine } from "@/aira/aira-steps"
 import { airaCopy } from "@/copy/aira-copy"
 import { productCopy } from "@/copy/product-copy"
 

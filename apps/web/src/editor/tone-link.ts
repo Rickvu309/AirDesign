@@ -1,5 +1,5 @@
 import type { ElementId } from "@airdesign/document"
-import type { ToneScope } from "@/aira-prompts"
+import type { ToneScope } from "@/aira/aira-prompts"
 import type { ToneControlFor } from "@/editor/adjust-tone"
 
 export type ToneLink = {

@@ -1,4 +1,4 @@
-import type { WeekUsage } from "@/aira-wire"
+import type { WeekUsage } from "@/aira/aira-wire"
 
 export type ClockFormat = { readonly locale?: string; readonly timeZone?: string }
 

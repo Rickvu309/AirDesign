@@ -12,8 +12,8 @@ import {
   type ToolAnswer,
   type ToolCall,
 } from "@airdesign/catalog"
-import { cappedPictures, toolAnswer } from "@/aira-answers"
-import { airaLine, bodyLines, fieldsOf, toolOutcome, weekUsage, type WeekUsage } from "@/aira-wire"
+import { cappedPictures, toolAnswer } from "@/aira/aira-answers"
+import { airaLine, bodyLines, fieldsOf, toolOutcome, weekUsage, type WeekUsage } from "@/aira/aira-wire"
 
 export type ToolState = "working" | "done" | "refused" | "stopped"
 

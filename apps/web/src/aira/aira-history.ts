@@ -8,7 +8,7 @@ import {
   type AiraExchange,
   type AiraStep,
   type ToolState,
-} from "@/aira-loop"
+} from "@/aira/aira-loop"
 
 export type SavedChat = {
   readonly id: string

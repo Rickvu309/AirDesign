@@ -1,6 +1,6 @@
 import { openRegister, type ElementId } from "@airdesign/document"
 import { textValue } from "@airdesign/render"
-import type { ToneScope } from "@/aira-prompts"
+import type { ToneScope } from "@/aira/aira-prompts"
 import { deviceScope } from "@/design/trait-edit"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 

@@ -2,13 +2,13 @@
   "check": "checks-server.md#aira-loop",
   "covers": [
     {
-      "file": "apps/web/src/aira-loop.ts",
+      "file": "apps/web/src/aira/aira-loop.ts",
       "names": ["askAira", "retryAira", "converse", "callTool", "stopAsk", "continues", "landedIn", "closeRuns"],
       "digest": "0aa5d29c1a7c",
       "blob": "3e06e502c548c69cf91a5b30026d13ceca2edf43"
     },
     {
-      "file": "apps/web/src/aira-panel.tsx",
+      "file": "apps/web/src/aira/aira-panel.tsx",
       "names": ["AiraPanel"],
       "digest": "7aa24c96f8c9",
       "blob": "62f863a80d4effde344e4fd84ee0128aad7c9fc7"

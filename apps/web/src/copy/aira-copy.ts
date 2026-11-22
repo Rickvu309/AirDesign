@@ -1,5 +1,5 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
-import type { ToolState } from "@/aira-loop"
+import type { ToolState } from "@/aira/aira-loop"
 import { elementCopy } from "./element-copy.ts"
 
 export type StepWords = Readonly<Record<ToolState, string>>

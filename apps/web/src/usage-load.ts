@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { airaRoutes } from "@airdesign/catalog"
-import { fieldsOf, weekUsage, type WeekUsage } from "@/aira-wire"
+import { fieldsOf, weekUsage, type WeekUsage } from "@/aira/aira-wire"
 
 export type UsageLoad =
   | { readonly kind: "usage"; readonly email: string; readonly usage: WeekUsage; readonly available: boolean }

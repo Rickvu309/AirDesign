@@ -1,12 +1,4 @@
 apps/web/src:
-  apps/web/src/aira-prompts.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/adjust-tone.tsx
-      - apps/web/src/editor/tone-link.ts
-      - apps/web/src/editor/tone-scope.ts
   apps/web/src/canvas-slide.ts:
     violations:
       - dependency
@@ -293,9 +285,3 @@ apps/web/src:
       - apps/web/src/editor/box-moves.ts
       - apps/web/src/editor/inserts.ts
       - apps/web/src/editor/slide-commands.tsx
-  apps/web/src/usage-ring.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/agent-panel.tsx

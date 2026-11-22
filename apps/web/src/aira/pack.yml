@@ -1,0 +1,13 @@
+layer: feature
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/lib
+  - apps/web/src/settings
+public:
+  - aira-loop.ts
+  - aira-panel.tsx
+  - aira-prompts.ts
+  - aira-usage.ts
+  - aira-wire.ts
+  - usage-ring.tsx

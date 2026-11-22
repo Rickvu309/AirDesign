@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { AiraPanel } from "@/aira-panel"
+import { AiraPanel } from "@/aira/aira-panel"
 import { doomAgentUndo } from "./doom-agent-undo"
 import type { EditorClient } from "./use-doom-deck"
 

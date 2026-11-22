@@ -11,7 +11,7 @@ const sha = "a".repeat(40)
 const image = `![Annotated before and after](https://github.com/${repository}/releases/download/proof/pr-12-annotated-1-abcdef1234.png)`
 
 for (const file of [
-  "apps/web/src/aira-panel.tsx",
+  "apps/web/src/aira/aira-panel.tsx",
   "apps/web/src/index.css",
   "apps/web/src/copy/product-copy.ts",
   "apps/site/src/landing/hero.astro",
@@ -22,8 +22,8 @@ for (const file of [
   same(`${file} is something a person sees`, seen(file), true)
 
 for (const file of [
-  "apps/web/src/aira-steps.test.ts",
-  "apps/web/src/aira-steps.ts",
+  "apps/web/src/aira/aira-steps.test.ts",
+  "apps/web/src/aira/aira-steps.ts",
   "apps/web/src/live-sync.ts",
   "packages/render/src/slide-canvas-move.test.ts",
   "tests/browser/aira-panel.spec.ts",
@@ -70,7 +70,7 @@ same(
   true,
 )
 
-const files = ["apps/web/src/aira-panel.tsx", "scripts/bar.mjs"]
+const files = ["apps/web/src/aira/aira-panel.tsx", "scripts/bar.mjs"]
 same(
   "a seen change with no section needs one",
   beforeAfterNeed({ changedFiles: files, body: "", repository }).needed,

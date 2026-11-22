@@ -1,5 +1,5 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
-import type { AiraStep, ToolState } from "@/aira-loop"
+import type { AiraStep, ToolState } from "@/aira/aira-loop"
 import { airaOtherStepWords, airaRefusalWords, airaStepWords, airaStepsSummary } from "@/copy/aira-copy"
 
 export type StepLine = {

@@ -1,10 +1,4 @@
 apps/web/src:
-  apps/web/src/aira-usage.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/settings/usage-page.tsx
   apps/web/src/thin-notice.tsx:
     violations:
       - dependency
@@ -18,6 +12,12 @@ apps/web/src:
     violations:
       - dependency
       - layer
+    files:
+      - apps/web/src/settings/usage-page.tsx
+apps/web/src/aira:
+  apps/web/src/aira/aira-usage.ts:
+    violations:
+      - dependency
     files:
       - apps/web/src/settings/usage-page.tsx
 apps/web/src/credits:

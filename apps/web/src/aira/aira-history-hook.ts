@@ -1,6 +1,6 @@
 import { dropChats, readChats, shelveChats, takeShelvedChats, writeChat } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
-import type { AiraChat } from "@/aira-loop"
+import type { AiraChat } from "@/aira/aira-loop"
 import {
   droppedChats,
   newestOfEach,
@@ -10,7 +10,7 @@ import {
   savedChat,
   type SaveQueue,
   type SavedChat,
-} from "@/aira-history"
+} from "@/aira/aira-history"
 
 export type ChatStore = {
   readonly list: (deck: string) => Promise<unknown[]>

@@ -1,5 +1,5 @@
-apps/web/src:
-  apps/web/src/aira-loop.ts:
+apps/web/src/aira:
+  apps/web/src/aira/aira-loop.ts:
     violations:
       - dependency
       - layer

@@ -1,5 +1,5 @@
 import { useEffect, useId, type CSSProperties } from "react"
-import { UsageRing } from "@/usage-ring"
+import { UsageRing } from "@/aira/usage-ring"
 import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/ui/status-pill"
