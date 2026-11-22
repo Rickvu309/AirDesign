@@ -45,11 +45,57 @@ function geometryOf(context: Context, node: Node, box: Box): ResolvedGeometry {
   }
 }
 
+type Kept = {
+  readonly theme: Theme
+  readonly measure: Measure
+  readonly box: Box
+  readonly children: readonly Resolved[]
+  readonly resolved: Resolved
+}
+
+const kept = new WeakMap<Node, Kept>()
+
+const sameBox = (left: Box, right: Box) =>
+  left.x === right.x &&
+  left.y === right.y &&
+  left.w === right.w &&
+  left.h === right.h &&
+  left.rotation === right.rotation &&
+  left.flipH === right.flipH &&
+  left.flipV === right.flipV
+
+const sameList = (left: readonly Resolved[], right: readonly Resolved[]) =>
+  left.length === right.length && left.every((each, at) => each === right[at])
+
+const reads = (node: Node) => prop(node, "geometry")?.kind === "line"
+
 function resolveNode(context: Context, node: Node, box: Box): Resolved {
+  const { theme } = context
+  const children = [
+    ...(node.type === "frame" && prop(node, "chart") !== undefined
+      ? deriveChart(node.id, prop(node, "chart")!, box, theme, context.measure)
+      : []),
+    ...nodesOf(context, node.id),
+  ]
+  const before = kept.get(node)
+  if (
+    before !== undefined &&
+    !reads(node) &&
+    before.theme === theme &&
+    before.measure === context.measure &&
+    sameBox(before.box, box) &&
+    sameList(before.children, children)
+  )
+    return before.resolved
+  const resolved = resolveFresh(context, node, box, children)
+  if (!reads(node)) kept.set(node, { theme, measure: context.measure, box, children, resolved })
+  return resolved
+}
+
+function resolveFresh(context: Context, node: Node, box: Box, children: readonly Resolved[]): Resolved {
   const { theme } = context
   const strokes = resolvePaints(prop(node, "strokes"), theme)
   const text = node.type === "shape" ? prop(node, "text") : undefined
-  const chart = node.type === "frame" ? prop(node, "chart") : undefined
   return {
     id: node.id,
     type: node.type === "frame" ? "frame" : "shape",
@@ -63,10 +109,7 @@ function resolveNode(context: Context, node: Node, box: Box): Resolved {
     geometry: node.type === "shape" ? geometryOf(context, node, box) : null,
     text: text === undefined || text.chars === "" ? null : resolveText(text, theme, box, context.measure),
     clip: prop(node, "clip") ?? false,
-    children: [
-      ...(chart === undefined ? [] : deriveChart(node.id, chart, box, theme, context.measure)),
-      ...nodesOf(context, node.id),
-    ],
+    children,
     derived: false,
   }
 }

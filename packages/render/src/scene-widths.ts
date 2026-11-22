@@ -13,23 +13,33 @@ type Measured = {
   readonly descent: number
 }
 
-type Held = { readonly faces: Map<string, Measured>; widths: FontWidths }
+type Held = {
+  readonly faces: Map<string, Measured>
+  readonly covered: Set<string>
+  widths: FontWidths
+}
+
+const coveredLimit = 4096
 
 const held = new WeakMap<Document, Held>()
 
 function heldFor(doc: Document): Held {
   let kept = held.get(doc)
   if (kept === undefined) {
-    kept = { faces: new Map(), widths: {} }
+    kept = { faces: new Map(), covered: new Set(), widths: {} }
     held.set(doc, kept)
   }
   return kept
 }
 
 export async function measureFaces(doc: Document, needs: scene.FaceNeeds): Promise<FontWidths> {
+  const kept = heldFor(doc)
+  const faceIsNew = needs.faces.some((face) => !kept.faces.has(fontFace(face.font, face.bold, face.italic)))
+  if (kept.covered.size > coveredLimit) kept.covered.clear()
+  const texts = faceIsNew ? needs.texts : needs.texts.filter((text) => !kept.covered.has(text))
   const chars = new Set(["x"])
   const pairs = new Set<string>()
-  for (const text of needs.texts) {
+  for (const text of texts) {
     let previous: string | undefined
     for (const char of text) {
       chars.add(char)
@@ -37,7 +47,6 @@ export async function measureFaces(doc: Document, needs: scene.FaceNeeds): Promi
       previous = char
     }
   }
-  const kept = heldFor(doc)
   const wanted = needs.faces.filter((face) => {
     const done = kept.faces.get(fontFace(face.font, face.bold, face.italic))
     if (done === undefined) return true
@@ -45,7 +54,10 @@ export async function measureFaces(doc: Document, needs: scene.FaceNeeds): Promi
     for (const pair of pairs) if (!done.pairs.has(pair)) return true
     return false
   })
-  if (wanted.length === 0) return kept.widths
+  if (wanted.length === 0) {
+    for (const text of texts) kept.covered.add(text)
+    return kept.widths
+  }
   const context = doc.createElement("canvas").getContext("2d")
   if (context === null) return kept.widths
   const loader = fontsFor(doc)
@@ -81,6 +93,8 @@ export async function measureFaces(doc: Document, needs: scene.FaceNeeds): Promi
         : before
     kept.faces.set(name, { advances, kerning, pairs: seen, ascent: metrics.ascent, descent: metrics.descent })
   }
+  if (needs.faces.every((face) => kept.faces.has(fontFace(face.font, face.bold, face.italic))))
+    for (const text of texts) kept.covered.add(text)
   kept.widths = Object.fromEntries(
     [...kept.faces].map(([name, done]) => [
       name,

@@ -1,5 +1,5 @@
 import { orderKeyBetween, scene } from "@airdesign/document"
-import { SlidePaint, TextOverride, useSceneSlide } from "@airdesign/render"
+import { SlidePaint, useSceneSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
@@ -215,6 +215,18 @@ export function SceneCanvas(props: {
     },
   }
 
+  const latestInserts = useRef(inserts)
+  useLayoutEffect(() => {
+    latestInserts.current = inserts
+  })
+  const run = useMemo(
+    () => ({
+      chart: (kind: scene.Chart["kind"]) => latestInserts.current.chart(kind),
+      icon: (name: string) => latestInserts.current.icon(name),
+    }),
+    [],
+  )
+
   const pictures = useScenePictures({
     deck: props.deck,
     client,
@@ -323,22 +335,23 @@ export function SceneCanvas(props: {
               {props.slideNumber}
             </span>
             <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
-              <TextOverride.Provider
-                value={(resolved) =>
-                  text.session !== null && resolved.id === text.session.node ? (
-                    <TextHost node={resolved} theme={theme} api={text} onLeave={leaveText} />
-                  ) : null
-                }
-              >
-                <SlidePaint
-                  nodes={painted.nodes ?? []}
-                  background={painted.background}
-                  size={size}
-                  width={size.w * scale}
-                  assetUrl={pictures.assetUrl}
-                  waiting={pictureCopy.uploading}
-                />
-              </TextOverride.Provider>
+              <SlidePaint
+                nodes={painted.nodes ?? []}
+                background={painted.background}
+                size={size}
+                width={size.w * scale}
+                assetUrl={pictures.assetUrl}
+                waiting={pictureCopy.uploading}
+                iconsReady={painted.ready}
+                {...(text.session === null
+                  ? {}
+                  : {
+                      host: {
+                        id: text.session.node,
+                        render: (resolved) => <TextHost node={resolved} theme={theme} api={text} onLeave={leaveText} />,
+                      },
+                    })}
+              />
               <CanvasOverlay
                 view={shown}
                 preview={preview}
@@ -364,7 +377,7 @@ export function SceneCanvas(props: {
               onTool={onTool}
               actionsOpen={actionsOpen}
               onActionsOpen={setActionsOpen}
-              run={{ chart: inserts.chart, icon: inserts.icon }}
+              run={run}
               panel={props.panel}
               onPanel={props.onPanel}
             />,

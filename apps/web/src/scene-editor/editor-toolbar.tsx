@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from "lucide-react"
-import { useRef } from "react"
+import { memo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -46,7 +46,7 @@ const moves = [
   { tool: "hand", icon: "hand", label: sceneEditorCopy.toolHand, key: sceneEditorCopy.toolHandKey },
 ] as const satisfies readonly { tool: string; icon: EditorIconName; label: string; key: string }[]
 
-export function EditorToolbar(props: {
+export const EditorToolbar = memo(function EditorToolbar(props: {
   readonly tool: Tool
   readonly onTool: (next: Tool) => void
   readonly actionsOpen: boolean
@@ -162,4 +162,4 @@ export function EditorToolbar(props: {
       <PanelSwitch active={props.panel} onPick={props.onPanel} />
     </div>
   )
-}
+})

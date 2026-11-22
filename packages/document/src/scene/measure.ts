@@ -98,7 +98,7 @@ const trimmedWidth = (glyphs: readonly Glyph[], from: number, to: number): numbe
 
 const alignOf = (para: Para | undefined) => para?.align ?? "left"
 
-export function measureWith(widths: FontWidths): Measure {
+function measureOnce(widths: FontWidths): Measure {
   return (text, theme, width) => {
     const base = baseLook(text, theme)
     const padding = text.padding ?? { t: 0, r: 0, b: 0, l: 0 }
@@ -186,5 +186,19 @@ export function measureWith(widths: FontWidths): Measure {
       h: y + padding.b,
       lines: lines.map((line) => ({ ...line, w: Math.max(0, outer - padding.r - line.x) })),
     }
+  }
+}
+
+export function measureWith(widths: FontWidths): Measure {
+  const measure = measureOnce(widths)
+  const known = new WeakMap<Text, WeakMap<Theme, Map<Px | null, Measured>>>()
+  return (text, theme, width) => {
+    let themes = known.get(text)
+    if (themes === undefined) known.set(text, (themes = new WeakMap()))
+    let widthsOf = themes.get(theme)
+    if (widthsOf === undefined) themes.set(theme, (widthsOf = new Map()))
+    let measured = widthsOf.get(width)
+    if (measured === undefined) widthsOf.set(width, (measured = measure(text, theme, width)))
+    return measured
   }
 }
