@@ -4,6 +4,14 @@ The words for AirDesign's core: the scene in `packages/document/src/scene`. One 
 
 ## Shape of a deck
 
+**Doom**:
+The name of AirDesign's core: the scene and everything that edits, paints, stores and syncs it. "Scene" stays the code word for the data model, so code, routes, tables and the `scene` export keep it; Doom names the core as a whole and its versions.
+_Avoid_: engine (a package name), the editor (one client of the core)
+
+**Doom v0.1**:
+The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons, lines and charts, with undo and reload, stored as scene decks. Out of v0.1: components and instances, variables with modes, and a style library (next), and PowerPoint import and export (after).
+_Avoid_: the new editor, the rewrite
+
 **scene**:
 A deck as a tree of nodes, each a flat map of properties. It is the deck's truth; PowerPoint is an import and an export.
 _Avoid_: document model, element tree
