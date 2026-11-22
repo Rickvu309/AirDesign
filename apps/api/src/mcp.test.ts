@@ -299,7 +299,7 @@ describe("mcp route", () => {
         base: first.rev,
         changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "Agent" }],
       })
-      const [{ id: added }] = landed.answer.added as { id: string }[]
+      const added = (landed.answer.added as { id: string }[])[0]!.id
       const typed = await ask(
         base,
         "POST",
