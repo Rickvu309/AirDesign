@@ -90,6 +90,33 @@ describe("deriveChart", () => {
     expect(fillOf(byId(point, "t:9#Revenue:Q1"))).toBe(plainTheme.colors.accent1)
   })
 
+  it("gives a series with no colour the next accent that no other series holds", () => {
+    const named = (color: string) =>
+      derive({ ...column, series: [{ ...column.series[0]!, color: { var: color } as never }, column.series[1]!] })
+    const taken = named("accent2")
+    expect(fillOf(byId(taken, "t:9#Revenue:Q1"))).toBe(plainTheme.colors.accent2)
+    expect(fillOf(byId(taken, "t:9#Cost:Q1"))).toBe(plainTheme.colors.accent1)
+    const first = named("accent1")
+    expect(fillOf(byId(first, "t:9#Cost:Q1"))).toBe(plainTheme.colors.accent2)
+    const hexed = derive({
+      ...column,
+      series: [{ ...column.series[0]!, color: plainTheme.colors.accent1 }, column.series[1]!],
+    })
+    expect(fillOf(byId(hexed, "t:9#Cost:Q1"))).toBe(plainTheme.colors.accent2)
+    const three = derive({
+      ...column,
+      series: [
+        { ...column.series[0]!, color: { var: "accent2" } },
+        column.series[1]!,
+        { name: "Tax", values: [1, 2, 3] },
+      ],
+    })
+    expect(fillOf(byId(three, "t:9#Cost:Q1"))).toBe(plainTheme.colors.accent1)
+    expect(fillOf(byId(three, "t:9#Tax:Q1"))).toBe(plainTheme.colors.accent3)
+    const legend = three.filter((part) => part.id.includes("~legend") && part.fills[0]?.kind === "solid")
+    expect(new Set(legend.map(fillOf)).size).toBe(legend.length)
+  })
+
   it("draws axis labels, gridlines and a legend from the theme, and a legend only for more than one series", () => {
     const parts = derive(column)
     const words = wordsOf(parts)

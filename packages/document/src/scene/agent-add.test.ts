@@ -25,6 +25,21 @@ describe("add text", () => {
     expect(box.w).toBeGreaterThan(1000)
   })
 
+  it("puts a text with no box on the left edge of the slide's title, so a title and its subtitle line up", () => {
+    let scene = build(
+      agentDeck(),
+      text({ textStyle: "title", text: "Q3 board update", box: { x: 160, y: 380, w: 1600, h: 160 } }),
+      minter("a"),
+    )
+    scene = build(scene, text({ textStyle: "heading", text: "Revenue grew" }), minter("b"))
+    const [title, subtitle] = childrenOf(scene, slide)
+      .slice(-2)
+      .map((node) => get(node, "box")!)
+    expect(subtitle!.x).toBe(title!.x)
+    expect(subtitle!.x + subtitle!.w).toBeLessThanOrEqual(title!.x + title!.w)
+    expect(subtitle!.y).toBeGreaterThanOrEqual(title!.y + title!.h)
+  })
+
   it("takes the next free area for the next add, so two adds do not overlap", () => {
     let scene = build(agentDeck(), text({ textStyle: "title" }), minter("a"))
     scene = build(scene, text({ text: "Second" }), minter("b"))
