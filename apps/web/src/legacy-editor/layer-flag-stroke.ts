@@ -1,6 +1,6 @@
 import type { ElementId } from "@airdesign/document"
 import { useEffect, useRef, useState } from "react"
-import type { LayerFlag } from "@/editor/layer-flags"
+import type { LayerFlag } from "@/legacy-editor/layer-flags"
 
 export type FlagStroke = { readonly flag: LayerFlag; readonly on: boolean; readonly nodes: readonly ElementId[] }
 

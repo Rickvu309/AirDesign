@@ -44,7 +44,7 @@
       "blob": "3bbbda26f787a19f0b9dfadff8496c98a77295a0"
     },
     {
-      "file": "apps/web/src/editor/editable-slide.tsx",
+      "file": "apps/web/src/legacy-editor/editable-slide.tsx",
       "names": ["editableSlide"],
       "digest": "cade12613fee",
       "blob": "70cea1a8192c5f7937f9a6e49729addc9ce1872d"

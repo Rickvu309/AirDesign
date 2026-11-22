@@ -1,5 +1,5 @@
 import { elementId } from "@airdesign/document"
-import { layerTree, type LayerKind, type LayerRow } from "@/editor/layer-tree"
+import { layerTree, type LayerKind, type LayerRow } from "@/legacy-editor/layer-tree"
 
 type Flags = { readonly hidden?: true; readonly locked?: true }
 

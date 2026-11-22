@@ -1,4 +1,4 @@
-import type { LayerZone } from "@/editor/layer-tree"
+import type { LayerZone } from "@/legacy-editor/layer-tree"
 
 export const layerIndent = 16
 const scrollEdge = 24

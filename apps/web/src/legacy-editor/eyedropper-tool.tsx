@@ -5,10 +5,10 @@ import { colorCopy } from "@/copy/color-copy"
 import { changeDesign } from "@/design/design-change"
 import { dropperOf, pickScreenColor } from "@/design/eyedropper"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import { eyedropperChanges, hasEyedropperTarget } from "@/editor/eyedropper-changes"
+import { eyedropperChanges, hasEyedropperTarget } from "@/legacy-editor/eyedropper-changes"
 import type { DesigningDeck } from "@/editor/live-design-panel"
 import { onLayers, typing } from "@/editor/pointer-tool"
-import { sampleSlideColor } from "@/editor/slide-color-sample"
+import { sampleSlideColor } from "@/legacy-editor/slide-color-sample"
 
 export type EyedropperPreview = {
   readonly hex: string

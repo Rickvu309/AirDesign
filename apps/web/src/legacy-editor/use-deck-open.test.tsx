@@ -2,7 +2,7 @@ import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { useDeckOpen, type OpeningDeck } from "./use-deck-open"
-import type { DeckPaint } from "./use-deck-paint"
+import type { DeckPaint } from "../editor/use-deck-paint"
 
 const world = vi.hoisted(() => ({ order: [] as string[], held: true }))
 

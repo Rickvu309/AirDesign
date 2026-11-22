@@ -2,7 +2,7 @@ import { decide, format, openRegister, slideId, type Command, type Register } fr
 import { indexPackage } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { elementCommand } from "@/element-edit"
-import { groupCommands } from "@/editor/group-actions"
+import { groupCommands } from "@/legacy-editor/group-actions"
 import { onSlide, twoBoxSlide, xml } from "@/slide-fixtures"
 
 const size = { width: 1000, height: 500 }

@@ -1,4 +1,4 @@
-import { editorRoutes } from "@/editor/editor-routes"
+import { editorRoutes } from "@/legacy-editor/editor-routes"
 import {
   AgentComplete,
   AgentLong,
@@ -19,9 +19,9 @@ import {
   TextFormatScreen,
   TextScreen,
   Unreached,
-} from "@/editor/screens/slide-views"
-import { GridAddHold, GridAddHover, GridDefault, GridPasted } from "@/editor/screens/grid-views"
-import { GridWrapped } from "@/editor/screens/grid-wrapped"
+} from "@/legacy-editor/screens/slide-views"
+import { GridAddHold, GridAddHover, GridDefault, GridPasted } from "@/legacy-editor/screens/grid-views"
+import { GridWrapped } from "@/legacy-editor/screens/grid-wrapped"
 
 export const screens = {
   [editorRoutes.gridDefault]: GridDefault,

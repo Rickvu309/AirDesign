@@ -1,7 +1,7 @@
 import { gestureFor } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import type { LayerFlag } from "@/editor/layer-flags"
+import type { LayerFlag } from "@/legacy-editor/layer-flags"
 import { typing } from "@/editor/pointer-tool"
 
 const flagOfGesture = { hide: "hidden", lock: "locked" } as const satisfies Readonly<Record<string, LayerFlag>>

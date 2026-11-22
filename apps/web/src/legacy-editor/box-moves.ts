@@ -13,7 +13,7 @@ import { commitPatch, flushPending, storeBoxes, type BoxCommit, type CommitOutco
 import type { DesignDeck } from "@/design/design-change"
 import type { RecordHold } from "@/undo-list"
 import { deviceRegister } from "@/device-copy"
-import { commitPlace } from "@/editor/group-actions"
+import { commitPlace } from "@/legacy-editor/group-actions"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { laidBox, storedBox } from "@/frame-boxes"
 import { storedGroupBox, storedGroupBoxNow } from "@/group-boxes"
@@ -22,7 +22,7 @@ import { resizedCorners } from "@/resized-corners"
 import { resizedSizing } from "@/resized-sizing"
 import { boxName } from "@/undo-names"
 import { personCommands } from "@/editor/painted-ahead"
-import { draggedSize, relaidBoxes } from "@/editor/live-layout"
+import { draggedSize, relaidBoxes } from "@/legacy-editor/live-layout"
 
 type RestBox = (target: ElementId, box: Box | null) => void
 

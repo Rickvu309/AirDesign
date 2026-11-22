@@ -2,9 +2,9 @@ import { elementId, type ElementId, type StackMove } from "@airdesign/document"
 import { act, createElement, useLayoutEffect } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest"
-import { useLayerKeys } from "@/editor/layer-keys"
-import { LayersPanel, type RenameRequest } from "@/editor/layers-panel"
-import type { Layer } from "@/editor/layer-tree"
+import { useLayerKeys } from "@/legacy-editor/layer-keys"
+import { LayersPanel, type RenameRequest } from "@/legacy-editor/layers-panel"
+import type { Layer } from "@/legacy-editor/layer-tree"
 
 let domWindow: Window & typeof globalThis
 const hosts: { host: HTMLDivElement; root: Root }[] = []

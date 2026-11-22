@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { compositeOver, parseCssColor, rgbaToHex, sampleSlideColor } from "@/editor/slide-color-sample"
+import { compositeOver, parseCssColor, rgbaToHex, sampleSlideColor } from "@/legacy-editor/slide-color-sample"
 
 let domWindow: Window & typeof globalThis
 

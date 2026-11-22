@@ -2,7 +2,7 @@ import { elementId, openRegister, plainFrameTurn, slideId, type Register } from 
 import { indexPackage, readShapes } from "@airdesign/pptx"
 import { paintStore, type CanvasSlide, type Selection } from "@airdesign/render"
 import { describe, expect, it } from "vitest"
-import { eyedropperChanges, hasEyedropperTarget } from "@/editor/eyedropper-changes"
+import { eyedropperChanges, hasEyedropperTarget } from "@/legacy-editor/eyedropper-changes"
 import type { DesigningDeck } from "@/editor/live-design-panel"
 import { recordsInFlight } from "@/undo-list"
 

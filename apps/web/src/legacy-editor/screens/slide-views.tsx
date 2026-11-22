@@ -1,10 +1,10 @@
 import { EditorToast } from "@/editor/agent-panel"
 import { productCopy } from "@/copy/product-copy"
 import { galleryDeck } from "@/editor/gallery-deck"
-import { DesignElementArt } from "@/editor/design-element-art"
+import { DesignElementArt } from "@/legacy-editor/design-element-art"
 import { EditorView } from "@/editor/screens/editor-view"
-import { LayersPanel } from "@/editor/layers-panel"
-import { sampleLayers, sampleSelected } from "@/editor/sample-layers"
+import { LayersPanel } from "@/legacy-editor/layers-panel"
+import { sampleLayers, sampleSelected } from "@/legacy-editor/sample-layers"
 
 export function AgentWorking() {
   return <EditorView {...galleryDeck} run="working" />

@@ -1,6 +1,6 @@
 import { EditorToast } from "@/editor/agent-panel"
 import { galleryDeck } from "@/editor/gallery-deck"
-import { SlideGrid } from "@/editor/slide-grid"
+import { SlideGrid } from "@/legacy-editor/slide-grid"
 
 export function GridDefault() {
   return <SlideGrid state="idle" title={galleryDeck.title} />

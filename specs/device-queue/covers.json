@@ -32,7 +32,7 @@
       "blob": "0cdffef0a871cfe9e96a5bdfa76864ad0914b1b1"
     },
     {
-      "file": "apps/web/src/editor/use-deck-open.ts",
+      "file": "apps/web/src/legacy-editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
       "digest": "7efab0ad6786",
       "blob": "81ce47babdda5160b70a411f2a454020a1840dba"

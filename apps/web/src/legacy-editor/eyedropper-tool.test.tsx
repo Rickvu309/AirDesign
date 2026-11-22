@@ -3,7 +3,7 @@ import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import type { Dropper } from "@/design/eyedropper"
-import { SlideEyedropper, useEyedropper } from "@/editor/eyedropper-tool"
+import { SlideEyedropper, useEyedropper } from "@/legacy-editor/eyedropper-tool"
 
 let domWindow: Window & typeof globalThis
 const hosts: { host: HTMLDivElement; root: Root }[] = []

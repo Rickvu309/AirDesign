@@ -3,7 +3,7 @@ import { shapeSiblings } from "@airdesign/pptx"
 import type { CanvasSlide, Selection } from "@airdesign/render"
 import { useRef, useState, type MouseEvent, type ReactNode } from "react"
 import type { CommitOutcome } from "@/commit-edit"
-import type { GroupChange } from "@/editor/group-actions"
+import type { GroupChange } from "@/legacy-editor/group-actions"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -12,7 +12,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { arrangeCopy, arrangeMoves, groupCopy } from "@/copy/arrange-copy"
-import { maskAction } from "@/editor/mask-action"
+import { maskAction } from "@/legacy-editor/mask-action"
 
 type MenuEvent = MouseEvent<HTMLDivElement> & { preventBaseUIHandler?: () => void }
 

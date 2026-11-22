@@ -2,7 +2,7 @@
   "check": "checks-connection.md#connection",
   "covers": [
     {
-      "file": "apps/web/src/editor/use-network.ts",
+      "file": "apps/web/src/legacy-editor/use-network.ts",
       "names": ["useNetwork"],
       "digest": "db897a48738d",
       "blob": "336e01be464dfe0d65784e51eb317448df781cee"
