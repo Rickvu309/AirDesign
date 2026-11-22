@@ -59,7 +59,7 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
   const shape = outline.fill ?? outline.stroke[0] ?? ""
   const arrows = geometry?.kind === "line" ? geometry.arrows : (["none", "none"] as const)
   const first = paints[0]
-  const lineColor = first?.kind === "solid" ? first.color : "#000000"
+  const lineColor = first?.kind === "solid" ? first.color : "currentColor"
   const sides = stroke.sides
   const markers = {
     ...(arrows[0] === "none" ? {} : { markerStart: `url(#${id}-start)` }),

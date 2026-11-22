@@ -59,7 +59,7 @@ export type {
   ResolvedRun,
 } from "./resolved.js"
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
-export { defaultTheme } from "./default-theme.js"
+export { defaultTheme } from "./default-theme-art.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, sceneFromTree } from "./scene-tree.js"
 export { deckOf } from "./deck-of.js"
 export { type Face, type FaceNeeds, sceneFaces } from "./text-faces.js"

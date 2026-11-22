@@ -23,7 +23,7 @@ export function titleSlide(): scene.Grown {
               angle: 35,
               stops: [
                 { at: 0, color: { var: "accent1" } },
-                { at: 1, color: "#061f3d" },
+                { at: 1, color: { var: "accent1", tint: -0.45 } },
               ],
             },
           ],
@@ -47,14 +47,14 @@ export function titleSlide(): scene.Grown {
             }),
             copy("subtitle", "Where we invest, what we stop, and how we will measure it", {
               style: "body",
-              color: "#bcd3ec",
+              color: { var: "accent2", tint: 0.72 },
               size: 32,
             }),
           ]),
           frame("rule", { box: box(120, 936, 1680, 2), fills: [solid(white, 0.25)] }),
           copy("meta", "Board of Directors  ·  March 2026", {
             style: "caption",
-            color: "#bcd3ec",
+            color: { var: "accent2", tint: 0.72 },
             x: 120,
             y: 962,
             width: 900,

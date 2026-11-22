@@ -1,4 +1,4 @@
-import { defaultTheme } from "./default-theme.js"
+import { defaultTheme } from "./default-theme-art.js"
 import type { Scene } from "./scene.js"
 import type { Theme } from "./theme.js"
 

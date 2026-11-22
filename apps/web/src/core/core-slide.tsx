@@ -1,6 +1,6 @@
 import { SceneSlide } from "@airdesign/render"
 import type { scene } from "@airdesign/document"
-import { landscapeUrl } from "@/core/landscape"
+import { landscapeUrl } from "@/core/landscape-art"
 import { pictureAsset } from "@/core/scenes/picture-crop"
 
 const slideWidth = 1280
