@@ -146,4 +146,14 @@ describe("invert", () => {
     const undone = tryLand(next.after, writes) as Scene
     expect(valuesOf(undone)[ids.deck]).toEqual(valuesOf(original)[ids.deck])
   })
+
+  it("treats a rev the caller owns as the edit's own, and bases the write on the rev it found", () => {
+    const first = step(sampleDeck(), [{ node: ids.card, prop: "opacity", value: 0.5 }])
+    const second = step(first.after, [{ node: ids.card, prop: "opacity", value: 0.2 }])
+    const undone = step(second.after, invert(first.after, second.after, second.edit))
+    expect(invert(first.before, undone.after, first.edit)).toEqual([])
+    const writes = invert(first.before, undone.after, first.edit, new Set([undone.edit.rev]))
+    expect(writes).toEqual([{ node: ids.card, prop: "opacity", value: null, base: undone.edit.rev }])
+    expect(tryLand(undone.after, writes)).not.toHaveProperty("refused")
+  })
 })
