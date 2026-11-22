@@ -5,7 +5,7 @@ import { sceneRoutes } from "@airdesign/catalog"
 import type { DeckPictures } from "./deck-pictures.js"
 import type { DeckListen } from "./listen.js"
 import type { Sql } from "./pool.js"
-import { createScene, editScene, openScene, sceneRev, sinceScene } from "./scene-deck.js"
+import { createScene, editScene, openScene, runScene, sceneRev, sinceScene } from "./scene-deck.js"
 
 type SceneVisit = {
   readonly options: { readonly deck: Sql; readonly listen: DeckListen; readonly pictures: DeckPictures }
@@ -114,6 +114,9 @@ export function sceneRouteList<Visit extends SceneVisit>(http: SceneHttp<Visit>)
       const missing = visit.options.pictures.keep(parsed.deck, parsed.rev, parsed.pictures)
       return { ok: true, deck: parsed.deck, missing: visit.options.pictures.wantedAmong(parsed.deck, missing) }
     }),
+    route(sceneRoutes.run.path, sceneRoutes.run.read, (visit, parsed, email) =>
+      runScene(visit.options.deck, parsed, email),
+    ),
     route(sceneRoutes.since.path, sceneRoutes.since.read, async (visit, parsed, email) => {
       if (parsed.wait !== true) {
         const caught = await sinceScene(visit.options.deck, parsed, email)

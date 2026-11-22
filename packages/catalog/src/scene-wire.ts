@@ -1,4 +1,4 @@
-import { scene } from "@airdesign/document"
+import { limits, scene } from "@airdesign/document"
 import * as z from "zod/v4"
 
 import { readSlidePictures, type SlidePictures } from "./slide-pictures-wire.js"
@@ -37,6 +37,13 @@ export type SceneCaught = SceneResult<{
   readonly pictures?: true
 }>
 
+export type SceneRan = SceneResult<{
+  readonly deck: DeckId
+  readonly rev: number
+  readonly edits: readonly unknown[]
+  readonly before: Readonly<Record<string, unknown>>
+}>
+
 export const picturesWantedMilliseconds = 120_000
 
 export const nodeIdPattern = new RegExp(scene.agentChangesSchema.$defs.id.pattern)
@@ -59,6 +66,11 @@ export const readSceneSince = readInput(
     wait: z.boolean().optional(),
     pictures: z.boolean().optional(),
   }),
+  inputRefusal,
+)
+
+export const readSceneRun = readInput(
+  z.strictObject({ deck: deckInput, run: z.string().min(1).max(limits.clientName) }),
   inputRefusal,
 )
 
@@ -127,6 +139,13 @@ const caught = decode((body, deck) =>
     : undefined,
 )
 
+const ran = decode((body, deck) => {
+  const before = recordOf(body.before)
+  return whole(body.rev) && Array.isArray(body.edits) && before !== undefined
+    ? { deck, rev: body.rev, edits: body.edits as unknown[], before }
+    : undefined
+})
+
 const pictured = decode((body, deck) =>
   Array.isArray(body.missing) && body.missing.every((each) => readNodeId(each) !== undefined)
     ? { deck, missing: body.missing as scene.NodeId[] }
@@ -139,6 +158,7 @@ export const sceneRoutes = {
   edit: { path: "/scenes/edit", read: readSceneEdit, result: landed },
   since: { path: "/scenes/since", read: readSceneSince, result: caught },
   pictures: { path: "/scenes/pictures", read: readScenePictures, result: pictured },
+  run: { path: "/scenes/run", read: readSceneRun, result: ran },
 } as const
 
 export const scenePaths: readonly string[] = Object.values(sceneRoutes).map((route) => route.path)

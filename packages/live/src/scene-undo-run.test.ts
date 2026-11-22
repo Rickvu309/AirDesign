@@ -150,6 +150,46 @@ describe("undoing an agent's run", () => {
     expect(Math.min(...asked)).toBeGreaterThanOrEqual(mine.server().rev)
   })
 
+  it("undoes a run it did not see land, after a reload, without reading the deck's log from the start", async () => {
+    const base = memorySceneRemote(start)
+    const asked: number[] = []
+    const remote = {
+      ...base,
+      since: async (...args: Parameters<typeof base.since>) => (asked.push(args[0].rev), base.since(...args)),
+    }
+    await join(remote, "create")
+    for (let step = 1; step <= 30; step += 1)
+      await land(remote, {
+        once: `p${step}`,
+        author: { kind: "person", id: "other" },
+        writes: [{ node: title, prop: "box", value: box(step) }],
+      })
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(500) }],
+    })
+    await land(remote, {
+      once: "a2",
+      author: agent("run-1"),
+      writes: [
+        { node: title, prop: "box", value: box(600) },
+        { node: made, prop: "type", value: "shape" },
+        { node: made, prop: "parent", value: at(slide) },
+      ],
+    })
+    await land(remote, { once: "a3", author: agent("run-1"), writes: [{ node: made, prop: "name", value: "Made" }] })
+    const later = await join(remote, "open")
+    asked.length = 0
+
+    expect((await later.undoRun("run-1")).ok).toBe(true)
+
+    expect(xOf(later.view())).toBe(30)
+    expect(later.view().children.get(slide) ?? []).not.toContain(made)
+    expect(Math.min(...asked)).toBeGreaterThanOrEqual(later.server().rev)
+  })
+
   it("redoes the run with the person's redo", async () => {
     const remote = memorySceneRemote(start)
     const mine = await join(remote, "create")

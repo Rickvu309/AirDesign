@@ -540,4 +540,12 @@ update deck.scene as target set
 alter table deck.scene drop column fold;
 `,
   },
+  {
+    id: 23,
+    sql: `
+alter table deck.scene_edit add column was jsonb;
+create index scene_edit_run on deck.scene_edit (deck, (edit -> 'author' ->> 'run'), rev)
+  where edit -> 'author' ->> 'run' is not null;
+`,
+  },
 ]

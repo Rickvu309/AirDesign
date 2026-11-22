@@ -334,26 +334,26 @@ function connected(
   }
 
   async function runInLog(run: string): Promise<{ before: scene.Scene; edits: scene.Landed[] } | undefined> {
-    let replayed: scene.Scene = scene.emptyScene
-    let before: scene.Scene | undefined
-    const edits: scene.Landed[] = []
-    while (replayed.rev < server.rev) {
-      const answer = await remote.since({ deck, rev: replayed.rev })
-      if (!answer.ok || answer.edits.length === 0) return undefined
-      for (const raw of answer.edits) {
-        const read = scene.readLanded(raw, replayed)
-        if (scene.isRefusal(read)) return undefined
-        if (read.rev <= replayed.rev) continue
-        const result = scene.applyEdit(replayed, read)
-        if (scene.isRefusal(result)) return undefined
-        if (read.author.run === run) {
-          before ??= replayed
-          edits.push(read)
-        }
-        replayed = result
-      }
+    const answer = await remote.run?.({ deck, run })
+    if (answer === undefined || !answer.ok || answer.edits.length === 0) return undefined
+    const nodes = new Map<scene.NodeId, scene.Node>()
+    for (const [name, raw] of Object.entries(answer.before)) {
+      const stored = scene.readStoredNode(name, raw, {})
+      if (stored === undefined) return undefined
+      nodes.set(stored.node.id, stored.node)
     }
-    return before === undefined ? undefined : { before, edits }
+    const before: scene.Scene = { ...scene.emptyScene, nodes }
+    const known = new Map(nodes)
+    const edits: scene.Landed[] = []
+    for (const raw of answer.edits) {
+      const read = scene.readLanded(raw, { ...before, nodes: known })
+      if (scene.isRefusal(read)) return undefined
+      for (const write of read.writes)
+        if (write.prop === "type" && !known.has(write.node))
+          known.set(write.node, { id: write.node, rev: read.rev, type: write.value } as scene.Node)
+      edits.push(read)
+    }
+    return { before, edits }
   }
 
   async function undoRun(run: string): Promise<TurnedRun> {
