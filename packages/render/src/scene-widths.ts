@@ -2,7 +2,10 @@ import { type FontWidths, type scene, fontFace } from "@airdesign/document"
 import { fontFamily } from "@airdesign/fonts"
 import { fontsFor } from "./font-load.js"
 
-const em = 1000
+// A variable font with an optical size axis changes its advances with the size it is drawn at. Text is painted
+// pinned to this optical size and measured at this many px, so one set of advances holds at every font size.
+export const opticalSize = 32
+const em = opticalSize
 
 export async function measureFaces(doc: Document, needs: scene.FaceNeeds): Promise<FontWidths> {
   const context = doc.createElement("canvas").getContext("2d")
@@ -28,6 +31,7 @@ export async function measureFaces(doc: Document, needs: scene.FaceNeeds): Promi
     if (!doc.fonts.check(font, sample)) continue
     context.font = font
     context.fontKerning = "normal"
+    context.textRendering = "geometricPrecision"
     const advances: Record<string, number> = {}
     for (const char of chars) advances[char] = context.measureText(char).width / em
     const kerning: Record<string, number> = {}
