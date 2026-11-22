@@ -161,6 +161,8 @@ describe("database migrations", () => {
       "deck.once",
       "deck.original_delete",
       "deck.saved",
+      "deck.scene",
+      "deck.scene_edit",
       ...sessionRights.map(([table]) => `session.${table}`),
       "setup.migration",
     ]
@@ -177,6 +179,8 @@ describe("database migrations", () => {
       { grantee: "deck", name: "deck.once", rights: full },
       { grantee: "deck", name: "deck.original_delete", rights: full },
       { grantee: "deck", name: "deck.saved", rights: noDelete },
+      { grantee: "deck", name: "deck.scene", rights: noDelete },
+      { grantee: "deck", name: "deck.scene_edit", rights: "INSERT SELECT" },
       { grantee: "listen", name: "deck.saved", rights: "SELECT" },
       ...sessionRights.map(([table, rights]) => ({ grantee: "session", name: `session.${table}`, rights })),
     ])

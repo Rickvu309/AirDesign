@@ -175,12 +175,13 @@ export function ownerRemote(): Remote {
   }
 }
 
-export async function post(path: string, body: unknown): Promise<unknown> {
+export async function post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown> {
   const response = await fetch(path, {
     method: "POST",
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    ...(signal === undefined ? {} : { signal }),
   })
   if (response.status === 401) return { ok: false, refusal: "session" }
   if (response.status >= 500) throw new TypeError(`AirDesign did not answer: ${String(response.status)}`)

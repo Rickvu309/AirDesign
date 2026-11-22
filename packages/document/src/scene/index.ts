@@ -1,4 +1,5 @@
 export { applyEdit } from "./apply-edit.js"
+export { foldToJson, readFold, readLanded } from "./fold-json.js"
 export type { Arrow, End, Geometry } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, rev } from "./ids.js"
 export { invert } from "./invert.js"

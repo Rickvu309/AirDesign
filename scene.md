@@ -51,3 +51,15 @@ _Avoid_: readAt, version
 **layout**:
 How a frame places its children: none, row, column or grid. Laid-out boxes are computed from the scene, never written.
 _Avoid_: flow, auto layout (in code)
+
+**fold**:
+The scene after every landed edit is applied in server order. The server stores it beside the log of landed edits; a tab keeps its own copy and brings it forward by catch-up.
+_Avoid_: snapshot, state
+
+**pending**:
+The edits a tab has made that the server has not landed yet. What a person sees is the fold with the pending edits applied on top, so a local edit paints at once.
+_Avoid_: unsent, optimistic
+
+**catch-up**:
+Asking the server for the landed edits after a revision and applying each to the tab's fold.
+_Avoid_: poll, pull
