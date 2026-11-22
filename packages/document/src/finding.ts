@@ -63,6 +63,13 @@ export type Finding = About &
         readonly fix: { readonly x: number } | { readonly y: number }
       }
     | {
+        readonly code: "off-scale"
+        readonly level: "note"
+        readonly size: number
+        readonly style: string
+        readonly fix: { readonly size: number }
+      }
+    | {
         readonly code: "empty-placeholder"
         readonly level: "note"
         readonly placeholder: string

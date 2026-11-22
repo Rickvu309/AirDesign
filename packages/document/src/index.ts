@@ -417,6 +417,7 @@ export { findingLimits, type Finding } from "./finding.js"
 export { contrast, readableText } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
 export { slideFindings, type SlideFindings } from "./slide-findings.js"
+export { scaleMark, typeSteps } from "./finding-scale.js"
 
 export {
   defaultGrid1,

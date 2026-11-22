@@ -14,6 +14,7 @@ const findings = [
   { code: "low-contrast", node: "258.15", ratio: 2.87, needs: 4.5, color: null },
   { code: "empty-placeholder", node: "258.16", placeholder: "subTitle" },
   { code: "misaligned", node: "258.17", other: "258.18", edge: "left", by: 1.5, x: 72, y: null },
+  { code: "off-scale", node: "258.19", size: 24, to: 20, style: "Heading", uniform: true },
 ]
 const report = { deck: "deck", revision: 3, findings }
 

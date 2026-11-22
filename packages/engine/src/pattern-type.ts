@@ -1,4 +1,11 @@
-import type { Color, SlideSize, TextParagraph, TextRun, TextStyle } from "@airdesign/document"
+import {
+  scaleMark,
+  type Color,
+  type SlideSize,
+  type TextParagraph,
+  type TextRun,
+  type TextStyle,
+} from "@airdesign/document"
 
 const point = 12_700
 const singleLine = 1.2
@@ -38,10 +45,7 @@ const styleNames: Readonly<Record<Role, readonly string[]>> = {
   label: ["Label"],
 }
 
-const scaleMark = "Heading"
 const plainFloor = 10
-
-export const typeSteps = [1, 0.9, 0.8, 0.7, 0.6] as const
 
 function namedStyle(styles: readonly TextStyle[], role: Role): TextStyle | undefined {
   return styleNames[role]

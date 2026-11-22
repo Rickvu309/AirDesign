@@ -52,6 +52,11 @@ function told(finding: WireFinding): Omit<AgentFinding, "code" | "node"> {
         measure: `${tenths(finding.size)} pt, under ${finding.min}`,
         ...(finding.uniform ? { fix: set(node, { text: { size: finding.min } }) } : {}),
       }
+    case "off-scale":
+      return {
+        measure: `${tenths(finding.size)} pt, ${finding.style} is ${tenths(finding.to)}`,
+        ...(finding.uniform ? { fix: set(node, { text: { size: finding.to } }) } : {}),
+      }
     case "low-contrast":
       return {
         measure: `${tenths(finding.ratio)}:1, needs ${finding.needs}:1`,
