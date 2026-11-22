@@ -5,6 +5,7 @@ import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { CanvasTools } from "./canvas-tools"
 import { EditorTopBar } from "./editor-top-bar"
 import { slidesOf } from "./node-props"
+import { SceneAgentPanel } from "./scene-agent-panel"
 import { SceneCanvas } from "./scene-canvas"
 import { noSelection, type Selection } from "./selection"
 import { SlideStrip } from "./slide-strip"
@@ -30,8 +31,8 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   }
   useSlideStepKeys({ slides, current: slide, selecting: selection.ids.length > 0, onCurrent: choose })
   return (
-    <div className="window-frame" data-scene-editor={id}>
-      <div className="flex h-full flex-col bg-canvas">
+    <div className="window-frame flex" data-scene-editor={id}>
+      <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
         <EditorTopBar name={deckName(view)} client={client} />
         <div className="flex min-h-0 flex-1">
           <SlideStrip view={view} client={client} slides={slides} current={slide} onCurrent={choose} />
@@ -52,6 +53,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
           </div>
         </div>
       </div>
+      <SceneAgentPanel deck={id} client={client} />
     </div>
   )
 }

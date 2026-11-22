@@ -17,7 +17,7 @@ Every PR that changes what a person sees gets a `## Before / after` section. Whe
    ```json
    [
      {
-       "state": "agent-empty",
+       "state": "scene-agent-empty",
        "title": "Agent panel, empty",
        "crop": "[data-editor-panel]",
        "callouts": [{ "at": "[data-aira-welcome] h2", "note": "Empty panel names Aira and what to check (was blank)" }]

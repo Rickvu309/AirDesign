@@ -21,6 +21,8 @@ export type Turned =
   | { readonly ok: false; readonly reason: "nothing" }
   | { readonly ok: false; readonly reason: "refused"; readonly refused: scene.Refusal }
 
+export type TurnedRun = Turned | { readonly ok: false; readonly reason: "offline" }
+
 export type Synced =
   | { readonly ok: true }
   | { readonly ok: false; readonly reason: "offline" }
@@ -37,6 +39,7 @@ export type SceneDeck = {
   push(writes: readonly scene.Write[], options?: { readonly author?: scene.Author }): Pushed
   undo(): Turned
   redo(): Turned
+  undoRun(run: string): Promise<TurnedRun>
   sync(): Promise<Synced>
   catchUp(): Promise<{ readonly ok: boolean }>
   follow(signal: AbortSignal): Promise<void>
@@ -305,6 +308,60 @@ function connected(
     return { ok: true, once: pushed.once, saved: pushed.saved }
   }
 
+  async function runInLog(run: string): Promise<{ before: scene.Scene; edits: scene.Landed[] } | undefined> {
+    let replayed: scene.Scene = scene.emptyScene
+    let before: scene.Scene | undefined
+    const edits: scene.Landed[] = []
+    while (replayed.rev < server.rev) {
+      const answer = await remote.since({ deck, rev: replayed.rev })
+      if (!answer.ok || answer.edits.length === 0) return undefined
+      for (const raw of answer.edits) {
+        const read = scene.readLanded(raw, replayed)
+        if (scene.isRefusal(read)) return undefined
+        if (read.rev <= replayed.rev) continue
+        const result = scene.applyEdit(replayed, read)
+        if (scene.isRefusal(result)) return undefined
+        if (read.author.run === run) {
+          before ??= replayed
+          edits.push(read)
+        }
+        replayed = result
+      }
+    }
+    return before === undefined ? undefined : { before, edits }
+  }
+
+  async function undoRun(run: string): Promise<TurnedRun> {
+    let found
+    try {
+      if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
+      found = await runInLog(run)
+    } catch {
+      return { ok: false, reason: "offline" }
+    }
+    const last = found?.edits.at(-1)
+    if (found === undefined || last === undefined) return { ok: false, reason: "nothing" }
+    const now = view()
+    const owned = new Set<scene.Rev>(found.edits.map((each) => each.rev))
+    for (const name of turned) {
+      const turnedAt = revOf(name)
+      if (turnedAt !== undefined) owned.add(turnedAt)
+    }
+    const writes = scene.invert(
+      found.before,
+      now,
+      { once: last.once, author, writes: found.edits.flatMap((each) => each.writes), rev: last.rev },
+      owned,
+    )
+    if (writes.length === 0) return { ok: false, reason: "nothing" }
+    const pushed = pushEdit(writes, author)
+    if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
+    redoSteps.push({ once: pushed.once, before: now, writes })
+    turned.push(pushed.once)
+    if (turned.length > 500) turned.shift()
+    return { ok: true, once: pushed.once, saved: pushed.saved }
+  }
+
   async function follow(signal: AbortSignal): Promise<void> {
     let wait = false
     while (!signal.aborted) {
@@ -349,6 +406,7 @@ function connected(
     },
     undo: () => turn(undoSteps, redoSteps),
     redo: () => turn(redoSteps, undoSteps),
+    undoRun,
     sync,
     catchUp,
     follow,

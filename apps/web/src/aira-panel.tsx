@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { connect } from "@airdesign/live"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger } from "@/components/ui/popover"
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
@@ -9,7 +8,7 @@ import { productCopy } from "@/copy/product-copy"
 import { UsageRing } from "@/usage-ring"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
-import { airaChat, askAira, retryAira, undoExchange, type AiraChat, type AskOptions } from "@/aira-loop"
+import { airaChat, askAira, retryAira, undoExchange, type AiraChat, type AskOptions, type UndoRun } from "@/aira-loop"
 import { AiraComposer } from "@/aira-composer"
 import { Asked, ExchangeView, UsagePop, retryable } from "@/aira-reply"
 import { resetsWhen, usagePercent } from "@/aira-usage"
@@ -18,7 +17,6 @@ import { chatTitle } from "@/aira-history"
 import { deviceChats, useChatHistory, type ChatStore } from "@/aira-history-hook"
 import { AiraHistoryMenu } from "@/aira-history-menu"
 import { signInAddress } from "@/thin-notice"
-import { server } from "@/commit-edit"
 import { useWeekUsage, type UsageLoad } from "@/usage-load"
 import { requestedTone, tonePrompt, type Tone, type ToneScope } from "@/aira-prompts"
 import { adjustToneCopy } from "@/copy/adjust-tone-copy"
@@ -42,6 +40,8 @@ export function AiraPanel({
   design,
   toneLink,
   showAgent,
+  opened,
+  undo: undoRun,
   online = true,
   now = Date.now,
   mint = () => crypto.randomUUID(),
@@ -52,6 +52,8 @@ export function AiraPanel({
   design?: (toneFor: ToneControlFor) => ReactNode
   toneLink?: ToneLink
   showAgent?: () => void
+  opened?: () => Promise<unknown>
+  undo?: UndoRun
   online?: boolean
   now?: () => number
   mint?: () => string
@@ -151,7 +153,7 @@ export function AiraPanel({
       },
       added: takeQueued,
       after: finishing.current,
-      opened: connect(server).open(deck),
+      ...(opened === undefined ? {} : { opened: opened() }),
     })
     finishing.current = asking
     const done = await asking
@@ -196,7 +198,7 @@ export function AiraPanel({
 
   async function undo(exchange: number, focus = true) {
     setUndoing(true)
-    const next = await undoExchange(latest.current, exchange)
+    const next = await undoExchange(latest.current, exchange, undoRun)
     setUndoing(false)
     if (next === undefined) return false
     returnToComposer.current = focus && document.activeElement === document.body

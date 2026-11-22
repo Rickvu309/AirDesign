@@ -4,7 +4,7 @@ import { PresentLinks } from "@/present/present-links"
 import { slideRulers } from "@/editor/slide-rulers"
 import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
-import { storeNewer, watchNewer } from "@airdesign/live"
+import { connect, storeNewer, watchNewer } from "@airdesign/live"
 import { useRef, useState, useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { ThinNoticeView } from "@/thin-notice"
@@ -26,6 +26,7 @@ import { notesOn } from "@/present/notes-on"
 import { layerPairs, showsIn } from "@/present/slide-shows"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
+import { server } from "@/commit-edit"
 import { colorsIn } from "@/editor/deck-colors"
 import { LiveDesignPanel } from "@/editor/live-design-panel"
 import { LiveLayers } from "@/editor/live-layers"
@@ -194,6 +195,7 @@ export function ThinDeck({ id }: { id: string }) {
               toneLink={tone}
               hidden={panel !== "agent"}
               online={deck.online}
+              opened={() => connect(server).open(id)}
               showAgent={() => setPanel("agent")}
               design={(toneFor) =>
                 panel === "design" ? (

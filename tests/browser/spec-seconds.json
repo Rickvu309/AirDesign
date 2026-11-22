@@ -202,6 +202,7 @@
     "reduced-motion.spec.ts": 8.3,
     "save-failure.spec.ts": 8.1,
     "save-status.spec.ts": 53.8,
+    "scene-agent.spec.ts": 6.7,
     "scene-editor-arrange.spec.ts": 11.6,
     "scene-editor-select.spec.ts": 9.4,
     "scene-editor-slides.spec.ts": 8.1,
