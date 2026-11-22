@@ -1,0 +1,9 @@
+include:
+  - "apps/*/src/**/*.{ts,tsx}"
+  - "apps/*/worker/**/*.ts"
+  - "packages/*/src/**/*.{ts,tsx}"
+  - "packages/*/*.mjs"
+exclude:
+  - "**/*.test.{ts,tsx}"
+  - "**/*.spec.{ts,tsx}"
+layers: []

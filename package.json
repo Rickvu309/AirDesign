@@ -16,7 +16,7 @@
     "new:package": "node scripts/new-package.mjs",
     "lint": "pnpm -r --if-present run lint && node tooling/oxlint-plugin-airdesign/lint-tree.js",
     "typecheck": "node scripts/typecheck.mjs",
-    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "check:boundaries": "node scripts/check-boundaries.mjs && node tooling/ts-packwerk/src/cli.ts check",
     "check:specs": "node scripts/check-specs.mjs",
     "check:pptx": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs",
     "check:pptx:corpus": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs --corpus",

@@ -57,7 +57,7 @@ const partsOfFile = (file) => {
 }
 
 const partsOfPackage = (pkg) =>
-  pkg.dir.startsWith("tooling/") ? ["scripts"] : [unitNode(pkg.dir), ...(servedBy[pkg.name] ?? [])]
+  pkg.dir.startsWith("tooling/boundary-fixtures/") ? ["scripts"] : [unitNode(pkg.dir), ...(servedBy[pkg.name] ?? [])]
 
 const ownerOf = (file, packages) =>
   packages.filter((pkg) => file.startsWith(`${pkg.dir}/`)).sort((a, b) => b.dir.length - a.dir.length)[0]
