@@ -5,16 +5,16 @@ AirDesign is an omakase deck design service. A person, or their AI agent, asks f
 ## What we never compromise
 
 1. **Omakase.** AirDesign makes the design choices, so the deck is good without the person asking. Fewer choices, each with impact.
-2. **A lean core.** A few element kinds share one set of properties. A picture is an image fill, an icon a vector, a frame the one container, and a chart or KPI row is built from them. Add a property before a kind: a small core keeps everything above it simple.
-3. **The device does the work.** Painting, import, export, capture and the agent loop run on the user's machine. The server keeps edit order, storage, the Claude key and the MCP address.
-4. **One path for agents.** A person's own agent over MCP and Aira get the editor's tools, permissions and limits.
-5. **An edit paints before the network.**
+2. **Polish before breadth.** Make the small things good before extending a feature. A simple thing done well beats a complex thing done roughly, in code and in design.
+3. **The device does the work.** Painting, import, export and the agent loop run on the person's machine. That keeps AirDesign fast and the server small.
+4. **One path for agents.** A person's own agent and Aira use the editor's tools. Anything a person can do, an agent can do the same way.
+5. **An edit paints before the network.** The canvas answers at once, and saving follows.
 
-PowerPoint is an import and an export, not the core. When they pull apart, the core wins and the PR names what the export loses.
+PowerPoint is an import and an export, not the product. When they pull apart, the product wins and the PR names what the export loses.
 
 ## A note from Quan
 
-Simple but good software. From lean and simple we make powerful things. Delete what the core does not need instead of keeping it alive, and do not build machinery to look impressive.
+Simple over complex. Ship nothing of low quality, in code or in design. Delete what the product does not need instead of keeping it alive, and do not build machinery to look impressive.
 
 ## Hit every surface
 
@@ -51,4 +51,3 @@ An edit, from a person or an agent, is read by `catalog`, decided by `document` 
 - A bug or repeated mistake lands as a test, check or metric. Plans and notes stay out of commits.
 - Decide what can be undone and report it. Ask the owner only what only the owner can decide.
 - Read the MCP specification before you change a tool. Our limits win.
-- PR comments start with `🤖 **AI Agent responding on behalf of Quan Vu**`.
