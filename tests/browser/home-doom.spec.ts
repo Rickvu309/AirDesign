@@ -31,16 +31,17 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}$/)
   const deck = new URL(page.url()).pathname.slice("/s/".length)
 
-  await typeTitle(page, "Quarterly review")
+  const first = "Quarterly review"
+  await typeTitle(page, first)
   const opened = { deck, cookie, slide: "s:3" }
   await expect
     .poll(async () => ((await savedNode(stack, opened, titleNode))?.text as { chars: string } | undefined)?.chars)
-    .toBe("Quarterly review")
+    .toBe(first)
 
   await page.getByRole("link", { name: productCopy.goToDecks }).click()
   const card = page.locator(`[data-deck="${deck}"]`)
   await expect(card).toBeVisible()
-  await expect(card.getByRole("heading")).toHaveText(productCopy.blankDeck)
+  await expect(card.getByRole("heading")).toHaveText(first)
   await expect(card.locator("[data-doom-thumbnail]")).toContainText("Quarterly review")
   await expect(card.locator("[data-doom-slide]")).toHaveCount(1)
 

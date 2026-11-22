@@ -82,6 +82,10 @@ _Avoid_: style, traits, fields
 An agent change that adds a frame tree of text and shapes for one idea: `kpi`, `cards`, `compare`, `matrix`, `timeline` or `flow`. A frame with `rows` is a grid of words, not a pattern. A pattern writes only the text styles the deck names and steps down to the next named size, never to one between, until its words fit.
 _Avoid_: diagram, template, smart art
 
+**slide start**:
+A designed first state for a new slide, chosen in the New slide menu: title, title and text, KPIs, cards, chart, timeline, grid or blank. A slide start is the title placeholder plus what the agent's patterns build from placeholder words, so a person's slide looks as the agent's does. The plain plus button adds the title-only slide start. A new deck's first slide is the title start: a title and a subtitle placeholder that an agent's first title and first heading fill.
+_Avoid_: layout, template slide
+
 **free area**:
 The largest clear rectangle of a slide or frame, with a gap round what is already there. An add with no `box` takes it.
 _Avoid_: empty space, gap

@@ -14,38 +14,11 @@ function keyOf(view: doom.Doom, id: doom.NodeId | undefined): OrderKey | null {
   return id === undefined ? null : (parentSlot(view, id)?.at ?? null)
 }
 
-export type SlideLayout = "blank" | "title"
-
-function titleWrites(view: doom.Doom, slide: doom.NodeId, title: doom.NodeId): readonly doom.Write[] {
-  const { size } = doom.deckOf(view)
-  const box = {
-    x: Math.round(size.w / 12),
-    y: Math.round((size.h * 19) / 54),
-    w: Math.round((size.w * 5) / 6),
-    h: Math.round(size.h / 6.75),
-    rotation: 0,
-    flipH: false,
-    flipV: false,
-  }
-  return [
-    { node: title, prop: "type", value: "shape" },
-    { node: title, prop: "parent", value: { id: slide, at: orderKeyBetween(null, null) } },
-    { node: title, prop: "name", value: "Title" },
-    { node: title, prop: "role", value: "title" },
-    { node: title, prop: "box", value: box },
-    {
-      node: title,
-      prop: "text",
-      value: { chars: "Title", spans: [], paras: [{}], style: "title", resize: "height", alignV: "top" },
-    },
-  ]
-}
-
 export function addSlideWrites(
   view: doom.Doom,
   after: doom.NodeId | null,
   mint: Mint,
-  layout: SlideLayout = "blank",
+  start: doom.SlideStart = "titleOnly",
 ): Added {
   const slides = slidesOf(view)
   const slide = mint()
@@ -76,7 +49,13 @@ export function addSlideWrites(
   )
   const fills = previous === undefined ? undefined : propOf(view.nodes.get(previous), "fills")
   if (fills !== undefined) writes.push({ node: slide, prop: "fills", value: fills })
-  if (layout === "title") writes.push(...titleWrites(view, slide, mint()))
+  const withSlide = doom.applyEdit(view, {
+    once: "slide-added",
+    author: { kind: "person", id: "slide-start" },
+    writes,
+    rev: doom.rev(view.rev + 1),
+  })
+  if (!doom.isRefusal(withSlide)) writes.push(...doom.slideStartWrites(withSlide, slide, mint, start))
   return { slide, writes }
 }
 

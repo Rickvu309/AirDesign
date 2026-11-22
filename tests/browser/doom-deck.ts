@@ -55,6 +55,18 @@ export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Ma
   if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
 }
 
+export async function clearSubtitle(stack: Stack, opened: Opened): Promise<void> {
+  counter += 1
+  const { doomRoutes } = await catalog()
+  const edit = {
+    once: `test-${String(counter)}`,
+    author: { kind: "person", id: "other-tab" },
+    writes: [{ node: "s:5", prop: "parent", value: null }],
+  }
+  const landed = await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)
+  if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
+}
+
 export async function slidePoint(
   page: Page,
   x: number,

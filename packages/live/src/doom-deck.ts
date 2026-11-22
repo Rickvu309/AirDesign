@@ -428,7 +428,8 @@ function connected(
       tell()
     },
     mint: () => doom.nodeId(`${client}:${(counter += 1)}`),
-    push(writes, pushing) {
+    push(given, pushing) {
+      const writes = [...given, ...doom.nameFromTitleWrites(view(), given)]
       const pushed = pushEdit(writes, pushing?.author ?? author)
       if (!pushed.ok) return pushed
       undoSteps.push({ once: pushed.once, before: pushed.before!, writes })

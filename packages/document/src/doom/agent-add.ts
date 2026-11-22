@@ -3,6 +3,7 @@ import { type Draft, create, living, put, stop } from "./agent-draft.js"
 import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
+import { placeholderSubtitle } from "./slide-placeholders.js"
 import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./doom-walk.js"
@@ -48,11 +49,16 @@ function checkFields(change: Add): void {
     if (value !== undefined && !allowed.has(key)) stop("shape", undefined, key)
 }
 
-function emptyTitleOf(draft: Draft, slide: Node): Node | undefined {
+function emptyPlaceholderOf(draft: Draft, slide: Node, role: "title" | "subtitle", prompt: string): Node | undefined {
   return descendantsOf(draft.doom, slide.id).find((node) => {
     const chars = get(node, "text")?.chars
-    return get(node, "role") === "title" && (chars === "" || chars === placeholderTitle)
+    return get(node, "role") === role && (chars === "" || chars === prompt)
   })
+}
+
+function emptyPlaceholderFor(draft: Draft, slide: Node, style: Text["style"], boxed: boolean): Node | undefined {
+  if (style === "title") return emptyPlaceholderOf(draft, slide, "title", placeholderTitle)
+  return boxed ? undefined : emptyPlaceholderOf(draft, slide, "subtitle", placeholderSubtitle)
 }
 
 const inkOn = (fill: AgentLook["fill"]) =>
@@ -76,10 +82,15 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     })
     return
   }
-  const empty = kind === "text" && made?.style === "title" ? emptyTitleOf(draft, slide) : undefined
+  const empty =
+    kind === "text" && made !== undefined
+      ? emptyPlaceholderFor(draft, slide, made.style, change.box !== undefined)
+      : undefined
   if (empty !== undefined) {
-    const { chars, spans, paras } = made as Text
-    put(draft, empty.id, { text: { ...(get(empty, "text") as Text), chars, spans, paras } })
+    const held = get(empty, "text") as Text
+    const { textStyle: _, ...unstyled } = change
+    const { chars, spans, paras } = textOfLook(unstyled, held, held.style) as Text
+    put(draft, empty.id, { text: { ...held, chars, spans, paras } })
     return
   }
   const area =

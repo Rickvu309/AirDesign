@@ -100,7 +100,7 @@ test("presenter notes belong to their slide and are kept after a reload", async 
   await expect(notes(page)).toHaveValue("Open with the number\nthen the plan")
 })
 
-test("New slide offers a Title slide and a Blank slide, and the plus adds the one shown first", async ({
+test("New slide offers the designed starting slides, and the plus adds a slide with a title", async ({
   page,
   context,
   stack,
@@ -108,16 +108,23 @@ test("New slide offers a Title slide and a Blank slide, and the plus adds the on
   const opened = await openDoomEditor(page, context, stack)
   const painted = page.locator("[data-slide-box] [data-node]")
   const menu = page.getByRole("button", { name: "Choose a layout for the new slide" })
+  const choose = async (name: string) => {
+    await menu.click()
+    await page.getByRole("menuitem", { name, exact: true }).click()
+  }
   await menu.click()
-  await page.getByRole("menuitem", { name: doomEditorCopy.layoutBlank, exact: true }).click()
+  await expect(page.getByRole("menuitem")).toHaveText(Object.values(doomEditorCopy.slideStarts))
+  await page.keyboard.press("Escape")
+  await choose(doomEditorCopy.slideStarts.blank)
   await expect(painted).toHaveCount(0)
-  await menu.click()
-  await page.getByRole("menuitem", { name: doomEditorCopy.layoutTitle, exact: true }).click()
-  await expect(painted).toHaveCount(1)
-  await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
+  await choose(doomEditorCopy.slideStarts.title)
+  await expect(painted).toHaveCount(2)
+  await choose(doomEditorCopy.slideStarts.kpis)
+  expect(await painted.count()).toBeGreaterThan(5)
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(4)
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
-  await expect(painted).toHaveCount(0)
-  await expect.poll(async () => (await savedSlides(stack, opened)).length).toBe(4)
+  await expect(painted).toHaveCount(1)
+  await expect.poll(async () => (await savedSlides(stack, opened)).length).toBe(5)
 })
 
 test("the zoom menu in the right column zooms the slide and goes back to fit", async ({ page, context, stack }) => {

@@ -26,7 +26,13 @@ async function made(agent: Agent): Promise<Made> {
   }
 }
 
-const text = (slide: string, words: string) => ({ op: "add", kind: "text", slide, text: words })
+const text = (slide: string, words: string) => ({
+  op: "add",
+  kind: "text",
+  slide,
+  text: words,
+  box: { x: 160, y: 800, w: 600, h: 80 },
+})
 
 for (const pairing of ["two agents", "Aira and an agent"] as const) {
   describe(`${pairing} on one account`, () => {

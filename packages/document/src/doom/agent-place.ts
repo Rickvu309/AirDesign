@@ -1,7 +1,8 @@
 import { largestFreeBox } from "../box-placement.js"
-import { type Draft, stop } from "./agent-draft.js"
+import { type Draft, Stop, draftOf, stop } from "./agent-draft.js"
+import type { NodeId } from "./ids.js"
 import type { Px } from "./paint.js"
-import type { Node } from "./doom.js"
+import type { Doom, Node } from "./doom.js"
 import { boxOf, childrenOf, deckOf, descendantsOf, get, isLaidOut } from "./doom-walk.js"
 import type { Theme } from "./theme.js"
 
@@ -59,4 +60,31 @@ export function areaFor(draft: Draft, parent: Node, box: Area | undefined): Area
   if (box !== undefined) return box
   const free = freeArea(draft, parent) ?? stop("limit", parent.id, "box")
   return parent.type === "slide" ? alignedWithTitle(draft, parent, free) : free
+}
+
+const slideMarginShare = 1 / 12
+const slideEdgeShare = 1 / 13.5
+
+export function contentAreaOf(doom: Doom, parent: NodeId): Area | undefined {
+  const node = doom.nodes.get(parent)
+  if (node === undefined) return undefined
+  const draft = draftOf(doom, () => parent)
+  try {
+    const area = areaFor(draft, node, undefined)
+    if (node.type !== "slide") return area
+    const { w, h } = slideSize(draft)
+    const side = Math.round(w * slideMarginShare)
+    const edge = Math.round(h * slideEdgeShare)
+    const left = Math.max(area.x, side)
+    const top = Math.max(area.y, edge)
+    return {
+      x: left,
+      y: top,
+      w: Math.min(area.x + area.w, w - side) - left,
+      h: Math.min(area.y + area.h, h - edge) - top,
+    }
+  } catch (thrown) {
+    if (thrown instanceof Stop) return undefined
+    throw thrown
+  }
 }

@@ -10,11 +10,19 @@ describe("a new deck's title slide", () => {
   const text = written(startIds.title, "text") as doom.Text
   const box = written(startIds.title, "box") as doom.Box
 
-  it("sets the title in the theme's largest style, resting on the slide's middle line", () => {
-    expect(text.style).toBe("bigNumber")
+  it("sets the title in the theme's title style, resting on the slide's middle line", () => {
+    expect(text.style).toBe("title")
     expect(text.alignV).toBe("bottom")
-    expect(theme.textStyles.bigNumber.size).toBeGreaterThan(theme.textStyles.title.size)
     expect(box.y + box.h).toBe(540)
+  })
+
+  it("puts the subtitle placeholder under the title with a gap, lighter than the title", () => {
+    const subtitle = written(startIds.subtitle, "text") as doom.Text
+    const under = written(startIds.subtitle, "box") as doom.Box
+    expect(written(startIds.subtitle, "role")).toBe("subtitle")
+    expect(subtitle.chars).toBe(doom.placeholderSubtitle)
+    expect(under.y - (box.y + box.h)).toBeGreaterThanOrEqual(32)
+    expect(theme.textStyles[subtitle.style].weight).toBeLessThan(theme.textStyles[text.style].weight)
   })
 
   it("takes the slide type scale for its text styles, so a person's Text tool and the agent's patterns share it", () => {
@@ -43,10 +51,10 @@ describe("an agent's title on a new deck's first slide", () => {
     const onSlide = [...landed.nodes.values()].filter(
       (node) => (node as { parent?: { id: string } }).parent?.id === startIds.slide,
     )
-    expect(onSlide).toHaveLength(1)
+    expect(onSlide).toHaveLength(2)
     expect((landed.nodes.get(startIds.title) as { text?: doom.Text }).text).toMatchObject({
       chars: "Q3 board update",
-      style: "bigNumber",
+      style: "title",
     })
   })
 })

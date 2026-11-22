@@ -144,14 +144,14 @@ test("Alt-drag leaves the layer where it is and drags a copy above it, and one u
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
   ])
   const layers = page.locator("[data-slide-box] [data-node]")
-  await expect(layers).toHaveCount(2)
+  await expect(layers).toHaveCount(3)
   const from = await slidePoint(page, 350, 675)
   const to = await slidePoint(page, 450, 800)
   await page.mouse.move(from.x, from.y)
   await page.keyboard.down(shortcutCopy.chord.other.alt)
   await page.mouse.down()
   await page.mouse.move(to.x, to.y, { steps: 8 })
-  await expect(layers).toHaveCount(3)
+  await expect(layers).toHaveCount(4)
   await page.mouse.up()
   await page.keyboard.up(shortcutCopy.chord.other.alt)
 
@@ -162,7 +162,7 @@ test("Alt-drag leaves the layer where it is and drags a copy above it, and one u
   expect((await savedNode(stack, opened, "t:1"))?.box).toMatchObject(spot(200, 600, 300, 150))
 
   await page.keyboard.press("ControlOrMeta+z")
-  await expect(layers).toHaveCount(2)
+  await expect(layers).toHaveCount(3)
   expect((await savedNode(stack, opened, "t:1"))?.box).toMatchObject(spot(200, 600, 300, 150))
 })
 
@@ -179,10 +179,10 @@ test("Escape during an Alt-drag drops the copy and keeps the original selected",
   await page.keyboard.down(shortcutCopy.chord.other.alt)
   await page.mouse.down()
   await page.mouse.move(to.x, to.y, { steps: 8 })
-  await expect(layers).toHaveCount(3)
+  await expect(layers).toHaveCount(4)
   await page.keyboard.up(shortcutCopy.chord.other.alt)
   await page.keyboard.press("Escape")
   await page.mouse.up()
-  await expect(layers).toHaveCount(2)
+  await expect(layers).toHaveCount(3)
   expect(await selectedIds(page)).toEqual(["t:1"])
 })

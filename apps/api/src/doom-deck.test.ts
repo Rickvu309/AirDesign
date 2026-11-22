@@ -107,7 +107,7 @@ describe("creating a doom deck", () => {
     expect(decoded.rev).toBe(1)
     const { fold } = decoded
     const types = [...fold.nodes.values()].map((node) => node.type).sort()
-    expect(types).toEqual(["deck", "shape", "slide", "slideRow"])
+    expect(types).toEqual(["deck", "shape", "shape", "slide", "slideRow"])
     const neutral = templateTheme("neutral")!
     const theme = (fold.nodes.get(startIds.deck) as { theme: doom.Theme }).theme
     expect(theme.colors.text).toBe(`#${neutral.colors.dk1.toLowerCase()}`)
@@ -124,7 +124,7 @@ describe("creating a doom deck", () => {
     ])
     expect(fold.children.get(startIds.deck)).toEqual([startIds.row])
     expect(fold.children.get(startIds.row)).toEqual([startIds.slide])
-    expect(fold.children.get(startIds.slide)).toEqual([startIds.title])
+    expect(fold.children.get(startIds.slide)).toEqual([startIds.title, startIds.subtitle])
     const row = await admin.query("select owner, rev from deck.doom where id = $1", [deck])
     expect(row.rows).toEqual([{ owner: owner.email, rev: 1 }])
     const logged = await admin.query("select rev, once from deck.doom_edit where deck = $1", [deck])
@@ -295,19 +295,19 @@ describe("an edit", () => {
       { node: shape, prop: "parent", value: at(slides[0]!) },
     ])
     expect(await stored()).toEqual(await recount())
-    expect(await stored()).toEqual({ elements: 8, slides: 4 })
+    expect(await stored()).toEqual({ elements: 9, slides: 4 })
     await lands([{ node: row, prop: "hidden", value: true }])
-    expect(await stored()).toEqual({ elements: 8, slides: 1 })
+    expect(await stored()).toEqual({ elements: 9, slides: 1 })
     await lands([{ node: slides[1]!, prop: "parent", value: at(startIds.row) }])
     expect(await stored()).toEqual(await recount())
-    expect(await stored()).toEqual({ elements: 8, slides: 2 })
+    expect(await stored()).toEqual({ elements: 9, slides: 2 })
     await lands([{ node: row, prop: "hidden", value: false }])
-    expect(await stored()).toEqual({ elements: 8, slides: 4 })
+    expect(await stored()).toEqual({ elements: 9, slides: 4 })
     await lands([{ node: slides[2]!, prop: "parent", value: null }])
     expect(await stored()).toEqual(await recount())
     await lands([{ node: row, prop: "parent", value: null }])
     expect(await stored()).toEqual(await recount())
-    expect(await stored()).toEqual({ elements: 6, slides: 2 })
+    expect(await stored()).toEqual({ elements: 7, slides: 2 })
   })
 
   it("refuses a write the reader cannot read with shape, a node it does not know with missing", async () => {
