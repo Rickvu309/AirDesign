@@ -1,15 +1,20 @@
 # AirDesign
 
-AirDesign makes slide decks from an idea or a PowerPoint. A person and their AI agents edit a deck together, and it exports back to PowerPoint with no loss.
+AirDesign is an omakase deck design service: a person and their AI agents get a beautiful deck, fast and simply.
 
 ## What we never compromise
 
-1. **No-loss PowerPoint.** Content nobody touched survives byte for byte. Microsoft's own validator judges every export against its original, and our own re-import never counts. Where that validator is blind, we add a check for the break it missed. An element with no native PowerPoint form yet, such as an AirDesign chart or diagram block, exports as a high-resolution picture of how it looks in AirDesign, at its place and size. Looking right in AirDesign comes before native export. PowerPoint work merges on `ci`, `pnpm check:pptx` and that validator. No PR waits for a person to open a file in PowerPoint, and no agent asks the owner to. No tool shows PowerPoint's repair prompt, so no agent says a file opens clean there. A PR body says what the validator and `check:pptx` proved and names any PowerPoint-only risk as a known limit.
-2. **The user's machine does the work.** Painting, import, export, capture and the agent loop run on the device. The server keeps the order of edits, storage, the Claude key and the MCP address.
-3. **One path for agents.** A person's own agent over MCP and Aira get the same tools, permissions and limits.
-4. **An edit paints before the network.**
+1. **A lean core of elements, the Figma way.** A few kinds share one set of properties. A picture is an image fill, an icon a vector, a frame the one container, and a chart or KPI row is built from them. Add a property before a kind.
+2. **Omakase.** AirDesign makes the design choices, so people and agents get a great deck without asking. Fewer choices, each with impact.
+3. **The user's machine does the work.** Painting, import, export, capture and the agent loop run on the device. The server keeps the order of edits, storage, the Claude key and the MCP address.
+4. **One path for agents.** A person's own agent over MCP and Aira get the same tools, permissions and limits.
+5. **An edit paints before the network.**
 
 Prefer the simple system. Keep only complexity the product needs.
+
+## PowerPoint
+
+PowerPoint is an import and an export, not the core. When they pull apart, the core wins and the PR says what the export loses or which PowerPoint check it retires. PowerPoint work merges on `ci`, `pnpm check:pptx` and Microsoft's validator. No PR waits for a hand check in PowerPoint, no agent asks the owner for one, and no agent says a file opens clean there. A PR body says what the validator and `check:pptx` proved.
 
 ## How a change lands
 
