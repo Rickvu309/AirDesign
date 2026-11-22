@@ -1,0 +1,42 @@
+layer: shared
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/lib
+public:
+  - appearance-presets.ts
+  - color-choices.ts
+  - color-names.ts
+  - color-picker.tsx
+  - control-views.ts
+  - controls/color.tsx
+  - controls/link.tsx
+  - controls/picture-adjust.tsx
+  - controls/text.tsx
+  - controls/union.tsx
+  - corners-control.ts
+  - crop-change.ts
+  - design-change.ts
+  - effects-list.ts
+  - eyedropper.ts
+  - fill-image.ts
+  - fill-slots.ts
+  - frame-panel.ts
+  - node-names.ts
+  - opacity-control.ts
+  - panel-arrangement.ts
+  - panel-folds.ts
+  - panel-order.ts
+  - panel.ts
+  - preset-icons.ts
+  - rebase.ts
+  - selected-weight.ts
+  - selection-colors.ts
+  - served-faces.ts
+  - site-names.ts
+  - spacing-units.ts
+  - text-style-edit.tsx
+  - trait-controls.ts
+  - trait-edit.ts
+  - typed-number.ts
+  - weight-step.ts

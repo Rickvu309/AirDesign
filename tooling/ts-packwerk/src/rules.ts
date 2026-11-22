@@ -44,14 +44,14 @@ const packFindings = (workspace: Workspace): Finding[] =>
       found.push({
         ...at,
         rule: "dependency",
-        message: `${from.name} uses ${to.name} (${target}) but does not list it in dependencies`,
+        message: `${from.name} uses ${to.name} (${target}) but does not list it in dependencies; add it to ${from.name}/pack.yml if it should`,
       })
     }
     if (to.enforcePrivacy && !isPublic(to, target)) {
       found.push({
         ...at,
         rule: "privacy",
-        message: `${target} is private to ${to.name}; use ${to.publicPaths.join(" or ") || "a public path"}`,
+        message: `${target} is private to ${to.name}; import a public path (${to.publicPaths.join(", ") || "none yet"}) or add this file to its public list`,
       })
     }
     const fromRank = rank(workspace, from)
@@ -60,7 +60,7 @@ const packFindings = (workspace: Workspace): Finding[] =>
       found.push({
         ...at,
         rule: "layer",
-        message: `${from.name} (layer ${from.layer}) may not use ${to.name} (layer ${to.layer}), a higher layer`,
+        message: `${from.name} (layer ${from.layer}) may not use ${to.name} (layer ${to.layer}), a higher layer; move what it needs into a pack at layer ${from.layer} or lower`,
       })
     }
     return found

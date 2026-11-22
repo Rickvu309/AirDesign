@@ -11,4 +11,5 @@ layers:
   - app
   - legacy
   - feature
+  - shared
   - platform

@@ -8,7 +8,8 @@ Packs for TypeScript, after Shopify's [Packwerk](https://github.com/Shopify/pack
 
 ```sh
 node tooling/ts-packwerk/src/cli.ts check          # new violations and stale todos fail
-node tooling/ts-packwerk/src/cli.ts update-todo    # record today's violations in pack_todo.yml
+node tooling/ts-packwerk/src/cli.ts update-todo    # remove fixed violations from pack_todo.yml
+node tooling/ts-packwerk/src/cli.ts update-todo --all  # record every violation, once, when adopting packs
 node tooling/ts-packwerk/src/cli.ts explain <pack> # what a pack enforces, uses and is used by
 ```
 
@@ -41,6 +42,6 @@ enforce_layers: true
 | `cycle`      | pack dependencies form a cycle                                                                                                                             |
 | `package`    | an import names a package missing from the nearest `package.json`, a runtime import names a devDependency, or a relative path reaches into another package |
 
-`dependency`, `privacy` and `layer` violations can be recorded in a pack's `pack_todo.yml`. A recorded violation passes; a fixed one still listed fails as stale until `update-todo` removes it, so the file only shrinks.
+`dependency`, `privacy` and `layer` violations can be recorded in a pack's `pack_todo.yml`. A recorded violation passes; a fixed one still listed fails as stale until `update-todo` removes it. `update-todo` never records a new violation, so the file only shrinks.
 
 Type-only imports count, since they couple packs too. Dynamic `import()` counts when its argument is a string literal.

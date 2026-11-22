@@ -1,0 +1,85 @@
+apps/web/src:
+  apps/web/src/commit-edit.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/home.tsx
+  apps/web/src/deck-paint.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/first-slide.ts
+      - apps/web/src/decks/template-decks.ts
+  apps/web/src/exported-parts.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/first-slide.ts
+  apps/web/src/import-deck.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/home.tsx
+  apps/web/src/live-repaint.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/first-slide.ts
+      - apps/web/src/decks/template-decks.ts
+  apps/web/src/picture-tool.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/first-slide.ts
+  apps/web/src/thin-notice.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/deck-notice.tsx
+      - apps/web/src/decks/deck-request.ts
+      - apps/web/src/decks/delete-account.tsx
+      - apps/web/src/decks/home.tsx
+      - apps/web/src/decks/not-found-page.tsx
+apps/web/src/doom-editor:
+  apps/web/src/doom-editor/node-props.ts:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/decks/doom-thumbnail.ts
+apps/web/src/editor:
+  apps/web/src/editor/editor-chrome.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/decks/deck-preview.tsx
+      - apps/web/src/decks/doom-preview.tsx
+      - apps/web/src/decks/template-picker.tsx
+apps/web/src/settings:
+  apps/web/src/settings/account-load.ts:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/decks/not-found-page.tsx
+  apps/web/src/settings/account-profile.tsx:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/decks/decks-shell.tsx
+  apps/web/src/settings/settings-page.tsx:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/decks/not-found-page.tsx
+  apps/web/src/settings/settings-routes.ts:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/decks/decks-shell.tsx
