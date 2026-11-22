@@ -147,3 +147,59 @@ same("an oxlint error names its message", failedCauses(fixture("job-lint-failed.
   { step: "lint", lines: ["src/font-notice.ts:1:10: 'toast' import from 'sonner' is restricted."], more: 0 },
 ])
 same("a log with no failed step has no cause", failedCauses("ok lint 1.2s\nok unit-tests 3.4s\n"), [])
+
+const zoomSelectionLog = [
+  "2026-11-22T02:48:35.7501210Z   1) tests/browser/design-states.spec.ts:73:1 › every named state of this design shard is reached and scanned in one stack ",
+  "2026-11-22T02:48:35.7502908Z     Error: every named state is reached",
+  "2026-11-22T02:48:35.7506008Z     - Array []",
+  "2026-11-22T02:48:35.7506611Z     + Array [",
+  "2026-11-22T02:48:35.7507165Z     +   Object {",
+  '2026-11-22T02:48:35.7508152Z     +     "error": "expect(received).toBeLessThanOrEqual(expected)",',
+  '2026-11-22T02:48:35.7509722Z     +     "page": "zoom-selection",',
+  "2026-11-22T02:48:35.7510505Z     +   },",
+  "2026-11-22T02:48:35.7511057Z     + ]",
+  "2026-11-22T02:48:35.9367006Z failed: browser-tests",
+].join("\n")
+same("a failed design-states shard names the failing state and its error", failedTests(zoomSelectionLog), [
+  {
+    file: "tests/browser/design-states.spec.ts",
+    name: "every named state of this design shard is reached and scanned in one stack",
+    state: "zoom-selection",
+    error: "expect(received).toBeLessThanOrEqual(expected)",
+    line: 73,
+  },
+])
+
+const twoStatesLog = [
+  "  1) tests/browser/design-states.spec.ts:73:1 › every named state of this design shard is reached and scanned in one stack",
+  "    Error: every named state is reached",
+  '    +     "error": "expect(received).toBeLessThanOrEqual(expected)",',
+  '    +     "page": "zoom-selection",',
+  '    +     "error": "expect(locator).toBeFocused() failed",',
+  '    +     "page": "slide-added-title",',
+].join("\n")
+same(
+  "two failed states in one design-states shard are each named separately",
+  failedTests(twoStatesLog).map((test) => [test.state, test.error]),
+  [
+    ["zoom-selection", "expect(received).toBeLessThanOrEqual(expected)"],
+    ["slide-added-title", "expect(locator).toBeFocused() failed"],
+  ],
+)
+
+const designTimeoutLog = [
+  "  1) tests/browser/design-states.spec.ts:73:1 › every named state of this design shard is reached and scanned in one stack",
+  "    Test timeout of 240000ms exceeded.",
+].join("\n")
+same(
+  "a design-states failure that names no state falls back to the spec test",
+  failedTests(designTimeoutLog).map((test) => [test.file, test.name, test.state, test.error]),
+  [
+    [
+      "tests/browser/design-states.spec.ts",
+      "every named state of this design shard is reached and scanned in one stack",
+      undefined,
+      "Test timeout of 240000ms exceeded.",
+    ],
+  ],
+)

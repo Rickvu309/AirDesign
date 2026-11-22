@@ -204,3 +204,128 @@ same(
   [ended(rerunAs({ [connectorTest]: "fails" }).rerun).races.map((each) => [each.run.id, each.title])],
   [[[44764886281, noticeRace]]],
 )
+
+const greenBeforeLeftOut = "0d318ba4b305e9f74291cbbd98c0811ccc347735"
+const ec82581 = "ec82581b004ee250af756c938d00ce55822a3500"
+const afterLeftOut = "475bfffe19687933e81c90c9dd2b6d214281f955"
+const leftOutTest = "apps/web/src/left-out-replay.test.ts"
+const leftOutName =
+  "replays every state of the left-out spec through the tab's writer: each writable edit written, the rest left out and named"
+history.commits[greenBeforeLeftOut] = { title: "Use the deck's named type scale only when the deck has one", files: [] }
+history.commits[ec82581] = {
+  title: "Open a deck with an edit the tab cannot write, leave that edit out and say so",
+  files: [leftOutTest],
+}
+history.commits[afterLeftOut] = { title: "Let an agent create a blank deck it can read and edit at once", files: [] }
+const leftOutRun = { id: 44959805557, sha: ec82581, status: "completed", conclusion: "failure" }
+const leftOutGreenRun = { id: 44959700000, sha: greenBeforeLeftOut, status: "completed", conclusion: "success" }
+const leftOutAfterRun = { id: 44960059334, sha: afterLeftOut, status: "completed", conclusion: "success" }
+logs[leftOutRun.id] = [
+  {
+    name: "check (source 2/2)",
+    log: [
+      ` FAIL   unit  ${leftOutTest} > ${leftOutName}`,
+      "Error: Test timed out in 5000ms.",
+      "failed: unit-tests",
+    ].join("\n"),
+  },
+]
+const leftOutWindow = {
+  commits: [greenBeforeLeftOut, ec82581, afterLeftOut],
+  runs: [leftOutGreenRun, leftOutRun, leftOutAfterRun],
+}
+const unusedRerun = rerunAs({ [leftOutTest]: "unclear" })
+const addedLeftOut = decideIn(
+  leftOutWindow,
+  "ec82581",
+  new Set(),
+  [leftOutGreenRun, leftOutRun],
+  unusedRerun.rerun,
+  (from, to, file) => (from === greenBeforeLeftOut && to === ec82581 && file === leftOutTest ? ec82581 : undefined),
+)
+same(
+  "a failing test file absent at the last green commit is treated as the adding commit's own, skips rerun, and names the commit in plain words",
+  [
+    addedLeftOut.action,
+    short(addedLeftOut.target),
+    addedLeftOut.judged.at(-1).verdict,
+    unusedRerun.calls.length,
+    addedLeftOut.judged.at(-1).tests[0].why.includes("does not exist at the last green commit"),
+    addedLeftOut.judged.at(-1).tests[0].why.includes(ec82581.slice(0, 9)),
+  ],
+  ["revert", "ec82581", "real", 0, true, true],
+)
+
+const addedBot = recorder([
+  [
+    /^git cat-file -e 0d318ba4b305e9f74291cbbd98c0811ccc347735:apps\/web\/src\/left-out-replay\.test\.ts/,
+    () => ({ status: 128, stdout: "", stderr: "" }),
+  ],
+  [/^git log --no-renames --diff-filter=A/, () => ok(`${ec82581}\n`)],
+  ...mainWith(leftOutWindow, [leftOutGreenRun, leftOutRun]),
+  [/^owner pr list/, () => ok("[]")],
+])
+await redMainBot({
+  repository,
+  event: { id: leftOutRun.id, event: "push", branch: "main", sha: ec82581, conclusion: "failure" },
+  io: io({ ...addedBot, rerun: rerunAs({ [leftOutTest]: "unclear" }).rerun }),
+})
+const addedRevertBody = addedBot.calls.find((call) => call.who === "owner" && call.args[1] === "create")?.input ?? ""
+same(
+  "redMainBot reverts ec82581 for its newly added failing test and explains in plain words why it is not a race",
+  [addedRevertBody.includes("does not exist at the last green commit"), addedRevertBody.includes(ec82581.slice(0, 9))],
+  [true, true],
+)
+
+const unclearRerun = ({ at }) => ({
+  result: "unclear",
+  at,
+  why: "it ended with status 1 and named no failure of this test",
+})
+const unclearThenGreen = recorder([
+  ...mainWith(leftOutWindow, [leftOutGreenRun, leftOutRun, leftOutAfterRun]),
+  [/^gh issue create/, () => ok("https://github.com/Rickvu309/AirDesign/issues/1600\n")],
+])
+await redMainBot({
+  repository,
+  event: { id: leftOutAfterRun.id, event: "push", branch: "main", sha: afterLeftOut, conclusion: "success" },
+  io: io({ ...unclearThenGreen, rerun: unclearRerun }),
+})
+const unclearIssue = unclearThenGreen.calls.find((call) => call.args[0] === "issue" && call.args[1] === "create")
+same(
+  "when an unclear green rerun leaves main un-reverted and the next push passes, the bot files a Race: issue for that test",
+  [
+    unclearIssue?.args[unclearIssue.args.indexOf("--title") + 1],
+    unclearIssue?.input.includes(`https://github.com/${repository}/actions/runs/${leftOutRun.id}`),
+    unclearIssue?.input.includes(`https://github.com/${repository}/actions/runs/${leftOutAfterRun.id}`),
+  ],
+  [`Race: ${leftOutTest} › ${leftOutName}`, true, true],
+)
+
+const mixedUnknownAndRace = recorder([
+  [
+    /^gh issue list/,
+    () =>
+      ok(
+        JSON.stringify([
+          { number: 1130, title: noticeRace, url: "https://github.com/Rickvu309/AirDesign/issues/1130" },
+        ]),
+      ),
+  ],
+  ...mainUpTo(connector, "ee5ab77"),
+])
+await redMainBot({
+  repository,
+  event: { id: 44764886281, event: "push", branch: "main", sha: red, conclusion: "failure" },
+  io: io({ ...mixedUnknownAndRace, rerun: rerunAs({ [connectorTest]: "unrun" }).rerun }),
+})
+same(
+  "a run with an unrun test and a known race still comments on the race issue and reverts nothing",
+  [
+    mixedUnknownAndRace.calls.some((call) => call.who === "owner"),
+    mixedUnknownAndRace.calls
+      .filter((call) => call.args[0] === "issue" && call.args[1] === "comment")
+      .map((call) => call.args[2]),
+  ],
+  [false, ["1130"]],
+)

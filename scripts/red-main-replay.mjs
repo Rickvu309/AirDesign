@@ -50,8 +50,23 @@ export const upTo = (window, sha) => {
   const at = window.commits.findIndex((each) => each.startsWith(sha))
   return window.runs.filter((run) => window.commits.indexOf(run.sha) <= at)
 }
-export const decideIn = (window, sha, races = new Set(), runs = upTo(window, sha), rerun = undefined) =>
-  decide({ runs, commits: window.commits, jobsOf, filesBetween: filesBetween(window.commits), races, rerun })
+export const decideIn = (
+  window,
+  sha,
+  races = new Set(),
+  runs = upTo(window, sha),
+  rerun = undefined,
+  addedBetween = undefined,
+) =>
+  decide({
+    runs,
+    commits: window.commits,
+    jobsOf,
+    filesBetween: filesBetween(window.commits),
+    races,
+    rerun,
+    addedBetween,
+  })
 export const short = (sha) => sha?.slice(0, 7)
 export const culpritBody = (section) =>
   `## Summary\n\nSets type.\n\n## Before / after\n\n${section}\n\n## Merge Danger\n\n**Door:** two-way.\n`

@@ -412,4 +412,72 @@ same(
   true,
 )
 
+const zoomDesignLog = [
+  "2026-11-22T02:48:35.7501210Z   1) tests/browser/design-states.spec.ts:73:1 › every named state of this design shard is reached and scanned in one stack ",
+  "2026-11-22T02:48:35.7502908Z     Error: every named state is reached",
+  "2026-11-22T02:48:35.7506008Z     - Array []",
+  "2026-11-22T02:48:35.7506611Z     + Array [",
+  "2026-11-22T02:48:35.7507165Z     +   Object {",
+  '2026-11-22T02:48:35.7508152Z     +     "error": "expect(received).toBeLessThanOrEqual(expected)",',
+  '2026-11-22T02:48:35.7509722Z     +     "page": "zoom-selection",',
+  "2026-11-22T02:48:35.7510505Z     +   },",
+  "2026-11-22T02:48:35.7511057Z     + ]",
+  "2026-11-22T02:48:35.9367006Z failed: browser-tests",
+].join("\n")
+const zoomDesignJob = { name: "check (design 3/3)", log: zoomDesignLog }
+const pr1285Files = [
+  "packages/render/src/chart-bars.ts",
+  "tests/browser/agent-chart-picture.spec.ts",
+  "tests/browser/spec-seconds.json",
+]
+same(
+  "PR 1285 adding another browser spec and spec-seconds.json leaves design-states zoom-selection outside the diff",
+  outsideTheDiff({ jobs: [zoomDesignJob], files: pr1285Files }).outside,
+  true,
+)
+same(
+  "editing the failed design state owns the failure",
+  outsideTheDiff({
+    jobs: [zoomDesignJob],
+    files: [".agents/skills/verify-airdesign/look/states/zoom-selection.mjs"],
+  }).owned,
+  true,
+)
+same(
+  "editing an unrelated design state leaves zoom-selection outside the diff",
+  outsideTheDiff({
+    jobs: [zoomDesignJob],
+    files: [".agents/skills/verify-airdesign/look/states/unwritable-edit-open.mjs"],
+  }).outside,
+  true,
+)
+same(
+  "editing the shared design look runner owns a design-state failure",
+  outsideTheDiff({
+    jobs: [zoomDesignJob],
+    files: [".agents/skills/verify-airdesign/look/states.mjs"],
+  }).owned,
+  true,
+)
+const pr1285Follow = await follow({
+  number: 1285,
+  reads: reopened,
+  files: `${pr1285Files.join("\n")}\n`,
+  runs: [freshRun, prRun],
+  failedJobs: [zoomDesignJob],
+  freshJobs: [
+    { name: "ci", conclusion: "success" },
+    {
+      name: "check (design 3/3)",
+      conclusion: "success",
+      steps: [{ name: "Run pnpm check --part=design --shard=3/3", conclusion: "success" }],
+    },
+  ],
+})
+same(
+  "PR 1285 replay: zoom-selection passes on the fresh run and files Race: design-states › zoom-selection",
+  [pr1285Follow.code, pr1285Follow.raised.map((issue) => issue.title)],
+  [0, ["Race: design-states › zoom-selection"]],
+)
+
 console.log("fresh-run tests passed")
