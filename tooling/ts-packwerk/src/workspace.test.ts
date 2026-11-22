@@ -55,6 +55,7 @@ describe("loadWorkspace", () => {
     expect(reference(workspace, "apps/web/src/main.ts", "@acme/core")?.target).toEqual({
       kind: "file",
       file: "packages/core/src/index.ts",
+      declared: "runtime",
     })
     expect(reference(workspace, "apps/web/src/editor/editor.ts", "node:fs")?.target).toEqual({ kind: "builtin" })
     expect(reference(workspace, "apps/web/src/editor/editor.ts", "./lazy.js")?.target).toEqual({

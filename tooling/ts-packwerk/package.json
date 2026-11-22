@@ -1,15 +1,50 @@
 {
   "name": "ts-packwerk",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Packs, dependencies, privacy and layers for TypeScript monorepos, in the spirit of Shopify's Packwerk.",
+  "description": "Packs for TypeScript: dependencies, privacy, layers, named interfaces and table ownership, checked in under a second. After Shopify's Packwerk.",
+  "keywords": [
+    "packwerk",
+    "modular monolith",
+    "architecture",
+    "boundaries",
+    "monorepo",
+    "typescript",
+    "oxc",
+    "lint"
+  ],
+  "license": "MIT",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
+  "engines": {
+    "node": ">=24"
   },
+  "bin": {
+    "ts-packwerk": "./bin/ts-packwerk.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./lint": {
+      "types": "./dist/lint.d.ts",
+      "import": "./dist/lint.js"
+    }
+  },
+  "files": [
+    "bin",
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/fixture.*",
+    "!dist/tsconfig.tsbuildinfo",
+    "LICENSE",
+    "README.md",
+    "action.yml"
+  ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "prepack": "rm -rf dist && tsc -p tsconfig.release.json"
   },
   "dependencies": {
     "oxc-parser": "^0.157.0",

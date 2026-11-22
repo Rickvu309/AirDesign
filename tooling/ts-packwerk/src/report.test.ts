@@ -114,6 +114,7 @@ describe("workspace packages", () => {
     expect(workspace.references.find((item) => item.specifier === "@acme/core")?.target).toEqual({
       kind: "file",
       file: "packages/core/src/index.ts",
+      declared: "runtime",
     })
   })
 
@@ -172,5 +173,29 @@ describe("sarif and init", () => {
     expect((await run("init")).code).toBe(0)
     expect((await run("init")).code).toBe(1)
     expect((await run("check")).out).toContain("1 files, 0 packs, 0 new violations")
+  })
+})
+
+describe("lint", () => {
+  it("reports a file's new violations where they are, and skips recorded ones", async () => {
+    const { boundaries } = await import("./lint.ts")
+    open({ "apps/web/src/kit/pack.yml": "layer: platform\n" })
+    const reports: string[] = []
+    const lint = (file: string) =>
+      boundaries
+        .create({
+          filename: path.join(repo.root, file),
+          report: ({ loc, message }) =>
+            reports.push(`${String(loc.start.line)}:${String(loc.start.column)} ${message}`),
+        })
+        .Program?.()
+    lint("apps/web/src/editor/editor.ts")
+    expect(reports).toEqual([
+      "2:27 privacy: apps/web/src/kit/theme.ts is private to apps/web/src/kit; import a public path (apps/web/src/kit/index.ts) or add this file to its public list",
+    ])
+    reports.length = 0
+    expect((await run("update-todo", "--all")).code).toBe(0)
+    lint("apps/web/src/editor/editor.ts")
+    expect(reports).toEqual([])
   })
 })
