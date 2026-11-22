@@ -87,7 +87,7 @@ afterEach(async () => {
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
 })
 
-function env(extra: { FORWARD_SECRET?: string } = {}) {
+function env(extra: { FORWARD_SECRET?: string; COMMIT?: string } = {}) {
   return {
     API_ORIGIN: origin,
     ...extra,
@@ -141,6 +141,18 @@ describe("API forwarding", () => {
         (path) => !routed(path),
       ),
     ).toEqual([])
+    expect(routed("/version")).toBe(true)
+  })
+
+  it("answers its own commit at /version and does not ask the API or the assets", async () => {
+    const commit = "b".repeat(40)
+    const stamped = await worker.fetch(new Request("https://studio.airdesign.app/version"), env({ COMMIT: commit }))
+    expect(stamped.status).toBe(200)
+    expect(await stamped.json()).toEqual({ commit })
+    const missing = await worker.fetch(new Request("https://studio.airdesign.app/version"), env())
+    expect(await missing.json()).toEqual({ commit: "unknown" })
+    expect(seen).toEqual([])
+    expect(assets).toEqual([])
   })
 
   it("forwards the commit request and returns the API response", async () => {

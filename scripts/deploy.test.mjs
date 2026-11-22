@@ -48,32 +48,32 @@ same(
   true,
 )
 same(
-  "the matrix holds the site and the web app, and one failing deploy does not stop the other",
-  /^ {4}strategy:\n {6}fail-fast: false\n {6}matrix:\n {8}include:\n {10}- app: site\n {12}directory: apps\/site\n {12}what: Site\n {10}- app: web\n {12}directory: apps\/web\n {12}what: Web app$/m.test(
+  "the matrix holds the site, the web app and the API, and one failing deploy does not stop the others",
+  /^ {4}strategy:\n {6}fail-fast: false\n {6}matrix:\n {8}include:\n {10}- app: site\n {12}directory: apps\/site\n {12}what: Site\n {10}- app: web\n {12}directory: apps\/web\n {12}what: Web app\n {10}- app: api\n {12}directory: \.\n {12}what: API$/m.test(
     workflow,
   ),
   true,
 )
 same(
-  "each app has its own deploy queue and its two deploys cannot race",
+  "each app has its own deploy queue and two deploys of one app cannot race",
   /^ {4}concurrency:\n {6}group: deploy-\$\{\{ matrix\.app \}\}\n {6}cancel-in-progress: false$/m.test(workflow),
   true,
 )
 same(
-  "the workflow reads the code and writes issues",
-  /^permissions:\n {2}contents: read\n {2}issues: write$/m.test(workflow),
+  "the workflow reads actions, writes the green branch and writes issues",
+  /^permissions:\n {2}actions: read\n {2}contents: write\n {2}issues: write$/m.test(workflow),
   true,
 )
 same(
-  "the deploy publishes only the commit ci passed",
-  workflow.includes("ref: ${{ github.event.workflow_run.head_sha }}"),
+  "the job checks out main, where the decision script lives, with the history it needs",
+  workflow.includes("ref: main") && workflow.includes("fetch-depth: 0"),
   true,
 )
-same(
-  "the deploy skips a commit that is no longer the tip of main",
-  workflow.includes('if [ "$tip" != "$HEAD_SHA" ]'),
-  true,
-)
+same("the deploy checks out the chosen commit", workflow.includes('git checkout --detach "$SHA"'), true)
+same("a run never skips because main moved", workflow.includes("main moved to"), false)
+same("the API moves the green branch without force", workflow.includes("node scripts/deploy-commit.mjs --apply"), true)
+same("a git push in the workflow is never forced", /git push[^\n]*--force/.test(workflow), false)
+same("the web app publishes the chosen commit for the journey", workflow.includes("name: deployed-commit"), true)
 same("each deploy runs in its own app folder", workflow.includes("working-directory: ${{ matrix.directory }}"), true)
 
 const inRun = steps.map((step) => step.split(/^ {8}run: \|\n/m)[1] ?? "").join("\n")
@@ -114,10 +114,18 @@ same("the workflow does not swallow a failure with || true", workflow.includes("
 
 const railway = fs.readFileSync(path.join(root, ".railway/railway.ts"), "utf8")
 same(
-  "the api deploys every commit on main without waiting for check suites, because Railway skips the deployment when any workflow on the commit fails",
-  /github\("Rickvu309\/AirDesign", \{ branch: "main", checkSuites: false \}\)/.test(railway),
+  "the api follows the green branch without waiting for check suites, because Railway skips the deployment when any workflow on the commit fails",
+  /github\("Rickvu309\/AirDesign", \{ branch: "green", checkSuites: false \}\)/.test(railway),
   true,
 )
+for (const folder of ["apps/site", "apps/web"]) {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, folder, "package.json"), "utf8"))
+  same(
+    `${folder} stamps the deployed commit and keeps the vars already on Cloudflare`,
+    pkg.scripts.deploy,
+    "pnpm build && wrangler deploy --keep-vars --var COMMIT:$(git rev-parse HEAD)",
+  )
+}
 same("the api deploys every commit, so no watch path can skip one", /watchPatterns/.test(railway), false)
 
 const journey = parse(fs.readFileSync(path.join(root, ".github/workflows/production-journey.yml"), "utf8"))
@@ -132,21 +140,35 @@ same(
   journeyJob.if,
   "github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'",
 )
-same("the production journey tests the deployed commit", journeySteps[0].with, {
-  ref: "${{ github.event.workflow_run.head_sha || github.sha }}",
+const wanted = journeySteps[0]
+same(
+  "the journey reads the commit the deploy run published",
+  [wanted.id, wanted.env.EVENT, wanted.env.RUN],
+  ["wanted", "${{ github.event_name }}", "${{ github.event.workflow_run.id }}"],
+)
+same(
+  "a dispatched journey uses the tip and a deploy journey uses the published commit",
+  wanted.run.includes('"$EVENT" = "workflow_dispatch"') &&
+    wanted.run.includes("gh run download") &&
+    wanted.run.includes("deployed-commit"),
+  true,
+)
+same("the production journey tests the deployed commit", journeySteps[1].with, {
+  ref: "${{ steps.wanted.outputs.sha }}",
   "fetch-depth": 0,
 })
 const waitStep = journeySteps.findIndex((step) => (step.run ?? "").includes("scripts/production-commit.mjs"))
 same(
-  "the production journey waits until the API serves the deployed commit before it runs",
+  "the production journey waits until the web app and the API serve the deployed commit before it runs",
   waitStep !== -1 && waitStep < journeySteps.findIndex((step) => step.run === "pnpm test:production"),
   true,
 )
 same(
   "the wait reads the deployed commit from its environment, not the event",
-  [journeySteps[waitStep].env?.WANTED, /\$\{\{/.test(journeySteps[waitStep].run)],
-  ["${{ github.event.workflow_run.head_sha || github.sha }}", false],
+  [journeySteps[waitStep].env?.WANTED, journeySteps[waitStep].run, /\$\{\{/.test(journeySteps[waitStep].run)],
+  ["${{ steps.wanted.outputs.sha }}", 'node scripts/production-commit.mjs "$WANTED" web api', false],
 )
+same("the journey can read the deploy run's artifact", journey.permissions.actions, "read")
 same("deploys in a row queue their journeys", journey.concurrency, {
   group: "production-journey",
   "cancel-in-progress": false,

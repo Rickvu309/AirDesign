@@ -14,6 +14,7 @@ import {
 type Env = {
   API_ORIGIN?: string
   FORWARD_SECRET?: string
+  COMMIT?: string
   ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
@@ -33,6 +34,10 @@ type Visit = Request & { cf?: { country?: unknown } }
 export default {
   fetch(request: Visit, env: Env): Promise<Response> | Response {
     const url = new URL(request.url)
+    if (request.method === "GET" && url.pathname === "/version") {
+      const commit = env.COMMIT !== undefined && env.COMMIT.length > 0 ? env.COMMIT : "unknown"
+      return Response.json({ commit })
+    }
     if (!apiPaths.includes(url.pathname)) return env.ASSETS.fetch(request)
     if (!env.API_ORIGIN) return new Response(null, { status: 503 })
     const destination = new URL(url.pathname + url.search, env.API_ORIGIN)

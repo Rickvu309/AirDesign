@@ -11,6 +11,7 @@ on:
       - main
 
 permissions:
+  actions: read
   contents: read
   issues: write
 
@@ -25,19 +26,37 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
+      - id: wanted
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          RUN: ${{ github.event.workflow_run.id }}
+          TIP: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            sha=$TIP
+          else
+            gh run download "$RUN" --repo "$GITHUB_REPOSITORY" --name deployed-commit --dir "$RUNNER_TEMP/deployed-commit"
+            sha=$(tr -d '[:space:]' < "$RUNNER_TEMP/deployed-commit/deployed-commit.txt")
+          fi
+          if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "the deployed commit is missing"
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ steps.wanted.outputs.sha }}
           fetch-depth: 0
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
           cache: pnpm
-      - name: wait for the deployed API
+      - name: wait for the deployed web app and API
         env:
-          WANTED: ${{ github.event.workflow_run.head_sha || github.sha }}
-        run: node scripts/production-commit.mjs https://api-production-f919c062.up.railway.app "$WANTED"
+          WANTED: ${{ steps.wanted.outputs.sha }}
+        run: node scripts/production-commit.mjs "$WANTED" web api
       - run: pnpm install --frozen-lockfile
       - id: playwright-version
         run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
@@ -64,13 +83,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RED_TITLE: production journey failed
           RED_WHAT: the production journey
-        run: bash scripts/red-main.sh
+          WANTED: ${{ steps.wanted.outputs.sha }}
+        run: |
+          RED_BODY="the production journey failed on main at ${WANTED::7}. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          export RED_BODY
+          bash scripts/red-main.sh
       - if: success() && github.event_name == 'workflow_run'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          WANTED: ${{ steps.wanted.outputs.sha }}
         run: |
           open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search '"production journey failed" in:title' --json number --jq '.[0].number // empty')
           if [ -n "$open" ]; then
-            gh issue close "$open" --repo "$GITHUB_REPOSITORY" --comment "the production journey passed at ${GITHUB_SHA::7}. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            gh issue close "$open" --repo "$GITHUB_REPOSITORY" --comment "the production journey passed at ${WANTED::7}. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi

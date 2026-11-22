@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "deploy": "pnpm build && wrangler deploy"
+    "deploy": "pnpm build && wrangler deploy --keep-vars --var COMMIT:$(git rev-parse HEAD)"
   },
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
