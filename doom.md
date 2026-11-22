@@ -1,23 +1,19 @@
-# Scene words
+# Doom words
 
-The words for AirDesign's core: the scene in `packages/document/src/scene`. One word per idea, for code, test and tool. Where a word here differs from `GLOSSARY.md`'s model words, the old word names today's model and goes when the scene replaces it.
+The words for AirDesign's core, Doom. One word per idea, for code, test and tool. Until the code rename lands, the code still says `scene` (`packages/document/src/scene`, the `scene` export, `/scenes` routes, `deck.scene`); the rename brings code, tests and tools to "doom". Where a word here differs from `GLOSSARY.md`'s model words, the old word names today's model and goes when Doom replaces it.
 
 ## Shape of a deck
 
 **Doom**:
-The name of AirDesign's core: the scene and everything that edits, paints, stores and syncs it. "Scene" stays the code word for the data model, so code, routes, tables and the `scene` export keep it; Doom names the core as a whole and its versions.
-_Avoid_: engine (a package name), the editor (one client of the core)
+AirDesign's core: a deck as a tree of nodes, each a flat map of properties, changed by property writes the server orders. It is the deck's truth, and everything that edits, paints, stores and syncs it; PowerPoint is an import and an export.
+_Avoid_: scene, document model, element tree
 
 **Doom v0.1**:
-The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons, lines and charts, with undo and reload, stored as scene decks. Out of v0.1: components and instances, variables with modes, and a style library (next), and PowerPoint import and export (after).
+The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons, lines and charts, with undo and reload, stored as Doom decks. Out of v0.1: components and instances, variables with modes, and a style library (next), and PowerPoint import and export (after).
 _Avoid_: the new editor, the rewrite
 
-**scene**:
-A deck as a tree of nodes, each a flat map of properties. It is the deck's truth; PowerPoint is an import and an export.
-_Avoid_: document model, element tree
-
 **node**:
-One thing in the scene: a deck, slide row, slide, frame or shape, named by its `type`. A new type is added only when its behaviour cannot be a property.
+One thing in Doom: a deck, slide row, slide, frame or shape, named by its `type`. A new type is added only when its behaviour cannot be a property.
 _Avoid_: element, object, layer (a layer is what a person sees in the layers panel)
 
 **frame**:
@@ -42,7 +38,7 @@ _Avoid_: fill kind, image node
 The deck's colour variables, heading and body fonts, named text styles and effect styles. A property bound to a colour variable follows the theme; applying a template writes the theme.
 _Avoid_: template style, palette
 
-## Changing a scene
+## Changing a deck
 
 **write**:
 The unit of change: one property of one node set to a value, or unset. The last write in server order wins for that property.
@@ -57,11 +53,11 @@ The revision of a property its writer read. A write to text, notes or a list who
 _Avoid_: readAt, version
 
 **layout**:
-How a frame places its children: none, row, column or grid. Laid-out boxes are computed from the scene, never written.
+How a frame places its children: none, row, column or grid. Laid-out boxes are computed from Doom's nodes, never written.
 _Avoid_: flow, auto layout (in code)
 
 **fold**:
-The scene after every landed edit is applied in server order. The server stores it beside the log of landed edits; a tab keeps its own copy and brings it forward by catch-up.
+The deck after every landed edit is applied in server order. The server stores it beside the log of landed edits; a tab keeps its own copy and brings it forward by catch-up.
 _Avoid_: snapshot, state
 
 **pending**:
