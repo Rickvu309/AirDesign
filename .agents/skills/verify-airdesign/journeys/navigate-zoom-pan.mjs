@@ -52,9 +52,10 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
+  await capture("fit")
   const fit = await percent(page)
   const before = await slideBox(page)
-  await capture("fit")
   note(`imported clean.pptx as deck ${deck}; slide view opens at zoom to fit, ${fit}%`)
 
   const cursor = {
