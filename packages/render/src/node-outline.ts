@@ -27,19 +27,30 @@ export function ellipsePath(w: number, h: number): string {
   return `M0 ${num(ry)}A${num(rx)} ${num(ry)} 0 1 0 ${num(w)} ${num(ry)}A${num(rx)} ${num(ry)} 0 1 0 0 ${num(ry)}Z`
 }
 
-export function routePath({ from, to, route }: Pick<Line, "from" | "to" | "route">): string {
+export function routePath({
+  from,
+  to,
+  route,
+  leaves,
+  arrives,
+}: Pick<Line, "from" | "to" | "route" | "leaves" | "arrives">): string {
   const start = `M${num(from.x)} ${num(from.y)}`
-  if (route === "straight") return `${start}L${num(to.x)} ${num(to.y)}`
-  const acrossFirst = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y)
-  const midX = (from.x + to.x) / 2
-  const midY = (from.y + to.y) / 2
-  if (route === "elbow")
-    return acrossFirst
-      ? `${start}L${num(midX)} ${num(from.y)}L${num(midX)} ${num(to.y)}L${num(to.x)} ${num(to.y)}`
-      : `${start}L${num(from.x)} ${num(midY)}L${num(to.x)} ${num(midY)}L${num(to.x)} ${num(to.y)}`
-  return acrossFirst
-    ? `${start}C${num(midX)} ${num(from.y)} ${num(midX)} ${num(to.y)} ${num(to.x)} ${num(to.y)}`
-    : `${start}C${num(from.x)} ${num(midY)} ${num(to.x)} ${num(midY)} ${num(to.x)} ${num(to.y)}`
+  const end = `${num(to.x)} ${num(to.y)}`
+  if (route === "straight") return `${start}L${end}`
+  const midX = num((from.x + to.x) / 2)
+  const midY = num((from.y + to.y) / 2)
+  if (leaves === arrives) {
+    const across = leaves === "across"
+    if (route === "elbow")
+      return across
+        ? `${start}L${midX} ${num(from.y)}L${midX} ${num(to.y)}L${end}`
+        : `${start}L${num(from.x)} ${midY}L${num(to.x)} ${midY}L${end}`
+    return across
+      ? `${start}C${midX} ${num(from.y)} ${midX} ${num(to.y)} ${end}`
+      : `${start}C${num(from.x)} ${midY} ${num(to.x)} ${midY} ${end}`
+  }
+  const corner = leaves === "across" ? `${num(to.x)} ${num(from.y)}` : `${num(from.x)} ${num(to.y)}`
+  return route === "elbow" ? `${start}L${corner}L${end}` : `${start}Q${corner} ${end}`
 }
 
 export function outlineOf(node: Resolved): Outline {

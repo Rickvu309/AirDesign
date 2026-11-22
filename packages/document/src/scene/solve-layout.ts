@@ -71,17 +71,20 @@ function flowPlan(context: Context, layout: Flow, flow: readonly Node[], w: numb
   const padCross = horizontal ? padding.t + padding.b : padding.l + padding.r
   const outerMain = horizontal ? w : h
   const outerCross = horizontal ? h : w
+  const innerCross = outerCross === null ? null : Math.max(0, outerCross - padCross)
   const innerMain = outerMain === null ? null : Math.max(0, outerMain - padMain)
   const [mainShare, crossShare] = alignOf(layout.align, horizontal)
   const along = (size: Size) => (horizontal ? size.w : size.h)
   const across = (size: Size) => (horizontal ? size.h : size.w)
   const items: Item[] = flow.map((node) => {
     const mode = modes(node)
+    const crossMode = horizontal ? mode.h : mode.w
+    const forced = crossMode === "fill" ? innerCross : null
     return {
       node,
       mode: horizontal ? mode.w : mode.h,
-      crossMode: horizontal ? mode.h : mode.w,
-      main: along(sizeOf(context, node, null, null)),
+      crossMode,
+      main: along(sizeOf(context, node, horizontal ? null : forced, horizontal ? forced : null)),
     }
   })
   const lines: Item[][] = [[]]

@@ -13,6 +13,8 @@ const heads: Readonly<Record<Exclude<Arrow, "none">, Arrowhead>> = {
   circle: "oval",
 }
 
+const headSize = { length: 4.5, width: 4 }
+
 const dashes = { solid: "", dash: "3 2", dot: "0.01 2" } as const
 
 function strokeRef(paint: Paint, id: string): string {
@@ -121,7 +123,7 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
             kind={heads[arrows[0]]}
             color={lineColor}
             weight={stroke.weight}
-            size={undefined}
+            size={headSize}
           />
         )}
         {arrows[1] === "none" ? null : (
@@ -130,7 +132,7 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
             kind={heads[arrows[1]]}
             color={lineColor}
             weight={stroke.weight}
-            size={undefined}
+            size={headSize}
           />
         )}
       </defs>

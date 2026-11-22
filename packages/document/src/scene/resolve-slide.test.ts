@@ -185,6 +185,8 @@ describe("resolveSlide", () => {
       from: { x: 200, y: 0 },
       to: { x: 0, y: 300 },
       route: "elbow",
+      leaves: "down",
+      arrives: "down",
       arrows: ["none", "triangle"],
     })
   })

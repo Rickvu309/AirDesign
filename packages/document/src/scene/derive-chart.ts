@@ -126,7 +126,7 @@ function barChart(context: Context): Resolved[] {
   const legendH = legend.length > 0 ? context.lineH + 22 : 0
   const labelled = chart.labels === true
   const valueRoom = Math.max(0, ...axis.ticks.map((tick) => wordsWidth(context, formatValue(tick), look))) + 16
-  const categoryRoom = Math.max(0, ...chart.categories.map((name) => wordsWidth(context, name, look))) + 16
+  const categoryRoom = Math.max(0, ...chart.categories.map((name) => wordsWidth(context, name, look))) + 28
   const left = horizontal ? categoryRoom : valueRoom
   const right = horizontal && labelled ? valueRoom + 4 : 2
   const bottomRoom = context.lineH + 14
@@ -245,7 +245,7 @@ function barChart(context: Context): Resolved[] {
     })
     if (horizontal)
       chrome.push(
-        words(`${frame}#~category:${slug(category)}`, context, category, spot(0, band, left - 12, bandSize), {
+        words(`${frame}#~category:${slug(category)}`, context, category, spot(0, band, left - 20, bandSize), {
           ...look,
           align: "right",
         }),

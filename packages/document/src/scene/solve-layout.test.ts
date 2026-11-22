@@ -185,6 +185,30 @@ describe("solveLayout of text", () => {
   })
 })
 
+describe("solveLayout of wrapping text in a column", () => {
+  it("wraps text that fills a column's width and stacks the next child below its lines", () => {
+    const { at } = solved([
+      {
+        type: "frame",
+        name: "col",
+        props: { box: spot(0, 0, 90, 10), sizing: { w: "fixed", h: "hug" }, layout: column({}, 10) },
+        children: [
+          label(
+            "t",
+            "aaaa bbbb cccc dddd",
+            { sizing: { w: "fill", h: "hug" }, box: spot(0, 0, 10, 10) },
+            { resize: "height" },
+          ),
+          block("after", 40, 20),
+        ],
+      },
+    ])
+    expect(at("t")).toMatchObject({ w: 90, h: 4 * lineHeight })
+    expect(at("after").y).toBe(4 * lineHeight + 10)
+    expect(at("col").h).toBe(4 * lineHeight + 10 + 20)
+  })
+})
+
 describe("solveLayout in a grid", () => {
   const grid = (columns: Track[], rows: Track[], gap = 10): Layout => ({
     mode: "grid",

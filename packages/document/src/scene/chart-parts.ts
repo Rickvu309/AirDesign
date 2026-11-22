@@ -63,6 +63,8 @@ export const rule = (id: string, from: Point, to: Point, color: Hex, weight: num
       from: { x: from.x - box.x, y: from.y - box.y },
       to: { x: to.x - box.x, y: to.y - box.y },
       route: "straight",
+      leaves: "across",
+      arrives: "across",
       arrows: ["none", "none"],
     }),
     strokes: [solid(color, opacity)],
