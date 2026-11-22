@@ -5,6 +5,7 @@ import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ZoomControl } from "./zoom-control"
 import { ThinNoticeView } from "@/thin-notice"
 import { useScenePictures } from "./use-pictures"
+import { useSlidePictures } from "./use-slide-pictures"
 import { roomInset, scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
@@ -18,6 +19,7 @@ import { chartWrites, drawWrites, iconWrites } from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
 import type { EditorClient } from "./use-scene-deck"
 import type { ZoomKey } from "@/editor/canvas-zoom"
+import { pictureCopy } from "@/copy/picture-copy"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 
 const author: scene.Author = { kind: "person", id: "preview" }
@@ -212,6 +214,8 @@ export function SceneCanvas(props: {
     onPlaced: (id) => onSelection({ ids: [id], inside: null }),
   })
 
+  useSlidePictures(client, pictures.assetUrl)
+
   const pointer = useCanvasPointer({
     stage,
     slideBox,
@@ -311,6 +315,7 @@ export function SceneCanvas(props: {
                 size={size}
                 width={size.w * scale}
                 assetUrl={pictures.assetUrl}
+                waiting={pictureCopy.uploading}
               />
             </TextOverride.Provider>
             <CanvasOverlay

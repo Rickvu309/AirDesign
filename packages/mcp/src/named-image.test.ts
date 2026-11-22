@@ -1,7 +1,7 @@
 import type { scene } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 
-import { imageAddresses, imageProblem, withAssets, type NamedImages } from "./named-image.js"
+import { imageNames, imageProblem, withAssets, type NamedImages } from "./named-image.js"
 
 const logo = "https://images.example.com/logo.png"
 const asset = "b".repeat(64)
@@ -15,8 +15,8 @@ const pictures = [
 ] as unknown as readonly scene.AgentChange[]
 
 describe("images an agent names by address", () => {
-  it("lists each https address once and leaves stored assets and colours alone", () => {
-    expect(imageAddresses(pictures)).toEqual([logo])
+  it("lists each https address and stored hash once and leaves colours alone", () => {
+    expect(imageNames(pictures)).toEqual([logo, asset])
   })
 
   it("swaps a fetched address for its stored asset in every change that names it", () => {
@@ -35,6 +35,14 @@ describe("images an agent names by address", () => {
     expect(problem?.ok).toBe(false)
     expect(problem?.content[0]?.text).toContain(`Change 1: "${logo}" was not used because it leads to a private`)
     expect(problem?.content[0]?.text).toContain("Change 4:")
-    expect(imageProblem(pictures, new Map([[logo, { ok: true, asset }]]))).toBeUndefined()
+    expect(
+      imageProblem(
+        pictures,
+        new Map([
+          [logo, { ok: true, asset }],
+          [asset, { ok: true, asset }],
+        ]),
+      ),
+    ).toBeUndefined()
   })
 })

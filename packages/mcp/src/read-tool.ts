@@ -1,10 +1,44 @@
 import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
 import { scene } from "@airdesign/document"
 
-import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
+import { answered, hostRefused, refused, type ToolContent, type ToolResult } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 
 const readBytes = 24_000
+const picturesPerRead = 10
+
+const pictureWords = {
+  none: (slides: readonly string[], rev: number) =>
+    `No current picture of ${slides.length === 1 ? "slide" : "slides"} ${slides.join(", ")} at rev ${String(rev)} yet. The owner's open AirDesign tab paints a slide a moment after it changes and none has sent it. Read again in a few seconds, or ask the owner to open the deck.`,
+  more: (shown: number, total: number) =>
+    `Pictures of the first ${String(shown)} of ${String(total)} slides. Read with slide and picture for another.`,
+  slide: (position: number, id: string, rev: number) => `Slide ${String(position)} (${id}) at rev ${String(rev)}:`,
+} as const
+
+async function pictureBlocks(
+  opened: Opened,
+  slides: readonly scene.NodeId[],
+  all: readonly scene.NodeId[],
+  host: DeckHost,
+): Promise<readonly ToolContent[]> {
+  const wanted = slides.slice(0, picturesPerRead)
+  const shots = host.pictures === undefined ? new Map() : await host.pictures(opened.deck, opened.fold, wanted)
+  const blocks: ToolContent[] = []
+  const waiting: string[] = []
+  for (const id of wanted) {
+    const data = shots.get(id)
+    if (data === undefined) {
+      waiting.push(id)
+      continue
+    }
+    blocks.push({ type: "text", text: pictureWords.slide(all.indexOf(id) + 1, id, opened.rev) })
+    blocks.push({ type: "image", data, mimeType: "image/jpeg" })
+  }
+  if (waiting.length > 0) blocks.push({ type: "text", text: pictureWords.none(waiting, opened.rev) })
+  if (slides.length > wanted.length)
+    blocks.push({ type: "text", text: pictureWords.more(wanted.length, slides.length) })
+  return blocks
+}
 
 const lead = (opened: Opened, count: number) =>
   `Deck ${opened.deck} "${scene.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
@@ -46,5 +80,12 @@ export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolRe
   if (!opened.ok) return hostRefused(opened)
   const parsed = readDeckQuery(raw)
   if (!parsed.ok) return refused(parsed.refusal)
-  return readAnswer(opened, parsed)
+  const read = readAnswer(opened, parsed)
+  if (parsed.picture !== true || !read.ok) return read
+  const slides = scene.slidesOf(opened.fold).map((slide) => slide.id)
+  const from = parsed.cursor === undefined ? 0 : slides.findIndex((id) => id === parsed.cursor)
+  const wanted = parsed.slide === undefined ? slides.slice(from) : slides.filter((id) => id === parsed.slide)
+  const pictures = await pictureBlocks(opened, wanted, slides, host)
+  const last = read.content.length - 1
+  return { ...read, content: [...read.content.slice(0, last), ...pictures, ...read.content.slice(last)] }
 }

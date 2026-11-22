@@ -1,9 +1,8 @@
-import { scene } from "@airdesign/document"
 import * as z from "zod/v4"
 
+import { nodeIdPattern } from "./scene-wire.js"
 import { type DeckId, deckInput, deckPattern, inputRefusal, readInput } from "./wire.js"
 
-const nodePattern = new RegExp(scene.agentChangesSchema.$defs.id.pattern)
 const deckCursor = z
   .string()
   .regex(deckPattern)
@@ -13,8 +12,9 @@ const deckCursor = z
 export const readDeckQuery = readInput(
   z.strictObject({
     deck: deckInput,
-    slide: z.string().regex(nodePattern).describe("Only this slide.").exactOptional(),
-    cursor: z.string().regex(nodePattern).describe("Continue from this slide id.").exactOptional(),
+    slide: z.string().regex(nodeIdPattern).describe("Only this slide.").exactOptional(),
+    cursor: z.string().regex(nodeIdPattern).describe("Continue from this slide id.").exactOptional(),
+    picture: z.literal(true).describe("Add a picture of each slide read, up to 10.").exactOptional(),
   }),
   inputRefusal,
 )

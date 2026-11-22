@@ -18,5 +18,10 @@ export type DeckHost = {
   readonly create: (name: string, once: string) => Promise<Opened | SceneRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | SceneRefusal>
   readonly edit: (deck: DeckId, edit: scene.Edit) => Promise<Landed | SceneRefusal>
-  readonly images?: (deck: DeckId, addresses: readonly string[]) => Promise<NamedImages>
+  readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
+  readonly pictures?: (
+    deck: DeckId,
+    fold: scene.Scene,
+    slides: readonly scene.NodeId[],
+  ) => Promise<ReadonlyMap<scene.NodeId, string>>
 }

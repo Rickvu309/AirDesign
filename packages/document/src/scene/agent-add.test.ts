@@ -205,6 +205,38 @@ describe("add picture and icon", () => {
     expect(get(made, "geometry")).toEqual({ kind: "rect" })
   })
 
+  it("sizes a picture with no box to its own shape, centred in the free area and no larger than it is", () => {
+    const reading = { pictures: new Map([["a".repeat(64), { width: 4000, height: 1000 }]]) }
+    const change: AgentChange = { op: "add", kind: "picture", slide, fill: { image: "a".repeat(64) } }
+    const writes = compiled(agentDeck(), change, minter(), reading)
+    const box = writes.find((write) => write.prop === "box")?.value as { x: number; y: number; w: number; h: number }
+    const free = compiled(agentDeck(), change, minter()).find((write) => write.prop === "box")?.value as {
+      x: number
+      y: number
+      w: number
+      h: number
+    }
+    expect(box.w / box.h).toBeCloseTo(4, 1)
+    expect(box.w).toBeLessThanOrEqual(free.w)
+    expect(box.h).toBeLessThanOrEqual(free.h)
+    expect(box.x + box.w / 2).toBeCloseTo(free.x + free.w / 2, 0)
+    expect(box.y + box.h / 2).toBeCloseTo(free.y + free.h / 2, 0)
+  })
+
+  it("keeps a small picture with no box at its own size", () => {
+    const reading = { pictures: new Map([["a".repeat(64), { width: 300, height: 200 }]]) }
+    const change: AgentChange = { op: "add", kind: "picture", slide, fill: { image: "a".repeat(64) } }
+    const writes = compiled(agentDeck(), change, minter(), reading)
+    expect(writes.find((write) => write.prop === "box")?.value).toMatchObject({ w: 300, h: 200 })
+  })
+
+  it("fills the free area when the picture's size is not known", () => {
+    const change: AgentChange = { op: "add", kind: "picture", slide, fill: { image: "a".repeat(64) } }
+    const writes = compiled(agentDeck(), change, minter())
+    const box = writes.find((write) => write.prop === "box")?.value as { w: number; h: number }
+    expect(box.w).toBeGreaterThan(1000)
+  })
+
   it("refuses a picture with no image", () => {
     expect(compileAgentChange(agentDeck(), { op: "add", kind: "picture", slide }, minter())).toMatchObject({
       refused: "shape",

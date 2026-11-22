@@ -136,3 +136,10 @@ export async function sinceScene(db: Sql, parsed: { readonly deck: DeckId; reado
   const head = await readStored(db, parsed.deck)
   return { ok: true, deck: parsed.deck, rev: Math.max(head?.rev ?? 0, rows.rows.at(-1)?.rev ?? 0), edits } as const
 }
+
+export async function sceneRev(db: Sql, deck: DeckId, email: string) {
+  const stored = await readStored(db, deck)
+  if (stored === undefined) return refusal("deck")
+  if (stored.owner !== email) return refusal("owner")
+  return { ok: true, rev: stored.rev } as const
+}

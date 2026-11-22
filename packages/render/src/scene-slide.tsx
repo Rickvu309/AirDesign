@@ -38,8 +38,9 @@ export function SlidePaint(props: {
   readonly size: { readonly w: number; readonly h: number }
   readonly width: number
   readonly assetUrl?: AssetUrl
+  readonly waiting?: string
 }) {
-  const { size, width } = props
+  const { size, width, waiting } = props
   const assetUrl = props.assetUrl ?? noAssets
   const scale = width / size.w
   return (
@@ -63,7 +64,7 @@ export function SlidePaint(props: {
           <PaintLayers fills={props.background} assetUrl={assetUrl} />
         </div>
         {props.nodes.map((node) => (
-          <NodeArt key={node.id} node={node} assetUrl={assetUrl} />
+          <NodeArt key={node.id} node={node} assetUrl={assetUrl} {...(waiting === undefined ? {} : { waiting })} />
         ))}
       </div>
     </div>
@@ -93,6 +94,7 @@ export function SceneSlide(props: {
   readonly slide: scene.NodeId
   readonly width: number
   readonly assetUrl?: AssetUrl
+  readonly waiting?: string
 }) {
   const { nodes, background, ready } = useSceneSlide(props.scene, props.slide)
   const { size } = scene.deckOf(props.scene)
@@ -104,6 +106,7 @@ export function SceneSlide(props: {
         size={size}
         width={props.width}
         {...(props.assetUrl === undefined ? {} : { assetUrl: props.assetUrl })}
+        {...(props.waiting === undefined ? {} : { waiting: props.waiting })}
       />
     </div>
   )

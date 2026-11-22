@@ -27,6 +27,16 @@ async function encoded(canvas: OffscreenCanvas): Promise<string | null> {
   return null
 }
 
+export async function jpegOf(image: CanvasImageSource, width: number, height: number): Promise<string | null> {
+  const canvas = new OffscreenCanvas(width, height)
+  const context = canvas.getContext("2d")
+  if (context === null) return null
+  context.fillStyle = "white"
+  context.fillRect(0, 0, width, height)
+  context.drawImage(image, 0, 0, width, height)
+  return encoded(canvas)
+}
+
 export async function slidePicture(
   parts: Parts,
   register: Register,
@@ -41,13 +51,7 @@ export async function slidePicture(
     if (shown === null) return null
     const scale = Math.min(pictureFit.width / shown.width, pictureFit.height / shown.height)
     const { image, width, height } = await paintedPicture(store, shown, shown.elements, scale, true)
-    const canvas = new OffscreenCanvas(width, height)
-    const context = canvas.getContext("2d")
-    if (context === null) return null
-    context.fillStyle = "white"
-    context.fillRect(0, 0, width, height)
-    context.drawImage(image, 0, 0, width, height)
-    return await encoded(canvas)
+    return await jpegOf(image, width, height)
   } finally {
     painted.pictures.release()
   }

@@ -96,6 +96,16 @@ export async function keepMedia(
   return { ok: true, sha256 }
 }
 
+export async function storedMedia(
+  db: Sql,
+  deck: DeckId,
+  sha256: string,
+  store: OriginalStore | undefined,
+): Promise<Uint8Array | undefined> {
+  const row = await held(db, deck, sha256)
+  return row === undefined || store === undefined ? undefined : store.read(row.key)
+}
+
 export async function downloadMedia(
   db: Sql,
   parsed: { readonly deck: DeckId; readonly sha256: string },

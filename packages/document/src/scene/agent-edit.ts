@@ -17,6 +17,7 @@ export type EditBy = {
   readonly phase?: "start"
   readonly read?: Scene
   readonly boxes?: Reading["boxes"]
+  readonly pictures?: Reading["pictures"]
 }
 
 export function readingOf(scene: Scene, base: number): Scene {
@@ -29,7 +30,11 @@ export function readingOf(scene: Scene, base: number): Scene {
 
 export function compileAgentEdit(scene: Scene, changes: readonly AgentChange[], by: EditBy): AgentEdit | AgentRefusal {
   if (changes.length === 0) return { refused: "shape", change: "changes" }
-  const reading: Reading = { read: by.read ?? scene, ...(by.boxes === undefined ? {} : { boxes: by.boxes }) }
+  const reading: Reading = {
+    read: by.read ?? scene,
+    ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
+    ...(by.pictures === undefined ? {} : { pictures: by.pictures }),
+  }
   const writes: Write[] = []
   const ends: number[] = []
   let view = scene

@@ -3,6 +3,7 @@ import { type Draft, create, living, stop } from "./agent-draft.js"
 import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { type Area, areaFor, gapFor, slideSize, themeOf } from "./agent-place.js"
+import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./scene-walk.js"
 import { boxOf as boxOfNode, descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./scene-walk.js"
 import type { Node } from "./scene.js"
@@ -132,10 +133,19 @@ function addFrame(draft: Draft, parent: Node, change: Add): void {
   })
 }
 
+const centred = (area: Area, size: { readonly w: number; readonly h: number }) => ({
+  x: area.x + Math.round((area.w - size.w) / 2),
+  y: area.y + Math.round((area.h - size.h) / 2),
+  ...size,
+})
+
 function addPicture(draft: Draft, parent: Node, change: Add): void {
   if (typeof change.fill !== "object") stop("shape", undefined, "fill")
   const area = areaFor(draft, parent, change.box)
-  create(draft, "shape", parent.id, { ...surfaceOf(change), box: givenBox(change, area), geometry: { kind: "rect" } })
+  const natural = draft.reading.pictures?.get(change.fill.image)
+  const fitted =
+    change.box !== undefined || natural === undefined ? area : { ...area, ...centred(area, pictureFit(natural, area)) }
+  create(draft, "shape", parent.id, { ...surfaceOf(change), box: givenBox(change, fitted), geometry: { kind: "rect" } })
 }
 
 function addIcon(draft: Draft, parent: Node, change: Add): void {

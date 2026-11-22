@@ -1,5 +1,6 @@
 import type { DeckId, SlidePictures } from "@airdesign/catalog"
-import type { SlideId } from "@airdesign/document"
+
+type SlideId = string
 
 export const picturesCap = 200_000_000
 
@@ -10,8 +11,6 @@ type Shots = {
   readonly keys: ReadonlyMap<SlideId, string>
   readonly held: Map<SlideId, Held>
 }
-
-export type Shot = { readonly revision: number; readonly data: string }
 
 function heldBytes(shots: Shots): number {
   let total = 0
@@ -33,7 +32,7 @@ export class DeckPictures {
     this.cap = cap
   }
 
-  keep(deck: DeckId, revision: number, pictures: SlidePictures): readonly SlideId[] {
+  keep(deck: DeckId, revision: number, pictures: SlidePictures<SlideId>): readonly SlideId[] {
     const was = this.decks.get(deck)
     if (was !== undefined && was.revision > revision) return missingOf(was)
     const keys = new Map(pictures.keys.map(({ slide, key }) => [slide, key]))
@@ -50,13 +49,13 @@ export class DeckPictures {
     return missingOf(next)
   }
 
-  shot(deck: DeckId, slide: SlideId): Shot | undefined {
+  fresh(deck: DeckId, slide: SlideId, key: string): string | undefined {
     const shots = this.decks.get(deck)
     const held = shots?.held.get(slide)
-    if (shots === undefined || held === undefined || shots.keys.get(slide) !== held.key) return undefined
+    if (shots === undefined || held === undefined || held.key !== key) return undefined
     this.decks.delete(deck)
     this.decks.set(deck, shots)
-    return { revision: shots.revision, data: held.data }
+    return held.data
   }
 
   revision(deck: DeckId): number | undefined {

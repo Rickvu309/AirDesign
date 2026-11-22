@@ -18,12 +18,15 @@ export type Answer = {
   readonly json: Record<string, unknown>
   readonly cookie: string | undefined
 }
+export type ToolBlock = { readonly type: string; readonly text?: string; readonly data?: string }
+
 export type Stack = {
   readonly origin: string
   readonly hop: string
   readonly mcp: string
   readonly post: (path: string, body: unknown, cookie?: string) => Promise<Answer>
   readonly callTool: (name: string, args: unknown, cookie: string) => Promise<Record<string, unknown>>
+  readonly toolBlocks: (name: string, args: unknown, cookie: string) => Promise<readonly ToolBlock[]>
   readonly signIn: () => Promise<string>
   readonly saved: (deck: string) => Promise<{ owner: string; register: SavedRegister } | undefined>
   readonly emailOf: (cookie: string) => Promise<string>
@@ -87,6 +90,19 @@ function poster(origin: string): Stack["post"] {
   }
 }
 
+function toolBlocker(origin: string, mcp: string): Stack["toolBlocks"] {
+  return async (name, args, cookie) => {
+    const response = await fetch(`${origin}${mcp}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream", cookie },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+    })
+    const data = (await response.text()).split("\n").find((line) => line.startsWith("data:"))
+    const answer = JSON.parse(data?.slice("data:".length) ?? "{}") as { result?: { content?: ToolBlock[] } }
+    return answer.result?.content ?? []
+  }
+}
+
 function toolCaller(origin: string, mcp: string): Stack["callTool"] {
   return async (name, args, cookie) => {
     const response = await fetch(`${origin}${mcp}`, {
@@ -117,6 +133,7 @@ async function deployedStack(production: Production): Promise<Stack> {
     mcp: mcpRoutes.mcp.path,
     post: poster(production.web),
     callTool: toolCaller(production.web, mcpRoutes.mcp.path),
+    toolBlocks: toolBlocker(production.web, mcpRoutes.mcp.path),
     signIn: async () => cookie,
     saved: localOnly("saved"),
     emailOf: localOnly("emailOf"),
@@ -215,6 +232,7 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
         hop: hop.origin,
         mcp: mcpRoutes.mcp.path,
         post,
+        toolBlocks: toolBlocker(origin, mcpRoutes.mcp.path),
         async callTool(name, args, cookie) {
           if (name !== "airdesign_read_deck") throw new Error(`${name} does not reach an element deck`)
           const { deck: id, slide, cursor } = args as { deck: string; slide?: string; cursor?: string }

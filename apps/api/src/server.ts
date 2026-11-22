@@ -71,6 +71,7 @@ export type ApiOptions = {
   readonly smokeToken?: string
   readonly originals?: OriginalStore
   readonly imageNet?: ImageNet
+  readonly pictureWait?: number
   readonly aira?: AiraSettings
   readonly closing?: Closing
   readonly forwardSecret?: string
@@ -412,6 +413,8 @@ async function mcpRoute(visit: Visit): Promise<void> {
       bodyCap: limits.body,
       ...(options.originals === undefined ? {} : { originals: options.originals }),
       ...(options.imageNet === undefined ? {} : { imageNet: options.imageNet }),
+      pictures: options.pictures,
+      ...(options.pictureWait === undefined ? {} : { pictureWait: options.pictureWait }),
       fail: (error) => answerThrow(visit, name, error),
     },
     req,
