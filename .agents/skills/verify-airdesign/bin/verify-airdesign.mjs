@@ -92,7 +92,7 @@ async function launch(args) {
   for (const built of [webDist, apiDist, catalogDist]) {
     if (!existsSync(built)) fail(`missing build output ${built}; run launch without --no-build`)
   }
-  const { airaEfforts } = await import(pathToFileURL(path.join(apiDist, "aira.js")).href)
+  const { airaEfforts } = await import(pathToFileURL(path.join(apiDist, "aira/aira.js")).href)
   const chosen = airaChoice(args, process.env, airaEfforts)
   if (!chosen.ok) fail(chosen.message)
   const site = builtSite(repo)
@@ -196,7 +196,7 @@ async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@ex
   const asked = await call(state.origin, signInRoutes.email.method, signInRoutes.email.path, { email })
   if (asked.status !== 202) throw new Error(`sign-in email answered ${String(asked.status)}`)
   const mails = mailsIn(readFileSync(state.mail, "utf8"))
-  const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "sign-in-mail.js")).href)
+  const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "account/sign-in-mail.js")).href)
   const { code } = readSignInMail(mails.filter((mail) => mail.to === email).at(-1)?.text ?? "")
   const signed = await call(state.origin, signInRoutes.code.method, signInRoutes.code.path, { email, code })
   if (signed.status !== 200 || signed.cookie === undefined)
@@ -287,7 +287,7 @@ export async function journeyKit({ run, name, page, context }) {
       )
     },
     async mailParts(to) {
-      const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "sign-in-mail.js")).href)
+      const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "account/sign-in-mail.js")).href)
       const sent = kit.mail(to)
       if (sent === undefined) throw new Error(`no mail was sent to ${to}`)
       const { code, link } = readSignInMail(sent.text)
