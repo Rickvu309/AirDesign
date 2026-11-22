@@ -30,6 +30,7 @@
       "/oauth/revoke",
       "/mcp",
       "/aira/*",
+      "/fonts/*",
       "/.well-known/*",
     ],
   },

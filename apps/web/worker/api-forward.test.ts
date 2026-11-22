@@ -11,6 +11,7 @@ import {
   deckPaths,
   doomPaths,
   deckRoutes,
+  fontRoutes,
   forwardSecretHeader,
   mcpPaths,
   oauthPaths,
@@ -147,6 +148,7 @@ describe("API forwarding", () => {
         ...oauthPaths,
         ...mcpPaths,
         ...airaPaths,
+        ...Object.values(fontRoutes).map((route) => route.path),
       ].filter((path) => !routed(path)),
     ).toEqual([])
     expect(routed("/version")).toBe(true)
