@@ -1,5 +1,5 @@
-import type { EditRefusal, SceneRefusal } from "@airdesign/catalog"
-import type { scene } from "@airdesign/document"
+import type { EditRefusal, DoomRefusal } from "@airdesign/catalog"
+import type { doom } from "@airdesign/document"
 
 export type ToolText = { readonly type: "text"; readonly text: string }
 export type ToolImage = {
@@ -38,7 +38,7 @@ export const refusalWords = {
 
 export type Refused = keyof typeof refusalWords
 
-const sceneCodes = {
+const doomCodes = {
   shape: "field",
   limit: "limit",
   cycle: "kind",
@@ -46,7 +46,7 @@ const sceneCodes = {
   missing: "dead",
   stale: "stale",
   "run-fenced": "run-fenced",
-} as const satisfies Record<scene.Refusal["refused"], Refused>
+} as const satisfies Record<doom.Refusal["refused"], Refused>
 
 const hostCodes = {
   session: "owner",
@@ -58,7 +58,7 @@ const hostCodes = {
   size: "payload",
   stale: "stale",
   server: "store",
-} as const satisfies Record<Exclude<SceneRefusal["refusal"], "edit">, Refused>
+} as const satisfies Record<Exclude<DoomRefusal["refusal"], "edit">, Refused>
 
 export function answered(lead: string, answer: Readonly<Record<string, unknown>>, body?: string): ToolResult {
   return {
@@ -106,11 +106,8 @@ export function refused(code: Refused, more: Where & Readonly<Record<string, unk
   }
 }
 
-export function sceneRefused(
-  refusal: scene.AgentRefusal | scene.Refusal,
-  more: Readonly<Record<string, unknown>> = {},
-) {
-  return refused(sceneCodes[refusal.refused], {
+export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Readonly<Record<string, unknown>> = {}) {
+  return refused(doomCodes[refusal.refused], {
     refused: refusal.refused,
     ...("change" in refusal ? { change: refusal.change } : {}),
     ...("at" in refusal && refusal.at !== undefined ? { at: refusal.at } : {}),
@@ -121,7 +118,7 @@ export function sceneRefused(
   })
 }
 
-export function hostRefused(refusal: SceneRefusal): ToolResult {
+export function hostRefused(refusal: DoomRefusal): ToolResult {
   if (refusal.refusal !== "edit") return refused(hostCodes[refusal.refusal])
-  return sceneRefused(refusal)
+  return doomRefused(refusal)
 }

@@ -26,7 +26,7 @@ import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
-import { ScenePreview } from "@/decks/scene-preview"
+import { DoomPreview } from "@/decks/doom-preview"
 import { TemplatePicker } from "@/decks/template-picker"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
@@ -390,10 +390,10 @@ export function Home({
                   href={trash ? undefined : deckPath(deck)}
                   previewClassName={section !== "recents" ? "h-[136px]" : undefined}
                   preview={
-                    deck.scene === undefined ? (
+                    deck.doom === undefined ? (
                       <DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />
                     ) : (
-                      <ScenePreview deck={deck.deck} rev={deck.scene.rev} name={deck.name} />
+                      <DoomPreview deck={deck.deck} rev={deck.doom.rev} name={deck.name} />
                     )
                   }
                   action={

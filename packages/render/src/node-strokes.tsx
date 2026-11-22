@@ -1,10 +1,10 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import { useId } from "react"
 import { ArrowMarker, type Arrowhead } from "./arrow-marker.js"
 import { type Outline } from "./node-outline.js"
 
-type Resolved = scene.Resolved
-type Paint = scene.ResolvedPaint
+type Resolved = doom.Resolved
+type Paint = doom.ResolvedPaint
 type Arrow = "none" | "arrow" | "triangle" | "circle"
 
 const heads: Readonly<Record<Exclude<Arrow, "none">, Arrowhead>> = {

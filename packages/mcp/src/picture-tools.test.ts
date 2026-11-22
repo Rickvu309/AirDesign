@@ -1,5 +1,5 @@
 import { catalog, projectTools } from "@airdesign/catalog"
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 
 import { callTool, emptyLog, memoryDecks, type DeckHost, type Session, type ToolResult } from "./index.js"
@@ -8,14 +8,14 @@ const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, t
 const logo = "https://images.example.com/logo.png"
 const stored = "c".repeat(64)
 
-function start(): scene.Scene {
-  return scene.sceneFromTree({
-    theme: scene.defaultTheme,
+function start(): doom.Doom {
+  return doom.doomFromTree({
+    theme: doom.defaultTheme,
     slides: [
       { name: "One", children: [] },
       { name: "Two", children: [] },
     ],
-  }).scene
+  }).doom
 }
 
 function agent(overrides: (decks: ReturnType<typeof memoryDecks>) => Partial<DeckHost> = () => ({})) {
@@ -104,8 +104,8 @@ describe("a picture an agent adds with no box", () => {
       changes: [addPicture(made.slides[0]!, logo)],
     })
     expect(sent.ok).toBe(true)
-    const [{ fold }] = [await by.decks.open(made.deck as never)] as [{ fold: scene.Scene }]
-    const added = (sent.answer.added as { id: string }[])[0]!.id as scene.NodeId
+    const [{ fold }] = [await by.decks.open(made.deck as never)] as [{ fold: doom.Doom }]
+    const added = (sent.answer.added as { id: string }[])[0]!.id as doom.NodeId
     const box = (fold.nodes.get(added) as { box: { w: number; h: number } }).box
     expect(box.w / box.h).toBeCloseTo(4, 1)
   })

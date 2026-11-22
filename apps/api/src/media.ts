@@ -13,16 +13,16 @@ const refused = (refusal: WireRefusal) => ({ ok: false as const, refusal })
 const ownedSql = `
 select deleted is not null as deleted from deck.saved where id = $1 and owner = $2
 union all
-select false from deck.scene where id = $1 and owner = $2
+select false from deck.doom where id = $1 and owner = $2
 limit 1`
 
 const insertSql = `
 with saved_live as (
   select id from deck.saved where id = $1 and owner = $2 and deleted is null for share
-), scene_live as (
-  select id from deck.scene where id = $1 and owner = $2 for share
+), doom_live as (
+  select id from deck.doom where id = $1 and owner = $2 for share
 ), live as (
-  select id from saved_live union all select id from scene_live limit 1
+  select id from saved_live union all select id from doom_live limit 1
 ), held as (
   select coalesce(sum(bytes), 0) as total from deck.media where deck = $1
 )

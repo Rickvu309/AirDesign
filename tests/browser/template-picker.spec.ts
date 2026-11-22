@@ -65,7 +65,7 @@ test("a slide of a template starts a deck with that slide alone, untouched @expo
   )
 })
 
-test("Start from scratch opens the scene editor and Back returns to the templates", async ({ page }) => {
+test("Start from scratch opens the doom editor and Back returns to the templates", async ({ page }) => {
   const picker = await openPicker(page)
   await picker.locator('[data-template="neutral"]').click()
   await picker.getByRole("button", { name: templatePickerCopy.backToTemplates }).click()

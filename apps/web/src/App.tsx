@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react"
 import { LiveProof } from "./live-proof"
-import { SceneProof } from "./scene-proof"
+import { DoomProof } from "./doom-proof"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
@@ -13,9 +13,7 @@ import { AccountProfile } from "./settings/account-profile"
 
 const ThinDeck = lazy(() => import("./thin-deck").then((module) => ({ default: module.ThinDeck })))
 const ScreenRoute = lazy(() => import("./screen-routes"))
-const SceneEditor = lazy(() =>
-  import("./scene-editor/scene-editor").then((module) => ({ default: module.SceneEditor })),
-)
+const DoomEditor = lazy(() => import("./doom-editor/doom-editor").then((module) => ({ default: module.DoomEditor })))
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/$/, "") || "/"
@@ -48,15 +46,15 @@ function AppRoutes() {
         <ThinDeck id={deck[1]} />
       </Suspense>
     )
-  const sceneDeck = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
-  if (sceneDeck !== null)
+  const doomDeck = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
+  if (doomDeck !== null)
     return (
       <Suspense>
-        <SceneEditor id={sceneDeck[1] ?? null} />
+        <DoomEditor id={doomDeck[1] ?? null} />
       </Suspense>
     )
   if (path === "/live-proof") return <LiveProof />
-  if (path === "/scene-proof") return <SceneProof />
+  if (path === "/doom-proof") return <DoomProof />
   if (path === "/oauth/authorize") return <OAuthAuthorize />
   if (path === "/screens" || path.startsWith("/screens/"))
     return (
@@ -69,7 +67,7 @@ function AppRoutes() {
 
 export default function App() {
   const path = currentPath()
-  if (path.startsWith("/screens") || path === "/live-proof" || path === "/scene-proof" || path === "/oauth/authorize")
+  if (path.startsWith("/screens") || path === "/live-proof" || path === "/doom-proof" || path === "/oauth/authorize")
     return <AppRoutes />
   return (
     <AccountProfile>

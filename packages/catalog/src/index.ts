@@ -53,15 +53,15 @@ export {
 } from "./deck-routes.js"
 export {
   picturesWantedMilliseconds,
-  sceneRoutes,
-  scenePaths,
-  type SceneCaught,
-  type SceneRan,
-  type SceneLanded,
-  type SceneOpened,
-  type ScenePictured,
-  type SceneRefusal,
-} from "./scene-wire.js"
+  doomRoutes,
+  doomPaths,
+  type DoomCaught,
+  type DoomRan,
+  type DoomLanded,
+  type DoomOpened,
+  type DoomPictured,
+  type DoomRefusal,
+} from "./doom-wire.js"
 export {
   notifyKey,
   parseNotifyKey,

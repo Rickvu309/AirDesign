@@ -1,5 +1,5 @@
 import { webImage } from "@airdesign/catalog"
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 
 import type { ToolResult } from "./answer.js"
 
@@ -44,13 +44,13 @@ const storedAsset = /^[0-9a-f]{64}$/
 
 const usable = (name: string) => webImage(name) || storedAsset.test(name)
 
-function imageOf(change: scene.AgentChange): string | undefined {
+function imageOf(change: doom.AgentChange): string | undefined {
   if (!("op" in change) || (change.op !== "add" && change.op !== "set")) return undefined
   const fill = change.fill
   return typeof fill === "object" ? fill.image : undefined
 }
 
-export function imageNames(changes: readonly scene.AgentChange[]): readonly string[] {
+export function imageNames(changes: readonly doom.AgentChange[]): readonly string[] {
   return [...new Set(changes.flatMap((change) => imageOf(change) ?? []).filter(usable))]
 }
 
@@ -66,7 +66,7 @@ export function pictureSizes(
   )
 }
 
-export function withAssets(changes: readonly scene.AgentChange[], images: NamedImages): readonly scene.AgentChange[] {
+export function withAssets(changes: readonly doom.AgentChange[], images: NamedImages): readonly doom.AgentChange[] {
   return changes.map((change) => {
     const address = imageOf(change)
     const found = address === undefined ? undefined : images.get(address)
@@ -75,7 +75,7 @@ export function withAssets(changes: readonly scene.AgentChange[], images: NamedI
 }
 
 export function imageProblem(
-  changes: readonly scene.AgentChange[],
+  changes: readonly doom.AgentChange[],
   images: NamedImages | undefined,
 ): ToolResult | undefined {
   const lines = changes.flatMap((change, at) => {

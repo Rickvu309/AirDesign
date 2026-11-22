@@ -1,7 +1,7 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import type { CSSProperties } from "react"
 
-type Paint = scene.ResolvedPaint
+type Paint = doom.ResolvedPaint
 
 export type AssetUrl = (asset: string) => string | undefined
 

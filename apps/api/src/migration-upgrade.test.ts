@@ -45,7 +45,7 @@ it("adds the import index and its deleted-row constraint after migration 6", asy
   }
 })
 
-it("moves a stored scene deck's fold into one row per node with the live counts", async () => {
+it("moves a stored doom deck's fold into one row per node with the live counts", async () => {
   const cluster = await startEmptyCluster()
   const url = `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres`
   const db = new Client({ connectionString: url })
@@ -76,7 +76,7 @@ it("moves a stored scene deck's fold into one row per node with the live counts"
       [JSON.stringify(fold)],
     )
     await applySchema(db, migrations)
-    const rows = await db.query("select id, type, parent, revs from deck.scene_node where deck = 'old' order by id")
+    const rows = await db.query("select id, type, parent, revs from deck.doom_node where deck = 'old' order by id")
     expect(rows.rows).toEqual([
       { id: "s:1", type: "deck", parent: null, revs: {} },
       { id: "s:2", type: "slideRow", parent: "s:1", revs: {} },
@@ -86,9 +86,43 @@ it("moves a stored scene deck's fold into one row per node with the live counts"
       { id: "s:6", type: "slideRow", parent: "s:1", revs: {} },
       { id: "s:7", type: "slide", parent: "s:6", revs: {} },
     ])
-    const head = await db.query("select rev, name, runs, elements, slides from deck.scene where id = 'old'")
+    const head = await db.query("select rev, name, runs, elements, slides from deck.doom where id = 'old'")
     expect(head.rows).toEqual([{ rev: 3, name: "Old", runs: fold.runs, elements: 5, slides: 1 }])
-    await expect(db.query("select fold from deck.scene")).rejects.toMatchObject({ code: "42703" })
+    await expect(db.query("select fold from deck.doom")).rejects.toMatchObject({ code: "42703" })
+  } finally {
+    await db.end()
+    await cluster.stop()
+  }
+})
+
+it("leaves no table, index, constraint or function body that says scene once every migration has run", async () => {
+  const cluster = await startEmptyCluster()
+  const url = `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres`
+  const db = new Client({ connectionString: url })
+  try {
+    await db.connect()
+    for (const role of ["session", "deck", "listen"]) await createRole(db, role, "local-test")
+    await applySchema(db, migrations)
+    const left = await db.query(
+      `select relname as name from pg_class where relname like '%scene%'
+       union all select conname from pg_constraint where conname like '%scene%'
+       union all select proname from pg_proc where prosrc like '%scene%'`,
+    )
+    expect(left.rows).toEqual([])
+    const named = await db.query(
+      `select relname from pg_class where relnamespace = 'deck'::regnamespace and relname like 'doom%' order by relname`,
+    )
+    expect(named.rows.map((row: { relname: string }) => row.relname)).toEqual(
+      expect.arrayContaining([
+        "doom",
+        "doom_edit",
+        "doom_node",
+        "doom_owner",
+        "doom_node_deck",
+        "doom_node_parent",
+        "doom_edit_run",
+      ]),
+    )
   } finally {
     await db.end()
     await cluster.stop()

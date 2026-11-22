@@ -1,10 +1,10 @@
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
-type Color = scene.Color
-type Node = scene.TreeNode
-type Paint = scene.Paint
-type Align9 = scene.Align9
-type Given = NonNullable<scene.TreeNode["props"]>
+type Color = doom.Color
+type Node = doom.TreeNode
+type Paint = doom.Paint
+type Align9 = doom.Align9
+type Given = NonNullable<doom.TreeNode["props"]>
 
 export const margin = 120
 export const contentWidth = 1680
@@ -34,14 +34,14 @@ export const box = (x: number, y: number, w: number, h: number) => ({
 
 export const pad = (t: number, r = t, b = t, l = r) => ({ t, r, b, l })
 
-export const rowOf = (gap: number, align: Align9 = "top-left", padding = pad(0)): scene.Layout => ({
+export const rowOf = (gap: number, align: Align9 = "top-left", padding = pad(0)): doom.Layout => ({
   mode: "row",
   gap,
   padding,
   align,
 })
 
-export const columnOf = (gap: number, align: Align9 = "top-left", padding = pad(0)): scene.Layout => ({
+export const columnOf = (gap: number, align: Align9 = "top-left", padding = pad(0)): doom.Layout => ({
   mode: "column",
   gap,
   padding,
@@ -50,7 +50,7 @@ export const columnOf = (gap: number, align: Align9 = "top-left", padding = pad(
 
 export type Part = { readonly text: string; readonly bold?: boolean; readonly color?: Color; readonly size?: number }
 type Look = {
-  readonly style?: scene.TextStyleName
+  readonly style?: doom.TextStyleName
   readonly align?: "left" | "center" | "right"
   readonly color?: Color
   readonly bold?: boolean
@@ -58,7 +58,7 @@ type Look = {
   readonly lineHeight?: number
 }
 
-export function textOf(parts: string | readonly Part[], look: Look = {}): scene.Text {
+export function textOf(parts: string | readonly Part[], look: Look = {}): doom.Text {
   const list: readonly Part[] = typeof parts === "string" ? [{ text: parts }] : parts
   const chars = list.map((part) => part.text).join("")
   let end = 0
@@ -96,7 +96,7 @@ export function copy(
   name: string,
   parts: string | readonly Part[],
   look: Look & { readonly width?: number; readonly x?: number; readonly y?: number } = {},
-  props: Partial<scene.Props> = {},
+  props: Partial<doom.Props> = {},
 ): Node {
   return {
     type: "shape",
@@ -143,7 +143,7 @@ export function footer(source: string, page: string): readonly Node[] {
 
 export const edge: Paint = solid({ var: "text2", tint: 0.78 })
 
-export const tile = (name: string, props: Partial<scene.Props>, children: readonly Node[]): Node =>
+export const tile = (name: string, props: Partial<doom.Props>, children: readonly Node[]): Node =>
   frame(
     name,
     {

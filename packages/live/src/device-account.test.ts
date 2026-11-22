@@ -32,7 +32,7 @@ import {
   starDeck,
   writeChat,
 } from "./index.js"
-import { deviceStorage } from "./scene-storage.js"
+import { deviceStorage } from "./doom-storage.js"
 import { keepUnsaved } from "./unsaved.js"
 import { rowKey } from "./store.js"
 
@@ -265,22 +265,22 @@ it(`keeps a deck not opened for ${String(idleDays)} days while a picture's bytes
   expect(await getParts("picture")).toMatchObject({ ok: true })
 })
 
-it(`keeps a deck not opened for ${String(idleDays)} days while a scene edit is not sent`, async () => {
+it(`keeps a deck not opened for ${String(idleDays)} days while a doom edit is not sent`, async () => {
   const { remote } = countingRemote()
   let now = 1_000 * day
   const cache = connect(remote, { now: () => now })
-  for (const deck of ["sent", "scened"]) {
+  for (const deck of ["sent", "doomQueued"]) {
     await putParts(deck, parts, () => now)
     await cache.enqueue(deck, `Text of ${deck}`, node, "file")
     await cache.flush(deck)
   }
   const edit = { once: "kept", author: { kind: "person" as const, id: "tab" }, writes: [] }
-  await deviceStorage("scened").write({ queue: [{ edit, after: [] }] })
+  await deviceStorage("doomQueued").write({ queue: [{ edit, after: [] }] })
   now += (idleDays + 1) * day
   expect([...(await cache.sweep())]).toEqual(["sent"])
-  expect(await getParts("scened")).toMatchObject({ ok: true })
-  await deviceStorage("scened").write({ queue: [] })
-  expect([...(await cache.sweep())]).toEqual(["scened"])
+  expect(await getParts("doomQueued")).toMatchObject({ ok: true })
+  await deviceStorage("doomQueued").write({ queue: [] })
+  expect([...(await cache.sweep())]).toEqual(["doomQueued"])
 })
 
 it("lets the account that added a picture read its bytes from the device, and never another account on the same browser", async () => {

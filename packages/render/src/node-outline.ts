@@ -1,7 +1,7 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import { adjustDefaults, presetOutline } from "./preset-path.js"
 
-type Resolved = scene.Resolved
+type Resolved = doom.Resolved
 type Line = Extract<NonNullable<Resolved["geometry"]>, { kind: "line" }>
 
 export type Outline = { readonly fill: string | null; readonly stroke: readonly string[] }

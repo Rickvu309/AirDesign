@@ -1,6 +1,6 @@
 import * as z from "zod/v4"
 
-import { nodeIdPattern } from "./scene-wire.js"
+import { nodeIdPattern } from "./doom-wire.js"
 import { type DeckId, deckInput, deckPattern, inputRefusal, readInput } from "./wire.js"
 
 const deckCursor = z

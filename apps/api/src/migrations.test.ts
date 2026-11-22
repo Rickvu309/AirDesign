@@ -153,13 +153,13 @@ describe("database migrations", () => {
       ["sent", full],
     ]
     const deckRights = [
+      ["doom", full],
+      ["doom_edit", "INSERT SELECT"],
+      ["doom_node", noDelete],
       ["media", "DELETE INSERT SELECT"],
       ["once", full],
       ["original_delete", full],
       ["saved", noDelete],
-      ["scene", full],
-      ["scene_edit", "INSERT SELECT"],
-      ["scene_node", noDelete],
     ] as const
     const tables = await admin.query<{ name: string; tableowner: string }>(
       `select schemaname || '.' || tablename as name, tableowner from pg_tables

@@ -51,7 +51,7 @@ import { checkedResource, readUrl } from "./resource.js"
 import { requireDomain, requireOrigin } from "./start-origins.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
 import { savedAnswers } from "./saved.js"
-import { sceneRouteList } from "./scene-route.js"
+import { doomRouteList } from "./doom-route.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 import { undoAnswers } from "./undo.js"
 
@@ -471,7 +471,7 @@ export const routes: readonly Route[] = [
   ...answeredDeckRoutes(deckAnswers, deckRoute),
   deckWatchRoute(deckHttp),
   findingsRoute({ signedIn, answerSize, parsedJson, sendJson }),
-  ...sceneRouteList(deckHttp),
+  ...doomRouteList(deckHttp),
   ...accountRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
 ]
 

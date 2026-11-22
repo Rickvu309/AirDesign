@@ -1,5 +1,5 @@
 import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
 import { answered, hostRefused, refused, type ToolContent, type ToolResult } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
@@ -17,8 +17,8 @@ const pictureWords = {
 
 async function pictureBlocks(
   opened: Opened,
-  slides: readonly scene.NodeId[],
-  all: readonly scene.NodeId[],
+  slides: readonly doom.NodeId[],
+  all: readonly doom.NodeId[],
   host: DeckHost,
 ): Promise<readonly ToolContent[]> {
   const wanted = slides.slice(0, picturesPerRead)
@@ -41,13 +41,13 @@ async function pictureBlocks(
 }
 
 const lead = (opened: Opened, count: number) =>
-  `Deck ${opened.deck} "${scene.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
+  `Deck ${opened.deck} "${doom.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
 
 export function readAnswer(
   opened: Opened,
   query: { readonly slide?: string | undefined; readonly cursor?: string | undefined },
 ): ToolResult {
-  const slides = scene.slidesOf(opened.fold).map((slide) => slide.id)
+  const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const { slide, cursor } = query
   const alone = slide === undefined ? undefined : slides.find((id) => id === slide)
   if (slide !== undefined && alone === undefined) return refused("dead", { node: slide })
@@ -57,7 +57,7 @@ export function readAnswer(
   const chosen: typeof slides = []
   let bytes = 0
   for (const slide of wanted) {
-    bytes += scene.readForAgent(opened.fold, [slide]).length
+    bytes += doom.readForAgent(opened.fold, [slide]).length
     if (chosen.length > 0 && bytes > readBytes) break
     chosen.push(slide)
   }
@@ -66,11 +66,11 @@ export function readAnswer(
     ok: true,
     deck: opened.deck,
     rev: opened.rev,
-    name: scene.deckName(opened.fold),
+    name: doom.deckName(opened.fold),
     slides,
     ...(next === undefined ? {} : { next }),
   }
-  return answered(lead(opened, slides.length), answer, scene.readForAgent(opened.fold, chosen))
+  return answered(lead(opened, slides.length), answer, doom.readForAgent(opened.fold, chosen))
 }
 
 export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolResult> {
@@ -82,7 +82,7 @@ export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolRe
   if (!parsed.ok) return refused(parsed.refusal)
   const read = readAnswer(opened, parsed)
   if (parsed.picture !== true || !read.ok) return read
-  const slides = scene.slidesOf(opened.fold).map((slide) => slide.id)
+  const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const from = parsed.cursor === undefined ? 0 : slides.findIndex((id) => id === parsed.cursor)
   const wanted = parsed.slide === undefined ? slides.slice(from) : slides.filter((id) => id === parsed.slide)
   const pictures = await pictureBlocks(opened, wanted, slides, host)

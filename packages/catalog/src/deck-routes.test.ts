@@ -42,13 +42,13 @@ it("checks each list, rename and original field independently", () => {
   expect(deckRoutes.list.result(listed)).toEqual(listed)
   const scenic = {
     ...listed,
-    decks: [{ ...row, scene: { rev: 3 } }],
-    trash: [{ ...row, scene: { rev: 3 }, trashed: "2026-11-11" }],
+    decks: [{ ...row, doom: { rev: 3 } }],
+    trash: [{ ...row, doom: { rev: 3 }, trashed: "2026-11-11" }],
   }
   expect(deckRoutes.list.result(scenic)).toEqual(scenic)
-  expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, scene: "yes" }] })).toEqual(payload)
-  expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, scene: true }] })).toEqual(payload)
-  expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, scene: { rev: -1 } }] })).toEqual(payload)
+  expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, doom: "yes" }] })).toEqual(payload)
+  expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, doom: true }] })).toEqual(payload)
+  expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, doom: { rev: -1 } }] })).toEqual(payload)
   for (const [field, value] of Object.entries({ deck: "bad deck", name: 1, edited: null, created: 1 })) {
     expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, [field]: value }] })).toEqual(payload)
     expect(deckRoutes.list.result({ ...listed, trash: [{ ...listed.trash[0], [field]: value }] })).toEqual(payload)

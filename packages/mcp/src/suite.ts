@@ -1,4 +1,4 @@
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
 import { blank, blankDeck, evalDeck, named, person, slides } from "./eval-deck.js"
 import { onceIds } from "./once-ids.js"
@@ -15,22 +15,22 @@ const aim = `${slides.opening}.title`
 const baseRev = Number(evalDeck().rev)
 const logoAsset = "1".repeat(64)
 
-const lines = (end: scene.Scene) => scene.readForAgent(end, "all")
-const has = (end: scene.Scene, fragment: string) => lines(end).includes(fragment)
-const lineOf = (end: scene.Scene, id: string) =>
+const lines = (end: doom.Doom) => doom.readForAgent(end, "all")
+const has = (end: doom.Doom, fragment: string) => lines(end).includes(fragment)
+const lineOf = (end: doom.Doom, id: string) =>
   lines(end)
     .split("\n")
     .find((line) => line.trimStart().startsWith(`${id} `)) ?? ""
-const textOf = (end: scene.Scene, id: string): string | undefined => {
-  const words = (end.nodes.get(id as never) as { text?: scene.Text } | undefined)?.text
-  return words === undefined ? undefined : scene.textToMarkdown(words)
+const textOf = (end: doom.Doom, id: string): string | undefined => {
+  const words = (end.nodes.get(id as never) as { text?: doom.Text } | undefined)?.text
+  return words === undefined ? undefined : doom.textToMarkdown(words)
 }
-const slideIds = (end: scene.Scene) => scene.slidesOf(end).map((slide) => slide.id as string)
-const childrenOf = (end: scene.Scene, id: string) => (end.children.get(id as never) ?? []) as readonly string[]
+const slideIds = (end: doom.Doom) => doom.slidesOf(end).map((slide) => slide.id as string)
+const childrenOf = (end: doom.Doom, id: string) => (end.children.get(id as never) ?? []) as readonly string[]
 
 const ok: Step = { name: "edit_deck", outcome: "ok" }
 const refused = (outcome: string): Step => ({ name: "edit_deck", outcome })
-const unchanged = (end: scene.Scene) => end.rev === evalDeck().rev
+const unchanged = (end: doom.Doom) => end.rev === evalDeck().rev
 
 function row(
   id: string,
@@ -40,7 +40,7 @@ function row(
     readonly landed?: Task["want"]["landed"]
     readonly steps?: readonly Step[]
     readonly calls?: number
-    readonly deck?: () => scene.Scene
+    readonly deck?: () => doom.Doom
   },
   reference: Attempt,
   wrong: Attempt,
@@ -124,55 +124,55 @@ const bigRun = "n".repeat(7_000)
 const tooBig = "n".repeat(9_000)
 const slideCount = 3
 
-function typedByAPerson(): scene.Scene {
+function typedByAPerson(): doom.Doom {
   const start = evalDeck()
-  const landed = scene.applyEdit(start, {
+  const landed = doom.applyEdit(start, {
     once: "typed",
     author: person,
     writes: [
       {
         node: named.title,
         prop: "text",
-        value: scene.textFromMarkdown("Typed by a person", "title"),
+        value: doom.textFromMarkdown("Typed by a person", "title"),
         base: start.revs.get(named.title)!.get("text")!,
       },
     ],
-    rev: scene.rev(start.rev + 1),
+    rev: doom.rev(start.rev + 1),
   })
-  if (scene.isRefusal(landed)) throw new Error("typed")
+  if (doom.isRefusal(landed)) throw new Error("typed")
   return landed
 }
 
 const heldRun = "held"
 
-function runningWith(then: readonly scene.Write[], by: scene.Author = person): scene.Scene {
+function runningWith(then: readonly doom.Write[], by: doom.Author = person): doom.Doom {
   const start = evalDeck()
-  const began = scene.applyEdit(start, {
+  const began = doom.applyEdit(start, {
     once: "begin",
     author: { kind: "agent", id: "eval", run: heldRun },
     writes: [],
     phase: "start",
-    rev: scene.rev(start.rev + 1),
+    rev: doom.rev(start.rev + 1),
   })
-  if (scene.isRefusal(began)) throw new Error("begin")
+  if (doom.isRefusal(began)) throw new Error("begin")
   if (then.length === 0) return began
-  const next = scene.applyEdit(began, { once: "then", author: by, writes: then, rev: scene.rev(began.rev + 1) })
-  if (scene.isRefusal(next)) throw new Error("then")
+  const next = doom.applyEdit(began, { once: "then", author: by, writes: then, rev: doom.rev(began.rev + 1) })
+  if (doom.isRefusal(next)) throw new Error("then")
   return next
 }
 
 const noteTouched = () => runningWith([{ node: named.note, prop: "name", value: "Mine" }])
 
-function stoppedRun(): scene.Scene {
+function stoppedRun(): doom.Doom {
   const began = runningWith([])
-  const stopped = scene.applyEdit(began, {
+  const stopped = doom.applyEdit(began, {
     once: "end",
     author: { kind: "agent", id: "eval", run: heldRun },
     writes: [],
     phase: "stop",
-    rev: scene.rev(began.rev + 1),
+    rev: doom.rev(began.rev + 1),
   })
-  if (scene.isRefusal(stopped)) throw new Error("end")
+  if (doom.isRefusal(stopped)) throw new Error("end")
   return stopped
 }
 

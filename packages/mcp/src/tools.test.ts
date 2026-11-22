@@ -1,14 +1,14 @@
 import { catalog, projectTools } from "@airdesign/catalog"
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, memoryDecks, callTool, type MemoryDecks, type Session, type ToolResult } from "./index.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
-function start(): scene.Scene {
-  return scene.sceneFromTree({
-    theme: scene.defaultTheme,
+function start(): doom.Doom {
+  return doom.doomFromTree({
+    theme: doom.defaultTheme,
     slides: [
       {
         name: "Title",
@@ -19,13 +19,13 @@ function start(): scene.Scene {
             props: {
               role: "title",
               box: { x: 160, y: 380, w: 1600, h: 160, rotation: 0, flipH: false, flipV: false },
-              text: scene.textFromMarkdown("Untitled", "title"),
+              text: doom.textFromMarkdown("Untitled", "title"),
             },
           },
         ],
       },
     ],
-  }).scene
+  }).doom
 }
 
 function agent(decks: MemoryDecks = memoryDecks(start), id = "aira") {
@@ -53,7 +53,7 @@ const edit = (deck: string, base: number, changes: unknown[], runId?: string) =>
   ...(runId === undefined ? {} : { runId }),
 })
 
-const person: scene.Author = { kind: "person", id: "quan" }
+const person: doom.Author = { kind: "person", id: "quan" }
 
 describe("create_deck and list_decks", () => {
   it("makes a deck and answers its id, name and first read", async () => {
@@ -334,7 +334,7 @@ describe("edit_deck", () => {
         {
           node,
           prop: "text",
-          value: scene.textFromMarkdown("Typed", "title"),
+          value: doom.textFromMarkdown("Typed", "title"),
           base: fold.revs.get(node)!.get("text")!,
         },
       ],

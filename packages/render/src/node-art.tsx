@@ -1,4 +1,4 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import { memo, type CSSProperties, type ReactNode } from "react"
 import { iconNodes, type IconNode } from "./icon-nodes.js"
 import { effectLook } from "./node-effects.js"
@@ -7,7 +7,7 @@ import { outlineOf } from "./node-outline.js"
 import { NodeStrokes } from "./node-strokes.js"
 import { TextLines } from "./node-text.js"
 
-type Resolved = scene.Resolved
+type Resolved = doom.Resolved
 
 export type NodeHost = { readonly id: string; readonly render: (node: Resolved) => ReactNode }
 

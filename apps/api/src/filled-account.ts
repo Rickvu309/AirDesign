@@ -116,8 +116,8 @@ export async function personalRows(sql: Sql, filled: Filled): Promise<Record<str
     ["session.aira_ask", "email = $1", filled.email],
     ["session.caller_log", "email = $1", filled.email],
     ["deck.saved", "owner = $1", filled.email],
-    ["deck.scene", "owner = $1", filled.email],
-    ["deck.scene_edit", "deck in (select id from deck.scene where owner = $1)", filled.email],
+    ["deck.doom", "owner = $1", filled.email],
+    ["deck.doom_edit", "deck in (select id from deck.doom where owner = $1)", filled.email],
     ["deck.once", "deck = any($1::text[])", filled.decks],
     ["deck.original_delete", "owner = $1", filled.email],
   ] as const) {

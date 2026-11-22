@@ -1,7 +1,7 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import type { CSSProperties } from "react"
 
-type Effect = scene.ResolvedEffect
+type Effect = doom.ResolvedEffect
 
 export const withOpacity = (hex: string, opacity: number): string => {
   const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16))

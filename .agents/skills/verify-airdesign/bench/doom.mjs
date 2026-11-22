@@ -136,14 +136,14 @@ export const doomAgentEdit = {
   name: "doom-agent-edit-40",
   async setup(kit) {
     const made = await seated(kit)
-    const { scene } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)
-    return { ...made, scene, runs: 0 }
+    const { doom } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)
+    return { ...made, doom, runs: 0 }
   },
   async measure(kit, state) {
-    const { page, post, sceneRoutes } = kit
-    const { scene, deck, cookie } = state
-    const fold = scene.readFold((await post(sceneRoutes.open, { deck }, cookie)).json.fold)
-    const slide = scene.slidesOf(fold)[1].id
+    const { page, post, doomRoutes } = kit
+    const { doom, deck, cookie } = state
+    const fold = doom.readFold((await post(doomRoutes.open, { deck }, cookie)).json.fold)
+    const slide = doom.slidesOf(fold)[1].id
     const target = fold.children.get(slide)[1]
     const box = fold.nodes.get(target).box
     await page.evaluate((id) => {
@@ -166,7 +166,7 @@ export const doomAgentEdit = {
       writes: [{ node: target, prop: "box", value: { ...box, x: box.x + 40 }, base: fold.revs.get(target).get("box") }],
     }
     const sent = Date.now()
-    const landed = await post(sceneRoutes.edit, { deck, edit }, cookie)
+    const landed = await post(doomRoutes.edit, { deck, edit }, cookie)
     if (landed.json.ok !== true) throw new Error(`agent edit refused ${JSON.stringify(landed.json)}`)
     return (await page.evaluate(() => window.benchAnswer)) - sent
   },

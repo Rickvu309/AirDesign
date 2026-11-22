@@ -1,4 +1,4 @@
-import { sceneRoutes } from "@airdesign/catalog"
+import { doomRoutes } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { account, address, connected, grant, startAgents, type Account, type Agent } from "./agents-drive.js"
@@ -87,7 +87,7 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
       const typed = await ask(
         address.base,
         "POST",
-        sceneRoutes.edit.path,
+        doomRoutes.edit.path,
         {
           deck: start.deck,
           edit: {

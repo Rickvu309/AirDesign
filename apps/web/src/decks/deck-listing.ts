@@ -5,11 +5,11 @@ export type ListedDeck = {
   readonly created: string
   readonly trashed?: string
   readonly starred?: boolean
-  readonly scene?: { readonly rev: number }
+  readonly doom?: { readonly rev: number }
 }
 
-export function deckPath(deck: { readonly deck: string; readonly scene?: object }): string {
-  return deck.scene === undefined ? `/deck/${deck.deck}` : `/s/${deck.deck}`
+export function deckPath(deck: { readonly deck: string; readonly doom?: object }): string {
+  return deck.doom === undefined ? `/deck/${deck.deck}` : `/s/${deck.deck}`
 }
 
 export const recentCount = 6

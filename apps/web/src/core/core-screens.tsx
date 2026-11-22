@@ -1,6 +1,6 @@
-import { coreScenes } from "@/core/core-scenes"
+import { coreDoom } from "@/core/core-doom"
 import { CoreSlide } from "@/core/core-slide"
 
 export const screens = Object.fromEntries(
-  Object.entries(coreScenes).map(([route, grown]) => [route, () => <CoreSlide grown={grown} />]),
+  Object.entries(coreDoom).map(([route, grown]) => [route, () => <CoreSlide grown={grown} />]),
 )

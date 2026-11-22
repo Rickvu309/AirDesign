@@ -7,7 +7,7 @@ import {
   forwardSecretHeader,
   mcpPaths,
   oauthPaths,
-  scenePaths,
+  doomPaths,
   signInPaths,
   signOutPaths,
 } from "@airdesign/catalog"
@@ -25,7 +25,7 @@ const apiPaths = [
   ...signInPaths,
   ...signOutPaths,
   ...deckPaths,
-  ...scenePaths,
+  ...doomPaths,
   ...oauthPaths,
   ...mcpPaths,
   ...airaPaths,
