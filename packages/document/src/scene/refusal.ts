@@ -2,7 +2,7 @@ import type { NodeId } from "./ids.js"
 import type { WriteKey } from "./props.js"
 
 export type Refusal = {
-  readonly refused: "shape" | "limit" | "cycle" | "kept" | "person" | "missing" | "stale" | "run-fenced"
+  readonly refused: "shape" | "limit" | "cycle" | "person" | "missing" | "stale" | "run-fenced"
   readonly node?: NodeId
   readonly prop?: WriteKey
 }

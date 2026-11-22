@@ -24,7 +24,6 @@ import {
   integer,
   list,
   literal,
-  matching,
   object,
   oneOf,
   quad,
@@ -36,7 +35,7 @@ import type { Refusal } from "./refusal.js"
 import { type Text, readText } from "./text.js"
 import { type Theme, type ThemeKey, readTheme } from "./theme.js"
 
-export const nodeTypes = ["deck", "slideRow", "slide", "frame", "shape", "kept"] as const
+export const nodeTypes = ["deck", "slideRow", "slide", "frame", "shape"] as const
 export type NodeType = (typeof nodeTypes)[number]
 
 export type Origin = {
@@ -84,7 +83,6 @@ export type Props = {
   readonly theme: Theme
   readonly size: { readonly w: Px; readonly h: Px }
   readonly origin: Origin
-  readonly snapshot: string
 }
 export type PropName = keyof Props
 export type WriteKey = PropName | ThemeKey
@@ -145,19 +143,15 @@ export const accepts = {
     "role",
     "origin",
   ],
-  kept: ["type", "parent", "name", "hidden", "locked", "box", "origin", "snapshot"],
 } as const satisfies Readonly<Record<NodeType, readonly PropName[]>>
 
 export const holds = {
   deck: ["slideRow"],
   slideRow: ["slide"],
-  slide: ["frame", "shape", "kept"],
-  frame: ["frame", "shape", "kept"],
+  slide: ["frame", "shape"],
+  frame: ["frame", "shape"],
   shape: [],
-  kept: [],
 } as const satisfies Readonly<Record<NodeType, readonly NodeType[]>>
-
-export const keptEditable: readonly PropName[] = ["box", "name", "hidden", "parent"]
 
 const refusing =
   <T>(reader: Reader<T>) =>
@@ -248,5 +242,4 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   theme: spec(readTheme, "custom", null, "native"),
   size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null, "native"),
   origin: spec(readOrigin, "none", null, "dropped"),
-  snapshot: spec(matching(/^[A-Za-z0-9_-]+$/, 128), "none", null, "dropped"),
 }

@@ -1,15 +1,12 @@
 import { bytesOf, limits } from "../limits.js"
 import { type NodeId, readNodeId, readRev } from "./ids.js"
-import { type NodeType, type PropName, type WriteKey, accepts, keptEditable, nodeTypes, props } from "./props.js"
+import { type NodeType, type PropName, type WriteKey, accepts, nodeTypes, props } from "./props.js"
 import { object, rejected, words, literal } from "./read-kit.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Author, Edit, Scene, Write } from "./scene.js"
 import { readThemeKey, readThemeValue } from "./theme.js"
 
-export type Lookup = {
-  readonly type: (node: NodeId) => NodeType | undefined
-  readonly created: (node: NodeId) => boolean
-}
+export type Lookup = { readonly type: (node: NodeId) => NodeType | undefined }
 
 const writeKeys = new Set(["node", "prop", "value", "base"])
 const required: readonly PropName[] = ["type", "theme", "size"]
@@ -54,8 +51,6 @@ export function readWriteIn(raw: unknown, lookup: Lookup): Write | Refusal {
     return type === undefined || type === value ? { ...made, value } : refuse("shape", node, key)
   }
   if (type === undefined) return refuse("missing", node, key)
-  if (type === "kept" && !lookup.created(node) && !keptEditable.includes(key as PropName))
-    return refuse("kept", node, key)
   if (!(accepts[type] as readonly PropName[]).includes(baseKey(key))) return refuse("shape", node, key)
 
   if (found.value === null && key !== "parent") {
@@ -72,10 +67,7 @@ export function readWrite(
   scene: Scene,
   created: ReadonlyMap<NodeId, NodeType> = new Map(),
 ): Write | Refusal {
-  return readWriteIn(raw, {
-    type: (node) => created.get(node) ?? scene.nodes.get(node)?.type,
-    created: (node) => created.has(node),
-  })
+  return readWriteIn(raw, { type: (node) => created.get(node) ?? scene.nodes.get(node)?.type })
 }
 
 const readAuthor = object(

@@ -119,10 +119,7 @@ function guardRun(work: Working, landed: Landed): Refusal | undefined {
 }
 
 function write(work: Working, scene: Scene, landed: Landed, raw: Write): Refusal | undefined {
-  const read = readWriteIn(raw, {
-    type: (node) => work.nodes.get(node)?.type,
-    created: (node) => work.created.has(node),
-  })
+  const read = readWriteIn(raw, { type: (node) => work.nodes.get(node)?.type })
   if (isRefusal(read)) return read
   const { node: id, prop: key, value } = read
   if (key === "type") {

@@ -12,6 +12,6 @@ it("hands the scene core to callers through the package index as one namespace",
   expect(isRefusal({ refused: "shape" })).toBe(true)
   expect(isRefusal(emptyScene)).toBe(false)
   expect(nodeId("c:1")).toBe("c:1")
-  expect(Object.keys(accepts)).toEqual(["deck", "slideRow", "slide", "frame", "shape", "kept"])
+  expect(Object.keys(accepts)).toEqual(["deck", "slideRow", "slide", "frame", "shape"])
   expect(Object.keys(props)).toContain("box")
 })
