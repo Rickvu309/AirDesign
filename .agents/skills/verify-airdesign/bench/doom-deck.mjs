@@ -25,7 +25,7 @@ async function land(kit, deck, cookie, changes, once, counter, phase) {
   if ("refused" in compiled) throw new Error(`bench deck refused ${JSON.stringify(compiled)}`)
   const landed = await kit.post(kit.sceneRoutes.edit, { deck, edit: compiled.edit }, cookie)
   if (landed.json.ok !== true) throw new Error(`bench deck not landed ${JSON.stringify(landed.json)}`)
-  return compiled.added
+  return compiled.added.map((each) => each.id)
 }
 
 export async function boardDeck(kit, cookie, slideCount, deck) {
