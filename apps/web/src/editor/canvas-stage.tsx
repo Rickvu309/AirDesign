@@ -56,6 +56,16 @@ export function CanvasStage({
     element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
   }, [width, fit])
 
+  const laidOut = useRef({ fit, canvasWidth, canvasHeight, overlay, top })
+  useLayoutEffect(() => {
+    const before = laidOut.current
+    laidOut.current = { fit, canvasWidth, canvasHeight, overlay, top }
+    const element = stage.current
+    if (element === null || fit || before.fit || gestures.placing()) return
+    element.scrollLeft += (before.canvasWidth - canvasWidth) / 2
+    element.scrollTop += (before.canvasHeight - before.overlay - (canvasHeight - overlay)) / 2 + top - before.top
+  }, [canvasWidth, canvasHeight, overlay, top, fit])
+
   function grab(event: PointerEvent<HTMLDivElement>) {
     const element = stage.current
     if (element === null || event.button !== 0) return

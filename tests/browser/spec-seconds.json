@@ -292,7 +292,8 @@
     "typing-renders.spec.ts": 7.9,
     "undo-export.spec.ts": 17.4,
     "usage-motion.spec.ts": 1.7,
-    "usage.spec.ts": 4.1
+    "usage.spec.ts": 4.1,
+    "zoom-selection-resize.spec.ts": 19.4
   },
   "export": {
     "agent-arrow.spec.ts": 7.8,
