@@ -1,7 +1,7 @@
 import { Client } from "pg"
 import { expect, it } from "vitest"
 
-import { postgresInfo } from "./harness.js"
+import { postgresInfo } from "./testing/harness.js"
 
 it("runs the throwaway cluster without waiting for the disk, and keeps commits synchronous", async () => {
   const info = await postgresInfo()

@@ -3,7 +3,7 @@ import { request } from "node:http"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const smokeToken = "smoke-token-for-this-file"

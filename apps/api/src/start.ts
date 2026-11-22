@@ -1,13 +1,13 @@
 import type { Socket } from "node:net"
 
-import { anthropicTransport } from "./anthropic-transport.js"
-import { DeckListen } from "./listen.js"
-import { sendWithResend } from "./mail.js"
-import { openPool } from "./pool.js"
+import { anthropicTransport } from "./aira/anthropic-transport.js"
+import { DeckListen } from "./platform/listen.js"
+import { sendWithResend } from "./platform/mail.js"
+import { openPool } from "./platform/pool.js"
 import { createApi } from "./server.js"
-import { readStartSettings } from "./start-settings.js"
-import { drainOriginals } from "./original.js"
-import { R2OriginalStore } from "./r2-original-store.js"
+import { readStartSettings } from "./platform/start-settings.js"
+import { drainOriginals } from "./doom/original.js"
+import { R2OriginalStore } from "./platform/r2-original-store.js"
 
 const settings = readStartSettings(process.env)
 

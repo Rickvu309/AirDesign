@@ -3,10 +3,10 @@ import { randomBytes } from "node:crypto"
 import { readDeckId } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, askForm, signInByCode, verifierPair, postgresInfo, serve } from "./harness.js"
+import { ask, askForm, signInByCode, verifierPair, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { openSql } from "./doom-deck.js"
-import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
+import { openSql } from "./doom/doom-deck.js"
+import { same, specGraph, type SpecState, type Value } from "./testing/spec-graph.js"
 
 const own = "https://mcp.example.test/mcp"
 const callback = "http://127.0.0.1:8124/owner"

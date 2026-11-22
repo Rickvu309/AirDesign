@@ -2,12 +2,20 @@ import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { accountRoutes, deckRoutes, oauthRoutes } from "@airdesign/catalog"
 
-import { fuzzAira } from "./aira-fuzz.js"
-import { emptied, fillAccount, mcpStatus, personalRows, signIn, storedKeys, type Served } from "./filled-account.js"
-import { ask, askForm, postgresInfo, serve } from "./harness.js"
+import { fuzzAira } from "./testing/aira-fuzz.js"
+import {
+  emptied,
+  fillAccount,
+  mcpStatus,
+  personalRows,
+  signIn,
+  storedKeys,
+  type Served,
+} from "./testing/filled-account.js"
+import { ask, askForm, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { LocalOriginalStore } from "./local-original-store.js"
-import { drainOriginals } from "./original.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
+import { drainOriginals } from "./doom/original.js"
 
 const cleared = "airdesign.session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0"
 const mails: Mail[] = []

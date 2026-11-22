@@ -3,10 +3,10 @@ import { createHash, randomBytes } from "node:crypto"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
-import type { ImageNet, Resolved } from "./image-fetch.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import type { ImageNet, Resolved } from "./platform/image-fetch.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { LocalOriginalStore } from "./local-original-store.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const logo = "https://images.example.com/logo.png"

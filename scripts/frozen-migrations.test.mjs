@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { defaultFrozenMigrationsFile, readFrozenMigrations } from "../apps/api/src/frozen-migrations.ts"
+import { defaultFrozenMigrationsFile, readFrozenMigrations } from "../apps/api/src/platform/frozen-migrations.ts"
 import { migrations, runFrozenMigrations } from "./frozen-migrations.mjs"
 
 const scriptPath = fileURLToPath(new URL("./frozen-migrations.mjs", import.meta.url))

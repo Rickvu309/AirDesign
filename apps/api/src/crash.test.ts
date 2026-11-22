@@ -4,7 +4,7 @@ import { call, openDeck } from "@airdesign/engine"
 import { Client } from "pg"
 import { afterAll, describe, expect, it } from "vitest"
 
-import { postgresInfo } from "./harness.js"
+import { postgresInfo } from "./testing/harness.js"
 import { openPool, openSaved, readSaved, writeRevision } from "./index.js"
 
 function delay(ms: number): Promise<void> {

@@ -3,7 +3,7 @@ import { deckRoutes } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 
 type Row = { deck: string; starred?: boolean }

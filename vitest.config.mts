@@ -51,7 +51,7 @@ export default defineConfig({
         test: {
           name: "api",
           include: testFiles.api,
-          globalSetup: ["apps/api/src/postgres-setup.ts"],
+          globalSetup: ["apps/api/src/testing/postgres-setup.ts"],
           setupFiles: ["scripts/vitest-api-database.mjs"],
         },
       },

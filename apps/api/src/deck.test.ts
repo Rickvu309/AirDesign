@@ -4,7 +4,7 @@ import { call, openDeck } from "@airdesign/engine"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, signInByCode, postgresInfo, serve, wireCommit } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve, wireCommit } from "./testing/harness.js"
 import { DeckListen, commitEdits, openPool, readSaved, writeRevision, type Mail, type Sql } from "./index.js"
 
 function wait(ms: number): Promise<void> {

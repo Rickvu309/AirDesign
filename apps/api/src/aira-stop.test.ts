@@ -8,10 +8,10 @@ import { bytesOf } from "@airdesign/document"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { airaMaxTokens, airaSystem, settleTurn } from "./aira.js"
-import { Closing } from "./aira-closing.js"
-import { Replay } from "./aira-replay.js"
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
+import { airaMaxTokens, airaSystem, settleTurn } from "./aira/aira.js"
+import { Closing } from "./aira/aira-closing.js"
+import { Replay } from "./testing/aira-replay.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const vietnam = { [countryHeader]: "VN" }

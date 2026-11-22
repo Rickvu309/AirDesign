@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { postgresInfo, serve, signInByCode } from "./harness.js"
+import { postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }

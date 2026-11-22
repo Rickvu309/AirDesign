@@ -18,7 +18,7 @@ describe("suitesFor", () => {
   })
 
   it("runs the journeys but not the browser suite for a server-only change", () => {
-    expect(names(["apps/api/src/aira.ts"])).toEqual(["check", "journeys"])
+    expect(names(["apps/api/src/aira/aira.ts"])).toEqual(["check", "journeys"])
     expect(names(["packages/mcp/src/call-tool.ts"])).toEqual(["check", "journeys"])
   })
 

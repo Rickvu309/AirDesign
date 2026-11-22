@@ -13,10 +13,10 @@ import {
 import { Client, type Notification } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { migrations } from "./migrations.js"
-import { startEmptyCluster, type EmptyCluster } from "./postgres-setup.js"
-import { createRole } from "./provision.js"
-import { applySchema } from "./schema.js"
+import { migrations } from "./platform/migrations.js"
+import { startEmptyCluster, type EmptyCluster } from "./testing/postgres-setup.js"
+import { createRole } from "./platform/provision.js"
+import { applySchema } from "./platform/schema.js"
 
 const owner = "owner@example.com"
 const file = [slideId("256"), slideId("257")]

@@ -1,0 +1,8 @@
+layer: feature
+dependencies:
+  - apps/api/src/account
+  - apps/api/src/platform
+public:
+  - aira-ledger.ts
+  - credits-route.ts
+  - credits.ts

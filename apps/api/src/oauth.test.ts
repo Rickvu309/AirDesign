@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto"
 import type { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { ask, askForm, signInByCode, postgresInfo, serve } from "./harness.js"
+import { ask, askForm, signInByCode, postgresInfo, serve } from "./testing/harness.js"
 import { bearerPrincipal, createApi, DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const own = "https://mcp.example.test/mcp"

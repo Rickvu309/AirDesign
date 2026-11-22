@@ -26,13 +26,13 @@
       "blob": "edc2bcd5427a52b25bd8788b0f5a269a6714b6b0"
     },
     {
-      "file": "apps/api/src/mcp.ts",
+      "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
       "digest": "bd7ea9d0aee1",
       "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
     },
     {
-      "file": "apps/api/src/saved.ts",
+      "file": "apps/api/src/legacy-decks/saved.ts",
       "names": ["commitEdits", "readStoredOnce", "writeRevision"],
       "digest": "444bfea260bd",
       "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"

@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-export const recordFile = "apps/api/src/frozen-migrations.json"
+export const recordFile = "apps/api/src/platform/frozen-migrations.json"
 
 export const takenNumbers = ({ base, head }) => {
   const onBase = new Map(base.map((entry) => [entry.id, entry.sha256]))
@@ -17,7 +17,7 @@ export const migrationFault = ({ base, head }) => {
   const taken = takenNumbers({ base, head })
   if (taken.length === 0) return undefined
   const free = Math.max(...base.map((entry) => entry.id), ...head.map((entry) => entry.id)) + 1
-  return `Migration ${taken[0]} is already on origin/main with different sql. Give yours the next free number, ${free}: rebase on origin/main, change its id to ${free} in apps/api/src/migrations.ts, then run node scripts/frozen-migrations.mjs to record it.`
+  return `Migration ${taken[0]} is already on origin/main with different sql. Give yours the next free number, ${free}: rebase on origin/main, change its id to ${free} in apps/api/src/platform/migrations.ts, then run node scripts/frozen-migrations.mjs to record it.`
 }
 
 const recordAt = (root, revision) => {

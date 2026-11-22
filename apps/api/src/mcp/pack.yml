@@ -1,0 +1,7 @@
+layer: feature
+dependencies:
+  - apps/api/src/account
+  - apps/api/src/doom
+  - apps/api/src/platform
+public:
+  - mcp.ts

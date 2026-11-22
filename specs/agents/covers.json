@@ -2,7 +2,7 @@
   "check": "checks-server.md#agents",
   "covers": [
     {
-      "file": "apps/api/src/agent-key.ts",
+      "file": "apps/api/src/oauth/agent-key.ts",
       "names": ["agentKey"],
       "digest": "16e4990149b1",
       "blob": "7a7e56261c8ddbe61730eb109fcfc5eca0820592"

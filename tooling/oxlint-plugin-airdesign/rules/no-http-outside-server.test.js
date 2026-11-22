@@ -58,14 +58,14 @@ expectRejects(
 )
 expectRejects(
   "the harness may not open a server",
-  "apps/api/src/harness.ts",
+  "apps/api/src/testing/harness.ts",
   `import { createServer, request } from "node:http"\n`,
   rule,
   message,
 )
 expectRejects(
   "the harness may not take the whole module",
-  "apps/api/src/harness.ts",
+  "apps/api/src/testing/harness.ts",
   `import http from "http"\n`,
   rule,
   message,
@@ -73,21 +73,26 @@ expectRejects(
 expectAccepts("server.ts may open a server", "apps/api/src/server.ts", named, rule)
 expectAccepts(
   "the harness may import request",
-  "apps/api/src/harness.ts",
+  "apps/api/src/testing/harness.ts",
   `import { request, type IncomingHttpHeaders, type Server } from "node:http"\n`,
   rule,
 )
-expectAccepts("import type stays", "apps/api/src/mcp.ts", `import type { IncomingMessage } from "node:http"\n`, rule)
+expectAccepts(
+  "import type stays",
+  "apps/api/src/mcp/mcp.ts",
+  `import type { IncomingMessage } from "node:http"\n`,
+  rule,
+)
 expectAccepts("inline types stay", source, `import { type IncomingMessage } from "node:http"\n`, rule)
 expectAccepts(
   "createServer from another module stays",
-  "apps/api/src/mcp.ts",
+  "apps/api/src/mcp/mcp.ts",
   `import { createServer } from "@airdesign/mcp"\nexport const open = () => createServer()\n`,
   rule,
 )
 expectAccepts(
   "node:net stays",
-  "apps/api/src/postgres-setup.ts",
+  "apps/api/src/testing/postgres-setup.ts",
   `import { createServer } from "node:net"\nexport const open = () => createServer()\n`,
   rule,
 )
@@ -97,13 +102,13 @@ expectAccepts("a test file is out of scope", "apps/api/src/second.test.ts", name
 
 expectAccepts(
   "the agent image fetch may send a request",
-  "apps/api/src/image-fetch.ts",
+  "apps/api/src/platform/image-fetch.ts",
   `import { request } from "node:https"\nexport const get = (url) => request(url)\n`,
   rule,
 )
 expectRejects(
   "the agent image fetch may not open a server",
-  "apps/api/src/image-fetch.ts",
+  "apps/api/src/platform/image-fetch.ts",
   `import { createServer } from "node:https"\nexport const open = () => createServer()\n`,
   rule,
   message,

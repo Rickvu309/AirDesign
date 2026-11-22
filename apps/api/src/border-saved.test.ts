@@ -12,8 +12,8 @@ import {
   type Register,
 } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { account, deckOf, startAgents, stores, address, type Account } from "./agents-drive.js"
-import { ask } from "./harness.js"
+import { account, deckOf, startAgents, stores, address, type Account } from "./testing/agents-drive.js"
+import { ask } from "./testing/harness.js"
 
 type Row = { readonly v?: number; readonly patch?: Readonly<Record<string, unknown>> }
 type Body = { readonly landed: readonly Row[] }

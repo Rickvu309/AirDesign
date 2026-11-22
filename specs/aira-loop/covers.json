@@ -14,19 +14,19 @@
       "blob": "62f863a80d4effde344e4fd84ee0128aad7c9fc7"
     },
     {
-      "file": "apps/api/src/aira-route.ts",
+      "file": "apps/api/src/aira/aira-route.ts",
       "names": ["airaRouteList"],
       "digest": "7d3ce1d791cf",
       "blob": "92675c52a53c6f71c5cf45523f00051a4ca39db8"
     },
     {
-      "file": "apps/api/src/saved.ts",
+      "file": "apps/api/src/legacy-decks/saved.ts",
       "names": ["spendOnce", "readStoredOnce", "writeRevision"],
       "digest": "0679229d058a",
       "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"
     },
     {
-      "file": "apps/api/src/mcp.ts",
+      "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
       "digest": "bd7ea9d0aee1",
       "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"

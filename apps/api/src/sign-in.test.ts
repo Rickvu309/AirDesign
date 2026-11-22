@@ -3,10 +3,10 @@ import { request as httpRequest, type IncomingHttpHeaders } from "node:http"
 import { Client, Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
+import { ask, cookieFrom, postgresInfo, serve, testResource } from "./testing/harness.js"
 import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
-import { signInMinutes } from "./account.js"
-import { readSignInMail, signInMail } from "./sign-in-mail.js"
+import { signInMinutes } from "./account/account.js"
+import { readSignInMail, signInMail } from "./account/sign-in-mail.js"
 
 const publicOrigin = "https://app.example"
 const siteOrigin = "https://site.example"

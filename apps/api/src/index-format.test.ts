@@ -1,9 +1,9 @@
 import { deckRoutes, signInRoutes } from "@airdesign/catalog"
 import { elementId, format, slideId, type IndexElement } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { readSignInMail } from "./sign-in-mail.js"
+import { readSignInMail } from "./account/sign-in-mail.js"
 
 let base = ""
 let close = async () => {}

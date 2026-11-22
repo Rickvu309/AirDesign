@@ -5,7 +5,7 @@ import { createServer, request as forwardTo } from "node:http"
 import type { AddressInfo } from "node:net"
 import { dirname } from "node:path"
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import type { Script } from "../../apps/api/src/aira-replay.ts"
+import type { Script } from "../../apps/api/src/testing/aira-replay.ts"
 import { watchRequests } from "../request-timeline.ts"
 import { test as base } from "./deck-test.ts"
 import { sessionCookie, type Production } from "./production.ts"
@@ -166,17 +166,17 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
         return
       }
       execFileSync("pnpm", ["--filter", "@airdesign/api", "build"], { stdio: "ignore" })
-      const { startEmptyCluster } = await import("../../apps/api/src/postgres-setup.js")
-      const { runBootstrap, runSetup } = await import("../../apps/api/src/provision.js")
-      const { openPool } = await import("../../apps/api/src/pool.js")
-      const { DeckListen } = await import("../../apps/api/src/listen.js")
+      const { startEmptyCluster } = await import("../../apps/api/src/testing/postgres-setup.js")
+      const { runBootstrap, runSetup } = await import("../../apps/api/src/platform/provision.js")
+      const { openPool } = await import("../../apps/api/src/platform/pool.js")
+      const { DeckListen } = await import("../../apps/api/src/platform/listen.js")
       const { createApi } = await import("../../apps/api/src/server.js")
-      const { Replay } = await import("../../apps/api/src/aira-replay.js")
-      const { readSignInMail } = await import("../../apps/api/src/sign-in-mail.js")
+      const { Replay } = await import("../../apps/api/src/testing/aira-replay.js")
+      const { readSignInMail } = await import("../../apps/api/src/account/sign-in-mail.js")
       const { mcpRoutes, signInRoutes, accountRoutes } = await import("../../packages/catalog/src/index.ts")
       const { readDeckPage } = await import("../../packages/engine/src/index.ts")
-      const { deckAccess, readSaved } = await import("../../apps/api/src/saved.js")
-      const { LocalOriginalStore } = await import("../../apps/api/src/local-original-store.js")
+      const { deckAccess, readSaved } = await import("../../apps/api/src/legacy-decks/saved.js")
+      const { LocalOriginalStore } = await import("../../apps/api/src/platform/local-original-store.js")
       const originals = new LocalOriginalStore(Date.now, "https://original.test")
       const { allowance } = await import("../../packages/usage/src/index.ts")
       const cluster = await startEmptyCluster()

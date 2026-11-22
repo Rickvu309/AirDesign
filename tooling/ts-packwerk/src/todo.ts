@@ -96,8 +96,7 @@ export const writeTodos = (root: string, packs: readonly Pack[], found: readonly
       }
       sorted[toPack] = next
     }
-    const header = "# Known pack violations, recorded by `ts-packwerk update-todo`. Fix them; do not add to them.\n"
-    writeFileSync(file, header + YAML.stringify(sorted, { lineWidth: 0 }))
+    writeFileSync(file, YAML.stringify(sorted, { lineWidth: 0 }))
   }
   return written
 }

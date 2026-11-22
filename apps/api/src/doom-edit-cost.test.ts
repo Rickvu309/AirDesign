@@ -4,10 +4,10 @@ import type { Pool } from "pg"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { postgresInfo } from "./harness.js"
+import { postgresInfo } from "./testing/harness.js"
 import { openPool, type Sql } from "./index.js"
-import { createDoom, editDoom } from "./doom-deck.js"
-import { startIds } from "./doom-start.js"
+import { createDoom, editDoom } from "./doom/doom-deck.js"
+import { startIds } from "./doom/doom-start.js"
 
 type Traffic = { statements: number; rows: number; bytes: number }
 

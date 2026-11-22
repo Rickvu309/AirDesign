@@ -1,10 +1,10 @@
 import { Client } from "pg"
 import { expect, it } from "vitest"
 
-import { migrations } from "./migrations.js"
-import { startEmptyCluster } from "./postgres-setup.js"
-import { createRole, runSetup } from "./provision.js"
-import { applySchema } from "./schema.js"
+import { migrations } from "./platform/migrations.js"
+import { startEmptyCluster } from "./testing/postgres-setup.js"
+import { createRole, runSetup } from "./platform/provision.js"
+import { applySchema } from "./platform/schema.js"
 
 it("adds the import index and its deleted-row constraint after migration 6", async () => {
   const cluster = await startEmptyCluster()

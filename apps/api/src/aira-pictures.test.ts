@@ -6,9 +6,9 @@ import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
 import { limits } from "@airdesign/document"
-import { airaMaxTokens, airaSystem, airaTurnCap } from "./aira.js"
-import { Replay } from "./aira-replay.js"
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
+import { airaMaxTokens, airaSystem, airaTurnCap } from "./aira/aira.js"
+import { Replay } from "./testing/aira-replay.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const vietnam = { [countryHeader]: "VN" }

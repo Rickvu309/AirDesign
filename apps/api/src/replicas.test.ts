@@ -4,14 +4,14 @@ import { request } from "node:http"
 import type { Socket } from "node:net"
 
 import { countryHeader, doomRoutes } from "@airdesign/catalog"
-import { airaMaxTokens } from "./aira.js"
+import { airaMaxTokens } from "./aira/aira.js"
 import { Client as McpClient, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { Closing } from "./aira-closing.js"
-import { Replay } from "./aira-replay.js"
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
+import { Closing } from "./aira/aira-closing.js"
+import { Replay } from "./testing/aira-replay.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const vietnam = { [countryHeader]: "VN" }

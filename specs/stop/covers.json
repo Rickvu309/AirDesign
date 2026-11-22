@@ -2,13 +2,13 @@
   "check": "checks-server.md#stop",
   "covers": [
     {
-      "file": "apps/api/src/aira-closing.ts",
+      "file": "apps/api/src/aira/aira-closing.ts",
       "names": ["followSql", "stopSql", "openStopSql", "Closing"],
       "digest": "f6772127a6d3",
       "blob": "bb49606e9145fd00a5d70d1afb0d36850c710844"
     },
     {
-      "file": "apps/api/src/aira.ts",
+      "file": "apps/api/src/aira/aira.ts",
       "names": ["reserveTurn", "answered", "settleTurn", "releaseTurn"],
       "digest": "76292cff5825",
       "blob": "97ec295b896de46094905857bd2c4b255d46850c"
