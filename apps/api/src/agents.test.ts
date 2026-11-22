@@ -83,7 +83,7 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
         base: start.rev + 1,
         changes: [text(start.slide, "two")],
       })
-      const [{ id: added }] = a.body.added as { id: string }[]
+      const added = (a.body.added as { id: string }[])[0]!.id
       const typed = await ask(
         address.base,
         "POST",
