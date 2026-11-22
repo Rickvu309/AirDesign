@@ -97,6 +97,7 @@ function connected(
   let queue: readonly Queued[] = firstQueue
   let undoSteps: Step[] = []
   let redoSteps: Step[] = []
+  const turned: string[] = []
   let notices: readonly Notice[] = []
   let memo: { readonly server: scene.Scene; readonly queue: readonly Queued[]; readonly view: scene.Scene } | undefined
   let saving: Promise<void> = Promise.resolve()
@@ -289,11 +290,18 @@ function connected(
     const at = revOf(step.once)
     if (at === undefined) return { ok: false, reason: "nothing" }
     const now = view()
-    const writes = scene.invert(step.before, now, { once: step.once, author, writes: step.writes, rev: at })
+    const owned = new Set<scene.Rev>()
+    for (const name of turned) {
+      const turnedAt = revOf(name)
+      if (turnedAt !== undefined) owned.add(turnedAt)
+    }
+    const writes = scene.invert(step.before, now, { once: step.once, author, writes: step.writes, rev: at }, owned)
     if (writes.length === 0) return { ok: false, reason: "nothing" }
     const pushed = pushEdit(writes, author)
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     to.push({ once: pushed.once, before: now, writes })
+    turned.push(pushed.once)
+    if (turned.length > 500) turned.shift()
     return { ok: true, once: pushed.once, saved: pushed.saved }
   }
 
