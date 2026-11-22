@@ -1,4 +1,5 @@
 import {
+  colorXml,
   declaration,
   escaped,
   levelList,
@@ -7,6 +8,8 @@ import {
   rectangle,
   relationships,
   solid,
+  tableTextNamespace,
+  tableTextUri,
   textBox,
   textStylesNamespace,
   textStylesUri,
@@ -52,6 +55,18 @@ function textStyles(spec) {
   return { styles, extension, plain }
 }
 
+function tableStyles(spec) {
+  const line = (side, width, color) =>
+    `<a:${side}><a:ln w="${String(width)}" cmpd="sng"><a:solidFill>${colorXml(color)}</a:solidFill></a:ln></a:${side}>`
+  const none = (side) => `<a:${side}><a:ln><a:noFill/></a:ln></a:${side}>`
+  const text = (font, bold) =>
+    `<a:tcTxStyle b="${bold ? "on" : "off"}"><a:fontRef idx="${font}"><a:prstClr val="black"/></a:fontRef><a:schemeClr val="tx1"/></a:tcTxStyle>`
+  const { id, rule, headRule } = spec.table
+  const whole = `<a:wholeTbl>${text("minor", false)}<a:tcStyle><a:tcBdr>${["left", "right", "top"].map(none).join("")}${line("bottom", 9525, rule)}${line("insideH", 9525, rule)}${none("insideV")}</a:tcBdr><a:fill><a:noFill/></a:fill></a:tcStyle></a:wholeTbl>`
+  const first = `<a:firstRow>${text("major", false)}<a:tcStyle><a:tcBdr>${line("bottom", 12700, headRule)}</a:tcBdr></a:tcStyle></a:firstRow>`
+  return `<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="${id}"><a:tblStyle styleId="${id}" styleName="${escaped(spec.name)}">${whole}${first}<a:extLst><a:ext uri="${tableTextUri}"><ad:cellText xmlns:ad="${tableTextNamespace}" sz="${String(Math.round(spec.scale.body2.size * 100))}"/></a:ext></a:extLst></a:tblStyle></a:tblStyleLst>`
+}
+
 function placed(shapes, start = 2) {
   return shapes.map((shape, at) => {
     const id = start + at
@@ -82,6 +97,7 @@ export function deckParts(spec, { start = false } = {}) {
   const types = [
     ["/ppt/presentation.xml", "presentation.main"],
     ["/ppt/presProps.xml", "presProps"],
+    ["/ppt/tableStyles.xml", "tableStyles"],
     ["/ppt/slideMasters/slideMaster1.xml", "slideMaster"],
     ...slides.map((_, n) => [`/ppt/slides/slide${String(n + 1)}.xml`, "slide"]),
     ...spec.layouts.map((_, n) => [`/ppt/slideLayouts/slideLayout${String(n + 1)}.xml`, "slideLayout"]),
@@ -104,9 +120,11 @@ export function deckParts(spec, { start = false } = {}) {
       ...slides.map((_, n) => [n + 2, "slide", `slides/slide${String(n + 1)}.xml`]),
       [slides.length + 2, "presProps", "presProps.xml"],
       [slides.length + 3, "theme", "theme/theme1.xml"],
+      [slides.length + 4, "tableStyles", "tableStyles.xml"],
     ]),
   )
   put("ppt/presProps.xml", `<p:presentationPr ${namespaces}/>`)
+  put("ppt/tableStyles.xml", tableStyles(spec))
   put("ppt/theme/theme1.xml", theme(spec))
   const colorMap = `<p:clrMap ${mapped[spec.map]} accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>`
   const layoutIds = spec.layouts.map(

@@ -86,6 +86,7 @@ export default {
   },
   fonts: { major: "Inter SemiBold", minor: "Inter" },
   scale,
+  table: { id: "{2D1C7E5A-6B0F-4C3E-9A41-7E5B2C8D1F01}", rule: hairline, headRule: "tx1" },
   master: master(look),
   layouts: layouts(look),
   slides: boardSlides(scale),
