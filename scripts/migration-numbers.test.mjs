@@ -14,7 +14,7 @@ same("two branches that both added migration 9 clash on 9", takenNumbers({ base:
 same(
   "the fault names the next free number",
   migrationFault({ base: main, head: branch }),
-  "Migration 9 is already on origin/main with different sql. Give yours the next free number, 10: rebase on origin/main, change its id to 10 in apps/api/src/platform/migrations.ts, then run node scripts/frozen-migrations.mjs to record it.",
+  "Migration 9 is already on origin/main with different sql. Give yours the next free number, 10: rebase on origin/main, rename its file in apps/api/src/platform/migrations/ to start with 0010, then run node scripts/frozen-migrations.mjs to record it.",
 )
 same("the same migration on both sides is no clash", migrationFault({ base: main, head: main }), undefined)
 same(
@@ -29,6 +29,6 @@ same(
     base: [...upTo(7), { id: 8, sha256: "a" }, { id: 9, sha256: "b" }],
     head: [...upTo(7), { id: 8, sha256: "c" }, { id: 9, sha256: "d" }],
   }),
-  "Migration 8 is already on origin/main with different sql. Give yours the next free number, 10: rebase on origin/main, change its id to 10 in apps/api/src/platform/migrations.ts, then run node scripts/frozen-migrations.mjs to record it.",
+  "Migration 8 is already on origin/main with different sql. Give yours the next free number, 10: rebase on origin/main, rename its file in apps/api/src/platform/migrations/ to start with 0010, then run node scripts/frozen-migrations.mjs to record it.",
 )
 same("a base that could not be read judges nothing", migrationFault({ base: undefined, head: branch }), undefined)
