@@ -70,22 +70,34 @@ export function SlidePaint(props: {
   )
 }
 
+export function useSceneSlide(
+  value: scene.Scene,
+  slide: scene.NodeId,
+): {
+  readonly nodes: readonly Resolved[] | null
+  readonly background: readonly scene.ResolvedPaint[]
+  readonly ready: boolean
+} {
+  const measure = useSceneMeasure(value)
+  const nodes = useMemo(
+    () => (measure === null ? null : scene.resolveSlide(value, slide, measure)),
+    [value, slide, measure],
+  )
+  const iconsReady = useIcons(nodes === null ? [] : iconNames(nodes))
+  const background = useMemo(() => scene.slideBackground(value, slide), [value, slide])
+  return { nodes, background, ready: nodes !== null && iconsReady }
+}
+
 export function SceneSlide(props: {
   readonly scene: scene.Scene
   readonly slide: scene.NodeId
   readonly width: number
   readonly assetUrl?: AssetUrl
 }) {
-  const measure = useSceneMeasure(props.scene)
-  const nodes = useMemo(
-    () => (measure === null ? null : scene.resolveSlide(props.scene, props.slide, measure)),
-    [props.scene, props.slide, measure],
-  )
-  const iconsReady = useIcons(nodes === null ? [] : iconNames(nodes))
+  const { nodes, background, ready } = useSceneSlide(props.scene, props.slide)
   const { size } = scene.deckOf(props.scene)
-  const background = useMemo(() => scene.slideBackground(props.scene, props.slide), [props.scene, props.slide])
   return (
-    <div data-fonts-pending={nodes !== null && iconsReady ? undefined : ""}>
+    <div data-fonts-pending={ready ? undefined : ""}>
       <SlidePaint
         nodes={nodes ?? []}
         background={background}
