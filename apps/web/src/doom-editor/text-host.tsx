@@ -150,6 +150,11 @@ export function TextHost(props: {
     if (gesture === "deselect") {
       handled()
       latest.current.onLeave()
+    } else if (gesture === "select-all") {
+      handled()
+      const end = latest.current.session.draft.chars.length
+      current.select(0, end)
+      if (host.current !== null) showSelection(host.current, 0, end)
     } else if (gesture === "bold" || gesture === "italic" || gesture === "underline" || gesture === "strike") {
       handled()
       current.mark(gesture)

@@ -87,7 +87,12 @@ export const gestures = [
     keys: [{ code: "KeyA", mod: true, alt: true }],
     where: ["editor"],
   },
-  { id: "select-all", group: "select", keys: [{ key: "a", mod: true }], where: ["grid", "element", "slide"] },
+  {
+    id: "select-all",
+    group: "select",
+    keys: [{ key: "a", mod: true }],
+    where: ["grid", "element", "slide", "text"],
+  },
   {
     id: "select-inverse",
     group: "select",

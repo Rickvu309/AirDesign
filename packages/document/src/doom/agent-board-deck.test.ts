@@ -72,6 +72,13 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
     expect(childrenOf(doom, roadmap.id)).toHaveLength(19)
   })
 
+  it("fills most of the room with the KPI row and keeps the decision card under it, inside the slide", () => {
+    const [, row, decision] = childrenOf(doom, slides[1]!).map((node) => get(node, "box")!)
+    expect(row!.h).toBeGreaterThanOrEqual(0.55 * (1000 - row!.y))
+    expect(decision!.y).toBeGreaterThanOrEqual(row!.y + row!.h)
+    expect(decision!.y + decision!.h).toBeLessThanOrEqual(1000)
+  })
+
   it("uses the deck's named text styles and no size of its own anywhere", () => {
     for (const slide of slides)
       for (const node of descendantsOf(doom, slide)) {

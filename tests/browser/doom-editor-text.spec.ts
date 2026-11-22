@@ -158,6 +158,42 @@ test("a double-click on a shape with no words starts words inside it, makes no n
   await expect(layers).toHaveCount(3)
 })
 
+test("Ctrl+A inside bulleted words selects every bullet, and typing replaces them all", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text", "select-all")
+  const opened = await openDoomEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        box: spot(200, 600, 700, 300),
+        text: {
+          chars: "First detail\nSecond detail",
+          spans: [],
+          paras: [{ list: "bullet" }, { list: "bullet" }],
+          style: "body",
+          resize: "fixed",
+          alignV: "top",
+        },
+      },
+    },
+  ])
+  await clickSlide(page, 300, 640, { double: true })
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+a")
+  const selected = await page.evaluate(() => window.getSelection()?.toString() ?? "")
+  expect(selected).toContain("First detail")
+  expect(selected).toContain("Second detail")
+  await page.keyboard.type("Only")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("Only")
+})
+
 test("pasted words keep their line breaks, and undo while typing takes back the last words typed", async ({
   page,
   context,
