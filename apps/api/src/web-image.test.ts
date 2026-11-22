@@ -137,6 +137,42 @@ describe("an agent adds an image from the web to a Doom deck through the MCP add
     }
   })
 
+  it("sizes a picture added with no box to the shape of the file it fetched", async () => {
+    const { client, made } = await opened()
+    try {
+      const answer = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: made.deck,
+          base: made.rev,
+          changes: [{ op: "add", kind: "picture", slide: made.slides[0], fill: { image: logo } }],
+        },
+      })
+      expect(answer.isError, JSON.stringify(answer.content)).not.toBe(true)
+      const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: made.deck } })
+      const words = (read.content as readonly Text[]).map((block) => block.text).join("\n")
+      const box = /picture @\d+,\d+ (\d+)x(\d+)/.exec(words)
+      expect(box, words).not.toBeNull()
+      expect(Number(box?.[1]) / Number(box?.[2])).toBeCloseTo(4, 1)
+    } finally {
+      await client.close()
+    }
+  })
+
+  it("refuses a hash the deck holds no picture for, and a name that is neither hash nor address", async () => {
+    const { client, made } = await opened()
+    try {
+      for (const image of ["d".repeat(64), "logo.png"]) {
+        const answer = await client.callTool({ name: "airdesign_edit_deck", arguments: add(made, image) })
+        expect(answer.isError).toBe(true)
+        const words = (answer.content as readonly Text[]).map((block) => block.text).join("\n")
+        expect(words).toContain(`Change 1: "${image}" was not used because`)
+      }
+    } finally {
+      await client.close()
+    }
+  })
+
   it("refuses an address that leads inside the network, says why, and fetches and stores nothing", async () => {
     const { client, made } = await opened()
     try {

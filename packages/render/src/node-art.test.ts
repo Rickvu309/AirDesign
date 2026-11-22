@@ -21,14 +21,20 @@ const spot = (x: number, y: number, w: number, h: number, extra: object = {}) =>
 const solid = (color: unknown, extra: object = {}) => ({ kind: "solid", color, ...extra })
 const shape = (name: string, props: object): scene.TreeNode => ({ type: "shape", name, props: props as never })
 
-function painted(nodes: readonly scene.TreeNode[], assetUrl: (asset: string) => string | undefined = () => undefined) {
+function painted(
+  nodes: readonly scene.TreeNode[],
+  assetUrl: (asset: string) => string | undefined = () => undefined,
+  waiting?: string,
+) {
   const grown = scene.sceneFromTree({ theme: scene.defaultTheme, slides: [{ children: nodes }] })
   const resolved = scene.resolveSlide(grown.scene, grown.slides[0]!, scene.measureWith({}))
   return renderToStaticMarkup(
     createElement(
       "div",
       null,
-      resolved.map((node) => createElement(NodeArt, { key: node.id, node, assetUrl })),
+      resolved.map((node) =>
+        createElement(NodeArt, { key: node.id, node, assetUrl, ...(waiting === undefined ? {} : { waiting }) }),
+      ),
     ),
   ).replaceAll("&quot;", '"')
 }
@@ -268,5 +274,40 @@ describe("NodeArt", () => {
       }),
     ])
     expect(html).not.toContain("<path")
+  })
+})
+
+describe("NodeArt for a picture whose bytes are not on this device yet", () => {
+  const image = { kind: "image", asset: "a".repeat(64), fit: "fill" }
+  const words = "Image is still uploading from another device"
+
+  it("says the picture is still uploading, centred in its box", () => {
+    const html = painted([shape("p", { box: spot(0, 0, 600, 300), fills: [image] })], () => undefined, words)
+    expect(html).toContain("data-unshown-label")
+    expect(html).toContain(words)
+    expect(html).toContain("var(--placeholder-prompt)")
+    expect(html).toContain("background:var(--line)")
+  })
+
+  it("says nothing once the bytes are here", () => {
+    const html = painted([shape("p", { box: spot(0, 0, 600, 300), fills: [image] })], () => "blob:1", words)
+    expect(html).not.toContain("data-unshown-label")
+    expect(html).not.toContain("var(--line)")
+  })
+
+  it("says nothing in a box too small to hold the words", () => {
+    const html = painted([shape("p", { box: spot(0, 0, 200, 60), fills: [image] })], () => undefined, words)
+    expect(html).not.toContain("data-unshown-label")
+    expect(html).toContain("background:var(--line)")
+  })
+
+  it("says nothing where the caller gave no words, as in a thumbnail", () => {
+    const html = painted([shape("p", { box: spot(0, 0, 600, 300), fills: [image] })])
+    expect(html).not.toContain("data-unshown-label")
+  })
+
+  it("says nothing for a colour fill", () => {
+    const html = painted([shape("p", { box: spot(0, 0, 600, 300), fills: [solid("#112233")] })], () => undefined, words)
+    expect(html).not.toContain("data-unshown-label")
   })
 })

@@ -15,7 +15,7 @@ const folded = (id: string) => ({
 })
 
 it("names the scene paths the web worker forwards, apart from the deck paths", () => {
-  expect(scenePaths).toEqual(["/scenes/create", "/scenes/open", "/scenes/edit", "/scenes/since"])
+  expect(scenePaths).toEqual(["/scenes/create", "/scenes/open", "/scenes/edit", "/scenes/since", "/scenes/pictures"])
 })
 
 it("reads a deck, an edit for a deck, and a catch-up cursor, and nothing else", () => {
@@ -75,4 +75,23 @@ it("decodes a catch-up into the head and the landed edits as sent, left for the 
   })
   expect(sceneRoutes.since.result({ ok: true, deck, rev: 2, edits: "none" })).toEqual(payload)
   expect(sceneRoutes.since.result({ ok: true, deck, edits: [] })).toEqual(payload)
+})
+
+it("reads the slide keys and slide pictures an open tab sends for a scene deck, and the slides still missing", () => {
+  const key = "a".repeat(64)
+  const pictures = { keys: [{ slide: "t:3", key }], images: [{ slide: "t:3", key, type: "image/jpeg", data: "QUFB" }] }
+  expect(sceneRoutes.pictures.read({ deck, rev: 4, pictures })).toEqual({ ok: true, deck, rev: 4, pictures })
+  expect(sceneRoutes.pictures.read({ deck, rev: 4, pictures: { keys: [], images: [] } })).toMatchObject({ ok: true })
+  expect(sceneRoutes.pictures.read({ deck, rev: 4 })).toEqual(field)
+  expect(
+    sceneRoutes.pictures.read({ deck, rev: 4, pictures: { ...pictures, keys: [{ slide: "no id", key }] } }),
+  ).toEqual(field)
+  expect(sceneRoutes.pictures.read({ deck, rev: -1, pictures })).toEqual(field)
+  expect(sceneRoutes.pictures.result({ ok: true, deck, missing: ["t:3"] })).toEqual({
+    ok: true,
+    deck,
+    missing: ["t:3"],
+  })
+  expect(sceneRoutes.pictures.result({ ok: true, deck, missing: [3] })).toEqual(payload)
+  expect(sceneRoutes.pictures.result({ ok: false, refusal: "stale" })).toEqual({ ok: false, refusal: "stale" })
 })

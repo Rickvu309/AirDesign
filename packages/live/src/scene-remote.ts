@@ -4,7 +4,9 @@ import {
   type DeckId,
   type SceneCaught,
   type SceneLanded,
+  type ScenePictured,
   type SceneOpened,
+  type SlidePictures,
 } from "@airdesign/catalog"
 import { scene } from "@airdesign/document"
 import { post } from "./remote.js"
@@ -17,6 +19,11 @@ export type SceneRemote = {
     body: { readonly deck: string; readonly rev: number; readonly wait?: boolean },
     signal?: AbortSignal,
   ): Promise<SceneCaught>
+  pictures?(body: {
+    readonly deck: string
+    readonly rev: number
+    readonly pictures: SlidePictures<scene.NodeId>
+  }): Promise<ScenePictured>
 }
 
 export function httpSceneRemote(): SceneRemote {
@@ -25,6 +32,7 @@ export function httpSceneRemote(): SceneRemote {
     open: async (body) => sceneRoutes.open.result(await post(sceneRoutes.open.path, body)),
     edit: async (body) => sceneRoutes.edit.result(await post(sceneRoutes.edit.path, body)),
     since: async (body, signal) => sceneRoutes.since.result(await post(sceneRoutes.since.path, body, signal)),
+    pictures: async (body) => sceneRoutes.pictures.result(await post(sceneRoutes.pictures.path, body)),
   }
 }
 

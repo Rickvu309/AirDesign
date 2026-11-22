@@ -6,11 +6,7 @@ type Natural = { readonly width: number; readonly height: number }
 type Size = { readonly w: number; readonly h: number }
 
 export function pictureBox(natural: Natural, slide: Size, at: Point | null): scene.Box {
-  const width = Math.max(1, natural.width)
-  const height = Math.max(1, natural.height)
-  const scale = Math.min(1, slide.w / width, slide.h / height)
-  const w = Math.max(1, Math.round(width * scale))
-  const h = Math.max(1, Math.round(height * scale))
+  const { w, h } = scene.pictureFit(natural, slide)
   const centre = at ?? { x: slide.w / 2, y: slide.h / 2 }
   const x = Math.min(Math.max(0, Math.round(centre.x - w / 2)), Math.max(0, slide.w - w))
   const y = Math.min(Math.max(0, Math.round(centre.y - h / 2)), Math.max(0, slide.h - h))

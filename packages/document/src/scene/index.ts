@@ -13,6 +13,8 @@ export {
   readAgentChanges,
 } from "./agent-change.js"
 export { compileAgentChange } from "./agent-compile.js"
+export { pictureFit } from "./picture-fit.js"
+export { slideKeyText } from "./slide-key.js"
 export { type AgentEdit, type EditBy, compileAgentEdit, readingOf } from "./agent-edit.js"
 export { readForAgent } from "./agent-read.js"
 export { applyEdit } from "./apply-edit.js"

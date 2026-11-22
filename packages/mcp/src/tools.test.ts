@@ -98,7 +98,7 @@ describe("read_deck", () => {
     const { deck, rev, slides } = await created(by)
     const read = await by.call("read_deck", { deck })
     expect(read.answer).toMatchObject({ ok: true, deck, rev, slides })
-    const lines = read.content[1]!.text.split("\n")
+    const lines = (read.content[1]?.text ?? "").split("\n")
     expect(lines[0]).toMatch(/^slide /)
     expect(lines[1]).toMatch(/^ {2}\S+ text:title @160,380 1600x160 .*text="Untitled"/)
   })
@@ -138,7 +138,7 @@ describe("read_deck", () => {
     const next = (first.answer as { next?: string }).next
     expect(next).toBeDefined()
     const rest = await by.call("read_deck", { deck, cursor: next })
-    expect(rest.content[1]!.text.split("\n")[0]).toContain(next)
+    expect((rest.content[1]?.text ?? "").split("\n")[0]).toContain(next)
     expect(first.content[1]!.text).not.toContain(`slide ${next}`)
   })
 

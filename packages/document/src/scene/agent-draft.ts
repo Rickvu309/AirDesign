@@ -8,7 +8,12 @@ import { type Box, childrenOf, isLive, parentOf } from "./scene-walk.js"
 import type { Props } from "./props.js"
 
 export type Values = { readonly [K in PropName]?: Props[K] }
-export type Reading = { readonly read?: Scene; readonly boxes?: ReadonlyMap<NodeId, Box> }
+export type Natural = { readonly width: number; readonly height: number }
+export type Reading = {
+  readonly read?: Scene
+  readonly boxes?: ReadonlyMap<NodeId, Box>
+  readonly pictures?: ReadonlyMap<string, Natural>
+}
 export type Draft = {
   readonly scene: Scene
   readonly mint: () => NodeId

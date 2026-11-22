@@ -11,12 +11,14 @@ export type ImageRefusal =
   | "type"
   | "size"
   | "timeout"
+  | "unknown"
+  | "absent"
   | "many"
   | "full"
   | "store"
 
 export type NamedImage =
-  | { readonly ok: true; readonly asset: string }
+  | { readonly ok: true; readonly asset: string; readonly width?: number; readonly height?: number }
   | { readonly ok: false; readonly refusal: ImageRefusal }
 
 export type NamedImages = ReadonlyMap<string, NamedImage>
@@ -31,19 +33,37 @@ const imageReasons = {
   type: "the file is not a PNG, JPEG or GIF. WebP and SVG are not taken yet.",
   size: "the file is 10 MB or more, or the image is over 40 megapixels.",
   timeout: "its server did not send the file within 10 seconds.",
+  unknown: "it is neither an https address nor an asset read from this deck.",
+  absent: "this deck holds no picture with that hash.",
   many: `the call names more than ${String(imagesPerCall)} images. Send the rest in another call.`,
   full: "the deck is at its storage limit. Tell the person.",
   store: "the file could not be stored. Try again later.",
 } as const satisfies Record<ImageRefusal, string>
 
+const storedAsset = /^[0-9a-f]{64}$/
+
+const usable = (name: string) => webImage(name) || storedAsset.test(name)
+
 function imageOf(change: scene.AgentChange): string | undefined {
   if (!("op" in change) || (change.op !== "add" && change.op !== "set")) return undefined
   const fill = change.fill
-  return typeof fill === "object" && webImage(fill.image) ? fill.image : undefined
+  return typeof fill === "object" ? fill.image : undefined
 }
 
-export function imageAddresses(changes: readonly scene.AgentChange[]): readonly string[] {
-  return [...new Set(changes.flatMap((change) => imageOf(change) ?? []))]
+export function imageNames(changes: readonly scene.AgentChange[]): readonly string[] {
+  return [...new Set(changes.flatMap((change) => imageOf(change) ?? []).filter(usable))]
+}
+
+export function pictureSizes(
+  images: NamedImages,
+): ReadonlyMap<string, { readonly width: number; readonly height: number }> {
+  return new Map(
+    [...images.values()].flatMap((image) =>
+      image.ok && image.width !== undefined && image.height !== undefined
+        ? [[image.asset, { width: image.width, height: image.height }] as const]
+        : [],
+    ),
+  )
 }
 
 export function withAssets(changes: readonly scene.AgentChange[], images: NamedImages): readonly scene.AgentChange[] {
@@ -54,10 +74,16 @@ export function withAssets(changes: readonly scene.AgentChange[], images: NamedI
   })
 }
 
-export function imageProblem(changes: readonly scene.AgentChange[], images: NamedImages): ToolResult | undefined {
+export function imageProblem(
+  changes: readonly scene.AgentChange[],
+  images: NamedImages | undefined,
+): ToolResult | undefined {
   const lines = changes.flatMap((change, at) => {
     const address = imageOf(change)
     if (address === undefined) return []
+    if (!usable(address))
+      return [`Change ${String(at + 1)}: ${JSON.stringify(address)} was not used because ${imageReasons.unknown}`]
+    if (images === undefined) return []
     const found = images.get(address)
     if (found?.ok === true) return []
     const reason = found === undefined ? "it was not fetched." : imageReasons[found.refusal]

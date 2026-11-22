@@ -1,7 +1,14 @@
 import type { EditRefusal, SceneRefusal } from "@airdesign/catalog"
 import type { scene } from "@airdesign/document"
 
-export type ToolContent = { readonly type: "text"; readonly text: string }
+export type ToolText = { readonly type: "text"; readonly text: string }
+export type ToolImage = {
+  readonly type: "image"
+  readonly data: string
+  readonly mimeType: "image/jpeg"
+  readonly text?: undefined
+}
+export type ToolContent = ToolText | ToolImage
 
 export type ToolResult = {
   readonly ok: boolean

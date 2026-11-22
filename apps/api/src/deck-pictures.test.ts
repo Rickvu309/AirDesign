@@ -1,5 +1,4 @@
 import { readDeckId, type DeckId, type SlidePictures } from "@airdesign/catalog"
-import { slideId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { DeckPictures } from "./deck-pictures.js"
 
@@ -10,17 +9,20 @@ function deckOf(name: string): DeckId {
 }
 
 const deck = deckOf("deck")
-const first = slideId("256")
-const second = slideId("257")
+const first = "t:3"
+const second = "t:4"
 const key = (letter: string) => letter.repeat(64)
-const image = (slide: typeof first, letter: string, data = "QUFB"): SlidePictures["images"][number] => ({
+const image = (slide: string, letter: string, data = "QUFB"): SlidePictures<string>["images"][number] => ({
   slide,
   key: key(letter),
   type: "image/jpeg",
   data,
 })
 
-function report(keys: readonly [typeof first, string][], images: SlidePictures["images"] = []): SlidePictures {
+function report(
+  keys: readonly [string, string][],
+  images: SlidePictures<string>["images"] = [],
+): SlidePictures<string> {
   return { keys: keys.map(([slide, letter]) => ({ slide, key: key(letter) })), images }
 }
 
@@ -63,7 +65,8 @@ describe("the latest picture of each slide, as the open tab painted it", () => {
         ),
       ),
     ).toEqual([])
-    expect(pictures.shot(deck, first)).toEqual({ revision: 3, data: "QUFB" })
+    expect(pictures.fresh(deck, first, key("a"))).toBe("QUFB")
+    expect(pictures.fresh(deck, first, key("z"))).toBeUndefined()
     expect(
       pictures.keep(
         deck,
@@ -74,8 +77,8 @@ describe("the latest picture of each slide, as the open tab painted it", () => {
         ]),
       ),
     ).toEqual([second])
-    expect(pictures.shot(deck, first)).toEqual({ revision: 5, data: "QUFB" })
-    expect(pictures.shot(deck, second)).toBeUndefined()
+    expect(pictures.fresh(deck, first, key("a"))).toBe("QUFB")
+    expect(pictures.fresh(deck, second, key("c"))).toBeUndefined()
     expect(pictures.revision(deck)).toBe(5)
   })
 
@@ -83,7 +86,7 @@ describe("the latest picture of each slide, as the open tab painted it", () => {
     const pictures = new DeckPictures()
     pictures.keep(deck, 5, report([[first, "a"]], [image(first, "a")]))
     expect(pictures.keep(deck, 4, report([[first, "z"]], [image(first, "z", "WldX")]))).toEqual([])
-    expect(pictures.shot(deck, first)).toEqual({ revision: 5, data: "QUFB" })
+    expect(pictures.fresh(deck, first, key("a"))).toBe("QUFB")
   })
 
   it("heals after a restart: a new store names every slide missing, and the tab's next report fills it", () => {
@@ -123,7 +126,7 @@ describe("the latest picture of each slide, as the open tab painted it", () => {
         ),
       ),
     ).toEqual([])
-    expect(after.shot(deck, second)).toEqual({ revision: 7, data: "QUFB" })
+    expect(after.fresh(deck, second, key("b"))).toBe("QUFB")
   })
 
   it("drops a deleted slide's picture and the least recently used deck past its byte cap", () => {
@@ -141,12 +144,12 @@ describe("the latest picture of each slide, as the open tab painted it", () => {
       ),
     )
     pictures.keep(deck, 2, report([[first, "a"]]))
-    expect(pictures.shot(deck, second)).toBeUndefined()
+    expect(pictures.fresh(deck, second, key("b"))).toBeUndefined()
     pictures.keep(other, 1, report([[first, "a"]], [image(first, "a", "QkJCQkJC")]))
-    expect(pictures.shot(other, first)).toEqual({ revision: 1, data: "QkJCQkJC" })
+    expect(pictures.fresh(other, first, key("a"))).toBe("QkJCQkJC")
     pictures.keep(deck, 2, report([[first, "a"]], [image(first, "a", "Q0NDQ0ND")]))
-    expect(pictures.shot(other, first)).toBeUndefined()
-    expect(pictures.shot(deck, first)).toEqual({ revision: 2, data: "Q0NDQ0ND" })
+    expect(pictures.fresh(other, first, key("a"))).toBeUndefined()
+    expect(pictures.fresh(deck, first, key("a"))).toBe("Q0NDQ0ND")
   })
 
   it("wakes a waiting read when a report lands", async () => {

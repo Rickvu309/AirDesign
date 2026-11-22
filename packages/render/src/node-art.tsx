@@ -51,7 +51,44 @@ function flipOf(box: Resolved["box"]): string | undefined {
   return box.flipH || box.flipV ? `scale(${box.flipH ? -1 : 1}, ${box.flipV ? -1 : 1})` : undefined
 }
 
-export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly assetUrl: AssetUrl }) {
+const labelWidth = 283
+const labelHeight = 71
+const labelSize = 28
+const labelInset = 14
+
+function WaitingLabel({ text }: { readonly text: string }) {
+  return (
+    <div
+      data-unshown-label
+      style={{
+        ...fill,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: labelInset,
+        textAlign: "center",
+        fontFamily: "var(--font-sans)",
+        fontSize: labelSize,
+        lineHeight: 1.3,
+        color: "var(--placeholder-prompt)",
+        pointerEvents: "none",
+        userSelect: "none",
+      }}
+    >
+      {text}
+    </div>
+  )
+}
+
+export function NodeArt({
+  node,
+  assetUrl,
+  waiting,
+}: {
+  readonly node: Resolved
+  readonly assetUrl: AssetUrl
+  readonly waiting?: string
+}) {
   const override = useContext(TextOverride)
   const { box, geometry } = node
   const boxy = geometry === null || geometry.kind === "rect" || geometry.kind === "ellipse"
@@ -61,6 +98,9 @@ export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly 
   const clipped = !boxy && outline.fill !== null ? `path("${outline.fill}")` : undefined
   const painted = node.fills.length > 0 && geometry?.kind !== "line" && geometry?.kind !== "icon"
   const icon = geometry?.kind === "icon" ? iconNodes(geometry.name) : undefined
+  const missing =
+    waiting !== undefined && node.fills.some((paint) => paint.kind === "image" && assetUrl(paint.asset) === undefined)
+  const unshown = missing && box.w >= labelWidth && box.h >= labelHeight
   return (
     <div
       data-node={node.id}
@@ -79,13 +119,14 @@ export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly 
       }}
     >
       <div style={{ ...fill, ...(flipOf(box) === undefined ? {} : { transform: flipOf(box) }) }}>
-        {painted || look.boxShadow !== undefined ? (
+        {painted || missing || look.boxShadow !== undefined ? (
           <div style={{ ...fill, ...(look.dropFilter === undefined ? {} : { filter: look.dropFilter }) }}>
             <div
               data-body=""
               style={{
                 ...fill,
                 overflow: "hidden",
+                ...(missing ? { background: "var(--line)" } : {}),
                 ...(boxy ? { borderRadius: round } : { clipPath: clipped }),
                 ...(look.boxShadow === undefined ? {} : { boxShadow: look.boxShadow }),
                 ...(look.backdrop === undefined ? {} : { backdropFilter: look.backdrop }),
@@ -103,6 +144,7 @@ export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly 
           <NodeStrokes node={node} outline={outline} />
         )}
       </div>
+      {unshown ? <WaitingLabel text={waiting} /> : null}
       {override?.(node) ?? (node.text === null ? null : <TextLines lines={node.text.lines} />)}
       {node.children.length === 0 ? null : (
         <div
@@ -112,7 +154,7 @@ export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly 
           }}
         >
           {node.children.map((child) => (
-            <NodeArt key={child.id} node={child} assetUrl={assetUrl} />
+            <NodeArt key={child.id} node={child} assetUrl={assetUrl} {...(waiting === undefined ? {} : { waiting })} />
           ))}
         </div>
       )}

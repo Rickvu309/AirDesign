@@ -2,14 +2,15 @@ import { createHash } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { type DeckId, type SceneRefusal, readDeckId } from "@airdesign/catalog"
-import { scene } from "@airdesign/document"
+import { mediaSize, scene } from "@airdesign/document"
 import { emptyLog, createServer, type DeckHost, type Host, type NamedImage, type Session } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import { admitCaller } from "./caller-log.js"
+import type { DeckPictures } from "./deck-pictures.js"
 import { fetchImage, type ImageNet } from "./image-fetch.js"
-import { keepMedia } from "./media.js"
+import { keepMedia, storedMedia } from "./media.js"
 import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
 import { createScene, editScene, openScene } from "./scene-deck.js"
@@ -26,6 +27,8 @@ export type McpHost = {
   readonly bodyCap: number
   readonly originals?: OriginalStore
   readonly imageNet?: ImageNet
+  readonly pictures?: DeckPictures
+  readonly pictureWait?: number
   readonly fail: (error: unknown) => void
 }
 
@@ -59,37 +62,72 @@ function opened(deck: DeckId, answer: Awaited<ReturnType<typeof openScene>>) {
 }
 
 type ImageStore = { readonly originals: OriginalStore | undefined; readonly net: ImageNet | undefined }
+type Pictured = { readonly pictures: DeckPictures | undefined; readonly wait: number }
+
+const sizeOf = (bytes: Uint8Array) => {
+  const size = mediaSize(bytes)
+  return size === null ? {} : size
+}
+
+async function namedImage(db: Sql, deck: DeckId, email: string, name: string, images: ImageStore): Promise<NamedImage> {
+  if (/^[0-9a-f]{64}$/.test(name)) {
+    const bytes = await storedMedia(db, deck, name, images.originals)
+    return bytes === undefined ? { ok: false, refusal: "absent" } : { ok: true, asset: name, ...sizeOf(bytes) }
+  }
+  const fetched = await fetchImage(name, images.net)
+  if (!fetched.ok) return { ok: false, refusal: fetched.refusal }
+  const kept = await keepMedia(db, deck, fetched.bytes, email, images.originals)
+  if (!kept.ok) return { ok: false, refusal: kept.refusal === "limit" ? "full" : "store" }
+  return { ok: true, asset: kept.sha256, ...sizeOf(fetched.bytes) }
+}
 
 async function storedImages(
   db: Sql,
   deck: DeckId,
   email: string,
-  addresses: readonly string[],
+  names: readonly string[],
   images: ImageStore,
 ): Promise<ReadonlyMap<string, NamedImage>> {
   const found = new Map<string, NamedImage>()
-  for (const address of addresses) {
-    const fetched = await fetchImage(address, images.net)
-    if (!fetched.ok) {
-      found.set(address, { ok: false, refusal: fetched.refusal })
-      continue
-    }
+  for (const name of names) {
     try {
-      const kept = await keepMedia(db, deck, fetched.bytes, email, images.originals)
-      found.set(
-        address,
-        kept.ok
-          ? { ok: true, asset: kept.sha256 }
-          : { ok: false, refusal: kept.refusal === "limit" ? "full" : "store" },
-      )
+      found.set(name, await namedImage(db, deck, email, name, images))
     } catch {
-      found.set(address, { ok: false, refusal: "store" })
+      found.set(name, { ok: false, refusal: "store" })
     }
   }
   return found
 }
 
-function sceneHost(db: Sql, email: string, images: ImageStore): DeckHost {
+const slideKey = (fold: scene.Scene, slide: scene.NodeId) =>
+  createHash("sha256").update(scene.slideKeyText(fold, slide)).digest("hex")
+
+async function slidePictures(
+  pictures: DeckPictures,
+  wait: number,
+  deck: DeckId,
+  fold: scene.Scene,
+  slides: readonly scene.NodeId[],
+): Promise<ReadonlyMap<scene.NodeId, string>> {
+  const keys = slides.map((slide) => [slide, slideKey(fold, slide)] as const)
+  const current = () =>
+    new Map(
+      keys.flatMap(([slide, key]) => {
+        const data = pictures.fresh(deck, slide, key)
+        return data === undefined ? [] : [[slide, data] as const]
+      }),
+    )
+  let shots = current()
+  const until = AbortSignal.timeout(wait)
+  while (shots.size < keys.length && !until.aborted) {
+    await pictures.wait(deck, until)
+    shots = current()
+  }
+  return shots
+}
+
+function sceneHost(db: Sql, email: string, images: ImageStore, seen: Pictured): DeckHost {
+  const shots = seen.pictures
   const guarded =
     <Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) =>
     async (...args: Args): Promise<Result | SceneRefusal> => {
@@ -132,7 +170,10 @@ function sceneHost(db: Sql, email: string, images: ImageStore): DeckHost {
       )
       return decoded(named) ?? opened(id.deck, await openScene(db, { deck: id.deck }, email))
     }),
-    images: async (deck, addresses) => storedImages(db, deck, email, addresses, images),
+    images: async (deck, names) => storedImages(db, deck, email, names, images),
+    ...(shots === undefined
+      ? {}
+      : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),
     open: guarded(async (deck) => opened(deck, await openScene(db, { deck }, email))),
     edit: guarded(async (deck, edit) => {
       const landed = await editScene(db, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)
@@ -157,7 +198,12 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const session: Session = { agent: host.agentKey, mint: host.mint, log: emptyLog(), now: host.now() }
   const bridge: Host = {
-    ...sceneHost(host.deck, host.email, { originals: host.originals, net: host.imageNet }),
+    ...sceneHost(
+      host.deck,
+      host.email,
+      { originals: host.originals, net: host.imageNet },
+      { pictures: host.pictures, wait: host.pictureWait ?? 4_000 },
+    ),
     admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })

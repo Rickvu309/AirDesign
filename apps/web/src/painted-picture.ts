@@ -6,7 +6,7 @@ import {
   type CanvasSlide,
   type PaintStore,
 } from "@airdesign/render"
-import { createElement } from "react"
+import { createElement, type ReactElement } from "react"
 import { createRoot } from "react-dom/client"
 
 export type PaintedPicture = { readonly image: HTMLImageElement; readonly width: number; readonly height: number }
@@ -170,30 +170,28 @@ async function drawn(svg: string): Promise<HTMLImageElement> {
   return image
 }
 
-export async function paintedPicture(
-  store: PaintStore,
-  slide: CanvasSlide,
-  elements: readonly CanvasElement[],
-  scale: number,
-  background = false,
+const settledFrames = 120
+
+async function settled(host: Element, ready: (host: Element) => boolean): Promise<void> {
+  for (let waited = 0; waited < settledFrames && !ready(host); waited += 1) await frames()
+}
+
+export async function paintedElement(
+  element: ReactElement,
+  width: number,
+  height: number,
+  background: boolean,
+  ready: (host: Element) => boolean = () => true,
 ): Promise<PaintedPicture> {
-  const width = Math.ceil(slide.width * scale)
-  const height = Math.ceil(slide.height * scale)
   const host = document.createElement("div")
   host.setAttribute("aria-hidden", "true")
   host.style.cssText = `position:fixed;left:${-width - 100}px;top:0;width:${width}px;height:${height}px;pointer-events:none`
   document.body.append(host)
   const root = createRoot(host)
   try {
-    root.render(
-      createElement(SlideCanvas, {
-        store,
-        slide: { ...slide, background: background ? slide.background : null, elements },
-        width,
-        quiet: true,
-      }),
-    )
+    root.render(element)
     await frames()
+    await settled(host, ready)
     await waitForFonts(document)
     await Promise.all([...host.querySelectorAll("img")].map((image) => image.decode().catch(() => undefined)))
     await frames()
@@ -204,4 +202,26 @@ export async function paintedPicture(
     root.unmount()
     host.remove()
   }
+}
+
+export async function paintedPicture(
+  store: PaintStore,
+  slide: CanvasSlide,
+  elements: readonly CanvasElement[],
+  scale: number,
+  background = false,
+): Promise<PaintedPicture> {
+  const width = Math.ceil(slide.width * scale)
+  const height = Math.ceil(slide.height * scale)
+  return paintedElement(
+    createElement(SlideCanvas, {
+      store,
+      slide: { ...slide, background: background ? slide.background : null, elements },
+      width,
+      quiet: true,
+    }),
+    width,
+    height,
+    background,
+  )
 }

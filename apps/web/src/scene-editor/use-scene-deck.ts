@@ -3,7 +3,17 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 export type EditorClient = Pick<
   SceneDeck,
-  "deck" | "view" | "mint" | "push" | "undo" | "redo" | "undoRun" | "subscribe"
+  | "deck"
+  | "view"
+  | "server"
+  | "pending"
+  | "mint"
+  | "push"
+  | "undo"
+  | "redo"
+  | "undoRun"
+  | "reportPictures"
+  | "subscribe"
 >
 
 export type Opening =

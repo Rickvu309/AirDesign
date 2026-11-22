@@ -1,4 +1,4 @@
-import { readDeckId, type DeckId, type SceneRefusal } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type ScenePictured, type SceneRefusal, type SlidePictures } from "@airdesign/catalog"
 import { scene } from "@airdesign/document"
 import { appliedOn, dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./scene-queue.js"
 import type { SceneRemote } from "./scene-remote.js"
@@ -43,6 +43,7 @@ export type SceneDeck = {
   sync(): Promise<Synced>
   catchUp(): Promise<{ readonly ok: boolean }>
   follow(signal: AbortSignal): Promise<void>
+  reportPictures(rev: number, pictures: SlidePictures<scene.NodeId>): Promise<ScenePictured>
   subscribe(listener: () => void): () => void
 }
 
@@ -410,6 +411,8 @@ function connected(
     sync,
     catchUp,
     follow,
+    reportPictures: async (rev, pictures) =>
+      remote.pictures === undefined ? { ok: false, refusal: "server" } : remote.pictures({ deck, rev, pictures }),
     subscribe(listener) {
       listeners.add(listener)
       return () => {

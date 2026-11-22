@@ -1,6 +1,7 @@
 import { scene } from "@airdesign/document"
 import * as z from "zod/v4"
 
+import { readSlidePictures, type SlidePictures } from "./slide-pictures-wire.js"
 import { type DeckId, deckInput, inputRefusal, readCapture, readInput, recordOf, wholeInput } from "./wire.js"
 
 export const sceneRefusals = [
@@ -28,11 +29,17 @@ export type SceneRefusal =
 export type SceneResult<Value> = ({ readonly ok: true } & Value) | SceneRefusal
 export type SceneOpened = SceneResult<{ readonly deck: DeckId; readonly rev: number; readonly fold: scene.Scene }>
 export type SceneLanded = SceneResult<{ readonly deck: DeckId; readonly rev: number }>
+export type ScenePictured = SceneResult<{ readonly deck: DeckId; readonly missing: readonly scene.NodeId[] }>
 export type SceneCaught = SceneResult<{
   readonly deck: DeckId
   readonly rev: number
   readonly edits: readonly unknown[]
 }>
+
+export const nodeIdPattern = new RegExp(scene.agentChangesSchema.$defs.id.pattern)
+
+const readNodeId = (raw: unknown): scene.NodeId | undefined =>
+  typeof raw === "string" && nodeIdPattern.test(raw) ? (raw as scene.NodeId) : undefined
 
 const payload: SceneRefusal = { ok: false, refusal: "payload" }
 const refusedKinds: readonly string[] = ["shape", "limit", "cycle", "person", "missing", "stale", "run-fenced"]
@@ -44,6 +51,19 @@ export const readSceneEdit = readInput(
 
 export const readSceneSince = readInput(
   z.strictObject({ deck: deckInput, rev: wholeInput, wait: z.boolean().optional() }),
+  inputRefusal,
+)
+
+export const readScenePictures = readInput(
+  z.strictObject({
+    deck: deckInput,
+    rev: wholeInput,
+    pictures: z.unknown().transform((raw, ctx): SlidePictures<scene.NodeId> => {
+      const read = readSlidePictures(raw, readNodeId)
+      if (read === undefined) ctx.issues.push({ code: "custom", message: "pictures", input: raw })
+      return read ?? { keys: [], images: [] }
+    }),
+  }),
   inputRefusal,
 )
 
@@ -92,11 +112,18 @@ const caught = decode((body, deck) =>
   whole(body.rev) && Array.isArray(body.edits) ? { deck, rev: body.rev, edits: body.edits as unknown[] } : undefined,
 )
 
+const pictured = decode((body, deck) =>
+  Array.isArray(body.missing) && body.missing.every((each) => readNodeId(each) !== undefined)
+    ? { deck, missing: body.missing as scene.NodeId[] }
+    : undefined,
+)
+
 export const sceneRoutes = {
   create: { path: "/scenes/create", read: readCapture, result: opened },
   open: { path: "/scenes/open", read: readCapture, result: opened },
   edit: { path: "/scenes/edit", read: readSceneEdit, result: landed },
   since: { path: "/scenes/since", read: readSceneSince, result: caught },
+  pictures: { path: "/scenes/pictures", read: readScenePictures, result: pictured },
 } as const
 
 export const scenePaths: readonly string[] = Object.values(sceneRoutes).map((route) => route.path)

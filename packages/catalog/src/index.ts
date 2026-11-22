@@ -57,6 +57,7 @@ export {
   type SceneCaught,
   type SceneLanded,
   type SceneOpened,
+  type ScenePictured,
   type SceneRefusal,
 } from "./scene-wire.js"
 export {

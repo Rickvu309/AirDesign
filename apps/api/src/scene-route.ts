@@ -2,12 +2,13 @@ import type { ServerResponse } from "node:http"
 
 import { sceneRoutes } from "@airdesign/catalog"
 
+import type { DeckPictures } from "./deck-pictures.js"
 import type { DeckListen } from "./listen.js"
 import type { Sql } from "./pool.js"
-import { createScene, editScene, openScene, sinceScene } from "./scene-deck.js"
+import { createScene, editScene, openScene, sceneRev, sinceScene } from "./scene-deck.js"
 
 type SceneVisit = {
-  readonly options: { readonly deck: Sql; readonly listen: DeckListen }
+  readonly options: { readonly deck: Sql; readonly listen: DeckListen; readonly pictures: DeckPictures }
   readonly res: ServerResponse
   readonly body: () => Promise<Buffer | undefined>
 }
@@ -85,6 +86,13 @@ export function sceneRouteList<Visit extends SceneVisit>(http: SceneHttp<Visit>)
     route(sceneRoutes.edit.path, sceneRoutes.edit.read, (visit, parsed, email) =>
       editScene(visit.options.deck, parsed, email),
     ),
+    route(sceneRoutes.pictures.path, sceneRoutes.pictures.read, async (visit, parsed, email) => {
+      const known = await sceneRev(visit.options.deck, parsed.deck, email)
+      if (!known.ok) return known
+      if (parsed.rev > known.rev) return { ok: false, refusal: "stale" }
+      const missing = visit.options.pictures.keep(parsed.deck, parsed.rev, parsed.pictures)
+      return { ok: true, deck: parsed.deck, missing }
+    }),
     route(sceneRoutes.since.path, sceneRoutes.since.read, async (visit, parsed, email) => {
       if (parsed.wait !== true) return sinceScene(visit.options.deck, parsed, email)
       const signal = http.gone(visit.res)
