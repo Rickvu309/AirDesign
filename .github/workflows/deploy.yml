@@ -10,7 +10,8 @@ on:
       - main
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
   issues: write
 
 jobs:
@@ -29,6 +30,9 @@ jobs:
           - app: web
             directory: apps/web
             what: Web app
+          - app: api
+            directory: .
+            what: API
     concurrency:
       group: deploy-${{ matrix.app }}
       cancel-in-progress: false
@@ -37,7 +41,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         continue-on-error: true
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
+          fetch-depth: 0
       - id: pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
         continue-on-error: true
@@ -47,34 +52,64 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+      - id: choose
+        continue-on-error: true
+        env:
+          APP: ${{ matrix.app }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/deploy-commit.mjs >> "$GITHUB_OUTPUT"
+      - id: commit
+        if: steps.choose.outputs.deploy == 'true' && matrix.app != 'api'
+        continue-on-error: true
+        env:
+          SHA: ${{ steps.choose.outputs.sha }}
+        run: git checkout --detach "$SHA"
       - id: install
+        if: steps.commit.outcome == 'success'
         continue-on-error: true
         run: pnpm install --frozen-lockfile
       - id: deploy
+        if: steps.install.outcome == 'success'
         continue-on-error: true
         working-directory: ${{ matrix.directory }}
         env:
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          git fetch --quiet origin main
-          tip=$(git rev-parse origin/main)
-          if [ "$tip" != "$HEAD_SHA" ]; then
-            echo "main moved to $tip, its own run deploys it"
-            exit 0
-          fi
           pnpm run deploy
           echo "deployed=true" >> "$GITHUB_OUTPUT"
+      - id: branch
+        if: matrix.app == 'api' && steps.choose.outputs.deploy == 'true'
+        continue-on-error: true
+        env:
+          SHA: ${{ steps.choose.outputs.sha }}
+        run: |
+          node scripts/deploy-commit.mjs --apply
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+      - id: record
+        if: "matrix.app == 'web' && steps.choose.outputs.sha != ''"
+        continue-on-error: true
+        env:
+          SHA: ${{ steps.choose.outputs.sha }}
+        run: printf '%s\n' "$SHA" > deployed-commit.txt
+      - id: artifact
+        if: "matrix.app == 'web' && steps.choose.outputs.sha != ''"
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        continue-on-error: true
+        with:
+          name: deployed-commit
+          path: deployed-commit.txt
+          retention-days: 7
+          if-no-files-found: error
       - if: always()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          DEPLOYED: ${{ steps.deploy.outputs.deployed }}
-          OUTCOMES: checkout=${{ steps.checkout.outcome }} pnpm=${{ steps.pnpm.outcome }} node=${{ steps.node.outcome }} install=${{ steps.install.outcome }} deploy=${{ steps.deploy.outcome }}
+          HEAD_SHA: ${{ steps.choose.outputs.sha }}
+          DEPLOYED: ${{ steps.deploy.outputs.deployed || steps.branch.outputs.deployed }}
+          OUTCOMES: checkout=${{ steps.checkout.outcome }} pnpm=${{ steps.pnpm.outcome }} node=${{ steps.node.outcome }} choose=${{ steps.choose.outcome }} commit=${{ steps.commit.outcome }} install=${{ steps.install.outcome }} deploy=${{ steps.deploy.outcome }} branch=${{ steps.branch.outcome }} record=${{ steps.record.outcome }} artifact=${{ steps.artifact.outcome }}
           APP: ${{ matrix.app }}
           WHAT: ${{ matrix.what }}
         run: |

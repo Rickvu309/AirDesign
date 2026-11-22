@@ -11,7 +11,7 @@ export default defineRailway(() => {
   })
   const PostgresPITR = bucket("Postgres-PITR", { region: "sin" })
   const api = service("api", {
-    source: github("Rickvu309/AirDesign", { branch: "main", checkSuites: false }),
+    source: github("Rickvu309/AirDesign", { branch: "green", checkSuites: false }),
     build: { buildEnvironment: "V3", builder: "RAILPACK", buildCommand: "pnpm --filter @airdesign/api... build" },
     start: "node apps/api/dist/start.js",
     healthcheck: "/health",

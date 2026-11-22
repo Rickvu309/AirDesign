@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { deployBranch } from "./deploy-commit.mjs"
 
 const hours = 60 * 60 * 1000
 
@@ -211,9 +212,10 @@ const staleBranchReasons = ({ root, base = "origin/main", pulls = new Map() }) =
   const named = git(root, ["for-each-ref", "--format=%(refname)", "refs/heads"])
   if (listed === undefined || named === undefined) return []
   const held = new Set(readWorktrees(listed).map((worktree) => worktree.branch))
+  const kept = new Set(["refs/heads/main", `refs/heads/${deployBranch}`])
   return named
     .split("\n")
-    .filter((branch) => branch.length > 0 && branch !== "refs/heads/main" && !held.has(branch))
+    .filter((branch) => branch.length > 0 && !kept.has(branch) && !held.has(branch))
     .map((branch) => ({ branch: branch.replace("refs/heads/", ""), reason: branchReason(root, branch, base, pulls) }))
     .filter(({ reason }) => reason !== undefined)
     .sort((left, right) => left.branch.localeCompare(right.branch))

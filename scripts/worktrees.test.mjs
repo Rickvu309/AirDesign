@@ -218,6 +218,7 @@ same(
   "its work is on main",
 )
 
+git(root, "branch", "green", "main")
 git(root, "branch", "pointer", "main")
 git(root, "branch", "spent", "main")
 git(root, "checkout", "-q", "spent")
@@ -254,11 +255,12 @@ same("each deleted branch is named", saidBranches, [
   "deleted branch spent, because it holds nothing main lacks",
 ])
 const left = git(root, "branch", "--format=%(refname:short)").split("\n").filter(Boolean).sort()
-same("main, unfinished work and branches in a worktree stay", left, [
+same("main, the deploy branch, unfinished work and branches in a worktree stay", left, [
   "busy",
   "closed",
   "dirty",
   "fresh",
+  "green",
   "locked",
   "main",
   "open",

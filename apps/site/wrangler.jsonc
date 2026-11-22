@@ -2,6 +2,6 @@
   "name": "airdesign-landing",
   "main": "worker/sign-in-forward.ts",
   "compatibility_date": "2026-11-09",
-  "assets": { "directory": "./dist" },
+  "assets": { "directory": "./dist", "run_worker_first": ["/version"] },
   "routes": ["airdesign.app/*", "www.airdesign.app/*"],
 }

@@ -1,4 +1,5 @@
-import { deployedCommit } from "./production-commit.mjs"
+import { versionOf } from "./deploy-commit.mjs"
+import { deployedCommit, parseWait } from "./production-commit.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -74,5 +75,36 @@ same(
   (await deployedCommit({ origin, wanted, ...silent })).line,
   `production API still at no commit, wanted ${wanted}`,
 )
+
+const both = production({ answers: [older, wanted] })
+same(
+  "the web app and the API must both serve the commit before the wait ends",
+  await deployedCommit({
+    origins: [
+      { origin: "https://studio.example", label: "web app" },
+      { origin, label: "production API" },
+    ],
+    wanted,
+    ...both,
+  }),
+  {
+    ok: true,
+    line: `web app serves ${wanted.slice(0, 12)}, which contains ${wanted.slice(0, 12)}; production API serves ${wanted.slice(0, 12)}, which contains ${wanted.slice(0, 12)}`,
+  },
+)
+same("it asks each app once per round", both.asked.slice(0, 2), ["https://studio.example/version", `${origin}/version`])
+same("one round waits once, for every app", both.waits, [20_000])
+
+same("a journey wait names the web app and the API", parseWait([wanted, "web", "api"]), {
+  wanted,
+  targets: [
+    { origin: versionOf.web, label: "web app" },
+    { origin: versionOf.api, label: "production API" },
+  ],
+})
+same("the old one-origin form still names the API", parseWait([`${origin}/`, wanted]), {
+  wanted,
+  targets: [{ origin, label: "production API" }],
+})
 
 console.log("production-commit tests passed")

@@ -25,6 +25,7 @@ for (const kept of [
   "github.event.pull_request.merged == false",
   "github.event.pull_request.head.repo.full_name == github.repository",
   "github.event.pull_request.head.ref != 'main'",
+  "github.event.pull_request.head.ref != 'green'",
   "!startsWith(github.event.pull_request.head.ref, 'archive/')",
 ]) {
   same(`it only runs when ${kept}`, job.if.includes(kept), true)

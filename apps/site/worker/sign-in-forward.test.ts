@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { createServer, type Server } from "node:http"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -106,6 +107,26 @@ describe("sign-in forwarding", () => {
       expect(response.status).toBe(503)
     }
     expect(seen).toEqual([])
+  })
+
+  it("answers the site's own commit at /version and does not ask the API", async () => {
+    const outbound = vi.spyOn(globalThis, "fetch")
+    const commit = "a".repeat(40)
+    const response = await worker.fetch(new Request("https://airdesign.app/version"), {
+      API_ORIGIN: origin,
+      COMMIT: commit,
+    })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ commit })
+    expect(outbound).not.toHaveBeenCalled()
+    expect(seen).toEqual([])
+    outbound.mockRestore()
+  })
+
+  it("sends /version to the Worker before site assets", () => {
+    const text = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")
+    const config = JSON.parse(text.replace(/,(\s*[}\]])/g, "$1")) as { assets: { run_worker_first?: string[] } }
+    expect(config.assets.run_worker_first).toContain("/version")
   })
 
   it.each(["/pricing", "/agents", "/status", "/assets", "/assets/logo.png", "/agent-instructions.txt"])(
