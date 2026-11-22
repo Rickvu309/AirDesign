@@ -5,7 +5,7 @@ import { zoomKey, type ZoomKey } from "@/editor/canvas-zoom"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deleteWrites } from "./delete-writes"
 import { moveWrites } from "./move-writes"
-import { lockedIn, propOf } from "./node-props"
+import { holdsText, lockedIn } from "./node-props"
 import { arranged } from "./arrange-keys"
 import { allIn, noSelection, steppedOut, type Selection } from "./selection"
 import type { SlideGeometry } from "./slide-geometry"
@@ -94,8 +94,7 @@ export function useCanvasKeys(args: KeyArgs) {
         a.onActions()
       } else if (gesture === "edit-text") {
         const [only] = a.selection.ids
-        if (only === undefined || a.selection.ids.length !== 1 || propOf(a.view.nodes.get(only), "text") === undefined)
-          return
+        if (only === undefined || a.selection.ids.length !== 1 || !holdsText(a.view, only)) return
         handled()
         a.onEditText(only)
       } else if (gesture === "select-all") {

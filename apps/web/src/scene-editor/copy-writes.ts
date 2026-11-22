@@ -9,6 +9,7 @@ const skipped = new Set(["id", "rev", "type", "parent", "origin", "slideLayout"]
 export type Copies = {
   readonly writes: readonly scene.Write[]
   readonly roots: readonly scene.NodeId[]
+  readonly made: ReadonlyMap<scene.NodeId, scene.NodeId>
 }
 
 function remapped(end: scene.End, map: ReadonlyMap<scene.NodeId, scene.NodeId>): scene.End {
@@ -56,7 +57,18 @@ export function copiesOf(
   return {
     writes: withRemappedLines(writes, map),
     roots: placements.flatMap(({ root }) => map.get(root) ?? []),
+    made: map,
   }
+}
+
+export function copiedMove(copies: Copies, moves: readonly scene.Write[]): readonly scene.Write[] {
+  return [
+    ...copies.writes,
+    ...moves.flatMap((write) => {
+      const copy = copies.made.get(write.node)
+      return copy === undefined ? [] : [{ ...write, node: copy }]
+    }),
+  ]
 }
 
 export function duplicateWrites(view: scene.Scene, ids: readonly scene.NodeId[], mint: Mint): Copies {

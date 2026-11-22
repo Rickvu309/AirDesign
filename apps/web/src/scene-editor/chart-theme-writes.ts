@@ -17,6 +17,13 @@ export function chartRow(chart: scene.Chart, category: number, name: string): sc
   return { ...chart, categories: chart.categories.map((old, at) => (at === category ? name : old)) }
 }
 
+export function chartSeriesName(chart: scene.Chart, series: number, name: string): scene.Chart {
+  const words = name.trim().slice(0, 200)
+  const was = chart.series[series]
+  if (words === "" || was === undefined || was.name === words) return chart
+  return { ...chart, series: chart.series.map((each, at) => (at === series ? { ...each, name: words } : each)) }
+}
+
 export function chartAddRow(chart: scene.Chart): scene.Chart {
   return {
     ...chart,

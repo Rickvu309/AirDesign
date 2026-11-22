@@ -3,6 +3,7 @@ import { sceneEditorCopy } from "../../apps/web/src/copy/scene-editor-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import {
+  accent,
   clickSlide,
   dragSlide,
   landNodes,
@@ -116,6 +117,45 @@ test("a double-click edits a text layer where it was clicked, Enter edits it wit
   await page.keyboard.press("ControlOrMeta+z")
   await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(1)
   await expect.poll(async () => (await textOf(stack, opened, title))?.chars).toBe("Replaced\nSecond")
+})
+
+test("a double-click on a shape with no words starts words inside it, makes no new layer, and leaving it empty keeps the shape", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text")
+  const opened = await openSceneEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 600, 300), fills: accent } },
+  ])
+  const layers = page.locator("[data-slide-box] [data-node]")
+  await expect(layers).toHaveCount(2)
+
+  await clickSlide(page, 300, 700, { double: true })
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(layers).toHaveCount(2)
+  expect((await savedNode(stack, opened, "t:1"))?.parent).not.toBeNull()
+  expect((await savedNode(stack, opened, "t:1"))?.text).toBeUndefined()
+
+  await clickSlide(page, 300, 700, { double: true })
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.type("Plan")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("Plan")
+  expect((await savedNode(stack, opened, "t:1"))?.box).toMatchObject(spot(200, 600, 600, 300))
+  await expect(layers).toHaveCount(2)
+  expect(await selectedIds(page)).toEqual(["t:1"])
+
+  await clickSlide(page, 300, 700, { double: true })
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("Delete")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("")
+  expect((await savedNode(stack, opened, "t:1"))?.parent).not.toBeNull()
+  await expect(layers).toHaveCount(2)
 })
 
 test("pasted words keep their line breaks, and undo while typing takes back the last words typed", async ({

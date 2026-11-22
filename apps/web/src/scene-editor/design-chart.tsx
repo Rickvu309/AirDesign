@@ -3,10 +3,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2 } from "lucide-react"
+import { Fragment } from "react"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { NumberField, PanelSection } from "./panel-fields"
 import { propOf } from "./node-props"
-import { chartAddRow, chartAddSeries, chartCell, chartDropRow, chartRow, chartWrites } from "./chart-theme-writes"
+import {
+  chartAddRow,
+  chartAddSeries,
+  chartCell,
+  chartDropRow,
+  chartRow,
+  chartSeriesName,
+  chartWrites,
+} from "./chart-theme-writes"
+
+function WordsCell(props: {
+  readonly label: string
+  readonly value: string
+  readonly onCommit: (words: string, field: HTMLInputElement) => void
+}) {
+  return (
+    <div data-focus-ring className="flex h-8 min-w-0 items-center rounded-lg bg-muted px-2.5">
+      <input
+        aria-label={props.label}
+        defaultValue={props.value}
+        className="min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none"
+        onBlur={(event) => props.onCommit(event.currentTarget.value, event.currentTarget)}
+      />
+    </div>
+  )
+}
 
 const kinds = ["column", "bar", "line", "pie", "stacked"] as const
 
@@ -49,38 +75,59 @@ export function ChartSection({
           onCheckedChange={(on) => change({ ...chart, labels: on })}
         />
       </label>
-      <div role="group" aria-label={sceneEditorCopy.chartData} className="flex flex-col gap-1" data-chart-data="">
-        {chart.categories.map((category, row) => (
-          <div key={row} className="flex items-center gap-1">
-            <input
-              aria-label={`${sceneEditorCopy.chartData} ${String(row + 1)}`}
-              defaultValue={category}
-              key={category}
-              className="h-7 w-16 min-w-0 rounded-md bg-white px-1.5 text-[length:var(--type-caption)] outline-none"
-              onBlur={(event) =>
-                event.currentTarget.value !== category && change(chartRow(chart, row, event.currentTarget.value))
-              }
+      <div
+        role="group"
+        aria-label={sceneEditorCopy.chartData}
+        className="-m-0.5 overflow-x-auto p-0.5"
+        data-chart-data=""
+      >
+        <div
+          className="grid items-center gap-1"
+          style={{ gridTemplateColumns: `5rem repeat(${String(chart.series.length)}, minmax(4.5rem, 1fr)) 1.5rem` }}
+        >
+          <span />
+          {chart.series.map((series, at) => (
+            <WordsCell
+              key={`${String(at)}|${series.name}`}
+              label={sceneEditorCopy.seriesName(at + 1)}
+              value={series.name}
+              onCommit={(words, field) => {
+                const next = chartSeriesName(chart, at, words)
+                if (next === chart) field.value = series.name
+                else change(next)
+              }}
             />
-            {chart.series.map((series, at) => (
-              <div key={at} className="min-w-0 flex-1">
+          ))}
+          <span />
+          {chart.categories.map((category, row) => (
+            <Fragment key={row}>
+              <WordsCell
+                key={category}
+                label={`${sceneEditorCopy.chartData} ${String(row + 1)}`}
+                value={category}
+                onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
+              />
+              {chart.series.map((series, at) => (
                 <NumberField
+                  key={at}
                   label={String(at + 1)}
+                  hideLabel
                   value={series.values[row]}
                   onCommit={(value) => change(chartCell(chart, at, row, value))}
                 />
-              </div>
-            ))}
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={sceneEditorCopy.dropRow(category)}
-              onClick={() => change(chartDropRow(chart, row))}
-            >
-              <Trash2 />
-            </Button>
-          </div>
-        ))}
-        <div className="flex flex-wrap gap-1">
+              ))}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={sceneEditorCopy.dropRow(category)}
+                onClick={() => change(chartDropRow(chart, row))}
+              >
+                <Trash2 />
+              </Button>
+            </Fragment>
+          ))}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-1">
           <Button variant="ghost" size="sm" onClick={() => change(chartAddRow(chart))}>
             <Plus /> {sceneEditorCopy.addRow}
           </Button>

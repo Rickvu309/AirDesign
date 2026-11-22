@@ -50,3 +50,9 @@ export function parentSlot(view: scene.Scene, id: scene.NodeId): NonNullable<sce
 export function siblingsOf(view: scene.Scene, parent: scene.NodeId): readonly scene.NodeId[] {
   return view.children.get(parent) ?? []
 }
+
+export function holdsText(view: scene.Scene, id: scene.NodeId): boolean {
+  const node = view.nodes.get(id)
+  const kind = propOf(node, "geometry")?.kind
+  return node?.type === "shape" && kind !== "line" && kind !== "icon"
+}

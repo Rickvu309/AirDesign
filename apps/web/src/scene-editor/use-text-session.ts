@@ -1,6 +1,7 @@
 import { scene, type OrderKey } from "@airdesign/document"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { propOf } from "./node-props"
+import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
 import {
   lookAt,
   markOn,
@@ -27,6 +28,7 @@ export type Entry =
 export type Session = {
   readonly node: scene.NodeId
   readonly created: Created | null
+  readonly keeps: boolean
   readonly draft: scene.Text
   readonly saved: scene.Text
   readonly anchor: number
@@ -99,8 +101,10 @@ export function useTextSession(client: EditorClient, view: scene.Scene): TextSes
     const now = ref.current
     if (now === null) return
     flush()
-    const emptied = now.draft.chars === "" && now.created === null
-    if (emptied) client.push([{ node: now.node, prop: "parent", value: null }])
+    if (now.created === null) {
+      const writes = leaveEmptyWrites({ node: now.node, keeps: now.keeps, draft: now.draft, pushed: pushed.current })
+      if (writes.length > 0) client.push(writes)
+    }
     set(null)
   }
 
@@ -121,12 +125,14 @@ export function useTextSession(client: EditorClient, view: scene.Scene): TextSes
   )
 
   function begin(node: scene.NodeId, entry: Entry) {
-    const text = propOf(viewRef.current.nodes.get(node), "text") ?? empty("height")
+    const keeps = holdsPaint(viewRef.current, node)
+    const text = propOf(viewRef.current.nodes.get(node), "text") ?? blankTextFor(keeps)
     pushed.current = JSON.stringify(text)
     const from = entry.kind === "all" ? 0 : text.chars.length
     set({
       node,
       created: null,
+      keeps,
       draft: text,
       saved: text,
       anchor: from,
@@ -143,6 +149,7 @@ export function useTextSession(client: EditorClient, view: scene.Scene): TextSes
     set({
       node: created.id,
       created,
+      keeps: false,
       draft: text,
       saved: text,
       anchor: 0,

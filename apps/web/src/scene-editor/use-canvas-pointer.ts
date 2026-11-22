@@ -8,9 +8,10 @@ import {
   type RefObject,
 } from "react"
 import type { Preview } from "./canvas-overlay"
+import { copiedMove, duplicateWrites, type Copies } from "./copy-writes"
 import { hitChain } from "./hit-test"
 import { movedBy } from "./move-writes"
-import { lockedIn } from "./node-props"
+import { holdsText, lockedIn } from "./node-props"
 import {
   marqueeSelection,
   noSelection,
@@ -21,7 +22,6 @@ import {
   type Rect,
   type Selection,
 } from "./selection"
-import { propOf } from "./node-props"
 import type { Placed, Point, SlideGeometry } from "./slide-geometry"
 import { transformedBy } from "./transform-drag"
 import type { EditorClient } from "./use-scene-deck"
@@ -71,6 +71,9 @@ type Active =
       readonly view: scene.Scene
       readonly geometry: SlideGeometry
       readonly alone: Selection | null
+      readonly selected: Selection
+      copies: Copies | null
+      copying: boolean
       moved: boolean
     }
   | {
@@ -131,7 +134,7 @@ export function useCanvasPointer(args: PointerArgs) {
     view: scene.Scene,
   ) => hitChain(geometry.roots, toSlide(event), 4.5 / latest.current.scale, (id) => lockedIn(view, id))
 
-  type Evaluated = Pick<Preview, "writes" | "guides" | "label">
+  type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: Copies | null }
 
   function evaluate(
     gesture: Extract<Active, { kind: "move" | "transform" }>,
@@ -150,9 +153,16 @@ export function useCanvasPointer(args: PointerArgs) {
         scale: a.scale,
         size: a.size,
       })
-      return { writes: moved.writes, guides: moved.guides, label: null }
+      if (!event.altKey) return { writes: moved.writes, guides: moved.guides, label: null, copies: null }
+      gesture.copies ??= duplicateWrites(gesture.view, gesture.ids, a.client.mint)
+      return {
+        writes: copiedMove(gesture.copies, moved.writes),
+        guides: moved.guides,
+        label: null,
+        copies: gesture.copies,
+      }
     }
-    return transformedBy({
+    const transformed = transformedBy({
       view: gesture.view,
       geometry: gesture.geometry,
       ids: gesture.ids,
@@ -166,6 +176,7 @@ export function useCanvasPointer(args: PointerArgs) {
       scale: a.scale,
       size: a.size,
     })
+    return { ...transformed, copies: null }
   }
 
   function advance(event: PointerEvent | ReactPointerEvent) {
@@ -185,7 +196,14 @@ export function useCanvasPointer(args: PointerArgs) {
     gesture.moved = true
     if (gesture.kind === "move" || gesture.kind === "transform") {
       const done = evaluate(gesture, event)
-      a.setPreview(done.writes.length === 0 ? null : { ...done, kind: gesture.kind })
+      if (gesture.kind === "move" && (done.copies !== null) !== gesture.copying) {
+        gesture.copying = done.copies !== null
+        a.onSelection(
+          done.copies === null ? gesture.selected : { ids: done.copies.roots, inside: gesture.selected.inside },
+        )
+      }
+      const { copies: _copies, ...preview } = done
+      a.setPreview(done.writes.length === 0 ? null : { ...preview, kind: gesture.kind })
       return
     }
     if (gesture.kind === "draw") {
@@ -248,6 +266,7 @@ export function useCanvasPointer(args: PointerArgs) {
       })
       return
     }
+    if (gesture?.kind === "move" && gesture.copying && !commit) a.onSelection(gesture.selected)
     if (gesture === null || (gesture.kind !== "move" && gesture.kind !== "transform") || !commit || last === null)
       return
     const at = toSlide(last)
@@ -257,6 +276,13 @@ export function useCanvasPointer(args: PointerArgs) {
       return
     }
     const done = evaluate(gesture, last)
+    if (gesture.kind === "move") {
+      const copies = done.copies
+      if (gesture.copying !== (copies !== null))
+        a.onSelection(copies === null ? gesture.selected : { ids: copies.roots, inside: gesture.selected.inside })
+      if (done.writes.length > 0 && !a.client.push(done.writes).ok && copies !== null) a.onSelection(gesture.selected)
+      return
+    }
     if (done.writes.length > 0) a.client.push(done.writes)
   }
 
@@ -311,7 +337,18 @@ export function useCanvasPointer(args: PointerArgs) {
       const next = held ? a.selection : picked(chain, a.selection, { shift: event.shiftKey, deep })
       if (!held) a.onSelection(next)
       const alone = held && a.selection.ids.length > 1 ? picked(chain, a.selection, { shift: false, deep }) : null
-      active.current = { kind: "move", origin, ids: next.ids, view: a.view, geometry: a.geometry, alone, moved: false }
+      active.current = {
+        kind: "move",
+        origin,
+        ids: next.ids,
+        view: a.view,
+        geometry: a.geometry,
+        alone,
+        selected: next,
+        copies: null,
+        copying: false,
+        moved: false,
+      }
     },
     double(event: ReactMouseEvent<HTMLElement>) {
       const a = latest.current
@@ -324,7 +361,7 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const leaf = chain[chain.length - 1]!
-      if (propOf(a.view.nodes.get(leaf.id), "text") !== undefined) {
+      if (holdsText(a.view, leaf.id)) {
         a.onSelection({ ids: [leaf.id], inside: a.selection.inside })
         a.onTextEdit(leaf.id, { x: event.clientX, y: event.clientY })
       }
