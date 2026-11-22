@@ -2,7 +2,8 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import { doom } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 
-import { callTool, emptyLog, memoryDecks, type DeckHost, type Session, type ToolResult } from "./index.js"
+import { callTool, emptyLog, type DeckHost, type Session, type ToolResult } from "./index.js"
+import { memoryDecks } from "./memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 const logo = "https://images.example.com/logo.png"

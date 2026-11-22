@@ -70,8 +70,8 @@ export type Effect =
     }
   | { readonly kind: "layerBlur" | "backgroundBlur"; readonly radius: Px }
 
-export const px = (min = -1_000_000, max = 1_000_000) => finite(min, max)
-export const size = px(0)
+export const px = (min = -1_000_000, max = 1_000_000): Reader<Px> => finite(min, max)
+export const size: Reader<Px> = px(0)
 
 export const readHex: Reader<Hex> = (raw) => matching(/^#[0-9a-fA-F]{6}$/, 7)(raw).toLowerCase() as Hex
 
@@ -80,7 +80,7 @@ export const readColor: Reader<Color> = oneOf<Color>(
   object({ var: literal(colorVars) }, { tint: finite(-1, 1) }),
 )
 
-export const readSides = object({ t: size, r: size, b: size, l: size })
+export const readSides: Reader<Sides> = object({ t: size, r: size, b: size, l: size })
 
 const fraction = finite(0, 1)
 const filter = finite(-1, 1)
@@ -121,5 +121,5 @@ export const readEffect: Reader<Effect> = variant("kind", {
   backgroundBlur: blur,
 })
 
-export const readEffectList = list(readEffect, 8)
-export const readCount = integer(0, 1_000_000)
+export const readEffectList: Reader<readonly Effect[]> = list(readEffect, 8)
+export const readCount: Reader<number> = integer(0, 1_000_000)

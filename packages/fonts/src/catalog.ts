@@ -8,7 +8,7 @@ export type FontFamily = {
   readonly notice: string
 }
 
-export const fontRevision = catalog.revision
+export const fontRevision: string = catalog.revision
 export const fontCatalog: readonly FontFamily[] = [
   ...catalog.families,
   {

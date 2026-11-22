@@ -10,4 +10,4 @@ export function resolveFont(name: string): FontFamily | undefined {
   return catalogFamily(twin ?? name) ?? (face === undefined ? undefined : catalogFamily(face.family))
 }
 
-export const fontNames = fontCatalog.map((font) => font.family)
+export const fontNames: readonly string[] = fontCatalog.map((font) => font.family)

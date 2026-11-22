@@ -2,7 +2,8 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import { doom } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 
-import { emptyLog, memoryDecks, callTool, type MemoryDecks, type Session, type ToolResult } from "./index.js"
+import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
+import { memoryDecks, type MemoryDecks } from "./memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
