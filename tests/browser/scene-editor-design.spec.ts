@@ -15,7 +15,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { test } from "./api-stack"
 import { typeColor } from "./design-panel"
-import { hexes } from "./scene-editor-design-art"
+import { hexes, neutralColorNames } from "./scene-editor-design-art"
 import { accent, clickSlide, landNodes, openSceneEditor, savedNode, selectedIds, spot, type Opened } from "./scene-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -132,7 +132,7 @@ test("with nothing selected the panel is the old slide panel: the head, template
   await background.getByRole("button", { name: fillWords.solid, exact: true }).click()
   await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.kind).toBe("solid")
   await background.getByRole("button", { name: /^Background color/ }).click()
-  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent3, exact: true }).first().click()
+  await page.getByRole("button", { name: neutralColorNames.accent3, exact: true }).first().click()
   await page.keyboard.press("Escape")
   await expect
     .poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.color)
@@ -160,7 +160,7 @@ test("template style opens the deck's theme: a colour writes the theme and Undo 
   await expect(dialog).toBeVisible()
   await typeColor(
     page,
-    dialog.getByRole("button", { name: sceneEditorCopy.colorNames.accent1, exact: true }),
+    dialog.getByRole("button", { name: neutralColorNames.accent1, exact: true }),
     colorCopy.hexName("1f4e79"),
   )
   await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(hexes.navy)
@@ -205,7 +205,7 @@ test("a text layer shows the old Text section and each control writes its spans,
   await expect.poll(async () => (await read()).spans[0]?.font).toBe("Georgia")
 
   await section(page, fillCopy.section).getByRole("button", { name: /Text/ }).click()
-  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent2, exact: true }).first().click()
+  await page.getByRole("button", { name: neutralColorNames.accent2, exact: true }).first().click()
   await page.keyboard.press("Escape")
   await expect.poll(async () => (await read()).spans[0]?.color).toEqual({ var: "accent2" })
 
@@ -281,7 +281,7 @@ test("a shape shows fill, opacity, corners, border and shadow like the old panel
   const colors = section(page, selectionColorsCopy.section)
   await expect(colors.locator("[data-selection-colors] > div")).toHaveCount(1)
   await colors.locator("[data-selection-colors] > div").first().getByRole("button").first().click()
-  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent4, exact: true }).first().click()
+  await page.getByRole("button", { name: neutralColorNames.accent4, exact: true }).first().click()
   await page.keyboard.press("Escape")
   await expect.poll(async () => (await read()).strokes[0].color).toEqual({ var: "accent4" })
 

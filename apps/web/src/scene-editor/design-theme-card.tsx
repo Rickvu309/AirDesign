@@ -4,7 +4,6 @@ import { schemeNames } from "@airdesign/document"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { designCopy } from "@/copy/design-copy"
-import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { arrange } from "@/design/panel-arrangement"
 import { ColorPicker } from "@/design/color-picker"
 import { DesignSection, SectionStrips } from "@/editor/design-panel"
@@ -13,6 +12,7 @@ import { TemplateStyleFace } from "@/editor/template-style-card"
 import { oldControl } from "./design-controls"
 import { slotOfVar } from "./design-values"
 import { swatchesOf } from "./design-palette"
+import { templateNameOf } from "./design-template-name"
 import { themeColorWrites } from "./chart-theme-writes"
 import type { EditorClient } from "./use-scene-deck"
 
@@ -26,8 +26,9 @@ export function SceneThemeCard(props: {
   const { client, view, theme } = props
   const [editing, setEditing] = useState(false)
   const swatches = swatchesOf(theme)
+  const templateName = templateNameOf(theme)
   const face = {
-    name: null,
+    name: templateName,
     major: theme.fonts.heading,
     minor: theme.fonts.body,
     swatches: swatches.filter((swatch) => (schemeNames as readonly string[]).includes(swatch.scheme)),
@@ -71,15 +72,17 @@ export function SceneThemeCard(props: {
       </div>
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent data-template-style-dialog>
-          <DialogTitle className="min-w-0 flex-1 truncate">{designCopy.currentTemplateStyle}</DialogTitle>
+          <DialogTitle className="min-w-0 flex-1 truncate">
+            {templateName ?? designCopy.currentTemplateStyle}
+          </DialogTitle>
           <DialogDescription>{designCopy.templateScope}</DialogDescription>
           <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
             <section className="flex flex-col gap-3">
               <h3 className="font-medium">{designCopy.templateColors}</h3>
               <div className="grid grid-cols-6 gap-2">
-                {(Object.keys(slotOfVar) as scene.ColorVar[]).map((name) => {
+                {(Object.keys(slotOfVar) as scene.ColorVar[]).map((name, at) => {
                   const hex = theme.colors[name]
-                  const label = sceneEditorCopy.colorNames[name]
+                  const label = swatches[at]?.name ?? name
                   return (
                     <ColorPicker
                       key={name}

@@ -1,5 +1,4 @@
 import type { OrderKey, scene } from "@airdesign/document"
-import { shapeFill, shapeStroke } from "@/editor/tool-panels-art"
 import type { Point } from "./slide-geometry"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
@@ -26,8 +25,8 @@ const isLine = (kind: Drawn) => kind === "line" || kind === "arrow"
 
 const solid = (color: scene.Color): scene.Paint => ({ kind: "solid", color })
 const themed = (color: scene.ColorVar): scene.Paint => solid({ var: color })
-const blue = solid(shapeFill.toLowerCase() as scene.Hex)
-const edge = solid(shapeStroke.toLowerCase() as scene.Hex)
+const quiet = solid({ var: "background2", tint: -0.06 })
+const ink = themed("text")
 const upright = { rotation: 0, flipH: false, flipV: false } as const
 const plainStroke: scene.StrokeStyle = { weight: 4, align: "center", dash: "solid" }
 
@@ -98,7 +97,7 @@ export function drawWrites(drawing: Drawing): readonly scene.Write[] {
           arrows: kind === "arrow" ? ["none", "arrow"] : ["none", "none"],
         },
       },
-      { node: id, prop: "strokes", value: [edge] },
+      { node: id, prop: "strokes", value: [ink] },
       { node: id, prop: "stroke", value: plainStroke },
     ]
   }
@@ -123,9 +122,7 @@ export function drawWrites(drawing: Drawing): readonly scene.Write[] {
             ? { kind: "preset", name: kind.slice("preset:".length) }
             : { kind: "rect" },
     },
-    { node: id, prop: "fills", value: [blue] },
-    { node: id, prop: "strokes", value: [edge] },
-    { node: id, prop: "stroke", value: { weight: 2, align: "inside", dash: "solid" } },
+    { node: id, prop: "fills", value: [quiet] },
   ]
 }
 

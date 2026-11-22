@@ -19,8 +19,8 @@ const neutralStyles = {
   heading: { size: 40, font: "heading", weight: 400, lineHeight: 1.1, tracking: 0 },
   body: { size: 32, font: "body", weight: 400, lineHeight: 1.25, tracking: 0 },
   body2: { size: 28, font: "body", weight: 400, lineHeight: 1.25, tracking: 0 },
-  caption: { size: 22, font: "body", weight: 400, lineHeight: 1.2, tracking: 0 },
-  label: { size: 20, font: "heading", weight: 400, lineHeight: 1.2, tracking: 2 },
+  caption: { size: 24, font: "body", weight: 400, lineHeight: 1.2, tracking: 0 },
+  label: { size: 24, font: "heading", weight: 400, lineHeight: 1.2, tracking: 2 },
 } as const
 
 const shadow = (y: number, blur: number) => ({ kind: "dropShadow", color: { var: "text" }, x: 0, y, blur, spread: 0 })
@@ -75,7 +75,7 @@ export function startEdit(): scene.Edit {
       ...create(title, "shape", first_),
       { node: title, prop: "name", value: "Title" },
       { node: title, prop: "role", value: "title" },
-      { node: title, prop: "box", value: { x: 160, y: 380, w: 1600, h: 160, rotation: 0, flipH: false, flipV: false } },
+      { node: title, prop: "box", value: { x: 160, y: 240, w: 1600, h: 300, rotation: 0, flipH: false, flipV: false } },
       {
         node: title,
         prop: "text",
@@ -83,9 +83,9 @@ export function startEdit(): scene.Edit {
           chars: "Untitled",
           spans: [],
           paras: [{}],
-          style: "title",
-          resize: "height",
-          alignV: "top",
+          style: "bigNumber",
+          resize: "fixed",
+          alignV: "bottom",
         },
       },
     ],

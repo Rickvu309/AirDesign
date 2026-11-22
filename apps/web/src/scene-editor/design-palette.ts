@@ -1,16 +1,20 @@
 import type { scene } from "@airdesign/document"
 import type { Palette, Swatch } from "@/design/color-choices"
-import { sceneEditorCopy } from "@/copy/scene-editor-copy"
+import { namedByColor } from "@/design/color-names"
 import { propOf } from "./node-props"
 import { slotOfVar } from "./design-values"
 
 export function swatchesOf(theme: scene.Theme): readonly Swatch[] {
-  return (Object.keys(slotOfVar) as scene.ColorVar[]).map((name) => ({
-    scheme: slotOfVar[name] as Swatch["scheme"],
-    css: theme.colors[name].toUpperCase(),
-    name: sceneEditorCopy.colorNames[name],
-  }))
+  return namedByColor(
+    (Object.keys(slotOfVar) as scene.ColorVar[]).map((name) => ({
+      scheme: slotOfVar[name] as Swatch["scheme"],
+      css: theme.colors[name].toUpperCase(),
+    })),
+  )
 }
+
+export const colorNameOf = (theme: scene.Theme, name: scene.ColorVar): string =>
+  swatchesOf(theme)[Object.keys(slotOfVar).indexOf(name)]?.name ?? name
 
 function literalHexes(paints: readonly scene.Paint[] | undefined): readonly string[] {
   return (paints ?? []).flatMap((paint) => {

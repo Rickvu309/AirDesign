@@ -1,5 +1,4 @@
 import { expect, type Page } from "@playwright/test"
-import { shapeFill } from "../../apps/web/src/editor/tool-panels-art"
 import { sceneEditorCopy } from "../../apps/web/src/copy/scene-editor-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
@@ -40,7 +39,7 @@ test("R draws a rectangle where it is dragged, Shift keeps it square, and the to
   await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("rect")
   const made = (await picked(page, stack, opened)).node!
   expect(near(made.box.x, 300) && near(made.box.y, 640) && near(made.box.w, 400) && near(made.box.h, 260)).toBe(true)
-  expect(made.fills).toEqual([{ kind: "solid", color: shapeFill.toLowerCase() }])
+  expect(made.fills).toEqual([{ kind: "solid", color: { var: "background2", tint: -0.06 } }])
 
   await page.keyboard.press("o")
   await page.keyboard.down(shortcutCopy.chord.other.shift)
@@ -178,7 +177,7 @@ test("the shape tray arms a preset shape and the Agent and Design switch stays o
   await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("preset")
   const star = (await picked(page, stack, opened)).node!
   expect(star.geometry).toMatchObject({ name: "star5" })
-  expect(star.fills).toEqual([{ kind: "solid", color: shapeFill.toLowerCase() }])
+  expect(star.fills).toEqual([{ kind: "solid", color: { var: "background2", tint: -0.06 } }])
   const agent = page.getByRole("button", { name: sceneEditorCopy.panelAgent })
   const design = page.getByRole("button", { name: sceneEditorCopy.panelDesign })
   await expect(agent).toHaveAttribute("aria-pressed", "true")

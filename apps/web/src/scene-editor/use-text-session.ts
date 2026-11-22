@@ -12,6 +12,7 @@ import {
   type Look,
   type Mark,
 } from "./text-edit"
+import { styleWrite } from "./design-text-values"
 import type { EditorClient } from "./use-scene-deck"
 
 export type Created = {
@@ -218,7 +219,7 @@ export function useTextSession(client: EditorClient, view: scene.Scene): TextSes
     },
     setStyle(style) {
       const now = ref.current
-      if (now !== null) change({ draft: { ...now.draft, style } })
+      if (now !== null) change({ draft: styleWrite(now.draft, style) })
     },
     select(anchor, focus) {
       const now = ref.current
