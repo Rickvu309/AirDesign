@@ -5,7 +5,8 @@ import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { CanvasTools } from "./canvas-tools"
 import { EditorTopBar } from "./editor-top-bar"
 import { slidesOf } from "./node-props"
-import { SceneAgentPanel } from "./scene-agent-panel"
+import { ResizablePanel } from "@/editor/resizable-panel"
+import { AgentPanel } from "./agent-panel"
 import { SceneCanvas } from "./scene-canvas"
 import { noSelection, type Selection } from "./selection"
 import { SlideStrip } from "./slide-strip"
@@ -53,7 +54,9 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
           </div>
         </div>
       </div>
-      <SceneAgentPanel deck={id} client={client} />
+      <ResizablePanel panel="agent">
+        <AgentPanel deck={client} />
+      </ResizablePanel>
     </div>
   )
 }

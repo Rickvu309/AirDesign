@@ -1,7 +1,10 @@
 import { createSceneDeck, httpSceneRemote, openSceneDeck, type SceneDeck, type SceneRemote } from "@airdesign/live"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
-export type EditorClient = Pick<SceneDeck, "view" | "mint" | "push" | "undo" | "redo" | "undoRun" | "subscribe">
+export type EditorClient = Pick<
+  SceneDeck,
+  "deck" | "view" | "mint" | "push" | "undo" | "redo" | "undoRun" | "subscribe"
+>
 
 export type Opening =
   | { readonly status: "loading" }
