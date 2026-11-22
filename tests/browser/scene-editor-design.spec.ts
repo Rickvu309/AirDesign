@@ -1,8 +1,21 @@
-import { expect, type Page } from "@playwright/test"
+import { join } from "node:path"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { borderCopy, borderWords } from "../../apps/web/src/copy/border-copy"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
+import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { sceneEditorCopy } from "../../apps/web/src/copy/scene-editor-copy"
-import { sampleHexes } from "../../apps/web/src/scene-editor/panel-art"
+import { colorCopy } from "../../apps/web/src/copy/color-copy"
+import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
+import { formatCopy } from "../../apps/web/src/copy/format-copy"
+import { linkCopy } from "../../apps/web/src/copy/link-copy"
+import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { test } from "./api-stack"
+import { typeColor } from "./design-panel"
+import { hexes } from "./scene-editor-design-art"
 import { accent, clickSlide, landNodes, openSceneEditor, savedNode, selectedIds, spot, type Opened } from "./scene-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -10,182 +23,390 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 type Stack = Parameters<typeof savedNode>[0]
 type Saved = Record<string, any>
 
-const section = (page: Page, name: string) => page.locator(`[data-panel-section="${name}"]`)
 const saved = async (stack: Stack, opened: Opened, id: string) => (await savedNode(stack, opened, id)) as Saved
+const panel = (page: Page) => page.locator("[data-design-panel]")
+const section = (page: Page, title: string) => panel(page).locator(`[data-design-section="${title}"]`)
+const stage = (page: Page) => page.locator("[data-scene-stage]")
+const node = (page: Page, id: string) => page.locator(`[data-slide-box] [data-node="${id}"]`)
+const undo = (page: Page) => page.keyboard.press("ControlOrMeta+z")
 
-async function typeInto(page: Page, name: string, label: string, value: string) {
-  const field = section(page, name).getByLabel(label, { exact: true })
+async function typeInto(field: Locator, value: string) {
   await field.fill(value)
   await field.press("Tab")
 }
 
-async function openDesign(page: Page, context: Parameters<typeof openSceneEditor>[1], stack: Stack) {
+async function designing(page: Page, context: Parameters<typeof openSceneEditor>[1], stack: Stack) {
   const opened = await openSceneEditor(page, context, stack)
   await page.getByRole("button", { name: sceneEditorCopy.panelDesign, exact: true }).click()
+  await expect(panel(page)).toBeVisible()
   return opened
 }
 
+const words = (chars: string) => ({
+  chars,
+  spans: [],
+  paras: [{}],
+  style: "body",
+  resize: "fixed",
+  alignV: "top",
+})
+
 async function layers(page: Page, context: Parameters<typeof openSceneEditor>[1], stack: Stack) {
-  const opened = await openDesign(page, context, stack)
+  const opened = await designing(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:1",
       type: "shape",
       parent: opened.slide,
-      props: { name: "alpha", box: spot(100, 700, 200, 120), fills: accent },
+      props: { name: "Words", box: spot(100, 100, 700, 120), text: words("Quarterly review") },
     },
     {
       id: "t:2",
-      type: "frame",
+      type: "shape",
       parent: opened.slide,
-      props: { name: "beta", box: spot(600, 600, 500, 300), fills: accent },
+      props: {
+        name: "Card",
+        box: spot(100, 300, 400, 260),
+        geometry: { kind: "rect" },
+        fills: accent,
+        strokes: [{ kind: "solid", color: hexes.edge }],
+        stroke: { weight: 2, align: "inside", dash: "solid" },
+      },
     },
     {
       id: "t:3",
       type: "shape",
       parent: opened.slide,
-      props: { name: "gamma", box: spot(1300, 700, 200, 120), fills: accent },
+      props: {
+        name: "Photo",
+        box: spot(600, 300, 400, 260),
+        geometry: { kind: "rect" },
+        fills: [{ kind: "image", asset: "e".repeat(64), fit: "fill" }],
+      },
+    },
+    {
+      id: "t:4",
+      type: "frame",
+      parent: opened.slide,
+      props: {
+        name: "Panel",
+        box: spot(1100, 300, 600, 300),
+        fills: [{ kind: "solid", color: { var: "background2" } }],
+        layout: { mode: "row", gap: 16, padding: { t: 0, r: 0, b: 0, l: 0 }, align: "top-left" },
+      },
+    },
+    {
+      id: "t:5",
+      type: "frame",
+      parent: opened.slide,
+      props: {
+        name: sceneEditorCopy.chart,
+        box: spot(1100, 700, 600, 260),
+        chart: {
+          kind: "column",
+          categories: ["Q1", "Q2", "Q3"],
+          series: [{ name: "Revenue", values: [12, 19, 15] }],
+          labels: true,
+        },
+      },
     },
   ])
-  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(4)
+  await expect(node(page, "t:5")).toBeVisible()
   return opened
 }
 
-test("the panel's sections follow what is selected, and the position fields write the layer's box", async ({
+test("with nothing selected the panel is the old slide panel: the head, template style, a background that takes solid, gradient and a colour, and selection colours", async ({
   page,
   context,
   stack,
 }) => {
   const opened = await layers(page, context, stack)
-  await expect(page.locator("[data-design-panel]")).toBeVisible()
-  await expect(section(page, "slide-fill")).toBeVisible()
-  await clickSlide(page, 200, 760)
+  await expect(panel(page).getByText(designCopy.slide(1), { exact: true })).toBeVisible()
+  for (const title of [designCopy.templateStyle, designCopy.background, selectionColorsCopy.section])
+    await expect(section(page, title)).toBeVisible()
+  await expect(page.getByRole("tab", { name: transitionCopy.animate })).toHaveCount(0)
+
+  const background = section(page, designCopy.background)
+  await background.getByRole("button", { name: fillWords.gradient, exact: true }).click()
+  await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.kind).toBe("gradient")
+  await background.getByRole("button", { name: fillWords.solid, exact: true }).click()
+  await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.kind).toBe("solid")
+  await background.getByRole("button", { name: /^Background color/ }).click()
+  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent3, exact: true }).first().click()
+  await page.keyboard.press("Escape")
+  await expect
+    .poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.color)
+    .toEqual({ var: "accent3" })
+  await stage(page).click({ position: { x: 20, y: 20 } })
+  await undo(page)
+  await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.kind).toBe("solid")
+  await expect
+    .poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.color)
+    .not.toEqual({ var: "accent3" })
+  await page.reload()
+  await page.getByRole("button", { name: sceneEditorCopy.panelDesign, exact: true }).click()
+  await expect(section(page, designCopy.background)).toBeVisible()
+})
+
+test("template style opens the deck's theme: a colour writes the theme and Undo takes it back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await designing(page, context, stack)
+  const before = (await saved(stack, opened, "s:1")).theme.colors.accent1 as string
+  await section(page, designCopy.templateStyle).locator("[data-template-style]").click()
+  const dialog = page.locator("[data-template-style-dialog]")
+  await expect(dialog).toBeVisible()
+  await typeColor(
+    page,
+    dialog.getByRole("button", { name: sceneEditorCopy.colorNames.accent1, exact: true }),
+    colorCopy.hexName("1f4e79"),
+  )
+  await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(hexes.navy)
+  await page.keyboard.press("Escape")
+  await expect(dialog).toHaveCount(0)
+  await stage(page).click({ position: { x: 20, y: 20 } })
+  await undo(page)
+  await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(before)
+  expect(before).toMatch(/^#[0-9a-f]{6}$/)
+})
+
+test("a text layer shows the old Text section and each control writes its spans, undoes and survives a reload", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await layers(page, context, stack)
+  await clickSlide(page, 300, 160)
   expect(await selectedIds(page)).toEqual(["t:1"])
-  for (const name of ["box", "sizing", "appearance", "fills", "strokes", "effects"])
-    await expect(section(page, name)).toBeVisible()
-  await expect(section(page, "layout")).toHaveCount(0)
-  await typeInto(page, "box", sceneEditorCopy.fieldX, "340")
-  await typeInto(page, "box", sceneEditorCopy.fieldW, "420")
-  await expect
-    .poll(async () => (await saved(stack, opened, "t:1")).box)
-    .toMatchObject({ x: 340, y: 700, w: 420, h: 120 })
-  await typeInto(page, "box", sceneEditorCopy.fieldRotation, "30")
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).box.rotation).toBe(30)
+  const text = panel(page)
+  for (const title of [linkCopy.section, fillCopy.section, opacityCopy.section])
+    await expect(section(page, title)).toBeVisible()
+  const read = async () => (await saved(stack, opened, "t:1")).text
+
+  await typeInto(text.getByRole("textbox", { name: formatCopy.sizeGroup, exact: true }), "40")
+  await expect.poll(async () => (await read()).spans).toEqual([{ end: 16, size: 40 }])
+  await text.getByRole("button", { name: formatCopy.named.bold, exact: true }).click()
+  await expect.poll(async () => (await read()).spans[0]?.bold).toBe(true)
+  await text.getByRole("button", { name: formatCopy.named.italic, exact: true }).click()
+  await text.getByRole("button", { name: formatCopy.named.underline, exact: true }).click()
+  await text.getByRole("button", { name: formatCopy.named.strike, exact: true }).click()
+  await expect.poll(async () => (await read()).spans[0]).toMatchObject({ italic: true, underline: true, strike: true })
+  await text.locator("[data-segments]").first().getByRole("button").nth(1).click()
+  await expect.poll(async () => (await read()).paras[0]?.align).toBe("center")
+  await text.getByRole("button", { name: textWords["list.bullets"], exact: true }).click()
+  await expect.poll(async () => (await read()).paras[0]?.list).toBe("bullet")
+  await text.getByRole("button", { name: textWords.upper, exact: true }).click()
+  await expect.poll(async () => (await read()).spans[0]?.case).toBe("upper")
+  await typeInto(text.getByRole("textbox", { name: textCopy.lineHeight, exact: true }), "150")
+  await expect.poll(async () => (await read()).paras[0]?.lineHeight).toBe(1.5)
+  await typeInto(text.getByRole("textbox", { name: textCopy.font, exact: true }), "Georgia")
+  await expect.poll(async () => (await read()).spans[0]?.font).toBe("Georgia")
+
+  await section(page, fillCopy.section).getByRole("button", { name: /Text/ }).click()
+  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent2, exact: true }).first().click()
   await page.keyboard.press("Escape")
-  await page.locator("[data-scene-stage]").click({ position: { x: 40, y: 40 } })
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).box.rotation).toBe(0)
+  await expect.poll(async () => (await read()).spans[0]?.color).toEqual({ var: "accent2" })
+
+  await typeInto(section(page, linkCopy.section).getByRole("textbox"), "https://airdesign.app")
+  await expect.poll(async () => (await saved(stack, opened, "t:1")).link).toBe("https://airdesign.app")
+  await typeInto(
+    section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true }),
+    "60",
+  )
+  await expect.poll(async () => (await saved(stack, opened, "t:1")).opacity).toBe(0.6)
+
+  await stage(page).click({ position: { x: 20, y: 20 } })
+  await undo(page)
+  await expect.poll(async () => (await saved(stack, opened, "t:1")).opacity).toBeUndefined()
+  await page.reload()
+  await page.getByRole("button", { name: sceneEditorCopy.panelDesign, exact: true }).click()
+  await clickSlide(page, 300, 160)
+  await expect(panel(page).getByRole("button", { name: formatCopy.named.bold, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
 })
 
-test("fills take a theme colour first and a hex second, strokes add a weight, and opacity and radius write", async ({
+test("a shape shows fill, opacity, corners, border and shadow like the old panel, paints before the server answers, and each undoes", async ({
   page,
   context,
   stack,
 }) => {
   const opened = await layers(page, context, stack)
-  await clickSlide(page, 200, 760)
-  await section(page, "fills")
-    .getByRole("button", { name: `${sceneEditorCopy.fills} ${sceneEditorCopy.paintColor}` })
-    .click()
-  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent3, exact: true }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).fills[0].color).toEqual({ var: "accent3" })
-  await page.getByLabel(sceneEditorCopy.hexColor, { exact: true }).fill(sampleHexes.fill)
-  await page.getByRole("button", { name: sceneEditorCopy.applyHex }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).fills[0].color).toBe(sampleHexes.fill)
-  await page.keyboard.press("Escape")
-
-  await section(page, "strokes")
-    .getByRole("button", { name: `${sceneEditorCopy.addPaint} ${sceneEditorCopy.strokes}` })
-    .click()
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).strokes).toHaveLength(1)
-  await typeInto(page, "strokes", sceneEditorCopy.weight, "9")
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).stroke?.weight).toBe(9)
-  await section(page, "strokes").getByRole("button", { name: sceneEditorCopy.strokeOutside }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).stroke?.align).toBe("outside")
-
-  await typeInto(page, "appearance", sceneEditorCopy.opacity, "40")
-  await typeInto(page, "appearance", sceneEditorCopy.radius, "24")
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).opacity).toBe(0.4)
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).radius).toBe(24)
-  await section(page, "effects").getByRole("button", { name: sceneEditorCopy.effectLifted }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).effects).toBe("lifted")
-})
-
-test("a frame takes auto layout with a gap, and several layers share one edit", async ({ page, context, stack }) => {
-  const opened = await layers(page, context, stack)
-  await clickSlide(page, 800, 750)
+  await clickSlide(page, 300, 400)
   expect(await selectedIds(page)).toEqual(["t:2"])
-  await section(page, "layout").getByRole("button", { name: sceneEditorCopy.layoutRow }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:2")).layout?.mode).toBe("row")
-  await typeInto(page, "layout", sceneEditorCopy.gap, "24")
-  await expect.poll(async () => (await saved(stack, opened, "t:2")).layout?.gap).toBe(24)
-  await section(page, "appearance").getByRole("switch", { name: sceneEditorCopy.clip }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:2")).clip).toBe(true)
+  for (const title of [
+    fillCopy.section,
+    opacityCopy.section,
+    geometryCopy.corners,
+    designCopy.border,
+    designCopy.shadow,
+  ])
+    await expect(section(page, title)).toBeVisible()
+  const read = async () => saved(stack, opened, "t:2")
 
-  await clickSlide(page, 200, 760)
-  await page.keyboard.down(shortcutCopy.chord.other.shift)
-  await clickSlide(page, 1400, 760)
-  await page.keyboard.up(shortcutCopy.chord.other.shift)
-  await expect(section(page, "box")).toHaveCount(0)
-  await typeInto(page, "appearance", sceneEditorCopy.opacity, "50")
-  await expect.poll(async () => (await saved(stack, opened, "t:3")).opacity).toBe(0.5)
-  expect((await saved(stack, opened, "t:1")).opacity).toBe(0.5)
+  const release = await heldEdits(page)
+  await typeInto(
+    section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true }),
+    "30",
+  )
+  await expect.poll(() => node(page, "t:2").evaluate((each) => getComputedStyle(each).opacity)).toBe("0.3")
+  expect((await read()).opacity).toBeUndefined()
+  release()
+  await expect.poll(async () => (await read()).opacity).toBe(0.3)
+
+  const fill = section(page, fillCopy.section)
+  await fill.getByRole("button", { name: fillWords.gradient, exact: true }).click()
+  await expect.poll(async () => (await read()).fills[0].kind).toBe("gradient")
+  await fill.getByRole("button", { name: fillWords.solid, exact: true }).click()
+  await expect.poll(async () => (await read()).fills[0].kind).toBe("solid")
+  await fill.getByRole("button", { name: fillWords.none, exact: true }).click()
+  await expect.poll(async () => (await read()).fills).toBeUndefined()
+
+  await typeInto(
+    section(page, geometryCopy.corners).getByRole("textbox", { name: geometryCopy.corners, exact: true }),
+    "24",
+  )
+  await expect.poll(async () => (await read()).radius).toBe(24)
+  const border = section(page, designCopy.border)
+  await border.getByRole("button", { name: borderWords["border.dash"]!, exact: true }).click()
+  await expect.poll(async () => (await read()).stroke.dash).toBe("dash")
+  await typeInto(border.getByRole("textbox", { name: borderCopy.width, exact: true }), "6")
+  await expect.poll(async () => (await read()).stroke.weight).toBe(6)
+  await section(page, designCopy.shadow).locator("[data-segments] button").nth(2).click()
+  await expect.poll(async () => (await read()).effects).toHaveLength(1)
+
+  const colors = section(page, selectionColorsCopy.section)
+  await expect(colors.locator("[data-selection-colors] > div")).toHaveCount(1)
+  await colors.locator("[data-selection-colors] > div").first().getByRole("button").first().click()
+  await page.getByRole("button", { name: sceneEditorCopy.colorNames.accent4, exact: true }).first().click()
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await read()).strokes[0].color).toEqual({ var: "accent4" })
+
+  await stage(page).click({ position: { x: 20, y: 20 } })
+  await undo(page)
+  await expect.poll(async () => (await read()).strokes[0].color).toBe(hexes.edge)
+  await page.reload()
+  await page.getByRole("button", { name: sceneEditorCopy.panelDesign, exact: true }).click()
+  await clickSlide(page, 300, 400)
+  await expect(section(page, geometryCopy.corners).getByRole("textbox", { name: geometryCopy.corners })).toHaveValue(
+    "24",
+  )
 })
 
-test("text sets its named style and alignment, a chart edits its data and kind, and the slide has a background", async ({
+test("a picture and a frame get the old panel's fit, replace and remove-auto-layout, and a chart edits its data and kind", async ({
   page,
   context,
   stack,
 }) => {
-  const opened = await openDesign(page, context, stack)
-  await clickSlide(page, 600, 410)
-  await section(page, "text").getByRole("combobox", { name: sceneEditorCopy.textStyle }).click()
-  await page.getByRole("option", { name: sceneEditorCopy.textStyles.heading, exact: true }).click()
-  await section(page, "text").getByRole("button", { name: sceneEditorCopy.alignCenter }).click()
-  await expect
-    .poll(async () => (await saved(stack, opened, "s:4")).text)
-    .toMatchObject({ style: "heading", paras: [{ align: "center" }] })
+  const opened = await layers(page, context, stack)
+  await clickSlide(page, 800, 400)
+  expect(await selectedIds(page)).toEqual(["t:3"])
+  await expect(
+    section(page, fillCopy.section).getByRole("button", { name: fillWords.image, exact: true }),
+  ).toHaveAttribute("aria-pressed", "true")
+  const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy")
+  const { pictureWords } = await import("../../apps/web/src/copy/picture-panel-copy")
+  await expect(page.getByRole("button", { name: pictureCopy.replace, exact: true })).toBeVisible()
+  await section(page, fillCopy.section).getByRole("combobox").click()
+  await page.getByRole("option", { name: pictureWords.tile, exact: true }).click()
+  await expect.poll(async () => (await saved(stack, opened, "t:3")).fills[0].fit).toBe("tile")
 
-  await page.getByRole("button", { name: sceneEditorCopy.actions, exact: true }).click()
-  await page.getByRole("button", { name: sceneEditorCopy.chartKinds.column, exact: true }).click()
-  const [chart] = await selectedIds(page)
-  await expect(section(page, "chart")).toBeVisible()
+  await clickSlide(page, 1300, 400)
+  expect(await selectedIds(page)).toEqual(["t:4"])
+  await page.locator("[data-auto-layout]").getByRole("button", { name: designCopy.removeAutoLayout }).click()
+  await expect.poll(async () => (await saved(stack, opened, "t:4")).layout?.mode).toBe("none")
+
+  await clickSlide(page, 1300, 850)
+  expect(await selectedIds(page)).toEqual(["t:5"])
+  const chart = page.locator('[data-panel-section="chart"]')
+  await expect(chart).toBeVisible()
   await page.locator("[data-chart-data]").getByLabel("1", { exact: true }).first().fill("30")
   await page.locator("[data-chart-data]").getByLabel("1", { exact: true }).first().press("Tab")
-  await expect.poll(async () => (await saved(stack, opened, chart ?? "")).chart.series[0].values[0]).toBe(30)
+  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[0].values[0]).toBe(30)
   await page.getByRole("button", { name: sceneEditorCopy.addRow }).click()
-  await expect.poll(async () => (await saved(stack, opened, chart ?? "")).chart.categories.length).toBe(5)
-  await section(page, "chart").getByRole("combobox", { name: sceneEditorCopy.chartKind }).click()
+  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.categories.length).toBe(4)
+  await chart.getByRole("combobox", { name: sceneEditorCopy.chartKind }).click()
   await page.getByRole("option", { name: sceneEditorCopy.kinds.line, exact: true }).click()
-  await expect.poll(async () => (await saved(stack, opened, chart ?? "")).chart.kind).toBe("line")
-
-  await page.keyboard.press("Escape")
-  await page.locator("[data-scene-stage]").click({ position: { x: 20, y: 20 } })
-  await expect(section(page, "slide-fill")).toBeVisible()
-  await section(page, "slide-fill")
-    .getByRole("button", { name: `${sceneEditorCopy.addPaint} ${sceneEditorCopy.fills}` })
-    .click()
-  await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills).toHaveLength(1)
+  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("line")
+  await stage(page).click({ position: { x: 20, y: 20 } })
+  await undo(page)
+  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("column")
 })
 
-test("with nothing selected the panel shows the slide's fill and the deck's theme colours, and a hex writes the theme", async ({
+test("several layers share one panel: a shared edit writes each, and Align moves them to the selection's edge", async ({
   page,
   context,
   stack,
 }) => {
-  const opened = await openDesign(page, context, stack)
-  await expect(page.locator("[data-design-panel]")).toBeVisible()
-  await expect(section(page, "slide-fill")).toBeVisible()
-  await expect(section(page, "theme")).toBeVisible()
-  const accent = section(page, "theme").getByLabel(sceneEditorCopy.colorNames.accent1, { exact: true })
-  const first = await accent.inputValue()
-  expect(first).toMatch(/^#[0-9a-f]{6}$/)
-  await typeInto(page, "theme", sceneEditorCopy.colorNames.accent1, sampleHexes.theme)
-  await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(sampleHexes.theme)
-  await expect(accent).toHaveValue(sampleHexes.theme)
-  await typeInto(page, "theme", sceneEditorCopy.colorNames.accent1, "not a colour")
-  await expect(accent).toHaveValue(sampleHexes.theme)
-  await page.locator("[data-scene-stage]").click({ position: { x: 40, y: 40 } })
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(first)
+  const opened = await layers(page, context, stack)
+  await clickSlide(page, 300, 400)
+  await page.keyboard.down(shortcutCopy.chord.other.shift)
+  await clickSlide(page, 800, 400)
+  await page.keyboard.up(shortcutCopy.chord.other.shift)
+  await expect(panel(page).getByText(designCopy.selected(2), { exact: true })).toBeVisible()
+  await typeInto(
+    section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true }),
+    "50",
+  )
+  await expect.poll(async () => (await saved(stack, opened, "t:2")).opacity).toBe(0.5)
+  expect((await saved(stack, opened, "t:3")).opacity).toBe(0.5)
+  await panel(page)
+    .getByRole("button", { name: /align right/i })
+    .first()
+    .click()
+  await expect.poll(async () => (await saved(stack, opened, "t:2")).box.x).toBe(600)
+  expect((await saved(stack, opened, "t:3")).box.x).toBe(600)
+})
+
+async function heldEdits(page: Page): Promise<() => void> {
+  let release = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const { sceneRoutes } = await import("../../packages/catalog/src/index.ts")
+  await page.route(`**${sceneRoutes.edit.path}`, async (route) => {
+    await gate
+    await route.fallback()
+  })
+  return release
+}
+
+const pictureFile = join(process.cwd(), "scripts/pptx-fixtures/picture.png")
+
+test("an image fill is picked from a file for a shape, the slide background and a picture's replace, and shows in the panel", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await layers(page, context, stack)
+  const sha = /^[0-9a-f]{64}$/
+  const choose = async (open: () => Promise<void>) => {
+    const chooser = page.waitForEvent("filechooser")
+    await open()
+    await (await chooser).setFiles(pictureFile)
+  }
+
+  await clickSlide(page, 300, 400)
+  await choose(() =>
+    section(page, fillCopy.section).getByRole("button", { name: fillWords.image, exact: true }).click(),
+  )
+  await expect.poll(async () => (await saved(stack, opened, "t:2")).fills[0].asset).toMatch(sha)
+  await expect(page.locator("[data-picture-preview] img")).toBeVisible()
+  expect((await saved(stack, opened, "t:2")).fills[0].fit).toBe("fill")
+
+  await clickSlide(page, 800, 400)
+  const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy")
+  await choose(() => page.getByRole("button", { name: pictureCopy.replace, exact: true }).click())
+  await expect.poll(async () => (await saved(stack, opened, "t:3")).fills[0].asset).toMatch(sha)
+
+  await stage(page).click({ position: { x: 20, y: 20 } })
+  await choose(() =>
+    section(page, designCopy.background).getByRole("button", { name: fillWords.image, exact: true }).click(),
+  )
+  await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.asset).toMatch(sha)
+  await undo(page)
+  await expect.poll(async () => (await saved(stack, opened, opened.slide)).fills).toBeUndefined()
 })

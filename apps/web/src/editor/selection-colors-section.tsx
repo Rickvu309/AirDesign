@@ -20,8 +20,28 @@ export function SelectionColorsSection({
   onPick: (hex: string, color: Color) => void
   onSelect: (hex: string) => void
 }) {
+  return (
+    <SelectionColorRows
+      rows={selectionColors(sources, palette)}
+      palette={palette}
+      onPick={onPick}
+      onSelect={onSelect}
+    />
+  )
+}
+
+export function SelectionColorRows({
+  rows,
+  palette,
+  onPick,
+  onSelect,
+}: {
+  rows: readonly { readonly hex: string; readonly color: Color }[]
+  palette: Palette
+  onPick: (hex: string, color: Color) => void
+  onSelect: (hex: string) => void
+}) {
   const id = useId()
-  const rows = selectionColors(sources, palette)
   if (rows.length === 0) return null
   return (
     <DesignSection title={selectionColorsCopy.section}>

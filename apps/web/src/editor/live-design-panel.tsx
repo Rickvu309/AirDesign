@@ -7,6 +7,7 @@ import {
   shapeOf,
   takes,
   traits,
+  type Desc,
   type Paint,
   type ElementId,
   type ScopedElement,
@@ -434,19 +435,22 @@ function SlideChrome({ deck, mode, toneFor }: { deck: DesigningDeck; mode: Panel
   )
 }
 
-function SlideBackground({
+export function SlideBackground({
   shown,
   deck,
   onFill,
+  plainImage = false,
 }: {
-  shown: DesignShown
+  shown: Pick<DesignShown, "slide" | "background" | "fill" | "templateColors">
   deck: readonly string[]
   onFill: (paint: Paint) => void
+  plainImage?: boolean
 }) {
   const { background } = shown
   const named = useId()
   const desc = traits.fills.inputs.paint.desc
   const cases = desc.kind === "union" ? desc.cases : {}
+  const image: Record<string, Desc> = plainImage ? { image: { kind: "mark" } } : {}
   const base = resolveControl({
     trait: "fills",
     field: "paint",
@@ -454,7 +458,10 @@ function SlideBackground({
     desc: {
       kind: "union",
       plain: null,
-      cases: Object.fromEntries(Object.entries(cases).filter(([key]) => ["solid", "gradient", "image"].includes(key))),
+      cases: {
+        ...Object.fromEntries(Object.entries(cases).filter(([key]) => ["solid", "gradient", "image"].includes(key))),
+        ...image,
+      },
     },
     value: shown.fill ?? (background.value === undefined ? { image: null } : { solid: background.value }),
     mixed: false,

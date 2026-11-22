@@ -350,8 +350,6 @@
   "apps/web/src/scene-editor/create-writes.test.ts": 3.2,
   "apps/web/src/scene-editor/deck-writes.test.ts": 2.8,
   "apps/web/src/scene-editor/move-writes.test.ts": 3.6,
-  "apps/web/src/scene-editor/panel-model.test.ts": 2.3,
-  "apps/web/src/scene-editor/panel-writes.test.ts": 2.4,
   "apps/web/src/scene-editor/picture-writes.test.ts": 3.9,
   "apps/web/src/scene-editor/scene-agent-undo.test.ts": 4.3,
   "apps/web/src/scene-editor/selection.test.ts": 2.2,
