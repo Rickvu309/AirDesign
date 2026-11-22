@@ -5,6 +5,7 @@ import { decksOn } from "./deck-test"
 import { designing } from "./design-panel"
 import { holdDeviceStore } from "./device-store"
 import { shapeAt } from "./shape-fills"
+import { placeText } from "./text-place"
 
 function saveStatus(page: Page) {
   return page.locator("[data-save-status]").first()
@@ -72,4 +73,27 @@ test("a person who reloads before the device stored an inserted shape is asked f
   expect(await reloadAsked(page)).toEqual([])
   expect(await decksOn(page).ready()).toBe(deck)
   await expect(layers).toHaveCount(2)
+})
+
+test("a person who reloads before the device stored typed letters is asked first, and keeps every letter", async ({
+  page,
+}) => {
+  const deck = await decksOn(page).blank()
+  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await placeText(page, { x: 0.2, y: 0.3 })
+  await expect(texts).toHaveCount(1)
+  await expect(texts.first()).toBeFocused()
+  await page.keyboard.type("Added te")
+  await expect(saveStatus(page)).toHaveAttribute("data-save-status", "saved")
+  const release = await holdDeviceStore(page)
+  await page.keyboard.type("xt")
+  await expect(texts.first()).toHaveText("Added text")
+  expect(await decksOn(page).readiness()).toBeNull()
+  expect(await reloadAsked(page)).toEqual(["beforeunload"])
+  await expect(texts.first()).toHaveText("Added text")
+  await release()
+  await expect(saveStatus(page)).toHaveAttribute("data-save-status", "saved")
+  expect(await reloadAsked(page)).toEqual([])
+  expect(await decksOn(page).ready()).toBe(deck)
+  await expect(texts.first()).toHaveText("Added text")
 })

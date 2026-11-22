@@ -44,6 +44,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
   await page.keyboard.type("Added text", { delay: 20 })
   await expect(added).toHaveText("Added text")
+  await decks.ready()
   await page.reload()
   await decks.ready()
   await expect(texts).toHaveCount(2)
