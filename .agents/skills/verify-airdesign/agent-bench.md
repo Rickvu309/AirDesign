@@ -2,7 +2,7 @@
 
 `$V agent-bench` asks Aira, the shipped path (the browser loop, the server's model proxy and the same `/mcp` tools and limits an outside agent gets), to do deck tasks, and scores each trial with mechanical rules. No model judges a trial.
 
-It calls the real model with the owner's key, so a person or an agent runs it by hand. No check, `prove`, `ci` job or test runs it. Its own test, the `agent-bench-recorded` journey, plays recorded streams.
+It calls the real model with the owner's key, so a person or an agent runs it by hand. No check, `prove`, `ci` job or test runs it.
 
 ```sh
 $V agent-bench run --model-key-env ANTHROPIC_API_KEY                         # every task, 3 trials, Sonnet 5.5 at low

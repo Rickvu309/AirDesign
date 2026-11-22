@@ -13,7 +13,7 @@ export {
   readAgentChanges,
 } from "./agent-change.js"
 export { compileAgentChange } from "./agent-compile.js"
-export { type AgentEdit, type EditBy, compileAgentEdit } from "./agent-edit.js"
+export { type AgentEdit, type EditBy, compileAgentEdit, readingOf } from "./agent-edit.js"
 export { readForAgent } from "./agent-read.js"
 export { applyEdit } from "./apply-edit.js"
 export { foldToJson, readFold, readLanded } from "./fold-json.js"
@@ -79,5 +79,6 @@ export type {
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
 export { defaultTheme } from "./default-theme-art.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, sceneFromTree } from "./scene-tree.js"
-export { deckOf } from "./deck-of.js"
+export { deckName, deckOf } from "./deck-of.js"
+export { slidesOf } from "./scene-walk.js"
 export { type Face, type FaceNeeds, sceneFaces } from "./text-faces.js"

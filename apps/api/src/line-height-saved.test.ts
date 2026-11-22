@@ -15,7 +15,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { account, address, connected, deckOf, grant, startAgents, stores, type Account } from "./agents-drive.js"
+import { account, address, deckOf, startAgents, stores, type Account } from "./agents-drive.js"
 import { ask } from "./harness.js"
 
 type Saved = {
@@ -98,7 +98,7 @@ it("opens a deck the build before line height stored, shows each line height it 
   expect((await stored(deck)).import_index).toEqual(saved.index)
 })
 
-it("edits, undoes and applies a stored text style on that deck, reads an agent today's key, and answers an agent that still says lineSpacing", async () => {
+it("edits, undoes and applies a stored text style on that deck", async () => {
   const owner = await account()
   const deck = await plant(owner, saved.register, saved.index)
   const title = elementId("256.2")
@@ -128,35 +128,6 @@ it("edits, undoes and applies a stored text style on that deck, reads an agent t
   expect(await commit(owner, deck, rows)).toMatchObject({ ok: true })
   expect(shownText((await opened(owner, deck)).register, title)).toBe(old)
 
-  const agent = await connected({ authorization: `Bearer ${await grant(owner, "claude")}` })
-  const read = await agent.call("read_deck", { deck, slide: "256" })
-  const values = (read.body.elements as readonly { readonly value: string | null }[]).map(({ value }) => value ?? "")
-  expect(values.join("")).toContain('"lineHeight":')
-  expect(values.join("")).not.toContain("lineSpacing")
-  expect(JSON.stringify((await stored(deck)).register)).toContain("lineSpacing")
-  const styles = (
-    read.body.slides as readonly {
-      readonly textStyles?: readonly { readonly name: string; readonly fields: object }[]
-    }[]
-  ).flatMap((slide) => slide.textStyles ?? [])
-  const subtitle = styles.find((style) => style.name === "Subtitle")
-  expect(subtitle?.fields).toMatchObject({ lineHeight: 100_000 })
-  expect(JSON.stringify(styles)).not.toContain("lineSpacing")
-  const styled = await agent.call("edit_deck", {
-    deck,
-    base: read.body.revision,
-    changes: [{ op: "set", target: "256.6", text: { style: (subtitle as { readonly id?: string })?.id } }],
-  })
-  expect(styled.ok, styled.said).toBe(true)
-  const aliased = await agent.call("edit_deck", {
-    deck,
-    base: styled.body.revision,
-    changes: [{ op: "set", target: "257.2", text: { lineSpacing: 175 } }],
-  })
-  expect(aliased.ok, aliased.said).toBe(true)
-  const after = (await opened(owner, deck)).register
-  expect(lineHeights(after, elementId("256.6"))).toEqual([100_000])
-  expect(lineHeights(after, elementId("257.2"))).toEqual([175_000])
   expect((await stored(deck)).import_index).toEqual(saved.index)
 })
 

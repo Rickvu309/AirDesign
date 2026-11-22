@@ -89,32 +89,3 @@ test("the offline notice shows at rest with reduced motion", async ({ page, cont
   await goOffline(page, context)
   expect(await transitionOf(page, offlineWords)).toBe("none")
 })
-
-test("the notice after an undo that changed nothing shows at once", async ({ page, context, stack, decks }) => {
-  await page.emulateMedia({ reducedMotion: "no-preference" })
-  const cookie = await stack.signIn()
-  await signInBrowser(context, cookie)
-  await forward(page, stack)
-  const deck = await decks.open()
-  const text = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await text.dblclick()
-  await page.keyboard.press("ControlOrMeta+a")
-  await text.pressSequentially("Mine", { delay: 40 })
-  await page.keyboard.press("Escape")
-  await expect.poll(() => pendingRows(page)).toBe(0)
-  const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
-  const read = (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as {
-    elements: { node: string; version: number }[]
-  }
-  const readAt = read.elements.find((each) => each.node === "256.2")?.version
-  const changed = await stack.callTool(
-    "airdesign_edit_deck",
-    { deck, base, changes: [{ node: "256.2", readAt, value: '[{"from":0,"runs":[{"from":0,"text":"Agent"}]}]' }] },
-    cookie,
-  )
-  expect(changed).toMatchObject({ ok: true })
-  await expect(text).toHaveText("Agent")
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect(noticeOf(page, undoChangedWords)).toBeVisible()
-  expect(await transitionOf(page, undoChangedWords)).toBe("none")
-})

@@ -23,7 +23,7 @@ export { deckName, readDeckName } from "./deck-name.js"
 export { pointBox, pointSize, type PointBox, type PointSize } from "./agent-box.js"
 export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign } from "./agent-form.js"
 export { templateFontDesign } from "./template-font.js"
-export { closeIcons, iconNames, knownIcon } from "./icon-names.js"
+export { iconNames, knownIcon } from "./icon-names.js"
 export { webImage } from "./image-address.js"
 export { opacityWire } from "./opacity-wire.js"
 export { traitWire } from "./trait-wire.js"
@@ -101,8 +101,9 @@ export {
   type WireSet,
   type WireTemplateStyle,
 } from "./set-wire.js"
-export { groupOps, readGroupChange, type WireGroup } from "./group-wire.js"
-export { readDiagramChange, type PatternItem, type WireDiagram } from "./diagram-wire.js"
+export { type WireGroup } from "./group-wire.js"
+export { type PatternItem, type WireDiagram } from "./diagram-wire.js"
+export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
 export { readFindingsReport, type FindingsReport, type WireFinding } from "./findings-wire.js"
@@ -118,15 +119,7 @@ export { slideEditCommand, type WireSlide } from "./slide-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
 
-export {
-  layoutId,
-  readDeleteChange,
-  readSlideChange,
-  slideOps,
-  type SlideOp,
-  type WireDelete,
-  type WireSlideChange,
-} from "./slide-change-wire.js"
+export { layoutId, type SlideOp, type WireDelete, type WireSlideChange } from "./slide-change-wire.js"
 
 export { fontRoutes } from "@airdesign/fonts"
 

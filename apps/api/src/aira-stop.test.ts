@@ -359,29 +359,44 @@ describe("a stop the browser sends for its ask", () => {
 })
 
 describe("a stop that names the edit call it cut", () => {
-  async function landedEdit(account: Account, name: string, once: string) {
-    expect((await ask(main, "POST", "/decks/open", { deck: name }, account.cookie)).status).toBe(200)
-    const call = {
+  async function landedEdit(account: Account, once: string) {
+    const call = (name: string, args: unknown, named?: string) => ({
       jsonrpc: "2.0",
       id: 1,
       method: "tools/call",
-      params: {
-        name: "airdesign_edit_deck",
-        arguments: { deck: name, base: 0, changes: [{ node: "256.2", value: "Aira", readAt: 0 }] },
-        _meta: { "app.airdesign/once": once },
-      },
-    }
-    const answer = await ask(main, "POST", "/mcp", call, account.cookie, {
-      accept: "application/json, text/event-stream",
+      params: { name, arguments: args, ...(named === undefined ? {} : { _meta: { "app.airdesign/once": named } }) },
     })
+    const headers = { accept: "application/json, text/event-stream" }
+    const made = await ask(main, "POST", "/mcp", call("airdesign_create_deck", {}), account.cookie, headers)
+    const reply = made.text.startsWith("{")
+      ? made.text
+      : (made.text.split("\n").find((line) => line.startsWith("data: ")) ?? "").slice(6)
+    const created = (
+      JSON.parse(reply) as { result: { structuredContent: { deck: string; rev: number; slides: string[] } } }
+    ).result.structuredContent
+    const answer = await ask(
+      main,
+      "POST",
+      "/mcp",
+      call(
+        "airdesign_edit_deck",
+        {
+          deck: created.deck,
+          base: created.rev,
+          changes: [{ op: "add", kind: "text", slide: created.slides[0], text: "Aira" }],
+        },
+        once,
+      ),
+      account.cookie,
+      headers,
+    )
     expect(answer.text).toContain('"runId"')
-    return /"runId":"([^"]+)"/.exec(answer.text)?.[1]
+    return { deck: created.deck, runId: /"runId":"([^"]+)"/.exec(answer.text)?.[1] }
   }
 
   it("answers the run the call landed, so the browser can offer Undo for it", async () => {
     const account = await signIn()
-    const name = `stopdeck${randomBytes(4).toString("hex")}`
-    const runId = await landedEdit(account, name, "edit-1")
+    const { deck: name, runId } = await landedEdit(account, "edit-1")
     const answer = await ask(
       main,
       "POST",
@@ -396,8 +411,7 @@ describe("a stop that names the edit call it cut", () => {
   it("answers no run for a call that had not landed, and for a deck of another account", async () => {
     const account = await signIn()
     const other = await signIn()
-    const name = `stopdeck${randomBytes(4).toString("hex")}`
-    await landedEdit(account, name, "edit-1")
+    const { deck: name } = await landedEdit(account, "edit-1")
     const unsent = await ask(
       main,
       "POST",

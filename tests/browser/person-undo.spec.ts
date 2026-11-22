@@ -139,40 +139,6 @@ test("a person undoes a move, a text edit and a slide delete, redoes the move, a
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
 })
 
-test("an undo after an agent changed the same text changes nothing and says so", async ({
-  page,
-  context,
-  stack,
-  decks,
-}) => {
-  const cookie = await stack.signIn()
-  await signInBrowser(context, cookie)
-  await forward(page, stack)
-  const deck = await decks.open()
-  const text = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await text.dblclick()
-  await page.keyboard.press("ControlOrMeta+a")
-  await text.pressSequentially("Mine", { delay: 40 })
-  await page.keyboard.press("Escape")
-  await expect.poll(() => pendingRows(page)).toBe(0)
-  const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
-  const read = (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as {
-    elements: { node: string; version: number }[]
-  }
-  const readAt = read.elements.find((each) => each.node === "256.2")?.version
-  const changed = await stack.callTool(
-    "airdesign_edit_deck",
-    { deck, base, changes: [{ node: "256.2", readAt, value: '[{"from":0,"runs":[{"from":0,"text":"Agent"}]}]' }] },
-    cookie,
-  )
-  expect(changed).toMatchObject({ ok: true })
-  await expect(text).toHaveText("Agent")
-  await page.getByRole("button", { name: "Undo text edit" }).click()
-  await expect(page.getByText("Unable to undo. This changed after your edit, so it stays as it is.")).toBeVisible()
-  await expect(text).toHaveText("Agent")
-  await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
-})
-
 test("undoing a text edit paints the old text on the slide and its thumbnail without a reload", async ({
   page,
   context,

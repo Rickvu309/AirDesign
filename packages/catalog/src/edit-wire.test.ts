@@ -1,6 +1,6 @@
 import { decide, elementId, format, openRegister } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { deckRoutes, readAgentEdit, readCommit, readEdit, toolInputSchema } from "./index.js"
+import { deckRoutes, readAgentEdit, readCommit, readEdit } from "./index.js"
 
 const node = elementId("258.7")
 const box = { x: -914400, y: 0, cx: 1828800, cy: 457200 }
@@ -72,9 +72,6 @@ it("moves an agent's layer only in points, through op set, and refuses the box f
     changes: [{ op: "set", target: "258.7", box: { x: 72, w: 144 } }],
   })
   expect(moved.ok).toBe(true)
-  const schema = JSON.stringify(toolInputSchema("edit_deck"))
-  expect(schema).not.toContain('"const":"box"')
-  expect(schema).not.toContain("EMU")
 })
 
 it("decodes a stored register holding a box row and refuses a box row that holds text", () => {
@@ -94,10 +91,4 @@ it("decodes a stored register holding a box row and refuses a box row that holds
     const broken = { ...moved.register, elements: { ...moved.register.elements, [node]: { ...body, landed: [row] } } }
     expect(deckRoutes.open.result(answer(broken))).toEqual({ ok: false, refusal: "payload" })
   }
-})
-
-it("tells the agent a value may be a JSON text value, whose run format the server instructions give", () => {
-  const schema = JSON.stringify(toolInputSchema("edit_deck"))
-  expect(schema).toContain("Text to write: plain text, or a JSON text value when the file's text is one.")
-  expect(schema).not.toContain("A run may set bold")
 })

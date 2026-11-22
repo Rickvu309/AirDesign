@@ -12,7 +12,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { account, connected, deckOf, grant, startAgents, stores, address, type Account } from "./agents-drive.js"
+import { account, deckOf, startAgents, stores, address, type Account } from "./agents-drive.js"
 import { ask } from "./harness.js"
 
 type Row = { readonly v?: number; readonly patch?: Readonly<Record<string, unknown>> }
@@ -153,33 +153,4 @@ it("takes a person's border on that deck, undoes it to the old border, and lands
   })
   expect(after.import_index).toEqual(saved.index)
   expect(shown((await opened(owner, deck)).register, plan).border?.dash).toEqual({ set: "dot" })
-})
-
-it("answers an agent that still says line, refuses both names at once, and reads it every border under border", async () => {
-  const owner = await account()
-  const deck = await plant(owner)
-  const agent = await connected({ authorization: `Bearer ${await grant(owner, "claude")}` })
-  const read = await agent.call("read_deck", { deck, slide: "256" })
-  expect(read.ok, read.said).toBe(true)
-  const designs = (read.body.elements as readonly { readonly node: string; readonly design?: string }[]).map(
-    (element) => element.design ?? "",
-  )
-  expect(designs.join(" ")).toContain("border.width")
-  expect(designs.join(" ")).not.toContain("line.")
-  const aliased = await agent.call("edit_deck", {
-    deck,
-    base: read.body.revision,
-    changes: [{ op: "set", target: "256.5", line: { width: 6, dash: "dash" } }],
-  })
-  expect(aliased.ok, aliased.said).toBe(true)
-  const both = await agent.call("edit_deck", {
-    deck,
-    base: aliased.body.revision,
-    changes: [{ op: "set", target: "256.5", line: { width: 2 }, border: { width: 3 } }],
-  })
-  expect(both.ok).toBe(false)
-  expect(both.said).toContain("border.width")
-  const { register } = await opened(owner, deck)
-  expect(shown(register, "256.5").border).toMatchObject({ width: { set: 76_200 }, dash: { set: "dash" } })
-  expect(traits((await stored(deck)).register)).not.toContain("line")
 })

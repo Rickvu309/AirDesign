@@ -70,7 +70,6 @@ export {
   currentValue,
   decide,
   decideUndo,
-  editMissing,
   history,
   landedPatch,
   openRegister,
@@ -92,8 +91,6 @@ export { fitNewBox, fittedInside, pictureSize, placeNewBox } from "./box-placeme
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
 export type { AddChange } from "./add-change.js"
 export {
-  namedFields,
-  paintsBackdrop,
   planChange,
   registerScope,
   writtenField,
@@ -114,7 +111,7 @@ export {
   type Row,
   type TraitPatch,
 } from "./row.js"
-export { boxOnly, indexFacts, opacityFields, removable, takes } from "./element-takes.js"
+export { opacityFields, removable, takes } from "./element-takes.js"
 export {
   alphaKeys,
   type AlphaField,

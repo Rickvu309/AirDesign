@@ -1,8 +1,6 @@
 import { deckTemplates } from "@airdesign/templates"
 import { describe, expect, it } from "vitest"
-import * as z from "zod/v4"
-import { readSetChange, setChangeSchema } from "./set-wire.js"
-import { toolInputSchema } from "./index.js"
+import { readSetChange } from "./set-wire.js"
 
 const red = "FF0000"
 
@@ -44,26 +42,5 @@ describe("templateStyle.template wire form", () => {
       expect(read.field).toBe("templateStyle.template")
       for (const id of ids) expect(read.detail).toContain(id)
     }
-  })
-
-  it("advertises template on templateStyle with a description noting layouts and type scale stay", () => {
-    const setSchema = setChangeSchema()
-    const checkSet = z.fromJSONSchema(setSchema)
-    expect(
-      checkSet.safeParse({ op: "set", target: "deck.templateStyles", templateStyle: { template: "midnight" } }).success,
-    ).toBe(true)
-    const editCheck = z.fromJSONSchema(toolInputSchema("edit_deck"))
-    expect(
-      editCheck.safeParse({
-        deck: "d",
-        base: 0,
-        changes: [{ op: "set", target: "deck.templateStyles", templateStyle: { template: "midnight" } }],
-      }).success,
-    ).toBe(true)
-    const props = (setSchema.properties as Readonly<Record<string, Readonly<Record<string, unknown>>>>).templateStyle
-      ?.properties as Readonly<Record<string, Readonly<Record<string, unknown>>>> | undefined
-    const description = String(props?.template?.description ?? "")
-    expect(description.toLowerCase()).toContain("layout")
-    expect(description.toLowerCase()).toContain("type scale")
   })
 })

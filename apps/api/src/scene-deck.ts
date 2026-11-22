@@ -56,11 +56,6 @@ async function readStored(db: Sql, deck: DeckId): Promise<Stored | undefined> {
   return (await db.query<Stored>(readSql, [deck])).rows[0]
 }
 
-const nameOf = (fold: scene.Scene): string => {
-  for (const node of fold.nodes.values()) if (node.type === "deck") return node.name ?? ""
-  return ""
-}
-
 function answered(deck: DeckId, stored: Stored) {
   return { ok: true, deck, rev: stored.rev, fold: stored.fold } as const
 }
@@ -73,7 +68,7 @@ export async function createScene(db: Sql, parsed: { readonly deck: DeckId }, em
     await db.query(insertSql, [
       parsed.deck,
       email,
-      nameOf(started),
+      scene.deckName(started),
       1,
       JSON.stringify(scene.foldToJson(started)),
       edit.once,
@@ -111,7 +106,7 @@ export async function editScene(
         fold.rev,
         landed.once,
         JSON.stringify(read),
-        nameOf(next),
+        scene.deckName(next),
       ])
       if (wrote.rows.length > 0) return { ok: true, deck: parsed.deck, rev: landed.rev } as const
     } catch (error) {

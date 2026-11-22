@@ -157,6 +157,8 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
       const { Replay } = await import("../../apps/api/src/aira-replay.js")
       const { readSignInMail } = await import("../../apps/api/src/sign-in-mail.js")
       const { mcpRoutes, signInRoutes, accountRoutes } = await import("../../packages/catalog/src/index.ts")
+      const { readDeckPage } = await import("../../packages/engine/src/index.ts")
+      const { deckAccess, readSaved } = await import("../../apps/api/src/saved.js")
       const { LocalOriginalStore } = await import("../../apps/api/src/local-original-store.js")
       const originals = new LocalOriginalStore(Date.now, "https://original.test")
       const { allowance } = await import("../../packages/usage/src/index.ts")
@@ -213,7 +215,22 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
         hop: hop.origin,
         mcp: mcpRoutes.mcp.path,
         post,
-        callTool: toolCaller(origin, mcpRoutes.mcp.path),
+        async callTool(name, args, cookie) {
+          if (name !== "airdesign_read_deck") throw new Error(`${name} does not reach an element deck`)
+          const { deck: id, slide, cursor } = args as { deck: string; slide?: string; cursor?: string }
+          const found = await readSaved(deck, id)
+          const access = found === undefined ? undefined : deckAccess(found, owners.get(cookie) ?? "")
+          if (access?.ok !== true) return { ok: false }
+          const page = readDeckPage(
+            { id: id as never, revision: access.saved.revision, register: access.saved.register },
+            {
+              runId: null,
+              ...(slide === undefined ? {} : { slide }),
+              ...(cursor === undefined ? {} : { cursor }),
+            },
+          )
+          return JSON.parse(JSON.stringify(page)) as Record<string, unknown>
+        },
         async signIn() {
           const email = `person${randomBytes(4).toString("hex")}@example.com`
           expect((await post(signInRoutes.email.path, { email })).status).toBe(202)

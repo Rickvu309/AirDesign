@@ -89,11 +89,12 @@ describe("the schema an agent is shown", () => {
     })
   })
 
-  it("shows airdesign_edit_deck with no length caps, the cap on changes an agent can meet, and the colour form once", () => {
+  it("shows airdesign_edit_deck with no length caps, the cap on changes an agent can meet, and each colour and layer id once", () => {
     const shown = JSON.stringify(toolInputSchema("edit_deck"))
     expect(shown).not.toContain('"maxLength"')
     expect(shown).not.toContain('"minProperties"')
     expect(shown).toContain('"maxItems":100')
-    expect(shown.split(colorPattern.slice(0, 40)).length - 1).toBe(1)
+    expect(shown.split("accent[1-6]").length - 1).toBe(1)
+    expect(shown.split('"^[a-z0-9]{1,16}:[0-9]{1,12}$"').length - 1).toBe(1)
   })
 })

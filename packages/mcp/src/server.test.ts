@@ -1,77 +1,30 @@
-import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
-import { Client, InMemoryTransport, fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/client"
-import { decide, elementId, rootElement, version, type NodeRegister, type Register } from "@airdesign/document"
-import { openDeck, type Deck } from "@airdesign/engine"
+import { catalog, onceMeta, projectTools } from "@airdesign/catalog"
+import { bytesOf, scene } from "@airdesign/document"
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
-import { createServer, editNext, emptyLog, memoryTurns, type CallerLog, type Session } from "./index.js"
 
-function firstOf(register: Register): NodeRegister {
-  const body = register.elements[rootElement]
-  if (body === undefined) throw new Error("missing node")
-  return body
+import { createServer, emptyLog, memoryDecks, type Host, type Session } from "./index.js"
+
+function started(): scene.Scene {
+  return scene.sceneFromTree({
+    theme: scene.defaultTheme,
+    slides: [
+      {
+        name: "Title",
+        children: [
+          { type: "shape", name: "Title", props: { role: "title", text: scene.textFromMarkdown("Untitled", "title") } },
+        ],
+      },
+    ],
+  }).scene
 }
 
-function opened(): Deck {
-  const id = readDeckId("deck")
-  if (!id.ok) throw new Error(id.refusal)
-  return openDeck(id.deck)
+function sessionFor(): Session {
+  return { agent: "aira", mint: () => "minted", log: emptyLog(), now: 0 }
 }
 
-const node = elementId("258.7")
-
-function nodeBody(register: Register) {
-  const body = register.elements[node]
-  if (body === undefined) throw new Error("missing node")
-  return body
-}
-
-function running(): Deck {
-  const deck = opened()
-  const added = decide(deck.register, {
-    command: "add",
-    node,
-    floor: deck.register.floor,
-    route: deck.register.route,
-  })
-  if (added.decision !== "apply") throw new Error(added.code)
-  const started = decide(added.register, { command: "start", runId: "run", node })
-  if (started.decision !== "apply") throw new Error(started.code)
-  return { id: deck.id, revision: deck.revision, register: started.register }
-}
-
-function sessionFor(deck: Deck): Session {
-  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0, turns: memoryTurns() }
-}
-
-function held(deck: Deck, holder: { log: CallerLog }): Session {
-  return {
-    caller: { actor: "agent", runId: "run" },
-    deck,
-    get log() {
-      return holder.log
-    },
-    set log(value) {
-      holder.log = value
-    },
-    now: 0,
-    turns: memoryTurns(),
-  }
-}
-
-function utf8Size(text: string): number {
-  let size = 0
-  for (const symbol of text) {
-    const code = symbol.codePointAt(0) ?? 0
-    if (code <= 0x7f) size += 1
-    else if (code <= 0x7ff) size += 2
-    else if (code <= 0xffff) size += 3
-    else size += 4
-  }
-  return size
-}
-
-async function withClient(session: Session, use: (client: Client) => Promise<void>): Promise<void> {
-  const server = createServer(session)
+async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
+  const server = createServer(session, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
   await server.connect(serverTransport)
@@ -86,21 +39,25 @@ async function withClient(session: Session, use: (client: Client) => Promise<voi
 
 describe("createServer", () => {
   it("returns a new server on every call", () => {
-    const session = sessionFor(opened())
-    expect(createServer(session)).not.toBe(createServer(session))
+    const session = sessionFor()
+    expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
   })
 
-  it("lists tools within budget", async () => {
+  it("lists the five tools within 8,000 tokens, each as the catalog describes it", async () => {
     const projected = projectTools(catalog)
-    await withClient(sessionFor(opened()), async (client) => {
+    await withClient(sessionFor(), memoryDecks(started), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
       const { tools } = await client.listTools()
-      expect(tools.length).toBe(projected.length)
-      expect(tools.length).toBeLessThanOrEqual(20)
       expect(tools.map((tool) => tool.name)).toEqual(projected.map((tool) => tool.name))
+      expect(tools.map((tool) => tool.name)).toEqual([
+        "airdesign_create_deck",
+        "airdesign_edit_deck",
+        "airdesign_list_decks",
+        "airdesign_read_deck",
+        "airdesign_stop_run",
+      ])
       for (const [index, tool] of tools.entries()) {
-        const expected = projected[index]
-        if (expected === undefined) throw new Error("missing tool")
+        const expected = projected[index]!
         expect(tool.description).toBe(expected.description)
         expect(tool.annotations).toEqual({
           readOnlyHint: expected.readOnlyHint,
@@ -109,20 +66,20 @@ describe("createServer", () => {
           openWorldHint: expected.openWorldHint,
         })
       }
-      const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
-      if (edit === undefined) throw new Error("missing edit")
+      const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")!
       const schema = edit.inputSchema as {
-        properties?: { changes?: { items?: { anyOf?: readonly { required?: readonly string[] }[] } } }
+        required?: string[]
+        $defs?: { change?: { properties?: { op?: { enum?: string[] } } } }
       }
-      const changes = schema.properties?.changes?.items?.anyOf ?? []
-      expect(changes.map((change) => change.required)).toEqual([
-        expect.arrayContaining(["node", "readAt"]),
-        ["op", "target"],
-        ["op", "kind", "slide"],
-        ["op", "elements"],
-        ["op", "slide"],
-        ["op"],
-        ["op", "node"],
+      expect(schema.required).toEqual(["deck", "base", "changes"])
+      expect(schema.$defs?.change?.properties?.op?.enum).toEqual([
+        "add",
+        "set",
+        "move",
+        "wrap",
+        "unwrap",
+        "delete",
+        "slide",
       ])
       const advertised = tools.map((tool) => ({
         name: tool.name,
@@ -130,340 +87,137 @@ describe("createServer", () => {
         inputSchema: tool.inputSchema,
         annotations: tool.annotations,
       }))
-      const estimate = Math.ceil(utf8Size(JSON.stringify(advertised)) / 4)
-      expect(estimate).toBeLessThanOrEqual(8000)
-      const listed = await client.listTools()
-      expect(Math.ceil(utf8Size(JSON.stringify(listed)) / 4)).toBeLessThanOrEqual(8000)
+      expect(Math.ceil(bytesOf(JSON.stringify(advertised)) / 4)).toBeLessThanOrEqual(8000)
+      expect(Math.ceil(bytesOf(JSON.stringify(await client.listTools())) / 4)).toBeLessThanOrEqual(8000)
       expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })
   })
 
-  it("refuses an actor on the wire and leaves the deck", async () => {
-    const deck = running()
-    await withClient(sessionFor(deck), async (client) => {
-      const result = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }], actor: "person" },
-      })
-      expect(result.isError).toBe(true)
-      const answer = { ok: false, revision: 0, refusal: "field", elements: [] }
-      expect(result.content).toEqual([
-        { type: "text", text: editNext.field },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(result.structuredContent).toEqual(answer)
-      expect(deck.revision).toBe(0)
-      expect(firstOf(deck.register).landed).toEqual([])
-    })
-  })
-
-  it("advertises every shape each tool reader takes, and leaves to the reader the limits an agent never meets", async () => {
-    const change = { value: "21", node: "258.7", readAt: 0 }
-    const edit = { deck: "deck", base: 0, changes: [change] }
-    const inputs: unknown[] = [
-      null,
-      [],
-      "deck",
-      7,
-      {},
-      { deck: "deck" },
-      { deck: "bad id" },
-      { deck: 7 },
-      { deck: "deck", actor: "agent" },
-      { deck: "deck", runId: "run" },
-      { deck: "deck", runId: 7 },
-      { deck: "deck", runId: "bad id" },
-      { deck: "deck", runId: "run", extra: true },
-      edit,
-      { ...edit, extra: true },
-      { ...edit, deck: 7 },
-      { base: 0, changes: [change] },
-      { ...edit, base: -1 },
-      { ...edit, base: 0.5 },
-      { ...edit, changes: "21" },
-      { ...edit, changes: [] },
-      { ...edit, changes: Array.from({ length: 101 }, () => change) },
-      ...[
-        { ...change, value: 7 },
-        { ...change, value: "😀" },
-        { ...change, floor: "old" },
-        { ...change, floor: 7 },
-        { ...change, actor: "person" },
-        { ...change, node: "a" },
-        { ...change, node: "258.7\n" },
-        { ...change, readAt: -1 },
-        { ...change, readAt: 0.5 },
-      ].map((item) => ({ ...edit, changes: [item] })),
-    ]
-    const readerOnly: unknown[] = [
-      { ...edit, base: Number.MAX_SAFE_INTEGER + 1 },
-      { ...edit, changes: [{ ...change, value: "\u0000" }] },
-      { ...edit, changes: [{ ...change, value: "\ud800" }] },
-    ]
-    await withClient(sessionFor(opened()), async (client) => {
-      const { tools } = await client.listTools()
-      for (const tool of projectTools(catalog)) {
-        const advertised = tools.find((item) => item.name === tool.name)
-        if (advertised === undefined) throw new Error("missing tool")
-        const schema = fromJsonSchema(advertised.inputSchema as JsonSchemaType)
-        for (const input of inputs) {
-          const checked = await schema["~standard"].validate(input)
-          expect(!checked.issues?.length, `${tool.name}: ${JSON.stringify(input)}`).toBe(
-            catalog[tool.op].read(input).ok,
-          )
-        }
-        for (const input of readerOnly) {
-          const checked = await schema["~standard"].validate(input)
-          expect(catalog[tool.op].read(input).ok, `${tool.name}: ${JSON.stringify(input)}`).toBe(false)
-          if (tool.op === "edit_deck") expect(checked.issues?.length ?? 0, JSON.stringify(input)).toBe(0)
-        }
+  it("builds the board deck brief in six calls over the protocol", async () => {
+    const decks = memoryDecks(started)
+    await withClient(sessionFor(), decks, async (client) => {
+      const call = async (name: string, args: unknown) => {
+        const result = await client.callTool({ name: `airdesign_${name}`, arguments: args as Record<string, unknown> })
+        expect(result.isError, JSON.stringify(result.content)).not.toBe(true)
+        return result.structuredContent as Record<string, any>
       }
+      const made = await call("create_deck", { name: "Board" })
+      const deck = made.deck as string
+      const first = made.slides[0] as string
+      const slides = await call("edit_deck", {
+        deck,
+        base: made.rev,
+        changes: Array.from({ length: 4 }, () => ({ op: "slide", add: {} })),
+      })
+      const read = await call("read_deck", { deck })
+      const [, two, three, four, five] = read.slides as string[]
+      const filled = await call("edit_deck", {
+        deck,
+        base: slides.rev,
+        runId: slides.runId,
+        changes: [
+          { op: "add", kind: "text", slide: first, text: "Q3 board update", textStyle: "title" },
+          { op: "add", kind: "kpi", slide: two, items: [{ title: "Revenue", value: "$4.2M" }] },
+          {
+            op: "add",
+            kind: "chart",
+            slide: three,
+            chart: { kind: "bar", categories: ["Q1"], series: [{ name: "Plan", values: [3] }] },
+          },
+          {
+            op: "add",
+            kind: "cards",
+            slide: four,
+            items: [{ title: "Grow", icon: "trending-up", points: ["Enter two markets"] }],
+          },
+          {
+            op: "add",
+            kind: "frame",
+            slide: five,
+            rows: [
+              ["", "Q1"],
+              ["Product", "Beta"],
+            ],
+          },
+        ],
+      })
+      await call("stop_run", { deck, runId: filled.runId })
+      await call("read_deck", { deck })
     })
   })
 
-  it("returns our sentences and structured refusals for SDK validation failures", async () => {
-    const change = { value: "21", node: "258.7", readAt: 0 }
-    for (const [name, arguments_, refusal] of [
-      ["airdesign_edit_deck", { deck: "deck", base: 0, changes: [{ ...change, value: 7 }] }, "field"],
-      ["airdesign_edit_deck", { deck: "deck", base: 0, changes: "21" }, "batch"],
-      ["airdesign_edit_deck", { base: 0, changes: [change] }, "field"],
-      ["airdesign_stop_run", { deck: "deck", runId: 7 }, "field"],
-      ["airdesign_stop_run", { runId: "run" }, "field"],
-    ] as const) {
-      const session = sessionFor(opened())
-      const before = session.deck
-      await withClient(session, async (client) => {
-        const result = await client.callTool({ name, arguments: arguments_ })
-        const answer = { ok: false, revision: 0, refusal, elements: [] }
-        expect(result.isError).toBe(true)
-        expect(result.content).toEqual([
-          { type: "text", text: editNext[refusal] },
-          { type: "text", text: JSON.stringify(answer) },
-        ])
-        expect(result.structuredContent).toEqual(answer)
-        expect(session.deck).toBe(before)
-      })
+  it("takes the once an agent names in the call's meta, and refuses one in the wrong form", async () => {
+    const decks = memoryDecks(started)
+    await withClient(sessionFor(), decks, async (client) => {
+      const once = (value: unknown) => ({ _meta: { [onceMeta]: value } })
+      const first = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("make-1") })
+      const again = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("make-1") })
+      expect(again.structuredContent).toEqual(first.structuredContent)
+      expect(decks.decks.size).toBe(1)
+      const bad = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("not allowed!") })
+      expect(bad.isError).toBe(true)
+      expect(bad.structuredContent).toEqual({ ok: false, refusal: "field" })
+    })
+  })
+
+  it("answers a refusal as an error with the answer as its structured content", async () => {
+    await withClient(sessionFor(), memoryDecks(started), async (client) => {
+      const refused = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "nothere" } })
+      expect(refused.isError).toBe(true)
+      expect(refused.structuredContent).toEqual({ ok: false, refusal: "deck" })
+      expect(refused.content).toHaveLength(2)
+    })
+  })
+})
+
+describe("a host that admits each tool call", () => {
+  it("is asked for every call, and a refusal answers the host's text and changes nothing", async () => {
+    const decks = memoryDecks(started)
+    const asked: number[] = []
+    const text = "Thirty tool calls in five minutes. The next tool call can run in 12 seconds." as const
+    const host: Host = {
+      ...decks,
+      admit: async (seen) => {
+        asked.push(seen.now)
+        return asked.length === 1
+          ? { ok: true, log: emptyLog() }
+          : { ok: false, log: emptyLog(), text, resetsAt: 12_000 }
+      },
     }
-  })
-
-  it("lands an edit on the wire", async () => {
-    const before = running()
-    const caller = { actor: "agent" as const, runId: "run" }
-    const session: Session = { caller, deck: before, log: emptyLog(), now: 0, turns: memoryTurns() }
-    await withClient(session, async (client) => {
-      const first = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      })
-      expect(first.isError).not.toBe(true)
-      expect(session.deck).not.toBe(before)
-      expect(session.deck.revision).toBe(1)
-      expect(nodeBody(session.deck.register).landed).toEqual([
-        { actor: "agent", value: "21", visible: true, runId: "run" },
-      ])
-      expect(before.revision).toBe(0)
-      expect(nodeBody(before.register).landed).toEqual([])
-
-      const second = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: {
-          deck: "deck",
-          base: 1,
-          changes: [{ value: "22", node: "258.7", readAt: version(nodeBody(session.deck.register)) }],
-        },
-      })
-      expect(second.isError).not.toBe(true)
-      expect(session.deck.revision).toBe(2)
-      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22"])
-      expect(before.revision).toBe(0)
+    await withClient(sessionFor(), host, async (client) => {
+      const made = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      expect(made.isError).not.toBe(true)
+      const refused = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      expect(refused.isError).toBe(true)
+      expect(refused.content).toEqual([{ type: "text", text }])
     })
+    expect(asked).toEqual([0, 0])
+    expect(decks.decks.size).toBe(1)
   })
 
-  it("refuses the thirty-first tool call and leaves the deck", async () => {
-    const deck = running()
-    const session = sessionFor(deck)
-    await withClient(session, async (client) => {
+  it("answers a store refusal when the host cannot admit a call", async () => {
+    const decks = memoryDecks(started)
+    const host: Host = { ...decks, admit: () => Promise.reject(new Error("connect ECONNREFUSED")) }
+    await withClient(sessionFor(), host, async (client) => {
+      const refused = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      expect(refused.isError).toBe(true)
+      expect(refused.structuredContent).toEqual({ ok: false, refusal: "store" })
+    })
+    expect(decks.decks.size).toBe(0)
+  })
+
+  it("counts calls in the session's own log when the host does not admit", async () => {
+    const session = sessionFor()
+    await withClient(session, memoryDecks(started), async (client) => {
       for (let call = 0; call < 30; call += 1) {
-        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
-        expect(read.isError).toBeFalsy()
+        const listed = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+        expect(listed.isError).not.toBe(true)
       }
-      const refused = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      })
+      const refused = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
       expect(refused.isError).toBe(true)
       expect(refused.content).toEqual([
         { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds." },
       ])
-      expect(session.deck).toBe(deck)
-      expect(session.deck.revision).toBe(0)
-      expect(firstOf(session.deck.register).landed).toEqual([])
-      expect(session.log.events).toHaveLength(30)
-
-      session.now = 300_000
-      const landed = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      })
-      expect(landed.isError).not.toBe(true)
-      expect(session.deck).not.toBe(deck)
-      expect(session.deck.revision).toBe(1)
-      expect(nodeBody(session.deck.register).landed).toEqual([
-        { actor: "agent", value: "21", visible: true, runId: "run" },
-      ])
-      expect(deck.revision).toBe(0)
-      expect(session.log.events).toEqual([{ kind: "tool", at: 300_000 }])
-    })
-  })
-
-  it("lands an edit on a deck that no test started a run on", async () => {
-    const before = opened()
-    expect(firstOf(before.register).phase).toBe("idle")
-    const session = sessionFor(before)
-    await withClient(session, async (client) => {
-      const result = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      })
-      expect(result.isError).not.toBe(true)
-      const answer = { ok: true, revision: 1, runId: "run", elements: [{ node: "258.7", value: "21", version: 1 }] }
-      expect(result.content).toEqual([
-        { type: "text", text: "Landed revision 1." },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(result.structuredContent).toEqual(answer)
-      expect(session.deck.revision).toBe(1)
-      const body = nodeBody(session.deck.register)
-      expect(body.phase).toBe("running")
-      expect(body.runId).toBe("run")
-      expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "run" }])
-      expect(firstOf(before.register).phase).toBe("idle")
-      expect(firstOf(before.register).landed).toEqual([])
-    })
-  })
-
-  it("tells the agent the next step when an edit is stale", async () => {
-    const before = opened()
-    const session = sessionFor(before)
-    await withClient(session, async (client) => {
-      for (const [readAt, value] of [
-        [0, "21"],
-        [1, "22"],
-      ] as const) {
-        const landed = await client.callTool({
-          name: "airdesign_edit_deck",
-          arguments: { deck: "deck", base: readAt, changes: [{ value, node: "258.7", readAt }] },
-        })
-        expect(landed.isError).not.toBe(true)
-      }
-      const stale = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 2, changes: [{ value: "late", node: "258.7", readAt: 0 }] },
-      })
-      expect(stale.isError).toBe(true)
-      const block = { ok: false, revision: 2, refusal: "stale", elements: [{ node: "258.7", value: "22", version: 2 }] }
-      expect(stale.content).toEqual([
-        { type: "text", text: editNext.stale },
-        { type: "text", text: JSON.stringify(block) },
-      ])
-      expect(stale.structuredContent).toEqual(block)
-      expect(session.deck.revision).toBe(2)
-      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22"])
-      const sent = block.elements[0]
-      if (sent === undefined) throw new Error("missing element")
-      const resent = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: {
-          deck: "deck",
-          base: block.revision,
-          changes: [{ value: "late", node: sent.node, readAt: sent.version }],
-        },
-      })
-      expect(resent.isError).not.toBe(true)
-      expect(resent.structuredContent).toEqual({
-        ok: true,
-        revision: 3,
-        runId: "run",
-        elements: [{ node: "258.7", value: "late", version: 3 }],
-      })
-      expect(session.deck.revision).toBe(3)
-      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22", "late"])
-    })
-  })
-
-  it("lands two edits in a row, each at the version the previous answer carried", async () => {
-    const session = sessionFor(opened())
-    await withClient(session, async (client) => {
-      let readAt = 0
-      let base = 0
-      for (const value of ["21", "22"]) {
-        const result = await client.callTool({
-          name: "airdesign_edit_deck",
-          arguments: { deck: "deck", base, changes: [{ value, node: "258.7", readAt }] },
-        })
-        expect(result.isError).not.toBe(true)
-        const answer = result.structuredContent as { revision: number; elements: { version: number }[] }
-        expect(result.content.at(-1)).toEqual({ type: "text", text: JSON.stringify(answer) })
-        readAt = answer.elements[0]?.version ?? -1
-        base = answer.revision
-      }
-      expect(readAt).toBe(2)
-      expect(session.deck.revision).toBe(2)
-      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22"])
-    })
-  })
-
-  it("refuses the thirty-first tool call of one caller across two connections", async () => {
-    const holder: { log: CallerLog } = { log: emptyLog() }
-    const firstDeck = opened()
-    const secondDeck = opened()
-    const first = held(firstDeck, holder)
-    const second = held(secondDeck, holder)
-    await withClient(first, async (client) => {
-      for (let call = 0; call < 20; call += 1) {
-        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
-        expect(read.isError).toBeFalsy()
-      }
-    })
-    await withClient(second, async (client) => {
-      for (let call = 0; call < 10; call += 1) {
-        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
-        expect(read.isError).toBeFalsy()
-      }
-      const refused = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      })
-      expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([
-        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds." },
-      ])
-      expect(second.deck).toBe(secondDeck)
-      expect(firstOf(secondDeck.register).landed).toEqual([])
-    })
-    expect(holder.log.events).toHaveLength(30)
-    expect(firstOf(firstDeck.register).landed).toEqual([])
-  })
-
-  it("says when the limit resets in seconds", async () => {
-    const deck = running()
-    const session = sessionFor(deck)
-    await withClient(session, async (client) => {
-      for (let call = 0; call < 30; call += 1) {
-        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
-        expect(read.isError).toBeFalsy()
-      }
-      session.now = 298_501
-      const refused = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      })
-      expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([
-        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 2 seconds." },
-      ])
-      expect(session.deck).toBe(deck)
-      expect(firstOf(deck.register).landed).toEqual([])
     })
   })
 })

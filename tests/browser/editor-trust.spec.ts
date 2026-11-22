@@ -311,17 +311,3 @@ async function agentTypesOnOpenDeck(page: Page, stack: Stack, file: string | und
 function contextOf(page: Page): ReturnType<Page["context"]> {
   return page.context()
 }
-
-test("an open blank deck shows an agent's text once after a lost watch answer and a repeated one", async ({
-  page,
-  stack,
-}) => {
-  await agentTypesOnOpenDeck(page, stack, undefined, agentText)
-})
-
-test("an open doe-heat-pumps deck shows an agent's text once after a lost watch answer and a repeated one", async ({
-  page,
-  stack,
-}) => {
-  await agentTypesOnOpenDeck(page, stack, doe, `${agentText} on the deck`)
-})
