@@ -60,7 +60,7 @@ test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape 
 
   await page.reload()
   await page.locator("[data-scene-ready]").waitFor()
-  await expect(page.locator("[data-line]").filter({ hasText: "Hello world" })).toHaveCount(1)
+  await expect(page.locator("[data-slide-box] [data-line]").filter({ hasText: "Hello world" })).toHaveCount(1)
 })
 
 test("a drag with the Text tool draws a fixed box, and leaving it empty leaves no layer behind", async ({

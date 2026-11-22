@@ -100,3 +100,10 @@ export const selectedIds = (page: Page) =>
   page
     .locator("[data-selection-outline]")
     .evaluateAll((all) => all.map((each) => each.getAttribute("data-selection-outline")))
+
+export async function savedSlides(stack: Stack, opened: Opened): Promise<readonly string[]> {
+  const { sceneRoutes } = await catalog()
+  const answer = await stack.post(sceneRoutes.open.path, { deck: opened.deck }, opened.cookie)
+  const fold = scene.readFold(answer.json.fold)
+  return fold === undefined ? [] : scene.slidesOf(fold).map((slide) => slide.id)
+}

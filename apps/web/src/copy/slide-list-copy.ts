@@ -17,6 +17,7 @@ export const slideListCopy = {
   nothingSelected: "Nothing selected",
   entered: (number: number) => `Editing slide ${String(number)}. Tab moves through its layers`,
   newSlide: "New slide",
+  addSlide: "Add slide",
   lastSlide: "The last slide cannot be deleted.",
   slideLimit,
   addLimit: (limit: number) => `${slideLimit(limit)} Delete a slide to add another.`,

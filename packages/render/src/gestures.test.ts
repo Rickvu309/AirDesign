@@ -150,6 +150,19 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "]", code: "BracketRight" }, "slides")).toBeNull()
   })
 
+  it("adds a slide with Enter in the slide list and steps between slides with the up and down keys", () => {
+    expect(gestureFor({ ...plain, key: "Enter" }, "slides")).toBe("slide-add")
+    expect(gestureFor({ ...plain, key: "Enter", metaKey: true }, "slides")).toBeNull()
+    expect(gestureFor({ ...plain, key: "Enter" }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "ArrowUp" }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "ArrowUp" }, "slides")).toBe("slide-previous")
+    expect(gestureFor({ ...plain, key: "PageUp" }, "slides")).toBe("slide-previous")
+    expect(gestureFor({ ...plain, key: "ArrowDown" }, "slides")).toBe("slide-next")
+    expect(gestureFor({ ...plain, key: "PageDown" }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "ArrowUp" }, "element")).toBe("nudge")
+    expect(gestureFor({ ...plain, key: "ArrowUp", altKey: true }, "slides")).toBe("slide-up")
+  })
+
   it("toggles design mode with Shift+D and keeps the slide duplicate shortcut", () => {
     const key = { ...plain, key: "D", shiftKey: true }
     expect(gestureFor(key, "editor")).toBe("design-mode")
