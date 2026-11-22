@@ -215,6 +215,7 @@
     "scene-editor-transform.spec.ts": 10.7,
     "scene-editor-view.spec.ts": 1.9,
     "scene-editor.spec.ts": 3.2,
+    "scene-picture-wake.spec.ts": 7.1,
     "scene-slide-picture.spec.ts": 14.4,
     "section-names.spec.ts": 2.7,
     "settings-names.spec.ts": 4.7,

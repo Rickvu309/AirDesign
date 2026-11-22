@@ -117,6 +117,22 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
     }
   })
 
+  it("tells a tab that was between two catch-ups when an agent asked, in its next catch-up, once", async () => {
+    const { cookie, client, made } = await opened()
+    try {
+      const { rev, slides } = await keysOf(made.deck, cookie)
+      const reading = read(client, made.deck, { slide: slides[0] })
+      await new Promise((resolve) => setTimeout(resolve, 40))
+      const next = ask(base, "POST", "/scenes/since", { deck: made.deck, rev, wait: true }, cookie)
+      expect((await next).json).toEqual({ ok: true, deck: made.deck, rev, edits: [], pictures: true })
+      const told = ask(base, "POST", "/scenes/since", { deck: made.deck, rev, pictures: true }, cookie)
+      expect((await told).json).toEqual({ ok: true, deck: made.deck, rev, edits: [] })
+      await reading
+    } finally {
+      await client.close()
+    }
+  })
+
   it("waits a moment for a picture on its way, then says plainly there is none current", async () => {
     const { cookie, client, made } = await opened()
     try {

@@ -16,7 +16,7 @@ export type SceneRemote = {
   open(body: { readonly deck: string }): Promise<SceneOpened>
   edit(body: { readonly deck: string; readonly edit: scene.Edit }): Promise<SceneLanded>
   since(
-    body: { readonly deck: string; readonly rev: number; readonly wait?: boolean },
+    body: { readonly deck: string; readonly rev: number; readonly wait?: boolean; readonly pictures?: boolean },
     signal?: AbortSignal,
   ): Promise<SceneCaught>
   pictures?(body: {

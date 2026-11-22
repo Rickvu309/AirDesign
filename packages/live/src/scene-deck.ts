@@ -392,7 +392,10 @@ function connected(
     let wait = false
     while (!signal.aborted) {
       try {
-        const answer = await remote.since({ deck, rev: server.rev, wait }, signal)
+        const answer = await remote.since(
+          { deck, rev: server.rev, wait, ...(Date.now() < picturesUntil ? { pictures: true } : {}) },
+          signal,
+        )
         if (signal.aborted) return
         if (!answer.ok) {
           await pause(retryMilliseconds)

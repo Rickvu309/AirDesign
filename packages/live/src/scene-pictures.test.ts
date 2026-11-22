@@ -71,4 +71,39 @@ describe("a deck learns that an agent wants pictures from its held catch-up", ()
       spy.mockRestore()
     }
   })
+
+  it("says it is already painting for an agent in each catch-up until the window ends, so the server does not tell it again", async () => {
+    const bodies: { readonly wait?: boolean; readonly pictures?: boolean }[] = []
+    const base = memorySceneRemote(start)
+    const remote: SceneRemote = {
+      ...base,
+      since: async (body, signal) => {
+        bodies.push({
+          ...(body.wait === undefined ? {} : { wait: body.wait }),
+          ...("pictures" in body ? { pictures: body.pictures as boolean } : {}),
+        })
+        const caught = await base.since({ ...body, wait: false }, signal)
+        if (bodies.length === 2 && caught.ok) return { ...caught, pictures: true }
+        if (bodies.length >= 4)
+          await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }))
+        return caught
+      },
+    }
+    const now = 10_000
+    const spy = vi.spyOn(Date, "now").mockImplementation(() => now)
+    try {
+      const opened = await createSceneDeck(remote, "deck1", { storage: memoryStorage() })
+      if (!opened.ok) throw new Error("open")
+      const before = bodies.length
+      const stop = new AbortController()
+      const following = opened.deck.follow(stop.signal)
+      await vi.waitFor(() => expect(bodies.length).toBeGreaterThanOrEqual(before + 4))
+      const followed = bodies.slice(before)
+      expect(followed.map((body) => body.pictures === true)).toEqual([false, false, true, true])
+      stop.abort()
+      await following
+    } finally {
+      spy.mockRestore()
+    }
+  })
 })

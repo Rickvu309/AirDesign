@@ -47,6 +47,11 @@ export class DeckPictures {
     for (const each of woken) each()
   }
 
+  wanted(deck: DeckId): boolean {
+    const held = this.wanting.get(deck)
+    return held !== undefined && held.until > this.now()
+  }
+
   wantedAmong(deck: DeckId, slides: readonly SlideId[]): readonly SlideId[] {
     const held = this.wanting.get(deck)
     if (held === undefined || held.until <= this.now()) return []
