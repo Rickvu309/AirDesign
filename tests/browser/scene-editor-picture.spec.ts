@@ -116,6 +116,8 @@ test("a picture pasted from the clipboard lands centred, and a file that is not 
   await send(page, "paste", "notes.txt", "text/plain", [104, 105])
   await send(page, "drop", "notes.txt", "text/plain", [104, 105], { x: 400, y: 400 })
   await expect(pictures(page)).toHaveCount(0)
+  const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy.ts")
+  await expect(page.getByText(pictureCopy["picture-type"])).toBeVisible()
   await send(page, "paste", "picture.png", "image/png", [...(await readFile(pictureFile))])
   await expect(pictures(page)).toHaveCount(1)
   const shown = await pictureNode(page).boundingBox()
