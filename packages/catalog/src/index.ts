@@ -54,8 +54,6 @@ export {
 export {
   sceneRoutes,
   scenePaths,
-  readSceneEdit,
-  readSceneSince,
   type SceneCaught,
   type SceneLanded,
   type SceneOpened,
