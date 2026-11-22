@@ -294,6 +294,7 @@ export function SceneCanvas(props: {
       <div
         ref={stage}
         data-canvas-stage=""
+        data-focus-edge=""
         data-canvas-fit={zoom === "fit" ? "true" : "false"}
         data-scene-stage=""
         data-scene-ready={painted.ready ? props.deck : undefined}

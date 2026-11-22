@@ -52,6 +52,14 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   await expect(page.locator("[data-zoom-percent]")).toHaveCount(0)
 })
 
+test("the canvas draws no focus ring of its own after a key", async ({ page, context, stack }) => {
+  await openSceneEditor(page, context, stack)
+  await page.locator("[data-scene-stage]").click({ position: { x: 40, y: 40 } })
+  await page.keyboard.press("r")
+  await expect(page.locator("[data-scene-stage]")).toBeFocused()
+  await expect(page.locator("[data-scene-stage]")).toHaveCSS("outline-style", "none")
+})
+
 test("the deck's name is renamed in the sidebar, titles the tab, is kept after a reload and shows on the home card", async ({
   page,
   context,

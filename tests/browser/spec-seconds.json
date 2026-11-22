@@ -205,6 +205,7 @@
     "save-status.spec.ts": 53.8,
     "scene-agent.spec.ts": 6.7,
     "scene-editor-arrange.spec.ts": 11.6,
+    "scene-editor-design.spec.ts": 14.4,
     "scene-editor-page.spec.ts": 13.7,
     "scene-editor-picture.spec.ts": 10.8,
     "scene-editor-select.spec.ts": 9.4,
