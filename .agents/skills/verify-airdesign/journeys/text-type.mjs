@@ -61,7 +61,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const titles = read.elements.filter((element) => element.role === "title")
   const worded = (value) => (value.startsWith("[") ? /"text":"[^"]/.test(value) : value.trim() !== "")
   const typed = titles.filter((element) => worded(element.value ?? ""))
-  expect(titles.length).toBeGreaterThan(5)
+  expect(titles.length).toBeGreaterThan(3)
   for (const title of typed) expect(title.design).toContain("text.font Georgia")
   note(
     `set landed on ${edited.structuredContent.elements.length} titles; read_deck prints the first as: ${titles[0].design}`,

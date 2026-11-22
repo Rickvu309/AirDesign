@@ -48,7 +48,9 @@ function turnOf({ place }: Routed) {
 }
 
 function boxOf(body: NodeRegister | undefined, indexed: IndexElement | undefined, followed: Routed | null) {
-  return followed?.place.box ?? (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
+  return (
+    followed?.place.box ?? (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? indexed?.placed ?? null
+  )
 }
 
 function designOf(
