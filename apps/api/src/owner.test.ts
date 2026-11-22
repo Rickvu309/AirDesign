@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto"
 
 import { readDeckId } from "@airdesign/catalog"
-import { editNext } from "@airdesign/mcp"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, signInByCode, verifierPair, postgresInfo, serve } from "./harness.js"
@@ -11,17 +10,17 @@ import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
 const own = "https://mcp.example.test/mcp"
 const callback = "http://127.0.0.1:8124/owner"
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
-const element = "258.7"
 const invalidToken =
   'Bearer resource_metadata="https://mcp.example.test/.well-known/oauth-protected-resource", error="invalid_token"'
 
 type Pair = { readonly access: string; readonly refresh: string }
 type Stored = { readonly revision: number; readonly register: unknown; readonly owner: string }
+type Answer = { readonly ok?: boolean; readonly refusal?: string; readonly rev?: number }
 type Called = {
   readonly status: number
   readonly text: string
   readonly challenge: string | null
-  readonly answer?: { readonly refusal?: string }
+  readonly answer?: Answer
   readonly last?: string
 }
 type Credential = { readonly cookie: string } | { readonly bearer: string; readonly scheme?: string }
@@ -137,13 +136,16 @@ describe("only a deck's owner acts on it", () => {
 
   async function opened(cookie: string): Promise<string> {
     const id = deckName()
-    const reply = await ask(base, "POST", "/decks/open", { deck: id }, cookie)
+    const reply = await ask(base, "POST", "/scenes/create", { deck: id }, cookie)
     if (reply.status !== 200) throw new Error(reply.text)
     return id
   }
 
   async function row(id: string): Promise<Stored | undefined> {
-    const result = await deck.query<Stored>("select revision, register, owner from deck.saved where id = $1", [id])
+    const result = await deck.query<Stored>(
+      "select rev as revision, fold as register, owner from deck.scene where id = $1",
+      [id],
+    )
     return result.rows[0]
   }
 
@@ -185,7 +187,7 @@ describe("only a deck's owner acts on it", () => {
       .find((line) => line.startsWith("data: "))
       ?.slice("data: ".length)
     const parsed = JSON.parse(data ?? body) as {
-      result?: { content?: { text?: string }[]; structuredContent?: { refusal?: string } }
+      result?: { content?: { text?: string }[]; structuredContent?: Answer }
     }
     const content = parsed.result?.content ?? []
     const answered = parsed.result?.structuredContent
@@ -206,7 +208,7 @@ describe("only a deck's owner acts on it", () => {
       {
         deck: id,
         base: revision,
-        changes: [{ value: `v${String(revision + 1)}`, node: `${element}${String(revision)}`, readAt: 0 }],
+        changes: [{ op: "add", kind: "text", slide: "s:3", text: `v${String(revision + 1)}` }],
       },
       claim,
     )
@@ -219,11 +221,10 @@ describe("only a deck's owner acts on it", () => {
   function editRefusalOf(called: Called): string | undefined {
     const parsed = JSON.parse(called.last ?? "{}") as { refusal?: string }
     expect(parsed.refusal).toBe(called.answer?.refusal)
-    const code = called.answer?.refusal
-    if (code === undefined || !Object.hasOwn(editNext, code)) return called.text
-    expect(called.text).toBe(editNext[code as keyof typeof editNext])
-    return code
+    return called.answer?.refusal ?? called.text
   }
+
+  const landedRev = (called: Called): number | undefined => (called.answer?.ok === true ? called.answer.rev : undefined)
 
   function readOutcome(called: Called): string | undefined {
     return called.answer?.refusal === undefined ? "landed" : editRefusalOf(called)
@@ -253,9 +254,9 @@ describe("only a deck's owner acts on it", () => {
     it("lands an access token of A on A's own deck", async () => {
       const a = await connection(address("ownera"))
       const id = await opened(a.cookie)
-      expect((await edit({ bearer: a.pair.access }, id)).text).toBe("Landed revision 1.")
+      expect(landedRev(await edit({ bearer: a.pair.access }, id))).toBe(2)
       expect(readOutcome(await read({ bearer: a.pair.access }, id))).toBe("landed")
-      expect((await row(id))?.revision).toBe(1)
+      expect((await row(id))?.revision).toBe(2)
     })
 
     it("refuses a deck that does not exist yet with deck and creates nothing", async () => {
@@ -296,8 +297,8 @@ describe("only a deck's owner acts on it", () => {
       const own = await opened(a.cookie)
       const other = await opened(await sign(address("schemeb")))
       const before = await row(other)
-      expect((await edit({ bearer: a.pair.access, scheme: "bearer" }, own)).text).toBe("Landed revision 1.")
-      expect((await edit({ bearer: a.pair.access, scheme: "BEARER" }, own)).text).toBe("Landed revision 2.")
+      expect(landedRev(await edit({ bearer: a.pair.access, scheme: "bearer" }, own))).toBe(2)
+      expect(landedRev(await edit({ bearer: a.pair.access, scheme: "BEARER" }, own))).toBe(3)
       expect(editRefusalOf(await edit({ bearer: a.pair.access, scheme: "BEARER" }, other))).toBe("owner")
       expect(await row(other)).toEqual(before)
     })
@@ -326,7 +327,7 @@ describe("only a deck's owner acts on it", () => {
         }
       }
       expect(await row(id)).toEqual(before)
-      expect((await edit({ bearer: second.access }, id)).text).toBe("Landed revision 1.")
+      expect(landedRev(await edit({ bearer: second.access }, id))).toBe(2)
     })
 
     it("never falls back to the cookie when a bearer is sent", async () => {
@@ -385,7 +386,7 @@ describe("only a deck's owner acts on it", () => {
         clock = start
       }
       expect(await row(id)).toEqual(before)
-      expect((await edit({ cookie }, id)).text).toBe("Landed revision 1.")
+      expect(landedRev(await edit({ cookie }, id))).toBe(2)
     })
   })
 
@@ -624,7 +625,7 @@ describe("only a deck's owner acts on it", () => {
       if (answer.status === 401)
         return answer.challenge === invalidToken ? "invalid" : `401 ${String(answer.challenge)}`
       if (reading) return readOutcome(answer)
-      if (answer.text.startsWith("Landed revision")) return "landed"
+      if (answer.answer?.ok === true) return "landed"
       return editRefusalOf(answer)
     }
 

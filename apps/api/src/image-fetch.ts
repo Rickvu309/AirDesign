@@ -2,12 +2,8 @@ import { lookup } from "node:dns/promises"
 import { request } from "node:https"
 import { BlockList, isIP } from "node:net"
 import { limits, mediaSize, mediaTypeOf, overPixelLimit, type MediaType } from "@airdesign/document"
-import type { ImageRefusal } from "@airdesign/mcp"
 
-export type FetchRefusal = Extract<
-  ImageRefusal,
-  "address" | "private" | "unreachable" | "status" | "type" | "size" | "timeout"
->
+export type FetchRefusal = "address" | "private" | "unreachable" | "status" | "type" | "size" | "timeout"
 
 export type FetchedImage =
   | {

@@ -42,46 +42,6 @@ test("where Aira is not offered, the panel says so as it opens and its composer 
   expect(paths).not.toContain("/aira/turn")
 })
 
-test("a running step shows a progress mark that stops moving with reduced motion, and a finished step a check", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { deck, base, side } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" })
-  let open = () => {}
-  const gate = new Promise<void>((resolve) => {
-    open = resolve
-  })
-  await page.route(
-    (url) => url.pathname === stack.mcp,
-    async (route) => {
-      await gate
-      await route.fallback()
-    },
-  )
-  await ask(page, asked)
-  const running = side.locator('[data-tool-state="working"]')
-  await expect(running).toHaveText("Editing slides")
-  const mark = running.locator('[data-step-mark="progress"]')
-  await expect(mark).toBeVisible()
-  const title = running.getByText("Editing slides", { exact: true })
-  const titleMotion = () => title.evaluate((box) => box.getAnimations().length)
-  expect(await titleMotion()).toBe(0)
-  const motion = () => mark.evaluate((box) => getComputedStyle(box).animationName)
-  expect(await motion()).not.toBe("none")
-  await page.emulateMedia({ reducedMotion: "reduce" })
-  expect(await motion()).toBe("none")
-  expect(await titleMotion()).toBe(0)
-  await expect(mark).toBeVisible()
-  await page.emulateMedia({ reducedMotion: "no-preference" })
-  open()
-  const finished = side.locator('[data-tool-state="done"]')
-  await expect(finished).toHaveText("Edited slides")
-  await expect(finished.locator('[data-step-mark="check"]')).toBeVisible()
-  await expect(side.locator('[data-step-mark="progress"]')).toHaveCount(0)
-})
-
 test("Try again retries a failed request in place, with no second copy of the request or its error", async ({
   page,
   context,
@@ -97,46 +57,6 @@ test("Try again retries a failed request in place, with no second copy of the re
   await expect(log.getByText(asked, { exact: true })).toHaveCount(1)
   await expect(side.getByRole("button", { name: airaCopy.retry })).toHaveCount(0)
   await expect(side.getByText(airaCopy.failedTitle, { exact: true })).toHaveCount(0)
-})
-
-test("a step refused because the person typed in the same title says why, flags the reply, and retries in place", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { cookie, deck, base, side, log } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" }, { name: "turn.sse" })
-  let open = () => {}
-  const gate = new Promise<void>((resolve) => {
-    open = resolve
-  })
-  await page.route(
-    (url) => url.pathname === stack.mcp,
-    async (route) => {
-      await gate
-      await route.fallback()
-    },
-  )
-  await ask(page, asked)
-  await expect(side.locator('[data-tool-state="working"]')).toHaveText("Editing slides")
-  await page.locator('[data-slide-paint] [contenteditable="true"]').first().dblclick()
-  await page.keyboard.type("X")
-  await page.keyboard.press("Escape")
-  await expect
-    .poll(async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision)
-    .toBeGreaterThan(Number(base))
-  open()
-  const refused = side.locator('[data-tool-state="refused"]')
-  await expect(refused).toHaveText("Couldn't edit slides")
-  await expect(side.locator("[data-step-reason]")).toHaveText(reason)
-  await expect(side.getByText(airaCopy.stepsFailedTitle, { exact: true })).toBeVisible()
-  await expect(side.getByText(airaCopy.stepsFailedBody, { exact: true })).toBeVisible()
-  await side.getByRole("button", { name: airaCopy.retry }).click()
-  await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
-  await expect(log.getByText(asked, { exact: true })).toHaveCount(1)
-  await expect(side.getByText(airaCopy.stepsFailedTitle, { exact: true })).toHaveCount(0)
-  await expect(side.getByRole("button", { name: airaCopy.retry })).toHaveCount(0)
-  await expect(refused).toHaveCount(1)
 })
 
 test("a request that ran out of usage offers no Try again", async ({ page, context, stack }) => {
@@ -241,58 +161,3 @@ test("a malformed ending leaves focus alone when the person was not in the compo
   await expect(newChat).not.toBeFocused()
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true)
 })
-
-for (const moved of [false, true]) {
-  test(`a malformed ending after an edit ${moved ? "preserves focus moved elsewhere" : "hands focus to New chat"} after run cleanup`, async ({
-    page,
-    context,
-    stack,
-  }) => {
-    const { deck, base, side, log } = await openDeck(page, context, stack)
-    stack.aira({ name: "edit.sse", fill: { deck, base, node } })
-    let turns = 0
-    await page.route(
-      (url) => url.pathname === "/aira/turn",
-      async (route) => {
-        turns += 1
-        if (turns === 1) await route.fallback()
-        else await route.fulfill({ status: 400, json: { ok: false, refusal: "body" } })
-      },
-    )
-    let release = () => {}
-    const gate = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    await page.route(
-      (url) => url.pathname === stack.mcp,
-      async (route) => {
-        if (route.request().postDataJSON()?.params?.name === "airdesign_stop_run") await gate
-        await route.fallback()
-      },
-    )
-    try {
-      await ask(page, asked)
-      await expect(side.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
-      await expect(side.getByText(airaCopy.malformedTitle, { exact: true })).toBeVisible()
-      const newChat = side.locator("[data-aira-stuck]").getByRole("button", { name: "New chat", exact: true })
-      await expect(newChat).toHaveCount(0)
-      await expect(side.getByRole("textbox", { name: airaCopy.malformedBlocked, exact: true })).toBeDisabled()
-      if (moved) {
-        await log.focus()
-        await expect(log).toBeFocused()
-      }
-      release()
-      await expect(newChat).toBeVisible()
-      if (moved) {
-        await expect(log).toBeFocused()
-      } else {
-        await expect(newChat).toBeFocused()
-        await page.keyboard.press("Enter")
-        await expect(side.getByRole("textbox", { name: "Ask Aira", exact: true })).toBeFocused()
-        await expect(side.getByRole("textbox", { name: "Ask Aira", exact: true })).toBeEditable()
-      }
-    } finally {
-      release()
-    }
-  })
-}

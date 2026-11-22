@@ -1,178 +1,69 @@
-import {
-  closeIcons,
-  readAddChange,
-  readAgentEdit,
-  readDiagramChange,
-  groupOps,
-  readGroupChange,
-  readSetChange,
-  readSlideChange,
-  readDeleteChange,
-  slideOps,
-  type AgentChange,
-  type WireChange,
-} from "@airdesign/catalog"
-import { registerScope, type ElementId, type Register, slideBirths } from "@airdesign/document"
-import { call } from "@airdesign/engine"
-import type { Session, ToolResult } from "./call-tool.js"
-import { editLanded, editRefusal, namedNodes } from "./edit-answer.js"
-import { kindProblem, setProblem } from "./kind-refusal.js"
-import {
-  agentCaller,
-  elementFloors,
-  joinRun,
-  nodeChanges,
-  openRun,
-  runElements,
-  setNodes,
-  stopForNewTurn,
-} from "./run.js"
-import { changeDetail } from "./change-detail.js"
-import { imageLookup, imageProblem } from "./named-image.js"
-import { styleProblem } from "./style-problem.js"
-import { formProblem } from "./text-form.js"
-import { textProblem } from "./text-from.js"
-import { heldRun, holders } from "./turn.js"
+import { readDeckEdit, readNamedDeck } from "@airdesign/catalog"
+import { scene } from "@airdesign/document"
 
-function startedTurn(raw: unknown, session: Session) {
-  const { deck } = session
-  const held = heldRun(session)
-  if (held !== undefined) return joinRun(deck.register, raw, held.runId, holders(session))
-  return openRun(deck.register, raw, () => session.caller.runId, holders(session))
-}
+import { answered, hostRefused, refused, sceneRefused, type ToolResult } from "./answer.js"
+import type { DeckHost } from "./deck-host.js"
+import { onceIds } from "./once-ids.js"
 
-function addTurn(session: Session, base: number) {
-  const before = session.deck
-  const held = heldRun(session)
-  const stopped =
-    held === undefined && base === before.revision
-      ? stopForNewTurn(before, holders(session))
-      : ({ ok: true, deck: before } as const)
-  if (!stopped.ok) return stopped
-  return {
-    ok: true,
-    register: stopped.deck.register,
-    caller: agentCaller(held?.runId ?? session.caller.runId),
-  } as const
-}
+type Read =
+  | { readonly ok: true; readonly changes: readonly scene.AgentChange[] }
+  | { readonly ok: false; readonly result: ToolResult }
 
-type IconNamed = {
-  readonly icon?: unknown
-  readonly image?: { readonly source?: unknown }
-  readonly fills?: { readonly source?: unknown; readonly paint?: { readonly image?: unknown } }
-}
-
-function iconName(field: string, named: IconNamed): unknown {
-  if (field === "icon") return named.icon
-  if (field === "fills.source") return named.fills?.source ?? named.image?.source
-  return field === "fills.paint" ? named.fills?.paint?.image : undefined
-}
-
-function iconHint(field: string, change: unknown): string {
-  const name = iconName(field, change as IconNamed)
-  if (typeof name !== "string") return ""
-  const close = closeIcons(name)
-  const quoted = JSON.stringify(name)
-  if (close.length === 0) return ` No Lucide icon is named ${quoted}, and none is close; try a plainer word.`
-  return ` No Lucide icon is named ${quoted}. Close names: ${close.join(", ")}.`
-}
-
-function fieldDetail(raw: unknown): string | undefined {
-  const changes = typeof raw === "object" && raw !== null ? (raw as { readonly changes?: unknown }).changes : undefined
-  if (!Array.isArray(changes)) return undefined
-  for (const [at, change] of changes.entries()) {
-    const op = typeof change === "object" && change !== null ? (change as { readonly op?: unknown }).op : undefined
-    const read =
-      op === "set"
-        ? readSetChange(change)
-        : op === "add"
-          ? readAddChange(change)
-          : groupOps.some((each) => each === op)
-            ? readGroupChange(change)
-            : op === "diagram"
-              ? readDiagramChange(change)
-              : op === "delete"
-                ? readDeleteChange(change)
-                : slideOps.some((each) => each === op)
-                  ? readSlideChange(change)
-                  : undefined
-    if (read !== undefined && !read.ok) {
-      const detail = "detail" in read && read.detail !== undefined ? ` ${read.detail}` : ""
-      return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.${detail}${iconHint(read.field, change)}`
+function readChanges(raw: readonly unknown[]): Read {
+  const changes: scene.AgentChange[] = []
+  for (const [at, each] of raw.entries()) {
+    const read = scene.readAgentChange(each)
+    if ("refused" in read) {
+      const op = typeof each === "object" && each !== null ? (each as { op?: unknown }).op : undefined
+      return { ok: false, result: sceneRefused({ ...read, change: typeof op === "string" ? op : "change", at }) }
     }
+    changes.push(read)
   }
-  return undefined
+  return { ok: true, changes }
 }
 
-function setTexts(register: Register, changes: readonly AgentChange[]): readonly WireChange[] {
-  const scope = registerScope(register)
-  return changes.flatMap((change) => {
-    const value = "op" in change && change.op === "set" ? change.text?.value : undefined
-    const nodes = value === undefined || !("op" in change) || change.op !== "set" ? [] : scope.expand(change.target)
-    return value === undefined || nodes === "indexing" ? [] : nodes.map((node) => ({ node, value, readAt: 0 }))
+function rootsInFold(fold: scene.Scene, client: string): readonly scene.NodeId[] {
+  const mine = [...fold.nodes.keys()].filter((id) => id.startsWith(`${client}:`))
+  const made = new Set<string>(mine)
+  return mine.filter((id) => !made.has((fold.nodes.get(id) as { parent?: { id: string } | null }).parent?.id ?? ""))
+}
+
+function rootsOfEdit(edit: scene.Edit, added: readonly scene.NodeId[]): readonly scene.NodeId[] {
+  const made = new Set<string>(added)
+  const parents = new Map<string, string>()
+  for (const write of edit.writes)
+    if (write.prop === "parent" && write.value !== null) parents.set(write.node, (write.value as { id: string }).id)
+  return added.filter((id) => !made.has(parents.get(id) ?? ""))
+}
+
+function landedAnswer(deck: string, rev: number, run: string, added: readonly string[]): ToolResult {
+  const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${added.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
+  return answered(lead, { ok: true, deck, rev, runId: run, added })
+}
+
+export async function editDeckTool(raw: unknown, agent: string, once: string, host: DeckHost): Promise<ToolResult> {
+  const named = readNamedDeck(raw)
+  if (!named.ok) return refused(named.refusal)
+  const opened = await host.open(named.deck)
+  if (!opened.ok) return hostRefused(opened)
+  const parsed = readDeckEdit(raw)
+  if (!parsed.ok) return refused(parsed.refusal)
+  const read = readChanges(parsed.changes)
+  if (!read.ok) return read.result
+  if (parsed.base > opened.rev) return refused("base", { rev: opened.rev })
+  const ids = onceIds(once)
+  const run = parsed.runId ?? ids.run
+  const before = opened.fold.onces.get(once)
+  if (before !== undefined) return landedAnswer(opened.deck, before, run, rootsInFold(opened.fold, ids.client))
+  const compiled = scene.compileAgentEdit(opened.fold, read.changes, {
+    author: { kind: "agent", id: agent, run },
+    once,
+    mint: ids.mint,
+    read: scene.readingOf(opened.fold, parsed.base),
+    ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
   })
-}
-
-function addedNodes(before: Register, after: Register): readonly ElementId[] {
-  return after.order
-    .slice(before.order.length)
-    .flatMap((command) =>
-      command.slide === "element-add" || command.slide === "element-clone" || command.slide === "element-group"
-        ? [command.element.node]
-        : [],
-    )
-}
-
-function groupDetail(changes: readonly AgentChange[], refusal: string): string | undefined {
-  if (refusal !== "kind" || !changes.some((change) => "elements" in change)) return undefined
-  return "Only shapes, images, lines and groups that are not placeholders can be grouped or framed, only a group can be ungrouped, only a group or frame can be joined, a frame joins only a group that keeps the slide's scale and turn, and a group holding a kept layer or a layer inside a frame cannot be duplicated."
-}
-
-export function editDeck(raw: unknown, session: Session): ToolResult {
-  const before = session.deck
-  const parsed = readAgentEdit(raw)
-  if (!parsed.ok)
-    return editRefusal(before, parsed.refusal, [], parsed.refusal === "field" ? fieldDetail(raw) : undefined)
-  if (parsed.deck !== before.id) return editRefusal(before, "deck", [])
-  const named = nodeChanges(parsed.changes)
-  const nodes = namedNodes(named, setNodes(before.register, parsed.changes))
-  const unfit = kindProblem(before.register, parsed.changes)
-  if (unfit !== undefined) return editRefusal(before, "kind", nodes, unfit)
-  const unset = setProblem(before.register, parsed.changes)
-  if (unset !== undefined) return editRefusal(before, unset.code, nodes, unset.detail)
-  const checked = [...named, ...setTexts(before.register, parsed.changes)]
-  const floors = elementFloors(before.register, checked)
-  if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
-  const problem =
-    formProblem(before.register, parsed.changes) ??
-    textProblem(floors.floors, checked) ??
-    styleProblem(before.register, parsed.changes)
-  if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
-  const unfetched = imageProblem(parsed.changes, session.images)
-  if (unfetched !== undefined) return editRefusal(before, "image", nodes, unfetched)
-  const holds = runElements(before.register, parsed.changes).length > 0
-  const opened = holds ? startedTurn(raw, session) : addTurn(session, parsed.base)
-  if (!opened.ok) return editRefusal(before, opened.refusal, nodes)
-  const deck = { id: before.id, revision: before.revision, register: opened.register }
-  const result = call("edit_deck", deck, opened.caller, raw, imageLookup(session.images))
-  if (!result.ok)
-    return {
-      ...editRefusal(
-        deck,
-        result.refusal,
-        nodes,
-        groupDetail(parsed.changes, result.refusal) ?? changeDetail(before, parsed.changes, result.refusal),
-      ),
-      deck: before,
-    }
-  const slides = result.deck.register.order
-    .slice(deck.register.order.length)
-    .flatMap(slideBirths)
-    .map((birth) => birth.id)
-  return editLanded(
-    result.deck,
-    [...nodes, ...addedNodes(deck.register, result.deck.register)],
-    opened.caller.runId,
-    slides,
-  )
+  if ("refused" in compiled) return sceneRefused(compiled, { rev: opened.rev })
+  const landed = await host.edit(parsed.deck, compiled.edit)
+  if (!landed.ok) return hostRefused(landed)
+  return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added))
 }

@@ -3,7 +3,7 @@ import { once } from "node:events"
 import { request } from "node:http"
 import type { Socket } from "node:net"
 
-import { countryHeader, readDeckId } from "@airdesign/catalog"
+import { countryHeader, sceneRoutes } from "@airdesign/catalog"
 import { airaMaxTokens } from "./aira.js"
 import { Client as McpClient, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { Client } from "pg"
@@ -180,30 +180,30 @@ async function withMcp(cookie: string, on: Replica, use: (client: McpClient) => 
   }
 }
 
-async function edited(client: McpClient, args: Record<string, unknown>): Promise<unknown> {
-  return (await client.callTool({ name: "airdesign_edit_deck", arguments: args })).structuredContent
+async function called(client: McpClient, name: string, args: Record<string, unknown>) {
+  return (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<
+    string,
+    any
+  >
 }
 
-async function read(client: McpClient, id: string) {
-  return client.callTool({ name: "airdesign_read_deck", arguments: { deck: id } })
+async function listed(client: McpClient) {
+  return client.callTool({ name: "airdesign_list_decks", arguments: {} })
 }
 
 describe("the limits an account's calls share hold on every server and after a restart", () => {
   it("refuses the thirty-first tool call when the thirty landed on two servers, and on a server started after", async () => {
     const account = await signIn()
-    const named = readDeckId(`deck${randomBytes(4).toString("hex")}`)
-    if (!named.ok) throw new Error(named.refusal)
-    await ask(first.base, "POST", "/decks/open", { deck: named.deck }, account.cookie)
     for (const on of [first, second]) {
       await withMcp(account.cookie, on, async (client) => {
         for (let call = 0; call < 15; call += 1) {
-          expect((await read(client, named.deck)).isError).toBeFalsy()
+          expect((await listed(client)).isError).toBeFalsy()
         }
       })
     }
     for (const on of [first, second, await replica()]) {
       await withMcp(account.cookie, on, async (client) => {
-        expect((await read(client, named.deck)).content).toEqual([{ type: "text", text: toolLimit }])
+        expect((await listed(client)).content).toEqual([{ type: "text", text: toolLimit }])
       })
     }
   })
@@ -222,25 +222,49 @@ describe("the limits an account's calls share hold on every server and after a r
   })
 })
 
-describe("an agent's turn on a deck", () => {
-  it("goes on when its next call lands on another server, so a box a person typed in stays closed", async () => {
+describe("an agent's run on a deck", () => {
+  it("goes on when its next call lands on another server, so a layer a person changed stays closed", async () => {
     const account = await signIn()
-    const named = readDeckId(`deck${randomBytes(4).toString("hex")}`)
-    if (!named.ok) throw new Error(named.refusal)
-    const id = named.deck
-    await ask(first.base, "POST", "/decks/open", { deck: id }, account.cookie)
-    let started: unknown
+    let deck = ""
+    let run = ""
+    let added = ""
     await withMcp(account.cookie, first, async (client) => {
-      const opened = await edited(client, { deck: id, base: 0, changes: [{ value: "a", node: "258.7", readAt: 0 }] })
-      started = (opened as { readonly runId: string }).runId
+      const made = await called(client, "create_deck", {})
+      deck = made.deck
+      const opened = await called(client, "edit_deck", {
+        deck,
+        base: made.rev,
+        changes: [{ op: "add", kind: "text", slide: made.slides[0], text: "a" }],
+      })
+      run = opened.runId
+      added = opened.added[0]
     })
-    const typed = { deck: id, batch: [{ value: "person", node: "258.7" }] }
-    expect((await ask(first.base, "POST", "/decks/commit", typed, account.cookie)).json).toMatchObject({ revision: 2 })
+    const typed = {
+      deck,
+      edit: {
+        once: "typed",
+        author: { kind: "person", id: "tab" },
+        writes: [{ node: added, prop: "name", value: "mine" }],
+      },
+    }
+    expect((await ask(first.base, "POST", sceneRoutes.edit.path, typed, account.cookie)).json).toMatchObject({ rev: 3 })
     await withMcp(account.cookie, await replica(), async (client) => {
-      const closed = await edited(client, { deck: id, base: 2, changes: [{ value: "b", node: "258.7", readAt: 2 }] })
+      const closed = await called(client, "edit_deck", {
+        deck,
+        base: 3,
+        runId: run,
+        changes: [{ op: "set", target: added, name: "b" }],
+      })
       expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
-      const joined = await edited(client, { deck: id, base: 2, changes: [{ value: "c", node: "258.8", readAt: 0 }] })
-      expect(joined).toMatchObject({ ok: true, revision: 3, runId: started })
+      const joined = await called(client, "edit_deck", {
+        deck,
+        base: 3,
+        runId: run,
+        changes: [
+          { op: "add", kind: "text", slide: (await called(client, "read_deck", { deck })).slides[0], text: "c" },
+        ],
+      })
+      expect(joined).toMatchObject({ ok: true, rev: 4, runId: run })
     })
   })
 })

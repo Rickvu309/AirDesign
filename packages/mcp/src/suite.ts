@@ -1,579 +1,638 @@
-import { elementId, limits, type Register } from "@airdesign/document"
-import { bodyIs } from "./body-fixture.js"
-import { fixture } from "./fixture.js"
-import { edit, type Attempt, type ElementName, type Reason, type Task } from "./score.js"
+import { scene } from "@airdesign/document"
+
+import { blank, blankDeck, evalDeck, named, person, slides } from "./eval-deck.js"
+import { onceIds } from "./once-ids.js"
+import { swatch } from "./suite-art.js"
+import { type Attempt, type Reason, type Step, type Task, edit, read, stop } from "./score.js"
 
 export type SuiteRow = {
   readonly task: Task
   readonly reference: Attempt
-  readonly wrong: {
-    readonly attempt: Attempt
-    readonly reason: Reason
+  readonly wrong: { readonly attempt: Attempt; readonly reason: Reason }
+}
+
+const aim = `${slides.opening}.title`
+const baseRev = Number(evalDeck().rev)
+
+const lines = (end: scene.Scene) => scene.readForAgent(end, "all")
+const has = (end: scene.Scene, fragment: string) => lines(end).includes(fragment)
+const lineOf = (end: scene.Scene, id: string) =>
+  lines(end)
+    .split("\n")
+    .find((line) => line.trimStart().startsWith(`${id} `)) ?? ""
+const textOf = (end: scene.Scene, id: string): string | undefined => {
+  const words = (end.nodes.get(id as never) as { text?: scene.Text } | undefined)?.text
+  return words === undefined ? undefined : scene.textToMarkdown(words)
+}
+const slideIds = (end: scene.Scene) => scene.slidesOf(end).map((slide) => slide.id as string)
+const childrenOf = (end: scene.Scene, id: string) => (end.children.get(id as never) ?? []) as readonly string[]
+
+const ok: Step = { name: "edit_deck", outcome: "ok" }
+const refused = (outcome: string): Step => ({ name: "edit_deck", outcome })
+const unchanged = (end: scene.Scene) => end.rev === evalDeck().rev
+
+function row(
+  id: string,
+  prompt: string,
+  want: {
+    readonly touches?: readonly string[]
+    readonly landed?: Task["want"]["landed"]
+    readonly steps?: readonly Step[]
+    readonly calls?: number
+    readonly deck?: () => scene.Scene
+  },
+  reference: Attempt,
+  wrong: Attempt,
+  reason: Reason,
+): SuiteRow {
+  return {
+    task: {
+      id,
+      prompt,
+      deck: want.deck ?? evalDeck,
+      want: {
+        calls: want.calls ?? 1,
+        steps: want.steps ?? [ok],
+        touches: want.touches ?? [],
+        landed: want.landed ?? (() => true),
+      },
+    },
+    reference,
+    wrong: { attempt: wrong, reason },
   }
 }
 
-function one(deck: string, element: ElementName, value: string, readAt: number): Attempt {
-  return [edit(deck, [{ element, value, readAt }])]
+const one = (change: Record<string, unknown>): Attempt => [edit([change], baseRev)]
+const setTitle = (text: string) => one({ op: "set", target: aim, text })
+const setOn = (target: string, look: Record<string, unknown>) => one({ op: "set", target, ...look })
+const addTo = (slide: string, look: Record<string, unknown>) => one({ op: "add", slide, ...look })
+
+function words(id: string, task: string, text: string, other: string, markdown = text): SuiteRow {
+  return row(
+    id,
+    task,
+    { touches: [named.title], landed: (end) => textOf(end, named.title) === markdown },
+    setTitle(text),
+    setTitle(other),
+    "landed",
+  )
 }
 
-function overLimit(register: Register): Register {
-  return { ...register, slides: limits.slides + 1 }
+function look(
+  id: string,
+  prompt: string,
+  target: string,
+  right: Record<string, unknown>,
+  wrong: Record<string, unknown>,
+  shown: string,
+) {
+  return row(
+    id,
+    prompt,
+    { touches: [target], landed: (end) => lineOf(end, target).includes(shown) },
+    setOn(target, right),
+    setOn(target, wrong),
+    "landed",
+  )
 }
 
-function atLimit(register: Register): Register {
-  return { ...register, slides: limits.slides }
+function placed(
+  id: string,
+  prompt: string,
+  make: Record<string, unknown>,
+  shown: string | readonly string[],
+): SuiteRow {
+  const fragments = typeof shown === "string" ? [shown] : shown
+  return row(
+    id,
+    prompt,
+    {
+      landed: (end) =>
+        fragments.every((fragment) => has(end, fragment)) && childrenOf(end, slides.roadmap).length === 2,
+    },
+    addTo(slides.roadmap, make),
+    addTo(slides.numbers, make),
+    "landed",
+  )
 }
 
-function fullBytes(register: Register): Register {
-  return { ...register, bytes: limits.bytes }
+const pattern = (id: string, prompt: string, make: Record<string, unknown>, shown: string, name: string): SuiteRow =>
+  placed(id, prompt, make, [`name="${name}"`, shown])
+
+const bigRun = "n".repeat(7_000)
+const tooBig = "n".repeat(9_000)
+const slideCount = 3
+
+function typedByAPerson(): scene.Scene {
+  const start = evalDeck()
+  const landed = scene.applyEdit(start, {
+    once: "typed",
+    author: person,
+    writes: [
+      {
+        node: named.title,
+        prop: "text",
+        value: scene.textFromMarkdown("Typed by a person", "title"),
+        base: start.revs.get(named.title)!.get("text")!,
+      },
+    ],
+    rev: scene.rev(start.rev + 1),
+  })
+  if (scene.isRefusal(landed)) throw new Error("typed")
+  return landed
 }
 
-function tenBytesLeft(register: Register): Register {
-  return { ...register, bytes: limits.bytes - 10 }
+const heldRun = "held"
+
+function runningWith(then: readonly scene.Write[], by: scene.Author = person): scene.Scene {
+  const start = evalDeck()
+  const began = scene.applyEdit(start, {
+    once: "begin",
+    author: { kind: "agent", id: "eval", run: heldRun },
+    writes: [],
+    phase: "start",
+    rev: scene.rev(start.rev + 1),
+  })
+  if (scene.isRefusal(began)) throw new Error("begin")
+  if (then.length === 0) return began
+  const next = scene.applyEdit(began, { once: "then", author: by, writes: then, rev: scene.rev(began.rev + 1) })
+  if (scene.isRefusal(next)) throw new Error("then")
+  return next
 }
 
-function fullElements(register: Register): Register {
-  const missing = limits.elements - register.nodes.length
-  const filler = Array.from({ length: missing }, (_, index) => elementId(`${String(index)}.99`))
-  return { ...register, nodes: [...register.nodes, ...filler] }
+const noteTouched = () => runningWith([{ node: named.note, prop: "name", value: "Mine" }])
+
+function stoppedRun(): scene.Scene {
+  const began = runningWith([])
+  const stopped = scene.applyEdit(began, {
+    once: "end",
+    author: { kind: "agent", id: "eval", run: heldRun },
+    writes: [],
+    phase: "stop",
+    rev: scene.rev(began.rev + 1),
+  })
+  if (scene.isRefusal(stopped)) throw new Error("end")
+  return stopped
 }
 
-const longNote = "n".repeat(4000)
-const fits = "é".repeat(4000)
-const tooLong = "é".repeat(4001)
-
-export const landSourceTask: Task = {
-  id: "land-source",
-  prompt: "Set the title of deck deck to 21.",
-  deck: () => fixture("deck", [{ element: "title" }]),
-  want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["21"] } },
-}
-
-export const landSourceAttempt: Attempt = one("deck", "title", "21", 0)
-
-export const staleEditTask: Task = {
-  id: "stale-edit",
-  prompt: "Set the title of deck deck to 22. Your copy of the deck is at revision 1, and the deck is at revision 2.",
-  deck: () => ({ ...fixture("deck", [{ element: "title" }]), revision: 2 }),
-  want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["22"] } },
-}
-
-export const staleEditAttempt: Attempt = [edit("deck", [{ element: "title", value: "22", readAt: 0 }], 1)]
+const boardOnce = "call2"
+const boardIds = onceIds(boardOnce)
+const boardSlides = () => [blank.title, ...[1, 2, 3, 4].map((at) => `${boardIds.client}:${String(at)}`)]
 
 export const suite: readonly SuiteRow[] = [
-  {
-    task: {
-      id: "plain-words",
-      prompt: "Set the title of deck brief to North star.",
-      deck: () => fixture("brief", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["North star"] } },
-    },
-    reference: one("brief", "title", "North star", 0),
-    wrong: { attempt: one("brief", "title", "South star", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "emoji-text",
-      prompt: "Set the title of deck hello to 東京 🌸.",
-      deck: () => fixture("hello", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["東京 🌸"] } },
-    },
-    reference: one("hello", "title", "東京 🌸", 0),
-    wrong: { attempt: one("hello", "title", "大阪", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "spaced-text",
-      prompt: "Set the title of deck margin to keep, with two spaces before it and two spaces after it.",
-      deck: () => fixture("margin", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["  keep  "] } },
-    },
-    reference: one("margin", "title", "  keep  ", 0),
-    wrong: { attempt: one("margin", "title", "keep", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "lined-text",
-      prompt: "Set the title of deck lines to one, two, and three, each on its own line.",
-      deck: () => fixture("lines", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["one\ntwo\nthree"] } },
-    },
-    reference: one("lines", "title", "one\ntwo\nthree", 0),
-    wrong: { attempt: one("lines", "title", "one two three", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "quoted-text",
-      prompt: 'Set the title of deck marks to "quoted", and include the quote marks.',
-      deck: () => fixture("marks", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ['"quoted"'] } },
-    },
-    reference: one("marks", "title", '"quoted"', 0),
-    wrong: { attempt: one("marks", "title", "quoted", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "long-text",
-      prompt: "Set the title of deck essay to a run of four thousand n characters.",
-      deck: () => fixture("essay", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: [longNote] } },
-    },
-    reference: one("essay", "title", longNote, 0),
-    wrong: { attempt: one("essay", "title", "short", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "empty-text",
-      prompt: "Set the title of deck blank to an empty string.",
-      deck: () => fixture("blank", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: [""] } },
-    },
-    reference: one("blank", "title", "", 0),
-    wrong: { attempt: one("blank", "title", "empty", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "keep-body-note",
-      prompt: "The body of deck keeper already says Kept by you. Set the title to Update.",
-      deck: () => fixture("keeper", [{ element: "title" }, { element: "body", before: ["Kept by you."] }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Update"] } },
-    },
-    reference: one("keeper", "title", "Update", 0),
-    wrong: {
-      attempt: [
-        edit("keeper", [
-          { element: "title", value: "Update", readAt: 0 },
-          { element: "body", value: "Update", readAt: 1 },
-        ]),
-      ],
-      reason: "touched",
-    },
-  },
-  {
-    task: {
-      id: "both-plain",
-      prompt: "In one edit, set the title of deck pair to Heading and the body to Detail.",
-      deck: () => fixture("pair", [{ element: "title" }, { element: "body" }]),
-      want: {
-        calls: 1,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Heading"], body: ["Detail"] },
+  words("plain-words", "Set the title of the opening slide to North star.", "North star", "South star"),
+  words("emoji-text", "Set the title of the opening slide to 東京 🌸.", "東京 🌸", "大阪"),
+  words(
+    "lined-text",
+    "Set the title of the opening slide to one, two and three, each in its own paragraph.",
+    "one\n\ntwo\n\nthree",
+    "one two three",
+  ),
+  words(
+    "bullet-text",
+    "Set the title of the opening slide to a bulleted list of Grow and Protect.",
+    "- Grow\n- Protect",
+    "Grow, Protect",
+  ),
+  words(
+    "styled-text",
+    "Set the title of the opening slide to Revenue grew fast, with Revenue in bold and fast in italic.",
+    "**Revenue** grew *fast*",
+    "Revenue grew fast",
+  ),
+  words(
+    "quoted-text",
+    'Set the title of the opening slide to "quoted", and include the quote marks.',
+    '"quoted"',
+    "quoted",
+  ),
+  words("long-text", "Set the title of the opening slide to a run of seven thousand n characters.", bigRun, "n"),
+  row(
+    "over-long-text",
+    "Set the title of the opening slide to a run of nine thousand n characters.",
+    { steps: [refused("limit")], landed: unchanged },
+    setTitle(tooBig),
+    setTitle("n"),
+    "tool",
+  ),
+
+  look(
+    "theme-fill",
+    "Fill the card on the numbers slide with the theme's second accent colour.",
+    named.card,
+    { fill: "accent2" },
+    { fill: "accent3" },
+    "fill=accent2",
+  ),
+  look(
+    "hex-fill",
+    `Fill the card on the numbers slide with ${swatch.asked}.`,
+    named.card,
+    { fill: swatch.asked },
+    { fill: swatch.other },
+    `fill=${swatch.asked}`,
+  ),
+  look(
+    "text-colour",
+    "Colour the revenue label with the first accent colour.",
+    named.label,
+    { color: "accent1" },
+    { color: "accent4" },
+    "color=accent1",
+  ),
+  look(
+    "text-style",
+    "Make the revenue label a heading.",
+    named.label,
+    { textStyle: "heading" },
+    { textStyle: "caption" },
+    "style=heading",
+  ),
+  look("effect-style", "Lift the card.", named.card, { effect: "lifted" }, { effect: "soft" }, "effect=lifted"),
+  look(
+    "card-outline",
+    "Round the card by 24 pixels and outline it in the first accent colour, 3 pixels wide.",
+    named.card,
+    { radius: 24, stroke: "accent1", strokeWidth: 3 },
+    { radius: 8, stroke: "accent1", strokeWidth: 3 },
+    "stroke=accent1 strokeWidth=3 radius=24",
+  ),
+  look("centre-text", "Centre the note.", named.note, { align: "center" }, { align: "right" }, "align=center"),
+  look("rename-card", "Name the card Fact.", named.card, { name: "Fact" }, { name: "Figure" }, 'name="Fact"'),
+
+  placed("add-text", "Add the words Hello to the roadmap slide.", { kind: "text", text: "Hello" }, 'text="Hello"'),
+  placed(
+    "add-shape",
+    "Add an accent-coloured box with the words Go to the roadmap slide.",
+    { kind: "shape", text: "Go", fill: "accent1", box: { x: 100, y: 300, w: 400, h: 200 } },
+    "fill=accent1",
+  ),
+  placed(
+    "add-arrow",
+    "Add an arrow to the roadmap slide.",
+    { kind: "line", arrow: true, box: { x: 100, y: 300, w: 400, h: 0 } },
+    "arrow",
+  ),
+  placed(
+    "add-row-frame",
+    "Add a frame that lays its children out in a row, 24 pixels apart, to the roadmap slide.",
+    { kind: "frame", layout: "row", gap: 24 },
+    "layout=row gap=24",
+  ),
+  placed("add-icon", "Add a rocket icon to the roadmap slide.", { kind: "icon", icon: "rocket" }, "icon=rocket"),
+  placed(
+    "add-chart",
+    "Add a bar chart of Plan against Actual for Q1 and Q2 to the roadmap slide.",
+    {
+      kind: "chart",
+      chart: {
+        kind: "bar",
+        categories: ["Q1", "Q2"],
+        series: [
+          { name: "Plan", values: [3, 4] },
+          { name: "Actual", values: [3.5, 4.5] },
+        ],
       },
     },
-    reference: [
-      edit("pair", [
-        { element: "title", value: "Heading", readAt: 0 },
-        { element: "body", value: "Detail", readAt: 0 },
-      ]),
+    "chart=",
+  ),
+  placed(
+    "add-picture",
+    "Add the picture with asset logo-1 to the roadmap slide.",
+    { kind: "picture", fill: { image: "logo-1" } },
+    "fill=image:logo-1",
+  ),
+  placed(
+    "add-word-grid",
+    "Add a two by two grid of words to the roadmap slide.",
+    {
+      kind: "frame",
+      rows: [
+        ["", "Q1"],
+        ["Product", "Beta"],
+      ],
+    },
+    "layout=grid",
+  ),
+
+  pattern(
+    "kpi-pattern",
+    "Show Revenue at $4M as a KPI on the roadmap slide.",
+    { kind: "kpi", items: [{ title: "Revenue", value: "$4M" }] },
+    "$4M",
+    "KPI",
+  ),
+  pattern(
+    "cards-pattern",
+    "Show a Grow card with one point on the roadmap slide.",
+    { kind: "cards", items: [{ title: "Grow", points: ["Enter two markets"] }] },
+    "Enter two markets",
+    "Cards",
+  ),
+  pattern(
+    "compare-pattern",
+    "Compare Build and Buy on the roadmap slide.",
+    {
+      kind: "compare",
+      items: [
+        { title: "Build", points: ["Slow"] },
+        { title: "Buy", points: ["Fast"] },
+      ],
+    },
+    "Fast",
+    "Compare",
+  ),
+  pattern(
+    "matrix-pattern",
+    "Show a matrix of Quick wins and Big bets on the roadmap slide.",
+    { kind: "matrix", items: [{ title: "Quick wins" }, { title: "Big bets" }], axes: ["Effort", "Impact"] },
+    "Big bets",
+    "Matrix",
+  ),
+  pattern(
+    "timeline-pattern",
+    "Show a timeline of Q1 Beta and Q2 Launch on the roadmap slide.",
+    {
+      kind: "timeline",
+      items: [
+        { value: "Q1", title: "Beta" },
+        { value: "Q2", title: "Launch" },
+      ],
+    },
+    "Launch",
+    "Timeline",
+  ),
+  pattern(
+    "flow-pattern",
+    "Show a flow of Plan then Build on the roadmap slide.",
+    { kind: "flow", items: [{ title: "Plan" }, { title: "Build" }] },
+    "Build",
+    "Flow",
+  ),
+
+  row(
+    "move-into-card",
+    "Move the note into the card.",
+    { touches: [named.note], landed: (end) => childrenOf(end, named.card).includes(named.note) },
+    one({ op: "move", node: named.note, into: named.card }),
+    one({ op: "move", node: named.note }),
+    "landed",
+  ),
+  row(
+    "delete-note",
+    "Delete the note.",
+    { touches: [named.note], landed: (end) => !childrenOf(end, slides.numbers).includes(named.note) },
+    one({ op: "delete", nodes: [named.note] }),
+    one({ op: "delete", nodes: [named.card] }),
+    "touched",
+  ),
+  row(
+    "add-slide",
+    "Add a slide at the end.",
+    { landed: (end) => slideIds(end).length === slideCount + 1 },
+    one({ op: "slide", add: {} }),
+    one({ op: "slide", delete: slides.roadmap }),
+    "touched",
+  ),
+  row(
+    "move-slide",
+    "Move the roadmap slide to the front.",
+    { touches: [slides.roadmap], landed: (end) => slideIds(end)[0] === slides.roadmap },
+    one({ op: "slide", move: { slide: slides.roadmap, after: null } }),
+    one({ op: "slide", move: { slide: slides.numbers, after: null } }),
+    "touched",
+  ),
+
+  row(
+    "base-ahead",
+    "Set the title of the opening slide to North star. The deck is at revision 1, and your copy says revision 9.",
+    { steps: [refused("base")], landed: unchanged },
+    [edit([{ op: "set", target: aim, text: "North star" }], 9)],
+    setTitle("North star"),
+    "tool",
+  ),
+  row(
+    "unknown-deck",
+    "Set the title of the deck that has the id missing to North star.",
+    { steps: [refused("deck")], landed: unchanged },
+    [edit([{ op: "set", target: aim, text: "North star" }], baseRev, undefined, "missing")],
+    setTitle("North star"),
+    "tool",
+  ),
+  row(
+    "unknown-layer",
+    "Set the words of the layer z:9 to North star.",
+    { steps: [refused("dead")], landed: unchanged },
+    one({ op: "set", target: "z:9", text: "North star" }),
+    setTitle("North star"),
+    "tool",
+  ),
+  row(
+    "no-text-on-a-line",
+    "Add a line to the roadmap slide that says Go.",
+    { steps: [refused("field")], landed: unchanged },
+    addTo(slides.roadmap, { kind: "line", text: "Go" }),
+    addTo(slides.roadmap, { kind: "line" }),
+    "tool",
+  ),
+  row(
+    "empty-changes",
+    "Send an edit with no changes.",
+    { steps: [refused("batch")], landed: unchanged },
+    [edit([], baseRev)],
+    setTitle("North star"),
+    "tool",
+  ),
+  row(
+    "read-first",
+    "Read the deck, then set the note to Plan was $3.9M.",
+    {
+      calls: 2,
+      steps: [{ name: "read_deck", outcome: "ok" }, ok],
+      touches: [named.note],
+      landed: (end) => textOf(end, named.note) === "Plan was $3.9M",
+    },
+    [read(), edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }], baseRev)],
+    [edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }], baseRev)],
+    "tool",
+  ),
+  row(
+    "retry-after-stale",
+    "Set the title of the opening slide to Agent. A person retyped it after your read at revision 1, and the deck is at revision 2.",
+    {
+      deck: typedByAPerson,
+      calls: 3,
+      steps: [refused("stale"), { name: "read_deck", outcome: "ok" }, ok],
+      touches: [named.title],
+      landed: (end) => textOf(end, named.title) === "Agent",
+    },
+    [
+      edit([{ op: "set", target: aim, text: "Agent" }], baseRev),
+      read(),
+      edit([{ op: "set", target: aim, text: "Agent" }], baseRev + 1),
     ],
-    wrong: {
-      attempt: [
-        edit("pair", [
-          { element: "title", value: "Detail", readAt: 0 },
-          { element: "body", value: "Heading", readAt: 0 },
-        ]),
+    [edit([{ op: "set", target: aim, text: "Agent" }], baseRev + 1)],
+    "tool",
+  ),
+  row(
+    "closed-by-a-person",
+    "Set the name of the note to Agent in your run. A person renamed the note while the run was open.",
+    {
+      deck: noteTouched,
+      steps: [refused("person-protected")],
+      touches: [named.note],
+      landed: (end) => lineOf(end, named.note).includes('name="Mine"'),
+    },
+    [edit([{ op: "set", target: named.note, name: "Agent" }], baseRev + 2, heldRun)],
+    [edit([{ op: "set", target: named.note, name: "Agent" }], baseRev + 2)],
+    "tool",
+  ),
+  row(
+    "stopped-run",
+    "Add the words Late to the roadmap slide in the run that has stopped.",
+    { deck: stoppedRun, steps: [refused("run-fenced")] },
+    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }], baseRev + 2, heldRun)],
+    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }], baseRev + 2)],
+    "tool",
+  ),
+  row(
+    "stop-twice",
+    "Stop the run that is open, then stop it again.",
+    {
+      deck: () => runningWith([]),
+      calls: 2,
+      steps: [
+        { name: "stop_run", outcome: "ok" },
+        { name: "stop_run", outcome: "ok" },
       ],
-      reason: "landed",
+      landed: (end) => end.runs.get(heldRun)?.phase === "stopped",
     },
-  },
-  {
-    task: {
-      id: "order-words",
-      prompt: "On the title of deck steps, write First and then Second.",
-      deck: () => fixture("steps", [{ element: "title" }]),
-      want: {
-        calls: 2,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["First", "Second"] },
-      },
-    },
-    reference: [...one("steps", "title", "First", 0), ...one("steps", "title", "Second", 1)],
-    wrong: {
-      attempt: [...one("steps", "title", "Second", 0), ...one("steps", "title", "First", 1)],
-      reason: "landed",
-    },
-  },
-  {
-    task: {
-      id: "protect-title-words",
-      prompt: "A teammate just typed Do not touch into the title of deck guarded. Set the title to Overwrite.",
-      deck: () => fixture("guarded", [{ element: "title", during: ["Do not touch"] }, { element: "body" }]),
-      want: {
-        calls: 1,
-        steps: [{ name: "edit_deck", outcome: "person-protected" }],
-        elements: { title: ["Do not touch"] },
-      },
-    },
-    reference: one("guarded", "title", "Overwrite", 1),
-    wrong: { attempt: one("guarded", "body", "Overwrite", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "ask-delete",
-      prompt: "Delete slide 2 of deck slides.",
-      deck: () => fixture("slides", [{ element: "title" }, { element: "note" }]),
-      want: { calls: 0, steps: [], elements: {} },
-    },
-    reference: [],
-    wrong: { attempt: one("slides", "title", "", 0), reason: "calls" },
-  },
-  {
-    task: {
-      id: "ask-export",
-      prompt: "Export deck report as a PowerPoint file.",
-      deck: () => fixture("report", [{ element: "title" }, { element: "body" }, { element: "note" }]),
-      want: { calls: 0, steps: [], elements: {} },
-    },
-    reference: [],
-    wrong: { attempt: one("report", "title", "report.pptx", 0), reason: "calls" },
-  },
-  {
-    task: {
-      id: "ask-read",
-      prompt: "What does the title of deck review say?",
-      deck: () => fixture("review", [{ element: "title", before: ["Quarterly review"] }]),
-      want: { calls: 1, steps: [], elements: {} },
-    },
-    reference: [],
-    wrong: { attempt: one("review", "title", "Quarterly review", 1), reason: "touched" },
-  },
-  {
-    task: {
-      id: "ask-colour",
-      prompt: "Make the title of deck palette blue.",
-      deck: () => fixture("palette", [{ element: "title" }, { element: "body" }]),
-      want: { calls: 0, steps: [], elements: {} },
-    },
-    reference: [],
-    wrong: { attempt: one("palette", "title", "blue", 0), reason: "calls" },
-  },
-  {
-    task: {
-      id: "limit-slides",
-      prompt: "Set the title of deck full to More. The deck has 51 slides, one over the 50 slide limit.",
-      deck: () => fixture("full", [{ element: "title" }], overLimit),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "limit" }], elements: { title: [] } },
-    },
-    reference: one("full", "title", "More", 0),
-    wrong: { attempt: one("other", "title", "More", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "limit-bytes",
-      prompt: "Set the title of deck heavy to More. This deck is already at the byte limit.",
-      deck: () => fixture("heavy", [{ element: "title" }], fullBytes),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "limit" }], elements: { title: [] } },
-    },
-    reference: one("heavy", "title", "More", 0),
-    wrong: { attempt: one("other", "title", "More", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "foreign-notes",
-      prompt: "Set the title of deck notes to Hello. This session is on deck archive.",
-      deck: () => fixture("archive", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "deck" }], elements: { title: [] } },
-    },
-    reference: one("notes", "title", "Hello", 0),
-    wrong: { attempt: one("archive", "title", "Hello", 0), reason: "tool" },
-  },
-  {
-    task: staleEditTask,
-    reference: staleEditAttempt,
-    wrong: { attempt: [edit("deck", [{ element: "title", value: "21", readAt: 0 }], 1)], reason: "landed" },
-  },
-  {
-    task: {
-      id: "protect-batch-drop",
-      prompt: "A teammate is typing in the title of deck split. Set the title to Agenda and the body to Notes.",
-      deck: () => fixture("split", [{ element: "title", during: ["Mine"] }, { element: "body" }]),
-      want: {
-        calls: 2,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Mine"], body: ["Notes"] },
-      },
-    },
-    reference: [
-      edit("split", [
-        { element: "title", value: "Agenda", readAt: 1 },
-        { element: "body", value: "Notes", readAt: 0 },
-      ]),
-      ...one("split", "body", "Notes", 0),
+    [stop(heldRun), stop(heldRun)],
+    [stop("other"), stop(heldRun)],
+    "tool",
+  ),
+  row(
+    "batch-limit",
+    "Send a hundred and one changes in one call.",
+    { steps: [refused("batch")], landed: unchanged },
+    [
+      edit(
+        Array.from({ length: 101 }, () => ({ op: "delete", nodes: [named.note] })),
+        baseRev,
+      ),
     ],
-    wrong: {
-      attempt: [
-        edit("split", [
-          { element: "title", value: "Agenda", readAt: 1 },
-          { element: "body", value: "Notes", readAt: 0 },
-        ]),
-      ],
-      reason: "tool",
-    },
-  },
+    one({ op: "delete", nodes: [named.note] }),
+    "tool",
+  ),
   {
     task: {
-      id: "three-over-two-slides",
+      id: "board-brief",
       prompt:
-        "In one edit, set the title and body on slide 258 of deck spread to Heading and Detail, and the note on slide 259 to Remember.",
-      deck: () => fixture("spread", [{ element: "title" }, { element: "body" }, { element: "note" }]),
+        "Build a five-slide board deck: a title, a KPI summary with a decision card, a bar chart of plan against actual, three priorities with icons, and a roadmap as a grid of words.",
+      deck: blankDeck,
       want: {
-        calls: 1,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Heading"], body: ["Detail"], note: ["Remember"] },
+        calls: 8,
+        steps: [{ name: "read_deck", outcome: "ok" }, ok, ok, { name: "stop_run", outcome: "ok" }],
+        touches: [blank.title],
+        landed: (end) => {
+          const made = slideIds(end)
+          return (
+            made.length === 5 &&
+            has(end, 'name="KPI"') &&
+            has(end, 'name="Decision"') &&
+            has(end, "chart=") &&
+            lines(end)
+              .split("\n")
+              .filter((line) => line.includes("icon=")).length === 3 &&
+            has(end, "layout=grid")
+          )
+        },
       },
     },
-    reference: [
-      edit("spread", [
-        { element: "title", value: "Heading", readAt: 0 },
-        { element: "body", value: "Detail", readAt: 0 },
-        { element: "note", value: "Remember", readAt: 0 },
-      ]),
-    ],
-    wrong: {
-      attempt: [
-        edit("spread", [
-          { element: "title", value: "Heading", readAt: 0 },
-          { element: "body", value: "Detail", readAt: 0 },
-        ]),
-      ],
-      reason: "landed",
-    },
-  },
-  {
-    task: {
-      id: "person-after-agent-row",
-      prompt:
-        "Earlier you set the title of deck typed-over to First, and a teammate has typed over it since. Set the title to Second.",
-      deck: () =>
-        fixture("typed-over", [{ element: "title", agent: ["First"], during: ["Teammate"] }, { element: "body" }]),
-      want: {
-        calls: 1,
-        steps: [{ name: "edit_deck", outcome: "person-protected" }],
-        elements: { title: ["First", "Teammate"] },
-      },
-    },
-    reference: one("typed-over", "title", "Second", 2),
-    wrong: { attempt: one("typed-over", "body", "Second", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "person-on-other-element",
-      prompt: "A teammate is typing in the body of deck beside. Set the title to Agenda.",
-      deck: () => fixture("beside", [{ element: "title" }, { element: "body", during: ["Teammate"] }]),
-      want: {
-        calls: 1,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Agenda"], body: ["Teammate"] },
-      },
-    },
-    reference: one("beside", "title", "Agenda", 0),
-    wrong: {
-      attempt: [
-        edit("beside", [
-          { element: "title", value: "Agenda", readAt: 0 },
-          { element: "body", value: "Agenda", readAt: 1 },
-        ]),
-      ],
-      reason: "tool",
-    },
-  },
-  {
-    task: {
-      id: "stale-read-resend",
-      prompt: "The title of deck ledger has been edited twice by hand before this run. Set the title to Final.",
-      deck: () => fixture("ledger", [{ element: "title", before: ["Draft", "Review"] }]),
-      want: {
-        calls: 2,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Draft", "Review", "Final"] },
-      },
-    },
-    reference: [...one("ledger", "title", "Final", 0), ...one("ledger", "title", "Final", 2)],
-    wrong: { attempt: one("ledger", "title", "Final", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "versions-per-element",
-      prompt:
-        "The title of deck levels already says Old title. Set the title to New title and the body to New body in one edit.",
-      deck: () => fixture("levels", [{ element: "title", before: ["Old title"] }, { element: "body" }]),
-      want: {
-        calls: 1,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Old title", "New title"], body: ["New body"] },
-      },
-    },
-    reference: [
-      edit("levels", [
-        { element: "title", value: "New title", readAt: 1 },
-        { element: "body", value: "New body", readAt: 0 },
-      ]),
-    ],
-    wrong: {
-      attempt: [
-        edit("levels", [
-          { element: "title", value: "New title", readAt: 0 },
-          { element: "body", value: "New body", readAt: 0 },
-        ]),
-      ],
-      reason: "tool",
-    },
-  },
-  {
-    task: {
-      id: "value-over-8000-bytes",
-      prompt:
-        "Set the title of deck bulk to the letter é 4001 times. If the deck says that is too long, use 4000 é instead.",
-      deck: () => fixture("bulk", [{ element: "title" }]),
-      want: {
-        calls: 2,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: [fits] },
-      },
-    },
-    reference: [...one("bulk", "title", tooLong, 0), ...one("bulk", "title", fits, 0)],
-    wrong: { attempt: one("bulk", "title", tooLong, 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "name-the-element",
-      prompt: "Set the title of deck legacy to Hello. The title is element 258.7, not a.",
-      deck: () => fixture("legacy", [{ element: "title" }, { element: "body" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Hello"] } },
-    },
-    reference: one("legacy", "title", "Hello", 0),
-    wrong: { attempt: one("legacy", "body", "Hello", 0), reason: "touched" },
-  },
-  {
-    task: {
-      id: "floor-on-change",
-      prompt:
-        "The title of deck floored already says Draft. Set it to Hello, and keep Draft as the text it started from.",
-      deck: () => fixture("floored", [{ element: "title", before: ["Draft"] }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Draft", "Hello"] } },
-    },
-    reference: [edit("floored", [{ element: "title", value: "Hello", readAt: 1, floor: "Draft" }])],
-    wrong: { attempt: one("floored", "title", "Draft", 1), reason: "landed" },
-  },
-  {
-    task: {
-      id: "element-not-in-deck",
-      prompt: "Set the footer of deck bare to Thanks. The deck has no footer yet.",
-      deck: () => fixture("bare", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { footer: ["Thanks"] } },
-    },
-    reference: one("bare", "footer", "Thanks", 0),
-    wrong: { attempt: one("bare", "title", "Thanks", 0), reason: "touched" },
-  },
-  {
-    task: {
-      id: "same-element-twice",
-      prompt: "In one edit, write First and then Second on the title of deck twice.",
-      deck: () => fixture("twice", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["First", "Second"] } },
-    },
-    reference: [
-      edit("twice", [
-        { element: "title", value: "First", readAt: 0 },
-        { element: "title", value: "Second", readAt: 0 },
-      ]),
-    ],
-    wrong: {
-      attempt: [
-        edit("twice", [
-          { element: "title", value: "Second", readAt: 0 },
-          { element: "title", value: "First", readAt: 0 },
-        ]),
-      ],
-      reason: "landed",
-    },
-  },
-  {
-    task: {
-      id: "limit-slides-at",
-      prompt: "Set the title of deck edge to More. The deck has 50 slides, exactly the limit.",
-      deck: () => fixture("edge", [{ element: "title" }], atLimit),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["More"] } },
-    },
-    reference: one("edge", "title", "More", 0),
-    wrong: { attempt: one("edge", "title", "Less", 0), reason: "landed" },
-  },
-  {
-    task: {
-      id: "bytes-run-out",
-      prompt:
-        "Set the title of deck tight to Short, then the body to Longer note. The deck has room for ten more bytes.",
-      deck: () => fixture("tight", [{ element: "title" }, { element: "body" }], tenBytesLeft),
-      want: {
-        calls: 2,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { title: ["Short"], body: [] },
-      },
-    },
-    reference: [...one("tight", "title", "Short", 0), ...one("tight", "body", "Longer note", 0)],
-    wrong: {
-      attempt: [
-        edit("tight", [
-          { element: "title", value: "Short", readAt: 0 },
-          { element: "body", value: "Longer note", readAt: 0 },
-        ]),
-      ],
-      reason: "tool",
-    },
-  },
-  {
-    task: {
-      id: "elements-run-out",
-      prompt: "Set the footer of deck crowded to Thanks. The deck already holds 5000 elements.",
-      deck: () => fixture("crowded", [{ element: "title" }], fullElements),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "limit" }], elements: { footer: [] } },
-    },
-    reference: one("crowded", "footer", "Thanks", 0),
-    wrong: { attempt: one("crowded", "title", "Thanks", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "two-calls-one-read",
-      prompt:
-        "The body of deck reread already says Start. Add First and then Second to the body, reading it only once.",
-      deck: () => fixture("reread", [{ element: "body", before: ["Start"] }]),
-      want: {
-        calls: 2,
-        steps: [{ name: "edit_deck", outcome: "ok" }],
-        elements: { body: ["Start", "First", "Second"] },
-      },
-    },
-    reference: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 1)],
-    wrong: { attempt: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 5)], reason: "landed" },
-  },
-  {
-    task: {
-      id: "undone-run",
-      prompt: "Your last run on the title of deck undone was undone. Set the title to Again.",
-      deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Again"] } },
-    },
-    reference: one("undone", "title", "Again", 2),
-    wrong: { attempt: one("undone", "body", "Again", 0), reason: "touched" },
-  },
-  {
-    task: {
-      id: "text-on-picture",
-      prompt: "Write the caption Sunrise into the picture that is the body of deck pictured.",
-      deck: () => fixture("pictured", [{ element: "title" }, { element: "body" }], bodyIs("photo")),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
-    },
-    reference: one("pictured", "body", "Sunrise", 0),
-    wrong: { attempt: one("pictured", "title", "Sunrise", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "text-on-kept",
-      prompt: "Change the diagram that is the body of deck diagrammed to read Plan.",
-      deck: () => fixture("diagrammed", [{ element: "title" }, { element: "body" }], bodyIs("kept")),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
-    },
-    reference: one("diagrammed", "body", "Plan", 0),
-    wrong: { attempt: one("diagrammed", "title", "Plan", 0), reason: "tool" },
+    reference: boardAttempt(true),
+    wrong: { attempt: boardAttempt(false), reason: "landed" },
   },
 ]
+
+function boardAttempt(withChart: boolean): Attempt {
+  const [one, two, three, four, five] = boardSlides() as [string, string, string, string, string]
+  const title = (slide: string, text: string) => ({
+    op: "add",
+    kind: "text",
+    slide,
+    text,
+    textStyle: "title",
+    box: { x: 80, y: 60, w: 1760, h: 90 },
+  })
+  return [
+    read(),
+    edit(
+      Array.from({ length: 4 }, () => ({ op: "slide", add: {} })),
+      baseRev,
+    ),
+    edit(
+      [
+        { op: "set", target: `${one}`, text: "Q3 board update" },
+        title(two, "Results at a glance"),
+        {
+          op: "add",
+          kind: "kpi",
+          slide: two,
+          items: [
+            { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
+            { title: "Margin", value: "31%" },
+          ],
+        },
+        {
+          op: "add",
+          kind: "cards",
+          slide: two,
+          name: "Decision",
+          items: [{ title: "Decision requested", points: ["Approve the budget"] }],
+        },
+        title(three, "Revenue ran ahead of plan"),
+        ...(withChart
+          ? [
+              {
+                op: "add",
+                kind: "chart",
+                slide: three,
+                chart: {
+                  kind: "bar",
+                  categories: ["Q1", "Q2"],
+                  series: [
+                    { name: "Plan", values: [3.1, 3.4] },
+                    { name: "Actual", values: [3.3, 3.7] },
+                  ],
+                },
+              },
+            ]
+          : []),
+        title(four, "Three priorities"),
+        {
+          op: "add",
+          kind: "cards",
+          slide: four,
+          items: [
+            { title: "Grow", icon: "trending-up", points: ["Enter two markets"] },
+            { title: "Protect", icon: "shield", points: ["Raise retention"] },
+            { title: "Build", icon: "hammer", points: ["Ship the platform"] },
+          ],
+        },
+        title(five, "Roadmap"),
+        {
+          op: "add",
+          kind: "frame",
+          slide: five,
+          rows: [
+            ["", "Q1", "Q2"],
+            ["Product", "Beta", "Launch"],
+          ],
+        },
+      ],
+      baseRev + 1,
+      boardIds.run,
+    ),
+    stop(boardIds.run),
+  ]
+}

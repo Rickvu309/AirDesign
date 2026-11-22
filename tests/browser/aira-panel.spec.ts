@@ -42,55 +42,6 @@ async function ask(page: Page, text: string) {
   await page.keyboard.press("Enter")
 }
 
-test("a person asks Aira, watches the reply stream, and sees the slide change without a reload", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { deck, base, side, log } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 }, { name: "edited.sse" })
-  const reached = stack.hold()
-  await ask(page, asked)
-  await reached
-  await expect(log.getByText(asked, { exact: true })).toBeVisible()
-  await expect(side.getByText("I will change the title", { exact: true })).toBeVisible()
-  await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
-  await expect(side.getByRole("textbox", { name: airaCopy.addToRequest })).toBeVisible()
-  stack.release()
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
-  await expect(side.getByText("I will change the title on the first slide.", { exact: true })).toBeVisible()
-  await expect(side.getByText(airaStepWords.edit_deck.done, { exact: true })).toBeVisible()
-  await expect(side.getByText(/airdesign_/)).toHaveCount(0)
-  await expect(side.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
-  await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
-  await expect(side.getByRole("button", { name: productCopy.undo })).toBeVisible()
-  await side.getByRole("button", { name: productCopy.usageTitle }).click()
-  const usage = page.getByRole("dialog", { name: productCopy.usageTitle })
-  await expect(usage).toContainText(/\d+%/)
-  await expect(usage).toContainText(usageResetsOn("Mon 7:00 AM"))
-  expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
-})
-
-test("Undo takes Aira's run back, the slide paints the old words, and the request says its changes are undone", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { cookie, deck, base, side, log } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
-  await ask(page, asked)
-  const editor = page.locator('[contenteditable="true"]')
-  await expect(editor).toHaveText("Hello from Aira")
-  expect(await serverText(stack, deck, cookie)).toBe("Hello from Aira")
-  await side.getByRole("button", { name: productCopy.undo }).click()
-  await expect(editor).toHaveText("Hello")
-  await expect(side.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
-  await expect(log.getByText(airaCopy.undone, { exact: true })).toBeVisible()
-  await expect(side.getByRole("textbox", { name: airaCopy.askAira })).toBeFocused()
-  expect(await serverText(stack, deck, cookie)).not.toBe("Hello from Aira")
-  expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
-})
-
 test("Stop ends the run before Aira's edit lands", async ({ page, context, stack }) => {
   const { cookie, deck, base, paths, side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 })
@@ -126,90 +77,6 @@ test("Stop ends an edit call the server has not answered, and the step says it s
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeVisible()
   await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
-})
-
-test("Stop after an edit reached the server ends its run, shows the step done and offers Undo for the edit that landed, while its answer is still held", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { cookie, deck, base, side } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
-  let reachedCall: () => void = () => undefined
-  const reached = new Promise<void>((resolve) => {
-    reachedCall = resolve
-  })
-  let answer: () => void = () => undefined
-  const answered = new Promise<void>((resolve) => {
-    answer = resolve
-  })
-  let calls = 0
-  await page.route("**/mcp", async (route) => {
-    calls += 1
-    if (calls > 1) {
-      await route.fallback()
-      return
-    }
-    const request = route.request()
-    const landed = await route.fetch({ url: `${stack.origin}${stack.mcp}`, headers: await request.allHeaders() })
-    reachedCall()
-    await answered
-    await route.fulfill({ response: landed }).catch(() => undefined)
-  })
-  await ask(page, asked)
-  await reached
-  await side.getByRole("button", { name: "Stop" }).click()
-  await expect(side.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.edit_deck.done)
-  await expect(side.getByText("Stopped editing slides", { exact: true })).toHaveCount(0)
-  await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello from Aira")
-  const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
-  await expect(undo).toBeEnabled()
-  const opened = (await stack.post("/decks/open", { deck }, cookie)).json as {
-    register?: { elements?: Record<string, { phase?: string }> }
-  }
-  expect(opened.register?.elements?.[node]?.phase).toBe("stopped")
-  await undo.click()
-  await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello")
-  await expect(side.getByText(airaCopy.undone, { exact: true })).toBeVisible()
-  expect(await serverText(stack, deck, cookie)).not.toBe("Hello from Aira")
-  answer()
-})
-
-test("Stop before an edit reached the server keeps it from landing when it reaches the server later", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { cookie, deck, base, side } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
-  let heldCall: (request: { body: string; headers: Record<string, string> }) => void = () => undefined
-  const held = new Promise<{ body: string; headers: Record<string, string> }>((resolve) => {
-    heldCall = resolve
-  })
-  let calls = 0
-  await page.route("**/mcp", async (route) => {
-    calls += 1
-    if (calls > 1) {
-      await route.fallback()
-      return
-    }
-    const request = route.request()
-    heldCall({ body: request.postData() ?? "", headers: await request.allHeaders() })
-  })
-  await ask(page, asked)
-  const call = await held
-  const stopped = page.waitForResponse((response) => new URL(response.url()).pathname === "/aira/stop")
-  await side.getByRole("button", { name: "Stop" }).click()
-  expect(JSON.parse((await stopped).request().postData() ?? "")).toMatchObject({ call: { deck } })
-  await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
-  const { cookie: sent, accept } = call.headers
-  const headers = { cookie: sent ?? "", accept: accept ?? "", "content-type": "application/json" }
-  const late = await fetch(`${stack.origin}${stack.mcp}`, { method: "POST", headers, body: call.body })
-  expect(await late.text()).toContain("run-fenced")
-  expect((await stack.post("/decks/open", { deck }, cookie)).json.revision).toBe(base)
-  await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello")
-  await expect(side.getByRole("button", { name: productCopy.undo, exact: true })).toHaveCount(0)
-  expect(calls).toBe(1)
 })
 
 test("after Stop the usage ring shows what the stopped model call was charged", async ({ page, context, stack }) => {
@@ -288,28 +155,6 @@ test("a new ask right after Stop is answered once the server has stopped and clo
   }
 })
 
-test("Aira keeps streaming and repainting while a person changes slide order", async ({ page, context, stack }) => {
-  const { cookie, deck, base, side } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 }, { name: "edited.sse" })
-  const reached = stack.hold()
-  await ask(page, asked)
-  await reached
-  await page.getByRole("button", { name: "Add slide", exact: true }).click()
-  const entries = page.locator("[data-slide-entry]")
-  await expect(entries).toHaveCount(2)
-  await entries.nth(1).focus()
-  await page.keyboard.press("Alt+ArrowUp")
-  await expect(entries.first()).toHaveAttribute("aria-current", "true")
-  await entries.first().focus()
-  await page.keyboard.press("Delete")
-  await expect(entries).toHaveCount(1)
-  stack.release()
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
-  await expect(side.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
-  expect(await serverText(stack, deck, cookie)).toBe("Hello from Aira")
-  await expect(entries).toHaveCount(1)
-})
-
 test("Aira refuses an edit of a slide removed during its reply without hanging", async ({ page, context, stack }) => {
   const { cookie, deck, base, side } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 }, { name: "edited.sse" })
@@ -351,25 +196,6 @@ test("a new deck's panel says who Aira is, and Enter sends while Shift+Enter sta
   await expect(side.getByRole("log").getByText("Lead with\nthe claim", { exact: true })).toBeVisible()
   await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
   await expect(side.getByRole("heading", { name: productCopy.agentName })).toHaveCount(0)
-})
-
-test("steps Aira takes one after another sum up in one line that opens to each step", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { deck, base, side } = await openDeck(page, context, stack)
-  stack.aira({ name: "read-edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
-  await ask(page, asked)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
-  const summary = side.getByRole("button", { name: "Read the deck and edited slides" })
-  await expect(summary).toHaveAttribute("aria-expanded", "false")
-  await summary.click()
-  await expect(summary).toHaveAttribute("aria-expanded", "true")
-  const steps = side.locator('li[data-tool-state="done"]')
-  await expect(steps).toHaveText(["Read the deck", airaStepWords.edit_deck.done])
-  await summary.click()
-  await expect(steps).toHaveCount(0)
 })
 
 test("the thread follows the reply at the latest message and stays put once the person scrolls up", async ({

@@ -1,50 +1,50 @@
-import { readDeckQuery, readListDecks } from "@airdesign/catalog"
-import { readSlideId } from "@airdesign/document"
-import { listLead, pageOwned, readDeckPage, readLead } from "@airdesign/engine"
+import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
+import { scene } from "@airdesign/document"
 
-import type { Session, ToolResult } from "./call-tool.js"
-import { editRefusal } from "./edit-answer.js"
-import { pictureBlocks } from "./slide-pictures.js"
+import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
+import type { DeckHost, Opened } from "./deck-host.js"
 
-export function readDeckTool(raw: unknown, session: Session, runId: string | null): ToolResult {
-  const before = session.deck
-  const parsed = readDeckQuery(raw)
-  if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
-  if (parsed.deck !== before.id) return editRefusal(before, "deck", [])
-  const reported = readDeckPage(before, {
-    runId,
-    ...(parsed.slide === undefined ? {} : { slide: parsed.slide }),
-    ...(parsed.cursor === undefined ? {} : { cursor: parsed.cursor }),
-    ...(session.findings?.deck === before.id ? { findings: session.findings } : {}),
-  })
-  const lead = readLead(reported.revision)
-  const pictures =
-    parsed.picture === true
-      ? pictureBlocks(session.pictures, before.register, readSlideId(parsed.slide), before.revision)
-      : []
-  return {
-    ok: true,
-    deck: before,
-    reported,
-    content: [
-      { type: "text", text: lead },
-      { type: "text", text: JSON.stringify(reported) },
-    ],
-    ...(pictures.length === 0 ? {} : { pictures }),
+const readBytes = 24_000
+
+const lead = (opened: Opened, count: number) =>
+  `Deck ${opened.deck} "${scene.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
+
+export function readAnswer(
+  opened: Opened,
+  query: { readonly slide?: string | undefined; readonly cursor?: string | undefined },
+): ToolResult {
+  const slides = scene.slidesOf(opened.fold).map((slide) => slide.id)
+  const { slide, cursor } = query
+  const alone = slide === undefined ? undefined : slides.find((id) => id === slide)
+  if (slide !== undefined && alone === undefined) return refused("dead", { node: slide })
+  const from = cursor === undefined ? 0 : slides.findIndex((id) => id === cursor)
+  if (cursor !== undefined && from < 0) return refused("dead", { node: cursor })
+  const wanted = alone === undefined ? slides.slice(from) : [alone]
+  const chosen: typeof slides = []
+  let bytes = 0
+  for (const slide of wanted) {
+    bytes += scene.readForAgent(opened.fold, [slide]).length
+    if (chosen.length > 0 && bytes > readBytes) break
+    chosen.push(slide)
   }
+  const next = wanted[chosen.length]
+  const answer = {
+    ok: true,
+    deck: opened.deck,
+    rev: opened.rev,
+    name: scene.deckName(opened.fold),
+    slides,
+    ...(next === undefined ? {} : { next }),
+  }
+  return answered(lead(opened, slides.length), answer, scene.readForAgent(opened.fold, chosen))
 }
 
-export function listDecksTool(raw: unknown, session: Session): ToolResult {
-  const parsed = readListDecks(raw)
-  if (!parsed.ok) return editRefusal(session.deck, parsed.refusal, [])
-  const reported = pageOwned(session.owned ?? [], parsed.cursor)
-  return {
-    ok: true,
-    deck: session.deck,
-    reported,
-    content: [
-      { type: "text", text: listLead },
-      { type: "text", text: JSON.stringify(reported) },
-    ],
-  }
+export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolResult> {
+  const named = readNamedDeck(raw)
+  if (!named.ok) return refused(named.refusal)
+  const opened = await host.open(named.deck)
+  if (!opened.ok) return hostRefused(opened)
+  const parsed = readDeckQuery(raw)
+  if (!parsed.ok) return refused(parsed.refusal)
+  return readAnswer(opened, parsed)
 }

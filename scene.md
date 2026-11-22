@@ -85,3 +85,7 @@ _Avoid_: empty space, gap
 **reading**:
 What the agent saw when it last read the deck. Its text and list writes carry that revision as their `base`, so a person's later change refuses them as stale.
 _Avoid_: snapshot, readAt
+
+**run**:
+One agent turn on a deck. Its first edit opens it (`phase: start`) and `stop_run` closes it. A person's change to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
+_Avoid_: session, turn

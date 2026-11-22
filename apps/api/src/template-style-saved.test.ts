@@ -13,7 +13,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { account, connected, deckOf, grant, startAgents, stores, address, type Account } from "./agents-drive.js"
+import { account, deckOf, startAgents, stores, address, type Account } from "./agents-drive.js"
 import { ask } from "./harness.js"
 
 const templateStyleFormat = 68
@@ -36,10 +36,6 @@ type Saved = {
       } | null
     }[]
   }
-}
-
-function hashed(digits: string): `#${string}` {
-  return `#${digits}`
 }
 
 const saved = JSON.parse(
@@ -162,55 +158,4 @@ it("takes the template colour that build left unsent, undoes a new one, and stor
   })
   expect(JSON.stringify(after.register.elements[node])).not.toContain('"theme"')
   expect(shown((await opened(owner, deck)).register, node).templateStyle).toMatchObject({ accent4: { set: "123456" } })
-})
-
-it("answers an agent that still says deck.theme, and reads the template styles under their new names", async () => {
-  const owner = await account()
-  const deck = await plant(owner)
-  const agent = await connected({ authorization: `Bearer ${await grant(owner, "claude")}` })
-  const read = await agent.call("read_deck", { deck })
-  expect(read.ok, read.said).toBe(true)
-  const styles = read.body.templateStyles as readonly {
-    readonly node: string
-    readonly palette: { readonly slots: { readonly accent3: string } }
-  }[]
-  expect(styles.map((style) => style.node)).toEqual([templateStyleNode(0), templateStyleNode(1)])
-  expect(styles.every((style) => style.palette.slots.accent3 === "7030A0")).toBe(true)
-  expect(read.said).not.toContain("deck.theme")
-  const aliased = await agent.call("edit_deck", {
-    deck,
-    base: read.body.revision,
-    changes: [{ op: "set", target: "deck.theme", theme: { accent2: hashed("00B050"), minor: "Verdana" } }],
-  })
-  expect(aliased.ok, aliased.said).toBe(true)
-  const runId = aliased.body.runId
-  expect(typeof runId).toBe("string")
-  const stopped = await agent.call("stop_run", { deck, runId })
-  expect(stopped.ok, stopped.said).toBe(true)
-  const both = await agent.call("edit_deck", {
-    deck,
-    base: stopped.body.revision ?? aliased.body.revision,
-    changes: [
-      {
-        op: "set",
-        target: "deck.templateStyles",
-        theme: { accent2: hashed("FF0000") },
-        templateStyle: { accent2: hashed("00FF00") },
-      },
-    ],
-  })
-  expect(both.ok).toBe(false)
-  const { register } = await opened(owner, deck)
-  for (const node of [templateStyleNode(0), templateStyleNode(1)]) {
-    expect(shown(register, node).templateStyle).toMatchObject({
-      accent2: { set: "00B050" },
-      minor: { set: "Verdana" },
-    })
-  }
-  const kept = await stored(deck)
-  const flat = JSON.stringify(kept.register.elements)
-  expect(flat).toContain('"accent2":{"set":"00B050"}')
-  expect(flat).toContain('"minor":{"set":"Verdana"}')
-  expect(flat).not.toMatch(/"(theme|template)":/)
-  expect(flat).not.toMatch(/deck\.(theme|template\d)/)
 })

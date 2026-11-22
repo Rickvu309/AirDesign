@@ -5,9 +5,6 @@ const exported = "exported-connection.pptx"
 const elbowOriginal = "connectors.pptx"
 const elbowExported = "exported-elbow.pptx"
 const elbowSlide = "ppt/slides/slide1.xml"
-const arrowOriginal = "shapes-added.pptx"
-const arrowExported = "exported-agent-arrow.pptx"
-const underExported = "exported-agent-elbow.pptx"
 const clearance = 228600
 const slide = "ppt/slides/slide10.xml"
 const untouched = ["ppt/slides/slide7.xml", "ppt/slides/slide8.xml", "ppt/slides/slide9.xml"]
@@ -81,62 +78,15 @@ function elbowLines(answers, decode) {
   return lines
 }
 
-function arrowLines(answers, decode) {
-  const kept = [...(answers.parts.get(arrowOriginal)?.keys() ?? [])].filter((name) => name !== elbowSlide)
-  const lines = slideExportLines({ ...answers, original: arrowOriginal, exported: arrowExported, kept }).map((line) =>
-    line.replace(/^slide export/, "agent arrow"),
-  )
-  const after = decode(arrowExported, elbowSlide)
-  if (!after.includes('<a:stCxn id="4" idx="3"/><a:endCxn id="5" idx="2"/>'))
-    lines.push("agent arrow did not bind the rectangle's right site to the oval's left site")
-  if (!after.includes('<a:tailEnd type="triangle"/>')) lines.push("agent arrow lost its arrowhead")
-  const rectangle = placeOf(after, "4")
-  const oval = placeOf(after, "5")
-  if (oval.x === 4114800 && oval.y === 1371600) lines.push("agent arrow did not move the oval it ends on")
-  const ends = endsOf(placeOf(after, "7"))
-  if (!near(ends.start, { x: rectangle.x + rectangle.cx, y: rectangle.y + rectangle.cy / 2 }))
-    lines.push("agent arrow left its start off the rectangle's right site")
-  if (!near(ends.end, { x: oval.x, y: oval.y + oval.cy / 2 }))
-    lines.push("agent arrow left its end off the moved oval's left site")
-  return lines
-}
-
-function underLines(answers, decode) {
-  const kept = [...(answers.parts.get(arrowOriginal)?.keys() ?? [])].filter((name) => name !== elbowSlide)
-  const lines = slideExportLines({ ...answers, original: arrowOriginal, exported: underExported, kept }).map((line) =>
-    line.replace(/^slide export/, "agent elbow"),
-  )
-  const after = decode(underExported, elbowSlide)
-  if (!after.includes('<a:stCxn id="4" idx="2"/><a:endCxn id="5" idx="4"/>'))
-    lines.push("agent elbow did not bind the rectangle's bottom site to the oval's bottom site")
-  if (!after.includes('<a:prstGeom prst="bentConnector3">')) lines.push("agent elbow is not an elbow connector")
-  const rectangle = placeOf(after, "4")
-  const oval = placeOf(after, "5")
-  const ends = endsOf(placeOf(after, "7"))
-  const elbow = placeOf(after, "7")
-  const pointWideU = Math.min(elbow.cx, elbow.cy) === pointWide
-  const within = pointWideU ? halfPoint : 1
-  const off = pointWideU ? "more than half a point (a U at one height is one point wide)" : "more than 1 EMU"
-  if (!near(ends.start, { x: rectangle.x + rectangle.cx / 2, y: rectangle.y + rectangle.cy }, within))
-    lines.push(`agent elbow left its start ${off} off the rectangle's bottom site`)
-  if (!near(ends.end, { x: oval.x + oval.cx / 2, y: oval.y + oval.cy }, within))
-    lines.push(`agent elbow left its end ${off} off the oval's bottom site`)
-  return lines
-}
-
-const pointWide = 12700
-const halfPoint = pointWide / 2
-
-function near(left, right, within = 1) {
-  const gap = (from, to) => (within === 1 ? Math.abs(from - to) : Math.round(Math.abs(from - to)))
-  return gap(left.x, right.x) <= within && gap(left.y, right.y) <= within
+function near(left, right) {
+  return Math.abs(left.x - right.x) <= 1 && Math.abs(left.y - right.y) <= 1
 }
 
 export default {
-  specs: ["tests/browser/connector-ends.spec.ts", "tests/browser/agent-arrow.spec.ts"],
-  exports: [exported, elbowExported, arrowExported, underExported],
-  originals: [elbowOriginal, arrowOriginal],
-  renders: [exported, elbowExported, arrowExported, underExported],
+  specs: ["tests/browser/connector-ends.spec.ts"],
+  exports: [exported, elbowExported],
+  originals: [elbowOriginal],
+  renders: [exported, elbowExported],
   covers: ["connection.start", "connection.end"],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => name !== slide)
@@ -170,6 +120,6 @@ export default {
       if (was === null || JSON.stringify(was) !== JSON.stringify(now))
         lines.push(`connection changed the connector PowerPoint routed on ${part}`)
     }
-    return [...lines, ...elbowLines(answers, decode), ...arrowLines(answers, decode), ...underLines(answers, decode)]
+    return [...lines, ...elbowLines(answers, decode)]
   },
 }

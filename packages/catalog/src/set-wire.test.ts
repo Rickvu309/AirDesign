@@ -1,9 +1,7 @@
 import { elementId, slideId, traitNames, traits, type Desc, type TraitName } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
-import { colorPattern } from "./agent-color.js"
 import { flat } from "./agent-form.js"
-import { readAgentEdit, toolInputSchema } from "./index.js"
 import { addChangeSchema, readAddChange, readSetChange, readTarget, setChangeSchema } from "./set-wire.js"
 import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
@@ -393,58 +391,6 @@ describe("the set and add schemas derive from the agent forms", () => {
     expect(check.safeParse({ op: "set", target: "258.2", text: { color: "accent9" } }).success).toBe(false)
     expect(check.safeParse({ op: "set", target: "*.title", fills: { paint: null } }).success).toBe(true)
     expect(check.safeParse({ op: "set", target: "*.title", text: { color: null } }).success).toBe(false)
-  })
-
-  it("names the colour form once in the tool's $defs and points every colour field at it", () => {
-    const schema = toolInputSchema("edit_deck") as { readonly $defs?: Readonly<Record<string, unknown>> }
-    const nodes = (value: unknown): readonly Readonly<Record<string, unknown>>[] => {
-      if (Array.isArray(value)) return value.flatMap(nodes)
-      if (typeof value !== "object" || value === null) return []
-      const node = value as Readonly<Record<string, unknown>>
-      return [node, ...Object.values(node).flatMap(nodes)]
-    }
-    expect(schema.$defs?.color).toEqual({ type: "string", pattern: `^${colorPattern}$` })
-    expect(nodes(schema).filter((node) => node.pattern === `^${colorPattern}$`)).toHaveLength(1)
-    expect(nodes(schema).filter((node) => node.$ref === "#/$defs/color").length).toBeGreaterThanOrEqual(10)
-    const check = z.fromJSONSchema(schema as Parameters<typeof z.fromJSONSchema>[0])
-    const edit = (color: string) => ({
-      deck: "deck",
-      base: 0,
-      changes: [{ op: "set", target: "*.title", text: { color } }],
-    })
-    expect(check.safeParse(edit("accent1 lumMod 75")).success).toBe(true)
-    expect(check.safeParse(edit("accent9")).success).toBe(false)
-  })
-
-  it("rides in airdesign_edit_deck beside the text and box changes, which read as before", () => {
-    const schema = JSON.stringify(toolInputSchema("edit_deck"))
-    expect(schema).toContain('"const":"set"')
-    expect(schema).toContain('"const":"add"')
-    const read = readAgentEdit({
-      deck: "deck",
-      base: 3,
-      changes: [
-        { value: "Hi", node: "258.2", readAt: 0 },
-        { op: "set", target: "*.title", text: { bold: true } },
-        { op: "add", kind: "shape", slide: "258" },
-      ],
-    })
-    expect(read).toEqual({
-      ok: true,
-      deck: "deck",
-      base: 3,
-      changes: [
-        { value: "Hi", node: title, readAt: 0 },
-        { op: "set", target: { role: "title", slide: "every" }, text: { bold: true } },
-        { op: "add", kind: "shape", slide: slideId("258") },
-      ],
-    })
-    expect(
-      readAgentEdit({ deck: "deck", base: 3, changes: [{ op: "set", target: "*.title", text: { bold: 1 } }] }),
-    ).toEqual({
-      ok: false,
-      refusal: "field",
-    })
   })
 })
 

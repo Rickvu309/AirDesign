@@ -4,7 +4,6 @@ import { advertisedSchema } from "./advertised-schema.js"
 import { agentSchema } from "./agent-form.js"
 import { catalog, toolInputSchema } from "./catalog.js"
 import { inlinedSchema, sharedSchemas } from "./shared-schema.js"
-import { traitWire } from "./trait-wire.js"
 
 const color = agentSchema({ kind: "color" })
 
@@ -126,44 +125,25 @@ describe("a tool's input schema says each repeated subschema once", () => {
     expect(references(sharedSchemas(twice))).toEqual([])
   })
 
-  it("resolves every reference in airdesign_edit_deck, and still takes every field's example", () => {
+  it("resolves every reference in airdesign_edit_deck, and still takes the forms the instructions name", () => {
     const schema = toolInputSchema("edit_deck")
     const defs = Object.keys((schema as { readonly $defs?: object }).$defs ?? {})
-    expect(defs).toContain("color")
+    expect(defs).toEqual(expect.arrayContaining(["color", "id", "change"]))
     for (const reference of references(schema)) expect(defs).toContain(reference.replace("#/$defs/", ""))
     const check = z.fromJSONSchema(schema)
-    for (const trait of Object.values(traitWire)) {
-      for (const { example } of Object.values(trait.fields as Readonly<Record<string, { readonly example: object }>>)) {
-        const change = { op: "set", target: "258.2", ...example }
-        expect(check.safeParse({ deck: "d", base: 0, changes: [change] }).success, JSON.stringify(example)).toBe(true)
-      }
-    }
-    const icon = { op: "add", kind: "shape", slide: "258", icon: "rocket" }
-    expect(check.safeParse({ deck: "d", base: 0, changes: [icon] }).success).toBe(true)
-    const wrong = { op: "set", target: "258.2", effects: { glow: { halo: { radius: 8, color: "accent9" } } } }
+    const changes = [
+      { op: "add", kind: "text", slide: "s:3", text: "Hi", textStyle: "title", fill: "accent2" },
+      { op: "set", target: "s:3.title", color: "text2", effect: "lifted" },
+      { op: "add", kind: "kpi", slide: "s:3", items: [{ title: "Revenue", value: "$4M" }] },
+      { op: "slide", add: {} },
+    ]
+    expect(check.safeParse({ deck: "d", base: 0, changes }).success).toBe(true)
+    const wrong = { op: "set", target: "s:3", fill: "accent9" }
     expect(check.safeParse({ deck: "d", base: 0, changes: [wrong] }).success).toBe(false)
   })
 })
 
 describe("a schema for a caller that may not follow references", () => {
-  it("names the opening text carried by the legacy floor field", () => {
-    expect(inlinedSchema(toolInputSchema("edit_deck"))).toMatchObject({
-      properties: {
-        changes: {
-          items: {
-            anyOf: expect.arrayContaining([
-              expect.objectContaining({
-                properties: expect.objectContaining({
-                  floor: expect.objectContaining({ description: "Opening text of the layer." }),
-                }),
-              }),
-            ]),
-          },
-        },
-      },
-    })
-  })
-
   it("puts each shared subschema back where it was used, keeps the words beside a reference, and drops $defs", () => {
     const leaf = { type: "string", pattern: "^[a-z]+$" }
     const pair = { type: "object", properties: { left: { $ref: "#/$defs/leaf" }, right: { $ref: "#/$defs/leaf" } } }
@@ -185,11 +165,13 @@ describe("a schema for a caller that may not follow references", () => {
   })
 
   it("gives back every tool's advertised schema, with no reference left", () => {
-    for (const op of ["edit_deck", "read_deck"] as const) {
+    for (const op of ["create_deck", "edit_deck", "list_decks", "read_deck", "stop_run"] as const) {
       const inlined = inlinedSchema(toolInputSchema(op))
       expect(references(inlined)).toEqual([])
       expect(inlined).not.toHaveProperty("$defs")
-      expect(inlined).toEqual(advertisedSchema(z.toJSONSchema(catalog[op].read.input, { io: "input" })))
     }
+    expect(inlinedSchema(toolInputSchema("read_deck"))).toEqual(
+      advertisedSchema(z.toJSONSchema(catalog.read_deck.read.input, { io: "input" })),
+    )
   })
 })

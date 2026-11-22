@@ -291,12 +291,20 @@ function landedRun(answer: unknown): string | undefined {
   return typeof landed.runId === "string" ? landed.runId : undefined
 }
 
+const sceneOnceSql = `
+select edit -> 'author' ->> 'run' as run from deck.scene_edit
+join deck.scene on deck.scene.id = deck.scene_edit.deck
+where deck.scene.owner = $1 and deck.scene_edit.deck = $2 and deck.scene_edit.once = $3`
+
 export async function spendOnce(
   db: Sql,
   email: string,
   deck: string,
   once: string,
 ): Promise<{ readonly ok: false } | { readonly ok: true; readonly runId?: string }> {
+  const landedInScene = await db.query<{ run: string | null }>(sceneOnceSql, [email, deck, once])
+  const run = landedInScene.rows[0]?.run
+  if (landedInScene.rows.length > 0) return run === null || run === undefined ? { ok: true } : { ok: true, runId: run }
   const spent = await db.query(spendSql, [email, deck, once])
   if (spent.rows.length > 0) return { ok: true }
   const prior = await readStoredOnce(db, email, deck, once)

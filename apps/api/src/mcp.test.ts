@@ -1,104 +1,32 @@
-import { landedAnswer, landedContent } from "./mcp-answers.js"
 import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
-import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
-import { rootElement } from "@airdesign/document"
-import { commitTries, editNext, runNext } from "@airdesign/mcp"
+import { catalog, onceMeta, projectTools, sceneRoutes } from "@airdesign/catalog"
+import { limits, scene } from "@airdesign/document"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { agentKey } from "./agent-key.js"
-import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
+import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { limits } from "@airdesign/document"
-
-const { body: bodyCap } = limits
-
-function deckName(): string {
-  return `deck${randomBytes(4).toString("hex")}`
-}
-
-function address(mark: string): string {
-  return `${mark}${randomBytes(4).toString("hex")}@example.com`
-}
-
-type StoredElement = {
-  floor: string
-  phase: string
-  runId: string | null
-  guarded: boolean
-  landed: { value: string; visible: boolean; runId?: string }[]
-}
-
-type Stored = {
-  revision: number
-  register: {
-    nodes: string[]
-    elements: Record<string, StoredElement>
-  }
-}
-
-const part = (id: string | null) => id?.slice(17)
-
-const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
-const storeFailure = editNext.store
-
-const element = "258.7"
-const sibling = "258.8"
-const created = "258.n0123456789ab"
-
-function firstEdit(deck: string) {
-  return { deck, base: 0, changes: [{ value: "21", node: element, readAt: 0 }] }
-}
-
-function secondEdit(deck: string) {
-  return { deck, base: 1, changes: [{ value: "22", node: element, readAt: 1 }] }
-}
-
-function otherEdit(deck: string) {
-  return { deck, base: 1, changes: [{ value: "no", node: element, readAt: 1 }] }
-}
-
-function editCall(deck: string) {
-  return {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "tools/call",
-    params: { name: "airdesign_edit_deck", arguments: firstEdit(deck) },
-  }
-}
-
-type EditReply = {
-  ok: boolean
-  revision: number
-  runId: string
-  refusal?: string
-  elements: { node: string; value: string; version: number; closed?: true }[]
-}
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const sessionRefusal = { ok: false, refusal: "session" }
+const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
+const storeFailure = { ok: false, refusal: "store" }
 
-function elementOf(stored: Stored | undefined, node = element): StoredElement {
-  const body = stored?.register.elements[node]
-  if (body === undefined) throw new Error("missing element")
-  return body
-}
+type Answer = Record<string, any>
 
-function runOf(stored: Stored | undefined, node = element): string {
-  const runId = elementOf(stored, node).runId
-  if (runId === null) throw new Error("no run")
-  return runId
-}
+const address = (mark: string) => `${mark}${randomBytes(4).toString("hex")}@example.com`
 
-function values(stored: Stored | undefined, node = element): string[] {
-  return elementOf(stored, node).landed.map((item) => item.value)
+const listCall = {
+  jsonrpc: "2.0",
+  id: 1,
+  method: "tools/call",
+  params: { name: "airdesign_list_decks", arguments: {} },
 }
 
 describe("mcp route", () => {
   const mails: Mail[] = []
-  const minted: string[] = []
   let base = ""
   let publicBase = ""
   let deck: Sql = openPool("postgres://deck@127.0.0.1/api")
@@ -107,35 +35,21 @@ describe("mcp route", () => {
 
   beforeAll(async () => {
     const info = await postgresInfo()
-    const session = openPool(info.session, "mcp-session")
-    sessionDb = session
+    sessionDb = openPool(info.session, "mcp-session")
     deck = openPool(info.deck, "mcp-handler")
     const listen = new DeckListen(info.listen)
-    const served = await serve({
-      ...origins,
-      session,
-      deck,
-      listen,
-      now: () => 1_000_000,
-      mint: () => {
-        const id = `mint${String(minted.length)}`
-        minted.push(id)
-        return id
-      },
-      send: async (mail) => {
-        mails.push(mail)
-      },
-    })
+    const send = async (mail: Mail) => {
+      mails.push(mail)
+    }
+    const served = await serve({ ...origins, session: sessionDb, deck, listen, now: () => 1_000_000, send })
     const opened = await serve({
       ...origins,
-      session,
+      session: sessionDb,
       deck,
       listen,
       now: () => 1_000_000,
       hosts: ["localhost", "127.0.0.1", "[::1]", "mcp.airdesign.app"],
-      send: async (mail) => {
-        mails.push(mail)
-      },
+      send,
     })
     base = served.base
     publicBase = opened.base
@@ -143,7 +57,7 @@ describe("mcp route", () => {
       await served.close()
       await opened.close()
       await listen.close()
-      await session.end()
+      await sessionDb.end()
       await deck.end()
     }
   })
@@ -152,169 +66,16 @@ describe("mcp route", () => {
     await close()
   })
 
-  const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
+  const sign = (email: string) => signInByCode(base, mails, email)
 
-  async function row(id: string): Promise<Stored | undefined> {
-    const result = await deck.query<Stored>("select revision, register from deck.saved where id = $1", [id])
-    return result.rows[0]
-  }
-
-  function fetchAt(target: string, forced: Record<string, string>) {
-    return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-      const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url
-      const url = new URL(raw, target)
-      const headers: Record<string, string> = {}
-      new Headers(init?.headers).forEach((value, key) => {
-        headers[key] = value
-      })
-      Object.assign(headers, forced)
-      const payload =
-        typeof init?.body === "string"
-          ? Buffer.from(init.body)
-          : init?.body instanceof Uint8Array
-            ? Buffer.from(init.body)
-            : undefined
-      if (payload !== undefined) headers["content-length"] = String(payload.length)
-      const sent = await new Promise<{ status: number; headers: Headers; body: Buffer }>((resolve, reject) => {
-        const req = httpRequest(
-          {
-            hostname: "127.0.0.1",
-            port: url.port,
-            path: `${url.pathname}${url.search}`,
-            method: init?.method ?? "GET",
-            headers,
-          },
-          (res) => {
-            const chunks: Buffer[] = []
-            res.on("data", (chunk: Buffer) => chunks.push(chunk))
-            res.on("end", () => {
-              const responseHeaders = new Headers()
-              for (const [key, value] of Object.entries(res.headers)) {
-                if (typeof value === "string") responseHeaders.set(key, value)
-                else if (Array.isArray(value)) responseHeaders.set(key, value.join(", "))
-              }
-              resolve({ status: res.statusCode ?? 0, headers: responseHeaders, body: Buffer.concat(chunks) })
-            })
-          },
-        )
-        req.on("error", reject)
-        if (payload === undefined) req.end()
-        else req.end(payload)
-      })
-      return new Response(sent.body, { status: sent.status, headers: sent.headers })
-    }
-  }
-
-  async function posted(
+  function posted(
     target: string,
     headers: Record<string, string>,
     body: unknown,
   ): Promise<{ status: number; text: string }> {
-    const response = await fetchAt(target, headers)(`${target}/mcp`, {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify(body),
-    })
-    return { status: response.status, text: await response.text() }
-  }
-
-  async function withMcp(
-    cookie: string,
-    use: (client: Client) => Promise<void>,
-    target = base,
-    forced?: Record<string, string>,
-  ): Promise<void> {
-    const transport = new StreamableHTTPClientTransport(new URL(`${target}/mcp`), {
-      requestInit: { headers: { cookie } },
-      ...(forced === undefined ? {} : { fetch: fetchAt(target, forced) }),
-    })
-    const client = new Client({ name: "airdesign-test", version: "0.0.0" })
-    await client.connect(transport)
-    try {
-      await use(client)
-    } finally {
-      await client.close()
-    }
-  }
-
-  async function connected(cookie: string, target = base): Promise<Client> {
-    const transport = new StreamableHTTPClientTransport(new URL(`${target}/mcp`), {
-      requestInit: { headers: { cookie } },
-    })
-    const client = new Client({ name: "airdesign-test", version: "0.0.0" })
-    await client.connect(transport)
-    return client
-  }
-
-  async function openedDeck(mark: string, email = address(mark)): Promise<{ id: string; cookie: string }> {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(email)
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    return { id: named.deck, cookie }
-  }
-
-  async function editText(client: Client, args: Record<string, unknown>): Promise<string> {
-    const result = await client.callTool({ name: "airdesign_edit_deck", arguments: args })
-    const block = result.content[0]
-    if (block === undefined || block.type !== "text") throw new Error("text")
-    return block.text
-  }
-
-  async function seeded(client: Client, id: string): Promise<void> {
-    const edits = [
-      { base: 0, changes: [{ value: "a1", node: element, readAt: 0 }] },
-      { base: 1, changes: [{ value: "a2", node: element, readAt: 1 }] },
-      { base: 2, changes: [{ value: "b1", node: sibling, readAt: 0 }] },
-    ]
-    for (const [index, edit] of edits.entries()) {
-      expect(await editText(client, { deck: id, ...edit })).toBe(`Landed revision ${String(index + 1)}.`)
-    }
-  }
-
-  async function ownServer(
-    mark: string,
-    fields: {
-      readonly deck?: Sql
-      readonly now?: () => number
-      readonly session?: (pool: Sql) => Sql
-    },
-  ): Promise<{ readonly base: string; readonly close: () => Promise<void> }> {
-    const info = await postgresInfo()
-    const session = openPool(info.session, `mcp-${mark}-session`)
-    const stored = openPool(info.deck, `mcp-${mark}-deck`)
-    const listen = new DeckListen(info.listen)
-    const served = await serve({
-      ...origins,
-      session: fields.session?.(session) ?? session,
-      deck: fields.deck ?? stored,
-      listen,
-      now: fields.now ?? (() => 1_000_000),
-      send: async () => undefined,
-    })
-    return {
-      base: served.base,
-      close: async () => {
-        await served.close()
-        await listen.close()
-        await session.end()
-        await stored.end()
-      },
-    }
-  }
-
-  function heldRead(target: string, cookie: string, id: string): { release: () => void; answer: Promise<string> } {
-    const payload = Buffer.from(
-      JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: { name: "airdesign_read_deck", arguments: { deck: id } },
-      }),
-    )
+    const payload = Buffer.from(typeof body === "string" ? body : JSON.stringify(body))
     const url = new URL(`${target}/mcp`)
-    let release = () => {}
-    const answer = new Promise<string>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const sent = httpRequest(
         {
           hostname: "127.0.0.1",
@@ -325,1357 +86,344 @@ describe("mcp route", () => {
             "content-type": "application/json",
             accept: "application/json, text/event-stream",
             "content-length": String(payload.length),
-            cookie,
+            ...headers,
           },
         },
         (res) => {
           const chunks: Buffer[] = []
           res.on("data", (chunk: Buffer) => chunks.push(chunk))
-          res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
+          res.on("end", () => resolve({ status: res.statusCode ?? 0, text: Buffer.concat(chunks).toString("utf8") }))
         },
       )
       sent.on("error", reject)
-      sent.write(payload.subarray(0, 1))
-      release = () => sent.end(payload.subarray(1))
+      sent.end(payload)
     })
-    return { release, answer }
   }
 
-  it("refuses mcp without a session", async () => {
-    const { id } = await openedDeck("unsigned")
-    const before = await row(id)
-    const missing = await posted(base, {}, editCall(id))
-    expect({ status: missing.status, text: missing.text, stored: await row(id) }).toEqual({
-      status: 401,
-      text: JSON.stringify(sessionRefusal),
-      stored: before,
+  async function withMcp(cookie: string, use: (client: Client) => Promise<void>, target = base): Promise<void> {
+    const transport = new StreamableHTTPClientTransport(new URL(`${target}/mcp`), {
+      requestInit: { headers: { cookie } },
     })
-    const unknown = await posted(base, { cookie: "airdesign.session=missing" }, editCall(id))
-    expect({ status: unknown.status, text: unknown.text, stored: await row(id) }).toEqual({
-      status: 401,
-      text: JSON.stringify(sessionRefusal),
-      stored: before,
-    })
-  })
-
-  it("answers session for a malformed cookie on mcp and a deck route", async () => {
-    const { id } = await openedDeck("malformed")
-    const before = await row(id)
-    for (const value of ["%", "%E0%A4%A", "%00"]) {
-      const cookie = `airdesign.session=${value}`
-      const mcp = await posted(base, { cookie }, editCall(id))
-      expect({ status: mcp.status, text: mcp.text }).toEqual({ status: 401, text: JSON.stringify(sessionRefusal) })
-      const opened = await ask(base, "POST", "/decks/open", { deck: id }, cookie)
-      expect({ status: opened.status, json: opened.json }).toEqual({ status: 401, json: sessionRefusal })
-      expect(await row(id)).toEqual(before)
-    }
-  })
-
-  it("answers session to an unsigned request whose host is not allowed", async () => {
-    const { id } = await openedDeck("unsignedhost")
-    const before = await row(id)
-    const unsigned = await posted(base, { host: "evil.example" }, editCall(id))
-    expect(unsigned.status).toBe(401)
-    expect(JSON.parse(unsigned.text)).toEqual(sessionRefusal)
-    expect(await row(id)).toEqual(before)
-  })
-
-  it("counts a deck, owner, field or store refusal toward the thirty", async () => {
-    async function nearLimit(email: string): Promise<string> {
-      const agent = agentKey("aira", email)
-      const events = JSON.stringify(Array.from({ length: 29 }, () => ({ kind: "tool", at: 1_000_000, agent })))
-      await sessionDb.query("insert into session.caller_log (email, events) values ($1, $2)", [email, events])
-      return email
-    }
-    async function signedNear(mark: string): Promise<string> {
-      const email = address(mark)
-      const cookie = await sign(email)
-      await nearLimit(email)
-      return cookie
-    }
-    const counting = await ownServer("counted", {})
-    const broken = await ownServer("uncounted", {
-      deck: { query: () => Promise.reject(new Error("connect ECONNREFUSED")) } as unknown as Sql,
-    })
+    const client = new Client({ name: "airdesign-test", version: "0.0.0" })
+    await client.connect(transport)
     try {
-      const foreign = await openedDeck("theirs")
-      const fieldEmail = address("field")
-      const opened = await openedDeck("field", fieldEmail)
-      await nearLimit(fieldEmail)
-      const cases = [
-        {
-          text: editNext.deck,
-          target: counting.base,
-          cookie: await signedNear("nodeck"),
-          id: deckName(),
-          extra: {},
-        },
-        {
-          text: editNext.owner,
-          target: counting.base,
-          cookie: await signedNear("noowner"),
-          id: foreign.id,
-          extra: {},
-        },
-        {
-          text: editNext.field,
-          target: counting.base,
-          cookie: opened.cookie,
-          id: opened.id,
-          extra: { runId: "client-run" },
-        },
-        {
-          text: storeFailure,
-          target: broken.base,
-          cookie: await signedNear("nostore"),
-          id: deckName(),
-          extra: {},
-        },
-      ]
-      for (const item of cases) {
-        await withMcp(
-          item.cookie,
-          async (client) => {
-            expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(item.text)
-            expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(toolLimit)
-          },
-          item.target,
-        )
-      }
-      expect((await row(foreign.id))?.revision).toBe(0)
-      expect((await row(opened.id))?.revision).toBe(0)
+      await use(client)
     } finally {
-      await counting.close()
-      await broken.close()
+      await client.close()
     }
+  }
+
+  async function tool(client: Client, name: string, args: unknown, once?: string) {
+    const result = await client.callTool({
+      name: `airdesign_${name}`,
+      arguments: args as Record<string, unknown>,
+      ...(once === undefined ? {} : { _meta: { [onceMeta]: once } }),
+    })
+    return { ...result, answer: result.structuredContent as Answer }
+  }
+
+  async function made(client: Client, name = "Board"): Promise<Answer> {
+    const result = await tool(client, "create_deck", { name })
+    expect(result.isError, JSON.stringify(result.content)).not.toBe(true)
+    return result.answer
+  }
+
+  async function stored(id: string) {
+    const found = await deck.query<{ rev: number; name: string; fold: unknown }>(
+      "select rev, name, fold from deck.scene where id = $1",
+      [id],
+    )
+    return found.rows[0]
+  }
+
+  async function ownServer(
+    mark: string,
+    fields: { readonly now?: () => number; readonly session?: (pool: Sql) => Sql; readonly deck?: Sql },
+  ) {
+    const info = await postgresInfo()
+    const session = openPool(info.session, `mcp-${mark}-session`)
+    const stores = openPool(info.deck, `mcp-${mark}-deck`)
+    const listen = new DeckListen(info.listen)
+    const served = await serve({
+      ...origins,
+      session: fields.session?.(session) ?? session,
+      deck: fields.deck ?? stores,
+      listen,
+      now: fields.now ?? (() => 1_000_000),
+      send: async () => undefined,
+    })
+    return {
+      base: served.base,
+      close: async () => {
+        await served.close()
+        await listen.close()
+        await session.end()
+        await stores.end()
+      },
+    }
+  }
+
+  it("refuses mcp without a session and creates no deck", async () => {
+    const before = await deck.query("select id from deck.scene")
+    for (const headers of [
+      {},
+      { cookie: "airdesign.session=missing" },
+      { cookie: "airdesign.session=%" },
+      { host: "evil.example" },
+    ]) {
+      const refused = await posted(base, headers, listCall)
+      expect({ status: refused.status, text: refused.text }).toEqual({
+        status: 401,
+        text: JSON.stringify(sessionRefusal),
+      })
+    }
+    const create = { ...listCall, params: { name: "airdesign_create_deck", arguments: {} } }
+    expect((await posted(base, {}, create)).status).toBe(401)
+    expect((await deck.query("select id from deck.scene")).rowCount).toBe(before.rowCount)
   })
 
-  it("refuses the thirty-first call until the injected clock leaves the window", async () => {
+  it("lists the five agent tools for a signed-in caller", async () => {
+    await withMcp(await sign(address("list")), async (client) => {
+      const listed = await client.listTools()
+      expect(listed.tools.map((tool) => tool.name)).toEqual(projectTools(catalog).map((each) => each.name))
+      expect(listed.tools).toHaveLength(5)
+    })
+  })
+
+  it("makes a scene deck, reads it, edits it in a run, reads it again and stops the run", async () => {
+    await withMcp(await sign(address("flow")), async (client) => {
+      const first = await made(client)
+      expect(first).toMatchObject({ ok: true, name: "Board", slides: [expect.any(String)] })
+      const row = await stored(first.deck)
+      expect(row).toMatchObject({ rev: first.rev, name: "Board" })
+
+      const listed = await tool(client, "list_decks", {})
+      expect(listed.answer.decks).toEqual([{ deck: first.deck, name: "Board", rev: first.rev }])
+
+      const landed = await tool(client, "edit_deck", {
+        deck: first.deck,
+        base: first.rev,
+        changes: [
+          { op: "add", kind: "text", slide: first.slides[0], text: "Q3 **board** update", textStyle: "heading" },
+          {
+            op: "add",
+            kind: "kpi",
+            slide: first.slides[0],
+            items: [{ title: "Revenue", value: "$4.2M", note: "+12%" }],
+          },
+        ],
+      })
+      expect(landed.isError).not.toBe(true)
+      expect(landed.answer).toMatchObject({ ok: true, deck: first.deck, rev: first.rev + 1, runId: expect.any(String) })
+      expect(landed.answer.added).toHaveLength(2)
+
+      const read = await tool(client, "read_deck", { deck: first.deck })
+      expect(read.answer.rev).toBe(first.rev + 1)
+      const lines = (read.content as { text: string }[])[1]!.text
+      expect(lines).toContain('text="Q3 **board** update"')
+      expect(lines).toContain("Revenue")
+
+      const folded = scene.readFold((await stored(first.deck))!.fold)!
+      expect(folded.runs.get(landed.answer.runId)?.phase).toBe("running")
+      const stopped = await tool(client, "stop_run", { deck: first.deck, runId: landed.answer.runId })
+      expect(stopped.answer).toMatchObject({ ok: true, rev: first.rev + 2 })
+      const fenced = await tool(client, "edit_deck", {
+        deck: first.deck,
+        base: first.rev + 2,
+        runId: landed.answer.runId,
+        changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "late" }],
+      })
+      expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
+      expect(scene.readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
+    })
+  })
+
+  it("makes one deck and lands one edit for a call sent again with the same once", async () => {
+    await withMcp(await sign(address("once")), async (client) => {
+      const created = await tool(client, "create_deck", { name: "Once" }, "create-1")
+      const again = await tool(client, "create_deck", { name: "Once" }, "create-1")
+      expect(again.answer).toEqual(created.answer)
+      expect((await tool(client, "list_decks", {})).answer.decks).toHaveLength(1)
+      const args = {
+        deck: created.answer.deck,
+        base: created.answer.rev,
+        changes: [
+          { op: "add", kind: "cards", slide: created.answer.slides[0], items: [{ title: "A", points: ["one"] }] },
+        ],
+      }
+      const first = await tool(client, "edit_deck", args, "edit-1")
+      const second = await tool(client, "edit_deck", args, "edit-1")
+      expect(second.answer).toEqual(first.answer)
+      expect((await stored(created.answer.deck))!.rev).toBe(created.answer.rev + 1)
+    })
+  })
+
+  it("refuses another account's deck for a read and an edit, and changes nothing", async () => {
+    let owned: Answer = {}
+    await withMcp(await sign(address("owns")), async (client) => {
+      owned = await made(client)
+    })
+    const before = await stored(owned.deck)
+    await withMcp(await sign(address("else")), async (client) => {
+      const read = await tool(client, "read_deck", { deck: owned.deck })
+      expect(read.isError).toBe(true)
+      expect(read.answer).toEqual({ ok: false, refusal: "owner" })
+      const edit = await tool(client, "edit_deck", {
+        deck: owned.deck,
+        base: owned.rev,
+        changes: [{ op: "add", kind: "text", slide: owned.slides[0], text: "mine now" }],
+      })
+      expect(edit.answer).toEqual({ ok: false, refusal: "owner" })
+      expect((await tool(client, "stop_run", { deck: owned.deck, runId: "run" })).answer).toEqual({
+        ok: false,
+        refusal: "owner",
+      })
+      expect((await tool(client, "list_decks", {})).answer.decks).toEqual([])
+    })
+    expect(await stored(owned.deck)).toEqual(before)
+  })
+
+  it("refuses a deck that was never made with deck and makes nothing", async () => {
+    await withMcp(await sign(address("miss")), async (client) => {
+      const refused = await tool(client, "read_deck", { deck: "neverthere" })
+      expect(refused.answer).toEqual({ ok: false, refusal: "deck" })
+    })
+    expect(await stored("neverthere")).toBeUndefined()
+  })
+
+  it("closes a layer to the run once the person changes it, through the scene edit route", async () => {
+    const email = address("person")
+    const cookie = await sign(email)
+    await withMcp(cookie, async (client) => {
+      const first = await made(client)
+      const landed = await tool(client, "edit_deck", {
+        deck: first.deck,
+        base: first.rev,
+        changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "Agent words", name: "Words" }],
+      })
+      const [added] = landed.answer.added as string[]
+      const typed = await ask(
+        base,
+        "POST",
+        sceneRoutes.edit.path,
+        {
+          deck: first.deck,
+          edit: {
+            once: "typed-1",
+            author: { kind: "person", id: "tab-1" },
+            writes: [{ node: added, prop: "name", value: "Mine" }],
+          },
+        },
+        cookie,
+      )
+      expect(typed.json).toMatchObject({ ok: true, rev: first.rev + 2 })
+      const closed = await tool(client, "edit_deck", {
+        deck: first.deck,
+        base: first.rev + 2,
+        runId: landed.answer.runId,
+        changes: [{ op: "set", target: added, name: "Agent" }],
+      })
+      expect(closed.answer).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added })
+      const reopened = await tool(client, "edit_deck", {
+        deck: first.deck,
+        base: first.rev + 2,
+        changes: [{ op: "set", target: added, name: "Agent" }],
+      })
+      expect(reopened.answer).toMatchObject({ ok: true })
+      const read = await tool(client, "read_deck", { deck: first.deck })
+      expect((read.content as { text: string }[])[1]!.text).toContain('name="Agent"')
+    })
+  })
+
+  it("refuses text a person typed after the agent read it as stale, and lands it after a fresh read", async () => {
+    const cookie = await sign(address("typed"))
+    await withMcp(cookie, async (client) => {
+      const first = await made(client)
+      const title = (await stored(first.deck))!
+      const fold = scene.readFold(title.fold)!
+      const node = fold.children.get(first.slides[0])![0]!
+      const typed = await ask(
+        base,
+        "POST",
+        sceneRoutes.edit.path,
+        {
+          deck: first.deck,
+          edit: {
+            once: "typed-1",
+            author: { kind: "person", id: "tab-1" },
+            writes: [
+              {
+                node,
+                prop: "text",
+                value: scene.textFromMarkdown("Typed", "title"),
+                base: fold.revs.get(node)!.get("text"),
+              },
+            ],
+          },
+        },
+        cookie,
+      )
+      expect(typed.json).toMatchObject({ ok: true })
+      const change = { op: "set", target: `${first.slides[0]}.title`, text: "Agent" }
+      const stale = await tool(client, "edit_deck", { deck: first.deck, base: first.rev, changes: [change] })
+      expect(stale.answer).toMatchObject({ ok: false, refusal: "stale", refused: "stale", prop: "text" })
+      const fresh = await tool(client, "edit_deck", { deck: first.deck, base: first.rev + 1, changes: [change] })
+      expect(fresh.answer).toMatchObject({ ok: true })
+    })
+  })
+
+  it("names the change, its place and the field when a batch is refused, and lands none of it", async () => {
+    await withMcp(await sign(address("named")), async (client) => {
+      const first = await made(client)
+      const refused = await tool(client, "edit_deck", {
+        deck: first.deck,
+        base: first.rev,
+        changes: [
+          { op: "add", kind: "text", slide: first.slides[0], text: "A" },
+          { op: "set", target: "z:9", text: "B" },
+        ],
+      })
+      expect(refused.isError).toBe(true)
+      expect(refused.answer).toMatchObject({ refusal: "dead", change: "set z:9", at: 1, field: "target", node: "z:9" })
+      expect((await stored(first.deck))!.rev).toBe(first.rev)
+    })
+  })
+
+  it("counts a refusal toward the thirty, and refuses the thirty-first call until the clock leaves the window", async () => {
     let clock = 1_000_000
     const served = await ownServer("clock", { now: () => clock })
     try {
-      const { id, cookie } = await openedDeck("clock")
+      const cookie = await sign(address("clock"))
       await withMcp(
         cookie,
         async (client) => {
-          for (let call = 0; call < 30; call += 1) {
-            const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: id } })
-            expect(read.isError).toBeFalsy()
-          }
-          expect(await editText(client, firstEdit(id))).toBe(toolLimit)
-          expect((await row(id))?.revision).toBe(0)
+          expect((await tool(client, "read_deck", { deck: "neverthere" })).answer.refusal).toBe("deck")
+          for (let call = 1; call < 30; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
+          const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+          expect(blocked.isError).toBe(true)
+          expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
           clock += 300_000
-          expect(await editText(client, firstEdit(id))).toBe("Landed revision 1.")
-        },
-        served.base,
-      )
-      expect(values(await row(id))).toEqual(["21"])
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("lands two edits in one run and keeps the server run id", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const email = address("land")
-    const firstCookie = await sign(email)
-    const opened = await ask(base, "POST", "/decks/open", { deck: named.deck }, firstCookie)
-    expect(opened.json).toMatchObject({ ok: true, revision: 0 })
-    await withMcp(firstCookie, async (client) => {
-      const listed = await client.listTools()
-      const estimate = Math.ceil(Buffer.byteLength(JSON.stringify(listed)) / 4)
-      expect(listed.tools.length).toBe(projectTools(catalog).length)
-      expect(listed.tools.length).toBeLessThanOrEqual(20)
-      expect(estimate).toBeLessThanOrEqual(8000)
-      const before = minted.length
-      const first = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: firstEdit(named.deck),
-      })
-      expect(first.isError).not.toBe(true)
-      const started = await row(named.deck)
-      const runId = runOf(started)
-      expect(first.content).toEqual(landedContent(1, [{ node: element, value: "21", version: 1 }], runId))
-      expect(first.structuredContent).toEqual(landedAnswer(1, [{ node: element, value: "21", version: 1 }], runId))
-      expect(started?.revision).toBe(1)
-      expect(values(started)).toEqual(["21"])
-      expect(minted.slice(before)).toContain(part(runId))
-      const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, firstCookie)
-      expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
-      const secondCookie = await sign(email)
-      const seen = await ask(base, "POST", "/decks/open", { deck: named.deck }, secondCookie)
-      expect(seen.status).toBe(200)
-      expect(seen.json).toMatchObject({
-        ok: true,
-        deck: named.deck,
-        revision: 1,
-        register: { elements: { [element]: { runId, landed: [{ actor: "agent", value: "21", visible: true }] } } },
-      })
-      const second = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: secondEdit(named.deck),
-      })
-      expect(second.isError).not.toBe(true)
-      expect(second.content).toEqual(landedContent(2, [{ node: element, value: "22", version: 2 }], runId))
-      const kept = await row(named.deck)
-      expect(kept?.revision).toBe(2)
-      expect(values(kept)).toEqual(["21", "22"])
-      expect(elementOf(kept).runId).toBe(runId)
-    })
-  })
-
-  it("refuses another account", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const owner = await sign(address("own"))
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, owner)
-    await withMcp(owner, async (client) => {
-      const landed = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: firstEdit(named.deck),
-      })
-      expect(landed.content).toEqual(
-        landedContent(1, [{ node: element, value: "21", version: 1 }], runOf(await row(named.deck))),
-      )
-    })
-    const before = await row(named.deck)
-    const other = await sign(address("else"))
-    await withMcp(other, async (client) => {
-      const refused = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: otherEdit(named.deck),
-      })
-      expect(refused.isError).toBe(true)
-      const answer = { ok: false, revision: 0, refusal: "owner", elements: [] }
-      expect(refused.content).toEqual([
-        { type: "text", text: editNext.owner },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(refused.structuredContent).toEqual(answer)
-      expect(JSON.stringify(refused)).not.toContain("21")
-    })
-    expect(await row(named.deck)).toEqual(before)
-  })
-
-  it("lands one call on two elements at different versions, each at its readAt", async () => {
-    const { id, cookie } = await openedDeck("pair")
-    const before = minted.length
-    await withMcp(cookie, async (client) => {
-      await seeded(client, id)
-      const text = await editText(client, {
-        deck: id,
-        base: 3,
-        changes: [
-          { value: "a3", node: element, readAt: 2 },
-          { value: "b2", node: sibling, readAt: 1 },
-        ],
-      })
-      expect(text).toBe("Landed revision 4.")
-    })
-    const kept = await row(id)
-    expect(kept?.revision).toBe(4)
-    expect(values(kept)).toEqual(["a1", "a2", "a3"])
-    expect(values(kept, sibling)).toEqual(["b1", "b2"])
-    const runId = elementOf(kept).runId
-    expect(minted.slice(before)).toContain(part(runId))
-    expect(elementOf(kept, sibling).runId).toBe(runId)
-  })
-
-  it("answers stale for a readAt behind the element and lands nothing", async () => {
-    const { id, cookie } = await openedDeck("behind")
-    await withMcp(cookie, async (client) => {
-      await seeded(client, id)
-      const seededRow = await row(id)
-      const alone = await editText(client, {
-        deck: id,
-        base: 3,
-        changes: [{ value: "late", node: element, readAt: 0 }],
-      })
-      expect(alone).toBe(editNext.stale)
-      expect(await row(id)).toEqual(seededRow)
-      const paired = await editText(client, {
-        deck: id,
-        base: 3,
-        changes: [
-          { value: "b2", node: sibling, readAt: 1 },
-          { value: "late", node: element, readAt: 0 },
-        ],
-      })
-      expect(paired).toBe(editNext.stale)
-      expect(await row(id)).toEqual(seededRow)
-    })
-  })
-
-  it("tells the agent the next step when an edit is stale", async () => {
-    const { id, cookie } = await openedDeck("next")
-    await withMcp(cookie, async (client) => {
-      await seeded(client, id)
-      const stale = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: id, base: 3, changes: [{ value: "late", node: element, readAt: 0 }] },
-      })
-      expect(stale.isError).toBe(true)
-      const answer = {
-        ok: false,
-        revision: 3,
-        refusal: "stale",
-        elements: [{ node: element, value: "a2", version: 2 }],
-      }
-      expect(stale.content).toEqual([
-        { type: "text", text: editNext.stale },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(stale.structuredContent).toEqual(answer)
-      expect((await row(id))?.revision).toBe(3)
-      const resent = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: id, base: answer.revision, changes: [{ value: "late", node: element, readAt: 2 }] },
-      })
-      expect(resent.structuredContent).toEqual(landedAnswer(4, [{ node: element, value: "late", version: 3 }]))
-    })
-    const kept = await row(id)
-    expect(kept?.revision).toBe(4)
-    expect(values(kept)).toEqual(["a1", "a2", "late"])
-  })
-
-  it("lands two edits in a row, each at the version the last answer carried", async () => {
-    const { id, cookie } = await openedDeck("row")
-    await withMcp(cookie, async (client) => {
-      let readAt = 0
-      let revision = 0
-      for (const value of ["one", "two"]) {
-        const result = await client.callTool({
-          name: "airdesign_edit_deck",
-          arguments: { deck: id, base: revision, changes: [{ value, node: sibling, readAt }] },
-        })
-        expect(result.isError).not.toBe(true)
-        const answer = result.structuredContent as { revision: number; elements: { version: number }[] }
-        expect(result.content.at(-1)).toEqual({ type: "text", text: JSON.stringify(answer) })
-        readAt = answer.elements[0]?.version ?? -1
-        revision = answer.revision
-      }
-      expect(readAt).toBe(2)
-    })
-    const kept = await row(id)
-    expect(kept?.revision).toBe(2)
-    expect(values(kept, sibling)).toEqual(["one", "two"])
-  })
-
-  it("refuses text whose run the new element's floor lacks, and creates nothing", async () => {
-    const { id, cookie } = await openedDeck("textfrom")
-    const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])
-    const sent = JSON.stringify([{ from: 0, runs: [{ from: 3, text: "After" }] }])
-    const before = await row(id)
-    await withMcp(cookie, async (client) => {
-      const refused = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: id, base: 0, changes: [{ value: sent, node: created, readAt: 0, floor }] },
-      })
-      expect(refused.isError).toBe(true)
-      const answer = {
-        ok: false,
-        revision: 0,
-        refusal: "text-from",
-        elements: [{ node: created, value: "", version: 0 }],
-      }
-      expect(refused.content).toEqual([
-        { type: "text", text: editNext["text-from"] },
-        { type: "text", text: "Paragraph 0 of the file has runs 0. Use one of them, or -1 for a new run." },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(refused.structuredContent).toEqual(answer)
-    })
-    const kept = await row(id)
-    expect(kept).toEqual(before)
-    expect(kept?.register.nodes).not.toContain(created)
-  })
-
-  it("lands a call whose base is behind the revision when each readAt is current", async () => {
-    const { id, cookie } = await openedDeck("oldbase")
-    await withMcp(cookie, async (client) => {
-      await seeded(client, id)
-      const text = await editText(client, {
-        deck: id,
-        base: 0,
-        changes: [{ value: "a3", node: element, readAt: 2 }],
-      })
-      expect(text).toBe("Landed revision 4.")
-    })
-    const kept = await row(id)
-    expect(kept?.revision).toBe(4)
-    expect(values(kept)).toEqual(["a1", "a2", "a3"])
-  })
-
-  it("opens a new element with the given floor, starts it and lands", async () => {
-    const { id, cookie } = await openedDeck("created")
-    const before = minted.length
-    await withMcp(cookie, async (client) => {
-      const text = await editText(client, {
-        deck: id,
-        base: 0,
-        changes: [{ value: "After", node: created, readAt: 0, floor: "Before" }],
-      })
-      expect(text).toBe("Landed revision 1.")
-    })
-    const kept = await row(id)
-    expect(kept?.revision).toBe(1)
-    expect(kept?.register.nodes).toContain(created)
-    const body = elementOf(kept, created)
-    expect(body.floor).toBe("Before")
-    expect(body.phase).toBe("running")
-    expect(minted.slice(before)).toContain(part(body.runId))
-    expect(values(kept, created)).toEqual(["After"])
-  })
-
-  it("answers person-protected after a person commits on the element in the run", async () => {
-    const { id, cookie } = await openedDeck("guard")
-    await withMcp(cookie, async (client) => {
-      expect(await editText(client, firstEdit(id))).toBe("Landed revision 1.")
-      const committed = await ask(
-        base,
-        "POST",
-        "/decks/commit",
-        { deck: id, batch: [{ value: "person", node: element }] },
-        cookie,
-      )
-      expect(committed.json).toMatchObject({ ok: true, revision: 2 })
-      const guarded = await row(id)
-      expect(elementOf(guarded).guarded).toBe(true)
-      const seen = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: id, base: 1, changes: [{ value: "agent", node: element, readAt: 1 }] },
-      })
-      const closed = {
-        ok: false,
-        revision: 2,
-        refusal: "person-protected",
-        elements: [{ node: element, value: "person", version: 2, closed: true }],
-      }
-      expect(seen.content).toEqual([
-        { type: "text", text: editNext["person-protected"] },
-        { type: "text", text: JSON.stringify(closed) },
-      ])
-      expect(seen.structuredContent).toEqual(closed)
-      const kept = await row(id)
-      expect(kept).toEqual(guarded)
-      const again = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: id, base: 2, changes: [{ value: "agent", node: element, readAt: 2 }] },
-      })
-      const answer = {
-        ok: false,
-        revision: 2,
-        refusal: "person-protected",
-        elements: [{ node: element, value: "person", version: 2, closed: true }],
-      }
-      expect(again.content).toEqual([
-        { type: "text", text: editNext["person-protected"] },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(again.structuredContent).toEqual(answer)
-      expect(await row(id)).toEqual(guarded)
-      expect(values(kept).at(-1)).toBe("person")
-    })
-  })
-
-  async function editAnswer(client: Client, args: Record<string, unknown>): Promise<EditReply> {
-    const result = await client.callTool({ name: "airdesign_edit_deck", arguments: args })
-    return result.structuredContent as EditReply
-  }
-
-  async function typed(id: string, cookie: string, value: string, revision: number): Promise<void> {
-    const committed = await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value, node: element }] }, cookie)
-    expect(committed.json).toMatchObject({ ok: true, revision })
-  }
-
-  it("an agent edits a box again in a new turn after a person typed in it", async () => {
-    const { id, cookie } = await openedDeck("again")
-    await withMcp(cookie, async (client) => {
-      const first = await editAnswer(client, firstEdit(id))
-      await typed(id, cookie, "person", 2)
-      expect(elementOf(await row(id)).guarded).toBe(true)
-      const stopped = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: first.runId } })
-      expect(stopped.structuredContent).toEqual({ ok: true, revision: 3, runId: first.runId, elements: [] })
-      const earlier = await row(id)
-      expect(elementOf(earlier).phase).toBe("stopped")
-      const later = await editAnswer(client, {
-        deck: id,
-        base: 3,
-        changes: [{ value: "later", node: element, readAt: 2 }],
-      })
-      expect(later).toEqual(landedAnswer(4, [{ node: element, value: "later", version: 3 }]))
-      expect(later.runId).not.toBe(first.runId)
-      const kept = await row(id)
-      expect(kept?.revision).toBe(4)
-      expect(runOf(kept)).toBe(later.runId)
-      expect(elementOf(kept).guarded).toBe(false)
-      expect(elementOf(kept).landed.slice(0, 2)).toEqual(elementOf(earlier).landed)
-      expect(values(kept)).toEqual(["21", "person", "later"])
-    })
-  })
-
-  it("an agent edits a box again after the idle window, and a person still closes it inside it", async () => {
-    let clock = 1_000_000
-    const served = await ownServer("idle", { now: () => clock })
-    try {
-      const { id, cookie } = await openedDeck("idle")
-      await withMcp(
-        cookie,
-        async (client) => {
-          const first = await editAnswer(client, firstEdit(id))
-          clock += 599_999
-          const second = await editAnswer(client, secondEdit(id))
-          expect(second.runId).toBe(first.runId)
-          await typed(id, cookie, "person", 3)
-          const closedRow = await row(id)
-          expect(elementOf(closedRow).guarded).toBe(true)
-          clock += 599_999
-          const closed = await editAnswer(client, {
-            deck: id,
-            base: 3,
-            changes: [{ value: "no", node: element, readAt: 3 }],
-          })
-          expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
-          expect(await row(id)).toEqual(closedRow)
-          clock += 600_000
-          const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: id } })
-          expect(read.isError).toBeFalsy()
-          const stale = await editAnswer(client, {
-            deck: id,
-            base: 3,
-            changes: [{ value: "no", node: element, readAt: 1 }],
-          })
-          expect(stale).toEqual({
-            ok: false,
-            revision: 3,
-            refusal: "stale",
-            elements: [{ node: element, value: "person", version: 3 }],
-          })
-          expect(await row(id)).toEqual(closedRow)
-          const later = await editAnswer(client, {
-            deck: id,
-            base: 3,
-            changes: [{ value: "later", node: element, readAt: 3 }],
-          })
-          expect(later).toEqual(landedAnswer(4, [{ node: element, value: "later", version: 4 }]))
-          expect(later.runId).not.toBe(first.runId)
-          const kept = await row(id)
-          expect(kept?.revision).toBe(4)
-          expect(runOf(kept)).toBe(later.runId)
-          expect(elementOf(kept).guarded).toBe(false)
-          expect(elementOf(kept).landed.slice(0, 3)).toEqual(elementOf(closedRow).landed)
+          expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
         },
         served.base,
       )
     } finally {
       await served.close()
     }
-  })
-
-  it("joins a second element and ends the idle turn on both in one write", async () => {
-    let clock = 1_000_000
-    const served = await ownServer("both", { now: () => clock })
-    try {
-      const { id, cookie } = await openedDeck("both")
-      await withMcp(
-        cookie,
-        async (client) => {
-          const first = await editAnswer(client, firstEdit(id))
-          const second = await editAnswer(client, {
-            deck: id,
-            base: 1,
-            changes: [{ value: "b", node: sibling, readAt: 0 }],
-          })
-          expect(second.runId).toBe(first.runId)
-          expect(runOf(await row(id), sibling)).toBe(first.runId)
-          clock += 600_000
-          const later = await editAnswer(client, secondEdit(id))
-          expect(later.runId).not.toBe(first.runId)
-          const kept = await row(id)
-          expect(kept?.revision).toBe(3)
-          expect(elementOf(kept, sibling).phase).toBe("stopped")
-          expect(runOf(kept, sibling)).toBe(first.runId)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("answers owner to another account's stop_run", async () => {
-    const { id, cookie } = await openedDeck("runowner")
-    let runId = ""
-    await withMcp(cookie, async (client) => {
-      runId = (await editAnswer(client, firstEdit(id))).runId
-    })
-    const before = await row(id)
-    await withMcp(await sign(address("runthief")), async (client) => {
-      const result = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId } })
-      const answer = { ok: false, revision: 0, refusal: "owner", elements: [] }
-      expect(result.isError).toBe(true)
-      expect(result.content).toEqual([
-        { type: "text", text: editNext.owner },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(result.structuredContent).toEqual(answer)
-      expect(await row(id)).toEqual(before)
-    })
-  })
-
-  it("answers run-fenced to a bad or unknown run id", async () => {
-    const { id, cookie } = await openedDeck("runfence")
-    await withMcp(cookie, async (client) => {
-      await editAnswer(client, firstEdit(id))
-      const before = await row(id)
-      for (const runId of ["unknown", "../bad"]) {
-        const result = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId } })
-        const answer = { ok: false, revision: 1, refusal: "run-fenced", elements: [] }
-        expect(result.content).toEqual([
-          { type: "text", text: runNext["run-fenced"] },
-          { type: "text", text: JSON.stringify(answer) },
-        ])
-        expect(await row(id)).toEqual(before)
-      }
-    })
-  })
-
-  it("answers a second stop_run ok with no change", async () => {
-    const { id, cookie } = await openedDeck("runtwice")
-    await withMcp(cookie, async (client) => {
-      const { runId } = await editAnswer(client, firstEdit(id))
-      await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId } })
-      const stopped = await row(id)
-      const again = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId } })
-      expect(again.structuredContent).toEqual({ ok: true, revision: 2, runId, elements: [] })
-      expect(await row(id)).toEqual(stopped)
-    })
-  })
-
-  it("keeps an element closed after a refused call inside the turn", async () => {
-    const { id, cookie } = await openedDeck("closedbatch")
-    await withMcp(cookie, async (client) => {
-      await editAnswer(client, { deck: id, base: 0, changes: [{ value: "y1", node: sibling, readAt: 0 }] })
-      await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "typed", node: sibling }] }, cookie)
-      const closedRow = await row(id)
-      expect(elementOf(closedRow, sibling).guarded).toBe(true)
-      const batch = await editAnswer(client, {
-        deck: id,
-        base: 2,
-        changes: [
-          { value: "x", node: element, readAt: 0 },
-          { value: "y", node: sibling, readAt: 2 },
-        ],
-      })
-      expect(batch).toMatchObject({ ok: false, refusal: "person-protected" })
-      const alone = await editAnswer(client, {
-        deck: id,
-        base: 2,
-        changes: [{ value: "overwrite", node: sibling, readAt: 2 }],
-      })
-      expect(alone).toMatchObject({ ok: false, refusal: "person-protected" })
-      expect(await row(id)).toEqual(closedRow)
-    })
-  })
-
-  it("opens a closed element in a new turn whose first edit names another", async () => {
-    let clock = 1_000_000
-    const served = await ownServer("newturn", { now: () => clock })
-    try {
-      const { id, cookie } = await openedDeck("newturn")
-      await withMcp(
-        cookie,
-        async (client) => {
-          const old = await editAnswer(client, {
-            deck: id,
-            base: 0,
-            changes: [{ value: "y1", node: sibling, readAt: 0 }],
-          })
-          await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "typed", node: sibling }] }, cookie)
-          clock += 3_600_000
-          const first = await editAnswer(client, firstEdit(id))
-          expect(first.runId).not.toBe(old.runId)
-          const between = await row(id)
-          expect(between?.revision).toBe(3)
-          expect(elementOf(between, sibling).phase).toBe("stopped")
-          const later = await editAnswer(client, {
-            deck: id,
-            base: 3,
-            changes: [{ value: "later", node: sibling, readAt: 2 }],
-          })
-          expect(later).toEqual(landedAnswer(4, [{ node: sibling, value: "later", version: 3 }], first.runId))
-          expect(elementOf(await row(id), sibling).guarded).toBe(false)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("lands a batch over elements written in two past turns", async () => {
-    let clock = 1_000_000
-    const served = await ownServer("twoturns", { now: () => clock })
-    try {
-      const { id, cookie } = await openedDeck("twoturns")
-      await withMcp(
-        cookie,
-        async (client) => {
-          await editAnswer(client, firstEdit(id))
-          clock += 600_000
-          const second = await editAnswer(client, {
-            deck: id,
-            base: 1,
-            changes: [{ value: "b", node: sibling, readAt: 0 }],
-          })
-          clock += 600_000
-          const batch = await editAnswer(client, {
-            deck: id,
-            base: 2,
-            changes: [
-              { value: "a2", node: element, readAt: 1 },
-              { value: "b2", node: sibling, readAt: 1 },
-            ],
-          })
-          expect(batch.ok).toBe(true)
-          expect(batch.runId).not.toBe(second.runId)
-          const kept = await row(id)
-          expect(runOf(kept)).toBe(batch.runId)
-          expect(runOf(kept, sibling)).toBe(batch.runId)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("keeps one account's turns on two decks apart", async () => {
-    const email = address("twodecks")
-    const one = await openedDeck("deckone", email)
-    const two = await openedDeck("decktwo", email)
-    await withMcp(one.cookie, async (client) => {
-      const first = await editAnswer(client, firstEdit(one.id))
-      const second = await editAnswer(client, firstEdit(two.id))
-      expect(second.runId).not.toBe(first.runId)
-      expect(runOf(await row(one.id))).toBe(first.runId)
-      expect(runOf(await row(two.id))).toBe(second.runId)
-      const before = await row(two.id)
-      const crossed = await client.callTool({
-        name: "airdesign_stop_run",
-        arguments: { deck: two.id, runId: first.runId },
-      })
-      expect(crossed.structuredContent).toMatchObject({ ok: false, refusal: "run-fenced" })
-      expect(await row(two.id)).toEqual(before)
-      const again = await editAnswer(client, {
-        deck: one.id,
-        base: 1,
-        changes: [{ value: "b", node: sibling, readAt: 0 }],
-      })
-      expect(again.runId).toBe(first.runId)
-      expect(runOf(await row(one.id), sibling)).toBe(first.runId)
-    })
-  })
-
-  it("stores no start for an edit refused in a turn or on opening one", async () => {
-    let clock = 1_000_000
-    const served = await ownServer("nostart", { now: () => clock })
-    try {
-      const { id, cookie } = await openedDeck("nostart")
-      await withMcp(
-        cookie,
-        async (client) => {
-          const stale = { deck: id, base: 1, changes: [{ value: "z", node: created, readAt: 5 }] }
-          await editAnswer(client, firstEdit(id))
-          const before = await row(id)
-          expect(await editAnswer(client, stale)).toMatchObject({ ok: false, refusal: "stale" })
-          expect(await row(id)).toEqual(before)
-          expect(before?.register.elements[created]).toBeUndefined()
-          clock += 600_000
-          expect(await editAnswer(client, stale)).toMatchObject({ ok: false, refusal: "stale" })
-          expect(await row(id)).toEqual(before)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("a person's edit closes an element in a new turn after the deck is deleted and reopened", async () => {
-    let clock = 1_000_000
-    const served = await ownServer("reborn", { now: () => clock })
-    try {
-      const { id, cookie } = await openedDeck("reborn")
-      await withMcp(
-        cookie,
-        async (client) => {
-          await editAnswer(client, firstEdit(id))
-          await editAnswer(client, secondEdit(id))
-          await editAnswer(client, { deck: id, base: 2, changes: [{ value: "23", node: element, readAt: 2 }] })
-          expect((await row(id))?.revision).toBe(3)
-          await ask(base, "POST", "/decks/trash", { deck: id }, cookie)
-          await ask(base, "POST", "/decks/delete", { decks: [id] }, cookie)
-          const reopened = await ask(base, "POST", "/decks/open", { deck: id }, cookie)
-          expect(reopened.json).toEqual({ ok: false, refusal: "deleted" })
-          clock += 600_000
-          const deletedRow = await row(id)
-          expect(deletedRow).toMatchObject({ register: null })
-          const first = await editAnswer(client, firstEdit(id))
-          expect(first).toMatchObject({ ok: false, refusal: "deleted" })
-          const closed = await editAnswer(client, {
-            deck: id,
-            base: 3,
-            changes: [{ value: "overwrite", node: element, readAt: 2 }],
-          })
-          expect(closed).toMatchObject({ ok: false, refusal: "deleted" })
-          expect(await row(id)).toEqual(deletedRow)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("refuses an edit on a deck deleted for good with deleted and changes nothing", async () => {
-    const { id, cookie } = await openedDeck("deletedagent")
-    await withMcp(cookie, async (client) => {
-      expect(await editAnswer(client, firstEdit(id))).toMatchObject({ ok: true, revision: 1 })
-      await ask(base, "POST", "/decks/trash", { deck: id }, cookie)
-      await ask(base, "POST", "/decks/delete", { decks: [id] }, cookie)
-      const before = await row(id)
-      expect(before).toMatchObject({ register: null })
-      expect(await editAnswer(client, secondEdit(id))).toMatchObject({ ok: false, refusal: "deleted" })
-      expect(await row(id)).toEqual(before)
-    })
-  })
-
-  it("refuses with deleted when a delete for good lands between the read and the write", async () => {
-    const info = await postgresInfo()
-    const stored = openPool(info.deck, "mcp-deletedrace")
-    let racing = false
-    const racer = new Proxy(stored, {
-      get(target, prop, receiver) {
-        if (prop !== "query") return Reflect.get(target, prop, receiver)
-        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
-        return async (sql: unknown, params?: unknown[]) => {
-          if (racing && typeof sql === "string" && sql.includes("update deck.saved")) {
-            racing = false
-            await query(
-              "update deck.saved set deleted = now(), register = null, name = '', trashed = null where id = $1",
-              [params?.[0]],
-            )
-          }
-          return query(sql, params)
-        }
-      },
-    }) as Sql
-    const served = await ownServer("deletedrace", { deck: racer, now: () => 1_000_000 })
-    try {
-      const { id, cookie } = await openedDeck("deletedrace")
-      await withMcp(
-        cookie,
-        async (client) => {
-          racing = true
-          expect(await editAnswer(client, firstEdit(id))).toMatchObject({ ok: false, refusal: "deleted" })
-          expect(await row(id)).toMatchObject({ register: null })
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-      await stored.end()
-    }
-  })
-
-  it("leaves the live turn and its rows when stop_run names an old stopped run", async () => {
-    const { id, cookie } = await openedDeck("oldstop")
-    await withMcp(cookie, async (client) => {
-      const old = await editAnswer(client, firstEdit(id))
-      await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: old.runId } })
-      const live = await editAnswer(client, { deck: id, base: 2, changes: [{ value: "b", node: sibling, readAt: 0 }] })
-      expect(live.runId).not.toBe(old.runId)
-      await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "typed", node: sibling }] }, cookie)
-      const before = await row(id)
-      expect(elementOf(before, sibling).guarded).toBe(true)
-      const again = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: old.runId } })
-      expect(again.structuredContent).toEqual({ ok: true, revision: 4, runId: old.runId, elements: [] })
-      expect(await row(id)).toEqual(before)
-      const next = await editAnswer(client, {
-        deck: id,
-        base: 4,
-        changes: [{ value: "overwrite", node: sibling, readAt: 2 }],
-      })
-      expect(next).toMatchObject({ ok: false, refusal: "person-protected" })
-      expect(await row(id)).toEqual(before)
-    })
-  })
-
-  async function holdingServer(
-    mark: string,
-    now: () => number,
-  ): Promise<{
-    readonly base: string
-    readonly hold: (match?: string) => { readonly reached: Promise<void>; readonly release: () => void }
-    readonly close: () => Promise<void>
-  }> {
-    const info = await postgresInfo()
-    const stored = openPool(info.deck, `mcp-${mark}-hold`)
-    let held: null | { readonly match: string; readonly reach: () => void; readonly released: Promise<void> } = null
-    const holding = new Proxy(stored, {
-      get(target, prop, receiver) {
-        if (prop !== "query") return Reflect.get(target, prop, receiver)
-        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
-        return async (sql: unknown, params?: unknown[]) => {
-          const answered = await query(sql, params)
-          if (held !== null && typeof sql === "string" && sql.includes(held.match)) {
-            const gate = held
-            held = null
-            gate.reach()
-            await gate.released
-          }
-          return answered
-        }
-      },
-    }) as Sql
-    const served = await ownServer(mark, { deck: holding, now })
-    return {
-      base: served.base,
-      hold: (match = "update deck.saved") => {
-        let reach = () => {}
-        let release = () => {}
-        const reached = new Promise<void>((resolve) => {
-          reach = resolve
-        })
-        const released = new Promise<void>((resolve) => {
-          release = resolve
-        })
-        held = { match, reach, released }
-        return { reached, release }
-      },
-      close: async () => {
-        await served.close()
-        await stored.end()
-      },
-    }
-  }
-
-  it("keeps the newer run in the record when an older call settles after it", async () => {
-    const served = await holdingServer("lateedit", () => 1_000_000)
-    const { id, cookie } = await openedDeck("lateedit")
-    const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
-    try {
-      const gate = served.hold()
-      const pending = slow.callTool({ name: "airdesign_edit_deck", arguments: firstEdit(id) })
-      await gate.reached
-      const held = runOf(await row(id))
-      await fast.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: held } })
-      const newer = await editAnswer(fast, { ...secondEdit(id), base: 2 })
-      expect(newer.runId).not.toBe(held)
-      gate.release()
-      await pending
-      const next = await editAnswer(fast, { deck: id, base: 3, changes: [{ value: "z", node: sibling, readAt: 0 }] })
-      expect(next.runId).toBe(newer.runId)
-      expect(runOf(await row(id), sibling)).toBe(newer.runId)
-    } finally {
-      await Promise.all([slow.close(), fast.close()])
-      await served.close()
-    }
-  })
-
-  it("keeps the record and a closed element when a row read lags a newer settle", async () => {
-    const served = await holdingServer("lagread", () => 1_000_000)
-    const { id, cookie } = await openedDeck("lagread")
-    const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
-    try {
-      const first = await editAnswer(fast, firstEdit(id))
-      await editAnswer(fast, { deck: id, base: 1, changes: [{ value: "b", node: sibling, readAt: 0 }] })
-      await typed(id, cookie, "person", 3)
-      const gate = served.hold("from deck.saved where id")
-      const pending = slow.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: id, base: 3, changes: [{ value: "slow", node: sibling, readAt: 1 }] },
-      })
-      await gate.reached
-      const newer = await editAnswer(fast, {
-        deck: id,
-        base: 3,
-        changes: [{ value: "fast", node: sibling, readAt: 1 }],
-      })
-      expect(newer).toMatchObject({ ok: true, revision: 4, runId: first.runId })
-      gate.release()
-      expect((await pending).structuredContent).toMatchObject({ ok: true, revision: 5 })
-      const before = await row(id)
-      expect(elementOf(before).guarded).toBe(true)
-      const closed = await editAnswer(fast, {
-        deck: id,
-        base: 5,
-        changes: [{ value: "overwrite", node: element, readAt: 2 }],
-      })
-      expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
-      expect(await row(id)).toEqual(before)
-    } finally {
-      await Promise.all([slow.close(), fast.close()])
-      await served.close()
-    }
-  })
-
-  it("keeps a turn ended when an older call settles after the stop", async () => {
-    const served = await holdingServer("latestop", () => 1_000_000)
-    const { id, cookie } = await openedDeck("latestop")
-    const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
-    try {
-      const first = await editAnswer(fast, firstEdit(id))
-      const gate = served.hold()
-      const pending = slow.callTool({ name: "airdesign_edit_deck", arguments: secondEdit(id) })
-      await gate.reached
-      const stopped = await fast.callTool({
-        name: "airdesign_stop_run",
-        arguments: { deck: id, runId: first.runId },
-      })
-      expect(stopped.structuredContent).toMatchObject({ ok: true, revision: 3 })
-      gate.release()
-      await pending
-      const next = await editAnswer(fast, {
-        deck: id,
-        base: 3,
-        changes: [{ value: "z", node: sibling, readAt: 0 }],
-      })
-      expect(next.ok).toBe(true)
-      expect(next.runId).not.toBe(first.runId)
-    } finally {
-      await Promise.all([slow.close(), fast.close()])
-      await served.close()
-    }
-  })
-
-  async function racingServer(
-    mark: string,
-    now: () => number,
-  ): Promise<{ readonly base: string; readonly race: () => void; readonly close: () => Promise<void> }> {
-    const info = await postgresInfo()
-    const stored = openPool(info.deck, `mcp-${mark}-race`)
-    let racing = 0
-    const racer = new Proxy(stored, {
-      get(target, prop, receiver) {
-        if (prop !== "query") return Reflect.get(target, prop, receiver)
-        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
-        return async (sql: unknown, params?: unknown[]) => {
-          if (racing > 0 && typeof sql === "string" && sql.includes("update deck.saved")) {
-            racing -= 1
-            await query("update deck.saved set revision = revision + 1 where id = $1", [params?.[0]])
-          }
-          return query(sql, params)
-        }
-      },
-    }) as Sql
-    const served = await ownServer(mark, { deck: racer, now })
-    return {
-      base: served.base,
-      race: () => {
-        racing = commitTries
-      },
-      close: async () => {
-        await served.close()
-        await stored.end()
-      },
-    }
-  }
-
-  it("answers stale when a stop_run loses its write, and the run stays live", async () => {
-    const served = await racingServer("lostend", () => 1_000_000)
-    try {
-      const { id, cookie } = await openedDeck("lostend")
-      await withMcp(
-        cookie,
-        async (client) => {
-          const first = await editAnswer(client, firstEdit(id))
-          const before = await row(id)
-          served.race()
-          const lost = await client.callTool({
-            name: "airdesign_stop_run",
-            arguments: { deck: id, runId: first.runId },
-          })
-          const answer = { ok: false, revision: 1 + commitTries, refusal: "stale", elements: [] }
-          expect(lost.content).toEqual([
-            { type: "text", text: runNext.stale },
-            { type: "text", text: JSON.stringify(answer) },
-          ])
-          const kept = await row(id)
-          expect(kept?.revision).toBe(1 + commitTries)
-          expect(kept?.register).toEqual(before?.register)
-          const next = await editAnswer(client, secondEdit(id))
-          expect(next.runId).toBe(first.runId)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("answers stale when an edit ending an idle turn loses its write and the old run stays live", async () => {
-    let clock = 1_000_000
-    const served = await racingServer("lostidle", () => clock)
-    try {
-      const { id, cookie } = await openedDeck("lostidle")
-      await withMcp(
-        cookie,
-        async (client) => {
-          const first = await editAnswer(client, firstEdit(id))
-          const before = await row(id)
-          clock += 600_000
-          served.race()
-          const lost = await editAnswer(client, secondEdit(id))
-          expect(lost).toMatchObject({ ok: false, revision: 1 + commitTries, refusal: "stale" })
-          const kept = await row(id)
-          expect(kept?.revision).toBe(1 + commitTries)
-          expect(kept?.register).toEqual(before?.register)
-          expect(elementOf(kept).phase).toBe("running")
-          expect(runOf(kept)).toBe(first.runId)
-        },
-        served.base,
-      )
-    } finally {
-      await served.close()
-    }
-  })
-
-  it("counts stop_run toward the thirty", async () => {
-    const { id, cookie } = await openedDeck("runlimit")
-    await withMcp(cookie, async (client) => {
-      const stop = { name: "airdesign_stop_run", arguments: { deck: id, runId: "unknown" } }
-      for (let call = 0; call < 30; call += 1) {
-        const result = await client.callTool(stop)
-        expect(result.content[0]).toEqual({ type: "text", text: runNext["run-fenced"] })
-      }
-      expect((await client.callTool(stop)).content).toEqual([{ type: "text", text: toolLimit }])
-      expect(await editText(client, firstEdit(id))).toBe(toolLimit)
-      expect((await row(id))?.revision).toBe(0)
-    })
-  })
-
-  it("checks every change on a new element against the first change's floor", async () => {
-    const { id, cookie } = await openedDeck("twofloor")
-    const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "One" }] }])
-    const good = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Two" }] }])
-    const bad = JSON.stringify([{ from: 9, runs: [{ from: 4, text: "bad" }] }])
-    const before = await row(id)
-    await withMcp(cookie, async (client) => {
-      const unfloored = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: {
-          deck: id,
-          base: 0,
-          changes: [
-            { value: good, node: created, readAt: 0, floor },
-            { value: bad, node: created, readAt: 1 },
-          ],
-        },
-      })
-      expect(unfloored.isError).toBe(true)
-      expect(unfloored.content).toEqual([
-        { type: "text", text: editNext["text-from"] },
-        { type: "text", text: "The file has paragraphs 0." },
-        {
-          type: "text",
-          text: JSON.stringify({
-            ok: false,
-            revision: 0,
-            refusal: "text-from",
-            elements: [{ node: created, value: "", version: 0 }],
-          }),
-        },
-      ])
-      expect(await row(id)).toEqual(before)
-      const refloored = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: {
-          deck: id,
-          base: 0,
-          changes: [
-            { value: good, node: created, readAt: 0, floor },
-            { value: bad, node: created, readAt: 1, floor: "plain" },
-          ],
-        },
-      })
-      expect(refloored.isError).toBe(true)
-      expect(refloored.structuredContent).toEqual({
-        ok: false,
-        revision: 0,
-        refusal: "field",
-        elements: [{ node: created, value: "", version: 0 }],
-      })
-      expect(await row(id)).toEqual(before)
-      const landed = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: {
-          deck: id,
-          base: 0,
-          changes: [
-            { value: good, node: created, readAt: 0, floor },
-            { value: good.replace("Two", "Three"), node: created, readAt: 1 },
-          ],
-        },
-      })
-      expect(landed.structuredContent).toEqual(
-        landedAnswer(1, [{ node: created, value: good.replace("Two", "Three"), version: 2 }]),
-      )
-    })
-    const kept = await row(id)
-    expect(kept?.revision).toBe(1)
-    expect(elementOf(kept, created).floor).toBe(floor)
-    expect(values(kept, created)).toEqual([good, good.replace("Two", "Three")])
-  })
-
-  it("answers run-fenced on an ended element, and a stop opens a fresh run keeping earlier rows", async () => {
-    const { id, cookie } = await openedDeck("restart")
-    const before = minted.length
-    await withMcp(cookie, async (client) => {
-      await seeded(client, id)
-      const earlier = await row(id)
-      const firstRun = runOf(earlier)
-      expect(runOf(earlier, sibling)).toBe(firstRun)
-      await deck.query("update deck.saved set register = jsonb_set(register, $2, to_jsonb($3::text)) where id = $1", [
-        id,
-        ["elements", element, "phase"],
-        "stopped",
-      ])
-      const stoppedRow = await row(id)
-      const send = { deck: id, base: 3, changes: [{ value: "a3", node: element, readAt: 2 }] }
-      expect(await editText(client, send)).toBe(editNext["run-fenced"])
-      expect(await row(id)).toEqual(stoppedRow)
-      await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: firstRun } })
-      expect(await editText(client, send)).toBe("Landed revision 5.")
-      const kept = await row(id)
-      const fresh = runOf(kept)
-      expect(minted.slice(before)).toContain(part(fresh))
-      expect(fresh).not.toBe(firstRun)
-      expect(elementOf(kept).phase).toBe("running")
-      expect(elementOf(kept).landed.slice(0, 2)).toEqual(elementOf(earlier).landed)
-      expect(elementOf(kept).landed[2]).toMatchObject({ value: "a3", runId: fresh })
-      expect(elementOf(kept, sibling).landed).toEqual(elementOf(earlier, sibling).landed)
-      expect(elementOf(kept, sibling).phase).toBe("stopped")
-    })
-  })
-
-  it("refuses a client run id and leaves the stored run", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(address("id"))
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    await withMcp(cookie, async (client) => {
-      const before = minted.length
-      const landed = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: firstEdit(named.deck),
-      })
-      expect(landed.content).toEqual(
-        landedContent(1, [{ node: element, value: "21", version: 1 }], runOf(await row(named.deck))),
-      )
-      const started = await row(named.deck)
-      expect(minted.slice(before)).toContain(part(elementOf(started).runId))
-      for (const extra of [{ runId: "client-run" }, { readAt: 5 }, { actor: "person" }] as const) {
-        const refused = await client.callTool({
-          name: "airdesign_edit_deck",
-          arguments: { deck: named.deck, base: 1, changes: [{ value: "99", node: element, readAt: 1 }], ...extra },
-        })
-        expect(refused.isError).toBe(true)
-        expect(refused.content).toEqual([
-          { type: "text", text: editNext.field },
-          { type: "text", text: JSON.stringify({ ok: false, revision: 1, refusal: "field", elements: [] }) },
-        ])
-        const kept = await row(named.deck)
-        expect(kept).toEqual(started)
-        expect(minted.slice(before)).toContain(part(elementOf(kept).runId))
-      }
-    })
-  })
-
-  it("refuses a deck that was never opened", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(address("miss"))
-    await withMcp(cookie, async (client) => {
-      const refused = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: firstEdit(named.deck),
-      })
-      expect(refused.isError).toBe(true)
-      const answer = { ok: false, revision: 0, refusal: "deck", elements: [] }
-      expect(refused.content).toEqual([
-        { type: "text", text: editNext.deck },
-        { type: "text", text: JSON.stringify(answer) },
-      ])
-      expect(refused.structuredContent).toEqual(answer)
-    })
-    const counted = await deck.query<{ count: string }>(
-      "select count(*)::text as count from deck.saved where id = $1",
-      [named.deck],
-    )
-    expect(counted.rows[0]?.count).toBe("0")
   })
 
   it("refuses the thirty-first tool call after a new sign-in", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
     const email = address("cap")
     const cookie = await sign(email)
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     await withMcp(cookie, async (client) => {
-      for (let call = 0; call < 30; call += 1) {
-        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: named.deck } })
-        expect(read.isError).toBeFalsy()
-      }
-      const blocked = await client.callTool({
-        name: "airdesign_edit_deck",
-        arguments: firstEdit(named.deck),
-      })
-      expect(blocked.isError).toBe(true)
+      for (let call = 0; call < 30; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
+      const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
       expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
     })
-    const kept = await row(named.deck)
-    expect(kept?.revision).toBe(0)
-    expect(Object.keys(kept?.register.elements ?? {})).toEqual([rootElement])
-    const again = await sign(email)
-    await withMcp(again, async (client) => {
-      const blocked = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: named.deck } })
-      expect(blocked.isError).toBe(true)
+    await withMcp(await sign(email), async (client) => {
+      const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
       expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
     })
-    expect(await row(named.deck)).toEqual(kept)
-  })
-
-  it("allows a configured host and refuses any other host or origin", async () => {
-    const { id, cookie } = await openedDeck("host")
-    const before = await row(id)
-    const unsigned = await posted(publicBase, { host: "mcp.airdesign.app" }, editCall(id))
-    expect({ status: unsigned.status, json: JSON.parse(unsigned.text), stored: await row(id) }).toEqual({
-      status: 401,
-      json: sessionRefusal,
-      stored: before,
-    })
-    await withMcp(
-      cookie,
-      async (client) => {
-        const listed = await client.listTools()
-        expect(listed.tools.map((tool) => tool.name)).toEqual(projectTools(catalog).map((tool) => tool.name))
-      },
-      publicBase,
-      { host: "mcp.airdesign.app" },
-    )
-    const foreign = await posted(base, { host: "evil.example", cookie }, editCall(id))
-    expect({ status: foreign.status, stored: await row(id) }).toEqual({ status: 403, stored: before })
-    expect(foreign.text).toContain("Invalid Host")
-    const origin = await posted(
-      publicBase,
-      { host: "mcp.airdesign.app", origin: "https://evil.example", cookie },
-      editCall(id),
-    )
-    expect({ status: origin.status, stored: await row(id) }).toEqual({ status: 403, stored: before })
-    expect(origin.text).toContain("Invalid Origin")
   })
 
   it("counts overlapping tool calls once each", async () => {
@@ -1703,8 +451,37 @@ describe("mcp route", () => {
         }) as Sql,
     })
     try {
-      const { id, cookie } = await openedDeck("race")
-      const held = Array.from({ length: requests }, () => heldRead(served.base, cookie, id))
+      const cookie = await sign(address("race"))
+      const payload = Buffer.from(JSON.stringify(listCall))
+      const url = new URL(`${served.base}/mcp`)
+      const held = Array.from({ length: requests }, () => {
+        let release = () => {}
+        const answer = new Promise<string>((resolve, reject) => {
+          const sent = httpRequest(
+            {
+              hostname: "127.0.0.1",
+              port: url.port,
+              path: url.pathname,
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                accept: "application/json, text/event-stream",
+                "content-length": String(payload.length),
+                cookie,
+              },
+            },
+            (res) => {
+              const chunks: Buffer[] = []
+              res.on("data", (chunk: Buffer) => chunks.push(chunk))
+              res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
+            },
+          )
+          sent.on("error", reject)
+          sent.write(payload.subarray(0, 1))
+          release = () => sent.end(payload.subarray(1))
+        })
+        return { release, answer }
+      })
       await allSignedIn
       await new Promise((resolve) => setImmediate(resolve))
       for (const call of held) call.release()
@@ -1716,215 +493,65 @@ describe("mcp route", () => {
     }
   })
 
-  it("lists the agent tools on POST /mcp for a signed-in caller", async () => {
-    const cookie = await sign(address("list"))
-    await withMcp(cookie, async (client) => {
-      const listed = await client.listTools()
-      expect(listed.tools.map((tool) => tool.name)).toEqual(projectTools(catalog).map((tool) => tool.name))
-    })
-  })
-
-  it("refuses another account's read", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const owner = await sign(address("capown"))
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, owner)
-    const before = await row(named.deck)
-    const other = await sign(address("capelse"))
-    await withMcp(other, async (client) => {
-      const refused = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: named.deck } })
-      expect(refused.isError).toBe(true)
-      expect((refused.content as readonly { readonly text?: string }[])[0]).toEqual({
-        type: "text",
-        text: editNext.owner,
-      })
-    })
-    expect(await row(named.deck)).toEqual(before)
-  })
-
-  it("refuses a body over the cap and accepts one under it", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(address("size"))
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const nodes = Array.from({ length: 100 }, (_, index) => `258.${String(index)}`)
-    const call = (texts: readonly string[]) =>
-      JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: {
-          name: "airdesign_edit_deck",
-          arguments: {
-            deck: named.deck,
-            base: 0,
-            changes: nodes.map((node, index) => ({ value: texts[index] ?? "", node, readAt: 0 })),
-          },
-        },
-      })
-    const packed = (wire: number) =>
-      nodes.map((_, index) => {
-        const share = Math.floor(wire / nodes.length) + (index < wire % nodes.length ? 1 : 0)
-        return `${share % 2 === 1 ? "y" : ""}${'"'.repeat(Math.floor(share / 2))}`
-      })
-    const emptySize = Buffer.byteLength(call(nodes.map(() => "")))
-    const underValues = packed(bodyCap - emptySize - 1)
-    const under = call(underValues)
-    const over = call(packed(bodyCap))
-    expect(Buffer.byteLength(under)).toBe(bodyCap - 1)
-    expect(Buffer.byteLength(over)).toBeGreaterThan(bodyCap)
-    const blocked = await fetch(`${base}/mcp`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json, text/event-stream",
-        cookie,
-      },
-      body: over,
-    })
-    const blockedText = await blocked.text()
-    expect(blocked.status).toBe(413)
-    expect(JSON.parse(blockedText)).toEqual({ ok: false, refusal: "size" })
-    expect(await row(named.deck)).toMatchObject({ revision: 0, register: { elements: {} } })
-    const allowed = await fetch(`${base}/mcp`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json, text/event-stream",
-        cookie,
-      },
-      body: under,
-    })
-    const allowedText = await allowed.text()
+  it("allows a configured host and refuses any other host or origin", async () => {
+    const cookie = await sign(address("host"))
+    const unsigned = await posted(publicBase, { host: "mcp.airdesign.app" }, listCall)
+    expect({ status: unsigned.status, json: JSON.parse(unsigned.text) }).toEqual({ status: 401, json: sessionRefusal })
+    const allowed = await posted(publicBase, { host: "mcp.airdesign.app", cookie }, listCall)
     expect(allowed.status).toBe(200)
-    expect(allowedText).toContain("Landed revision 1.")
-    const kept = await row(named.deck)
-    expect(kept?.revision).toBe(1)
-    expect(nodes.map((node) => values(kept, node)[0])).toEqual(underValues)
+    const foreign = await posted(base, { host: "evil.example", cookie }, listCall)
+    expect(foreign.status).toBe(403)
+    expect(foreign.text).toContain("Invalid Host")
+    const origin = await posted(
+      publicBase,
+      { host: "mcp.airdesign.app", origin: "https://evil.example", cookie },
+      listCall,
+    )
+    expect(origin.status).toBe(403)
+    expect(origin.text).toContain("Invalid Origin")
   })
 
-  it("answers a fixed sentence when the store throws", async () => {
-    const info = await postgresInfo()
-    const session = openPool(info.session, "mcp-throw-session")
-    const listen = new DeckListen(info.listen)
-    const broken = {
-      query: () => Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:1")),
-    } as unknown as Sql
-    const denied = await serve({
-      ...origins,
-      session,
-      deck: broken,
-      listen,
-      now: () => 1_000_000,
-      send: async () => undefined,
-    })
-    const saving = new Proxy(deck, {
-      get(target, prop, receiver) {
-        if (prop !== "query") return Reflect.get(target, prop, receiver)
-        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
-        return (sql: unknown, params?: unknown[]) => {
-          if (typeof sql === "string" && sql.includes("update deck.saved")) {
-            return Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:1"))
-          }
-          return query(sql, params)
-        }
-      },
-    }) as Sql
-    const writer = await serve({
-      ...origins,
-      session,
-      deck: saving,
-      listen,
-      now: () => 1_000_000,
-      send: async () => undefined,
-    })
+  it("refuses a body over the cap, and answers one under it", async () => {
+    const cookie = await sign(address("size"))
+    const padded = (size: number) =>
+      JSON.stringify({ ...listCall, params: { ...listCall.params, pad: "x".repeat(size) } })
+    const over = padded(limits.body)
+    expect(Buffer.byteLength(over)).toBeGreaterThan(limits.body)
+    const blocked = await posted(base, { cookie }, over)
+    expect(blocked.status).toBe(413)
+    expect(JSON.parse(blocked.text)).toEqual({ ok: false, refusal: "size" })
+    const under = padded(limits.body - Buffer.byteLength(padded(0)) - 1)
+    expect(Buffer.byteLength(under)).toBe(limits.body - 1)
+    expect((await posted(base, { cookie }, under)).status).toBe(200)
+  })
+
+  it("answers a fixed word when the store throws, and leaks nothing of the error", async () => {
+    const broken = { query: () => Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:1")) } as unknown as Sql
+    const served = await ownServer("throw", { deck: broken })
     try {
       const cookie = await sign(address("throw"))
-      const named = readDeckId(deckName())
-      if (!named.ok) throw new Error(named.refusal)
       await withMcp(
         cookie,
         async (client) => {
-          const refused = await client.callTool({
-            name: "airdesign_edit_deck",
-            arguments: firstEdit(named.deck),
-          })
+          const refused = await tool(client, "create_deck", {})
           expect(refused.isError).toBe(true)
-          expect(refused.content).toEqual([
-            { type: "text", text: storeFailure },
-            { type: "text", text: JSON.stringify({ ok: false, revision: 0, refusal: "store", elements: [] }) },
-          ])
-          expect(JSON.stringify(refused)).not.toContain("ECONNREFUSED")
-        },
-        denied.base,
-      )
-      const opened = readDeckId(deckName())
-      if (!opened.ok) throw new Error(opened.refusal)
-      await ask(base, "POST", "/decks/open", { deck: opened.deck }, cookie)
-      const before = await row(opened.deck)
-      await withMcp(
-        cookie,
-        async (client) => {
-          const refused = await client.callTool({
-            name: "airdesign_edit_deck",
-            arguments: firstEdit(opened.deck),
-          })
-          expect(refused.isError).toBe(true)
-          const answer = {
-            ok: false,
-            revision: 0,
-            refusal: "store",
-            elements: [{ node: element, value: "", version: 0 }],
+          expect(refused.answer).toEqual(storeFailure)
+          for (const name of ["list_decks", "read_deck", "edit_deck", "stop_run"]) {
+            const args = {
+              list_decks: {},
+              read_deck: { deck: "a" },
+              edit_deck: { deck: "a", base: 0, changes: [{ op: "delete", nodes: ["a:1"] }] },
+              stop_run: { deck: "a", runId: "r" },
+            }[name]
+            const answered = await tool(client, name, args)
+            expect(answered.answer).toEqual(storeFailure)
+            expect(JSON.stringify(answered)).not.toContain("ECONNREFUSED")
           }
-          expect(refused.content).toEqual([
-            { type: "text", text: storeFailure },
-            { type: "text", text: JSON.stringify(answer) },
-          ])
-          expect(refused.structuredContent).toEqual(answer)
-          expect(JSON.stringify(refused)).not.toContain("ECONNREFUSED")
         },
-        writer.base,
+        served.base,
       )
-      expect(await row(opened.deck)).toEqual(before)
     } finally {
-      await writer.close()
-      await denied.close()
-      await listen.close()
-      await session.end()
+      await served.close()
     }
-  })
-
-  it("keeps the server run id when params name one", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(address("param"))
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const before = minted.length
-    const body = JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "tools/call",
-      params: {
-        name: "airdesign_edit_deck",
-        arguments: firstEdit(named.deck),
-        runId: "client-side",
-      },
-    })
-    const response = await fetch(`${base}/mcp`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json, text/event-stream",
-        cookie,
-      },
-      body,
-    })
-    const text = await response.text()
-    expect(response.status).toBe(200)
-    expect(text).toContain("Landed revision 1.")
-    const kept = await row(named.deck)
-    expect(minted.slice(before)).toEqual([part(elementOf(kept).runId)])
-    expect(elementOf(kept).runId).not.toBe("client-side")
-    expect(values(kept)).toEqual(["21"])
   })
 })

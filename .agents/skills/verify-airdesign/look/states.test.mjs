@@ -42,31 +42,23 @@ describe("states", () => {
 
   it("selects states with a star", () => {
     expect(matching("agent-*").map((state) => state.name)).toEqual([
-      "agent-done",
-      "agent-empty",
-      "agent-failed",
       "agent-malformed",
       "agent-not-offered",
       "agent-off",
       "agent-out-of-usage",
       "agent-retried",
-      "agent-step-refused",
-      "agent-working",
     ])
   })
 
   it("walks each journey once for all of its states", () => {
     const grouped = units(matching("agent-*"))
     expect(grouped.map((unit) => unit.states.map((state) => state.name))).toEqual([
-      ["agent-done", "agent-empty", "agent-failed", "agent-working"],
       ["agent-malformed"],
       ["agent-not-offered"],
       ["agent-off"],
       ["agent-out-of-usage"],
       ["agent-retried"],
-      ["agent-step-refused"],
     ])
-    expect(grouped[0].aira).toBe(true)
   })
 
   it("sweeps three lanes on a four-core ci runner and one lane per four cores on a larger machine, at most eight", () => {
@@ -75,6 +67,7 @@ describe("states", () => {
 
   it("puts every state in exactly one design shard and keeps each journey's states together", () => {
     const largestUnit = Math.max(...units(states).map((unit) => unit.states.length))
+    const airaUnits = units(states).filter((unit) => unit.aira).length
     for (const total of [1, 2, 3, 5]) {
       const shards = Array.from({ length: total }, (_, index) => shardStates(states, { current: index + 1, total }))
       expect(shards.flat().map((state) => state.name)).toEqual(
@@ -85,7 +78,8 @@ describe("states", () => {
         expect(shards.filter((shard) => unit.states.some((state) => shard.includes(state)))).toHaveLength(1)
       const sizes = shards.map((shard) => shard.length)
       expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(largestUnit)
-      if (total <= 2) for (const shard of shards) expect(units(shard).some((unit) => unit.aira)).toBe(true)
+      if (total <= Math.min(2, airaUnits))
+        for (const shard of shards) expect(units(shard).some((unit) => unit.aira)).toBe(true)
     }
   })
 

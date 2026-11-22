@@ -32,7 +32,7 @@ test("verification states share copy after a spec loads it through CommonJS", as
   expect(copy.productCopy).toBe(productCopy)
   expect(copy.undoCopy).toBe(undoCopy)
   expect(copy.creditsCopy).toBe(creditsCopy)
-  for (const name of ["blank-deck", "move-resize", "open-edit-save", "sign-in-pages", "slide-background"]) {
+  for (const name of ["blank-deck", "move-resize", "open-edit-save", "sign-in-pages", "aira-panel"]) {
     const journey = await load<{ default: unknown }>(`../journeys/${name}.mjs`)
     expect(journey.default).toBeInstanceOf(Function)
   }

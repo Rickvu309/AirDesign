@@ -98,22 +98,3 @@ test("the slide list thumbnail follows a drag, a resize, a nudge and their undo 
   await expect.poll(async () => (await shown(page)).canvas[0]).toBeCloseTo(start.x / emuPerPixel, 3)
   await expectShownAt(page, start)
 })
-
-test("the slide list thumbnail follows a shape an agent moves", async ({ page, context, stack }) => {
-  const cookie = await stack.signIn()
-  await signInBrowser(context, cookie)
-  await forward(page, stack)
-  const deck = await opened(page)
-  await expectShownAt(page, start)
-  await expect
-    .poll(async () => (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)).index)
-    .toBe("ready")
-  const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
-  const change = { op: "set", target: "256.2", box: { x: 144, y: 108 } }
-  expect(await stack.callTool("airdesign_edit_deck", { deck, base, changes: [change] }, cookie)).toMatchObject({
-    ok: true,
-  })
-  const moved = { ...start, x: 144 * 12_700, y: 108 * 12_700 }
-  await expect.poll(async () => (await shown(page)).canvas[0]).toBeCloseTo(moved.x / emuPerPixel, 3)
-  await expectShownAt(page, moved)
-})

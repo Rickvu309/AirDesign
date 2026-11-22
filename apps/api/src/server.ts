@@ -40,7 +40,6 @@ import { deckWatchRoute } from "./deck-watch.js"
 import { DeckListen } from "./listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./deck-answer.js"
 import type { Sender } from "./mail.js"
-import { nodeNet, type ImageNet } from "./image-fetch.js"
 import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
 import { mediaAnswers } from "./media.js"
@@ -70,14 +69,10 @@ export type ApiOptions = {
   readonly commit?: string
   readonly smokeToken?: string
   readonly originals?: OriginalStore
-  readonly imageNet?: ImageNet
   readonly aira?: AiraSettings
   readonly closing?: Closing
   readonly forwardSecret?: string
-  readonly measureLimit?: number
 }
-
-const measureLimit = 5_000
 
 type ServedOptions = ApiOptions & {
   readonly closing: Closing
@@ -414,15 +409,6 @@ async function mcpRoute(visit: Visit): Promise<void> {
       hosts: options.hosts ?? localHosts,
       bodyCap: limits.body,
       fail: (error) => answerThrow(visit, name, error),
-      measures: {
-        listen: options.listen,
-        following: (deck) => options.followers.following(deck),
-        limit: options.measureLimit ?? measureLimit,
-        findings: options.findings,
-        pictures: options.pictures,
-      },
-      originals: options.originals,
-      images: { store: options.originals, net: options.imageNet ?? nodeNet },
     },
     req,
     res,

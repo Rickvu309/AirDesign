@@ -93,7 +93,7 @@ export async function fillAccount(served: Served, sql: Sql, email: string): Prom
   const decks = [await storedDeck(served, cookie), await storedDeck(served, cookie)]
   await posted(served, deckRoutes.trash.path, { deck: decks[1] }, cookie)
   const oauth = await connected(served, cookie)
-  await agentEdit(served, oauth.access, decks[0] ?? "")
+  await agentEdit(served, oauth.access)
   const asked = { deck: decks[0], messages: [{ role: "user", content: "Fuzz" }] }
   const turn = await ask(served.base, "POST", airaRoutes.turn.path, asked, cookie, { [countryHeader]: "VN" })
   if (turn.status !== 200) throw new Error(turn.text)
@@ -115,8 +115,9 @@ export async function personalRows(sql: Sql, filled: Filled): Promise<Record<str
     ["session.aira_turn", "email = $1", filled.email],
     ["session.aira_ask", "email = $1", filled.email],
     ["session.caller_log", "email = $1", filled.email],
-    ["session.agent_turn", "email = $1", filled.email],
     ["deck.saved", "owner = $1", filled.email],
+    ["deck.scene", "owner = $1", filled.email],
+    ["deck.scene_edit", "deck in (select id from deck.scene where owner = $1)", filled.email],
     ["deck.once", "deck = any($1::text[])", filled.decks],
     ["deck.original_delete", "owner = $1", filled.email],
   ] as const) {
@@ -139,8 +140,7 @@ export function storedKeys(store: LocalOriginalStore, email: string): readonly s
   return [...store.objects.keys()].filter((key) => key.startsWith(`originals/${account}/`))
 }
 
-async function agentEdit(served: Served, access: string, deck: string): Promise<void> {
-  const edit = { deck, base: 0, changes: [{ value: "agent", node: "258.7", readAt: 0 }] }
+async function agentCall(served: Served, access: string, name: string, args: unknown): Promise<Record<string, any>> {
   const response = await fetch(`${served.base}${mcpRoutes.mcp.path}`, {
     method: "POST",
     headers: {
@@ -148,15 +148,25 @@ async function agentEdit(served: Served, access: string, deck: string): Promise<
       accept: "application/json, text/event-stream",
       authorization: `Bearer ${access}`,
     },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "tools/call",
-      params: { name: "airdesign_edit_deck", arguments: edit },
-    }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
   })
   const text = await response.text()
-  if (!text.includes("Landed revision")) throw new Error(text)
+  const reply = text.startsWith("{")
+    ? text
+    : (text.split("\n").find((line) => line.startsWith("data: ")) ?? "").slice(6)
+  const answered = (JSON.parse(reply) as { result?: { structuredContent?: Record<string, any> } }).result
+    ?.structuredContent
+  if (answered?.ok !== true) throw new Error(text)
+  return answered
+}
+
+async function agentEdit(served: Served, access: string): Promise<void> {
+  const made = await agentCall(served, access, "airdesign_create_deck", {})
+  await agentCall(served, access, "airdesign_edit_deck", {
+    deck: made.deck,
+    base: made.rev,
+    changes: [{ op: "add", kind: "text", slide: made.slides[0], text: "agent" }],
+  })
 }
 
 export async function mcpStatus(served: Served, access: string): Promise<number> {

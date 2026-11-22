@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { compileAgentEdit } from "./agent-edit.js"
+import { compileAgentEdit, readingOf } from "./agent-edit.js"
 import { agentDeck, minter, richDeck, runName, started } from "./agent-fixtures.js"
 import { type Scene, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
@@ -116,5 +116,64 @@ describe("compileAgentEdit", () => {
 
   it("refuses an empty batch", () => {
     expect(compileAgentEdit(agentDeck(), [], by())).toEqual({ refused: "shape", change: "changes" })
+  })
+})
+
+describe("compileAgentEdit starting a run", () => {
+  it("starts the run in the edit that carries the first changes, and the scene takes it", () => {
+    const scene = sampleDeck()
+    const result = compileAgentEdit(
+      scene,
+      [
+        change({ op: "add", kind: "text", slide: ids.slide, text: "A" }),
+        change({ op: "set", target: ids.title, text: "B" }),
+      ],
+      by({ phase: "start" }),
+    )
+    if ("refused" in result) throw new Error(JSON.stringify(result))
+    expect(result.edit.phase).toBe("start")
+    const landed = landEdit(scene, result.edit as never)
+    if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
+    expect((landed as Scene).runs.get(runName)?.phase).toBe("running")
+  })
+
+  it("refuses a start for a run the scene already holds", () => {
+    expect(
+      compileAgentEdit(
+        agentDeck(),
+        [change({ op: "add", kind: "text", slide: ids.slide, text: "A" })],
+        by({ phase: "start" }),
+      ),
+    ).toMatchObject({ refused: "run-fenced", at: 0 })
+  })
+})
+
+describe("readingOf", () => {
+  it("keeps the revisions the agent saw and lowers newer ones to the one it read at", () => {
+    const read = sampleDeck()
+    const typed = land(
+      read,
+      [{ node: ids.title, prop: "text", value: textOf("Typed"), base: revOf(read, ids.title, "text")! }],
+      person,
+    )
+    const seen = readingOf(typed, read.rev)
+    expect(revOf(seen, ids.title, "text")).toBe(read.rev)
+    expect(revOf(seen, ids.card, "box")).toBe(revOf(read, ids.card, "box"))
+    expect(seen.nodes).toBe(typed.nodes)
+  })
+
+  it("lets the first change in a run refuse text a person changed after the read", () => {
+    const read = sampleDeck()
+    const typed = land(
+      read,
+      [{ node: ids.title, prop: "text", value: textOf("Typed"), base: revOf(read, ids.title, "text")! }],
+      person,
+    )
+    const result = compileAgentEdit(
+      typed,
+      [change({ op: "set", target: ids.title, text: "A" })],
+      by({ phase: "start", read: readingOf(typed, read.rev) }),
+    )
+    expect(result).toMatchObject({ refused: "stale", node: ids.title, prop: "text" })
   })
 })

@@ -367,14 +367,14 @@ same(
 )
 const connectorJourney = ".agents/skills/verify-airdesign/journeys/connector-follow.mjs"
 same(
-  "the workflow gets the connector journey and the agent bench that reaches its look states, while design still runs",
+  "the workflow gets the connector journey, while design still runs",
   [said(["--paths", listedIn([connectorJourney])])["journey-names"], real([connectorJourney]).parts.design],
-  ['["agent-bench-recorded","connector-follow"]', true],
+  ['["connector-follow"]', true],
 )
 same(
-  "an account journey change selects that journey and the agent bench that walks it",
+  "an account journey change selects that journey",
   real([".agents/skills/verify-airdesign/journeys/account-name.mjs"]).journeyNames,
-  ["account-name", "agent-bench-recorded"],
+  ["account-name"],
 )
 same(
   "a docs change keeps only the source job",

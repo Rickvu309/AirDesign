@@ -42,6 +42,7 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
 for (const name of [
   "speaker-notes",
   "open-edit-save",
+  "aira-panel",
   "blank-deck",
   "blank-slides",
   "slide-layouts",
@@ -52,18 +53,10 @@ for (const name of [
   "element-order",
   "layers-panel",
   "layer-shortcuts",
-  "slide-background",
-  "shape-fill",
-  "border-style",
-  "shape-effects",
   "appearance-presets",
-  "shape-geometry",
   "corners",
-  "opacity",
-  "text-type",
   "text-fields",
   "text-fill-image",
-  "text-style-weight",
   "text-weight-faces",
   "text-weight-switch",
   "text-list-levels",
@@ -72,9 +65,6 @@ for (const name of [
   "text-template-bullet",
   "text-imported-line-height",
   "text-weight-selection",
-  "dynamic-fonts",
-  "picture-icon",
-  "theme",
   "commit-once",
   "deck-list-trash",
   "deck-grid-motion",
@@ -100,7 +90,6 @@ for (const name of [
   "slide-list-select",
   "grid-group-add",
   "grid-gap-add",
-  "person-undo",
   "usage-page",
   "account-name",
   "sign-in-mail",
@@ -114,7 +103,6 @@ for (const name of [
   "auto-layout-frame",
   "auto-layout-text",
   "auto-layout-opacity",
-  "auto-layout-measure",
   "auto-layout-nested",
   "group-transform",
   "group-text-copy",
@@ -129,21 +117,7 @@ for (const name of [
 
 test.describe("recorded Aira", () => {
   test.describe.configure({ mode: "default" })
-  for (const name of [
-    "element-index",
-    "aira-turn",
-    "aira-panel",
-    "aira-slides",
-    "adjust-tone",
-    "aira-head",
-    "agent-after-open",
-    "group-elements",
-    "auto-layout-agent",
-    "corners-agent",
-    "connector-diagram",
-    "line-add",
-    "agent-bench-recorded",
-  ]) {
+  for (const name of ["aira-head"]) {
     test(name, async ({ page, context }) => {
       await drive(name, page, context)
     })

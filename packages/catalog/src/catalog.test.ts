@@ -40,7 +40,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Edit text, boxes, design, layers or slides, all landing or none. Send airdesign_read_deck's revision as base and each layer's version as readAt (a change with op needs none). The answer's findings cover the slides it touched, as in airdesign_read_deck. Pass the returned runId to airdesign_stop_run when done.",
+        "Change the deck, all of it landing or none. Send airdesign_read_deck's rev as base. The answer has the new rev, the ids of the layers and slides you added, and a runId: send it with your next edits and to airdesign_stop_run when done.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
@@ -51,7 +51,7 @@ describe("projectTools", () => {
       name: "airdesign_read_deck",
       op: "read_deck",
       description:
-        "Read an owned deck. slides lists slide ids in order; groups holds each slide group's first slide id (a PowerPoint section), which added, duplicated and moved slides join. A layer's node is its id, version 0 is unchanged, role names a placeholder, design is one line of its look, and closed means a person's newer change or another run holds it. A grouped layer's box is where it sits on the slide, and its group fits its layers; frame is auto or free. findings names what is wrong on layers read, with a measure and fix, a change to send. If index or findings is pending or missing, the owner must open the deck in AirDesign; broken means the open tab cannot draw that revision. Send slide or cursor to read the rest.",
+        "Read an owned deck, one line for each layer: its id, what it is, @x,y and size, then its look. rev is the base to send to airdesign_edit_deck. Send slide or cursor to read the rest.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,
@@ -61,7 +61,7 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.name === "airdesign_list_decks")).toEqual({
       name: "airdesign_list_decks",
       op: "list_decks",
-      description: "List owned decks with id, name, and trash when in Trash, and the templates a deck can start from.",
+      description: "List owned decks with id, name and rev.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,
@@ -97,10 +97,12 @@ describe("projectTools", () => {
   })
 })
 
-it("reads element changes through edit_deck", () => {
+it("reads the scene's changes through edit_deck", () => {
   const read = catalog.edit_deck.read
   const base = { deck: "d", base: 3 }
-  expect(read({ ...base, changes: [{ op: "add", kind: "shape", slide: "258" }] }).ok).toBe(true)
-  expect(read({ ...base, changes: [{ op: "delete", node: "258.7" }] }).ok).toBe(true)
-  expect(read({ ...base, changes: [{ op: "delete", node: "258" }] }).ok).toBe(false)
+  expect(read({ ...base, changes: [{ op: "add", kind: "text", slide: "s:3" }] }).ok).toBe(true)
+  expect(read({ ...base, runId: "r1", changes: [{ op: "delete", nodes: ["s:4"] }] }).ok).toBe(true)
+  expect(read({ ...base, changes: [] })).toEqual({ ok: false, refusal: "batch" })
+  expect(read({ deck: "d", changes: [{}] })).toEqual({ ok: false, refusal: "base" })
+  expect(read({ ...base, changes: [{}], actor: "person" })).toEqual({ ok: false, refusal: "field" })
 })

@@ -103,43 +103,6 @@ test("text placed, typed in and emptied in one visit leaves nothing and no undo 
   await expect(page.getByRole("button", { name: undoCopy.undo, exact: true })).toBeDisabled()
 })
 
-test("an agent's text emptied by the agent is removed, and text added from grid view or by an agent paints with no inset from its first frame", async ({
-  page,
-  context,
-  stack,
-  decks,
-}) => {
-  const cookie = await stack.signIn()
-  await signInBrowser(context, cookie)
-  await forward(page, stack)
-  const deck = await decks.open()
-  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await expect(texts).toHaveCount(1)
-  await watchFirstPaddings(page)
-  await expect.poll(async () => (await stack.callTool("airdesign_read_deck", { deck }, cookie)).index).toBe("ready")
-  const read = await stack.callTool("airdesign_read_deck", { deck }, cookie)
-  const slide = (read.slides as { id: string }[])[0]?.id
-  const change = { op: "add", kind: "shape", slide, text: { value: agentWords } }
-  const added = await stack.callTool("airdesign_edit_deck", { deck, base: read.revision, changes: [change] }, cookie)
-  expect(added.ok).toBe(true)
-  const node = (added.elements as { node: string }[])[0]
-  if (node === undefined) throw new Error("added")
-  await expect(texts).toHaveCount(2)
-  await expect(texts.last()).toHaveText("Agent words")
-  const empty = { op: "set", target: node.node, text: { value: noWords } }
-  const emptied = await stack.callTool("airdesign_edit_deck", { deck, base: added.revision, changes: [empty] }, cookie)
-  expect(emptied).toMatchObject({ ok: true })
-  await expect(texts).toHaveCount(1)
-
-  await openGrid(page)
-  await page.locator("[data-editor-grid] [data-grid-card]").first().locator("[data-slide-number]").click()
-  await page.getByRole("button", { name: "Add text", exact: true }).click()
-  await expect(texts).toHaveCount(2)
-  const addedPaddings = Object.entries(await firstPaddings(page)).filter(([frame]) => !frame.endsWith("#2"))
-  expect(addedPaddings.length).toBeGreaterThanOrEqual(2)
-  for (const [, padding] of addedPaddings) expect(padding).toBe("0px")
-})
-
 test("an export after emptied text was removed holds only the kept new text @export", async ({
   page,
   decks,

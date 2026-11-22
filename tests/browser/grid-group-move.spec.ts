@@ -208,48 +208,6 @@ test.describe("slide group touch", () => {
   })
 })
 
-test("a foreign structural edit cancels a held slide group without moving different slides", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const saved = await openSaved(page, context, stack, 10, groupSizes(10))
-  const moves = moveRequests(page)
-  await zoomTo(page, 20)
-  await handle(page, 2).focus()
-  const button = await handle(page, 2).boundingBox(),
-    first = await boxOf(page, 1),
-    second = await boxOf(page, 5)
-  if (button === null) throw new Error("handle")
-  await page.mouse.move(button.x + button.width / 2, button.y + button.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(first.x + first.width / 2, (first.y + first.height + second.y) / 2, { steps: 5 })
-  await expect(page.locator("[data-drag-ghost]")).toBeVisible()
-  const read = await stack.callTool("airdesign_read_deck", { deck: saved.deck }, saved.cookie)
-  await stack.callTool(
-    "airdesign_edit_deck",
-    {
-      deck: saved.deck,
-      base: read.revision,
-      changes: [{ op: "add_slide", after: saved.ids[4], layout: saved.ids[0] }],
-    },
-    saved.cookie,
-  )
-  await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
-  await expect(page.locator("[data-drag-ghost]")).toHaveCount(0)
-  await page.mouse.up()
-  const order = await saved.order(),
-    added = order.find((id) => !saved.ids.includes(id))
-  if (added === undefined) throw new Error("foreign slide")
-  expect(order).toEqual([...saved.ids.slice(0, 5), added, ...saved.ids.slice(5)])
-  expect(await saved.rows()).toEqual([
-    saved.ids.slice(0, 4),
-    [saved.ids[4], added, ...saved.ids.slice(5, 8)],
-    saved.ids.slice(8),
-  ])
-  expect(moves()).toBe(0)
-})
-
 for (const last of [false, true]) {
   test(`edge pan keeps the ${last ? "last" : "first"} slide group mark until release`, async ({
     page,

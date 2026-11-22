@@ -1,10 +1,11 @@
-import { catalog, projectTools, readOnce, toolInputSchema, type AgentOp } from "@airdesign/catalog"
+import { catalog, projectTools, readOnce, toolInputSchema } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
-import { admit, refund, type Admission } from "./admit.js"
-import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
-import type { EditCode } from "./edit-next.js"
-import { kindInstructions } from "./kind-refusal.js"
-import { settleTurn } from "./turn.js"
+
+import { type Admission, admit } from "./admit.js"
+import { refused, type ToolResult } from "./answer.js"
+import { callTool, opOf, type Session } from "./call-tool.js"
+import type { DeckHost } from "./deck-host.js"
+import { kindInstructions } from "./instructions.js"
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
@@ -18,51 +19,15 @@ function inputSchema(json: Readonly<Record<string, unknown>>) {
 }
 
 function mcpResult(result: ToolResult) {
-  const pictures = result.ok ? (result.pictures ?? []) : []
-  const content = [...result.content.map((block) => ({ type: "text" as const, text: block.text })), ...pictures]
-  const body = result.ok && result.reported !== undefined ? result.reported : result.answer
-  const structured = body === undefined ? {} : { structuredContent: body }
-  if (result.ok) return { content, ...structured }
-  return { content, isError: true as const, ...structured }
+  const content = result.content.map((block) => ({ type: "text" as const, text: block.text }))
+  return result.ok
+    ? { content, structuredContent: result.answer }
+    : { content, isError: true as const, structuredContent: result.answer }
 }
 
-export type Host = {
-  admit?: (session: Session) => Promise<Admission>
-  prepare?: (name: string, raw: unknown, session: Session) => Promise<Prepared>
-  commit?: (result: ToolResult, session: Session) => Promise<ToolResult | Lost>
-  refund?: (session: Session) => Promise<void>
-  turnSaved?: () => Promise<void>
-}
+export type Host = DeckHost & { readonly admit?: (session: Session) => Promise<Admission> }
 
-export type Lost = { readonly lost: ToolResult }
-
-export type Prepared =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly refusal: EditCode }
-  | { readonly answered: ToolResult }
-
-export const commitTries = 3
-
-async function settledCall(
-  tool: { readonly name: string; readonly op: AgentOp },
-  args: unknown,
-  session: Session,
-  host: Host | undefined,
-): Promise<ToolResult> {
-  for (let tried = 1; ; tried += 1) {
-    if (host?.prepare) {
-      const prepared = await host.prepare(tool.name, args, session)
-      if ("answered" in prepared) return prepared.answered
-      if (!prepared.ok) return agentOps[tool.op].refuse(session.deck, prepared.refusal)
-    }
-    const result = callTool(tool.name, args, session)
-    const committed = host?.commit ? await host.commit(result, session) : result
-    if (!("lost" in committed)) return committed
-    if (tried === commitTries) return committed.lost
-  }
-}
-
-export function createServer(session: Session, host?: Host): McpServer {
+export function createServer(session: Session, host: Host): McpServer {
   const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions: kindInstructions() })
   for (const tool of projectTools(catalog)) {
     server.registerTool(
@@ -79,33 +44,17 @@ export function createServer(session: Session, host?: Host): McpServer {
       },
       async (args, ctx) => {
         const named = readOnce(ctx.mcpReq._meta)
-        if (!named.ok) return mcpResult(agentOps[tool.op].refuse(session.deck, "field"))
+        if (!named.ok || opOf(tool.name) === undefined) return mcpResult(refused("field"))
         session.once = named.once
         let admitted: Admission
         try {
-          admitted = host?.admit ? await host.admit(session) : admit(session.log, "tool", session.now)
+          admitted = host.admit ? await host.admit(session) : admit(session.log, "tool", session.now)
         } catch {
-          return mcpResult(agentOps[tool.op].refuse(session.deck, "store"))
+          return mcpResult(refused("store"))
         }
-        if (!admitted.ok) {
-          const refusal: ToolResult = {
-            ok: false,
-            refusal: admitted.text,
-            deck: session.deck,
-            content: [{ type: "text", text: admitted.text }],
-          }
-          return mcpResult(refusal)
-        }
+        if (!admitted.ok) return mcpResult({ ok: false, content: [{ type: "text", text: admitted.text }], answer: {} })
         session.log = admitted.log
-        const settled = await settledCall(tool, args, session, host)
-        if (settled.ok) session.deck = settled.deck
-        else if (settled.refusal === "indexing") {
-          if (host?.refund) await host.refund(session)
-          else session.log = refund(session.log, "tool")
-        }
-        settleTurn(tool.op, settled, session)
-        if (host?.turnSaved) await host.turnSaved()
-        return mcpResult(settled)
+        return mcpResult(await callTool(tool.name, args, session, host))
       },
     )
   }

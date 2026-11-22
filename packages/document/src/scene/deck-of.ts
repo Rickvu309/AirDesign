@@ -9,3 +9,8 @@ export function deckOf(scene: Scene): DeckLook {
     if (node.type === "deck") return { theme: node.theme ?? defaultTheme, size: node.size ?? { w: 1920, h: 1080 } }
   return { theme: defaultTheme, size: { w: 1920, h: 1080 } }
 }
+
+export function deckName(scene: Scene): string {
+  for (const node of scene.nodes.values()) if (node.type === "deck") return node.name ?? ""
+  return ""
+}
