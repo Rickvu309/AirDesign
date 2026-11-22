@@ -1,5 +1,5 @@
 import type { scene } from "@airdesign/document"
-import { createContext, useContext, type CSSProperties, type ReactNode } from "react"
+import { memo, type CSSProperties, type ReactNode } from "react"
 import { iconNodes, type IconNode } from "./icon-nodes.js"
 import { effectLook } from "./node-effects.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
@@ -9,7 +9,10 @@ import { TextLines } from "./node-text.js"
 
 type Resolved = scene.Resolved
 
-export const TextOverride = createContext<((node: Resolved) => ReactNode) | null>(null)
+export type NodeHost = { readonly id: string; readonly render: (node: Resolved) => ReactNode }
+
+export const holds = (node: Resolved, id: string): boolean =>
+  node.id === id || node.children.some((child) => holds(child, id))
 
 const fill: CSSProperties = { position: "absolute", inset: 0 }
 
@@ -80,16 +83,19 @@ function WaitingLabel({ text }: { readonly text: string }) {
   )
 }
 
-export function NodeArt({
+export const NodeArt = memo(function NodeArt({
   node,
   assetUrl,
   waiting,
+  host,
+  iconsReady,
 }: {
   readonly node: Resolved
   readonly assetUrl: AssetUrl
   readonly waiting?: string
+  readonly host?: NodeHost | undefined
+  readonly iconsReady?: boolean | undefined
 }) {
-  const override = useContext(TextOverride)
   const { box, geometry } = node
   const boxy = geometry === null || geometry.kind === "rect" || geometry.kind === "ellipse"
   const outline = outlineOf(node)
@@ -145,7 +151,8 @@ export function NodeArt({
         )}
       </div>
       {unshown ? <WaitingLabel text={waiting} /> : null}
-      {override?.(node) ?? (node.text === null ? null : <TextLines lines={node.text.lines} />)}
+      {(host?.id === node.id ? host.render(node) : null) ??
+        (node.text === null ? null : <TextLines lines={node.text.lines} />)}
       {node.children.length === 0 ? null : (
         <div
           style={{
@@ -154,10 +161,17 @@ export function NodeArt({
           }}
         >
           {node.children.map((child) => (
-            <NodeArt key={child.id} node={child} assetUrl={assetUrl} {...(waiting === undefined ? {} : { waiting })} />
+            <NodeArt
+              key={child.id}
+              node={child}
+              assetUrl={assetUrl}
+              {...(waiting === undefined ? {} : { waiting })}
+              host={host !== undefined && holds(child, host.id) ? host : undefined}
+              iconsReady={iconsReady}
+            />
           ))}
         </div>
       )}
     </div>
   )
-}
+})

@@ -9,7 +9,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 const budget = {
   slides: 40,
   idleTaskMilliseconds: 150,
-  typeScriptPerKey: 16,
+  typeScriptPerKey: 8,
   typeMeasureCalls: 6,
   dragScriptPerFrame: 8,
   dragTaskPerFrame: 16,

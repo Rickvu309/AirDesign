@@ -2,7 +2,7 @@ import { type FontWidths, scene } from "@airdesign/document"
 import { useEffect, useMemo, useState } from "react"
 import { useIcons } from "./icon-nodes.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
-import { NodeArt } from "./node-art.js"
+import { NodeArt, holds, type NodeHost } from "./node-art.js"
 import { measureFaces } from "./scene-widths.js"
 
 type Resolved = scene.Resolved
@@ -39,8 +39,10 @@ export function SlidePaint(props: {
   readonly width: number
   readonly assetUrl?: AssetUrl
   readonly waiting?: string
+  readonly host?: NodeHost
+  readonly iconsReady?: boolean
 }) {
-  const { size, width, waiting } = props
+  const { size, width, waiting, host, iconsReady } = props
   const assetUrl = props.assetUrl ?? noAssets
   const scale = width / size.w
   return (
@@ -64,7 +66,14 @@ export function SlidePaint(props: {
           <PaintLayers fills={props.background} assetUrl={assetUrl} />
         </div>
         {props.nodes.map((node) => (
-          <NodeArt key={node.id} node={node} assetUrl={assetUrl} {...(waiting === undefined ? {} : { waiting })} />
+          <NodeArt
+            key={node.id}
+            node={node}
+            assetUrl={assetUrl}
+            {...(waiting === undefined ? {} : { waiting })}
+            host={host !== undefined && holds(node, host.id) ? host : undefined}
+            iconsReady={iconsReady}
+          />
         ))}
       </div>
     </div>
@@ -107,6 +116,7 @@ export function SceneSlide(props: {
         width={props.width}
         {...(props.assetUrl === undefined ? {} : { assetUrl: props.assetUrl })}
         {...(props.waiting === undefined ? {} : { waiting: props.waiting })}
+        iconsReady={ready}
       />
     </div>
   )
