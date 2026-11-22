@@ -64,6 +64,7 @@
     "control-toggle.spec.ts": 10.2,
     "control-typography.spec.ts": 2.8,
     "control-union.spec.ts": 5.9,
+    "core-screens.spec.ts": 10,
     "credits.spec.ts": 1.7,
     "deck-ready-font.spec.ts": 1.4,
     "deck-rename.spec.ts": 25.6,
