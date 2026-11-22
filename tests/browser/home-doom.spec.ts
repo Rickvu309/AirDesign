@@ -1,6 +1,5 @@
 import { expect, type Page } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { sceneEditorCopy } from "../../apps/web/src/copy/scene-editor-copy"
 import { test, forward, signInBrowser } from "./api-stack"
 import { newDoomDeck } from "./new-deck"
 import { clickSlide, savedNode } from "./scene-deck"
@@ -38,7 +37,7 @@ test("a new deck opens as a scene deck, and the home lists it with its name and 
     .poll(async () => ((await savedNode(stack, opened, titleNode))?.text as { chars: string } | undefined)?.chars)
     .toBe("Quarterly review")
 
-  await page.getByRole("link", { name: sceneEditorCopy.home }).click()
+  await page.getByRole("link", { name: productCopy.goToDecks }).click()
   const card = page.locator(`[data-deck="${deck}"]`)
   await expect(card).toBeVisible()
   await expect(card.getByRole("heading")).toHaveText(productCopy.blankDeck)

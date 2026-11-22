@@ -43,6 +43,19 @@ describe("add slide", () => {
     expect(after.children.get(writes.slide) ?? []).toEqual([])
   })
 
+  it("adds a title slide with one title in the title style, scaled to the deck", () => {
+    const { view, slides } = three()
+    const made = addSlideWrites(view, slides[0]!, minter(), "title")
+    const after = landed(view, made.writes)
+    const [title] = after.children.get(made.slide) ?? []
+    expect(after.nodes.get(title!)).toMatchObject({
+      type: "shape",
+      role: "title",
+      box: { x: 160, y: 380, w: 1600, h: 160 },
+      text: { chars: "Title", style: "title" },
+    })
+  })
+
   it("adds after the last slide too", () => {
     const { view, slides } = three()
     const writes = addSlideWrites(view, slides[2]!, minter())

@@ -11,7 +11,7 @@ const percentOf = (text: string | null) => Number.parseInt(text ?? "", 10)
 test("zoom keys, the wheel and the hand tool move around the slide as Figma does", async ({ page, context, stack }) => {
   covers("zoom-fit", "zoom-actual", "zoom-in", "zoom-out", "zoom-selection", "tool-hand", "tool-move", "pan")
   await openSceneEditor(page, context, stack)
-  const percent = page.locator("[data-zoom-percent]")
+  const percent = page.locator("[data-zoom-readout]")
   const fitted = percentOf(await percent.textContent())
   expect(fitted).toBeGreaterThan(40)
   expect(fitted).toBeLessThan(100)

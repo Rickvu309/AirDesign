@@ -1,10 +1,11 @@
-import { Check, ChevronDown, SlidersHorizontal } from "lucide-react"
+import { Check, ChevronDown } from "lucide-react"
 import { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
+import { PanelSwitch } from "@/editor/panel-switch"
 import { ShapeTool } from "@/editor/shape-tool"
 import { cn } from "@/lib/class-names"
 import { ActionsPanel, type ActionRun } from "./actions-popover"
@@ -28,22 +29,6 @@ function ActionsIcon() {
       <circle cx="17" cy="7" r="4" />
       <rect x="3" y="13" width="8" height="8" rx="1.5" />
       <path d="M17 13v8M13 17h8" />
-    </svg>
-  )
-}
-
-function AgentIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="size-4"
-    >
-      <path d="M5 20 12 4l7 16M8.5 13h7" />
     </svg>
   )
 }
@@ -79,7 +64,7 @@ export function EditorToolbar(props: {
       ref={bar}
       role="toolbar"
       aria-label={sceneEditorCopy.tools}
-      className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
+      className="pointer-events-auto flex items-center gap-0.5 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
     >
       <div className="flex items-center">
         <Button
@@ -174,34 +159,7 @@ export function EditorToolbar(props: {
         </PopoverContent>
       </Popover>
       <Divider />
-      <div role="group" aria-label={sceneEditorCopy.rightPanel} className="flex rounded-lg bg-canvas p-0.5">
-        {(
-          [
-            { panel: "agent", label: sceneEditorCopy.panelAgent, icon: <AgentIcon /> },
-            {
-              panel: "design",
-              label: sceneEditorCopy.panelDesign,
-              icon: <SlidersHorizontal className="size-4" />,
-            },
-          ] as const
-        ).map(({ panel, label, icon }) => (
-          <button
-            key={panel}
-            type="button"
-            aria-pressed={props.panel === panel}
-            onClick={() => props.onPanel(panel)}
-            className={cn(
-              "flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs",
-              props.panel === panel
-                ? "bg-white text-foreground shadow-[0_0_0_1px_var(--field-edge)]"
-                : "text-quiet hover:text-foreground",
-            )}
-          >
-            {icon}
-            {label}
-          </button>
-        ))}
-      </div>
+      <PanelSwitch active={props.panel} onPick={props.onPanel} />
     </div>
   )
 }

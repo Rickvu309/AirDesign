@@ -1,0 +1,51 @@
+import type { scene } from "@airdesign/document"
+import { useEffect, useRef, useState } from "react"
+import { NotesBar } from "@/editor/notes-bar"
+import { notesOf, notesWrites } from "./deck-writes"
+import type { EditorClient } from "./use-scene-deck"
+
+const idle = 600
+
+type Draft = { readonly slide: scene.NodeId; readonly text: string }
+
+export function SceneNotes(props: {
+  readonly client: EditorClient
+  readonly view: scene.Scene
+  readonly slide: scene.NodeId
+}) {
+  const { client, view, slide } = props
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const held = useRef<Draft | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latest = useRef({ client, view })
+  useEffect(() => {
+    latest.current = { client, view }
+  })
+
+  function commit() {
+    if (timer.current !== null) clearTimeout(timer.current)
+    timer.current = null
+    const pending = held.current
+    held.current = null
+    if (pending === null) return
+    const writes = notesWrites(latest.current.view, pending.slide, pending.text)
+    if (writes.length > 0) latest.current.client.push(writes)
+    setDraft((now) => (now === pending ? null : now))
+  }
+
+  useEffect(() => commit, [slide])
+
+  function edit(text: string) {
+    const next = { slide, text }
+    held.current = next
+    setDraft(next)
+    if (timer.current !== null) clearTimeout(timer.current)
+    timer.current = setTimeout(commit, idle)
+  }
+
+  return (
+    <div onBlur={commit}>
+      <NotesBar text={draft !== null && draft.slide === slide ? draft.text : notesOf(view, slide)} onEdit={edit} />
+    </div>
+  )
+}

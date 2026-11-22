@@ -1,4 +1,4 @@
-import { orderKeyBetween, type OrderKey, type scene } from "@airdesign/document"
+import { orderKeyBetween, scene, type OrderKey } from "@airdesign/document"
 import { duplicateWrites } from "./copy-writes"
 import { parentSlot, propOf, siblingsOf, slidesOf } from "./node-props"
 
@@ -14,7 +14,39 @@ function keyOf(view: scene.Scene, id: scene.NodeId | undefined): OrderKey | null
   return id === undefined ? null : (parentSlot(view, id)?.at ?? null)
 }
 
-export function addSlideWrites(view: scene.Scene, after: scene.NodeId | null, mint: Mint): Added {
+export type SlideLayout = "blank" | "title"
+
+function titleWrites(view: scene.Scene, slide: scene.NodeId, title: scene.NodeId): readonly scene.Write[] {
+  const { size } = scene.deckOf(view)
+  const box = {
+    x: Math.round(size.w / 12),
+    y: Math.round((size.h * 19) / 54),
+    w: Math.round((size.w * 5) / 6),
+    h: Math.round(size.h / 6.75),
+    rotation: 0,
+    flipH: false,
+    flipV: false,
+  }
+  return [
+    { node: title, prop: "type", value: "shape" },
+    { node: title, prop: "parent", value: { id: slide, at: orderKeyBetween(null, null) } },
+    { node: title, prop: "name", value: "Title" },
+    { node: title, prop: "role", value: "title" },
+    { node: title, prop: "box", value: box },
+    {
+      node: title,
+      prop: "text",
+      value: { chars: "Title", spans: [], paras: [{}], style: "title", resize: "height", alignV: "top" },
+    },
+  ]
+}
+
+export function addSlideWrites(
+  view: scene.Scene,
+  after: scene.NodeId | null,
+  mint: Mint,
+  layout: SlideLayout = "blank",
+): Added {
   const slides = slidesOf(view)
   const slide = mint()
   const writes: scene.Write[] = []
@@ -44,6 +76,7 @@ export function addSlideWrites(view: scene.Scene, after: scene.NodeId | null, mi
   )
   const fills = previous === undefined ? undefined : propOf(view.nodes.get(previous), "fills")
   if (fills !== undefined) writes.push({ node: slide, prop: "fills", value: fills })
+  if (layout === "title") writes.push(...titleWrites(view, slide, mint()))
   return { slide, writes }
 }
 

@@ -1,12 +1,12 @@
 import { orderKeyBetween, scene } from "@airdesign/document"
 import { SlidePaint, TextOverride, useSceneSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
-import { ZoomControl } from "./zoom-control"
 import { ThinNoticeView } from "@/thin-notice"
 import { useScenePictures } from "./use-pictures"
 import { useSlidePictures } from "./use-slide-pictures"
-import { roomInset, scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
+import { scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
 import { TextBar } from "./text-bar"
@@ -18,12 +18,15 @@ import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-poin
 import { chartWrites, drawWrites, iconWrites } from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
 import type { EditorClient } from "./use-scene-deck"
-import type { ZoomKey } from "@/editor/canvas-zoom"
+import { canvasInset, slideTop, type ZoomKey } from "@/editor/canvas-zoom"
+import { slideFrame } from "@/editor/revenue-slide"
 import { pictureCopy } from "@/copy/picture-copy"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 
 const author: scene.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
+
+export type CanvasCommands = { zoomTo: (zoom: Zoom) => void; zoomSelection: (() => void) | null }
 
 export function SceneCanvas(props: {
   readonly deck: string
@@ -36,12 +39,19 @@ export function SceneCanvas(props: {
   readonly onTool: (tool: Tool) => void
   readonly panel: RightPanel
   readonly onPanel: (next: RightPanel) => void
+  readonly zoom: Zoom
+  readonly scale: number
+  readonly room: Size
+  readonly overlay: number
+  readonly slideNumber: number
+  readonly onZoom: (zoom: Zoom) => void
+  readonly onCommands: (commands: CanvasCommands | null) => void
+  readonly toolbarHost: HTMLElement | null
 }) {
-  const { client, view, slide, selection, onSelection, tool, onTool } = props
+  const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
   const slideBox = useRef<HTMLDivElement>(null)
-  const [room, setRoom] = useState<Size>({ w: 0, h: 0 })
-  const [zoom, setZoom] = useState<Zoom>("fit")
+  const [box, setBox] = useState<Size>({ w: 0, h: 0 })
   const [space, setSpace] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [marquee, setMarquee] = useState<Rect | null>(null)
@@ -50,7 +60,6 @@ export function SceneCanvas(props: {
   const anchor = useRef<{ readonly point: Point; readonly at: Point } | null>(null)
 
   const { size } = scene.deckOf(view)
-  const scale = scaleOf(zoom, room, size)
   const text = useTextSession(client, view)
   const shown = useMemo(() => {
     const edits = [
@@ -67,7 +76,7 @@ export function SceneCanvas(props: {
   useEffect(() => {
     const element = stage.current
     if (element === null) return
-    const measure = () => setRoom({ w: element.clientWidth, h: element.clientHeight })
+    const measure = () => setBox({ w: element.clientWidth, h: element.clientHeight })
     measure()
     const watcher = new ResizeObserver(measure)
     watcher.observe(element)
@@ -89,7 +98,7 @@ export function SceneCanvas(props: {
         at,
       }
     }
-    setZoom(next)
+    props.onZoom(next)
   }
 
   useLayoutEffect(() => {
@@ -266,19 +275,32 @@ export function SceneCanvas(props: {
     onActions: () => setActionsOpen((open) => !open),
   })
 
-  const pad = roomInset
-  const width = Math.max(room.w, size.w * scale + 2 * pad)
-  const height = Math.max(room.h, size.h * scale + 2 * pad)
+  useLayoutEffect(() => {
+    props.onCommands({
+      zoomTo: (next) => zoomTo(next),
+      zoomSelection: current.ids.length === 0 ? null : () => onZoomKey("selection"),
+    })
+    return () => props.onCommands(null)
+  })
+
+  const slideW = size.w * scale
+  const slideH = size.h * scale
+  const width = Math.max(box.w, slideW + 2 * canvasInset.side)
+  const height = Math.max(box.h, slideH + 2 * canvasInset.gap + overlay)
+  const left = (width - slideW) / 2
+  const top = slideTop({ height, overlay, slide: slideH })
   return (
     <>
       <div
         ref={stage}
+        data-canvas-stage=""
+        data-canvas-fit={zoom === "fit" ? "true" : "false"}
         data-scene-stage=""
         data-scene-ready={painted.ready ? props.deck : undefined}
         aria-label={sceneEditorCopy.canvas}
         role="application"
         tabIndex={0}
-        className="relative min-h-0 flex-1 touch-none overflow-auto bg-canvas outline-none select-none"
+        className="absolute inset-0 touch-none overflow-auto bg-canvas outline-none select-none"
         style={{ cursor: panning ? "grab" : "default" }}
         onPointerDown={pointer.down}
         onPointerMove={pointer.move}
@@ -290,60 +312,61 @@ export function SceneCanvas(props: {
         onDrop={pictures.drop}
       >
         <div style={{ position: "relative", width, height }}>
-          <div
-            ref={slideBox}
-            data-slide-box=""
-            className="shadow-card"
-            style={{
-              position: "absolute",
-              left: (width - size.w * scale) / 2,
-              top: (height - size.h * scale) / 2,
-              width: size.w * scale,
-              height: size.h * scale,
-            }}
-          >
-            <TextOverride.Provider
-              value={(resolved) =>
-                text.session !== null && resolved.id === text.session.node ? (
-                  <TextHost node={resolved} theme={theme} api={text} onLeave={leaveText} />
-                ) : null
-              }
+          <div data-slide-wrapper="" style={{ position: "absolute", left, top, width: slideW, height: slideH }}>
+            <span
+              className="absolute inset-x-0 bottom-full mb-3 text-[length:var(--type-dense)] text-quiet"
+              data-slide-label=""
             >
-              <SlidePaint
-                nodes={painted.nodes ?? []}
-                background={painted.background}
+              {props.slideNumber}
+            </span>
+            <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
+              <TextOverride.Provider
+                value={(resolved) =>
+                  text.session !== null && resolved.id === text.session.node ? (
+                    <TextHost node={resolved} theme={theme} api={text} onLeave={leaveText} />
+                  ) : null
+                }
+              >
+                <SlidePaint
+                  nodes={painted.nodes ?? []}
+                  background={painted.background}
+                  size={size}
+                  width={size.w * scale}
+                  assetUrl={pictures.assetUrl}
+                  waiting={pictureCopy.uploading}
+                />
+              </TextOverride.Provider>
+              <CanvasOverlay
+                view={shown}
+                preview={preview}
+                geometry={geometry}
+                selected={current.ids}
+                hovered={hover}
+                marquee={marquee}
+                editing={text.session !== null}
+                scale={scale}
                 size={size}
-                width={size.w * scale}
-                assetUrl={pictures.assetUrl}
-                waiting={pictureCopy.uploading}
               />
-            </TextOverride.Provider>
-            <CanvasOverlay
-              view={shown}
-              preview={preview}
-              geometry={geometry}
-              selected={current.ids}
-              hovered={hover}
-              marquee={marquee}
-              editing={text.session !== null}
-              scale={scale}
-              size={size}
-            />
+            </div>
           </div>
         </div>
       </div>
       <ThinNoticeView notice={pictures.notice} onTryAgain={() => undefined} />
       <TextBar api={text} />
-      <EditorToolbar
-        tool={tool}
-        onTool={onTool}
-        actionsOpen={actionsOpen}
-        onActionsOpen={setActionsOpen}
-        run={{ chart: inserts.chart, icon: inserts.icon }}
-        panel={props.panel}
-        onPanel={props.onPanel}
-      />
-      <ZoomControl scale={scale} fitted={zoom === "fit"} onZoom={(next) => zoomTo(next)} />
+      {props.toolbarHost === null
+        ? null
+        : createPortal(
+            <EditorToolbar
+              tool={tool}
+              onTool={onTool}
+              actionsOpen={actionsOpen}
+              onActionsOpen={setActionsOpen}
+              run={{ chart: inserts.chart, icon: inserts.icon }}
+              panel={props.panel}
+              onPanel={props.onPanel}
+            />,
+            props.toolbarHost,
+          )}
     </>
   )
 }

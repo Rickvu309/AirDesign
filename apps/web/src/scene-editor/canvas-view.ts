@@ -3,8 +3,6 @@ import { boundedZoom, zoomRanges } from "@/editor/canvas-zoom"
 export type Size = { readonly w: number; readonly h: number }
 export type Zoom = "fit" | number
 
-export const roomInset = 64
-
 const stops = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4] as const
 
 export function boundedScale(scale: number): number {
@@ -13,9 +11,8 @@ export function boundedScale(scale: number): number {
 
 export function fitScale(room: Size, slide: Size): number {
   if (slide.w <= 0 || slide.h <= 0) return 1
-  const across = Math.max(1, room.w - 2 * roomInset) / slide.w
-  const down = Math.max(1, room.h - 2 * roomInset) / slide.h
-  return boundedScale(Math.min(across, down))
+  const width = Math.floor(Math.min(room.w, (room.h * slide.w) / slide.h))
+  return boundedScale(Math.max(1, width) / slide.w)
 }
 
 export function scaleOf(zoom: Zoom, room: Size, slide: Size): number {
@@ -40,5 +37,5 @@ export function percentOf(scale: number): number {
 
 export function scaleToFill(room: Size, frame: Size): number {
   if (frame.w <= 0 || frame.h <= 0) return 1
-  return boundedScale(Math.min(Math.max(1, room.w - 96) / frame.w, Math.max(1, room.h - 96) / frame.h))
+  return boundedScale(Math.min(Math.max(1, room.w) / frame.w, Math.max(1, room.h) / frame.h))
 }

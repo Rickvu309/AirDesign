@@ -44,12 +44,21 @@ export function DeckTitle({
   )
 }
 
-export function ExportButton({ onClick, ref }: { onClick?: () => void; ref?: Ref<HTMLButtonElement> }) {
+export function ExportButton({
+  onClick,
+  ref,
+  disabled = false,
+}: {
+  onClick?: () => void
+  ref?: Ref<HTMLButtonElement>
+  disabled?: boolean
+}) {
   return (
     <Button
       {...(ref === undefined ? {} : { ref })}
       type="button"
       variant="default"
+      disabled={disabled}
       className={cn("h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0")}
       {...(onClick === undefined ? {} : { onClick })}
     >

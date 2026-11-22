@@ -1,5 +1,4 @@
 import { expect } from "@playwright/test"
-import { sceneEditorCopy } from "../../apps/web/src/copy/scene-editor-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import { clickSlide, dragSlide, openSceneEditor, savedNode, selectedIds, spot } from "./scene-deck"
@@ -39,7 +38,7 @@ test("a new scene deck opens at its own address, paints its first slide and keep
 
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(boxOf.bind(null, node)).toMatchObject({ x: x + 1, y })
-  await page.getByRole("button", { name: sceneEditorCopy.redo }).click()
+  await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect.poll(boxOf.bind(null, node)).toMatchObject({ x: x + 1, y: y + 10 })
 
   await page.reload()
@@ -53,7 +52,7 @@ test("a new scene deck opens at its own address, paints its first slide and keep
   await page.keyboard.press("Delete")
   await expect(title).toHaveCount(0)
   await expect.poll(async () => (await savedNode(stack, opened, node))?.parent).toBeNull()
-  await page.getByRole("button", { name: sceneEditorCopy.undo }).click()
+  await page.keyboard.press("ControlOrMeta+z")
   await expect(title).toHaveCount(1)
   expect(faults).toEqual([])
 })

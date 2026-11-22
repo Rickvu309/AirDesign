@@ -4,14 +4,15 @@ import { fitScale, scaleOf, steppedScale, wheelScale } from "./canvas-view"
 const slide = { w: 1920, h: 1080 }
 
 describe("canvas view", () => {
-  it("fits the whole slide inside the room with a margin on every side", () => {
+  it("fits the whole slide inside the room, in whole pixels of width as the old editor does", () => {
     const scale = fitScale({ w: 1344, h: 840 }, slide)
-    expect(scale).toBeCloseTo((1344 - 128) / 1920)
-    expect(slide.h * scale).toBeLessThanOrEqual(840 - 128)
+    expect(scale).toBeCloseTo(1344 / 1920)
+    expect(slide.h * scale).toBeLessThanOrEqual(840)
+    expect(Math.round(slide.w * scale)).toBe(1344)
   })
 
   it("fits by height when the room is wide", () => {
-    expect(fitScale({ w: 3000, h: 700 }, slide)).toBeCloseTo((700 - 128) / 1080)
+    expect(fitScale({ w: 3000, h: 700 }, slide)).toBeCloseTo(Math.floor((700 * 1920) / 1080) / 1920)
   })
 
   it("never zooms past the same limits as the old editor", () => {

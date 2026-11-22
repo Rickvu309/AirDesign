@@ -1,18 +1,31 @@
 import { scene } from "@airdesign/document"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
-import { cn } from "@/lib/class-names"
+import { tabTitleOf } from "@/copy/product-copy"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
-import { EditorTopBar } from "./editor-top-bar"
-import type { RightPanel } from "./editor-toolbar"
-import { slidesOf } from "./node-props"
+import { slideRoom } from "@/editor/canvas-zoom"
+import { ExportButton, PanelHead } from "@/editor/editor-chrome"
 import { ResizablePanel } from "@/editor/resizable-panel"
+import { SlideSidebar } from "@/editor/slide-sidebar"
+import { useCanvasRoom } from "@/editor/use-canvas-room"
+import { ZoomMenu } from "@/editor/zoom-menu"
+import { PresentButton } from "@/present/present-button"
+import { usePresentKeys } from "@/present/present-keys"
+import { PresentLayer } from "@/present/present-layer"
+import { usePresent } from "@/present/use-present"
+import { cn } from "@/lib/class-names"
+import { percentOf, scaleOf, type Zoom } from "./canvas-view"
+import { renameWrites } from "./deck-writes"
 import { AgentPanel } from "./agent-panel"
-import { SceneCanvas } from "./scene-canvas"
+import type { RightPanel } from "./editor-toolbar"
+import { propOf, slidesOf } from "./node-props"
+import { SceneCanvas, type CanvasCommands } from "./scene-canvas"
+import { SceneNotes } from "./scene-notes"
+import { SceneThumb } from "./scene-thumb"
 import { noSelection, type Selection } from "./selection"
-import { SlideStrip } from "./slide-strip"
 import { useCurrentSlide } from "./use-current-slide"
 import { useSlideStepKeys } from "./use-slide-step-keys"
+import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
 import { useSceneDeck, useSceneView, type EditorClient } from "./use-scene-deck"
 
@@ -28,40 +41,120 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [tool, setTool] = useState<Tool>("move")
   const [panel, setPanel] = useState<RightPanel>("agent")
+  const [zoom, setZoom] = useState<Zoom>("fit")
+  const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
+  const commands = useRef<CanvasCommands>({ zoomTo: setZoom, zoomSelection: null })
+  const presentButton = useRef<HTMLButtonElement>(null)
+  const canvas = useCanvasRoom()
+  const { size } = scene.deckOf(view)
+  const room = canvas.room ?? slideRoom(800)
+  const fit = { w: room.width, h: room.height }
+  const scale = scaleOf(zoom, fit, size)
+  const percent = percentOf(scale)
   const choose = (next: scene.NodeId) => {
     if (next !== slide) setSelection(noSelection)
     showSlide(next)
   }
+  const strip = useSlideStrip({ view, client, slides, current: slide, onCurrent: choose })
+  const present = usePresent({
+    count: slides.length,
+    current: strip.current,
+    onLand: (at) => {
+      const landed = slides[at]
+      if (landed !== undefined) choose(landed)
+      setTimeout(() => presentButton.current?.focus({ preventScroll: true }))
+    },
+  })
+  usePresentKeys(present.show === null, (from) => present.start(from === "first" ? 0 : strip.current))
   useSlideStepKeys({ slides, current: slide, selecting: selection.ids.length > 0, onCurrent: choose })
+  const title = deckName(view)
+  useEffect(() => {
+    if (title === "") return
+    const before = document.title
+    document.title = tabTitleOf(title)
+    return () => {
+      document.title = before
+    }
+  }, [title])
   return (
-    <div className="window-frame flex" data-scene-editor={id}>
-      <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
-        <EditorTopBar name={deckName(view)} client={client} />
-        <div className="flex min-h-0 flex-1">
-          <SlideStrip view={view} client={client} slides={slides} current={slide} onCurrent={choose} />
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            {slide === undefined ? null : (
-              <SceneCanvas
-                deck={id}
-                client={client}
-                view={view}
-                slide={slide}
-                selection={selection}
-                onSelection={setSelection}
-                tool={tool}
-                onTool={setTool}
-                panel={panel}
-                onPanel={setPanel}
-              />
-            )}
-          </div>
+    <div className="window-frame flex" data-scene-editor={id} inert={present.show !== null}>
+      <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
+        <SlideSidebar
+          run="done"
+          title={title}
+          strip={strip}
+          onRename={(name) => client.push(renameWrites(view, name))}
+        />
+      </div>
+      <div ref={canvas.onCanvas} className="relative min-w-0 flex-1" data-editor-canvas>
+        {slide === undefined ? null : (
+          <SceneCanvas
+            deck={id}
+            client={client}
+            view={view}
+            slide={slide}
+            slideNumber={strip.current + 1}
+            selection={selection}
+            onSelection={setSelection}
+            tool={tool}
+            onTool={setTool}
+            panel={panel}
+            onPanel={setPanel}
+            zoom={zoom}
+            scale={scale}
+            room={fit}
+            overlay={canvas.overlay}
+            onZoom={setZoom}
+            onCommands={(next) => {
+              commands.current = next ?? { zoomTo: setZoom, zoomSelection: null }
+            }}
+            toolbarHost={toolbarHost}
+          />
+        )}
+        <div
+          ref={canvas.onOverlay}
+          data-canvas-overlay
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
+        >
+          {slide === undefined ? null : (
+            <>
+              <div data-notes-width style={{ width: Math.min(size.w * scale, room.width) }}>
+                <SceneNotes client={client} view={view} slide={slide} />
+              </div>
+              <span className="block h-3" />
+            </>
+          )}
+          <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
         </div>
       </div>
-      <div className={cn("h-full", panel === "agent" ? null : "hidden")}>
-        <ResizablePanel panel="agent">
+      <ResizablePanel panel={panel}>
+        <PanelHead>
+          <ZoomMenu
+            zoom={zoom === "fit" ? "fit" : percent}
+            percent={percent}
+            onZoom={(next) => commands.current.zoomTo(next === "fit" ? "fit" : next / 100)}
+            {...(selection.ids.length === 0 ? {} : { onSelection: () => commands.current.zoomSelection?.() })}
+          />
+          <span className="flex items-center gap-1">
+            <PresentButton ref={presentButton} onClick={() => present.start(strip.current)} />
+            <ExportButton disabled />
+          </span>
+        </PanelHead>
+        <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
           <AgentPanel deck={client} />
-        </ResizablePanel>
-      </div>
+        </div>
+      </ResizablePanel>
+      <PresentLayer
+        present={present}
+        title={title}
+        count={slides.length}
+        size={{ width: size.w, height: size.h }}
+        paint={(index, width) => {
+          const shown = slides[index]
+          return shown === undefined ? null : <SceneThumb view={view} slide={shown} width={width} />
+        }}
+        notesOf={(index) => propOf(view.nodes.get(slides[index] ?? ("" as scene.NodeId)), "notes")?.chars ?? ""}
+      />
     </div>
   )
 }
