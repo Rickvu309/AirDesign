@@ -1,0 +1,28 @@
+layer: legacy
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/decks
+  - apps/web/src/design
+  - apps/web/src/editor
+  - apps/web/src/export
+  - apps/web/src/lib
+  - apps/web/src/present
+public:
+  - design-keys.ts
+  - editable-slide.tsx
+  - eyedropper-tool.tsx
+  - group-actions.ts
+  - keys-back-to-canvas.ts
+  - layer-flags.ts
+  - layer-join.ts
+  - layer-keys.ts
+  - layers-panel.tsx
+  - live-layers.tsx
+  - mask-action.ts
+  - slide-commands.tsx
+  - slide-rulers.tsx
+  - use-deck-open.ts
+  - use-editor-deck.ts
+  - use-findings-report.ts
+  - use-network.ts

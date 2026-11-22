@@ -3,7 +3,7 @@ import { act, createElement } from "react"
 import type { Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { useLeaveGuard } from "./leave-guard"
-import { paintingAhead, personCommands, type PaintAhead } from "./painted-ahead"
+import { paintingAhead, personCommands, type PaintAhead } from "../editor/painted-ahead"
 
 let window: Window & typeof globalThis
 let root: Root | null = null

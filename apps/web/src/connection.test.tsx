@@ -3,7 +3,7 @@ import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { commitKept, flushPending } from "./commit-edit"
 import { saveStatus, useDeckStatus } from "./editor/use-deck-status"
-import { useNetwork } from "./editor/use-network"
+import { useNetwork } from "./legacy-editor/use-network"
 
 type Send = {
   readonly caller: number

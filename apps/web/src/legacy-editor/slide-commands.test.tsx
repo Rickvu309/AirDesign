@@ -4,8 +4,8 @@ import { expect, it, vi } from "vitest"
 import type { CommitOutcome } from "@/commit-edit"
 import { until } from "@/replay-waits"
 import { slideCommands, type CommandedDeck } from "./slide-commands"
-import { storeLane } from "./store-lane"
-import type { DeckPaint } from "./use-deck-paint"
+import { storeLane } from "../editor/store-lane"
+import type { DeckPaint } from "../editor/use-deck-paint"
 
 const device = vi.hoisted(() => ({
   rows: [] as unknown[],

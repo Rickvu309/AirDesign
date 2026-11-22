@@ -1,7 +1,7 @@
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { useKeysBackToCanvas } from "@/editor/keys-back-to-canvas"
+import { useKeysBackToCanvas } from "@/legacy-editor/keys-back-to-canvas"
 
 let domWindow: Window & typeof globalThis
 let mounted: { readonly host: HTMLDivElement; readonly root: Root } | null = null

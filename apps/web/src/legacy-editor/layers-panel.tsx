@@ -15,9 +15,9 @@ import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { layersCopy } from "@/copy/layers-copy"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import { depthAt, scrollNearEdge, zoneAt } from "@/editor/layer-drag"
-import { useFlagStroke } from "@/editor/layer-flag-stroke"
-import { LayerNameField } from "@/editor/layer-name-field"
+import { depthAt, scrollNearEdge, zoneAt } from "@/legacy-editor/layer-drag"
+import { useFlagStroke } from "@/legacy-editor/layer-flag-stroke"
+import { LayerNameField } from "@/legacy-editor/layer-name-field"
 import {
   frontOf,
   holdsLayers,
@@ -30,8 +30,8 @@ import {
   type LayerKind,
   type LayerPlace,
   type ShownLayer,
-} from "@/editor/layer-tree"
-import type { LayerFlag } from "@/editor/layer-flags"
+} from "@/legacy-editor/layer-tree"
+import type { LayerFlag } from "@/legacy-editor/layer-flags"
 import { cn } from "@/lib/class-names"
 
 export type LayerPick = "pointer" | "keys"

@@ -1,6 +1,6 @@
 import { CanvasRulers } from "@airdesign/render"
 import type { ReactNode } from "react"
-import type { EditableDeck } from "@/editor/editable-slide"
+import type { EditableDeck } from "@/legacy-editor/editable-slide"
 import { changeGuides, guidedCanvas } from "@/editor/slide-guides"
 
 export function slideRulers(deck: EditableDeck): () => ReactNode {

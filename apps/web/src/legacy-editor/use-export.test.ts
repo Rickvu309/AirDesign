@@ -2,7 +2,7 @@ import { elementId, openRegister } from "@airdesign/document"
 import { expect, it, vi } from "vitest"
 import { ExportStopped } from "@/export/export-deck"
 import { PicturesUploading } from "@/picture-tool"
-import { exportFailure, exportNotices, useExport, type ExportingDeck } from "@/editor/use-export"
+import { exportFailure, exportNotices, useExport, type ExportingDeck } from "@/legacy-editor/use-export"
 import { paintingAhead, personCommands } from "@/editor/painted-ahead"
 import { recordsInFlight } from "@/undo-list"
 

@@ -64,24 +64,20 @@ apps/web/src/editor:
   apps/web/src/editor/editor-chrome.tsx:
     violations:
       - dependency
-      - layer
     files:
       - apps/web/src/export/export-control.tsx
   apps/web/src/editor/editor-key-ownership.ts:
     violations:
       - dependency
-      - layer
     files:
       - apps/web/src/export/export-key.ts
   apps/web/src/editor/gallery-deck.ts:
     violations:
       - dependency
-      - layer
     files:
       - apps/web/src/export/screens/export-states.tsx
   apps/web/src/editor/screens/editor-view.tsx:
     violations:
       - dependency
-      - layer
     files:
       - apps/web/src/export/screens/export-states.tsx

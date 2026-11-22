@@ -53,15 +53,12 @@ apps/web/src/doom-editor:
       - dependency
     files:
       - apps/web/src/decks/doom-thumbnail.ts
-apps/web/src/editor:
-  apps/web/src/editor/editor-chrome.tsx:
+apps/web/src/export:
+  apps/web/src/export/chosen-parts.ts:
     violations:
       - dependency
-      - layer
     files:
-      - apps/web/src/decks/deck-preview.tsx
-      - apps/web/src/decks/doom-preview.tsx
-      - apps/web/src/decks/template-picker.tsx
+      - apps/web/src/decks/template-decks.ts
 apps/web/src/settings:
   apps/web/src/settings/account-load.ts:
     violations:
