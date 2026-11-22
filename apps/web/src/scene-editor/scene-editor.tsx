@@ -17,6 +17,7 @@ import { cn } from "@/lib/class-names"
 import { percentOf, scaleOf, type Zoom } from "./canvas-view"
 import { renameWrites } from "./deck-writes"
 import { AgentPanel } from "./agent-panel"
+import { DesignPanel } from "./design-panel"
 import type { RightPanel } from "./editor-toolbar"
 import { propOf, slidesOf } from "./node-props"
 import { SceneCanvas, type CanvasCommands } from "./scene-canvas"
@@ -143,6 +144,9 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
         <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
           <AgentPanel deck={client} />
         </div>
+        {panel === "design" && slide !== undefined ? (
+          <DesignPanel client={client} view={view} slide={slide} selection={selection} />
+        ) : null}
       </ResizablePanel>
       <PresentLayer
         present={present}
