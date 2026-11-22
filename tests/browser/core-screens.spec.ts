@@ -9,7 +9,7 @@ for (const [name, path] of Object.entries(coreRoutes)) {
     page.on("pageerror", (error) => faults.push(error.message))
     page.on("console", (message) => message.type() === "error" && faults.push(message.text()))
     await openScreen(page, path)
-    await page.locator("[data-scene-slide]").waitFor()
+    await page.locator("[data-doom-slide]").waitFor()
     await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
     const lines = await page.locator("[data-line]").count()
     expect(lines).toBeGreaterThan(0)

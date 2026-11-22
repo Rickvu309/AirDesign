@@ -36,8 +36,8 @@ Preconditions:
 - **Grid motion.** `deck-grid-motion` drives pointer Trash and Undo against the real API, checks 220 ms neighbour transforms, the fading exit, return to the original slot, focus, and a second Trash and Undo during a paused shift. It also checks no motion on load, search, keyboard actions, list view or reduced motion, including the last card and its first return. Proven 2026-11-16.
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
 - **Make a deck.** Import `clean.pptx` from Home. Poll `post(deckRoutes.list, {})` until the deck's name is `clean`, the file name without `.pptx`.
-- **Make a scene deck.** From Home, `button "New deck"` then `menuitem "Blank deck"` opens `/s/<id>`. Poll `post(deckRoutes.list, {})` until the deck carries `scene: { rev: 1 }`.
-- **Listed.** Open `/`. `heading "clean"` is visible, and the scene deck's card paints a `[data-scene-thumbnail]`. Evidence `NN-home-lists-deck`.
+- **Make a doom deck.** From Home, `button "New deck"` then `menuitem "Blank deck"` opens `/s/<id>`. Poll `post(deckRoutes.list, {})` until the deck carries `doom: { rev: 1 }`.
+- **Listed.** Open `/`. `heading "clean"` is visible, and the doom deck's card paints a `[data-doom-thumbnail]`. Evidence `NN-home-lists-deck`.
 - **Move to Trash.** Click `button "clean actions"`, then `menuitem "Move to Trash"`. The text `clean moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
 - **Trash.** Open `/trash`. `heading "clean"` is visible. Evidence `NN-trash-lists-deck`.
 - **Restore.** Click `button "Restore"`. The heading leaves Trash, `deckRoutes.list` lists the deck under `decks`, and Home shows it again. Evidence `NN-restored`.

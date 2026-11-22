@@ -1,4 +1,4 @@
-import { limits, scene } from "@airdesign/document"
+import { limits, doom } from "@airdesign/document"
 import * as z from "zod/v4"
 
 import {
@@ -16,7 +16,7 @@ import {
   type FieldRefusal,
 } from "./wire.js"
 
-const { $defs, properties } = scene.agentChangesSchema
+const { $defs, properties } = doom.agentChangesSchema
 
 export const readDeckEdit = readInput(
   z

@@ -1,4 +1,4 @@
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
 function mixed(text: string): number {
   let high = 0xdeadbeef
@@ -18,12 +18,12 @@ export const shortHash = (text: string): string => mixed(text).toString(36).padS
 export type OnceIds = {
   readonly client: string
   readonly run: string
-  readonly mint: () => scene.NodeId
+  readonly mint: () => doom.NodeId
 }
 
 export function onceIds(once: string): OnceIds {
   const hash = shortHash(once)
   const client = `m${hash}`
   let counter = 0
-  return { client, run: `r${hash}`, mint: () => scene.nodeId(`${client}:${(counter += 1)}`) }
+  return { client, run: `r${hash}`, mint: () => doom.nodeId(`${client}:${(counter += 1)}`) }
 }

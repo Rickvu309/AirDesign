@@ -19,8 +19,8 @@ export {
   type SlideId,
 } from "./element-id.js"
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
-import * as scene from "./scene/index.js"
-export { scene }
+import * as doom from "./doom/index.js"
+export { doom }
 export { type IndexLayout } from "./index-layout.js"
 export { answeredRegister } from "./answered-register.js"
 export {

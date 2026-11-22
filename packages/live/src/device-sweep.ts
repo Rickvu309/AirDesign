@@ -15,7 +15,7 @@ import {
 import { dropShelvedChats } from "./chat-slot.js"
 import { dropShelvedQueue } from "./deck-queue.js"
 import { adoptJournal, dropJournal, hasLegacyJournal, pageShelf, type Shelf } from "./unsaved.js"
-import { sceneQueueKey } from "./scene-storage.js"
+import { doomQueueKey } from "./doom-storage.js"
 import { asideKey } from "./store.js"
 
 export const idleDays = 30
@@ -59,13 +59,13 @@ function unsentIn(store: IDBObjectStore, account: string, deck: string): () => b
   const star = store.get(scoped(account, `${deck}\u0003star`))
   const media = store.get(scoped(account, `${deck}\u0003media`))
   const aside = store.get(scoped(account, asideKey(deck)))
-  const scenes = store.get(scoped(account, sceneQueueKey(deck)))
+  const queues = store.get(scoped(account, doomQueueKey(deck)))
   return () => {
     const index = queue.result as { count?: unknown; sent?: unknown } | undefined
     const indexing = typeof index === "object" && index !== null && index.sent !== index.count
     const pictures = Array.isArray(media.result) && media.result.length > 0
     const untold = Array.isArray(aside.result) && aside.result.length > 0
-    const scened = Array.isArray(scenes.result) && scenes.result.length > 0
+    const doomQueued = Array.isArray(queues.result) && queues.result.length > 0
     return (
       pending.result.length > 0 ||
       indexing ||
@@ -74,7 +74,7 @@ function unsentIn(store: IDBObjectStore, account: string, deck: string): () => b
       typeof star.result === "string" ||
       pictures ||
       untold ||
-      scened
+      doomQueued
     )
   }
 }

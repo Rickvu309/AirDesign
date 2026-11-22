@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { type DeckId, type SceneRefusal, readDeckId } from "@airdesign/catalog"
-import { mediaSize, scene } from "@airdesign/document"
+import { type DeckId, type DoomRefusal, readDeckId } from "@airdesign/catalog"
+import { mediaSize, doom } from "@airdesign/document"
 import { emptyLog, createServer, type DeckHost, type Host, type NamedImage, type Session } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
@@ -13,8 +13,8 @@ import { fetchImage, type ImageNet } from "./image-fetch.js"
 import { keepMedia, storedMedia } from "./media.js"
 import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
-import { createScene, editScene, openScene } from "./scene-deck.js"
-import { startIds } from "./scene-start.js"
+import { createDoom, editDoom, openDoom } from "./doom-deck.js"
+import { startIds } from "./doom-start.js"
 
 export type McpHost = {
   readonly deck: Sql
@@ -35,17 +35,17 @@ export type McpHost = {
 const listPage = 50
 
 const listSql = `
-select id, name, rev from deck.scene
+select id, name, rev from deck.doom
 where owner = $1
-  and ($2::text is null or (edited, id) < (select edited, id from deck.scene where id = $2 and owner = $1))
+  and ($2::text is null or (edited, id) < (select edited, id from deck.doom where id = $2 and owner = $1))
 order by edited desc, id desc
 limit ${String(listPage + 1)}`
 
-const refusal = (kind: Exclude<SceneRefusal["refusal"], "edit">): SceneRefusal => ({ ok: false, refusal: kind })
+const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => ({ ok: false, refusal: kind })
 
-type Answered = Awaited<ReturnType<typeof openScene>> | Awaited<ReturnType<typeof editScene>>
+type Answered = Awaited<ReturnType<typeof openDoom>> | Awaited<ReturnType<typeof editDoom>>
 
-function decoded(answer: Answered): SceneRefusal | undefined {
+function decoded(answer: Answered): DoomRefusal | undefined {
   if (answer.ok) return undefined
   if (answer.refusal === "edit") {
     const { ok: _ok, refusal: _refusal, ...refused } = answer
@@ -54,10 +54,10 @@ function decoded(answer: Answered): SceneRefusal | undefined {
   return { ok: false, refusal: answer.refusal }
 }
 
-function opened(deck: DeckId, answer: Awaited<ReturnType<typeof openScene>>) {
+function opened(deck: DeckId, answer: Awaited<ReturnType<typeof openDoom>>) {
   const unread = decoded(answer)
   if (unread !== undefined || !answer.ok) return unread ?? refusal("payload")
-  const fold = scene.readFold(answer.fold)
+  const fold = doom.readFold(answer.fold)
   return fold === undefined ? refusal("payload") : ({ ok: true, deck, rev: answer.rev, fold } as const)
 }
 
@@ -99,16 +99,16 @@ async function storedImages(
   return found
 }
 
-const slideKey = (fold: scene.Scene, slide: scene.NodeId) =>
-  createHash("sha256").update(scene.slideKeyText(fold, slide)).digest("hex")
+const slideKey = (fold: doom.Doom, slide: doom.NodeId) =>
+  createHash("sha256").update(doom.slideKeyText(fold, slide)).digest("hex")
 
 async function slidePictures(
   pictures: DeckPictures,
   wait: number,
   deck: DeckId,
-  fold: scene.Scene,
-  slides: readonly scene.NodeId[],
-): Promise<ReadonlyMap<scene.NodeId, string>> {
+  fold: doom.Doom,
+  slides: readonly doom.NodeId[],
+): Promise<ReadonlyMap<doom.NodeId, string>> {
   const keys = slides.map((slide) => [slide, slideKey(fold, slide)] as const)
   pictures.want(deck, slides)
   const current = () =>
@@ -127,11 +127,11 @@ async function slidePictures(
   return shots
 }
 
-function sceneHost(db: Sql, email: string, images: ImageStore, seen: Pictured): DeckHost {
+function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): DeckHost {
   const shots = seen.pictures
   const guarded =
     <Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) =>
-    async (...args: Args): Promise<Result | SceneRefusal> => {
+    async (...args: Args): Promise<Result | DoomRefusal> => {
       try {
         return await run(...args)
       } catch {
@@ -155,9 +155,9 @@ function sceneHost(db: Sql, email: string, images: ImageStore, seen: Pictured): 
     create: guarded(async (name, once) => {
       const id = readDeckId(createHash("sha256").update(`${email}\n${once}`).digest("hex").slice(0, 32))
       if (!id.ok) return refusal("deck")
-      const made = opened(id.deck, await createScene(db, { deck: id.deck }, email))
-      if (!made.ok || scene.deckName(made.fold) === name) return made
-      const named = await editScene(
+      const made = opened(id.deck, await createDoom(db, { deck: id.deck }, email))
+      if (!made.ok || doom.deckName(made.fold) === name) return made
+      const named = await editDoom(
         db,
         {
           deck: id.deck,
@@ -169,15 +169,15 @@ function sceneHost(db: Sql, email: string, images: ImageStore, seen: Pictured): 
         },
         email,
       )
-      return decoded(named) ?? opened(id.deck, await openScene(db, { deck: id.deck }, email))
+      return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),
-    open: guarded(async (deck) => opened(deck, await openScene(db, { deck }, email))),
+    open: guarded(async (deck) => opened(deck, await openDoom(db, { deck }, email))),
     edit: guarded(async (deck, edit) => {
-      const landed = await editScene(db, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)
+      const landed = await editDoom(db, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)
       return decoded(landed) ?? (landed.ok ? ({ ok: true, deck, rev: landed.rev } as const) : refusal("server"))
     }),
   }
@@ -199,7 +199,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const session: Session = { agent: host.agentKey, mint: host.mint, log: emptyLog(), now: host.now() }
   const bridge: Host = {
-    ...sceneHost(
+    ...doomHost(
       host.deck,
       host.email,
       { originals: host.originals, net: host.imageNet },

@@ -4,20 +4,20 @@ import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 
 const asked = "Add three KPIs to this slide"
 
-async function sceneAgent(kit, cookie) {
-  const { page, post, capture, note, sceneRoutes, mcpRoutes, aira, holdReply } = kit
+async function doomAgent(kit, cookie) {
+  const { page, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
   await page.goto("/s")
-  await page.locator("[data-scene-ready]").waitFor()
+  await page.locator("[data-doom-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
-  const opened = (await post(sceneRoutes.open, { deck }, cookie)).json
+  const opened = (await post(doomRoutes.open, { deck }, cookie)).json
   const slide = Object.values(opened.fold.nodes).find((node) => node.type === "slide").id
   const side = page.locator("[data-editor-panel]")
   const log = side.getByRole("log")
   const canvas = page.locator("[data-slide-box]")
   const composer = side.getByRole("textbox", { name: airaCopy.askAira })
   await expect(composer).toBeVisible()
-  await capture("scene-agent-panel")
-  note(`opened scene deck ${deck} at revision ${String(opened.rev)}; the Agent panel shows the Ask Aira composer`)
+  await capture("doom-agent-panel")
+  note(`opened doom deck ${deck} at revision ${String(opened.rev)}; the Agent panel shows the Ask Aira composer`)
 
   aira([{ name: "add-kpi.sse", fill: { deck, base: String(opened.rev), slide } }, { name: "added-kpi.sse" }])
   const { release } = await holdReply(mcpRoutes.mcp)
@@ -51,5 +51,5 @@ export default async function drive(kit) {
   await expect(side.getByRole("textbox", { name: airaCopy.askAira })).toBeVisible()
   await capture("agent-panel")
   note("imported clean.pptx; the Agent panel shows the Ask Aira composer")
-  await sceneAgent(kit, cookie)
+  await doomAgent(kit, cookie)
 }

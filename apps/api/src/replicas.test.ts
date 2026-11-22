@@ -3,7 +3,7 @@ import { once } from "node:events"
 import { request } from "node:http"
 import type { Socket } from "node:net"
 
-import { countryHeader, sceneRoutes } from "@airdesign/catalog"
+import { countryHeader, doomRoutes } from "@airdesign/catalog"
 import { airaMaxTokens } from "./aira.js"
 import { Client as McpClient, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { Client } from "pg"
@@ -247,7 +247,7 @@ describe("an agent's run on a deck", () => {
         writes: [{ node: added, prop: "name", value: "mine" }],
       },
     }
-    expect((await ask(first.base, "POST", sceneRoutes.edit.path, typed, account.cookie)).json).toMatchObject({ rev: 3 })
+    expect((await ask(first.base, "POST", doomRoutes.edit.path, typed, account.cookie)).json).toMatchObject({ rev: 3 })
     await withMcp(account.cookie, await replica(), async (client) => {
       const closed = await called(client, "edit_deck", {
         deck,

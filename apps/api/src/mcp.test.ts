@@ -1,14 +1,14 @@
 import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
-import { catalog, onceMeta, projectTools, sceneRoutes } from "@airdesign/catalog"
-import { limits, scene } from "@airdesign/document"
+import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
+import { limits, doom } from "@airdesign/document"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { openSql } from "./scene-deck.js"
+import { openSql } from "./doom-deck.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const sessionRefusal = { ok: false, refusal: "session" }
@@ -162,7 +162,7 @@ describe("mcp route", () => {
   }
 
   it("refuses mcp without a session and creates no deck", async () => {
-    const before = await deck.query("select id from deck.scene")
+    const before = await deck.query("select id from deck.doom")
     for (const headers of [
       {},
       { cookie: "airdesign.session=missing" },
@@ -177,7 +177,7 @@ describe("mcp route", () => {
     }
     const create = { ...listCall, params: { name: "airdesign_create_deck", arguments: {} } }
     expect((await posted(base, {}, create)).status).toBe(401)
-    expect((await deck.query("select id from deck.scene")).rowCount).toBe(before.rowCount)
+    expect((await deck.query("select id from deck.doom")).rowCount).toBe(before.rowCount)
   })
 
   it("lists the five agent tools for a signed-in caller", async () => {
@@ -188,7 +188,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("makes a scene deck, reads it, edits it in a run, reads it again and stops the run", async () => {
+  it("makes a doom deck, reads it, edits it in a run, reads it again and stops the run", async () => {
     await withMcp(await sign(address("flow")), async (client) => {
       const first = await made(client)
       expect(first).toMatchObject({ ok: true, name: "Board", slides: [expect.any(String)] })
@@ -221,7 +221,7 @@ describe("mcp route", () => {
       expect(lines).toContain('text="Q3 **board** update"')
       expect(lines).toContain("Revenue")
 
-      const folded = scene.readFold((await stored(first.deck))!.fold)!
+      const folded = doom.readFold((await stored(first.deck))!.fold)!
       expect(folded.runs.get(landed.answer.runId)?.phase).toBe("running")
       const stopped = await tool(client, "stop_run", { deck: first.deck, runId: landed.answer.runId })
       expect(stopped.answer).toMatchObject({ ok: true, rev: first.rev + 2 })
@@ -232,7 +232,7 @@ describe("mcp route", () => {
         changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "late" }],
       })
       expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
-      expect(scene.readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
+      expect(doom.readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
     })
   })
 
@@ -289,7 +289,7 @@ describe("mcp route", () => {
     expect(await stored("neverthere")).toBeUndefined()
   })
 
-  it("closes a layer to the run once the person changes it, through the scene edit route", async () => {
+  it("closes a layer to the run once the person changes it, through the doom edit route", async () => {
     const email = address("person")
     const cookie = await sign(email)
     await withMcp(cookie, async (client) => {
@@ -303,7 +303,7 @@ describe("mcp route", () => {
       const typed = await ask(
         base,
         "POST",
-        sceneRoutes.edit.path,
+        doomRoutes.edit.path,
         {
           deck: first.deck,
           edit: {
@@ -338,12 +338,12 @@ describe("mcp route", () => {
     await withMcp(cookie, async (client) => {
       const first = await made(client)
       const title = (await stored(first.deck))!
-      const fold = scene.readFold(title.fold)!
+      const fold = doom.readFold(title.fold)!
       const node = fold.children.get(first.slides[0])![0]!
       const typed = await ask(
         base,
         "POST",
-        sceneRoutes.edit.path,
+        doomRoutes.edit.path,
         {
           deck: first.deck,
           edit: {
@@ -353,7 +353,7 @@ describe("mcp route", () => {
               {
                 node,
                 prop: "text",
-                value: scene.textFromMarkdown("Typed", "title"),
+                value: doom.textFromMarkdown("Typed", "title"),
                 base: fold.revs.get(node)!.get("text"),
               },
             ],

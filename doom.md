@@ -1,6 +1,6 @@
 # Doom words
 
-The words for AirDesign's core, Doom. One word per idea, for code, test and tool. Until the code rename lands, the code still says `scene` (`packages/document/src/scene`, the `scene` export, `/scenes` routes, `deck.scene`); the rename brings code, tests and tools to "doom". Where a word here differs from `GLOSSARY.md`'s model words, the old word names today's model and goes when Doom replaces it.
+The words for AirDesign's core, Doom. One word per idea, for code, test and tool. Where a word here differs from `GLOSSARY.md`'s model words, the old word names today's model and goes when Doom replaces it.
 
 ## Shape of a deck
 

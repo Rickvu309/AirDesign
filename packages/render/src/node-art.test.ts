@@ -1,4 +1,4 @@
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
@@ -6,7 +6,7 @@ import { loadIcon } from "./icon-nodes.js"
 import { NodeArt } from "./index.js"
 import { swatches } from "./swatches-art.js"
 
-const navy = scene.defaultTheme.colors.accent1
+const navy = doom.defaultTheme.colors.accent1
 
 const spot = (x: number, y: number, w: number, h: number, extra: object = {}) => ({
   x,
@@ -19,15 +19,15 @@ const spot = (x: number, y: number, w: number, h: number, extra: object = {}) =>
   ...extra,
 })
 const solid = (color: unknown, extra: object = {}) => ({ kind: "solid", color, ...extra })
-const shape = (name: string, props: object): scene.TreeNode => ({ type: "shape", name, props: props as never })
+const shape = (name: string, props: object): doom.TreeNode => ({ type: "shape", name, props: props as never })
 
 function painted(
-  nodes: readonly scene.TreeNode[],
+  nodes: readonly doom.TreeNode[],
   assetUrl: (asset: string) => string | undefined = () => undefined,
   waiting?: string,
 ) {
-  const grown = scene.sceneFromTree({ theme: scene.defaultTheme, slides: [{ children: nodes }] })
-  const resolved = scene.resolveSlide(grown.scene, grown.slides[0]!, scene.measureWith({}))
+  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: nodes }] })
+  const resolved = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
   return renderToStaticMarkup(
     createElement(
       "div",

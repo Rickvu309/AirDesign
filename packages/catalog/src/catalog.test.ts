@@ -97,7 +97,7 @@ describe("projectTools", () => {
   })
 })
 
-it("reads the scene's changes through edit_deck", () => {
+it("reads the doom's changes through edit_deck", () => {
   const read = catalog.edit_deck.read
   const base = { deck: "d", base: 3 }
   expect(read({ ...base, changes: [{ op: "add", kind: "text", slide: "s:3" }] }).ok).toBe(true)

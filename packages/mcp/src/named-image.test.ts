@@ -1,4 +1,4 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 
 import { imageNames, imageProblem, withAssets, type NamedImages } from "./named-image.js"
@@ -12,7 +12,7 @@ const pictures = [
   { op: "add", kind: "picture", slide, fill: { image: asset } },
   { op: "add", kind: "shape", slide, fill: "accent1" },
   { op: "set", target: "s:2", fill: { image: logo } },
-] as unknown as readonly scene.AgentChange[]
+] as unknown as readonly doom.AgentChange[]
 
 describe("images an agent names by address", () => {
   it("lists each https address and stored hash once and leaves colours alone", () => {

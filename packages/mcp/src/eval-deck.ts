@@ -1,11 +1,11 @@
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
 const box = (x: number, y: number, w: number, h: number) => ({ x, y, w, h, rotation: 0, flipH: false, flipV: false })
-const words = (markdown: string, style: scene.TextStyleName = "body") => scene.textFromMarkdown(markdown, style)
+const words = (markdown: string, style: doom.TextStyleName = "body") => doom.textFromMarkdown(markdown, style)
 const padding = { t: 16, r: 16, b: 16, l: 16 }
 
-const grown = scene.sceneFromTree({
-  theme: scene.defaultTheme,
+const grown = doom.doomFromTree({
+  theme: doom.defaultTheme,
   slides: [
     {
       name: "Opening",
@@ -67,7 +67,7 @@ const grown = scene.sceneFromTree({
   ],
 })
 
-export const evalDeck = (): scene.Scene => grown.scene
+export const evalDeck = (): doom.Doom => grown.doom
 
 export const ids = grown.ids
 
@@ -86,8 +86,8 @@ export const named = {
   note: ids["Note"]!,
 }
 
-const opened = scene.sceneFromTree({
-  theme: scene.defaultTheme,
+const opened = doom.doomFromTree({
+  theme: doom.defaultTheme,
   slides: [
     {
       name: "Opening",
@@ -102,10 +102,10 @@ const opened = scene.sceneFromTree({
   ],
 })
 
-export const blankDeck = (): scene.Scene => opened.scene
+export const blankDeck = (): doom.Doom => opened.doom
 
 export const blank = { title: opened.ids["Opening title"]! }
 
-export const person: scene.Author = { kind: "person", id: "quan" }
+export const person: doom.Author = { kind: "person", id: "quan" }
 
-export const revOfDeck = grown.scene.rev
+export const revOfDeck = grown.doom.rev

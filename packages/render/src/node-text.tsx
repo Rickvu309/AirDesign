@@ -1,9 +1,9 @@
-import type { scene } from "@airdesign/document"
+import type { doom } from "@airdesign/document"
 import { fontFamily } from "@airdesign/fonts"
 import type { CSSProperties } from "react"
-import { pinnedOpticalSize } from "./scene-widths.js"
+import { pinnedOpticalSize } from "./doom-widths.js"
 
-type Run = scene.ResolvedRun
+type Run = doom.ResolvedRun
 
 function runLook(run: Run): CSSProperties {
   const decoration = [run.underline ? "underline" : "", run.strike ? "line-through" : ""].filter(Boolean).join(" ")
@@ -23,7 +23,7 @@ export function TextLines({
   lines,
   editing = false,
 }: {
-  readonly lines: readonly scene.ResolvedLine[]
+  readonly lines: readonly doom.ResolvedLine[]
   readonly editing?: boolean
 }) {
   return (

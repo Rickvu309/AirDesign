@@ -1,22 +1,22 @@
 import { catalog, onceMeta, projectTools } from "@airdesign/catalog"
-import { bytesOf, scene } from "@airdesign/document"
+import { bytesOf, doom } from "@airdesign/document"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
 import { createServer, emptyLog, memoryDecks, type Host, type Session } from "./index.js"
 
-function started(): scene.Scene {
-  return scene.sceneFromTree({
-    theme: scene.defaultTheme,
+function started(): doom.Doom {
+  return doom.doomFromTree({
+    theme: doom.defaultTheme,
     slides: [
       {
         name: "Title",
         children: [
-          { type: "shape", name: "Title", props: { role: "title", text: scene.textFromMarkdown("Untitled", "title") } },
+          { type: "shape", name: "Title", props: { role: "title", text: doom.textFromMarkdown("Untitled", "title") } },
         ],
       },
     ],
-  }).scene
+  }).doom
 }
 
 function sessionFor(): Session {

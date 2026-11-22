@@ -106,7 +106,7 @@ type Listed = {
   readonly edited: string
   readonly created: string
   readonly starred?: boolean
-  readonly scene?: { readonly rev: number }
+  readonly doom?: { readonly rev: number }
 }
 type ListedTrash = Listed & { readonly trashed: string }
 
@@ -118,7 +118,7 @@ function listed(raw: unknown): raw is Listed & Record<string, unknown> {
     typeof raw.edited === "string" &&
     typeof raw.created === "string" &&
     (raw.starred === undefined || typeof raw.starred === "boolean") &&
-    (raw.scene === undefined || (recordAnswer(raw.scene) && wholeAnswer(raw.scene.rev)))
+    (raw.doom === undefined || (recordAnswer(raw.doom) && wholeAnswer(raw.doom.rev)))
   )
 }
 

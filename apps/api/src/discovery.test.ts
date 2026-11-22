@@ -140,7 +140,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
       readOnlyHint: true,
       idempotentHint: true,
     })
-    const created = await ask(base, "POST", "/scenes/create", { deck: "discovery" }, cookie)
+    const created = await ask(base, "POST", "/doom/create", { deck: "discovery" }, cookie)
     expect(created.json).toMatchObject({ ok: true, deck: "discovery", rev: 1 })
     const listed = await sdk.callTool({ name: "airdesign_list_decks", arguments: {} })
     expect(listed.isError).not.toBe(true)
@@ -161,7 +161,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     expect(called.structuredContent).toMatchObject({ ok: true, deck: "discovery", rev: 2 })
     const again = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
     expect((again.content as { text: string }[])[1]?.text).toContain('text="Connected"')
-    const saved = await ask(base, "POST", "/scenes/open", { deck: "discovery" }, cookie)
+    const saved = await ask(base, "POST", "/doom/open", { deck: "discovery" }, cookie)
     expect(saved.json).toMatchObject({ rev: 2 })
   } finally {
     await sdk.close()

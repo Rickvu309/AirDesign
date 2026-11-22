@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, signInByCode, verifierPair, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { openSql } from "./scene-deck.js"
+import { openSql } from "./doom-deck.js"
 import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
 
 const own = "https://mcp.example.test/mcp"
@@ -137,7 +137,7 @@ describe("only a deck's owner acts on it", () => {
 
   async function opened(cookie: string): Promise<string> {
     const id = deckName()
-    const reply = await ask(base, "POST", "/scenes/create", { deck: id }, cookie)
+    const reply = await ask(base, "POST", "/doom/create", { deck: id }, cookie)
     if (reply.status !== 200) throw new Error(reply.text)
     return id
   }

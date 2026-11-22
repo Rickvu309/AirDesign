@@ -3,9 +3,9 @@ import { pageReady, paintedSignal } from "./page-ready.mjs"
 
 describe("when a page is painted enough to look at", () => {
   it("waits for the Doom editor's painted slide on /s and on a deck at /s/<id>", () => {
-    expect(paintedSignal("/s")).toBe("[data-scene-ready]")
-    expect(paintedSignal("/s/abc123")).toBe("[data-scene-ready]")
-    expect(paintedSignal("/s?x=1")).toBe("[data-scene-ready]")
+    expect(paintedSignal("/s")).toBe("[data-doom-ready]")
+    expect(paintedSignal("/s/abc123")).toBe("[data-doom-ready]")
+    expect(paintedSignal("/s?x=1")).toBe("[data-doom-ready]")
   })
 
   it("leaves every other page to the settle step", () => {
@@ -28,6 +28,6 @@ describe("when a page is painted enough to look at", () => {
     }
     await pageReady(page, "/s/abc")
     await pageReady(page, "/deck/abc")
-    expect(asked).toEqual([["[data-scene-ready]", "attached"]])
+    expect(asked).toEqual([["[data-doom-ready]", "attached"]])
   })
 })

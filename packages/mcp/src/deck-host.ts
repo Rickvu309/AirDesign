@@ -1,11 +1,11 @@
-import type { DeckId, SceneRefusal } from "@airdesign/catalog"
-import type { scene } from "@airdesign/document"
+import type { DeckId, DoomRefusal } from "@airdesign/catalog"
+import type { doom } from "@airdesign/document"
 
 import type { NamedImages } from "./named-image.js"
 
 export type DeckSummary = { readonly deck: DeckId; readonly name: string; readonly rev: number }
 
-export type Opened = { readonly ok: true; readonly deck: DeckId; readonly rev: number; readonly fold: scene.Scene }
+export type Opened = { readonly ok: true; readonly deck: DeckId; readonly rev: number; readonly fold: doom.Doom }
 export type Listed = {
   readonly ok: true
   readonly decks: readonly DeckSummary[]
@@ -14,14 +14,14 @@ export type Listed = {
 export type Landed = { readonly ok: true; readonly deck: DeckId; readonly rev: number }
 
 export type DeckHost = {
-  readonly list: (cursor: DeckId | undefined) => Promise<Listed | SceneRefusal>
-  readonly create: (name: string, once: string) => Promise<Opened | SceneRefusal>
-  readonly open: (deck: DeckId) => Promise<Opened | SceneRefusal>
-  readonly edit: (deck: DeckId, edit: scene.Edit) => Promise<Landed | SceneRefusal>
+  readonly list: (cursor: DeckId | undefined) => Promise<Listed | DoomRefusal>
+  readonly create: (name: string, once: string) => Promise<Opened | DoomRefusal>
+  readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>
+  readonly edit: (deck: DeckId, edit: doom.Edit) => Promise<Landed | DoomRefusal>
   readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
   readonly pictures?: (
     deck: DeckId,
-    fold: scene.Scene,
-    slides: readonly scene.NodeId[],
-  ) => Promise<ReadonlyMap<scene.NodeId, string>>
+    fold: doom.Doom,
+    slides: readonly doom.NodeId[],
+  ) => Promise<ReadonlyMap<doom.NodeId, string>>
 }

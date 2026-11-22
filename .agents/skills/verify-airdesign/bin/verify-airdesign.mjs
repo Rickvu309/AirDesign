@@ -234,7 +234,7 @@ export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
   const {
     deckRoutes,
-    sceneRoutes,
+    doomRoutes,
     signInRoutes,
     accountRoutes,
     oauthRoutes,
@@ -259,7 +259,7 @@ export async function journeyKit({ run, name, page, context }) {
     page,
     context,
     deckRoutes,
-    sceneRoutes,
+    doomRoutes,
     signInRoutes,
     accountRoutes,
     oauthRoutes,

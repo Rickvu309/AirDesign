@@ -1,5 +1,5 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
 import { emptyLog } from "./admit.js"
 import { callTool, type Session } from "./call-tool.js"
@@ -18,12 +18,12 @@ export type Attempt = readonly Call[]
 export type Task = {
   readonly id: string
   readonly prompt: string
-  readonly deck: () => scene.Scene
+  readonly deck: () => doom.Doom
   readonly want: {
     readonly calls: number
     readonly steps: readonly Step[]
     readonly touches: readonly string[]
-    readonly landed: (end: scene.Scene) => boolean
+    readonly landed: (end: doom.Doom) => boolean
   }
 }
 
@@ -33,8 +33,8 @@ export type ScoreResult = {
   readonly pass: boolean
   readonly reason: Reason
   readonly answers: readonly Answer[]
-  readonly deck: scene.Scene
-  readonly start: scene.Scene
+  readonly deck: doom.Doom
+  readonly start: doom.Doom
 }
 
 export const evalDeckId = "deck"
@@ -60,7 +60,7 @@ function answeredInOrder(steps: readonly Step[], answers: readonly Answer[]): bo
   return next === steps.length
 }
 
-function changed(start: scene.Scene, end: scene.Scene): readonly string[] {
+function changed(start: doom.Doom, end: doom.Doom): readonly string[] {
   return [...start.nodes].flatMap(([id, node]) => (end.nodes.get(id) === node ? [] : [id]))
 }
 

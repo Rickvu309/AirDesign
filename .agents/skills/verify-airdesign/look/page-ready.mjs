@@ -1,7 +1,7 @@
-const sceneEditor = /^\/s(?:\/|\?|#|$)/
+const doomEditor = /^\/s(?:\/|\?|#|$)/
 
 export function paintedSignal(where) {
-  return sceneEditor.test(where) ? "[data-scene-ready]" : null
+  return doomEditor.test(where) ? "[data-doom-ready]" : null
 }
 
 export async function pageReady(page, where) {

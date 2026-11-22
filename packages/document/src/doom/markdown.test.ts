@@ -1,0 +1,180 @@
+import fc from "fast-check"
+import { describe, expect, it } from "vitest"
+import { hex } from "./sample-deck.js"
+import { readText } from "./text.js"
+import { textFromMarkdown, textToMarkdown } from "./markdown.js"
+
+const read = (markdown: string) => textFromMarkdown(markdown, "body")
+
+describe("textFromMarkdown", () => {
+  it("reads plain words as one paragraph with no spans", () => {
+    expect(read("Revenue grew")).toEqual({
+      chars: "Revenue grew",
+      spans: [],
+      paras: [{}],
+      style: "body",
+      resize: "height",
+      alignV: "top",
+    })
+  })
+
+  it("reads bold, italic, both and a link as end-indexed spans that cover the characters", () => {
+    expect(read("a **b** *c* ***d*** [e](https://x.test/y)")).toMatchObject({
+      chars: "a b c d e",
+      spans: [
+        { end: 2 },
+        { end: 3, bold: true },
+        { end: 4 },
+        { end: 5, italic: true },
+        { end: 6 },
+        { end: 7, bold: true, italic: true },
+        { end: 8 },
+        { end: 9, link: "https://x.test/y" },
+      ],
+    })
+  })
+
+  it("reads bullets, numbers and two-space indent as paragraph lists with levels", () => {
+    const text = read("- one\n  - two\n    - three\n1. first\n2. second")
+    expect(text.chars).toBe("one\ntwo\nthree\nfirst\nsecond")
+    expect(text.paras).toEqual([
+      { list: "bullet" },
+      { list: "bullet", level: 1 },
+      { list: "bullet", level: 2 },
+      { list: "number" },
+      { list: "number" },
+    ])
+  })
+
+  it("splits paragraphs on blank lines and on single line breaks, and drops empty ones", () => {
+    const text = read("one\n\ntwo\nthree\n\n\nfour")
+    expect(text.chars).toBe("one\ntwo\nthree\nfour")
+    expect(text.paras).toHaveLength(4)
+  })
+
+  it("keeps a star with a space beside it, an unmatched marker and an escaped marker as words", () => {
+    expect(read("2 * 3 * 4").chars).toBe("2 * 3 * 4")
+    expect(read("2 * 3 * 4").spans).toEqual([])
+    expect(read("**open").chars).toBe("**open")
+    expect(read("a \\*b\\* \\[c\\]").chars).toBe("a *b* [c]")
+    expect(read("a \\*b\\* \\[c\\]").spans).toEqual([])
+  })
+
+  it("keeps a bracket that is not a link as words", () => {
+    expect(read("[not](a link) [open").chars).toBe("[not](a link) [open")
+    expect(read("[x]").chars).toBe("[x]")
+  })
+
+  it("reads text a doom reader accepts", () => {
+    for (const markdown of ["", "a", "- a\n- **b**\n\n1. [c](d)", "**a***b*"]) {
+      expect(() => readText(JSON.parse(JSON.stringify(read(markdown))))).not.toThrow()
+    }
+  })
+
+  it("keeps the style the caller names", () => {
+    expect(textFromMarkdown("x", "title").style).toBe("title")
+  })
+
+  it("caps indent at level 8", () => {
+    expect(read(`${" ".repeat(40)}- deep`).paras).toEqual([{ list: "bullet", level: 8 }])
+  })
+})
+
+describe("textToMarkdown", () => {
+  it("writes the words an agent reads: markers, lists and blank lines between paragraphs", () => {
+    const markdown = "Lead **bold** *it*\n\n- a\n  - b\n- c\n\n1. x\n2. y\n\nEnd"
+    expect(textToMarkdown(read(markdown))).toBe(markdown)
+  })
+
+  it("numbers a list from one and starts again after a break", () => {
+    expect(textToMarkdown(read("1. a\n1. b\n\nbreak\n\n7. c"))).toBe("1. a\n2. b\n\nbreak\n\n1. c")
+  })
+
+  it("escapes what would read as a marker", () => {
+    for (const words of ["5 * 3", "[x](y)", "back\\slash", "- not a bullet", "1. not a number", " leading space"]) {
+      const text = { ...read("x"), chars: words, paras: [{}] }
+      expect(textFromMarkdown(textToMarkdown(text), "body").chars).toBe(words)
+    }
+  })
+
+  it("moves the spaces at the edge of a styled run outside its markers", () => {
+    const text = { ...read("a b"), chars: "a b c", spans: [{ end: 1 }, { end: 3, bold: true }, { end: 5 }] }
+    expect(textToMarkdown(text)).toBe("a **b** c")
+  })
+
+  it("leaves out what markdown cannot hold: colours, sizes and fonts", () => {
+    const text = { ...read("ab"), spans: [{ end: 2, color: hex(0xff0000), size: 90 }] }
+    expect(textToMarkdown(text)).toBe("ab")
+  })
+})
+
+const letters = fc.constantFrom(..."ab c-.1*[]()\\é".split(""))
+const word = fc.string({ unit: letters, minLength: 1, maxLength: 6 })
+const edgeless = word.filter((chars) => chars === chars.trim())
+const address = fc.string({ unit: fc.constantFrom(..."ab:/.()\\-".split("")), minLength: 1, maxLength: 8 })
+
+const run = fc.oneof(
+  word.map((text) => ({ text })),
+  fc.record({ text: edgeless, bold: fc.constant(true) }),
+  fc.record({ text: edgeless, italic: fc.constant(true) }),
+  fc.record({ text: edgeless, bold: fc.constant(true), italic: fc.constant(true) }),
+  fc.record({ text: edgeless, link: address }),
+)
+const paragraph = fc.record({
+  runs: fc.array(run, { minLength: 1, maxLength: 4 }),
+  list: fc.constantFrom(undefined, "bullet" as const, "number" as const),
+  level: fc.integer({ min: 0, max: 3 }),
+})
+
+type Format = { bold?: true | undefined; italic?: true | undefined; link?: string | undefined }
+type Paragraph = {
+  runs: readonly ({ text: string } & Format)[]
+  list?: "bullet" | "number" | undefined
+  level: number
+}
+
+const textOfParagraphs = (paragraphs: readonly Paragraph[]) => {
+  const chars = paragraphs.map(({ runs }) => runs.map(({ text }) => text).join("")).join("\n")
+  const formats: Format[] = []
+  paragraphs.forEach(({ runs }, at) => {
+    for (const { text, bold, italic, link } of runs)
+      for (let char = 0; char < text.length; char += 1) formats.push({ bold, italic, link })
+    if (at < paragraphs.length - 1) formats.push({})
+  })
+  const spans: Record<string, unknown>[] = []
+  formats.forEach((format, at) => {
+    const same = (other: Record<string, unknown>) =>
+      other.bold === format.bold && other.italic === format.italic && other.link === format.link
+    const last = spans[spans.length - 1]
+    if (last !== undefined && same(last)) last.end = at + 1
+    else
+      spans.push({
+        end: at + 1,
+        ...(format.bold ? { bold: true } : {}),
+        ...(format.italic ? { italic: true } : {}),
+        ...(format.link === undefined ? {} : { link: format.link }),
+      })
+  })
+  const plain = spans.every((span) => Object.keys(span).length === 1)
+  return {
+    chars,
+    spans: plain ? [] : spans,
+    paras: paragraphs.map(({ list, level }) => (list === undefined ? {} : { list, ...(level === 0 ? {} : { level }) })),
+    style: "body" as const,
+    resize: "height" as const,
+    alignV: "top" as const,
+  }
+}
+
+describe("markdown round trip", () => {
+  it("gives back the same text for any paragraphs of plain, bold, italic and linked words", () => {
+    fc.assert(
+      fc.property(fc.array(paragraph, { minLength: 1, maxLength: 4 }), (paragraphs) => {
+        const text = textOfParagraphs(paragraphs)
+        const markdown = textToMarkdown(text as never)
+        expect(textFromMarkdown(markdown, "body")).toEqual(text)
+        expect(textToMarkdown(textFromMarkdown(markdown, "body"))).toBe(markdown)
+      }),
+    )
+  })
+})

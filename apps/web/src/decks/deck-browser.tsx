@@ -33,7 +33,7 @@ export function DeckBrowser({
   onSignOut?: () => void
   onNavigate?: (path: string) => void
   search?: { value: string; onChange: (value: string) => void }
-  starred?: readonly { readonly deck: string; readonly name: string; readonly scene?: object }[]
+  starred?: readonly { readonly deck: string; readonly name: string; readonly doom?: object }[]
 }) {
   return (
     <div className="screen-frame reflow-frame">

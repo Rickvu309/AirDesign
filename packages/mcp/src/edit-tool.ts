@@ -1,22 +1,22 @@
 import { readDeckEdit, readNamedDeck } from "@airdesign/catalog"
-import { scene } from "@airdesign/document"
+import { doom } from "@airdesign/document"
 
-import { answered, hostRefused, refused, sceneRefused, type ToolResult } from "./answer.js"
+import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
 import type { DeckHost } from "./deck-host.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 
 type Read =
-  | { readonly ok: true; readonly changes: readonly scene.AgentChange[] }
+  | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
   | { readonly ok: false; readonly result: ToolResult }
 
 function readChanges(raw: readonly unknown[]): Read {
-  const changes: scene.AgentChange[] = []
+  const changes: doom.AgentChange[] = []
   for (const [at, each] of raw.entries()) {
-    const read = scene.readAgentChange(each)
+    const read = doom.readAgentChange(each)
     if ("refused" in read) {
       const op = typeof each === "object" && each !== null ? (each as { op?: unknown }).op : undefined
-      return { ok: false, result: sceneRefused({ ...read, change: typeof op === "string" ? op : "change", at }) }
+      return { ok: false, result: doomRefused({ ...read, change: typeof op === "string" ? op : "change", at }) }
     }
     changes.push(read)
   }
@@ -25,7 +25,7 @@ function readChanges(raw: readonly unknown[]): Read {
 
 type Added = { readonly id: string; readonly kind: string; readonly change?: number }
 
-function rootsOfEdit(edit: scene.Edit, added: readonly scene.AddedNode[]): readonly Added[] {
+function rootsOfEdit(edit: doom.Edit, added: readonly doom.AddedNode[]): readonly Added[] {
   const made = new Set<string>(added.filter((each) => each.kind !== "slideRow").map((each) => each.id))
   const parents = new Map<string, string>()
   for (const write of edit.writes)
@@ -33,17 +33,17 @@ function rootsOfEdit(edit: scene.Edit, added: readonly scene.AddedNode[]): reado
   return added.filter((each) => each.kind !== "slideRow" && !made.has(parents.get(each.id) ?? ""))
 }
 
-const makesRoot = (change: scene.AgentChange) =>
+const makesRoot = (change: doom.AgentChange) =>
   change.op === "add" || change.op === "wrap" || (change.op === "slide" && change.add !== undefined)
 
-function rootsInFold(fold: scene.Scene, client: string, changes: readonly scene.AgentChange[]): readonly Added[] {
+function rootsInFold(fold: doom.Doom, client: string, changes: readonly doom.AgentChange[]): readonly Added[] {
   const mine = [...fold.nodes.values()].filter((node) => node.id.startsWith(`${client}:`) && node.type !== "slideRow")
   const made = new Set<string>(mine.map((node) => node.id))
   const roots = mine.filter((node) => !made.has((node as { parent?: { id: string } | null }).parent?.id ?? ""))
   const making = changes.flatMap((change, at) => (makesRoot(change) ? [at] : []))
   return roots.map((node, at) => ({
     id: node.id,
-    kind: scene.agentKind(node),
+    kind: doom.agentKind(node),
     ...(making.length === roots.length ? { change: making[at] as number } : {}),
   }))
 }
@@ -82,15 +82,15 @@ export async function editDeckTool(raw: unknown, agent: string, once: string, ho
   const problem = imageProblem(read.changes, found)
   if (problem !== undefined) return problem
   const changes = found === undefined ? read.changes : withAssets(read.changes, found)
-  const compiled = scene.compileAgentEdit(opened.fold, changes, {
+  const compiled = doom.compileAgentEdit(opened.fold, changes, {
     author: { kind: "agent", id: agent, run },
     once,
     mint: ids.mint,
-    read: scene.readingOf(opened.fold, parsed.base),
+    read: doom.readingOf(opened.fold, parsed.base),
     ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
     ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
   })
-  if ("refused" in compiled) return sceneRefused(compiled, { rev: opened.rev })
+  if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
   const landed = await host.edit(parsed.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)
   return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added))
