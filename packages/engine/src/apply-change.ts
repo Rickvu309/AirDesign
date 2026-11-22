@@ -1,13 +1,5 @@
-import {
-  webImage,
-  type CallRefusal,
-  type WireAdd,
-  type WireRunElement,
-  type WireSet,
-  type WireTemplateStyle,
-} from "@airdesign/catalog"
+import { webImage, type CallRefusal, type WireAdd, type WireRunElement, type WireSet } from "@airdesign/catalog"
 import { applyStack } from "./agent-stack.js"
-import { expandedTemplateChange } from "./apply-template.js"
 import {
   decide,
   openingSlideNumber,
@@ -84,32 +76,9 @@ export function landRow(register: Register, node: ElementId, row: Row, runId: st
   return { ok: true, register: { ...decision.register, bytes: next } }
 }
 
-type TemplatedSet = Omit<SetChange, "templateStyle"> & { readonly templateStyle?: WireTemplateStyle }
-
-function planSet(
-  register: Register,
-  change: TemplatedSet,
-): ReturnType<typeof planChange> | { readonly ok: false; readonly refusal: CallRefusal } {
-  const scope = registerScope(register)
-  if (change.templateStyle?.template === undefined) return planChange(change, scope)
-  const nodes = scope.expand(change.target)
-  if (nodes === "indexing" || nodes.length === 0)
-    return { ok: false, refusal: nodes === "indexing" ? "indexing" : "dead" }
-  const rows: { readonly node: ElementId; readonly row: Row }[] = []
-  for (const node of nodes) {
-    const expanded = expandedTemplateChange(register, node, change)
-    if (expanded === null) return { ok: false, refusal: "field" }
-    const planned = planChange(expanded, scope)
-    if (!planned.ok) return planned
-    rows.push(...planned.rows)
-  }
-  return { ok: true, rows }
-}
-
-export function applySet(register: Register, change: TemplatedSet, runId: string): Applied {
-  const planned = planSet(register, change)
-  if (!planned.ok)
-    return { ok: false, refusal: "refusal" in planned ? planned.refusal : (planned.refusals[0]?.code ?? "dead") }
+export function applySet(register: Register, change: SetChange, runId: string): Applied {
+  const planned = planChange(change, registerScope(register))
+  if (!planned.ok) return { ok: false, refusal: planned.refusals[0]?.code ?? "dead" }
   let current = register
   for (const { node, row } of planned.rows) {
     const landed = landRow(current, node, row, runId)

@@ -96,10 +96,8 @@ function fieldDetail(raw: unknown): string | undefined {
                 : slideOps.some((each) => each === op)
                   ? readSlideChange(change)
                   : undefined
-    if (read !== undefined && !read.ok) {
-      const detail = "detail" in read && read.detail !== undefined ? ` ${read.detail}` : ""
-      return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.${detail}${iconHint(read.field, change)}`
-    }
+    if (read !== undefined && !read.ok)
+      return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.${iconHint(read.field, change)}`
   }
   return undefined
 }

@@ -18,7 +18,6 @@ import {
   type Target,
   type TraitName,
 } from "@airdesign/document"
-import { deckTemplates } from "@airdesign/templates"
 import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
 import { knownIcon } from "./icon-names.js"
 import { imageAddressLength, imageAddressPattern, webImage } from "./image-address.js"
@@ -27,32 +26,12 @@ import { opacityWire } from "./opacity-wire.js"
 import { readStack, stackSchema, type Stack } from "./stack-wire.js"
 import { traitWire } from "./trait-wire.js"
 
-export type WireTemplateStyle = NonNullable<SetChange["templateStyle"]> & { readonly template?: string }
-export type WireSet = Omit<SetChange, "templateStyle"> & {
-  readonly op: "set"
-  readonly stack?: Stack
-  readonly templateStyle?: WireTemplateStyle
-}
+export type WireSet = SetChange & { readonly op: "set"; readonly stack?: Stack }
 export type WireAdd = AddChange & { readonly op: "add" }
 
-type Refused = { readonly ok: false; readonly refusal: "field"; readonly field: string; readonly detail?: string }
+type Refused = { readonly ok: false; readonly refusal: "field"; readonly field: string }
 type Read<Change> = { readonly ok: true; readonly change: Change } | Refused
 type Inputs = Readonly<Record<string, unknown>>
-
-const templateIds = deckTemplates.map((each) => each.id)
-const templateFieldSchema: JsonSchema = {
-  type: "string",
-  description: "Template id: colors and fonts; keeps layouts and type scale.",
-}
-
-function unknownTemplate(value: unknown): Refused {
-  const valid = templateIds.join(", ")
-  const detail =
-    typeof value === "string"
-      ? `No template is named ${JSON.stringify(value)}. Valid templates: ${valid}.`
-      : `Valid templates: ${valid}.`
-  return { ok: false, refusal: "field", field: "templateStyle.template", detail }
-}
 
 const slidePart = "(?:[0-9]{1,10}|n[0-9a-z]{12})"
 const rolePart = `(?:${roles.join("|")})`
@@ -121,11 +100,6 @@ function readTrait(trait: TraitName, raw: unknown): Read<Inputs> {
   if (!named.ok) return refused(named.field)
   const read: Record<string, unknown> = {}
   for (const [field, value] of Object.entries(named.fields)) {
-    if (trait === "templateStyle" && field === "template") {
-      if (typeof value !== "string" || !templateIds.includes(value)) return unknownTemplate(value)
-      read.template = value
-      continue
-    }
     const desc = descOf(trait, field)
     const got = desc === undefined ? null : value === null ? inherited(trait, field) : readAgent(desc, value)
     if (got === null || !got.ok || !presetFits(trait, field, got.value)) return refused(`${trait}.${field}`)
@@ -325,16 +299,12 @@ function traitSchema(trait: TraitName, required: readonly string[] | null): Json
       { ...nullable(trait, field, agentSchema(desc)), ...(description === undefined ? {} : { description }) },
     ] as const
   })
-  const properties = Object.fromEntries([
-    ...fields,
-    ...(trait === "templateStyle" && required === null ? ([["template", templateFieldSchema]] as const) : []),
-  ])
   return {
     type: "object",
     additionalProperties: false,
     ...(required === null ? { minProperties: 1 } : { required: fields.map(([field]) => field) }),
     ...(wire.description === undefined ? {} : { description: wire.description }),
-    properties,
+    properties: Object.fromEntries(fields),
   }
 }
 

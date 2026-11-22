@@ -1,4 +1,3 @@
-import { templateTheme } from "../../packages/templates/src/index.ts"
 import { boxes, layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
@@ -68,7 +67,24 @@ const look = {
 }
 
 export default {
-  ...templateTheme("neutral"),
+  id: "neutral",
+  name: "Neutral",
+  map: "light",
+  colors: {
+    dk1: "16191D",
+    lt1: "FFFFFF",
+    dk2: "1B2A4A",
+    lt2: "F2F4F7",
+    accent1: "2F5BD3",
+    accent2: "0E9384",
+    accent3: "E08A1E",
+    accent4: "7A5AF8",
+    accent5: "D92D20",
+    accent6: "4E8B2F",
+    hlink: "2F5BD3",
+    folHlink: "7A5AF8",
+  },
+  fonts: { major: "Inter SemiBold", minor: "Inter" },
   scale,
   table: { id: "{2D1C7E5A-6B0F-4C3E-9A41-7E5B2C8D1F01}", rule: hairline, headRule: "tx1" },
   master: master(look),
