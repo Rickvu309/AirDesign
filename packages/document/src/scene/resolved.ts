@@ -64,6 +64,8 @@ export type ResolvedGeometry =
       readonly from: Point
       readonly to: Point
       readonly route: "straight" | "elbow" | "curve"
+      readonly leaves: "across" | "down"
+      readonly arrives: "across" | "down"
       readonly arrows: readonly [Arrow, Arrow]
     }
 

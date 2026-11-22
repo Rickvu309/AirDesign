@@ -43,7 +43,11 @@ export function SlidePaint(props: {
   const assetUrl = props.assetUrl ?? noAssets
   const scale = width / size.w
   return (
-    <div data-scene-slide="" style={{ position: "relative", width, height: size.h * scale, overflow: "hidden" }}>
+    <div
+      data-scene-slide=""
+      data-slide-paint=""
+      style={{ position: "relative", width, height: size.h * scale, overflow: "hidden" }}
+    >
       <div
         style={{
           position: "absolute",
@@ -81,7 +85,7 @@ export function SceneSlide(props: {
   const { size } = scene.deckOf(props.scene)
   const background = useMemo(() => scene.slideBackground(props.scene, props.slide), [props.scene, props.slide])
   return (
-    <div data-scene-ready={nodes !== null && iconsReady ? "" : undefined}>
+    <div data-fonts-pending={nodes !== null && iconsReady ? undefined : ""}>
       <SlidePaint
         nodes={nodes ?? []}
         background={background}

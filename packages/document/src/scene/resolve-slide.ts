@@ -31,11 +31,16 @@ function geometryOf(context: Context, node: Node, box: Box): ResolvedGeometry {
   if (geometry.kind === "path") return { kind: "path", d: scalePath(geometry.d, box.w, box.h) }
   const parent = (node as { parent?: { id: NodeId } | null }).parent?.id
   const { from, to } = lineEnds(context.scene, context.boxes, parent, geometry)
+  const nearer = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y) ? "across" : "down"
+  const facing = (end: typeof geometry.start) =>
+    "node" in end ? (end.site === "t" || end.site === "b" ? "down" : "across") : nearer
   return {
     kind: "line",
     from: { x: from.x - box.x, y: from.y - box.y },
     to: { x: to.x - box.x, y: to.y - box.y },
     route: geometry.route,
+    leaves: facing(geometry.start),
+    arrives: facing(geometry.end),
     arrows: geometry.arrows,
   }
 }
