@@ -1,4 +1,4 @@
-import type { DeckId, SlidePictures } from "@airdesign/catalog"
+import { picturesWantedMilliseconds, type DeckId, type SlidePictures } from "@airdesign/catalog"
 
 type SlideId = string
 
@@ -22,14 +22,56 @@ function missingOf(shots: Shots): readonly SlideId[] {
   return [...shots.keys].flatMap(([slide, key]) => (shots.held.get(slide)?.key === key ? [] : [slide]))
 }
 
+type Wanted = { readonly until: number; readonly slides: ReadonlySet<SlideId> }
+
 export class DeckPictures {
   private readonly decks = new Map<DeckId, Shots>()
   private readonly waiting = new Map<DeckId, Set<() => void>>()
+  private readonly wanting = new Map<DeckId, Wanted>()
+  private readonly asking = new Map<DeckId, Set<() => void>>()
   private bytes = 0
   private readonly cap: number
+  private readonly now: () => number
 
-  constructor(cap = picturesCap) {
+  constructor(cap = picturesCap, now: () => number = Date.now) {
     this.cap = cap
+    this.now = now
+  }
+
+  want(deck: DeckId, slides: readonly SlideId[]): void {
+    const held = this.wanting.get(deck)
+    const kept = held !== undefined && held.until > this.now() ? held.slides : []
+    this.wanting.set(deck, { until: this.now() + picturesWantedMilliseconds, slides: new Set([...kept, ...slides]) })
+    const woken = this.asking.get(deck) ?? new Set()
+    this.asking.delete(deck)
+    for (const each of woken) each()
+  }
+
+  wantedAmong(deck: DeckId, slides: readonly SlideId[]): readonly SlideId[] {
+    const held = this.wanting.get(deck)
+    if (held === undefined || held.until <= this.now()) return []
+    return slides.filter((slide) => held.slides.has(slide))
+  }
+
+  asked(deck: DeckId, signal: AbortSignal): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (signal.aborted) {
+        resolve(false)
+        return
+      }
+      const held = this.asking.get(deck) ?? new Set()
+      const wake = () => {
+        signal.removeEventListener("abort", stop)
+        resolve(true)
+      }
+      const stop = () => {
+        this.asking.get(deck)?.delete(wake)
+        resolve(false)
+      }
+      held.add(wake)
+      this.asking.set(deck, held)
+      signal.addEventListener("abort", stop, { once: true })
+    })
   }
 
   keep(deck: DeckId, revision: number, pictures: SlidePictures<SlideId>): readonly SlideId[] {

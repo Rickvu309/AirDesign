@@ -73,27 +73,45 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
   const read = (client: Client, deck: string, more: Record<string, unknown> = {}) =>
     client.callTool({ name: "airdesign_read_deck", arguments: { deck, picture: true, ...more } })
 
-  it("names the slides it still needs, takes each picture, and gives a current one to the agent", async () => {
+  it("asks the tab for no picture until an agent reads, then names the slides the agent asked for and gives it the current one", async () => {
     const { cookie, client, made } = await opened()
     try {
       const { rev, keyOf, slides } = await keysOf(made.deck, cookie)
       const keys = slides.map((slide) => ({ slide, key: keyOf(slide) }))
       const first = await send(made.deck, rev, { keys, images: [] }, cookie)
-      expect(first.json).toEqual({ ok: true, deck: made.deck, missing: slides })
+      expect(first.json).toEqual({ ok: true, deck: made.deck, missing: [] })
       const [slide] = slides
+      const pending = read(client, made.deck, { slide })
+      await new Promise((resolve) => setTimeout(resolve, 40))
+      const asked = await send(made.deck, rev, { keys, images: [] }, cookie)
+      expect(asked.json).toEqual({ ok: true, deck: made.deck, missing: [slide] })
       const next = await send(
         made.deck,
         rev,
         { keys, images: [{ slide, key: keyOf(slide!), type: "image/jpeg", data: shot }] },
         cookie,
       )
-      expect(next.json).toEqual({ ok: true, deck: made.deck, missing: slides.slice(1) })
-      const answer = await read(client, made.deck, { slide })
+      expect(next.json).toEqual({ ok: true, deck: made.deck, missing: [] })
+      const answer = await pending
       expect(answer.isError).not.toBe(true)
       const blocks = answer.content as readonly Block[]
       expect(blocks.filter((block) => block.type === "image")).toEqual([
         { type: "image", data: shot, mimeType: "image/jpeg" },
       ])
+    } finally {
+      await client.close()
+    }
+  })
+
+  it("tells a tab that is following the deck, in its held catch-up, that an agent asked for pictures", async () => {
+    const { cookie, client, made } = await opened()
+    try {
+      const { rev, slides } = await keysOf(made.deck, cookie)
+      const following = ask(base, "POST", "/scenes/since", { deck: made.deck, rev, wait: true }, cookie)
+      await new Promise((resolve) => setTimeout(resolve, 60))
+      const reading = read(client, made.deck, { slide: slides[0] })
+      expect((await following).json).toEqual({ ok: true, deck: made.deck, rev, edits: [], pictures: true })
+      await reading
     } finally {
       await client.close()
     }

@@ -110,6 +110,7 @@ async function slidePictures(
   slides: readonly scene.NodeId[],
 ): Promise<ReadonlyMap<scene.NodeId, string>> {
   const keys = slides.map((slide) => [slide, slideKey(fold, slide)] as const)
+  pictures.want(deck, slides)
   const current = () =>
     new Map(
       keys.flatMap(([slide, key]) => {

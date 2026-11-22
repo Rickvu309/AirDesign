@@ -1,5 +1,6 @@
 import { scene } from "@airdesign/document"
-import { describe, expect, it } from "vitest"
+import { picturesWantedMilliseconds } from "@airdesign/catalog"
+import { describe, expect, it, vi } from "vitest"
 import { createSceneDeck } from "./scene-deck.js"
 import { memorySceneRemote, type SceneRemote } from "./scene-remote.js"
 import { memoryStorage } from "./scene-storage.js"
@@ -32,5 +33,42 @@ describe("a deck reports the slide pictures its open tab painted", () => {
     const opened = await createSceneDeck(memorySceneRemote(start), "deck1", { storage: memoryStorage() })
     if (!opened.ok) throw new Error("open")
     expect(await opened.deck.reportPictures(1, { keys: [], images: [] })).toEqual({ ok: false, refusal: "server" })
+  })
+})
+
+describe("a deck learns that an agent wants pictures from its held catch-up", () => {
+  it("wants none until the server says an agent asked, tells its listeners, and stops wanting after the window", async () => {
+    let answers = 0
+    const base = memorySceneRemote(start)
+    const remote: SceneRemote = {
+      ...base,
+      since: async (body, signal) => {
+        const caught = await base.since({ ...body, wait: false }, signal)
+        answers += 1
+        if (answers === 1) return caught
+        if (answers === 2 && caught.ok) return { ...caught, pictures: true }
+        await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }))
+        return caught
+      },
+    }
+    let now = 10_000
+    const spy = vi.spyOn(Date, "now").mockImplementation(() => now)
+    try {
+      const opened = await createSceneDeck(remote, "deck1", { storage: memoryStorage() })
+      if (!opened.ok) throw new Error("open")
+      expect(opened.deck.picturesWanted()).toBe(false)
+      let told = 0
+      opened.deck.subscribe(() => (told += 1))
+      const stop = new AbortController()
+      const following = opened.deck.follow(stop.signal)
+      await vi.waitFor(() => expect(opened.deck.picturesWanted()).toBe(true))
+      expect(told).toBeGreaterThan(0)
+      now += picturesWantedMilliseconds + 1
+      expect(opened.deck.picturesWanted()).toBe(false)
+      stop.abort()
+      await following
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

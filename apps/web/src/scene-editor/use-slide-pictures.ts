@@ -15,7 +15,7 @@ function idle(): Promise<void> {
 }
 
 export function useSlidePictures(
-  client: Pick<EditorClient, "server" | "pending" | "reportPictures" | "subscribe">,
+  client: Pick<EditorClient, "server" | "pending" | "reportPictures" | "subscribe" | "picturesWanted">,
   assetUrl: (asset: string) => string | undefined,
 ): void {
   const urls = useRef(assetUrl)
@@ -30,7 +30,7 @@ export function useSlidePictures(
     let running = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const run = async () => {
-      if (running || client.pending().length > 0) return
+      if (running || client.pending().length > 0 || !client.picturesWanted()) return
       running = true
       const fold = client.server()
       let reached = false
@@ -55,12 +55,20 @@ export function useSlidePictures(
       }
       if (!live) return
       clearTimeout(timer)
+      if (!client.picturesWanted()) return
       if (client.server() !== fold) timer = setTimeout(() => void run(), quietFor)
       else if (!reached) timer = setTimeout(() => void run(), retryAfter)
     }
+    let asked = false
     const later = () => {
+      if (!client.picturesWanted()) {
+        asked = false
+        clearTimeout(timer)
+        return
+      }
       clearTimeout(timer)
-      timer = setTimeout(() => void run(), quietFor)
+      timer = setTimeout(() => void run(), asked ? quietFor : 0)
+      asked = true
     }
     wake.current = later
     later()

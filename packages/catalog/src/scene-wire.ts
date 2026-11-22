@@ -34,7 +34,10 @@ export type SceneCaught = SceneResult<{
   readonly deck: DeckId
   readonly rev: number
   readonly edits: readonly unknown[]
+  readonly pictures?: true
 }>
+
+export const picturesWantedMilliseconds = 120_000
 
 export const nodeIdPattern = new RegExp(scene.agentChangesSchema.$defs.id.pattern)
 
@@ -109,7 +112,14 @@ const opened = decode((body, deck) => {
 const landed = decode((body, deck) => (whole(body.rev) ? { deck, rev: body.rev } : undefined))
 
 const caught = decode((body, deck) =>
-  whole(body.rev) && Array.isArray(body.edits) ? { deck, rev: body.rev, edits: body.edits as unknown[] } : undefined,
+  whole(body.rev) && Array.isArray(body.edits)
+    ? {
+        deck,
+        rev: body.rev,
+        edits: body.edits as unknown[],
+        ...(body.pictures === true ? { pictures: true as const } : {}),
+      }
+    : undefined,
 )
 
 const pictured = decode((body, deck) =>

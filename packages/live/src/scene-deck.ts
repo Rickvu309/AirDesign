@@ -1,4 +1,11 @@
-import { readDeckId, type DeckId, type ScenePictured, type SceneRefusal, type SlidePictures } from "@airdesign/catalog"
+import {
+  picturesWantedMilliseconds,
+  readDeckId,
+  type DeckId,
+  type ScenePictured,
+  type SceneRefusal,
+  type SlidePictures,
+} from "@airdesign/catalog"
 import { scene } from "@airdesign/document"
 import { appliedOn, dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./scene-queue.js"
 import type { SceneRemote } from "./scene-remote.js"
@@ -44,6 +51,7 @@ export type SceneDeck = {
   catchUp(): Promise<{ readonly ok: boolean }>
   follow(signal: AbortSignal): Promise<void>
   reportPictures(rev: number, pictures: SlidePictures<scene.NodeId>): Promise<ScenePictured>
+  picturesWanted(): boolean
   subscribe(listener: () => void): () => void
 }
 
@@ -107,6 +115,7 @@ function connected(
   let saving: Promise<void> = Promise.resolve()
   let running: Promise<Synced> | undefined
   let wanted = false
+  let picturesUntil = 0
   const listeners = new Set<() => void>()
 
   const view = (): scene.Scene => {
@@ -378,6 +387,10 @@ function connected(
           continue
         }
         wait = true
+        if (answer.pictures === true) {
+          picturesUntil = Date.now() + picturesWantedMilliseconds
+          tell()
+        }
         if (queue.length > 0) await sync()
       } catch {
         if (signal.aborted) return
@@ -413,6 +426,7 @@ function connected(
     follow,
     reportPictures: async (rev, pictures) =>
       remote.pictures === undefined ? { ok: false, refusal: "server" } : remote.pictures({ deck, rev, pictures }),
+    picturesWanted: () => Date.now() < picturesUntil,
     subscribe(listener) {
       listeners.add(listener)
       return () => {
