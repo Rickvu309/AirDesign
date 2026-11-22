@@ -11,3 +11,9 @@ public:
   - doom-start.ts
   - media.ts
   - original.ts
+owns_tables:
+  - deck.doom
+  - deck.doom_edit
+  - deck.doom_node
+  - deck.media
+  - deck.original_delete

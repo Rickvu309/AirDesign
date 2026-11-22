@@ -176,3 +176,22 @@ export async function advance(
   }
   return last === undefined ? undefined : { ...last, lost: true }
 }
+
+type ConnectedGrant = {
+  readonly id: string
+  readonly name: string | null
+  readonly redirect_uri: string
+  readonly connected: Date
+}
+
+const connectedGrantsSql = `
+select g.id, c.name, g.redirect_uri, g.connected
+from session.oauth_grant g
+join session.oauth_client c on c.id = g.client_id
+where g.principal = $1 and g.code = 'used' and not g.revoked
+order by g.connected desc, g.id desc
+`
+
+export async function connectedGrants(db: Sql, principal: string): Promise<readonly ConnectedGrant[]> {
+  return (await db.query<ConnectedGrant>(connectedGrantsSql, [principal])).rows
+}

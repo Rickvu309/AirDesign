@@ -18,6 +18,7 @@ node tooling/ts-packwerk/src/cli.ts explain <pack> # what a pack enforces, uses 
 include: ["apps/*/src/**/*.{ts,tsx}"]
 exclude: ["**/*.test.ts"]
 layers: [app, legacy, feature, platform] # top to bottom; a pack may use its own layer or lower
+table_exempt: ["src/migrations.ts"] # files that may name any table, such as migrations
 ```
 
 ## pack.yml
@@ -29,6 +30,7 @@ public: [index.ts] # files other packs may import; default index.ts or src/index
 enforce_dependencies: true # each rule defaults to true
 enforce_privacy: true
 enforce_layers: true
+owns_tables: [deck.doom] # SQL tables only this pack's files may name
 ```
 
 ## Rules
@@ -38,6 +40,7 @@ enforce_layers: true
 | `dependency` | a file uses a pack in the same package that its pack does not list                                                                                         |
 | `privacy`    | a file imports another pack's file that is not public                                                                                                      |
 | `layer`      | a pack uses a pack in a higher layer                                                                                                                       |
+| `table`      | a string or template literal names a table that another pack owns                                                                                          |
 | `cycle`      | pack dependencies form a cycle                                                                                                                             |
 | `package`    | an import names a package missing from the nearest `package.json`, a runtime import names a devDependency, or a relative path reaches into another package |
 

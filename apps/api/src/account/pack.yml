@@ -8,3 +8,9 @@ public:
   - account.ts
   - caller-log.ts
   - session-cookie.ts
+owns_tables:
+  - session.account
+  - session.access
+  - session.code
+  - session.sent
+  - session.caller_log

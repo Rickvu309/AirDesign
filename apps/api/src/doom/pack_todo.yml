@@ -1,0 +1,13 @@
+apps/api/src/legacy-decks:
+  deck.once:
+    violations:
+      - table
+    files:
+      - apps/api/src/doom/deck-list.ts
+  deck.saved:
+    violations:
+      - table
+    files:
+      - apps/api/src/doom/deck-list.ts
+      - apps/api/src/doom/media.ts
+      - apps/api/src/doom/original.ts

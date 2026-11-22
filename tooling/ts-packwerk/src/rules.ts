@@ -1,6 +1,6 @@
 import { isPublic, manifestFile, packageRootOf, packOf, type Pack, type Workspace } from "./workspace.ts"
 
-export type RuleName = "dependency" | "privacy" | "layer" | "package" | "cycle"
+export type RuleName = "dependency" | "privacy" | "layer" | "table" | "package" | "cycle"
 
 export type Finding = {
   readonly rule: RuleName
@@ -13,7 +13,7 @@ export type Finding = {
   readonly message: string
 }
 
-export const todoRules: ReadonlySet<RuleName> = new Set(["dependency", "privacy", "layer"])
+export const todoRules: ReadonlySet<RuleName> = new Set(["dependency", "privacy", "layer", "table"])
 
 const crossPack = (workspace: Workspace) =>
   workspace.references.flatMap((reference) => {
@@ -110,6 +110,27 @@ const packageFindings = (workspace: Workspace): Finding[] =>
     ]
   })
 
+const tableFindings = (workspace: Workspace): Finding[] => {
+  const owners = new Map(workspace.packs.flatMap((pack) => pack.ownsTables.map((table) => [table, pack.name] as const)))
+  return workspace.tableUses.flatMap((use) => {
+    const owner = owners.get(use.table)
+    const from = packOf(workspace.packs, use.file)?.name ?? "."
+    if (owner === undefined || owner === from) return []
+    return [
+      {
+        rule: "table",
+        file: use.file,
+        line: use.line,
+        column: use.column,
+        fromPack: from,
+        toPack: owner,
+        target: use.table,
+        message: `${use.table} belongs to ${owner}; read and write it through ${owner}'s public functions`,
+      },
+    ]
+  })
+}
+
 export const dependencyCycles = (packs: readonly Pack[]): string[][] => {
   const byName = new Map(packs.map((pack) => [pack.name, pack]))
   const index = new Map<string, number>()
@@ -174,6 +195,7 @@ export const findings = (workspace: Workspace): Finding[] =>
   [
     ...cycleFindings(workspace),
     ...packFindings(workspace),
+    ...tableFindings(workspace),
     ...pathFindings(workspace),
     ...packageFindings(workspace),
   ].sort(order)

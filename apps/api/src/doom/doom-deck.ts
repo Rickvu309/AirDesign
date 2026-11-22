@@ -292,3 +292,36 @@ export async function doomRev(db: Sql, deck: DeckId, email: string) {
   if (stored.owner !== email) return refusal("owner")
   return { ok: true, rev: stored.rev } as const
 }
+
+const listSql = `
+select id, name, rev from deck.doom
+where owner = $1
+  and ($2::text is null or (edited, id) < (select edited, id from deck.doom where id = $2 and owner = $1))
+order by edited desc, id desc
+limit $3`
+
+export async function listDoom(
+  db: Sql,
+  email: string,
+  after: string | undefined,
+  limit: number,
+): Promise<readonly { readonly id: string; readonly name: string; readonly rev: number }[]> {
+  return (await db.query<{ id: string; name: string; rev: number }>(listSql, [email, after ?? null, limit])).rows
+}
+
+const onceRunSql = `
+select edit -> 'author' ->> 'run' as run from deck.doom_edit
+join deck.doom on deck.doom.id = deck.doom_edit.deck
+where deck.doom.owner = $1 and deck.doom_edit.deck = $2 and deck.doom_edit.once = $3`
+
+export async function doomOnceRun(
+  db: Sql,
+  email: string,
+  deck: string,
+  once: string,
+): Promise<{ readonly landed: false } | { readonly landed: true; readonly run?: string }> {
+  const found = await db.query<{ run: string | null }>(onceRunSql, [email, deck, once])
+  if (found.rows.length === 0) return { landed: false }
+  const run = found.rows[0]?.run
+  return run === null || run === undefined ? { landed: true } : { landed: true, run }
+}
