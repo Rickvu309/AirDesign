@@ -57,6 +57,7 @@ export type SceneOptions = {
 type Step = { readonly once: string; readonly before: scene.Scene; readonly writes: readonly scene.Write[] }
 
 const retryMilliseconds = 2_000
+const watchedRuns = 20
 
 export type Opened =
   | { readonly ok: true; readonly deck: SceneDeck }
@@ -103,6 +104,7 @@ function connected(
   let redoSteps: Step[] = []
   const turned: string[] = []
   let notices: readonly Notice[] = []
+  const watched = new Map<string, { readonly before: scene.Scene; readonly edits: scene.Landed[] }>()
   let memo: { readonly server: scene.Scene; readonly queue: readonly Queued[]; readonly view: scene.Scene } | undefined
   let saving: Promise<void> = Promise.resolve()
   let running: Promise<Synced> | undefined
@@ -149,6 +151,17 @@ function connected(
     }
   }
 
+  function watch(run: string | undefined, read: scene.Landed, before: scene.Scene) {
+    if (run === undefined) return
+    if (read.phase === "start") {
+      watched.delete(run)
+      watched.set(run, { before, edits: [] })
+      const oldest = watched.keys().next().value
+      if (watched.size > watchedRuns && oldest !== undefined) watched.delete(oldest)
+    }
+    watched.get(run)?.edits.push(read)
+  }
+
   function adopt(next: scene.Scene) {
     server = next
     settle()
@@ -159,6 +172,7 @@ function connected(
   async function resync(): Promise<boolean> {
     const answer = await remote.open({ deck })
     if (!answer.ok) return false
+    watched.clear()
     adopt(answer.fold)
     return true
   }
@@ -172,6 +186,7 @@ function connected(
       if (read.rev !== next.rev + 1) return false
       const result = scene.applyEdit(next, read)
       if (scene.isRefusal(result)) return false
+      watch(read.author.run, read, next)
       next = result
     }
     if (next !== server) adopt(next)
@@ -336,7 +351,8 @@ function connected(
     let found
     try {
       if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
-      found = await runInLog(run)
+      const seen = watched.get(run)
+      found = seen === undefined ? await runInLog(run) : { before: seen.before, edits: [...seen.edits] }
     } catch {
       return { ok: false, reason: "offline" }
     }
