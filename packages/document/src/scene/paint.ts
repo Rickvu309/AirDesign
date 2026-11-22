@@ -62,6 +62,7 @@ export type Effect =
   | {
       readonly kind: "dropShadow" | "innerShadow"
       readonly color: Color
+      readonly opacity?: number
       readonly x: Px
       readonly y: Px
       readonly blur: Px
@@ -110,7 +111,7 @@ export const readStrokeStyle: Reader<StrokeStyle> = object(
   { sides: object({}, { t: size, r: size, b: size, l: size }) },
 )
 
-const shadow = object({ color: readColor, x: px(), y: px(), blur: size, spread: px() })
+const shadow = object({ color: readColor, x: px(), y: px(), blur: size, spread: px() }, { opacity: fraction })
 const blur = object({ radius: size })
 
 export const readEffect: Reader<Effect> = variant("kind", {

@@ -27,7 +27,7 @@ export type TextLayout = {
 export type Unjudged = "vertical" | "style" | "face" | "glyph" | "tab" | "script"
 
 type Sized = { readonly size: number; readonly face: FontFace | undefined; readonly line: number }
-type Glyph = { readonly char: string; readonly width: number; readonly run: number }
+export type Glyph = { readonly char: string; readonly width: number; readonly run: number }
 type Span = { readonly start: number; readonly end: number; readonly forced: boolean }
 type Band = { readonly top: number; readonly bottom: number }
 
@@ -144,7 +144,7 @@ function glyphsOf(paragraph: ResolvedParagraph, text: ResolvedText, widths: Font
   return { sized, glyphs, empties }
 }
 
-function spansOf(glyphs: readonly Glyph[], first: number, rest: number): readonly Span[] {
+export function spansOf(glyphs: readonly Glyph[], first: number, rest: number): readonly Span[] {
   const chars = glyphs.map((glyph) => glyph.char)
   const spans: Span[] = []
   let start = 0

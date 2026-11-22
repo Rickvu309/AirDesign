@@ -44,3 +44,21 @@ export {
 export type { Para, Span, Text, TextStyleName } from "./text.js"
 export type { TextStyle, Theme, ThemeKey } from "./theme.js"
 export { viewOf } from "./view-of.js"
+export { resolveColor, tinted } from "./color.js"
+export { type Measure, type Measured, measureWith } from "./measure.js"
+export { solveLayout } from "./solve-layout.js"
+export { deriveChart } from "./derive-chart.js"
+export type {
+  Box,
+  Point,
+  Resolved,
+  ResolvedEffect,
+  ResolvedGeometry,
+  ResolvedLine,
+  ResolvedPaint,
+  ResolvedRun,
+} from "./resolved.js"
+export { resolveSlide, slideBackground } from "./resolve-slide.js"
+export { defaultTheme } from "./default-theme.js"
+export { type Grown, type Tree, type TreeNode, type TreeSlide, sceneFromTree } from "./scene-tree.js"
+export { deckOf } from "./deck-of.js"
