@@ -98,31 +98,42 @@ export async function fillAccount(served: Served, sql: Sql, email: string): Prom
   const turn = await ask(served.base, "POST", airaRoutes.turn.path, asked, cookie, { [countryHeader]: "VN" })
   if (turn.status !== 200) throw new Error(turn.text)
   await ask(served.base, "POST", signInRoutes.email.path, { email })
+  await sql.query("insert into session.credits (email, cents) values ($1, 500)", [email])
+  await sql.query("insert into session.credit_history (email, once, at, cents) values ($1, 'reset', now(), -500)", [
+    email,
+  ])
   const grants = await sql.query<{ id: string }>("select id from session.oauth_grant where principal = $1", [email])
   return { email, cookie, decks, grants: grants.rows.map((row) => row.id), ...oauth }
 }
 
+export const accountTables = [
+  ["session.account", "email = $1", "email"],
+  ["session.code", "email = $1", "email"],
+  ["session.access", "email = $1", "email"],
+  ["session.sent", "email = $1", "email"],
+  ["session.oauth_grant", "principal = $1", "email"],
+  ["session.oauth_token", "grant_id = any($1::text[])", "grants"],
+  ["session.aira_ledger", "email = $1", "email"],
+  ["session.aira_turn", "email = $1", "email"],
+  ["session.aira_ask", "email = $1", "email"],
+  ["session.caller_log", "email = $1", "email"],
+  ["session.agent_turn", "email = $1", "email"],
+  ["session.credits", "email = $1", "email"],
+  ["session.credit_history", "email = $1", "email"],
+  ["deck.saved", "owner = $1", "email"],
+  ["deck.doom", "owner = $1", "email"],
+  ["deck.doom_edit", "deck in (select id from deck.doom where owner = $1)", "email"],
+  ["deck.doom_node", "deck in (select id from deck.doom where owner = $1)", "email"],
+  ["deck.media", "deck = any($1::text[])", "decks"],
+  ["deck.once", "deck = any($1::text[])", "decks"],
+  ["deck.original_delete", "owner = $1", "email"],
+] as const
+
 export async function personalRows(sql: Sql, filled: Filled): Promise<Record<string, number>> {
   const counts: Record<string, number> = {}
-  for (const [table, where, value] of [
-    ["session.account", "email = $1", filled.email],
-    ["session.code", "email = $1", filled.email],
-    ["session.access", "email = $1", filled.email],
-    ["session.sent", "email = $1", filled.email],
-    ["session.oauth_grant", "principal = $1", filled.email],
-    ["session.oauth_token", "grant_id = any($1::text[])", filled.grants],
-    ["session.aira_ledger", "email = $1", filled.email],
-    ["session.aira_turn", "email = $1", filled.email],
-    ["session.aira_ask", "email = $1", filled.email],
-    ["session.caller_log", "email = $1", filled.email],
-    ["deck.saved", "owner = $1", filled.email],
-    ["deck.doom", "owner = $1", filled.email],
-    ["deck.doom_edit", "deck in (select id from deck.doom where owner = $1)", filled.email],
-    ["deck.once", "deck = any($1::text[])", filled.decks],
-    ["deck.original_delete", "owner = $1", filled.email],
-  ] as const) {
+  for (const [table, where, key] of accountTables) {
     const found = await sql.query<{ rows: number }>(`select count(*)::int as rows from ${table} where ${where}`, [
-      value,
+      filled[key],
     ])
     counts[table] = found.rows[0]?.rows ?? 0
   }
