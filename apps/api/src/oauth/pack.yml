@@ -8,3 +8,7 @@ public:
   - discovery.ts
   - grants.ts
   - tokens.ts
+owns_tables:
+  - session.oauth_client
+  - session.oauth_grant
+  - session.oauth_token

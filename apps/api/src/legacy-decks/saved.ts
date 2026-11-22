@@ -4,6 +4,7 @@ import { answeredRegister, readRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
+import { doomOnceRun } from "../doom/doom-deck.js"
 import { indexSaved } from "./index-saved.js"
 
 const readSql =
@@ -287,20 +288,14 @@ function landedRun(answer: unknown): string | undefined {
   return typeof landed.runId === "string" ? landed.runId : undefined
 }
 
-const doomOnceSql = `
-select edit -> 'author' ->> 'run' as run from deck.doom_edit
-join deck.doom on deck.doom.id = deck.doom_edit.deck
-where deck.doom.owner = $1 and deck.doom_edit.deck = $2 and deck.doom_edit.once = $3`
-
 export async function spendOnce(
   db: Sql,
   email: string,
   deck: string,
   once: string,
 ): Promise<{ readonly ok: false } | { readonly ok: true; readonly runId?: string }> {
-  const landedInDoom = await db.query<{ run: string | null }>(doomOnceSql, [email, deck, once])
-  const run = landedInDoom.rows[0]?.run
-  if (landedInDoom.rows.length > 0) return run === null || run === undefined ? { ok: true } : { ok: true, runId: run }
+  const inDoom = await doomOnceRun(db, email, deck, once)
+  if (inDoom.landed) return inDoom.run === undefined ? { ok: true } : { ok: true, runId: inDoom.run }
   const spent = await db.query(spendSql, [email, deck, once])
   if (spent.rows.length > 0) return { ok: true }
   const prior = await readStoredOnce(db, email, deck, once)

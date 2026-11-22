@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { app, makeRepo, type Repo } from "./fixture.ts"
-import { loadWorkspace, packOf } from "./workspace.ts"
+import { loadWorkspace, packOf, tableUsesIn } from "./workspace.ts"
 
 let repo: Repo
 afterEach(() => repo.remove())
@@ -86,5 +86,41 @@ describe("loadWorkspace", () => {
       "apps/web/src/kit/pack.yml public path apps/web/src/kit/missing.ts does not exist",
       "apps/web/src/kit/pack.yml depends on apps/web/src/ghost, which is not a pack",
     ])
+  })
+})
+
+describe("tableUsesIn", () => {
+  it("finds a table only inside string and template literals, never in member access", () => {
+    const source = [
+      "const deck = { doom: 1, id: 2 }",
+      "const doom = deck.doom + deck.id",
+      'const read = "select * from deck.doom where id = $1"',
+      "const write = `insert into deck.doom_edit (deck) values (${doom})`",
+      'const near = "deck.doomed is another name"',
+    ].join("\n")
+    expect(tableUsesIn("a.ts", source, ["deck.doom", "deck.doom_edit", "deck.id"])).toEqual([
+      { file: "a.ts", line: 3, column: 29, table: "deck.doom" },
+      { file: "a.ts", line: 4, column: 28, table: "deck.doom_edit" },
+    ])
+  })
+})
+
+describe("owns_tables", () => {
+  it("collects each pack's tables and their uses in other packs", async () => {
+    const workspace = await open({
+      "apps/web/src/kit/pack.yml": "layer: platform\npublic: [index.ts, theme.ts]\nowns_tables: [app.theme]\n",
+      "apps/web/src/editor/lazy.ts": 'export const lazy = "select ink from app.theme"\n',
+    })
+    expect(workspace.tableUses).toEqual([
+      { file: "apps/web/src/editor/lazy.ts", line: 1, column: 38, table: "app.theme" },
+    ])
+  })
+
+  it("refuses a table owned by two packs", async () => {
+    const workspace = await open({
+      "apps/web/src/kit/pack.yml": "layer: platform\npublic: [index.ts, theme.ts]\nowns_tables: [app.theme]\n",
+      "apps/web/src/editor/pack.yml": "layer: feature\ndependencies: [apps/web/src/kit]\nowns_tables: [app.theme]\n",
+    })
+    expect(workspace.problems).toEqual(["app.theme is owned by both apps/web/src/editor and apps/web/src/kit"])
   })
 })

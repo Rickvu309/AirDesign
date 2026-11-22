@@ -9,3 +9,6 @@ public:
   - aira-usage-route.ts
   - aira.ts
   - anthropic-transport.ts
+owns_tables:
+  - session.aira_turn
+  - session.aira_ask

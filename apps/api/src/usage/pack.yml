@@ -6,3 +6,7 @@ public:
   - aira-ledger.ts
   - credits-route.ts
   - credits.ts
+owns_tables:
+  - session.aira_ledger
+  - session.credits
+  - session.credit_history

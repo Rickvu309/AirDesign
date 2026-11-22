@@ -10,6 +10,7 @@ const pack = (name: string, extra: Partial<Pack> = {}): Pack => ({
   enforceLayers: true,
   dependencies: [],
   publicPaths: [`${name}/index.ts`],
+  ownsTables: [],
   metadata: {},
   ...extra,
 })
@@ -25,11 +26,12 @@ const uses = (file: string, target: string, specifier = "./x.js"): Reference => 
 
 const workspace = (packs: Pack[], references: Reference[], packageRoots = ["app"]): Workspace => ({
   root: "/repo",
-  config: { include: [], exclude: [], layers: ["app", "legacy", "feature", "platform"] },
+  config: { include: [], exclude: [], layers: ["app", "legacy", "feature", "platform"], tableExempt: [] },
   packs,
   files: [],
   references,
   packageRoots,
+  tableUses: [],
   problems: [],
 })
 
@@ -105,6 +107,23 @@ describe("findings", () => {
       ],
     )
     expect(rules(space)).toEqual(["package app/a.ts -> vitest", "package app/a.ts -> left-pad"])
+  })
+})
+
+describe("tables", () => {
+  it("flags SQL naming another pack's table, and not the owner's own", () => {
+    const space = {
+      ...workspace([pack("app/doom", { ownsTables: ["deck.doom"] }), pack("app/mcp")], []),
+      tableUses: [
+        { file: "app/doom/store.ts", line: 3, column: 9, table: "deck.doom" },
+        { file: "app/mcp/mcp.ts", line: 7, column: 22, table: "deck.doom" },
+      ],
+    }
+    expect(
+      findings(space).map(
+        (item) => `${item.rule} ${item.file}:${String(item.line)} -> ${item.target} (${item.toPack})`,
+      ),
+    ).toEqual(["table app/mcp/mcp.ts:7 -> deck.doom (app/doom)"])
   })
 })
 

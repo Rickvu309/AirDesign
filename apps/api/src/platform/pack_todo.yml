@@ -1,0 +1,6 @@
+apps/api/src/legacy-decks:
+  deck.saved:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/listen.ts

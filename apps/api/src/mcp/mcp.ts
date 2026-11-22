@@ -13,7 +13,7 @@ import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
-import { createDoom, editDoom, openDoom } from "../doom/doom-deck.js"
+import { createDoom, editDoom, listDoom, openDoom } from "../doom/doom-deck.js"
 import { startIds } from "../doom/doom-start.js"
 
 export type McpHost = {
@@ -33,13 +33,6 @@ export type McpHost = {
 }
 
 const listPage = 50
-
-const listSql = `
-select id, name, rev from deck.doom
-where owner = $1
-  and ($2::text is null or (edited, id) < (select edited, id from deck.doom where id = $2 and owner = $1))
-order by edited desc, id desc
-limit ${String(listPage + 1)}`
 
 const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => ({ ok: false, refusal: kind })
 
@@ -140,8 +133,8 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): D
     }
   return {
     list: guarded(async (cursor) => {
-      const found = await db.query<{ id: string; name: string; rev: number }>(listSql, [email, cursor ?? null])
-      const decks = found.rows.slice(0, listPage).flatMap((row) => {
+      const found = await listDoom(db, email, cursor, listPage + 1)
+      const decks = found.slice(0, listPage).flatMap((row) => {
         const id = readDeckId(row.id)
         return id.ok ? [{ deck: id.deck, name: row.name, rev: row.rev }] : []
       })
@@ -149,7 +142,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): D
       return {
         ok: true,
         decks,
-        ...(found.rows.length > listPage && last !== undefined ? { next: last.deck } : {}),
+        ...(found.length > listPage && last !== undefined ? { next: last.deck } : {}),
       } as const
     }),
     create: guarded(async (name, once) => {

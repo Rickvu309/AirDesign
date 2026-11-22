@@ -7,3 +7,6 @@ public:
   - findings-route.ts
   - saved.ts
   - undo.ts
+owns_tables:
+  - deck.saved
+  - deck.once

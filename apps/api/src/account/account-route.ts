@@ -12,7 +12,7 @@ import {
 
 import { deleteAccess } from "./account.js"
 import { screenFor } from "../oauth/clients.js"
-import { advance, readApproval } from "../oauth/grants.js"
+import { advance, connectedGrants, readApproval } from "../oauth/grants.js"
 import { drainOriginals } from "../doom/original.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
@@ -67,21 +67,6 @@ async function deleteAccount<Visit extends AccountVisit>(http: AccountHttp<Visit
   await drainOriginals(options.deck, options.originals, { owner: email })
   http.sendJson(res, 200, { ok: true }, http.clearSessionCookie(options.cookieDomain))
 }
-
-type ConnectedGrantRow = {
-  id: string
-  name: string | null
-  redirect_uri: string
-  connected: Date
-}
-
-const connectedGrantsSql = `
-select g.id, c.name, g.redirect_uri, g.connected
-from session.oauth_grant g
-join session.oauth_client c on c.id = g.client_id
-where g.principal = $1 and g.code = 'used' and not g.revoked
-order by g.connected desc, g.id desc
-`
 
 export async function sessionBody<Visit extends AccountVisit>(
   http: AccountHttp<Visit>,
@@ -140,12 +125,12 @@ async function listAgents<Visit extends AccountVisit>(http: AccountHttp<Visit>, 
     http.sendJson(res, 400, { ok: false, refusal: "field" })
     return
   }
-  const result = await options.session.query<ConnectedGrantRow>(connectedGrantsSql, [session.email])
+  const grants = await connectedGrants(options.session, session.email)
   http.sendJson(res, 200, {
     ok: true,
     account: { email: session.email },
     mcp: options.resource,
-    agents: result.rows.map((row) => ({
+    agents: grants.map((row) => ({
       id: row.id,
       name: row.name,
       agent: screenFor(row.name, row.redirect_uri),

@@ -1,6 +1,6 @@
 import { existsSync, globSync, readFileSync } from "node:fs"
 import path from "node:path"
-import { parse } from "oxc-parser"
+import { parse, parseSync } from "oxc-parser"
 import { ResolverFactory } from "oxc-resolver"
 import YAML from "yaml"
 
@@ -12,6 +12,7 @@ export type Config = {
   readonly include: readonly string[]
   readonly exclude: readonly string[]
   readonly layers: readonly string[]
+  readonly tableExempt: readonly string[]
 }
 
 export type Pack = {
@@ -22,7 +23,15 @@ export type Pack = {
   readonly enforceLayers: boolean
   readonly dependencies: readonly string[]
   readonly publicPaths: readonly string[]
+  readonly ownsTables: readonly string[]
   readonly metadata: Readonly<Record<string, unknown>>
+}
+
+export type TableUse = {
+  readonly file: string
+  readonly line: number
+  readonly column: number
+  readonly table: string
 }
 
 export type Target =
@@ -47,6 +56,7 @@ export type Workspace = {
   readonly files: readonly string[]
   readonly references: readonly Reference[]
   readonly packageRoots: readonly string[]
+  readonly tableUses: readonly TableUse[]
   readonly problems: readonly string[]
 }
 
@@ -54,6 +64,7 @@ const defaultConfig: Config = {
   include: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
   exclude: ["**/node_modules/**", "**/dist/**"],
   layers: [],
+  tableExempt: [],
 }
 
 const defaultPublic = ["index.ts", "index.tsx", "src/index.ts", "src/index.tsx"]
@@ -89,6 +100,7 @@ export const readConfig = (root: string, problems: string[]): Config => {
     include: strings(raw.include, `${configFile} include`, problems) ?? defaultConfig.include,
     exclude: [...defaultConfig.exclude, ...(strings(raw.exclude, `${configFile} exclude`, problems) ?? [])],
     layers: strings(raw.layers, `${configFile} layers`, problems) ?? defaultConfig.layers,
+    tableExempt: strings(raw.table_exempt, `${configFile} table_exempt`, problems) ?? defaultConfig.tableExempt,
   }
 }
 
@@ -124,6 +136,7 @@ const readPack = (root: string, manifest: string, config: Config, problems: stri
     enforceLayers: flag(raw.enforce_layers, `${where} enforce_layers`, problems, true),
     dependencies: strings(raw.dependencies, `${where} dependencies`, problems) ?? [],
     publicPaths,
+    ownsTables: strings(raw.owns_tables, `${where} owns_tables`, problems) ?? [],
     metadata: typeof metadata === "object" && metadata !== null ? (metadata as Record<string, unknown>) : {},
   }
 }
@@ -196,6 +209,41 @@ const jsonc = (text: string): string =>
     .replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (_match, quoted: string | undefined) => quoted ?? "")
     .replace(/,(\s*[}\]])/g, "$1")
 
+type Walked = { type?: unknown; start?: unknown; end?: unknown }
+
+const stringSpans = (node: unknown, spans: [number, number][]): void => {
+  if (Array.isArray(node)) {
+    for (const item of node) stringSpans(item, spans)
+    return
+  }
+  if (typeof node !== "object" || node === null) return
+  const walked = node as Walked
+  const isString =
+    walked.type === "TemplateElement" ||
+    (walked.type === "Literal" && typeof (node as { value?: unknown }).value === "string")
+  if (isString && typeof walked.start === "number" && typeof walked.end === "number")
+    spans.push([walked.start, walked.end])
+  for (const value of Object.values(node)) stringSpans(value, spans)
+}
+
+const escaped = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+export const tableUsesIn = (file: string, source: string, tables: readonly string[]): TableUse[] => {
+  const named = tables.filter((table) => source.includes(table))
+  if (named.length === 0) return []
+  const spans: [number, number][] = []
+  stringSpans(parseSync(file, source).program, spans)
+  const pattern = new RegExp(`(?<![\\w.])(${named.map(escaped).join("|")})(?![\\w])`, "g")
+  const starts = lineStarts(source)
+  const uses: TableUse[] = []
+  for (const [start, end] of spans) {
+    for (const match of source.slice(start, end).matchAll(pattern)) {
+      uses.push({ file, ...position(starts, start + match.index), table: match[1] ?? "" })
+    }
+  }
+  return uses
+}
+
 const packageNameOf = (specifier: string): string => {
   const parts = specifier.split("/")
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : (parts[0] ?? specifier)
@@ -222,6 +270,15 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
     .map((manifest) => readPack(root, path.join(root, manifest), config, problems))
     .sort((left, right) => left.name.localeCompare(right.name))
   const names = new Set(packs.map((pack) => pack.name))
+  const tableOwners = new Map<string, string>()
+  for (const pack of packs) {
+    for (const table of pack.ownsTables) {
+      const other = tableOwners.get(table)
+      if (other !== undefined) problems.push(`${table} is owned by both ${other} and ${pack.name}`)
+      tableOwners.set(table, pack.name)
+    }
+  }
+  const tables = [...tableOwners.keys()]
   for (const pack of packs) {
     for (const dependency of pack.dependencies) {
       if (!names.has(dependency))
@@ -324,6 +381,7 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
     return { kind: "package", name, declared }
   }
 
+  const tableUses: TableUse[] = []
   const perFile = await Promise.all(
     files.map(async (file) => {
       const owner = nearestManifest(path.dirname(path.join(root, file)))
@@ -331,6 +389,9 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
       const source = readFileSync(path.join(root, file), "utf8")
       const starts = lineStarts(source)
       const requests = await requestsOf(file, source)
+      if (tables.length > 0 && !config.tableExempt.some((pattern) => path.matchesGlob(file, pattern))) {
+        tableUses.push(...tableUsesIn(file, source, tables))
+      }
       return Promise.all(
         requests.map(async (request): Promise<Reference> => ({
           file,
@@ -343,5 +404,14 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
     }),
   )
 
-  return { root, config, packs, files, references: perFile.flat(), packageRoots: [...packageRoots].sort(), problems }
+  return {
+    root,
+    config,
+    packs,
+    files,
+    references: perFile.flat(),
+    packageRoots: [...packageRoots].sort(),
+    tableUses,
+    problems,
+  }
 }
