@@ -3,7 +3,7 @@ export { dependencyCycles, findings, todoRules, type Finding, type RuleName } fr
 export { judge, readTodos, writeTodos, type TodoEntry, type Todos, type Verdict } from "./todo.ts"
 export { exportTarget } from "./package-exports.ts"
 export { typeGapsIn, type TypeGap } from "./public-types.ts"
-export { affected, docs, sarif } from "./report.ts"
+export { affected, affectedDistances, docs, sarif, unitOf } from "./report.ts"
 export { tableUsesIn, type TableUse } from "./tables.ts"
 export {
   configFile,

@@ -10,6 +10,7 @@ import { checkSteps, unitTestsIn } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { timeMetric } from "./metrics.mjs"
 import { testFilesByProject } from "./unit-test-files.mjs"
+import { affectedDistances, loadWorkspace, unitOf } from "../tooling/ts-packwerk/src/index.ts"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const prove = ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs"
@@ -19,7 +20,7 @@ const secondsPerFile = 1
 export const packagesFor = (changed) =>
   [...new Set(changed.flatMap((file) => file.match(/^(?:apps|packages)\/[^/]+(?=\/)/)?.[0] ?? []))].sort()
 
-export const testsFor = ({ map, related, inventory, changed, seconds = {} }) => {
+export const testsFor = ({ map, related, inventory, changed, seconds = {}, distance = () => 0 }) => {
   const reach = unitTestsIn(map.unitTests, inventory)
   const reached = new Set(reach)
   const weight = (file) => secondsPerFile + (seconds[file] ?? 0) / 2
@@ -27,7 +28,8 @@ export const testsFor = ({ map, related, inventory, changed, seconds = {} }) => 
   const near = map.unitTests === "all" ? [] : related.filter((file) => reached.has(file) && !mustRun.includes(file))
   const files = [...mustRun]
   let spent = files.reduce((sum, file) => sum + weight(file), 0)
-  for (const file of near.toSorted((a, b) => weight(a) - weight(b) || a.localeCompare(b))) {
+  const ranked = near.toSorted((a, b) => distance(a) - distance(b) || weight(a) - weight(b) || a.localeCompare(b))
+  for (const file of ranked) {
     if (spent + weight(file) > unitSecondsBudget) break
     files.push(file)
     spent += weight(file)
@@ -130,18 +132,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         const map = changeMap(plan.changed, readChangeGraph(root))
         const inventory = Object.values(testFilesByProject(root)).flat().sort()
         const related = map.unitTests === "all" || map.unitTests.length === 0 ? [] : await relatedTests(base, ownTemp)
+        const workspace = await loadWorkspace(root)
+        const distances = affectedDistances(workspace, plan.changed)
         const { files: tests, reach } = testsFor({
           map,
           related,
           inventory,
           changed: plan.changed,
           seconds: recordedSeconds(root),
+          distance: (file) => distances.get(unitOf(workspace, file) ?? "") ?? Number.POSITIVE_INFINITY,
         })
         left = ciAlsoRuns(map, tests.length, reach)
         const tooling = map.parts.scripts ? (plan.steps.find((step) => step.kind === "script-tests")?.files ?? []) : []
         const packages = packagesFor(plan.changed)
         console.log(
-          `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s by scripts/change-map.mjs, the map ci uses: ${String(tests.length)} of the ${String(reach)} unit test files the change reaches, ${String(tooling.length)} script test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
+          `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s by scripts/change-map.mjs, the map ci uses, nearest pack first by ts-packwerk affected: ${String(tests.length)} of the ${String(reach)} unit test files the change reaches, ${String(tooling.length)} script test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
         )
         selection = { base, plan, related, tests, tooling }
         return checkSteps.affectedGateStages({ tests, tooling, packages })
