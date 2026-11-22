@@ -6,6 +6,7 @@ import { DeckGlyph } from "@/decks/deck-glyph"
 import { DeleteAccountDialog } from "@/decks/delete-account"
 import { accountName } from "@/decks/account-name"
 import { AgentButton, AgentPromo } from "@/decks/agent-promo"
+import { deckPath } from "@/decks/deck-listing"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
 import { settingsPaths, type SettingsPath } from "@/settings/settings-routes"
@@ -102,7 +103,7 @@ export function DecksShell({
   onSignOut?: () => void
   onNavigate?: (path: string) => void
   search?: { value: string; onChange: (value: string) => void }
-  starred?: readonly { readonly deck: string; readonly name: string }[]
+  starred?: readonly { readonly deck: string; readonly name: string; readonly scene?: object }[]
 }) {
   const profile = useAccountProfile()
   const [deletingAccount, setDeletingAccount] = useState(false)
@@ -256,7 +257,7 @@ export function DecksShell({
               </p>
             ) : starred && realAccount ? (
               starred.map((deck) => (
-                <a key={deck.deck} href={`/deck/${deck.deck}`} className={starredRow}>
+                <a key={deck.deck} href={deckPath(deck)} className={starredRow}>
                   <StarredRow name={deck.name} />
                 </a>
               ))

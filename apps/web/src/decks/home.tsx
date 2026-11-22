@@ -26,13 +26,13 @@ import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
-import { blankDeck } from "@/decks/blank-deck"
+import { ScenePreview } from "@/decks/scene-preview"
 import { TemplatePicker } from "@/decks/template-picker"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
-import { allDecks, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
+import { allDecks, deckPath, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { server } from "@/commit-edit"
 import { signInAddress } from "@/thin-notice"
 
@@ -287,7 +287,7 @@ export function Home({
       starred={listing?.decks.filter((deck) => deck.starred === true)}
       newDeck={{
         onImport: () => picker.current?.click(),
-        onBlank: () => void blankDeck().then(choose),
+        onBlank: () => navigate("/s"),
         onTemplate: () => setChoosing(true),
       }}
       onSignOut={() => void signOut()}
@@ -301,7 +301,7 @@ export function Home({
         onOpenChange={setChoosing}
         onScratch={() => {
           setChoosing(false)
-          void blankDeck().then(choose)
+          navigate("/s")
         }}
         onChoose={(template, slide) => {
           setChoosing(false)
@@ -344,7 +344,7 @@ export function Home({
             description={productCopy.noDecksBody}
             actions={
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => void blankDeck().then(choose)}>
+                <Button size="sm" onClick={() => navigate("/s")}>
                   {productCopy.blankDeck}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => picker.current?.click()}>
@@ -387,9 +387,15 @@ export function Home({
                   edited={
                     trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card
                   }
-                  href={trash ? undefined : `/deck/${deck.deck}`}
+                  href={trash ? undefined : deckPath(deck)}
                   previewClassName={section !== "recents" ? "h-[136px]" : undefined}
-                  preview={<DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />}
+                  preview={
+                    deck.scene === undefined ? (
+                      <DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />
+                    ) : (
+                      <ScenePreview deck={deck.deck} rev={deck.scene.rev} name={deck.name} />
+                    )
+                  }
                   action={
                     trash ? (
                       <RestoreButton onClick={(pointer) => void restore(deck, pointer)} />
@@ -436,7 +442,7 @@ export function Home({
                 name={deck.name}
                 edited={deckTime(deck.edited, now()).row}
                 created={deckTime(deck.created, now()).created}
-                href={`/deck/${deck.deck}`}
+                href={deckPath(deck)}
               />
             </DeckRowMenu>
           ))}

@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test"
+import { newBlankDeck } from "../../bin/new-deck.mjs"
 import { productCopy, readPictureToolCopy, transitionCopy } from "../../bin/product-copy.mjs"
 
 const words = "Market context and sizing"
@@ -9,8 +10,7 @@ async function drive(kit) {
   const { page } = kit
   await kit.signIn()
   await page.goto(".")
-  await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
-  await page.getByRole("menuitem", { name: productCopy.blankDeck, exact: true }).click()
+  await newBlankDeck(page)
   await expect(page.locator(".thin-page[data-deck-ready]")).toHaveCount(1)
   await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.locator("[data-design-mode]").click()

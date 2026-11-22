@@ -65,14 +65,12 @@ test("a slide of a template starts a deck with that slide alone, untouched @expo
   )
 })
 
-test("Start from scratch starts the blank deck and Back returns to the templates", async ({ page, decks }) => {
+test("Start from scratch opens the scene editor and Back returns to the templates", async ({ page }) => {
   const picker = await openPicker(page)
   await picker.locator('[data-template="neutral"]').click()
   await picker.getByRole("button", { name: templatePickerCopy.backToTemplates }).click()
   await expect(picker.getByRole("heading", { name: templatePickerCopy.chooseTemplate })).toBeVisible()
   await expect(picker.locator('[data-template="neutral"]')).toBeFocused()
   await picker.locator("[data-template-scratch]").click()
-  await decks.ready()
-  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(0)
+  await expect(page).toHaveURL(/\/s(\/[A-Za-z0-9_-]{1,64})?$/)
 })

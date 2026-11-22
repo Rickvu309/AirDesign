@@ -176,7 +176,7 @@ describe("database migrations", () => {
           ["once", full],
           ["original_delete", full],
           ["saved", noDelete],
-          ["scene", noDelete],
+          ["scene", full],
           ["scene_edit", "INSERT SELECT"],
         ] as const
       ).map(([table, rights]) => ({ grantee: "deck", name: `deck.${table}`, rights })),
