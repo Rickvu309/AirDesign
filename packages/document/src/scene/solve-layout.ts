@@ -10,7 +10,12 @@ import type { Theme } from "./theme.js"
 
 type Size = { readonly w: number; readonly h: number }
 type Mode = Sizing["w"]
-type Context = { readonly scene: Scene; readonly theme: Theme; readonly measure: Measure }
+type Context = {
+  readonly scene: Scene
+  readonly theme: Theme
+  readonly measure: Measure
+  readonly sizes: Map<string, Size>
+}
 type Placed = { readonly id: NodeId; readonly box: Box }
 type Plan = { readonly size: Size; readonly kids: readonly Placed[] }
 type Flow = Extract<Layout, { mode: "row" | "column" }>
@@ -41,6 +46,15 @@ function childrenOf(context: Context, id: NodeId): readonly Node[] {
 }
 
 function sizeOf(context: Context, node: Node, forcedW: number | null, forcedH: number | null): Size {
+  const key = `${node.id}|${String(forcedW)}|${String(forcedH)}`
+  const known = context.sizes.get(key)
+  if (known !== undefined) return known
+  const size = measuredSize(context, node, forcedW, forcedH)
+  context.sizes.set(key, size)
+  return size
+}
+
+function measuredSize(context: Context, node: Node, forcedW: number | null, forcedH: number | null): Size {
   const mode = modes(node)
   const stored = storedBox(node)
   const w = forcedW ?? (mode.w === "fixed" ? stored.w : null)
@@ -301,7 +315,7 @@ export function solveLayout(scene: Scene, root: NodeId, measure: Measure): Reado
   const boxes = new Map<NodeId, Box>()
   if (node === undefined) return boxes
   const { theme, size } = deckOf(scene)
-  const context = { scene, theme, measure }
+  const context = { scene, theme, measure, sizes: new Map<string, Size>() }
   if (node.type === "slide") {
     boxes.set(root, { ...nothing, w: size.w, h: size.h })
     arrange(context, boxes, node, size.w, size.h)

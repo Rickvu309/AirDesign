@@ -196,6 +196,26 @@ describe("solveLayout of text", () => {
   })
 })
 
+describe("solveLayout of deeply nested frames", () => {
+  it("measures each text a handful of times however deep the hug frames nest", () => {
+    let calls = 0
+    const counting: typeof measure = (text, theme, width) => {
+      calls += 1
+      return measure(text, theme, width)
+    }
+    const nested = (depth: number): TreeNode => ({
+      type: "frame",
+      name: `level ${String(depth)}`,
+      props: { box: spot(0, 0, 1, 1), sizing: { w: "hug", h: "hug" }, layout: row({}, 4, padding(4)) },
+      children: depth === 0 ? [label("t", "hello there", {}, { resize: "widthAndHeight" })] : [nested(depth - 1)],
+    })
+    const grown = sceneFromTree({ theme: plainTheme, slides: [{ children: [nested(14)] }] })
+    const boxes = solveLayout(grown.scene, grown.slides[0]!, counting)
+    expect(boxes.get(grown.ids.t!)).toMatchObject({ w: 11 * advance, h: lineHeight })
+    expect(calls).toBeLessThan(40)
+  })
+})
+
 describe("solveLayout of wrapping text in a column", () => {
   it("wraps text that fills a column's width and stacks the next child below its lines", () => {
     const { at } = solved([
