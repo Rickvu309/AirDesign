@@ -36,14 +36,13 @@ describe("readForAgent", () => {
   )
   const read = lines(readForAgent(scene, "all"))
 
-  it("lists the layouts by name first, so a new slide can ask for one", () => {
-    expect(read[0]).toBe('layouts "Title"')
+  it("lists no layouts: a slide add takes no layout", () => {
+    expect(read.some((line) => line.startsWith("layouts"))).toBe(false)
   })
 
   it("prints one line per node, in slide order and tree order, indented under its parent", () => {
     const ids_ = read.map((line) => line.trim().split(" ")[0])
     expect(ids_).toEqual([
-      "layouts",
       "slide",
       ids.card,
       ids.title,
@@ -55,16 +54,16 @@ describe("readForAgent", () => {
       "slide",
       more.titled,
     ])
-    expect(read[1]).toBe(`slide ${ids.slide} "Slide 1"`)
-    expect(read[2]!.startsWith("  ")).toBe(true)
-    expect(read[3]!.startsWith("    ")).toBe(true)
+    expect(read[0]).toBe(`slide ${ids.slide} "Slide 1"`)
+    expect(read[1]!.startsWith("  ")).toBe(true)
+    expect(read[2]!.startsWith("    ")).toBe(true)
   })
 
   it("says what each node is in the words the agent writes, with its place and size", () => {
-    expect(read[2]).toBe(
+    expect(read[1]).toBe(
       `  ${ids.card} frame @100,0 200x100 name="Revenue card" fill=accent2 stroke=${hex(0xaabbcc)} strokeWidth=3 radius=12 effect=soft layout=column gap=10 padding=20`,
     )
-    expect(read[3]).toBe(
+    expect(read[2]).toBe(
       `    ${ids.title} text 200x100 style=heading align=center color=accent1 text="Revenue **up**\\n\\n- a\\n- b"`,
     )
   })
@@ -89,7 +88,6 @@ describe("readForAgent", () => {
 
   it("reads only the slides asked for, and says so for an id that is no slide", () => {
     expect(lines(readForAgent(scene, [more.slide2]))).toEqual([
-      'layouts "Title"',
       `slide ${more.slide2} "Slide 2"`,
       expect.stringContaining(more.titled),
     ])
@@ -97,8 +95,8 @@ describe("readForAgent", () => {
   })
 
   it("shows the solved box of a laid-out child, and leaves its place out when none was solved", () => {
-    expect(read[3]).not.toContain("@")
+    expect(read[2]).not.toContain("@")
     const solved = new Map([[ids.title, { x: 11, y: 12, w: 13, h: 14, rotation: 0, flipH: false, flipV: false }]])
-    expect(lines(readForAgent(scene, [ids.slide], solved))[3]).toContain("@11,12 13x14")
+    expect(lines(readForAgent(scene, [ids.slide], solved))[2]).toContain("@11,12 13x14")
   })
 })

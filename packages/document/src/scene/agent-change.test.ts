@@ -37,7 +37,7 @@ const valid: readonly AgentChange[] = [
   { op: "wrap", nodes: ["t:4" as never], layout: "row" },
   { op: "unwrap", node: "t:4" as never },
   { op: "delete", nodes: ["t:4" as never] },
-  { op: "slide", add: { layout: "Title", after: "t:3" as never } },
+  { op: "slide", add: { after: "t:3" as never } },
   { op: "slide", move: { slide: "t:3" as never, after: null } },
   { op: "slide", delete: "t:3" as never },
 ]
@@ -69,7 +69,7 @@ describe("readAgentChange", () => {
     refused({ op: "set", target: "nope", text: "x" })
     refused({ op: "set", target: "t:3", textStyle: "huge" })
     refused({ op: "set", target: "t:3", layout: "grid" })
-    refused({ op: "slide", add: { layout: "" } })
+    refused({ op: "slide", add: { layout: "Blank" } })
     refused({ op: "paint" })
     refused("add")
     refused(null)

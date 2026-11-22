@@ -30,10 +30,23 @@ describe("compileAgentEdit", () => {
     )
     if ("refused" in result) throw new Error(JSON.stringify(result))
     expect(result.edit).toMatchObject({ once: "agent-1", author: { kind: "agent", id: "aira", run: runName } })
-    expect(result.added).toEqual(["a:1", "a:2"])
+    expect(result.added).toEqual([
+      { id: "a:1", change: 0, kind: "text" },
+      { id: "a:2", change: 2, kind: "shape" },
+    ])
     const landed = landEdit(scene, result.edit as never)
     expect(isRefusal(landed)).toBe(false)
-    expect(get((landed as Scene).nodes.get(result.added[0]!)!, "text")?.chars).toBe("Board update Q3")
+    expect(get((landed as Scene).nodes.get(result.added[0]!.id)!, "text")?.chars).toBe("Board update Q3")
+  })
+
+  it("labels a slide added with its change and the kind slide", () => {
+    const result = compileAgentEdit(
+      agentDeck(),
+      [change({ op: "set", target: ids.title, text: "A" }), change({ op: "slide", add: {} })],
+      by(),
+    )
+    if ("refused" in result) throw new Error(JSON.stringify(result))
+    expect(result.added).toEqual([{ id: "a:1", change: 1, kind: "slide" }])
   })
 
   it("lets a later change use what an earlier one made: the title it set is the one it added", () => {

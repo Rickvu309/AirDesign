@@ -23,22 +23,36 @@ function readChanges(raw: readonly unknown[]): Read {
   return { ok: true, changes }
 }
 
-function rootsInFold(fold: scene.Scene, client: string): readonly scene.NodeId[] {
-  const mine = [...fold.nodes.keys()].filter((id) => id.startsWith(`${client}:`))
-  const made = new Set<string>(mine)
-  return mine.filter((id) => !made.has((fold.nodes.get(id) as { parent?: { id: string } | null }).parent?.id ?? ""))
-}
+type Added = { readonly id: string; readonly kind: string; readonly change?: number }
 
-function rootsOfEdit(edit: scene.Edit, added: readonly scene.NodeId[]): readonly scene.NodeId[] {
-  const made = new Set<string>(added)
+function rootsOfEdit(edit: scene.Edit, added: readonly scene.AddedNode[]): readonly Added[] {
+  const made = new Set<string>(added.filter((each) => each.kind !== "slideRow").map((each) => each.id))
   const parents = new Map<string, string>()
   for (const write of edit.writes)
     if (write.prop === "parent" && write.value !== null) parents.set(write.node, (write.value as { id: string }).id)
-  return added.filter((id) => !made.has(parents.get(id) ?? ""))
+  return added.filter((each) => each.kind !== "slideRow" && !made.has(parents.get(each.id) ?? ""))
 }
 
-function landedAnswer(deck: string, rev: number, run: string, added: readonly string[]): ToolResult {
-  const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${added.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
+const makesRoot = (change: scene.AgentChange) =>
+  change.op === "add" || change.op === "wrap" || (change.op === "slide" && change.add !== undefined)
+
+function rootsInFold(fold: scene.Scene, client: string, changes: readonly scene.AgentChange[]): readonly Added[] {
+  const mine = [...fold.nodes.values()].filter((node) => node.id.startsWith(`${client}:`) && node.type !== "slideRow")
+  const made = new Set<string>(mine.map((node) => node.id))
+  const roots = mine.filter((node) => !made.has((node as { parent?: { id: string } | null }).parent?.id ?? ""))
+  const making = changes.flatMap((change, at) => (makesRoot(change) ? [at] : []))
+  return roots.map((node, at) => ({
+    id: node.id,
+    kind: scene.agentKind(node),
+    ...(making.length === roots.length ? { change: making[at] as number } : {}),
+  }))
+}
+
+function landedAnswer(deck: string, rev: number, run: string, added: readonly Added[]): ToolResult {
+  const words = added.map(
+    (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
+  )
+  const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${words.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
   return answered(lead, { ok: true, deck, rev, runId: run, added })
 }
 
@@ -55,7 +69,8 @@ export async function editDeckTool(raw: unknown, agent: string, once: string, ho
   const ids = onceIds(once)
   const run = parsed.runId ?? ids.run
   const before = opened.fold.onces.get(once)
-  if (before !== undefined) return landedAnswer(opened.deck, before, run, rootsInFold(opened.fold, ids.client))
+  if (before !== undefined)
+    return landedAnswer(opened.deck, before, run, rootsInFold(opened.fold, ids.client, read.changes))
   const names = imageNames(read.changes)
   const found: NamedImages | undefined =
     names.length > 0 && host.images !== undefined

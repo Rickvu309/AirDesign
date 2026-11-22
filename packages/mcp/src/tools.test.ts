@@ -161,7 +161,7 @@ describe("edit_deck", () => {
       deck,
       rev: rev + 1,
       runId: expect.any(String),
-      added: [expect.stringMatching(/^m\w+:1$/)],
+      added: [{ change: 0, id: expect.stringMatching(/^m\w+:1$/), kind: "text" }],
     })
     const fold = by.decks.decks.get(deck as never)!
     expect(fold.runs.get((landed.answer as { runId: string }).runId)?.phase).toBe("running")
@@ -186,7 +186,7 @@ describe("edit_deck", () => {
         },
       ]),
     )
-    expect((landed.answer as { added: string[] }).added).toHaveLength(1)
+    expect((landed.answer as { added: { kind: string }[] }).added).toMatchObject([{ change: 0, kind: "frame" }])
     const fold = by.decks.decks.get(deck as never)!
     expect(fold.nodes.size).toBeGreaterThan(8)
   })
@@ -297,6 +297,31 @@ describe("edit_deck", () => {
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 1)
   })
 
+  it("labels each added id with its change and kind, in the words and in the answer, and again when sent again", async () => {
+    const by = agent()
+    const { deck, rev, slides } = await created(by)
+    const args = edit(deck, rev, [
+      { op: "set", target: `${slides[0]}.title`, text: "A" },
+      { op: "add", kind: "shape", slide: slides[0], box: { x: 0, y: 0, w: 10, h: 10 } },
+      { op: "slide", add: {} },
+    ])
+    const first = await by.call("edit_deck", args, "labels")
+    expect(first.answer.added).toEqual([
+      { change: 1, id: expect.any(String), kind: "shape" },
+      { change: 2, id: expect.any(String), kind: "slide" },
+    ])
+    const [shape, slide] = first.answer.added as { id: string }[]
+    expect(first.content[0]!.text).toContain(`adding ${shape!.id} shape (change 1), ${slide!.id} slide (change 2).`)
+    expect((await by.call("edit_deck", args, "labels")).answer).toEqual(first.answer)
+  })
+
+  it("refuses a slide add that names a layout, since a deck has none to list", async () => {
+    const by = agent()
+    const { deck, rev } = await created(by)
+    const refused = await by.call("edit_deck", edit(deck, rev, [{ op: "slide", add: { layout: "Blank" } }]))
+    expect(refused.answer).toMatchObject({ ok: false, refusal: "field" })
+  })
+
   it("refuses text a person changed after the agent read it as stale, and lands it after a fresh read", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
@@ -329,7 +354,8 @@ describe("edit_deck", () => {
       "edit_deck",
       edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
     )
-    const { runId, added } = first.answer as { runId: string; added: string[] }
+    const { runId, added: made } = first.answer as { runId: string; added: { id: string }[] }
+    const added = made.map((each) => each.id)
     await by.decks.edit(deck as never, {
       once: "typed",
       author: person,

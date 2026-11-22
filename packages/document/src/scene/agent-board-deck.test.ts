@@ -21,7 +21,7 @@ function board(mode: "together" | "per-slide") {
     const landed = applyEdit(scene, { ...result.edit, rev: rev(scene.rev + 1) })
     if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
     scene = landed
-    return result.added
+    return result.added.map((each) => each.id)
   }
   const added = send(Array.from({ length: 4 }, () => ({ op: "slide", add: {} })))
   const slides = [ids.slide, ...added]

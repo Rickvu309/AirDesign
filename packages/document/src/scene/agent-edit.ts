@@ -4,12 +4,14 @@ import type { Reading } from "./agent-draft.js"
 import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
 import type { WriteKey } from "./props.js"
+import { kindOf } from "./agent-read.js"
 import { applyEdit } from "./apply-edit.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Scene, Write } from "./scene.js"
 import { onTop } from "./view-of.js"
 
-export type AgentEdit = { readonly edit: Edit; readonly added: readonly NodeId[] }
+export type AddedNode = { readonly id: NodeId; readonly change: number; readonly kind: string }
+export type AgentEdit = { readonly edit: Edit; readonly added: readonly AddedNode[] }
 export type EditBy = {
   readonly author: Author
   readonly once: string
@@ -72,8 +74,10 @@ export function compileAgentEdit(scene: Scene, changes: readonly AgentChange[], 
     )
     return { ...landed, change: nameOf(changes[at] as AgentChange), at }
   }
-  return {
-    edit,
-    added: writes.filter((write) => write.prop === "type" && !scene.nodes.has(write.node)).map((write) => write.node),
-  }
+  const added = writes.flatMap((write, index): AddedNode[] => {
+    const node = landed.nodes.get(write.node)
+    if (write.prop !== "type" || scene.nodes.has(write.node) || node === undefined) return []
+    return [{ id: write.node, change: ends.findIndex((end) => end > index), kind: kindOf(node) }]
+  })
+  return { edit, added }
 }

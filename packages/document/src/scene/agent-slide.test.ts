@@ -4,7 +4,7 @@ import { compileAgentChange } from "./agent-compile.js"
 import { build, compiled, minter, more, richDeck, started } from "./agent-fixtures.js"
 import { applyEdit, emptyScene, isRefusal, rev, type Scene } from "./index.js"
 import { agent, create, ids, land, once, theme } from "./sample-deck.js"
-import { childrenOf, get, parentOf, slidesOf } from "./scene-walk.js"
+import { get, parentOf, slidesOf } from "./scene-walk.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const order = (scene: Scene) => slidesOf(scene).map((slide) => slide.id)
@@ -37,31 +37,7 @@ describe("slide add", () => {
     expect(slidesOf(scene)).toHaveLength(1)
   })
 
-  it("copies a layout's look and its nodes onto the new slide, with new ids", () => {
-    const scene = build(richDeck(), change({ op: "slide", add: { layout: "Title" } }))
-    const made = slidesOf(scene).at(-1)!
-    expect(get(made, "slideLayout")).toBe(more.layout)
-    expect(get(made, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
-    const copies = childrenOf(scene, made.id)
-    expect(copies.map((node) => get(node, "role"))).toEqual(["title", "subtitle"])
-    expect(copies.map((node) => get(node, "text")?.chars)).toEqual(["Title", "Subtitle"])
-    expect(copies.map((node) => node.id)).not.toContain(more.layoutTitle)
-    expect(childrenOf(scene, more.layout)).toHaveLength(2)
-  })
-
-  it("makes the copied title the one `<slide>.title` finds", () => {
-    let scene = build(richDeck(), change({ op: "slide", add: { layout: "Title" } }), minter("a"))
-    const made = slidesOf(scene).at(-1)!
-    scene = build(scene, change({ op: "set", target: `${made.id}.title`, text: "Board update" }), minter("b"))
-    expect(get(childrenOf(scene, made.id)[0]!, "text")?.chars).toBe("Board update")
-  })
-
-  it("refuses a layout nobody named, and a slide that is a layout or not there", () => {
-    expect(refusal(richDeck(), { op: "slide", add: { layout: "Nope" } })).toEqual({
-      refused: "missing",
-      field: "layout",
-      change: "slide add",
-    })
+  it("refuses a slide that is a layout or not there", () => {
     expect(refusal(richDeck(), { op: "slide", add: { after: more.layout } })).toMatchObject({
       refused: "shape",
       field: "after",
