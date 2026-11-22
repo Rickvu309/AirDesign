@@ -1,12 +1,14 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
-import { type Draft, create, living, stop } from "./agent-draft.js"
+import { type Draft, create, living, put, stop } from "./agent-draft.js"
 import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
+import { placeholderTitle } from "./placeholder-title.js"
 import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./scene-walk.js"
 import { descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./scene-walk.js"
 import type { Node } from "./scene.js"
+import type { Text } from "./text.js"
 import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
@@ -46,6 +48,13 @@ function checkFields(change: Add): void {
     if (value !== undefined && !allowed.has(key)) stop("shape", undefined, key)
 }
 
+function emptyTitleOf(draft: Draft, slide: Node): Node | undefined {
+  return descendantsOf(draft.scene, slide.id).find((node) => {
+    const chars = get(node, "text")?.chars
+    return get(node, "role") === "title" && (chars === "" || chars === placeholderTitle)
+  })
+}
+
 const inkOn = (fill: AgentLook["fill"]) =>
   fill === undefined || (typeof fill === "string" && fill.startsWith("accent")) ? "background" : undefined
 
@@ -65,6 +74,12 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
       sizing: { w: "fill", h: "hug" },
       text: made,
     })
+    return
+  }
+  const empty = kind === "text" && made?.style === "title" ? emptyTitleOf(draft, slide) : undefined
+  if (empty !== undefined) {
+    const { chars, spans, paras } = made as Text
+    put(draft, empty.id, { text: { ...(get(empty, "text") as Text), chars, spans, paras } })
     return
   }
   const area =

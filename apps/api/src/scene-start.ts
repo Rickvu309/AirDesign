@@ -70,7 +70,7 @@ export function startEdit(): scene.Edit {
         node: title,
         prop: "text",
         value: {
-          chars: "Untitled",
+          chars: scene.placeholderTitle,
           spans: [],
           paras: [{}],
           style: "bigNumber",

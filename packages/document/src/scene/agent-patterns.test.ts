@@ -169,6 +169,35 @@ describe("kpi", () => {
   })
 })
 
+describe("cards sized to their words", () => {
+  const shortCards = [
+    { title: "Grow", icon: "trending-up", points: ["Enter two markets", "Double the sales team"] },
+    { title: "Protect", icon: "shield", points: ["Cut cost to serve", "Raise retention"] },
+    { title: "Build", icon: "hammer", points: ["Ship the platform", "Open the API"] },
+  ]
+  const row = (items: unknown) => made(build(agentDeck(), add({ kind: "cards", items })))
+
+  it("takes under 60% of the room below the title for three short cards, not 70%", () => {
+    const scene = build(agentDeck(), add({ kind: "cards", items: shortCards }))
+    const box = get(made(scene), "box")!
+    expect(box.h).toBeLessThan(0.6 * (1080 - box.y))
+  })
+
+  it("keeps every card in the row as tall as the row", () => {
+    const scene = build(agentDeck(), add({ kind: "cards", items: shortCards }))
+    for (const card of childrenOf(scene, made(scene).id)) expect(get(card, "sizing")).toMatchObject({ h: "fill" })
+  })
+
+  it("grows past the minimum to hug the tallest card when its words need the room", () => {
+    const tall = [
+      shortCards[0]!,
+      { title: "Long", points: Array.from({ length: 14 }, (_, at) => `A line of words ${at}`) },
+    ]
+    const short = get(row(shortCards), "box")!.h
+    expect(get(row(tall), "box")!.h).toBeGreaterThan(short)
+  })
+})
+
 describe("cards and compare", () => {
   it("puts an icon, a heading and bullet points in each card, filling the area's height", () => {
     const scene = build(

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, compiled, firstSlide, lastChild, minter } from "./agent-fixtures.js"
-import { hex, ids } from "./sample-deck.js"
+import { agentDeck, apply, build, compiled, firstSlide, lastChild, minter } from "./agent-fixtures.js"
+import { placeholderTitle } from "./placeholder-title.js"
+import { create, hex, ids } from "./sample-deck.js"
 import { childrenOf, get } from "./scene-walk.js"
+import type { Scene } from "./scene.js"
+import { nodeId } from "./ids.js"
 
 const slide = ids.slide
 const text = (more: Record<string, unknown> = {}): AgentChange =>
@@ -84,6 +87,76 @@ describe("add text", () => {
       field: "text",
       change: "add text",
     })
+  })
+})
+
+const startTitle = nodeId("t:50")
+const withPlaceholder = (chars: string = placeholderTitle): Scene =>
+  apply(agentDeck(), [
+    ...create(startTitle, "shape", ids.slide),
+    { node: startTitle, prop: "role", value: "title" },
+    {
+      node: startTitle,
+      prop: "box",
+      value: { x: 160, y: 240, w: 1600, h: 300, rotation: 0, flipH: false, flipV: false },
+    },
+    {
+      node: startTitle,
+      prop: "text",
+      value: { chars, spans: [], paras: [{}], style: "bigNumber", resize: "fixed", alignV: "bottom" },
+    },
+  ])
+
+describe("add text on a slide holding the new deck's title placeholder", () => {
+  it("fills the placeholder with the words and makes no second text", () => {
+    const before = withPlaceholder()
+    const scene = build(before, text({ textStyle: "title", text: "Q3 board update" }))
+    expect(childrenOf(scene, slide)).toHaveLength(childrenOf(before, slide).length)
+    const filled = scene.nodes.get(startTitle)!
+    expect(get(filled, "text")).toMatchObject({
+      chars: "Q3 board update",
+      style: "bigNumber",
+      resize: "fixed",
+      alignV: "bottom",
+    })
+    expect(get(filled, "box")).toMatchObject({ x: 160, y: 240, w: 1600, h: 300 })
+    expect(get(filled, "role")).toBe("title")
+  })
+
+  it("carries the agent's markdown and colour into the filled text", () => {
+    const scene = build(withPlaceholder(), text({ textStyle: "title", text: "Q3 **board**", color: "accent2" }))
+    expect(get(scene.nodes.get(startTitle)!, "text")!.spans).toEqual([
+      { end: 3, color: { var: "accent2" } },
+      { end: 8, bold: true, color: { var: "accent2" } },
+    ])
+  })
+
+  it("puts the subtitle under the filled title, on its left edge", () => {
+    let scene = build(withPlaceholder(), text({ textStyle: "title", text: "Q3 board update" }), minter("a"))
+    scene = build(scene, text({ textStyle: "heading", text: "Revenue grew" }), minter("b"))
+    const title = get(scene.nodes.get(startTitle)!, "box")!
+    const subtitle = get(lastChild(scene, slide), "box")!
+    expect(subtitle.x).toBe(title.x)
+    expect(subtitle.y).toBeGreaterThanOrEqual(title.y + title.h)
+  })
+
+  it("fills a title left empty too", () => {
+    const scene = build(withPlaceholder(""), text({ textStyle: "title", text: "Q3 board update" }))
+    expect(get(scene.nodes.get(startTitle)!, "text")!.chars).toBe("Q3 board update")
+  })
+
+  it("keeps a title a person wrote, and adds the agent's text beside it", () => {
+    const before = withPlaceholder("Our plan")
+    const scene = build(before, text({ textStyle: "title", text: "Another" }))
+    expect(get(scene.nodes.get(startTitle)!, "text")!.chars).toBe("Our plan")
+    expect(childrenOf(scene, slide)).toHaveLength(childrenOf(before, slide).length + 1)
+  })
+
+  it("adds a body text beside the placeholder", () => {
+    const before = withPlaceholder()
+    const scene = build(before, text())
+    expect(get(scene.nodes.get(startTitle)!, "text")!.chars).toBe(placeholderTitle)
+    expect(childrenOf(scene, slide)).toHaveLength(childrenOf(before, slide).length + 1)
   })
 })
 

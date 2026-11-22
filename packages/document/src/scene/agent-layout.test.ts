@@ -71,13 +71,8 @@ describe("content with no box uses the slide well", () => {
     expect(cards.y + cards.h).toBeLessThanOrEqual(1080 - 40)
   })
 
-  it("grows a row of cards and a grid to most of the room under the title", () => {
+  it("grows a grid to most of the room under the title", () => {
     const { scene: start, on } = blank()
-    const cards = add({
-      kind: "cards",
-      slide: on,
-      items: [{ title: "Grow", points: ["One", "Two"] }, { title: "Hold" }],
-    })
     const grid = add({
       kind: "frame",
       slide: on,
@@ -86,11 +81,9 @@ describe("content with no box uses the slide well", () => {
         ["Beta", "Launch"],
       ],
     })
-    for (const change of [cards, grid]) {
-      const scene = build(build(start, title(on), minter("a")), change, minter("b"))
-      const box = get(lastChild(scene, on), "box")!
-      expect(box.y + box.h).toBeGreaterThan(1080 * 0.66)
-    }
+    const scene = build(build(start, title(on), minter("a")), grid, minter("b"))
+    const box = get(lastChild(scene, on), "box")!
+    expect(box.y + box.h).toBeGreaterThan(1080 * 0.66)
   })
 })
 
