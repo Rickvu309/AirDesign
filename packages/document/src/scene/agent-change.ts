@@ -180,7 +180,7 @@ const lookFields: LookFields = {
           type: "object",
           additionalProperties: false,
           required: ["image"],
-          properties: { image: { type: "string", description: "An https address." } },
+          properties: { image: { type: "string", description: "An https address, or an asset read from the deck." } },
         },
       ],
     },

@@ -3,6 +3,7 @@ import { scene } from "@airdesign/document"
 
 import { answered, hostRefused, refused, sceneRefused, type ToolResult } from "./answer.js"
 import type { DeckHost } from "./deck-host.js"
+import { imageAddresses, imageProblem, imagesPerCall, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 
 type Read =
@@ -55,7 +56,18 @@ export async function editDeckTool(raw: unknown, agent: string, once: string, ho
   const run = parsed.runId ?? ids.run
   const before = opened.fold.onces.get(once)
   if (before !== undefined) return landedAnswer(opened.deck, before, run, rootsInFold(opened.fold, ids.client))
-  const compiled = scene.compileAgentEdit(opened.fold, read.changes, {
+  const addresses = imageAddresses(read.changes)
+  let changes = read.changes
+  if (addresses.length > 0 && host.images !== undefined) {
+    const found: NamedImages = new Map([
+      ...(await host.images(parsed.deck, addresses.slice(0, imagesPerCall))),
+      ...addresses.slice(imagesPerCall).map((each) => [each, { ok: false, refusal: "many" }] as const),
+    ])
+    const problem = imageProblem(changes, found)
+    if (problem !== undefined) return problem
+    changes = withAssets(changes, found)
+  }
+  const compiled = scene.compileAgentEdit(opened.fold, changes, {
     author: { kind: "agent", id: agent, run },
     once,
     mint: ids.mint,

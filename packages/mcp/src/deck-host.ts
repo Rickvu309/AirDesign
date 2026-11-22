@@ -1,6 +1,8 @@
 import type { DeckId, SceneRefusal } from "@airdesign/catalog"
 import type { scene } from "@airdesign/document"
 
+import type { NamedImages } from "./named-image.js"
+
 export type DeckSummary = { readonly deck: DeckId; readonly name: string; readonly rev: number }
 
 export type Opened = { readonly ok: true; readonly deck: DeckId; readonly rev: number; readonly fold: scene.Scene }
@@ -16,4 +18,5 @@ export type DeckHost = {
   readonly create: (name: string, once: string) => Promise<Opened | SceneRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | SceneRefusal>
   readonly edit: (deck: DeckId, edit: scene.Edit) => Promise<Landed | SceneRefusal>
+  readonly images?: (deck: DeckId, addresses: readonly string[]) => Promise<NamedImages>
 }
