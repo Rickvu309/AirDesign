@@ -3,7 +3,7 @@ import { decodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { readSlides } from "./read-shapes.js"
 import { applyStructuralRoute } from "./structural-route.js"
-import { defaultTableStyle, officeTableStyle, tableTextSize } from "./table-style-list.js"
+import { defaultTableStyle, officeTableStyle, tableCellLook } from "./table-style-list.js"
 
 declare const process: {
   cwd(): string
@@ -29,12 +29,13 @@ it.each(["neutral", "midnight", "editorial"])(
     expect(styles).not.toContain("a:band1H")
     expect(styles).toContain("<a:fill><a:noFill/></a:fill>")
     expect(styles).toContain('<a:fontRef idx="major">')
-    expect(tableTextSize(parts, style ?? "")).toBe(1400)
+    expect(tableCellLook(parts, style ?? "")).toEqual({ size: 1400, middle: true })
     const slide = readSlides(parts)[0]!.part
     const added = applyStructuralRoute(parts, { name: "graphicFrame.addTable", part: slide, id: 9, ...box })
     const frame = text(added.get(slide))
     expect(frame).toContain(`<a:tableStyleId>${style ?? ""}</a:tableStyleId>`)
     expect(frame.match(/<a:endParaRPr lang="en-US" sz="1400"\/>/g)).toHaveLength(4)
+    expect(frame.match(/<a:tcPr anchor="ctr"\/>/g)).toHaveLength(4)
     expect(text(added.get("ppt/tableStyles.xml"))).toBe(styles)
   },
 )
@@ -43,6 +44,7 @@ it("writes no size into a new table when the deck's table style names none", asy
   const parts = await deck("scripts/pptx-fixtures/blank.pptx")
   const slide = readSlides(parts)[0]!.part
   const added = applyStructuralRoute(parts, { name: "graphicFrame.addTable", part: slide, id: 9, ...box })
-  expect(tableTextSize(added, officeTableStyle)).toBeNull()
+  expect(tableCellLook(added, officeTableStyle)).toBeNull()
+  expect(text(added.get(slide)).match(/<a:tcPr\/>/g)).toHaveLength(4)
   expect(text(added.get(slide)).match(/<a:tc>.*?<a:endParaRPr lang="en-US"\/>/g)).toHaveLength(4)
 })

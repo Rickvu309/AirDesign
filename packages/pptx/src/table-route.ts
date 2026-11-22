@@ -1,3 +1,4 @@
+import type { TableCellLook } from "./table-style-list.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { insertAt, moveBytes, requireMarkup, within } from "./part-markup.js"
@@ -124,7 +125,7 @@ export function addTable(
   bytes: Uint8Array,
   shape: TableShape & { readonly id?: number },
   style: string,
-  textSize: number | null = null,
+  look: TableCellLook | null = null,
 ) {
   const document = requireMarkup(bytes)
   const tree = document.elements.find((element) => element.kind === "p:spTree")
@@ -133,7 +134,7 @@ export function addTable(
   if (!Number.isInteger(id) || id < 2 || id > 4294967295 || shapeIdsIn(bytes).includes(String(id)))
     throw new Error("shape id")
   if (![shape.x, shape.y].every(Number.isSafeInteger)) throw new Error("emu")
-  return insertAt(bytes, tree.closeStart, encodeUtf8(tableFrame(id, shape, style, textSize)))
+  return insertAt(bytes, tree.closeStart, encodeUtf8(tableFrame(id, shape, style, look)))
 }
 
 export function addRow(bytes: Uint8Array, row: number): Uint8Array {

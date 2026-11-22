@@ -8,7 +8,7 @@ import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
 import { removeShape, type RouteResult } from "./slide-route.js"
 import type { TableShape } from "./table-frame.js"
-import { newTableStyle, tableTextSize } from "./table-style-list.js"
+import { newTableStyle, tableCellLook } from "./table-style-list.js"
 import { addColumn, removeColumn } from "./table-column-route.js"
 import { addRow, addTable, orderRow, removeRow } from "./table-route.js"
 
@@ -92,8 +92,8 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       return { parts: new Map(orderSection(next, route.section, route.before)), id: null }
     case "graphicFrame.addTable": {
       const style = newTableStyle(next)
-      const textSize = tableTextSize(next, style)
-      editPart(next, route.part, (bytes) => addTable(bytes, route, style, textSize))
+      const look = tableCellLook(next, style)
+      editPart(next, route.part, (bytes) => addTable(bytes, route, style, look))
       return { parts: next, id: null }
     }
     case "tbl.addRow":
