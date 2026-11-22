@@ -53,7 +53,7 @@ const names: Readonly<Record<PatternName, string>> = {
   flow: "Flow",
 }
 const kpiShare = 0.45
-const cardsShare = 0.7
+const cardsShare = 0.5
 const gridShare = 0.7
 const iconShare = 1.7
 const dotShare = 0.7

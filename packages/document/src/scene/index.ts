@@ -14,6 +14,7 @@ export {
 } from "./agent-change.js"
 export { compileAgentChange } from "./agent-compile.js"
 export { boardDeckChanges } from "./board-deck.js"
+export { placeholderTitle } from "./placeholder-title.js"
 export { pictureFit } from "./picture-fit.js"
 export { slideKeyText } from "./slide-key.js"
 export { type AddedNode, type AgentEdit, type EditBy, compileAgentEdit, readingOf } from "./agent-edit.js"
