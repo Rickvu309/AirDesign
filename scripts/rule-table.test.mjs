@@ -43,7 +43,7 @@ same(
   ["apps", "packages"].flatMap((folder) =>
     fs
       .readdirSync(path.join(root, folder))
-      .filter((name) => !agents.includes(folder === "apps" ? `\`apps/${name}\` is` : `  - \`${name}\` `)),
+      .filter((name) => !agents.includes(folder === "apps" ? `\`apps/${name}\` is` : `\`${name}\``)),
   ),
   [],
 )
