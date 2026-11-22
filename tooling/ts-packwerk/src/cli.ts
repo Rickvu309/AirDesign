@@ -1,5 +1,7 @@
-import { existsSync } from "node:fs"
+import { execFileSync } from "node:child_process"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { affected, docs, sarif, starterConfig } from "./report.ts"
 import { findings, todoRules, type Finding } from "./rules.ts"
 import { judge, readTodos, writeTodos } from "./todo.ts"
 import { configFile, loadWorkspace, packOf, type Workspace } from "./workspace.ts"
@@ -9,13 +11,18 @@ type Io = { readonly out: (line: string) => void; readonly err: (line: string) =
 const usage = `usage: ts-packwerk <command> [options]
 
 commands:
-  check [--json]        report references that break pack rules and are not in a pack_todo.yml
+  init                  write a starter ${configFile}
+  check [--json|--sarif]  report references that break pack rules and are not in a pack_todo.yml
   update-todo           remove fixed violations from pack_todo.yml files
   update-todo --all     record every current violation, for a repo adopting packs
   explain <pack>        describe a pack: its rules, public paths, what it uses and what uses it
+  affected [files...]   list the packs a change reaches; without files, the files changed since --base
+  docs --out <file>     write a page of every pack, its layer, interfaces and dependencies
+  docs --out <file> --check  fail when that page is stale
 
 options:
-  --root <dir>          repository root (default: nearest folder with ${configFile})`
+  --root <dir>          repository root (default: nearest folder with ${configFile})
+  --base <ref>          git ref for affected (default: origin/main)`
 
 const line = (finding: Finding): string =>
   `${finding.file}:${String(finding.line)}:${String(finding.column)}  ${finding.rule}  ${finding.message}`
@@ -50,6 +57,7 @@ const explain = (workspace: Workspace, name: string, io: Io): number => {
     pack.enforceDependencies && "dependencies",
     pack.enforcePrivacy && "privacy",
     pack.enforceLayers && pack.layer !== undefined && "layers",
+    pack.enforcePublicTypes && "public types",
   ].filter((item) => item !== false)
   for (const text of [
     `# ${pack.name}`,
@@ -57,7 +65,8 @@ const explain = (workspace: Workspace, name: string, io: Io): number => {
     `layer: ${pack.layer ?? "none"}`,
     `enforces: ${rules.join(", ") || "nothing"}`,
     `files: ${String(owned.length)}`,
-    `public: ${pack.publicPaths.join(", ") || "none"}`,
+    `public: ${[...pack.interfaces].map(([face, paths]) => (face === "default" ? paths.join(", ") : `${face}: ${paths.join(", ")}`)).join("; ") || "none"}`,
+    `owns tables: ${pack.ownsTables.join(", ") || "none"}`,
     `declared dependencies: ${pack.dependencies.join(", ") || "none"}`,
     `uses: ${counted(outgoing).join(", ") || "nothing"}`,
     `used by: ${counted(incoming).join(", ") || "nothing"}`,
@@ -80,20 +89,54 @@ const findRoot = (start: string): string => {
 
 const existsConfig = (directory: string): boolean => existsSync(path.join(directory, configFile))
 
+const valueOf = (args: string[], name: string): string | undefined => {
+  const at = args.indexOf(name)
+  return at >= 0 ? args.splice(at, 2)[1] : undefined
+}
+
+const changedSince = (root: string, base: string): string[] => {
+  const git = (...args: string[]) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" })
+  const fork = git("merge-base", "HEAD", base).trim()
+  const listed = [git("diff", "--name-only", fork), git("ls-files", "--others", "--exclude-standard")]
+  return [
+    ...new Set(
+      listed
+        .join("\n")
+        .split("\n")
+        .filter((file) => file !== ""),
+    ),
+  ]
+}
+
+const commands = ["init", "check", "update-todo", "explain", "affected", "docs"]
+
 export const runCli = async (argv: readonly string[], io: Io): Promise<number> => {
   const args = [...argv]
-  const rootAt = args.indexOf("--root")
-  const root = rootAt >= 0 ? path.resolve(args.splice(rootAt, 2)[1] ?? ".") : findRoot(process.cwd())
-  const json = args.includes("--json")
-  const all = args.includes("--all")
-  const [command, ...rest] = args.filter((arg) => arg !== "--json" && arg !== "--all")
-  if (command === undefined || command === "help" || command === "--help") {
+  const given = valueOf(args, "--root")
+  const root = given === undefined ? findRoot(process.cwd()) : path.resolve(given)
+  const out = valueOf(args, "--out")
+  const base = valueOf(args, "--base") ?? "origin/main"
+  const flags = new Set(args.filter((arg) => arg.startsWith("--")))
+  const json = flags.has("--json")
+  const all = flags.has("--all")
+  const [command, ...rest] = args.filter((arg) => !arg.startsWith("--"))
+  if (command === undefined || command === "help" || flags.has("--help")) {
     io.out(usage)
     return command === undefined ? 2 : 0
   }
-  if (!["check", "update-todo", "explain"].includes(command)) {
+  if (!commands.includes(command)) {
     io.err(`unknown command ${command}\n\n${usage}`)
     return 2
+  }
+  if (command === "init") {
+    const file = path.join(root, configFile)
+    if (existsSync(file)) {
+      io.err(`${configFile} already exists`)
+      return 1
+    }
+    writeFileSync(file, starterConfig)
+    io.out(`wrote ${configFile}; add a pack.yml to each folder that should be a pack, then run ts-packwerk check`)
+    return 0
   }
   const started = performance.now()
   const workspace = await loadWorkspace(root)
@@ -102,6 +145,26 @@ export const runCli = async (argv: readonly string[], io: Io): Promise<number> =
     return 2
   }
   if (command === "explain") return explain(workspace, rest[0] ?? "", io)
+  if (command === "affected") {
+    for (const pack of affected(workspace, rest.length > 0 ? rest : changedSince(root, base))) io.out(pack)
+    return 0
+  }
+  if (command === "docs") {
+    if (out === undefined) {
+      io.err("docs needs --out <file>")
+      return 2
+    }
+    const page = docs(workspace)
+    const file = path.resolve(root, out)
+    if (flags.has("--check")) {
+      if (existsSync(file) && readFileSync(file, "utf8") === page) return 0
+      io.err(`${out} is stale; run ts-packwerk docs --out ${out}`)
+      return 1
+    }
+    writeFileSync(file, page)
+    io.out(`wrote ${out}`)
+    return 0
+  }
   const found = findings(workspace)
   const verdict = judge(found, readTodos(root, workspace.packs))
   if (command === "update-todo") {
@@ -113,7 +176,9 @@ export const runCli = async (argv: readonly string[], io: Io): Promise<number> =
     return unrecorded.length === 0 ? 0 : 1
   }
   const seconds = ((performance.now() - started) / 1000).toFixed(2)
-  if (json) {
+  if (flags.has("--sarif")) {
+    io.out(sarif(verdict.fresh))
+  } else if (json) {
     io.out(JSON.stringify({ fresh: verdict.fresh, stale: verdict.stale, listed: verdict.listed.length }, null, 2))
   } else {
     for (const finding of verdict.fresh) io.out(line(finding))

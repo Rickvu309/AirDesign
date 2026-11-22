@@ -10,6 +10,9 @@ const pack = (name: string, extra: Partial<Pack> = {}): Pack => ({
   enforceLayers: true,
   dependencies: [],
   publicPaths: [`${name}/index.ts`],
+  interfaces: new Map([["default", [`${name}/index.ts`]]]),
+  interfaceDependencies: new Map(),
+  enforcePublicTypes: false,
   ownsTables: [],
   metadata: {},
   ...extra,
@@ -21,6 +24,7 @@ const uses = (file: string, target: string, specifier = "./x.js"): Reference => 
   column: 1,
   specifier,
   typeOnly: false,
+  reexport: false,
   target: { kind: "file", file: target },
 })
 
@@ -32,6 +36,7 @@ const workspace = (packs: Pack[], references: Reference[], packageRoots = ["app"
   references,
   packageRoots,
   tableUses: [],
+  typeGaps: [],
   problems: [],
 })
 

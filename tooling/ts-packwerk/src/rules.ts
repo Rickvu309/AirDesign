@@ -1,6 +1,6 @@
 import { isPublic, manifestFile, packageRootOf, packOf, type Pack, type Workspace } from "./workspace.ts"
 
-export type RuleName = "dependency" | "privacy" | "layer" | "table" | "package" | "cycle"
+export type RuleName = "dependency" | "privacy" | "interface" | "layer" | "table" | "public_type" | "package" | "cycle"
 
 export type Finding = {
   readonly rule: RuleName
@@ -13,7 +13,14 @@ export type Finding = {
   readonly message: string
 }
 
-export const todoRules: ReadonlySet<RuleName> = new Set(["dependency", "privacy", "layer", "table"])
+export const todoRules: ReadonlySet<RuleName> = new Set([
+  "dependency",
+  "privacy",
+  "interface",
+  "layer",
+  "table",
+  "public_type",
+])
 
 const crossPack = (workspace: Workspace) =>
   workspace.references.flatMap((reference) => {
@@ -53,6 +60,17 @@ const packFindings = (workspace: Workspace): Finding[] =>
         rule: "privacy",
         message: `${target} is private to ${to.name}; import a public path (${to.publicPaths.join(", ") || "none yet"}) or add this file to its public list`,
       })
+    }
+    const faces = from.interfaceDependencies.get(to.name)
+    if (faces !== undefined && isPublic(to, target)) {
+      const allowed = faces.flatMap((face) => to.interfaces.get(face) ?? [])
+      if (!allowed.some((entry) => target === entry || target.startsWith(`${entry.replace(/\/$/, "")}/`))) {
+        found.push({
+          ...at,
+          rule: "interface",
+          message: `${from.name} may use only ${faces.map((face) => `${to.name}#${face}`).join(", ")}, and ${target} is outside it`,
+        })
+      }
     }
     const fromRank = rank(workspace, from)
     const toRank = rank(workspace, to)
@@ -131,6 +149,21 @@ const tableFindings = (workspace: Workspace): Finding[] => {
   })
 }
 
+const publicTypeFindings = (workspace: Workspace): Finding[] =>
+  workspace.typeGaps.map((gap) => {
+    const pack = packOf(workspace.packs, gap.file)?.name ?? "."
+    return {
+      rule: "public_type",
+      file: gap.file,
+      line: gap.line,
+      column: gap.column,
+      fromPack: pack,
+      toPack: pack,
+      target: gap.name,
+      message: `${gap.name} is public in ${pack}; write its type, so a change inside cannot change what callers see`,
+    }
+  })
+
 export const dependencyCycles = (packs: readonly Pack[]): string[][] => {
   const byName = new Map(packs.map((pack) => [pack.name, pack]))
   const index = new Map<string, number>()
@@ -196,6 +229,7 @@ export const findings = (workspace: Workspace): Finding[] =>
     ...cycleFindings(workspace),
     ...packFindings(workspace),
     ...tableFindings(workspace),
+    ...publicTypeFindings(workspace),
     ...pathFindings(workspace),
     ...packageFindings(workspace),
   ].sort(order)
