@@ -386,6 +386,25 @@ same(
   ["The limit of ci-duration went from 40 to 45."],
 )
 
+same(
+  "a renamed test file that GitHub lists with a null patch reads as unchanged",
+  readReasons({
+    text: (sha, file) =>
+      file === "metrics.json" ? JSON.stringify({ "ci-duration": { limit: 40 } }) : 'it("a", () => {})\n',
+    fork: "fork",
+    head: "head",
+    listed: [
+      {
+        name: "apps/web/src/doom-editor/a.test.ts",
+        before: "apps/web/src/scene-editor/a.test.ts",
+        status: "renamed",
+        patch: null,
+      },
+    ],
+  }),
+  [],
+)
+
 const localRepo = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-bar-local-"))
 process.on("exit", () => fs.rmSync(localRepo, { recursive: true, force: true }))
 const localGit = (args, input) =>

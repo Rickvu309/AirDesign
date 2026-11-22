@@ -251,7 +251,7 @@ const reader = (text, fork, head) => (file) => ({
     return file.status === "removed" ? undefined : text(head, file.name)
   },
   get lines() {
-    return file.patch === undefined ? netLines(this.base, this.head) : patchLines(file.patch)
+    return file.patch == null ? netLines(this.base, this.head) : patchLines(file.patch)
   },
 })
 
