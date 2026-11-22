@@ -111,6 +111,7 @@
   --stage: #000000;
   --stage-hover: #ffffff1a;
   --stage-quiet: #ffffffa6;
+  --menu-dark: #1e1e1e;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -318,6 +319,7 @@
   --color-claude: var(--claude);
   --color-ink: var(--ink);
   --color-stage: var(--stage);
+  --color-menu-dark: var(--menu-dark);
   --color-blue-tint: var(--blue-tint);
   --color-field-edge: var(--field-edge);
   --color-pressed: var(--pressed);

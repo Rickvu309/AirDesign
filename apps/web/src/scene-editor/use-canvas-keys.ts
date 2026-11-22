@@ -24,7 +24,19 @@ export type KeyArgs = {
   readonly onSpace: (down: boolean) => void
   readonly cancelDrag: () => boolean
   readonly onEditText: (id: scene.NodeId) => void
+  readonly onActions: () => void
 }
+
+const toolOf = {
+  "tool-move": "move",
+  "tool-hand": "hand",
+  "tool-text": "text",
+  "tool-frame": "frame",
+  "tool-rectangle": "rectangle",
+  "tool-ellipse": "ellipse",
+  "tool-line": "line",
+  "tool-arrow": "arrow",
+} as const
 
 const nudge = 1
 const nudgeFar = 10
@@ -74,9 +86,12 @@ export function useCanvasKeys(args: KeyArgs) {
       } else if (gesture === "pan") {
         handled()
         a.onSpace(true)
-      } else if (gesture === "tool-move" || gesture === "tool-hand" || gesture === "tool-text") {
+      } else if (gesture in toolOf) {
         handled()
-        a.onTool(gesture === "tool-move" ? "move" : gesture === "tool-hand" ? "hand" : "text")
+        a.onTool(toolOf[gesture as keyof typeof toolOf])
+      } else if (gesture === "actions") {
+        handled()
+        a.onActions()
       } else if (gesture === "edit-text") {
         const [only] = a.selection.ids
         if (only === undefined || a.selection.ids.length !== 1 || propOf(a.view.nodes.get(only), "text") === undefined)

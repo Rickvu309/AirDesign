@@ -26,7 +26,20 @@ import type { Placed, Point, SlideGeometry } from "./slide-geometry"
 import { transformedBy } from "./transform-drag"
 import type { EditorClient } from "./use-scene-deck"
 
-export type Tool = "move" | "hand" | "text"
+import type { Drawn } from "./create-writes"
+
+export type Tool = "move" | "hand" | "text" | Drawn
+
+const drawing: readonly Tool[] = ["text", "frame", "rectangle", "ellipse", "line", "arrow"]
+
+export type DrawRequest = {
+  readonly from: Point
+  readonly to: Point | null
+  readonly chain: readonly Placed[] | null
+  readonly shift: boolean
+  readonly alt: boolean
+  readonly commit: boolean
+}
 
 export type PointerArgs = {
   readonly stage: RefObject<HTMLDivElement | null>
@@ -42,7 +55,7 @@ export type PointerArgs = {
   readonly texting: boolean
   readonly onTextEnd: () => void
   readonly onTextEdit: (id: scene.NodeId, at: { readonly x: number; readonly y: number }) => void
-  readonly onTextDraw: (from: Point, to: Point | null, chain: readonly Placed[] | null) => void
+  readonly onDraw: (request: DrawRequest) => readonly scene.Write[] | null
   readonly tool: Tool
   readonly setPreview: (preview: Preview | null) => void
   readonly setMarquee: (rect: Rect | null) => void
@@ -175,9 +188,24 @@ export function useCanvasPointer(args: PointerArgs) {
       a.setPreview(done.writes.length === 0 ? null : { ...done, kind: gesture.kind })
       return
     }
+    if (gesture.kind === "draw") {
+      if (a.tool === "text") {
+        a.setMarquee(rectBetween(gesture.origin, at))
+        return
+      }
+      const writes = a.onDraw({
+        from: gesture.origin,
+        to: at,
+        chain: gesture.chain,
+        shift: event.shiftKey,
+        alt: event.altKey,
+        commit: false,
+      })
+      a.setPreview(writes === null || writes.length === 0 ? null : { kind: "draw", writes, guides: [], label: null })
+      return
+    }
     const rect = rectBetween(gesture.origin, at)
     a.setMarquee(rect)
-    if (gesture.kind === "draw") return
     const hits = marqueeSelection(gesture.geometry, rect, {
       deep: event.metaKey || event.ctrlKey,
       locked: (id) => lockedIn(gesture.view, id),
@@ -210,7 +238,14 @@ export function useCanvasPointer(args: PointerArgs) {
     if (gesture?.kind === "draw" && commit && last !== null) {
       const at = toSlide(last)
       const far = gesture.moved || Math.hypot(at.x - gesture.origin.x, at.y - gesture.origin.y) * a.scale >= threshold
-      a.onTextDraw(gesture.origin, far ? at : null, gesture.chain)
+      a.onDraw({
+        from: gesture.origin,
+        to: far ? at : null,
+        chain: gesture.chain,
+        shift: last.shiftKey,
+        alt: last.altKey,
+        commit: true,
+      })
       return
     }
     if (gesture === null || (gesture.kind !== "move" && gesture.kind !== "transform") || !commit || last === null)
@@ -245,7 +280,7 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const origin = toSlide(event)
-      if (a.tool === "text") {
+      if (drawing.includes(a.tool) || a.tool.startsWith("preset:")) {
         stage.setPointerCapture(event.pointerId)
         active.current = { kind: "draw", origin, chain: chainAt(event, a.geometry, a.view), moved: false }
         return

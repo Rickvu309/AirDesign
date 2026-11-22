@@ -33,7 +33,8 @@ test("zoom keys, the wheel and the hand tool move around the slide as Figma does
   const stage = page.locator("[data-scene-stage]")
   await expect.poll(() => stage.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true)
   const left = await stage.evaluate((element) => element.scrollLeft)
-  await page.getByRole("button", { name: sceneEditorCopy.toolHand }).click()
+  await page.getByRole("button", { name: sceneEditorCopy.moveTools }).click()
+  await page.getByRole("menuitem", { name: new RegExp(sceneEditorCopy.toolHand) }).click()
   const room = await stage.boundingBox()
   await page.mouse.move((room?.x ?? 0) + 600, (room?.y ?? 0) + 300)
   await page.mouse.down()
@@ -41,7 +42,10 @@ test("zoom keys, the wheel and the hand tool move around the slide as Figma does
   await page.mouse.up()
   expect(await stage.evaluate((element) => element.scrollLeft)).toBeGreaterThan(left)
   await page.keyboard.press("v")
-  await expect(page.getByRole("button", { name: sceneEditorCopy.toolMove })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("button", { name: sceneEditorCopy.toolMove, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
 
   await page.keyboard.press("Shift+Digit1")
   await page.keyboard.down("ControlOrMeta")

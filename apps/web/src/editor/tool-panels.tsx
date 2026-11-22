@@ -41,6 +41,7 @@ export function ShapeSvg({ markup, size, stroke = shapeStroke }: { markup: strin
       viewBox="0 0 24 24"
       width={size}
       height={size}
+      style={{ width: size, height: size }}
       fill={shapeFill}
       stroke={stroke}
       strokeWidth="1"
@@ -57,6 +58,7 @@ export function LineArt({ arrow, size }: { arrow: boolean; size: number }) {
       viewBox="0 0 24 24"
       width={size}
       height={size}
+      style={{ width: size, height: size }}
       fill="none"
       stroke={lineStroke}
       strokeWidth={size > 24 ? 1.5 : 1.6}
