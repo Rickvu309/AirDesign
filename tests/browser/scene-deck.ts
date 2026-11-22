@@ -1,9 +1,8 @@
 import type { BrowserContext, Page } from "@playwright/test"
-import type { OrderKey } from "../../packages/document/src/index.ts"
+import { orderKeyBetween, scene, type OrderKey } from "../../packages/document/src/index.ts"
 import { forward, signInBrowser, type Stack } from "./api-stack"
 
 const catalog = () => import("../../packages/catalog/src/index.ts")
-const document = () => import("../../packages/document/src/index.ts")
 
 export type Opened = { readonly deck: string; readonly cookie: string; readonly slide: string }
 
@@ -27,7 +26,6 @@ export async function openSceneEditor(page: Page, context: BrowserContext, stack
   await page.locator("[data-scene-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
   const { sceneRoutes } = await catalog()
-  const { scene } = await document()
   const opened = await stack.post(sceneRoutes.open.path, { deck }, cookie)
   const fold = scene.readFold(opened.json.fold)
   const slide = [...(fold?.nodes.values() ?? [])].find((node) => node.type === "slide")
@@ -42,7 +40,6 @@ let counter = 0
 export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Made[]): Promise<void> {
   counter += 1
   const { sceneRoutes } = await catalog()
-  const { orderKeyBetween } = await document()
   const last = new Map<string, OrderKey | null>([[opened.slide, orderKeyBetween(null, null)]])
   const writes = nodes.flatMap((node) => {
     const at = orderKeyBetween(last.get(node.parent) ?? null, null)
@@ -94,7 +91,6 @@ export async function savedNode(
   id: string,
 ): Promise<Record<string, unknown> | undefined> {
   const { sceneRoutes } = await catalog()
-  const { scene } = await document()
   const answer = await stack.post(sceneRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const fold = scene.readFold(answer.json.fold)
   return fold?.nodes.get(scene.nodeId(id)) as Record<string, unknown> | undefined
