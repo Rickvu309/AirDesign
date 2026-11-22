@@ -1,3 +1,4 @@
+import { runDrillCases } from "./red-main-drill.mjs"
 import { history, io, logs, mainUpTo, mainWith, ok, recorder, repository, said, same } from "./red-main-replay.mjs"
 import { redMainBot, revertBranch } from "./red-main-revert.mjs"
 
@@ -52,8 +53,7 @@ const revertAnswers = [
   [/\/pulls\/1211\/files/, () => ok(history.commits[skillsHead].files.join("\n"))],
   raceIssue,
 ]
-const designRace =
-  "Race: tests/browser/design-states.spec.ts › every named state of this design shard is reached and scanned in one stack"
+const designRace = "Race: design-states › slide-added-title"
 const failedDesign = recorder(revertAnswers)
 await redMainBot({ repository, event: designEvent, io: io(failedDesign) })
 same(
@@ -96,4 +96,11 @@ same(
     said.at(-1).includes("check (design 3/3)"),
   ],
   [[], false, true],
+)
+
+const drilled = await runDrillCases(redMainBot)
+same(
+  "every red-main drill case passes",
+  drilled.map((each) => each.passed),
+  drilled.map(() => true),
 )

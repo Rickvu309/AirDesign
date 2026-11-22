@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { failedTests } from "./failed-tests.mjs"
 import { drillGreenRerun } from "./green-rerun-drill.mjs"
-import { greenRerun, rerunCommand, rerunResult } from "./green-rerun.mjs"
+import { fileAddedBetween, greenRerun, rerunCommand, rerunResult } from "./green-rerun.mjs"
 import { replayVariable } from "./property-seed.mjs"
 import { logs, root, same } from "./red-main-replay.mjs"
 
@@ -174,4 +174,44 @@ same(
       [green, "tests/browser/notice-motion.spec.ts", undefined],
     ],
   ],
+)
+
+same(
+  "fileAddedBetween returns undefined when the file exists at the green commit",
+  fileAddedBetween((args) => ({ status: 0, stdout: args[0] === "log" ? "abc\n" : "", stderr: "" }))(
+    green,
+    "ee5ab7748b4f858c90cbd015c213e3aa78e8e15b",
+    "apps/web/src/left-out-replay.test.ts",
+  ),
+  undefined,
+)
+same(
+  "fileAddedBetween returns the adding commit when the file is absent at the green commit",
+  fileAddedBetween((args) =>
+    args[0] === "cat-file"
+      ? { status: 128, stdout: "", stderr: "" }
+      : { status: 0, stdout: "ec82581b004ee250af756c938d00ce55822a3500\n", stderr: "" },
+  )(green, "ec82581b004ee250af756c938d00ce55822a3500", "apps/web/src/left-out-replay.test.ts"),
+  "ec82581b004ee250af756c938d00ce55822a3500",
+)
+const designZoom = {
+  file: "tests/browser/design-states.spec.ts",
+  line: 73,
+  name: "every named state of this design shard is reached and scanned in one stack",
+  state: "zoom-selection",
+  error: "expect(received).toBeLessThanOrEqual(expected)",
+}
+same(
+  "rerunResult matches a design-state failure only when the same state fails at green",
+  rerunResult({
+    test: designZoom,
+    status: 1,
+    output: [
+      "  1) tests/browser/design-states.spec.ts:73:1 › every named state of this design shard is reached and scanned in one stack",
+      "    Error: every named state is reached",
+      '    +     "error": "expect(received).toBeLessThanOrEqual(expected)",',
+      '    +     "page": "slide-added-title",',
+    ].join("\n"),
+  }).result,
+  "unclear",
 )

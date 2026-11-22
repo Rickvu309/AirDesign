@@ -1,5 +1,5 @@
 import { deckStateFile, deckStateNote } from "./deck-state-file.mjs"
-import { agentHeader, raceTitle, recordRace } from "./race-issue.mjs"
+import { agentHeader, raceKey, raceTitle, recordRace } from "./race-issue.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -235,6 +235,42 @@ same(
   "a unit test race names no deck-state.json",
   written(unitRace).map((call) => call.input.includes(deckStateFile)),
   [false],
+)
+
+const zoomState = {
+  file: "tests/browser/design-states.spec.ts",
+  line: 73,
+  name: "every named state of this design shard is reached and scanned in one stack",
+  state: "zoom-selection",
+}
+same("a design-state race title names the state", raceTitle(zoomState), "Race: design-states › zoom-selection")
+same(
+  "a hand-filed design-state issue with a journey suffix shares the same race key",
+  raceKey("Race: design-states › zoom-selection (navigate-zoom-pan)"),
+  raceKey(raceTitle(zoomState)),
+)
+const designOpen = tracker({
+  open: [
+    {
+      number: 1293,
+      title: "Race: design-states › zoom-selection (navigate-zoom-pan)",
+      url: issueUrl(1293),
+    },
+  ],
+})
+recordRace({ ...failure(oldBase), test: zoomState, gh: designOpen.gh })
+same("a design-state race comments on an open issue for the same state", designOpen.did(), ["issue comment 1293"])
+
+const designClosed = tracker({
+  closed: [closedBy(1293, zoomState, [merged(1299, fixMerge, "2026-11-22T07:00:00Z")])],
+  compared: { [oldBase]: "behind" },
+})
+recordRace({ ...failure(oldBase), test: zoomState, gh: designClosed.gh })
+const designSearch = designClosed.calls.find((call) => call.args[1] === "graphql")?.args.at(-1) ?? ""
+same(
+  "closed design-state search queries design-states and the state name, not the spec path",
+  [designSearch.includes('"design-states" "zoom-selection"'), designClosed.did()],
+  [true, ["issue comment 1293"]],
 )
 
 console.log("race-issue tests passed")
