@@ -24,6 +24,15 @@ export const plainTheme: Theme = {
   },
 }
 
+export const swatches = {
+  black: "#000000",
+  custom: "#123456",
+  halfBlue: "#8080ff",
+  recoloured: "#abcdef",
+  shown: "#112233",
+  switchedOff: "#445566",
+} as const
+
 export const advance = 11
 export const lineHeight = 30
 export const measure = measureWith({})

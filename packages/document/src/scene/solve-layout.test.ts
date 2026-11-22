@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest"
 import { type Layout, type Track, solveLayout } from "./index.js"
-import { advance, block, column, label, lineHeight, measure, padding, plainTheme, row, spot } from "./scene-fixtures.js"
+import {
+  advance,
+  block,
+  column,
+  label,
+  lineHeight,
+  measure,
+  padding,
+  plainTheme,
+  row,
+  spot,
+} from "./scene-fixtures-art.js"
 import { type TreeNode, sceneFromTree } from "./scene-tree.js"
 
 function solved(slide: readonly TreeNode[], slideProps = {}) {

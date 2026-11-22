@@ -1,7 +1,7 @@
 import type { scene } from "@airdesign/document"
 import { fontFamily } from "@airdesign/fonts"
 import type { CSSProperties } from "react"
-import { opticalSize } from "./scene-widths.js"
+import { pinnedOpticalSize } from "./scene-widths.js"
 
 type Run = scene.ResolvedRun
 
@@ -12,7 +12,7 @@ function runLook(run: Run): CSSProperties {
     fontSize: run.size,
     fontWeight: run.bold ? 700 : 400,
     fontStyle: run.italic ? "italic" : "normal",
-    fontVariationSettings: `"opsz" ${String(opticalSize)}`,
+    fontVariationSettings: `"opsz" ${String(pinnedOpticalSize)}`,
     color: run.color,
     ...(decoration === "" ? {} : { textDecoration: decoration }),
     ...(run.tracking === 0 ? {} : { letterSpacing: run.tracking }),

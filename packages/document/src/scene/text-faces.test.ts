@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { sceneFaces } from "./index.js"
-import { block, label, plainTheme, spot } from "./scene-fixtures.js"
+import { block, label, plainTheme, spot } from "./scene-fixtures-art.js"
 import { sceneFromTree } from "./scene-tree.js"
 
 const faces = (nodes: Parameters<typeof sceneFromTree>[0]["slides"][number]["children"]) =>

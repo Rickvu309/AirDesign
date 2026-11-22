@@ -4,6 +4,9 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { loadIcon } from "./icon-nodes.js"
 import { NodeArt } from "./index.js"
+import { swatches } from "./swatches-art.js"
+
+const navy = scene.defaultTheme.colors.accent1
 
 const spot = (x: number, y: number, w: number, h: number, extra: object = {}) => ({
   x,
@@ -36,12 +39,12 @@ describe("NodeArt", () => {
       shape("card", {
         box: spot(40, 30, 300, 200),
         radius: [8, 8, 0, 0],
-        fills: [solid({ var: "accent1" }), solid("#ffffff", { opacity: 0.5 })],
+        fills: [solid({ var: "accent1" }), solid(swatches.white, { opacity: 0.5 })],
       }),
     ])
     expect(html).toContain("left:40px;top:30px;width:300px;height:200px")
     expect(html).toContain("border-radius:8px 8px 0px 0px")
-    expect(html.indexOf("background:#0b3a6f")).toBeLessThan(html.indexOf("background:#ffffff"))
+    expect(html.indexOf(`background:${navy}`)).toBeLessThan(html.indexOf(`background:${swatches.white}`))
     expect(html).toContain("opacity:0.5")
   })
 
@@ -55,14 +58,14 @@ describe("NodeArt", () => {
             shape: "linear",
             angle: 0,
             stops: [
-              { at: 0, color: "#000000" },
-              { at: 1, color: "#ffffff" },
+              { at: 0, color: swatches.black },
+              { at: 1, color: swatches.white },
             ],
           },
         ],
       }),
     ])
-    expect(linear).toContain("linear-gradient(90deg, #000000 0%, #ffffff 100%)")
+    expect(linear).toContain(`linear-gradient(90deg, ${swatches.black} 0%, ${swatches.white} 100%)`)
     const radial = painted([
       shape("g", {
         box: spot(0, 0, 100, 100),
@@ -72,14 +75,14 @@ describe("NodeArt", () => {
             shape: "radial",
             angle: 0,
             stops: [
-              { at: 0, color: "#000000" },
-              { at: 1, color: "#ffffff" },
+              { at: 0, color: swatches.black },
+              { at: 1, color: swatches.white },
             ],
           },
         ],
       }),
     ])
-    expect(radial).toContain("radial-gradient(closest-side, #000000 0%, #ffffff 100%)")
+    expect(radial).toContain(`radial-gradient(closest-side, ${swatches.black} 0%, ${swatches.white} 100%)`)
   })
 
   it("draws a picture in its fit, and a crop as the part of the picture it names", () => {
@@ -109,13 +112,15 @@ describe("NodeArt", () => {
       painted([
         shape("s", {
           box: spot(0, 0, 100, 100),
-          fills: [solid("#000000")],
+          fills: [solid(swatches.black)],
           geometry: { kind: "preset", name: "triangle" },
         }),
       ]),
     ).toMatch(/clip-path:path\("M[^"]+Z"\)/)
     expect(
-      painted([shape("e", { box: spot(0, 0, 100, 100), fills: [solid("#000000")], geometry: { kind: "ellipse" } })]),
+      painted([
+        shape("e", { box: spot(0, 0, 100, 100), fills: [solid(swatches.black)], geometry: { kind: "ellipse" } }),
+      ]),
     ).toContain("border-radius:50%")
   })
 
@@ -124,7 +129,7 @@ describe("NodeArt", () => {
       painted([
         shape("s", {
           box: spot(0, 0, 100, 50),
-          strokes: [solid("#ff0000")],
+          strokes: [solid(swatches.red)],
           stroke: { weight: 4, align, dash: "solid", ...extra },
         }),
       ])
@@ -149,7 +154,7 @@ describe("NodeArt", () => {
             route,
             arrows: ["circle", "triangle"],
           },
-          strokes: [solid("#000000")],
+          strokes: [solid(swatches.black)],
           stroke: { weight: 4, align: "center", dash: "solid" },
         }),
       ])
@@ -168,7 +173,7 @@ describe("NodeArt", () => {
         box: spot(10, 20, 100, 200),
         text: {
           chars: "aaaa bbbb",
-          spans: [{ end: 5, bold: true, color: "#ff0000" }, { end: 9 }],
+          spans: [{ end: 5, bold: true, color: swatches.red }, { end: 9 }],
           paras: [{ align: "center" }],
           style: "body",
           resize: "fixed",
@@ -179,7 +184,7 @@ describe("NodeArt", () => {
     expect(html.match(/data-line/g)).toHaveLength(2)
     expect(html).toContain("text-align:center")
     expect(html).toContain("font-weight:700")
-    expect(html).toContain("color:#ff0000")
+    expect(html).toContain(`color:${swatches.red}`)
     expect(html).toContain("white-space:pre")
     expect(html).not.toContain("aaaa </span>")
   })
@@ -191,7 +196,7 @@ describe("NodeArt", () => {
           type: "frame",
           name: "f",
           props: { box: spot(0, 0, 100, 100), radius: 12, clip } as never,
-          children: [shape("c", { box: spot(0, 0, 50, 50), fills: [solid("#000000")] })],
+          children: [shape("c", { box: spot(0, 0, 50, 50), fills: [solid(swatches.black)] })],
         },
       ])
     expect(frame(false)).not.toContain("overflow:hidden;border-radius:12px")
@@ -203,8 +208,8 @@ describe("NodeArt", () => {
     const html = painted([
       shape("s", {
         box: spot(0, 0, 100, 100),
-        fills: [solid("#ffffff")],
-        effects: [{ kind: "dropShadow", color: "#000000", opacity: 0.2, x: 0, y: 8, blur: 24, spread: 0 }],
+        fills: [solid(swatches.white)],
+        effects: [{ kind: "dropShadow", color: swatches.black, opacity: 0.2, x: 0, y: 8, blur: 24, spread: 0 }],
       }),
     ])
     expect(html).toContain("box-shadow:0px 8px 24px 0px rgb(0 0 0 / 0.2)")
@@ -212,7 +217,7 @@ describe("NodeArt", () => {
       painted([
         shape("s", {
           box: spot(0, 0, 100, 100),
-          fills: [solid("#ffffff")],
+          fills: [solid(swatches.white)],
           effects: [{ kind: "layerBlur", radius: 8 }],
         }),
       ]),
@@ -220,7 +225,7 @@ describe("NodeArt", () => {
     const preset = painted([
       shape("s", {
         box: spot(0, 0, 100, 100),
-        fills: [solid("#ffffff")],
+        fills: [solid(swatches.white)],
         geometry: { kind: "preset", name: "triangle" },
         effects: "soft",
       }),
@@ -230,7 +235,7 @@ describe("NodeArt", () => {
 
   it("turns a node by its rotation and mirrors its drawing by its flips", () => {
     const html = painted([
-      shape("s", { box: spot(0, 0, 100, 100, { rotation: 15, flipH: true }), fills: [solid("#000000")] }),
+      shape("s", { box: spot(0, 0, 100, 100, { rotation: 15, flipH: true }), fills: [solid(swatches.black)] }),
     ])
     expect(html).toContain("transform:rotate(15deg)")
     expect(html).toContain("transform:scale(-1, 1)")
@@ -242,12 +247,12 @@ describe("NodeArt", () => {
       shape("i", {
         box: spot(0, 0, 48, 48),
         geometry: { kind: "icon", name: "lucide/arrow-right" },
-        strokes: [solid("#0b3a6f")],
+        strokes: [solid(navy)],
         stroke: { weight: 4, align: "center", dash: "solid" },
       }),
     ])
     expect(html).toContain('viewBox="0 0 24 24"')
-    expect(html).toContain('stroke="#0b3a6f"')
+    expect(html).toContain(`stroke="${navy}"`)
     expect(html).toContain('stroke-width="2"')
     expect(html).toContain('d="M5 12h14"')
   })
@@ -258,7 +263,7 @@ describe("NodeArt", () => {
       shape("i", {
         box: spot(0, 0, 48, 48),
         geometry: { kind: "icon", name: "lucide/no-such-icon-anywhere" },
-        strokes: [solid("#000000")],
+        strokes: [solid(swatches.black)],
         stroke: { weight: 2, align: "center", dash: "solid" },
       }),
     ])

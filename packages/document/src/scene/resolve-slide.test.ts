@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { type Theme, applyEdit, isRefusal, nodeId, resolveSlide, rev, slideBackground } from "./index.js"
-import { block, column, label, measure, plainTheme, row, spot } from "./scene-fixtures.js"
+import { block, column, label, measure, plainTheme, row, spot, swatches } from "./scene-fixtures-art.js"
 import { type TreeNode, sceneFromTree } from "./scene-tree.js"
 
 function resolved(children: readonly TreeNode[], theme: Theme = plainTheme, slideProps = {}) {
@@ -18,10 +18,10 @@ describe("resolveSlide", () => {
       }),
     ])
     expect(parts[0]?.fills).toEqual([
-      { kind: "solid", color: "#0000ff", opacity: 1 },
-      { kind: "solid", color: "#8080ff", opacity: 1 },
+      { kind: "solid", color: plainTheme.colors.accent1, opacity: 1 },
+      { kind: "solid", color: swatches.halfBlue, opacity: 1 },
     ])
-    expect(parts[0]?.strokes).toEqual([{ kind: "solid", color: "#ff0000", opacity: 1 }])
+    expect(parts[0]?.strokes).toEqual([{ kind: "solid", color: plainTheme.colors.accent3, opacity: 1 }])
   })
 
   it("repaints every use of a variable when the theme changes, with no write to any node", () => {
@@ -29,18 +29,18 @@ describe("resolveSlide", () => {
       block("a", 100, 100, { fills: [solidOf({ var: "accent1" })] }),
       label("t", "hi", {}, { spans: [{ end: 2, color: { var: "accent1" } }] }),
     ])
-    expect(parts[0]?.fills[0]).toMatchObject({ color: "#0000ff" })
-    expect(parts[1]?.text?.lines[0]?.runs[0]?.color).toBe("#0000ff")
+    expect(parts[0]?.fills[0]).toMatchObject({ color: plainTheme.colors.accent1 })
+    expect(parts[1]?.text?.lines[0]?.runs[0]?.color).toBe(plainTheme.colors.accent1)
     const recoloured = applyEdit(scene, {
       once: "recolour",
       author: { kind: "person", id: "p" },
-      writes: [{ node: nodeId("n:1"), prop: "theme.colors.accent1", value: "#abcdef" }],
+      writes: [{ node: nodeId("n:1"), prop: "theme.colors.accent1", value: swatches.recoloured }],
       rev: rev(scene.rev + 1),
     })
     if (isRefusal(recoloured)) throw new Error("refused")
     const after = resolveSlide(recoloured, slides[0]!, measure)
-    expect(after[0]?.fills[0]).toMatchObject({ color: "#abcdef" })
-    expect(after[1]?.text?.lines[0]?.runs[0]?.color).toBe("#abcdef")
+    expect(after[0]?.fills[0]).toMatchObject({ color: swatches.recoloured })
+    expect(after[1]?.text?.lines[0]?.runs[0]?.color).toBe(swatches.recoloured)
     expect(recoloured.nodes.get(nodeId("n:4"))).toBe(scene.nodes.get(nodeId("n:4")))
   })
 
@@ -61,7 +61,7 @@ describe("resolveSlide", () => {
 
   it("leaves out hidden nodes and paints that are switched off", () => {
     const { parts } = resolved([
-      block("shown", 10, 10, { fills: [solidOf("#112233"), solidOf("#445566", { visible: false })] }),
+      block("shown", 10, 10, { fills: [solidOf(swatches.shown), solidOf(swatches.switchedOff, { visible: false })] }),
       block("hidden", 10, 10, { hidden: true }),
     ])
     expect(parts).toHaveLength(1)
@@ -84,7 +84,7 @@ describe("resolveSlide", () => {
   it("answers a stroke only when something strokes", () => {
     const { parts } = resolved([
       block("a", 10, 10),
-      block("b", 10, 10, { strokes: [solidOf("#000000")], stroke: { weight: 3, align: "center", dash: "dash" } }),
+      block("b", 10, 10, { strokes: [solidOf(swatches.black)], stroke: { weight: 3, align: "center", dash: "dash" } }),
     ])
     expect(parts[0]?.stroke).toBeNull()
     expect(parts[1]?.stroke).toEqual({ weight: 3, align: "center", dash: "dash" })
@@ -103,7 +103,7 @@ describe("resolveSlide", () => {
       named,
     )
     expect(parts[0]?.effects).toEqual([
-      { kind: "dropShadow", color: "#111111", opacity: 0.1, x: 0, y: 4, blur: 12, spread: 0 },
+      { kind: "dropShadow", color: plainTheme.colors.text, opacity: 0.1, x: 0, y: 4, blur: 12, spread: 0 },
     ])
     expect(parts[1]?.effects).toEqual([{ kind: "layerBlur", radius: 4 }])
   })
@@ -117,7 +117,7 @@ describe("resolveSlide", () => {
     expect(parts.map((part) => part.text?.lines[0]?.y)).toEqual([0, 35, 70])
     expect(parts[0]?.text?.lines[0]?.runs[0]).toMatchObject({
       text: "hello",
-      color: "#111111",
+      color: plainTheme.colors.text,
       font: "Inter",
       size: 20,
     })
@@ -250,8 +250,12 @@ describe("resolveSlide", () => {
 describe("slideBackground", () => {
   it("paints a slide with the theme's background unless it has fills of its own", () => {
     const plain = resolved([])
-    expect(slideBackground(plain.scene, plain.slides[0]!)).toEqual([{ kind: "solid", color: "#ffffff", opacity: 1 }])
+    expect(slideBackground(plain.scene, plain.slides[0]!)).toEqual([
+      { kind: "solid", color: plainTheme.colors.background, opacity: 1 },
+    ])
     const filled = resolved([], plainTheme, { fills: [solidOf({ var: "background2" })] })
-    expect(slideBackground(filled.scene, filled.slides[0]!)).toEqual([{ kind: "solid", color: "#eeeeee", opacity: 1 }])
+    expect(slideBackground(filled.scene, filled.slides[0]!)).toEqual([
+      { kind: "solid", color: plainTheme.colors.background2, opacity: 1 },
+    ])
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { type Chart, type Resolved, deriveChart, nodeId } from "./index.js"
-import { measure, plainTheme, spot } from "./scene-fixtures.js"
+import { measure, plainTheme, spot, swatches } from "./scene-fixtures-art.js"
 
 const frame = nodeId("t:9")
 const area = spot(0, 0, 800, 400)
@@ -83,8 +83,8 @@ describe("deriveChart", () => {
     const parts = derive(column)
     expect(fillOf(byId(parts, "t:9#Revenue:Q1"))).toBe(plainTheme.colors.accent1)
     expect(fillOf(byId(parts, "t:9#Cost:Q1"))).toBe(plainTheme.colors.accent2)
-    const own = derive({ ...column, series: [{ ...column.series[0]!, color: "#123456" }, column.series[1]!] })
-    expect(fillOf(byId(own, "t:9#Revenue:Q2"))).toBe("#123456")
+    const own = derive({ ...column, series: [{ ...column.series[0]!, color: swatches.custom }, column.series[1]!] })
+    expect(fillOf(byId(own, "t:9#Revenue:Q2"))).toBe(swatches.custom)
     const point = derive({ ...column, points: { "t:9#Revenue:Q2": { var: "accent5" } } })
     expect(fillOf(byId(point, "t:9#Revenue:Q2"))).toBe(plainTheme.colors.accent5)
     expect(fillOf(byId(point, "t:9#Revenue:Q1"))).toBe(plainTheme.colors.accent1)
