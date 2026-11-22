@@ -39,7 +39,6 @@ import { slideAddresses, slidePart } from "./package-address.js"
 import { partBytes } from "./part-markup.js"
 import { readShapeFacts, shapeKind, type ShapeFact } from "./read-shapes.js"
 import { SlideEditor } from "./slide-editor.js"
-import { frameSize, scaledGrid } from "./table-size.js"
 import { writeTrait } from "./trait-xml.js"
 import { templateStyles } from "./template-style.js"
 import { slideNumbering } from "./slide-numbering.js"
@@ -50,31 +49,6 @@ type Fields = Record<string, FieldEdit<unknown>>
 
 function entries(patch: ElementPatch): readonly (readonly [TraitName, Readonly<Fields>])[] {
   return Object.entries(patch) as [TraitName, Fields][]
-}
-
-function boxLast(body: NodeRegister | undefined): boolean {
-  const patches = (body?.landed ?? []).filter((row) => row.visible).map((row) => rowOf(row, "table").patch)
-  const box = patches.findLastIndex((patch) => patch.box !== undefined)
-  return box > patches.findLastIndex((patch) => patch.table !== undefined)
-}
-
-function sizedTable(parts: Parts, at: ElementAt, fields: Fields): Parts {
-  const before = frameSize(partBytes(parts, at.part), at.shape)
-  const next = writeTrait(parts, at, "box", fields)
-  const written = partBytes(next, at.part)
-  const fitted = scaledGrid(written, at.shape, before)
-  if (fitted === written) return next
-  const sized = new Map(next)
-  sized.set(at.part, fitted)
-  return sized
-}
-
-function writtenTable(parts: Parts, at: ElementAt, written: ReadonlyMap<TraitName, Fields>, last: boolean): Parts {
-  const box = written.get("box")
-  const sized = (from: Parts) => (box === undefined ? from : sizedTable(from, at, box))
-  let next = last ? parts : sized(parts)
-  for (const [trait, fields] of written) if (trait !== "box") next = writeTrait(next, at, trait, fields)
-  return last ? sized(next) : next
 }
 
 function writtenNotes(
@@ -95,8 +69,7 @@ function writtenNotes(
 
 function openedValue(opening: IndexElement): ElementPatch | null {
   const traits: readonly TraitName[] = kindTraits[opening.kind]
-  const holder = traits.includes("text") ? "text" : traits.includes("table") ? "table" : null
-  return holder === null ? null : rowOf({ value: opening.value ?? "" }, holder).patch
+  return traits.includes("text") ? rowOf({ value: opening.value ?? "" }, "text").patch : null
 }
 
 function openingPatch(opening: IndexElement | undefined): ElementPatch {
@@ -182,7 +155,7 @@ function writtenElement(
   numbering: ReadonlyMap<string, SlideNumbers>,
   textNamed: boolean,
 ): void {
-  const rows = body === undefined ? {} : landedPatch(body, shape?.contentKind === "table" ? "table" : "text")
+  const rows = body === undefined ? {} : landedPatch(body, "text")
   const facts = shape && {
     kind: shapeKind(shape),
     text: shape.hasText || shape.contentKind === "chart",
@@ -200,7 +173,7 @@ function writtenElement(
       if (edit === "opening" && kept[field] !== undefined) continue
       delete kept[field]
       if (taken !== null && !taken.has(`${trait}.${field}` as FieldKey)) continue
-      if (shape === undefined || (shape.locked && shape.contentKind !== "table")) throw new Error(`${trait}-shape`)
+      if (shape === undefined || shape.locked) throw new Error(`${trait}-shape`)
       kept[field] = edit
     }
     written.set(trait, kept)
@@ -226,7 +199,6 @@ function writtenElement(
     shape.part,
     shape.shape,
     (scoped) => {
-      if (shape.contentKind === "table") return writtenTable(scoped, at, written, boxLast(body))
       let next = scoped
       for (const [trait, fields] of written) {
         if (deferText && trait === "text") continue

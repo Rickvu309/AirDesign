@@ -1,7 +1,7 @@
 import { elementId, limits, type Register } from "@airdesign/document"
-import { bodyIs, boxed, placed } from "./body-fixture.js"
+import { bodyIs } from "./body-fixture.js"
 import { fixture } from "./fixture.js"
-import { edit, elements, type Attempt, type ElementName, type Reason, type Task } from "./score.js"
+import { edit, type Attempt, type ElementName, type Reason, type Task } from "./score.js"
 
 export type SuiteRow = {
   readonly task: Task
@@ -578,16 +578,6 @@ export const suite: readonly SuiteRow[] = [
   },
   {
     task: {
-      id: "text-on-table",
-      prompt: "Type Q3 into the table that is the body of deck tabled.",
-      deck: () => fixture("tabled", [{ element: "title" }, { element: "body" }], bodyIs("table")),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
-    },
-    reference: one("tabled", "body", "Q3", 0),
-    wrong: { attempt: one("tabled", "title", "Q3", 0), reason: "tool" },
-  },
-  {
-    task: {
       id: "text-on-kept",
       prompt: "Change the diagram that is the body of deck diagrammed to read Plan.",
       deck: () => fixture("diagrammed", [{ element: "title" }, { element: "body" }], bodyIs("kept")),
@@ -595,15 +585,5 @@ export const suite: readonly SuiteRow[] = [
     },
     reference: one("diagrammed", "body", "Plan", 0),
     wrong: { attempt: one("diagrammed", "title", "Plan", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "resize-table",
-      prompt: "Make the table that is the body of deck widened twice as wide.",
-      deck: () => fixture("widened", [{ element: "title", before: ["Results"] }, { element: "body" }], bodyIs("table")),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { body: [] } },
-    },
-    reference: boxed("widened", { ...placed, cx: placed.cx * 2 }),
-    wrong: { attempt: boxed("widened", { ...placed, cx: placed.cx * 2 }, elements.title), reason: "touched" },
   },
 ]

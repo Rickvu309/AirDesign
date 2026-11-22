@@ -15,10 +15,6 @@ const spTreeAdd = route("spTree.add")
 const spTreeOrder = route("spTree.order")
 const spTreeRemove = route("spTree.remove")
 const spTreeClone = route("spTree.clone")
-const graphicFrameAddTable = route("graphicFrame.addTable")
-const tblAddRow = route("tbl.addRow")
-const tblOrderRow = route("tbl.orderRow")
-const tblRemoveRow = route("tbl.removeRow")
 const graphicFrameAddChart = route("graphicFrame.addChart")
 
 const placed = {
@@ -64,18 +60,6 @@ type StructuralRoutes = {
   readonly shape: Placed
   readonly connector: Placed
   readonly group: Placed
-  readonly table: {
-    readonly create: NamedRoute<"graphicFrame.addTable">
-    readonly move: NamedRoute<"spTree.order">
-    readonly remove: NamedRoute<"spTree.remove">
-    readonly duplicate: NamedRoute<"spTree.clone">
-  }
-  readonly row: {
-    readonly create: NamedRoute<"tbl.addRow">
-    readonly move: NamedRoute<"tbl.orderRow">
-    readonly remove: NamedRoute<"tbl.removeRow">
-  }
-  readonly cell: NoActions
   readonly chart: {
     readonly create: NamedRoute<"graphicFrame.addChart">
     readonly move: NamedRoute<"spTree.order">
@@ -109,14 +93,6 @@ export const structure = {
   shape: placed,
   connector: placed,
   group: placed,
-  table: {
-    create: graphicFrameAddTable,
-    move: spTreeOrder,
-    remove: spTreeRemove,
-    duplicate: spTreeClone,
-  },
-  row: { create: tblAddRow, move: tblOrderRow, remove: tblRemoveRow },
-  cell: {},
   chart: {
     create: graphicFrameAddChart,
     move: spTreeOrder,

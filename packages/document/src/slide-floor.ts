@@ -144,7 +144,7 @@ export function floorFor(elements: readonly IndexElement[], slide: SlideId): rea
   }))
 }
 
-const carried: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text.value", "notes.value", "table.value"]
+const carried: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text.value", "notes.value"]
 
 type Edits = Record<string, Record<string, FieldEdit<unknown>>>
 

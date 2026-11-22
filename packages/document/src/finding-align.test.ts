@@ -22,7 +22,6 @@ function card(
     placeholder: null,
     fill: { rgb: "DDDDDD" },
     text: null,
-    cells: null,
     ...more,
   }
 }

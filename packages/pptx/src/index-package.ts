@@ -1,11 +1,8 @@
 import { slideTextStyles } from "./slide-text-styles.js"
 import {
-  bytesOf,
   elementId,
   layoutFromFile,
-  limits,
   readSlideId,
-  writeTableValue,
   writeTextValue,
   type DeckIndex,
   type IndexElement,
@@ -23,7 +20,6 @@ import { presentationPart } from "./package-address.js"
 import { slideSkipped } from "./slide-show.js"
 import { markupDocument } from "./element-span.js"
 import { animatedShapeIds, freeShapeId } from "./shape-id.js"
-import { readTable } from "./table-write.js"
 
 type Shape = ReturnType<typeof readShapes>[number]
 
@@ -38,16 +34,6 @@ function framingOf(parts: ReadonlyMap<string, Uint8Array>, shapes: readonly Shap
   )
   const node = elementId(`${group.slide}.${group.shape}`)
   return layoutFromFile(marker, { node, box: group.box, frame: group.frame ?? null, children })
-}
-
-function tableValue(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
-  try {
-    const table = readTable(parts, shape.part, shape.shape)
-    const value = table === null ? null : writeTableValue(table)
-    return value !== null && bytesOf(value) <= limits.valueBytes ? value : null
-  } catch {
-    return null
-  }
 }
 
 function indexedTransition(bytes: Uint8Array | undefined) {
@@ -66,8 +52,7 @@ function indexedGuides(parts: ReadonlyMap<string, Uint8Array>, part: string) {
   }
 }
 
-function valueOf(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
-  if (shapeKind(shape) === "table") return tableValue(parts, shape)
+function valueOf(shape: Shape): string | null {
   return shape.text.length === 0 ? null : writeTextValue(shape.text)
 }
 
@@ -115,7 +100,7 @@ export function indexPackage(
     return {
       node: elementId(`${shape.slide}.${shape.shape}`),
       kind: shapeKind(shape),
-      value: valueOf(parts, shape),
+      value: valueOf(shape),
       box: shape.box,
       grouped: shape.grouped === true,
       ...(shape.group === undefined ? {} : { group: elementId(`${shape.slide}.${shape.group}`) }),

@@ -32,10 +32,6 @@ _Avoid_: clone (in product copy)
 An edit the deck holds that this device cannot write into its PowerPoint file. The slides and an export leave it out, with the layers it made and their rows, so every edit before and after it still paints and saves, and the deck still opens after a reload. The editor says "Unable to show some edits" once for it. `writtenDeck` in `packages/pptx` finds it when the deck's edits do not write together.
 _Avoid_: dropped edit, broken edit, failed edit
 
-**painted row height**:
-The height a table row shows on the canvas: its own height, or more while its text needs more. The table's frame follows it while a person types, a row border drag stops at the row's text, and the export writes it as the row's height in the file. Figma's plugin API calls the least height a row's "minimum size".
-_Avoid_: auto row height, row fit
-
 **painted ahead**:
 An edit the canvas shows before the device stored it. The editor keeps these edits in the order the person made them and lays them over every deck it paints from the device, and drops each one once the device wrote its rows. Typing, every Design panel change, a drag's boxes, text the Text tool places, and every inserted, removed, grouped or duplicated layer paint ahead, so an edit never waits for an earlier save to paint; the save order stays the order of the edits. While any edit is painted ahead or still waits to reach AirDesign, the editor says Saving… and the browser asks before the tab reloads or closes, as Figma does with changes it has not synced. An export waits until every edit painted ahead is written, so the file holds what the canvas shows.
 _Avoid_: optimistic update, preview, pending paint

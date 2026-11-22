@@ -1,6 +1,6 @@
 import { sectionIds } from "./section-ids.js"
 import { describe, expect, it } from "vitest"
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyRoute } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
@@ -24,8 +24,6 @@ const orderedSlides = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"
 const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
 const types = `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`
 const slideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide1.xml"/></Relationships>`
-const table = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:txBody><a:p><a:r><a:t>A</a:t></a:r></a:p></a:txBody></a:tc></a:tr><a:tr h="1"><a:tc><a:txBody><a:p><a:r><a:t>B</a:t></a:r></a:p></a:txBody></a:tc></a:tr></a:tbl></p:sld>`
-const twoTables = `<p:sld><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="2" name="A"/></p:nvGraphicFramePr><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr></a:tbl></p:graphicFrame><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="3" name="B"/></p:nvGraphicFramePr><a:tbl><a:tr h="1"><a:tc><a:t>B</a:t></a:tc></a:tr></a:tbl></p:graphicFrame></p:sld>`
 
 function deck(slideXml: string = slide, presentationXml: string = presentation): Map<string, Uint8Array> {
   return new Map([
@@ -44,28 +42,6 @@ function elementBytes(bytes: Uint8Array, kind: string, id: string): Uint8Array {
   const found = direct ?? shapeById(elements, id)
   if (found.kind !== kind) throw new Error(kind)
   return bytes.slice(found.start, found.end)
-}
-
-function frameMarks(bytes: Uint8Array): { id: string | null; name: string | null }[] {
-  const elements = markupDocument(bytes).elements
-  return elements
-    .filter((element) => element.kind === "p:graphicFrame")
-    .map((frame) => {
-      const mark = elements.find((element) => element.kind === "p:cNvPr" && inside(elements, element, frame))
-      const name = mark?.attributes.find((item) => item.name === "name")?.value ?? null
-      return { id: mark?.id ?? null, name }
-    })
-}
-
-function inside(elements: readonly MarkupElement[], child: MarkupElement, ancestor: MarkupElement): boolean {
-  let parent = child.parent
-  while (parent >= 0) {
-    if (parent === ancestor.index) return true
-    const next = elements[parent]
-    if (next === undefined) return false
-    parent = next.parent
-  }
-  return false
 }
 
 describe("applyStructuralRoute", () => {
@@ -286,64 +262,13 @@ describe("applyStructuralRoute", () => {
     expect(back.get("ppt/presentation.xml")).toEqual(second.get("ppt/presentation.xml"))
   })
 
-  it("copies a table row and the inverse order restores the part", () => {
-    const parts = deck(table)
-    const added = applyStructuralRoute(parts, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 })
-    expect(xml(added, "ppt/slides/slide1.xml").match(/<a:tr /g)?.length).toBe(3)
-    expect(added.get("ppt/media/keep.bin")).toBe(parts.get("ppt/media/keep.bin"))
-    const removed = applyStructuralRoute(added, { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 2 })
-    expect(removed.get("ppt/slides/slide1.xml")).toEqual(parts.get("ppt/slides/slide1.xml"))
-    const moved = applyStructuralRoute(parts, {
-      name: "tbl.orderRow",
-      part: "ppt/slides/slide1.xml",
-      row: 2,
-      before: 1,
-    })
-    const movedXml = xml(moved, "ppt/slides/slide1.xml")
-    expect(movedXml.indexOf(">B<")).toBeLessThan(movedXml.indexOf(">A<"))
-    const back = applyStructuralRoute(moved, { name: "tbl.orderRow", part: "ppt/slides/slide1.xml", row: 2, before: 1 })
-    expect(back.get("ppt/slides/slide1.xml")).toEqual(parts.get("ppt/slides/slide1.xml"))
-  })
-
-  it("moves the second table row and leaves both frames", () => {
-    const parts = deck(twoTables)
-    const before = parts.get("ppt/slides/slide1.xml")
-    if (before === undefined) throw new Error("part")
-    const first = elementBytes(before, "p:graphicFrame", "2")
-    const second = elementBytes(before, "p:graphicFrame", "3")
-    const moved = applyStructuralRoute(parts, {
-      name: "tbl.orderRow",
-      part: "ppt/slides/slide1.xml",
-      row: 2,
-      before: 1,
-    })
-    const after = moved.get("ppt/slides/slide1.xml")
-    if (after === undefined) throw new Error("part")
-    expect(markupDocument(after).wellFormed).toBe(true)
-    expect(frameMarks(after)).toEqual([
-      { id: "2", name: "A" },
-      { id: "3", name: "B" },
-    ])
-    const row = markupDocument(after).elements.filter((element) => element.kind === "a:tr")
-    expect(decodeUtf8(after.slice(row[0]?.start ?? 0, row[0]?.end ?? 0))).toContain(">B<")
-    expect(decodeUtf8(after.slice(row[1]?.start ?? 0, row[1]?.end ?? 0))).toContain(">A<")
-    expect(elementBytes(after, "p:graphicFrame", "2").byteLength).toBeGreaterThan(0)
-    expect(elementBytes(after, "p:graphicFrame", "3").byteLength).toBeGreaterThan(0)
-    expect(first.byteLength).toBeGreaterThan(0)
-    expect(second.byteLength).toBeGreaterThan(0)
-  })
-
-  it("keeps the presentation, its relationships, content types, and media for a shape or table edit", () => {
+  it("keeps the presentation, its relationships, content types, and media for a shape edit", () => {
     const shapeDeck = deck()
-    const tableDeck = deck(table)
     const checks: [Map<string, Uint8Array>, Parameters<typeof applyStructuralRoute>[1]][] = [
       [shapeDeck, { name: "spTree.order", part: "ppt/slides/slide1.xml", shape: "3", before: "2" }],
       [shapeDeck, { name: "spTree.clone", part: "ppt/slides/slide1.xml", shape: "2" }],
       [shapeDeck, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "2" }],
       [shapeDeck, { name: "spTree.add", part: "ppt/slides/slide1.xml", text: "New", x: 0, y: 0, cx: 1, cy: 1 }],
-      [tableDeck, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 }],
-      [tableDeck, { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 2 }],
-      [tableDeck, { name: "tbl.orderRow", part: "ppt/slides/slide1.xml", row: 2, before: 1 }],
     ]
     for (const [source, route] of checks) {
       const edited = applyStructuralRoute(source, route)
@@ -383,46 +308,6 @@ describe("applyStructuralRoute", () => {
     const id4 = movedXml.indexOf('id="4"')
     expect(id3).toBeLessThan(id2)
     expect(id2).toBeLessThan(id4)
-  })
-
-  it("moves an earlier table row forward without breaking the markup", () => {
-    const three = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr><a:tr h="1"><a:tc><a:t>B</a:t></a:tc></a:tr><a:tr h="1"><a:tc><a:t>C</a:t></a:tc></a:tr></a:tbl></p:sld>`
-    const parts = deck(three)
-    const moved = applyStructuralRoute(parts, {
-      name: "tbl.orderRow",
-      part: "ppt/slides/slide1.xml",
-      row: 1,
-      before: 3,
-    })
-    const movedBytes = moved.get("ppt/slides/slide1.xml")
-    if (movedBytes === undefined) throw new Error("part")
-    expect(markupDocument(movedBytes).wellFormed).toBe(true)
-    const movedXml = decodeUtf8(movedBytes)
-    expect(movedXml.indexOf(">B<")).toBeLessThan(movedXml.indexOf(">A<"))
-    expect(movedXml.indexOf(">A<")).toBeLessThan(movedXml.indexOf(">C<"))
-  })
-
-  it("refuses to remove the only row of a table", () => {
-    const one = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr></a:tbl></p:sld>`
-    expect(() =>
-      applyStructuralRoute(deck(one), { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 1 }),
-    ).toThrow(/a:tr/)
-    const mixed = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr><a:tr h="1"><a:tc><a:t>B</a:t></a:tc></a:tr></a:tbl><a:tbl><a:tr h="1"><a:tc><a:t>C</a:t></a:tc></a:tr></a:tbl></p:sld>`
-    expect(() =>
-      applyStructuralRoute(deck(mixed), { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 3 }),
-    ).toThrow(/a:tr/)
-    const removed = applyStructuralRoute(deck(mixed), {
-      name: "tbl.removeRow",
-      part: "ppt/slides/slide1.xml",
-      row: 1,
-    })
-    const removedBytes = removed.get("ppt/slides/slide1.xml")
-    if (removedBytes === undefined) throw new Error("part")
-    expect(markupDocument(removedBytes).wellFormed).toBe(true)
-    const removedXml = decodeUtf8(removedBytes)
-    expect(removedXml).toContain(">B<")
-    expect(removedXml).toContain(">C<")
-    expect(removedXml).not.toContain(">A<")
   })
 })
 

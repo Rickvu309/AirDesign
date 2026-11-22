@@ -27,7 +27,6 @@ export {
   type CanvasSlide,
   type CanvasText,
   type CanvasTemplateColor,
-  type CanvasTable,
   type ElementRecord,
   type PaintBox,
 } from "./record.js"
@@ -38,7 +37,8 @@ export type { TextPlace } from "./text-placing.js"
 export type { ShapeDrawing, ShapeDrawn, ShapeLook } from "./shape-drawing.js"
 export { CanvasRulers } from "./canvas-rulers.js"
 export type { GuideEdit } from "./guide-edit.js"
-export { paintStore, type MeasuredFit, type MeasuredRows, type PaintStore } from "./store.js"
+export { manyCells, readPastedCells } from "./pasted-cells.js"
+export { paintStore, type MeasuredFit, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"
 export {
   arrowOf,
@@ -54,4 +54,3 @@ export {
 export { leadOf, noSelection, type Selection } from "./selection.js"
 export { bulletLabel } from "./bullet-label.js"
 export { fontsFor, installedFaces, waitForFonts } from "./font-load.js"
-export { manyCells, readPastedCells } from "./pasted-cells.js"

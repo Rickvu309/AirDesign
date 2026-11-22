@@ -21,7 +21,6 @@ function words(node: string, sizes: readonly number[], more: Partial<ResolvedEle
     placeholder: null,
     fill: "none",
     text: { paragraphs: [{ runs }] } as unknown as ResolvedElement["text"],
-    cells: null,
     ...more,
   }
 }

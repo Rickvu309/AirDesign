@@ -25,7 +25,6 @@ export const designCopy = {
     connector: "Line",
     group: "Group",
     frame: frameCopy.frame,
-    table: "Table",
     chart: "Chart",
     kept: "Layer",
   },

@@ -1,4 +1,3 @@
-import { readTableValue, writeTableValue } from "./table-value.js"
 import { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"
 
 const lineBreak = /\r\n|\r|\n/
@@ -35,18 +34,6 @@ export function paragraphedText(stored: string): string {
       ? writeTextValue(paragraphed([{ from: 0, runs: [{ from: 0, text: stored }] }]))
       : stored
   return broken(read) ? writeTextValue(paragraphed(read)) : stored
-}
-
-export function paragraphedTable(stored: string): string {
-  const table = readTableValue(stored)
-  if (table === null || !table.rows.some((row) => row.cells.some(broken))) return stored
-  return writeTableValue({
-    ...table,
-    rows: table.rows.map((row) => ({
-      ...row,
-      cells: row.cells.map((cell) => (broken(cell) ? paragraphed(cell) : cell)),
-    })),
-  })
 }
 
 export function filedText(floor: string | null | undefined, stored: string): string {

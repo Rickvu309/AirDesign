@@ -20,7 +20,7 @@ import { paintingAhead } from "./editor/painted-ahead"
 import { until, within } from "./replay-waits"
 import type { DeckPaint } from "./editor/use-deck-paint"
 import { useUndoList, useUndoTurn, type UndoList as UndoHooks } from "./editor/use-undo"
-import { structureOf } from "./table-hook"
+import { structureOf } from "./paint-structure"
 import type { UndoEntry } from "./undo-list"
 
 type Run = () => Promise<unknown>

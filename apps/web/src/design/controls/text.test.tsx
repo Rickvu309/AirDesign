@@ -1,5 +1,5 @@
 import { resolveControl } from "@/design/panel-arrangement"
-import { cellText, readTextValue, traits } from "@airdesign/document"
+import { plainText, readTextValue, traits } from "@airdesign/document"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { ControlProps } from "@/design/panel"
@@ -82,7 +82,7 @@ it.each([
     expect(input.hasAttribute("aria-invalid")).toBe(false)
     await act(async () => input.dispatchEvent(new window.Event("focusout", { bubbles: true })))
     expect(onChange).toHaveBeenCalledOnce()
-    expect(cellText(readTextValue(onChange.mock.calls[0]?.[0]) ?? [])).toBe("Corrected text")
+    expect(plainText(readTextValue(onChange.mock.calls[0]?.[0]) ?? [])).toBe("Corrected text")
   } finally {
     await act(async () => root.unmount())
     host.remove()

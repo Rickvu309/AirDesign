@@ -2,9 +2,7 @@ import type { AgentChange } from "@airdesign/catalog"
 import {
   filedText,
   openingElement,
-  paragraphedTable,
   paragraphedText,
-  placedTable,
   placedText,
   readTextValue,
   slideKind,
@@ -20,16 +18,11 @@ function written<Input extends Held>(input: Input, writable: (stored: string) =>
 }
 
 const addedText = (stored: string) => placedText(paragraphedText(stored))
-const addedTable = (stored: string) => placedTable(paragraphedTable(stored))
 
 export function writableEdit(register: Register, edit: AgentChange): AgentChange {
   if ("op" in edit) {
-    if (edit.op === "add") {
-      if (edit.kind === "table") return { ...edit, table: written(edit.table, addedTable) }
-      return "text" in edit && edit.text !== undefined ? { ...edit, text: written(edit.text, addedText) } : edit
-    }
-    if (edit.op !== "set") return edit
-    return edit.table === undefined ? edit : { ...edit, table: written(edit.table, paragraphedTable) }
+    if (edit.op !== "add") return edit
+    return "text" in edit && edit.text !== undefined ? { ...edit, text: written(edit.text, addedText) } : edit
   }
   if (edit.property === "box" || slideKind(edit.node) !== null) return edit
   const opening = openingElement(register, edit.node)
@@ -37,6 +30,5 @@ export function writableEdit(register: Register, edit: AgentChange): AgentChange
   const floor = opening?.value ?? (register.elements[edit.node] as { readonly floor?: string } | undefined)?.floor
   if (kind === "shape" || (kind === undefined && readTextValue(floor ?? "") !== null))
     return { ...edit, value: paragraphedText(filedText(floor, edit.value)) }
-  if (kind === "table") return { ...edit, value: paragraphedTable(edit.value) }
   return edit
 }

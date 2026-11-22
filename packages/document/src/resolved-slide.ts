@@ -53,7 +53,6 @@ export type ResolvedElement = {
   readonly placeholder: string | null
   readonly fill: Fill
   readonly text: ResolvedText | null
-  readonly cells: readonly (readonly string[])[] | null
 }
 
 export type ResolvedSlide = {

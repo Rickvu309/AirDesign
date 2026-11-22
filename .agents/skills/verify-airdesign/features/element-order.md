@@ -5,7 +5,7 @@ On an open deck, a right-click on an element opens Bring to front, Bring forward
 ## Sub-features
 
 - `element-order` the menu on the element, and `]` / `[` (plus Mac Cmd+Option+]/[, Windows Ctrl+Shift+]/[) and Cmd/Ctrl+]/[ when the browser delivers them. The server's `register.order` gets a `slide: "element-order"` row. The canvas and the thumbnail paint the new order at once.
-- `element-order-export` the export changes only that slide's part. The moved shape's own XML stays as it was, and a group or a table in the same tree stays whole.
+- `element-order-export` the export changes only that slide's part. The moved shape's own XML stays as it was, and a group or a kept frame in the same tree stays whole.
 - A shape inside a group moves only among that group's children. It is not pulled out of the group.
 
 ## How to get to it (user POV)

@@ -20,7 +20,7 @@ async function namesOnSlide(page: Page): Promise<Record<string, string[]>> {
   return shared
 }
 
-for (const deck of ["shapes-added.pptx", "connectors.pptx", "clean.pptx", "picture-png.pptx", "table-added.pptx"]) {
+for (const deck of ["shapes-added.pptx", "connectors.pptx", "clean.pptx", "picture-png.pptx"]) {
   test(`every control in the design panel has a name of its own, for each element of ${deck}`, async ({ page }) => {
     await openDeck(page, deck)
     const shared = await namesOnSlide(page)

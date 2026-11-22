@@ -11,7 +11,6 @@ import { guidesXml } from "./guide-list.js"
 import { identityXml } from "./trait-xml-identity.js"
 import { borderAlpha, borderXml } from "./trait-xml-border.js"
 import { notesXml } from "./trait-xml-notes.js"
-import { tableXml } from "./trait-xml-table.js"
 import { chartXml } from "./trait-xml-chart.js"
 import { textAlpha, textXml } from "./trait-xml-text.js"
 import { showXml } from "./slide-show.js"
@@ -33,7 +32,6 @@ export const traitXml: { readonly [T in Written]: TraitXml<T> } = {
   body: bodyXml,
   text: textXml,
   connection: connectionXml,
-  table: tableXml,
   chart: chartXml,
   notes: notesXml,
   templateStyle: templateStyleXml,

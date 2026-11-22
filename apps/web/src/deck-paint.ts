@@ -32,7 +32,6 @@ import { pictureSources, type PictureSources } from "@/picture-fill"
 import { heldChart, shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
 import { numberedText } from "@/numbered-text"
-import { tableEdited } from "@/table-edit"
 import { designRows } from "@/design-rows"
 import {
   namedShapes,
@@ -218,7 +217,6 @@ export function paint(
   const edited =
     floored !== null &&
     (floored.order.length > 0 ||
-      tableEdited(floored) ||
       designRows(floored).length > 0 ||
       imageTexts(floored).length > 0 ||
       cover ||

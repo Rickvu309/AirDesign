@@ -6,7 +6,6 @@ import { GroupArt } from "./group-art.js"
 import { PictureArt } from "./picture-art.js"
 import { PresetArt } from "./preset-art.js"
 import type { CanvasElement } from "./record.js"
-import { TablePaint } from "./table-paint.js"
 import { TextBoxArt } from "./text-box.js"
 
 const textPreset = new Set(["rect", "roundRect", "ellipse"])
@@ -15,7 +14,6 @@ const painters = {
   text: TextBoxArt,
   picture: PictureArt,
   shape: PresetArt,
-  table: TablePaint,
   frame: FrameArt,
   group: GroupArt,
 } satisfies Record<string, (props: ElementPaintProps) => ReactNode>
@@ -23,7 +21,6 @@ const painters = {
 export type ElementKind = keyof typeof painters
 
 export function elementKind(element: CanvasElement): ElementKind {
-  if (element.table !== undefined) return "table"
   if (element.kind === "picture") return "picture"
   if (element.kind === "chart" || element.kind === "kept") return "frame"
   if (element.kind === "connector") return "shape"

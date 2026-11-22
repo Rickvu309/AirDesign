@@ -22,7 +22,7 @@ $V agent-bench publish <run-dir>                                             # s
 | `slides-added` `count`                | the export has exactly `count` more slides, each with a written title placeholder                        |
 | `finding-gone` `slide` `code`         | the original had that fault on that slide, the export has none, and no new fault appeared on the slide   |
 | `no-new-findings`                     | no `(slide, node, code)` fault in the export that the original lacked                                    |
-| `text-kept` `slides`                  | every paragraph and table cell of those original slides appears in the export's same slide               |
+| `text-kept` `slides`                  | every paragraph of those original slides appears in the export's same slide                              |
 | `text-has` `slide` `text`             | the export's slide text carries `text`                                                                   |
 | `text-changed` `slides` `lengthRatio` | each slide's text changed and its length over the original's is inside the range                         |
 | `script` `slides` `script`            | at least 30 % of the words on those slides carry `Latin-vi` diacritics, `Cyrillic` or `Japanese` letters |

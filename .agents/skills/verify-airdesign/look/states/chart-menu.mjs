@@ -14,4 +14,4 @@ async function drive(kit) {
   await expect(kit.page.locator("[data-chart-menu]")).toBeVisible()
 }
 
-export default { name: "chart-menu", design: "/screens/s43-07-editor-tools-table", drive }
+export default { name: "chart-menu", design: "/screens/s43-04-editor-tools-shapes", drive }

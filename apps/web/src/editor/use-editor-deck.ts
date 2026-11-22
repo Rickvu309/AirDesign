@@ -1,6 +1,6 @@
 import { gestureFor, noSelection, type Selection } from "@airdesign/render"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import type { CellRange, ElementId } from "@airdesign/document"
+import { useEffect, useMemo, useState } from "react"
+import type { ElementId } from "@airdesign/document"
 import { flushMedia, keepMedia } from "@airdesign/live"
 import { toast } from "@/components/ui/toast"
 import { designCopy } from "@/copy/design-copy"
@@ -17,8 +17,6 @@ import { useUndoList } from "@/editor/use-undo"
 import { useNotes } from "@/notes-edit"
 import { pickPicture } from "@/editor/picture-picker"
 import { usePictureStore, usePictureTool } from "@/picture-tool"
-import { useTables } from "@/table-hook"
-import type { TableCells } from "@/editor/table-cells-section"
 
 export type EditorDeck = ReturnType<typeof useEditorDeck>
 
@@ -107,12 +105,7 @@ export function useEditorDeck(id: string) {
   function chooseFillImage(node: ElementId) {
     pickPicture((file) => placeImage(node, file, true))
   }
-  const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, pasteTable, cutLayers } = inserts
-  const tables = useTables(shown)
-  const [tableCells, setTableCells] = useState<TableCells | null>(null)
-  const onCells = useCallback((node: ElementId, cells: CellRange | null) => {
-    setTableCells((now) => (cells !== null ? { node, cells } : now?.node === node ? null : now))
-  }, [])
+  const { changeElement, duplicateLayers, pasteLayers, pasteFromDeck, cutLayers } = inserts
   const exported = useExport({
     id,
     records,
@@ -146,11 +139,7 @@ export function useEditorDeck(id: string) {
     duplicateLayers,
     pasteLayers,
     pasteFromDeck,
-    pasteTable,
     cutLayers,
-    tables,
-    tableCells,
-    onCells,
     exported,
   }
 }

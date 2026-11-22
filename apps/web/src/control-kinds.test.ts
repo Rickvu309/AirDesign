@@ -46,7 +46,7 @@ describe("every control kind a field uses", () => {
     expect(Object.keys(controlViews).filter((kind) => !known.includes(kind))).toEqual([])
   })
 
-  it("maps a length, a type size, a flag, a colour, a choice, words and a table to their controls", () => {
+  it("maps a length, a type size, a flag, a colour, a choice and words to their controls", () => {
     expect(
       [
         traits.box.fields.x,
@@ -55,8 +55,7 @@ describe("every control kind a field uses", () => {
         traits.text.inputs.color,
         traits.text.inputs.align,
         traits.notes.fields.value,
-        traits.table.fields.value,
       ].map((kind) => controlOf(kind.desc)),
-    ).toEqual(["length", "length", "toggle", "color", "choice", "text", null])
+    ).toEqual(["length", "length", "toggle", "color", "choice", "text"])
   })
 })

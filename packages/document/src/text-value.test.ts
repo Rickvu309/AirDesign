@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest"
-import { readTableValue } from "./table-value.js"
 import { readTextValue, writeTextValue } from "./text-value.js"
 
 describe("readTextValue", () => {
@@ -241,12 +240,10 @@ describe("a paragraph a build stored before line height had its name", () => {
     )
   })
 
-  it("reads a styled paragraph and a table cell the same way", () => {
+  it("reads a styled paragraph with the older spacing key", () => {
     const styled =
       '[{"from":0,"align":"center","lineSpacing":130000,"spaceBefore":0,"spaceAfter":0,"runs":[{"from":-1,"text":"North, South and West","size":2400}]}]'
     expect(readTextValue(styled)?.[0]).toMatchObject({ align: "center", lineHeight: 130_000, spaceBefore: 0 })
-    const table = JSON.stringify({ rows: [{ from: 0, cells: [JSON.parse(typed)] }] })
-    expect(readTableValue(table)?.rows[0]?.cells[0]?.[0]).toMatchObject({ lineHeight: 150_000 })
   })
 
   it("is not structured text when one paragraph holds both names", () => {

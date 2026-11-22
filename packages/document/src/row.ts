@@ -12,14 +12,13 @@ export type ElementPatch = { readonly [T in TraitName]?: TraitPatch<T> }
 
 export type Row = { readonly v: number; readonly patch: ElementPatch }
 
-export type ValueHolder = "text" | "notes" | "table"
+export type ValueHolder = "text" | "notes"
 
 type Loose = Readonly<Record<string, Readonly<Record<string, FieldEdit<unknown>>> | undefined>>
 
 function heldPatch(holder: ValueHolder, value: string): ElementPatch {
   const edit = { value: { set: value } }
   if (holder === "notes") return { notes: edit }
-  if (holder === "table") return { table: edit }
   return { text: edit }
 }
 

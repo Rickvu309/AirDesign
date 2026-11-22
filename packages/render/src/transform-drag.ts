@@ -68,7 +68,6 @@ export function canRotateElement(element: CanvasElement): boolean {
   return (
     canResizeElement(element) &&
     element.frame !== "auto" &&
-    element.kind !== "table" &&
     element.kind !== "chart" &&
     element.group?.frame === undefined &&
     element.inFrame === undefined

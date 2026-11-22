@@ -9,12 +9,12 @@ it("keeps every part in the row while nothing folds", () => {
 
 it("folds the insert tools before the text controls, keeping the row's order in More", () => {
   expect(toolbarFold(all, 4)).toEqual({
-    row: ["number", "text", "shape", "styles", "size", "color", "align", "bullets"],
-    more: ["table", "chart", "image", "icon"],
+    row: ["number", "text", "styles", "size", "color", "align", "bullets"],
+    more: ["shape", "chart", "image", "icon"],
   })
-  expect(toolbarFold(all, 9)).toEqual({
+  expect(toolbarFold(all, 8)).toEqual({
     row: ["styles", "size", "color"],
-    more: ["number", "text", "shape", "table", "chart", "image", "icon", "align", "bullets"],
+    more: ["number", "text", "shape", "chart", "image", "icon", "align", "bullets"],
   })
 })
 
@@ -25,15 +25,15 @@ it("folds bold, italic and underline last", () => {
 
 it("counts only the parts that show", () => {
   expect(toolbarFold(insertParts, 4)).toEqual({
-    row: ["number", "text", "shape"],
-    more: ["table", "chart", "image", "icon"],
+    row: ["number", "text"],
+    more: ["shape", "chart", "image", "icon"],
   })
 })
 
 it("folds the slide number before Add text box", () => {
-  expect(toolbarFold(all, 6)).toEqual({
+  expect(toolbarFold(all, 5)).toEqual({
     row: ["text", "styles", "size", "color", "align", "bullets"],
-    more: ["number", "shape", "table", "chart", "image", "icon"],
+    more: ["number", "shape", "chart", "image", "icon"],
   })
 })
 

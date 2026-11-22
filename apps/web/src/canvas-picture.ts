@@ -13,7 +13,6 @@ export function paintPicture(ctx: RowPaint): CanvasElement {
     line: canvasLine(ctx.row.line),
     text: canvasText(ctx.row.text, ctx.src),
     geometry: geometryOf(ctx.row),
-    table: undefined,
     editable: ctx.shape?.editable ?? false,
     movable: movableRow(ctx),
   })

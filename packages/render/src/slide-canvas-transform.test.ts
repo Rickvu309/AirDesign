@@ -321,25 +321,8 @@ describe("SlideCanvas transform gestures", () => {
     expect(flips).toHaveLength(2)
   })
 
-  it("omits rotate grips on a table", async () => {
-    const emptyCell = {
-      gridSpan: 1,
-      rowSpan: 1,
-      hMerge: false,
-      vMerge: false,
-      fill: null,
-      borders: { left: null, right: null, top: null, bottom: null },
-      text: null,
-    }
-    const { host } = await mounted([
-      element(id, {
-        kind: "table",
-        table: {
-          columns: [1_524_000, 1_524_000],
-          rows: [{ height: 1_524_000, cells: [emptyCell, emptyCell] }],
-        },
-      }),
-    ])
+  it("omits rotate grips on a chart", async () => {
+    const { host } = await mounted([element(id, { kind: "chart" })])
     await pointer(frameOf(host), "pointerdown", 150, 150)
     await pointer(host.ownerDocument, "pointerup", 150, 150)
     expect(host.querySelectorAll('[data-grip^="rotate-"]')).toHaveLength(0)

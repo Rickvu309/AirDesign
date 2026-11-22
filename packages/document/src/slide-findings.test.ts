@@ -58,7 +58,6 @@ function element(node: string, shape: Shape, more: Partial<ResolvedElement> = {}
     placeholder: null,
     fill: "none",
     text: null,
-    cells: null,
     ...more,
   }
 }
@@ -151,8 +150,8 @@ describe("off-slide", () => {
     expect(found.map((finding) => `${finding.code} ${finding.node} ${finding.level}`)).toEqual(["off-slide 3 note"])
   })
 
-  it("reports a table cut by the slide's edge", () => {
-    expect(codes(find([element("2", { x: 800, y: 10, w: 200, h: 100 }, { kind: "table" })]))).toEqual(["off-slide 2"])
+  it("reports a chart cut by the slide's edge", () => {
+    expect(codes(find([element("2", { x: 800, y: 10, w: 200, h: 100 }, { kind: "chart" })]))).toEqual(["off-slide 2"])
   })
 })
 

@@ -14,7 +14,6 @@ const iconPaths = {
   shape: '<rect x="3.5" y="3.5" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
   icon: '<path d="M12 3.5 14.6 9l5.9.6-4.5 3.9 1.3 5.8L12 16.3l-5.3 3 1.3-5.8-4.5-3.9 5.9-.6z"/>',
-  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/>',
   chartLine: '<path d="M3 4v16h18"/><path d="m7 15 4-5 4 3 5-6"/>',
   chartColumns:
     '<path d="M3.5 20h17"/><rect x="5" y="10" width="3.5" height="7" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="8" width="3.5" height="9" rx=".6"/>',

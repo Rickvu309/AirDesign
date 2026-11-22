@@ -1,7 +1,7 @@
-import type { Box, ElementId, Kind, Register } from "@airdesign/document"
-import { edit, elements, type Attempt } from "./score.js"
+import type { Box, Kind, Register } from "@airdesign/document"
+import { elements } from "./score.js"
 
-export const placed: Box = { x: 914_400, y: 914_400, cx: 3_657_600, cy: 2_743_200 }
+const placed: Box = { x: 914_400, y: 914_400, cx: 3_657_600, cy: 2_743_200 }
 
 export function bodyIs(kind: Kind | "photo"): (register: Register) => Register {
   const body = kind === "photo" ? { kind: "shape" as const, design: { fills: ["image"] as const } } : { kind }
@@ -13,12 +13,4 @@ export function bodyIs(kind: Kind | "photo"): (register: Register) => Register {
     ...register,
     index: { total: rows.length, slides: [{ id: "258", position: 0 }], elements: rows, pages: [] },
   })
-}
-
-const emuPerPoint = 12_700
-
-export function boxed(deck: string, box: Box, node: ElementId = elements.body): Attempt {
-  const call = edit(deck, [])
-  const points = { x: box.x / emuPerPoint, y: box.y / emuPerPoint, w: box.cx / emuPerPoint, h: box.cy / emuPerPoint }
-  return [{ name: call.name, raw: { deck, base: 0, changes: [{ op: "set", target: node, box: points }] } }]
 }

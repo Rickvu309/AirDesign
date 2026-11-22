@@ -6,10 +6,8 @@ import {
   kindTraits,
   removable,
   takes,
-  openingTable,
   openRegister,
   slideId,
-  writeTableValue,
   type Box,
   type Command,
   type IndexElement,
@@ -29,7 +27,6 @@ const rows: readonly (readonly [string, Kind, string | null, boolean])[] = [
   ["256.5", "connector", null, false],
   ["256.6", "group", null, false],
   ["256.7", "shape", '[{"from":0,"runs":[{"from":0,"text":"Inside"}]}]', true],
-  ["256.8", "table", null, false],
   ["256.9", "chart", null, false],
   ["256.10", "kept", null, false],
   ["256.11", "shape", null, false],
@@ -79,11 +76,6 @@ function agentBox(node: string, value: Box) {
   return decision.decision === "apply" ? "apply" : decision.code
 }
 
-function personEdit(node: string, value: string) {
-  const decision = decide(opened(node), { command: "person", value, node: elementId(node) })
-  return decision.decision === "apply" ? "apply" : decision.code
-}
-
 function removal(node: string) {
   const decision = decide(indexed, {
     command: "slide",
@@ -102,7 +94,6 @@ describe("the server admits only the edits the device can write onto an element 
       ["256.5", "kind"],
       ["256.6", "kind"],
       ["256.7", "apply"],
-      ["256.8", "kind"],
       ["256.9", "kind"],
       ["256.10", "kind"],
       ["256.11", "kind"],
@@ -118,19 +109,11 @@ describe("the server admits only the edits the device can write onto an element 
       ["256.5", "apply", "apply"],
       ["256.6", "apply", "apply"],
       ["256.7", "apply", "apply"],
-      ["256.8", "apply", "apply"],
       ["256.9", "apply", "apply"],
       ["256.10", "kind", "kind"],
       ["256.11", "apply", "apply"],
       ["256.notes", "kind", "kind"],
     ])
-  })
-
-  it("admits a person's table value on a table and nowhere else", () => {
-    const table = writeTableValue(openingTable(2, 2))
-    expect(personEdit("256.8", table)).toBe("apply")
-    expect(personEdit("256.4", table)).toBe("kind")
-    expect(personEdit("256.2", "Typed")).toBe("apply")
   })
 
   it("refuses a delete the person's own Delete refuses: a grouped element and an animated one, and deletes a group", () => {
@@ -141,7 +124,6 @@ describe("the server admits only the edits the device can write onto an element 
       ["256.5", "apply"],
       ["256.6", "apply"],
       ["256.7", "group-box"],
-      ["256.8", "apply"],
       ["256.9", "apply"],
       ["256.10", "apply"],
       ["256.11", "locked"],
@@ -200,7 +182,6 @@ describe("the server admits only the edits the device can write onto an element 
       "connection.start",
       "connection.end",
     ])
-    expect(takes({ ...facts, kind: "table" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h", "table.value"])
     expect(takes({ ...facts, kind: "chart" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h", "chart.value"])
     expect(takes({ ...facts, kind: "chart", text: false })).toEqual([
       ...named,
@@ -240,7 +221,7 @@ describe("the server admits only the edits the device can write onto an element 
   it("lets a person delete what the person's own Delete deletes", () => {
     const facts = { text: true, grouped: false, animated: false }
     const removes = kinds.filter((kind) => removable({ ...facts, kind }))
-    expect(removes).toEqual(["shape", "connector", "group", "table", "chart", "kept"])
+    expect(removes).toEqual(["shape", "connector", "group", "chart", "kept"])
     expect(removable({ ...facts, kind: "shape", grouped: true })).toBe(false)
     expect(removable({ ...facts, kind: "shape", text: false, animated: true })).toBe(false)
   })

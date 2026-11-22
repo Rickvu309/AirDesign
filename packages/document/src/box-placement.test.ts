@@ -77,12 +77,12 @@ describe("placing a new text box", () => {
     expect(placeNewBox(slide, taken)).toEqual(placeNewBox(slide, taken))
   })
 
-  it("places a table or a picture of its own size in the same clear space as a text box", () => {
+  it("places a chart or a picture of its own size in the same clear space as a text box", () => {
     const title = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
     const subtitle = { x: 1_524_000, y: 3_602_038, cx: 9_144_000, cy: 1_655_762 }
-    const table = { cx: Math.round(slide.width * 0.6), cy: 3 * 370_840 }
-    const placed = placeNewBox(slide, [title, subtitle], table)
-    expect(placed).toMatchObject(table)
+    const chart = { cx: Math.round(slide.width * 0.6), cy: 3 * 370_840 }
+    const placed = placeNewBox(slide, [title, subtitle], chart)
+    expect(placed).toMatchObject(chart)
     expect(overlaps(placed, title)).toBe(false)
     expect(overlaps(placed, subtitle)).toBe(false)
   })

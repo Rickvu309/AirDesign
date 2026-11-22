@@ -14,7 +14,6 @@ import {
   limits,
   openingElement,
   planChange,
-  readTableValue,
   shapeOf,
   slideKind,
   slideBirths,
@@ -23,7 +22,6 @@ import {
   templateStyleIndex,
   valueBytes,
   version,
-  writeTableValue,
   type ElementId,
   type Media,
   type PlacedChart,
@@ -31,7 +29,7 @@ import {
   type Row,
   type SetChange,
 } from "@airdesign/document"
-import { addChartLayer, addIcon, addPicture, addTable, addTextBox } from "./agent-elements.js"
+import { addChartLayer, addIcon, addPicture, addTextBox } from "./agent-elements.js"
 import { readFresh } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
@@ -126,14 +124,6 @@ function addedNode(register: Register): ElementId | undefined {
 
 type ShapeAdd = Exclude<WireAdd, { readonly kind: "line" | "arrow" | "elbow" }>
 
-function applyTableAdd(deck: Deck, change: Extract<WireAdd, { kind: "table" }>, runId: string, base: number): Applied {
-  const table = readTableValue(change.table.value)
-  if (table === null) return { ok: false, refusal: "field" }
-  const shaped = writeTableValue({ rows: table.rows.map((row, from) => ({ ...row, from })) })
-  const added = addTable({ deck: deck.id, base }, deck, change.slide, table, change.box, runId)
-  return added.ok ? withAdded(added.register, runId, { table: { value: shaped } }) : added
-}
-
 function withAdded(register: Register, runId: string, inputs: Omit<SetChange, "target">): Applied {
   const node = addedNode(register)
   if (node === undefined) return { ok: true, register }
@@ -197,7 +187,6 @@ function applyChartAdd(
 }
 
 function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, images: ImageLookup): Applied {
-  if (change.kind === "table") return applyTableAdd(deck, change, runId, base)
   if (change.kind === "chart") return applyChartAdd(deck, change, runId, base)
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   if ("image" in change) {

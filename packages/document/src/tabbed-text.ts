@@ -1,7 +1,5 @@
 export type CellTexts = readonly (readonly string[])[]
 
-const needsQuotes = /[\t\n\r"]/
-
 function padded(rows: readonly string[][]): CellTexts {
   const width = Math.max(0, ...rows.map((row) => row.length))
   return rows.map((row) => [...row, ...Array.from({ length: width - row.length }, () => "")])
@@ -43,25 +41,4 @@ export function readTabbed(text: string): CellTexts {
   const last = rows[rows.length - 1]
   if (rows.length > 1 && last?.length === 1 && last[0] === "") rows.pop()
   return padded(rows)
-}
-
-function quotedCell(text: string): string {
-  return needsQuotes.test(text) ? `"${text.replaceAll('"', '""')}"` : text
-}
-
-export function writeTabbed(rows: CellTexts): string {
-  return rows.map((row) => row.map(quotedCell).join("\t")).join("\n")
-}
-
-function escaped(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\n", "<br>")
-}
-
-export function tabbedTable(rows: CellTexts): string {
-  const body = rows.map((row) => `<tr>${row.map((text) => `<td>${escaped(text)}</td>`).join("")}</tr>`).join("")
-  return `<table>${body}</table>`
-}
-
-export function tabbedHtml(rows: CellTexts): string {
-  return `<meta charset="utf-8">${tabbedTable(rows)}`
 }

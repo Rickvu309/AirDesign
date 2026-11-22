@@ -22,26 +22,6 @@ const textValues = [
   JSON.stringify([{ from: 0, list: "bullets", level: 2, runs: [{ from: 5, text: "Far run" }] }]),
 ]
 
-function cells(cell: unknown): string {
-  return JSON.stringify({ rows: [0, 1].map((from) => ({ from, cells: [cell, cell] })) })
-}
-
-const tableValues = [
-  cells([{ from: 0, runs: [{ from: 0, text: "Cell" }] }]),
-  cells([{ from: 0, runs: [{ from: -1, text: "Cell" }] }]),
-  cells([{ from: 0, runs: [{ from: -1, text: "Two\nlines" }] }]),
-  cells([
-    { from: 0, runs: [{ from: 0, text: "One" }] },
-    { from: 1, runs: [{ from: 0, text: "Two" }] },
-  ]),
-  JSON.stringify({
-    rows: [
-      { from: 0, cells: [[{ from: 0, runs: [] }]] },
-      { from: -1, cells: [[{ from: 0, runs: [] }]] },
-    ],
-  }),
-]
-
 const chartValues = [
   JSON.stringify({ kind: "bar", categories: ["Jul", "Aug"], series: [{ name: "Plan", values: [1, 2] }] }),
   JSON.stringify({ kind: "line", categories: ["A"], series: [{ name: "S", values: [3] }] }),
@@ -74,7 +54,7 @@ function numbers(schema: Schema, integer: boolean): readonly number[] {
 }
 
 function strings(schema: Schema, field: string, places: Places): readonly string[] {
-  if (field === "value") return [...textValues, ...tableValues, ...chartValues]
+  if (field === "value") return [...textValues, ...chartValues]
   if (field === "slide" || field === "after" || field === "layout") return [places.slide]
   if (field === "node" || field === "target") return [places.node]
   if (field === "stack") return ["front", "back", `above ${places.node}`, `below ${places.node}`]

@@ -7,7 +7,6 @@ import { boxStorable } from "@/element-move"
 import type { Framed } from "@/frame-boxes"
 import { storedText } from "@/exported-parts"
 import type { PictureSource } from "@/picture-fill"
-import { tableEditable } from "@/table-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -127,9 +126,8 @@ export function slideShapes(
     const file = storedText(shape.text)
     shapes.push({ id, shape: shown, kind: paintKind(shown.kind), file, opening: shape.box })
     if (holding === null || seen.get(id) !== 1) continue
-    const table = shape.contentKind === "table" && tableEditable(holding, shape)
     const chart = shape.contentKind === "chart" && placed.charted?.(id) === true
-    if (table || chart || boxStorable(holding, shape, placed.has(id))) movables.set(id, { id, file })
+    if (chart || boxStorable(holding, shape, placed.has(id))) movables.set(id, { id, file })
     const numbered = [...shape.text, ...shown.text].some((each) =>
       each.runs.some((run) => run.slideNumber !== undefined),
     )
@@ -137,7 +135,7 @@ export function slideShapes(
       editable.set(id, shape)
       continue
     }
-    if (!table && (shape.locked || !valueStorable(holding, shape, trialValue(shape.text)))) continue
+    if (shape.locked || !valueStorable(holding, shape, trialValue(shape.text))) continue
     boxes.set(id, { id, file })
     editable.set(id, shape)
   }

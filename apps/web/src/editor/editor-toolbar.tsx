@@ -17,9 +17,7 @@ import { pictureCopy } from "@/copy/picture-copy"
 import { pickPicture } from "@/editor/picture-picker"
 import { IconTool } from "@/editor/icon-tool"
 import { ShapeTool } from "@/editor/shape-tool"
-import { TableTool, type TablePicker } from "@/editor/table-tool"
 import { ChartTool } from "@/editor/chart-tool"
-import type { TableSize } from "@/element-edit"
 import type { ChartKind, Geometry } from "@airdesign/document"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
@@ -39,7 +37,7 @@ import {
 import { useLayoutEffect, useRef, useState, type MouseEvent } from "react"
 import { flushSync } from "react-dom"
 
-export type EditorTool = "move" | "text" | "shape" | "table" | "image" | "icon"
+export type EditorTool = "move" | "text" | "shape" | "image" | "icon"
 
 export type EditorPanel = "agent" | "design" | "none"
 
@@ -48,7 +46,6 @@ export type DesignMode = { readonly value: PanelMode; readonly onChange: (mode: 
 const toolIcons: Readonly<Record<Exclude<InsertPart, "number">, EditorIconName>> = {
   text: "text",
   shape: "shape",
-  table: "table",
   chart: "chart",
   image: "image",
   icon: "icon",
@@ -93,8 +90,6 @@ type Inserts = {
   readonly textTool: boolean
   readonly onSlideNumber: (() => void) | undefined
   readonly onText: ((place?: TextPlace) => void) | undefined
-  readonly onTable: ((size: TableSize) => void) | undefined
-  readonly tablePicker: TablePicker | undefined
   readonly onChart: ((kind: ChartKind) => void) | undefined
   readonly onPicture: ((file: File) => void) | undefined
   readonly onShape: ((geometry: Geometry) => void) | undefined
@@ -122,19 +117,7 @@ function TextTool({ pointer }: { pointer: ToolPick }) {
 }
 
 function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
-  const {
-    activeTool,
-    pointer,
-    textTool,
-    onText,
-    onTable,
-    tablePicker,
-    onChart,
-    onPicture,
-    onShape,
-    onIcon,
-    onSlideNumber,
-  } = inserts
+  const { activeTool, pointer, textTool, onText, onChart, onPicture, onShape, onIcon, onSlideNumber } = inserts
   if (tool === "number")
     return (
       <Button
@@ -149,7 +132,6 @@ function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
       </Button>
     )
   if (tool === "shape" && onShape !== undefined) return <ShapeTool onShape={onShape} />
-  if (tool === "table" && onTable !== undefined) return <TableTool onTable={onTable} picker={tablePicker} />
   if (tool === "chart" && onChart !== undefined) return <ChartTool onChart={onChart} />
   if (tool === "icon" && onIcon !== undefined) return <IconTool onIcon={onIcon} />
   if (tool === "text" && textTool && pointer !== undefined && onText !== undefined)
@@ -313,8 +295,6 @@ export function EditorToolbar({
   tone,
   deckColors,
   formats,
-  onTable,
-  tablePicker,
   onChart,
   onPicture,
   onShape,
@@ -334,8 +314,6 @@ export function EditorToolbar({
   tone?: ToneSource
   deckColors?: readonly string[]
   formats?: FormatShown
-  onTable?: (size: TableSize) => void
-  tablePicker?: TablePicker
   onChart?: (kind: ChartKind) => void
   onPicture?: (file: File) => void
   onShape?: (geometry: Geometry) => void
@@ -360,8 +338,6 @@ export function EditorToolbar({
     pointer,
     textTool,
     onText,
-    onTable,
-    tablePicker,
     onChart,
     onPicture,
     onShape,

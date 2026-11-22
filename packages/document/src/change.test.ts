@@ -32,7 +32,7 @@ const elements: readonly IndexElement[] = [
   { ...shape("258.6", undefined, ""), kept: ["text.color"] },
   { ...shape("258.7", undefined, null), kept: ["fills"] },
   shape("259.2", "title", ""),
-  { node: elementId("259.3"), kind: "table", value: "{}", box, grouped: false, role: "table" },
+  { node: elementId("259.3"), kind: "chart", value: "{}", box, grouped: false, role: "chart" },
 ]
 
 function indexed(index: Partial<DeckIndex> = {}): Register {
@@ -77,7 +77,7 @@ describe("planChange names its elements by node, by role on one slide, or by rol
     })
   })
 
-  it("moves a table by its sides x and y", () => {
+  it("moves a chart by its sides x and y", () => {
     const planned = plan({ target: { node: elementId("259.3") }, box: { x: 5 } })
     expect(planned.ok && planned.rows[0]?.row.patch.box).toEqual({
       x: { set: 5 },
@@ -167,7 +167,7 @@ describe("planChange refuses the whole change and names every element it cannot 
       ok: false,
       refusals: [{ node: "258.5", trait: "box", code: "group-box" }],
     })
-    expect(plan({ target: { role: "table", slide: slideId("259") }, box: { rot: 30 } })).toEqual({
+    expect(plan({ target: { role: "chart", slide: slideId("259") }, box: { rot: 30 } })).toEqual({
       ok: false,
       refusals: [{ node: "259.3", trait: "box", code: "kind" }],
     })
@@ -428,7 +428,7 @@ describe("box inputs align and distribute the elements a target names on each sl
     })
   })
 
-  it("moves a table by x and y, and refuses a grouped element's box", () => {
+  it("moves a chart by x and y, and refuses a grouped element's box", () => {
     expect(placed(plan({ target: { node: elementId("259.3") }, box: { align: "right" } }, sized()))).toEqual([
       ["259.3", 700, 20],
     ])

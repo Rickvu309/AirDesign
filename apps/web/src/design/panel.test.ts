@@ -150,15 +150,15 @@ it("leaves a field empty and not inherited when nothing paints it", () => {
   expect(controls["text.lineHeight"]).toEqual([undefined, false])
 })
 
-it("sizes a table by Width and Height beside X and Y, and offers no rotation for it", () => {
-  const table: ScopedElement = {
+it("sizes a chart by Width and Height beside X and Y, and offers no rotation for it", () => {
+  const chart: ScopedElement = {
     node: elementId("258.4"),
-    facts: { kind: "table", text: false, grouped: false, animated: false },
+    facts: { kind: "chart", text: false, grouped: false, animated: false },
     kept: [],
     value: null,
     box: { x: 457_200, y: 914_400, cx: 7_315_200, cy: 1_112_520 },
   }
-  const panel = panelOf(table, { reads: {}, moves: true, fields: {} })
+  const panel = panelOf(chart, { reads: {}, moves: true, fields: {} })
   const controls = panel.sections.find((section) => section.trait === "box")?.strips.flat() ?? []
   expect(
     controls.filter((control) => control.kind === "length").map((control) => [control.label, control.value]),

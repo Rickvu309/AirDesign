@@ -15,13 +15,7 @@ function textFonts(text: CanvasText | null | undefined): readonly string[] {
 }
 
 function namesOf(element: CanvasElement): readonly string[] {
-  return [
-    ...new Set([
-      ...textFonts(element.text),
-      ...(element.diagram?.flatMap(namesOf) ?? []),
-      ...(element.table?.rows.flatMap((row) => row.cells.flatMap((cell) => textFonts(cell.text))) ?? []),
-    ]),
-  ].sort()
+  return [...new Set([...textFonts(element.text), ...(element.diagram?.flatMap(namesOf) ?? [])])].sort()
 }
 
 const noSubscription = () => () => {}

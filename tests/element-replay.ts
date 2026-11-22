@@ -1,17 +1,14 @@
 import { readDeckId } from "@airdesign/catalog"
 import {
   addedPictures,
-  changedTable,
   elementId,
   nextElementId,
-  openingTable,
   readSlideId,
   redoOf,
   slideId,
   slideUndoable,
   takes,
   undoOf,
-  writeTableValue,
   type Register,
   type Undoable,
 } from "@airdesign/document"
@@ -24,21 +21,10 @@ const deck = parsed.deck
 const node = elementId("256.9")
 const file = ["256"]
 const box = { x: 0, y: 0, cx: 1000, cy: 500 }
-const opening = openingTable(2, 2)
-const grown = changedTable(changedTable(opening, { change: "cell", row: 0, column: 0, text: "Typed" })!, {
-  change: "row",
-  row: 1,
-  place: "below",
-})!
 const kinds = {
   box: { element: { node, kind: "shape", value: "", box, grouped: false }, typed: "Typed" },
   shape: { element: { node, kind: "shape", value: null, box, grouped: false }, geometry: "ellipse", typed: null },
-  table: {
-    element: { node, kind: "table", value: writeTableValue(opening), box, grouped: false },
-    typed: writeTableValue(grown),
-  },
 }
-const wroteTable = writeTableValue(changedTable(opening, { change: "cell", row: 0, column: 0, text: "Aira" })!)
 let kind: keyof typeof kinds = "box"
 const media = { sha256: "d".repeat(64), type: "image/png" }
 const picture = { node, kind: "shape", value: null, box, grouped: false }
@@ -107,10 +93,7 @@ function agentWrote(current: Deck): Answer {
   const started = call("start_run", current, caller, { deck, runId, elements: [{ node }] })
   if (!started.ok) return started
   const readAt = started.deck.register.elements[node]?.readAt ?? 0
-  const change =
-    kind === "table"
-      ? { op: "set", target: node, table: { value: wroteValue() } }
-      : { node, value: wroteValue(), readAt }
+  const change = { node, value: wroteValue(), readAt }
   const wrote = call("edit_deck", started.deck, caller, { deck, base: started.deck.revision, changes: [change] })
   if (!wrote.ok) return wrote
   return call("stop_run", wrote.deck, caller, { deck, runId })
@@ -142,7 +125,7 @@ function act(current: Deck, source: Spec, action: string, undoable: Undoable | n
 }
 
 function wroteValue(): string {
-  return kind === "table" ? wroteTable : "Aira"
+  return "Aira"
 }
 
 function shown(current: Deck, state: Spec) {
@@ -203,22 +186,20 @@ function takenByKind(failures: string[]): void {
   const taken = {
     box: takes({ ...facts, kind: "shape", text: true }),
     shape: takes({ ...facts, kind: "shape", text: false }),
-    table: takes({ ...facts, kind: "table", text: true }),
     picture: takes({ ...facts, kind: "shape", text: false }),
   }
-  const values = ["text.value", "notes.value", "table.value"]
+  const values = ["text.value", "notes.value"]
   if (!taken.box.includes("text.value")) failures.push("element TraitTakenByKind: a text box takes no text")
-  if (!taken.table.includes("table.value")) failures.push("element TraitTakenByKind: a table takes no table value")
   if (taken.shape.includes("text.value"))
     failures.push("element TraitTakenByKind: a shape with no text body takes text")
   if (taken.picture.some((field) => values.includes(field)))
-    failures.push("element TraitTakenByKind: a picture takes a text or table value")
+    failures.push("element TraitTakenByKind: a picture takes a text value")
 }
 
 export function replayElement(graph: Graph, failures: string[]) {
   takenByKind(failures)
   let told = 0
-  for (const each of ["box", "shape", "table"] as const) {
+  for (const each of ["box", "shape"] as const) {
     kind = each
     told += replayKind(graph, failures)
   }

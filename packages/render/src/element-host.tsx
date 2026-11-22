@@ -46,7 +46,6 @@ import { presetTextArea, type TextArea } from "./preset-path.js"
 import { tidy } from "./effect-art.js"
 import type { FitSize } from "./text-hug.js"
 import { UnshownLabel } from "./unshown-label.js"
-import type { TableEditing } from "./table-handles.js"
 
 const defaultInsetX = 91_440
 const defaultInsetY = 45_720
@@ -70,7 +69,7 @@ export type ElementPaintProps = {
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
   readonly targets?: Targets | undefined
-} & TableEditing
+}
 
 function resizing(placed: CanvasElement, resting: CanvasElement): boolean {
   const { box } = placed

@@ -31,7 +31,6 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   body: ["5465b825", "fbdbb36e"],
   text: ["7bd8d0c1", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede"],
   connection: ["5465b825", "4ad8435a"],
-  table: ["248ba3f0", "248ba3f0"],
   chart: ["d5337dcc"],
   notes: ["d772d0d9"],
   show: ["5465b825", "fc0e1303"],

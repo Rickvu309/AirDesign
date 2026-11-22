@@ -2,7 +2,7 @@
 
 A person inserts a bar, stacked, 100% stacked, horizontal, waterfall, line or pie chart from the toolbar and edits its numbers in a grid in the Design panel. An agent adds one with its numbers through `airdesign_edit_deck`. Charts made in AirDesign paint, move, resize and export as native PowerPoint charts. A chart the deck was imported with moves like any layer. When it is a clustered, stacked or 100% stacked column, a clustered horizontal bar, a standard line or a pie, its numbers open in the Data grid, and editing them changes only those numbers in its chart part and workbook.
 
-Figma Slides has no chart. The tool copies the closest documented pattern, the table: a chart's numbers sit in a small table-like grid, and Insert chart sits in the toolbar beside Insert table.
+Figma Slides has no chart. The tool copies the closest documented pattern: a chart's numbers sit in a small grid, and Insert chart sits in the toolbar beside Insert shape.
 
 ## Sub-features
 

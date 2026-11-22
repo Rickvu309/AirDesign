@@ -1,9 +1,7 @@
-import { format, type CellTexts, type ElementId, type Register, type StackMove } from "@airdesign/document"
+import { format, type ElementId, type Register, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import {
   boxOf,
-  manyCells,
-  readPastedCells,
   SlideCanvas,
   type Copied,
   type FitSize,
@@ -45,31 +43,24 @@ import { guidedCanvas, type GuidesShown } from "@/editor/slide-guides"
 import { indexedRegister } from "@/indexed-register"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
-import { shownTable } from "@/table-hook"
-import { tableCanvas, type TableCanvasDeck } from "@/editor/table-canvas"
 import type { UndoName } from "@/copy/undo-copy"
 import type { RecordHold, Typing } from "@/undo-list"
 
-export type EditableDeck = DesignDeck &
-  TableCanvasDeck & {
-    readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
-    readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
-    readonly pasteLayers?: (
-      copies: readonly CopyAsked[],
-      replacing?: readonly ElementId[],
-    ) => Promise<readonly Copied[]>
-    readonly pasteFromDeck?: (
-      copy: LayerCopy,
-      places: readonly PastePlace[],
-      replacing?: readonly ElementId[],
-    ) => Promise<readonly Copied[]>
-    readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
-    readonly pasteTable?: (cells: CellTexts) => void
-    readonly selection: Selection
-    readonly select: (selection: Selection) => void
-    readonly hovered?: ElementId | null
-    readonly placedText?: PlacedTextActions
-  }
+export type EditableDeck = DesignDeck & {
+  readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
+  readonly duplicateLayers?: (copies: readonly Moved[]) => Promise<readonly Copied[]>
+  readonly pasteLayers?: (copies: readonly CopyAsked[], replacing?: readonly ElementId[]) => Promise<readonly Copied[]>
+  readonly pasteFromDeck?: (
+    copy: LayerCopy,
+    places: readonly PastePlace[],
+    replacing?: readonly ElementId[],
+  ) => Promise<readonly Copied[]>
+  readonly cutLayers?: (nodes: readonly ElementId[]) => Promise<CommitOutcome | "closed">
+  readonly selection: Selection
+  readonly select: (selection: Selection) => void
+  readonly hovered?: ElementId | null
+  readonly placedText?: PlacedTextActions
+}
 
 type PlacedTextActions = {
   readonly typed: (node: ElementId, value: string) => Promise<boolean>
@@ -99,8 +90,7 @@ export function editableSlide(
 
   async function textBefore(target: ElementId): Promise<string> {
     const file = boxes.current.get(target)?.file ?? ""
-    const shown = shapes.current.get(target)?.contentKind === "table" ? shownTable : shownValue
-    return shown(await deviceRegister(id), target, file)
+    return shownValue(await deviceRegister(id), target, file)
   }
 
   function typedAhead(target: ElementId, value: string): () => void {
@@ -175,7 +165,6 @@ export function editableSlide(
       async () => {
         written()
         const before = await started
-        const holder = shape?.contentKind === "table" ? "table" : "text"
         slot.record({
           name,
           session,
@@ -183,8 +172,8 @@ export function editableSlide(
             steps: [
               {
                 node: target,
-                before: { [holder]: { value: { set: before } } },
-                after: { [holder]: { value: { set: value } } },
+                before: { text: { value: { set: before } } },
+                after: { text: { value: { set: value } } },
               },
             ],
           },
@@ -322,10 +311,7 @@ export function editableSlide(
             if (paste.data === null) return readClipboardCopy().then((copy) => pasted(copy, paste))
             const copy = readLayerCopy(paste.data.getData("text/html"))
             if (copy !== null) return pasted(copy, paste)
-            const cells = paste.mode === "paste" ? readPastedCells(paste.data) : null
-            if (!manyCells(cells) || deck.pasteTable === undefined) return null
-            deck.pasteTable(cells)
-            return Promise.resolve([])
+            return null
           },
         }
 
@@ -439,7 +425,6 @@ export function editableSlide(
               clear()
               void holding([target], () => onEdit(target, value, kind))
             }}
-            {...tableCanvas(deck, (target, value, name) => holding([target], () => onEdit(target, value, name)))}
             slide={canvas}
             slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
             store={store.current}

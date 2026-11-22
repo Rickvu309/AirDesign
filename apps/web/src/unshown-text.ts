@@ -10,7 +10,7 @@ function formatOf(part: string): string | null {
 }
 
 export function unshownText(row: PaintElement, src: PictureSource): string | null {
-  if (row.table !== undefined || row.diagram !== undefined || row.chart !== undefined) return null
+  if (row.diagram !== undefined || row.chart !== undefined) return null
   if (row.image !== null && src(row.image) !== null) return null
   if (row.image !== null && addedPicturePart(row.image.part)) return pictureCopy.uploading
   if (row.image !== null) return unshownCopy.picture(formatOf(row.image.part))

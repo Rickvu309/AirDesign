@@ -11,7 +11,7 @@ import { slideTurnSaid } from "@/editor/slide-said"
 import { withFileFloors } from "@/deck-paint"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
-import { structureOf } from "@/table-hook"
+import { structureOf } from "@/paint-structure"
 import {
   emptyShown,
   emptyUndo,

@@ -18,10 +18,6 @@ describe("writtenRoutes", () => {
       addSection: structure.section.create.route,
       removeSection: structure.section.remove.route,
       orderSection: structure.section.move.route,
-      addTable: structure.table.create.route,
-      addRow: structure.row.create.route,
-      removeRow: structure.row.remove.route,
-      orderRow: structure.row.move.route,
     })
   })
 })

@@ -133,7 +133,6 @@ describe("element clone", () => {
     expect(refused({ ...made, source: elementId("256.4"), element: { ...made.element, kind: "group" } })).toBe("refuse")
     expect(refused({ ...made, source: elementId("256.5") })).toBe("refuse")
     expect(refused({ ...made, source: elementId("256.6"), element: { ...made.element, kind: "chart" } })).toBe("refuse")
-    expect(refused({ ...made, element: { ...made.element, kind: "table" } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, node: elementId("256.3") } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, node: elementId("257.9") } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, box: null } })).toBe("refuse")

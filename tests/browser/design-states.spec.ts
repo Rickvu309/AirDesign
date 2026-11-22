@@ -167,10 +167,6 @@ test("a selected text box draws one frame, not two", () => {
   ).toEqual([])
 })
 
-test("a selected table draws one frame, not two", () => {
-  expect(seen(["design-table"], "stacked-frames"), "An imported table has one object selection frame").toEqual([])
-})
-
 test("the offline notice shows its whole sentence", () => {
   expect(seen(["editor-offline"], "truncated-text"), "the offline notice is cut by an ellipsis").toEqual([])
 })
@@ -187,13 +183,6 @@ test("an empty placeholder on a blank slide shows that it is there", () => {
 
 test("an imported Calibri slide keeps its text inside its boxes", () => {
   expect(seen(["imported-text"], "overflowing-text"), "imported text runs past its box").toEqual([])
-})
-
-test("a table's text and the legend under it are never painted over each other", () => {
-  expect(
-    seen(["table-cells"], "overflowing-text"),
-    "the grown table and the legend are painted over each other",
-  ).toEqual([])
 })
 
 test("text in the real app meets WCAG AA contrast", () => {

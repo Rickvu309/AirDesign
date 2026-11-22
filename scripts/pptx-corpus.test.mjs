@@ -230,7 +230,6 @@ const pptx = {
   newSharedOwnedParts: () => [],
   touchMatches: () => true,
   newNotesLinkFailures: () => [],
-  newTableBreaks: () => [],
 }
 const written = (name) => ({
   name,

@@ -5,7 +5,7 @@ import { servedFaces } from "@/design/served-faces"
 import { useFaceFallback } from "@/design/face-fallback"
 import {
   bytesOf,
-  cellText,
+  plainText,
   limits,
   readTextValue,
   writeTextValue,
@@ -40,7 +40,7 @@ export function typedText(value: string, words: string): string {
 }
 
 export function passageWords(value: string): string {
-  return cellText(readTextValue(value) ?? [{ from: 0, runs: [{ from: 0, text: value }] }])
+  return plainText(readTextValue(value) ?? [{ from: 0, runs: [{ from: 0, text: value }] }])
 }
 
 function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean } {

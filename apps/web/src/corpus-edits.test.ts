@@ -7,7 +7,6 @@ import {
   newDuplicateShapeIds,
   newNotesLinkFailures,
   newSharedOwnedParts,
-  newTableBreaks,
   partCopies,
   readParts,
   readSlides,
@@ -78,7 +77,6 @@ function breaks(before: Parts, after: Parts, touches: readonly string[], copies:
     ...dangling.map((row) => `dangling ${JSON.stringify(row)}`),
     ...newSharedOwnedParts(sharedOwnedParts(before), sharedOwnedParts(after)).map((row) => `shared ${row.part}`),
     ...newNotesLinkFailures(before, after).map((row) => `notes ${JSON.stringify(row)}`),
-    ...newTableBreaks(before, after, copies).map((row) => `table ${row.reason} ${row.part} ${row.shape}`),
   ]
 }
 

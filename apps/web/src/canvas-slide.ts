@@ -67,21 +67,10 @@ function tintText(text: CanvasText | null, colors: readonly CanvasTemplateColor[
 
 function withColors(element: CanvasElement, colors: readonly CanvasTemplateColor[]): CanvasElement {
   if (colors.length === 0) return element
-  const table =
-    element.table === undefined
-      ? undefined
-      : {
-          ...element.table,
-          rows: element.table.rows.map((row) => ({
-            ...row,
-            cells: row.cells.map((cell) => ({ ...cell, text: tintText(cell.text, colors) })),
-          })),
-        }
   const diagram = element.diagram?.map((child) => withColors(child, colors))
   return {
     ...element,
     text: tintText(element.text, colors),
-    ...(table === undefined ? {} : { table }),
     ...(diagram === undefined ? {} : { diagram }),
   }
 }

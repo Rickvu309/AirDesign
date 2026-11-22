@@ -35,7 +35,6 @@ const partsPptx = {
   partCopies: () => new Map(),
   newSharedOwnedParts: (before, after) => after.filter((row) => !before.includes(row)),
   newNotesLinkFailures: () => [],
-  newTableBreaks: () => [],
 }
 const judgedDeck = (references, shared = []) => ({ list: [], ids: [], orders: [], references, shared })
 same(

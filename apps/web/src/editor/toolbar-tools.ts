@@ -11,11 +11,10 @@ function after<A extends readonly unknown[]>(first: () => void, insert: (...args
 }
 
 export function insertsFirst(tools: ToolbarTools, first: () => void): ToolbarTools {
-  const { onText, onTable, onChart, onPicture, onShape, onIcon } = tools
+  const { onText, onChart, onPicture, onShape, onIcon } = tools
   return {
     ...tools,
     ...(onText === undefined ? {} : { onText: after(first, onText) }),
-    ...(onTable === undefined ? {} : { onTable: after(first, onTable) }),
     ...(onChart === undefined ? {} : { onChart: after(first, onChart) }),
     ...(onPicture === undefined ? {} : { onPicture: after(first, onPicture) }),
     ...(onShape === undefined ? {} : { onShape: after(first, onShape) }),

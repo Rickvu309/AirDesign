@@ -85,7 +85,6 @@ export function textOf(text: PaintText): ResolvedText {
 }
 
 function kindOf(row: PaintElement): Kind {
-  if (row.table !== undefined) return "table"
   if (row.diagram !== undefined) return "kept"
   return paintKind(row.kind)
 }
@@ -109,16 +108,6 @@ function elementOf(row: PaintElement): ResolvedElement {
     placeholder: row.placeholder?.type ?? null,
     fill: row.kind === "p:pic" ? "unknown" : fillOf(row.fill),
     text: row.text === null ? null : textOf(row.text),
-    cells:
-      row.table === undefined
-        ? null
-        : row.table.rows.map((tableRow) =>
-            tableRow.cells.map(
-              (cell) =>
-                cell.text?.paragraphs.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n") ??
-                "",
-            ),
-          ),
   }
 }
 

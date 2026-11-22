@@ -127,7 +127,7 @@ async function fieldProblems(
   if (probe.kind !== "slide" && paint(exported, at, field) === paint(parts, at, field)) {
     problems.push({ field: key, missing: "paint-change" })
   }
-  const holder = trait === "notes" || trait === "table" ? trait : "text"
+  const holder = trait === "notes" ? trait : "text"
   const step = { node: at.node, before: rowOf(opening, holder).patch, after: rowOf(edit, holder).patch }
   const turn = person === null ? null : undoOf(person, { steps: [step] })
   const undone = person === null || turn === null || !turn.ok ? null : landed(person, turn.commands)

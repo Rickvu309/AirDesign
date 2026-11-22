@@ -26,7 +26,7 @@ import {
   type ValueHolder,
 } from "./row.js"
 
-const valueHolders: readonly ValueHolder[] = ["notes", "table", "text"]
+const valueHolders: readonly ValueHolder[] = ["notes", "text"]
 
 export type SlideSpot = { readonly present: boolean; readonly key: OrderKey }
 
@@ -90,8 +90,7 @@ const changed: Turns = { ok: false }
 function openingOf(register: Register, node: ElementId): ElementPatch {
   const opening = openingElement(register, node)
   const rows: Row[] = []
-  if (typeof opening?.value === "string")
-    rows.push(rowOf({ value: opening.value }, valueHolder(register, node, "person")))
+  if (typeof opening?.value === "string") rows.push(rowOf({ value: opening.value }, valueHolder(node)))
   if (opening?.box !== undefined && opening.box !== null) rows.push({ v: 1, patch: boxPatch(opening.box) })
   return netPatch(rows)
 }
@@ -107,7 +106,7 @@ function shownOn(register: Register, node: ElementId): ElementPatch {
   const body = register.elements[node]
   if (body === undefined) return shownWith(register, node, {})
   const written = { ...body, landed: body.landed.filter((row) => !measuredOnly(row)) }
-  return shownWith(register, node, landedPatch(written, valueHolder(register, node, "person")))
+  return shownWith(register, node, landedPatch(written, valueHolder(node)))
 }
 
 function stillShows(register: Register, node: ElementId, shown: ElementPatch): boolean {
@@ -196,9 +195,9 @@ export function elementsUndoable(
   return { elements, slide: first.edit.id, file, before: first.before, after: first.after }
 }
 
-function holderOf(register: Register, step: NodeStep): ValueHolder {
+function holderOf(step: NodeStep): ValueHolder {
   const named = valueHolders.find((holder) => step.after[holder] !== undefined)
-  return named ?? valueHolder(register, step.node, "person")
+  return named ?? valueHolder(step.node)
 }
 
 function stepCommands(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Command[] | null {
@@ -206,7 +205,7 @@ function stepCommands(register: Register, steps: readonly NodeStep[], from: "bef
   const commands: Command[] = []
   for (const step of from === "after" ? steps.toReversed() : steps) {
     const body = register.nodes.includes(step.node) ? register.elements[step.node] : undefined
-    const holder = holderOf(register, step)
+    const holder = holderOf(step)
     const values = formatOne(step[to], holder) ?? [{ v: format, patch: step[to] }]
     if (body === undefined || !shows(shownPatch(body, holder), step[from])) return null
     commands.push(...values.map((value): Command => ({ command: "person", ...value, node: step.node })))

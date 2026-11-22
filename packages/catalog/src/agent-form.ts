@@ -331,7 +331,6 @@ export function agentSchema(desc: Desc): JsonSchema {
     case "link":
       return linkSchema
     case "text":
-    case "table":
     case "chart":
     case "node":
       return { type: "string" }
@@ -449,7 +448,6 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
     case "asset":
       return readString(raw, (text) => knownIcon(text) || (desc.media === true && webImage(text)))
     case "text":
-    case "table":
     case "chart":
       return readString(raw, storableText)
     case "link": {

@@ -15,7 +15,7 @@ function shownRow(register: Register, source: ElementId): IndexElement | undefin
   if (row === undefined) return undefined
   const body = register.nodes.includes(source) ? register.elements[source] : undefined
   const value = body !== undefined && history(body).length > 0 ? currentValue(body) : row.value
-  const landed = body === undefined ? {} : landedPatch(body, valueHolder(register, source, "person"))
+  const landed = body === undefined ? {} : landedPatch(body, valueHolder(source))
   const opening = floorOpening(register, source, landed)
   const { group: _group, frame: _frame, framing: _framing, opening: _opening, ...kept } = row
   return { ...kept, value, ...(opening === undefined ? {} : { opening }) }

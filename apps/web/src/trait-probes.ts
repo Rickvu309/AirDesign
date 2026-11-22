@@ -3,18 +3,14 @@ import {
   changeFills,
   format,
   readChartValue,
-  readTableValue,
   readTextValue,
-  writeTableValue,
   type Overlay,
   type Paint,
   type TextValue,
   type TraitName,
 } from "@airdesign/document"
 import {
-  readCells,
   readNotes,
-  readTable,
   shownBody,
   shownConnection,
   shownEffects,
@@ -90,28 +86,6 @@ const boxOpening = {
 
 function words(text: TextValue): string {
   return text.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
-}
-
-const openingBorder = { width: 12700, fill: { solid: { scheme: "tx1" } } }
-
-function grid(parts: Parts, at: At): readonly (readonly unknown[])[] | undefined {
-  const cells = readCells(parts, at.part, at.shape)
-  return readTable(parts, at.part, at.shape)?.rows.map((row, line) =>
-    row.cells.map((cell, column) => {
-      const read = cells[line]?.[column]
-      return [words(cell), read?.fill ?? null, read?.borders.bottom ?? null]
-    }),
-  )
-}
-
-function gridShown(value: string): readonly (readonly unknown[])[] | undefined {
-  return readTableValue(value)?.rows.map((row) =>
-    row.cells.map((cell, column) => [
-      words(cell),
-      row.fills?.[column] ?? null,
-      { ...openingBorder, ...row.borders?.[column]?.bottom },
-    ]),
-  )
 }
 
 export const probes: { readonly [T in TraitName]: Probe<T> } = {
@@ -330,18 +304,6 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     opening: () => ({ value: "" }),
     edit: (_, __, value) => ({ value }),
     fields: { value: { file: () => undefined, shows: (value) => readChartValue(value) } },
-  },
-  table: {
-    deck: "table-added.pptx",
-    kind: "table",
-    opening: (parts, at) => {
-      const table = readTable(parts, at.part, at.shape)
-      return { value: table === null ? "" : writeTableValue(table) }
-    },
-    edit: (_, __, value) => ({ value }),
-    fields: {
-      value: { file: grid, shows: gridShown },
-    },
   },
   templateStyle: templateStyleProbe,
 }

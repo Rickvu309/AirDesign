@@ -188,12 +188,11 @@ describe("gestureFor", () => {
       gestureFor({ ...plain, key, code, shiftKey }, "slides")
     expect([
       tool("t", "KeyT"),
-      tool("T", "KeyT", true),
       tool("r", "KeyR"),
       tool("o", "KeyO"),
       tool("l", "KeyL"),
       tool("L", "KeyL", true),
-    ]).toEqual(["tool-text", "tool-table", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow"])
+    ]).toEqual(["tool-text", "tool-rectangle", "tool-ellipse", "tool-line", "tool-arrow"])
     expect(gestureFor({ ...plain, key: "K", code: "KeyK", ctrlKey: true, shiftKey: true }, "slides")).toBe(
       "place-image",
     )

@@ -8,7 +8,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react"
-import type { Box, CellRange, ElementId, StackMove, TableChange } from "@airdesign/document"
+import type { Box, ElementId, StackMove } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import { CopiedLayer } from "./copied-layer.js"
@@ -34,7 +34,6 @@ import type { Duplicate } from "./use-layer-copies.js"
 import { enterElement } from "./text-entry.js"
 import { leadOf, type Selection } from "./selection.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
-import type { TableWords } from "./table-handles.js"
 import type { PaintStore } from "./store.js"
 import type { TextEditKind } from "./passage.js"
 import { ensureTextRule, type Scaled } from "./text-look.js"
@@ -75,9 +74,6 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly highlights?: readonly ElementId[]
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
   readonly onFit?: (id: ElementId, size: FitSize) => void
-  readonly onTable?: (id: ElementId, change: TableChange) => void
-  readonly tableWords?: TableWords
-  readonly onCells?: (id: ElementId, cells: CellRange | null) => void
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRotate?: (turned: readonly Turned[]) => void
   readonly onFlip?: (flipped: readonly FlippedLayer[]) => void
@@ -298,9 +294,6 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
               moves={moving}
               onEdit={props.onEdit}
               onFit={props.onFit}
-              onTable={props.onTable}
-              tableWords={props.tableWords}
-              onCells={props.onCells}
               quiet={quiet}
               scaled={scaled}
               store={props.store}

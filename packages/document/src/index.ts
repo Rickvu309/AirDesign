@@ -273,29 +273,6 @@ export {
 export { format, formatOf, newerFormat, type StoredRead } from "./format.js"
 export { readRegister, readRow, readStoredEdit, type StoredEdit } from "./stored.js"
 export {
-  cellText,
-  changedTable,
-  openingTable,
-  openingTableSize,
-  pastedTable,
-  readTableValue,
-  tableColumns,
-  writeTableValue,
-  type TableChange,
-  type TableRow,
-  type TableValue,
-} from "./table-value.js"
-export { readTabbed, tabbedHtml, tabbedTable, writeTabbed, type CellTexts } from "./table-text.js"
-export {
-  cellFill,
-  tableSides,
-  type Border,
-  type Borders,
-  type CellFill,
-  type CellRange,
-  type TableSide,
-} from "./table-cells.js"
-export {
   chartBars,
   chartFormats,
   chartGap,
@@ -335,8 +312,9 @@ export {
 } from "./color.js"
 export { cycledColor, presentSlots } from "./template-remix.js"
 export { fixedLineHeight } from "./text-restyle.js"
-export { filedText, paragraphedTable, paragraphedText } from "./line-breaks.js"
-export { placedTable, placedText } from "./added-text.js"
+export { readTabbed, type CellTexts } from "./tabbed-text.js"
+export { filedText, paragraphedText } from "./line-breaks.js"
+export { placedText } from "./added-text.js"
 export {
   noCharacters,
   readTextValue,
@@ -348,7 +326,6 @@ export {
   lastListLevel,
   lineHeightPointsFloor,
   schemeNames,
-  sizeDefault,
   spaceCeiling,
   spacingNames,
   writeTextValue,
@@ -362,6 +339,7 @@ export {
   type TextList,
   type TextRun,
   type TextValue,
+  plainText,
 } from "./text-value.js"
 export { withCurrentKeys } from "./current-keys.js"
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
@@ -414,7 +392,7 @@ export type {
 } from "./resolved-slide.js"
 export { fontFace, layText, type FontWidths } from "./text-fit.js"
 export { findingLimits, type Finding } from "./finding.js"
-export { contrast, readableText } from "./contrast.js"
+export { contrast } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
 export { slideFindings, type SlideFindings } from "./slide-findings.js"
 export { scaleMark, typeSteps } from "./finding-scale.js"

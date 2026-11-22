@@ -1,6 +1,6 @@
 import { landedPatch, type ElementId, type ElementPatch, type Register } from "@airdesign/document"
 
-const livePainted: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text", "notes", "table"]
+const livePainted: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text", "notes"]
 
 function painted(trait: string, fields: object | undefined): readonly (readonly [string, object])[] {
   if (livePainted.includes(trait) || fields === undefined) return []

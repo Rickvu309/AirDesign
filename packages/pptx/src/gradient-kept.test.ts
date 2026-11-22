@@ -1,9 +1,8 @@
-import { changedTable, type FieldValue } from "@airdesign/document"
+import type { FieldValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
 import { fillMarkup } from "./fill-markup.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { readTable, writeTable } from "./table-write.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Fill = Exclude<FieldValue<"fills", "p0">, { readonly image: unknown }>
@@ -42,21 +41,6 @@ function text(next: ReadonlyMap<string, Uint8Array>): string {
   return decodeUtf8(bytes)
 }
 
-function cell(properties: string): Map<string, Uint8Array> {
-  const body = "<a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr/></a:p></a:txBody>"
-  return parts(
-    `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="7" name="Table 7"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid><a:gridCol w="100"/></a:tblGrid><a:tr h="100"><a:tc>${body}<a:tcPr>${properties}</a:tcPr></a:tc></a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`,
-  )
-}
-
-function cellWritten(before: Map<string, Uint8Array>, fill: Gradient): string {
-  const opened = readTable(before, part, "7")
-  const value =
-    opened === null ? null : changedTable(opened, { change: "fill", cells: { rows: [0, 0], columns: [0, 0] }, fill })
-  if (value === null) throw new Error("table")
-  return text(writeTable(before, part, "7", value))
-}
-
 describe("a gradient a change rewrites keeps the flip and tile rectangle its value does not hold", () => {
   it("keeps them on a shape's own fill, and drops them when the fill becomes another kind", () => {
     const before = parts(shape(tiled))
@@ -80,9 +64,5 @@ describe("a gradient a change rewrites keeps the flip and tile rectangle its val
     const before = parts(shape(line(tiled)))
     const written = writeTrait(before, { slide: "256", part, shape: "2" }, "border", { fill: { set: gradient } })
     expect(text(written)).toBe(text(parts(shape(line(kept)))))
-  })
-
-  it("keeps them on a table cell's fill", () => {
-    expect(cellWritten(cell(tiled), gradient)).toBe(text(cell(kept)))
   })
 })

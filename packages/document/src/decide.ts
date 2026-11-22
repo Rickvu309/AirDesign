@@ -144,7 +144,7 @@ export function version(register: NodeRegister): number {
 
 function heldText(row: Value, floor: string): readonly string[] {
   if (row.v === undefined) return row.property === "box" ? [] : [row.value]
-  const edit = row.patch.text?.value ?? row.patch.notes?.value ?? row.patch.table?.value ?? row.patch.chart?.value
+  const edit = row.patch.text?.value ?? row.patch.notes?.value ?? row.patch.chart?.value
   if (edit === undefined) return []
   return [typeof edit === "object" ? edit.set : floor]
 }
@@ -340,9 +340,8 @@ export type Missing = {
   readonly box: Box | null
 }
 
-export function valueHolder(register: Register, node: ElementId, actor: Actor): ValueHolder {
-  if (slideKind(node) === "notes") return "notes"
-  return actor === "person" && openingElement(register, node)?.kind === "table" ? "table" : "text"
+export function valueHolder(node: ElementId): ValueHolder {
+  return slideKind(node) === "notes" ? "notes" : "text"
 }
 
 export function landedPatch(register: NodeRegister, holder: ValueHolder): ElementPatch {
@@ -375,7 +374,7 @@ export function editMissing(
   if (facts === undefined) return null
   const body = storedBody(register, edit.node)
   const box = (body === null ? null : currentBox(body)) ?? openingElement(register, edit.node)?.box ?? null
-  const holder = valueHolder(register, edit.node, edit.command)
+  const holder = valueHolder(edit.node)
   const wanted =
     edit.v === undefined
       ? edit.property === "box"

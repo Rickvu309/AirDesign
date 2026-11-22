@@ -15,10 +15,9 @@ import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
 import { elementCommand, removals } from "./element-edit"
-import { busyElements, shownValue } from "./live-repaint"
+import { busyElements } from "./live-repaint"
 import { pictureCommand } from "./picture-add"
 import { fileSlides } from "./slide-edit"
-import { tableValue } from "./table-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -96,7 +95,7 @@ it("each one-element edit on a 5 MB deck repaints its own slide and paints what 
   const typed = writeTextValue([{ from: 0, runs: [{ from: -1, text: "Typed" }] }])
   const edits: readonly (readonly [number, (before: Register) => Register])[] = [
     [2, (before) => changed(before, { change: "text", index: 2, size: room })],
-    [4, (before) => changed(before, { change: "table", index: 4, size: room, rows: 3, columns: 3 })],
+    [4, (before) => changed(before, { change: "shape", geometry: "rect", index: 4, size: room })],
     [6, (before) => removed(before, store, 6)],
     [2, (before) => person(before, elementOn(store, 2, painted.boxes), typed)],
     [
@@ -167,36 +166,11 @@ it("paints a picture once its bytes arrive after the slide was painted without t
   expect(shown(loaded, store)).toEqual(shown(paint(whole, parts, added, busy, pictures), whole))
 }, 120_000)
 
-const tableNode = elementId("256.4")
-
 function landed(register: Register, command: Command): Register {
   const decision = decide(register, command)
   if (decision.decision !== "apply") throw new Error(decision.code)
   return decision.register
 }
-
-it("paints the rows and columns a person changed in a table the deck was imported with", async () => {
-  const fsName = "node:fs/promises"
-  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  const columns = await readParts(
-    await fs.readFile(new URL("../../../scripts/pptx-fixtures/table-columns.pptx", import.meta.url)),
-  )
-  const shape = readShapes(columns).find((each) => each.shape === "4")!
-  let register = landed(openRegister("", "deck"), { command: "add", node: tableNode, floor: "", route: "" })
-  for (const change of [
-    { change: "remove-column", column: 1 },
-    { change: "remove-row", row: 0 },
-  ] as const)
-    register = landed(register, {
-      command: "person",
-      node: tableNode,
-      value: tableValue(columns, shape, shownValue(register, tableNode, ""), change)!,
-    })
-  const painted = paint(paintStore(), columns, register, busyElements())
-  const table = painted.canvases(0)?.elements.find((element) => element.id === tableNode)?.table
-  expect(table?.columns).toHaveLength(3)
-  expect(table?.rows).toHaveLength(3)
-})
 
 it("paints a slide's typed title in the template style's new heading font, as it paints an untouched slide", () => {
   const typed = person(openRegister("", "doe"), "256.2", "Heat pumps")

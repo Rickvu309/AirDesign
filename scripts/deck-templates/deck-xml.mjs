@@ -8,8 +8,6 @@ export const drawingNamespace = a
 export const relationshipNamespace = r
 export const textStylesUri = "{6E3B1F4A-9C2D-4B7E-A815-3F0D2C9B7A61}"
 export const textStylesNamespace = "https://airdesign.app/2026/text-styles"
-export const tableTextUri = "{9B4E2A71-3C5D-4F86-A1B0-6D2E8F4C7A53}"
-export const tableTextNamespace = "https://airdesign.app/2026/table-text"
 
 const emuPerPoint = 12_700
 
