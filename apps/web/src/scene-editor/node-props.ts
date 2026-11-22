@@ -42,3 +42,11 @@ export function flows(view: scene.Scene, id: scene.NodeId): boolean {
 export function geometryKind(view: scene.Scene, id: scene.NodeId): scene.Geometry["kind"] | undefined {
   return propOf(view.nodes.get(id), "geometry")?.kind
 }
+
+export function parentSlot(view: scene.Scene, id: scene.NodeId): NonNullable<scene.Props["parent"]> | null {
+  return propOf(view.nodes.get(id), "parent") ?? null
+}
+
+export function siblingsOf(view: scene.Scene, parent: scene.NodeId): readonly scene.NodeId[] {
+  return view.children.get(parent) ?? []
+}

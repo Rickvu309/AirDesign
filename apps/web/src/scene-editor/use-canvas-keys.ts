@@ -6,6 +6,7 @@ import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deleteWrites } from "./delete-writes"
 import { moveWrites } from "./move-writes"
 import { lockedIn } from "./node-props"
+import { arranged } from "./arrange-keys"
 import { allIn, noSelection, steppedOut, type Selection } from "./selection"
 import type { SlideGeometry } from "./slide-geometry"
 import type { Tool } from "./use-canvas-pointer"
@@ -16,6 +17,7 @@ export type KeyArgs = {
   readonly view: scene.Scene
   readonly geometry: SlideGeometry
   readonly selection: Selection
+  readonly slide: scene.NodeId
   readonly onSelection: (next: Selection) => void
   readonly onTool: (tool: Tool) => void
   readonly onZoom: (key: ZoomKey) => void
@@ -60,6 +62,10 @@ export function useCanvasKeys(args: KeyArgs) {
         (selected ? gestureFor(event, "element") : null) ?? gestureFor(event, "editor") ?? gestureFor(event, "slide")
       if (gesture === null) return
       const handled = () => event.preventDefault()
+      if (arranged(gesture, a)) {
+        handled()
+        return
+      }
       if (gesture === "undo" || gesture === "redo") {
         handled()
         if (gesture === "undo") a.client.undo()
