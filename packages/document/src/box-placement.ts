@@ -98,6 +98,10 @@ function clearAreas(area: PlacementArea, taken: readonly Box[]): readonly Box[] 
   return [...freeAreas(usable, present(area, taken))].sort(larger)
 }
 
+export function largestFreeBox(area: PlacementArea, taken: readonly Box[]): Box | undefined {
+  return clearAreas(area, taken)[0]
+}
+
 function centredIn(free: Box, size: Size): Box {
   return { x: free.x + Math.round((free.cx - size.cx) / 2), y: free.y + Math.round((free.cy - size.cy) / 2), ...size }
 }
