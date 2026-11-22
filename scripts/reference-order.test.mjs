@@ -31,13 +31,15 @@ try {
   project("packages/bare", undefined)
   project("apps/api", { composite: true })
   project("apps/web", { noEmit: true })
-  project("tooling/fixture", { composite: true })
+  project("tooling/checker", { composite: true })
+  project("tooling/fixtures/failing", { composite: true })
   fs.writeFileSync(path.join(root, "packages", "notes.txt"), "")
 
-  same("every composite project under apps and packages, sorted", references(root), [
+  same("every composite project directly under apps, packages and tooling, sorted", references(root), [
     "./apps/api",
     "./packages/alpha",
     "./packages/zeta",
+    "./tooling/checker",
   ])
   project("packages/beta", { composite: true })
   same("a new package is referenced with no list to edit", references(root), [
@@ -45,6 +47,7 @@ try {
     "./packages/alpha",
     "./packages/beta",
     "./packages/zeta",
+    "./tooling/checker",
   ])
   same("a workspace with neither folder has none", references(path.join(root, "packages", "bare")), [])
   same("the root is found from a nested folder", workspaceRoot(path.join(root, "packages", "alpha", "src")), root)

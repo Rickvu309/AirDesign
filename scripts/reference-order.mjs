@@ -20,7 +20,7 @@ export const unsortedReferences = (references) => {
   return [referenceOrderMessage]
 }
 
-export const referenceFolders = ["apps", "packages"]
+export const referenceFolders = ["apps", "packages", "tooling"]
 
 const composite = (project) => {
   const file = path.join(project, "tsconfig.json")
