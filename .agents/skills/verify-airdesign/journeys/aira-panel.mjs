@@ -1,6 +1,6 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
-import { airaStepWords, undoCopy } from "../bin/product-copy.mjs"
+import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 
 const asked = "Add three KPIs to this slide"
 
@@ -14,7 +14,7 @@ async function sceneAgent(kit, cookie) {
   const side = page.locator("[data-editor-panel]")
   const log = side.getByRole("log")
   const canvas = page.locator("[data-slide-box]")
-  const composer = side.getByRole("textbox", { name: "Ask Aira" })
+  const composer = side.getByRole("textbox", { name: airaCopy.askAira })
   await expect(composer).toBeVisible()
   await capture("scene-agent-panel")
   note(`opened scene deck ${deck} at revision ${String(opened.rev)}; the Agent panel shows the Ask Aira composer`)
@@ -48,7 +48,7 @@ export default async function drive(kit) {
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   const side = page.locator("[data-editor-panel]")
-  await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeVisible()
+  await expect(side.getByRole("textbox", { name: airaCopy.askAira })).toBeVisible()
   await capture("agent-panel")
   note("imported clean.pptx; the Agent panel shows the Ask Aira composer")
   await sceneAgent(kit, cookie)
