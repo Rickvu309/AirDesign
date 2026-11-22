@@ -26,6 +26,7 @@ type Context = Kit & {
   readonly w: number
   readonly h: number
   readonly lineH: number
+  readonly seriesColors: readonly Hex[]
 }
 type Entry = { readonly name: string; readonly color: Hex; readonly note?: string }
 
@@ -36,9 +37,20 @@ const legendGap = 28
 const dataId = (context: Context, series: string, category: string) =>
   `${context.frame}#${slug(series)}:${slug(category)}`
 
+function seriesColorsOf(chart: Chart, theme: Theme): readonly Hex[] {
+  const own = chart.series.map((series) => (series.color === undefined ? undefined : resolveColor(series.color, theme)))
+  const free = accents.map((name) => theme.colors[name]).filter((color) => !own.includes(color))
+  const fallback = free.length === 0 ? accents.map((name) => theme.colors[name]) : free
+  let next = 0
+  return own.map((color) => color ?? fallback[next++ % fallback.length]!)
+}
+
 const colorAt = (context: Context, index: number, id: string): Hex => {
   const { chart, theme } = context
-  const own = chart.points?.[id] ?? chart.series[index]?.color
+  const point = chart.points?.[id]
+  if (point !== undefined) return resolveColor(point, theme)
+  if (chart.kind !== "pie") return context.seriesColors[index] ?? theme.colors.accent1
+  const own = chart.series[index]?.color
   return own === undefined ? theme.colors[accents[index % accents.length]!] : resolveColor(own, theme)
 }
 
@@ -430,6 +442,7 @@ export function deriveChart(
     w: box.w,
     h: box.h,
     lineH: wordsHeight(kit, { style: "caption", color: theme.colors.text, bold: false }),
+    seriesColors: seriesColorsOf(chart, theme),
   }
   if (chart.kind === "pie") return pieChart(context)
   if (chart.kind === "line") return lineChart(context)
