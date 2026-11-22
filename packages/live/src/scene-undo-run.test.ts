@@ -120,6 +120,36 @@ describe("undoing an agent's run", () => {
     expect(xOf(later.view())).toBe(0)
   })
 
+  it("undoes a run it watched land without reading the deck's log again", async () => {
+    const base = memorySceneRemote(start)
+    const asked: number[] = []
+    const remote = {
+      ...base,
+      since: async (...args: Parameters<typeof base.since>) => (asked.push(args[0].rev), base.since(...args)),
+    }
+    const mine = await join(remote, "create")
+    for (let step = 1; step <= 30; step += 1)
+      await land(remote, {
+        once: `p${step}`,
+        author: { kind: "person", id: "other" },
+        writes: [{ node: title, prop: "box", value: box(step) }],
+      })
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(500) }],
+    })
+    await land(remote, { once: "a2", author: agent("run-1"), writes: [{ node: title, prop: "box", value: box(600) }] })
+    await mine.catchUp()
+    asked.length = 0
+
+    expect((await mine.undoRun("run-1")).ok).toBe(true)
+
+    expect(xOf(mine.view())).toBe(30)
+    expect(Math.min(...asked)).toBeGreaterThanOrEqual(mine.server().rev)
+  })
+
   it("redoes the run with the person's redo", async () => {
     const remote = memorySceneRemote(start)
     const mine = await join(remote, "create")
