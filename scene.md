@@ -63,3 +63,25 @@ _Avoid_: unsent, optimistic
 **catch-up**:
 Asking the server for the landed edits after a revision and applying each to the tab's fold.
 _Avoid_: poll, pull
+
+## The agent's words
+
+**agent change**:
+One instruction an agent sends: `add`, `set`, `move`, `wrap`, `unwrap`, `delete` or `slide`. `compileAgentChange` turns it into writes, or refuses it by name; `compileAgentEdit` turns a batch of them into one edit of the agent's run. Nothing else turns agent words into writes.
+_Avoid_: command, patch, tool call
+
+**look**:
+The choices an agent names for a layer: a theme colour, a text style name, an effect style name, a radius, words as markdown. It never names a gradient, a filter, a preset or a size.
+_Avoid_: style, traits, fields
+
+**pattern**:
+An agent change that adds a frame tree of text and shapes for one idea: `kpi`, `cards`, `compare`, `matrix`, `timeline` or `flow`. A frame with `rows` is a grid of words, not a pattern. A pattern writes only the text styles the deck names and steps down to the next named size, never to one between, until its words fit.
+_Avoid_: diagram, template, smart art
+
+**free area**:
+The largest clear rectangle of a slide or frame, with a gap round what is already there. An add with no `box` takes it.
+_Avoid_: empty space, gap
+
+**reading**:
+What the agent saw when it last read the deck. Its text and list writes carry that revision as their `base`, so a person's later change refuses them as stale.
+_Avoid_: snapshot, readAt

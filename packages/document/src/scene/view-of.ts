@@ -3,7 +3,7 @@ import { rev } from "./ids.js"
 import { isRefusal } from "./refusal.js"
 import type { Edit, Scene } from "./scene.js"
 
-function onTop(view: Scene, edit: Edit): Edit {
+export function onTop(view: Scene, edit: Edit): Edit {
   return {
     ...edit,
     writes: edit.writes.map(({ base: _sent, ...write }) => {

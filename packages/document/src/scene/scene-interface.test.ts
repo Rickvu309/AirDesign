@@ -15,3 +15,28 @@ it("hands the scene core to callers through the package index as one namespace",
   expect(Object.keys(accepts)).toEqual(["deck", "slideRow", "slide", "frame", "shape"])
   expect(Object.keys(props)).toContain("box")
 })
+
+it("hands the agent's words to callers as functions that compile, read and print", () => {
+  const {
+    compileAgentChange,
+    compileAgentEdit,
+    readForAgent,
+    readAgentChange,
+    readAgentChanges,
+    agentChangesSchema,
+    textFromMarkdown,
+    textToMarkdown,
+  } = scene
+  for (const each of [
+    compileAgentChange,
+    compileAgentEdit,
+    readForAgent,
+    readAgentChange,
+    readAgentChanges,
+    textFromMarkdown,
+    textToMarkdown,
+  ])
+    expect(typeof each).toBe("function")
+  expect(agentChangesSchema.required).toEqual(["changes"])
+  expect(textToMarkdown(textFromMarkdown("**a**", "body"))).toBe("**a**")
+})

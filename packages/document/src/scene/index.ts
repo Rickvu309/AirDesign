@@ -1,3 +1,20 @@
+export {
+  type AgentAdd,
+  type AgentChange,
+  type AgentChart,
+  type AgentColor,
+  type AgentFill,
+  type AgentItem,
+  type AgentLook,
+  type AgentRefusal,
+  type PatternName,
+  agentChangesSchema,
+  readAgentChange,
+  readAgentChanges,
+} from "./agent-change.js"
+export { compileAgentChange } from "./agent-compile.js"
+export { type AgentEdit, type EditBy, compileAgentEdit } from "./agent-edit.js"
+export { readForAgent } from "./agent-read.js"
 export { applyEdit } from "./apply-edit.js"
 export { foldToJson, readFold, readLanded } from "./fold-json.js"
 export type { Arrow, End, Geometry } from "./geometry.js"
@@ -28,6 +45,7 @@ export {
   holds,
   props,
 } from "./props.js"
+export { textFromMarkdown, textToMarkdown } from "./markdown.js"
 export { readEdit, readWrite } from "./read-write.js"
 export { type Refusal, isRefusal } from "./refusal.js"
 export {
