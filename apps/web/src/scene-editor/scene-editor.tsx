@@ -145,7 +145,15 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
           <AgentPanel deck={client} />
         </div>
         {panel === "design" && slide !== undefined ? (
-          <DesignPanel client={client} view={view} slide={slide} selection={selection} />
+          <DesignPanel
+            deck={id}
+            client={client}
+            view={view}
+            slide={slide}
+            slideNumber={strip.current + 1}
+            selection={selection}
+            onSelection={setSelection}
+          />
         ) : null}
       </ResizablePanel>
       <PresentLayer
