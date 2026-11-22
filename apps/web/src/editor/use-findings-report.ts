@@ -7,7 +7,7 @@ import {
   type WireFinding,
 } from "@airdesign/catalog"
 import type { FontWidths, Register, ResolvedSlide, ResolvedText, SlideId } from "@airdesign/document"
-import { liveRuns } from "@airdesign/engine"
+import { openRuns } from "@airdesign/engine"
 import { knownRevision, servedDeck, type Remote } from "@airdesign/live"
 import { paintReader, readSlides } from "@airdesign/pptx"
 import { useEffect } from "react"
@@ -121,8 +121,7 @@ async function wantedPictures(
   deck: DeckId,
   served: { readonly revision: number; readonly register: Register; readonly saved: Register },
 ): Promise<PictureSource | null> {
-  if (pictures === null || liveRuns({ id: deck, revision: served.revision, register: served.saved }).length === 0)
-    return null
+  if (pictures === null || openRuns(served.saved).length === 0) return null
   await pictures.store.load(deck, served.register).catch(() => false)
   return pictures
 }

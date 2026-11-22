@@ -1,5 +1,5 @@
 import type { SlideId } from "@airdesign/document"
-import { liveRuns, type Deck } from "@airdesign/engine"
+import { openRuns, type Deck } from "@airdesign/engine"
 import { wantedSlides, type ReadPictures } from "@airdesign/mcp"
 import type { DeckPictures, Shot } from "./deck-pictures.js"
 
@@ -29,7 +29,7 @@ export async function readPictures(
   const done = () => shots.size === wanted.length
   if (!watch.following(deck.id)) return shots.size > 0 ? { state: "painted", shots } : { state: "closed" }
   if (done()) return { state: "painted", shots }
-  if (liveRuns(deck).length === 0) return shots.size > 0 ? { state: "painted", shots } : { state: "idle" }
+  if (openRuns(deck.register).length === 0) return shots.size > 0 ? { state: "painted", shots } : { state: "idle" }
   const until = AbortSignal.timeout(watch.limit)
   while (!done() && !until.aborted) {
     await watch.pictures.wait(deck.id, until)
