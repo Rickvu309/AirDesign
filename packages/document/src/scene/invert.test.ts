@@ -97,7 +97,7 @@ describe("invert", () => {
     expect(back.nodes.get(ids.card)).toMatchObject({
       parent: (valuesOf(sampleDeck())[ids.card] as { parent: unknown }).parent,
     })
-    expect(back.children.get(ids.slide)).toEqual([ids.card, ids.side, ids.kept])
+    expect(back.children.get(ids.slide)).toEqual([ids.card, ids.side])
   })
 
   it("puts the parent first, so a deleted node comes back before its other props are restored", () => {

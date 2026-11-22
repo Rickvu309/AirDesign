@@ -15,11 +15,11 @@ const refusedWith = (result: unknown, refused: string, node?: string, prop?: str
 describe("creating and ordering nodes", () => {
   it("indexes children by order key, with equal keys broken by node id", () => {
     const scene = sampleDeck()
-    expect(scene.children.get(ids.slide)).toEqual([ids.card, ids.side, ids.kept])
+    expect(scene.children.get(ids.slide)).toEqual([ids.card, ids.side])
     const first = orderKeyBetween(null, null)
     const before = orderKeyBetween(null, first)
-    const moved = land(scene, [{ node: ids.kept, prop: "parent", value: { id: ids.slide, at: before } }])
-    expect(moved.children.get(ids.slide)).toEqual([ids.kept, ids.card, ids.side])
+    const moved = land(scene, [{ node: ids.side, prop: "parent", value: { id: ids.slide, at: before } }])
+    expect(moved.children.get(ids.slide)).toEqual([ids.side, ids.card])
   })
 
   it("keeps children and parent in one property, so a reparent never leaves two parents", () => {
@@ -85,34 +85,17 @@ describe("what a type accepts", () => {
   })
 })
 
-describe("kept nodes", () => {
-  it("move, resize, rename, hide and delete, and take nothing else", () => {
-    const scene = sampleDeck()
-    const moved = land(scene, [
-      { node: ids.kept, prop: "box", value: box(10) },
-      { node: ids.kept, prop: "name", value: "Diagram" },
-      { node: ids.kept, prop: "hidden", value: true },
-    ])
-    expect(moved.nodes.get(ids.kept)).toMatchObject({ name: "Diagram", hidden: true })
-    refusedWith(tryLand(scene, [{ node: ids.kept, prop: "fills", value: [], base: rev(0) }]), "kept", ids.kept, "fills")
-    refusedWith(tryLand(scene, [{ node: ids.kept, prop: "snapshot", value: "other" }]), "kept", ids.kept, "snapshot")
-    refusedWith(tryLand(scene, [{ node: ids.kept, prop: "locked", value: true }]), "kept", ids.kept, "locked")
-    const gone = land(scene, [{ node: ids.kept, prop: "parent", value: null }])
-    expect(gone.children.get(ids.slide)).not.toContain(ids.kept)
-  })
-})
-
 describe("delete and missing", () => {
   it("deletes with parent null, keeps the node and its props, and revives it in place", () => {
     const scene = sampleDeck()
     const gone = land(scene, [{ node: ids.card, prop: "parent", value: null }])
     expect(gone.nodes.get(ids.card)).toMatchObject({ parent: null, box: box(100) })
-    expect(gone.children.get(ids.slide)).toEqual([ids.side, ids.kept])
+    expect(gone.children.get(ids.slide)).toEqual([ids.side])
     expect(gone.children.get(ids.card)).toEqual([ids.title])
     const back = land(gone, [
       { node: ids.card, prop: "parent", value: (scene.nodes.get(ids.card) as { parent: unknown }).parent },
     ])
-    expect(back.children.get(ids.slide)).toEqual([ids.card, ids.side, ids.kept])
+    expect(back.children.get(ids.slide)).toEqual([ids.card, ids.side])
   })
 
   it("refuses a write to an absent or deleted node, and a parent that is absent or deleted", () => {

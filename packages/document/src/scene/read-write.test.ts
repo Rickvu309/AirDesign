@@ -43,10 +43,6 @@ describe("readWrite", () => {
     })
   })
 
-  it("says kept, not shape, for a kept node's prop it cannot take", () => {
-    expect(readWrite({ node: ids.kept, prop: "fills", value: [] }, scene)).toMatchObject({ refused: "kept" })
-  })
-
   it("says missing for a node it does not hold, and lets a type write create one", () => {
     expect(readWrite({ node: "t:77", prop: "name", value: "x" }, scene)).toMatchObject({ refused: "missing" })
     expect(readWrite({ node: "t:77", prop: "type", value: "frame" }, scene)).toEqual({

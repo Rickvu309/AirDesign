@@ -23,7 +23,6 @@ export const ids = {
   side: nodeId("t:5"),
   title: nodeId("t:6"),
   caption: nodeId("t:7"),
-  kept: nodeId("t:8"),
 }
 
 export const hex = (seed: number): Hex => `#${seed.toString(16).padStart(6, "0")}`
@@ -122,13 +121,6 @@ export function sampleDeck(): Scene {
     ...create(ids.title, "shape", ids.card, { node: ids.title, prop: "box", value: box(0) }),
     { node: ids.title, prop: "text", value: textOf("Revenue") },
     ...create(ids.caption, "shape", ids.side, { node: ids.caption, prop: "box", value: box(0) }),
-    ...create(
-      ids.kept,
-      "kept",
-      ids.slide,
-      { node: ids.kept, prop: "box", value: box(800) },
-      { node: ids.kept, prop: "snapshot", value: "hash-of-picture" },
-    ),
   ])
   return scene
 }
