@@ -1,4 +1,5 @@
 import type { Effect } from "./paint.js"
+import { slideTextStyles } from "./slide-text-styles.js"
 import type { Theme } from "./theme.js"
 
 const shadow = (y: number, blur: number, opacity: number): Effect => ({
@@ -26,15 +27,7 @@ export const defaultTheme: Theme = {
     link: "#1f6feb",
   },
   fonts: { heading: "Inter", body: "Inter" },
-  textStyles: {
-    bigNumber: { size: 96, font: "heading", weight: 700, lineHeight: 1.05, tracking: -1 },
-    title: { size: 60, font: "heading", weight: 700, lineHeight: 1.12, tracking: -0.5 },
-    heading: { size: 36, font: "heading", weight: 600, lineHeight: 1.2, tracking: 0 },
-    body: { size: 28, font: "body", weight: 400, lineHeight: 1.4, tracking: 0 },
-    body2: { size: 24, font: "body", weight: 400, lineHeight: 1.4, tracking: 0 },
-    caption: { size: 22, font: "body", weight: 400, lineHeight: 1.35, tracking: 0 },
-    label: { size: 22, font: "body", weight: 600, lineHeight: 1.2, tracking: 1.4, case: "upper" },
-  },
+  textStyles: slideTextStyles,
   effectStyles: {
     soft: [shadow(2, 8, 0.08)],
     lifted: [shadow(12, 32, 0.16)],

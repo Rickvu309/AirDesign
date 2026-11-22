@@ -7,7 +7,7 @@ const title = (slide: NodeId, text: string): AgentChange => ({
   slide,
   text,
   textStyle: "title",
-  box: { x: 80, y: 60, w: 1760, h: 90 },
+  box: { x: 80, y: 60, w: 1760, h: 110 },
 })
 
 export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly AgentChange[])[] {

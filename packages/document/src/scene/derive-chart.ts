@@ -31,7 +31,7 @@ type Context = Kit & {
 type Entry = { readonly name: string; readonly color: Hex; readonly note?: string }
 
 const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
-const swatch = 16
+const markShare = 0.5
 const legendGap = 28
 
 const dataId = (context: Context, series: string, category: string) =>
@@ -62,6 +62,7 @@ function legendOf(context: Context, entries: readonly Entry[], x: number, y: num
   const look = muted(context.theme)
   const noteLook = { ...look, color: context.theme.colors.text }
   const noteGap = 24
+  const swatch = Math.round(context.lineH * markShare)
   const nameRoom = Math.max(0, ...entries.map((entry) => wordsWidth(context, entry.name, look)))
   let at = vertical ? y : x
   for (const entry of entries) {
@@ -330,7 +331,7 @@ function lineChart(context: Context): Resolved[] {
     )
   })
   const plot = spot(left, top, context.w - left, bottom - top)
-  const markerSize = 14
+  const markerSize = Math.round(context.lineH * markShare)
   chart.series.forEach((series, index) => {
     const color = colorAt(context, index, "")
     const points = chart.categories.map((category, at) => ({

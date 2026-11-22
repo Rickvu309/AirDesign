@@ -3,7 +3,10 @@ import { bytesOf } from "../limits.js"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { boardDeckChanges } from "./board-deck.js"
-import { agentDeck, minter, runName } from "./agent-fixtures.js"
+import { agentDeck, apply, minter, runName } from "./agent-fixtures.js"
+import { defaultTheme } from "./default-theme-art.js"
+import { deriveChart } from "./derive-chart.js"
+import { measure } from "./scene-fixtures-art.js"
 import { readForAgent } from "./agent-read.js"
 import { type NodeId, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
@@ -85,5 +88,71 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
     expect(Math.ceil(bytesOf(read) / 4)).toBeLessThan(3_000)
     const count = slides.reduce((sum, slide) => sum + 1 + descendantsOf(scene, slide).length, 0)
     expect(read.split("\n")).toHaveLength(count)
+  })
+})
+
+const onTheScale = () => {
+  const withScale = apply(agentDeck(), [{ node: ids.deck, prop: "theme", value: defaultTheme }])
+  return withScale
+}
+
+describe("the board deck on the slide type scale", () => {
+  const mint = minter("sc")
+  let scene = onTheScale()
+  const send = (changes: readonly AgentChange[]): readonly NodeId[] => {
+    const result = compileAgentEdit(scene, changes, { author: agent(runName), once: `scale-${scene.rev}`, mint })
+    if ("refused" in result) throw new Error(JSON.stringify(result))
+    const landed = applyEdit(scene, { ...result.edit, rev: rev(scene.rev + 1) })
+    if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
+    scene = landed
+    return result.added.map((each) => each.id)
+  }
+  const slides = [ids.slide, ...send(Array.from({ length: 4 }, () => ({ op: "slide", add: {} })))]
+  for (const part of boardDeckChanges(slides)) send(part)
+
+  const sizeOf = (node: ReturnType<typeof childrenOf>[number]) => {
+    const text = get(node, "text")
+    return text === undefined ? undefined : defaultTheme.textStyles[text.style].size
+  }
+  const sizesOn = (slide: NodeId) => descendantsOf(scene, slide).flatMap((node) => sizeOf(node) ?? [])
+
+  it("writes no text under 24 px on any of the five slides", () => {
+    for (const slide of slides) expect(Math.min(...sizesOn(slide))).toBeGreaterThanOrEqual(24)
+  })
+
+  it("sets every slide title at 88 px", () => {
+    for (const slide of slides.slice(1)) {
+      const title = childrenOf(scene, slide).find((node) => get(node, "role") === "title")!
+      expect(sizeOf(title)).toBeGreaterThanOrEqual(88)
+    }
+  })
+
+  it("sets a KPI as a number of 128 px or more over a label and a note of 28 px or more", () => {
+    const row = childrenOf(scene, slides[1]!).find((node) => get(node, "name") === "KPI")!
+    for (const card of childrenOf(scene, row.id)) {
+      const [label, number, note] = childrenOf(scene, card.id).map((node) => sizeOf(node)!)
+      expect(number).toBeGreaterThanOrEqual(128)
+      expect(label).toBeGreaterThanOrEqual(28)
+      expect(note).toBeGreaterThanOrEqual(28)
+    }
+  })
+
+  it("sets card bullets, the decision card and the roadmap cells at 32 px or more", () => {
+    for (const slide of [slides[1]!, slides[3]!, slides[4]!]) {
+      const rest = childrenOf(scene, slide).filter(
+        (node) => get(node, "role") !== "title" && get(node, "name") !== "KPI",
+      )
+      for (const frame of rest)
+        for (const node of descendantsOf(scene, frame.id)) expect(sizeOf(node) ?? 32).toBeGreaterThanOrEqual(32)
+    }
+  })
+
+  it("sets a chart's words, value labels included, at 24 px or more", () => {
+    const chart = childrenOf(scene, slides[2]!).find((node) => get(node, "chart") !== undefined)!
+    const words = deriveChart(chart.id, get(chart, "chart")!, get(chart, "box")!, defaultTheme, measure).flatMap(
+      (part) => part.text?.lines.flatMap((line) => line.runs.map((run) => run.size)) ?? [],
+    )
+    expect(words.length).toBeGreaterThan(0)
+    expect(Math.min(...words)).toBeGreaterThanOrEqual(24)
   })
 })
