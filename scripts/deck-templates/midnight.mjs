@@ -1,3 +1,4 @@
+import { templateTheme } from "../../packages/templates/src/index.ts"
 import { layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
@@ -67,24 +68,7 @@ const look = {
 }
 
 export default {
-  id: "midnight",
-  name: "Midnight",
-  map: "dark",
-  colors: {
-    dk1: "0E1626",
-    lt1: "F4F6FA",
-    dk2: "1A2438",
-    lt2: "9AA6BA",
-    accent1: "6B9BFF",
-    accent2: "34C3A6",
-    accent3: "F5B54A",
-    accent4: "A98BFA",
-    accent5: "F06A73",
-    accent6: "8AD167",
-    hlink: "7AA6FF",
-    folHlink: "C3A9FF",
-  },
-  fonts: { major: "Inter SemiBold", minor: "Inter" },
+  ...templateTheme("midnight"),
   scale,
   table: { id: "{2D1C7E5A-6B0F-4C3E-9A41-7E5B2C8D1F02}", rule: hairline, headRule: "tx1" },
   master: master(look),

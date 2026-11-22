@@ -1,3 +1,4 @@
+import { templateTheme } from "../../packages/templates/src/index.ts"
 import { boxes, layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
@@ -67,24 +68,7 @@ const look = {
 }
 
 export default {
-  id: "editorial",
-  name: "Editorial",
-  map: "light",
-  colors: {
-    dk1: "231F1C",
-    lt1: "FBF8F3",
-    dk2: "3A2E26",
-    lt2: "EFE8DD",
-    accent1: "B4532A",
-    accent2: "5F7A4A",
-    accent3: "C8962E",
-    accent4: "7B4B6E",
-    accent5: "2F6F8F",
-    accent6: "8C6239",
-    hlink: "B4532A",
-    folHlink: "7B4B6E",
-  },
-  fonts: { major: "Source Serif 4 SemiBold", minor: "Inter" },
+  ...templateTheme("editorial"),
   scale,
   table: { id: "{2D1C7E5A-6B0F-4C3E-9A41-7E5B2C8D1F03}", rule: "tx1 lumMod 25000 lumOff 75000", headRule: ink },
   master: master(look),

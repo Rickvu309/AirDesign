@@ -80,3 +80,69 @@ it("lets an agent change every template style's colours and fonts with set, by t
     await client.close()
   }
 })
+
+it("applies a template through templateStyle.template, never reads it back, refuses unknown ids with valid ids, and undoes in one step", async () => {
+  const held = session()
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const unknown = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: 0,
+        changes: [{ op: "set", target: "deck.templateStyles", templateStyle: { template: "sunset" } }],
+      },
+    })
+    expect(unknown.isError).toBe(true)
+    expect(unknown.structuredContent).toMatchObject({ ok: false, refusal: "field" })
+    const message = JSON.stringify(unknown.content)
+    expect(message).toContain("neutral")
+    expect(message).toContain("midnight")
+    expect(message).toContain("editorial")
+    const onShape = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: 0,
+        changes: [{ op: "set", target: "256.2", templateStyle: { template: "midnight" } }],
+      },
+    })
+    expect(onShape.isError).toBe(true)
+    expect(onShape.structuredContent).toMatchObject({ ok: false, refusal: "kind" })
+    expect(JSON.stringify(onShape.content)).toContain("Send templateStyle with target deck.templateStyles.")
+    const applied = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: 0,
+        changes: [{ op: "set", target: "deck.templateStyles", templateStyle: { template: "midnight" } }],
+      },
+    })
+    expect(applied.isError).not.toBe(true)
+    const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+    expect(read.structuredContent).toMatchObject({
+      palettes: [
+        {
+          slots: {
+            dk1: "F4F6FA",
+            lt1: "0E1626",
+            dk2: "9AA6BA",
+            lt2: "1A2438",
+            accent1: "6B9BFF",
+          },
+          fonts: { major: "Inter SemiBold", minor: "Inter" },
+        },
+      ],
+    })
+    expect(read.structuredContent).not.toHaveProperty("templateStyle.template")
+    const undone = call("undo_run", held.deck, { actor: "person" }, { deck: "deck", runId: "run" })
+    if (!undone.ok) throw new Error(undone.refusal)
+    expect(readDeckPage(undone.deck, { runId: null }).palettes).toEqual([palette])
+  } finally {
+    await client.close()
+  }
+})
