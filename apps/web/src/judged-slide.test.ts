@@ -1,4 +1,4 @@
-import { fontFace, type FontWidths } from "@airdesign/document"
+import { contrast, fontFace, type FontWidths } from "@airdesign/document"
 import type { PaintBox, PaintElement, PaintParagraph, PaintReader, PaintRunStyle, PaintText } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { pageFont, readableShade, resolvedSlide, wireFindings } from "./judged-slide"
@@ -176,7 +176,24 @@ it("keeps the hue of text too pale to read, and offers no color for words in sev
   expect(found([row("2", { box: { ...box, width: 400 * point, height: 80 * point }, text: twoColors })])).toMatchObject(
     [{ code: "low-contrast", color: null }],
   )
-  expect(readableShade("00B050", "FFFFFF", 4.5)).toBe("00893E")
+  expect(readableShade("00B050", "FFFFFF", 4.5)).toBe("00863D")
+})
+
+it("names a text colour that clears the contrast it missed by a little, with room to spare", () => {
+  const card = row("1", {
+    text: null,
+    fill: solid("F2F4F7"),
+    box: { ...box, x: 0, y: 0, width: 500 * point, height: 100 * point },
+  })
+  const wide = { ...box, width: 400 * point, height: 80 * point }
+  const pale = row("2", { box: wide, text: text({}, { color: { hex: "657385", alpha: 1 }, size: 11 }) })
+  const [finding] = found([card, pale])
+  expect(finding).toMatchObject({ code: "low-contrast", node: "256.2", needs: 4.5 })
+  const color = finding?.code === "low-contrast" ? finding.color : null
+  expect(color).toMatch(/^[0-9A-F]{6}$/)
+  expect(contrast(color ?? "", "F2F4F7")).toBeGreaterThanOrEqual(4.6)
+  const mended = row("2", { box: wide, text: text({}, { color: { hex: color ?? "", alpha: 1 }, size: 11 }) })
+  expect(found([card, mended])).toEqual([])
 })
 
 it("names small type with the size to set, and an empty placeholder to delete", () => {

@@ -189,16 +189,19 @@ function channelsOf(color: string): readonly number[] {
   return [0, 2, 4].map((at) => Number.parseInt(color.slice(at, at + 2), 16))
 }
 
+const contrastMargin = 1.03
+
 export function readableShade(text: string, behind: string, needs: number): string | null {
   const toward = contrast("000000", behind) >= contrast("FFFFFF", behind) ? [0, 0, 0] : [255, 255, 255]
   const from = channelsOf(text)
   const mixed = (share: number) => hex(from.map((channel, at) => channel + ((toward[at] ?? 0) - channel) * share))
   if (contrast(mixed(1), behind) < needs) return null
+  const aim = contrast(mixed(1), behind) >= needs * contrastMargin ? needs * contrastMargin : needs
   let low = 0
   let high = 1
   for (let step = 0; step < 16; step += 1) {
     const middle = (low + high) / 2
-    if (contrast(mixed(middle), behind) >= needs) high = middle
+    if (contrast(mixed(middle), behind) >= aim) high = middle
     else low = middle
   }
   return mixed(high)
