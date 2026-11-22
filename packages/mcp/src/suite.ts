@@ -13,6 +13,7 @@ export type SuiteRow = {
 
 const aim = `${slides.opening}.title`
 const baseRev = Number(evalDeck().rev)
+const logoAsset = "1".repeat(64)
 
 const lines = (end: scene.Scene) => scene.readForAgent(end, "all")
 const has = (end: scene.Scene, fragment: string) => lines(end).includes(fragment)
@@ -298,9 +299,9 @@ export const suite: readonly SuiteRow[] = [
   ),
   placed(
     "add-picture",
-    "Add the picture with asset logo-1 to the roadmap slide.",
-    { kind: "picture", fill: { image: "logo-1" } },
-    "fill=image:logo-1",
+    `Add the picture with asset ${logoAsset} to the roadmap slide.`,
+    { kind: "picture", fill: { image: logoAsset } },
+    `fill=image:${logoAsset}`,
   ),
   placed(
     "add-word-grid",
