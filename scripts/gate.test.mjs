@@ -48,6 +48,18 @@ same(
   [...document.slice(0, 2), ...document.slice(290)],
 )
 same(
+  "tests in the pack a change sits in, then in packs that reach it, fill the budget before cheaper tests further away",
+  testsFor({
+    map: mapOf(["packages/document/"]),
+    related: document,
+    inventory,
+    changed: [],
+    seconds: timed,
+    distance: (file) => (file.endsWith("t005.test.ts") || file.endsWith("t006.test.ts") ? 0 : 1),
+  }).files,
+  [...document.slice(5, 7), ...document.slice(290)],
+)
+same(
   "a changed test file in the reach always runs, even past the budget",
   testsFor({
     map: mapOf(["packages/document/"]),

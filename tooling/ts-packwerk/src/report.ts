@@ -1,10 +1,10 @@
 import type { Finding } from "./rules.ts"
 import { packageRootOf, packOf, type Pack, type Workspace } from "./workspace.ts"
 
-const unitOf = (workspace: Workspace, file: string): string | undefined =>
+export const unitOf = (workspace: Workspace, file: string): string | undefined =>
   packOf(workspace.packs, file)?.name ?? packageRootOf(workspace.packageRoots, file)
 
-export const affected = (workspace: Workspace, changed: readonly string[]): string[] => {
+export const affectedDistances = (workspace: Workspace, changed: readonly string[]): Map<string, number> => {
   const users = new Map<string, Set<string>>()
   for (const reference of workspace.references) {
     if (reference.target.kind !== "file") continue
@@ -13,23 +13,26 @@ export const affected = (workspace: Workspace, changed: readonly string[]): stri
     if (from === undefined || to === undefined || from === to) continue
     users.set(to, (users.get(to) ?? new Set()).add(from))
   }
-  const reached = new Set(
-    changed.flatMap((file) => {
-      const unit = unitOf(workspace, file)
-      return unit === undefined ? [] : [unit]
-    }),
-  )
-  const queue = [...reached]
-  while (queue.length > 0) {
-    for (const user of users.get(queue.pop() ?? "") ?? []) {
-      if (!reached.has(user)) {
-        reached.add(user)
-        queue.push(user)
-      }
-    }
+  const distances = new Map<string, number>()
+  let frontier = [
+    ...new Set(
+      changed.flatMap((file) => {
+        const unit = unitOf(workspace, file)
+        return unit === undefined ? [] : [unit]
+      }),
+    ),
+  ]
+  for (let distance = 0; frontier.length > 0; distance += 1) {
+    for (const unit of frontier) distances.set(unit, distance)
+    frontier = [...new Set(frontier.flatMap((unit) => [...(users.get(unit) ?? [])]))].filter(
+      (unit) => !distances.has(unit),
+    )
   }
-  return [...reached].sort()
+  return distances
 }
+
+export const affected = (workspace: Workspace, changed: readonly string[]): string[] =>
+  [...affectedDistances(workspace, changed).keys()].sort()
 
 const nodeId = (name: string): string => `p_${name.replace(/[^A-Za-z0-9]/g, "_")}`
 

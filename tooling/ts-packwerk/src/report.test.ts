@@ -3,7 +3,7 @@ import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { runCli } from "./cli.ts"
 import { app, makeRepo, type Repo } from "./fixture.ts"
-import { affected, sarif } from "./report.ts"
+import { affected, affectedDistances, sarif } from "./report.ts"
 import { exportTarget } from "./package-exports.ts"
 import { typeGapsIn } from "./public-types.ts"
 import { loadWorkspace } from "./workspace.ts"
@@ -103,6 +103,11 @@ describe("affected", () => {
       "apps/web/src/kit",
     ])
     expect(affected(workspace, ["packages/core/src/index.ts"])).toEqual(["apps/web/src", "packages/core"])
+    expect([...affectedDistances(workspace, ["apps/web/src/kit/theme.ts"])]).toEqual([
+      ["apps/web/src/kit", 0],
+      ["apps/web/src/editor", 1],
+      ["apps/web/src", 2],
+    ])
   })
 })
 
