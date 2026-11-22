@@ -63,7 +63,8 @@ const testVerdict = ({ test, files, races, earlier, reachable }) => {
 }
 
 const short = (sha) => sha.slice(0, 9)
-const rerunsAtGreen = (each) => each.verdict === "real" && (each.repeated === true || !browserTest.test(each.test.file))
+const rerunsAtGreen = (each) =>
+  each.added !== true && each.verdict === "real" && (each.repeated === true || !browserTest.test(each.test.file))
 const sameSeed = (test) => (test.replay === undefined ? "" : ", with the same seed and path")
 
 const afterRerun = (each, rerun) => {
@@ -96,6 +97,17 @@ const rerunEach = ({ judged, checks, rerun }) => {
     : judged.map((each) => (rerunsAtGreen(each) ? afterRerun(each, rerun) : each))
 }
 
+const addedOwn = ({ test, title, added }) =>
+  added === undefined
+    ? undefined
+    : {
+        title,
+        test,
+        verdict: "real",
+        added: true,
+        why: `${test.file} does not exist at the last green commit. ${short(added)} added it, so this failure is that commit's own`,
+      }
+
 export const judgeRun = ({
   jobs,
   warnings = [],
@@ -104,6 +116,9 @@ export const judgeRun = ({
   earlier = new Set(),
   rerun,
   reaches = () => true,
+  addedBetween,
+  from,
+  to,
 }) => {
   if (jobs.length === 0)
     return { verdict: "unknown", why: warnings[0] ?? "no failed job was found", tests: [], checks: [] }
@@ -118,9 +133,13 @@ export const judgeRun = ({
       if (!failed.has(title) || reachable) failed.set(title, { test, reachable })
     }
   }
-  const judged = [...failed.values()].map(({ test, reachable }) =>
-    testVerdict({ test, files, races: raceKeys, earlier, reachable }),
-  )
+  const judged = [...failed.values()].map(({ test, reachable }) => {
+    const added = from === undefined || addedBetween === undefined ? undefined : addedBetween(from, to, test.file)
+    return (
+      addedOwn({ test, title: raceTitle(test), added }) ??
+      testVerdict({ test, files, races: raceKeys, earlier, reachable })
+    )
+  })
   const tests = rerunEach({ judged, checks, rerun })
   const unnamed = [
     ...read.flatMap((each) => each.unnamed ?? []),
@@ -135,7 +154,7 @@ export const judgeRun = ({
 
 const rerunAt = (rerun, at) => (rerun === undefined ? undefined : (test) => rerun({ at, test }))
 
-const judgeStreak = ({ streak, green, jobsOf, filesBetween, races, rerun, jobsReached }) => {
+const judgeStreak = ({ streak, green, jobsOf, filesBetween, races, rerun, jobsReached, addedBetween }) => {
   const firstSeen = new Map()
   const judged = []
   for (const [index, run] of streak.entries()) {
@@ -149,6 +168,9 @@ const judgeStreak = ({ streak, green, jobsOf, filesBetween, races, rerun, jobsRe
       races,
       earlier: new Set(firstSeen.keys()),
       rerun: rerunAt(rerun, green.sha),
+      addedBetween,
+      from: before.sha,
+      to: run.sha,
     })
     judged.push({ run, index, ...judgment })
     for (const each of judgment.tests)
@@ -165,6 +187,7 @@ const racesIn = (judged, races) => {
       .filter(
         (test) =>
           (test.unreachable && !known.has(raceKey(test.title))) ||
+          (test.rerun?.result === "unclear" && !known.has(raceKey(test.title))) ||
           (each.verdict === "suspect" &&
             test.verdict === "suspect" &&
             failed.filter((title) => title === test.title).length === 1),
@@ -173,7 +196,7 @@ const racesIn = (judged, races) => {
   )
 }
 
-export const decide = ({ runs, commits, jobsOf, filesBetween, races, rerun, jobsReached }) => {
+export const decide = ({ runs, commits, jobsOf, filesBetween, races, rerun, jobsReached, addedBetween }) => {
   const at = new Map(commits.map((sha, index) => [sha, index]))
   const latest = new Map()
   for (const run of runs.filter((each) => at.has(each.sha)))
@@ -183,7 +206,16 @@ export const decide = ({ runs, commits, jobsOf, filesBetween, races, rerun, jobs
   if (greenAt === -1) return { action: "hold", why: "no ci run on main in reach passed", judged: [] }
   const green = ordered[greenAt]
   const streak = ordered.slice(greenAt + 1)
-  const { judged, firstSeen } = judgeStreak({ streak, green, jobsOf, filesBetween, races, rerun, jobsReached })
+  const { judged, firstSeen } = judgeStreak({
+    streak,
+    green,
+    jobsOf,
+    filesBetween,
+    races,
+    rerun,
+    jobsReached,
+    addedBetween,
+  })
   if (judged.length === 0) {
     const greenBefore = ordered.findLastIndex((run, index) => index < greenAt && run.conclusion === "success")
     const ended =
@@ -197,6 +229,7 @@ export const decide = ({ runs, commits, jobsOf, filesBetween, races, rerun, jobs
             races,
             rerun,
             jobsReached,
+            addedBetween,
           }).judged
     return { action: "green", green, judged, races: racesIn(ended, races) }
   }

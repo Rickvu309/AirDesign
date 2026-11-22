@@ -70,3 +70,111 @@ export const finishDrill = async ({ repository, io, pull, close, say }) => {
   const recorded = io.redMain(`${agentHeader}\n\n${outcome.trim()}`, true)
   return { failed: fault !== undefined || closed.status !== 0 || !deleted || recorded.status !== 0 }
 }
+
+const issueTitle = (fake) => {
+  const call = fake.calls.find((each) => each.args[0] === "issue" && each.args[1] === "create")
+  return call?.args[call.args.indexOf("--title") + 1]
+}
+
+const check = (name, actual, expected) => {
+  const passed = JSON.stringify(actual) === JSON.stringify(expected)
+  if (!passed) console.error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+  return { name, passed }
+}
+
+export const runDrillCases = async (redMainBot) => {
+  const { history, io, logs, mainUpTo, mainWith, ok, recorder, repository } = await import("./red-main-replay.mjs")
+  const remember = (sha, commit) => {
+    history.commits[sha] = commit
+  }
+  const green = "0d318ba4b305e9f74291cbbd98c0811ccc347735"
+  const added = "ec82581b004ee250af756c938d00ce55822a3500"
+  const after = "475bfffe19687933e81c90c9dd2b6d214281f955"
+  const file = "apps/web/src/left-out-replay.test.ts"
+  const name =
+    "replays every state of the left-out spec through the tab's writer: each writable edit written, the rest left out and named"
+  remember(green, { title: "Use the deck's named type scale only when the deck has one", files: [] })
+  remember(added, {
+    title: "Open a deck with an edit the tab cannot write, leave that edit out and say so",
+    files: [file],
+  })
+  remember(after, { title: "Let an agent create a blank deck it can read and edit at once", files: [] })
+  const redRun = { id: 44959805557, sha: added, status: "completed", conclusion: "failure" }
+  const greenRun = { id: 44959700000, sha: green, status: "completed", conclusion: "success" }
+  const passedRun = { id: 44960059334, sha: after, status: "completed", conclusion: "success" }
+  logs[redRun.id] = [
+    {
+      name: "check (source 2/2)",
+      log: [` FAIL   unit  ${file} > ${name}`, "Error: Test timed out in 5000ms.", "failed: unit-tests"].join("\n"),
+    },
+  ]
+  const window = { commits: [green, added, after], runs: [greenRun, redRun, passedRun] }
+  const addedBot = recorder([
+    [
+      /^git cat-file -e 0d318ba4b305e9f74291cbbd98c0811ccc347735:apps\/web\/src\/left-out-replay\.test\.ts/,
+      () => ({ status: 128, stdout: "", stderr: "" }),
+    ],
+    [/^git log --no-renames --diff-filter=A/, () => ok(`${added}\n`)],
+    ...mainWith(window, [greenRun, redRun]),
+    [/^owner pr list/, () => ok("[]")],
+  ])
+  await redMainBot({
+    repository,
+    event: { id: redRun.id, event: "push", branch: "main", sha: added, conclusion: "failure" },
+    io: io({ ...addedBot, rerun: () => ({ result: "unclear", at: green, why: "absent" }) }),
+  })
+  const revertBody = addedBot.calls.find((call) => call.who === "owner" && call.args[1] === "create")?.input ?? ""
+  const addedCase = check(
+    "a new failing test file is that commit's own",
+    [revertBody.includes("does not exist at the last green commit"), revertBody.includes(added.slice(0, 9))],
+    [true, true],
+  )
+
+  const unclearBot = recorder([
+    ...mainWith(window, [greenRun, redRun, passedRun]),
+    [/^gh issue create/, () => ok("https://github.com/Rickvu309/AirDesign/issues/1600\n")],
+  ])
+  await redMainBot({
+    repository,
+    event: { id: passedRun.id, event: "push", branch: "main", sha: after, conclusion: "success" },
+    io: io({
+      ...unclearBot,
+      rerun: () => ({ result: "unclear", at: green, why: "it ended with status 1 and named no failure of this test" }),
+    }),
+  })
+  const unclearCase = check(
+    "an unclear rerun is filed once the next push passes",
+    issueTitle(unclearBot),
+    `Race: ${file} › ${name}`,
+  )
+
+  const november = history.windows.at(-1)
+  const skillsHead = november.commits[3]
+  const revertHead = "80fbc1fe119bc1aa64e416db75790df1220c6fa5"
+  const designBot = recorder([
+    [
+      /^gh pr list --repo \S+ --head/,
+      () => ok(JSON.stringify([{ number: 1211, headRefOid: revertHead, isCrossRepository: false }])),
+    ],
+    ...mainUpTo(november, skillsHead),
+    [/\/pulls\/1211\/files/, () => ok(history.commits[skillsHead].files.join("\n"))],
+    [/^gh issue create/, () => ok("https://github.com/Rickvu309/AirDesign/issues/1500\n")],
+  ])
+  await redMainBot({
+    repository,
+    event: {
+      id: 44888380660,
+      event: "pull_request",
+      branch: `red-main/revert-${skillsHead}`,
+      sha: revertHead,
+      conclusion: "failure",
+    },
+    io: io(designBot),
+  })
+  const designCase = check(
+    "a design-state the revert cannot reach is recorded by its state",
+    issueTitle(designBot),
+    "Race: design-states › slide-added-title",
+  )
+  return [addedCase, unclearCase, designCase]
+}

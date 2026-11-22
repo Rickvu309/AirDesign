@@ -42,17 +42,17 @@ const recordedLine = ({ repository, event, races, old, suspect }) => {
 
 export const recordRun = ({ repository, io, judged, event, ended = false }) => {
   if (judged === undefined) return { failed: false }
-  if (judged.verdict === "unknown") {
+  const suspect = judged.verdict === "suspect" || judged.verdict === "real"
+  const kept = judged.tests.filter(
+    (each) => each.verdict === "old" || each.unreachable || (each.verdict === "race" && !suspect),
+  )
+  if (judged.verdict === "unknown" && kept.length === 0) {
     io.redMain(
       `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}, and the bot reverts nothing: ${judged.why}. A person or agent reads the log.`,
       ended,
     )
     return { failed: false }
   }
-  const suspect = judged.verdict === "suspect" || judged.verdict === "real"
-  const kept = judged.tests.filter(
-    (each) => each.verdict === "old" || each.unreachable || (each.verdict === "race" && !suspect),
-  )
   if (kept.length === 0) return { failed: false }
   const log = logOf(io, judged.run)
   const urls = { race: [], old: [] }

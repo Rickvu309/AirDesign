@@ -11,11 +11,24 @@ const excerptLimit = 60
 const failureHeader = /^\s*(?:\d+\) \S+\.spec\.\w+:\d+:\d+ › | FAIL\s)/
 const excerptEnd = /^\s*\[\d+\/\d+\]|⎯{3,}|^\s+\d+ (?:failed|passed|flaky)/
 
+export const designStatesFile = "tests/browser/design-states.spec.ts"
+export const designStatesRunner = ".agents/skills/verify-airdesign/look/states.mjs"
+export const designStateFile = (state) => `.agents/skills/verify-airdesign/look/states/${state}.mjs`
+export const namedDesignState = (test) => test.file === designStatesFile && test.state !== undefined
+
 export const testId = (test) => `${test.file}${test.line === undefined ? "" : `:${test.line}`} › ${test.name}`
 
-export const raceTitle = (test) => `Race: ${test.file} › ${test.name}`.slice(0, titleLimit)
+export const raceTitle = (test) =>
+  (namedDesignState(test) ? `Race: design-states › ${test.state}` : `Race: ${test.file} › ${test.name}`).slice(
+    0,
+    titleLimit,
+  )
 
-export const raceKey = (title) => title.replace(/^((?:Race|Old fault): \S+?):\d+ › /, "$1 › ").slice(0, titleLimit - 10)
+export const raceKey = (title) =>
+  title
+    .replace(/^((?:Race|Old fault): \S+?):\d+ › /, "$1 › ")
+    .replace(/ \([^)]*\)$/, "")
+    .slice(0, titleLimit - 10)
 
 const isHeaderOf = (line, test) =>
   failureHeader.test(line) &&
@@ -93,6 +106,11 @@ const closedRaceQuery = `query($search: String!) {
   }
 }`
 
+const closedSearch = (repository, test) =>
+  namedDesignState(test)
+    ? `repo:${repository} is:issue is:closed in:title "Race:" "design-states" "${test.state}"`
+    : `repo:${repository} is:issue is:closed in:title "Race:" "${test.file}"`
+
 export const fixesOf = ({ gh, repository, test }) => {
   const listed = gh([
     "api",
@@ -100,7 +118,7 @@ export const fixesOf = ({ gh, repository, test }) => {
     "-f",
     `query=${closedRaceQuery}`,
     "-f",
-    `search=repo:${repository} is:issue is:closed in:title "Race:" "${test.file}"`,
+    `search=${closedSearch(repository, test)}`,
   ])
   if (listed.status !== 0) return { why: `the closed issues could not be read: ${said(listed)}` }
   try {

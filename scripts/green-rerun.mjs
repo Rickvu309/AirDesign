@@ -44,10 +44,17 @@ export const rerunCommand = (test) => {
 
 const shape = (error) => (error ?? "").replace(/\d+/g, "#").trim()
 
+const sameTest = (each, test) => each.file === test.file && each.name === test.name && each.state === test.state
+
+export const fileAddedBetween = (git) => (from, to, file) => {
+  if (git(["cat-file", "-e", `${from}:${file}`]).status === 0) return undefined
+  const added = git(["log", "--no-renames", "--diff-filter=A", "--format=%H", "-1", `${from}..${to}`, "--", file])
+  const sha = added.status === 0 ? added.stdout.trim().split("\n")[0] : ""
+  return sha === "" ? undefined : sha
+}
+
 export const rerunResult = ({ test, status, output }) => {
-  const found = [...failedTests(output), ...failedScripts(output)].find(
-    (each) => each.file === test.file && each.name === test.name,
-  )
+  const found = [...failedTests(output), ...failedScripts(output)].find((each) => sameTest(each, test))
   if (found === undefined)
     return status === 0
       ? { result: "passes" }
@@ -97,7 +104,7 @@ export const greenRerun = ({ root, run, now = Date.now, say = () => {}, home = o
     return ready
   }
   return ({ at, test }) => {
-    const key = JSON.stringify([at, test.file, test.name, test.replay])
+    const key = JSON.stringify([at, test.file, test.name, test.state, test.replay])
     if (results.has(key)) return results.get(key)
     const command = rerunCommand(test)
     const tree = prepare(at, command.browser)
