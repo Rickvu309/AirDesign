@@ -31,6 +31,14 @@ it("reads a deck, an edit for a deck, and a catch-up cursor, and nothing else", 
   expect(sceneRoutes.edit.read({ deck, edit, once: "o" })).toEqual(field)
   expect(sceneRoutes.since.read({ deck, rev: 3 })).toEqual({ ok: true, deck, rev: 3 })
   expect(sceneRoutes.since.read({ deck, rev: 3, wait: true })).toEqual({ ok: true, deck, rev: 3, wait: true })
+  expect(sceneRoutes.since.read({ deck, rev: 3, wait: true, pictures: true })).toEqual({
+    ok: true,
+    deck,
+    rev: 3,
+    wait: true,
+    pictures: true,
+  })
+  expect(sceneRoutes.since.read({ deck, rev: 3, pictures: "yes" })).toEqual(field)
   expect(sceneRoutes.since.read({ deck, rev: -1 })).toEqual(field)
   expect(sceneRoutes.since.read({ deck, rev: 1.5 })).toEqual(field)
   expect(sceneRoutes.since.read({ deck, rev: 3, wait: "yes" })).toEqual(field)

@@ -53,7 +53,12 @@ export const readSceneEdit = readInput(
 )
 
 export const readSceneSince = readInput(
-  z.strictObject({ deck: deckInput, rev: wholeInput, wait: z.boolean().optional() }),
+  z.strictObject({
+    deck: deckInput,
+    rev: wholeInput,
+    wait: z.boolean().optional(),
+    pictures: z.boolean().optional(),
+  }),
   inputRefusal,
 )
 

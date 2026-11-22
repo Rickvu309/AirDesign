@@ -27,9 +27,26 @@ type Route<Visit> = {
   readonly serve: (visit: Visit) => Promise<void>
 }
 
+const owed = (
+  options: SceneVisit["options"],
+  parsed: { readonly deck: string; readonly pictures?: boolean | undefined },
+) => parsed.pictures !== true && options.pictures.wanted(parsed.deck as never)
+
+function withPictures<Caught extends object>(
+  options: SceneVisit["options"],
+  parsed: { readonly deck: string; readonly pictures?: boolean | undefined },
+  caught: Caught,
+) {
+  return owed(options, parsed) ? { ...caught, pictures: true as const } : caught
+}
+
 async function heldSince(
   options: SceneVisit["options"],
-  parsed: { readonly deck: Parameters<typeof sinceScene>[1]["deck"]; readonly rev: number },
+  parsed: {
+    readonly deck: Parameters<typeof sinceScene>[1]["deck"]
+    readonly rev: number
+    readonly pictures?: boolean | undefined
+  },
   email: string,
   signal: AbortSignal,
 ) {
@@ -42,7 +59,8 @@ async function heldSince(
       await options.listen.ready()
       if (signal.aborted) return undefined
       const caught = await sinceScene(options.deck, parsed, email)
-      if (!caught.ok || caught.edits.length > 0) return caught
+      if (!caught.ok) return caught
+      if (caught.edits.length > 0 || owed(options, parsed)) return withPictures(options, parsed, caught)
       const wanted = await Promise.race([woken, asked])
       if (signal.aborted) return undefined
       if (wanted) return { ...caught, pictures: true as const }
@@ -97,7 +115,10 @@ export function sceneRouteList<Visit extends SceneVisit>(http: SceneHttp<Visit>)
       return { ok: true, deck: parsed.deck, missing: visit.options.pictures.wantedAmong(parsed.deck, missing) }
     }),
     route(sceneRoutes.since.path, sceneRoutes.since.read, async (visit, parsed, email) => {
-      if (parsed.wait !== true) return sinceScene(visit.options.deck, parsed, email)
+      if (parsed.wait !== true) {
+        const caught = await sinceScene(visit.options.deck, parsed, email)
+        return caught.ok ? withPictures(visit.options, parsed, caught) : caught
+      }
       const signal = http.gone(visit.res)
       const caught = await heldSince(visit.options, parsed, email, signal)
       return signal.aborted || visit.res.writableEnded || visit.res.destroyed ? undefined : caught
