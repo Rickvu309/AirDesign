@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto"
-import { deckRoutes, sceneRoutes } from "@airdesign/catalog"
+import { sceneRoutes } from "@airdesign/catalog"
 import { orderKeyBetween, scene } from "@airdesign/document"
 import { templateTheme } from "@airdesign/templates"
 import { Client } from "pg"
@@ -141,12 +141,6 @@ describe("creating a scene deck", () => {
     expect(await admin.query("select owner from deck.scene where id = $1", [deck])).toMatchObject({
       rows: [{ owner: owner.email }],
     })
-  })
-
-  it("keeps the scene deck out of today's deck list", async () => {
-    const deck = await made()
-    const listed = await ask(base, "POST", deckRoutes.list.path, {}, owner.cookie)
-    expect(JSON.stringify(listed.json)).not.toContain(deck)
   })
 })
 

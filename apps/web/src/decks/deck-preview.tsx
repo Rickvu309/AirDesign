@@ -5,11 +5,11 @@ import type { FirstSlide } from "@/decks/first-slide"
 import { hairlineShadow } from "@/editor/editor-chrome"
 import { cn } from "@/lib/class-names"
 
-type Size = { readonly width: number; readonly height: number }
+export type Size = { readonly width: number; readonly height: number }
 
 const inset = 16
 
-function fittedWidth(box: Size, slide: Size): number {
+export function fittedWidth(box: Size, slide: Size): number {
   if (slide.width <= 0 || slide.height <= 0) return 0
   const room = { width: box.width - inset * 2, height: box.height - inset * 2 }
   return Math.max(0, Math.floor(Math.min(room.width, (room.height * slide.width) / slide.height)))
@@ -49,7 +49,7 @@ function FirstSlidePaint({ deck, name, box }: { deck: string; name: string; box:
   )
 }
 
-export function DeckPreview({ deck, name, edited }: { deck: string; name: string; edited: string }) {
+export function usePreviewBox() {
   const frame = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<Size | null>(null)
   useLayoutEffect(() => {
@@ -66,6 +66,11 @@ export function DeckPreview({ deck, name, edited }: { deck: string; name: string
     observer.observe(node)
     return () => observer.disconnect()
   }, [])
+  return { frame, box }
+}
+
+export function DeckPreview({ deck, name, edited }: { deck: string; name: string; edited: string }) {
+  const { frame, box } = usePreviewBox()
   return (
     <div ref={frame} data-deck-preview className="size-full">
       {box !== null && box.width > 0 && (

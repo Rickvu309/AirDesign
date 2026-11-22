@@ -2,6 +2,7 @@ import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { newBlankDeck } from "../bin/new-deck.mjs"
 import { productCopy, readPictureToolCopy, shortcutCopy, transitionCopy, undoCopy } from "../bin/product-copy.mjs"
 
 const shift = shortcutCopy.chord.other.shift
@@ -15,8 +16,7 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   await signIn()
   await page.goto("/")
-  await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
-  await page.getByRole("menuitem", { name: productCopy.blankDeck, exact: true }).click()
+  await newBlankDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page
     .url()

@@ -497,4 +497,11 @@ end
 $$;
 `,
   },
+  {
+    id: 21,
+    sql: `
+alter table deck.scene add column trashed timestamptz, add column starred boolean not null default false;
+grant delete on deck.scene to deck;
+`,
+  },
 ]

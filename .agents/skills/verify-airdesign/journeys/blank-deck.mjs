@@ -4,6 +4,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { newBlankDeck } from "../bin/new-deck.mjs"
 import { placeText } from "../bin/text-place.mjs"
 
 const typed = "My first deck"
@@ -28,8 +29,9 @@ export default async function drive({ repo, page, context, signIn, post, capture
   const menu = page.getByRole("menu", { name: productCopy.newDeck })
   await expect(menu.getByRole("menuitem", { name: "Import PowerPoint" })).toBeVisible()
   const out = path.dirname(await capture("new-deck-menu"))
+  await page.keyboard.press("Escape")
   await context.setOffline(true)
-  await menu.getByRole("menuitem", { name: productCopy.blankDeck, exact: true }).click()
+  await newBlankDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const address = page.url()
   const deck = address.split("/").at(-1)

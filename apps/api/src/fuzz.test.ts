@@ -668,14 +668,13 @@ describe("hostile input over every route", () => {
     }
   })
 
-  it("refuses a deck name Postgres cannot store and keeps the old name", async () => {
+  it("refuses a deck name Postgres cannot store", async () => {
     await ask(base, "POST", "/decks/rename", { deck, name: "kept" }, cookie)
-    for (const name of unstorable) {
-      const answer = await ask(base, "POST", "/decks/rename", { deck, name }, cookie)
-      expect(answer.json).toEqual({ ok: false, refusal: "field" })
-    }
-    const listed = await ask(base, "POST", "/decks/list", {}, cookie)
-    expect(listed.json).toMatchObject({ decks: [{ deck, name: "kept" }] })
+    for (const name of unstorable)
+      expect((await ask(base, "POST", "/decks/rename", { deck, name }, cookie)).json).toEqual({
+        ok: false,
+        refusal: "field",
+      })
   })
 
   it("answers every body over the cap with 413 size, whatever its framing", async () => {

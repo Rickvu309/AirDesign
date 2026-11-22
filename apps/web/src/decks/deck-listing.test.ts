@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { allDecks, decksMatching, recentCount, recentDecks, type ListedDeck } from "./deck-listing"
+import { allDecks, deckPath, decksMatching, recentCount, recentDecks, type ListedDeck } from "./deck-listing"
 
 function deck(id: string, name: string, edited: string, created = "2026-01-01T00:00:00Z"): ListedDeck {
   return { deck: id, name, edited, created }
@@ -68,5 +68,12 @@ describe("recentDecks", () => {
 
   it("shows every deck when there are no more than recentCount", () => {
     expect(recentDecks([atlas, budget, board])).toEqual([budget, atlas, board])
+  })
+})
+
+describe("deckPath", () => {
+  it("opens an element deck in the old editor and a scene deck at /s", () => {
+    expect(deckPath({ deck: "old" })).toBe("/deck/old")
+    expect(deckPath({ deck: "new", scene: { rev: 3 } })).toBe("/s/new")
   })
 })

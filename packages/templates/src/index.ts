@@ -88,8 +88,6 @@ export const deckTemplates: readonly { readonly id: string; readonly name: strin
   ({ id, name }) => ({ id, name }),
 )
 
-export const blankTemplate = "neutral"
-
 export function templateTheme(id: string): TemplateTheme | undefined {
   return templateThemes.find((each) => each.id === id)
 }

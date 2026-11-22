@@ -1,5 +1,6 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { newDoomDeck } from "../bin/new-deck.mjs"
 
 export default async function drive({ repo, page, signIn, post, capture, note, deckRoutes }) {
   const { cookie, email } = await signIn()
@@ -13,6 +14,20 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
     .toBe("clean")
   note(`imported clean.pptx as deck ${deck}; ${deckRoutes.list.path} names it clean`)
   await page.goto("/")
+  await newDoomDeck(page)
+  await page.locator("[data-scene-ready]").waitFor()
+  const sceneDeck = new URL(page.url()).pathname.match(/[A-Za-z0-9_-]+$/)[0]
+  await expect
+    .poll(
+      async () =>
+        (await post(deckRoutes.list, {}, cookie)).json.decks?.find((entry) => entry.deck === sceneDeck)?.scene,
+    )
+    .toEqual({ rev: 1 })
+  note(
+    `New deck, Blank deck opened scene deck ${sceneDeck} at /s/${sceneDeck}; ${deckRoutes.list.path} lists it with its revision`,
+  )
+  await page.goto("/")
+  await expect(page.locator(`[data-deck="${sceneDeck}"] [data-scene-thumbnail]`)).toBeVisible()
   await expect(page.getByRole("heading", { name: "clean", exact: true })).toBeVisible()
   await capture("home-lists-deck")
   await page.getByRole("button", { name: "clean actions" }).click()

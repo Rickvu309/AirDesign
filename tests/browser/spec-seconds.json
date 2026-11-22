@@ -134,6 +134,7 @@
     "hero-chart.spec.ts": 1,
     "hero-ticker.spec.ts": 2.2,
     "home-actions.spec.ts": 14.9,
+    "home-doom.spec.ts": 11.2,
     "home-previews.spec.ts": 5.2,
     "home-search.spec.ts": 17.4,
     "home-sections.spec.ts": 5.1,

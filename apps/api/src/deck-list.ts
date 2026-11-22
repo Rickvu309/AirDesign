@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto"
+
 import type { DeckAnswers } from "./deck-answer.js"
 import type { DeckId } from "@airdesign/catalog"
 import type { OwnedRow } from "@airdesign/engine"
@@ -5,6 +7,8 @@ import type { OwnedRow } from "@airdesign/engine"
 import type { Sql } from "./pool.js"
 import { discardOriginals, drainOriginals } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
+import { editScene } from "./scene-deck.js"
+import { startAuthor, startIds } from "./scene-start.js"
 
 type Listed = {
   readonly deck: DeckId
@@ -12,6 +16,7 @@ type Listed = {
   readonly edited: string
   readonly created: string
   readonly starred: boolean
+  readonly scene?: { readonly rev: number }
 }
 
 type ListedTrash = Listed & { readonly trashed: string }
@@ -23,6 +28,7 @@ type ListRow = {
   readonly created: Date
   readonly trashed: Date | null
   readonly starred: boolean
+  readonly rev: number | null
 }
 
 type Refusal = "owner" | "deleted"
@@ -61,6 +67,27 @@ select id, original_key, pg_notify('deck', id) as notified from removed
 
 const expireSql = deletedSql("owner = $1 and trashed < now() - interval '30 days'")
 
+function deletedSceneSql(doomed: string): string {
+  return `
+with doomed as (
+  delete from deck.scene where ${doomed} returning id, owner
+),
+media_queued as (
+  insert into deck.original_delete (key, owner, expires)
+  select media.key, doomed.owner, now() + interval '15 minutes' from deck.media join doomed on media.deck = doomed.id
+  on conflict (key) do nothing
+),
+media_removed as (
+  delete from deck.media using doomed where deck.media.deck = doomed.id
+)
+select id from doomed
+`
+}
+
+const expireSceneSql = deletedSceneSql("owner = $1 and trashed < now() - interval '30 days'")
+
+const deleteSceneSql = deletedSceneSql("owner = $1 and id = any($2::text[]) and trashed is not null")
+
 const deleteSql = deletedSql("owner = $1 and id = any($2::text[])")
 
 const onceClearSql = "delete from deck.once where deck = any($1::text[])"
@@ -68,9 +95,13 @@ const onceClearSql = "delete from deck.once where deck = any($1::text[])"
 const missedSql = "select deleted is not null as deleted from deck.saved where id = $1 and owner = $2"
 
 const listSql = `
-select id, name, edited, created, trashed, starred
+select id, name, edited, created, trashed, starred, null::int as rev
 from deck.saved
 where owner = $1 and deleted is null
+union all
+select id, name, edited, created, trashed, starred, rev
+from deck.scene
+where owner = $1
 order by edited desc, created desc, id
 `
 
@@ -85,13 +116,23 @@ const renameSql = "update deck.saved set name = $3 where id = $1 and owner = $2 
 
 const starSql = "update deck.saved set starred = $3 where id = $1 and owner = $2 and deleted is null returning starred"
 
+const starSceneSql = "update deck.scene set starred = $3 where id = $1 and owner = $2 returning starred"
+
 const trashSql = `
 update deck.saved set trashed = coalesce(trashed, now())
 where id = $1 and owner = $2 and deleted is null
 returning id, trashed
 `
 
+const trashSceneSql = `
+update deck.scene set trashed = coalesce(trashed, now())
+where id = $1 and owner = $2
+returning id, trashed
+`
+
 const restoreSql = "update deck.saved set trashed = null where id = $1 and owner = $2 and deleted is null returning id"
+
+const restoreSceneSql = "update deck.scene set trashed = null where id = $1 and owner = $2 returning id"
 
 type Removed = { readonly id: string; readonly original_key: string | null }
 
@@ -116,6 +157,18 @@ async function missed(
   return { ok: false, refusal: result.rows[0]?.deleted === true ? "deleted" : "owner" }
 }
 
+async function firstRow<Row extends object>(
+  db: Sql,
+  statements: readonly string[],
+  values: readonly unknown[],
+): Promise<Row | undefined> {
+  for (const statement of statements) {
+    const row = (await db.query<Row>(statement, [...values])).rows[0]
+    if (row !== undefined) return row
+  }
+  return undefined
+}
+
 function listed(row: ListRow): Listed {
   return {
     deck: row.id as DeckId,
@@ -123,6 +176,7 @@ function listed(row: ListRow): Listed {
     edited: row.edited.toISOString(),
     created: row.created.toISOString(),
     starred: row.starred,
+    ...(row.rev === null ? {} : { scene: { rev: row.rev } }),
   }
 }
 
@@ -156,6 +210,7 @@ export async function listDecks(
   readonly trash: ListedTrash[]
 }> {
   await removeDecks(db, expireSql, [email], store)
+  await db.query(expireSceneSql, [email])
   await drainOriginals(db, store, { owner: email })
   const result = await db.query<ListRow>(listSql, [email])
   const decks: Listed[] = []
@@ -165,6 +220,17 @@ export async function listDecks(
     else trash.push({ ...listed(row), trashed: row.trashed.toISOString() })
   }
   return { ok: true, account: { email }, decks, trash }
+}
+
+async function renameScene(db: Sql, parsed: { readonly deck: DeckId; readonly name: string }, email: string) {
+  const edit = {
+    once: `rename-${randomUUID()}`,
+    author: startAuthor,
+    writes: [{ node: startIds.deck, prop: "name", value: parsed.name }],
+  }
+  const landed = await editScene(db, { deck: parsed.deck, edit }, email)
+  if (landed.ok) return { ok: true, deck: parsed.deck, name: parsed.name } as const
+  return missed(db, parsed.deck, email)
 }
 
 export async function renameDeck(
@@ -177,7 +243,7 @@ export async function renameDeck(
 > {
   const result = await db.query<{ name: string }>(renameSql, [parsed.deck, email, parsed.name])
   const row = result.rows[0]
-  if (row === undefined) return missed(db, parsed.deck, email)
+  if (row === undefined) return renameScene(db, parsed, email)
   return { ok: true, deck: parsed.deck, name: row.name }
 }
 
@@ -189,8 +255,7 @@ export async function starDeck(
   | { readonly ok: true; readonly deck: DeckId; readonly starred: boolean }
   | { readonly ok: false; readonly refusal: Refusal }
 > {
-  const result = await db.query<{ starred: boolean }>(starSql, [parsed.deck, email, parsed.starred])
-  const row = result.rows[0]
+  const row = await firstRow<{ starred: boolean }>(db, [starSql, starSceneSql], [parsed.deck, email, parsed.starred])
   if (row === undefined) return missed(db, parsed.deck, email)
   return { ok: true, deck: parsed.deck, starred: row.starred }
 }
@@ -203,8 +268,7 @@ export async function trashDeck(
   | { readonly ok: true; readonly deck: DeckId; readonly trashed: string }
   | { readonly ok: false; readonly refusal: Refusal }
 > {
-  const result = await db.query<{ trashed: Date }>(trashSql, [parsed.deck, email])
-  const row = result.rows[0]
+  const row = await firstRow<{ trashed: Date }>(db, [trashSql, trashSceneSql], [parsed.deck, email])
   if (row === undefined) return missed(db, parsed.deck, email)
   return { ok: true, deck: parsed.deck, trashed: row.trashed.toISOString() }
 }
@@ -214,8 +278,8 @@ export async function restoreDeck(
   parsed: { readonly deck: DeckId },
   email: string,
 ): Promise<{ readonly ok: true; readonly deck: DeckId } | { readonly ok: false; readonly refusal: Refusal }> {
-  const result = await db.query(restoreSql, [parsed.deck, email])
-  if (result.rows.length === 0) return missed(db, parsed.deck, email)
+  if ((await firstRow(db, [restoreSql, restoreSceneSql], [parsed.deck, email])) === undefined)
+    return missed(db, parsed.deck, email)
   return { ok: true, deck: parsed.deck }
 }
 
@@ -226,6 +290,7 @@ export async function deleteDecks(
   store?: OriginalStore,
 ): Promise<{ readonly ok: true; readonly deleted: string[] }> {
   const gone = new Set(await removeDecks(db, deleteSql, [email, parsed.decks], store))
+  for (const row of (await db.query<{ id: string }>(deleteSceneSql, [email, parsed.decks])).rows) gone.add(row.id)
   return { ok: true, deleted: parsed.decks.filter((deck) => gone.has(deck)) }
 }
 

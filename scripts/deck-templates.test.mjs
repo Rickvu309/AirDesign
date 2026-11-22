@@ -1,7 +1,6 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
 import { styleNames } from "./deck-templates/deck-parts.mjs"
-import { blankTemplate, templateFile } from "../packages/templates/src/index.ts"
 import { templateCatalog, templateDeck, templateSpecs, templateUrl } from "./deck-templates/build.mjs"
 
 for (const spec of templateSpecs) {
@@ -19,13 +18,7 @@ assert.deepEqual(
   templateCatalog,
   "the generator writes exactly the catalog's templates",
 )
-assert.ok(
-  fs
-    .readFileSync(new URL("../apps/web/src/decks/blank-deck.ts", import.meta.url), "utf8")
-    .includes(`@airdesign/templates/${templateFile(blankTemplate, true)}`),
-  "a new blank deck opens the blank template's start deck",
-)
-console.log("the catalog names every generated template and the blank deck's start file")
+console.log("the catalog names every generated template")
 
 const layouts = ["Title Slide", "Section Header", "Title and Content", "Two Content", "Title Only", "Closing", "Blank"]
 for (const spec of templateSpecs) {
