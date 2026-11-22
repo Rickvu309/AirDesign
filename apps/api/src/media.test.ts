@@ -175,3 +175,51 @@ it("queues an added picture's object for removal when its account is deleted", a
   expect(await keys(id)).toEqual([])
   expect((await admin.query("select key from deck.original_delete where key = $1", [key])).rows).toEqual([{ key }])
 })
+
+async function sceneDeck(session = cookie): Promise<string> {
+  const id = `scenemedia${String(++sequence)}`
+  expect((await post("/scenes/create", { deck: id }, session)).json).toMatchObject({ ok: true })
+  return id
+}
+
+it("stores a picture for a Doom deck by hash and hands it to a second session once it lands", async () => {
+  const id = await sceneDeck()
+  expect((await post("/decks/media", { deck: id, sha256 })).json).toEqual({ ok: false, refusal: "missing" })
+  const signed = await upload(id)
+  store.put(signed.url, bytes, signed.headers)
+  const second = await signInByCode(base, mails, "media@example.com")
+  const reply = await post("/decks/media", { deck: id, sha256 }, second)
+  expect(reply.json).toMatchObject({ ok: true, bytes: bytes.length, sha256 })
+  expect(Buffer.from(store.get((reply.json as { url: string }).url))).toEqual(bytes)
+})
+
+it("answers owner to another account asking for a Doom deck's picture", async () => {
+  const id = await sceneDeck()
+  await upload(id)
+  const other = await signInByCode(base, mails, "other-media@example.com")
+  expect((await post("/decks/media", { deck: id, sha256 }, other)).json).toEqual({ ok: false, refusal: "owner" })
+  expect((await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, other)).json).toEqual({
+    ok: false,
+    refusal: "owner",
+  })
+})
+
+it("keeps a Doom deck's pictures within the same size limits", async () => {
+  const id = await sceneDeck()
+  expect((await post("/decks/media/upload", { deck: id, bytes: limits.media, sha256 })).json).toEqual({
+    ok: false,
+    refusal: "limit",
+  })
+})
+
+it("queues a Doom deck's picture objects for removal when its account is deleted", async () => {
+  const email = "scene-media-leaving@example.com"
+  const leaving = await signInByCode(base, mails, email)
+  const id = await sceneDeck(leaving)
+  await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, leaving)
+  const [key] = await keys(id)
+  expect(key).toBeDefined()
+  await admin.query("select session.delete_account($1)", [email])
+  expect(await keys(id)).toEqual([])
+  expect((await admin.query("select key from deck.original_delete where key = $1", [key])).rows).toEqual([{ key }])
+})

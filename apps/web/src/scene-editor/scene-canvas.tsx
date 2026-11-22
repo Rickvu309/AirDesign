@@ -3,6 +3,8 @@ import { SlidePaint, TextOverride, useSceneSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ZoomControl } from "./zoom-control"
+import { Toaster } from "@/components/ui/sonner"
+import { useScenePictures } from "./use-pictures"
 import { roomInset, scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
@@ -144,6 +146,16 @@ export function SceneCanvas(props: {
     onSelection({ ids: [created.id], inside: null })
   }
 
+  const pictures = useScenePictures({
+    deck: props.deck,
+    client,
+    view,
+    slide,
+    slideBox,
+    scale,
+    onPlaced: (id) => onSelection({ ids: [id], inside: null }),
+  })
+
   const pointer = useCanvasPointer({
     stage,
     slideBox,
@@ -213,6 +225,8 @@ export function SceneCanvas(props: {
         onPointerCancel={pointer.cancel}
         onPointerLeave={pointer.leave}
         onDoubleClick={pointer.double}
+        onDragOver={pictures.over}
+        onDrop={pictures.drop}
       >
         <div style={{ position: "relative", width, height }}>
           <div
@@ -239,6 +253,7 @@ export function SceneCanvas(props: {
                 background={painted.background}
                 size={size}
                 width={size.w * scale}
+                assetUrl={pictures.assetUrl}
               />
             </TextOverride.Provider>
             <CanvasOverlay
@@ -255,6 +270,7 @@ export function SceneCanvas(props: {
           </div>
         </div>
       </div>
+      <Toaster position="top-center" />
       <TextBar api={text} />
       <ZoomControl scale={scale} fitted={zoom === "fit"} onZoom={(next) => zoomTo(next)} />
     </>
