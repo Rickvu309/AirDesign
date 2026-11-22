@@ -11,6 +11,7 @@ import { badTargets } from "./fuzz-target.js"
 import { storageFuzzGood } from "./storage-fuzz.js"
 import { deckListFuzzGood } from "./deck-list-fuzz.js"
 import { tabFuzzGood } from "./tab-fuzz.js"
+import { sceneFuzzGood } from "./scene-fuzz.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
@@ -360,6 +361,7 @@ describe("hostile input over every route", () => {
       ...deckListFuzzGood(deck),
       ...storageFuzzGood(deck),
       ...tabFuzzGood(deck),
+      ...sceneFuzzGood("fuzzscene"),
     }
   })
 

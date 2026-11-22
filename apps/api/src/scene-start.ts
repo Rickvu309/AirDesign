@@ -20,7 +20,7 @@ const neutralStyles = {
   body: { size: 32, font: "body", weight: 400, lineHeight: 1.25, tracking: 0 },
   body2: { size: 28, font: "body", weight: 400, lineHeight: 1.25, tracking: 0 },
   caption: { size: 22, font: "body", weight: 400, lineHeight: 1.2, tracking: 0 },
-  label: { size: 20, font: "heading", weight: 400, lineHeight: 1.2, tracking: 2, case: "upper" },
+  label: { size: 20, font: "heading", weight: 400, lineHeight: 1.2, tracking: 2 },
 } as const
 
 const shadow = (y: number, blur: number) => ({ kind: "dropShadow", color: { var: "text" }, x: 0, y, blur, spread: 0 })
