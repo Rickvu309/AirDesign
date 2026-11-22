@@ -22,7 +22,7 @@ import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { indexedGridOpening } from "./grid-opening.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, commitRefusal, keepCommitRefusal, markNewer, storeNewer } from "./device.js"
-import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
+import { rowsFromRegister, type DeckView, type LivePhase } from "./deck-view.js"
 import { knownRevisions } from "./served-deck.js"
 import { slideBatch, slideChange, valueChange, type Enqueued } from "./deck-edit.js"
 import {
@@ -435,9 +435,8 @@ export function connect(remote: Remote, options: Options = {}) {
         if (!opened.ok) return opened
         const confirmed = rowsFromRegister(parsed.deck, opened.register)
         const opening = indexedGridOpening(opened.register.index)
-        const adopted = await adoptRows(parsed.deck, opened.revision, confirmed, opening)
+        await adoptRows(parsed.deck, opened.revision, confirmed, opening)
         if (!known.has(parsed.deck)) known.set(parsed.deck, opened.revision)
-        if (adopted) return { ok: true, ...view(parsed.deck, confirmed, opening) }
         const newer = await readRecovered(parsed.deck)
         return newer === null ? signedOut : { ok: true, ...newer }
       })
