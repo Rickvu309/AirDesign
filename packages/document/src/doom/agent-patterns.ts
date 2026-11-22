@@ -16,7 +16,9 @@ import {
   ladderOf,
   partOf,
   sizedPart,
+  stylesAt,
 } from "./pattern-parts.js"
+import { borrowing, endsInside } from "./pattern-lend.js"
 import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
 import { zeroBox } from "./doom-walk.js"
@@ -330,8 +332,8 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
     name: change.name ?? names[kind],
     ...(change.hidden === undefined ? {} : { hidden: change.hidden }),
   }
-  const block = fitting(theme, (styles) =>
-    builders[kind](area, items, {
+  const make = (at: Area, styles: Styles) =>
+    builders[kind](at, items, {
       gap: gapFor(width),
       pad: padFor(width),
       theme,
@@ -339,8 +341,12 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
       root,
       filled: change.box !== undefined,
       axes: change.axes,
-    }),
-  )
+    })
+  const start = stylesAt(theme, 0)
+  const first = make(area, start)
+  const borrowed =
+    change.box === undefined && !endsInside(draft, first) ? borrowing(draft, parent, area, make, start) : undefined
+  const block = borrowed ?? first ?? fitting(theme, (styles) => make(area, styles))
   emit(draft, parent.id, block)
 }
 
