@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ThinNoticeView } from "@/thin-notice"
+import type { AssetUrls } from "./use-asset-urls"
 import { useScenePictures } from "./use-pictures"
 import { useSlidePictures } from "./use-slide-pictures"
 import { scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
@@ -30,6 +31,7 @@ export type CanvasCommands = { zoomTo: (zoom: Zoom) => void; zoomSelection: (() 
 
 export function SceneCanvas(props: {
   readonly deck: string
+  readonly assets: AssetUrls
   readonly client: EditorClient
   readonly view: scene.Scene
   readonly slide: scene.NodeId
@@ -216,7 +218,7 @@ export function SceneCanvas(props: {
   const pictures = useScenePictures({
     deck: props.deck,
     client,
-    view,
+    ...props.assets,
     slide,
     slideBox,
     scale,

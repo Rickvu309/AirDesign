@@ -26,8 +26,9 @@ export function useSlideStrip(props: {
   readonly slides: readonly scene.NodeId[]
   readonly current: scene.NodeId | undefined
   readonly onCurrent: (slide: scene.NodeId) => void
+  readonly assetUrl: (asset: string) => string | undefined
 }): SlideStrip {
-  const { view, client, slides, current, onCurrent } = props
+  const { view, client, slides, current, onCurrent, assetUrl } = props
   const say = useRef<(text: string) => void>(() => undefined)
   const { size } = scene.deckOf(view)
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
@@ -40,7 +41,7 @@ export function useSlideStrip(props: {
     thumbHeight: Math.round((slideThumbWidth * size.h) / size.w),
     thumb: (at, width) => {
       const slide = slides[at]
-      return slide === undefined ? null : <SceneThumb view={view} slide={slide} width={width} />
+      return slide === undefined ? null : <SceneThumb view={view} slide={slide} width={width} assetUrl={assetUrl} />
     },
     onSelect: (at) => {
       const slide = slides[at]

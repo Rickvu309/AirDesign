@@ -25,6 +25,7 @@ import { SceneNotes } from "./scene-notes"
 import { SceneThumb } from "./scene-thumb"
 import { noSelection, type Selection } from "./selection"
 import { useCurrentSlide } from "./use-current-slide"
+import { useAssetUrls } from "./use-asset-urls"
 import { useSlideStepKeys } from "./use-slide-step-keys"
 import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
@@ -56,7 +57,8 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
     if (next !== slide) setSelection(noSelection)
     showSlide(next)
   }
-  const strip = useSlideStrip({ view, client, slides, current: slide, onCurrent: choose })
+  const assets = useAssetUrls(id, view)
+  const strip = useSlideStrip({ view, client, slides, current: slide, onCurrent: choose, assetUrl: assets.assetUrl })
   const present = usePresent({
     count: slides.length,
     current: strip.current,
@@ -91,6 +93,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
         {slide === undefined ? null : (
           <SceneCanvas
             deck={id}
+            assets={assets}
             client={client}
             view={view}
             slide={slide}
@@ -163,7 +166,9 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
         size={{ width: size.w, height: size.h }}
         paint={(index, width) => {
           const shown = slides[index]
-          return shown === undefined ? null : <SceneThumb view={view} slide={shown} width={width} />
+          return shown === undefined ? null : (
+            <SceneThumb view={view} slide={shown} width={width} assetUrl={assets.assetUrl} />
+          )
         }}
         notesOf={(index) => propOf(view.nodes.get(slides[index] ?? ("" as scene.NodeId)), "notes")?.chars ?? ""}
       />

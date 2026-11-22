@@ -70,6 +70,10 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
   await expect(page.locator("[data-slide-box]").getByText("Revenue grew")).toBeVisible()
   await dropPicture(page)
   await expect(page.locator('[data-slide-box] [data-paint="image"]')).toHaveCount(1)
+  await expect(
+    page.locator('[data-slide-entry="1"] [data-paint="image"]'),
+    "the filmstrip shows the picture too",
+  ).toHaveCount(1)
 
   let first = await read(stack, opened, { slide: opened.slide })
   await expect

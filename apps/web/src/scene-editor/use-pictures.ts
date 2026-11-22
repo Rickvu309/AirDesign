@@ -1,25 +1,14 @@
-import { mediaTypeOf, scene } from "@airdesign/document"
-import { flushMedia, keepMedia, readMedia } from "@airdesign/live"
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type RefObject } from "react"
+import type { scene } from "@airdesign/document"
+import { flushMedia, keepMedia } from "@airdesign/live"
+import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObject } from "react"
 import { readPicture } from "@/picture-file"
 import type { ThinNotice } from "@/thin-notice"
 import { pictureWrites } from "./picture-writes"
 import type { Point } from "./slide-geometry"
 import type { EditorClient } from "./use-scene-deck"
 
-const sha = /^[0-9a-f]{64}$/
-
 function typing(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea") !== null)
-}
-
-function assetsIn(view: scene.Scene): readonly string[] {
-  const found = new Set<string>()
-  for (const node of view.nodes.values()) {
-    const fills = (node as { readonly fills?: readonly scene.Paint[] }).fills ?? []
-    for (const paint of fills) if (paint.kind === "image" && sha.test(paint.asset)) found.add(paint.asset)
-  }
-  return [...found]
 }
 
 export type Pictures = {
@@ -32,36 +21,19 @@ export type Pictures = {
 export function useScenePictures(args: {
   readonly deck: string
   readonly client: EditorClient
-  readonly view: scene.Scene
+  readonly assetUrl: (asset: string) => string | undefined
+  readonly keepUrl: (asset: string, bytes: Uint8Array) => void
   readonly slide: scene.NodeId
   readonly slideBox: RefObject<HTMLDivElement | null>
   readonly scale: number
   readonly onPlaced: (id: scene.NodeId) => void
 }): Pictures {
-  const { deck, view } = args
-  const urls = useRef(new Map<string, string>())
-  const asked = useRef(new Set<string>())
-  const [version, setVersion] = useState(0)
+  const { deck, keepUrl, assetUrl } = args
   const [notice, setNotice] = useState<ThinNotice | null>(null)
   const latest = useRef(args)
   useEffect(() => {
     latest.current = args
   })
-
-  const keepUrl = useCallback((asset: string, bytes: Uint8Array) => {
-    if (urls.current.has(asset)) return
-    const type = mediaTypeOf(bytes) ?? "application/octet-stream"
-    urls.current.set(asset, URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type })))
-    setVersion((was) => was + 1)
-  }, [])
-
-  useEffect(() => {
-    const kept = urls.current
-    return () => {
-      for (const url of kept.values()) URL.revokeObjectURL(url)
-      kept.clear()
-    }
-  }, [])
 
   useEffect(() => {
     void flushMedia(deck)
@@ -69,16 +41,6 @@ export function useScenePictures(args: {
     window.addEventListener("online", again)
     return () => window.removeEventListener("online", again)
   }, [deck])
-
-  useEffect(() => {
-    const wanted = assetsIn(view).filter((asset) => !asked.current.has(asset))
-    if (wanted.length === 0) return
-    for (const asset of wanted) asked.current.add(asset)
-    void readMedia(deck, wanted).then((found) => {
-      for (const [asset, bytes] of found) keepUrl(asset, bytes)
-      for (const asset of wanted) if (!found.has(asset)) asked.current.delete(asset)
-    })
-  }, [deck, view, keepUrl])
 
   useEffect(() => {
     if (notice === null) return
@@ -136,6 +98,5 @@ export function useScenePictures(args: {
     [place],
   )
 
-  const assetUrl = useMemo(() => (asset: string) => urls.current.get(asset), [version])
   return { assetUrl, drop, over, notice }
 }

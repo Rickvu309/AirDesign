@@ -17,7 +17,8 @@ export function SceneThumb(props: {
   readonly view: scene.Scene
   readonly slide: scene.NodeId
   readonly width: number
+  readonly assetUrl: (asset: string) => string | undefined
 }) {
   const painted = useStableView(props.view, props.slide)
-  return <PaintedSlide scene={painted} slide={props.slide} width={props.width} />
+  return <PaintedSlide scene={painted} slide={props.slide} width={props.width} assetUrl={props.assetUrl} />
 }
