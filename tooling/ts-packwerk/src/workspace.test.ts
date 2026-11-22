@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { app, makeRepo, type Repo } from "./fixture.ts"
-import { loadWorkspace, packOf, tableUsesIn } from "./workspace.ts"
+import { tableUsesIn } from "./tables.ts"
+import { loadWorkspace, packOf } from "./workspace.ts"
 
 let repo: Repo
 afterEach(() => repo.remove())
