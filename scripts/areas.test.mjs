@@ -12,7 +12,7 @@ const cases = [
   ["apps/web/src/editor/editor-shell.tsx", ["editor"]],
   ["apps/web/src/export/export-dialog.tsx", ["editor"]],
   ["packages/render/src/canvas.tsx", ["editor"]],
-  ["apps/web/src/aira-panel.tsx", ["aira"]],
+  ["apps/web/src/aira/aira-panel.tsx", ["aira"]],
   ["apps/web/src/copy/aira-copy.ts", ["aira"]],
   ["apps/web/src/credits/limit-panel.tsx", ["aira"]],
   ["apps/web/src/settings/usage-page.tsx", ["aira"]],
@@ -61,7 +61,7 @@ for (const [file, expected] of cases) same(`${file} has its areas`, areasOf([fil
 
 same(
   "a pull request gets every area its files touch, once, in the map's order",
-  areasOf(["scripts/land.mjs", "apps/web/src/aira-panel.tsx", "apps/web/src/thin-deck.tsx", "scripts/bar.mjs"]),
+  areasOf(["scripts/land.mjs", "apps/web/src/aira/aira-panel.tsx", "apps/web/src/thin-deck.tsx", "scripts/bar.mjs"]),
   ["editor", "aira", "tooling"],
 )
 same("no files give no areas", areasOf([]), [])

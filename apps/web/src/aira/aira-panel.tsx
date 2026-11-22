@@ -5,20 +5,28 @@ import { Conversation, ConversationContent, ConversationScrollButton } from "@/c
 import { useConversationFollow } from "@/components/ai-elements/conversation-follow"
 import { airaBackOn, airaCopy } from "@/copy/aira-copy"
 import { productCopy } from "@/copy/product-copy"
-import { UsageRing } from "@/usage-ring"
+import { UsageRing } from "@/aira/usage-ring"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
-import { airaChat, askAira, retryAira, undoExchange, type AiraChat, type AskOptions, type UndoRun } from "@/aira-loop"
-import { AiraComposer } from "@/aira-composer"
-import { Asked, ExchangeView, UsagePop, retryable } from "@/aira-reply"
-import { resetsWhen, usagePercent } from "@/aira-usage"
-import { AiraWelcome } from "@/aira-welcome"
-import { chatTitle } from "@/aira-history"
-import { deviceChats, useChatHistory, type ChatStore } from "@/aira-history-hook"
-import { AiraHistoryMenu } from "@/aira-history-menu"
+import {
+  airaChat,
+  askAira,
+  retryAira,
+  undoExchange,
+  type AiraChat,
+  type AskOptions,
+  type UndoRun,
+} from "@/aira/aira-loop"
+import { AiraComposer } from "@/aira/aira-composer"
+import { Asked, ExchangeView, UsagePop, retryable } from "@/aira/aira-reply"
+import { resetsWhen, usagePercent } from "@/aira/aira-usage"
+import { AiraWelcome } from "@/aira/aira-welcome"
+import { chatTitle } from "@/aira/aira-history"
+import { deviceChats, useChatHistory, type ChatStore } from "@/aira/aira-history-hook"
+import { AiraHistoryMenu } from "@/aira/aira-history-menu"
 import { signInAddress } from "@/thin-notice"
 import { useWeekUsage, type UsageLoad } from "@/usage-load"
-import { requestedTone, tonePrompt, type Tone, type ToneScope } from "@/aira-prompts"
+import { requestedTone, tonePrompt, type Tone, type ToneScope } from "@/aira/aira-prompts"
 import { adjustToneCopy } from "@/copy/adjust-tone-copy"
 import type { ToneControlFor } from "@/editor/adjust-tone"
 import type { ToneLink } from "@/editor/tone-link"

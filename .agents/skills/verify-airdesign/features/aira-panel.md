@@ -4,7 +4,7 @@ An open deck shows the Agent panel on the right. The person types to Aira, watch
 
 ## Sub-features
 
-- `empty` before the first ask the panel shows the Aira mark, `Aira` and one line, `Tell Aira what to change in this deck.`, with no starters and no caution (`apps/web/src/aira-welcome.tsx`). The head reads `New chat`; its `button "New chat"` (use `exact: true`, the history trigger's name also holds the words) is disabled until there is an ask.
+- `empty` before the first ask the panel shows the Aira mark, `Aira` and one line, `Tell Aira what to change in this deck.`, with no starters and no caution (`apps/web/src/aira/aira-welcome.tsx`). The head reads `New chat`; its `button "New chat"` (use `exact: true`, the history trigger's name also holds the words) is disabled until there is an ask.
 - `ask` the composer reads `Ask Aira`. Enter sends; Shift+Enter starts a new line. The ask shows as the person's message and becomes the chat title.
 - `stream` Aira's words show as they arrive, and the thread follows them while the person is at the latest message. Scrolling up stops the following; the round arrow button, `Show latest message`, brings it back.
 - `steps` tool calls show in plain words, never the tool's id: a running step reads like `Editing slides`, a finished one `Edited slides`, a refused one `Couldn't edit slides`, a stopped one `Stopped editing slides`. Each step carries `[data-step-mark]`: `progress` (spinning), `check`, or `x`. Steps taken one after another sum up in one line, such as `Read the deck and edited slides`, that opens to each step.

@@ -12,7 +12,12 @@ const hidden = { needed: false }
 same("the label is long-title", longTitleLabel, "long-title")
 same(
   "a pull request gets its areas and keeps no stale long-title or before-after label",
-  labelChanges({ result: quiet, shown: hidden, changedFiles: ["apps/web/src/aira-panel.tsx"], title: "Keep a chat" }),
+  labelChanges({
+    result: quiet,
+    shown: hidden,
+    changedFiles: ["apps/web/src/aira/aira-panel.tsx"],
+    title: "Keep a chat",
+  }),
   { add: ["aira"], remove: ["needs-before-after", "long-title"] },
 )
 same(

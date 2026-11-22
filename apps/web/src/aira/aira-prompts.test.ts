@@ -1,6 +1,6 @@
 import { elementId, slideId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { adjustToneCopy as words } from "./copy/adjust-tone-copy"
+import { adjustToneCopy as words } from "../copy/adjust-tone-copy"
 import { requestedTone, tonePrompt, type ToneScope } from "./aira-prompts"
 
 const slide = slideId("256")

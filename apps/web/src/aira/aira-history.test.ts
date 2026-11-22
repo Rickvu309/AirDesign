@@ -1,6 +1,6 @@
 import type { ModelMessage } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
-import { airaChat, type AiraChat, type AiraExchange } from "@/aira-loop"
+import { airaChat, type AiraChat, type AiraExchange } from "@/aira/aira-loop"
 import {
   chatBytes,
   chatTitle,
@@ -13,7 +13,7 @@ import {
   saveStep,
   savedChat,
   type SavedChat,
-} from "@/aira-history"
+} from "@/aira/aira-history"
 
 const deck = "historydeck"
 const edit = "airdesign_edit_deck"

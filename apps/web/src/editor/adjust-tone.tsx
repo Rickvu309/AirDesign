@@ -2,7 +2,15 @@ import { useState, type KeyboardEvent, type PointerEvent, type RefObject } from 
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { adjustToneCopy as words } from "@/copy/adjust-tone-copy"
-import { dialStep, dialSteps, toneCenter, toneName, type Tone, type TonePoint, type ToneScope } from "@/aira-prompts"
+import {
+  dialStep,
+  dialSteps,
+  toneCenter,
+  toneName,
+  type Tone,
+  type TonePoint,
+  type ToneScope,
+} from "@/aira/aira-prompts"
 import { ToneIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 

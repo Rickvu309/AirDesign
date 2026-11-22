@@ -1,7 +1,7 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
-import type { AiraStep, ToolState } from "@/aira-loop"
-import { replyPieces, stepLine } from "@/aira-steps"
+import type { AiraStep, ToolState } from "@/aira/aira-loop"
+import { replyPieces, stepLine } from "@/aira/aira-steps"
 import { airaRefusalWords } from "@/copy/aira-copy"
 
 function tool(name: string, state: ToolState, id = name): AiraStep {

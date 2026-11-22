@@ -11,7 +11,7 @@ import {
 import { airaChatsKeptOf, airaCopy, airaHistoryNameOf } from "@/copy/aira-copy"
 import { deckTime } from "@/decks/deck-time"
 import { EditorIcon } from "@/editor/editor-icons"
-import { chatsKept, type SavedChat } from "@/aira-history"
+import { chatsKept, type SavedChat } from "@/aira/aira-history"
 
 const noteClass = "px-1.5 py-1 text-[length:var(--type-caption)] leading-[var(--leading-dense)] text-muted-foreground"
 

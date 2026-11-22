@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest"
 const sources = import.meta.glob<string>("./**/*.tsx", { query: "?raw", import: "default", eager: true })
 
 const realFiles = [
-  "aira-composer.tsx",
-  "aira-panel.tsx",
+  "aira/aira-composer.tsx",
+  "aira/aira-panel.tsx",
   "decks/decks-shell.tsx",
   "decks/delete-account.tsx",
   "settings/account-card.tsx",

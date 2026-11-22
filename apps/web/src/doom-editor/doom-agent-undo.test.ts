@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { airaChat, undoExchange, type AiraChat } from "@/aira-loop"
+import { airaChat, undoExchange, type AiraChat } from "@/aira/aira-loop"
 import { doomAgentUndo } from "./doom-agent-undo"
 
 const deck = "deck"

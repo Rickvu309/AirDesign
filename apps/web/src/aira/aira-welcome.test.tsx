@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
-import { AiraWelcome } from "@/aira-welcome"
+import { AiraWelcome } from "@/aira/aira-welcome"
 import { airaCopy } from "@/copy/aira-copy"
 import { productCopy } from "@/copy/product-copy"
 

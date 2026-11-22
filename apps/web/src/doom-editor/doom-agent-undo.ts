@@ -1,4 +1,4 @@
-import type { UndoRun } from "@/aira-loop"
+import type { UndoRun } from "@/aira/aira-loop"
 import type { EditorClient } from "./use-doom-deck"
 
 export function doomAgentUndo(client: Pick<EditorClient, "undoRun">): UndoRun {

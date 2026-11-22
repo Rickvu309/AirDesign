@@ -2,7 +2,7 @@
   "editor": {
     "paths": ["apps/web/src/", "packages/render/", "tests/browser/"],
     "except": [
-      "apps/web/src/aira-",
+      "apps/web/src/aira/",
       "apps/web/src/usage-",
       "apps/web/src/copy/aira-",
       "apps/web/src/copy/usage-",
@@ -24,7 +24,7 @@
   },
   "aira": {
     "paths": [
-      "apps/web/src/aira-",
+      "apps/web/src/aira/",
       "apps/web/src/usage-",
       "apps/web/src/copy/aira-",
       "apps/web/src/copy/usage-",

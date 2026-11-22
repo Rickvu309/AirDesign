@@ -1,0 +1,60 @@
+apps/web/src:
+  apps/web/src/thin-notice.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-panel.tsx
+  apps/web/src/usage-load.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-panel.tsx
+apps/web/src/credits:
+  apps/web/src/credits/limit-panel.tsx:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/aira/aira-reply.tsx
+apps/web/src/decks:
+  apps/web/src/decks/deck-time.ts:
+    violations:
+      - dependency
+    files:
+      - apps/web/src/aira/aira-history-menu.tsx
+apps/web/src/editor:
+  apps/web/src/editor/adjust-tone.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-panel.tsx
+  apps/web/src/editor/agent-panel.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-reply.tsx
+  apps/web/src/editor/editor-chrome.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-composer.tsx
+      - apps/web/src/aira/aira-reply.tsx
+  apps/web/src/editor/editor-icons.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-composer.tsx
+      - apps/web/src/aira/aira-history-menu.tsx
+      - apps/web/src/aira/aira-panel.tsx
+      - apps/web/src/aira/aira-reply.tsx
+  apps/web/src/editor/tone-link.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/aira/aira-panel.tsx

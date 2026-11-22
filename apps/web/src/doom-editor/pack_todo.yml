@@ -1,16 +1,4 @@
 apps/web/src:
-  apps/web/src/aira-loop.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/doom-editor/doom-agent-undo.ts
-  apps/web/src/aira-panel.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/doom-editor/agent-panel.tsx
   apps/web/src/painted-picture.ts:
     violations:
       - dependency
