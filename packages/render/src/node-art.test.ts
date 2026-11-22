@@ -307,7 +307,11 @@ describe("NodeArt for a picture whose bytes are not on this device yet", () => {
   })
 
   it("says nothing for a colour fill", () => {
-    const html = painted([shape("p", { box: spot(0, 0, 600, 300), fills: [solid("#112233")] })], () => undefined, words)
+    const html = painted(
+      [shape("p", { box: spot(0, 0, 600, 300), fills: [solid({ var: "accent1" })] })],
+      () => undefined,
+      words,
+    )
     expect(html).not.toContain("data-unshown-label")
   })
 })

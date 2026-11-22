@@ -5,7 +5,6 @@ import { test, type Stack } from "./api-stack"
 import { accent, landNodes, openSceneEditor, serveOriginals, spot, type Opened } from "./scene-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-test.setTimeout(60_000)
 
 const pictureFile = join(process.cwd(), "scripts/pptx-fixtures/picture.png")
 
@@ -99,7 +98,7 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
 
   blocked = false
   await expect
-    .poll(async () => (await read(stack, opened, { slide: opened.slide })).images.length, { timeout: 40_000 })
+    .poll(async () => (await read(stack, opened, { slide: opened.slide })).images.length, { timeout: 20_000 })
     .toBe(1)
 })
 
