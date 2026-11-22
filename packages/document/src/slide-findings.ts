@@ -1,6 +1,7 @@
 import type { Box } from "./box.js"
 import { alignFindings } from "./finding-align.js"
 import { contrastFindings, overlapFindings } from "./finding-cover.js"
+import { scaleFindings } from "./finding-scale.js"
 import { findingLimits, points, union, type Finding, type Placed, type Rect } from "./finding.js"
 import type { ResolvedElement, ResolvedSlide, ResolvedText } from "./resolved-slide.js"
 import { layText, type FontWidths, type TextLayout, type Unjudged } from "./text-fit.js"
@@ -176,6 +177,11 @@ export function slideFindings(slide: ResolvedSlide, widths: FontWidths): SlideFi
     ]
     for (const finding of own) if (finding !== null) findings.push(finding)
   }
-  findings.push(...overlapFindings(slide, placed), ...contrastFindings(slide, placed), ...alignFindings(slide))
+  findings.push(
+    ...overlapFindings(slide, placed),
+    ...contrastFindings(slide, placed),
+    ...alignFindings(slide),
+    ...scaleFindings(slide),
+  )
   return { slide: slide.slide, findings, unjudged }
 }

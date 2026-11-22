@@ -33,6 +33,13 @@ export type WireFinding = { readonly node: ElementId } & (
       readonly y: number | null
     }
   | { readonly code: "small-text"; readonly size: number; readonly min: number; readonly uniform: boolean }
+  | {
+      readonly code: "off-scale"
+      readonly size: number
+      readonly to: number
+      readonly style: string
+      readonly uniform: boolean
+    }
   | { readonly code: "low-contrast"; readonly ratio: number; readonly needs: number; readonly color: string | null }
   | { readonly code: "empty-placeholder"; readonly placeholder: string }
 )
@@ -51,6 +58,7 @@ const alignEdges = ["left", "right", "top", "bottom"] as const
 const pointsCeiling = 100_000
 const sizeCeiling = 4_000
 const hexColor = /^[0-9A-F]{6}$/
+const styleName = /^[^\p{C}]{1,64}$/u
 const placeholderName = /^[A-Za-z]{1,32}$/
 const findingsCeiling = limits.elements * 4
 
@@ -124,6 +132,16 @@ const readers: Readonly<Record<WireFinding["code"], readonly [readonly string[],
       defined({
         size: pointsOf(body.size),
         min: sizeOf(body.min),
+        uniform: typeof body.uniform === "boolean" ? body.uniform : undefined,
+      }),
+  ],
+  "off-scale": [
+    ["size", "to", "style", "uniform"],
+    (body) =>
+      defined({
+        size: pointsOf(body.size),
+        to: pointsOf(body.to),
+        style: typeof body.style === "string" && styleName.test(body.style) ? body.style : undefined,
         uniform: typeof body.uniform === "boolean" ? body.uniform : undefined,
       }),
   ],

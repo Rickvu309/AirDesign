@@ -4,6 +4,7 @@ import {
   nextElementId,
   slideMeasure,
   textStylesOf,
+  typeSteps,
   type Box,
   type ElementId,
   type SlideId,
@@ -12,7 +13,7 @@ import { decided, ready } from "./agent-elements.js"
 import type { Applied } from "./apply-change.js"
 import type { Deck } from "./call.js"
 import { layer, Overflowed, padded, Refused, set, textLayer, wrap, type Build } from "./pattern-build.js"
-import { fittedSize, linesHigh, tones, typeScale, typeSteps, type Line } from "./pattern-type.js"
+import { fittedSize, linesHigh, tones, typeScale, type Line } from "./pattern-type.js"
 
 const point = 12_700
 

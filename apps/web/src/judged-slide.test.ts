@@ -188,6 +188,20 @@ it("names small type with the size to set, and an empty placeholder to delete", 
   ])
 })
 
+it("names text at a size the deck's named styles do not hold, only when the deck names a scale", () => {
+  const big = row("2", { box: { ...box, width: 600 * point, height: 80 * point }, text: text({}, { size: 24 }) })
+  const style = (name: string, size: number) => ({ id: name, name, fields: { size } })
+  const judged = (styles: Parameters<typeof resolvedSlide>[2]) => {
+    const slide = resolvedSlide(source, reader([big]), styles)
+    return slide === null ? null : wireFindings(slide, widths)
+  }
+  expect(judged([style("Title", 2800), style("Heading", 2000)])).toEqual([
+    { code: "off-scale", node: "256.2", size: 24, to: 20, style: "Heading", uniform: true },
+  ])
+  expect(judged([style("Title", 2800)])).toEqual([])
+  expect(judged([])).toEqual([])
+})
+
 it("moves a card a point or two out of its column back into line", () => {
   const card = (shape: string, x: number, y: number) =>
     row(shape, { text: null, fill: solid("DDDDDD"), box: { ...box, x: x * point, y: y * point, height: 60 * point } })

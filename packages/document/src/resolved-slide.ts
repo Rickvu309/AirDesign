@@ -60,5 +60,6 @@ export type ResolvedSlide = {
   readonly slide: string
   readonly size: SlideSize
   readonly background: Fill
+  readonly scale?: readonly { readonly name: string; readonly size: number }[]
   readonly elements: readonly ResolvedElement[]
 }

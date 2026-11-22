@@ -9,7 +9,7 @@ import {
 import type { FontWidths, Register, ResolvedSlide, ResolvedText, SlideId } from "@airdesign/document"
 import { liveRuns } from "@airdesign/engine"
 import { knownRevision, servedDeck, type Remote } from "@airdesign/live"
-import { paintReader, readSlides } from "@airdesign/pptx"
+import { paintReader, readSlides, slideTextStyles } from "@airdesign/pptx"
 import { useEffect } from "react"
 import { server } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
@@ -60,7 +60,9 @@ export function judgedOf(exported: Parts, kept: JudgedDeck): readonly ResolvedSl
     const rels = exported.get(relsOf(source.part))
     const held = kept.slides.get(source.part)
     const resolved =
-      held !== undefined && held.slide === slide && held.rels === rels ? held.resolved : resolvedSlide(source, reader)
+      held !== undefined && held.slide === slide && held.rels === rels
+        ? held.resolved
+        : resolvedSlide(source, reader, slideTextStyles(exported, source.part))
     next.set(source.part, { slide, rels, resolved })
   }
   kept.slides = next

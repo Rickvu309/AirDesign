@@ -10,6 +10,7 @@ import {
   type ResolvedParagraph,
   type ResolvedSlide,
   type ResolvedText,
+  type TextStyle,
 } from "@airdesign/document"
 import {
   paintKind,
@@ -143,13 +144,20 @@ function elementOf(source: SlideSource, row: PaintElement): ResolvedElement {
   }
 }
 
-export function resolvedSlide(source: SlideSource, reader: PaintReader): ResolvedSlide | null {
+export function resolvedSlide(
+  source: SlideSource,
+  reader: PaintReader,
+  styles: readonly TextStyle[] = [],
+): ResolvedSlide | null {
   try {
     const paint = reader.slide(source.part)
     return {
       slide: source.slide,
       size: { width: paint.width, height: paint.height },
       background: paint.background === null ? { rgb: "FFFFFF" } : fillOf(paint.background),
+      scale: styles.flatMap(({ name, fields }) =>
+        fields.size === undefined ? [] : [{ name, size: fields.size / 100 }],
+      ),
       elements: paint.elements.map((row) => elementOf(source, row)),
     }
   } catch {
@@ -239,6 +247,17 @@ function wireOf(slide: ResolvedSlide, finding: Finding): WireFinding | null {
     }
     case "small-text":
       return { code: "small-text", node, size: finding.size, min: finding.fix.size, uniform: uniform(text) }
+    case "off-scale":
+      return finding.style.length > 64
+        ? null
+        : {
+            code: "off-scale",
+            node,
+            size: finding.size,
+            to: finding.fix.size,
+            style: finding.style,
+            uniform: uniform(text),
+          }
     case "low-contrast":
       return {
         code: "low-contrast",
