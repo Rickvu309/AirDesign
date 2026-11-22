@@ -1,0 +1,28 @@
+layer: platform
+dependencies:
+  - apps/web/src/copy
+  - apps/web/src/lib
+public:
+  - ai-elements/chain-of-thought.tsx
+  - ai-elements/conversation-follow.ts
+  - ai-elements/conversation.tsx
+  - ai-elements/message.tsx
+  - ai-elements/prompt-input.tsx
+  - ai-elements/tool.tsx
+  - ui/announcer.tsx
+  - ui/button.tsx
+  - ui/card.tsx
+  - ui/collapsible.tsx
+  - ui/context-menu.tsx
+  - ui/dialog.tsx
+  - ui/dropdown-menu.tsx
+  - ui/input.tsx
+  - ui/popover.tsx
+  - ui/select.tsx
+  - ui/skeleton.tsx
+  - ui/slider.tsx
+  - ui/sonner.tsx
+  - ui/status-pill.tsx
+  - ui/switch.tsx
+  - ui/textarea.tsx
+  - ui/toast.tsx

@@ -1,0 +1,7 @@
+apps/web/src/editor:
+  apps/web/src/editor/editor-icons.tsx:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/components/ai-elements/chain-of-thought.tsx

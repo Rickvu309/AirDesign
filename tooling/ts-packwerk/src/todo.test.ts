@@ -43,7 +43,11 @@ describe("check and update-todo", () => {
       "apps/web/src/editor/editor.ts:2:28  privacy  apps/web/src/kit/theme.ts is private to apps/web/src/kit",
     )
 
-    expect((await run("update-todo")).code).toBe(0)
+    const pruneOnly = await run("update-todo")
+    expect(pruneOnly.code).toBe(1)
+    expect(pruneOnly.out).toContain("these new violations are not recorded; fix them")
+
+    expect((await run("update-todo", "--all")).code).toBe(0)
     const todo = readFileSync(path.join(repo.root, "apps/web/src/editor/pack_todo.yml"), "utf8")
     expect(todo).toContain(
       "apps/web/src/kit/theme.ts:\n    violations:\n      - dependency\n      - privacy\n    files:\n      - apps/web/src/editor/editor.ts",
@@ -63,6 +67,9 @@ describe("check and update-todo", () => {
     const fixed = await run("check")
     expect(fixed.code).toBe(1)
     expect(fixed.out).toContain("stale  apps/web/src/editor/pack_todo.yml lists privacy on apps/web/src/kit/theme.ts")
+
+    expect((await run("update-todo")).code).toBe(0)
+    expect((await run("check")).out).toContain("0 new violations, 0 stale todos, 1 known")
   })
 
   it("explains a pack for an agent about to change it", async () => {

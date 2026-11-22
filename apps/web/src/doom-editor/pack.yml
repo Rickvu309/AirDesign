@@ -1,0 +1,11 @@
+layer: feature
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/decks
+  - apps/web/src/design
+  - apps/web/src/lib
+  - apps/web/src/present
+public:
+  - doom-editor.tsx
+  - node-props.ts

@@ -26,6 +26,7 @@ An edit, from a person or an agent, is read by `catalog`, decided by `document` 
 
 - `apps/web` is the product UI, with designed states at `/screens/<id>-<name>`. `apps/site` is marketing and sign-in. `apps/api` is the server, on Postgres.
 - In `packages/`, a package's `src/index.ts` is its whole interface: `document` (imports no package), `engine`, `catalog`, `render`, `live`, `mcp`, `pptx`, plus `templates` (start decks), `theme` (tokens), `fonts`, `device` (when a tab can work), `oauth`, `usage` (Claude spend).
+- A folder with a `pack.yml` is a pack. `packwerk.yml` ranks packs in layers, and `pnpm check:boundaries` fails an import its pack does not allow. Read `node tooling/ts-packwerk/src/cli.ts explain <folder>` before you change a pack. A `pack_todo.yml` lists known violations: fix them, never add to them.
 
 ## Land a change
 

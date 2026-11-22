@@ -1,0 +1,10 @@
+layer: feature
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/lib
+  - apps/web/src/settings
+public:
+  - credits-cards.tsx
+  - limit-panel.tsx
+  - use-credits.ts

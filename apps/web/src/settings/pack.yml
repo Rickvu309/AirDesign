@@ -1,0 +1,18 @@
+layer: feature
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/decks
+  - apps/web/src/lib
+public:
+  - account-load.ts
+  - account-page.tsx
+  - account-profile.tsx
+  - agents-page.tsx
+  - screens/usage-tab.tsx
+  - settings-controls.tsx
+  - settings-frame.tsx
+  - settings-page.tsx
+  - settings-routes.ts
+  - settings-sample.ts
+  - usage-page.tsx

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import path from "node:path"
-import { findings, type Finding } from "./rules.ts"
+import { findings, todoRules, type Finding } from "./rules.ts"
 import { judge, readTodos, writeTodos } from "./todo.ts"
 import { configFile, loadWorkspace, packOf, type Workspace } from "./workspace.ts"
 
@@ -10,7 +10,8 @@ const usage = `usage: ts-packwerk <command> [options]
 
 commands:
   check [--json]        report references that break pack rules and are not in a pack_todo.yml
-  update-todo           record every current violation in pack_todo.yml files
+  update-todo           remove fixed violations from pack_todo.yml files
+  update-todo --all     record every current violation, for a repo adopting packs
   explain <pack>        describe a pack: its rules, public paths, what it uses and what uses it
 
 options:
@@ -84,7 +85,8 @@ export const runCli = async (argv: readonly string[], io: Io): Promise<number> =
   const rootAt = args.indexOf("--root")
   const root = rootAt >= 0 ? path.resolve(args.splice(rootAt, 2)[1] ?? ".") : findRoot(process.cwd())
   const json = args.includes("--json")
-  const [command, ...rest] = args.filter((arg) => arg !== "--json")
+  const all = args.includes("--all")
+  const [command, ...rest] = args.filter((arg) => arg !== "--json" && arg !== "--all")
   if (command === undefined || command === "help" || command === "--help") {
     io.out(usage)
     return command === undefined ? 2 : 0
@@ -101,15 +103,15 @@ export const runCli = async (argv: readonly string[], io: Io): Promise<number> =
   }
   if (command === "explain") return explain(workspace, rest[0] ?? "", io)
   const found = findings(workspace)
-  if (command === "update-todo") {
-    const written = writeTodos(root, workspace.packs, found)
-    const left = found.length - written
-    io.out(`recorded ${String(written)} violations in pack_todo.yml files`)
-    for (const finding of found.filter((item) => item.rule === "cycle" || item.rule === "package"))
-      io.err(line(finding))
-    return left === 0 ? 0 : 1
-  }
   const verdict = judge(found, readTodos(root, workspace.packs))
+  if (command === "update-todo") {
+    const written = writeTodos(root, workspace.packs, all ? found : verdict.listed)
+    io.out(`${String(written)} violations in pack_todo.yml files, ${String(verdict.stale.length)} fixed ones removed`)
+    const unrecorded = all ? found.filter((item) => !todoRules.has(item.rule)) : verdict.fresh
+    for (const finding of unrecorded) io.err(line(finding))
+    if (!all && verdict.fresh.length > 0) io.err("these new violations are not recorded; fix them")
+    return unrecorded.length === 0 ? 0 : 1
+  }
   const seconds = ((performance.now() - started) / 1000).toFixed(2)
   if (json) {
     io.out(JSON.stringify({ fresh: verdict.fresh, stale: verdict.stale, listed: verdict.listed.length }, null, 2))

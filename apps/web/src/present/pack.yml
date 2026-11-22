@@ -1,0 +1,14 @@
+layer: feature
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/lib
+public:
+  - notes-on.ts
+  - present-button.tsx
+  - present-keys.ts
+  - present-layer.tsx
+  - present-links.tsx
+  - slide-shows.ts
+  - use-leaving.ts
+  - use-present.ts

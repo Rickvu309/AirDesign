@@ -11,6 +11,7 @@ layers:
   - app
   - legacy
   - feature
+  - shared
   - platform
 table_exempt:
   - "apps/api/src/platform/migrations.ts"
