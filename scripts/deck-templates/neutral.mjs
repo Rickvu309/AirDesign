@@ -1,7 +1,7 @@
 import { boxes, layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
-const grey = "tx1 lumMod 60000 lumOff 40000"
+const grey = "tx1 lumMod 62000 lumOff 38000"
 const hairline = "tx1 lumMod 15000 lumOff 85000"
 
 const scale = {

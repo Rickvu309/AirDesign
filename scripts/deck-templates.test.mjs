@@ -64,3 +64,64 @@ for (const spec of templateSpecs) {
   if (spec.map === "dark") assert.ok(contrast(colors.lt2, background) >= 4.5, `${spec.id} muted text reads`)
 }
 console.log("each template's text, accent and muted colours read on its background")
+
+const toHsl = (hex) => {
+  const [red, green, blue] = channels(hex)
+  const high = Math.max(red, green, blue)
+  const low = Math.min(red, green, blue)
+  const light = (high + low) / 2
+  if (high === low) return [0, 0, light]
+  const span = high - low
+  const sat = light > 0.5 ? span / (2 - high - low) : span / (high + low)
+  const hue =
+    high === red
+      ? (green - blue) / span + (green < blue ? 6 : 0)
+      : high === green
+        ? (blue - red) / span + 2
+        : (red - green) / span + 4
+  return [hue / 6, sat, light]
+}
+const fromHsl = ([hue, sat, light]) => {
+  const q = light < 0.5 ? light * (1 + sat) : light + sat - light * sat
+  const p = 2 * light - q
+  const part = (shift) => {
+    const t = (hue + shift + 1) % 1
+    if (t < 1 / 6) return p + (q - p) * 6 * t
+    if (t < 1 / 2) return q
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+    return p
+  }
+  return [1 / 3, 0, -1 / 3]
+    .map((shift) =>
+      Math.round((sat === 0 ? light : part(shift)) * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")
+}
+const resolveColor = (spec, written) => {
+  const [name, ...transforms] = written.split(" ")
+  const slots =
+    spec.map === "dark"
+      ? { tx1: "lt1", tx2: "lt2", bg1: "dk1", bg2: "dk2" }
+      : { tx1: "dk1", tx2: "dk2", bg1: "lt1", bg2: "lt2" }
+  const hex = spec.colors[slots[name] ?? name]
+  const hsl = toHsl(hex)
+  for (let at = 0; at < transforms.length; at += 2) {
+    const amount = Number(transforms[at + 1]) / 100_000
+    hsl[2] = transforms[at] === "lumMod" ? hsl[2] * amount : hsl[2] + amount
+  }
+  return fromHsl(hsl)
+}
+for (const spec of templateSpecs) {
+  const slots = spec.map === "dark" ? ["dk1", "dk2"] : ["lt1", "lt2"]
+  for (const [key, style] of Object.entries(spec.scale)) {
+    const ink = resolveColor(spec, style.color)
+    for (const slot of slots)
+      assert.ok(
+        contrast(ink, spec.colors[slot]) >= 4.5,
+        `${spec.id} ${key} ${ink} reads on ${slot} (${contrast(ink, spec.colors[slot]).toFixed(2)})`,
+      )
+  }
+}
+console.log("every text style colour reads on both background colours")

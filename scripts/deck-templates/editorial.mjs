@@ -1,7 +1,7 @@
 import { boxes, layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
-const muted = "tx1 lumMod 65000 lumOff 35000"
+const muted = "tx1 lumMod 68000 lumOff 32000"
 const ink = "tx1"
 
 const scale = {
@@ -75,13 +75,13 @@ export default {
     lt1: "FBF8F3",
     dk2: "3A2E26",
     lt2: "EFE8DD",
-    accent1: "B4532A",
+    accent1: "A84E27",
     accent2: "5F7A4A",
     accent3: "C8962E",
     accent4: "7B4B6E",
     accent5: "2F6F8F",
     accent6: "8C6239",
-    hlink: "B4532A",
+    hlink: "A84E27",
     folHlink: "7B4B6E",
   },
   fonts: { major: "Source Serif 4 SemiBold", minor: "Inter" },
