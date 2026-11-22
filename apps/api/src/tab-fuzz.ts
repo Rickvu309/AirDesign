@@ -1,3 +1,5 @@
+import { sceneFuzzGood } from "./scene-fuzz.js"
+
 const findings = [{ code: "overflow", node: "258.7", needed: 86.4, room: 64.8, size: 28, height: 93.6 }]
 
 function landed(fields: Record<string, unknown>) {
@@ -8,5 +10,6 @@ export function tabFuzzGood(deck: string) {
   return {
     "POST /decks/watch": landed({ deck, cursor: null }),
     "POST /decks/findings": landed({ deck, revision: 0, findings }),
+    ...sceneFuzzGood(`${deck}scene`),
   }
 }
