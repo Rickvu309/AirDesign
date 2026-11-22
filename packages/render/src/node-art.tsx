@@ -1,5 +1,5 @@
 import type { scene } from "@airdesign/document"
-import type { CSSProperties } from "react"
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react"
 import { iconNodes, type IconNode } from "./icon-nodes.js"
 import { effectLook } from "./node-effects.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
@@ -8,6 +8,8 @@ import { NodeStrokes } from "./node-strokes.js"
 import { TextLines } from "./node-text.js"
 
 type Resolved = scene.Resolved
+
+export const TextOverride = createContext<((node: Resolved) => ReactNode) | null>(null)
 
 const fill: CSSProperties = { position: "absolute", inset: 0 }
 
@@ -50,6 +52,7 @@ function flipOf(box: Resolved["box"]): string | undefined {
 }
 
 export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly assetUrl: AssetUrl }) {
+  const override = useContext(TextOverride)
   const { box, geometry } = node
   const boxy = geometry === null || geometry.kind === "rect" || geometry.kind === "ellipse"
   const outline = outlineOf(node)
@@ -100,7 +103,7 @@ export function NodeArt({ node, assetUrl }: { readonly node: Resolved; readonly 
           <NodeStrokes node={node} outline={outline} />
         )}
       </div>
-      {node.text === null ? null : <TextLines lines={node.text.lines} />}
+      {override?.(node) ?? (node.text === null ? null : <TextLines lines={node.text.lines} />)}
       {node.children.length === 0 ? null : (
         <div
           style={{

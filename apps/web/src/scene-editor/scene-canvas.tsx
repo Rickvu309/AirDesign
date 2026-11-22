@@ -1,11 +1,15 @@
-import { scene } from "@airdesign/document"
-import { SlidePaint, useSceneSlide } from "@airdesign/render"
+import { orderKeyBetween, scene } from "@airdesign/document"
+import { SlidePaint, TextOverride, useSceneSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ZoomControl } from "./zoom-control"
 import { roomInset, scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
-import { aroundPlaced, geometryOf, type Point, type SlideGeometry } from "./slide-geometry"
+import { aroundPlaced, apply, geometryOf, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { TextBar } from "./text-bar"
+import { TextHost } from "./text-host"
+import { useTextSession } from "./use-text-session"
+import { propOf } from "./node-props"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type Tool } from "./use-canvas-pointer"
 import type { EditorClient } from "./use-scene-deck"
@@ -38,10 +42,14 @@ export function SceneCanvas(props: {
 
   const { size } = scene.deckOf(view)
   const scale = scaleOf(zoom, room, size)
-  const shown = useMemo(
-    () => (preview === null ? view : scene.viewOf(view, [{ once: "preview", author, writes: preview.writes }])),
-    [view, preview],
-  )
+  const text = useTextSession(client, view)
+  const shown = useMemo(() => {
+    const edits = [
+      ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),
+      ...(text.preview.length === 0 ? [] : [{ once: "text-preview", author, writes: text.preview }]),
+    ]
+    return edits.length === 0 ? view : scene.viewOf(view, edits)
+  }, [view, preview, text.preview])
   const painted = useSceneSlide(shown, slide)
   const geometry = useMemo(() => (painted.nodes === null ? emptyGeometry : geometryOf(painted.nodes)), [painted.nodes])
   const current = kept(selection, geometry)
@@ -99,6 +107,43 @@ export function SceneCanvas(props: {
     return () => element.removeEventListener("wheel", wheel)
   })
 
+  const theme = scene.deckOf(shown).theme
+
+  function leaveText() {
+    const id = text.session?.node
+    text.finish()
+    if (id !== undefined) onSelection({ ids: [id], inside: null })
+  }
+
+  function drawText(from: Point, to: Point | null, chain: readonly Placed[] | null) {
+    onTool("move")
+    const holder = chain?.filter((each) => view.nodes.get(each.id)?.type === "frame").at(-1)
+    const parent = holder?.id ?? slide
+    const local = (point: Point) => (holder === undefined ? point : apply(invert(holder.matrix), point))
+    const a = local(from)
+    const b = to === null ? null : local(to)
+    const style = theme.textStyles.body
+    const box =
+      b === null
+        ? { x: Math.round(a.x), y: Math.round(a.y), w: 24, h: Math.round(style.size * style.lineHeight) }
+        : {
+            x: Math.round(Math.min(a.x, b.x)),
+            y: Math.round(Math.min(a.y, b.y)),
+            w: Math.max(8, Math.round(Math.abs(b.x - a.x))),
+            h: Math.max(8, Math.round(Math.abs(b.y - a.y))),
+          }
+    const siblings = view.children.get(parent) ?? []
+    const last = siblings[siblings.length - 1]
+    const lastAt = last === undefined ? null : (propOf(view.nodes.get(last), "parent")?.at ?? null)
+    const created = {
+      id: client.mint(),
+      parent: { id: parent, at: orderKeyBetween(lastAt, null) },
+      box: { ...box, rotation: 0, flipH: false, flipV: false },
+    }
+    text.beginNew(created, b === null ? "widthAndHeight" : "fixed")
+    onSelection({ ids: [created.id], inside: null })
+  }
+
   const pointer = useCanvasPointer({
     stage,
     slideBox,
@@ -110,6 +155,11 @@ export function SceneCanvas(props: {
     scale,
     size,
     panning,
+    tool,
+    texting: text.session !== null,
+    onTextEnd: leaveText,
+    onTextEdit: (id, at) => text.begin(id, { kind: "point", x: at.x, y: at.y }),
+    onTextDraw: drawText,
     setPreview,
     setMarquee,
     setHover,
@@ -140,6 +190,7 @@ export function SceneCanvas(props: {
     onZoom: onZoomKey,
     onSpace: setSpace,
     cancelDrag: pointer.cancelDrag,
+    onEditText: (id) => text.begin(id, { kind: "all" }),
   })
 
   const pad = roomInset
@@ -176,12 +227,20 @@ export function SceneCanvas(props: {
               height: size.h * scale,
             }}
           >
-            <SlidePaint
-              nodes={painted.nodes ?? []}
-              background={painted.background}
-              size={size}
-              width={size.w * scale}
-            />
+            <TextOverride.Provider
+              value={(resolved) =>
+                text.session !== null && resolved.id === text.session.node ? (
+                  <TextHost node={resolved} theme={theme} api={text} onLeave={leaveText} />
+                ) : null
+              }
+            >
+              <SlidePaint
+                nodes={painted.nodes ?? []}
+                background={painted.background}
+                size={size}
+                width={size.w * scale}
+              />
+            </TextOverride.Provider>
             <CanvasOverlay
               view={shown}
               preview={preview}
@@ -189,12 +248,14 @@ export function SceneCanvas(props: {
               selected={current.ids}
               hovered={hover}
               marquee={marquee}
+              editing={text.session !== null}
               scale={scale}
               size={size}
             />
           </div>
         </div>
       </div>
+      <TextBar api={text} />
       <ZoomControl scale={scale} fitted={zoom === "fit"} onZoom={(next) => zoomTo(next)} />
     </>
   )

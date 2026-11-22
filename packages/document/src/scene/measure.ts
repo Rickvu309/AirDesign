@@ -109,6 +109,7 @@ export function measureWith(widths: FontWidths): Measure {
     const numbers: number[] = []
     let y = padding.t
     let widest = 0
+    let paragraphStart = 0
     for (const [index, chars] of paragraphsOf(text).entries()) {
       const para = text.paras[index]
       const level = para?.list === undefined ? 0 : (para.level ?? 0)
@@ -136,7 +137,7 @@ export function measureWith(widths: FontWidths): Measure {
       const before = first ? 0 : (para?.spaceBefore ?? 0)
       y += before
       const lineScale = para?.lineHeight ?? base.lineHeight
-      const paragraphEnd = (chars[0]?.at ?? 0) + chars.reduce((sum, item) => sum + item.char.length, 0)
+      const paragraphEnd = paragraphStart + chars.reduce((sum, item) => sum + item.char.length, 0)
       for (const [spanIndex, span] of spansOf(glyphs, inner - indent, inner - indent).entries()) {
         const runs: ResolvedRun[] = []
         let size = base.size
@@ -177,6 +178,7 @@ export function measureWith(widths: FontWidths): Measure {
         y += h
       }
       y += index === text.paras.length - 1 ? 0 : (para?.spaceAfter ?? 0)
+      paragraphStart = paragraphEnd + 1
     }
     const outer = width ?? widest + padding.l + padding.r
     return {
