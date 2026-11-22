@@ -29,22 +29,22 @@ export type FlippableLayer = RotatedLayer & {
 
 export type FlipAxis = "horizontal" | "vertical"
 
-export type FlippedLayer = {
-  readonly id: ElementId
+export type FlippedLayer<K = ElementId> = {
+  readonly id: K
   readonly box?: Box
   readonly rotation?: number
   readonly flipH?: boolean
   readonly flipV?: boolean
 }
 
-export type SelectionResize = {
+export type SelectionResize<K = ElementId> = {
   readonly frame: Box
-  readonly boxes: ReadonlyMap<ElementId, Box>
+  readonly boxes: ReadonlyMap<K, Box>
 }
 
-export type SelectionRotation = {
+export type SelectionRotation<K = ElementId> = {
   readonly displayAngle: number
-  readonly layers: ReadonlyMap<ElementId, RotatedLayer>
+  readonly layers: ReadonlyMap<K, RotatedLayer>
 }
 
 export const edges: readonly Edge[] = ["top", "right", "bottom", "left"]
@@ -177,7 +177,7 @@ export function visualBounds(box: Box, rotation: number): Box {
   return { x: box.x + (box.cx - across) / 2, y: box.y + (box.cy - down) / 2, cx: across, cy: down }
 }
 
-export function selectionFrame(layers: ReadonlyMap<ElementId, RotatedLayer>): Box | null {
+export function selectionFrame<K>(layers: ReadonlyMap<K, RotatedLayer>): Box | null {
   if (layers.size === 0) return null
   const bounds = [...layers.values()].map((layer) => visualBounds(layer.box, layer.rotation))
   const left = Math.min(...bounds.map((each) => each.x))
@@ -187,19 +187,19 @@ export function selectionFrame(layers: ReadonlyMap<ElementId, RotatedLayer>): Bo
   return { x: left, y: top, cx: right - left, cy: bottom - top }
 }
 
-export function resizeSelection(
-  starts: ReadonlyMap<ElementId, RotatedLayer>,
+export function resizeSelection<K>(
+  starts: ReadonlyMap<K, RotatedLayer>,
   grip: ResizeGrip,
   dx: number,
   dy: number,
   modifiers: ResizeModifiers,
-): SelectionResize {
+): SelectionResize<K> {
   const startFrame = selectionFrame(starts)
   if (startFrame === null) return { frame: { x: 0, y: 0, cx: 0, cy: 0 }, boxes: new Map() }
   const nextFrame = resizeBox(startFrame, grip, dx, dy, modifiers, 0)
   const scaleX = startFrame.cx > 0 ? nextFrame.cx / startFrame.cx : 1
   const scaleY = startFrame.cy > 0 ? nextFrame.cy / startFrame.cy : 1
-  const boxes = new Map<ElementId, Box>()
+  const boxes = new Map<K, Box>()
   for (const [id, { box, rotation }] of starts) {
     const angle = normalizeDegrees(rotation)
     if (angle === 0) {
@@ -236,13 +236,13 @@ export function rotatedAngle(center: Point, from: Point, at: Point, startRotatio
   return roundRotation(startRotation + delta, snapAngle)
 }
 
-export function rotateSelection(
-  starts: ReadonlyMap<ElementId, RotatedLayer>,
+export function rotateSelection<K>(
+  starts: ReadonlyMap<K, RotatedLayer>,
   centerScreen: Point,
   from: Point,
   at: Point,
   snapAngle: boolean,
-): SelectionRotation {
+): SelectionRotation<K> {
   if (starts.size === 1) {
     const entry = [...starts][0]
     if (entry === undefined) return { displayAngle: 0, layers: new Map() }
@@ -255,7 +255,7 @@ export function rotateSelection(
   const delta = rotatedAngle(centerScreen, from, at, 0, snapAngle)
   const centerX = frame.x + frame.cx / 2
   const centerY = frame.y + frame.cy / 2
-  const layers = new Map<ElementId, RotatedLayer>()
+  const layers = new Map<K, RotatedLayer>()
   for (const [id, { box, rotation }] of starts) {
     const rel = { x: box.x + box.cx / 2 - centerX, y: box.y + box.cy / 2 - centerY }
     const orbited = rotatePoint(rel, delta)
@@ -276,12 +276,12 @@ export function constrainMove(dx: number, dy: number, lockAxis: boolean): { read
   return Math.abs(dx) >= Math.abs(dy) ? { dx, dy: 0 } : { dx: 0, dy }
 }
 
-export function flipSelection(layers: ReadonlyMap<ElementId, FlippableLayer>, axis: FlipAxis): readonly FlippedLayer[] {
+export function flipSelection<K>(layers: ReadonlyMap<K, FlippableLayer>, axis: FlipAxis): readonly FlippedLayer<K>[] {
   const frame = selectionFrame(layers)
   if (frame === null) return []
   const centerX = frame.x + frame.cx / 2
   const centerY = frame.y + frame.cy / 2
-  return [...layers].map(([id, layer]): FlippedLayer => {
+  return [...layers].map(([id, layer]): FlippedLayer<K> => {
     const box =
       axis === "horizontal"
         ? { ...layer.box, x: Math.round(2 * centerX - layer.box.x - layer.box.cx) }

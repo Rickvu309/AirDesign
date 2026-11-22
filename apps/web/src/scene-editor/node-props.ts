@@ -38,3 +38,7 @@ export function flows(view: scene.Scene, id: scene.NodeId): boolean {
   const layout = propOf(holder, "layout")
   return layout !== undefined && layout.mode !== "none" && propOf(view.nodes.get(id), "absolute") !== true
 }
+
+export function geometryKind(view: scene.Scene, id: scene.NodeId): scene.Geometry["kind"] | undefined {
+  return propOf(view.nodes.get(id), "geometry")?.kind
+}

@@ -153,7 +153,7 @@ export function SceneCanvas(props: {
         aria-label={sceneEditorCopy.canvas}
         role="application"
         tabIndex={0}
-        className="relative min-h-0 flex-1 touch-none overflow-auto bg-canvas outline-none"
+        className="relative min-h-0 flex-1 touch-none overflow-auto bg-canvas outline-none select-none"
         style={{ cursor: panning ? "grab" : "default" }}
         onPointerDown={pointer.down}
         onPointerMove={pointer.move}
@@ -182,11 +182,12 @@ export function SceneCanvas(props: {
               width={size.w * scale}
             />
             <CanvasOverlay
+              view={shown}
+              preview={preview}
               geometry={geometry}
               selected={current.ids}
               hovered={hover}
               marquee={marquee}
-              guides={preview?.guides ?? []}
               scale={scale}
               size={size}
             />
