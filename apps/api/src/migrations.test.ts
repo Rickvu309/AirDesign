@@ -157,12 +157,7 @@ describe("database migrations", () => {
        where schemaname in ('session', 'deck', 'setup') order by name`,
     )
     const named = [
-      "deck.media",
-      "deck.once",
-      "deck.original_delete",
-      "deck.saved",
-      "deck.scene",
-      "deck.scene_edit",
+      ...["media", "once", "original_delete", "saved", "scene", "scene_edit"].map((table) => `deck.${table}`),
       ...sessionRights.map(([table]) => `session.${table}`),
       "setup.migration",
     ]
@@ -175,12 +170,16 @@ describe("database migrations", () => {
        group by grantee, table_schema, table_name order by grantee, name`,
     )
     expect(grants.rows).toEqual([
-      { grantee: "deck", name: "deck.media", rights: "DELETE INSERT SELECT" },
-      { grantee: "deck", name: "deck.once", rights: full },
-      { grantee: "deck", name: "deck.original_delete", rights: full },
-      { grantee: "deck", name: "deck.saved", rights: noDelete },
-      { grantee: "deck", name: "deck.scene", rights: noDelete },
-      { grantee: "deck", name: "deck.scene_edit", rights: "INSERT SELECT" },
+      ...(
+        [
+          ["media", "DELETE INSERT SELECT"],
+          ["once", full],
+          ["original_delete", full],
+          ["saved", noDelete],
+          ["scene", noDelete],
+          ["scene_edit", "INSERT SELECT"],
+        ] as const
+      ).map(([table, rights]) => ({ grantee: "deck", name: `deck.${table}`, rights })),
       { grantee: "listen", name: "deck.saved", rights: "SELECT" },
       ...sessionRights.map(([table, rights]) => ({ grantee: "session", name: `session.${table}`, rights })),
     ])

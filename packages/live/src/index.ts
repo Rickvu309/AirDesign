@@ -21,17 +21,6 @@ export { dropChats, readChats, shelveChats, takeShelvedChats, writeChat } from "
 export { adoptDeck, dropAccount, dropDeck } from "./device-sweep.js"
 export { accountKey, databaseName, deleteDatabase, scoped, storeName, storeNewer, watchNewer } from "./device.js"
 export { rowKey } from "./store.js"
-export {
-  createSceneDeck,
-  openSceneDeck,
-  type Notice,
-  type Opened as OpenedSceneDeck,
-  type Pushed,
-  type SceneDeck,
-  type SceneOptions,
-  type Synced,
-  type Turned,
-} from "./scene-deck.js"
+export { createSceneDeck, openSceneDeck, type SceneDeck } from "./scene-deck.js"
 export { httpSceneRemote, memorySceneRemote, type SceneRemote } from "./scene-remote.js"
-export { memoryStorage as memorySceneStorage, type SceneStorage } from "./scene-storage.js"
 export { noteBoxes } from "./unsaved.js"

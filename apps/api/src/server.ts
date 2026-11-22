@@ -4,7 +4,6 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { bytesOf, limits } from "@airdesign/document"
 
 import {
-  deckRoutes,
   signInRoutes,
   readApprovalRequest,
   oauthRoutes,
@@ -37,7 +36,7 @@ import { DeckFindings } from "./deck-findings.js"
 import { DeckPictures } from "./deck-pictures.js"
 import { DeckFollowers } from "./deck-followers.js"
 import { findingsRoute } from "./findings-route.js"
-import { heldRevision } from "./deck-watch.js"
+import { deckWatchRoute } from "./deck-watch.js"
 import { DeckListen } from "./listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./deck-answer.js"
 import type { Sender } from "./mail.js"
@@ -323,27 +322,6 @@ function deckRoute<Read extends Reader>(
   }
 }
 
-async function watchRoute(visit: Visit): Promise<void> {
-  const { options, res } = visit
-  const email = await signedIn(visit)
-  if (email === undefined) return
-  const parsed = await readJson(visit, deckRoutes.watch.read)
-  if (parsed === undefined) return
-  if (!parsed.ok) {
-    sendJson(res, 200, parsed)
-    return
-  }
-  const signal = gone(res)
-  const leave = options.followers.follow(parsed.deck)
-  const revision = await heldRevision(options, parsed.deck, parsed.cursor, email, signal).finally(leave)
-  if (revision === undefined || signal.aborted || res.writableEnded || res.destroyed) return
-  if (revision === "owner" || revision === "deleted") {
-    sendJson(res, 200, { ok: false, refusal: revision })
-    return
-  }
-  sendJson(res, 200, { ok: true, deck: parsed.deck, revision })
-}
-
 async function registerRoute(visit: Visit): Promise<void> {
   const parsed = await readJson(visit, readRegistration)
   if (parsed === undefined) return
@@ -476,6 +454,8 @@ export const deckAnswers: DeckAnswers = {
   ...undoAnswers,
 }
 
+const deckHttp = { signedIn, answerSize, parsedJson, sendJson, gone }
+
 export const routes: readonly Route[] = [
   ...fontRouteList,
   { method: "GET", path: mcpRoutes.resourceMetadata.path, serve: resourceMetadataRoute },
@@ -496,9 +476,9 @@ export const routes: readonly Route[] = [
   { method: "POST", path: signInRoutes.code.path, serve: codeRoute },
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
   ...answeredDeckRoutes(deckAnswers, deckRoute),
-  { method: "POST", path: deckRoutes.watch.path, serve: watchRoute },
+  deckWatchRoute(deckHttp),
   findingsRoute({ signedIn, answerSize, parsedJson, sendJson }),
-  ...sceneRouteList({ signedIn, answerSize, parsedJson, sendJson, gone }),
+  ...sceneRouteList(deckHttp),
   ...accountRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
 ]
 
