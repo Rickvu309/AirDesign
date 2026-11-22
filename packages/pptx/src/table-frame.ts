@@ -1,4 +1,5 @@
 import type { ShapeBox } from "./shape-write.js"
+import type { TableCellLook } from "./table-style-list.js"
 
 export type TableShape = ShapeBox & { readonly rows: number; readonly columns: number }
 
@@ -10,12 +11,13 @@ function shares(total: number, count: number): readonly number[] {
   return Array.from({ length: count }, (_, at) => each + (at < total % count ? 1 : 0))
 }
 
-export function tableFrame(id: number, shape: TableShape, style: string, textSize: number | null = null): string {
+export function tableFrame(id: number, shape: TableShape, style: string, look: TableCellLook | null = null): string {
   const widths = shares(shape.cx, shape.columns)
   const heights = shares(shape.cy, shape.rows)
   const properties = `<a:tblPr firstRow="1" bandRow="1"><a:tableStyleId>${style}</a:tableStyleId></a:tblPr>`
-  const size = textSize === null ? "" : ` sz="${String(textSize)}"`
-  const cell = `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"${size}/></a:p></a:txBody><a:tcPr/></a:tc>`
+  const size = look === null ? "" : ` sz="${String(look.size)}"`
+  const anchor = look?.middle === true ? ' anchor="ctr"' : ""
+  const cell = `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"${size}/></a:p></a:txBody><a:tcPr${anchor}/></a:tc>`
   const grid = widths.map((width) => `<a:gridCol w="${width}"/>`).join("")
   const rows = heights.map((height) => `<a:tr h="${height}">${cell.repeat(shape.columns)}</a:tr>`).join("")
   return `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="Table ${id}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="${shape.x}" y="${shape.y}"/><a:ext cx="${shape.cx}" cy="${shape.cy}"/></p:xfrm><a:graphic><a:graphicData uri="${tableUri}"><a:tbl>${properties}<a:tblGrid>${grid}</a:tblGrid>${rows}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`

@@ -177,7 +177,13 @@ function CellText(props: {
         aria-multiline
         aria-label={`Row ${spot.row + 1}, column ${spot.column + 1}`}
         data-table-text={spotKey(spot)}
-        style={{ flex: 1, outline: "none", minHeight: "1lh", whiteSpace: "pre-wrap", ...(active ? style : {}) }}
+        style={{
+          flex: text === null ? 1 : "0 1 auto",
+          outline: "none",
+          minHeight: "1lh",
+          whiteSpace: "pre-wrap",
+          ...(active ? style : {}),
+        }}
         onFocus={props.onFocus}
         onBlur={(event) => props.onBlur(event.currentTarget)}
         onInput={(event) => {

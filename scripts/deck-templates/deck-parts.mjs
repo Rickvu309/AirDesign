@@ -64,7 +64,7 @@ function tableStyles(spec) {
   const { id, rule, headRule } = spec.table
   const whole = `<a:wholeTbl>${text("minor", false)}<a:tcStyle><a:tcBdr>${["left", "right", "top"].map(none).join("")}${line("bottom", 9525, rule)}${line("insideH", 9525, rule)}${none("insideV")}</a:tcBdr><a:fill><a:noFill/></a:fill></a:tcStyle></a:wholeTbl>`
   const first = `<a:firstRow>${text("major", false)}<a:tcStyle><a:tcBdr>${line("bottom", 12700, headRule)}</a:tcBdr></a:tcStyle></a:firstRow>`
-  return `<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="${id}"><a:tblStyle styleId="${id}" styleName="${escaped(spec.name)}">${whole}${first}<a:extLst><a:ext uri="${tableTextUri}"><ad:cellText xmlns:ad="${tableTextNamespace}" sz="${String(Math.round(spec.scale.body2.size * 100))}"/></a:ext></a:extLst></a:tblStyle></a:tblStyleLst>`
+  return `<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="${id}"><a:tblStyle styleId="${id}" styleName="${escaped(spec.name)}">${whole}${first}<a:extLst><a:ext uri="${tableTextUri}"><ad:cellText xmlns:ad="${tableTextNamespace}" sz="${String(Math.round(spec.scale.body2.size * 100))}" anchor="ctr"/></a:ext></a:extLst></a:tblStyle></a:tblStyleLst>`
 }
 
 function placed(shapes, start = 2) {
