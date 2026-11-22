@@ -1,5 +1,5 @@
 import type { Geometry } from "@airdesign/document"
-import { useState, type ReactNode } from "react"
+import { useState, type ReactNode, type RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { shapeCopy } from "@/copy/shape-copy"
@@ -84,7 +84,13 @@ export function ShapeTrayItems({ onShape, onMore }: { onShape: (geometry: Geomet
   )
 }
 
-export function ShapeTool({ onShape }: { onShape: (geometry: Geometry) => void }) {
+export function ShapeTool({
+  onShape,
+  anchor,
+}: {
+  onShape: (geometry: Geometry) => void
+  anchor?: RefObject<HTMLElement | null>
+}) {
   const [open, setOpen] = useState(false)
   const [more, setMore] = useState(false)
   const change = (next: boolean) => {
@@ -111,6 +117,7 @@ export function ShapeTool({ onShape }: { onShape: (geometry: Geometry) => void }
         <EditorIcon name="shape" size={18} />
       </PopoverTrigger>
       <PopoverContent
+        anchor={anchor}
         side="top"
         sideOffset={12}
         className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0"

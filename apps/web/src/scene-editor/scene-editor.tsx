@@ -1,9 +1,10 @@
 import { scene } from "@airdesign/document"
 import { useState } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
+import { cn } from "@/lib/class-names"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
-import { CanvasTools } from "./canvas-tools"
 import { EditorTopBar } from "./editor-top-bar"
+import type { RightPanel } from "./editor-toolbar"
 import { slidesOf } from "./node-props"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { AgentPanel } from "./agent-panel"
@@ -26,6 +27,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [tool, setTool] = useState<Tool>("move")
+  const [panel, setPanel] = useState<RightPanel>("agent")
   const choose = (next: scene.NodeId) => {
     if (next !== slide) setSelection(noSelection)
     showSlide(next)
@@ -48,15 +50,18 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
                 onSelection={setSelection}
                 tool={tool}
                 onTool={setTool}
+                panel={panel}
+                onPanel={setPanel}
               />
             )}
-            <CanvasTools tool={tool} onTool={setTool} />
           </div>
         </div>
       </div>
-      <ResizablePanel panel="agent">
-        <AgentPanel deck={client} />
-      </ResizablePanel>
+      <div className={cn("h-full", panel === "agent" ? null : "hidden")}>
+        <ResizablePanel panel="agent">
+          <AgentPanel deck={client} />
+        </ResizablePanel>
+      </div>
     </div>
   )
 }

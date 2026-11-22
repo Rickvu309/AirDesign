@@ -7,13 +7,15 @@ import { ThinNoticeView } from "@/thin-notice"
 import { useScenePictures } from "./use-pictures"
 import { roomInset, scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
-import { aroundPlaced, apply, geometryOf, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
 import { TextBar } from "./text-bar"
 import { TextHost } from "./text-host"
 import { useTextSession } from "./use-text-session"
 import { propOf } from "./node-props"
 import { useCanvasKeys } from "./use-canvas-keys"
-import { useCanvasPointer, type Tool } from "./use-canvas-pointer"
+import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
+import { chartWrites, drawWrites, iconWrites } from "./create-writes"
+import { EditorToolbar, type RightPanel } from "./editor-toolbar"
 import type { EditorClient } from "./use-scene-deck"
 import type { ZoomKey } from "@/editor/canvas-zoom"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
@@ -30,6 +32,8 @@ export function SceneCanvas(props: {
   readonly onSelection: (next: Selection) => void
   readonly tool: Tool
   readonly onTool: (tool: Tool) => void
+  readonly panel: RightPanel
+  readonly onPanel: (next: RightPanel) => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -40,6 +44,7 @@ export function SceneCanvas(props: {
   const [preview, setPreview] = useState<Preview | null>(null)
   const [marquee, setMarquee] = useState<Rect | null>(null)
   const [hover, setHover] = useState<scene.NodeId | null>(null)
+  const [actionsOpen, setActionsOpen] = useState(false)
   const anchor = useRef<{ readonly point: Point; readonly at: Point } | null>(null)
 
   const { size } = scene.deckOf(view)
@@ -117,33 +122,84 @@ export function SceneCanvas(props: {
     if (id !== undefined) onSelection({ ids: [id], inside: null })
   }
 
-  function drawText(from: Point, to: Point | null, chain: readonly Placed[] | null) {
-    onTool("move")
-    const holder = chain?.filter((each) => view.nodes.get(each.id)?.type === "frame").at(-1)
-    const parent = holder?.id ?? slide
-    const local = (point: Point) => (holder === undefined ? point : apply(invert(holder.matrix), point))
-    const a = local(from)
-    const b = to === null ? null : local(to)
-    const style = theme.textStyles.body
-    const box =
-      b === null
-        ? { x: Math.round(a.x), y: Math.round(a.y), w: 24, h: Math.round(style.size * style.lineHeight) }
-        : {
-            x: Math.round(Math.min(a.x, b.x)),
-            y: Math.round(Math.min(a.y, b.y)),
-            w: Math.max(8, Math.round(Math.abs(b.x - a.x))),
-            h: Math.max(8, Math.round(Math.abs(b.y - a.y))),
-          }
+  const drawn = useRef<scene.NodeId | null>(null)
+
+  function slotIn(parent: scene.NodeId) {
     const siblings = view.children.get(parent) ?? []
     const last = siblings[siblings.length - 1]
     const lastAt = last === undefined ? null : (propOf(view.nodes.get(last), "parent")?.at ?? null)
-    const created = {
-      id: client.mint(),
-      parent: { id: parent, at: orderKeyBetween(lastAt, null) },
-      box: { ...box, rotation: 0, flipH: false, flipV: false },
+    return { id: parent, at: orderKeyBetween(lastAt, null) }
+  }
+
+  function draw(request: DrawRequest): readonly scene.Write[] | null {
+    const holder = request.chain?.filter((each) => view.nodes.get(each.id)?.type === "frame").at(-1)
+    const parent = holder?.id ?? slide
+    const local = (point: Point) => (holder === undefined ? point : apply(invert(holder.matrix), point))
+    const from = local(request.from)
+    const to = request.to === null ? null : local(request.to)
+    if (tool === "text") {
+      if (!request.commit) return null
+      onTool("move")
+      const style = theme.textStyles.body
+      const box =
+        to === null
+          ? { x: Math.round(from.x), y: Math.round(from.y), w: 24, h: Math.round(style.size * style.lineHeight) }
+          : {
+              x: Math.round(Math.min(from.x, to.x)),
+              y: Math.round(Math.min(from.y, to.y)),
+              w: Math.max(8, Math.round(Math.abs(to.x - from.x))),
+              h: Math.max(8, Math.round(Math.abs(to.y - from.y))),
+            }
+      const created = {
+        id: client.mint(),
+        parent: slotIn(parent),
+        box: { ...box, rotation: 0, flipH: false, flipV: false },
+      }
+      text.beginNew(created, to === null ? "widthAndHeight" : "fixed")
+      onSelection({ ids: [created.id], inside: null })
+      return null
     }
-    text.beginNew(created, b === null ? "widthAndHeight" : "fixed")
-    onSelection({ ids: [created.id], inside: null })
+    if (tool === "move" || tool === "hand") return null
+    const id = (drawn.current ??= client.mint())
+    const writes = drawWrites({
+      id,
+      parent: slotIn(parent),
+      kind: tool,
+      from,
+      to,
+      square: request.shift,
+      center: request.alt,
+    })
+    if (!request.commit) return writes
+    drawn.current = null
+    onTool("move")
+    if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
+    return null
+  }
+
+  function insertTarget() {
+    const [only] = current.ids
+    const placed = current.ids.length === 1 && only !== undefined ? geometry.byId.get(only) : undefined
+    if (placed !== undefined && view.nodes.get(placed.id)?.type === "frame")
+      return { parent: placed.id, inside: { w: placed.node.box.w, h: placed.node.box.h } }
+    return { parent: slide, inside: size }
+  }
+
+  function inserted(id: scene.NodeId, writes: readonly scene.Write[]) {
+    if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
+  }
+
+  const inserts = {
+    icon(name: string) {
+      const { parent, inside } = insertTarget()
+      const id = client.mint()
+      inserted(id, iconWrites(id, slotIn(parent), name, inside))
+    },
+    chart(kind: scene.Chart["kind"]) {
+      const { parent, inside } = insertTarget()
+      const id = client.mint()
+      inserted(id, chartWrites(id, slotIn(parent), inside, kind))
+    },
   }
 
   const pictures = useScenePictures({
@@ -171,7 +227,7 @@ export function SceneCanvas(props: {
     texting: text.session !== null,
     onTextEnd: leaveText,
     onTextEdit: (id, at) => text.begin(id, { kind: "point", x: at.x, y: at.y }),
-    onTextDraw: drawText,
+    onDraw: draw,
     setPreview,
     setMarquee,
     setHover,
@@ -203,6 +259,7 @@ export function SceneCanvas(props: {
     onSpace: setSpace,
     cancelDrag: pointer.cancelDrag,
     onEditText: (id) => text.begin(id, { kind: "all" }),
+    onActions: () => setActionsOpen((open) => !open),
   })
 
   const pad = roomInset
@@ -272,6 +329,15 @@ export function SceneCanvas(props: {
       </div>
       <ThinNoticeView notice={pictures.notice} onTryAgain={() => undefined} />
       <TextBar api={text} />
+      <EditorToolbar
+        tool={tool}
+        onTool={onTool}
+        actionsOpen={actionsOpen}
+        onActionsOpen={setActionsOpen}
+        run={{ chart: inserts.chart, icon: inserts.icon }}
+        panel={props.panel}
+        onPanel={props.onPanel}
+      />
       <ZoomControl scale={scale} fitted={zoom === "fit"} onZoom={(next) => zoomTo(next)} />
     </>
   )

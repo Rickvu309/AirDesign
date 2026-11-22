@@ -88,6 +88,8 @@ export const shortcutCopy = {
     "tool-move": "Move tool",
     "tool-hand": "Hand tool",
     "tool-text": "Add a text box",
+    actions: "Actions",
+    "tool-frame": "Add a frame",
     "tool-rectangle": "Add a rectangle",
     "tool-ellipse": "Add an ellipse",
     "tool-line": "Add a line",

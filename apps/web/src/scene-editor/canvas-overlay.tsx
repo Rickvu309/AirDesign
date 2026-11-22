@@ -6,7 +6,7 @@ import { framed } from "./selection-frame"
 import { aroundPlaced, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 export type Preview = {
-  readonly kind: "move" | "transform"
+  readonly kind: "move" | "transform" | "draw"
   readonly writes: readonly scene.Write[]
   readonly guides: readonly Guide[]
   readonly label: string | null
@@ -66,7 +66,8 @@ export function CanvasOverlay(props: {
 }) {
   const { view, preview, geometry, selected, hovered, marquee, scale, size } = props
   const guides = preview?.guides ?? []
-  const frame = preview?.kind === "move" || props.editing ? null : framed(geometry, selected, view)
+  const frame =
+    preview?.kind === "move" || preview?.kind === "draw" || props.editing ? null : framed(geometry, selected, view)
   const chosen = selected.flatMap((id) => geometry.byId.get(id) ?? [])
   const all = aroundPlaced(chosen)
   const hover = hovered === null || selected.includes(hovered) ? undefined : geometry.byId.get(hovered)
