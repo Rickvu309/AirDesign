@@ -104,4 +104,6 @@ it("says what the tab knows about a revision in one short word when it has no li
   expect(findingsAt(report({ findings: [], broken: true }), 4, all)).toBe("broken 4")
   expect(findingsAt(found, 4, all)).toMatchObject([{ code: "small-text", node: "258.14" }])
   expect(findingsAt(found, 4, () => false)).toEqual([])
+  expect(findingsAt(found, 3, all)).toMatchObject([{ code: "small-text", node: "258.14" }])
+  expect(findingsAt(report({ findings: [], broken: true }), 3, all)).toBe("broken 4")
 })

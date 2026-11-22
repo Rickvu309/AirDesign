@@ -79,6 +79,6 @@ export function findingsAt(
   shown: (node: ElementId) => boolean,
 ): AgentFindings {
   if (report === undefined) return "missing"
-  if (report.revision !== revision) return `pending ${revision}`
-  return report.broken === true ? `broken ${revision}` : agentFindings(report.findings, shown)
+  if (report.revision < revision) return `pending ${revision}`
+  return report.broken === true ? `broken ${report.revision}` : agentFindings(report.findings, shown)
 }
