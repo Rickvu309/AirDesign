@@ -65,6 +65,8 @@ export function areaFor(draft: Draft, parent: Node, box: Area | undefined): Area
 const slideMarginShare = 1 / 12
 const slideEdgeShare = 1 / 13.5
 
+export const bottomLimitOf = (height: Px): Px => height - Math.round(height * slideEdgeShare)
+
 export function contentAreaOf(doom: Doom, parent: NodeId): Area | undefined {
   const node = doom.nodes.get(parent)
   if (node === undefined) return undefined

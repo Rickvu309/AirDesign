@@ -154,6 +154,16 @@ describe("the board deck on the slide type scale", () => {
     }
   })
 
+  it("keeps the decision card under the KPIs at the slide type scale, inside the slide", () => {
+    const decision = childrenOf(doom, slides[1]!).find((node) => get(node, "name") === "Decision")!
+    const card = childrenOf(doom, decision.id)[0]!
+    const [heading, points] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
+    expect(heading).toBe(64)
+    expect(points).toBe(48)
+    const box = get(decision, "box")!
+    expect(box.y + box.h).toBeLessThanOrEqual(1000)
+  })
+
   it("sets a chart's words, value labels included, at 24 px or more", () => {
     const chart = childrenOf(doom, slides[2]!).find((node) => get(node, "chart") !== undefined)!
     const words = deriveChart(chart.id, get(chart, "chart")!, get(chart, "box")!, defaultTheme, measure).flatMap(

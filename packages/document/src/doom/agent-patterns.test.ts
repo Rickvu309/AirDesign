@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
-import type { NodeId, Doom } from "./index.js"
-import { ids } from "./sample-deck.js"
+import { compileAgentEdit } from "./agent-edit.js"
+import { agentDeck, apply, build, lastChild, minter, runName } from "./agent-fixtures.js"
+import { defaultTheme } from "./default-theme-art.js"
+import { type NodeId, type Doom, applyEdit, isRefusal, rev } from "./index.js"
+import { agent, ids } from "./sample-deck.js"
 import { childrenOf, descendantsOf, get } from "./doom-walk.js"
 import { textStyleNames } from "./text.js"
 
@@ -449,5 +451,56 @@ describe("a grid of words", () => {
       refused: "shape",
       field: "rows",
     })
+  })
+})
+
+describe("a card under a KPI row on the slide type scale", () => {
+  const mint = minter("ls")
+  const scaled = () => apply(agentDeck(), [{ node: ids.deck, prop: "theme", value: defaultTheme }])
+  const send = (doom: Doom, change: AgentChange): Doom => {
+    const result = compileAgentEdit(doom, [change], { author: agent(runName), once: `lend-${doom.rev}`, mint })
+    if ("refused" in result) throw new Error(JSON.stringify(result))
+    const landed = applyEdit(doom, { ...result.edit, rev: rev(doom.rev + 1) })
+    if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
+    return landed
+  }
+  const decision = add({
+    kind: "cards",
+    items: [{ title: "Decision requested", points: ["Approve the $2M expansion budget", "Vote by Friday"] }],
+  })
+  const sizesOf = (doom: Doom, root: NodeId) => styled(doom, root).map((style) => defaultTheme.textStyles[style].size)
+  const rowIn = (doom: Doom) => childrenOf(doom, slide).find((node) => get(node, "name") === "KPI")!
+
+  it("keeps its heading at 64 and its bullets at 48, taking the height from the row above", () => {
+    const withKpi = send(scaled(), add({ kind: "kpi", items: kpiItems }))
+    const before = get(rowIn(withKpi), "box")!
+    const doom = send(withKpi, decision)
+    const card = made(doom)
+    expect(sizesOf(doom, card.id)).toEqual([64, 48])
+    const after = get(rowIn(doom), "box")!
+    expect(after.h).toBeLessThan(before.h)
+    const box = get(card, "box")!
+    expect(box.y).toBeGreaterThanOrEqual(after.y + after.h)
+    expect(box.y + box.h).toBeLessThanOrEqual(1000)
+  })
+
+  it("leaves the KPI row as tall as its own words need", () => {
+    const doom = send(send(scaled(), add({ kind: "kpi", items: kpiItems })), decision)
+    const need = Math.max(
+      ...childrenOf(doom, rowIn(doom).id).map((card) => {
+        const layout = get(card, "layout")!
+        const pad = layout.mode === "column" ? layout.padding.t + layout.padding.b : 0
+        const lines = childrenOf(doom, card.id).map((node) => defaultTheme.textStyles[get(node, "text")!.style])
+        return pad + lines.reduce((sum, style) => sum + style.size * style.lineHeight, 0)
+      }),
+    )
+    expect(get(rowIn(doom), "box")!.h).toBeGreaterThanOrEqual(need)
+  })
+
+  it("leaves the row above alone when the card already fits at the start scale", () => {
+    const box = { x: 80, y: 199, w: 1760, h: 400 }
+    const withKpi = send(scaled(), add({ kind: "kpi", items: kpiItems, box }))
+    const doom = send(withKpi, decision)
+    expect(get(rowIn(doom), "box")).toEqual(get(rowIn(withKpi), "box"))
   })
 })
