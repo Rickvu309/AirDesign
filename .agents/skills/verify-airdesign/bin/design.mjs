@@ -6,6 +6,7 @@ import { pageMatches, readAllow, staleEntries } from "../look/allow.mjs"
 import { captureLook, themeValues } from "../look/capture.mjs"
 import { captureCompare } from "../look/compare.mjs"
 import { contextPool } from "../look/context-pool.mjs"
+import { pageReady } from "../look/page-ready.mjs"
 import { writeSheet } from "../look/sheet.mjs"
 import { find, matching, openDeck, reach, states, sweep } from "../look/states.mjs"
 
@@ -118,6 +119,7 @@ export async function designCommand(command, args, runtime) {
           ])
         } else if (!where.startsWith("/screens/")) await kit.signIn()
         await kit.page.goto(where)
+        await pageReady(kit.page, where)
         if (deck !== undefined) await openDeck(kit.page, deck, flags.slide)
       }
       const scope = named?.name ?? where

@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, clickSlide, landNodes, openSceneEditor, savedNode, selectedIds, spot } from "./scene-deck"
+import { accent, clickSlide, landNodes, openSceneEditor, savedNode, selectedIds, slidePoint, spot } from "./scene-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -131,4 +131,58 @@ test("resizing a group scales the layers inside it and leaves it hugging them", 
   expect(Math.abs((await widthOf("t:3")) - 100 * grew)).toBeLessThanOrEqual(2)
   expect(Math.abs(((await savedNode(stack, opened, "t:3"))?.box as Saved).x - 300 * grew)).toBeLessThanOrEqual(2)
   expect((await savedNode(stack, opened, "t:1"))?.sizing).toEqual({ w: "hug", h: "hug" })
+})
+
+test("Alt-drag leaves the layer where it is and drags a copy above it, and one undo takes the copy away", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("duplicate-drag", "undo")
+  const opened = await openSceneEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
+  ])
+  const layers = page.locator("[data-slide-box] [data-node]")
+  await expect(layers).toHaveCount(2)
+  const from = await slidePoint(page, 350, 675)
+  const to = await slidePoint(page, 450, 800)
+  await page.mouse.move(from.x, from.y)
+  await page.keyboard.down(shortcutCopy.chord.other.alt)
+  await page.mouse.down()
+  await page.mouse.move(to.x, to.y, { steps: 8 })
+  await expect(layers).toHaveCount(3)
+  await page.mouse.up()
+  await page.keyboard.up(shortcutCopy.chord.other.alt)
+
+  const [copy] = await selectedIds(page)
+  expect(copy).toBeTruthy()
+  expect(copy).not.toBe("t:1")
+  await expect.poll(async () => (await savedNode(stack, opened, copy!))?.box).toMatchObject({ x: 300, y: 725 })
+  expect((await savedNode(stack, opened, "t:1"))?.box).toMatchObject(spot(200, 600, 300, 150))
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(layers).toHaveCount(2)
+  expect((await savedNode(stack, opened, "t:1"))?.box).toMatchObject(spot(200, 600, 300, 150))
+})
+
+test("Escape during an Alt-drag drops the copy and keeps the original selected", async ({ page, context, stack }) => {
+  covers("duplicate-drag")
+  const opened = await openSceneEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
+  ])
+  const layers = page.locator("[data-slide-box] [data-node]")
+  const from = await slidePoint(page, 350, 675)
+  const to = await slidePoint(page, 450, 800)
+  await page.mouse.move(from.x, from.y)
+  await page.keyboard.down(shortcutCopy.chord.other.alt)
+  await page.mouse.down()
+  await page.mouse.move(to.x, to.y, { steps: 8 })
+  await expect(layers).toHaveCount(3)
+  await page.keyboard.up(shortcutCopy.chord.other.alt)
+  await page.keyboard.press("Escape")
+  await page.mouse.up()
+  await expect(layers).toHaveCount(2)
+  expect(await selectedIds(page)).toEqual(["t:1"])
 })

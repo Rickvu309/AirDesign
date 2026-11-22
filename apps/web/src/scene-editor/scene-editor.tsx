@@ -6,6 +6,7 @@ import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { slideRoom } from "@/editor/canvas-zoom"
 import { ExportButton, PanelHead } from "@/editor/editor-chrome"
 import { ResizablePanel } from "@/editor/resizable-panel"
+import { useKeptPanel } from "@/editor/kept-panel"
 import { SlideSidebar } from "@/editor/slide-sidebar"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -18,7 +19,6 @@ import { percentOf, scaleOf, type Zoom } from "./canvas-view"
 import { renameWrites } from "./deck-writes"
 import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
-import type { RightPanel } from "./editor-toolbar"
 import { propOf, slidesOf } from "./node-props"
 import { SceneCanvas, type CanvasCommands } from "./scene-canvas"
 import { SceneNotes } from "./scene-notes"
@@ -42,7 +42,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [tool, setTool] = useState<Tool>("move")
-  const [panel, setPanel] = useState<RightPanel>("agent")
+  const [panel, setPanel] = useKeptPanel(id)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
   const commands = useRef<CanvasCommands>({ zoomTo: setZoom, zoomSelection: null })
@@ -131,7 +131,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
           <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
         </div>
       </div>
-      <ResizablePanel panel={panel}>
+      <ResizablePanel panel="agent">
         <PanelHead>
           <ZoomMenu
             zoom={zoom === "fit" ? "fit" : percent}

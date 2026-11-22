@@ -133,6 +133,36 @@ test("the zoom menu in the right column zooms the slide and goes back to fit", a
   await expect.poll(async () => Math.round((await slide.boundingBox())?.width ?? 0)).toBe(Math.round(fitted))
 })
 
+test("Agent and Design share one column width and one zoom, and a reload opens the panel the deck last showed", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openSceneEditor(page, context, stack)
+  const column = page.locator("[data-editor-panel]")
+  const readout = page.locator("[data-zoom-readout]")
+  await expect(column.locator("[data-aira-panel]")).toBeVisible()
+  const widthBefore = (await box(page, "[data-editor-panel]")).width
+  const slideBefore = (await box(page, "[data-slide-box]")).width
+  const zoomBefore = await readout.textContent()
+
+  await page.getByRole("button", { name: sceneEditorCopy.panelDesign, exact: true }).click()
+  await expect(page.locator("[data-design-panel]")).toBeVisible()
+  expect((await box(page, "[data-editor-panel]")).width).toBe(widthBefore)
+  expect((await box(page, "[data-slide-box]")).width).toBeCloseTo(slideBefore, 1)
+  await expect(readout).toHaveText(zoomBefore ?? "")
+
+  await page.reload()
+  await page.locator("[data-scene-ready]").waitFor()
+  await expect(page.locator("[data-design-panel]")).toBeVisible()
+  await page.getByRole("button", { name: sceneEditorCopy.panelAgent, exact: true }).click()
+  await expect(column.locator("[data-aira-panel]")).toBeVisible()
+  await page.reload()
+  await page.locator("[data-scene-ready]").waitFor()
+  await expect(page.locator("[data-design-panel]")).toHaveCount(0)
+  await expect(column.locator("[data-aira-panel]")).toBeVisible()
+})
+
 test("Present shows the deck full screen and Escape returns to the editor with the button focused", async ({
   page,
   context,

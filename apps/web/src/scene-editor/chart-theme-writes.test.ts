@@ -1,6 +1,14 @@
 import { scene } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { chartAddRow, chartAddSeries, chartCell, chartDropRow, chartRow, themeColorWrites } from "./chart-theme-writes"
+import {
+  chartAddRow,
+  chartAddSeries,
+  chartCell,
+  chartDropRow,
+  chartRow,
+  chartSeriesName,
+  themeColorWrites,
+} from "./chart-theme-writes"
 import { hexes } from "./design-adapter-art"
 import { grow, landed, paint, spot } from "./scene-fixtures"
 
@@ -23,6 +31,15 @@ describe("chart data", () => {
     expect(chartDropRow({ ...chart, categories: ["a"], series: [{ name: "s", values: [1] }] }, 0).categories).toEqual([
       "a",
     ])
+  })
+
+  it("names a series, and keeps the old name for an empty or unchanged one", () => {
+    const two = chartAddSeries(chart)
+    expect(chartSeriesName(two, 1, "  Plan  ").series.map((each) => each.name)).toEqual(["s", "Plan"])
+    expect(chartSeriesName(two, 0, "Actual").series[1]?.name).toBe("Series 2")
+    expect(chartSeriesName(two, 1, "   ")).toBe(two)
+    expect(chartSeriesName(two, 0, "s")).toBe(two)
+    expect(chartSeriesName(two, 7, "Nobody")).toBe(two)
   })
 
   it("adds a series with a value for each category", () => {

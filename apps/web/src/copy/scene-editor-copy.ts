@@ -72,6 +72,7 @@ export const sceneEditorCopy = {
   chartData: "Chart data",
   addRow: "Add row",
   addSeries: "Add series",
+  seriesName: (at: number) => `Series ${String(at)} name`,
   dropRow: (name: string) => `Remove ${name}`,
   kinds: { bar: "Bar", column: "Column", line: "Line", pie: "Pie", stacked: "Stacked" },
   paintKinds: { solid: "Solid", gradient: "Gradient", image: "Image" },
