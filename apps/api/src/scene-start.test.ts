@@ -16,4 +16,10 @@ describe("a new deck's title slide", () => {
     expect(theme.textStyles.bigNumber.size).toBeGreaterThan(theme.textStyles.title.size)
     expect(box.y + box.h).toBe(540)
   })
+
+  it("takes the slide type scale for its text styles, so a person's Text tool and the agent's patterns share it", () => {
+    expect(theme.textStyles).toEqual(scene.slideTextStyles)
+    for (const style of Object.values(theme.textStyles)) expect(style.size).toBeGreaterThanOrEqual(36)
+    expect(theme.textStyles.title.size).toBe(88)
+  })
 })

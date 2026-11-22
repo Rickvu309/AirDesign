@@ -90,6 +90,7 @@ export type {
 } from "./resolved.js"
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
 export { defaultTheme } from "./default-theme-art.js"
+export { slideTextStyles } from "./slide-text-styles.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, sceneFromTree } from "./scene-tree.js"
 export { deckName, deckOf } from "./deck-of.js"
 export { slidesOf } from "./scene-walk.js"
