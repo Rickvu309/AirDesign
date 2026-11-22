@@ -118,13 +118,13 @@ function guardRun(work: Working, landed: Landed): Refusal | undefined {
   return run?.phase === "running" ? undefined : refuse("run-fenced")
 }
 
-function write(work: Working, scene: Scene, landed: Landed, raw: Write): Refusal | undefined {
+function write(work: Working, scene: Scene, landed: Landed, raw: Write, known: Known): Refusal | undefined {
   const read = readWriteIn(raw, { type: (node) => work.nodes.get(node)?.type })
   if (isRefusal(read)) return read
   const { node: id, prop: key, value } = read
   if (key === "type") {
     if (work.nodes.has(id)) return undefined
-    if (value === "deck" && [...work.nodes.values()].some((node) => node.type === "deck"))
+    if (value === "deck" && (known.deck() || [...work.created].some((made) => work.nodes.get(made)?.type === "deck")))
       return refuse("limit", id, key)
     work.nodes.set(id, { id, rev: landed.rev, type: value as NodeType } as Node)
     work.created.add(id)
@@ -168,28 +168,60 @@ function write(work: Working, scene: Scene, landed: Landed, raw: Write): Refusal
   return undefined
 }
 
-function liveElements(nodes: ReadonlyMap<NodeId, Node>): number {
-  let count = 0
-  for (const node of nodes.values()) if (parentOf(node) != null) count += 1
-  return count
+export type Counts = { readonly elements: number; readonly slides: number }
+export type Known = { readonly counts: () => Counts; readonly deck: () => boolean }
+export type Landing = { readonly scene: Scene; readonly delta: Counts }
+
+const noChange: Counts = { elements: 0, slides: 0 }
+
+const livesAsElement = (node: Node | undefined) => node !== undefined && parentOf(node) != null
+
+function livesAsSlide(nodes: ReadonlyMap<NodeId, Node>, node: Node | undefined): boolean {
+  if (node === undefined || node.type !== "slide") return false
+  const parent = parentOf(node)
+  const row = parent == null ? undefined : nodes.get(parent.id)
+  return row !== undefined && !deleted(row) && (row as { hidden?: boolean }).hidden !== true
 }
 
-function liveSlides(nodes: ReadonlyMap<NodeId, Node>): number {
-  let count = 0
-  for (const node of nodes.values()) {
-    if (node.type !== "slide") continue
-    const parent = parentOf(node)
-    const row = parent == null ? undefined : nodes.get(parent.id)
-    if (row !== undefined && !deleted(row) && (row as { hidden?: boolean }).hidden !== true) count += 1
+export function countsOf(scene: Scene): Counts {
+  let elements = 0
+  let slides = 0
+  for (const node of scene.nodes.values()) {
+    if (livesAsElement(node)) elements += 1
+    if (livesAsSlide(scene.nodes, node)) slides += 1
   }
-  return count
+  return { elements, slides }
 }
 
-function overLimit(work: Working, scene: Scene): Refusal | undefined {
-  if (!work.regrouped) return undefined
-  const grew = (now: number, was: () => number, limit: number) => now > limit && now > was()
-  if (grew(liveElements(work.nodes), () => liveElements(scene.nodes), limits.elements)) return refuse("limit")
-  if (grew(liveSlides(work.nodes), () => liveSlides(scene.nodes), limits.slides)) return refuse("limit")
+export const hasDeck = (scene: Scene): boolean => {
+  for (const node of scene.nodes.values()) if (node.type === "deck") return true
+  return false
+}
+
+function countDelta(work: Working, scene: Scene, landed: Landed): Counts {
+  if (!work.regrouped) return noChange
+  let elements = 0
+  const slides = new Set<NodeId>()
+  for (const id of new Set(landed.writes.map((each) => each.node))) {
+    const before = scene.nodes.get(id)
+    const after = work.nodes.get(id)
+    elements += Number(livesAsElement(after)) - Number(livesAsElement(before))
+    if (before?.type === "slide" || after?.type === "slide") slides.add(id)
+    if (after?.type === "slideRow")
+      for (const slide of [...(scene.children.get(id) ?? []), ...(work.children.get(id) ?? [])]) slides.add(slide)
+  }
+  let slideChange = 0
+  for (const id of slides)
+    slideChange +=
+      Number(livesAsSlide(work.nodes, work.nodes.get(id))) - Number(livesAsSlide(scene.nodes, scene.nodes.get(id)))
+  return { elements, slides: slideChange }
+}
+
+function overLimit(delta: Counts, known: Known): Refusal | undefined {
+  if (delta.elements <= 0 && delta.slides <= 0) return undefined
+  const was = known.counts()
+  if (delta.elements > 0 && was.elements + delta.elements > limits.elements) return refuse("limit")
+  if (delta.slides > 0 && was.slides + delta.slides > limits.slides) return refuse("limit")
   return undefined
 }
 
@@ -199,20 +231,21 @@ function protect(work: Working, landed: Landed, touched: ReadonlySet<NodeId>): v
     if (run.phase === "running") work.runs.set(name, { ...run, guarded: new Set([...run.guarded, ...touched]) })
 }
 
-export function applyEdit(scene: Scene, landed: Landed): Scene | Refusal {
-  if (scene.onces.has(landed.once)) return scene
+export function landEdit(scene: Scene, landed: Landed, known: Known): Landing | Refusal {
+  if (scene.onces.has(landed.once)) return { scene, delta: noChange }
   const work = open(scene)
   const fenced = guardRun(work, landed)
   if (fenced !== undefined) return fenced
   for (const each of landed.writes) {
-    const refusal = write(work, scene, landed, each)
+    const refusal = write(work, scene, landed, each, known)
     if (refusal !== undefined) return refusal
   }
   for (const id of work.created) {
     const node = work.nodes.get(id)!
     if (node.type !== "deck" && parentOf(node) === undefined) return refuse("shape", id)
   }
-  const crowded = overLimit(work, scene)
+  const delta = countDelta(work, scene, landed)
+  const crowded = overLimit(delta, known)
   if (crowded !== undefined) return crowded
   if (landed.phase === "stop") {
     const run = work.runs.get(landed.author.run!)!
@@ -220,11 +253,19 @@ export function applyEdit(scene: Scene, landed: Landed): Scene | Refusal {
   }
   protect(work, landed, new Set(landed.writes.map((each) => each.node)))
   return {
-    nodes: work.nodes,
-    revs: work.revs,
-    children: work.children,
-    rev: rev(Math.max(scene.rev, landed.rev)),
-    onces: new Map(scene.onces).set(landed.once, landed.rev),
-    runs: work.runs,
+    scene: {
+      nodes: work.nodes,
+      revs: work.revs,
+      children: work.children,
+      rev: rev(Math.max(scene.rev, landed.rev)),
+      onces: new Map(scene.onces).set(landed.once, landed.rev),
+      runs: work.runs,
+    },
+    delta,
   }
+}
+
+export function applyEdit(scene: Scene, landed: Landed): Scene | Refusal {
+  const landing = landEdit(scene, landed, { counts: () => countsOf(scene), deck: () => hasDeck(scene) })
+  return isRefusal(landing) ? landing : landing.scene
 }

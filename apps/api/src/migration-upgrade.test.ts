@@ -44,3 +44,53 @@ it("adds the import index and its deleted-row constraint after migration 6", asy
     await cluster.stop()
   }
 })
+
+it("moves a stored scene deck's fold into one row per node with the live counts", async () => {
+  const cluster = await startEmptyCluster()
+  const url = `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres`
+  const db = new Client({ connectionString: url })
+  const at = (id: string) => ({ id, at: "a" })
+  const node = (id: string, type: string, extra: Record<string, unknown> = {}) => ({ id, rev: 1, type, ...extra })
+  const fold = {
+    rev: 3,
+    nodes: {
+      "s:1": node("s:1", "deck", { name: "Old" }),
+      "s:2": node("s:2", "slideRow", { parent: at("s:1") }),
+      "s:3": node("s:3", "slide", { parent: at("s:2") }),
+      "s:4": node("s:4", "slide", { parent: null }),
+      "s:5": node("s:5", "shape", { parent: at("s:3") }),
+      "s:6": node("s:6", "slideRow", { parent: at("s:1"), hidden: true }),
+      "s:7": node("s:7", "slide", { parent: at("s:6") }),
+    },
+    revs: { "s:5": { name: 2 } },
+    onces: { first: 1 },
+    runs: { "run-1": { phase: "running", guarded: ["s:5"] } },
+  }
+  try {
+    await db.connect()
+    for (const role of ["session", "deck", "listen"]) await createRole(db, role, "local-test")
+    await applySchema(db, migrations.slice(0, 21))
+    await db.query("insert into session.account (email) values ('kept@example.com')")
+    await db.query(
+      "insert into deck.scene (id, owner, name, rev, fold) values ('old', 'kept@example.com', 'Old', 3, $1::jsonb)",
+      [JSON.stringify(fold)],
+    )
+    await applySchema(db, migrations)
+    const rows = await db.query("select id, type, parent, revs from deck.scene_node where deck = 'old' order by id")
+    expect(rows.rows).toEqual([
+      { id: "s:1", type: "deck", parent: null, revs: {} },
+      { id: "s:2", type: "slideRow", parent: "s:1", revs: {} },
+      { id: "s:3", type: "slide", parent: "s:2", revs: {} },
+      { id: "s:4", type: "slide", parent: null, revs: {} },
+      { id: "s:5", type: "shape", parent: "s:3", revs: { name: 2 } },
+      { id: "s:6", type: "slideRow", parent: "s:1", revs: {} },
+      { id: "s:7", type: "slide", parent: "s:6", revs: {} },
+    ])
+    const head = await db.query("select rev, name, runs, elements, slides from deck.scene where id = 'old'")
+    expect(head.rows).toEqual([{ rev: 3, name: "Old", runs: fold.runs, elements: 5, slides: 1 }])
+    await expect(db.query("select fold from deck.scene")).rejects.toMatchObject({ code: "42703" })
+  } finally {
+    await db.end()
+    await cluster.stop()
+  }
+})

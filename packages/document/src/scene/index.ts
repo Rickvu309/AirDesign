@@ -18,8 +18,17 @@ export { pictureFit } from "./picture-fit.js"
 export { slideKeyText } from "./slide-key.js"
 export { type AgentEdit, type EditBy, compileAgentEdit, readingOf } from "./agent-edit.js"
 export { readForAgent } from "./agent-read.js"
-export { applyEdit } from "./apply-edit.js"
-export { foldToJson, readFold, readLanded } from "./fold-json.js"
+export { type Counts, type Known, type Landing, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
+export {
+  type StoredNode,
+  foldToJson,
+  readFold,
+  readLanded,
+  readRuns,
+  readStoredNode,
+  revsToJson,
+  runsToJson,
+} from "./fold-json.js"
 export type { Arrow, End, Geometry } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, rev } from "./ids.js"
 export { invert } from "./invert.js"

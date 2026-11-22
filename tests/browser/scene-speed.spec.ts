@@ -14,6 +14,7 @@ const budget = {
   dragScriptPerFrame: 8,
   dragTaskPerFrame: 16,
   dragLongFrames: 0,
+  agentEditPaintMilliseconds: 80,
 }
 
 async function frames(page: Page, count: number): Promise<void> {
@@ -101,9 +102,52 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
 
   const feel = await dragFeel(page, from, { x: 240, y: 90 }, 120, "dragged")
+
+  const target = await page.locator("[data-slide-box] [data-node]").nth(1).getAttribute("data-node")
+  const painted: number[] = []
+  for (let edit = 1; edit <= 5; edit += 1) {
+    await page.evaluate((id) => {
+      const first = document.querySelector(`[data-slide-box] [data-node="${String(id)}"]`)?.getAttribute("style")
+      const holder = window as unknown as { agentPainted: Promise<number> }
+      holder.agentPainted = new Promise<number>((resolve) => {
+        const watch = new MutationObserver(() => {
+          const now = document.querySelector(`[data-slide-box] [data-node="${String(id)}"]`)?.getAttribute("style")
+          if (now === first) return
+          watch.disconnect()
+          requestAnimationFrame(() => setTimeout(() => resolve(Date.now())))
+        })
+        watch.observe(document.querySelector("[data-slide-box]")!, { subtree: true, childList: true, attributes: true })
+      })
+    }, target)
+    const sent = Date.now()
+    const landed = await stack.post(
+      sceneRoutes.edit.path,
+      {
+        deck: opened.deck,
+        edit: {
+          once: `speed-agent-${String(edit)}`,
+          author: { kind: "agent", id: "aira", run: "bench-run" },
+          writes: [
+            {
+              node: target,
+              prop: "box",
+              value: { x: 100 + edit * 40, y: 60, w: 400, h: 120, rotation: 0, flipH: false, flipV: false },
+            },
+          ],
+        },
+      },
+      opened.cookie,
+    )
+    expect(landed.json, "a node the person never touched takes an agent's write").toMatchObject({ ok: true })
+    painted.push(
+      (await page.evaluate(() => (window as unknown as { agentPainted: Promise<number> }).agentPainted)) - sent,
+    )
+  }
+  painted.sort((left, right) => left - right)
+  const agentEditPaint = painted[2]!
   test.info().annotations.push({
     type: "metric",
-    description: `idle ${String(Math.round(idle))} ms in 3 s; ${String(measured)} text measurements; typing script ${String(Math.round((typing / keys) * 10) / 10)} ms a key; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
+    description: `idle ${String(Math.round(idle))} ms in 3 s; ${String(measured)} text measurements; typing script ${String(Math.round((typing / keys) * 10) / 10)} ms a key; agent edit to paint ${String(agentEditPaint)} ms; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
   })
   expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
     budget.typeMeasureCalls,
@@ -114,5 +158,8 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
     budget.dragTaskPerFrame,
   )
   expect(feel.longFrames, "no frame during a drag runs past 50 ms").toBeLessThanOrEqual(budget.dragLongFrames)
+  expect(agentEditPaint, "an agent's edit paints in the open tab within a few frames").toBeLessThan(
+    budget.agentEditPaintMilliseconds,
+  )
   expect(requested, "no slide picture is painted or sent while no agent has asked for one").toEqual([])
 })
