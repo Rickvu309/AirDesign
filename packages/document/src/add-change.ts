@@ -25,4 +25,3 @@ export type AddChange =
       readonly connection?: TraitInput<"connection">
       readonly border?: TraitInput<"border">
     }
-  | { readonly kind: "chart"; readonly slide: SlideId; readonly box?: Box; readonly chart: { readonly value: string } }

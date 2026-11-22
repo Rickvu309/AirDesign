@@ -320,12 +320,4 @@ describe("SlideCanvas transform gestures", () => {
     await keyEvent(text, "keydown", { key: "H", code: "KeyH", shiftKey: true })
     expect(flips).toHaveLength(2)
   })
-
-  it("omits rotate grips on a chart", async () => {
-    const { host } = await mounted([element(id, { kind: "chart" })])
-    await pointer(frameOf(host), "pointerdown", 150, 150)
-    await pointer(host.ownerDocument, "pointerup", 150, 150)
-    expect(host.querySelectorAll('[data-grip^="rotate-"]')).toHaveLength(0)
-    expect(host.querySelectorAll('[data-grip="right"]')).toHaveLength(1)
-  })
 })

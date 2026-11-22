@@ -51,14 +51,7 @@ import {
 } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
-import {
-  arrange,
-  canvasControl,
-  panelTrait,
-  resolveControl,
-  type ControlKind,
-  type ControlLook,
-} from "./panel-arrangement"
+import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
 export type SectionName =
@@ -245,7 +238,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     (field) =>
       (shown.moves || !field.startsWith("box.")) && !(routed && (field === "box.flipH" || field === "box.flipV")),
   )
-  const sections = traitNames.filter(panelTrait).flatMap((trait): PanelSection[] => {
+  const sections = traitNames.flatMap((trait): PanelSection[] => {
     const labels = traitControls[trait] as Labels
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)

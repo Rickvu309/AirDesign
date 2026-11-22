@@ -42,5 +42,5 @@ Preconditions:
 ## Gotchas
 
 - Focus follows the current slide after every slide command, so two Alt+ArrowUp presses in a row move the same slide twice. The journey still clicks an entry before each key; that proves the key, not the focus.
-- A slide that holds a chart or a diagram duplicates, moves and deletes like any other; `slide-charts` drives it.
+- A slide that holds a kept chart or a diagram duplicates, moves and deletes like any other; `slide-kept-parts` drives it.
 - An entry's text is its thumbnail's text plus its number, so `toContainText` works and `toHaveText` does not.

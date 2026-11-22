@@ -7,7 +7,7 @@ import { laidBox } from "@/frame-boxes"
 const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp", "p:grpSp"])
 
 function movableKind(shape: ReadShape): boolean {
-  return movableKinds.has(shape.kind) || (shape.kind === "p:graphicFrame" && shape.contentKind === "chart")
+  return movableKinds.has(shape.kind)
 }
 
 export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape, placed = false): boolean {

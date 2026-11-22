@@ -158,7 +158,7 @@ function writtenElement(
   const rows = body === undefined ? {} : landedPatch(body, "text")
   const facts = shape && {
     kind: shapeKind(shape),
-    text: shape.hasText || shape.contentKind === "chart",
+    text: shape.hasText,
     grouped: shape.grouped === true,
   }
   const taken = facts === undefined ? null : takenSet(takes({ ...facts, animated: false }))

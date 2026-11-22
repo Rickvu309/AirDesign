@@ -13,8 +13,6 @@ export type ElementFacts = {
   readonly backdrop?: true
 }
 
-const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
-
 const placed: readonly FieldKey[] = ["box.x", "box.y", "box.w", "box.h"]
 
 const sized: readonly FieldKey[] = ["box.w", "box.h"]
@@ -26,7 +24,6 @@ const chosenStyle: FieldKey = "templateStyle.id"
 const masks: FieldKey = "identity.mask"
 
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
-  chart: [...turns, masks],
   connector: [masks],
   group: [masks],
   slide: [
@@ -46,7 +43,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]
 
-const removes: readonly Kind[] = ["shape", "connector", "chart", "kept", "group"]
+const removes: readonly Kind[] = ["shape", "connector", "kept", "group"]
 
 const takesCache = new Map<string, readonly FieldKey[]>()
 

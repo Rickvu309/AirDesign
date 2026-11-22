@@ -3,14 +3,13 @@ import {
   elementId,
   format,
   openRegister,
-  readChartValue,
   templateStylesNode,
   writeTextValue,
   type Box,
   type Command,
   type Register,
 } from "@airdesign/document"
-import { fileChartValue, iconParts, indexPackage, readPackage, readParts, readShapes } from "@airdesign/pptx"
+import { iconParts, indexPackage, readPackage, readParts, readShapes } from "@airdesign/pptx"
 import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
@@ -285,44 +284,6 @@ it("paints that cover when the device register kept the box and lost the opening
     ?.elements.find((element) => element.id === picture)
   expect(painted?.fill).toContain("50% 0% / 225% 100%")
 })
-
-it("offers a chart made in AirDesign to move and select", () => {
-  const store = paintStore()
-  const busy = busyElements()
-  const register = changed(openRegister("", "clean"), { change: "chart", kind: "bar", index: 1, size: room })
-  const painted = paint(store, parts, register, busy)
-  const [add] = register.order
-  const node = add !== undefined && "element" in add ? add.element.node : null
-  expect(node).not.toBeNull()
-  expect(painted.movables.has(elementId(node ?? ""))).toBe(true)
-  const value = add !== undefined && "element" in add ? (add.element.value ?? "") : ""
-  const chart = { value: { set: value.replace("Series 1", "Revenue") } }
-  const added = decide(register, { command: "add", node: elementId(node ?? ""), floor: "", route: register.route })
-  if (added.decision === "refuse") throw new Error(added.code)
-  const edited = decide(added.register, { command: "person", node: elementId(node ?? ""), v: format, patch: { chart } })
-  if (edited.decision === "refuse") throw new Error(edited.code)
-  paint(store, parts, edited.register, busy, new Map(), painted)
-  expect(store.getElement(elementId(node ?? ""))?.text).toBe("")
-}, 120_000)
-
-it("offers an imported PowerPoint chart to move and select, and holds its numbers from the file", async () => {
-  const fsName = "node:fs/promises"
-  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  const read = await readPackage(
-    await fs.readFile(new URL("../../../scripts/pptx-fixtures/census-updating-spm.pptx", import.meta.url)),
-  )
-  if (!read.ok) throw new Error(read.reason)
-  const charts = readShapes(read.parts).filter((shape) => shape.contentKind === "chart")
-  expect(charts.length).toBe(4)
-  const painted = paint(paintStore(), read.parts, openRegister("", "clean"), busyElements())
-  for (const chart of charts) {
-    const id = elementId(`${chart.slide}.${chart.shape}`)
-    expect(painted.movables.has(id)).toBe(true)
-  }
-  const [first] = charts
-  if (first === undefined) throw new Error("chart")
-  expect(readChartValue(fileChartValue(read.parts, first.part, first.shape) ?? "")?.kind).toBe("pie")
-}, 120_000)
 
 it("paints the rest of a deck and names the edit it cannot write, instead of failing", () => {
   const store = paintStore()

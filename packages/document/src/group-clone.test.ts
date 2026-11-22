@@ -34,8 +34,8 @@ const leaf = elementId("256.14")
 const twin = elementId("256.15")
 const beside = elementId("256.16")
 const loose = elementId("256.17")
-const charted = elementId("256.18")
-const chart = elementId("256.19")
+const holder = elementId("256.18")
+const keptFrame = elementId("256.19")
 const square = (x: number, y: number, side = 100): Box => ({ x, y, cx: side, cy: side })
 
 function shape(node: ElementId, box: Box, parent?: ElementId): IndexElement {
@@ -59,8 +59,8 @@ const elements: readonly IndexElement[] = [
   shape(twin, square(50, 0, 50), inner),
   shape(beside, square(0, 0), outer),
   shape(loose, square(5000, 0)),
-  group(charted, square(7000, 0, 200), square(7000, 0, 200)),
-  { node: chart, kind: "chart", value: null, box: square(7000, 0, 200), grouped: true, group: charted },
+  group(holder, square(7000, 0, 200), square(7000, 0, 200)),
+  { node: keptFrame, kind: "kept", value: null, box: square(7000, 0, 200), grouped: true, group: holder },
 ]
 
 const indexed: Register = {
@@ -180,8 +180,8 @@ describe("a copy of a group, a frame or a layer inside a group", () => {
     expect(readSlideState(stored)?.order).toEqual([command])
   })
 
-  it("refuses a group holding a chart, a copy that leaves a layer out, and a layer inside a frame", () => {
-    expect(cloneOf(indexed, charted, elementId("256.40"), square(0, 0, 200))).toEqual({ ok: false, refusal: "kind" })
+  it("refuses a group holding a kept frame, a copy that leaves a layer out, and a layer inside a frame", () => {
+    expect(cloneOf(indexed, holder, elementId("256.40"), square(0, 0, 200))).toEqual({ ok: false, refusal: "kind" })
     const { command } = copiedTo(indexed, scaled, 3000, 0)
     if (command.slide !== "element-clone") throw new Error("clone")
     const partial = { ...command, layers: (command.layers ?? []).slice(0, 1) }

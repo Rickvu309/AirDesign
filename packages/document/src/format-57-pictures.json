@@ -2315,14 +2315,14 @@
       { "node": "317.notes", "kind": "slide", "value": "", "box": null, "grouped": false },
       {
         "node": "312.11",
-        "kind": "chart",
+        "kind": "kept",
         "value": null,
         "box": { "x": 45027, "y": 1548328, "cx": 4166754, "cy": 3761340 },
         "grouped": false
       },
       {
         "node": "312.16",
-        "kind": "chart",
+        "kind": "kept",
         "value": null,
         "box": { "x": 4384498, "y": 1548329, "cx": 3928695, "cy": 3761341 },
         "grouped": false
@@ -2374,7 +2374,7 @@
       },
       {
         "node": "312.8",
-        "kind": "chart",
+        "kind": "kept",
         "value": null,
         "box": { "x": 8530937, "y": 1548328, "cx": 3616036, "cy": 3761341 },
         "grouped": false

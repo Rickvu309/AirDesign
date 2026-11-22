@@ -1,6 +1,6 @@
 import type { Bound, Command, ElementId, Place, PlacedRow, Register, SetChange } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { fileChartFormats, fileChartValue, readShapes, type ReadShape } from "@airdesign/pptx"
+import { readShapes, type ReadShape } from "@airdesign/pptx"
 import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { designCopy } from "@/copy/design-copy"
@@ -29,25 +29,12 @@ function fileShape(parts: ReadonlyMap<string, Uint8Array>, node: ElementId): Rea
   return shapes.get(node)
 }
 
-export function fileChartFormatsOf(shown: DeckPaint, node: ElementId): readonly string[] {
-  const parts = shown.editParts.current
-  const shape = shown.shapes.current.get(node) ?? fileShape(parts, node)
-  return shape?.contentKind === "chart" ? (fileChartFormats(parts, shape.part, shape.shape) ?? []) : []
-}
-
-export function fileValue(shown: DeckPaint, node: ElementId): string | null {
-  const parts = shown.editParts.current
-  const shape = shown.shapes.current.get(node) ?? fileShape(parts, node)
-  return shape?.contentKind === "chart" ? fileChartValue(parts, shape.part, shape.shape) : null
-}
-
 function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
   const { shown, undo } = deck
   return {
     id: deck.id,
     parts: () => shown.shownParts.current,
     floor: (node) => shown.boxes.current.get(node)?.file ?? shown.movables.current.get(node)?.file ?? "",
-    file: (node) => fileValue(shown, node),
     fits: (node, value) =>
       valueFits(
         shown.editParts.current,

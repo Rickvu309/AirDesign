@@ -17,8 +17,7 @@ import { pictureCopy } from "@/copy/picture-copy"
 import { pickPicture } from "@/editor/picture-picker"
 import { IconTool } from "@/editor/icon-tool"
 import { ShapeTool } from "@/editor/shape-tool"
-import { ChartTool } from "@/editor/chart-tool"
-import type { ChartKind, Geometry } from "@airdesign/document"
+import type { Geometry } from "@airdesign/document"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
 import type { PanelMode } from "@/design/panel-order"
@@ -46,7 +45,6 @@ export type DesignMode = { readonly value: PanelMode; readonly onChange: (mode: 
 const toolIcons: Readonly<Record<Exclude<InsertPart, "number">, EditorIconName>> = {
   text: "text",
   shape: "shape",
-  chart: "chart",
   image: "image",
   icon: "icon",
 }
@@ -90,7 +88,6 @@ type Inserts = {
   readonly textTool: boolean
   readonly onSlideNumber: (() => void) | undefined
   readonly onText: ((place?: TextPlace) => void) | undefined
-  readonly onChart: ((kind: ChartKind) => void) | undefined
   readonly onPicture: ((file: File) => void) | undefined
   readonly onShape: ((geometry: Geometry) => void) | undefined
   readonly onIcon: ((name: string) => void) | undefined
@@ -117,7 +114,7 @@ function TextTool({ pointer }: { pointer: ToolPick }) {
 }
 
 function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
-  const { activeTool, pointer, textTool, onText, onChart, onPicture, onShape, onIcon, onSlideNumber } = inserts
+  const { activeTool, pointer, textTool, onText, onPicture, onShape, onIcon, onSlideNumber } = inserts
   if (tool === "number")
     return (
       <Button
@@ -132,7 +129,6 @@ function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
       </Button>
     )
   if (tool === "shape" && onShape !== undefined) return <ShapeTool onShape={onShape} />
-  if (tool === "chart" && onChart !== undefined) return <ChartTool onChart={onChart} />
   if (tool === "icon" && onIcon !== undefined) return <IconTool onIcon={onIcon} />
   if (tool === "text" && textTool && pointer !== undefined && onText !== undefined)
     return <TextTool pointer={pointer} />
@@ -295,7 +291,6 @@ export function EditorToolbar({
   tone,
   deckColors,
   formats,
-  onChart,
   onPicture,
   onShape,
   onIcon,
@@ -314,7 +309,6 @@ export function EditorToolbar({
   tone?: ToneSource
   deckColors?: readonly string[]
   formats?: FormatShown
-  onChart?: (kind: ChartKind) => void
   onPicture?: (file: File) => void
   onShape?: (geometry: Geometry) => void
   onIcon?: (name: string) => void
@@ -338,7 +332,6 @@ export function EditorToolbar({
     pointer,
     textTool,
     onText,
-    onChart,
     onPicture,
     onShape,
     onIcon,

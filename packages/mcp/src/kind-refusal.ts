@@ -34,7 +34,6 @@ const kindWords: Readonly<Record<Kind, string>> = {
   shape: "a shape",
   connector: "a line",
   group: "a group",
-  chart: "a chart",
   kept: "kept exactly as the file has it: a diagram, an embedded object, or a shape with a copy for older PowerPoint",
 }
 
@@ -68,11 +67,8 @@ function what(node: ElementId, { facts }: Missing): string {
 }
 
 function textNext(node: ElementId, { facts }: Missing): string {
-  const beside = `put words beside it with airdesign_edit_deck with op add and kind shape on slide ${shapeOf(node).slide}`
   if (facts.kind === "group")
     return "Edit the text of the layers inside it: airdesign_read_deck lists them with grouped true."
-  if (facts.kind === "chart")
-    return `Set the data of a chart added in AirDesign with chart's value; an imported chart's data stays as the file has it. Tell the person, or ${beside}.`
   if (facts.kind === "kept") return "Leave it, or tell the person."
   return `To put words beside it, call airdesign_edit_deck with op add and kind shape on slide ${shapeOf(node).slide}.`
 }
@@ -164,7 +160,6 @@ const instructedKinds: readonly (readonly [Kind, string])[] = [
   ["shape", "A shape"],
   ["connector", "A line"],
   ["group", "A group"],
-  ["chart", "A chart"],
   ["kept", "A layer kept exactly as the file has it, such as a diagram or an embedded object,"],
   ["slide", "A slide itself, target <slide> or node <slide>.slide,"],
   ["notes", "A slide's presenter notes, node <slide>.notes,"],
@@ -196,6 +191,5 @@ export function kindInstructions(): string {
     "Presenter notes hold plain text; send their value as plain text.",
     "In airdesign_read_deck, role is one of title, subtitle, body, date, footer, number, picture, chart or object. design lists the layer's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the layer itself; once a change lands on a layer, its text fields follow its first run as it is now. Colors name a template color slot or hex; a slide's templateStyle palette gives their hexes; templateStyle lists what deck.templateStyles changed. size and boxes are points. connection.start and connection.end name the shape and site each end of a connector attaches to.",
     "A JSON text value is [{from, runs: [{from, text}]}]: each from is an index the file has, and -1 is a new one. A run may set bold, italic, underline or strike to true or false, size in hundredths of a point from 100 to 400000, letterSpacing in hundredths of a point from -400000 to 400000, case as none, upper, lower, title or small, font, and color as {scheme: dk1, lt1, dk2, lt2 or accent1 through accent6} or {rgb: six uppercase hex digits}. A paragraph may set align to left, center, right or justify, and list to none, bullets or numbers. Leaving one out keeps the file's.",
-    'A JSON chart value is {kind: bar, stacked, stacked100, horizontal, waterfall, line or pie, categories: [labels], series: [{name, values, color}]}, one number per category in each series, color as in a text run; stacked piles the series of each category in one column, stacked100 scales each column to 100 percent, horizontal lays bars sideways with the first category on top, waterfall draws the first series as a bridge where each value changes the level the bars before it reached, and a pie draws the first series. Optional: title, labels (data labels in the number format "General", "#,##0", "#,##0.0", "#,##0.00", "0%", "0.0%", "$#,##0" or "$#,##0.0"), axis and gridlines (false hides them), gap (bar gap width, 0 to 500 percent), legend (bottom, top, right, left or none), series[].colors (one colour per bar or slice), valueTitle and categoryTitle (axis titles), totals (in a waterfall, the indexes of bars that stand on the axis at their own value: a start, subtotal or end). Add a native PowerPoint chart with { "op": "add", "kind": "chart", "slide": ..., "chart": { "value": ... } } and change it with chart\'s value.',
   ].join("\n")
 }

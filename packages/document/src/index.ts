@@ -89,7 +89,6 @@ export {
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
 export { fitNewBox, fittedInside, pictureSize, placeNewBox } from "./box-placement.js"
-export { placeChart, type PlacedChart } from "./chart-placement.js"
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
 export type { AddChange } from "./add-change.js"
 export {
@@ -275,28 +274,6 @@ export {
 export { format, formatOf, newerFormat, type StoredRead } from "./format.js"
 export { readRegister, readRow, readStoredEdit, type StoredEdit } from "./stored.js"
 export {
-  chartBars,
-  chartFormats,
-  chartGap,
-  chartKinds,
-  chartAccent,
-  chartLegend,
-  chartLegends,
-  chartLimits,
-  openingChart,
-  readChartValue,
-  waterfallBars,
-  waterfallColor,
-  writeChartValue,
-  type ChartBarKind,
-  type ChartFormat,
-  type ChartKind,
-  type ChartLegend,
-  type ChartSeries,
-  type ChartValue,
-  type WaterfallRole,
-} from "./chart-value.js"
-export {
   alphaOf,
   bareTransforms,
   fadedColor,
@@ -314,7 +291,6 @@ export {
 } from "./color.js"
 export { cycledColor, presentSlots } from "./template-remix.js"
 export { fixedLineHeight } from "./text-restyle.js"
-export { readTabbed, type CellTexts } from "./tabbed-text.js"
 export { filedText, paragraphedText } from "./line-breaks.js"
 export { placedText } from "./added-text.js"
 export {

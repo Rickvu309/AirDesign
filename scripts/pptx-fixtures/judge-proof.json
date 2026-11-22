@@ -3,7 +3,6 @@
   "wrong child order": "caught",
   "slide content type removed": "caught",
   "duplicate shape id": "caught",
-  "chart data-label range": "missed",
   "control character in text": "caught",
   "unescaped ampersand in text": "caught",
   "slide id without relationship": "caught",

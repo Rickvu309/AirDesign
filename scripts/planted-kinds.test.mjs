@@ -7,7 +7,7 @@ const same = (name, actual, expected) => {
   }
 }
 
-same("eleven break kinds are planted", Object.keys(breakKinds).length, 11)
+same("ten break kinds are planted", Object.keys(breakKinds).length, 10)
 
 const relType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 const notes = (number) =>

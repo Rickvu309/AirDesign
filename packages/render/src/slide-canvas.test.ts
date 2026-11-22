@@ -260,15 +260,13 @@ describe("SlideCanvas", () => {
     expect(element.childElementCount).toBe(0)
   })
 
-  it("marks a picture and a chart it cannot show yet as an empty box", async () => {
-    const chart = elementId("256.3")
+  it("marks a picture it cannot show yet as an empty box", async () => {
     const shape = elementId("256.4")
     const host = await canvas({
       ...wide,
-      elements: [written(id, { kind: "picture" }), written(chart, { kind: "chart" }), written(shape)],
+      elements: [written(id, { kind: "picture" }), written(shape)],
     })
     expect(placed(host, id).style.background).not.toBe("")
-    expect(placed(host, chart).style.background).not.toBe("")
     expect(placed(host, shape).style.background).toBe("")
   })
 

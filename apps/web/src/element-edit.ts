@@ -1,14 +1,9 @@
 import {
   cloneOf,
   decide,
-  elementId,
   elementsUndoable,
   lineGeometries,
   nextElementId,
-  openingChart,
-  writeChartValue,
-  type ChartKind,
-  placeChart,
   placeNewBox,
   readSlideId,
   shapeOf,
@@ -25,7 +20,6 @@ import {
   type ElementPatch,
   type ElementId,
   type Geometry,
-  type PlacedChart,
   type Register,
   type SlideCommand,
   type SlideId,
@@ -49,17 +43,11 @@ type Parts = ReadonlyMap<string, Uint8Array>
 
 const textLine = 274_320
 const shapeShare = 0.2
-const chartShare = 0.5
 const lineShare = 0.3
-
-type RoomText = { readonly paragraphs: readonly { readonly runs: readonly { readonly text: string }[] }[] }
 
 type RoomElement = {
   readonly box: PaintBox | null
   readonly id?: ElementId | null
-  readonly placeholder?: boolean
-  readonly text?: RoomText | null
-  readonly chart?: unknown
 }
 
 export type SlideRoom = {
@@ -68,29 +56,12 @@ export type SlideRoom = {
   readonly elements?: readonly RoomElement[]
 }
 
-function emptyPlaceholder(element: RoomElement): boolean {
-  const words = (element.text?.paragraphs ?? []).flatMap((paragraph) => paragraph.runs.map((run) => run.text))
-  return element.placeholder === true && words.join("").trim() === ""
-}
-
-function chartRoom(room: SlideRoom): { readonly taken: readonly Box[]; readonly charts: readonly PlacedChart[] } {
-  const shown = (room.elements ?? []).filter((each) => !emptyPlaceholder(each))
-  const taken = takenBoxes({ ...room, elements: shown })
-  const charts = shown.flatMap((each, at) =>
-    each.chart === undefined || each.box === null
-      ? []
-      : [{ node: each.id ?? elementId(`0.${String(at)}`), box: boxOf(each.box) }],
-  )
-  return { taken, charts }
-}
-
 export type LayerSpot = { readonly before: ElementId | null }
 
 export type TextPlace = { readonly x: number; readonly y: number; readonly cx?: number; readonly cy?: number }
 
 export type ElementChange =
   | { readonly change: "text"; readonly index: number; readonly size: SlideRoom; readonly place?: TextPlace }
-  | { readonly change: "chart"; readonly kind: ChartKind; readonly index: number; readonly size: SlideRoom }
   | {
       readonly change: "shape"
       readonly geometry: Geometry
@@ -190,13 +161,6 @@ export function elementCommand(
   if (slide === null) return null
   const node = nextElementId(register, slide.id, freeShapeId(base, slide.part))
   const taken = takenBoxes(change.size)
-  if (change.change === "chart") {
-    const wanted = { cx: Math.round(change.size.width * chartShare), cy: Math.round(change.size.height * chartShare) }
-    const { taken: free, charts } = chartRoom(change.size)
-    const { box } = placeChart(change.size, free, charts, wanted, false)
-    const value = writeChartValue(openingChart(change.kind))
-    return { slide: "element-add", id: slide.id, element: { node, kind: "chart", value, box, grouped: false } }
-  }
   if (change.change === "shape") {
     const line = lineGeometries.includes(change.geometry)
     const side = Math.round(change.size.height * shapeShare)

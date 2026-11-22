@@ -28,8 +28,7 @@ const partsPptx = {
   ...countingPptx,
   shapeIdCounts: () => [],
   branchOrderErrors: () => [],
-  chartWorkbookErrors: (parts) => parts.filter((row) => String(row).startsWith("Chart workbook:")),
-  danglingShapeReferences: (parts) => parts.filter((row) => !String(row).startsWith("Chart workbook:")),
+  danglingShapeReferences: (parts) => parts,
   newDanglingShapeReferences: (before, after) => after.filter((row) => !before.includes(row)),
   sharedOwnedParts: () => [],
   partCopies: () => new Map(),
@@ -45,17 +44,6 @@ same(
 same(
   "the path pptx-check uses does not blame a dangling shape reference the deck already had",
   judgeParts(partsPptx, judgedDeck([dangling]), [], [dangling]).accepted,
-  true,
-)
-const mismatch = "Chart workbook: /ppt/charts/chart1.xml Sheet1!$B$2:$B$5 cell B3 holds 4.6, its cache 9.9"
-same(
-  "the path pptx-check uses rejects a chart whose cache no longer matches its embedded workbook",
-  judgeParts(partsPptx, judgedDeck([]), [], [mismatch]).accepted,
-  false,
-)
-same(
-  "the path pptx-check uses does not blame a mismatch the deck already had",
-  judgeParts(partsPptx, { ...judgedDeck([]), orders: [mismatch] }, [], [mismatch]).accepted,
   true,
 )
 const checkSource = fs.readFileSync(new URL("./pptx-check.mjs", import.meta.url), "utf8")

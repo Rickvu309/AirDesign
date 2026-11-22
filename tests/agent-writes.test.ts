@@ -74,19 +74,6 @@ describe("what the agent tools land, the tab writes", () => {
     expect(written(parts, session)).toContain("<a:t>Value two</a:t>")
   })
 
-  it("writes a chart added to a slide an agent added", async () => {
-    const { parts, session, slide } = await opened()
-    landed(session, [{ op: "add_slide", after: slide, layout: slide }])
-    const added = presentSlides(session.deck.register)[1]?.id ?? ""
-    const chart = JSON.stringify({
-      kind: "bar",
-      categories: ["Jul", "Aug"],
-      series: [{ name: "Actual", values: [15.3, 16.1] }],
-    })
-    landed(session, [{ op: "add", kind: "chart", slide: added, box, chart: { value: chart } }])
-    expect(written(parts, session, 1)).toContain("<c:chart ")
-  })
-
   it("writes an added layer's paragraphs and runs numbered as places", async () => {
     const { parts, session, slide } = await opened()
     const value = JSON.stringify([

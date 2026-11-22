@@ -16,7 +16,6 @@ scripts/slide-edits.mjs
 scripts/blank-export.mjs
 scripts/deck-templates
 scripts/diagram-edits.mjs
-scripts/chart-edits.mjs
 scripts/pptx-render.mjs
 scripts/judge.mjs
 scripts/judge-proof.mjs

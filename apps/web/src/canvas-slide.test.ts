@@ -262,7 +262,7 @@ it("names each kind the way the record does", () => {
     "shape",
     "connector",
     "group",
-    "chart",
+    "kept",
   ])
 })
 

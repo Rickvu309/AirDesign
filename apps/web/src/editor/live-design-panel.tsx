@@ -29,7 +29,7 @@ import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import { panelOf, panelOfMany, type PanelModel, type PanelControl } from "@/design/panel"
 import { panelPlaces, type PanelMode } from "@/design/panel-order"
-import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
+import { changeDesign, type DesignDeck } from "@/design/design-change"
 import { rebasedChange } from "@/design/rebase"
 import { chosenFill } from "@/design/fill-image"
 import { deviceScope } from "@/design/trait-edit"
@@ -54,8 +54,6 @@ import { liveSlideNumber } from "./live-slide-number"
 import { LiveBoxFields } from "./live-box-fields"
 import { servedFaces, useServedFaces } from "@/design/served-faces"
 import { controlsOf, perDesignChanges } from "@/editor/per-design-change"
-import { kindSection } from "@/editor/kind-section"
-import { heldChart } from "@/live-repaint"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -112,8 +110,7 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const edited = shown.editParts.current
   const opening = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(node)
   if (opening === undefined) return null
-  const held = opening.value ?? fileValue(shown, node)
-  const value = opening.facts.kind === "chart" ? (heldChart(shown.shownRegister.current, node) ?? held) : (text ?? held)
+  const value = text ?? opening.value
   const view = { ...opening, value, box: box ?? opening.box }
   const register = shown.shownRegister.current
   const laid = register === null ? null : indexedRegister(shown.shownParts.current, register)
@@ -215,7 +212,6 @@ function LiveElementDesign({
         mode={mode}
         selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
         palette={palette}
-        {...kindSection({ deck, node, kind: design.model.kind, palette })}
         onChange={(control, value) => {
           const chosen = chosenFill(
             value,

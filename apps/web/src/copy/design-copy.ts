@@ -25,7 +25,6 @@ export const designCopy = {
     connector: "Line",
     group: "Group",
     frame: frameCopy.frame,
-    chart: "Chart",
     kept: "Layer",
   },
   selected: (count: number) => `${String(count)} selected`,

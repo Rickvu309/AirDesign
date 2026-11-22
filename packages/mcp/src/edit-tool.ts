@@ -125,7 +125,7 @@ function addedNodes(before: Register, after: Register): readonly ElementId[] {
 
 function groupDetail(changes: readonly AgentChange[], refusal: string): string | undefined {
   if (refusal !== "kind" || !changes.some((change) => "elements" in change)) return undefined
-  return "Only shapes, images, lines, charts and groups that are not placeholders can be grouped or framed, only a group can be ungrouped, only a group or frame can be joined, a frame joins only a group that keeps the slide's scale and turn, and a chart, a group holding one or a layer inside a frame cannot be duplicated."
+  return "Only shapes, images, lines and groups that are not placeholders can be grouped or framed, only a group can be ungrouped, only a group or frame can be joined, a frame joins only a group that keeps the slide's scale and turn, and a group holding a kept layer or a layer inside a frame cannot be duplicated."
 }
 
 export function editDeck(raw: unknown, session: Session): ToolResult {

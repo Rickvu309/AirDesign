@@ -99,9 +99,8 @@ function offSlideOf(slide: ResolvedSlide, place: Placed): Finding | null {
   const height = slide.size.height / emuPerPoint
   const bounds = turned(box, element.rotation)
   const whole = bounds.x >= width || bounds.y >= height || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0
-  const framed = element.kind === "chart"
-  if (!whole && !framed && pastEdge(bounds, width, height) <= findingLimits.offSlide) return null
-  const target = whole || framed ? bounds : place.glyphs.length === 0 ? null : union(place.glyphs)
+  if (!whole && pastEdge(bounds, width, height) <= findingLimits.offSlide) return null
+  const target = whole ? bounds : place.glyphs.length === 0 ? null : union(place.glyphs)
   if (target === null) return null
   const past = pastEdge(target, width, height)
   if (!whole && past <= findingLimits.offSlide) return null

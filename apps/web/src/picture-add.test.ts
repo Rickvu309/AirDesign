@@ -46,7 +46,7 @@ it("places a picture at its natural size, centred, and scales a large one down t
   expect(tall.y).toBe(Math.round((slide.height - tall.cy) / 2))
 })
 
-it("places a picture in the same clear space as a text box or a chart, away from what the slide holds", () => {
+it("places a picture in the same clear space as a text box, away from what the slide holds", () => {
   const top = { x: 0, y: 0, width: slide.width, height: slide.height / 2, rotation: 0, flipH: false, flipV: false }
   const placed = placedPicture({ width: 240, height: 160 }, { ...slide, elements: [{ box: top }] })
   expect(placed).toMatchObject({ cx: 2_286_000, cy: 1_524_000 })

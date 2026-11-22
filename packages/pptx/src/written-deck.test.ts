@@ -34,8 +34,13 @@ function shape(node: ElementId): SlideCommand {
   }
 }
 
-function chart(node: ElementId): SlideCommand {
-  return { slide: "element-add", id, element: { node, kind: "chart", value: "not a chart", box, grouped: false } }
+function boxless(node: ElementId): SlideCommand {
+  return {
+    slide: "element-add",
+    id,
+    element: { node, kind: "shape", value: null, box: null, grouped: false },
+    geometry: "rect",
+  }
 }
 
 function shapesOn(parts: ReadonlyMap<string, Uint8Array>): readonly string[] {
@@ -57,13 +62,13 @@ function moved(register: Register, node: ElementId): Register {
 describe("an edit this device cannot write into the file is left out on its own", () => {
   it("writes the edits before and after it and names the one it left out", async () => {
     const parts = await clean()
-    const unwritable = chart(elementId("256.10"))
+    const unwritable = boxless(elementId("256.10"))
     const register = {
       ...openRegister("", ""),
       file: [id],
       order: [shape(elementId("256.9")), unwritable, shape(elementId("256.11"))],
     }
-    expect(() => orderedParts(parts, register)).toThrow("c:chart")
+    expect(() => orderedParts(parts, register)).toThrow("box")
     const written = writtenDeck(parts, register)
     expect(shapesOn(written.parts)).toEqual(expect.arrayContaining(["9", "11"]))
     expect(shapesOn(written.parts)).not.toContain("10")
@@ -74,7 +79,7 @@ describe("an edit this device cannot write into the file is left out on its own"
     const parts = await clean()
     const made = elementId("256.10")
     const kept = elementId("256.9")
-    const opened = { ...openRegister("", ""), file: [id], order: [shape(kept), chart(made)] }
+    const opened = { ...openRegister("", ""), file: [id], order: [shape(kept), boxless(made)] }
     const register = moved(moved(opened, made), kept)
     const written = writtenDeck(parts, register)
     expect(() => exportParts(written.parts, register)).toThrow("box-shape")

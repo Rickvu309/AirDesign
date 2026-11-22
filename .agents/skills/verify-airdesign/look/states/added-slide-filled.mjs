@@ -9,14 +9,7 @@ function answerOf(text) {
 
 const title = [{ from: 0, runs: [{ from: -1, text: "Q3 review\nRevenue ran ahead of plan" }] }]
 
-const chart = {
-  kind: "bar",
-  categories: ["Jul", "Aug", "Sep"],
-  series: [
-    { name: "Plan", values: [10, 14, 18] },
-    { name: "Actual", values: [12, 16, 20] },
-  ],
-}
+const note = [{ from: 0, runs: [{ from: -1, text: "Jul 12, Aug 16, Sep 20, each ahead of plan" }] }]
 
 async function drive(kit) {
   const { page } = kit
@@ -51,10 +44,10 @@ async function drive(kit) {
       { op: "set", target: `${added}.title`, text: { value: JSON.stringify(title) } },
       {
         op: "add",
-        kind: "chart",
+        kind: "shape",
         slide: added,
         box: { x: 72, y: 270, w: 400, h: 250 },
-        chart: { value: JSON.stringify(chart) },
+        text: { value: JSON.stringify(note) },
       },
     ],
   })

@@ -6,7 +6,6 @@ import {
   landedPatch,
   paintSlots,
   planChange,
-  readChartValue,
   registerScope,
   slideKind,
   valueHolder,
@@ -69,14 +68,13 @@ export function deviceScope(parts: Parts, register: Register): Scope {
 
 export function valueFits(parts: Parts, shape: ReadShape | undefined, value: string): boolean {
   if (shape === undefined) return false
-  if (shape.contentKind === "chart") return readChartValue(value) !== null
   return valueStorable(parts, shape, textValue(value))
 }
 
 function shownFields(view: ScopedElement): Readonly<Record<string, Readonly<Record<string, unknown>> | undefined>> {
   const value = { value: view.value ?? "" }
   const box = view.box === null ? undefined : { x: view.box.x, y: view.box.y, w: view.box.cx, h: view.box.cy }
-  return { box, text: value, chart: value, notes: value }
+  return { box, text: value, notes: value }
 }
 
 function heldPatch(view: ScopedElement, after: ElementPatch): ElementPatch | null {
@@ -110,7 +108,6 @@ export type ChangingDeck = {
   readonly id: string
   readonly parts: () => Parts
   readonly floor: (node: ElementId) => string
-  readonly file: (node: ElementId) => string | null
   readonly fits: (node: ElementId, value: string) => boolean
   readonly hold: () => RecordHold
   readonly show: (register: Register) => void
@@ -197,7 +194,7 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
   const rows: Planned[] = []
   for (const { node, row } of plan.rows) {
     const shown = scope.view(node)
-    const view = shown === undefined ? undefined : { ...shown, value: shown.value ?? deck.file(node) }
+    const view = shown === undefined ? undefined : shown
     const values = formatOne(row.patch, valueHolder(node))
     if (view === undefined) return null
     if (values === null) {

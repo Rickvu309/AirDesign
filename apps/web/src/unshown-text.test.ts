@@ -42,17 +42,12 @@ describe("unshownText", () => {
     expect(unshownText(row({ image: added }), () => "blob:2")).toBeNull()
   })
 
-  it("says a chart or diagram frame is not shown", () => {
+  it("says a frame it cannot paint is not shown", () => {
     expect(unshownText(row({ kind: "p:graphicFrame" }), () => null)).toBe("This object can't be shown here")
   })
 
   it("says nothing of a diagram frame painted from its saved drawing", () => {
     expect(unshownText(row({ kind: "p:graphicFrame", diagram: [] }), () => null)).toBeNull()
-  })
-
-  it("says nothing of a chart frame it paints", () => {
-    const chart = { kind: "pie" } as unknown as PaintElement["chart"]
-    expect(unshownText(row({ kind: "p:graphicFrame", chart }), () => null)).toBeNull()
   })
 
   it("says nothing of text and shapes", () => {

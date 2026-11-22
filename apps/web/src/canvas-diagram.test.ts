@@ -89,7 +89,7 @@ const reader = (elements: readonly PaintElement[]): PaintReader => ({
 const source: CanvasSource = {
   part,
   shapes: new Map([
-    ["6", { id, kind: "chart", editable: false, movable: false }],
+    ["6", { id, kind: "kept", editable: false, movable: false }],
     ["0", { id: elementId("256.0"), kind: "shape", editable: true, movable: true }],
   ]),
 }

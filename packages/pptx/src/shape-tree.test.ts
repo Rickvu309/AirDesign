@@ -27,7 +27,7 @@ it("recognizes only shape tags and maps them to document kinds", () => {
   expect(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"].filter(isShapeTag).map(paintKind)).toEqual([
     "shape",
     "shape",
-    "chart",
+    "kept",
     "connector",
     "group",
   ])

@@ -1,9 +1,6 @@
 export const sharedPartLine = (row) => `Shared part: ${row.part} belongs to ${row.owners.join(" and ")}`
 
-export const validatorBlindFaults = (pptx, parts) => [
-  ...pptx.branchOrderErrors(parts),
-  ...pptx.chartWorkbookErrors(parts),
-]
+export const validatorBlindFaults = (pptx, parts) => pptx.branchOrderErrors(parts)
 
 export const judge = (pptx, before, after) => {
   const errors = [

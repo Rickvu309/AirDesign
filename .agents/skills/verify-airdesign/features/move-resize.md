@@ -18,7 +18,7 @@ A person clicks an element on the slide to select it. A frame with corner and ed
 - `frames` a drag paints at most once a frame. The filmstrip and the Design panel keep the resting box until the drag lands; the panel's X, Y, Width and Height follow it.
 - `rotated` a rotated element shows its handles turned with it and resizes along its own sides.
 - `hand` pressing H switches to the hand tool, which lays an overlay over the canvas, so nothing can be selected until the pointer tool is back.
-- `fixed` an element the export cannot move (inside a group, a chart frame, a locked text box) shows the frame with no handles, or takes no click.
+- `fixed` an element the export cannot move (inside a group, a kept graphic frame, a locked text box) shows the frame with no handles, or takes no click.
 
 ## How to get to it (user POV)
 

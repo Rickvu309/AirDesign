@@ -48,7 +48,7 @@ it("keys every slide and changes only the key of the slide an edit touched", asy
   expect(await slideKeys(exportedParts(parts, register), slideKeyCache())).toEqual(second)
 })
 
-it("changes a slide's key when a chart it shows changes, though the slide part is the same", async () => {
+it("changes a slide's key when an embedded chart it holds changes, though the slide part is the same", async () => {
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
   const read = await readPackage(

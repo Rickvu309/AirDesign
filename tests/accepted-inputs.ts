@@ -22,11 +22,6 @@ const textValues = [
   JSON.stringify([{ from: 0, list: "bullets", level: 2, runs: [{ from: 5, text: "Far run" }] }]),
 ]
 
-const chartValues = [
-  JSON.stringify({ kind: "bar", categories: ["Jul", "Aug"], series: [{ name: "Plan", values: [1, 2] }] }),
-  JSON.stringify({ kind: "line", categories: ["A"], series: [{ name: "S", values: [3] }] }),
-]
-
 const colors = ["accent1", "dk2 shade 50", "tx1 lumMod 75"]
 
 function resolved(schema: Schema, defs: Defs): Schema {
@@ -54,7 +49,7 @@ function numbers(schema: Schema, integer: boolean): readonly number[] {
 }
 
 function strings(schema: Schema, field: string, places: Places): readonly string[] {
-  if (field === "value") return [...textValues, ...chartValues]
+  if (field === "value") return textValues
   if (field === "slide" || field === "after" || field === "layout") return [places.slide]
   if (field === "node" || field === "target") return [places.node]
   if (field === "stack") return ["front", "back", `above ${places.node}`, `below ${places.node}`]

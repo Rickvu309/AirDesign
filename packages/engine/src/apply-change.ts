@@ -24,12 +24,11 @@ import {
   version,
   type ElementId,
   type Media,
-  type PlacedChart,
   type Register,
   type Row,
   type SetChange,
 } from "@airdesign/document"
-import { addChartLayer, addIcon, addPicture, addTextBox } from "./agent-elements.js"
+import { addIcon, addPicture, addTextBox } from "./agent-elements.js"
 import { readFresh } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
@@ -162,32 +161,7 @@ function withMedia<Change extends SetChange>(change: Change, images: ImageLookup
   return { ...change, fills: next } as Change
 }
 
-function movedChart(register: Register, moved: PlacedChart, runId: string): Applied {
-  const { node, box } = moved
-  const opened = openedRegister(register, { node })
-  if (!opened.ok) return opened
-  const started = decide(opened.register, { command: "start", runId, node })
-  if (started.decision === "refuse") return { ok: false, refusal: started.code }
-  return applySet(started.register, { target: { node }, box: { x: box.x, y: box.y, w: box.cx, h: box.cy } }, runId)
-}
-
-function applyChartAdd(
-  deck: Deck,
-  change: ShapeAdd & { readonly kind: "chart" },
-  runId: string,
-  base: number,
-): Applied {
-  const head = { deck: deck.id, base }
-  const add = (shares: boolean) =>
-    addChartLayer(head, deck, change.slide, change.chart.value, change.box, runId, shares)
-  const added = add(true)
-  if (!added.ok || added.moved === undefined) return added
-  const moved = movedChart(added.register, added.moved, runId)
-  return moved.ok ? moved : add(false)
-}
-
 function applyAdd(deck: Deck, change: ShapeAdd, runId: string, base: number, images: ImageLookup): Applied {
-  if (change.kind === "chart") return applyChartAdd(deck, change, runId, base)
   if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   if ("image" in change) {
     const image = images(change.image)

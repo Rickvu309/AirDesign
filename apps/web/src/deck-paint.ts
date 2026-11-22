@@ -29,7 +29,7 @@ import { framedOf } from "@/frame-boxes"
 import { movableInGroups } from "@/group-boxes"
 import { indexedRegister } from "@/indexed-register"
 import { pictureSources, type PictureSources } from "@/picture-fill"
-import { heldChart, shownValue, type BusyElements } from "@/live-repaint"
+import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
 import { numberedText } from "@/numbered-text"
 import { designRows } from "@/design-rows"
@@ -236,7 +236,6 @@ export function paint(
   const inGroups = movableInGroups(laid)
   const placed = {
     has: (id: ElementId) => framed.children.has(id) || inGroups.has(id),
-    charted: (id: ElementId) => heldChart(laid, id) !== null,
   }
   const placedKey = `${framed.key}|${[...inGroups].join(",")}`
   const slides = read.map(({ slide, part }): PaintedSlide => {

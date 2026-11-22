@@ -79,29 +79,13 @@ function opened(parts: Parts): Register {
   return { ...indexed(parts), index: { ...index, format: 2, total: index.elements.length, pages: [] } }
 }
 
-const chartValue = JSON.stringify({ kind: "bar", categories: ["Jul"], series: [{ name: "Plan", values: [1] }] })
-
 async function setTried(field: string): Promise<Tried> {
   const trait = (field === "opacity" || field === "stack" ? "text" : field) as TraitName
   const probe = probes[trait] as { readonly deck: string; readonly kind: Kind; readonly node?: string }
   const parts = await deckParts(probe.deck)
-  let register = opened(parts)
-  let places: Places
-  if (probe.kind === "chart") {
-    const slide = register.index?.slides[0]?.id ?? ""
-    const at = session(register)
-    const added = sent(at, [{ op: "add", kind: "chart", slide, chart: { value: chartValue } }])
-    if (added === null) throw new Error("chart add")
-    register = added
-    places = {
-      slide,
-      node:
-        register.order.flatMap((command) => (command.slide === "element-add" ? [command.element.node] : []))[0] ?? "",
-    }
-  } else {
-    const at = placed(parts, probe.kind, probe.node)
-    places = { slide: at.slide, node: at.node }
-  }
+  const register = opened(parts)
+  const at = placed(parts, probe.kind, probe.node)
+  const places: Places = { slide: at.slide, node: at.node }
   const property = propertiesOf("set")[field] ?? {}
   const values = [
     ...samples(property, defs, places, field),
@@ -132,7 +116,6 @@ async function addTried(onAddedSlide: boolean): Promise<Tried> {
     line: ["box", "border", "connection"],
     arrow: ["box", "border", "connection"],
     elbow: ["box", "border", "connection"],
-    chart: ["box", "chart"],
   }
   const valuesOf = (name: string) => {
     const values = [

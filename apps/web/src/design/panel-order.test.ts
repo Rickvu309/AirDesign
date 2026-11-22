@@ -1,7 +1,6 @@
 import { elementId, kindTraits, opacityFields, type Kind, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { panelOf, type PanelReads } from "./panel"
-import { panelTrait } from "./panel-arrangement"
 import { panelKind, panelOrder, panelPlaces, type PanelKind } from "./panel-order"
 
 const panelled = (Object.keys(kindTraits) as Kind[]).filter((kind) =>
@@ -16,7 +15,7 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
   for (const kind of panelled) {
     const faded = opacityFields({ kind, text: true, grouped: false, animated: false }).length > 0
     const wanted = [
-      ...kindTraits[kind].filter(panelTrait),
+      ...kindTraits[kind],
       ...(faded ? ["opacity"] : []),
       ...(kind === "kept" ? [] : ["alignment"]),
     ].toSorted()

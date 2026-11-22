@@ -23,12 +23,6 @@ assert.deepEqual(
   [
     "blank.mjs",
     "box.mjs",
-    "chart-edits.mjs",
-    "chart-imported.mjs",
-    "chart-look-kept.mjs",
-    "chart-settings.mjs",
-    "chart-types.mjs",
-    "chart-waterfall.mjs",
     "color-picker.mjs",
     "color-transforms.mjs",
     "deck-templates.mjs",
@@ -79,7 +73,6 @@ assert.deepEqual(
     "text.mjs",
     "trait-body.mjs",
     "trait-border.mjs",
-    "trait-chart.mjs",
     "trait-connection.mjs",
     "trait-effects.mjs",
     "trait-fill.mjs",
@@ -169,11 +162,6 @@ assert.match(caseProblems("w.mjs", { written: [], lines: () => [] }).join("\n"),
 assert.deepEqual(caseSpecs([writing, good]), good.specs)
 assert.deepEqual(caseExports([writing, good]), good.exports)
 assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
-assert.deepEqual(caseWritten(entries).slice(0, 3), [
-  "written-chart-look-office.pptx",
-  "written-chart-look-census.pptx",
-  "written-chart-rows-office.pptx",
-])
 
 const out = scenario({})
 const original = new Map([["a", new Uint8Array([1])]])

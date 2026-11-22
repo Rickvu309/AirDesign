@@ -4,7 +4,7 @@ import { exportParts } from "./export-parts.js"
 import { indexPackage } from "./index-package.js"
 import { readParts } from "./package-container.js"
 import { decodeUtf8 } from "./package-bytes.js"
-import { readShapes } from "./read-shapes.js"
+import { readShapes, shapeKind } from "./read-shapes.js"
 
 declare const process: {
   cwd(): string
@@ -32,7 +32,7 @@ describe("a PowerPoint table frame", () => {
       const parts = await deckParts(name)
       const frames = readShapes(parts).filter((shape) => shape.kind === "p:graphicFrame")
       expect(frames.length, name).toBeGreaterThan(0)
-      expect(frames.map((shape) => shape.contentKind)).toEqual(frames.map(() => "kept"))
+      expect(frames.map((shape) => shapeKind(shape))).toEqual(frames.map(() => "kept"))
       const index = indexPackage(parts)
       for (const frame of frames) {
         const element = index.elements.find((each) => each.node === elementId(`${frame.slide}.${frame.shape}`))

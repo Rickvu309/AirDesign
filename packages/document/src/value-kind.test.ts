@@ -84,9 +84,9 @@ describe("the one stored reader walks a field's value kind", () => {
     expect(readValue(adjust, { adj: 11 })).toBeNull()
   })
 
-  it("reads stored text and charts as the strings format 1 stores, and a node as an element id", () => {
+  it("reads stored text as the strings format 1 stores, and a node as an element id", () => {
     expect(readValue(custom<string, string>("text"), '[{"from":0,"runs":[]}]')).toBe('[{"from":0,"runs":[]}]')
-    expect(readValue(custom<string, string>("chart"), 7)).toBeNull()
+    expect(readValue(custom<string, string>("text"), 7)).toBeNull()
     expect(readValue(custom<string, string>("asset"), "a".repeat(64))).toBe("a".repeat(64))
     expect(readValue(custom<string, string>("node"), "256.7")).toBe("256.7")
     expect(readValue(custom<string, string>("node"), "256")).toBeNull()
