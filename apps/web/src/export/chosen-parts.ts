@@ -1,6 +1,6 @@
 import { slidesKept, type Register } from "@airdesign/document"
-import { exportedDeck, type ExportedDeck, type PictureBytes } from "@/exported-parts"
-import { fileSlides } from "@/slide-edit"
+import { exportedDeck, type ExportedDeck, type PictureBytes } from "@/editing/exported-parts"
+import { fileSlides } from "@/editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

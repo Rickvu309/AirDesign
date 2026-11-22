@@ -6,7 +6,7 @@ import type { DeckFailure } from "@/editor/use-deck-status"
 import { exportDeck, ExportStopped, type ExportRequest, type ExportStop } from "@/export/export-deck"
 import { PicturesUploading, type PictureStore } from "@/picture-tool"
 import type { ThinNotice } from "@/thin-notice"
-import type { RecordsInFlight } from "@/undo-list"
+import type { RecordsInFlight } from "@/editing/undo-list"
 
 export type ExportingDeck = {
   readonly id: string

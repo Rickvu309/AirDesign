@@ -1,6 +1,6 @@
 import { fitFramesRows, readLayout, type ElementId } from "@airdesign/document"
 import { changeRows, type DesignDeck } from "@/design/design-change"
-import { indexedRegister } from "@/indexed-register"
+import { indexedRegister } from "@/editing/indexed-register"
 
 function indexedOf(deck: DesignDeck) {
   const register = deck.shown.shownRegister.current

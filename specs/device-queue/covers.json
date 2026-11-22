@@ -20,13 +20,13 @@
       "blob": "3bbbda26f787a19f0b9dfadff8496c98a77295a0"
     },
     {
-      "file": "apps/web/src/undo-list.ts",
+      "file": "apps/web/src/editing/undo-list.ts",
       "names": ["turnBack", "sent", "sentCommand", "recorded"],
       "digest": "f9987969b77d",
       "blob": "d7e800bdf3c53dde30aa623c4cd05d46f6d3eb41"
     },
     {
-      "file": "apps/web/src/commit-edit.ts",
+      "file": "apps/web/src/editing/commit-edit.ts",
       "names": ["flushPending"],
       "digest": "93acf5940101",
       "blob": "0cdffef0a871cfe9e96a5bdfa76864ad0914b1b1"

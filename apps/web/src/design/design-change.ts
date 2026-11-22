@@ -2,14 +2,14 @@ import type { Bound, Command, ElementId, Place, PlacedRow, Register, SetChange }
 import { connect, memoryRemote } from "@airdesign/live"
 import { readShapes, type ReadShape } from "@airdesign/pptx"
 import { toast } from "@/components/ui/toast"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { flushPending, type CommitOutcome } from "@/editing/commit-edit"
 import { designCopy } from "@/copy/design-copy"
 import { applyChange, applyRows, changeAhead, rowsAhead, valueFits, type ChangingDeck } from "@/design/trait-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import { withFileFloors } from "@/deck-paint"
-import { structureOf } from "@/paint-structure"
+import { structureOf } from "@/editing/paint-structure"
 
 export type DesignDeck = {
   readonly id: string

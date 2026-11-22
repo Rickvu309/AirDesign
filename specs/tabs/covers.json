@@ -44,7 +44,7 @@
       "blob": "81ce47babdda5160b70a411f2a454020a1840dba"
     },
     {
-      "file": "apps/web/src/device-copy.ts",
+      "file": "apps/web/src/editing/device-copy.ts",
       "names": ["deviceCopy"],
       "digest": "22e573bd728a",
       "blob": "2b57fd4ebb30e65b917ed00b2d3e52d9a507882a"

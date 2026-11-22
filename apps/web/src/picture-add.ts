@@ -16,13 +16,13 @@ import {
 } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { freeShapeId, iconInk, readSlides, slideColorHex } from "@airdesign/pptx"
-import type { PictureFile } from "@/picture-file"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
+import type { PictureFile } from "@/editing/picture-file"
+import { flushPending, type CommitOutcome } from "@/editing/commit-edit"
 import { takenBoxes, type ElementPlan, type SlideRoom } from "@/element-edit"
-import { slideBase } from "@/exported-parts"
+import { slideBase } from "@/editing/exported-parts"
 import { iconBytes } from "@/icon-fallback"
-import { indexedRegister } from "@/indexed-register"
-import { fileSlides } from "@/slide-edit"
+import { indexedRegister } from "@/editing/indexed-register"
+import { fileSlides } from "@/editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -116,4 +116,4 @@ export async function iconPlan(
   }
 }
 
-export { pictureRefusal, readPicture, type PictureFile, type PictureRefusal } from "@/picture-file"
+export { pictureRefusal, readPicture, type PictureFile, type PictureRefusal } from "@/editing/picture-file"

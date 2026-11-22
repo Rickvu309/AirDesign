@@ -1,5 +1,5 @@
 import { decide, format, groupParent, readLayout, type Box, type ElementId, type Register } from "@airdesign/document"
-import { commitPatch, type BoxCommit } from "@/commit-edit"
+import { commitPatch, type BoxCommit } from "@/editing/commit-edit"
 
 function autoFrame(register: Register, node: ElementId): boolean {
   const view = readLayout(register, node)

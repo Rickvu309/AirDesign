@@ -1,4 +1,4 @@
-import type { ShownNotes } from "@/notes-edit"
+import type { ShownNotes } from "@/editing/notes-edit"
 
 export function notesOn(notes: readonly ShownNotes[], slide: string | undefined): string {
   if (slide === undefined) return ""

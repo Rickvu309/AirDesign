@@ -1,30 +1,5 @@
 apps/web/src:
-  apps/web/src/commit-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/decks/home.tsx
   apps/web/src/deck-paint.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/decks/first-slide.ts
-      - apps/web/src/decks/template-decks.ts
-  apps/web/src/exported-parts.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/decks/first-slide.ts
-  apps/web/src/import-deck.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/decks/home.tsx
-  apps/web/src/live-repaint.ts:
     violations:
       - dependency
       - layer

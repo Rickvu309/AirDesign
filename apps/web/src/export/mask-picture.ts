@@ -1,9 +1,9 @@
 import { readSlides, type MaskRun } from "@airdesign/pptx"
 import { paintStore, type CanvasElement, type CanvasSlide } from "@airdesign/render"
 import { paint } from "@/deck-paint"
-import { busyElements } from "@/live-repaint"
+import { busyElements } from "@/editing/live-repaint"
 import type { MaskPicture } from "@/export/mask-bake"
-import { paintedPicture } from "@/painted-picture"
+import { paintedPicture } from "@/editing/painted-picture"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

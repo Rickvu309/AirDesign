@@ -33,7 +33,7 @@ import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, deckPath, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
-import { server } from "@/commit-edit"
+import { server } from "@/editing/commit-edit"
 import { signInAddress } from "@/thin-notice"
 
 type Deck = ListedDeck
@@ -239,7 +239,7 @@ export function Home({
   async function choose(file: File) {
     setImporting({ name: file.name, failed: false })
     try {
-      const { importDeck } = await import("@/import-deck")
+      const { importDeck } = await import("@/editing/import-deck")
       const imported = await importDeck(file)
       if (!imported.ok) {
         setImporting({ name: file.name, failed: true, reason: imported.reason })

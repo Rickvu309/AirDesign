@@ -6,7 +6,7 @@ import type { DeckPaint } from "../editor/use-deck-paint"
 
 const world = vi.hoisted(() => ({ order: [] as string[], held: true }))
 
-vi.mock("@/device-copy", () => ({
+vi.mock("@/editing/device-copy", () => ({
   deviceCopy: async () => {
     world.order.push("device")
     return { stored: { parts: new Map(), name: "Clean" }, register: null }
@@ -15,14 +15,14 @@ vi.mock("@/device-copy", () => ({
   closesDeck: () => false,
 }))
 
-vi.mock("@/index-deck", () => ({
+vi.mock("@/editing/index-deck", () => ({
   backfillIndex: () => {
     world.order.push("index")
     return world.held ? new Promise(() => undefined) : Promise.resolve()
   },
 }))
 
-vi.mock("@/deck-follow", () => ({
+vi.mock("@/editing/deck-follow", () => ({
   followDeck: () => {
     world.order.push("follow")
     return new Promise(() => undefined)

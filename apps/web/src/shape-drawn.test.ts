@@ -2,7 +2,7 @@ import { decide, openRegister, slideId, type Command, type Register, type SlideC
 import { readParts } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { elementCommand } from "./element-edit"
-import { exportedParts } from "./exported-parts"
+import { exportedParts } from "./editing/exported-parts"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

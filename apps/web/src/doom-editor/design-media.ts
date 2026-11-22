@@ -1,6 +1,6 @@
 import { flushMedia, keepMedia, readMedia } from "@airdesign/live"
 import { useEffect, useState } from "react"
-import { readPicture } from "@/picture-file"
+import { readPicture } from "@/editing/picture-file"
 
 const sha = /^[0-9a-f]{64}$/
 

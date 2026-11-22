@@ -1,9 +1,9 @@
 import { decide, openRegister } from "@airdesign/document"
 import { readParts, readShapes, readSlides } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { exportedParts } from "@/exported-parts"
+import { exportedParts } from "@/editing/exported-parts"
 import { pictureCommand } from "@/picture-add"
-import { fileSlides } from "@/slide-edit"
+import { fileSlides } from "@/editing/slide-edit"
 import { chosenParts } from "./chosen-parts"
 
 async function fixture(name: string): Promise<ReadonlyMap<string, Uint8Array>> {

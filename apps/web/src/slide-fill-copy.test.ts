@@ -15,8 +15,8 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides, shownFill } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { exportedParts } from "./exported-parts"
-import { flooredEdit } from "./slide-floor"
+import { exportedParts } from "./editing/exported-parts"
+import { flooredEdit } from "./editing/slide-floor"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 type Fill = FieldValue<"fills", "p0">

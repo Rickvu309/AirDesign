@@ -17,10 +17,10 @@ import { carriedShape, freeShapeId, readSlides } from "@airdesign/pptx"
 import { pastedOffset, pastedOver, type Moved, type PasteMode } from "@airdesign/render"
 import type { CopyRefusal, ElsewhereRefusal } from "@/copy/element-copy"
 import type { CopyAsked } from "@/element-edit"
-import { slideBase } from "@/exported-parts"
-import { indexedRegister } from "@/indexed-register"
-import { base64Of, type CarriedLayer, type CopiedLayer, type LayerCopy } from "@/layer-clipboard"
-import { fileSlides } from "@/slide-edit"
+import { slideBase } from "@/editing/exported-parts"
+import { indexedRegister } from "@/editing/indexed-register"
+import { base64Of, type CarriedLayer, type CopiedLayer, type LayerCopy } from "@/editing/layer-clipboard"
+import { fileSlides } from "@/editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

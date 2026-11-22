@@ -13,15 +13,15 @@ import { readPackage } from "@airdesign/pptx"
 import { paintStore } from "@airdesign/render"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
-import { flushPending, server as deckServer, type CommitOutcome } from "./commit-edit"
+import { flushPending, server as deckServer, type CommitOutcome } from "./editing/commit-edit"
 import { changeDesign } from "./design/design-change"
 import type { UndoButtonsState } from "./editor/undo-buttons"
 import { paintingAhead } from "./editor/painted-ahead"
 import { until, within } from "./replay-waits"
 import type { DeckPaint } from "./editor/use-deck-paint"
 import { useUndoList, useUndoTurn, type UndoList as UndoHooks } from "./editor/use-undo"
-import { structureOf } from "./paint-structure"
-import type { UndoEntry } from "./undo-list"
+import { structureOf } from "./editing/paint-structure"
+import type { UndoEntry } from "./editing/undo-list"
 
 type Run = () => Promise<unknown>
 type Held = { readonly run: Run; readonly resolve: (value: unknown) => void; readonly reject: (error: unknown) => void }

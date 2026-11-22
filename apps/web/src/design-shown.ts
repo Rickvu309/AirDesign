@@ -12,7 +12,7 @@ import {
 import { designCopy } from "@/copy/design-copy"
 import { shownName, type Swatch } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
-import { cssColor } from "@/paint-css"
+import { cssColor } from "@/editing/paint-css"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

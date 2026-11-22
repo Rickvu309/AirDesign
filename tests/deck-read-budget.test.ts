@@ -12,7 +12,7 @@ import { indexDeck, openDeck, readDeckPage, readLead, readReport, withinRead, ty
 import { indexPages } from "@airdesign/live"
 import { orderedParts, readPackage } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { indexedParts } from "../apps/web/src/index-deck.js"
+import { indexedParts } from "../apps/web/src/editing/index-deck.js"
 
 async function doeAtFifty() {
   const read = await readPackage(new Uint8Array(readFileSync("scripts/pptx-fixtures/doe-heat-pumps.pptx")))

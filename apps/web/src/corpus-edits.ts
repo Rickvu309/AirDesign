@@ -17,10 +17,10 @@ import {
   type Parts,
 } from "@/corpus-deck"
 import { elementCommand, removals } from "@/element-edit"
-import { slideBase } from "@/exported-parts"
-import { indexedParts } from "@/index-deck"
+import { slideBase } from "@/editing/exported-parts"
+import { indexedParts } from "@/editing/index-deck"
 import { pictureCommand } from "@/picture-add"
-import { slideRels } from "@/slide-paint"
+import { slideRels } from "@/editing/slide-paint"
 
 export type CorpusEdit = {
   readonly name: string

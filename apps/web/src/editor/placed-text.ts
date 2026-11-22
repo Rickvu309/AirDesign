@@ -10,8 +10,8 @@ import {
 import { textValue, type HeldKeys } from "@airdesign/render"
 import { elementCommand, type SlideRoom, type TextPlace } from "@/element-edit"
 import type { StoreLane } from "@/editor/store-lane"
-import { fileSlides } from "@/slide-edit"
-import type { RecordHold } from "@/undo-list"
+import { fileSlides } from "@/editing/slide-edit"
+import type { RecordHold } from "@/editing/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

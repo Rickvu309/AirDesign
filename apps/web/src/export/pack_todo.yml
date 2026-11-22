@@ -5,61 +5,12 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/export/mask-picture.ts
-  apps/web/src/device-copy.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/export-deck.ts
-  apps/web/src/exported-parts.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/chosen-parts.ts
-  apps/web/src/fill-plan.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/fill-bake.ts
-  apps/web/src/live-repaint.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/mask-picture.ts
-  apps/web/src/paint-css.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/fill-bake.ts
-      - apps/web/src/export/shadow-bake.ts
-  apps/web/src/painted-picture.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/mask-picture.ts
-  apps/web/src/picture-fill.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/fill-bake.ts
   apps/web/src/picture-tool.ts:
     violations:
       - dependency
       - layer
     files:
       - apps/web/src/export/export-deck.ts
-  apps/web/src/slide-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/chosen-parts.ts
 apps/web/src/editor:
   apps/web/src/editor/editor-chrome.tsx:
     violations:

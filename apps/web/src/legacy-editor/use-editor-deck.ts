@@ -14,7 +14,7 @@ import { saveStatus, useDeckStatus } from "@/editor/use-deck-status"
 import { useDeckTitle } from "@/legacy-editor/use-deck-title"
 import { useExport } from "@/legacy-editor/use-export"
 import { useUndoList } from "@/editor/use-undo"
-import { useNotes } from "@/notes-edit"
+import { useNotes } from "@/editing/notes-edit"
 import { pickPicture } from "@/editor/picture-picker"
 import { usePictureStore, usePictureTool } from "@/picture-tool"
 

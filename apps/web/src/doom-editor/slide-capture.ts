@@ -1,7 +1,7 @@
 import { doom } from "@airdesign/document"
 import { DoomSlide } from "@airdesign/render"
 import { createElement } from "react"
-import { paintedElement } from "@/painted-picture"
+import { paintedElement } from "@/editing/painted-picture"
 import { jpegOf, pictureFit } from "@/slide-pictures"
 
 export async function captureSlide(

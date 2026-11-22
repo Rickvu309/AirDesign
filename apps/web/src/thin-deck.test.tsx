@@ -8,8 +8,8 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { productCopy } from "./copy/product-copy"
 import { signInAddress } from "./thin-notice"
 import { editedRegister, fallbackSlide, xml } from "./slide-fixtures"
-import { commitEdit } from "./commit-edit"
-import { saveDeck } from "./import-deck"
+import { commitEdit } from "./editing/commit-edit"
+import { saveDeck } from "./editing/import-deck"
 import { elementIds, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {

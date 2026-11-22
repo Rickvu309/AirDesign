@@ -2,7 +2,7 @@ import { readDeckId } from "@airdesign/catalog"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 import { indexPackage, paintReader, readParts, shownTheme } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { exportedParts } from "./exported-parts"
+import { exportedParts } from "./editing/exported-parts"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

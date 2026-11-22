@@ -2,7 +2,7 @@ import { stackTarget, type ElementId, type StackMove } from "@airdesign/document
 import { shapeSiblings } from "@airdesign/pptx"
 import type { CanvasSlide, Selection } from "@airdesign/render"
 import { useRef, useState, type MouseEvent, type ReactNode } from "react"
-import type { CommitOutcome } from "@/commit-edit"
+import type { CommitOutcome } from "@/editing/commit-edit"
 import type { GroupChange } from "@/legacy-editor/group-actions"
 import {
   ContextMenu,

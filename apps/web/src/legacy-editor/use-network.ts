@@ -1,7 +1,7 @@
 import { connect, flushOriginal } from "@airdesign/live"
 import { useEffect } from "react"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
-import { resendPending } from "@/deck-resend"
+import { flushPending, type CommitOutcome } from "@/editing/commit-edit"
+import { resendPending } from "@/editing/deck-resend"
 
 export type NetworkDeck = {
   readonly id: string

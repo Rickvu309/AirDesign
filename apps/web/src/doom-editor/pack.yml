@@ -5,6 +5,7 @@ dependencies:
   - apps/web/src/copy
   - apps/web/src/decks
   - apps/web/src/design
+  - apps/web/src/editing
   - apps/web/src/editor
   - apps/web/src/lib
   - apps/web/src/present

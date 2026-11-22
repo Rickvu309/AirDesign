@@ -1,7 +1,7 @@
 import type { doom } from "@airdesign/document"
 import { flushMedia, keepMedia } from "@airdesign/live"
 import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObject } from "react"
-import { readPicture } from "@/picture-file"
+import { readPicture } from "@/editing/picture-file"
 import type { ThinNotice } from "@/thin-notice"
 import { pictureWrites } from "./picture-writes"
 import type { Point } from "./slide-geometry"

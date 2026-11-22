@@ -2,7 +2,7 @@ import { decide, elementId, openRegister, writeTextValue, type Register } from "
 import { readParts } from "@airdesign/pptx"
 import type { MeasuredFit } from "@airdesign/render"
 import { expect, it } from "vitest"
-import { exportedParts } from "@/exported-parts"
+import { exportedParts } from "@/editing/exported-parts"
 import { bakeFits } from "./fit-bake"
 
 type Parts = ReadonlyMap<string, Uint8Array>

@@ -1,7 +1,7 @@
 import { elementId, writeTextValue, type ElementId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { leftEmptied } from "./emptied-text"
-import { indexedRegister } from "@/indexed-register"
+import { indexedRegister } from "@/editing/indexed-register"
 import { editedRegister, onSlide, twoBoxSlide, xml } from "@/slide-fixtures"
 
 const emptied = writeTextValue([{ from: 0, runs: [{ from: 0, text: "" }] }])

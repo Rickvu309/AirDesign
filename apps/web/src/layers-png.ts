@@ -1,8 +1,8 @@
 import type { ElementId } from "@airdesign/document"
 import { paintStore, type CanvasElement, type PaintBox } from "@airdesign/render"
 import { paint } from "@/deck-paint"
-import { busyElements } from "@/live-repaint"
-import { paintedPicture } from "@/painted-picture"
+import { busyElements } from "@/editing/live-repaint"
+import { paintedPicture } from "@/editing/painted-picture"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

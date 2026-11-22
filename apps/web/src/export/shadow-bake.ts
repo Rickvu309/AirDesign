@@ -6,7 +6,7 @@ import {
   type PaintBox,
   type PaintShadow,
 } from "@airdesign/pptx"
-import { cssColor } from "@/paint-css"
+import { cssColor } from "@/editing/paint-css"
 
 const inch = 914_400
 const dots = 192

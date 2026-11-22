@@ -68,13 +68,13 @@
       "blob": "508efead42f1eef1f9abc83664f5b4cdf7ae3ada"
     },
     {
-      "file": "apps/web/src/undo-list.ts",
+      "file": "apps/web/src/editing/undo-list.ts",
       "names": ["recorded", "turnBack", "sent", "sentCommand"],
       "digest": "e43c8bf25acb",
       "blob": "d7e800bdf3c53dde30aa623c4cd05d46f6d3eb41"
     },
     {
-      "file": "apps/web/src/exported-parts.ts",
+      "file": "apps/web/src/editing/exported-parts.ts",
       "names": ["editedParts", "exportedParts"],
       "digest": "a53a4fc4e02c",
       "blob": "fc1b99fc2e4bde694efc38ac9602b064a6c85acc"

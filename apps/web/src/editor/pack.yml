@@ -3,6 +3,7 @@ dependencies:
   - apps/web/src/components
   - apps/web/src/copy
   - apps/web/src/design
+  - apps/web/src/editing
   - apps/web/src/export
   - apps/web/src/lib
 public:

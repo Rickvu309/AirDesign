@@ -2,16 +2,16 @@ import { slideKind, type SlideId, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { textFormatting } from "@airdesign/render"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { flushPending, type CommitOutcome } from "@/editing/commit-edit"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
-import { indexedRegister } from "@/indexed-register"
+import { indexedRegister } from "@/editing/indexed-register"
 import { storeLane } from "@/editor/store-lane"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { slideTurnSaid } from "@/editor/slide-said"
 import { withFileFloors } from "@/deck-paint"
 import type { DeckPaint } from "@/editor/use-deck-paint"
-import { notesShown, type ShownNotes } from "@/notes-edit"
-import { structureOf } from "@/paint-structure"
+import { notesShown, type ShownNotes } from "@/editing/notes-edit"
+import { structureOf } from "@/editing/paint-structure"
 import {
   emptyShown,
   emptyUndo,
@@ -25,7 +25,7 @@ import {
   type UndoDirection,
   type UndoEntry,
   type UndoList as UndoSides,
-} from "@/undo-list"
+} from "@/editing/undo-list"
 
 export type UndoList = ReturnType<typeof useUndoList>
 

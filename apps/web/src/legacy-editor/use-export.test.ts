@@ -4,7 +4,7 @@ import { ExportStopped } from "@/export/export-deck"
 import { PicturesUploading } from "@/picture-tool"
 import { exportFailure, exportNotices, useExport, type ExportingDeck } from "@/legacy-editor/use-export"
 import { paintingAhead, personCommands } from "@/editor/painted-ahead"
-import { recordsInFlight } from "@/undo-list"
+import { recordsInFlight } from "@/editing/undo-list"
 
 const reads = vi.hoisted(() => [] as string[])
 

@@ -2,9 +2,9 @@ import { pictureBytes as pictureLimit } from "@airdesign/catalog"
 import type { Register, SlideId } from "@airdesign/document"
 import { paintStore } from "@airdesign/render"
 import { paint } from "@/deck-paint"
-import type { PictureBytes } from "@/exported-parts"
-import { busyElements } from "@/live-repaint"
-import { paintedPicture } from "@/painted-picture"
+import type { PictureBytes } from "@/editing/exported-parts"
+import { busyElements } from "@/editing/live-repaint"
+import { paintedPicture } from "@/editing/painted-picture"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

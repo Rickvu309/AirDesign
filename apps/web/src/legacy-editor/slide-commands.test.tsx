@@ -1,7 +1,7 @@
 import type { SlideCommand } from "@airdesign/document"
 import { paintStore } from "@airdesign/render"
 import { expect, it, vi } from "vitest"
-import type { CommitOutcome } from "@/commit-edit"
+import type { CommitOutcome } from "@/editing/commit-edit"
 import { until } from "@/replay-waits"
 import { slideCommands, type CommandedDeck } from "./slide-commands"
 import { storeLane } from "../editor/store-lane"
@@ -20,7 +20,7 @@ vi.mock("@airdesign/live", async (original) => ({
   }),
 }))
 
-vi.mock("@/slide-edit", async (original) => ({
+vi.mock("@/editing/slide-edit", async (original) => ({
   ...(await original<object>()),
   commitSlideChange: async (
     _deck: string,

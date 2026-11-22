@@ -16,9 +16,9 @@ import {
 } from "@airdesign/document"
 import { notesLinkFailures, paintReader, readNotes, readParts, readShapes, readSlides } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { exportedParts, storedText } from "./exported-parts"
-import { shownValue } from "./live-repaint"
-import { flooredEdit } from "./slide-floor"
+import { exportedParts, storedText } from "./editing/exported-parts"
+import { shownValue } from "./editing/live-repaint"
+import { flooredEdit } from "./editing/slide-floor"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

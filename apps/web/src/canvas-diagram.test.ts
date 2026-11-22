@@ -1,8 +1,8 @@
 import { elementId } from "@airdesign/document"
 import type { PaintBox, PaintElement, PaintReader, PaintText } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { slideCanvases, type CanvasSource } from "./canvas-slide"
-import { cssColor } from "./paint-css"
+import { slideCanvases, type CanvasSource } from "./editing/canvas-slide"
+import { cssColor } from "./editing/paint-css"
 
 const part = "ppt/slides/slide5.xml"
 const drawing = "ppt/diagrams/drawing1.xml"

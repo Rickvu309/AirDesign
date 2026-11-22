@@ -29,7 +29,7 @@ test("slide revisions follow without reload, keep selection, and select a neighb
   await expect(selected).toHaveAttribute("data-slide-entry", "2")
   await expect.poll(async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision).toBe(1)
   const { deckRoutes } = await import("../../packages/catalog/src/index.ts")
-  const { slideCommand } = await import("../../apps/web/src/slide-edit.ts")
+  const { slideCommand } = await import("../../apps/web/src/editing/slide-edit.ts")
   async function outside(change: "clone" | "move" | "remove", index: number, to = index) {
     const opened = deckRoutes.open.result((await stack.post(deckRoutes.open.path, { deck }, cookie)).json)
     if (!opened.ok) throw new Error("open")

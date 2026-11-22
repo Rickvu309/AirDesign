@@ -2,7 +2,7 @@ import { decide, elementId, openRegister, writeTextValue, type Register } from "
 import { readPackage } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
 import { withFileFloors } from "@/deck-paint"
-import { exportedParts } from "@/exported-parts"
+import { exportedParts } from "@/editing/exported-parts"
 import { judgedDeck, judgedOf } from "./use-findings-report"
 import { slideKeyCache, slideKeys } from "./slide-picture-keys"
 

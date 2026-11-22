@@ -1,6 +1,6 @@
 import type { Register, SetChange } from "@airdesign/document"
 import type { FlippedLayer, Turned } from "@airdesign/render"
-import { storedBox } from "@/frame-boxes"
+import { storedBox } from "@/editing/frame-boxes"
 
 function angleUnits(degrees: number): number {
   const normalized = ((degrees % 360) + 360) % 360
