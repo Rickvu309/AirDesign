@@ -50,6 +50,7 @@ const rule = {
       Program() {
         const sourceCode = sourceCodeOf(context)
         for (const comment of sourceCode.getAllComments()) {
+          if (comment.type === "Shebang") continue
           if (isTsExpectError(comment) && allowsTsExpectError(filename)) continue
           context.report({ loc: comment.loc, message: messageFor(comment) })
         }

@@ -41,6 +41,21 @@ expectRejects(
 
 expectAccepts("no-comments accepts the uncommented fix", "fix.ts", "export const saved = 1\n", rule)
 
+expectAccepts(
+  "no-comments accepts a hashbang, which tells the shell how to run the file and is not a comment",
+  "bin.js",
+  "#!/usr/bin/env node\nexport const saved = 1\n",
+  rule,
+)
+
+expectRejects(
+  "no-comments still rejects a comment after a hashbang",
+  "bin.js",
+  "#!/usr/bin/env node\n// run it\nexport const saved = 1\n",
+  rule,
+  "Remove this comment.",
+)
+
 expectRejects(
   "no-comments rejects @ts-expect-error outside the allow list",
   "ordinary.ts",
