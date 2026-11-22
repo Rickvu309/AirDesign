@@ -277,7 +277,7 @@ export async function signInBrowser(context: BrowserContext, cookie: string): Pr
   )
 }
 
-const forwarded = ["/decks/", "/sign-in/"]
+const forwarded = ["/decks/", "/sign-in/", "/scenes/"]
 const streamed = "/aira/"
 
 export async function forward(page: Page, stack: Stack, country = "US"): Promise<string[]> {

@@ -13,6 +13,9 @@ import { AccountProfile } from "./settings/account-profile"
 
 const ThinDeck = lazy(() => import("./thin-deck").then((module) => ({ default: module.ThinDeck })))
 const ScreenRoute = lazy(() => import("./screen-routes"))
+const SceneEditor = lazy(() =>
+  import("./scene-editor/scene-editor").then((module) => ({ default: module.SceneEditor })),
+)
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/$/, "") || "/"
@@ -43,6 +46,13 @@ function AppRoutes() {
     return (
       <Suspense>
         <ThinDeck id={deck[1]} />
+      </Suspense>
+    )
+  const sceneDeck = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
+  if (sceneDeck !== null)
+    return (
+      <Suspense>
+        <SceneEditor id={sceneDeck[1] ?? null} />
       </Suspense>
     )
   if (path === "/live-proof") return <LiveProof />
