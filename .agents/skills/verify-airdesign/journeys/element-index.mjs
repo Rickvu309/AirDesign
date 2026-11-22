@@ -1,6 +1,7 @@
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { clearBrowser } from "../bin/clear-browser.mjs"
 
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes, airaRoutes, aira }) {
   const { mcpRoutes } = await import(pathToFileURL(path.join(repo, "packages/catalog/dist/index.js")).href)
@@ -86,20 +87,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect.poll(async () => (await post(deckRoutes.original, { deck }, cookie)).json.ok).toBe(true)
   const url = page.url()
   await page.goto("/version")
-  await page.evaluate(async () => {
-    localStorage.clear()
-    sessionStorage.clear()
-    for (const database of await indexedDB.databases()) {
-      await new Promise((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(database.name)
-        request.onsuccess = resolve
-        request.onerror = () => reject(request.error)
-        request.onblocked = () => reject(new Error("database open"))
-      })
-    }
-    const directory = await navigator.storage.getDirectory()
-    for await (const name of directory.keys()) await directory.removeEntry(name, { recursive: true })
-  })
+  await clearBrowser(page)
   await page.goto(url)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Read before editing")
   await capture("cleared-browser")

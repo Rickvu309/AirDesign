@@ -1,5 +1,6 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { clearBrowser } from "../bin/clear-browser.mjs"
 
 const typed = "Kept on the server"
 
@@ -12,24 +13,6 @@ function textsIn(register) {
         .map((paragraph) => paragraph.runs.map((run) => run.text).join(""))
         .join("\n"),
     ]
-  })
-}
-
-async function clearBrowser(page) {
-  await page.evaluate(async () => {
-    localStorage.clear()
-    sessionStorage.clear()
-    for (const database of await indexedDB.databases()) {
-      await new Promise((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(database.name)
-        request.onsuccess = () => resolve()
-        request.onerror = () => reject(request.error)
-        request.onblocked = () => reject(new Error(`${database.name} is still open`))
-      })
-    }
-    const directory = await navigator.storage?.getDirectory?.()
-    if (directory !== undefined)
-      for await (const name of directory.keys()) await directory.removeEntry(name, { recursive: true })
   })
 }
 
