@@ -277,7 +277,8 @@
     "undo-export.spec.ts": 17.4,
     "usage-motion.spec.ts": 1.7,
     "usage.spec.ts": 4.1,
-    "zoom-selection-resize.spec.ts": 19.4
+    "zoom-selection-resize.spec.ts": 19.4,
+    "zz-debug.spec.ts": 6
   },
   "export": {
     "agent-arrow.spec.ts": 7.8,

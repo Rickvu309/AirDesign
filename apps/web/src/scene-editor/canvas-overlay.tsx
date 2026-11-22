@@ -1,9 +1,16 @@
 import type { scene } from "@airdesign/document"
 import type { Guide } from "@airdesign/render"
 import type { Rect } from "./selection"
+import { CanvasHandles } from "./canvas-handles"
+import { framed } from "./selection-frame"
 import { aroundPlaced, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
-export type Preview = { readonly writes: readonly scene.Write[]; readonly guides: readonly Guide[] }
+export type Preview = {
+  readonly kind: "move" | "transform"
+  readonly writes: readonly scene.Write[]
+  readonly guides: readonly Guide[]
+  readonly label: string | null
+}
 
 const edge = "var(--primary-strong)"
 const alert = "var(--limit)"
@@ -47,15 +54,18 @@ function GuideMarks({ guide, scale }: { readonly guide: Guide; readonly scale: n
 }
 
 export function CanvasOverlay(props: {
+  readonly view: scene.Scene
+  readonly preview: Preview | null
   readonly geometry: SlideGeometry
   readonly selected: readonly scene.NodeId[]
   readonly hovered: scene.NodeId | null
   readonly marquee: Rect | null
-  readonly guides: readonly Guide[]
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
 }) {
-  const { geometry, selected, hovered, marquee, guides, scale, size } = props
+  const { view, preview, geometry, selected, hovered, marquee, scale, size } = props
+  const guides = preview?.guides ?? []
+  const frame = preview?.kind === "move" ? null : framed(geometry, selected, view)
   const chosen = selected.flatMap((id) => geometry.byId.get(id) ?? [])
   const all = aroundPlaced(chosen)
   const hover = hovered === null || selected.includes(hovered) ? undefined : geometry.byId.get(hovered)
@@ -91,6 +101,13 @@ export function CanvasOverlay(props: {
           strokeWidth={1}
         />
       ) : null}
+      {frame === null ? null : (
+        <CanvasHandles
+          frame={frame}
+          scale={scale}
+          label={preview?.label ?? `${String(Math.round(frame.w))} × ${String(Math.round(frame.h))}`}
+        />
+      )}
       {guides.map((guide, at) => (
         <GuideMarks key={at} guide={guide} scale={scale} />
       ))}

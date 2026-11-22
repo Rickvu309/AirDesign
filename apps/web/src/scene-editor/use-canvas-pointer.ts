@@ -1,4 +1,5 @@
 import type { scene } from "@airdesign/document"
+import type { TransformGrip } from "@airdesign/render"
 import {
   useEffect,
   useRef,
@@ -21,6 +22,7 @@ import {
   type Selection,
 } from "./selection"
 import type { Point, SlideGeometry } from "./slide-geometry"
+import { transformedBy } from "./transform-drag"
 import type { EditorClient } from "./use-scene-deck"
 
 export type Tool = "move" | "hand"
@@ -53,6 +55,15 @@ type Active =
       moved: boolean
     }
   | {
+      readonly kind: "transform"
+      readonly grip: TransformGrip
+      readonly origin: Point
+      readonly ids: readonly scene.NodeId[]
+      readonly view: scene.Scene
+      readonly geometry: SlideGeometry
+      moved: boolean
+    }
+  | {
       readonly kind: "marquee"
       readonly origin: Point
       readonly base: readonly scene.NodeId[]
@@ -62,6 +73,11 @@ type Active =
     }
 
 const threshold = 3
+
+function gripOf(target: EventTarget | null): TransformGrip | null {
+  const found = target instanceof Element ? target.closest("[data-grip]")?.getAttribute("data-grip") : null
+  return found === null || found === undefined ? null : (found as TransformGrip)
+}
 
 export function useCanvasPointer(args: PointerArgs) {
   const latest = useRef(args)
@@ -86,6 +102,43 @@ export function useCanvasPointer(args: PointerArgs) {
     view: scene.Scene,
   ) => hitChain(geometry.roots, toSlide(event), 4.5 / latest.current.scale, (id) => lockedIn(view, id))
 
+  type Evaluated = Pick<Preview, "writes" | "guides" | "label">
+
+  function evaluate(
+    gesture: Extract<Active, { kind: "move" | "transform" }>,
+    event: PointerEvent | ReactPointerEvent,
+  ): Evaluated {
+    const a = latest.current
+    const at = toSlide(event)
+    if (gesture.kind === "move") {
+      const moved = movedBy({
+        view: gesture.view,
+        geometry: gesture.geometry,
+        ids: gesture.ids,
+        by: { x: at.x - gesture.origin.x, y: at.y - gesture.origin.y },
+        snap: !event.ctrlKey,
+        lockAxis: event.shiftKey,
+        scale: a.scale,
+        size: a.size,
+      })
+      return { writes: moved.writes, guides: moved.guides, label: null }
+    }
+    return transformedBy({
+      view: gesture.view,
+      geometry: gesture.geometry,
+      ids: gesture.ids,
+      grip: gesture.grip,
+      origin: gesture.origin,
+      at,
+      keepRatio: event.shiftKey,
+      fromCenter: event.altKey,
+      snapAngle: event.shiftKey,
+      snap: !event.ctrlKey,
+      scale: a.scale,
+      size: a.size,
+    })
+  }
+
   function advance(event: PointerEvent | ReactPointerEvent) {
     const gesture = active.current
     const a = latest.current
@@ -101,18 +154,9 @@ export function useCanvasPointer(args: PointerArgs) {
     const far = Math.hypot(at.x - gesture.origin.x, at.y - gesture.origin.y) * a.scale >= threshold
     if (!gesture.moved && !far) return
     gesture.moved = true
-    if (gesture.kind === "move") {
-      const moved = movedBy({
-        view: gesture.view,
-        geometry: gesture.geometry,
-        ids: gesture.ids,
-        by: { x: at.x - gesture.origin.x, y: at.y - gesture.origin.y },
-        snap: !event.ctrlKey,
-        lockAxis: event.shiftKey,
-        scale: a.scale,
-        size: a.size,
-      })
-      a.setPreview(moved.writes.length === 0 ? null : { writes: moved.writes, guides: moved.guides })
+    if (gesture.kind === "move" || gesture.kind === "transform") {
+      const done = evaluate(gesture, event)
+      a.setPreview(done.writes.length === 0 ? null : { ...done, kind: gesture.kind })
       return
     }
     const rect = rectBetween(gesture.origin, at)
@@ -146,24 +190,16 @@ export function useCanvasPointer(args: PointerArgs) {
     pending.current = null
     a.setMarquee(null)
     a.setPreview(null)
-    if (gesture === null || gesture.kind !== "move" || !commit || last === null) return
+    if (gesture === null || (gesture.kind !== "move" && gesture.kind !== "transform") || !commit || last === null)
+      return
     const at = toSlide(last)
     const by = { x: at.x - gesture.origin.x, y: at.y - gesture.origin.y }
     if (!gesture.moved && Math.hypot(by.x, by.y) * a.scale < threshold) {
-      if (gesture.alone !== null) a.onSelection(gesture.alone)
+      if (gesture.kind === "move" && gesture.alone !== null) a.onSelection(gesture.alone)
       return
     }
-    const moved = movedBy({
-      view: gesture.view,
-      geometry: gesture.geometry,
-      ids: gesture.ids,
-      by,
-      snap: !last.ctrlKey,
-      lockAxis: last.shiftKey,
-      scale: a.scale,
-      size: a.size,
-    })
-    if (moved.writes.length > 0) a.client.push(moved.writes)
+    const done = evaluate(gesture, last)
+    if (done.writes.length > 0) a.client.push(done.writes)
   }
 
   return {
@@ -184,6 +220,19 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const origin = toSlide(event)
+      const grip = gripOf(event.target)
+      if (grip !== null) {
+        active.current = {
+          kind: "transform",
+          grip,
+          origin,
+          ids: a.selection.ids,
+          view: a.view,
+          geometry: a.geometry,
+          moved: false,
+        }
+        return
+      }
       const chain = chainAt(event, a.geometry, a.view)
       const deep = event.metaKey || event.ctrlKey
       if (chain === null) {

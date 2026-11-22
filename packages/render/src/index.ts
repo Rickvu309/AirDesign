@@ -1,10 +1,30 @@
 export { boxOf, ownBox, sameBox, type Moved } from "./box-gesture.js"
-export { around, reachOf, snapMove, type Bounds, type Guide, type SnapTargets } from "./snapping.js"
+export {
+  around,
+  guidesAt,
+  lineAt,
+  nearestLine,
+  reachOf,
+  snapMove,
+  type Bounds,
+  type Guide,
+  type Line,
+  type SnapTargets,
+  type Watched,
+} from "./snapping.js"
 export type { Copied } from "./layer-copies.js"
 export { pastedOffset, pastedOver } from "./paste-place.js"
 export type { LayerClipboard, LayerPaste, PasteMode } from "./use-canvas-clipboard.js"
 export type { Turned } from "./transform-drag.js"
-export type { FlippedLayer } from "./transform-math.js"
+export type { FlippedLayer, ResizeGrip, RotateGrip, TransformGrip } from "./transform-math.js"
+export {
+  normalizeDegrees,
+  resizeBox,
+  resizeCursor,
+  resizeSelection,
+  rotateCursor,
+  rotatedAngle,
+} from "./transform-math.js"
 export { ElementView, OpenSlide, useElement } from "./element-view.js"
 export { Filmstrip } from "./filmstrip.js"
 export { NodeArt } from "./node-art.js"
