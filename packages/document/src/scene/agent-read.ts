@@ -4,7 +4,7 @@ import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Color, Paint, Sides } from "./paint.js"
 import type { Node, Scene } from "./scene.js"
-import { type Box, childrenOf, get, isLaidOut, isLive, parentOf, rowsOf, slidesOf } from "./scene-walk.js"
+import { type Box, childrenOf, get, isLaidOut, isLive, parentOf, slidesOf } from "./scene-walk.js"
 import { textToMarkdown } from "./markdown.js"
 
 const quoted = (words: string) => JSON.stringify(words)
@@ -51,7 +51,8 @@ function chartWords(node: Node): string | undefined {
   return `chart=${JSON.stringify(words)}`
 }
 
-function kindOf(node: Node): string {
+export function kindOf(node: Node): string {
+  if (node.type === "slide" || node.type === "slideRow") return node.type
   if (node.type === "frame") return get(node, "chart") === undefined ? "frame" : "chart"
   const kind = get(node, "geometry")?.kind
   if (kind === "line" || kind === "icon") return kind
@@ -148,11 +149,6 @@ export function readForAgent(
   boxes?: ReadonlyMap<NodeId, Box>,
 ): string {
   const out: string[] = []
-  const layouts = rowsOf(scene, true)
-    .flatMap((row) => childrenOf(scene, row.id))
-    .map((layout) => get(layout, "name"))
-    .filter((name) => name !== undefined)
-  if (layouts.length > 0) out.push(`layouts ${layouts.map(quoted).join(" ")}`)
   const wanted = slides === "all" ? slidesOf(scene).map((slide) => slide.id) : slides
   for (const id of wanted) {
     const slide = scene.nodes.get(id)

@@ -40,7 +40,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Change the deck, all of it landing or none. Send airdesign_read_deck's rev as base. The answer has the new rev, the ids of the layers and slides you added, and a runId: send it with your next edits and to airdesign_stop_run when done.",
+        "Change the deck, all of it landing or none. Send airdesign_read_deck's rev as base. The answer has the new rev, the layers and slides you added, each as {change, id, kind}, and a runId: send it with your next edits and to airdesign_stop_run when done.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,

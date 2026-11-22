@@ -74,7 +74,7 @@ export type AgentLook = {
   readonly name?: string
   readonly hidden?: boolean
 }
-export type SlideAdd = { readonly layout?: string; readonly after?: NodeId }
+export type SlideAdd = { readonly after?: NodeId }
 export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null }
 export type AgentChange =
   | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
@@ -268,7 +268,7 @@ const lookFields: LookFields = {
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
 
-const readSlideAdd = object({}, { layout: words(limits.name, 1), after: readId })
+const readSlideAdd = object({}, { after: readId })
 const readSlideMove = object({ slide: readId, after: readAfter })
 const readTarget = matching(/^[a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,240})?$/, 280)
 
@@ -301,10 +301,6 @@ const placeFields = {
       type: "object",
       additionalProperties: false,
       properties: {
-        layout: {
-          type: "string",
-          description: "A layout name read_deck lists. The new slide starts with that layout's nodes.",
-        },
         after: { ...idSchema, description: "The slide to add after. Left out: at the end." },
       },
       description: "Add a slide.",

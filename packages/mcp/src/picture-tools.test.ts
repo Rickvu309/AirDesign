@@ -105,7 +105,7 @@ describe("a picture an agent adds with no box", () => {
     })
     expect(sent.ok).toBe(true)
     const [{ fold }] = [await by.decks.open(made.deck as never)] as [{ fold: scene.Scene }]
-    const added = (sent.answer.added as string[])[0] as scene.NodeId
+    const added = (sent.answer.added as { id: string }[])[0]!.id as scene.NodeId
     const box = (fold.nodes.get(added) as { box: { w: number; h: number } }).box
     expect(box.w / box.h).toBeCloseTo(4, 1)
   })
