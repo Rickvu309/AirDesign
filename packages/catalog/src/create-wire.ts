@@ -1,9 +1,10 @@
+import { doom } from "@airdesign/document"
 import * as z from "zod/v4"
 
 import { readDeckName } from "./deck-name.js"
 import { fieldRefusal, readInput } from "./wire.js"
 
-export const blankDeckName = "Blank deck"
+export const blankDeckName = doom.blankDeckName
 
 const readFields = readInput(
   z.strictObject({ name: z.string().describe("The deck's name. Left out: Blank deck.").exactOptional() }),

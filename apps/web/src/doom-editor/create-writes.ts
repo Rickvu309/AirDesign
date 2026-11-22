@@ -1,4 +1,4 @@
-import type { OrderKey, doom } from "@airdesign/document"
+import { doom, type OrderKey } from "@airdesign/document"
 import type { Point } from "./slide-geometry"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
@@ -143,52 +143,21 @@ export function iconWrites(id: doom.NodeId, parent: Slot, name: string, inside: 
   ]
 }
 
-const sampleCharts: Readonly<Record<doom.Chart["kind"], doom.Chart>> = {
-  column: {
-    kind: "column",
-    categories: ["Q1", "Q2", "Q3", "Q4"],
-    series: [{ name: "Revenue", values: [12, 19, 15, 24] }],
-    labels: true,
-  },
-  bar: {
-    kind: "bar",
-    categories: ["North", "South", "East", "West"],
-    series: [{ name: "Revenue", values: [24, 15, 19, 12] }],
-    labels: true,
-  },
-  line: {
-    kind: "line",
-    categories: ["Jan", "Feb", "Mar", "Apr", "May"],
-    series: [{ name: "Users", values: [8, 12, 11, 17, 21] }],
-  },
-  pie: {
-    kind: "pie",
-    categories: ["Direct", "Partners", "Online", "Other"],
-    series: [{ name: "Share", values: [45, 25, 20, 10] }],
-    labels: true,
-  },
-  stacked: {
-    kind: "stacked",
-    categories: ["Q1", "Q2", "Q3", "Q4"],
-    series: [
-      { name: "Product", values: [8, 11, 9, 14] },
-      { name: "Services", values: [4, 8, 6, 10] },
-    ],
-  },
+export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {
+  return doom.contentAreaOf(view, parent) ?? { x: 0, y: 0, ...inside }
 }
 
 export function chartWrites(
   id: doom.NodeId,
   parent: Slot,
-  inside: Size,
+  area: Size & { x: number; y: number },
   kind: doom.Chart["kind"] = "column",
 ): readonly doom.Write[] {
-  const size = { w: Math.min(1040, Math.round(inside.w * 0.6)), h: Math.min(580, Math.round(inside.h * 0.6)) }
   return [
     { node: id, prop: "type", value: "frame" },
     { node: id, prop: "parent", value: parent },
     { node: id, prop: "name", value: "Chart" },
-    { node: id, prop: "box", value: { ...centeredIn(inside, size), ...size, ...upright } },
-    { node: id, prop: "chart", value: sampleCharts[kind] },
+    { node: id, prop: "box", value: { x: area.x, y: area.y, w: area.w, h: area.h, ...upright } },
+    { node: id, prop: "chart", value: doom.sampleChart(kind) },
   ]
 }

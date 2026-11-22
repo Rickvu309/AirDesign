@@ -11,14 +11,11 @@ import {
   duplicateSlideWrites,
   moveSlideWrites,
   neighbourAfterDelete,
-  type SlideLayout,
 } from "./slide-writes"
 import type { EditorClient } from "./use-doom-deck"
 
-const layouts = [
-  { part: "title", name: doomEditorCopy.layoutTitle },
-  { part: "blank", name: doomEditorCopy.layoutBlank },
-] as const
+const layouts = doom.slideStarts.map((part) => ({ part, name: doomEditorCopy.slideStarts[part] }))
+const isStart = (part: string): part is doom.SlideStart => (doom.slideStarts as readonly string[]).includes(part)
 
 export function useSlideStrip(props: {
   readonly view: doom.Doom
@@ -49,8 +46,7 @@ export function useSlideStrip(props: {
     },
     onAdd: (part, after) => {
       const from = after === undefined ? current : slides[after]
-      const layout: SlideLayout = part === "title" ? "title" : "blank"
-      const made = addSlideWrites(view, from ?? null, mint, layout)
+      const made = addSlideWrites(view, from ?? null, mint, part !== undefined && isStart(part) ? part : "titleOnly")
       client.push(made.writes)
       onCurrent(made.slide)
       say.current(slideListCopy.added((from === undefined ? slides.length : slides.indexOf(from)) + 2))

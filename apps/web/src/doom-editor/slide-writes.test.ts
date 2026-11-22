@@ -32,9 +32,9 @@ function three() {
 }
 
 describe("add slide", () => {
-  it("puts an empty slide after the current one, with its background and no content", () => {
+  it("puts a blank slide after the current one, with its background and no content", () => {
     const { view, slides } = three()
-    const writes = addSlideWrites(view, slides[0]!, minter())
+    const writes = addSlideWrites(view, slides[0]!, minter(), "blank")
     const after = landed(view, writes.writes)
     const order = slidesOf(after)
     expect(order).toHaveLength(4)
@@ -43,17 +43,51 @@ describe("add slide", () => {
     expect(after.children.get(writes.slide) ?? []).toEqual([])
   })
 
-  it("adds a title slide with one title in the title style, scaled to the deck", () => {
+  it("adds by default a slide with one title placeholder in the title style at the title spot", () => {
     const { view, slides } = three()
-    const made = addSlideWrites(view, slides[0]!, minter(), "title")
+    const made = addSlideWrites(view, slides[0]!, minter())
     const after = landed(view, made.writes)
-    const [title] = after.children.get(made.slide) ?? []
+    const [title, ...rest] = after.children.get(made.slide) ?? []
+    expect(rest).toEqual([])
     expect(after.nodes.get(title!)).toMatchObject({
       type: "shape",
       role: "title",
-      box: { x: 160, y: 380, w: 1600, h: 160 },
-      text: { chars: "Title", style: "title" },
+      box: { x: 160, y: 80, w: 1600, h: 120 },
+      text: { chars: doom.placeholderTitle, style: "title" },
     })
+  })
+
+  it("adds a title slide with a title and a subtitle placeholder", () => {
+    const { view, slides } = three()
+    const made = addSlideWrites(view, slides[0]!, minter(), "title")
+    const after = landed(view, made.writes)
+    const roles = (after.children.get(made.slide) ?? []).map((id) => (after.nodes.get(id) as { role?: string }).role)
+    expect(roles).toEqual(["title", "subtitle"])
+  })
+
+  it.each(["text", "kpis", "cards", "chart", "timeline", "grid"] as const)(
+    "adds a %s slide the agent's patterns built, under its title, in one edit with the slide",
+    (start) => {
+      const { view, slides } = three()
+      const made = addSlideWrites(view, slides[0]!, minter(), start)
+      const after = landed(view, made.writes)
+      const children = after.children.get(made.slide) ?? []
+      expect(children).toHaveLength(2)
+      expect((after.nodes.get(children[0]!) as { role?: string }).role).toBe("title")
+      expect(slidesOf(after)[1]).toBe(made.slide)
+    },
+  )
+
+  it("keeps a pattern slide's content under its title, from the title's left edge", () => {
+    const { view, slides } = three()
+    const made = addSlideWrites(view, slides[0]!, minter(), "kpis")
+    const after = landed(view, made.writes)
+    const [title, kpi] = (after.children.get(made.slide) ?? []).map(
+      (id) => (after.nodes.get(id) as doom.Node & { box: doom.Box }).box,
+    )
+    expect(kpi!.x).toBe(title!.x)
+    expect(kpi!.y).toBeGreaterThanOrEqual(title!.y + title!.h)
+    expect(kpi!.w).toBe(title!.w)
   })
 
   it("adds after the last slide too", () => {

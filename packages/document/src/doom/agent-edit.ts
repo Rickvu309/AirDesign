@@ -6,6 +6,7 @@ import { rev } from "./ids.js"
 import type { WriteKey } from "./props.js"
 import { kindOf } from "./agent-read.js"
 import { applyEdit } from "./apply-edit.js"
+import { nameFromTitleWrites } from "./deck-name-from-title.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
 import { onTop } from "./view-of.js"
@@ -57,6 +58,8 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
     writes.push(...compiled)
     ends.push(writes.length)
   }
+  const named = nameFromTitleWrites(doom, writes)
+  writes.push(...named)
   const edit: Edit = {
     once: by.once,
     author: by.author,

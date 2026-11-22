@@ -234,7 +234,9 @@ describe("an agent's run on a deck", () => {
       const opened = await called(client, "edit_deck", {
         deck,
         base: made.rev,
-        changes: [{ op: "add", kind: "text", slide: made.slides[0], text: "a" }],
+        changes: [
+          { op: "add", kind: "text", slide: made.slides[0], text: "a", box: { x: 160, y: 800, w: 600, h: 80 } },
+        ],
       })
       run = opened.runId
       added = opened.added[0].id

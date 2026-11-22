@@ -213,7 +213,7 @@ describe("mcp route", () => {
       })
       expect(landed.isError).not.toBe(true)
       expect(landed.answer).toMatchObject({ ok: true, deck: first.deck, rev: first.rev + 1, runId: expect.any(String) })
-      expect(landed.answer.added).toHaveLength(2)
+      expect(landed.answer.added).toHaveLength(1)
 
       const read = await tool(client, "read_deck", { deck: first.deck })
       expect(read.answer.rev).toBe(first.rev + 1)
@@ -297,7 +297,7 @@ describe("mcp route", () => {
       const landed = await tool(client, "edit_deck", {
         deck: first.deck,
         base: first.rev,
-        changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "Agent" }],
+        changes: [{ op: "add", kind: "frame", slide: first.slides[0] }],
       })
       const added = (landed.answer.added as { id: string }[])[0]!.id
       const typed = await ask(

@@ -7,6 +7,7 @@ export const startIds = {
   row: doom.nodeId("s:2"),
   slide: doom.nodeId("s:3"),
   title: doom.nodeId("s:4"),
+  subtitle: doom.nodeId("s:5"),
 } as const
 
 export const startAuthor: doom.Author = { kind: "person", id: "airdesign" }
@@ -50,7 +51,9 @@ export function startEdit(): doom.Edit {
     { node, prop: "type" as const, value: type },
     ...(parent === undefined ? [] : [{ node, prop: "parent" as const, value: { id: parent, at: first } }]),
   ]
-  const { deck, row, slide: first_, title } = startIds
+  const { deck, row, slide: first_, title, subtitle } = startIds
+  const ids = [title, subtitle]
+  const minter = () => ids.shift() as doom.NodeId
   return {
     once: "start",
     author: startAuthor,
@@ -62,22 +65,7 @@ export function startEdit(): doom.Edit {
       ...create(row, "slideRow", deck),
       ...create(first_, "slide", row),
       { node: first_, prop: "name", value: "Title" },
-      ...create(title, "shape", first_),
-      { node: title, prop: "name", value: "Title" },
-      { node: title, prop: "role", value: "title" },
-      { node: title, prop: "box", value: { x: 160, y: 240, w: 1600, h: 300, rotation: 0, flipH: false, flipV: false } },
-      {
-        node: title,
-        prop: "text",
-        value: {
-          chars: doom.placeholderTitle,
-          spans: [],
-          paras: [{}],
-          style: "bigNumber",
-          resize: "fixed",
-          alignV: "bottom",
-        },
-      },
+      ...doom.titleSlideWrites(first_, minter, slide),
     ],
   }
 }

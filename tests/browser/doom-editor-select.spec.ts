@@ -2,7 +2,17 @@ import { expect } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, clickSlide, dragSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot } from "./doom-deck"
+import {
+  accent,
+  clearSubtitle,
+  clickSlide,
+  dragSlide,
+  landNodes,
+  openDoomEditor,
+  savedNode,
+  selectedIds,
+  spot,
+} from "./doom-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -15,6 +25,7 @@ async function withLayers(
 ) {
   const opened = await openDoomEditor(page, context, stack)
   const slide = opened.slide
+  await clearSubtitle(stack, opened)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: slide, props: { box: spot(100, 700, 200, 120), fills: accent } },
     { id: "t:2", type: "frame", parent: slide, props: { box: spot(600, 700, 500, 200) } },

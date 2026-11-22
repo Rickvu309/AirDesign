@@ -96,3 +96,8 @@ export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } fr
 export { deckName, deckOf } from "./deck-of.js"
 export { slidesOf } from "./doom-walk.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
+export { contentAreaOf } from "./agent-place.js"
+export { sampleChart } from "./sample-charts.js"
+export { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
+export { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
+export { blankDeckName, nameFromTitleWrites } from "./deck-name-from-title.js"

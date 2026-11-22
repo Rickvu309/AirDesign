@@ -16,7 +16,7 @@ import { useTextSession } from "./use-text-session"
 import { propOf } from "./node-props"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
-import { chartWrites, drawWrites, iconWrites } from "./create-writes"
+import { chartArea, chartWrites, drawWrites, iconWrites } from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
 import type { EditorClient } from "./use-doom-deck"
 import { canvasInset, slideTop, type ZoomKey } from "@/editor/canvas-zoom"
@@ -211,7 +211,7 @@ export function DoomCanvas(props: {
     chart(kind: doom.Chart["kind"]) {
       const { parent, inside } = insertTarget()
       const id = client.mint()
-      inserted(id, chartWrites(id, slotIn(parent), inside, kind))
+      inserted(id, chartWrites(id, slotIn(parent), chartArea(view, parent, inside), kind))
     },
   }
 

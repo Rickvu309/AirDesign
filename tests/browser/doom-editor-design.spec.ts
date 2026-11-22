@@ -51,6 +51,12 @@ const words = (chars: string) => ({
   alignV: "top",
 })
 
+async function reloadIntoDesign(page: Page) {
+  await page.reload()
+  await page.locator("[data-doom-ready]").waitFor()
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+}
+
 async function layers(page: Page, context: Parameters<typeof openDoomEditor>[1], stack: Stack) {
   const opened = await designing(page, context, stack)
   await landNodes(stack, opened, [
@@ -143,8 +149,7 @@ test("with nothing selected the panel is the old slide panel: the head, template
   await expect
     .poll(async () => (await saved(stack, opened, opened.slide)).fills?.[0]?.color)
     .not.toEqual({ var: "accent3" })
-  await page.reload()
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await reloadIntoDesign(page)
   await expect(section(page, designCopy.background)).toBeVisible()
 })
 
@@ -220,8 +225,7 @@ test("a text layer shows the old Text section and each control writes its spans,
   await stage(page).click({ position: { x: 20, y: 20 } })
   await undo(page)
   await expect.poll(async () => (await saved(stack, opened, "t:1")).opacity).toBeUndefined()
-  await page.reload()
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await reloadIntoDesign(page)
   await clickSlide(page, 300, 160)
   await expect(panel(page).getByRole("button", { name: formatCopy.named.bold, exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -288,8 +292,7 @@ test("a shape shows fill, opacity, corners, border and shadow like the old panel
   await stage(page).click({ position: { x: 20, y: 20 } })
   await undo(page)
   await expect.poll(async () => (await read()).strokes[0].color).toBe(hexes.edge)
-  await page.reload()
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await reloadIntoDesign(page)
   await clickSlide(page, 300, 400)
   await expect(section(page, geometryCopy.corners).getByRole("textbox", { name: geometryCopy.corners })).toHaveValue(
     "24",

@@ -3,7 +3,17 @@ import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot, type Opened } from "./doom-deck"
+import {
+  accent,
+  clearSubtitle,
+  clickSlide,
+  landNodes,
+  openDoomEditor,
+  savedNode,
+  selectedIds,
+  spot,
+  type Opened,
+} from "./doom-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -14,6 +24,7 @@ type Saved = { x: number; y: number; w: number; h: number; flipH: boolean }
 
 async function threeBoxes(page: Page, context: Parameters<typeof openDoomEditor>[1], stack: Stack) {
   const opened = await openDoomEditor(page, context, stack as Parameters<typeof openDoomEditor>[2])
+  await clearSubtitle(stack, opened)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(100, 700, 200, 120), fills: accent } },
     { id: "t:2", type: "shape", parent: opened.slide, props: { box: spot(600, 700, 200, 120), fills: accent } },

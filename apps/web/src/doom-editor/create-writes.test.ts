@@ -1,6 +1,6 @@
 import { contrast, doom } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { chartWrites, drawWrites, iconWrites, type Drawing } from "./create-writes"
+import { chartArea, chartWrites, drawWrites, iconWrites, type Drawing } from "./create-writes"
 import { darkTheme } from "./create-writes-art"
 import { grow, landed } from "./doom-fixtures"
 
@@ -104,11 +104,39 @@ describe("inserting", () => {
     })
   })
 
-  it("centres a column chart with data a person can edit", () => {
-    const after = landed(built.view, chartWrites(id, slot, inside))
+  it("inserts a column chart with data a person can edit, in the area it is given", () => {
+    const area = { x: 160, y: 229, w: 1600, h: 771 }
+    const after = landed(built.view, chartWrites(id, slot, area))
     expect(after.nodes.get(id)).toMatchObject({
       type: "frame",
+      box: area,
       chart: { kind: "column", categories: ["Q1", "Q2", "Q3", "Q4"] },
     })
+  })
+
+  it("fills the content area under the slide's title, from the title's left edge", () => {
+    let next = 0
+    const titled = landed(
+      built.view,
+      doom.titleOnlyWrites(slide, () => doom.nodeId(`t:${String((next += 1))}`), inside),
+    )
+    const area = chartArea(titled, slide, inside)
+    expect(area).toMatchObject({ x: 160, w: 1600 })
+    expect(area.y).toBeGreaterThan(200)
+    expect(area.y + area.h).toBeLessThanOrEqual(1000)
+  })
+
+  it("fills the margins of a slide with no title", () => {
+    expect(chartArea(built.view, slide, inside)).toEqual({ x: 160, y: 80, w: 1600, h: 920 })
+  })
+
+  it("falls back to the whole parent when nothing is free", () => {
+    const frame = doom.nodeId("m:9")
+    const covered = landed(built.view, [
+      { node: frame, prop: "type", value: "frame" },
+      { node: frame, prop: "parent", value: slot },
+      { node: frame, prop: "box", value: { x: 0, y: 0, w: 1920, h: 1080, rotation: 0, flipH: false, flipV: false } },
+    ])
+    expect(chartArea(covered, slide, inside)).toEqual({ x: 0, y: 0, w: 1920, h: 1080 })
   })
 })
