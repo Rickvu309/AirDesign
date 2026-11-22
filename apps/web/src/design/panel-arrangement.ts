@@ -54,7 +54,7 @@ import {
   VerticalPadding,
 } from "./layout-icons"
 import { optionWord } from "@/copy/option-copy"
-import type { Desc, TraitName } from "@airdesign/document"
+import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
 
 export type NameLook =
@@ -295,7 +295,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("end.shape.node")],
     [placed("end.shape.site", above, { kind: "site" })],
   ],
-  chart: [[placed("value", hidden, { control: "canvas" })]],
   notes: [[placed("value", hidden)]],
   templateStyle: [
     [{ field: "id", name: { show: "hidden" } }],
@@ -343,10 +342,6 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       ...(place?.unnamed === undefined ? {} : { unnamed: true }),
     },
   }
-}
-
-export function panelTrait(trait: TraitName): boolean {
-  return trait !== "chart"
 }
 
 export function canvasControl(trait: SectionName, field: string): boolean {
@@ -432,8 +427,6 @@ export function controlOf(desc: Desc): ControlKind | null {
       return "list"
     case "named":
       return "adjust"
-    case "chart":
-      return null
     case "asset":
       return "asset"
     case "link":

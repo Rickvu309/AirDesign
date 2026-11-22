@@ -89,8 +89,7 @@ it("leaves out an edit the device cannot write with one notice, paints the edits
   )
   const shown = seen.shown
   if (shown === null) throw new Error("not rendered")
-  const box = { x: 0, y: 0, cx: 1000, cy: 1000 }
-  const element = { node: elementId("256.9"), kind: "chart", value: "not a chart", box, grouped: false } as const
+  const element = { node: elementId("256.9"), kind: "shape", value: null, box: null, grouped: false } as const
   const unwritable: SlideCommand = { slide: "element-add", id: slideId("256"), element }
   const edited = editedRegister([["256.2", said("Hello again")]])
   const register = { ...edited, file: [slideId("256")], order: [unwritable] }

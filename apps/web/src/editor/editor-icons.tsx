@@ -14,18 +14,6 @@ const iconPaths = {
   shape: '<rect x="3.5" y="3.5" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
   icon: '<path d="M12 3.5 14.6 9l5.9.6-4.5 3.9 1.3 5.8L12 16.3l-5.3 3 1.3-5.8-4.5-3.9 5.9-.6z"/>',
-  chartLine: '<path d="M3 4v16h18"/><path d="m7 15 4-5 4 3 5-6"/>',
-  chartColumns:
-    '<path d="M3.5 20h17"/><rect x="5" y="10" width="3.5" height="7" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="8" width="3.5" height="9" rx=".6"/>',
-  chartStacked:
-    '<path d="M3.5 20h17"/><rect x="5" y="10" width="3.5" height="7" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="8" width="3.5" height="9" rx=".6"/><path d="M5 13.5h3.5M10.25 11h3.5M15.5 12.5h3.5"/>',
-  chartStacked100:
-    '<path d="M3.5 20h17"/><rect x="5" y="5" width="3.5" height="12" rx=".6"/><rect x="10.25" y="5" width="3.5" height="12" rx=".6"/><rect x="15.5" y="5" width="3.5" height="12" rx=".6"/><path d="M5 11h3.5M10.25 8.5h3.5M15.5 12.5h3.5"/>',
-  chartHorizontal:
-    '<path d="M4 3.5v17"/><rect x="7" y="5" width="12" height="3.5" rx=".6"/><rect x="7" y="10.25" width="8.5" height="3.5" rx=".6"/><rect x="7" y="15.5" width="5" height="3.5" rx=".6"/>',
-  chartWaterfall:
-    '<path d="M3.5 20h17"/><rect x="4" y="10" width="3.2" height="7" rx=".5"/><rect x="8.3" y="5.5" width="3.2" height="4.5" rx=".5"/><rect x="12.6" y="5.5" width="3.2" height="3" rx=".5"/><rect x="16.9" y="8.5" width="3.2" height="8.5" rx=".5"/>',
-  chartPie: '<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',

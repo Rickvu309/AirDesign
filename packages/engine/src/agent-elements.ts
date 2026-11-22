@@ -12,7 +12,6 @@ import {
   openingElement,
   personWrote,
   pictureSize,
-  placeChart,
   placeNewBox,
   presentSlides,
   readSlideId,
@@ -23,7 +22,6 @@ import {
   type ElementId,
   type IndexElement,
   type Media,
-  type PlacedChart,
   type Register,
   type SlideCommand,
   type SlideId,
@@ -32,10 +30,10 @@ import { readFresh, runFence } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
 type Built =
-  | { readonly ok: true; readonly register: Register; readonly runId: string; readonly moved?: PlacedChart }
+  | { readonly ok: true; readonly register: Register; readonly runId: string }
   | { readonly ok: false; readonly refusal: CallRefusal }
 
-type TakenLayer = { readonly node: ElementId; readonly kind: string; readonly box: Box }
+type TakenLayer = { readonly node: ElementId; readonly box: Box }
 
 function takenLayers(register: Register, slide: SlideId): readonly TakenLayer[] {
   const rows = new Map<ElementId, IndexElement>()
@@ -49,7 +47,7 @@ function takenLayers(register: Register, slide: SlideId): readonly TakenLayer[] 
     if (shapeOf(row.node).slide !== slide || elementGone(register, row.node)) continue
     const body = register.elements[row.node]
     const box = (body === undefined ? null : currentBox(body)) ?? row.box
-    if (box !== null) layers.push({ node: row.node, kind: row.kind, box })
+    if (box !== null) layers.push({ node: row.node, box })
   }
   return layers
 }
@@ -60,10 +58,6 @@ export function takenBoxes(register: Register, slide: SlideId): readonly Box[] {
     if (row.box !== null) boxes.push(row.box)
   }
   return boxes
-}
-
-export function takenCharts(register: Register, slide: SlideId): readonly PlacedChart[] {
-  return takenLayers(register, slide).filter((layer) => layer.kind === "chart")
 }
 
 function addedByRun(register: Register, node: ElementId, runId: string): boolean {
@@ -132,36 +126,6 @@ export function addTextBox(
   const opening = value === "" ? { opening: textOpening(wanted === undefined ? "auto-height" : "fixed") } : {}
   const element = { node, kind: "shape", value, box, grouped: false, ...opening } as const
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
-}
-
-const chartShare = 0.5
-
-export function addChartLayer(
-  head: Head,
-  deck: Deck,
-  slide: SlideId,
-  value: string,
-  wanted: Box | undefined,
-  runId: string,
-  shares = true,
-): Built {
-  const register = deck.register
-  const opened = ready(head, deck, slide, runId)
-  if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
-  const measure = slideMeasure(register, slide)
-  if (measure === undefined || (wanted === undefined && measure.size === undefined)) {
-    return { ok: false, refusal: "dead" }
-  }
-  const size = measure.size ?? { width: 0, height: 0 }
-  const half = { cx: Math.round(size.width * chartShare), cy: Math.round(size.height * chartShare) }
-  const placed =
-    wanted === undefined
-      ? placeChart(size, takenBoxes(register, slide), shares ? takenCharts(register, slide) : [], half)
-      : { box: wanted, moved: null }
-  const node = nextElementId(register, slide, measure.free)
-  const element = { node, kind: "chart", value, box: placed.box, grouped: false } as const
-  const added = decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
-  return added.ok && placed.moved !== null ? { ...added, moved: placed.moved } : added
 }
 
 export function addIcon(

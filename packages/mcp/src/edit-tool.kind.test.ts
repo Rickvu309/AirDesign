@@ -13,7 +13,6 @@ const rows: readonly (readonly [string, Kind, string | null])[] = [
   ["256.2", "shape", title],
   ["256.3", "shape", null],
   ["256.4", "shape", null],
-  ["256.5", "chart", null],
   ["256.7", "group", null],
   ["256.8", "kept", null],
   ["256.9", "connector", null],
@@ -78,7 +77,6 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
       for (const [node, kind, next] of [
         ["256.3", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
         ["256.4", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
-        ["256.5", "a chart", "Tell the person"],
         ["256.7", "a group", "grouped"],
         ["256.8", "kept exactly as the file has it", "Leave it"],
         ["256.9", "a line", "airdesign_edit_deck with op add and kind shape"],
@@ -146,7 +144,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     })
   })
 
-  it("refuses opacity on a group and a chart, which take no alpha, and lands it on a line and a picture", async () => {
+  it("refuses opacity on a group and a kept layer, which take no alpha, and lands it on a line and a picture", async () => {
     const held = session()
     await withClient(held, async (client) => {
       const refused = await client.callTool({
@@ -154,13 +152,13 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
         arguments: {
           deck: "deck",
           base: 0,
-          changes: ["256.7", "256.5", "256.9"].map((target) => ({ op: "set", target, opacity: 60 })),
+          changes: ["256.7", "256.8", "256.9"].map((target) => ({ op: "set", target, opacity: 60 })),
         },
       })
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "kind" })
       const words = said(refused)
       expect(words).toContain("Change 1 (256.7): Layer 256.7 is a group.")
-      expect(words).toContain("Change 2 (256.5): Layer 256.5 is a chart.")
+      expect(words).toContain("Change 2 (256.8): Layer 256.8 is kept exactly as the file has it")
       expect(words).not.toContain("Change 3")
       const landed = await client.callTool({
         name: "airdesign_edit_deck",
@@ -176,7 +174,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     expect(line === undefined ? undefined : landedPatch(line, "text")).toEqual({ border: { alpha: { set: 60_000 } } })
   })
 
-  it("lands what each kind can take: a move of a picture or a chart", async () => {
+  it("lands what each kind can take: a move of a picture", async () => {
     const held = session()
     await withClient(held, async (client) => {
       const landed = await client.callTool({
@@ -184,7 +182,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
         arguments: {
           deck: "deck",
           base: 0,
-          changes: ["256.4", "256.5"].map((target) => ({ op: "set", target, box: { x: 0 } })),
+          changes: ["256.4"].map((target) => ({ op: "set", target, box: { x: 0 } })),
         },
       })
       expect(landed.isError).toBeFalsy()

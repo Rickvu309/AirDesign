@@ -18,7 +18,6 @@ export type ReadShape = {
   readonly grouped?: true
   readonly group?: string
   readonly frame?: ShapeBox
-  readonly contentKind?: Kind
 }
 
 export type ShapeFact = {
@@ -29,11 +28,10 @@ export type ShapeFact = {
   readonly hasText: boolean
   readonly locked: boolean
   readonly grouped?: true
-  readonly contentKind?: Kind
 }
 
-export function shapeKind(shape: Pick<ReadShape, "contentKind" | "locked" | "kind">): Kind {
-  return shape.contentKind ?? (shape.locked ? "kept" : paintKind(shape.kind))
+export function shapeKind(shape: Pick<ReadShape, "locked" | "kind">): Kind {
+  return shape.locked ? "kept" : paintKind(shape.kind)
 }
 
 const slidePart = /^ppt\/slides\/[^/]+\.xml$/
@@ -51,7 +49,6 @@ type ShapeParts = {
   childOff: MarkupElement | null
   childExt: MarkupElement | null
   above: number
-  contentKind: Kind | null
   holdsTable: boolean
 }
 
@@ -68,7 +65,6 @@ const emptyParts = (): ShapeParts => ({
   childOff: null,
   childExt: null,
   above: -1,
-  contentKind: null,
   holdsTable: false,
 })
 
@@ -109,7 +105,6 @@ const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
     if (found.childOff === null && element.kind === "a:chOff") found.childOff = element
     if (found.childExt === null && element.kind === "a:chExt") found.childExt = element
     if (element.kind === "a:tbl") found.holdsTable = true
-    if (element.kind === "c:chart") found.contentKind = "chart"
   }
   return { parts, fallback, grouped }
 }
@@ -157,7 +152,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     for (const shape of elements) {
       if (!isShapeTag(shape.kind)) continue
       const held = found.get(shape.index) ?? emptyParts()
-      const { id, contentKind } = held
+      const { id } = held
       if (id === null || hidden.has(id)) continue
       if (fallback[shape.index] === 1) {
         fallbackIds.add(id)
@@ -189,7 +184,6 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
             : {}),
         ...(group === null ? {} : { group }),
         ...(frame === null ? {} : { frame }),
-        ...(shape.kind === "p:graphicFrame" ? { contentKind: contentKind ?? "kept" } : {}),
       })
     }
     for (const row of kept) rows.push(fallbackIds.has(row.shape) ? { ...row, locked: true } : row)
@@ -221,7 +215,7 @@ export function readShapeFacts(parts: ReadonlyMap<string, Uint8Array>): readonly
     for (const shape of elements) {
       if (!isShapeTag(shape.kind)) continue
       const held = found.get(shape.index) ?? emptyParts()
-      const { id, contentKind } = held
+      const { id } = held
       if (id === null || hidden.has(id)) continue
       if (fallback[shape.index] === 1) {
         fallbackIds.add(id)
@@ -242,7 +236,6 @@ export function readShapeFacts(parts: ReadonlyMap<string, Uint8Array>): readonly
           : grouped[shape.index] === 1
             ? { grouped: true as const }
             : {}),
-        ...(shape.kind === "p:graphicFrame" ? { contentKind: contentKind ?? "kept" } : {}),
       })
     }
     for (const row of kept) rows.push(fallbackIds.has(row.shape) ? { ...row, locked: true } : row)

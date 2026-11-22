@@ -37,7 +37,7 @@ const indexed: Register = {
       { node: elementId("256.3"), kind: "shape", value: "Body", box, grouped: false },
       { node: elementId("256.4"), kind: "group", value: null, box, grouped: false },
       { node: elementId("256.5"), kind: "shape", value: "Inside", box, grouped: true, group: elementId("256.4") },
-      { node: elementId("256.6"), kind: "chart", value: null, box, grouped: false },
+      { node: elementId("256.6"), kind: "kept", value: null, box, grouped: false },
       { node: elementId("257.2"), kind: "shape", value: "Other", box, grouped: false },
     ],
     pages: [{ once: "page", offset: 0, count: 6 }],
@@ -121,7 +121,7 @@ describe("element clone", () => {
     ])
   })
 
-  it("refuses a copy of a group or a layer whose group's own space is unknown, a chart, a gone layer or a used id", () => {
+  it("refuses a copy of a group or a layer whose group's own space is unknown, a kept frame, a gone layer or a used id", () => {
     const refused = (edit: SlideCommand) => decide(indexed, { command: "slide", file, edit }).decision
     const cloned = cloneOf(indexed, title, copy, box)
     if (!cloned.ok) throw new Error(cloned.refusal)
@@ -132,7 +132,7 @@ describe("element clone", () => {
     expect(cloneOf(indexed, elementId("256.6"), copy, box)).toEqual({ ok: false, refusal: "kind" })
     expect(refused({ ...made, source: elementId("256.4"), element: { ...made.element, kind: "group" } })).toBe("refuse")
     expect(refused({ ...made, source: elementId("256.5") })).toBe("refuse")
-    expect(refused({ ...made, source: elementId("256.6"), element: { ...made.element, kind: "chart" } })).toBe("refuse")
+    expect(refused({ ...made, source: elementId("256.6"), element: { ...made.element, kind: "kept" } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, node: elementId("256.3") } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, node: elementId("257.9") } })).toBe("refuse")
     expect(refused({ ...made, element: { ...made.element, box: null } })).toBe("refuse")

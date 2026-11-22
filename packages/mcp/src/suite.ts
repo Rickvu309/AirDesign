@@ -568,16 +568,6 @@ export const suite: readonly SuiteRow[] = [
   },
   {
     task: {
-      id: "text-on-chart",
-      prompt: "Make the chart that is the body of deck charted say Revenue.",
-      deck: () => fixture("charted", [{ element: "title" }, { element: "body" }], bodyIs("chart")),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
-    },
-    reference: one("charted", "body", "Revenue", 0),
-    wrong: { attempt: one("charted", "title", "Revenue", 0), reason: "tool" },
-  },
-  {
-    task: {
       id: "text-on-kept",
       prompt: "Change the diagram that is the body of deck diagrammed to read Plan.",
       deck: () => fixture("diagrammed", [{ element: "title" }, { element: "body" }], bodyIs("kept")),

@@ -7,7 +7,6 @@ import {
   openingIcon,
   presentSlides,
   readSlideId,
-  readChartValue,
   hasSlideNumber,
   plainSlideNumber,
   shapeOf,
@@ -28,7 +27,6 @@ import { slideAddresses, slidePart } from "./package-address.js"
 import { withFileSections, writeSlideGroups } from "./slide-group-write.js"
 import { addPicture, linkedSource, pictureShapeXml } from "./picture-write.js"
 import { openedIcon } from "./trait-xml-image.js"
-import { addChart } from "./chart-write.js"
 import { pasteMarkup } from "./shape-paste.js"
 import { drawnShapeXml, textShapeXml } from "./shape-write.js"
 import { SlideEditor } from "./slide-editor.js"
@@ -155,7 +153,6 @@ function elementAdded(
       shape,
       element,
     )
-  if (element.kind === "chart") return chartAdded(parts, part, id, box, element.value)
   const align = element.opening?.body === undefined ? {} : { align: "left" as const }
   const added = openedBody(
     applyRoute(parts, { name: "add", part, id, text: "", ...box, ...align }),
@@ -175,20 +172,6 @@ function elementAdded(
       },
     ],
   })
-}
-
-function chartAdded(
-  parts: ReadonlyMap<string, Uint8Array>,
-  part: string,
-  id: number,
-  box: Box,
-  value: string | null,
-): ReadonlyMap<string, Uint8Array> {
-  const chart = value === null ? null : readChartValue(value)
-  if (chart === null) throw new Error("c:chart")
-  const next = new Map(parts)
-  addChart(next, { part, id, ...box, chart })
-  return next
 }
 
 function pastedLayers(
@@ -213,7 +196,7 @@ function elementAddedOn(editor: SlideEditor, part: string, shape: string, shown:
   const box = element?.box ?? null
   if (element === undefined || box === null) throw new Error("box")
   const id = Number(shape)
-  if (shown.source !== undefined || shown.pasted !== undefined || element.kind === "chart") {
+  if (shown.source !== undefined || shown.pasted !== undefined) {
     editor.editWhole(part, (current) => elementAdded(current, part, shape, shown, media))
     return
   }

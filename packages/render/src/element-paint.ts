@@ -1,5 +1,4 @@
 import type { ElementId } from "@airdesign/document"
-import type { CanvasChart } from "./chart-record.js"
 import type { CanvasEffects } from "./effect-record.js"
 import type { CanvasLine, CanvasOutline } from "./line-record.js"
 import type { CanvasElement } from "./record.js"
@@ -63,7 +62,6 @@ export type ElementPaint = {
   readonly geometry?: CanvasGeometry
   readonly text: CanvasText | null
   readonly diagram?: readonly CanvasElement[]
-  readonly chart?: CanvasChart
   readonly label?: string
   readonly layers?: readonly CanvasLayer[]
   readonly crop?: CanvasCrop

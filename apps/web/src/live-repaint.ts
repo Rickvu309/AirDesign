@@ -1,13 +1,4 @@
-import {
-  clonedLayer,
-  currentValue,
-  history,
-  openingElement,
-  readChartValue,
-  type Box,
-  type ElementId,
-  type Register,
-} from "@airdesign/document"
+import { clonedLayer, currentValue, history, type Box, type ElementId, type Register } from "@airdesign/document"
 import { sameBox, type PaintStore } from "@airdesign/render"
 import { landedBox } from "@/element-move"
 import { newSlideElement } from "@/exported-parts"
@@ -46,23 +37,11 @@ export function busyElements(freed: (id: ElementId) => void = () => undefined): 
   }
 }
 
-function painted(value: string, file: string): string {
-  return value.startsWith("{") && readChartValue(value) !== null ? file : value
-}
-
 export function shownValue(register: Register | null, id: ElementId, file: string): string {
   const body = register?.elements[id]
-  if (body !== undefined && history(body).length > 0) return painted(currentValue(body), file)
+  if (body !== undefined && history(body).length > 0) return currentValue(body)
   const opening = register === null ? undefined : (newSlideElement(register, id) ?? clonedLayer(register, id))
-  return opening === undefined ? file : painted(opening.value ?? "", file)
-}
-
-export function heldChart(register: Register | null, id: ElementId): string | null {
-  if (register === null) return null
-  const body = register.elements[id]
-  const value =
-    body !== undefined && history(body).length > 0 ? currentValue(body) : openingElement(register, id)?.value
-  return typeof value === "string" && readChartValue(value) !== null ? value : null
+  return opening === undefined ? file : (opening.value ?? "")
 }
 
 type Landed = { readonly text: string; readonly box: Box | null }

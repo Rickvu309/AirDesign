@@ -22,7 +22,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Whole deck.** `deck-names`, `speaker-notes`, `element-edits`, `picture-add` and `slide-charts` export through the dialog with Export then Enter.
+- **Whole deck.** `deck-names`, `speaker-notes`, `element-edits`, `picture-add` and `slide-kept-parts` export through the dialog with Export then Enter.
 - **Range with a picture and new notes.** Driven live on 2026-11-13 with a scratch journey: a blank deck with three slides, a picture added and notes typed on slide 2, notes typed on slide 3 just before opening the dialog, `Range` 2 to 3. The file held two slides, a `p:pic` with `ppt/media/picture-<hash>.png`, and both notes; its new import showed two slides, the picture and each slide's notes.
 - **Keyboard only.** Driven live the same day: Tab to `Export`, Enter, Shift+Tab to `Slides`, Enter, ArrowDown to `Current slide`, Enter, Tab to `Export`, Enter. One slide with its table, picture and notes downloaded, and focus came back to `Export`.
 - **Offline.** With the context offline, Export then Enter saved `<name>.pptx`.

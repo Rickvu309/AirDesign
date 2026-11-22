@@ -144,7 +144,7 @@ describe("element order", () => {
     expect(refused(add(shape, "line"))).toBe(true)
     expect(refused(add(shape, "straightConnector1"))).toBe(true)
     expect(refused(add(line, "star5"))).toBe(true)
-    expect(refused(add({ ...shape, kind: "chart" }, "rect"))).toBe(true)
+    expect(refused(add({ ...shape, kind: "kept" }, "rect"))).toBe(true)
     expect(refused(add({ ...shape, box: { ...box, cx: 0 } }, "rect"))).toBe(true)
     expect(refused(add({ ...line, box: { ...box, cx: 0, cy: 0 } }, "line"))).toBe(true)
     expect(refused(add(shape, "star"))).toBe(true)

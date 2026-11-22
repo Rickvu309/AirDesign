@@ -46,7 +46,7 @@ it.each([
 
 it.each([
   [
-    "a chart frame, whose size PowerPoint does not take from the frame alone",
+    "a graphic frame, whose size PowerPoint does not take from the frame alone",
     `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="2" name="g"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></p:xfrm><a:graphic/></p:graphicFrame>`,
   ],
   [

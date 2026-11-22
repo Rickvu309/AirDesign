@@ -18,7 +18,7 @@ export const elementCopy = {
     carried: "It holds an image or a frame AirDesign can't move to another deck yet.",
   },
   copyRefusedBody: {
-    kind: "It is a chart or a layer kept as the file has it, or a group that holds one, and AirDesign can't duplicate those yet.",
+    kind: "It is a layer kept as the file has it, or a group that holds one, and AirDesign can't duplicate those yet.",
     "group-box": "It is inside a frame, and AirDesign can't duplicate layers in a frame yet.",
     present: "It shows the slide number, and each slide has one.",
   },

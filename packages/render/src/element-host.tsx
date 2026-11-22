@@ -28,7 +28,6 @@ import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
 import { paintsFillAsSvg, ShapeArt } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
-import { ChartArt } from "./chart-art.js"
 import { canDrag, canMove } from "./layer-movable.js"
 import type { Moves } from "./moves.js"
 import type { PaintStore } from "./store.js"
@@ -239,7 +238,6 @@ function QuietFrame(props: QuietProps & { readonly written: string }) {
       <FillLayers element={element} scaled={scaled} unshown={unshown || paintsFillAsSvg(element, scaled)} />
       <ShapeArt element={element} scaled={scaled} />
       <DiagramArt element={element} scaled={scaled} />
-      <ChartArt box={element.box} chart={element.chart} described={false} scaled={scaled} />
       {text === null ? null : (
         <div ref={layer} style={textLayer(element, text, scaled)}>
           {element.id === null ? (
@@ -263,7 +261,6 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
       <ShapeArt element={element} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
-      <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
       {text === null ? null : (
         <div ref={layer} style={textLayer(element, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
@@ -353,7 +350,6 @@ const LayerArt = memo(function LayerArt(props: {
       <ShapeArt element={element} grab={props.grab} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
-      <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
       <div ref={layer} style={textLayer(element, text, scaled)}>
         {prompt === undefined ? null : (
           <div
@@ -434,7 +430,7 @@ function PlacedText(props: {
   const typing = element.editable && onEdit !== undefined
   const isSelected = moves !== null && leadOf(moves.selection) === id
   const showPrompt = typing && element.placeholder && empty && Boolean(element.prompt)
-  const filledFrame = element.diagram !== undefined || element.chart !== undefined
+  const filledFrame = element.diagram !== undefined
   const showQuietOutline = element.placeholder && empty && !isSelected && !filledFrame
   const promptOutline: CSSProperties = showQuietOutline
     ? { outline: "1px dashed var(--placeholder-edge)", outlineOffset: -1 }

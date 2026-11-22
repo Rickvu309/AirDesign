@@ -15,7 +15,6 @@ const spTreeAdd = route("spTree.add")
 const spTreeOrder = route("spTree.order")
 const spTreeRemove = route("spTree.remove")
 const spTreeClone = route("spTree.clone")
-const graphicFrameAddChart = route("graphicFrame.addChart")
 
 const placed = {
   create: spTreeAdd,
@@ -60,12 +59,6 @@ type StructuralRoutes = {
   readonly shape: Placed
   readonly connector: Placed
   readonly group: Placed
-  readonly chart: {
-    readonly create: NamedRoute<"graphicFrame.addChart">
-    readonly move: NamedRoute<"spTree.order">
-    readonly remove: NamedRoute<"spTree.remove">
-    readonly duplicate: NamedRoute<"spTree.clone">
-  }
   readonly kept: {
     readonly move: NamedRoute<"spTree.order">
     readonly remove: NamedRoute<"spTree.remove">
@@ -93,11 +86,5 @@ export const structure = {
   shape: placed,
   connector: placed,
   group: placed,
-  chart: {
-    create: graphicFrameAddChart,
-    move: spTreeOrder,
-    remove: spTreeRemove,
-    duplicate: spTreeClone,
-  },
   kept: { move: spTreeOrder, remove: spTreeRemove },
 } as const satisfies Covered

@@ -72,7 +72,6 @@ export function pastedFits(element: IndexElement, pasted: PastedLayers, slide: S
   for (const { shape, element: layer } of pasted.layers) {
     if (shapeOf(layer.node).slide !== slide || above.has(layer.node) || shapes.has(shape)) return false
     if (!layer.grouped || layer.group === undefined || !above.has(layer.group)) return false
-    if (layer.kind === "chart") return false
     above.add(layer.node)
     shapes.add(shape)
   }

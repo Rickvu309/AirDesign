@@ -108,7 +108,7 @@ for (const name of [
   "landing-pages",
   "typed-reload",
   "deck-names",
-  "slide-charts",
+  "slide-kept-parts",
   "signed-out-deck",
   "connector-follow",
   "auto-layout-frame",
@@ -142,8 +142,6 @@ test.describe("recorded Aira", () => {
     "corners-agent",
     "connector-diagram",
     "line-add",
-    "chart-insert",
-    "chart-place",
     "agent-bench-recorded",
   ]) {
     test(name, async ({ page, context }) => {

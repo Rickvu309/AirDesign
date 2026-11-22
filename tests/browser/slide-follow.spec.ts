@@ -1,6 +1,6 @@
 import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import { expect, type Page } from "@playwright/test"
-import { clearBrowser } from "../../.agents/skills/verify-airdesign/bin/clear-browser.mjs"
 import type { ReadDeckAnswer, ReadElement } from "../../packages/engine/src/index.ts"
 import { forward, signInBrowser, test } from "./api-stack"
 
@@ -107,6 +107,10 @@ test("a cleared browser rebuilds a duplicate from the server's snapshot, not fro
   expect((await elementOn(stack, deck, "257", "257.2", cookie))?.value ?? "").toContain("Before the copy")
   const address = page.url()
   await page.goto("/version")
+  const cleared = join(process.cwd(), ".agents/skills/verify-airdesign/bin/clear-browser.mjs")
+  const { clearBrowser } = (await import(pathToFileURL(cleared).href)) as {
+    clearBrowser: (page: Page) => Promise<void>
+  }
   await clearBrowser(page)
   await page.goto(address)
   await decks.ready()

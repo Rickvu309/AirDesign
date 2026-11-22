@@ -1,5 +1,3 @@
-const letters = "abcdefghijklmnopqrstuvwxyz"
-
 export class NoPlace extends Error {}
 
 const place = (found) => {
@@ -16,11 +14,9 @@ const cut = (xml, start, end) => xml.slice(0, start) + xml.slice(end)
 
 const contentTypes = "[Content_Types].xml"
 const presentation = "ppt/presentation.xml"
-const emptyLabelExtension = /<c:ext uri="\{CE6537A1-D6FC-4f65-9D91-7224C49458BB\}"[^>]*\/>/g
 const slideNames = (parts) => [...parts.keys()].filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
 const slideRelationships = (parts) =>
   [...parts.keys()].filter((name) => /^ppt\/slides\/_rels\/slide\d+\.xml\.rels$/.test(name))
-const chartNames = (parts) => [...parts.keys()].filter((name) => /^ppt\/charts\/chart\d+\.xml$/.test(name))
 const relationships = (xml) => [...xml.matchAll(/<Relationship [^>]*\/>/g)]
 const relationshipId = (relationship) => place(/ Id="([^"]*)"/.exec(relationship)?.[1])
 
@@ -135,27 +131,6 @@ export const breakKinds = {
       return {
         parts: write(parts, changed.part, insertAt(cut(xml, idStart, idStart + changed.id.length), idStart, copied.id)),
         what: `${changed.part} id ${changed.id} becomes ${copied.id}`,
-      }
-    }
-    throw new NoPlace()
-  },
-  "chart data-label range": (pptx, parts, random) => {
-    for (const chart of random.shuffled(chartNames(parts))) {
-      const xml = read(parts, chart)
-      const extensions = [...xml.matchAll(emptyLabelExtension)]
-      if (extensions.length === 0) continue
-      const extension = random.pick(extensions)
-      const column = `${random.pick(letters)}${random.pick(letters)}`.toUpperCase()
-      const first = random.between(1000, 900000)
-      const range = `Sheet1!$${column}$${first}:$${column}$${first + random.between(1, 500)}`
-      const filled = `${extension[0].slice(0, -"/>".length)}><c15:datalabelsRange><c15:f>${range}</c15:f></c15:datalabelsRange></c:ext>`
-      return {
-        parts: write(
-          parts,
-          chart,
-          insertAt(cut(xml, extension.index, extension.index + extension[0].length), extension.index, filled),
-        ),
-        what: `${chart} label ${extensions.indexOf(extension) + 1} of ${extensions.length}, ${range}`,
       }
     }
     throw new NoPlace()

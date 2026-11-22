@@ -17,7 +17,7 @@ One page of a deck.
 _Avoid_: page, frame
 
 **layer**:
-One thing on a slide: a shape, text, an image, a line, a group or a chart. The code and the agent wire still say element (`element`, `elements`, `ElementId`) until its rename lands.
+One thing on a slide: a shape, text, an image, a line or a group. The code and the agent wire still say element (`element`, `elements`, `ElementId`) until its rename lands.
 _Avoid_: element, object, item
 
 **text**:
@@ -203,7 +203,7 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 The words the code and the agent tools use for how a deck is stored and edited. A person never reads them. The code, the test and the tool use the same word, so one search finds all of it.
 
 **element**:
-One thing on a slide: a shape, connector, group, chart, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
+One thing on a slide: a shape, connector, group, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
 _Avoid_: object, item, widget
 
 **node**:

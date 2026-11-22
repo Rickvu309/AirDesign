@@ -2,8 +2,7 @@ import { elementId } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { chartLayout } from "./chart-layout.js"
-import { paintStore, SlideCanvas, type CanvasChart, type CanvasElement, type CanvasText } from "./index.js"
+import { paintStore, SlideCanvas, type CanvasElement, type CanvasText } from "./index.js"
 import { textValue } from "./paragraph-edit.js"
 import { presetOutline } from "./preset-path.js"
 
@@ -15,11 +14,6 @@ vi.mock("./preset-path.js", async (actual) => {
 vi.mock("./paragraph-edit.js", async (actual) => {
   const real = await actual<typeof import("./paragraph-edit.js")>()
   return { ...real, textValue: vi.fn(real.textValue) }
-})
-
-vi.mock("./chart-layout.js", async (actual) => {
-  const real = await actual<typeof import("./chart-layout.js")>()
-  return { ...real, chartLayout: vi.fn(real.chartLayout) }
 })
 
 const hosts: { host: HTMLDivElement; root: Root }[] = []
@@ -62,52 +56,6 @@ const card: CanvasElement = {
   geometry: { preset: "roundRect", adjusts: {} },
   text: words,
 }
-const pieId = elementId("256.3")
-const pie: CanvasChart = {
-  kind: "pie",
-  grouping: "clustered",
-  hole: 0,
-  firstAngle: 0,
-  gap: 1.5,
-  overlap: 0,
-  categories: ["Owners", "Renters"],
-  series: [
-    {
-      name: "Tenure",
-      values: [0.4, 0.6],
-      texts: ["40%", "60%"],
-      points: [
-        { fill: "steelblue", line: null },
-        { fill: "navy", line: null },
-      ],
-      stroke: null,
-      marker: false,
-      labels: [],
-    },
-  ],
-  title: null,
-  legend: null,
-  fill: null,
-  line: null,
-  plot: null,
-  valueAxis: null,
-  categoryAxis: null,
-}
-const chart: CanvasElement = {
-  key: "chart",
-  id: pieId,
-  kind: "chart",
-  box: { x: 6_096_000, y: 457_200, width: 3_000_000, height: 2_400_000, rotation: 0, flipH: false, flipV: false },
-  editable: false,
-  movable: true,
-  placeholder: false,
-  filled: false,
-  fill: null,
-  line: null,
-  outline: "box",
-  text: null,
-  chart: pie,
-}
 const lineId = elementId("256.4")
 const tiedLine: CanvasElement = {
   key: "line",
@@ -139,7 +87,6 @@ const moved = (step: number) => ({
 async function painted() {
   const store = paintStore()
   store.publish({ id, kind: "shape", text: stored })
-  store.publish({ id: pieId, kind: "chart", text: "" })
   store.publish({ id: lineId, kind: "connector", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
@@ -149,7 +96,7 @@ async function painted() {
     root.render(
       createElement(SlideCanvas, {
         store,
-        slide: { width: 12_192_000, height: 6_858_000, background: null, elements: [card, chart, tiedLine] },
+        slide: { width: 12_192_000, height: 6_858_000, background: null, elements: [card, tiedLine] },
         width: 800,
         onBoxes: () => undefined,
         onEdit: () => undefined,
@@ -217,22 +164,6 @@ describe("work a move does", () => {
         grip.place(moved(step))
       })
     expect(textValue).not.toHaveBeenCalled()
-    grip.keep()
-  })
-
-  it("lays out no chart when a chart moves, and lays it out once when it is resized", async () => {
-    const { store } = await painted()
-    vi.mocked(chartLayout).mockClear()
-    const grip = store.gripBox(pieId)
-    for (const step of [1, 2, 3])
-      await act(async () => {
-        grip.place({ x: 6_096_000 - step * 152_400, y: 457_200 + step * 76_200, cx: 3_000_000, cy: 2_400_000 })
-      })
-    expect(chartLayout).not.toHaveBeenCalled()
-    await act(async () => {
-      grip.place({ x: 5_000_000, y: 900_000, cx: 3_300_000, cy: 2_400_000 })
-    })
-    expect(chartLayout).toHaveBeenCalledTimes(1)
     grip.keep()
   })
 })

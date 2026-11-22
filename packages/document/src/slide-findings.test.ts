@@ -149,10 +149,6 @@ describe("off-slide", () => {
     ])
     expect(found.map((finding) => `${finding.code} ${finding.node} ${finding.level}`)).toEqual(["off-slide 3 note"])
   })
-
-  it("reports a chart cut by the slide's edge", () => {
-    expect(codes(find([element("2", { x: 800, y: 10, w: 200, h: 100 }, { kind: "chart" })]))).toEqual(["off-slide 2"])
-  })
 })
 
 describe("overlap", () => {

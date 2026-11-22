@@ -55,7 +55,7 @@ function frame(diagram: readonly CanvasElement[] | undefined): CanvasElement {
   return {
     key: id,
     id,
-    kind: "chart",
+    kind: "kept",
     box: { x: 410_967, y: 731_521, width: 8_128_000, height: 5_380_744, ...flat },
     editable: false,
     placeholder: false,
@@ -72,7 +72,7 @@ const slide = { width: 9_144_000, height: 6_858_000, background: null }
 
 async function painted(elements: readonly CanvasElement[], quiet = false): Promise<HTMLElement> {
   const store = paintStore()
-  store.publish({ id, kind: "chart", text: "" })
+  store.publish({ id, kind: "kept", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
@@ -109,11 +109,6 @@ it("paints the diagram in a thumbnail", async () => {
   const host = await painted([frame([chevron, words])], true)
   expect(host.querySelectorAll("[data-thumb-paint] [data-diagram-shape]")).toHaveLength(2)
   expect(host.querySelector("[data-thumb-paint]")?.textContent).toContain("2023")
-})
-
-it("keeps the box it cannot show for a chart with no diagram", async () => {
-  const host = await painted([frame(undefined)])
-  expect(host.querySelector<HTMLElement>(`[data-canvas-element="${id}"]`)?.style.background).toBe(unshownFill)
 })
 
 it("draws no empty placeholder outline around a diagram that fills its placeholder", async () => {

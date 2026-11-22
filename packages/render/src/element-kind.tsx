@@ -22,7 +22,7 @@ export type ElementKind = keyof typeof painters
 
 export function elementKind(element: CanvasElement): ElementKind {
   if (element.kind === "picture") return "picture"
-  if (element.kind === "chart" || element.kind === "kept") return "frame"
+  if (element.kind === "kept") return "frame"
   if (element.kind === "connector") return "shape"
   if (element.kind === "group") return "group"
   if (element.geometry !== undefined && !textPreset.has(element.geometry.preset)) return "shape"

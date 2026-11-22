@@ -7,7 +7,7 @@ function answerOf(text) {
   return JSON.parse(line === undefined ? text : line.slice(6)).result
 }
 
-const chart = { kind: "bar", categories: ["Jul", "Aug", "Sep"], series: [{ name: "Revenue", values: [12, 16, 20] }] }
+const note = [{ from: 0, runs: [{ from: -1, text: "Revenue: Jul 12, Aug 16, Sep 20" }] }]
 
 const nowhere = JSON.stringify([{ from: 9, runs: [{ from: 0, text: "A paragraph the title does not have" }] }])
 
@@ -42,10 +42,10 @@ async function drive(kit) {
     changes: [
       {
         op: "add",
-        kind: "chart",
+        kind: "shape",
         slide: added,
         box: { x: 72, y: 120, w: 520, h: 320 },
-        chart: { value: JSON.stringify(chart) },
+        text: { value: JSON.stringify(note) },
       },
     ],
   })

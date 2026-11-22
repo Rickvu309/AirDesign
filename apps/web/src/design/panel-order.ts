@@ -1,7 +1,7 @@
 import { paintSlots, readTextValue, type ScopedElement } from "@airdesign/document"
 import type { PanelReads, PanelSection, SectionName } from "./panel"
 
-export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "frame" | "chart" | "kept" | "many"
+export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "frame" | "kept" | "many"
 
 export type PanelMode = "slides" | "design"
 
@@ -105,13 +105,6 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     design("box"),
     design("effects"),
     design("identity"),
-  ],
-  chart: [
-    slides("alignment"),
-    design("layout", true),
-    design("box"),
-    design("identity"),
-    design("selectionColors", true),
   ],
   kept: [design("identity", true), design("selectionColors", true)],
   many: [

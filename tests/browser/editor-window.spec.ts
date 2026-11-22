@@ -4,7 +4,6 @@ import { designing, openDeck } from "./design-panel"
 import { first, second, store } from "./home-store.ts"
 import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
 import { toolbarCopy } from "../../apps/web/src/copy/toolbar-copy.ts"
-import { chartCopy } from "../../apps/web/src/copy/chart-copy.ts"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy.ts"
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
@@ -141,13 +140,11 @@ test("with a text box selected and the Design panel open, the toolbar keeps ever
   await designing(page, page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" }))
   await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
   const toolbar = page.locator("[data-editor-toolbar]")
-  for (const name of [shapeCopy.tool, chartCopy.tool, pictureCopy.add, pictureCopy.addIcon])
+  for (const name of [shapeCopy.tool, pictureCopy.add, pictureCopy.addIcon])
     await expect(toolbar.getByRole("button", { name, exact: true })).toBeVisible()
   await expect(toolbar.locator("[data-text-format]")).toHaveCount(0)
   await expect(toolbar.getByRole("button", { name: toolbarCopy.more, exact: true })).toHaveCount(0)
   await expect(page.locator("[data-design-panel]").getByRole("button", { name: formatCopy.named.bold })).toBeVisible()
-  await toolbar.getByRole("button", { name: chartCopy.tool, exact: true }).click()
-  await expect(page.getByRole("button", { name: chartCopy.kinds.bar, exact: true })).toBeVisible()
 })
 
 test("in a 1280x720 window the controls that do not fit sit in More, reached and used by keyboard", async ({

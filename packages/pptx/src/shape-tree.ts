@@ -11,7 +11,7 @@ type ShapeFacts = {
 export const shapeTags = {
   "p:sp": { nonVisual: "p:nvSpPr", properties: "p:spPr", transform: "a:xfrm", documentKind: "shape" },
   "p:pic": { nonVisual: "p:nvPicPr", properties: "p:spPr", transform: "a:xfrm", documentKind: "shape" },
-  "p:graphicFrame": { nonVisual: "p:nvGraphicFramePr", properties: null, transform: "p:xfrm", documentKind: "chart" },
+  "p:graphicFrame": { nonVisual: "p:nvGraphicFramePr", properties: null, transform: "p:xfrm", documentKind: "kept" },
   "p:cxnSp": { nonVisual: "p:nvCxnSpPr", properties: "p:spPr", transform: "a:xfrm", documentKind: "connector" },
   "p:grpSp": { nonVisual: "p:nvGrpSpPr", properties: "p:grpSpPr", transform: "a:xfrm", documentKind: "group" },
 } satisfies Record<string, ShapeFacts>

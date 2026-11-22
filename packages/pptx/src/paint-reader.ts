@@ -31,7 +31,6 @@ import {
 import { markupChildren } from "./text-value-route.js"
 import { placeholderPrompt } from "./placeholder-prompt.js"
 import { paintDiagram } from "./paint-diagram.js"
-import { frameChart, type PaintChart } from "./paint-chart.js"
 import { paintConnection, type PaintConnection } from "./paint-connection.js"
 
 export type PaintBox = {
@@ -56,7 +55,6 @@ export type PaintElement = {
   prompt?: string | null
   text: PaintText | null
   diagram?: readonly PaintElement[]
-  chart?: PaintChart
   connection?: PaintConnection
 } & ShapePaint &
   PaintLabel
@@ -431,13 +429,6 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
         })
         return { diagram }
       }
-      const charts = {
-        parts,
-        target: (part: string, id: string) => relationshipsOf(part).get(`id:${id}`),
-        colors: (part: string) => relationshipsOf(part).get("chartColorStyle"),
-        palette: context.palette,
-        fonts: () => scope().fonts,
-      }
       const painted = standPaint(sheet.elements, sheet.children, context.palette, sheet.drawn, (item) =>
         paints.get(item)!,
       ).map((item): PaintElement => {
@@ -457,7 +448,6 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             picture: (id) => picture(sheet.part, id),
           })),
           ...diagramOf(item, box),
-          ...frameChart(item.element, sheet.children, slidePart, charts),
           ...labelOf(item, sheet.children),
           ...paintConnection(item.element, sheet.children),
           ...item.paint,
