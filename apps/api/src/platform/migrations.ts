@@ -1,5 +1,6 @@
 import { doomMigrations } from "./doom-migrations.js"
 import type { Migration } from "./migration.js"
+import { numberedMigrations } from "./numbered-migrations.js"
 
 export const migrations: readonly Migration[] = [
   {
@@ -442,4 +443,5 @@ grant usage, select on sequence session.credit_history_id_seq to session;
 `,
   },
   ...doomMigrations,
+  ...numberedMigrations(new URL("./migrations/", import.meta.url)),
 ]

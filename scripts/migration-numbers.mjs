@@ -17,7 +17,7 @@ export const migrationFault = ({ base, head }) => {
   const taken = takenNumbers({ base, head })
   if (taken.length === 0) return undefined
   const free = Math.max(...base.map((entry) => entry.id), ...head.map((entry) => entry.id)) + 1
-  return `Migration ${taken[0]} is already on origin/main with different sql. Give yours the next free number, ${free}: rebase on origin/main, change its id to ${free} in apps/api/src/platform/migrations.ts, then run node scripts/frozen-migrations.mjs to record it.`
+  return `Migration ${taken[0]} is already on origin/main with different sql. Give yours the next free number, ${free}: rebase on origin/main, rename its file in apps/api/src/platform/migrations/ to start with ${String(free).padStart(4, "0")}, then run node scripts/frozen-migrations.mjs to record it.`
 }
 
 const recordAt = (root, revision) => {
