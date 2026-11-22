@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url"
-import { expect, type Page } from "@playwright/test"
+import { expect, type CDPSession, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { dragFeel } from "./drag-feel"
 import { openSceneEditor } from "./scene-deck"
@@ -9,6 +9,8 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 const budget = {
   slides: 40,
   idleTaskMilliseconds: 150,
+  typeScriptPerKey: 16,
+  typeMeasureCalls: 6,
   dragScriptPerFrame: 8,
   dragTaskPerFrame: 16,
   dragLongFrames: 0,
@@ -26,15 +28,9 @@ async function frames(page: Page, count: number): Promise<void> {
   )
 }
 
-async function taskMilliseconds(page: Page): Promise<number> {
-  const device = await page.context().newCDPSession(page)
-  try {
-    await device.send("Performance.enable")
-    const { metrics } = (await device.send("Performance.getMetrics")) as { metrics: { name: string; value: number }[] }
-    return (metrics.find((metric) => metric.name === "TaskDuration")?.value ?? 0) * 1000
-  } finally {
-    await device.detach()
-  }
+async function engineMilliseconds(device: CDPSession, name: "TaskDuration" | "ScriptDuration"): Promise<number> {
+  const { metrics } = (await device.send("Performance.getMetrics")) as { metrics: { name: string; value: number }[] }
+  return (metrics.find((metric) => metric.name === name)?.value ?? 0) * 1000
 }
 
 test("a 40-slide Doom deck does no picture work while no agent reads it and keeps a drag inside one frame", async ({
@@ -58,8 +54,10 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
     sceneRoutes,
     post: (route: { path: string }, body: unknown, cookie: string) => stack.post(route.path, body, cookie),
   }
+  const device = await context.newCDPSession(page)
   await boardDeck(kit, opened.cookie, budget.slides, opened.deck)
   await page.reload()
+  await device.send("Performance.enable")
   await page.locator(`[data-scene-ready="${opened.deck}"]`).waitFor()
   await page.locator('[data-slide-entry="2"]').click()
   const node = page.locator("[data-slide-box] [data-node]").first()
@@ -69,20 +67,48 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   await page.mouse.click(from.x, from.y)
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
-  await frames(page, 90)
+  await frames(page, 240)
 
-  const before = await taskMilliseconds(page)
+  const before = await engineMilliseconds(device, "TaskDuration")
   await frames(page, 180)
-  const idle = (await taskMilliseconds(page)) - before
+  const idle = (await engineMilliseconds(device, "TaskDuration")) - before
   expect(idle, `an open deck idles at most ${String(budget.idleTaskMilliseconds)} ms of work in 3 s`).toBeLessThan(
     budget.idleTaskMilliseconds,
   )
 
+  await page.mouse.dblclick(from.x, from.y)
+  await expect(page.locator("[data-text-editor]")).toHaveCount(1)
+  await page.keyboard.press("End")
+  await page.evaluate(() => {
+    const counter = window as unknown as { measured: number }
+    counter.measured = 0
+    const measure = CanvasRenderingContext2D.prototype.measureText
+    CanvasRenderingContext2D.prototype.measureText = function (...args) {
+      counter.measured += 1
+      return measure.apply(this, args)
+    }
+  })
+  const keys = 24
+  const typedFrom = await engineMilliseconds(device, "ScriptDuration")
+  for (let key = 0; key < keys; key += 1) {
+    await page.keyboard.press("a")
+    await frames(page, 2)
+  }
+  const typing = (await engineMilliseconds(device, "ScriptDuration")) - typedFrom
+  const measured = await page.evaluate(() => (window as unknown as { measured: number }).measured)
+  await page.keyboard.press("Escape")
+  await page.mouse.click(from.x, from.y)
+  await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
+
   const feel = await dragFeel(page, from, { x: 240, y: 90 }, 120, "dragged")
   test.info().annotations.push({
     type: "metric",
-    description: `idle ${String(Math.round(idle))} ms in 3 s; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
+    description: `idle ${String(Math.round(idle))} ms in 3 s; ${String(measured)} text measurements; typing script ${String(Math.round((typing / keys) * 10) / 10)} ms a key; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
   })
+  expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
+    budget.typeMeasureCalls,
+  )
+  expect(typing / keys, "a typed letter's script work stays inside one frame").toBeLessThan(budget.typeScriptPerKey)
   expect(feel.scriptPerFrame, "a drag move's script work stays under 8 ms").toBeLessThan(budget.dragScriptPerFrame)
   expect(feel.taskPerFrame, "a drag move's main-thread work stays inside one frame").toBeLessThan(
     budget.dragTaskPerFrame,
