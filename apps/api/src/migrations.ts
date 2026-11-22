@@ -465,4 +465,36 @@ grant select, insert, update on deck.scene to deck;
 grant select, insert on deck.scene_edit to deck;
 `,
   },
+  {
+    id: 20,
+    sql: `
+alter table deck.media drop constraint media_deck_fkey;
+create or replace function session.delete_account(address text) returns void
+language plpgsql security definer set search_path = pg_catalog as $$
+begin
+  perform pg_advisory_xact_lock(hashtextextended(address, 0));
+  perform email from session.account where email = address for update;
+  insert into deck.original_delete (key, owner, expires)
+    select original_key, owner, coalesce(original_until, now()) from deck.saved
+    where owner = address and original_key is not null
+    on conflict (key) do nothing;
+  insert into deck.original_delete (key, owner, expires)
+    select media.key, address, now() + interval '15 minutes' from deck.media
+    where media.deck in (select id from deck.saved where owner = address union all select id from deck.scene where owner = address)
+    on conflict (key) do nothing;
+  delete from deck.media
+    where deck in (select id from deck.saved where owner = address union all select id from deck.scene where owner = address);
+  delete from session.oauth_token where grant_id in (select id from session.oauth_grant where principal = address);
+  delete from session.oauth_grant where principal = address;
+  delete from session.access where email = address;
+  delete from session.code where email = address;
+  delete from session.sent where email = address;
+  delete from session.aira_turn where email = address;
+  delete from session.aira_ledger where email = address;
+  delete from deck.saved where owner = address;
+  delete from session.account where email = address;
+end
+$$;
+`,
+  },
 ]

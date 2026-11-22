@@ -3,10 +3,6 @@ import {
   iconSideOn,
   iconTextColor,
   iconWeights,
-  limits,
-  mediaSize,
-  mediaTypeOf,
-  overPixelLimit,
   nextElementId,
   pictureSize,
   readSlideId,
@@ -14,13 +10,13 @@ import {
   type Box,
   type ElementId,
   type Media,
-  type MediaType,
   type Register,
   type SlideCommand,
   type Undoable,
 } from "@airdesign/document"
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { freeShapeId, iconInk, readSlides, slideColorHex } from "@airdesign/pptx"
+import type { PictureFile } from "@/picture-file"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { takenBoxes, type ElementPlan, type SlideRoom } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
@@ -30,26 +26,10 @@ import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export type PictureRefusal = "type" | "size" | "unread"
-
 export type PictureAt = {
   readonly index: number
   readonly slide: SlideRoom
   readonly keep: (sha256: string, bytes: Uint8Array) => void
-}
-
-export type PictureFile = {
-  readonly bytes: Uint8Array
-  readonly type: MediaType
-  readonly width: number
-  readonly height: number
-}
-
-export function pictureRefusal(bytes: Uint8Array): PictureRefusal | null {
-  if (mediaTypeOf(bytes) === null) return "type"
-  if (bytes.byteLength >= limits.media) return "size"
-  const size = mediaSize(bytes)
-  return size !== null && overPixelLimit(size) ? "size" : null
 }
 
 export function placedPicture(natural: { readonly width: number; readonly height: number }, slide: SlideRoom): Box {
@@ -80,21 +60,6 @@ export function pictureCommand(
 
 export function placedIcon(slide: SlideRoom, side: number): Box {
   return fitNewBox(slide, takenBoxes(slide), { cx: side, cy: side })
-}
-
-export async function readPicture(file: Blob): Promise<PictureFile | PictureRefusal> {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  const refusal = pictureRefusal(bytes)
-  const type = mediaTypeOf(bytes)
-  if (refusal !== null || type === null) return refusal ?? "type"
-  try {
-    const image = await createImageBitmap(new Blob([bytes], { type }))
-    const size = { width: image.width, height: image.height }
-    image.close()
-    return { bytes, type, ...size }
-  } catch {
-    return "unread"
-  }
 }
 
 export async function commitPicture(
@@ -150,3 +115,5 @@ export async function iconPlan(
     partial: false,
   }
 }
+
+export { pictureRefusal, readPicture, type PictureFile, type PictureRefusal } from "@/picture-file"

@@ -107,3 +107,37 @@ export async function savedSlides(stack: Stack, opened: Opened): Promise<readonl
   const fold = scene.readFold(answer.json.fold)
   return fold === undefined ? [] : scene.slidesOf(fold).map((slide) => slide.id)
 }
+
+export async function serveOriginals(page: Page, originals: Stack["originals"]): Promise<void> {
+  const allow = {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "PUT, GET, OPTIONS",
+    "access-control-allow-headers": "*",
+  }
+  await page.route(
+    (url) => url.hostname === "original.test",
+    async (route) => {
+      const request = route.request()
+      if (request.method() === "OPTIONS") {
+        await route.fulfill({ status: 204, headers: allow })
+        return
+      }
+      try {
+        if (request.method() === "PUT") {
+          const bytes = new Uint8Array(request.postDataBuffer() ?? Buffer.alloc(0))
+          originals.put(request.url(), bytes, { ...request.headers(), "content-length": String(bytes.byteLength) })
+          await route.fulfill({ status: 200, headers: allow, body: "" })
+          return
+        }
+        await route.fulfill({
+          status: 200,
+          headers: allow,
+          body: Buffer.from(originals.get(request.url())),
+          contentType: "application/octet-stream",
+        })
+      } catch (error) {
+        await route.fulfill({ status: request.method() === "PUT" ? 412 : 404, headers: allow, body: String(error) })
+      }
+    },
+  )
+}
