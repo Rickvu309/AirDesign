@@ -5,7 +5,7 @@ import { zoomKey, type ZoomKey } from "@/editor/canvas-zoom"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deleteWrites } from "./delete-writes"
 import { moveWrites } from "./move-writes"
-import { lockedIn } from "./node-props"
+import { lockedIn, propOf } from "./node-props"
 import { arranged } from "./arrange-keys"
 import { allIn, noSelection, steppedOut, type Selection } from "./selection"
 import type { SlideGeometry } from "./slide-geometry"
@@ -23,6 +23,7 @@ export type KeyArgs = {
   readonly onZoom: (key: ZoomKey) => void
   readonly onSpace: (down: boolean) => void
   readonly cancelDrag: () => boolean
+  readonly onEditText: (id: scene.NodeId) => void
 }
 
 const nudge = 1
@@ -73,9 +74,15 @@ export function useCanvasKeys(args: KeyArgs) {
       } else if (gesture === "pan") {
         handled()
         a.onSpace(true)
-      } else if (gesture === "tool-move" || gesture === "tool-hand") {
+      } else if (gesture === "tool-move" || gesture === "tool-hand" || gesture === "tool-text") {
         handled()
-        a.onTool(gesture === "tool-move" ? "move" : "hand")
+        a.onTool(gesture === "tool-move" ? "move" : gesture === "tool-hand" ? "hand" : "text")
+      } else if (gesture === "edit-text") {
+        const [only] = a.selection.ids
+        if (only === undefined || a.selection.ids.length !== 1 || propOf(a.view.nodes.get(only), "text") === undefined)
+          return
+        handled()
+        a.onEditText(only)
       } else if (gesture === "select-all") {
         handled()
         a.onSelection(allIn(a.geometry, a.selection, (id) => lockedIn(a.view, id)))

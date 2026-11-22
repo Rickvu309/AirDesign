@@ -21,11 +21,12 @@ import {
   type Rect,
   type Selection,
 } from "./selection"
-import type { Point, SlideGeometry } from "./slide-geometry"
+import { propOf } from "./node-props"
+import type { Placed, Point, SlideGeometry } from "./slide-geometry"
 import { transformedBy } from "./transform-drag"
 import type { EditorClient } from "./use-scene-deck"
 
-export type Tool = "move" | "hand"
+export type Tool = "move" | "hand" | "text"
 
 export type PointerArgs = {
   readonly stage: RefObject<HTMLDivElement | null>
@@ -38,6 +39,11 @@ export type PointerArgs = {
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
   readonly panning: boolean
+  readonly texting: boolean
+  readonly onTextEnd: () => void
+  readonly onTextEdit: (id: scene.NodeId, at: { readonly x: number; readonly y: number }) => void
+  readonly onTextDraw: (from: Point, to: Point | null, chain: readonly Placed[] | null) => void
+  readonly tool: Tool
   readonly setPreview: (preview: Preview | null) => void
   readonly setMarquee: (rect: Rect | null) => void
   readonly setHover: (id: scene.NodeId | null) => void
@@ -64,6 +70,12 @@ type Active =
       moved: boolean
     }
   | {
+      readonly kind: "draw"
+      readonly origin: Point
+      readonly chain: readonly Placed[] | null
+      moved: boolean
+    }
+  | {
       readonly kind: "marquee"
       readonly origin: Point
       readonly base: readonly scene.NodeId[]
@@ -73,6 +85,10 @@ type Active =
     }
 
 const threshold = 3
+
+function inEditor(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("[data-text-editor]") !== null
+}
 
 function gripOf(target: EventTarget | null): TransformGrip | null {
   const found = target instanceof Element ? target.closest("[data-grip]")?.getAttribute("data-grip") : null
@@ -161,6 +177,7 @@ export function useCanvasPointer(args: PointerArgs) {
     }
     const rect = rectBetween(gesture.origin, at)
     a.setMarquee(rect)
+    if (gesture.kind === "draw") return
     const hits = marqueeSelection(gesture.geometry, rect, {
       deep: event.metaKey || event.ctrlKey,
       locked: (id) => lockedIn(gesture.view, id),
@@ -190,6 +207,12 @@ export function useCanvasPointer(args: PointerArgs) {
     pending.current = null
     a.setMarquee(null)
     a.setPreview(null)
+    if (gesture?.kind === "draw" && commit && last !== null) {
+      const at = toSlide(last)
+      const far = gesture.moved || Math.hypot(at.x - gesture.origin.x, at.y - gesture.origin.y) * a.scale >= threshold
+      a.onTextDraw(gesture.origin, far ? at : null, gesture.chain)
+      return
+    }
     if (gesture === null || (gesture.kind !== "move" && gesture.kind !== "transform") || !commit || last === null)
       return
     const at = toSlide(last)
@@ -208,6 +231,8 @@ export function useCanvasPointer(args: PointerArgs) {
       if (event.button !== 0 && event.button !== 1) return
       const stage = a.stage.current
       if (stage === null) return
+      if (inEditor(event.target)) return
+      if (a.texting) a.onTextEnd()
       stage.setPointerCapture(event.pointerId)
       if (a.panning || event.button === 1) {
         active.current = {
@@ -220,6 +245,11 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const origin = toSlide(event)
+      if (a.tool === "text") {
+        stage.setPointerCapture(event.pointerId)
+        active.current = { kind: "draw", origin, chain: chainAt(event, a.geometry, a.view), moved: false }
+        return
+      }
       const grip = gripOf(event.target)
       if (grip !== null) {
         active.current = {
@@ -250,10 +280,19 @@ export function useCanvasPointer(args: PointerArgs) {
     },
     double(event: ReactMouseEvent<HTMLElement>) {
       const a = latest.current
+      if (inEditor(event.target)) return
       const chain = chainAt(event, a.geometry, a.view)
       if (chain === null) return
       const inside = steppedIn(chain, a.selection)
-      if (inside !== null) a.onSelection(inside)
+      if (inside !== null) {
+        a.onSelection(inside)
+        return
+      }
+      const leaf = chain[chain.length - 1]!
+      if (propOf(a.view.nodes.get(leaf.id), "text") !== undefined) {
+        a.onSelection({ ids: [leaf.id], inside: a.selection.inside })
+        a.onTextEdit(leaf.id, { x: event.clientX, y: event.clientY })
+      }
     },
     move(event: ReactPointerEvent<HTMLElement>) {
       const a = latest.current
@@ -261,7 +300,7 @@ export function useCanvasPointer(args: PointerArgs) {
         schedule(event)
         return
       }
-      if (a.panning) return
+      if (a.panning || a.texting) return
       const chain = chainAt(event, a.geometry, a.view)
       a.setHover(chain === null ? null : unitOf(chain, a.selection.inside, event.metaKey || event.ctrlKey).id)
     },

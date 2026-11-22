@@ -1,10 +1,11 @@
-import { Hand, MousePointer2 } from "lucide-react"
+import { Hand, MousePointer2, Type } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import type { Tool } from "./use-canvas-pointer"
 
 const tools = [
   { tool: "move", icon: MousePointer2, label: sceneEditorCopy.toolMove },
+  { tool: "text", icon: Type, label: sceneEditorCopy.textTool },
   { tool: "hand", icon: Hand, label: sceneEditorCopy.toolHand },
 ] as const
 

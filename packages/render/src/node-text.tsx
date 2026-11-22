@@ -19,13 +19,21 @@ function runLook(run: Run): CSSProperties {
   }
 }
 
-export function TextLines({ lines }: { readonly lines: readonly scene.ResolvedLine[] }) {
+export function TextLines({
+  lines,
+  editing = false,
+}: {
+  readonly lines: readonly scene.ResolvedLine[]
+  readonly editing?: boolean
+}) {
   return (
     <>
       {lines.map((line, at) => (
         <div
           key={at}
           data-line=""
+          data-start={line.start}
+          data-end={line.end}
           style={{
             position: "absolute",
             left: line.x,
@@ -39,15 +47,20 @@ export function TextLines({ lines }: { readonly lines: readonly scene.ResolvedLi
           }}
         >
           {line.label === undefined ? null : (
-            <span style={{ position: "absolute", left: line.label.x - line.x, ...runLook(line.label.run) }}>
+            <span
+              data-label=""
+              contentEditable={editing ? false : undefined}
+              style={{ position: "absolute", left: line.label.x - line.x, ...runLook(line.label.run) }}
+            >
               {line.label.run.text}
             </span>
           )}
           {line.runs.map((run, index) => (
-            <span key={index} style={runLook(run)}>
-              {index === line.runs.length - 1 ? run.text.trimEnd() : run.text}
+            <span key={index} data-run="" style={runLook(run)}>
+              {!editing && index === line.runs.length - 1 ? run.text.trimEnd() : run.text}
             </span>
           ))}
+          {editing && line.runs.length === 0 ? <br /> : null}
         </div>
       ))}
     </>

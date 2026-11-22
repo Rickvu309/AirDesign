@@ -60,12 +60,13 @@ export function CanvasOverlay(props: {
   readonly selected: readonly scene.NodeId[]
   readonly hovered: scene.NodeId | null
   readonly marquee: Rect | null
+  readonly editing: boolean
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
 }) {
   const { view, preview, geometry, selected, hovered, marquee, scale, size } = props
   const guides = preview?.guides ?? []
-  const frame = preview?.kind === "move" ? null : framed(geometry, selected, view)
+  const frame = preview?.kind === "move" || props.editing ? null : framed(geometry, selected, view)
   const chosen = selected.flatMap((id) => geometry.byId.get(id) ?? [])
   const all = aroundPlaced(chosen)
   const hover = hovered === null || selected.includes(hovered) ? undefined : geometry.byId.get(hovered)
