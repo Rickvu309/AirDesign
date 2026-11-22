@@ -1,13 +1,21 @@
 import { readdirSync, readFileSync } from "node:fs"
 
-import { describe, expect, it } from "vitest"
+import { beforeAll, describe, expect, it } from "vitest"
 
 import { agentsWalks, shareCount, shareOf } from "./agents-replay.js"
-import { specGraph } from "./spec-graph.js"
+import { specGraph, type Graph, type Path } from "./spec-graph.js"
 
 const folder = new URL("./", import.meta.url)
 
 describe("agents replay shares", () => {
+  let covering: readonly Path[]
+  let graph: Graph
+
+  beforeAll(async () => {
+    ;({ covering } = await agentsWalks())
+    graph = await specGraph("agents", "Agents")
+  }, 60_000)
+
   it("has one test file per share, each replaying its own share", () => {
     const files = readdirSync(folder)
       .filter((name) => /^agents-replay-\d+\.test\.ts$/.test(name))
@@ -20,8 +28,7 @@ describe("agents replay shares", () => {
     }
   })
 
-  it("splits the walks of the agents model so every walk is in exactly one share, in order", async () => {
-    const { covering } = await agentsWalks()
+  it("splits the walks of the agents model so every walk is in exactly one share, in order", () => {
     expect(covering.length).toBeGreaterThan(shareCount)
     const shares = Array.from({ length: shareCount }, (_, share) => shareOf(covering, share))
     for (const share of shares) expect(share.length).toBeGreaterThan(0)
@@ -36,7 +43,6 @@ describe("agents replay shares", () => {
         from = step.to
       }
     }
-    const graph = await specGraph("agents", "Agents")
     const edges = graph.edges.filter((edge) => edge.action !== "Done")
     expect(edges.filter((edge) => !driven.has(`${edge.from} ${edge.action} ${edge.to}`))).toEqual([])
   })

@@ -158,6 +158,9 @@ if (warns("commit-authors")) throw new Error("commit-authors blocks from the sta
 if (!namesIn("source").includes("linear-branch")) throw new Error("the source part must run linear-branch")
 if (!stepsWhen(true).includes("linear-branch")) throw new Error("ci must run linear-branch")
 if (warns("linear-branch")) throw new Error("linear-branch blocks from the start")
+if (!namesIn("source").includes("spec-timeouts")) throw new Error("the source part must run spec-timeouts")
+if (!stepsWhen(true).includes("spec-timeouts")) throw new Error("ci must run spec-timeouts")
+if (warns("spec-timeouts")) throw new Error("spec-timeouts blocks from the start")
 
 if (ranWhen("design", true).includes("design-findings"))
   throw new Error("design-findings judges every design shard's report together, so no one design shard runs it")

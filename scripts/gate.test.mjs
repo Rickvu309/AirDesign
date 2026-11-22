@@ -112,6 +112,7 @@ const preflight = [
   "unused-exports",
   "rule-rows",
   "linear-branch",
+  "spec-timeouts",
 ]
 const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],
