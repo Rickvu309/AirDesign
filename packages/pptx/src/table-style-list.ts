@@ -89,3 +89,26 @@ export function newTableStyle(parts: Map<string, Uint8Array>): string {
   replacePart(parts, part, spliceBytes(bytes, [edit]))
   return officeTableStyle
 }
+
+export const tableTextUri = "{9B4E2A71-3C5D-4F86-A1B0-6D2E8F4C7A53}"
+
+export function tableTextSize(parts: Parts, style: string): number | null {
+  const bytes = parts.get(stylesPart(parts))
+  if (bytes === undefined) return null
+  const { elements } = markupDocument(bytes)
+  const held = elements.find(
+    (element) =>
+      element.kind === "a:tblStyle" && (paintAttribute(element, "styleId") ?? "").toUpperCase() === style.toUpperCase(),
+  )
+  if (held === undefined) return null
+  const inside = (parent: MarkupElement, kind: string) =>
+    elements.find((element) => element.parent === parent.index && element.kind === kind)
+  const list = inside(held, "a:extLst")
+  const extension =
+    list === undefined
+      ? undefined
+      : elements.find((element) => element.parent === list.index && paintAttribute(element, "uri") === tableTextUri)
+  const text = extension === undefined ? undefined : inside(extension, "ad:cellText")
+  const size = text === undefined ? null : paintAttribute(text, "sz")
+  return size !== null && /^[1-9]\d{2,5}$/.test(size) ? Number(size) : null
+}

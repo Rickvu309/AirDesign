@@ -120,7 +120,12 @@ function tableOf(elements: readonly MarkupElement[], row: MarkupElement): Markup
   return table
 }
 
-export function addTable(bytes: Uint8Array, shape: TableShape & { readonly id?: number }, style: string) {
+export function addTable(
+  bytes: Uint8Array,
+  shape: TableShape & { readonly id?: number },
+  style: string,
+  textSize: number | null = null,
+) {
   const document = requireMarkup(bytes)
   const tree = document.elements.find((element) => element.kind === "p:spTree")
   if (tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
@@ -128,7 +133,7 @@ export function addTable(bytes: Uint8Array, shape: TableShape & { readonly id?: 
   if (!Number.isInteger(id) || id < 2 || id > 4294967295 || shapeIdsIn(bytes).includes(String(id)))
     throw new Error("shape id")
   if (![shape.x, shape.y].every(Number.isSafeInteger)) throw new Error("emu")
-  return insertAt(bytes, tree.closeStart, encodeUtf8(tableFrame(id, shape, style)))
+  return insertAt(bytes, tree.closeStart, encodeUtf8(tableFrame(id, shape, style, textSize)))
 }
 
 export function addRow(bytes: Uint8Array, row: number): Uint8Array {
