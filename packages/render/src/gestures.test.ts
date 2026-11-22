@@ -230,12 +230,13 @@ describe("gestureFor", () => {
     )
   })
 
-  it("selects all or the inverse on the slide and on a layer, and leaves text to the browser", () => {
+  it("selects all or the inverse on the slide and on a layer, and all the words inside a text box", () => {
     expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "slide")).toBe("select-all")
     expect(gestureFor({ ...plain, key: "A", code: "KeyA", metaKey: true, shiftKey: true }, "element")).toBe(
       "select-inverse",
     )
-    expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "text")).toBeNull()
+    expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "text")).toBe("select-all")
+    expect(gestureFor({ ...plain, key: "A", code: "KeyA", metaKey: true, shiftKey: true }, "text")).toBeNull()
   })
 
   it("reads Figma's backslash as select parent, Shift and minus as zoom out, and Mod+Backspace as ungroup", () => {

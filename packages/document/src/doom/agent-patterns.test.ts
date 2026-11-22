@@ -176,10 +176,20 @@ describe("cards sized to their words", () => {
   ]
   const row = (items: unknown) => made(build(agentDeck(), add({ kind: "cards", items })))
 
-  it("takes under 60% of the room below the title for three short cards, not 70%", () => {
+  it("takes between 55% and 70% of the room below the title for three short cards", () => {
     const doom = build(agentDeck(), add({ kind: "cards", items: shortCards }))
     const box = get(made(doom), "box")!
-    expect(box.h).toBeLessThan(0.6 * (1080 - box.y))
+    const room = 1080 - box.y
+    expect(box.h).toBeGreaterThanOrEqual(0.55 * room)
+    expect(box.h).toBeLessThan(0.7 * room)
+  })
+
+  it("takes the same share of the room for a KPI row, and only what it needs for one card", () => {
+    const kpis = build(agentDeck(), add({ kind: "kpi", items: kpiItems }))
+    const box = get(made(kpis), "box")!
+    expect(box.h).toBeGreaterThanOrEqual(0.55 * (1080 - box.y))
+    const one = build(agentDeck(), add({ kind: "cards", items: [shortCards[0]] }))
+    expect(get(made(one), "box")!.h).toBeLessThan(0.4 * (1080 - get(made(one), "box")!.y))
   })
 
   it("keeps every card in the row as tall as the row", () => {

@@ -74,6 +74,18 @@ describe("a designed starting slide", () => {
     }
   })
 
+  it.each(["kpis", "cards"] as const)(
+    "%s: fills most of the room under the title, so the lower half of the slide is not left empty",
+    (start) => {
+      const { doom, slide } = started(start)
+      const [content] = childrenOf(doom, slide).filter((node) => get(node, "role") !== "title")
+      const box = get(content!, "box")!
+      const room = 1000 - box.y
+      expect(box.h).toBeGreaterThanOrEqual(0.55 * room)
+      expect(box.y + box.h).toBeLessThanOrEqual(1000)
+    },
+  )
+
   it("blank: holds nothing", () => {
     const { doom, slide } = started("blank")
     expect(childrenOf(doom, slide)).toHaveLength(0)
