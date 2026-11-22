@@ -4,7 +4,6 @@ import {
   openRegister,
   readElementId,
   readLayout,
-  readTableValue,
   shapeOf,
   takes,
   traits,
@@ -55,7 +54,6 @@ import { liveSlideNumber } from "./live-slide-number"
 import { LiveBoxFields } from "./live-box-fields"
 import { servedFaces, useServedFaces } from "@/design/served-faces"
 import { controlsOf, perDesignChanges } from "@/editor/per-design-change"
-import type { TableCells } from "@/editor/table-cells-section"
 import { kindSection } from "@/editor/kind-section"
 import { heldChart } from "@/live-repaint"
 
@@ -70,7 +68,6 @@ export type DesigningDeck = DesignDeck & {
   readonly matchable?: boolean
   readonly replacePicture?: (node: ElementId, file: File) => void
   readonly chooseFillImage?: (node: ElementId) => void
-  readonly tableCells?: TableCells | null
 }
 
 const deckTraits = new WeakMap<Parts, DeckTraits | null>()
@@ -116,13 +113,7 @@ function nodeDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement
   const opening = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(node)
   if (opening === undefined) return null
   const held = opening.value ?? fileValue(shown, node)
-  const kept = opening.facts.kind === "table" && readTableValue(text ?? "") === null
-  const value =
-    opening.facts.kind === "chart"
-      ? (heldChart(shown.shownRegister.current, node) ?? held)
-      : kept
-        ? held
-        : (text ?? held)
+  const value = opening.facts.kind === "chart" ? (heldChart(shown.shownRegister.current, node) ?? held) : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
   const register = shown.shownRegister.current
   const laid = register === null ? null : indexedRegister(shown.shownParts.current, register)
@@ -224,7 +215,7 @@ function LiveElementDesign({
         mode={mode}
         selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
         palette={palette}
-        {...kindSection({ deck, node, kind: design.model.kind, value: design.view.value, palette })}
+        {...kindSection({ deck, node, kind: design.model.kind, palette })}
         onChange={(control, value) => {
           const chosen = chosenFill(
             value,

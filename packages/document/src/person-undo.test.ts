@@ -200,24 +200,6 @@ describe("person undo", () => {
     expect(currentValue(turned(edited, undoOf(edited, undoable)).elements[notes]!)).toBe("Say hello")
   })
 
-  it("undoes a table edit by the trait its step names, on a register that has no index", () => {
-    const table = elementId("256.4")
-    const cells = (text: string) =>
-      JSON.stringify({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text }] }]] }] })
-    const opening = landed(openRegister("", ""), { command: "add", node: table, floor: "", route: "" })
-    const edited = landed(opening, { command: "person", value: cells("North"), node: table })
-    const undoable: Undoable = {
-      steps: [
-        {
-          node: table,
-          before: { table: { value: { set: cells("") } } },
-          after: { table: { value: { set: cells("North") } } },
-        },
-      ],
-    }
-    expect(currentValue(turned(edited, undoOf(edited, undoable)).elements[table]!)).toBe(cells(""))
-  })
-
   it("gives no undoable for a slide edit the register refuses", () => {
     expect(slideUndoable(openRegister("", ""), file, { slide: "remove", id: slideId("300") })).toBeNull()
   })

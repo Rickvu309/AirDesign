@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { filedText, paragraphedTable, paragraphedText } from "./line-breaks.js"
-import { readTableValue } from "./table-value.js"
+import { filedText, paragraphedText } from "./line-breaks.js"
 import { readTextValue, writeTextValue } from "./text-value.js"
 
 describe("a line break starts a new paragraph, as Enter does", () => {
@@ -62,21 +61,6 @@ describe("a line break starts a new paragraph, as Enter does", () => {
     expect(paragraphedText("")).toBe("")
     const json = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Revenue" }] }])
     expect(paragraphedText(json)).toBe(json)
-  })
-
-  it("splits the words of each table cell", () => {
-    const table = JSON.stringify({
-      rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text: "Owner\nCFO" }] }], [{ from: 0, runs: [] }]] }],
-    })
-    expect(readTableValue(paragraphedTable(table))?.rows[0]?.cells[0]).toEqual([
-      { from: 0, runs: [{ from: -1, text: "Owner" }] },
-      { from: 0, runs: [{ from: -1, text: "CFO" }] },
-    ])
-  })
-
-  it("leaves a table with no line break as it was sent", () => {
-    const table = JSON.stringify({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text: "Owner" }] }]] }] })
-    expect(paragraphedTable(table)).toBe(table)
   })
 })
 

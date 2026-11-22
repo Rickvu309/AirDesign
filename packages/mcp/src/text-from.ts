@@ -1,14 +1,5 @@
 import type { WireChange } from "@airdesign/catalog"
-import {
-  readTableValue,
-  readTextValue,
-  slideKind,
-  tableColumns,
-  type ElementId,
-  type TableValue,
-  type TextRun,
-  type TextValue,
-} from "@airdesign/document"
+import { readTextValue, slideKind, type ElementId, type TextRun, type TextValue } from "@airdesign/document"
 
 export type TextProblem = { readonly code: "field" | "text-from"; readonly detail: string }
 
@@ -49,42 +40,6 @@ export const notTextValue =
   "The text looks like JSON and is not a text value, so nothing landed. A text value is [{from, runs:[{from, text}]}]: a paragraph's from is one the layer has, repeated for another paragraph, and a run's from is one it has or -1. Send plain text for plain words."
 
 const newLayer: TextValue = [{ from: 0, runs: [{ from: 0, text: "" }] }]
-const emptyCell: TextValue = [{ from: 0, runs: [] }]
-
-function gridProblem(file: TableValue, next: TableValue): TextProblem | undefined {
-  const width = file.rows[0]?.cells.length ?? 0
-  const row = next.rows.find((each) => each.from >= file.rows.length)
-  if (row !== undefined)
-    return {
-      code: "text-from",
-      detail: `The file's table has rows ${indexed(file.rows.map((each) => each.from))}. Use one of them, or -1 for a new row.`,
-    }
-  if (tableColumns(next).some((from) => from >= width))
-    return {
-      code: "text-from",
-      detail: `The file's table has ${String(width)} columns, numbered from 0. Use one of them in columns, or -1 for a new column.`,
-    }
-  return undefined
-}
-
-export function cellProblem(file: TableValue, next: TableValue): TextProblem | undefined {
-  const grid = gridProblem(file, next)
-  if (grid !== undefined) return grid
-  const columns = tableColumns(next)
-  for (const row of next.rows) {
-    const source = file.rows.find((each) => each.from === row.from)
-    for (const [at, cell] of row.cells.entries()) {
-      const column = columns[at] ?? -1
-      const problem = runProblem(
-        source === undefined || column < 0 ? emptyCell : (source.cells[column] ?? emptyCell),
-        cell,
-      )
-      if (problem !== undefined)
-        return { code: problem.code, detail: `Row ${String(row.from)}, cell ${String(at)}: ${problem.detail}` }
-    }
-  }
-  return undefined
-}
 
 export function textProblem(
   floors: ReadonlyMap<ElementId, string>,
@@ -94,13 +49,6 @@ export function textProblem(
     if (change.property === "box" || slideKind(change.node) !== null) continue
     const floor = floors.get(change.node)
     if (floor === undefined) continue
-    const table = readTableValue(floor)
-    const sent = table === null ? null : readTableValue(change.value)
-    if (table !== null && sent !== null) {
-      const problem = cellProblem(table, sent)
-      if (problem !== undefined) return problem
-      continue
-    }
     const file = floor === "" ? newLayer : readTextValue(floor)
     if (file === null) continue
     const next = readTextValue(change.value)

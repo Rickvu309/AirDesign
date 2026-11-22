@@ -7,12 +7,6 @@ function answerOf(text) {
   return JSON.parse(line === undefined ? text : line.slice(6)).result
 }
 
-const rows = [
-  ["Milestone", "Owner", "Due"],
-  ["Sign the cloud commitment", "CFO", "30 Nov"],
-  ["Re-price usage tiers", "CRO", "31 Jan"],
-].map((cells, from) => ({ from, cells: cells.map((text) => [{ from: 0, runs: [{ from: 0, text }] }]) }))
-
 const title = [{ from: 0, runs: [{ from: -1, text: "Q3 review\nRevenue ran ahead of plan" }] }]
 
 const chart = {
@@ -61,13 +55,6 @@ async function drive(kit) {
         slide: added,
         box: { x: 72, y: 270, w: 400, h: 250 },
         chart: { value: JSON.stringify(chart) },
-      },
-      {
-        op: "add",
-        kind: "table",
-        slide: added,
-        box: { x: 496, y: 270, w: 392, h: 96 },
-        table: { value: JSON.stringify({ rows }) },
       },
     ],
   })

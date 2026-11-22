@@ -62,7 +62,7 @@ const agentText: Value = { value: writeTextValue([{ from: 0, runs: [{ from: -1, 
 it("opens and exports a deck whose register holds agent text on elements that hold no text", async () => {
   const parts = await census()
   const shapes = readShapes(parts)
-  const refused = ["photo", "chart", "table", "group", "kept", "connector"].map((kind) => first(shapes, kind))
+  const refused = ["photo", "chart", "group", "kept", "connector"].map((kind) => first(shapes, kind))
   const register = storedBeforeTheFix(refused.map((node) => [node, agentText] as const))
   expect(() => notesShown(parts, register)).not.toThrow()
   const exported = exportedParts(parts, register)

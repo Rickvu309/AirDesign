@@ -124,7 +124,7 @@ function elementOf(source: SlideSource, row: PaintElement): ResolvedElement {
   const picture = row.kind === "p:pic" || row.image !== null
   return {
     node: node ?? `${row.part}#${row.shape}`,
-    kind: row.table !== undefined ? "table" : row.diagram !== undefined ? "kept" : paintKind(row.kind),
+    kind: row.diagram !== undefined ? "kept" : paintKind(row.kind),
     from: node === undefined ? "layout" : "slide",
     box:
       row.box === null
@@ -140,7 +140,6 @@ function elementOf(source: SlideSource, row: PaintElement): ResolvedElement {
     placeholder: row.placeholder?.type ?? null,
     fill: picture ? "image" : fillOf(row.fill),
     text: row.text === null ? null : resolvedText(row.text, row),
-    cells: null,
   }
 }
 

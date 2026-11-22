@@ -8,7 +8,7 @@ import type { DeckPaint } from "@/editor/use-deck-paint"
 import { backfillIndex } from "@/index-deck"
 import { withFileFloors } from "@/deck-paint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
-import { structureOf } from "@/table-hook"
+import { structureOf } from "@/paint-structure"
 import { signInAddress } from "@/thin-notice"
 
 export type OpeningDeck = {

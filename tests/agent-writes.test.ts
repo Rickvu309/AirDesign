@@ -1,4 +1,4 @@
-import { readDeckId, traitWire } from "@airdesign/catalog"
+import { readDeckId } from "@airdesign/catalog"
 import { openRegister, presentSlides, readSlideId, type Register } from "@airdesign/document"
 import { callTool, emptyLog, memoryTurns, type Session } from "@airdesign/mcp"
 import { readParts, readSlides } from "@airdesign/pptx"
@@ -72,24 +72,6 @@ describe("what the agent tools land, the tab writes", () => {
     expect(written(parts, session)).toContain("<a:t>Styled two</a:t>")
     landed(session, [{ node, readAt: version, value: "Value one\nValue two" }])
     expect(written(parts, session)).toContain("<a:t>Value two</a:t>")
-  })
-
-  it("writes a table added with words in its cells in the documented form", async () => {
-    const { parts, session, slide } = await opened()
-    const rows = [
-      ["Milestone", "Owner"],
-      ["Sign the commitment", "CFO\nFinance"],
-    ].map((cells, at) => ({ from: at, cells: cells.map((text) => [{ from: 0, runs: [{ from: 0, text }] }]) }))
-    landed(session, [{ op: "add", kind: "table", slide, table: { value: JSON.stringify({ rows }) } }])
-    const xml = written(parts, session)
-    for (const word of ["Milestone", "Owner", "Sign the commitment", "CFO", "Finance"])
-      expect(xml).toContain(`<a:t>${word}</a:t>`)
-  })
-
-  it("writes a table added with the example the tool gives", async () => {
-    const { parts, session, slide } = await opened()
-    landed(session, [{ op: "add", kind: "table", slide, ...traitWire.table.fields.value.example }])
-    expect(written(parts, session)).toContain("<a:t>Region</a:t>")
   })
 
   it("writes a chart added to a slide an agent added", async () => {

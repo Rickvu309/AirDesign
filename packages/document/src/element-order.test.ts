@@ -5,7 +5,6 @@ import {
   elementId,
   elementStacks,
   nextElementId,
-  openingTable,
   openRegister,
   openingElement,
   readSlideState,
@@ -13,7 +12,6 @@ import {
   type IndexElement,
   type Register,
   type SlideCommand,
-  writeTableValue,
 } from "./index.js"
 
 const file = [slideId("256"), slideId("257")]
@@ -121,24 +119,6 @@ describe("element order", () => {
     expect(refused(textBox)).toBe(false)
   })
 
-  it("opens an added table with its box and empty rows, and refuses one with text, no box or rows it does not own", () => {
-    const table: IndexElement = { ...textBox, kind: "table", value: writeTableValue(openingTable(3, 3)) }
-    const added = applied(openRegister("", ""), { slide: "element-add", id: file[0]!, element: table })
-    expect(openingElement(added, node)).toEqual(table)
-    const refused = (element: IndexElement) =>
-      slide(indexed, { slide: "element-add", id: file[0]!, element }).decision === "refuse"
-    expect(refused(table)).toBe(false)
-    expect(refused({ ...table, value: "" })).toBe(true)
-    expect(refused({ ...table, box: null })).toBe(true)
-    expect(refused({ ...table, grouped: true })).toBe(true)
-    const typed = writeTableValue({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text: "x" }] }]] }] })
-    expect(refused({ ...table, value: typed })).toBe(true)
-    expect(
-      refused({ ...table, value: writeTableValue({ rows: [{ from: -1, cells: [[{ from: 0, runs: [] }]] }] }) }),
-    ).toBe(true)
-    expect(refused({ ...textBox, value: writeTableValue(openingTable(1, 1)) })).toBe(true)
-  })
-
   it("opens an added rectangle, ellipse and line with their geometry, a shape with empty text to type in, and refuses one with text, media or the wrong kind", () => {
     const shape: IndexElement = { ...textBox, value: null }
     const line: IndexElement = { ...shape, kind: "connector", box: { ...box, cy: 0 } }
@@ -164,7 +144,7 @@ describe("element order", () => {
     expect(refused(add(shape, "line"))).toBe(true)
     expect(refused(add(shape, "straightConnector1"))).toBe(true)
     expect(refused(add(line, "star5"))).toBe(true)
-    expect(refused(add({ ...shape, kind: "table" }, "rect"))).toBe(true)
+    expect(refused(add({ ...shape, kind: "chart" }, "rect"))).toBe(true)
     expect(refused(add({ ...shape, box: { ...box, cx: 0 } }, "rect"))).toBe(true)
     expect(refused(add({ ...line, box: { ...box, cx: 0, cy: 0 } }, "line"))).toBe(true)
     expect(refused(add(shape, "star"))).toBe(true)

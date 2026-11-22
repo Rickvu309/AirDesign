@@ -55,10 +55,6 @@ export function ImagesScreen() {
   return <EditorView {...galleryDeck} run="done" rail="images" activeTool="image" />
 }
 
-export function TableScreen() {
-  return <EditorView {...galleryDeck} run="done" activeTool="table" tableTray />
-}
-
 export function ShapesScreen() {
   return <EditorView {...galleryDeck} run="done" activeTool="shape" shapeTray />
 }

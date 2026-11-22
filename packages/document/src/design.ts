@@ -6,18 +6,7 @@ import { bytesOf } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { readTypeface } from "./text-value.js"
 
-export const roles = [
-  "title",
-  "subtitle",
-  "body",
-  "date",
-  "footer",
-  "number",
-  "picture",
-  "chart",
-  "table",
-  "object",
-] as const
+export const roles = ["title", "subtitle", "body", "date", "footer", "number", "picture", "chart", "object"] as const
 export type Role = (typeof roles)[number]
 
 export const sources = ["layout", "master", "style"] as const

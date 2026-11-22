@@ -20,12 +20,6 @@ export const routeOperations = [
   "sectionLst.add",
   "sectionLst.remove",
   "sectionLst.order",
-  "graphicFrame.addTable",
-  "tbl.addRow",
-  "tbl.removeRow",
-  "tbl.orderRow",
-  "tbl.addColumn",
-  "tbl.removeColumn",
   "element.export",
 ] as const
 
@@ -54,11 +48,5 @@ export const routeName: Record<(typeof routeOperations)[number], string> = {
   "sectionLst.add": writtenRoutes.addSection,
   "sectionLst.remove": writtenRoutes.removeSection,
   "sectionLst.order": writtenRoutes.orderSection,
-  "graphicFrame.addTable": writtenRoutes.addTable,
-  "tbl.addRow": writtenRoutes.addRow,
-  "tbl.removeRow": writtenRoutes.removeRow,
-  "tbl.orderRow": writtenRoutes.orderRow,
-  "tbl.addColumn": writtenRoutes.columns,
-  "tbl.removeColumn": writtenRoutes.columns,
   "element.export": "element.export",
 }

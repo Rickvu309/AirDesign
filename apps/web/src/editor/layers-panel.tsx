@@ -67,7 +67,6 @@ const kindIcons: Readonly<Record<LayerKind, EditorIconName>> = {
   connector: "line",
   group: "group",
   frame: "frame",
-  table: "table",
   chart: "chart",
   kept: "layers",
 }

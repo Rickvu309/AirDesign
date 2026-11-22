@@ -221,7 +221,7 @@ export function panelRegister(
   const input = trait === "text" && field === "color" ? { solid: value } : value
   const planned = control === undefined ? null : planChange(control.change(input), scope)
   if (planned === null || !planned.ok) return null
-  const holder = valueHolder(register, at.node, "person")
+  const holder = valueHolder(at.node)
   const commands = planned.rows.flatMap(({ node, row: planned }): Command[] =>
     (formatOne(planned.patch, holder) ?? [planned]).map((each) => ({ command: "person", node, ...each })),
   )

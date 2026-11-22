@@ -1,15 +1,5 @@
 import { describe, expect, it } from "vitest"
-import {
-  beforeOf,
-  format,
-  netPatch,
-  readRow,
-  shows,
-  writeTableValue,
-  openingTable,
-  type ElementPatch,
-  type Row,
-} from "./index.js"
+import { beforeOf, format, netPatch, readRow, shows, type ElementPatch, type Row } from "./index.js"
 import { fieldsOf, formatOne, rowOf } from "./row.js"
 
 const box = { x: 100, y: -200, cx: 300, cy: 0 }
@@ -21,13 +11,11 @@ function row(patch: ElementPatch): Row {
 
 describe("readRow reads both format 1 forms as trait fields", () => {
   it("reads a value as the field of the trait that holds it on the node", () => {
-    const table = writeTableValue(openingTable(1, 1))
     expect(readRow({ value: "Hi" }, "text")).toEqual({ ok: true, value: row({ text: { value: { set: "Hi" } } }) })
     expect(readRow({ value: "Speak" }, "notes")).toEqual({
       ok: true,
       value: row({ notes: { value: { set: "Speak" } } }),
     })
-    expect(readRow({ value: table }, "table")).toEqual({ ok: true, value: row({ table: { value: { set: table } } }) })
   })
 
   it("reads a box as its four fields", () => {
@@ -152,7 +140,6 @@ describe("person undo compares and turns back only the fields a step names", () 
     expect(shows(net, { text: { value: { set: "New" } }, box: { y: "opening" } })).toBe(true)
     expect(shows(net, { box: { x: "opening" } })).toBe(false)
     expect(shows(net, { box: { x: { set: 8 } } })).toBe(false)
-    expect(shows(net, { table: { value: { set: "New" } } })).toBe(false)
     expect(shows(netPatch([row({ box: { w: "inherit" } })]), { box: { w: "inherit" } })).toBe(true)
     expect(shows(net, {})).toBe(true)
   })
@@ -160,7 +147,7 @@ describe("person undo compares and turns back only the fields a step names", () 
   it("turns the fields a step names back to the rows format 1 can store", () => {
     expect(formatOne({ text: { value: { set: "Hi" } } }, "text")).toEqual([{ value: "Hi" }])
     expect(formatOne(boxPatch, "notes")).toEqual([{ property: "box", value: box }])
-    expect(formatOne({ ...boxPatch, table: { value: { set: "t" } } }, "table")).toEqual([
+    expect(formatOne({ ...boxPatch, notes: { value: { set: "t" } } }, "notes")).toEqual([
       { value: "t" },
       { property: "box", value: box },
     ])

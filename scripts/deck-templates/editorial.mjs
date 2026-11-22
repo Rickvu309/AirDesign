@@ -70,7 +70,6 @@ const look = {
 export default {
   ...templateTheme("editorial"),
   scale,
-  table: { id: "{2D1C7E5A-6B0F-4C3E-9A41-7E5B2C8D1F03}", rule: "tx1 lumMod 25000 lumOff 75000", headRule: ink },
   master: master(look),
   layouts: layouts(look),
   slides: boardSlides(scale),

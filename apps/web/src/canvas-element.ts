@@ -6,7 +6,6 @@ import {
   type CanvasLayer,
   type CanvasLine,
   type CanvasOutline,
-  type CanvasTable,
   type CanvasText,
 } from "@airdesign/render"
 import type { CanvasShape } from "@/canvas-source"
@@ -31,7 +30,6 @@ export type DrawnSpec = {
   readonly line: CanvasLine | null
   readonly text: CanvasText | null
   readonly geometry: Geometry | undefined
-  readonly table: CanvasTable | undefined
   readonly editable: boolean
   readonly movable: boolean
 }
@@ -137,7 +135,6 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     outline: spec.outline,
     ...(spec.geometry === undefined ? {} : { geometry: spec.geometry }),
     text: heldText(spec.text, shape),
-    ...(spec.table === undefined ? {} : { table: spec.table }),
     ...cropOf(row, ctx.src),
   }
 }

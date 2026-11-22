@@ -54,7 +54,7 @@ type Tree = {
   readonly rejoined: ReadonlySet<ElementId>
 }
 
-export const groupable: readonly Kind[] = ["shape", "connector", "group", "table", "chart"]
+export const groupable: readonly Kind[] = ["shape", "connector", "group", "chart"]
 
 const fullTurn = 21_600_000
 

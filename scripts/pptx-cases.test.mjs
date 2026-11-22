@@ -87,7 +87,6 @@ assert.deepEqual(
     "trait-link.mjs",
     "trait-opacity.mjs",
     "trait-picture.mjs",
-    "trait-table.mjs",
     "trait-text.mjs",
     "trait-theme.mjs",
   ],

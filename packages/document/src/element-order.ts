@@ -8,7 +8,6 @@ import { slideMeasure } from "./slide-measure.js"
 import { presets, type Preset } from "./trait-geometry.js"
 import type { SlideState } from "./slide-order.js"
 import { hasSlideNumber, openingSlideNumber } from "./text-value.js"
-import { openedTable } from "./table-value.js"
 import { readChartValue } from "./chart-value.js"
 import { indexFacts, removable } from "./element-takes.js"
 import { frameBackdrop, groupChildren, groupedNow, groupEmptied, groupParent, plainGroup } from "./element-group.js"
@@ -218,7 +217,6 @@ function addable(command: ElementAdd): boolean {
   if (pasted !== undefined)
     return media === undefined && geometry === undefined && pastedFits(element, pasted, command.id)
   if (geometry !== undefined) return media === undefined && drawable(element, geometry)
-  if (element.kind === "table") return media === undefined && openedTable(element.value)
   if (element.kind === "chart")
     return media === undefined && element.value !== null && readChartValue(element.value) !== null
   if (element.kind !== "shape") return false

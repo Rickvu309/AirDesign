@@ -1,6 +1,6 @@
 import { readTextValue, writeTextValue, type TextValue } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
-import { readShapes, readSlides } from "@airdesign/pptx"
+import { readSlides } from "@airdesign/pptx"
 import { replaceSelection } from "@airdesign/render"
 import {
   commit,
@@ -21,7 +21,6 @@ import { slideBase } from "@/exported-parts"
 import { indexedParts } from "@/index-deck"
 import { pictureCommand } from "@/picture-add"
 import { slideRels } from "@/slide-paint"
-import { fileTableValue, tableEditable, tableValue } from "@/table-edit"
 
 export type CorpusEdit = {
   readonly name: string
@@ -59,12 +58,6 @@ function eachPanel(parts: Parts, deck: Deck, rows: readonly Held[], change: Para
   return rows.reduce((next, row) => panelChange(parts, next, row, change), deck)
 }
 
-function addedTable(parts: Parts, deck: Deck, index: number): Deck {
-  const room = slideRoom(parts)
-  const edit = elementCommand(parts, deck.register, { change: "table", index, rows: 3, columns: 3, size: room })
-  return commit(deck, [slideWire(parts, deck.register, edit)])
-}
-
 function addedPicture(parts: Parts, deck: Deck, index: number): Deck {
   const edit = pictureCommand(parts, deck.register, index, { media: corpusMedia }, pictureBox)
   return commit(deck, [slideWire(parts, deck.register, edit)])
@@ -78,18 +71,6 @@ function notesOn(parts: Parts, deck: Deck, index: number, value: string): Deck {
   return commit(deck, [{ node, value, floor: typeof opening === "string" ? opening : "" }])
 }
 
-function existingTables(parts: Parts) {
-  return readShapes(parts).filter(
-    (shape) => shape.contentKind === "table" && !shape.grouped && tableEditable(parts, shape),
-  )
-}
-
-const tableChanges = [
-  { change: "cell", row: 0, column: 0, text: "Typed in a cell" },
-  { change: "row", row: 0, place: "below" },
-  { change: "column", column: 0, place: "after" },
-] as const
-
 function session(parts: Parts, deck: Deck): Deck {
   const target = textTarget(parts)
   let next = slideEdit(parts, deck, "clone", 0)
@@ -99,7 +80,7 @@ function session(parts: Parts, deck: Deck): Deck {
   if (copy !== undefined && target.part === slidePart(parts, 0)) {
     next = commit(next, [{ node: `${copy}.${shape ?? ""}`, value: target.typed, floor: target.floor }])
   }
-  next = addedPicture(parts, addedTable(parts, next, 2), 2)
+  next = addedPicture(parts, next, 2)
   next = notesOn(parts, notesOn(parts, next, 1, "Notes on the copy"), 2, "Notes on the new slide")
   next = commit(next, [moved(target, 254_000, 1)])
   next = panelChange(parts, next, target, { text: { size: 20 } })
@@ -204,11 +185,6 @@ export const corpusEdits: readonly CorpusEdit[] = [
     touches: (parts) => [slidePart(parts, 0)],
   },
   {
-    name: "add-table",
-    run: (parts, deck) => addedTable(parts, deck, 0),
-    touches: (parts) => [slidePart(parts, 0), "ppt/tableStyles.xml"],
-  },
-  {
     name: "text-image",
     run: (parts, deck) =>
       typed(parts, deck, (text) =>
@@ -226,20 +202,6 @@ export const corpusEdits: readonly CorpusEdit[] = [
     name: "add-picture",
     run: (parts, deck) => addedPicture(parts, deck, 0),
     touches: (parts) => [slidePart(parts, 0), slideRels(slidePart(parts, 0)), "[Content_Types].xml"],
-  },
-  {
-    name: "type-in-tables",
-    run: (parts, deck) =>
-      existingTables(parts).reduce((next, shape) => {
-        const value = tableChanges.reduce<string | null>(
-          (held, change) => tableValue(parts, shape, held, change) ?? held,
-          null,
-        )
-        if (value === null) return next
-        const node = `${shape.slide}.${shape.shape}`
-        return commit(next, [{ node, value, floor: fileTableValue(parts, shape) ?? "" }])
-      }, deck),
-    touches: (parts) => [...new Set(existingTables(parts).map((shape) => shape.part))],
   },
   {
     name: "delete-element",
@@ -322,6 +284,6 @@ export const corpusEdits: readonly CorpusEdit[] = [
   {
     name: "session",
     run: session,
-    touches: (parts) => [...listed, textTarget(parts).part, "ppt/tableStyles.xml"],
+    touches: (parts) => [...listed, textTarget(parts).part],
   },
 ]

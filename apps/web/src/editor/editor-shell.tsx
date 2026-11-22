@@ -18,9 +18,7 @@ import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type DesignMode, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
-import type { TableSize } from "@/element-edit"
 import type { ChartKind } from "@airdesign/document"
-import { TableSizeGrid } from "@/editor/table-tool"
 import { typing, usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
@@ -55,8 +53,6 @@ import { usePresent } from "@/present/use-present"
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
-const shownSize = { rows: 4, columns: 3 }
-
 const unwatched = () => () => undefined
 const unchanged = () => 0
 
@@ -77,7 +73,6 @@ export type EditorDeck = {
   readonly selection?: Selection
   readonly select?: (selection: Selection) => void
   readonly onText?: (place?: TextPlace) => void
-  readonly onTable?: (size: TableSize) => void
   readonly onChart?: (kind: ChartKind) => void
   readonly onSlideNumber?: () => void
   readonly onTrash?: () => void
@@ -111,7 +106,6 @@ export type EditorShellProps = {
   toolMenu?: boolean
   templatePicker?: boolean
   shapeTray?: boolean
-  tableTray?: boolean
   toast?: ReactNode
   overlay?: ReactNode
   formats?: FormatShown
@@ -135,7 +129,6 @@ export function EditorShell({
   toolMenu = false,
   templatePicker = false,
   shapeTray = false,
-  tableTray = false,
   toast,
   overlay,
   formats,
@@ -151,7 +144,6 @@ export function EditorShell({
   const [selectedSlides, setSelectedSlides] = useState(0)
   const [shortcutsOpen, setShortcutsOpen] = useState(shortcutsShown)
   const [bare, setBare] = useState(false)
-  const [tablePicking, setTablePicking] = useState(false)
   const [listHidden, setListHidden] = useState(false)
   const [rulers, setRulers] = useKeptView("rulers")
   const [layoutGuides, setLayoutGuides] = useKeptView("layoutGuides")
@@ -185,7 +177,6 @@ export function EditorShell({
     present.start(from === "first" ? 0 : (strip?.current ?? 0)),
   )
   useToolKeys(deck !== undefined && !gridOpen && present.show === null, {
-    onTablePicker: deck?.onTable === undefined ? undefined : () => setTablePicking(true),
     onShape: deck?.onShape === undefined ? undefined : pointer.arm,
     onPicture: deck?.onPicture,
   })
@@ -255,9 +246,6 @@ export function EditorShell({
     ...(deck === undefined ? {} : { pointer, undo: deck.undo }),
     ...(deck?.onSlideNumber === undefined ? {} : { onSlideNumber: deck.onSlideNumber }),
     ...(deck?.onText === undefined ? {} : { onText: deck.onText }),
-    ...(deck?.onTable === undefined
-      ? {}
-      : { onTable: deck.onTable, tablePicker: { open: tablePicking, onOpenChange: setTablePicking } }),
     ...(deck?.onChart === undefined ? {} : { onChart: deck.onChart }),
     ...(deck?.formatting === undefined ? {} : { formatting: deck.formatting }),
     ...(deck?.tone === undefined ? {} : { tone: deck.tone }),
@@ -418,9 +406,9 @@ export function EditorShell({
             </div>
           )}
         </div>
-        {shapeTray || tableTray ? (
+        {shapeTray ? (
           <div className="absolute inset-x-0 bottom-[72px] flex justify-center">
-            {shapeTray ? <ShapeTray /> : <TableSizeGrid picked={shownSize} onPick={() => {}} onSize={() => {}} />}
+            <ShapeTray />
           </div>
         ) : null}
       </div>

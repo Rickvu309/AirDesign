@@ -91,7 +91,7 @@ describe("placeholderPrompt in paintReader", () => {
     expect(paintReader(ctrDeck, { fallbackPrompt: fallback }).slide(slidePart).elements[0]?.prompt).toBe("Add a title")
   })
 
-  it("gives no prompt to a placeholder that holds a picture, chart or table, not typed text", () => {
+  it("gives no prompt to a placeholder that holds a picture or a chart, not typed text", () => {
     for (const type of ["pic", "chart", "tbl", "media", "dgm", "clipArt"]) {
       const withLayoutText = deck(
         shape("2", `type="${type}"`),

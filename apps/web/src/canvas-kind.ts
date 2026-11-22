@@ -5,7 +5,6 @@ import { groupsOf, holdersOf, paintGroup, withHeld } from "@/canvas-group"
 import { paintPicture } from "@/canvas-picture"
 import { paintPreset } from "@/preset-paint"
 import type { CanvasSource } from "@/canvas-source"
-import { paintTable } from "@/canvas-table"
 import { paintTextBox } from "@/text-box-paint"
 import type { PictureSource } from "@/picture-fill"
 
@@ -15,7 +14,6 @@ const painters = {
   text: paintTextBox,
   picture: paintPicture,
   shape: paintPreset,
-  table: paintTable,
   frame: paintFrame,
 }
 
@@ -23,7 +21,6 @@ type PaintKind = keyof typeof painters | "group"
 
 export function paintKindOf(row: PaintElement): PaintKind {
   if (row.kind === "p:grpSp") return "group"
-  if (row.table !== undefined) return "table"
   if (row.kind === "p:graphicFrame") return "frame"
   if (row.kind === "p:pic") return "picture"
   if (row.kind === "p:cxnSp") return "shape"

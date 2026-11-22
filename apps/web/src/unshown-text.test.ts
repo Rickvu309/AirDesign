@@ -43,17 +43,11 @@ describe("unshownText", () => {
   })
 
   it("says a chart or diagram frame is not shown", () => {
-    expect(unshownText(row({ kind: "p:graphicFrame" }), () => null)).toBe("Chart or diagram can't be shown here")
+    expect(unshownText(row({ kind: "p:graphicFrame" }), () => null)).toBe("This object can't be shown here")
   })
 
   it("says nothing of a diagram frame painted from its saved drawing", () => {
     expect(unshownText(row({ kind: "p:graphicFrame", diagram: [] }), () => null)).toBeNull()
-  })
-
-  it("says nothing of a frame that is a table", () => {
-    expect(
-      unshownText(row({ kind: "p:graphicFrame", table: { rows: [] } as unknown as PaintElement["table"] }), () => null),
-    ).toBeNull()
   })
 
   it("says nothing of a chart frame it paints", () => {

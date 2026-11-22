@@ -3,7 +3,6 @@ import {
   openRegister,
   readColor,
   readSlideId,
-  readTableValue,
   readTextValue,
   shapeOf,
   slideNode,
@@ -11,7 +10,7 @@ import {
   type ElementId,
 } from "@airdesign/document"
 import { ownBackground, paintReader, readSlides } from "@airdesign/pptx"
-import { changeDesign, fileValue } from "@/design/design-change"
+import { changeDesign } from "@/design/design-change"
 import { shownHex } from "@/design/color-choices"
 import { layersWithColor, replaceSelectionColor, type ColorSource } from "@/design/selection-colors"
 import { deviceScope } from "@/design/trait-edit"
@@ -50,14 +49,6 @@ function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonl
     .filter((node) => included.has(node) && node !== slideNode(slide, "slide"))
     .map((node): ColorSource => {
       const fields = fieldsOf(parts, node) ?? {}
-      if (scope.view(node)?.facts.kind === "table") {
-        const table =
-          readTableValue(shown.store.current.getElement(node)?.text ?? "") ??
-          readTableValue(fileValue(shown, node) ?? "")
-        return table === null
-          ? { node, fields }
-          : { node, textColor: { scheme: "tx1" }, fields: { ...fields, "table.value": { value: table, own: true } } }
-      }
       const text = readTextValue(shown.store.current.getElement(node)?.text ?? scope.view(node)?.value ?? "")
       if (text === null) return { node, fields }
       const textColor = readColor(readsOf(parts, node)["text.color"]?.value) ?? { scheme: "tx1" }

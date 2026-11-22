@@ -29,5 +29,5 @@ Preconditions:
 ## Gotchas
 
 - The upload runs from the editor after the deck opens, not during the import. A browser cleared before it lands loses the original, and that deck shows `Deck not found`. Poll `deckRoutes.original` for `ok: true` before clearing.
-- `[data-canvas-element]` also matches tables in the slide-list thumbnails. Count `[data-slide-paint] [data-canvas-element]` on a deck with tables.
+- `[data-canvas-element]` also matches the slide-list thumbnails. Count `[data-slide-paint] [data-canvas-element]`.
 - Fixed 2026-11-11: before, the web app never sent the original, so the reopened deck showed an empty slide with page number `1`.

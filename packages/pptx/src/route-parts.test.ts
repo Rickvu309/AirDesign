@@ -11,7 +11,6 @@ import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { sectionListFailures } from "./section-check.js"
-import { tableEditFault } from "./route-table-proof.js"
 import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
 
 declare const process: {
@@ -405,23 +404,6 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
     case "spTree.clone":
       expect(cloneFault(oldSlide, nextSlide, edit.shape)).toBeNull()
       return
-    case "graphicFrame.addTable":
-      expectAppendedShape(oldSlide, nextSlide, "p:graphicFrame")
-      return
-    case "tbl.addRow":
-    case "tbl.removeRow":
-    case "tbl.addColumn":
-    case "tbl.removeColumn":
-      expect(tableEditFault(before, after, edit)).toBeNull()
-      return
-    case "tbl.orderRow": {
-      const rows = markup(oldSlide).filter((element) => element.kind === "a:tr")
-      expectBytes(
-        nextSlide,
-        movedBefore(oldSlide, required(rows[edit.row - 1], "a:tr"), required(rows[edit.before - 1], "a:tr")),
-      )
-      return
-    }
     case "sldIdLst.add":
       expectSlideAdded(before, after, edit.after, false)
       return
@@ -481,7 +463,6 @@ function forwardOrders(parts: Parts): { readonly base: Parts; readonly edit: Str
     },
   })
   let shapes = false
-  let table = false
   for (const part of slideParts(parts)) {
     const elements = markup(partOf(parts, part))
     const children = markupChildren(elements)
@@ -495,15 +476,6 @@ function forwardOrders(parts: Parts): { readonly base: Parts; readonly edit: Str
         edit: { name: "spTree.order", part, shape: idOf(children, first), before: idOf(children, third) },
       })
     }
-    const rows = elements.filter((element) => element.kind === "a:tr")
-    const tall = elements.find(
-      (element) =>
-        element.kind === "a:tbl" && childrenOf(children, element).filter((row) => row.kind === "a:tr").length >= 3,
-    )
-    if (table || tall === undefined) continue
-    table = true
-    const row = rows.findIndex((item) => item.parent === tall.index) + 1
-    orders.push({ base: parts, edit: { name: "tbl.orderRow", part, row, before: row + 2 } })
   }
   return orders
 }
@@ -655,7 +627,7 @@ describe("routeRuns", () => {
         expectInside(base, applyStructuralRoute(base, edit), edit)
       }
     }
-    expect([...seen].sort()).toEqual(["sectionLst.order", "sldIdLst.order", "spTree.order", "tbl.orderRow"])
+    expect([...seen].sort()).toEqual(["sectionLst.order", "sldIdLst.order", "spTree.order"])
   })
 
   it("an added shape on a real deck takes each number of the box it asked", () => {

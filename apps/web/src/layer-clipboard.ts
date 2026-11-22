@@ -1,17 +1,13 @@
 import {
-  cellText,
   mediaTypes,
   readBox,
   readElementId,
   readFloor,
   readSlideId,
-  readTableValue,
+  plainText,
   readTextValue,
   shapeOf,
-  tabbedTable,
-  writeTabbed,
   type Box,
-  type CellTexts,
   type ClonedLayer,
   type ElementId,
   type IndexElement,
@@ -71,18 +67,10 @@ function escaped(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
 }
 
-function tableTexts(value: string | null): CellTexts | null {
-  const table = value === null ? null : readTableValue(value)
-  return table === null ? null : table.rows.map((row) => row.cells.map(cellText))
-}
-
 function valueText(value: string | null): string {
   if (value === null) return ""
-  const cells = tableTexts(value)
-  if (cells !== null) return writeTabbed(cells)
   const paragraphs = readTextValue(value)
-  if (paragraphs === null) return value
-  return paragraphs.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
+  return paragraphs === null ? value : plainText(paragraphs)
 }
 
 export function layerText(copy: LayerCopy): string {
@@ -93,8 +81,7 @@ export function layerText(copy: LayerCopy): string {
 }
 
 function rowHtml(value: string | null): string {
-  const cells = tableTexts(value)
-  return cells === null ? valueText(value).split("\n").map(escaped).join("<br>") : tabbedTable(cells)
+  return valueText(value).split("\n").map(escaped).join("<br>")
 }
 
 export function layerCopyHtml(copy: LayerCopy): string {

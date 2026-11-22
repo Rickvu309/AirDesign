@@ -5,7 +5,6 @@ import {
   readElementId,
   readSlideId,
   readChartValue,
-  readTableValue,
   roles,
   slideKinds,
   traitNames,
@@ -60,7 +59,7 @@ const ownKinds = slideKinds.join("|")
 const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
-const addable = ["shape", "line", "arrow", "elbow", "table", "chart"] as const
+const addable = ["shape", "line", "arrow", "elbow", "chart"] as const
 const oldAddable = ["picture"]
 const boxSides = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
@@ -192,7 +191,7 @@ function readLineBox(raw: unknown): Box | null {
 
 const styleTraits = ["fills", "geometry", "border", "body"] as const
 
-const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "table", "chart", ...styleTraits]
+const addKeys = ["op", "kind", "slide", "box", "text", "icon", "image", "connection", "chart", ...styleTraits]
 
 function readStyle(raw: Inputs, allowed: readonly string[]): Read<Inputs> {
   const read: Record<string, Inputs> = {}
@@ -236,7 +235,7 @@ function readLineAdd(raw: Inputs, kind: "line" | "arrow" | "elbow", slide: Slide
 }
 
 function addedChart(raw: Inputs, slide: SlideId): Read<WireAdd> {
-  const extra = ["text", "icon", "image", "connection", "table", ...styleTraits].find((key) => raw[key] !== undefined)
+  const extra = ["text", "icon", "image", "connection", ...styleTraits].find((key) => raw[key] !== undefined)
   if (extra !== undefined) return refused(extra)
   const chart = readTrait("chart", raw.chart)
   if (!chart.ok || typeof chart.change.value !== "string" || readChartValue(chart.change.value) === null)
@@ -250,21 +249,6 @@ function addedChart(raw: Inputs, slide: SlideId): Read<WireAdd> {
   }
 }
 
-function addedTable(raw: Inputs, slide: SlideId): Read<WireAdd> {
-  const extra = ["text", "icon", "image", "connection", ...styleTraits].find((key) => raw[key] !== undefined)
-  if (extra !== undefined) return refused(extra)
-  const table = readTrait("table", raw.table)
-  if (!table.ok || typeof table.change.value !== "string" || readTableValue(table.change.value) === null)
-    return refused("table")
-  const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
-  if (box === null) return refused("box")
-  const value = table.change.value
-  return {
-    ok: true,
-    change: { op: "add", kind: "table", slide, ...(box === undefined ? {} : { box }), table: { value } },
-  }
-}
-
 export function readAddChange(raw: unknown): Read<WireAdd> {
   if (!plainObject(raw) || raw.op !== "add") return refused("op")
   const kind = addable.find((each) => each === raw.kind)
@@ -274,10 +258,8 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   if (slide === undefined) return refused("slide")
   const extra = Object.keys(raw).find((key) => !addKeys.includes(key))
   if (extra !== undefined) return refused(extra)
-  if (kind === "table") return addedTable(raw, slide)
   if (kind === "chart") return addedChart(raw, slide)
   if (raw.chart !== undefined) return refused("chart")
-  if (raw.table !== undefined) return refused("table")
   if (kind === "line" || kind === "arrow" || kind === "elbow") return readLineAdd(raw, kind, slide)
   if (raw.connection !== undefined) return refused("connection")
   if (old && raw.icon === undefined) return refused("icon")
@@ -379,7 +361,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line, a table or a chart. Style traits as in set: a line takes only border. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
+      "Add text, a Lucide icon, a web image, a line, an arrow, an elbow line or a chart. Style traits as in set: a line takes only border. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
@@ -399,7 +381,6 @@ export function addChangeSchema(): JsonSchema {
         description: "https address of a PNG, JPEG or GIF, fetched once; placed whole inside box.",
       },
       connection: traitSchema("connection", null),
-      table: traitSchema("table", null),
       chart: traitSchema("chart", null),
     },
   }

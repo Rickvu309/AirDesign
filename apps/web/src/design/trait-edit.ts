@@ -7,7 +7,6 @@ import {
   paintSlots,
   planChange,
   readChartValue,
-  readTableValue,
   registerScope,
   slideKind,
   valueHolder,
@@ -31,7 +30,6 @@ import { textValue } from "@airdesign/render"
 import type { UndoName } from "@/copy/undo-copy"
 import { designedParts } from "@/index-deck"
 import { valueStorable } from "@/slide-paint"
-import { tableEditName } from "@/table-edit"
 import type { RecordHold } from "@/undo-list"
 import { boxName } from "@/undo-names"
 import { personCommands } from "@/editor/painted-ahead"
@@ -71,7 +69,6 @@ export function deviceScope(parts: Parts, register: Register): Scope {
 
 export function valueFits(parts: Parts, shape: ReadShape | undefined, value: string): boolean {
   if (shape === undefined) return false
-  if (shape.contentKind === "table") return readTableValue(value) !== null
   if (shape.contentKind === "chart") return readChartValue(value) !== null
   return valueStorable(parts, shape, textValue(value))
 }
@@ -79,7 +76,7 @@ export function valueFits(parts: Parts, shape: ReadShape | undefined, value: str
 function shownFields(view: ScopedElement): Readonly<Record<string, Readonly<Record<string, unknown>> | undefined>> {
   const value = { value: view.value ?? "" }
   const box = view.box === null ? undefined : { x: view.box.x, y: view.box.y, w: view.box.cx, h: view.box.cy }
-  return { box, text: value, table: value, chart: value, notes: value }
+  return { box, text: value, chart: value, notes: value }
 }
 
 function heldPatch(view: ScopedElement, after: ElementPatch): ElementPatch | null {
@@ -106,8 +103,6 @@ function nameOf(view: ScopedElement, values: readonly FormatOneValue[]): UndoNam
   if (value === undefined) return "text"
   if (value.property === "box") return (view.box === null ? null : boxName(view.box, value.value)) ?? "move"
   if (slideKind(view.node) === "notes") return "notes"
-  const table = view.facts.kind === "table" ? tableEditName(view.value ?? "", value.value) : null
-  if (table !== null) return table
   return plainOf(value.value) === plainOf(view.value ?? "") ? "format" : "text"
 }
 
@@ -203,7 +198,7 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
   for (const { node, row } of plan.rows) {
     const shown = scope.view(node)
     const view = shown === undefined ? undefined : { ...shown, value: shown.value ?? deck.file(node) }
-    const values = formatOne(row.patch, valueHolder(opened, node, "person"))
+    const values = formatOne(row.patch, valueHolder(node))
     if (view === undefined) return null
     if (values === null) {
       const before = shownBoxBefore(landedBefore(opened, node, row.patch), view)

@@ -8,9 +8,6 @@ export const kinds = [
   "shape",
   "connector",
   "group",
-  "table",
-  "row",
-  "cell",
   "chart",
   "kept",
 ] as const

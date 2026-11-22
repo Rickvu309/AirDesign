@@ -40,5 +40,5 @@ Preconditions:
 ## Gotchas
 
 - Delete inside the text deletes characters. Press Escape first so the frame, not the text, has focus.
-- Count text boxes inside `[data-slide-paint]`; the slide list's thumbnails paint text too. A table's cells (`[data-table-text]`) are `contenteditable` as well, so a count of `[contenteditable="true"]` on a slide with a table includes them.
+- Count text boxes inside `[data-slide-paint]`; the slide list's thumbnails paint text too.
 - Wait for the new box to be focused before typing into it.

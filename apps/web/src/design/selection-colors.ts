@@ -103,7 +103,7 @@ export function replaceSelectionColor(
       if (changed && trait !== undefined && name !== undefined)
         traits[trait] = {
           ...traits[trait],
-          [name]: key === "text.value" || key === "table.value" ? JSON.stringify(value) : value,
+          [name]: key === "text.value" ? JSON.stringify(value) : value,
         }
     }
     return Object.keys(traits).length === 0 ? [] : [{ target: { node: source.node }, ...traits }]

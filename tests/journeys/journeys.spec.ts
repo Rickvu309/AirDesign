@@ -60,8 +60,6 @@ for (const name of [
   "shape-geometry",
   "corners",
   "opacity",
-  "table-fill",
-  "table-rows-columns",
   "text-type",
   "text-fields",
   "text-fill-image",
@@ -146,7 +144,6 @@ test.describe("recorded Aira", () => {
     "line-add",
     "chart-insert",
     "chart-place",
-    "table-insert",
     "agent-bench-recorded",
   ]) {
     test(name, async ({ page, context }) => {

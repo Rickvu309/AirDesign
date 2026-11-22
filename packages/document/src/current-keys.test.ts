@@ -1,6 +1,5 @@
 import { expect, it } from "vitest"
 import { withCurrentKeys } from "./current-keys.js"
-import { readTableValue } from "./table-value.js"
 import { readTextValue } from "./text-value.js"
 
 it("shows a stored text with an older key under today's name, the same paragraphs", () => {
@@ -9,16 +8,6 @@ it("shows a stored text with an older key under today's name, the same paragraph
   expect(shown).toContain('"lineHeight":150000')
   expect(shown).not.toContain("lineSpacing")
   expect(readTextValue(shown)).toEqual(readTextValue(stored))
-})
-
-it("shows a stored table whose cell text holds an older key under today's name", () => {
-  const cell = [{ from: 0, lineSpacing: 90_000, runs: [{ from: -1, text: "Q1" }] }]
-  const stored = JSON.stringify({ columns: [914_400], rows: [{ from: 0, cells: [cell] }] })
-  const table = readTableValue(stored)
-  expect(table).not.toBeNull()
-  const shown = withCurrentKeys(stored)
-  expect(shown).not.toContain("lineSpacing")
-  expect(readTableValue(shown)).toEqual(table)
 })
 
 it("hands back every other value as the same string", () => {

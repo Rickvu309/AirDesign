@@ -300,12 +300,6 @@ it("shows Adjust tone on an auto layout frame and scopes it to the frame's text"
   }
 })
 
-it("lists a table's inherited text color when its canvas value is plain text", async () => {
-  const panel = await slidePanel("table-added.pptx", true)
-  expect(panel.host.querySelector("[data-selection-colors]")?.textContent).toContain(colorNameCopy.black)
-  await panel.close()
-})
-
 it("keeps both crop sides a person types one after another while the first is still landing", async () => {
   const picture = await pictureDeck()
   await act(async () => picture.typed("Left", "10"))

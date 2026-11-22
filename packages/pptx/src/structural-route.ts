@@ -7,10 +7,6 @@ import { cloneShape, orderShape } from "./shape-route.js"
 import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
 import { removeShape, type RouteResult } from "./slide-route.js"
-import type { TableShape } from "./table-frame.js"
-import { newTableStyle, tableCellLook } from "./table-style-list.js"
-import { addColumn, removeColumn } from "./table-column-route.js"
-import { addRow, addTable, orderRow, removeRow } from "./table-route.js"
 
 export type StructuralEdit =
   | ({
@@ -37,18 +33,6 @@ export type StructuralEdit =
   | { readonly name: "sectionLst.add"; readonly title: string }
   | { readonly name: "sectionLst.remove"; readonly section: string }
   | { readonly name: "sectionLst.order"; readonly section: string; readonly before: string }
-  | ({ readonly name: "graphicFrame.addTable"; readonly part: string; readonly id?: number } & TableShape)
-  | { readonly name: "tbl.addRow"; readonly part: string; readonly row: number }
-  | { readonly name: "tbl.removeRow"; readonly part: string; readonly row: number }
-  | { readonly name: "tbl.orderRow"; readonly part: string; readonly row: number; readonly before: number }
-  | {
-      readonly name: "tbl.addColumn"
-      readonly part: string
-      readonly shape: string
-      readonly column: number
-      readonly place: "before" | "after"
-    }
-  | { readonly name: "tbl.removeColumn"; readonly part: string; readonly shape: string; readonly column: number }
 
 export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, route: StructuralEdit): RouteResult {
   const next = new Map(parts)
@@ -90,27 +74,6 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       return { parts: new Map(removeSection(next, route.section)), id: null }
     case "sectionLst.order":
       return { parts: new Map(orderSection(next, route.section, route.before)), id: null }
-    case "graphicFrame.addTable": {
-      const style = newTableStyle(next)
-      const look = tableCellLook(next, style)
-      editPart(next, route.part, (bytes) => addTable(bytes, route, style, look))
-      return { parts: next, id: null }
-    }
-    case "tbl.addRow":
-      editPart(next, route.part, (bytes) => addRow(bytes, route.row))
-      return { parts: next, id: null }
-    case "tbl.removeRow":
-      editPart(next, route.part, (bytes) => removeRow(bytes, route.row))
-      return { parts: next, id: null }
-    case "tbl.orderRow":
-      editPart(next, route.part, (bytes) => orderRow(bytes, route.row, route.before))
-      return { parts: next, id: null }
-    case "tbl.addColumn":
-      editPart(next, route.part, (bytes) => addColumn(bytes, route.shape, route.column, route.place))
-      return { parts: next, id: null }
-    case "tbl.removeColumn":
-      editPart(next, route.part, (bytes) => removeColumn(bytes, route.shape, route.column))
-      return { parts: next, id: null }
     default: {
       const unexpected: never = route
       throw new Error(String(unexpected))

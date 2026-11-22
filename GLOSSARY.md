@@ -17,7 +17,7 @@ One page of a deck.
 _Avoid_: page, frame
 
 **layer**:
-One thing on a slide: a shape, text, an image, a line, a group, a table or a chart. The code and the agent wire still say element (`element`, `elements`, `ElementId`) until its rename lands.
+One thing on a slide: a shape, text, an image, a line, a group or a chart. The code and the agent wire still say element (`element`, `elements`, `ElementId`) until its rename lands.
 _Avoid_: element, object, item
 
 **text**:
@@ -122,10 +122,6 @@ _Avoid_: theme fonts
 Where a person picks any color a field takes: a fill, border, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
 _Avoid_: palette, swatches, color menu
 
-**table style**:
-The look an imported or previously saved table takes from its deck: a header row, banded rows, borders and the text color on each, all in template colors. The table keeps its style through import and export.
-_Avoid_: table theme, table format, table preset
-
 **icon**:
 A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code keeps its name in `fills.source`.
 _Avoid_: symbol, glyph, clip art, sticker
@@ -143,7 +139,7 @@ The words a screen reader reads for a layer, shown beside its name in the design
 _Avoid_: description, caption, alternative text
 
 **opacity**:
-How solid a layer is, in percent: one value that fades its fill, border, text and image together, stored as each colour's alpha. A frame's fades it and its layers as one; the export multiplies it into each. A plain group, a table and a slide background have none.
+How solid a layer is, in percent: one value that fades its fill, border, text and image together, stored as each colour's alpha. A frame's fades it and its layers as one; the export multiplies it into each. A plain group and a slide background have none.
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
@@ -207,7 +203,7 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 The words the code and the agent tools use for how a deck is stored and edited. A person never reads them. The code, the test and the tool use the same word, so one search finds all of it.
 
 **element**:
-One thing on a slide: a shape, connector, group, table, chart, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
+One thing on a slide: a shape, connector, group, chart, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
 _Avoid_: object, item, widget
 
 **node**:
@@ -215,7 +211,7 @@ Anything an edit can address that holds its own rows: an element, a slide's own 
 _Avoid_: entity, object, item
 
 **trait**:
-A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `border`, `effects`, `body`, `text`, `connection`, `table`, `notes` and `templateStyle`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
+A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `border`, `effects`, `body`, `text`, `connection`, `notes` and `templateStyle`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
 
 **fills**:
@@ -257,7 +253,7 @@ A part of the design panel that holds the controls of one trait, Opacity or Alig
 _Avoid_: section (a section is a group of slides)
 
 **row**:
-One node’s stored edit: format `v` and a `patch`. Each field is set, inherited or returned to `opening`. Rows fold field by field in order. Say table row for kind `row`.
+One node’s stored edit: format `v` and a `patch`. Each field is set, inherited or returned to `opening`. Rows fold field by field in order.
 _Avoid_: edit record, change record, delta
 
 **format**:
@@ -281,7 +277,7 @@ Clears an `inheritable` field: a row sends `"inherit"`, an agent sends `null`, t
 _Avoid_: reset (in code and tools), unset, clear, default
 
 **role**:
-Which placeholder an element fills: `title`, `subtitle`, `body`, `date`, `footer`, `number`, `picture`, `chart`, `table` or `object`. An agent targets one with `<slide>.<role>`, or `*.<role>` for every slide.
+Which placeholder an element fills: `title`, `subtitle`, `body`, `date`, `footer`, `number`, `picture`, `chart` or `object`. An agent targets one with `<slide>.<role>`, or `*.<role>` for every slide.
 _Avoid_: type, placeholder type
 
 **edit**:

@@ -1,14 +1,13 @@
 import type { ElementId } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { exportPackage } from "@airdesign/pptx"
-import type { MeasuredFit, MeasuredRows } from "@airdesign/render"
+import type { MeasuredFit } from "@airdesign/render"
 import { deckParts } from "@/device-copy"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
 import { bakeFills } from "@/export/fill-bake"
 import { bakeFits } from "@/export/fit-bake"
 import { bakeMasks } from "@/export/mask-bake"
-import { bakeRows } from "@/export/rows-bake"
 import { maskPicture } from "@/export/mask-picture"
 import { bakeShadows } from "@/export/shadow-bake"
 import { exportablePictures, PicturesUploading, withIcons, type PictureStore } from "@/picture-tool"
@@ -34,7 +33,6 @@ const asked = new Map<string, readonly number[] | undefined>()
 
 export type Painted = {
   readonly fits: ReadonlyMap<ElementId, MeasuredFit>
-  readonly rows: ReadonlyMap<ElementId, MeasuredRows>
 }
 
 async function written(file: Uint8Array, edited: () => Promise<ReadonlyMap<string, Uint8Array>>): Promise<Uint8Array> {
@@ -50,7 +48,7 @@ export async function exportDeck(
   ready: Promise<void>,
   pictures: PictureStore,
   request?: ExportRequest,
-  painted: Painted = { fits: new Map(), rows: new Map() },
+  painted: Painted = { fits: new Map() },
 ): Promise<{ readonly leftOut: number }> {
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
@@ -67,7 +65,7 @@ export async function exportDeck(
       leftOut = chosen.leftOut.length
       return chosen.parts
     })
-    const chosen = bakeRows(bakeFits(icons, opened.register, painted.fits), opened.register, painted.rows)
+    const chosen = bakeFits(icons, opened.register, painted.fits)
     const masked = await bakeMasks(chosen, maskPicture())
     return bakeShadows(await bakeFills(masked, opened.register))
   })

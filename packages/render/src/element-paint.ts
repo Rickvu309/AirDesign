@@ -5,7 +5,6 @@ import type { CanvasLine, CanvasOutline } from "./line-record.js"
 import type { CanvasElement } from "./record.js"
 import type { PaintBox } from "./paint-box.js"
 import type { CanvasLayer } from "./fill-layers.js"
-import type { CanvasTable } from "./table-record.js"
 import type { CanvasText } from "./text-record.js"
 
 export type CanvasGeometry = {
@@ -63,7 +62,6 @@ export type ElementPaint = {
   readonly outline: CanvasOutline
   readonly geometry?: CanvasGeometry
   readonly text: CanvasText | null
-  readonly table?: CanvasTable
   readonly diagram?: readonly CanvasElement[]
   readonly chart?: CanvasChart
   readonly label?: string

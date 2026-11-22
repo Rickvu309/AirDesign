@@ -17,8 +17,6 @@ import { notesRuns } from "./notes-runs.js"
 import { probedValue } from "./text-probe.js"
 import { formatRuns } from "./text-format-runs.js"
 import { writeTrait } from "./trait-xml.js"
-import { tableEdits } from "./route-table-host.js"
-import { tableStyleTouch } from "./table-style-list.js"
 export { routeOperations } from "./route-operations.js"
 export { touchMatches } from "./slide-touch.js"
 
@@ -114,16 +112,7 @@ export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRo
     case "spTree.remove":
     case "spTree.order":
     case "spTree.clone":
-    case "tbl.addRow":
-    case "tbl.removeRow":
-    case "tbl.orderRow":
-    case "tbl.addColumn":
-    case "tbl.removeColumn":
       return slideTouch(route.part)
-    case "graphicFrame.addTable": {
-      const style = tableStyleTouch(parts)
-      return { ...style, changed: [route.part, ...style.changed] }
-    }
     case "sldIdLst.order":
     case "sectionLst.add":
     case "sectionLst.remove":
@@ -402,13 +391,6 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
         parts: applyStructuralRoute(parts, route),
       })),
     )
-    const table = { name: "graphicFrame.addTable", part: slide, ...box, rows: 3, columns: 3 } as const
-    runs.push(
-      attempt("graphicFrame.addTable", table, () => ({
-        touch: partTouch(parts, table),
-        parts: applyStructuralRoute(parts, table),
-      })),
-    )
   }
   const pair = shapePair(parts)
   if (pair !== null) {
@@ -546,9 +528,5 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       })),
     )
   }
-  for (const edit of tableEdits(parts, slideNames(parts)))
-    runs.push(
-      attempt(edit.name, edit, () => ({ touch: partTouch(parts, edit), parts: applyStructuralRoute(parts, edit) })),
-    )
   return runs
 }

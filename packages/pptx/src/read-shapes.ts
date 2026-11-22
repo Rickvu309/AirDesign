@@ -6,7 +6,6 @@ import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
 import { shownRunLink, type RelationshipsRead } from "./trait-xml-link.js"
 import { markupChildren, shapeHasText, shapeTextValue } from "./text-value-route.js"
-import { tableIn } from "./paint-table.js"
 
 export type ReadShape = {
   readonly slide: string
@@ -53,6 +52,7 @@ type ShapeParts = {
   childExt: MarkupElement | null
   above: number
   contentKind: Kind | null
+  holdsTable: boolean
 }
 
 type SlideShapes = {
@@ -69,6 +69,7 @@ const emptyParts = (): ShapeParts => ({
   childExt: null,
   above: -1,
   contentKind: null,
+  holdsTable: false,
 })
 
 const boxOf = (off: MarkupElement | null, ext: MarkupElement | null): ShapeBox | null => {
@@ -107,7 +108,7 @@ const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
     if (found.ext === null && element.kind === "a:ext" && attr(element, "cx") !== null) found.ext = element
     if (found.childOff === null && element.kind === "a:chOff") found.childOff = element
     if (found.childExt === null && element.kind === "a:chExt") found.childExt = element
-    if (element.kind === "a:tbl") found.contentKind = "table"
+    if (element.kind === "a:tbl") found.holdsTable = true
     if (element.kind === "c:chart") found.contentKind = "chart"
   }
   return { parts, fallback, grouped }
@@ -178,7 +179,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
             return link === null || link.kind === "none" ? run : { ...run, link }
           }),
         })),
-        locked: tableIn(shape, children) !== undefined,
+        locked: held.holdsTable,
         ...(stood !== undefined
           ? stood === null
             ? {}
@@ -233,7 +234,7 @@ export function readShapeFacts(parts: ReadonlyMap<string, Uint8Array>): readonly
         shape: id,
         kind: shape.kind,
         hasText: shapeHasText(children, shape),
-        locked: tableIn(shape, children) !== undefined,
+        locked: held.holdsTable,
         ...(stood !== undefined
           ? stood === null
             ? {}

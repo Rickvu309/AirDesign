@@ -14,9 +14,4 @@ export const writtenRoutes = {
   addSection: "sectionLst.add",
   removeSection: "sectionLst.remove",
   orderSection: "sectionLst.order",
-  addTable: "graphicFrame.addTable",
-  addRow: "tbl.addRow",
-  removeRow: "tbl.removeRow",
-  orderRow: "tbl.orderRow",
-  columns: "tblGrid",
 } as const

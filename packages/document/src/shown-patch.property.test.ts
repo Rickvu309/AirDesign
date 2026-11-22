@@ -25,7 +25,7 @@ it("shows per field what the screen shows: the last visible value and box, else 
       fc.string({ maxLength: 3 }),
       fc.option(box, { nil: undefined }),
       fc.array(landedRow, { maxLength: 8 }),
-      fc.constantFrom("text" as const, "notes" as const, "table" as const),
+      fc.constantFrom("text" as const, "notes" as const),
       (floor, floorBox, rows, holder) => {
         const opened = openRegister(floor, "").elements[rootElement]
         if (opened === undefined) throw new Error("node")

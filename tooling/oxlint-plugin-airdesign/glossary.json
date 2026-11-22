@@ -18,16 +18,6 @@
       "reason": "bar maps the old metric name to the new one"
     },
     {
-      "file": "packages/render/src/table-art.tsx",
-      "text": "gridRow: `${row + 1} / span ${cell.rowSpan}`,",
-      "reason": "the CSS property gridRow places a table cell"
-    },
-    {
-      "file": "packages/render/src/table-art.test.ts",
-      "text": "expect(painted?.style.gridRow).toBe(\"1 / span 2\")",
-      "reason": "the CSS property gridRow places a table cell"
-    },
-    {
       "file": "apps/web/src/editor/grid-group.tsx",
       "text": "<div style={{ gridColumn: offset + 1, gridRow: 1 }}>{children}</div>",
       "reason": "the CSS property gridRow places a line of thumbnails"

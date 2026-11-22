@@ -26,7 +26,6 @@ const chosenStyle: FieldKey = "templateStyle.id"
 const masks: FieldKey = "identity.mask"
 
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
-  table: [...turns, masks],
   chart: [...turns, masks],
   connector: [masks],
   group: [masks],
@@ -47,7 +46,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]
 
-const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept", "group"]
+const removes: readonly Kind[] = ["shape", "connector", "chart", "kept", "group"]
 
 const takesCache = new Map<string, readonly FieldKey[]>()
 

@@ -140,7 +140,7 @@ export function panelChange(
   if (!read.ok) throw new Error(`read ${read.refusal}`)
   const planned = planChange(read.change, deviceScope(parts, deck.register))
   if (!planned.ok) return deck
-  const holder = valueHolder(deck.register, target.node, "person")
+  const holder = valueHolder(target.node)
   const batch = planned.rows.flatMap(({ node, row }) =>
     (formatOne(row.patch, holder) ?? [row]).map((each) => ({ node, floor: target.floor, ...each })),
   )

@@ -76,7 +76,7 @@ expectRejects(
   "apps/web/src/connect/connect-copy.ts",
   `export const big = "Up to 100 rows."\n`,
   rule,
-  "100 is limits.batch or limits.delete or limits.tableRows",
+  "100 is limits.batch or limits.delete",
 )
 expectAccepts(
   "a limit taken from @airdesign/document stays",

@@ -29,9 +29,7 @@ import {
   type Drawn,
 } from "./paint-sheet.js"
 import { markupChildren } from "./text-value-route.js"
-import { paintTable, type PaintTable } from "./paint-table.js"
 import { placeholderPrompt } from "./placeholder-prompt.js"
-import { tableStyles } from "./table-style.js"
 import { paintDiagram } from "./paint-diagram.js"
 import { frameChart, type PaintChart } from "./paint-chart.js"
 import { paintConnection, type PaintConnection } from "./paint-connection.js"
@@ -57,7 +55,6 @@ export type PaintElement = {
   placeholder: { type: string; index: number | null } | null
   prompt?: string | null
   text: PaintText | null
-  table?: PaintTable
   diagram?: readonly PaintElement[]
   chart?: PaintChart
   connection?: PaintConnection
@@ -142,11 +139,6 @@ export type PaintReaderOptions = {
 }
 
 export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: PaintReaderOptions): PaintReader {
-  const styleOf = tableStyles(parts)
-  const tableOf = (item: Drawn, sheet: Sheet, scope: () => PaintTextScope): Pick<PaintElement, "table"> => {
-    const table = paintTable(item.element, sheet.children, sheet.bytes, scope, styleOf, (id) => picture(sheet.part, id))
-    return table === undefined ? {} : { table }
-  }
   const contentType = paintContentType(parts)
   const relationships = new Map<string, ReadonlyMap<string, string>>()
   const above = new Map<string, Above | null>()
@@ -353,7 +345,6 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
               ...scope(),
               picture: (id) => picture(item.sheet.part, id),
             })),
-            ...tableOf(drawn, item.sheet, scope),
           }
     })
     textedAbove.set(key, read)
@@ -465,7 +456,6 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             ...scope(),
             picture: (id) => picture(sheet.part, id),
           })),
-          ...tableOf(item, sheet, scope),
           ...diagramOf(item, box),
           ...frameChart(item.element, sheet.children, slidePart, charts),
           ...labelOf(item, sheet.children),

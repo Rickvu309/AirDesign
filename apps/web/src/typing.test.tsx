@@ -9,7 +9,7 @@ import type { DeckPaint } from "./editor/use-deck-paint"
 import { useUndoList, useUndoTurn, type UndoList as UndoHooks } from "./editor/use-undo"
 import { busyElements, liveRepaint, showText, shownValue } from "./live-repaint"
 import { useNotes, type NotesDeck } from "./notes-edit"
-import { structureOf } from "./table-hook"
+import { structureOf } from "./paint-structure"
 import type { RecordHold, UndoEntry, UndoList as UndoSides } from "./undo-list"
 
 const device = vi.hoisted(() => ({ link: null as unknown }))

@@ -1888,7 +1888,7 @@
       },
       {
         "node": "309.5",
-        "kind": "table",
+        "kind": "kept",
         "value": null,
         "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
         "grouped": false
@@ -1955,7 +1955,7 @@
       },
       {
         "node": "315.5",
-        "kind": "table",
+        "kind": "kept",
         "value": null,
         "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
         "grouped": false
@@ -2076,7 +2076,7 @@
       },
       {
         "node": "316.5",
-        "kind": "table",
+        "kind": "kept",
         "value": null,
         "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
         "grouped": false
@@ -2253,7 +2253,7 @@
       },
       {
         "node": "317.5",
-        "kind": "table",
+        "kind": "kept",
         "value": null,
         "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
         "grouped": false

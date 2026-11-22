@@ -225,6 +225,10 @@ export function noCharacters(value: string): boolean {
   return text === null ? value === "" : text.every((paragraph) => paragraph.runs.every((run) => run.text === ""))
 }
 
+export function plainText(value: TextValue): string {
+  return value.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
+}
+
 export function readTextValue(value: string): TextValue | null {
   let parsed: unknown
   try {

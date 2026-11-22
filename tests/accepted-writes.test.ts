@@ -132,7 +132,6 @@ async function addTried(onAddedSlide: boolean): Promise<Tried> {
     line: ["box", "border", "connection"],
     arrow: ["box", "border", "connection"],
     elbow: ["box", "border", "connection"],
-    table: ["box", "table"],
     chart: ["box", "chart"],
   }
   const valuesOf = (name: string) => {
@@ -162,32 +161,20 @@ describe("every input the agent tools accept, the store reads back and the tab w
   })
 })
 
-it.each(["shape", "table"])("op: set on a %s the agent added", { timeout: 60_000 }, async (kind) => {
+it("op: set on a shape the agent added", { timeout: 60_000 }, async () => {
   const parts = await deckParts("blank.pptx")
   const start = opened(parts)
   const slide = start.index?.slides[0]?.id ?? ""
   const at = session(start)
-  const added = sent(at, [
-    kind === "table"
-      ? {
-          op: "add",
-          kind,
-          slide,
-          table: {
-            value: JSON.stringify({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: 0, text: "A" }] }]] }] }),
-          },
-        }
-      : { op: "add", kind, slide, text: { value: "One" } },
-  ])
+  const added = sent(at, [{ op: "add", kind: "shape", slide, text: { value: "One" } }])
   if (added === null) throw new Error("add")
   const node =
     added.order.flatMap((command) => (command.slide === "element-add" ? [command.element.node] : []))[0] ?? ""
-  const field = kind === "table" ? "table" : "text"
-  const values = samples(propertiesOf("set")[field] ?? {}, defs, { slide, node }, field)
+  const values = samples(propertiesOf("set").text ?? {}, defs, { slide, node }, "text")
   const result = tried(
     parts,
     () => session(added),
-    values.map((value) => ({ op: "set", target: node, [field]: value })),
+    values.map((value) => ({ op: "set", target: node, text: value })),
   )
   expect(result.landed).toBeGreaterThan(0)
   expect(result.faults).toEqual([])

@@ -9,8 +9,7 @@ import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import { withFileFloors } from "@/deck-paint"
-import { fileTableValue } from "@/table-edit"
-import { structureOf } from "@/table-hook"
+import { structureOf } from "@/paint-structure"
 
 export type DesignDeck = {
   readonly id: string
@@ -39,8 +38,7 @@ export function fileChartFormatsOf(shown: DeckPaint, node: ElementId): readonly 
 export function fileValue(shown: DeckPaint, node: ElementId): string | null {
   const parts = shown.editParts.current
   const shape = shown.shapes.current.get(node) ?? fileShape(parts, node)
-  if (shape?.contentKind === "chart") return fileChartValue(parts, shape.part, shape.shape)
-  return shape?.contentKind === "table" ? fileTableValue(shown.editParts.current, shape) : null
+  return shape?.contentKind === "chart" ? fileChartValue(parts, shape.part, shape.shape) : null
 }
 
 function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {

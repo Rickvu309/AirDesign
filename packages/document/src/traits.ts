@@ -12,7 +12,6 @@ import { layout } from "./trait-layout.js"
 import { link } from "./trait-link.js"
 import { notes } from "./trait-notes.js"
 import { show } from "./trait-show.js"
-import { table } from "./trait-table.js"
 import { chart } from "./trait-chart.js"
 import { text } from "./trait-text.js"
 import { templateStyle } from "./trait-template-style.js"
@@ -30,7 +29,6 @@ export const traits = {
   body,
   text,
   connection,
-  table,
   chart,
   notes,
   templateStyle,
@@ -82,9 +80,6 @@ export const kindTraits = {
   shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link", "layout"],
   connector: ["identity", "box", "geometry", "border", "effects", "connection"],
   group: ["identity", "box", "effects", "layout"],
-  table: ["identity", "box", "table", "layout"],
-  row: [],
-  cell: [],
   chart: ["identity", "box", "chart", "layout"],
   kept: ["identity"],
 } as const satisfies { readonly [K in Kind]: readonly TraitName[] }

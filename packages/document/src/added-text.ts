@@ -1,4 +1,3 @@
-import { readTableValue, writeTableValue } from "./table-value.js"
 import { readTextValue, writeTextValue, type TextValue } from "./text-value.js"
 
 function inPlaces(value: TextValue): boolean {
@@ -16,10 +15,4 @@ function placed(value: TextValue): TextValue {
 export function placedText(stored: string): string {
   const read = readTextValue(stored)
   return read === null || inPlaces(read) ? stored : writeTextValue(placed(read))
-}
-
-export function placedTable(stored: string): string {
-  const table = readTableValue(stored)
-  if (table === null || table.rows.every((row) => row.cells.every(inPlaces))) return stored
-  return writeTableValue({ ...table, rows: table.rows.map((row) => ({ ...row, cells: row.cells.map(placed) })) })
 }

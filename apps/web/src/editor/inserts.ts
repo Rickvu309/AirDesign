@@ -1,6 +1,4 @@
 import {
-  limits,
-  type CellTexts,
   type ChartKind,
   type ElementId,
   type Geometry,
@@ -28,7 +26,6 @@ import {
   replacedUndoable,
   type CopyAsked,
   type ElementChange,
-  type TableSize,
   type TextPlace,
 } from "@/element-edit"
 import { commitPicture, iconPlan, type PictureFile } from "@/picture-add"
@@ -36,9 +33,6 @@ import type { PictureStore } from "@/picture-tool"
 import type { RecordHold, UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
 import { placedOn, placingText } from "@/editor/placed-text"
-
-import { commitPastedTable } from "@/pasted-table"
-import { tableCopy } from "@/copy/table-copy"
 
 import { addSlideNumbers } from "./slide-number-actions"
 
@@ -139,7 +133,7 @@ export function deckInserts(deck: InsertingDeck) {
   }
 
   function changeElement(change: ElementChange, named?: UndoName): Promise<CommitOutcome | "closed"> {
-    const typed = change.change === "text" || change.change === "table" || change.change === "shape"
+    const typed = change.change === "text" || change.change === "shape"
     const keys = typed ? holdKeys(document) : undefined
     const name =
       named ??
@@ -254,29 +248,6 @@ export function deckInserts(deck: InsertingDeck) {
     if (size !== null) void changeElement({ change: "text", index: current, size })
   }
 
-  function addTable(size: TableSize) {
-    const room = roomAt(current)
-    if (room !== null) void changeElement({ change: "table", index: current, size: room, ...size })
-  }
-
-  function pasteTable(cells: CellTexts) {
-    const size = roomAt(current)
-    if (size === null) return
-    void heldLane(async (stored, slot) => {
-      const register = await openPlaced()
-      if (register === null) return
-      const asked = { index: current, size, cells }
-      const added = recordAdded("paste-layer", slot, stored, true)
-      const outcome = await commitPastedTable(id, shownParts.current, register, asked, added)
-      if (outcome === "too-large")
-        toast.refusal(tableCopy.pasteRefused, {
-          id: "table-paste-refused",
-          description: tableCopy.pasteTooLarge(limits.tableRows, limits.tableColumns, limits.valueBytes),
-        })
-      settle(outcome === "too-large" ? "refused" : outcome)
-    })
-  }
-
   function addChart(kind: ChartKind) {
     const room = roomAt(current)
     if (room !== null) void changeElement({ change: "chart", kind, index: current, size: room })
@@ -320,11 +291,9 @@ export function deckInserts(deck: InsertingDeck) {
     duplicateLayers,
     pasteLayers,
     pasteFromDeck,
-    pasteTable,
     cutLayers,
     addText,
     placedText,
-    addTable,
     addChart,
     addShape,
     addPicture,

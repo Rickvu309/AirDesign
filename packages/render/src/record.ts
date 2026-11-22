@@ -3,7 +3,6 @@ import type { FrameRecord } from "./frame-record.js"
 import type { GroupRecord } from "./group-record.js"
 import type { PictureRecord } from "./picture-record.js"
 import type { PresetRecord } from "./preset-record.js"
-import type { TableRecord } from "./table-kind.js"
 import type { TextBoxRecord } from "./text-box-record.js"
 
 export type {
@@ -17,7 +16,6 @@ export type {
 } from "./text-record.js"
 export type { CanvasEffects, CanvasShadow } from "./effect-record.js"
 export type { CanvasLine, CanvasOutline } from "./line-record.js"
-export type { CanvasTable } from "./table-record.js"
 export type { PaintBox } from "./paint-box.js"
 
 export type ElementRecord = {
@@ -31,7 +29,7 @@ export type SlideRecord = {
   readonly elements: readonly ElementId[]
 }
 
-export type CanvasElement = TextBoxRecord | PictureRecord | PresetRecord | TableRecord | FrameRecord | GroupRecord
+export type CanvasElement = TextBoxRecord | PictureRecord | PresetRecord | FrameRecord | GroupRecord
 
 export type CanvasSlide = {
   readonly width: number

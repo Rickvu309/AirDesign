@@ -73,7 +73,6 @@ const roleOf: ReadonlyMap<string, Role> = new Map([
   ["sldNum", "number"],
   ["pic", "picture"],
   ["chart", "chart"],
-  ["tbl", "table"],
 ])
 const titleTypes = new Set(["title", "ctrTitle"])
 const bodyTypes = new Set(["body", "subTitle", "obj"])

@@ -8,7 +8,6 @@ import {
   presentSlides,
   readSlideId,
   readChartValue,
-  readTableValue,
   hasSlideNumber,
   plainSlideNumber,
   shapeOf,
@@ -157,37 +156,24 @@ function elementAdded(
       element,
     )
   if (element.kind === "chart") return chartAdded(parts, part, id, box, element.value)
-  if (element.kind !== "table") {
-    const align = element.opening?.body === undefined ? {} : { align: "left" as const }
-    const added = openedBody(
-      applyRoute(parts, { name: "add", part, id, text: "", ...box, ...align }),
-      part,
-      shape,
-      element,
-    )
-    if (!hasSlideNumber(element.value)) return added
-    return applyRoute(added, {
-      name: "text",
-      part,
-      shape,
-      value: [
-        {
-          from: 0,
-          runs: [{ from: -1, text: "1", slideNumber: plainSlideNumber }],
-        },
-      ],
-    })
-  }
-  const table = readTableValue(element.value ?? "")
-  const columns = table?.rows[0]?.cells.length
-  if (table === null || columns === undefined) throw new Error("a:tbl")
-  return applyStructuralRoute(parts, {
-    name: "graphicFrame.addTable",
+  const align = element.opening?.body === undefined ? {} : { align: "left" as const }
+  const added = openedBody(
+    applyRoute(parts, { name: "add", part, id, text: "", ...box, ...align }),
     part,
-    id,
-    ...box,
-    rows: table.rows.length,
-    columns,
+    shape,
+    element,
+  )
+  if (!hasSlideNumber(element.value)) return added
+  return applyRoute(added, {
+    name: "text",
+    part,
+    shape,
+    value: [
+      {
+        from: 0,
+        runs: [{ from: -1, text: "1", slideNumber: plainSlideNumber }],
+      },
+    ],
   })
 }
 
@@ -227,12 +213,7 @@ function elementAddedOn(editor: SlideEditor, part: string, shape: string, shown:
   const box = element?.box ?? null
   if (element === undefined || box === null) throw new Error("box")
   const id = Number(shape)
-  if (
-    shown.source !== undefined ||
-    shown.pasted !== undefined ||
-    element.kind === "chart" ||
-    element.kind === "table"
-  ) {
+  if (shown.source !== undefined || shown.pasted !== undefined || element.kind === "chart") {
     editor.editWhole(part, (current) => elementAdded(current, part, shape, shown, media))
     return
   }

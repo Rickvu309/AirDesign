@@ -4,10 +4,8 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { boxTurnedExportName, boxTurnedXfrm } from "../../scripts/pptx-cases/box.mjs"
-import { tableResizedExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { designing, unfold, openDeck, storedRows } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
-import { historicalTable } from "./historical-table"
 import { test } from "./deck-test"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
@@ -82,61 +80,5 @@ test("a turned shape resizes by its corner, keeps the opposite corner on screen 
   const file = testInfo.outputPath(boxTurnedExportName)
   const xml = await exported(page, file)
   expect(xml).toContain(boxTurnedXfrm)
-  await copyFile(file, judged)
-})
-
-test("a table resizes by its corner and by Width, scales its columns and rows, and exports at the size kept @export", async ({
-  page,
-  decks,
-}, testInfo) => {
-  const judged = join(process.cwd(), "tests/browser", tableResizedExportName)
-  await rm(judged, { force: true })
-  await historicalTable(page)
-  const table = page.locator("[data-slide-paint] [data-canvas-table]")
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  await table.click()
-  const panel = page.locator("[data-design-element]")
-  await expect(panel).toBeVisible()
-  await unfold(panel, boxCopy.section)
-  const slide = await page.locator("[data-slide-paint]").boundingBox()
-  if (slide === null) throw new Error("no slide")
-  const emu = (pixels: number) => Math.round((pixels * slideWidth) / slide.width)
-  const x = panel.getByRole("textbox", { name: "X", exact: true })
-  const y = panel.getByRole("textbox", { name: "Y", exact: true })
-  const width = panel.getByRole("textbox", { name: "Width", exact: true })
-  const height = panel.getByRole("textbox", { name: "Height", exact: true })
-  await expect(width).toHaveValue("576")
-  await expect(height).toHaveValue("87.6")
-  const start = { x: Number(await x.inputValue()) * 12_700, y: Number(await y.inputValue()) * 12_700 }
-  await dragGrip(page, page.locator('[data-slide-paint] [data-selection] [data-grip="bottom-right"]'), {
-    x: 40,
-    y: 20,
-  })
-  const dragged: Box = { ...start, cx: 7_315_200 + emu(40), cy: 1_112_520 + emu(20) }
-  await expect.poll(() => lastBox(page)).toEqual(dragged)
-  await width.fill("432")
-  await width.press("Enter")
-  await expect.poll(() => lastBox(page)).toEqual({ ...dragged, cx: 5_486_400 })
-  const column = (5_486_400 / 3) * (slide.width / slideWidth)
-  const columnsOff = async () =>
-    (await table.evaluate((node: HTMLElement) => node.style.gridTemplateColumns))
-      .split(" ")
-      .map((painted) => Math.abs(Number.parseFloat(painted) - column))
-  await expect.poll(async () => Math.max(...(await columnsOff()))).toBeLessThan(0.05)
-  await page.getByRole("button", { name: "Undo resize", exact: true }).click()
-  await expect(width).toHaveValue(String(Math.round((dragged.cx / 12_700) * 10) / 10))
-  await page.reload()
-  await decks.ready()
-  await expect(table).toContainText("Region")
-  const file = testInfo.outputPath(tableResizedExportName)
-  const xml = await exported(page, file)
-  expect(xml).toContain(`<a:off x="${dragged.x}" y="${dragged.y}"/><a:ext cx="${dragged.cx}" cy="${dragged.cy}"/>`)
-  const widths = [...xml.matchAll(/<a:gridCol w="(\d+)"/g)].map((found) => Number(found[1]))
-  const heights = [...xml.matchAll(/<a:tr h="(\d+)"/g)].map((found) => Number(found[1]))
-  expect(widths.reduce((sum, each) => sum + each, 0)).toBe(dragged.cx)
-  expect(heights.reduce((sum, each) => sum + each, 0)).toBe(dragged.cy)
-  expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1)
-  expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1)
-  expect(xml).toContain("<a:t>Region</a:t>")
   await copyFile(file, judged)
 })
