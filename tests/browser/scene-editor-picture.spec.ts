@@ -80,8 +80,10 @@ test("a picture file dropped on the canvas lands at the drop point at its own ra
 
   await page.keyboard.press("ControlOrMeta+z")
   await expect(pictures(page)).toHaveCount(0)
+  await expect.poll(async () => (await savedNode(stack, opened, id ?? ""))?.parent).toBeNull()
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect(pictures(page)).toHaveCount(1)
+  await expect.poll(async () => (await savedNode(stack, opened, id ?? ""))?.parent).toMatchObject({ id: opened.slide })
 
   await page.reload()
   await page.locator("[data-scene-ready]").waitFor()
@@ -143,7 +145,7 @@ test("a dropped picture paints and lands in the deck while its upload is failing
     .poll(async () => pictures(page).evaluate((node) => getComputedStyle(node).backgroundImage))
     .toContain("blob:")
   const id = (await pictureNode(page).getAttribute("data-node")) ?? ""
-  await expect.poll(async () => (await savedNode(stack, opened, id))?.fills).toBeDefined()
+  await expect.poll(async () => (await savedNode(stack, opened, id))?.parent).toMatchObject({ id: opened.slide })
   const asset = ((await savedNode(stack, opened, id))?.fills as { asset: string }[])[0]!.asset
   const stored = async () =>
     (await stack.post("/decks/media", { deck: opened.deck, sha256: asset }, opened.cookie)).json.ok

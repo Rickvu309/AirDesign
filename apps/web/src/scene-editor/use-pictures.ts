@@ -1,9 +1,8 @@
 import { mediaTypeOf, scene } from "@airdesign/document"
 import { flushMedia, keepMedia, readMedia } from "@airdesign/live"
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type RefObject } from "react"
-import { pictureCopy } from "@/copy/picture-copy"
-import { toast } from "@/components/ui/toast"
 import { readPicture } from "@/picture-file"
+import type { ThinNotice } from "@/thin-notice"
 import { pictureWrites } from "./picture-writes"
 import type { Point } from "./slide-geometry"
 import type { EditorClient } from "./use-scene-deck"
@@ -27,6 +26,7 @@ export type Pictures = {
   readonly assetUrl: (asset: string) => string | undefined
   readonly drop: (event: DragEvent) => void
   readonly over: (event: DragEvent) => void
+  readonly notice: ThinNotice | null
 }
 
 export function useScenePictures(args: {
@@ -42,6 +42,7 @@ export function useScenePictures(args: {
   const urls = useRef(new Map<string, string>())
   const asked = useRef(new Set<string>())
   const [version, setVersion] = useState(0)
+  const [notice, setNotice] = useState<ThinNotice | null>(null)
   const latest = useRef(args)
   useEffect(() => {
     latest.current = args
@@ -79,13 +80,20 @@ export function useScenePictures(args: {
     })
   }, [deck, view, keepUrl])
 
+  useEffect(() => {
+    if (notice === null) return
+    const clear = window.setTimeout(() => setNotice(null), 6000)
+    return () => window.clearTimeout(clear)
+  }, [notice])
+
   const place = useCallback(
     async (file: Blob, at: Point | null) => {
       const picture = await readPicture(file)
       if (typeof picture === "string") {
-        toast.refusal(pictureCopy[`picture-${picture}`], { id: "picture-refused" })
+        setNotice(`picture-${picture}`)
         return
       }
+      setNotice(null)
       const asset = await keepMedia(latest.current.deck, picture.bytes)
       keepUrl(asset, picture.bytes)
       const now = latest.current
@@ -129,5 +137,5 @@ export function useScenePictures(args: {
   )
 
   const assetUrl = useMemo(() => (asset: string) => urls.current.get(asset), [version])
-  return { assetUrl, drop, over }
+  return { assetUrl, drop, over, notice }
 }

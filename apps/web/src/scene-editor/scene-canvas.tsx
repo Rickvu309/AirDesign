@@ -3,7 +3,7 @@ import { SlidePaint, TextOverride, useSceneSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ZoomControl } from "./zoom-control"
-import { Toaster } from "@/components/ui/sonner"
+import { ThinNoticeView } from "@/thin-notice"
 import { useScenePictures } from "./use-pictures"
 import { roomInset, scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
@@ -270,7 +270,7 @@ export function SceneCanvas(props: {
           </div>
         </div>
       </div>
-      <Toaster position="top-center" />
+      <ThinNoticeView notice={pictures.notice} onTryAgain={() => undefined} />
       <TextBar api={text} />
       <ZoomControl scale={scale} fitted={zoom === "fit"} onZoom={(next) => zoomTo(next)} />
     </>
