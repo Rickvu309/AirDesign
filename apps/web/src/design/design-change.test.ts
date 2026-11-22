@@ -2,7 +2,7 @@ import { elementId, openRegister, type Command, type Register } from "@airdesign
 import { expect, it, vi } from "vitest"
 import { paintingAhead } from "@/editor/painted-ahead"
 import type { DesignDeck } from "./design-change"
-import { recordsInFlight } from "@/undo-list"
+import { recordsInFlight } from "@/editing/undo-list"
 
 const link = vi.hoisted(() => ({ stored: null as null | (() => void), open: () => undefined as void }))
 
@@ -21,7 +21,7 @@ vi.mock("@/design/trait-edit", async (actual) => ({
     }),
 }))
 
-vi.mock("@/commit-edit", () => ({ flushPending: () => Promise.resolve("sent") }))
+vi.mock("@/editing/commit-edit", () => ({ flushPending: () => Promise.resolve("sent") }))
 
 const { changeDesign } = await import("./design-change")
 

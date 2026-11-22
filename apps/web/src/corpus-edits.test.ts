@@ -16,8 +16,8 @@ import {
 import { expect, it } from "vitest"
 import { importedDeck, type Parts } from "@/corpus-deck"
 import { corpusEdits, corpusMedia } from "@/corpus-edits"
-import { exportedParts } from "@/exported-parts"
-import { slideRels } from "@/slide-paint"
+import { exportedParts } from "@/editing/exported-parts"
+import { slideRels } from "@/editing/slide-paint"
 
 declare const process: {
   readonly env: Readonly<Record<string, string | undefined>>

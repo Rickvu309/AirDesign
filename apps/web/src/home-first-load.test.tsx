@@ -19,7 +19,7 @@ const { loadedOnHome } = vi.hoisted(() => {
 vi.mock("@/thin-deck", loadedOnHome("the editor"))
 vi.mock("@/screen-routes", loadedOnHome("the design screens"))
 vi.mock("@/decks/first-slide", loadedOnHome("the slide painter"))
-vi.mock("@/import-deck", loadedOnHome("the PowerPoint reader"))
+vi.mock("@/editing/import-deck", loadedOnHome("the PowerPoint reader"))
 
 const { default: App } = await import("@/App")
 

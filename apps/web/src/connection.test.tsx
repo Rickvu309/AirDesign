@@ -1,7 +1,7 @@
 import { connect } from "@airdesign/live"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
-import { commitKept, flushPending } from "./commit-edit"
+import { commitKept, flushPending } from "./editing/commit-edit"
 import { saveStatus, useDeckStatus } from "./editor/use-deck-status"
 import { useNetwork } from "./legacy-editor/use-network"
 
@@ -53,8 +53,8 @@ vi.mock("@airdesign/live", async () => {
   }
 })
 
-vi.mock("./deck-follow", async () => {
-  const actual = await vi.importActual<object>("./deck-follow")
+vi.mock("./editing/deck-follow", async () => {
+  const actual = await vi.importActual<object>("./editing/deck-follow")
   return {
     ...actual,
     pause: (_ms: number, signal: AbortSignal) =>

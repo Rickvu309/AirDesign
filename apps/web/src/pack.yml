@@ -7,6 +7,7 @@ dependencies:
   - apps/web/src/decks
   - apps/web/src/design
   - apps/web/src/doom-editor
+  - apps/web/src/editing
   - apps/web/src/editor
   - apps/web/src/export
   - apps/web/src/legacy-editor

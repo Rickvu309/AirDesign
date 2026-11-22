@@ -1,7 +1,7 @@
 import { presentSlides, type Register } from "@airdesign/document"
 import { fileSlideGroups } from "@airdesign/pptx"
 import type { StripGroup } from "@/editor/slide-sidebar"
-import { fileSlides } from "@/slide-edit"
+import { fileSlides } from "@/editing/slide-edit"
 
 export function stripGroups(parts: ReadonlyMap<string, Uint8Array>, register: Register | null): readonly StripGroup[] {
   const state = {

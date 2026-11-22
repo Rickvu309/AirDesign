@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest"
 import { colorNameCopy } from "@/copy/color-name-copy"
 import { shownHex } from "@/design/color-choices"
 import { designShown } from "@/design-shown"
-import { exportedParts } from "@/exported-parts"
+import { exportedParts } from "@/editing/exported-parts"
 
 async function fixture(name: string) {
   const fsName = "node:fs/promises"

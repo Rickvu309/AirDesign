@@ -12,8 +12,8 @@ import {
 import { readParts, readShapes, readSlides } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { copyCommands, elementCommand } from "./element-edit"
-import { exportedParts } from "./exported-parts"
-import { flooredEdit } from "./slide-floor"
+import { exportedParts } from "./editing/exported-parts"
+import { flooredEdit } from "./editing/slide-floor"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

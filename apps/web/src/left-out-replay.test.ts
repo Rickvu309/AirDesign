@@ -9,7 +9,7 @@ import {
 } from "@airdesign/document"
 import { readPackage } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
-import { exportedDeck } from "./exported-parts"
+import { exportedDeck } from "./editing/exported-parts"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>

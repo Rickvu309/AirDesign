@@ -1,7 +1,7 @@
 import type { Box, StackMove } from "@airdesign/document"
 import type { UndoName } from "@/copy/undo-copy"
 import type { ElementChange } from "@/element-edit"
-import type { SlideChange } from "@/slide-edit"
+import type { SlideChange } from "@/editing/slide-edit"
 
 export const slideNames: Readonly<Record<SlideChange, UndoName>> = {
   add: "new",

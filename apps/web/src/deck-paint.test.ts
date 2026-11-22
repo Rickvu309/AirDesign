@@ -14,9 +14,9 @@ import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
 import { elementCommand, removals } from "./element-edit"
-import { busyElements } from "./live-repaint"
+import { busyElements } from "./editing/live-repaint"
 import { pictureCommand } from "./picture-add"
-import { fileSlides } from "./slide-edit"
+import { fileSlides } from "./editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

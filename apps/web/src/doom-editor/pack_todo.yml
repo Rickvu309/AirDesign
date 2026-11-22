@@ -1,17 +1,4 @@
 apps/web/src:
-  apps/web/src/painted-picture.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/doom-editor/slide-capture.ts
-  apps/web/src/picture-file.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/doom-editor/design-media.ts
-      - apps/web/src/doom-editor/use-pictures.ts
   apps/web/src/slide-pictures.ts:
     violations:
       - dependency

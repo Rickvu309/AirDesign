@@ -14,13 +14,13 @@ import {
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { freeShapeId, paintReader, readShapes, readShows, slideNumberBox } from "@airdesign/pptx"
-import { flushPending } from "@/commit-edit"
+import { flushPending } from "@/editing/commit-edit"
 import { boxOf } from "@airdesign/render"
-import { exportedParts, slideBase } from "@/exported-parts"
-import { shownValue } from "@/live-repaint"
-import { fileSlides } from "@/slide-edit"
+import { exportedParts, slideBase } from "@/editing/exported-parts"
+import { shownValue } from "@/editing/live-repaint"
+import { fileSlides } from "@/editing/slide-edit"
 import type { InsertingDeck } from "./inserts"
-import type { RecordHold } from "@/undo-list"
+import type { RecordHold } from "@/editing/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

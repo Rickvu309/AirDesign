@@ -10,8 +10,8 @@ import {
 } from "@airdesign/document"
 import { readParts } from "@airdesign/pptx"
 import { describe, expect, it } from "vitest"
-import { exportedParts } from "@/exported-parts"
-import { designedParts } from "@/index-deck"
+import { exportedParts } from "@/editing/exported-parts"
+import { designedParts } from "@/editing/index-deck"
 
 async function blank(): Promise<Uint8Array> {
   const fsName = "node:fs/promises"

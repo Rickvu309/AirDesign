@@ -13,7 +13,7 @@ import {
 import { exportPackage, readPackage } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
 import { deviceScope } from "./design/trait-edit"
-import { exportedParts } from "./exported-parts"
+import { exportedParts } from "./editing/exported-parts"
 import { ensureMarkup } from "./markup"
 
 type Parts = ReadonlyMap<string, Uint8Array>

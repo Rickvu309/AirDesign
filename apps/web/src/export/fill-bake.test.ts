@@ -2,8 +2,8 @@ import { openRegister } from "@airdesign/document"
 import { expect, it } from "vitest"
 import type { PaintElement } from "@airdesign/pptx"
 import { bakeFills, bakePlan, type BakeBox } from "./fill-bake"
-import { fillPlan } from "@/fill-plan"
-import type { PictureImage } from "@/picture-fill"
+import { fillPlan } from "@/editing/fill-plan"
+import type { PictureImage } from "@/editing/picture-fill"
 
 const box: BakeBox = { width: 4_572_000, height: 3_048_000 }
 const halfBlack = "00000080"

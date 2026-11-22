@@ -1,7 +1,0 @@
-apps/web/src:
-  apps/web/src/notes-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/present/notes-on.ts

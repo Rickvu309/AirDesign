@@ -12,7 +12,7 @@ import { readShapes } from "@airdesign/pptx"
 import type { PaintBox } from "@airdesign/render"
 import { expect, it } from "vitest"
 import { elementCommand, removalRefusal, removals } from "./element-edit"
-import { exportedParts } from "./exported-parts"
+import { exportedParts } from "./editing/exported-parts"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
 const size = { width: 1000, height: 500 }

@@ -8,7 +8,7 @@
       "blob": "bbf7d14da6b8e1871d9778060e8f1fc355b28b40"
     },
     {
-      "file": "apps/web/src/undo-list.ts",
+      "file": "apps/web/src/editing/undo-list.ts",
       "names": ["turnBack"],
       "digest": "0579be2b2d4a",
       "blob": "4a0559876f5e8a36b75aae2e4562a3e34be29c31"

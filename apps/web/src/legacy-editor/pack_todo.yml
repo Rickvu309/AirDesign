@@ -1,55 +1,9 @@
 apps/web/src:
-  apps/web/src/canvas-source.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/measured-slides.tsx
-  apps/web/src/command-store.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/group-actions.ts
-  apps/web/src/commit-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/arrange-menu.tsx
-      - apps/web/src/legacy-editor/box-moves.ts
-      - apps/web/src/legacy-editor/editable-slide.tsx
-      - apps/web/src/legacy-editor/live-layers.tsx
-      - apps/web/src/legacy-editor/live-layout.ts
-      - apps/web/src/legacy-editor/slide-commands.tsx
-      - apps/web/src/legacy-editor/use-deck-open.ts
-      - apps/web/src/legacy-editor/use-findings-report.ts
-      - apps/web/src/legacy-editor/use-network.ts
-  apps/web/src/deck-follow.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-deck-open.ts
   apps/web/src/deck-paint.ts:
     violations:
       - dependency
       - layer
     files:
-      - apps/web/src/legacy-editor/use-deck-open.ts
-  apps/web/src/deck-resend.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-network.ts
-  apps/web/src/device-copy.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-      - apps/web/src/legacy-editor/editable-slide.tsx
       - apps/web/src/legacy-editor/use-deck-open.ts
   apps/web/src/element-edit.ts:
     violations:
@@ -59,68 +13,6 @@ apps/web/src:
       - apps/web/src/legacy-editor/editable-slide.tsx
       - apps/web/src/legacy-editor/live-layers.tsx
       - apps/web/src/legacy-editor/mask-action.ts
-  apps/web/src/element-move.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-      - apps/web/src/legacy-editor/editable-slide.tsx
-  apps/web/src/exported-parts.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/group-actions.ts
-      - apps/web/src/legacy-editor/use-findings-report.ts
-  apps/web/src/font-widths.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-findings-report.ts
-  apps/web/src/frame-boxes.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-      - apps/web/src/legacy-editor/editable-slide.tsx
-      - apps/web/src/legacy-editor/turn-changes.ts
-  apps/web/src/group-boxes.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-  apps/web/src/index-deck.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-deck-open.ts
-  apps/web/src/indexed-register.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-      - apps/web/src/legacy-editor/editable-slide.tsx
-      - apps/web/src/legacy-editor/group-actions.ts
-      - apps/web/src/legacy-editor/layer-join.ts
-      - apps/web/src/legacy-editor/live-layers.tsx
-  apps/web/src/judged-slide.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-findings-report.ts
-  apps/web/src/layer-clipboard.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/editable-slide.tsx
   apps/web/src/layer-paste.ts:
     violations:
       - dependency
@@ -133,25 +25,6 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/legacy-editor/editable-slide.tsx
-  apps/web/src/live-repaint.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/editable-slide.tsx
-  apps/web/src/notes-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-deck-open.ts
-      - apps/web/src/legacy-editor/use-editor-deck.ts
-  apps/web/src/paint-structure.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/use-deck-open.ts
   apps/web/src/picture-tool.ts:
     violations:
       - dependency
@@ -160,26 +33,6 @@ apps/web/src:
       - apps/web/src/legacy-editor/use-editor-deck.ts
       - apps/web/src/legacy-editor/use-export.ts
       - apps/web/src/legacy-editor/use-findings-report.ts
-  apps/web/src/resized-corners.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-  apps/web/src/resized-sizing.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-  apps/web/src/slide-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/group-actions.ts
-      - apps/web/src/legacy-editor/layer-join.ts
-      - apps/web/src/legacy-editor/slide-commands.tsx
   apps/web/src/slide-pictures.ts:
     violations:
       - dependency
@@ -199,14 +52,6 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/legacy-editor/slide-commands.tsx
-  apps/web/src/undo-list.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/legacy-editor/box-moves.ts
-      - apps/web/src/legacy-editor/editable-slide.tsx
-      - apps/web/src/legacy-editor/use-export.ts
   apps/web/src/undo-names.ts:
     violations:
       - dependency

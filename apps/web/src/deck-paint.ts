@@ -1,4 +1,4 @@
-import { imageTexts } from "@/patch-images"
+import { imageTexts } from "@/editing/patch-images"
 import {
   currentBox,
   rebasedGroups,
@@ -19,20 +19,20 @@ import {
   type ReadShape,
 } from "@airdesign/pptx"
 import type { ElementRecord, PaintStore } from "@airdesign/render"
-import type { SlideCanvases } from "@/canvas-slide"
+import type { SlideCanvases } from "@/editing/canvas-slide"
 import type { StripGroup } from "@/editor/slide-sidebar"
 import { stripGroups } from "@/strip-groups"
-import type { TextBox } from "@/commit-edit"
-import { landedBox } from "@/element-move"
-import { editedDeck, newSlideElement, writtenBase, type PictureBytes } from "@/exported-parts"
-import { framedOf } from "@/frame-boxes"
-import { movableInGroups } from "@/group-boxes"
-import { indexedRegister } from "@/indexed-register"
-import { pictureSources, type PictureSources } from "@/picture-fill"
-import { shownValue, type BusyElements } from "@/live-repaint"
+import type { TextBox } from "@/editing/commit-edit"
+import { landedBox } from "@/editing/element-move"
+import { editedDeck, newSlideElement, writtenBase, type PictureBytes } from "@/editing/exported-parts"
+import { framedOf } from "@/editing/frame-boxes"
+import { movableInGroups } from "@/editing/group-boxes"
+import { indexedRegister } from "@/editing/indexed-register"
+import { pictureSources, type PictureSources } from "@/editing/picture-fill"
+import { shownValue, type BusyElements } from "@/editing/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
-import { numberedText } from "@/numbered-text"
-import { designRows } from "@/design-rows"
+import { numberedText } from "@/editing/numbered-text"
+import { designRows } from "@/editing/design-rows"
 import {
   namedShapes,
   paintCanvas,
@@ -43,9 +43,9 @@ import {
   type PaintedCanvas,
   type SlideShape,
   type SlideShapes,
-} from "@/slide-paint"
+} from "@/editing/slide-paint"
 
-export { valueStorable } from "@/slide-paint"
+export { valueStorable } from "@/editing/slide-paint"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

@@ -1,7 +1,7 @@
 import { iconWeights } from "@airdesign/document"
 import { iconInk, iconParts, unheldIcons, type IconRef } from "@airdesign/pptx"
 import dynamicIconImports from "lucide-react/dynamicIconImports"
-import { strokeWidth } from "@/icon-redraw"
+import { strokeWidth } from "@/editing/icon-redraw"
 
 type IconNode = readonly [string, Readonly<Record<string, unknown>>, (readonly IconNode[])?]
 

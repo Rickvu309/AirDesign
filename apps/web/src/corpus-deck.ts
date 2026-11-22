@@ -17,11 +17,11 @@ import { call, indexDeck, openDeck, type Deck } from "@airdesign/engine"
 import { indexPages } from "@airdesign/live"
 import { paintReader, readShapes, readSlides, type ReadShape } from "@airdesign/pptx"
 import { deviceScope, valueFits } from "@/design/trait-edit"
-import { boxStorable, paintedBox } from "@/element-move"
-import { indexedParts } from "@/index-deck"
-import { fileSlides, slideCommand, type SlideChange } from "@/slide-edit"
-import { flooredEdit } from "@/slide-floor"
-import { newSlideLayout } from "@/slide-layout"
+import { boxStorable, paintedBox } from "@/editing/element-move"
+import { indexedParts } from "@/editing/index-deck"
+import { fileSlides, slideCommand, type SlideChange } from "@/editing/slide-edit"
+import { flooredEdit } from "@/editing/slide-floor"
+import { newSlideLayout } from "@/editing/slide-layout"
 
 export type Parts = ReadonlyMap<string, Uint8Array>
 

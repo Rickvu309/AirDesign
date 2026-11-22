@@ -4,7 +4,7 @@ import { paintStore, type CanvasSlide, type Selection } from "@airdesign/render"
 import { describe, expect, it } from "vitest"
 import { eyedropperChanges, hasEyedropperTarget } from "@/legacy-editor/eyedropper-changes"
 import type { DesigningDeck } from "@/editor/live-design-panel"
-import { recordsInFlight } from "@/undo-list"
+import { recordsInFlight } from "@/editing/undo-list"
 
 const xml = (value: string) => Uint8Array.from(value, (ch) => ch.charCodeAt(0))
 const part = "ppt/slides/slide1.xml"

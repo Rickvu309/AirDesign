@@ -2,7 +2,7 @@ import { openRegister, readLayout, shapeOf, type ElementId } from "@airdesign/do
 import { textLayerName, textNamedNow } from "@airdesign/pptx"
 import { boxOf, type CanvasSlide, type PaintStore, type Copied, type Moved, type Selection } from "@airdesign/render"
 import { useEffect, useMemo, useReducer, useRef } from "react"
-import type { CommitOutcome } from "@/commit-edit"
+import type { CommitOutcome } from "@/editing/commit-edit"
 import { changeDesign, type DesignDeck } from "@/design/design-change"
 import { panelKind } from "@/design/panel-order"
 import { deviceScope } from "@/design/trait-edit"
@@ -14,7 +14,7 @@ import { fieldsOf } from "@/editor/panel-fields"
 import { canvasFrame } from "@/legacy-editor/keys-back-to-canvas"
 import { slideLayerRows, type LayerLook } from "@/legacy-editor/slide-layers"
 import type { ElementChange } from "@/element-edit"
-import { indexedRegister } from "@/indexed-register"
+import { indexedRegister } from "@/editing/indexed-register"
 
 export type LayeringDeck = DesignDeck & {
   readonly selection: Selection

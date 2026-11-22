@@ -8,8 +8,8 @@ import {
   type Register,
   type Undoable,
 } from "@airdesign/document"
-import { indexedRegister } from "@/indexed-register"
-import { fileSlides } from "@/slide-edit"
+import { indexedRegister } from "@/editing/indexed-register"
+import { fileSlides } from "@/editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

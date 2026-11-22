@@ -20,10 +20,10 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { freeShapeId, readShapes, readSlides, shapeKind } from "@airdesign/pptx"
-import { slideBase } from "@/exported-parts"
-import { indexedRegister } from "@/indexed-register"
-import { fileSlides } from "@/slide-edit"
-import { storeCommand } from "@/command-store"
+import { slideBase } from "@/editing/exported-parts"
+import { indexedRegister } from "@/editing/indexed-register"
+import { fileSlides } from "@/editing/slide-edit"
+import { storeCommand } from "@/editing/command-store"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

@@ -1,0 +1,41 @@
+layer: shared
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+public:
+  - canvas-slide.ts
+  - canvas-source.ts
+  - command-store.ts
+  - commit-edit.ts
+  - deck-follow.ts
+  - deck-resend.ts
+  - design-rows.ts
+  - device-copy.ts
+  - element-move.ts
+  - exported-parts.ts
+  - fill-plan.ts
+  - font-widths.ts
+  - frame-boxes.ts
+  - group-boxes.ts
+  - icon-redraw.ts
+  - import-deck.ts
+  - index-deck.ts
+  - indexed-register.ts
+  - judged-slide.ts
+  - layer-clipboard.ts
+  - live-repaint.ts
+  - notes-edit.ts
+  - numbered-text.ts
+  - paint-css.ts
+  - paint-structure.ts
+  - painted-picture.ts
+  - patch-images.ts
+  - picture-file.ts
+  - picture-fill.ts
+  - resized-corners.ts
+  - resized-sizing.ts
+  - slide-edit.ts
+  - slide-floor.ts
+  - slide-layout.ts
+  - slide-paint.ts
+  - undo-list.ts

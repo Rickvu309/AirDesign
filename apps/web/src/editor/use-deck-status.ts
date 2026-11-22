@@ -1,10 +1,10 @@
 import { watchUnsent } from "@airdesign/live"
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react"
 import { toast } from "@/components/ui/toast"
-import type { CommitOutcome, SaveRefusal } from "@/commit-edit"
+import type { CommitOutcome, SaveRefusal } from "@/editing/commit-edit"
 import { productCopy } from "@/copy/product-copy"
 import { signInAddress, type ThinNotice } from "@/thin-notice"
-import type { UndoDirection } from "@/undo-list"
+import type { UndoDirection } from "@/editing/undo-list"
 
 export type DeckFailure =
   | "import-failed"

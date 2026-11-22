@@ -5,7 +5,7 @@ import { deckTemplates, startIndexFile, templateFile } from "@airdesign/template
 import { expect, it } from "vitest"
 
 import { productCopy } from "@/copy/product-copy"
-import { indexedParts } from "@/index-deck"
+import { indexedParts } from "@/editing/index-deck"
 
 declare const process: {
   readonly env: Readonly<Record<string, string | undefined>>

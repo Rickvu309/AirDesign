@@ -11,9 +11,9 @@ import {
   type PaintElement,
   type PaintInner,
 } from "@airdesign/pptx"
-import { fillPlan, type PlanLayer } from "@/fill-plan"
-import { cssColor } from "@/paint-css"
-import type { PictureImage } from "@/picture-fill"
+import { fillPlan, type PlanLayer } from "@/editing/fill-plan"
+import { cssColor } from "@/editing/paint-css"
+import type { PictureImage } from "@/editing/picture-fill"
 
 const inch = 914_400
 const dots = 192

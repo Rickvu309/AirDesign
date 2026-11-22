@@ -14,7 +14,7 @@
       "blob": "a53762083ac3a9c9053382827aead949fe49d0df"
     },
     {
-      "file": "apps/web/src/exported-parts.ts",
+      "file": "apps/web/src/editing/exported-parts.ts",
       "names": ["exportedDeck", "editedDeck"],
       "digest": "450cd849dc6a",
       "blob": "f1ddb3a0ea05fc14f0d2a4163c5923b4d3c7dda6"

@@ -3,9 +3,9 @@ import { expect, it } from "vitest"
 import { hasWords, placedOn, placingText, type PlacedText } from "./placed-text"
 import { storeLane } from "./store-lane"
 import { elementCommand } from "@/element-edit"
-import { fileSlides } from "@/slide-edit"
+import { fileSlides } from "@/editing/slide-edit"
 import { onSlide, twoBoxSlide, xml } from "@/slide-fixtures"
-import type { UndoEntry } from "@/undo-list"
+import type { UndoEntry } from "@/editing/undo-list"
 
 const room = { width: 12_192_000, height: 6_858_000 }
 const words = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Hi" }] }])

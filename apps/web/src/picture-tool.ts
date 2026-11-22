@@ -1,7 +1,7 @@
 import type { Register } from "@airdesign/document"
 import { readMedia } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
-import { missingPictures, type PictureBytes } from "@/exported-parts"
+import { missingPictures, type PictureBytes } from "@/editing/exported-parts"
 import { iconBytes, missingIcons } from "@/icon-fallback"
 import { readPicture, type PictureFile, type PictureRefusal } from "@/picture-add"
 import type { ThinNotice } from "@/thin-notice"

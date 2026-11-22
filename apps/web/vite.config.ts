@@ -1,11 +1,15 @@
+import { existsSync } from "node:fs"
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin, type Rollup } from "vite"
 
-const offlineModules = ["src/thin-deck.tsx", "src/import-deck.ts", "src/decks/first-slide.ts"].map((file) =>
+const offlineModules = ["src/thin-deck.tsx", "src/editing/import-deck.ts", "src/decks/first-slide.ts"].map((file) =>
   path.resolve(import.meta.dirname, file),
 )
+const missingOffline = offlineModules.filter((file) => !existsSync(file))
+if (missingOffline.length > 0)
+  throw new Error(`offlineModules names files that do not exist: ${missingOffline.join(", ")}`)
 
 const homePaths = ["/", "/all", "/trash"]
 

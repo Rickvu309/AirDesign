@@ -14,13 +14,13 @@
       "blob": "5c02a5d5ab6f8236976a68e277838f2848f1bef1"
     },
     {
-      "file": "apps/web/src/deck-resend.ts",
+      "file": "apps/web/src/editing/deck-resend.ts",
       "names": ["resendPending"],
       "digest": "027aaf2afbfe",
       "blob": "2a7e048e0011f8d8528ee1160da561f187dc260a"
     },
     {
-      "file": "apps/web/src/commit-edit.ts",
+      "file": "apps/web/src/editing/commit-edit.ts",
       "names": ["flushPending", "commitKept"],
       "digest": "3064bb58ce56",
       "blob": "0cdffef0a871cfe9e96a5bdfa76864ad0914b1b1"

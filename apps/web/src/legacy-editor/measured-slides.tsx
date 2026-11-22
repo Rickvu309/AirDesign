@@ -1,6 +1,6 @@
 import type { ElementId } from "@airdesign/document"
 import { SlideCanvas, type FitSize, type PaintStore } from "@airdesign/render"
-import type { SlideCanvases } from "@/canvas-source"
+import type { SlideCanvases } from "@/editing/canvas-source"
 
 export function owingSlides(store: PaintStore, owed: ReadonlySet<ElementId>, shown: number): readonly number[] {
   if (owed.size === 0) return []

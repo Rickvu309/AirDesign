@@ -2,9 +2,9 @@ import type { Register } from "@airdesign/document"
 import { connect, getParts, memoryRemote } from "@airdesign/live"
 import { paintStore, type CanvasSlide, type PaintStore } from "@airdesign/render"
 import { paint } from "@/deck-paint"
-import { busyElements } from "@/live-repaint"
+import { busyElements } from "@/editing/live-repaint"
 import { pictureStore } from "@/picture-tool"
-import type { PictureBytes } from "@/exported-parts"
+import type { PictureBytes } from "@/editing/exported-parts"
 
 export type FirstSlide = {
   readonly slide: CanvasSlide

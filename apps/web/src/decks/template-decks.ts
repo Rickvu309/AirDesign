@@ -6,7 +6,7 @@ import midnightUrl from "@airdesign/templates/files/midnight.pptx?url"
 import neutralUrl from "@airdesign/templates/files/neutral.pptx?url"
 import { paint } from "@/deck-paint"
 import { chosenParts } from "@/export/chosen-parts"
-import { busyElements } from "@/live-repaint"
+import { busyElements } from "@/editing/live-repaint"
 
 export type DeckTemplate = { readonly id: string; readonly name: string }
 

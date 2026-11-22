@@ -1,7 +1,7 @@
 import { decide, limits, openRegister, slideId, type Register, type SlideCommand } from "@airdesign/document"
 import { readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { exportedParts, missingPictures } from "./exported-parts"
+import { exportedParts, missingPictures } from "./editing/exported-parts"
 import { pictureCommand, pictureRefusal, placedPicture } from "./picture-add"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
