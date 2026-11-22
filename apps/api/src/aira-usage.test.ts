@@ -4,8 +4,8 @@ import { airaRoutes, countryHeader } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { Replay } from "./aira-replay.js"
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
+import { Replay } from "./testing/aira-replay.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }

@@ -1,0 +1,11 @@
+layer: app
+dependencies:
+  - apps/api/src/account
+  - apps/api/src/aira
+  - apps/api/src/doom
+  - apps/api/src/legacy-decks
+  - apps/api/src/mcp
+  - apps/api/src/oauth
+  - apps/api/src/platform
+  - apps/api/src/usage
+enforce_privacy: false

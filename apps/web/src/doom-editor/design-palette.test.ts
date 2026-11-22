@@ -1,7 +1,7 @@
 import { doom } from "@airdesign/document"
 import { deckTemplates, templateTheme } from "@airdesign/templates"
 import { describe, expect, it } from "vitest"
-import { startEdit } from "../../../api/src/doom-start"
+import { startEdit } from "../../../api/src/doom/doom-start"
 import { colorNameOf, swatchesOf } from "./design-palette"
 import { neutralColorNames } from "./neutral-color-names"
 import { templateNameOf } from "./design-template-name"

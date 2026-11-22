@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { authored, grownFiles, sizeFault, tokenLimit, tokensOf } from "./file-size.mjs"
+import { authored, grownFiles, sizeFault, specifierBytes, tokenLimit, tokensOf } from "./file-size.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -59,8 +59,8 @@ same(
 )
 same(
   "a test file over the limit that grows is told where the new test goes",
-  sizeFault({ file: "apps/api/src/mcp.test.ts", before: over, after: over + 4 }),
-  "apps/api/src/mcp.test.ts is 5002 tokens, over the limit of 5000, and this change adds 1. Put the new test in a new test file beside the code it tests, named after that code. Do not add to this file.",
+  sizeFault({ file: "apps/api/src/mcp/mcp.test.ts", before: over, after: over + 4 }),
+  "apps/api/src/mcp/mcp.test.ts is 5002 tokens, over the limit of 5000, and this change adds 1. Put the new test in a new test file beside the code it tests, named after that code. Do not add to this file.",
 )
 same(
   "a new file over the limit is told the same",
@@ -68,6 +68,26 @@ same(
     "packages/live/src/new.ts is 5001 tokens, over the limit of 5000, and this change adds 5001.",
   ),
   true,
+)
+
+same(
+  "a longer import path is not growth, since a moved module adds no idea to the file",
+  sizeFault({ file: "a.test.ts", before: over, after: over + 8, paths: { before: 20, after: 28 } }),
+  undefined,
+)
+same(
+  "growth beside a longer import path still counts",
+  sizeFault({ file: "a.ts", before: over, after: over + 12, paths: { before: 20, after: 28 } })?.startsWith(
+    "a.ts is 5004 tokens, over the limit of 5000, and this change adds 3.",
+  ),
+  true,
+)
+same(
+  "only the text inside import and export specifiers is a path",
+  specifierBytes(
+    'import { a } from "./x.js"\nexport { b } from "../y/z.js"\nconst c = await import("./w.js")\nimport "./side.css"\nconst d = "from here"\n',
+  ),
+  "./x.js../y/z.js./w.js./side.css".length,
 )
 
 const repo = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-file-size-"))

@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest"
-import { R2OriginalStore } from "./r2-original-store.js"
+import { R2OriginalStore } from "./platform/r2-original-store.js"
 
 it("reads font bytes and writes them without replacing an existing object", async () => {
   const fetched = vi.fn(async (request: Request) =>

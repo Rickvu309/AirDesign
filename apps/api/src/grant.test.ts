@@ -1,7 +1,7 @@
 import { Client } from "pg"
 import { afterAll, describe, expect, it } from "vitest"
 
-import { postgresInfo } from "./harness.js"
+import { postgresInfo } from "./testing/harness.js"
 import { openPool } from "./index.js"
 
 describe("roles", () => {

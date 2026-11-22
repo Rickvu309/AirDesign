@@ -19,8 +19,8 @@ same("a nested source is chosen", changedSources("M\tpackages/mcp/src/tools/edit
 ])
 same(
   "every chosen source keeps the order git gave",
-  changedSources("M\tapps/api/src/mcp.ts\nM\tpackages/mcp/src/run.ts\nA\tpackages/live/src/cache.ts\n"),
-  ["apps/api/src/mcp.ts", "packages/mcp/src/run.ts", "packages/live/src/cache.ts"],
+  changedSources("M\tapps/api/src/mcp/mcp.ts\nM\tpackages/mcp/src/run.ts\nA\tpackages/live/src/cache.ts\n"),
+  ["apps/api/src/mcp/mcp.ts", "packages/mcp/src/run.ts", "packages/live/src/cache.ts"],
 )
 same("a deleted source is not chosen", changedSources("D\tpackages/document/src/limits.ts\n"), [])
 same("a test is not chosen", changedSources("M\tpackages/document/src/limits.test.ts\n"), [])
@@ -28,8 +28,8 @@ same("a tsx test is not chosen", changedSources("M\tapps/api/src/view.test.tsx\n
 same("a named test is not chosen", changedSources("M\tpackages/document/src/decide.property.test.ts\n"), [])
 same("a spec is not chosen", changedSources("M\tpackages/document/src/decide.spec.ts\n"), [])
 same("a declaration is not chosen", changedSources("M\tpackages/render/src/types.d.ts\n"), [])
-same("the api test harness is not chosen", changedSources("M\tapps/api/src/harness.ts\n"), [])
-same("the api postgres setup is not chosen", changedSources("M\tapps/api/src/postgres-setup.ts\n"), [])
+same("the api test harness is not chosen", changedSources("M\tapps/api/src/testing/harness.ts\n"), [])
+same("the api postgres setup is not chosen", changedSources("M\tapps/api/src/testing/postgres-setup.ts\n"), [])
 same("a web source is not chosen", changedSources("M\tapps/web/src/deck.ts\n"), [])
 same("a site source is not chosen", changedSources("M\tapps/site/src/page.ts\n"), [])
 same("a package file outside src is not chosen", changedSources("M\tpackages/pptx/markup-setup.ts\n"), [])

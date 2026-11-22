@@ -1,0 +1,10 @@
+layer: feature
+dependencies:
+  - apps/api/src/platform
+public:
+  - agent-key.ts
+  - clients.ts
+  - consent.ts
+  - discovery.ts
+  - grants.ts
+  - tokens.ts

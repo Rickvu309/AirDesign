@@ -32,7 +32,7 @@
       "blob": "c4aaa2490305f4d2918290bddd90482264d12355"
     },
     {
-      "file": "apps/api/src/saved.ts",
+      "file": "apps/api/src/legacy-decks/saved.ts",
       "names": ["commitEdits"],
       "digest": "b29e3ccb7238",
       "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"

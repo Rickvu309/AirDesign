@@ -26,7 +26,7 @@
       "blob": "cf44ccb491249fed1a66f0ba3f5a63e6c59b79e3"
     },
     {
-      "file": "apps/api/src/undo.ts",
+      "file": "apps/api/src/legacy-decks/undo.ts",
       "names": ["undoRun"],
       "digest": "6a04c35da3e5",
       "blob": "c4a9273582f405585a38a8ffd12143c79171b538"

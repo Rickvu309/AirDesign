@@ -6,4 +6,9 @@ include:
 exclude:
   - "**/*.test.{ts,tsx}"
   - "**/*.spec.{ts,tsx}"
-layers: []
+  - "apps/api/src/testing/**"
+layers:
+  - app
+  - legacy
+  - feature
+  - platform

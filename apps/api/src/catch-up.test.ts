@@ -2,11 +2,11 @@ import { randomBytes } from "node:crypto"
 import { readDeckId } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
-import { heldRevision } from "./deck-watch.js"
-import * as saved from "./saved.js"
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { heldRevision } from "./legacy-decks/deck-watch.js"
+import * as saved from "./legacy-decks/saved.js"
+import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { readSignInMail } from "./sign-in-mail.js"
+import { readSignInMail } from "./account/sign-in-mail.js"
 
 describe("lost acknowledgment", () => {
   const mails: Mail[] = []

@@ -4,9 +4,9 @@ const rule = { "airdesign/no-env-outside-entry": "error" }
 const message = "Read the environment only by passing process.env whole"
 const source = "apps/api/src/second.ts"
 const read = `export const key = process.env.RESEND_API_KEY\n`
-const startEntry = `import { readStartSettings } from "./start-settings.js"\nexport const settings = readStartSettings(process.env)\n`
+const startEntry = `import { readStartSettings } from "./platform/start-settings.js"\nexport const settings = readStartSettings(process.env)\n`
 
-expectRejects("0d00ff22 read the Resend key in mail.ts", "apps/api/src/mail.ts", read, rule, message)
+expectRejects("0d00ff22 read the Resend key in mail.ts", "apps/api/src/platform/mail.ts", read, rule, message)
 expectRejects("the verifier's destructure fails", source, `export const { env } = process\n`, rule, message)
 expectRejects(
   "a renamed destructure fails",
@@ -75,13 +75,13 @@ expectRejects(
 expectRejects(
   "the wrong reader for the entry fails",
   "apps/api/src/setup.ts",
-  `import { runBootstrap } from "./provision.js"\nawait runBootstrap(process.env)\n`,
+  `import { runBootstrap } from "./platform/provision.js"\nawait runBootstrap(process.env)\n`,
   rule,
   message,
 )
 expectRejects(
   "the Postgres setup may not read a third name",
-  "apps/api/src/postgres-setup.ts",
+  "apps/api/src/testing/postgres-setup.ts",
   `export const key = process.env.RESEND_API_KEY\n`,
   rule,
   message,
@@ -90,25 +90,25 @@ expectAccepts("start.ts passes the whole object", "apps/api/src/start.ts", start
 expectAccepts(
   "setup.ts passes the whole object",
   "apps/api/src/setup.ts",
-  `import { runSetup } from "./provision.js"\nprocess.exitCode = await runSetup(process.env, (stream, line) => process[stream].write(line))\n`,
+  `import { runSetup } from "./platform/provision.js"\nprocess.exitCode = await runSetup(process.env, (stream, line) => process[stream].write(line))\n`,
   rule,
 )
 expectAccepts(
   "bootstrap.ts passes the whole object",
   "apps/api/src/bootstrap.ts",
-  `import { runBootstrap } from "./provision.js"\nprocess.exitCode = await runBootstrap(process.env, () => undefined)\n`,
+  `import { runBootstrap } from "./platform/provision.js"\nprocess.exitCode = await runBootstrap(process.env, () => undefined)\n`,
   rule,
 )
 expectAccepts(
   "the Postgres setup reads its two names and copies the object",
-  "apps/api/src/postgres-setup.ts",
+  "apps/api/src/testing/postgres-setup.ts",
   `export const a = process.env.LD_LIBRARY_PATH\nexport const b = process.env.AIRDESIGN_POSTGRES_BIN\nexport const copy = () => ({ ...process.env })\nexport const whole = () => { return process.env }\n`,
   rule,
 )
 expectAccepts("other process members stay", source, `export const here = process.cwd()\nprocess.exitCode = 1\n`, rule)
 expectAccepts(
   "a reader's parameter stays",
-  "apps/api/src/start-settings.ts",
+  "apps/api/src/platform/start-settings.ts",
   `export const read = (env) => env.KEY\n`,
   rule,
 )

@@ -13,8 +13,8 @@ import {
   type Register,
 } from "@airdesign/document"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { account, deckOf, startAgents, stores, address, type Account } from "./agents-drive.js"
-import { ask } from "./harness.js"
+import { account, deckOf, startAgents, stores, address, type Account } from "./testing/agents-drive.js"
+import { ask } from "./testing/harness.js"
 
 const templateStyleFormat = 68
 

@@ -1,0 +1,9 @@
+layer: legacy
+dependencies:
+  - apps/api/src/doom
+  - apps/api/src/platform
+public:
+  - deck-watch.ts
+  - findings-route.ts
+  - saved.ts
+  - undo.ts

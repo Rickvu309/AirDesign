@@ -2,13 +2,13 @@
   "check": "checks-credits.md#credits",
   "covers": [
     {
-      "file": "apps/api/src/credits.ts",
+      "file": "apps/api/src/usage/credits.ts",
       "names": ["resetCredits", "charge", "readCredits"],
       "digest": "784d82e21333",
       "blob": "0385387fb86b1ce3866e33fe16274c127b9e154c"
     },
     {
-      "file": "apps/api/src/aira-ledger.ts",
+      "file": "apps/api/src/usage/aira-ledger.ts",
       "names": ["readLedger", "writeLedger", "turnOver", "applied"],
       "digest": "e731f54a131c",
       "blob": "92b41615356205f27ae3b39a76b74f632da3285d"

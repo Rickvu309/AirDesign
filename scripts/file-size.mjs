@@ -19,9 +19,13 @@ const split = (file) =>
     ? "Put the new test in a new test file beside the code it tests, named after that code. Do not add to this file."
     : "Move one idea out of it into a new file beside it, named after what the new file holds, and import it from there. Leave the rest where it is."
 
-export const sizeFault = ({ file, before, after }) => {
-  if (!authored(file) || tokensOf(after) <= tokenLimit || after <= before) return undefined
-  const added = tokensOf(after) - tokensOf(before)
+export const specifierBytes = (text) =>
+  [...text.matchAll(/\b(?:from|import)\s*\(?\s*(["'])([^"'\n]*)\1/g)].reduce((sum, match) => sum + match[2].length, 0)
+
+export const sizeFault = ({ file, before, after, paths = { before: 0, after: 0 } }) => {
+  const grown = after - paths.after - (before - paths.before)
+  if (!authored(file) || tokensOf(after) <= tokenLimit || grown <= 0) return undefined
+  const added = Math.max(1, tokensOf(after) - tokensOf(before))
   return `${file} is ${tokensOf(after)} tokens, over the limit of ${tokenLimit}, and this change adds ${added}. ${split(file)}`
 }
 
@@ -31,6 +35,14 @@ const git = (root, args) =>
 const sizeAt = (root, tree, file) => {
   try {
     return Number(git(root, ["cat-file", "-s", `${tree}:${file}`]).trim())
+  } catch {
+    return 0
+  }
+}
+
+const pathsAt = (root, tree, file) => {
+  try {
+    return specifierBytes(git(root, ["cat-file", "blob", `${tree}:${file}`]))
   } catch {
     return 0
   }
@@ -48,6 +60,11 @@ export const grownFiles = (root) => {
     .split("\0")
     .filter((file) => file !== "")
     .map((file) => ({ file, before: sizeAt(root, fork, file), after: sizeAt(root, head, file) }))
+    .map((grown) =>
+      tokensOf(grown.after) > tokenLimit && grown.before > 0
+        ? { ...grown, paths: { before: pathsAt(root, fork, grown.file), after: pathsAt(root, head, grown.file) } }
+        : grown,
+    )
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

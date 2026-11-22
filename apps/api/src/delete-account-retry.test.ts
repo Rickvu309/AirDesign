@@ -2,12 +2,12 @@ import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { accountRoutes, deckRoutes } from "@airdesign/catalog"
 
-import { fuzzAira } from "./aira-fuzz.js"
-import { emptied, fillAccount, mcpStatus, personalRows, storedKeys, type Served } from "./filled-account.js"
-import { ask, postgresInfo, serve } from "./harness.js"
+import { fuzzAira } from "./testing/aira-fuzz.js"
+import { emptied, fillAccount, mcpStatus, personalRows, storedKeys, type Served } from "./testing/filled-account.js"
+import { ask, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type OriginalStore, type Sql } from "./index.js"
-import { LocalOriginalStore } from "./local-original-store.js"
-import { drainOriginals } from "./original.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
+import { drainOriginals } from "./doom/original.js"
 
 const mails: Mail[] = []
 const store = new LocalOriginalStore()

@@ -2,8 +2,8 @@ import { accountRoutes, mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, askForm, cookieFrom, postgresInfo, serve, testResource, verifierPair } from "./harness.js"
-import { readSignInMail } from "./sign-in-mail.js"
+import { ask, askForm, cookieFrom, postgresInfo, serve, testResource, verifierPair } from "./testing/harness.js"
+import { readSignInMail } from "./account/sign-in-mail.js"
 
 type AgentRow = {
   readonly id: string

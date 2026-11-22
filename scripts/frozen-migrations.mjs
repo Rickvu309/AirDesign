@@ -2,8 +2,8 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 await import("../apps/api/src/source-hooks.ts")
-const { recordFrozenMigrations } = await import("../apps/api/src/frozen-migrations.ts")
-export const { migrations } = await import("../apps/api/src/migrations.ts")
+const { recordFrozenMigrations } = await import("../apps/api/src/platform/frozen-migrations.ts")
+export const { migrations } = await import("../apps/api/src/platform/migrations.ts")
 
 export const runFrozenMigrations = (argv, current = migrations, file = undefined) => {
   if (argv.length > 0) {

@@ -4,9 +4,9 @@ import { orderKeyBetween, doom } from "@airdesign/document"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { startIds } from "./doom-start.js"
+import { startIds } from "./doom/doom-start.js"
 
 const mails: Mail[] = []
 let base = ""

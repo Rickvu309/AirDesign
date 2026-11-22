@@ -3,9 +3,9 @@ import { notifyKey, readDeckId } from "@airdesign/catalog"
 import { call, openDeck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { readSignInMail } from "./sign-in-mail.js"
+import { readSignInMail } from "./account/sign-in-mail.js"
 
 function address(): string {
   return `person${randomBytes(4).toString("hex")}@example.com`

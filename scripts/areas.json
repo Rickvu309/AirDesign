@@ -42,7 +42,13 @@
     ]
   },
   "deck-home": {
-    "paths": ["apps/web/src/decks/", "apps/api/src/deck-list", "tests/browser/home", "tests/browser/recents-"]
+    "paths": [
+      "apps/web/src/decks/",
+      "apps/api/src/deck-list",
+      "apps/api/src/doom/deck-list",
+      "tests/browser/home",
+      "tests/browser/recents-"
+    ]
   },
   "sign-in": {
     "paths": [
@@ -78,6 +84,7 @@
       "apps/api/src/slide-",
       "apps/api/src/order",
       "apps/api/src/undo",
+      "apps/api/src/legacy-decks/undo",
       "apps/api/src/parallel-edits"
     ]
   },

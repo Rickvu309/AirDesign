@@ -1,0 +1,11 @@
+layer: feature
+dependencies:
+  - apps/api/src/account
+  - apps/api/src/platform
+  - apps/api/src/usage
+public:
+  - aira-closing.ts
+  - aira-route.ts
+  - aira-usage-route.ts
+  - aira.ts
+  - anthropic-transport.ts

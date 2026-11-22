@@ -124,7 +124,7 @@ describe("the route table is the only way in", () => {
   })
 
   async function sources(): Promise<readonly string[]> {
-    const names = await readdir(folder)
+    const names = await readdir(folder, { recursive: true })
     return names.filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
   }
 

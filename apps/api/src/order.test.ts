@@ -4,7 +4,7 @@ import { call, openDeck } from "@airdesign/engine"
 import { Client } from "pg"
 import { afterAll, describe, expect, it } from "vitest"
 
-import { postgresInfo, wireCommit } from "./harness.js"
+import { postgresInfo, wireCommit } from "./testing/harness.js"
 import { commitEdits, openPool, openSaved, writeRevision } from "./index.js"
 
 describe("two sessions on one row", () => {

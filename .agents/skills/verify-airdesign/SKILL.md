@@ -35,7 +35,7 @@ Under both sit the private app (Run the app) and `prove`, which picks the checks
 - `apps/web`, the product UI. Primary. Home `/`, Trash `/trash`, a deck `/deck/<id>`. Designed screens at `/screens/<id>-<name>` are static sample pages, not the app.
 - `apps/api`, the server. Reached through the same origin for every path in its own route table (`routes` in `apps/api/src/server.ts`), so the browser sends its session cookie the way production does.
 - `apps/site`, marketing and the sign-in pages. Served on a second origin of the same stack (`siteOrigin` in the launch line, `kit.siteOrigin`): its sign-in paths go to the API the way the site's Worker sends them, and its pages come from a build made with a placeholder app address that the front server swaps for the stack's app origin. The app's signed-out redirect goes to `https://airdesign.app/sign-in`, built into `apps/web`; the journey kit answers every `airdesign.app` address with a stand-in page so no journey reaches production, and `kit.useSite()` sends `https://airdesign.app/sign-in` to the site origin instead. See `features/sign-in.md`.
-- `packages/mcp`, the agent tools, mounted by the API at `/mcp`. Secondary. Its tests in `apps/api/src/mcp.test.ts` are the driver today.
+- `packages/mcp`, the agent tools, mounted by the API at `/mcp`. Secondary. Its tests in `apps/api/src/mcp/mcp.test.ts` are the driver today.
 
 ### Launch
 
@@ -45,7 +45,7 @@ $V launch
 
 It builds `@airdesign/api` with its workspace dependencies and `apps/web` (about 10 s warm), then starts a detached `serve` process that:
 
-1. starts an empty PostgreSQL 18 cluster with `startEmptyCluster` from `apps/api/src/postgres-setup.ts` (data under `~/tmp/airdesign-api-*`, free port),
+1. starts an empty PostgreSQL 18 cluster with `startEmptyCluster` from `apps/api/src/testing/postgres-setup.ts` (data under `~/tmp/airdesign-api-*`, free port),
 2. runs the real `runBootstrap` and `runSetup` (roles, schema, migrations),
 3. starts `createApi` on a free port with an in-memory original store and a mail sender that writes each mail to the run's scratch `mail.jsonl`,
 4. starts a front server on a free port that sends API paths to the API and every other path to `apps/web/dist` (single-page fallback), and a site server on another free port that sends the sign-in and sign-out paths to the API and every other path to the site build. The site build (`astro build`, about 5 s) is cached under `~/tmp/verify-airdesign-cache/site-<hash of apps/site, packages/theme and packages/catalog sources>`, so a launch at a source state already built costs nothing. The API's redirects to its placeholder origins (`https://app.example`, `https://site.example`) are rewritten to the two real origins.

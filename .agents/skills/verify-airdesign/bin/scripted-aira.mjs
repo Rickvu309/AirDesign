@@ -3,7 +3,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 
 export function scriptedAira({ Replay, repo, file, log }) {
-  const replay = new Replay(new URL(`${pathToFileURL(path.join(repo, "apps/api/src/aira-streams")).href}/`))
+  const replay = new Replay(new URL(`${pathToFileURL(path.join(repo, "apps/api/src/testing/aira-streams")).href}/`))
   let played = ""
   return {
     on: true,

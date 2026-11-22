@@ -13,7 +13,7 @@ const metricName = "guards a test would miss"
 const changedFlag = "--changed-from"
 const changedFolders = /^(?:packages\/[^/]+|apps\/api)\/src\/.+\.tsx?$/
 const testNames = /\.(?:test|spec)\.tsx?$|\.d\.ts$/
-const testSupport = new Set(["apps/api/src/harness.ts", "apps/api/src/postgres-setup.ts"])
+const testSupport = new Set(["apps/api/src/testing/harness.ts", "apps/api/src/testing/postgres-setup.ts"])
 
 export const changedSources = (nameStatus) =>
   nameStatus.split("\n").flatMap((row) => {

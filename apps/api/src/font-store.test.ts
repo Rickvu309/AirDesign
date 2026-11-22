@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { LocalOriginalStore } from "./local-original-store.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
 
 it("caches font bytes without requiring a device's signed URL", async () => {
   const store = new LocalOriginalStore(undefined, "/device-original")

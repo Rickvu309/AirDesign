@@ -2,9 +2,9 @@ import { createHash, randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type OriginalUpload, type Sql } from "./index.js"
-import { LocalOriginalStore } from "./local-original-store.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
 
 type Reply = { readonly status: number; readonly json: unknown }
 type Gate = { readonly reached: Promise<void>; readonly release: () => void }

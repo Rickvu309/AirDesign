@@ -1,8 +1,8 @@
 import { doomRoutes } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { account, address, connected, grant, startAgents, type Account, type Agent } from "./agents-drive.js"
-import { ask } from "./harness.js"
+import { account, address, connected, grant, startAgents, type Account, type Agent } from "./testing/agents-drive.js"
+import { ask } from "./testing/harness.js"
 
 let stop = async () => {}
 

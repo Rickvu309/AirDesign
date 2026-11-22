@@ -3,7 +3,7 @@ import { blankDeckName, doomRoutes } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 
 type Row = { deck: string; name: string; edited: string; created: string; trashed?: string; starred?: boolean }

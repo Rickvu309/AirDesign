@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import { Client, DatabaseError } from "pg"
 import { describe, expect, it } from "vitest"
 
-import { inDatabase, postgresInfo, unmigratedDatabase } from "./harness.js"
+import { inDatabase, postgresInfo, unmigratedDatabase } from "./testing/harness.js"
 
 async function marked(url: string, mark: string): Promise<number | null> {
   const client = new Client({ connectionString: url, application_name: "isolation-reader" })

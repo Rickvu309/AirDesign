@@ -3,13 +3,13 @@ import { apiFile, moduleVisitors, outer, staticText, typeOnly } from "../module-
 const message =
   "Read the environment only by passing process.env whole from start.ts, setup.ts or bootstrap.ts to its reader, then take the values as a parameter, the way readStartSettings does."
 const readers = new Map([
-  ["start.ts", { name: "readStartSettings", source: "./start-settings.js" }],
-  ["setup.ts", { name: "runSetup", source: "./provision.js" }],
-  ["bootstrap.ts", { name: "runBootstrap", source: "./provision.js" }],
+  ["start.ts", { name: "readStartSettings", source: "./platform/start-settings.js" }],
+  ["setup.ts", { name: "runSetup", source: "./platform/provision.js" }],
+  ["bootstrap.ts", { name: "runBootstrap", source: "./platform/provision.js" }],
 ])
 const modules = new Set(["process", "node:process"])
 const globals = new Set(["globalThis", "global"])
-const harnessFile = "postgres-setup.ts"
+const harnessFile = "testing/postgres-setup.ts"
 const harnessKeys = new Set(["LD_LIBRARY_PATH", "AIRDESIGN_POSTGRES_BIN"])
 const importSpecifiers = new Set(["ImportSpecifier", "ImportDefaultSpecifier", "ImportNamespaceSpecifier"])
 

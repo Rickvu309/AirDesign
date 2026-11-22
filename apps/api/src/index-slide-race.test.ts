@@ -1,10 +1,10 @@
 import { expect, it } from "vitest"
 import { readDeckId } from "@airdesign/catalog"
 import { call } from "@airdesign/engine"
-import { postgresInfo } from "./harness.js"
-import { openPool } from "./pool.js"
-import { indexSaved } from "./index-saved.js"
-import { openSaved, writeRevision } from "./saved.js"
+import { postgresInfo } from "./testing/harness.js"
+import { openPool } from "./platform/pool.js"
+import { indexSaved } from "./legacy-decks/index-saved.js"
+import { openSaved, writeRevision } from "./legacy-decks/saved.js"
 
 it("does not write a slide command decided before a conflicting import index arrived", async () => {
   const info = await postgresInfo()
