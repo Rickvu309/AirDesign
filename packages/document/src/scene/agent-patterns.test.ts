@@ -186,18 +186,16 @@ describe("cards and compare", () => {
     expect(get(first[0]!, "geometry")).toEqual({ kind: "icon", name: "lucide/star" })
     expect(get(first[2]!, "text")).toMatchObject({
       chars: "One\nTwo",
-      style: "body2",
+      style: "body",
       paras: [{ list: "bullet" }, { list: "bullet" }],
     })
   })
 
-  it("hugs its content when it has no box, and fills the box it was given", () => {
+  it("fills the box it was given", () => {
     const items = [
       { title: "Grow", points: ["One"] },
       { title: "Hold", points: ["Two"] },
     ]
-    const hugging = get(made(build(agentDeck(), add({ kind: "cards", items }))), "box")!
-    expect(hugging.h).toBeLessThan(400)
     const filling = get(
       made(build(agentDeck(), add({ kind: "cards", items, box: { x: 0, y: 0, w: 1000, h: 700 } }))),
       "box",
@@ -205,7 +203,7 @@ describe("cards and compare", () => {
     expect(filling.h).toBe(700)
   })
 
-  it("steps the bullets down from body 2 to caption as the area shrinks, never lower, then refuses", () => {
+  it("steps the bullets down from body to caption as the area shrinks, never lower, then refuses", () => {
     const points = Array.from({ length: 7 }, (_, at) => `A fairly long line of explanation number ${at}`)
     const seen: string[] = []
     for (let high = 900; high >= 150; high -= 10) {
@@ -226,7 +224,7 @@ describe("cards and compare", () => {
       const body = styled(scene, made(scene).id).at(-1)!
       if (seen.at(-1) !== body) seen.push(body)
     }
-    expect(seen).toEqual(["body2", "caption", "refused"])
+    expect(seen).toEqual(["body", "body2", "caption", "refused"])
   })
 
   it("sets compare headings in the first accent and spaces its cards wider", () => {
@@ -367,12 +365,12 @@ describe("a grid of words", () => {
     expect(get(root, "layout")).toMatchObject({
       mode: "grid",
       columns: [{ fr: 1 }, { fr: 1 }, { fr: 1 }, { fr: 1 }],
-      rows: ["hug", "hug", "hug"],
+      rows: ["hug", { fr: 1 }, { fr: 1 }],
     })
     const cells = childrenOf(scene, root.id)
     expect(get(cells[0]!, "cell")).toEqual({ row: 0, col: 1 })
-    expect(get(cells[0]!, "text")).toMatchObject({ chars: "Q1", style: "label" })
-    expect(get(cells[4]!, "text")).toMatchObject({ chars: "Beta", style: "body2" })
+    expect(get(cells[0]!, "text")).toMatchObject({ chars: "Q1", style: "body" })
+    expect(get(cells[4]!, "text")).toMatchObject({ chars: "Beta", style: "body" })
     expect(get(cells[10]!, "cell")).toEqual({ row: 2, col: 3 })
   })
 

@@ -1,11 +1,11 @@
-import { scene } from "@airdesign/document"
+import { contrast, scene } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { chartWrites, drawWrites, iconWrites, type Drawing } from "./create-writes"
-import { shapeFill, shapeStroke } from "@/editor/tool-panels-art"
+import { darkTheme } from "./create-writes-art"
 import { grow, landed } from "./scene-fixtures"
 
-const blue = shapeFill.toLowerCase()
-const edge = shapeStroke.toLowerCase()
+const quiet = { var: "background2", tint: -0.06 }
+const ink = { var: "text" }
 
 const built = grow([])
 const slide = built.slides[0]!
@@ -52,12 +52,18 @@ describe("drawing a shape", () => {
     })
   })
 
-  it("paints a shape in the product's blue with its darker edge, and a frame in the theme's colour", () => {
-    expect(made({ kind: "rectangle" })).toMatchObject({
-      fills: [{ kind: "solid", color: blue }],
-      strokes: [{ kind: "solid", color: edge }],
-    })
+  it("paints a shape in the theme's quiet surface with no border, and a frame in the theme's colour", () => {
+    const rectangle = made({ kind: "rectangle" })
+    expect(rectangle.fills).toEqual([{ kind: "solid", color: quiet }])
+    expect(rectangle.strokes).toBeUndefined()
     expect(made({ kind: "frame" }).fills).toEqual([{ kind: "solid", color: { var: "background2" } }])
+  })
+
+  it("keeps the theme's text readable on a new shape, in a light and in a dark theme", () => {
+    for (const theme of [scene.defaultTheme, darkTheme])
+      expect(
+        contrast(scene.resolveColor(quiet as scene.Color, theme).slice(1), theme.colors.text.slice(1)),
+      ).toBeGreaterThanOrEqual(4.5)
   })
 
   it("draws a named preset shape at the default size", () => {
@@ -71,7 +77,7 @@ describe("drawing a shape", () => {
   it("draws a line between its ends, an arrow with a head, and steps by 45 degrees with Shift", () => {
     expect(made({ kind: "line", to: { x: 300, y: 100 } })).toMatchObject({
       geometry: { kind: "line", start: { x: 100, y: 100 }, end: { x: 300, y: 100 }, arrows: ["none", "none"] },
-      strokes: [{ kind: "solid", color: edge }],
+      strokes: [{ kind: "solid", color: ink }],
     })
     expect(made({ kind: "arrow" })).toMatchObject({ geometry: { end: { x: 200, y: 100 }, arrows: ["none", "arrow"] } })
     const stepped = made({ kind: "line", to: { x: 300, y: 130 }, square: true }) as {

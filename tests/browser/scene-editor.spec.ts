@@ -19,7 +19,7 @@ test("a new scene deck opens at its own address, paints its first slide and keep
   await expect(title).toHaveCount(1)
   const node = "s:4"
   const boxOf = async (id: string) => (await savedNode(stack, opened, id))?.box as { x: number; y: number } | undefined
-  expect(await boxOf(node)).toMatchObject(spot(160, 380, 1600, 160))
+  expect(await boxOf(node)).toMatchObject(spot(160, 240, 1600, 300))
 
   await clickSlide(page, 600, 420)
   expect(await selectedIds(page)).toEqual([node])
@@ -28,8 +28,8 @@ test("a new scene deck opens at its own address, paints its first slide and keep
   const dragged = await boxOf(node)
   expect(dragged?.x).toBeGreaterThanOrEqual(258)
   expect(dragged?.x).toBeLessThanOrEqual(262)
-  expect(dragged?.y).toBeGreaterThanOrEqual(478)
-  expect(dragged?.y).toBeLessThanOrEqual(482)
+  expect(dragged?.y).toBeGreaterThanOrEqual(338)
+  expect(dragged?.y).toBeLessThanOrEqual(342)
   const { x, y } = dragged ?? { x: 0, y: 0 }
 
   await page.keyboard.press("ArrowRight")

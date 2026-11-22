@@ -18,6 +18,7 @@ import {
   sizedPart,
 } from "./pattern-parts.js"
 import type { Node } from "./scene.js"
+import type { Text } from "./text.js"
 import { zeroBox } from "./scene-walk.js"
 import type { TextStyleName } from "./text.js"
 import { widestLine } from "./text-estimate.js"
@@ -51,6 +52,9 @@ const names: Readonly<Record<PatternName, string>> = {
   timeline: "Timeline",
   flow: "Flow",
 }
+const kpiShare = 0.45
+const cardsShare = 0.7
+const gridShare = 0.7
 const iconShare = 1.7
 const dotShare = 0.7
 const axisShare = 2.6
@@ -62,13 +66,23 @@ const slotWidth = (area: Area, count: number, gap: Px) => Math.floor((area.w - g
 const boxIn = (area: Area, h: Px) => ({ ...zeroBox, x: area.x, y: area.y, w: area.w, h })
 const strokeOf = (weight: Px) => ({ weight, align: "center" as const, dash: "solid" as const })
 
-function rowOf(area: Area, cards: readonly Sized[], gap: Px, filled: boolean, root: Values): Block | undefined {
+const stretched = (area: Area, hug: Px, filled: boolean, share: number): Px =>
+  filled ? area.h : Math.min(area.h, Math.max(hug, Math.round(area.h * share)))
+
+function rowOf(
+  area: Area,
+  cards: readonly Sized[],
+  gap: Px,
+  filled: boolean,
+  root: Values,
+  share: number,
+): Block | undefined {
   const tallest = Math.max(...cards.map((card) => card.high))
   if (tallest > area.h) return undefined
   return frameOf(
     {
       ...root,
-      box: boxIn(area, filled ? area.h : tallest),
+      box: boxIn(area, stretched(area, tallest, filled, share)),
       layout: { mode: "row", gap, padding: sidesOf(0), align: "top-left" },
     },
     cards.map((card) => card.block),
@@ -116,10 +130,10 @@ const kpi: Build = (area, items, scale) => {
         ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, number), theme, room)]),
         ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room)]),
       ],
-      { pad, gap, fill: "background2" },
+      { pad, gap, fill: "background2", align: "center-left" },
     ),
   )
-  return rowOf(area, cards, gap, false, scale.root)
+  return rowOf(area, cards, gap, scale.filled, scale.root, kpiShare)
 }
 
 function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boolean): Build {
@@ -139,7 +153,7 @@ function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boo
         { pad, gap: scale.gap, fill: "background2" },
       ),
     )
-    return rowOf(area, cards, gap, scale.filled, scale.root)
+    return rowOf(area, cards, gap, scale.filled, scale.root, items.length === 1 ? 0 : cardsShare)
   }
 }
 
@@ -342,7 +356,11 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   const block = fitting(theme, (styles) => {
     const cells = rows.map((row, at) =>
       row.map((cell) =>
-        cell === "" ? undefined : partOf(cell, at === 0 ? styles.label : styles.point, at === 0 ? "text2" : "text"),
+        cell === ""
+          ? undefined
+          : at === 0
+            ? partOf(`**${cell}**`, styles.point, "text2")
+            : partOf(cell, styles.point, "text"),
       ),
     )
     const heights = cells.map((row) =>
@@ -354,21 +372,32 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
       {
         ...surfaceOf(change),
         name: change.name ?? "Grid",
-        box: boxIn(area, total),
+        box: boxIn(area, stretched(area, total, change.box !== undefined, gridShare)),
         layout: {
           mode: "grid",
           columns: Array.from({ length: columns }, () => ({ fr: 1 })),
-          rows: rows.map(() => "hug" as const),
+          rows: rows.map((_, at) => (at === 0 ? ("hug" as const) : { fr: 1 })),
           gap,
           padding: sidesOf(0),
         },
       },
       cells.flatMap((row, r) =>
-        row.flatMap((part, c): Block[] =>
-          part === undefined
-            ? []
-            : [{ ...part.block, values: { ...(part.block.values as Values), cell: { row: r, col: c } } }],
-        ),
+        row.flatMap((part, c): Block[] => {
+          if (part === undefined) return []
+          const body = r > 0
+          const values = part.block.values as Values
+          const text = body ? { ...(values.text as Text), alignV: "center" as const } : values.text
+          return [
+            {
+              ...part.block,
+              values: {
+                ...values,
+                ...(body ? { sizing: { w: "fill", h: "fill" }, text } : {}),
+                cell: { row: r, col: c },
+              },
+            },
+          ]
+        }),
       ),
     )
   })

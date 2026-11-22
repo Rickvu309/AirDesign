@@ -2,10 +2,10 @@ import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, create, living, stop } from "./agent-draft.js"
 import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
-import { type Area, areaFor, gapFor, slideSize, themeOf } from "./agent-place.js"
+import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./scene-walk.js"
-import { boxOf as boxOfNode, descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./scene-walk.js"
+import { descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./scene-walk.js"
 import type { Node } from "./scene.js"
 import { textHeight } from "./text-estimate.js"
 
@@ -49,15 +49,6 @@ function checkFields(change: Add): void {
 const inkOn = (fill: AgentLook["fill"]) =>
   fill === undefined || (typeof fill === "string" && fill.startsWith("accent")) ? "background" : undefined
 
-function alignedWithTitle(draft: Draft, slide: Node, area: Area): Area {
-  const title = descendantsOf(draft.scene, slide.id).find((node) => get(node, "role") === "title")
-  const box = title === undefined ? undefined : boxOfNode(title, draft.reading.boxes)
-  if (box === undefined) return area
-  const left = Math.max(area.x, box.x)
-  const right = Math.min(area.x + area.w, box.x + box.w)
-  return right > left && box.x >= area.x ? { ...area, x: left, w: right - left } : area
-}
-
 function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "text" | "shape"): void {
   if (kind === "text" && change.text === undefined) stop("shape", undefined, "text")
   const labelled = kind === "shape"
@@ -77,9 +68,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     return
   }
   const area =
-    kind === "text" && change.box === undefined
-      ? alignedWithTitle(draft, slide, areaFor(draft, parent, undefined))
-      : areaFor(draft, parent, change.box)
+    kind === "text" && change.box === undefined ? areaFor(draft, parent, undefined) : areaFor(draft, parent, change.box)
   const fixed = change.box !== undefined || labelled
   const high =
     fixed || made === undefined
@@ -92,6 +81,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     !descendantsOf(draft.scene, slide.id).some((node) => get(node, "role") === "title")
   create(draft, "shape", parent.id, {
     ...surfaceOf(change),
+    ...(labelled && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
     ...(filled ? { fills: [solid("accent1")] } : {}),
     box: givenBox(change, area, high),
     geometry: { kind: "rect" },

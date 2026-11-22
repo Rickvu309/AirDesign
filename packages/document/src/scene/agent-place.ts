@@ -2,7 +2,7 @@ import { largestFreeBox } from "../box-placement.js"
 import { type Draft, stop } from "./agent-draft.js"
 import type { Px } from "./paint.js"
 import type { Node } from "./scene.js"
-import { boxOf, childrenOf, deckOf, get, isLaidOut } from "./scene-walk.js"
+import { boxOf, childrenOf, deckOf, descendantsOf, get, isLaidOut } from "./scene-walk.js"
 import type { Theme } from "./theme.js"
 
 export type Area = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
@@ -24,6 +24,7 @@ export function slideSize(draft: Draft): { readonly w: Px; readonly h: Px } {
 
 export const gapFor = (width: Px): Px => Math.round(width * gapShare)
 export const padFor = (width: Px): Px => Math.round(width * padShare)
+export const cardRadiusFor = (width: Px): Px => Math.round(padFor(width) / 2)
 
 export function sizeOf(draft: Draft, parent: Node): { readonly w: Px; readonly h: Px } {
   if (parent.type === "slide") return slideSize(draft)
@@ -45,6 +46,17 @@ export function freeArea(draft: Draft, parent: Node): Area | undefined {
   return { x: best.x, y: best.y, w: best.cx, h: best.cy }
 }
 
+function alignedWithTitle(draft: Draft, slide: Node, area: Area): Area {
+  const title = descendantsOf(draft.scene, slide.id).find((node) => get(node, "role") === "title")
+  const box = title === undefined ? undefined : boxOf(title, draft.reading.boxes)
+  if (box === undefined) return area
+  const left = Math.max(area.x, box.x)
+  const right = Math.min(area.x + area.w, box.x + box.w)
+  return right > left && box.x >= area.x ? { ...area, x: left, w: right - left } : area
+}
+
 export function areaFor(draft: Draft, parent: Node, box: Area | undefined): Area {
-  return box ?? freeArea(draft, parent) ?? stop("limit", parent.id, "box")
+  if (box !== undefined) return box
+  const free = freeArea(draft, parent) ?? stop("limit", parent.id, "box")
+  return parent.type === "slide" ? alignedWithTitle(draft, parent, free) : free
 }

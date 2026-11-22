@@ -2,7 +2,7 @@ import type { AgentColor } from "./agent-change.js"
 import { type Draft, type Values, add, stop } from "./agent-draft.js"
 import { solid, textOfLook } from "./agent-look.js"
 import type { NodeId } from "./ids.js"
-import type { Cell } from "./layout.js"
+import type { Align9, Cell } from "./layout.js"
 import type { Px } from "./paint.js"
 import type { Text, TextStyleName } from "./text.js"
 import { textStyleNames } from "./text.js"
@@ -41,7 +41,7 @@ export function emit(draft: Draft, parent: NodeId, root: Block): NodeId {
 type Role = "number" | "heading" | "point" | "caption" | "label"
 export type Styles = Readonly<Record<Role, TextStyleName>>
 
-const starts: Styles = { number: "bigNumber", heading: "heading", point: "body2", caption: "caption", label: "label" }
+const starts: Styles = { number: "bigNumber", heading: "heading", point: "body", caption: "caption", label: "label" }
 const floors: Styles = { number: "heading", heading: "body2", point: "caption", caption: "caption", label: "label" }
 const roles = Object.keys(starts) as Role[]
 
@@ -101,6 +101,7 @@ export function cardOf(
     readonly fill: AgentColor
     readonly cell?: Cell
     readonly key?: string
+    readonly align?: Align9
   },
 ): Sized {
   const inner = Math.round(look.gap / 2)
@@ -114,7 +115,7 @@ export function cardOf(
         mode: "column",
         gap: inner,
         padding: { t: look.pad, r: look.pad, b: look.pad, l: look.pad },
-        align: "top-left",
+        align: look.align ?? "top-left",
       },
       fills: [solid(look.fill)],
       radius: Math.round(look.pad / 2),

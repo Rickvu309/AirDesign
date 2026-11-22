@@ -32,8 +32,8 @@ export const defaultTheme: Theme = {
     heading: { size: 36, font: "heading", weight: 600, lineHeight: 1.2, tracking: 0 },
     body: { size: 28, font: "body", weight: 400, lineHeight: 1.4, tracking: 0 },
     body2: { size: 24, font: "body", weight: 400, lineHeight: 1.4, tracking: 0 },
-    caption: { size: 20, font: "body", weight: 400, lineHeight: 1.35, tracking: 0 },
-    label: { size: 18, font: "body", weight: 600, lineHeight: 1.2, tracking: 1.4, case: "upper" },
+    caption: { size: 22, font: "body", weight: 400, lineHeight: 1.35, tracking: 0 },
+    label: { size: 22, font: "body", weight: 600, lineHeight: 1.2, tracking: 1.4, case: "upper" },
   },
   effectStyles: {
     soft: [shadow(2, 8, 0.08)],
