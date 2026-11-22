@@ -6,8 +6,11 @@ import { changeCall } from "./call-fixtures.js"
 import { indexDeck, openDeck, readDeckPage } from "./index.js"
 
 const actor = { actor: "agent", runId: "run" } as const
+const placed = { x: 609_600, y: 381_000, cx: 10_972_800, cy: 762_000 }
 const row = (node: string, role: "title" | "body") =>
-  ({ node: elementId(node), kind: "shape", value: "", box: null, grouped: false, role }) as const
+  ({ node: elementId(node), kind: "shape", value: "", box: null, grouped: false, role, placed }) as const
+const title = { role: "title", box: { x: 48, y: 30, w: 864, h: 60 } }
+const body = { role: "body", box: { x: 48, y: 30, w: 864, h: 60 } }
 
 function opened() {
   const id = readDeckId("deck")
@@ -39,8 +42,8 @@ function opened() {
 
 it("reads the deck's layouts with an id, a name and the placeholders each gives a slide", () => {
   expect(readDeckPage(opened(), { runId: null }).layouts).toEqual([
-    { id: "L1", name: "Title Only", placeholders: ["title"] },
-    { id: "L2", name: "Two Content", placeholders: ["title", "body", "body"] },
+    { id: "L1", name: "Title Only", placeholders: [title] },
+    { id: "L2", name: "Two Content", placeholders: [title, body, body] },
     { id: "L3", name: "Blank", placeholders: [] },
   ])
   expect(readDeckPage(opened(), { runId: null, cursor: "256.1" }).layouts).toBeUndefined()
@@ -62,10 +65,10 @@ it("adds a slide on the layout an agent names, with that layout's placeholders",
     ],
   })
   const read = readDeckPage(result.deck, { runId: "run", slide: "257" })
-  expect(read.elements.map((element) => [element.node, element.role])).toEqual([
-    ["257.2", "title"],
-    ["257.3", "body"],
-    ["257.4", "body"],
+  expect(read.elements.map((element) => [element.node, element.role, element.box])).toEqual([
+    ["257.2", "title", title.box],
+    ["257.3", "body", body.box],
+    ["257.4", "body", body.box],
   ])
 })
 

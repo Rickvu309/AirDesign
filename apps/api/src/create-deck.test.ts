@@ -57,9 +57,19 @@ type Answer = {
   readonly index?: string
   readonly size?: { readonly w: number; readonly h: number }
   readonly slides?: readonly ({ readonly id: string } | string)[]
-  readonly layouts?: readonly unknown[]
+  readonly layouts?: readonly {
+    readonly id: string
+    readonly name: string
+    readonly placeholders: readonly { readonly role: string; readonly box?: unknown }[]
+  }[]
   readonly templateStyles?: readonly unknown[]
-  readonly elements?: readonly { readonly node: string; readonly value?: string; readonly role?: string }[]
+  readonly elements?: readonly {
+    readonly node: string
+    readonly value?: string
+    readonly role?: string
+    readonly box?: unknown
+    readonly design?: string
+  }[]
   readonly decks?: readonly { readonly deck: string; readonly name: string; readonly trash: boolean }[]
 }
 
@@ -111,15 +121,18 @@ describe("an agent creates a deck", () => {
   it("lists the deck's layouts and adds a slide on the one the agent picks", async () => {
     const cookie = await signInByCode(base, mails, "create-layouts@example.com")
     const made = await mcp(cookie, "airdesign_create_deck", {})
-    expect(made.layouts).toEqual([
-      { id: "L1", name: "Title Slide", placeholders: ["body", "title", "subtitle"] },
-      { id: "L2", name: "Section Header", placeholders: ["body", "title"] },
-      { id: "L3", name: "Title and Content", placeholders: ["title", "body"] },
-      { id: "L4", name: "Two Content", placeholders: ["title", "body", "body"] },
-      { id: "L5", name: "Title Only", placeholders: ["title"] },
-      { id: "L6", name: "Closing", placeholders: ["title", "body"] },
-      { id: "L7", name: "Blank", placeholders: [] },
+    expect(
+      made.layouts?.map((layout) => [layout.id, layout.name, layout.placeholders.map((held) => held.role)]),
+    ).toEqual([
+      ["L1", "Title Slide", ["body", "title", "subtitle"]],
+      ["L2", "Section Header", ["body", "title"]],
+      ["L3", "Title and Content", ["title", "body"]],
+      ["L4", "Two Content", ["title", "body", "body"]],
+      ["L5", "Title Only", ["title"]],
+      ["L6", "Closing", ["title", "body"]],
+      ["L7", "Blank", []],
     ])
+    expect(made.layouts?.[4]?.placeholders).toEqual([{ role: "title", box: { x: 40.8, y: 30.4, w: 878.4, h: 65.2 } }])
     const deck = made.deck ?? ""
     const added = await mcp(cookie, "airdesign_edit_deck", {
       deck,
@@ -129,6 +142,7 @@ describe("an agent creates a deck", () => {
     expect(added, JSON.stringify(added)).toMatchObject({ ok: true, slides: ["257"] })
     const read = await mcp(cookie, "airdesign_read_deck", { deck, slide: "257" })
     expect(read.elements?.map((element) => element.role)).toEqual(["title", "body", "body"])
+    expect(read.elements?.every((element) => element.box !== null && element.design !== undefined)).toBe(true)
     const unknown = await mcp(cookie, "airdesign_edit_deck", {
       deck,
       base: added.revision,

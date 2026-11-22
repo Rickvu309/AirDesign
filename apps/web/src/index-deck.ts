@@ -109,8 +109,8 @@ function indexedLayouts(
     const found = layouts.map((layout, at) => {
       const made = elements.flatMap((row) => {
         if (!row.node.startsWith(`${String(born[at])}.`)) return []
-        const role = roles?.get(row.node)?.role
-        return [role === undefined ? row : { ...row, role }]
+        const read = roles?.get(row.node)
+        return [read === undefined ? row : { ...row, ...designOf(read) }]
       })
       return { part: layout.part, name: layout.name, floor: floorFor(made, first) }
     })

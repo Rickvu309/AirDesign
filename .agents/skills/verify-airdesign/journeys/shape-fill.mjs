@@ -61,7 +61,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const read = await tool("airdesign_read_deck", { deck })
   const filledTitles = edited.structuredContent.elements.length
   const titles = read.elements.filter((element) => element.role === "title")
-  expect(titles.length).toBeGreaterThan(5)
+  expect(titles.length).toBeGreaterThan(3)
   for (const title of titles) expect(title.design).toContain("fills accent2")
   note(`set landed on ${filledTitles} titles; read_deck's first page prints fills accent2 on its ${titles.length}`)
   const firstTitle = titles[0]

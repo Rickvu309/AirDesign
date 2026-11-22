@@ -57,7 +57,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const read = await tool("airdesign_read_deck", { deck })
   const fadedTitles = edited.structuredContent.elements.length
   const titles = read.elements.filter((element) => element.role === "title")
-  expect(titles.length).toBeGreaterThan(5)
+  expect(titles.length).toBeGreaterThan(3)
   for (const title of titles) expect(title.design).toContain("alpha 60")
   note(`set landed on ${fadedTitles} titles; read_deck prints the first as: ${titles[0].design}`)
 

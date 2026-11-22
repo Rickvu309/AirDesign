@@ -1,6 +1,6 @@
 [
   {
-    "format": 98,
+    "format": 99,
     "once": "start",
     "offset": 0,
     "total": 0,
@@ -76,7 +76,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "body"
+            "role": "body",
+            "design": {
+              "text.size": [10],
+              "text.color": ["accent1"],
+              "text.font": ["+mj-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 1529080,
+              "cx": 7802880,
+              "cy": 294640
+            }
           },
           {
             "node": "256.3",
@@ -84,7 +96,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "title"
+            "role": "title",
+            "design": {
+              "text.size": [44],
+              "text.color": ["tx1"],
+              "text.font": ["+mj-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 2138680,
+              "cx": 10342880,
+              "cy": 1463040
+            }
           },
           {
             "node": "256.4",
@@ -92,7 +116,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "subtitle"
+            "role": "subtitle",
+            "design": {
+              "text.size": [18],
+              "text.color": ["tx2"],
+              "text.font": ["+mn-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 3459480,
+              "cx": 9834880,
+              "cy": 853440
+            }
           }
         ]
       },
@@ -106,7 +142,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "body"
+            "role": "body",
+            "design": {
+              "text.size": [64],
+              "text.color": ["accent1"],
+              "text.font": ["+mj-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 2113280,
+              "cx": 3992880,
+              "cy": 1005840
+            }
           },
           {
             "node": "256.3",
@@ -114,7 +162,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "title"
+            "role": "title",
+            "design": {
+              "text.size": [36],
+              "text.color": ["tx1"],
+              "text.font": ["+mj-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 3205480,
+              "cx": 9834880,
+              "cy": 1310640
+            }
           }
         ]
       },
@@ -128,7 +188,20 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "title"
+            "role": "title",
+            "design": {
+              "text.size": [28, "master"],
+              "text.color": ["tx1", "master"],
+              "text.font": ["+mj-lt", "master"],
+              "body.anchor": ["b"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 386080,
+              "cx": 11155680,
+              "cy": 828040
+            }
           },
           {
             "node": "256.3",
@@ -136,7 +209,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "body"
+            "role": "body",
+            "design": {
+              "text.size": [16, "master"],
+              "text.color": ["tx1", "master"],
+              "text.font": ["+mn-lt", "master"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 1452880,
+              "cx": 11155680,
+              "cy": 4561840
+            }
           }
         ]
       },
@@ -150,7 +235,20 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "title"
+            "role": "title",
+            "design": {
+              "text.size": [28, "master"],
+              "text.color": ["tx1", "master"],
+              "text.font": ["+mj-lt", "master"],
+              "body.anchor": ["b"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 386080,
+              "cx": 11155680,
+              "cy": 828040
+            }
           },
           {
             "node": "256.3",
@@ -158,7 +256,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "body"
+            "role": "body",
+            "design": {
+              "text.size": [16, "master"],
+              "text.color": ["tx1", "master"],
+              "text.font": ["+mn-lt", "master"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 1452880,
+              "cx": 5364480,
+              "cy": 4561840
+            }
           },
           {
             "node": "256.4",
@@ -166,7 +276,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "body"
+            "role": "body",
+            "design": {
+              "text.size": [16, "master"],
+              "text.color": ["tx1", "master"],
+              "text.font": ["+mn-lt", "master"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 6309360,
+              "y": 1452880,
+              "cx": 5364480,
+              "cy": 4561840
+            }
           }
         ]
       },
@@ -180,7 +302,20 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "title"
+            "role": "title",
+            "design": {
+              "text.size": [28, "master"],
+              "text.color": ["tx1", "master"],
+              "text.font": ["+mj-lt", "master"],
+              "body.anchor": ["b"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 386080,
+              "cx": 11155680,
+              "cy": 828040
+            }
           }
         ]
       },
@@ -194,7 +329,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "title"
+            "role": "title",
+            "design": {
+              "text.size": [36],
+              "text.color": ["tx1"],
+              "text.font": ["+mj-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 2138680,
+              "cx": 9834880,
+              "cy": 1107440
+            }
           },
           {
             "node": "256.3",
@@ -202,7 +349,19 @@
             "value": "[{\"from\":0,\"runs\":[]}]",
             "box": null,
             "grouped": false,
-            "role": "body"
+            "role": "body",
+            "design": {
+              "text.size": [18],
+              "text.color": ["tx2"],
+              "text.font": ["+mn-lt"],
+              "body.autofit": ["shrink"]
+            },
+            "placed": {
+              "x": 518160,
+              "y": 3205480,
+              "cx": 9834880,
+              "cy": 1869440
+            }
           }
         ]
       },
