@@ -1,4 +1,5 @@
 import { readDeckId, type DeckId, type SlidePictures } from "@airdesign/catalog"
+import { picturesWantedMilliseconds } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
 import { DeckPictures } from "./deck-pictures.js"
 
@@ -158,5 +159,40 @@ describe("the latest picture of each slide, as the open tab painted it", () => {
     pictures.keep(deck, 1, report([[first, "a"]]))
     await waited
     expect(pictures.revision(deck)).toBe(1)
+  })
+})
+
+describe("the slides an agent has asked to see", () => {
+  it("wants nothing until an agent asks, then the slides it asked for, until the window passes", () => {
+    let now = 1_000
+    const pictures = new DeckPictures(undefined, () => now)
+    expect(pictures.wantedAmong(deck, [first, second])).toEqual([])
+    pictures.want(deck, [first])
+    expect(pictures.wantedAmong(deck, [first, second])).toEqual([first])
+    now += picturesWantedMilliseconds - 1
+    pictures.want(deck, [second])
+    expect(pictures.wantedAmong(deck, [first, second])).toEqual([first, second])
+    now += picturesWantedMilliseconds - 1
+    expect(pictures.wantedAmong(deck, [first, second])).toEqual([first, second])
+    now += 2
+    expect(pictures.wantedAmong(deck, [first, second])).toEqual([])
+    pictures.want(deck, [second])
+    expect(pictures.wantedAmong(deck, [first, second])).toEqual([second])
+  })
+
+  it("wakes the tab's held catch-up when an agent asks, and not for another deck", async () => {
+    const pictures = new DeckPictures()
+    const stop = new AbortController()
+    let woken: boolean | undefined
+    const waiting = pictures.asked(deck, stop.signal).then((asked) => (woken = asked))
+    pictures.want(deckOf("other"), [first])
+    await Promise.resolve()
+    expect(woken).toBeUndefined()
+    pictures.want(deck, [first])
+    expect(await waiting).toBe(true)
+    const gone = new AbortController()
+    const left = pictures.asked(deck, gone.signal)
+    gone.abort()
+    expect(await left).toBe(false)
   })
 })

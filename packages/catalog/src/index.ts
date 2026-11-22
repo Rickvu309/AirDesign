@@ -52,6 +52,7 @@ export {
   type WatchResult,
 } from "./deck-routes.js"
 export {
+  picturesWantedMilliseconds,
   sceneRoutes,
   scenePaths,
   type SceneCaught,

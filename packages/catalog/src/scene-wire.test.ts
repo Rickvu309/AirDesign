@@ -73,6 +73,19 @@ it("decodes a catch-up into the head and the landed edits as sent, left for the 
     rev: 2,
     edits: [edit],
   })
+  expect(sceneRoutes.since.result({ ok: true, deck, rev: 2, edits: [], pictures: true })).toEqual({
+    ok: true,
+    deck,
+    rev: 2,
+    edits: [],
+    pictures: true,
+  })
+  expect(sceneRoutes.since.result({ ok: true, deck, rev: 2, edits: [], pictures: "yes" })).toEqual({
+    ok: true,
+    deck,
+    rev: 2,
+    edits: [],
+  })
   expect(sceneRoutes.since.result({ ok: true, deck, rev: 2, edits: "none" })).toEqual(payload)
   expect(sceneRoutes.since.result({ ok: true, deck, edits: [] })).toEqual(payload)
 })

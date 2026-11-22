@@ -4,6 +4,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import addText from "../bench/add-text.mjs"
 import addText170 from "../bench/add-text-170.mjs"
+import { doomCases } from "../bench/doom.mjs"
 import drag from "../bench/drag.mjs"
 import dragBusy from "../bench/drag-busy.mjs"
 import { defaultDecks, importCase, judgedDecks } from "../bench/import.mjs"
@@ -27,6 +28,7 @@ const defaultCases = [
   "drag",
   "drag-busy",
   "open-41",
+  ...doomCases.map((each) => each.name),
   ...defaultDecks.map((deck) => `import-${deck}`),
 ]
 
@@ -52,6 +54,7 @@ export function casesFor(given, repo) {
     dragBusy,
     openDeck,
     openFifty,
+    ...doomCases,
     ...judgedDecks(repo).map(importCase),
   ]
   if (given === "all") return known

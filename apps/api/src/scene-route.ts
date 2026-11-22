@@ -35,14 +35,17 @@ async function heldSince(
 ) {
   for (;;) {
     const answered = new AbortController()
-    const woken = options.listen.wait(AbortSignal.any([signal, answered.signal]))
+    const hold = AbortSignal.any([signal, answered.signal])
+    const woken = options.listen.wait(hold).then(() => false)
+    const asked = options.pictures.asked(parsed.deck, hold)
     try {
       await options.listen.ready()
       if (signal.aborted) return undefined
       const caught = await sinceScene(options.deck, parsed, email)
       if (!caught.ok || caught.edits.length > 0) return caught
-      await woken
+      const wanted = await Promise.race([woken, asked])
       if (signal.aborted) return undefined
+      if (wanted) return { ...caught, pictures: true as const }
     } finally {
       answered.abort()
     }
@@ -91,7 +94,7 @@ export function sceneRouteList<Visit extends SceneVisit>(http: SceneHttp<Visit>)
       if (!known.ok) return known
       if (parsed.rev > known.rev) return { ok: false, refusal: "stale" }
       const missing = visit.options.pictures.keep(parsed.deck, parsed.rev, parsed.pictures)
-      return { ok: true, deck: parsed.deck, missing }
+      return { ok: true, deck: parsed.deck, missing: visit.options.pictures.wantedAmong(parsed.deck, missing) }
     }),
     route(sceneRoutes.since.path, sceneRoutes.since.read, async (visit, parsed, email) => {
       if (parsed.wait !== true) return sinceScene(visit.options.deck, parsed, email)
