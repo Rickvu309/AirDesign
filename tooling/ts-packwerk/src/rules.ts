@@ -108,8 +108,16 @@ const pathFindings = (workspace: Workspace): Finding[] =>
 const packageFindings = (workspace: Workspace): Finding[] =>
   workspace.references.flatMap((reference) => {
     const target = reference.target
-    if (target.kind !== "package" || target.declared === "runtime") return []
-    if (target.declared === "dev" && reference.typeOnly) return []
+    const declared = target.kind === "package" || target.kind === "file" ? target.declared : undefined
+    if (declared === undefined || declared === "runtime") return []
+    if (declared === "dev" && reference.typeOnly) return []
+    const name =
+      target.kind === "package"
+        ? target.name
+        : reference.specifier
+            .split("/")
+            .slice(0, reference.specifier.startsWith("@") ? 2 : 1)
+            .join("/")
     const from = packOf(workspace.packs, reference.file)
     return [
       {
@@ -118,12 +126,12 @@ const packageFindings = (workspace: Workspace): Finding[] =>
         line: reference.line,
         column: reference.column,
         fromPack: from?.name ?? ".",
-        toPack: target.name,
-        target: target.name,
+        toPack: name,
+        target: name,
         message:
-          target.declared === "dev"
-            ? `${target.name} is a devDependency but runs here; move it to dependencies`
-            : `${target.name} is not in the nearest package.json`,
+          declared === "dev"
+            ? `${name} is a devDependency but runs here; move it to dependencies`
+            : `${name} is not in the nearest package.json`,
       },
     ]
   })

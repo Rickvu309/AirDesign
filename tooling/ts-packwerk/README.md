@@ -4,6 +4,13 @@ Packs for TypeScript, after Shopify's [Packwerk](https://github.com/Shopify/pack
 
 `package.json` already governs references between workspace packages. `pack.yml` governs references inside one package, where an `@/*` path alias otherwise lets any file reach any other.
 
+## Install
+
+```sh
+npm install --save-dev ts-packwerk     # Node 24 or newer
+npx ts-packwerk init
+```
+
 ## Run it
 
 ```sh
@@ -66,3 +73,32 @@ dependencies: [packages/mcp#runtime] # may not import the evals interface
 `dependency`, `privacy`, `interface`, `layer`, `table` and `public_type` violations can be recorded in a pack's `pack_todo.yml`. A recorded violation passes; a fixed one still listed fails as stale until `update-todo` removes it. `update-todo` never records a new violation, so the file only shrinks.
 
 Type-only imports count, since they couple packs too. Dynamic `import()` counts when its argument is a string literal.
+
+## In the editor
+
+The `ts-packwerk/lint` export is an ESLint-style plugin. It reports a file's new violations where they are, and skips the ones in `pack_todo.yml`. With oxlint:
+
+```json
+{ "jsPlugins": ["ts-packwerk/lint"], "rules": { "ts-packwerk/boundaries": "error" } }
+```
+
+## In GitHub
+
+```yaml
+- uses: actions/checkout@v4
+- uses: <owner>/ts-packwerk@v0 # runs check --sarif, uploads to code scanning, fails on new violations
+```
+
+## Speed
+
+Measured on Linux x64, Node 26: 0.75 s for a 1,400-file monorepo (10.7 MB of source), 0.67 s for 5,000 small files in 50 packs. The time is spread across resolving, reading, parsing and decoding import records, each 60 to 90 ms on the large run.
+
+## Limits
+
+- `import(variable)` is not checked; a string-literal `import()` is.
+- `.astro`, `.vue` and `.svelte` files are not read.
+- Yarn Plug'n'Play is untested.
+
+## Decisions
+
+[docs/adr](docs/adr): oxc over the compiler API, named interfaces, table names from literals.

@@ -1,42 +1,31 @@
 import { existsSync, globSync, readFileSync } from "node:fs"
 import path from "node:path"
-import { parse } from "oxc-parser"
-import { ResolverFactory } from "oxc-resolver"
-import YAML from "yaml"
+import { parse, parseSync, type EcmaScriptModule } from "oxc-parser"
+import { ResolverFactory, type ResolveResult } from "oxc-resolver"
 import { exportTarget } from "./package-exports.ts"
 import { lineStarts, position } from "./positions.ts"
 import { typeGapsIn, type TypeGap } from "./public-types.ts"
 import { tableUsesIn, type TableUse } from "./tables.ts"
 
-export const configFile = "packwerk.yml"
-export const manifestFile = "pack.yml"
+import {
+  configFile,
+  manifestFile,
+  posix,
+  readConfig,
+  readPack,
+  skipDirectory,
+  type Config,
+  type Pack,
+} from "./manifests.ts"
+
+export { configFile, manifestFile, readConfig, type Config, type Pack }
 export const todoFile = "pack_todo.yml"
 
-export type Config = {
-  readonly include: readonly string[]
-  readonly exclude: readonly string[]
-  readonly layers: readonly string[]
-  readonly tableExempt: readonly string[]
-}
-
-export type Pack = {
-  readonly name: string
-  readonly layer: string | undefined
-  readonly enforceDependencies: boolean
-  readonly enforcePrivacy: boolean
-  readonly enforceLayers: boolean
-  readonly dependencies: readonly string[]
-  readonly interfaceDependencies: ReadonlyMap<string, readonly string[]>
-  readonly publicPaths: readonly string[]
-  readonly interfaces: ReadonlyMap<string, readonly string[]>
-  readonly enforcePublicTypes: boolean
-  readonly ownsTables: readonly string[]
-  readonly metadata: Readonly<Record<string, unknown>>
-}
+type Declared = "runtime" | "dev" | "missing"
 
 export type Target =
-  | { readonly kind: "file"; readonly file: string }
-  | { readonly kind: "package"; readonly name: string; readonly declared: "runtime" | "dev" | "missing" }
+  | { readonly kind: "file"; readonly file: string; readonly declared?: Declared }
+  | { readonly kind: "package"; readonly name: string; readonly declared: Declared }
   | { readonly kind: "builtin" }
   | { readonly kind: "unresolved"; readonly reason: string }
 
@@ -60,108 +49,6 @@ export type Workspace = {
   readonly tableUses: readonly TableUse[]
   readonly typeGaps: readonly TypeGap[]
   readonly problems: readonly string[]
-}
-
-const defaultConfig: Config = {
-  include: ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"],
-  exclude: ["**/node_modules/**", "**/dist/**"],
-  layers: [],
-  tableExempt: [],
-}
-
-const defaultPublic = ["index.ts", "index.tsx", "src/index.ts", "src/index.tsx"]
-
-const posix = (file: string): string => file.split(path.sep).join("/")
-
-const strings = (value: unknown, where: string, problems: string[]): string[] | undefined => {
-  if (value === undefined) return undefined
-  if (Array.isArray(value) && value.every((item) => typeof item === "string")) return value
-  problems.push(`${where} must be a list of strings`)
-  return undefined
-}
-
-const flag = (value: unknown, where: string, problems: string[], fallback: boolean): boolean => {
-  if (value === undefined) return fallback
-  if (typeof value === "boolean") return value
-  problems.push(`${where} must be true or false`)
-  return fallback
-}
-
-const readYaml = (file: string, problems: string[]): Record<string, unknown> => {
-  const parsed: unknown = YAML.parse(readFileSync(file, "utf8")) ?? {}
-  if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) return parsed as Record<string, unknown>
-  problems.push(`${file} must hold a mapping`)
-  return {}
-}
-
-export const readConfig = (root: string, problems: string[]): Config => {
-  const file = path.join(root, configFile)
-  if (!existsSync(file)) return defaultConfig
-  const raw = readYaml(file, problems)
-  return {
-    include: strings(raw.include, `${configFile} include`, problems) ?? defaultConfig.include,
-    exclude: [...defaultConfig.exclude, ...(strings(raw.exclude, `${configFile} exclude`, problems) ?? [])],
-    layers: strings(raw.layers, `${configFile} layers`, problems) ?? defaultConfig.layers,
-    tableExempt: strings(raw.table_exempt, `${configFile} table_exempt`, problems) ?? defaultConfig.tableExempt,
-  }
-}
-
-const skipDirectory = (name: string): boolean => name === "node_modules" || name === "dist" || name === ".git"
-
-export const packName = (root: string, manifest: string): string =>
-  posix(path.relative(root, path.dirname(manifest))) || "."
-
-const readPack = (root: string, manifest: string, config: Config, problems: string[]): Pack => {
-  const name = packName(root, manifest)
-  const where = `${name}/${manifestFile}`
-  const raw = readYaml(manifest, problems)
-  const layer = raw.layer
-  if (layer !== undefined && (typeof layer !== "string" || !config.layers.includes(layer))) {
-    problems.push(`${where} layer ${String(layer)} is not one of ${configFile} layers`)
-  }
-  const directory = path.dirname(manifest)
-  const rooted = (entry: string): string => (name === "." ? posix(entry) : `${name}/${posix(entry)}`)
-  const interfaces = new Map<string, string[]>()
-  const rawPublic = raw.public
-  if (rawPublic === undefined) {
-    interfaces.set("default", defaultPublic.filter((entry) => existsSync(path.join(directory, entry))).map(rooted))
-  } else if (typeof rawPublic === "object" && rawPublic !== null && !Array.isArray(rawPublic)) {
-    for (const [face, entries] of Object.entries(rawPublic)) {
-      interfaces.set(face, (strings(entries, `${where} public.${face}`, problems) ?? []).map(rooted))
-    }
-  } else {
-    interfaces.set("default", (strings(rawPublic, `${where} public`, problems) ?? []).map(rooted))
-  }
-  if (rawPublic !== undefined) {
-    for (const entry of [...interfaces.values()].flat()) {
-      if (!existsSync(path.join(root, entry))) problems.push(`${where} public path ${entry} does not exist`)
-    }
-  }
-  const publicPaths = [...new Set([...interfaces.values()].flat())]
-  const listedDependencies = strings(raw.dependencies, `${where} dependencies`, problems) ?? []
-  const interfaceDependencies = new Map<string, string[]>()
-  for (const entry of listedDependencies) {
-    const [pack, face] = entry.split("#")
-    if (pack === undefined || face === undefined) continue
-    interfaceDependencies.set(pack, [...(interfaceDependencies.get(pack) ?? []), face])
-  }
-  const bare = new Set(listedDependencies.filter((entry) => !entry.includes("#")))
-  for (const pack of bare) interfaceDependencies.delete(pack)
-  const metadata = raw.metadata
-  return {
-    name,
-    layer: typeof layer === "string" ? layer : undefined,
-    enforceDependencies: flag(raw.enforce_dependencies, `${where} enforce_dependencies`, problems, true),
-    enforcePrivacy: flag(raw.enforce_privacy, `${where} enforce_privacy`, problems, true),
-    enforceLayers: flag(raw.enforce_layers, `${where} enforce_layers`, problems, true),
-    dependencies: [...new Set(listedDependencies.map((entry) => entry.split("#")[0] ?? entry))],
-    interfaceDependencies,
-    publicPaths,
-    interfaces,
-    enforcePublicTypes: flag(raw.enforce_public_types, `${where} enforce_public_types`, problems, false),
-    ownsTables: strings(raw.owns_tables, `${where} owns_tables`, problems) ?? [],
-    metadata: typeof metadata === "object" && metadata !== null ? (metadata as Record<string, unknown>) : {},
-  }
 }
 
 export const packOf = (packs: readonly Pack[], file: string): Pack | undefined => {
@@ -189,8 +76,7 @@ type Request = { specifier: string; offset: number; typeOnly: boolean; reexport:
 
 const literal = /^\s*(["'`])([^"'`$\\]*)\1\s*$/
 
-const requestsOf = async (file: string, source: string): Promise<Request[]> => {
-  const { module } = await parse(file, source)
+const requestsFrom = (module: EcmaScriptModule, source: string): Request[] => {
   const requests: Request[] = module.staticImports.map((item) => ({
     specifier: item.moduleRequest.value,
     offset: item.moduleRequest.start,
@@ -239,7 +125,7 @@ const extensionSwaps: Record<string, readonly string[]> = {
   ".d.ts": [".ts", ".tsx"],
 }
 
-export const loadWorkspace = async (root: string): Promise<Workspace> => {
+export const openSetup = (root: string) => {
   const problems: string[] = []
   const config = readConfig(root, problems)
   const manifests = globSync(`**/${manifestFile}`, { cwd: root, exclude: (entry) => skipDirectory(entry) })
@@ -281,7 +167,6 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
     .sort()
   const fileSet = new Set(files)
 
-  const packageRoots = new Set<string>()
   const manifestsByDirectory = new Map<string, Manifest | undefined>()
   const nearestManifest = (directory: string): Manifest | undefined => {
     if (manifestsByDirectory.has(directory)) return manifestsByDirectory.get(directory)
@@ -371,49 +256,80 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
     return target === undefined ? undefined : toSource(path.join(found.directory, target))
   }
 
-  const targetOf = async (file: string, specifier: string): Promise<Target> => {
-    const absolute = path.join(root, file)
-    const resolved = await resolver.resolveFileAsync(absolute, specifier)
-    if (resolved.builtin !== undefined || specifier.startsWith("node:")) return { kind: "builtin" }
-    if (resolved.path === undefined && isBare(specifier)) {
-      const source = unbuilt(specifier)
-      if (source !== undefined) return { kind: "file", file: source }
-    }
-    const external = resolved.path === undefined || resolved.path.includes(`${path.sep}node_modules${path.sep}`)
-    if (resolved.path !== undefined && !external) return { kind: "file", file: toSource(resolved.path) }
-    if (!isBare(specifier)) return { kind: "unresolved", reason: resolved.error ?? "not found" }
-    const name = packageNameOf(specifier)
-    const manifest = nearestManifest(path.dirname(absolute))
-    const declared =
-      manifest === undefined || manifest.name === name || manifest.runtime.has(name)
-        ? "runtime"
-        : manifest.dev.has(name)
-          ? "dev"
-          : "missing"
-    return { kind: "package", name, declared }
+  const declaredIn = (file: string, name: string): Declared => {
+    const manifest = nearestManifest(path.dirname(path.join(root, file)))
+    if (manifest === undefined || manifest.name === name || manifest.runtime.has(name)) return "runtime"
+    return manifest.dev.has(name) ? "dev" : "missing"
   }
 
+  const classify = (file: string, specifier: string, resolved: ResolveResult): Target => {
+    if (resolved.builtin !== undefined || specifier.startsWith("node:")) return { kind: "builtin" }
+    const bare = isBare(specifier)
+    const local = (source: string): Target =>
+      bare && workspacePackages.has(packageNameOf(specifier))
+        ? { kind: "file", file: source, declared: declaredIn(file, packageNameOf(specifier)) }
+        : { kind: "file", file: source }
+    if (resolved.path === undefined && bare) {
+      const source = unbuilt(specifier)
+      if (source !== undefined) return local(source)
+    }
+    const external = resolved.path === undefined || resolved.path.includes(`${path.sep}node_modules${path.sep}`)
+    if (resolved.path !== undefined && !external) return local(toSource(resolved.path))
+    if (!bare) return { kind: "unresolved", reason: resolved.error ?? "not found" }
+    const name = packageNameOf(specifier)
+    return { kind: "package", name, declared: declaredIn(file, name) }
+  }
+
+  const targetOf = async (file: string, specifier: string): Promise<Target> =>
+    classify(file, specifier, await resolver.resolveFileAsync(path.join(root, file), specifier))
+
+  const targetOfSync = (file: string, specifier: string): Target =>
+    classify(file, specifier, resolver.resolveFileSync(path.join(root, file), specifier))
+
+  const ownerOf = (file: string): string | undefined => nearestManifest(path.dirname(path.join(root, file)))?.directory
+
+  const tableUsesOf = (file: string, source: string): TableUse[] =>
+    tables.length > 0 && !config.tableExempt.some((pattern) => path.matchesGlob(file, pattern))
+      ? tableUsesIn(file, source, tables)
+      : []
+
+  const allPackageRoots = [...workspacePackages.values()]
+    .map((found) => posix(path.relative(root, found.directory)) || ".")
+    .sort()
+
+  return { problems, config, packs, files, fileSet, targetOf, targetOfSync, ownerOf, tableUsesOf, allPackageRoots }
+}
+
+const referencesOf = (
+  file: string,
+  source: string,
+  requests: readonly Request[],
+  targets: readonly Target[],
+): Reference[] => {
+  const starts = lineStarts(source)
+  return requests.map((request, index) => ({
+    file,
+    ...position(starts, request.offset),
+    specifier: request.specifier,
+    typeOnly: request.typeOnly,
+    reexport: request.reexport,
+    target: targets[index] ?? { kind: "unresolved", reason: "not resolved" },
+  }))
+}
+
+export const loadWorkspace = async (root: string): Promise<Workspace> => {
+  const { problems, config, packs, files, fileSet, targetOf, ownerOf, tableUsesOf } = openSetup(root)
+  const packageRoots = new Set<string>()
   const tableUses: TableUse[] = []
   const perFile = await Promise.all(
     files.map(async (file) => {
-      const owner = nearestManifest(path.dirname(path.join(root, file)))
-      if (owner !== undefined) packageRoots.add(owner.directory)
+      const owner = ownerOf(file)
+      if (owner !== undefined) packageRoots.add(owner)
       const source = readFileSync(path.join(root, file), "utf8")
-      const starts = lineStarts(source)
-      const requests = await requestsOf(file, source)
-      if (tables.length > 0 && !config.tableExempt.some((pattern) => path.matchesGlob(file, pattern))) {
-        tableUses.push(...tableUsesIn(file, source, tables))
-      }
-      return Promise.all(
-        requests.map(async (request): Promise<Reference> => ({
-          file,
-          ...position(starts, request.offset),
-          specifier: request.specifier,
-          typeOnly: request.typeOnly,
-          reexport: request.reexport,
-          target: await targetOf(file, request.specifier),
-        })),
-      )
+      const requests = requestsFrom((await parse(file, source)).module, source)
+      tableUses.push(...tableUsesOf(file, source))
+      const targets = await Promise.all(requests.map((request) => targetOf(file, request.specifier)))
+      return referencesOf(file, source, requests, targets)
     }),
   )
 
@@ -445,6 +361,28 @@ export const loadWorkspace = async (root: string): Promise<Workspace> => {
     packageRoots: [...packageRoots].sort(),
     tableUses,
     typeGaps,
+    problems,
+  }
+}
+
+const setups = new Map<string, ReturnType<typeof openSetup>>()
+
+export const fileWorkspace = (root: string, file: string, text?: string): Workspace => {
+  const setup = setups.get(root) ?? openSetup(root)
+  setups.set(root, setup)
+  const { problems, config, packs, targetOfSync, tableUsesOf, allPackageRoots } = setup
+  const source = text ?? readFileSync(path.join(root, file), "utf8")
+  const requests = requestsFrom(parseSync(file, source).module, source)
+  const targets = requests.map((request) => targetOfSync(file, request.specifier))
+  return {
+    root,
+    config,
+    packs,
+    files: [file],
+    references: referencesOf(file, source, requests, targets),
+    packageRoots: allPackageRoots,
+    tableUses: tableUsesOf(file, source),
+    typeGaps: [],
     problems,
   }
 }
