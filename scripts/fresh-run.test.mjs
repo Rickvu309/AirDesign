@@ -3,7 +3,8 @@ import { history, logs } from "./red-main-replay.mjs"
 import { freshRunMark, outsideTheDiff } from "./fresh-run.mjs"
 import { followPull } from "./land-follow.mjs"
 import { fixture, mainRules, ok, same } from "./land-harness.mjs"
-import { forceTheGap } from "./race-issue.mjs"
+import { forceTheGap, raceTitle } from "./race-issue.mjs"
+import { journeysSpec } from "./failure-owners.mjs"
 
 const browserLog = fixture("job-playwright-failed.log")
 const unitLog = fixture("vitest-failed.log")
@@ -27,45 +28,89 @@ same(
 same(
   "a pull request that edits the failed test file owns the failure with or without the map",
   [false, true].map(
-    (byMap) => outsideTheDiff({ jobs: [browserJob], files: ["tests/browser/save-status.spec.ts"], byMap }).owned,
+    (byMap) =>
+      outsideTheDiff({
+        jobs: [browserJob],
+        files: ["tests/browser/save-status.spec.ts"],
+        byMap,
+      }).owned,
   ),
   [true, true],
 )
 same(
   "a journeys job is outside the diff without a failed: line",
-  outsideTheDiff({ jobs: [browserJob, { name: "journeys / journeys", log: journeysLog }], files: [] }).outside,
+  outsideTheDiff({
+    jobs: [browserJob, { name: "journeys / journeys", log: journeysLog }],
+    files: [],
+  }).outside,
   true,
 )
 same(
   "a unit-tests step is not a browser step",
-  outsideTheDiff({ jobs: [{ name: "check (source)", log: unitLog }], files: [] }).why,
+  outsideTheDiff({
+    jobs: [{ name: "check (source)", log: unitLog }],
+    files: [],
+  }).why,
   "step unit-tests failed, and it is not a browser or journeys step",
 )
 same(
   "a diff that changes the failed test file is inside",
-  outsideTheDiff({ jobs: [browserJob], files: ["tests/browser/save-status.spec.ts"] }).outside,
+  outsideTheDiff({
+    jobs: [browserJob],
+    files: ["tests/browser/save-status.spec.ts"],
+  }).outside,
   false,
 )
+const sources = {
+  "tests/browser/save-status.spec.ts":
+    'import { deckTest } from "./deck-test"\nimport { deckState } from "./deck-state.js"',
+  "tests/browser/deck-test.ts": 'import { fixtures } from "./fixtures"',
+  "tests/browser/deck-state.ts": "export const deckState = 1",
+  "tests/browser/fixtures.ts": "export const fixtures = 1",
+  "tests/journeys/journeys.spec.ts": 'import { deckStateFixture } from "../browser/deck-state"',
+  ".agents/skills/verify-airdesign/journeys/adjust-tone.mjs": 'import { copy } from "../bin/product-copy.mjs"',
+  ".agents/skills/verify-airdesign/bin/product-copy.mjs": "export const copy = 1",
+}
+const read = (file) => sources[file]
+const owner = (jobs, files) => outsideTheDiff({ jobs, files, read })
 same(
-  "a diff that touches any browser test is inside",
-  outsideTheDiff({ jobs: [browserJob], files: ["tests/browser/fixtures.ts"] }).why,
-  "this pull request changes tests/browser/fixtures.ts",
+  "a diff that changes a helper the failed spec imports through another helper owns the failure",
+  owner([browserJob], ["tests/browser/fixtures.ts"]).owned,
+  true,
+)
+same(
+  "a diff that changes a helper the failed spec imports directly owns the failure",
+  owner([browserJob], ["tests/browser/deck-state.ts"]).owned,
+  true,
+)
+same(
+  "a diff that changes another browser spec leaves the failure outside",
+  owner([browserJob], ["tests/browser/zoom-selection-resize.spec.ts"]).outside,
+  true,
 )
 same(
   "a rule file beside a browser test is a doc, so the failure stays outside the diff",
-  outsideTheDiff({ jobs: [browserJob], files: ["tests/browser/context-pool.rule.md"] }).outside,
+  outsideTheDiff({
+    jobs: [browserJob],
+    files: ["tests/browser/context-pool.rule.md"],
+  }).outside,
   true,
 )
 same(
   "a job that names no failed test is unsure, so inside",
-  outsideTheDiff({ jobs: [{ name: "corpus", log: "failed: browser-tests\n" }], files: [] }).outside,
+  outsideTheDiff({
+    jobs: [{ name: "corpus", log: "failed: browser-tests\n" }],
+    files: [],
+  }).outside,
   false,
 )
 same("unread files are unsure, so inside", outsideTheDiff({ jobs: [browserJob], files: undefined }).outside, false)
 same("no failed job read is unsure, so inside", outsideTheDiff({ jobs: [], files: [] }).outside, false)
 
 const head = "aaaa1111"
-const suite = (run) => ({ workflowRun: { databaseId: run, workflow: { databaseId: 409934807 } } })
+const suite = (run) => ({
+  workflowRun: { databaseId: run, workflow: { databaseId: 409934807 } },
+})
 const failed = [
   {
     __typename: "CheckRun",
@@ -77,7 +122,14 @@ const failed = [
   },
 ]
 const fresh = [
-  { __typename: "CheckRun", databaseId: 2, name: "changes", conclusion: null, status: "QUEUED", checkSuite: suite(78) },
+  {
+    __typename: "CheckRun",
+    databaseId: 2,
+    name: "changes",
+    conclusion: null,
+    status: "QUEUED",
+    checkSuite: suite(78),
+  },
 ]
 const passed = [{ ...failed[0], databaseId: 3, conclusion: "SUCCESS", checkSuite: suite(78) }]
 const pullAnswer = ({
@@ -103,12 +155,29 @@ const pullAnswer = ({
           isInMergeQueue: entry !== null,
           mergeQueueEntry: entry,
           autoMergeRequest: armed ? { enabledAt: "x", mergeMethod: "REBASE" } : null,
-          commits: { nodes: [{ commit: { statusCheckRollup: { state: "FAILURE", contexts: { nodes: contexts } } } }] },
+          commits: {
+            nodes: [
+              {
+                commit: {
+                  statusCheckRollup: {
+                    state: "FAILURE",
+                    contexts: { nodes: contexts },
+                  },
+                },
+              },
+            ],
+          },
           timelineItems: {
             nodes:
               removal === undefined
                 ? []
-                : [{ __typename: "RemovedFromMergeQueueEvent", reason: removal, createdAt: "t" }],
+                : [
+                    {
+                      __typename: "RemovedFromMergeQueueEvent",
+                      reason: removal,
+                      createdAt: "t",
+                    },
+                  ],
           },
         },
         mergeQueue: queue ? { entries: { nodes: [] } } : null,
@@ -117,9 +186,22 @@ const pullAnswer = ({
     },
   })
 
-const prRun = { id: 77, event: "pull_request", branch: "fix", head, attempt: 1, conclusion: "failure", createdAt: "t" }
+const prRun = {
+  id: 77,
+  event: "pull_request",
+  branch: "fix",
+  head,
+  attempt: 1,
+  conclusion: "failure",
+  createdAt: "t",
+}
 const freshRun = { ...prRun, id: 78, conclusion: "success" }
-const queueRun = { ...prRun, id: 78, event: "merge_group", branch: `gh-readonly-queue/main/pr-394-${"b".repeat(40)}` }
+const queueRun = {
+  ...prRun,
+  id: 78,
+  event: "merge_group",
+  branch: `gh-readonly-queue/main/pr-394-${"b".repeat(40)}`,
+}
 
 const afterReopen = (after, before) => (asked) => (asked.some((call) => call.startsWith("pr reopen")) ? after : before)
 
@@ -136,7 +218,12 @@ const follow = async ({
     {
       name: browserJob.name,
       conclusion: "success",
-      steps: [{ name: "Run pnpm check --part=browser --shard=2/4", conclusion: "success" }],
+      steps: [
+        {
+          name: "Run pnpm check --part=browser --shard=2/4",
+          conclusion: "success",
+        },
+      ],
     },
   ],
   number = 394,
@@ -186,7 +273,11 @@ const follow = async ({
       }
       return ok("")
     },
-    git: (args) => ({ status: 0, stdout: args[0] === "rev-list" ? "0\n" : "", stderr: "" }),
+    git: (args) => ({
+      status: 0,
+      stdout: args[0] === "rev-list" ? "0\n" : "",
+      stderr: "",
+    }),
     sleep: (ms) => {
       clock += ms
     },
@@ -208,7 +299,11 @@ const reopened = [
   pullAnswer({ queue: false, armed: false, contexts: [...failed, ...fresh] }),
   pullAnswer({ queue: false, armed: false, contexts: passed }),
 ]
-const taken = await follow({ reads: reopened, files: appFile, runs: [freshRun, prRun] })
+const taken = await follow({
+  reads: reopened,
+  files: appFile,
+  runs: [freshRun, prRun],
+})
 same("an app-code pull request takes a fresh run for the untouched browser test and merges", taken.code, 0)
 same("one comment is posted", taken.posted.length, 1)
 same(
@@ -301,15 +396,24 @@ same(
   failedAgain.said.some((line) => line.includes("1 test failed twice on this head") && line.includes("most likely")),
   true,
 )
-const wrongHead = await follow({ reads: reopened, runs: [{ ...freshRun, head: "bbbb2222" }, prRun] })
+const wrongHead = await follow({
+  reads: reopened,
+  runs: [{ ...freshRun, head: "bbbb2222" }, prRun],
+})
 same("a green run on another head cannot establish a race", wrongHead.raised, [])
 
-const second = await follow({ reads: [pullAnswer()], comments: `${freshRunMark(head)}\n` })
+const second = await follow({
+  reads: [pullAnswer()],
+  comments: `${freshRunMark(head)}\n`,
+})
 same("a second fresh run on the same head is refused", second.code, 1)
 same("and posts nothing", second.posted.length, 0)
 same("and says why", second.said.includes("follow: no fresh run: the one fresh run for head aaaa111 is used."), true)
 
-const inside = await follow({ reads: [pullAnswer()], files: "tests/browser/save-status.spec.ts\n" })
+const inside = await follow({
+  reads: [pullAnswer()],
+  files: "tests/browser/save-status.spec.ts\n",
+})
 same("a failure inside the diff is refused", [inside.code, inside.posted.length], [1, 0])
 same("and opens no issue, since the pull request owns the race", inside.raised, [])
 same(
@@ -318,7 +422,10 @@ same(
   true,
 )
 
-const unit = await follow({ reads: [pullAnswer()], failedJobs: [{ name: "check (source)", log: unitLog }] })
+const unit = await follow({
+  reads: [pullAnswer()],
+  failedJobs: [{ name: "check (source)", log: unitLog }],
+})
 same("a step that is not a browser step is refused", [unit.code, unit.posted.length], [1, 0])
 same(
   "and nothing is closed",
@@ -327,7 +434,12 @@ same(
 )
 
 const running = await follow({
-  reads: [pullAnswer({ contexts: [...failed, { ...fresh[0], name: "check (source)" }] }), pullAnswer({ merged: true })],
+  reads: [
+    pullAnswer({
+      contexts: [...failed, { ...fresh[0], name: "check (source)" }],
+    }),
+    pullAnswer({ merged: true }),
+  ],
 })
 same("a failed check waits for the rest of the run before it judges", [running.code, running.posted.length], [0, 0])
 
@@ -381,7 +493,10 @@ same(
   "run 44895953428: the agent read change leaves all six failed browser and journeys tests untouched",
   [
     brokenReads.flatMap(({ log }) => failedTests(log)).length,
-    outsideTheDiff({ jobs: brokenReads, files: history.commits[agentRead].files }).outside,
+    outsideTheDiff({
+      jobs: brokenReads,
+      files: history.commits[agentRead].files,
+    }).outside,
   ],
   [6, true],
 )
@@ -470,7 +585,12 @@ const pr1285Follow = await follow({
     {
       name: "check (design 3/3)",
       conclusion: "success",
-      steps: [{ name: "Run pnpm check --part=design --shard=3/3", conclusion: "success" }],
+      steps: [
+        {
+          name: "Run pnpm check --part=design --shard=3/3",
+          conclusion: "success",
+        },
+      ],
     },
   ],
 })
@@ -478,6 +598,60 @@ same(
   "PR 1285 replay: zoom-selection passes on the fresh run and files Race: design-states › zoom-selection",
   [pr1285Follow.code, pr1285Follow.raised.map((issue) => issue.title)],
   [0, ["Race: design-states › zoom-selection"]],
+)
+
+const adjustToneLog = [
+  "2026-11-22T02:48:35.7501210Z   1) tests/journeys/journeys.spec.ts:152:7 › recorded Aira › adjust-tone ",
+  "2026-11-22T02:48:35.7502908Z     Error: expect(locator).toBeVisible() failed",
+  "2026-11-22T02:48:35.9367006Z failed: browser-tests",
+].join("\n")
+const adjustToneJob = { name: "journeys / journeys", log: adjustToneLog }
+const adjustTone = (files) => owner([adjustToneJob], files)
+same(
+  "PR 1310 changes a new spec, spec-seconds.json and another journey, so adjust-tone stays outside the diff",
+  [
+    adjustTone([
+      ".agents/skills/verify-airdesign/journeys/navigate-zoom-pan.mjs",
+      "tests/browser/spec-seconds.json",
+      "tests/browser/zoom-selection-resize.spec.ts",
+    ]).outside,
+    failedTests(adjustToneLog).map(raceTitle),
+  ],
+  [true, ["Race: tests/journeys/journeys.spec.ts › recorded Aira › adjust-tone"]],
+)
+same(
+  "editing adjust-tone.mjs owns the adjust-tone failure",
+  adjustTone([".agents/skills/verify-airdesign/journeys/adjust-tone.mjs"]).owned,
+  true,
+)
+same(
+  "editing a helper adjust-tone imports owns it",
+  adjustTone([".agents/skills/verify-airdesign/bin/product-copy.mjs"]).owned,
+  true,
+)
+same("editing the journeys spec owns it", adjustTone([journeysSpec]).owned, true)
+same("editing a helper the journeys spec imports owns it", adjustTone(["tests/browser/deck-state.ts"]).owned, true)
+same(
+  "adding a row to spec-seconds.json or journey-seconds.json owns nothing",
+  [
+    adjustTone(["tests/browser/spec-seconds.json"]).outside,
+    owner([browserJob], ["tests/browser/spec-seconds.json"]).outside,
+    adjustTone(["tests/journeys/journey-seconds.json"]).outside,
+  ],
+  [true, true, true],
+)
+same(
+  "an app change still gets its fresh run with the map off and none with it on",
+  [
+    adjustTone([appFile]).outside,
+    outsideTheDiff({
+      jobs: [adjustToneJob],
+      files: [appFile],
+      byMap: true,
+      read,
+    }).outside,
+  ],
+  [true, false],
 )
 
 console.log("fresh-run tests passed")

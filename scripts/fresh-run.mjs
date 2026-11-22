@@ -11,9 +11,8 @@ import {
   raceTitle,
   recordRace,
 } from "./race-issue.mjs"
-import { ruleFileSuffix } from "./rules.mjs"
+import { ownedFailure } from "./failure-owners.mjs"
 export const browserStep = "browser-tests"
-const browserTestPaths = [/^tests\/browser\//, /^tests\/journeys\//, /^playwright[\w.]*\.config\.m?ts$/]
 
 export const freshRunMark = (head) => `This is the one fresh run for head ${head}.`
 
@@ -28,13 +27,17 @@ const jobFault = (job) => {
   return other === undefined ? undefined : `step ${other} failed, and it is not a browser or journeys step`
 }
 
-export const outsideTheDiff = ({ jobs, files, byMap = false }) => {
+export const outsideTheDiff = ({ jobs, files, byMap = false, read }) => {
   if (jobs.length === 0) return { outside: false, why: "no failed job log could be read" }
   for (const job of jobs) {
     const fault = jobFault(job)
     if (fault !== undefined) return { outside: false, why: fault }
   }
-  if (files === undefined) return { outside: false, why: "the files this pull request changes could not be read" }
+  if (files === undefined)
+    return {
+      outside: false,
+      why: "the files this pull request changes could not be read",
+    }
   const tests = jobs.flatMap((job) => failedTests(job.log))
   const namedDesign = tests.filter(namedDesignState)
   const designOnly = namedDesign.length > 0 && namedDesign.length === tests.length
@@ -50,19 +53,25 @@ export const outsideTheDiff = ({ jobs, files, byMap = false }) => {
         why: `this pull request changes the failed design state ${owned.state}`,
       }
   } else {
-    const touched = files.find(
-      (file) => !file.endsWith(ruleFileSuffix) && browserTestPaths.some((pattern) => pattern.test(file)),
-    )
-    if (touched !== undefined) return { outside: false, owned: true, why: `this pull request changes ${touched}` }
-    const changed = tests.find((test) => files.includes(test.file))
-    if (changed !== undefined)
-      return { outside: false, owned: true, why: `this pull request changes the failed test ${changed.file}` }
+    for (const test of tests) {
+      const touched = ownedFailure(test, files, read)
+      if (touched !== undefined)
+        return {
+          outside: false,
+          owned: true,
+          why: `this pull request changes ${touched}, which the failed test ${test.file} uses`,
+        }
+    }
   }
   if (byMap) {
     const reaches = jobsReachedBy(files)
     const reached = jobs.find((job) => reaches(job.name))
     if (reached !== undefined)
-      return { outside: false, owned: true, why: `the change map says this pull request can affect ${reached.name}` }
+      return {
+        outside: false,
+        owned: true,
+        why: `the change map says this pull request can affect ${reached.name}`,
+      }
   }
   return { outside: true, tests }
 }
@@ -149,12 +158,24 @@ export const freshRunComment = ({ repository, run, head, tests, queue, races = [
   ].join("\n")
 
 export const freshRunVerdict = ({ gh, repository, number, head, jobs, byMap = false }) => {
-  const judged = outsideTheDiff({ jobs, files: pullFiles({ gh, repository, number }), byMap })
+  const judged = outsideTheDiff({
+    jobs,
+    files: pullFiles({ gh, repository, number }),
+    byMap,
+  })
   if (!judged.outside) return { take: false, owned: judged.owned === true, why: judged.why }
   const state = freshRunState({ gh, repository, number, head })
-  if (state === undefined) return { take: false, why: "the pull request's comments could not be read" }
+  if (state === undefined)
+    return {
+      take: false,
+      why: "the pull request's comments could not be read",
+    }
   if (state.used)
-    return { take: false, after: state.after, why: `the one fresh run for head ${head.slice(0, 7)} is used` }
+    return {
+      take: false,
+      after: state.after,
+      why: `the one fresh run for head ${head.slice(0, 7)} is used`,
+    }
   return { take: true, tests: judged.tests }
 }
 
@@ -183,9 +204,20 @@ export const confirmFreshRaces = ({ gh, repository, number, head, runs }) => {
       .map((job) => job.name),
   )
   if (read.warnings.length > 0 || !read.jobs.every((job) => tested.has(job.name))) return {}
-  const judged = outsideTheDiff({ jobs: read.jobs, files: pullFiles({ gh, repository, number }) })
+  const judged = outsideTheDiff({
+    jobs: read.jobs,
+    files: pullFiles({ gh, repository, number }),
+  })
   if (!judged.outside) return {}
-  return recordRaces({ gh, repository, run: first, head, tests: judged.tests, jobs: read.jobs, passed: fresh.id })
+  return recordRaces({
+    gh,
+    repository,
+    run: first,
+    head,
+    tests: judged.tests,
+    jobs: read.jobs,
+    passed: fresh.id,
+  })
 }
 
 export const failedTwice = ({ gh, repository, after, jobs }) => {
@@ -249,7 +281,16 @@ export const takeFreshRun = async ({
   if (!queue) {
     const fault = reopenPull({ gh, number })
     if (fault !== undefined) return fault
-    const started = await awaitNewRun({ read, repository, number, run, head, sleep, now, interval })
+    const started = await awaitNewRun({
+      read,
+      repository,
+      number,
+      run,
+      head,
+      sleep,
+      now,
+      interval,
+    })
     if (started === undefined)
       return `no ci run started within ${startLimitMs / 60000} minutes of the reopen. Look at: gh pr checks ${number}`
     if (!started.hasQueue) return undefined
