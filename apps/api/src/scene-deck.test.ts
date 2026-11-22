@@ -272,6 +272,44 @@ describe("an edit", () => {
     expect(fits.json).toMatchObject({ ok: true, rev: 2 })
   })
 
+  it("keeps the stored live counts equal to a recount through adds, hides, moves and deletes", async () => {
+    const deck = await made()
+    const row = scene.nodeId("w:1")
+    const slides = [scene.nodeId("w:2"), scene.nodeId("w:3"), scene.nodeId("w:4")]
+    const shape = scene.nodeId("w:5")
+    const stored = async () =>
+      (await admin.query("select elements, slides from deck.scene where id = $1", [deck])).rows[0] as {
+        elements: number
+        slides: number
+      }
+    const recount = async () => scene.countsOf(await foldOf(deck))
+    const lands = async (writes: readonly unknown[]) => expect((await send(deck, writes)).json.ok).toBe(true)
+    await lands([
+      { node: row, prop: "type", value: "slideRow" },
+      { node: row, prop: "parent", value: at(startIds.deck, "a0") },
+      ...slides.flatMap((slide) => [
+        { node: slide, prop: "type", value: "slide" },
+        { node: slide, prop: "parent", value: at(row) },
+      ]),
+      { node: shape, prop: "type", value: "shape" },
+      { node: shape, prop: "parent", value: at(slides[0]!) },
+    ])
+    expect(await stored()).toEqual(await recount())
+    expect(await stored()).toEqual({ elements: 8, slides: 4 })
+    await lands([{ node: row, prop: "hidden", value: true }])
+    expect(await stored()).toEqual({ elements: 8, slides: 1 })
+    await lands([{ node: slides[1]!, prop: "parent", value: at(startIds.row) }])
+    expect(await stored()).toEqual(await recount())
+    expect(await stored()).toEqual({ elements: 8, slides: 2 })
+    await lands([{ node: row, prop: "hidden", value: false }])
+    expect(await stored()).toEqual({ elements: 8, slides: 4 })
+    await lands([{ node: slides[2]!, prop: "parent", value: null }])
+    expect(await stored()).toEqual(await recount())
+    await lands([{ node: row, prop: "parent", value: null }])
+    expect(await stored()).toEqual(await recount())
+    expect(await stored()).toEqual({ elements: 6, slides: 2 })
+  })
+
   it("refuses a write the reader cannot read with shape, a node it does not know with missing", async () => {
     const deck = await made()
     expect((await send(deck, [{ node: startIds.deck, prop: "name", value: 7 }])).json).toMatchObject({

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, signInByCode, verifierPair, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { openSql } from "./scene-deck.js"
 import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
 
 const own = "https://mcp.example.test/mcp"
@@ -14,7 +15,7 @@ const invalidToken =
   'Bearer resource_metadata="https://mcp.example.test/.well-known/oauth-protected-resource", error="invalid_token"'
 
 type Pair = { readonly access: string; readonly refresh: string }
-type Stored = { readonly revision: number; readonly register: unknown; readonly owner: string }
+type Stored = { readonly rev: number; readonly fold: unknown; readonly owner: string }
 type Answer = { readonly ok?: boolean; readonly refusal?: string; readonly rev?: number }
 type Called = {
   readonly status: number
@@ -142,11 +143,7 @@ describe("only a deck's owner acts on it", () => {
   }
 
   async function row(id: string): Promise<Stored | undefined> {
-    const result = await deck.query<Stored>(
-      "select rev as revision, fold as register, owner from deck.scene where id = $1",
-      [id],
-    )
-    return result.rows[0]
+    return (await deck.query<Stored>(openSql, [id])).rows[0]
   }
 
   function claimOf(email: string): Claim {
@@ -201,7 +198,7 @@ describe("only a deck's owner acts on it", () => {
   }
 
   async function edit(credential: Credential, id: string, claim: Claim = {}) {
-    const revision = (await row(id))?.revision ?? 0
+    const revision = (await row(id))?.rev ?? 0
     return call(
       credential,
       "airdesign_edit_deck",
@@ -256,7 +253,7 @@ describe("only a deck's owner acts on it", () => {
       const id = await opened(a.cookie)
       expect(landedRev(await edit({ bearer: a.pair.access }, id))).toBe(2)
       expect(readOutcome(await read({ bearer: a.pair.access }, id))).toBe("landed")
-      expect((await row(id))?.revision).toBe(2)
+      expect((await row(id))?.rev).toBe(2)
     })
 
     it("refuses a deck that does not exist yet with deck and creates nothing", async () => {
@@ -549,7 +546,7 @@ describe("only a deck's owner acts on it", () => {
             const was = rows[position]
             const now = after[position]
             if (value === landedOn) {
-              if (now?.revision !== (was?.revision ?? -1) + 1) failures.push(`${where} did not land on ${value}`)
+              if (now?.rev !== (was?.rev ?? -1) + 1) failures.push(`${where} did not land on ${value}`)
             } else if (!same(was, now)) failures.push(`${where} changed ${value}`)
           }
           const stored = await storedState(parties, decks)

@@ -216,6 +216,7 @@
     "scene-editor-view.spec.ts": 1.9,
     "scene-editor.spec.ts": 3.2,
     "scene-slide-picture.spec.ts": 14.4,
+    "scene-speed.spec.ts": 16.1,
     "section-names.spec.ts": 2.7,
     "settings-names.spec.ts": 4.7,
     "shape-effects.spec.ts": 10.9,

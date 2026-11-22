@@ -152,12 +152,21 @@ describe("database migrations", () => {
       ["oauth_token", noDelete],
       ["sent", full],
     ]
+    const deckRights = [
+      ["media", "DELETE INSERT SELECT"],
+      ["once", full],
+      ["original_delete", full],
+      ["saved", noDelete],
+      ["scene", full],
+      ["scene_edit", "INSERT SELECT"],
+      ["scene_node", noDelete],
+    ] as const
     const tables = await admin.query<{ name: string; tableowner: string }>(
       `select schemaname || '.' || tablename as name, tableowner from pg_tables
        where schemaname in ('session', 'deck', 'setup') order by name`,
     )
     const named = [
-      ...["media", "once", "original_delete", "saved", "scene", "scene_edit"].map((table) => `deck.${table}`),
+      ...deckRights.map(([table]) => `deck.${table}`),
       ...sessionRights.map(([table]) => `session.${table}`),
       "setup.migration",
     ]
@@ -170,16 +179,7 @@ describe("database migrations", () => {
        group by grantee, table_schema, table_name order by grantee, name`,
     )
     expect(grants.rows).toEqual([
-      ...(
-        [
-          ["media", "DELETE INSERT SELECT"],
-          ["once", full],
-          ["original_delete", full],
-          ["saved", noDelete],
-          ["scene", full],
-          ["scene_edit", "INSERT SELECT"],
-        ] as const
-      ).map(([table, rights]) => ({ grantee: "deck", name: `deck.${table}`, rights })),
+      ...deckRights.map(([table, rights]) => ({ grantee: "deck", name: `deck.${table}`, rights })),
       { grantee: "listen", name: "deck.saved", rights: "SELECT" },
       ...sessionRights.map(([table, rights]) => ({ grantee: "session", name: `session.${table}`, rights })),
     ])

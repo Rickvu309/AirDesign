@@ -15,9 +15,7 @@ export function foldToJson(scene: Scene): unknown {
     nodes: Object.fromEntries(scene.nodes),
     revs: Object.fromEntries([...scene.revs].map(([node, revs]) => [node, Object.fromEntries(revs)])),
     onces: Object.fromEntries(scene.onces),
-    runs: Object.fromEntries(
-      [...scene.runs].map(([name, run]) => [name, { phase: run.phase, guarded: [...run.guarded] }]),
-    ),
+    runs: runsToJson(scene.runs),
   }
 }
 
@@ -63,25 +61,44 @@ function childrenOf(nodes: ReadonlyMap<NodeId, Node>): Map<NodeId, NodeId[]> | u
   return children
 }
 
+function readNodeRevs(raw: unknown): Map<WriteKey, Rev> | undefined {
+  const list = plain(raw)
+  if (list === undefined) return undefined
+  const own = new Map<WriteKey, Rev>()
+  for (const [name, at] of Object.entries(list)) {
+    const write = readWriteKey(name)
+    const read = readRev(at)
+    if (write === undefined || read === undefined) return undefined
+    own.set(write, read)
+  }
+  return own
+}
+
 function readRevs(raw: unknown, nodes: ReadonlyMap<NodeId, Node>): Map<NodeId, Map<WriteKey, Rev>> | undefined {
   const found = plain(raw)
   if (found === undefined) return undefined
   const revs = new Map<NodeId, Map<WriteKey, Rev>>()
   for (const [key, each] of Object.entries(found)) {
     const id = readNodeId(key)
-    const list = plain(each)
-    if (id === undefined || !nodes.has(id) || list === undefined) return undefined
-    const own = new Map<WriteKey, Rev>()
-    for (const [name, at] of Object.entries(list)) {
-      const write = readWriteKey(name)
-      const read = readRev(at)
-      if (write === undefined || read === undefined) return undefined
-      own.set(write, read)
-    }
+    const own = readNodeRevs(each)
+    if (id === undefined || !nodes.has(id) || own === undefined) return undefined
     revs.set(id, own)
   }
   return revs
 }
+
+export type StoredNode = { readonly node: Node; readonly revs: ReadonlyMap<WriteKey, Rev> }
+
+export function readStoredNode(id: string, rawNode: unknown, rawRevs: unknown): StoredNode | undefined {
+  const node = readNode(id, rawNode)
+  const revs = readNodeRevs(rawRevs)
+  return node === undefined || revs === undefined ? undefined : { node, revs }
+}
+
+export const revsToJson = (revs: ReadonlyMap<WriteKey, Rev> | undefined): unknown => Object.fromEntries(revs ?? [])
+
+export const runsToJson = (runs: ReadonlyMap<string, Run>): unknown =>
+  Object.fromEntries([...runs].map(([name, run]) => [name, { phase: run.phase, guarded: [...run.guarded] }]))
 
 function readOnces(raw: unknown): Map<string, Rev> | undefined {
   const found = plain(raw)
@@ -95,7 +112,7 @@ function readOnces(raw: unknown): Map<string, Rev> | undefined {
   return onces
 }
 
-function readRuns(raw: unknown, nodes: ReadonlyMap<NodeId, Node>): Map<string, Run> | undefined {
+export function readRuns(raw: unknown, nodes?: ReadonlyMap<NodeId, Node>): Map<string, Run> | undefined {
   const found = plain(raw)
   if (found === undefined) return undefined
   const runs = new Map<string, Run>()
@@ -106,7 +123,7 @@ function readRuns(raw: unknown, nodes: ReadonlyMap<NodeId, Node>): Map<string, R
     const guarded = new Set<NodeId>()
     for (const item of run.guarded) {
       const id = readNodeId(item)
-      if (id === undefined || !nodes.has(id)) return undefined
+      if (id === undefined || (nodes !== undefined && !nodes.has(id))) return undefined
       guarded.add(id)
     }
     runs.set(name, { phase: run.phase, guarded })

@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { openSql } from "./scene-deck.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const sessionRefusal = { ok: false, refusal: "session" }
@@ -129,10 +130,7 @@ describe("mcp route", () => {
   }
 
   async function stored(id: string) {
-    const found = await deck.query<{ rev: number; name: string; fold: unknown }>(
-      "select rev, name, fold from deck.scene where id = $1",
-      [id],
-    )
+    const found = await deck.query<{ rev: number; name: string; fold: unknown }>(openSql, [id])
     return found.rows[0]
   }
 

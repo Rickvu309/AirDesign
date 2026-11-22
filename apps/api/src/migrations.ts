@@ -504,4 +504,40 @@ alter table deck.scene add column trashed timestamptz, add column starred boolea
 grant delete on deck.scene to deck;
 `,
   },
+  {
+    id: 22,
+    sql: `
+create table deck.scene_node (
+  deck text not null references deck.scene (id) on delete cascade,
+  id text not null,
+  type text not null,
+  parent text,
+  node jsonb not null,
+  revs jsonb not null,
+  primary key (deck, id)
+);
+create unique index scene_node_deck on deck.scene_node (deck) where type = 'deck';
+create index scene_node_parent on deck.scene_node (deck, parent) where parent is not null;
+grant select, insert, update on deck.scene_node to deck;
+alter table deck.scene
+  add column runs jsonb not null default '{}'::jsonb,
+  add column elements integer not null default 0,
+  add column slides integer not null default 0;
+insert into deck.scene_node (deck, id, type, parent, node, revs)
+select source.id, found.key, found.value ->> 'type', found.value -> 'parent' ->> 'id', found.value,
+  coalesce(source.fold -> 'revs' -> found.key, '{}'::jsonb)
+from deck.scene source, jsonb_each(source.fold -> 'nodes') as found;
+update deck.scene set runs = coalesce(fold -> 'runs', '{}'::jsonb);
+update deck.scene as target set
+  elements = (select count(*) from deck.scene_node node where node.deck = target.id and node.parent is not null),
+  slides = (
+    select count(*) from deck.scene_node slide
+    join deck.scene_node holder on holder.deck = slide.deck and holder.id = slide.parent
+    where slide.deck = target.id and slide.type = 'slide'
+      and holder.node -> 'parent' is distinct from 'null'::jsonb
+      and coalesce((holder.node ->> 'hidden')::boolean, false) = false
+  );
+alter table deck.scene drop column fold;
+`,
+  },
 ]

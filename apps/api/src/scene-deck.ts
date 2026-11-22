@@ -5,28 +5,74 @@ import type { Sql } from "./pool.js"
 import { uniqueOnce } from "./saved.js"
 import { startEdit } from "./scene-start.js"
 
-const readSql = "select id, owner, rev, fold from deck.scene where id = $1"
+const headSql = "select id, owner, rev from deck.scene where id = $1"
+
+export const openSql = `
+select s.id, s.owner, s.rev, s.name,
+  jsonb_build_object(
+    'rev', s.rev,
+    'nodes', coalesce((select jsonb_object_agg(n.id, n.node) from deck.scene_node n where n.deck = s.id), '{}'::jsonb),
+    'revs', coalesce((select jsonb_object_agg(n.id, n.revs) from deck.scene_node n where n.deck = s.id), '{}'::jsonb),
+    'onces', coalesce((select jsonb_object_agg(e.once, e.rev) from deck.scene_edit e where e.deck = s.id), '{}'::jsonb),
+    'runs', s.runs
+  ) as fold
+from deck.scene s where s.id = $1`
+
+const partSql = `
+with recursive chain(id, type, parent) as (
+  select n.id, n.type, n.parent from deck.scene_node n where n.deck = $1 and n.id = any($2::text[])
+  union
+  select up.id, up.type, up.parent from deck.scene_node up join chain on up.id = chain.parent where up.deck = $1
+),
+wanted as (
+  select id from chain
+  union
+  select n.id from deck.scene_node n join chain on n.parent = chain.id
+  where n.deck = $1 and chain.id = any($4::text[]) and chain.type = 'slideRow' and n.type = 'slide'
+)
+select s.owner, s.rev, s.runs, s.elements, s.slides,
+  exists (select 1 from deck.scene_node d where d.deck = s.id and d.type = 'deck') as has_deck,
+  (select e.rev from deck.scene_edit e where e.deck = s.id and e.once = $3) as landed,
+  coalesce(
+    (select jsonb_agg(jsonb_build_object('id', n.id, 'node', n.node, 'revs', n.revs))
+     from deck.scene_node n join wanted on wanted.id = n.id where n.deck = s.id),
+    '[]'::jsonb
+  ) as nodes
+from deck.scene s where s.id = $1`
+
+const writeNodesSql = `
+insert into deck.scene_node (deck, id, type, parent, node, revs)
+select landed.id, incoming.id, incoming.type, incoming.parent, incoming.node, incoming.revs
+from landed, jsonb_to_recordset($NODES::jsonb) as incoming(id text, type text, parent text, node jsonb, revs jsonb)
+on conflict (deck, id) do update
+  set type = excluded.type, parent = excluded.parent, node = excluded.node, revs = excluded.revs`
 
 const insertSql = `
 with inserted as (
-  insert into deck.scene (id, owner, name, rev, fold) values ($1, $2, $3, $4, $5::jsonb)
+  insert into deck.scene (id, owner, name, rev, runs, elements, slides)
+  values ($1, $2, $3, $4, $5::jsonb, $6, $7)
   on conflict (id) do nothing
   returning id, rev
 ),
 logged as (
-  insert into deck.scene_edit (deck, rev, once, edit) select id, rev, $6, $7::jsonb from inserted returning deck, rev
-)
+  insert into deck.scene_edit (deck, rev, once, edit) select id, rev, $8, $9::jsonb from inserted returning deck, rev
+),
+landed as (select id from inserted),
+written as (${writeNodesSql.replace("$NODES", "$10")})
 select pg_notify('deck', deck || ':' || rev::text) as notified from logged`
 
 const updateSql = `
 with updated as (
-  update deck.scene set rev = $2, fold = $3::jsonb, name = $7, edited = now()
-  where id = $1 and rev = $4
+  update deck.scene
+  set rev = $2, runs = coalesce($3::jsonb, runs), elements = $4, slides = $5, name = coalesce($6, name), edited = now()
+  where id = $1 and rev = $7
   returning id, rev
 ),
 logged as (
-  insert into deck.scene_edit (deck, rev, once, edit) select id, rev, $5, $6::jsonb from updated returning deck, rev
-)
+  insert into deck.scene_edit (deck, rev, once, edit) select id, rev, $8, $9::jsonb from updated returning deck, rev
+),
+landed as (select id from updated),
+written as (${writeNodesSql.replace("$NODES", "$10")})
 select rev, pg_notify('deck', deck || ':' || rev::text) as notified from logged`
 
 const editsSql =
@@ -35,7 +81,17 @@ const editsSql =
 const attempts = 8
 const answerEdits = 100
 
-type Stored = { readonly id: string; readonly owner: string; readonly rev: number; readonly fold: unknown }
+type Stored = { readonly id: string; readonly owner: string; readonly rev: number }
+type Part = {
+  readonly owner: string
+  readonly rev: number
+  readonly runs: unknown
+  readonly elements: number
+  readonly slides: number
+  readonly has_deck: boolean
+  readonly landed: number | null
+  readonly nodes: readonly { readonly id: string; readonly node: unknown; readonly revs: unknown }[]
+}
 
 const refusal = (kind: Exclude<SceneRefusal, { refusal: "edit" }>["refusal"]) => ({ ok: false, refusal: kind }) as const
 
@@ -43,21 +99,63 @@ function editRefusal(refused: scene.Refusal) {
   return { ok: false, refusal: "edit", ...refused } as const
 }
 
-type Opened = { readonly ok: true; readonly stored: Stored; readonly fold: scene.Scene } | ReturnType<typeof refusal>
-
-function openedFor(stored: Stored | undefined, email: string): Opened {
-  if (stored === undefined) return refusal("deck")
-  if (stored.owner !== email) return refusal("owner")
-  const fold = scene.readFold(stored.fold)
-  return fold === undefined ? refusal("payload") : { ok: true, stored, fold }
-}
-
 async function readStored(db: Sql, deck: DeckId): Promise<Stored | undefined> {
-  return (await db.query<Stored>(readSql, [deck])).rows[0]
+  return (await db.query<Stored>(headSql, [deck])).rows[0]
 }
 
-function answered(deck: DeckId, stored: Stored) {
-  return { ok: true, deck, rev: stored.rev, fold: stored.fold } as const
+const parentOf = (node: scene.Node | undefined) =>
+  (node as { parent?: { id: scene.NodeId } | null } | undefined)?.parent
+
+function nodeRows(fold: scene.Scene, ids: Iterable<scene.NodeId>) {
+  const rows: { id: string; type: string; parent: string | null; node: scene.Node; revs: unknown }[] = []
+  for (const id of ids) {
+    const node = fold.nodes.get(id)
+    if (node !== undefined)
+      rows.push({
+        id,
+        type: node.type,
+        parent: parentOf(node)?.id ?? null,
+        node,
+        revs: scene.revsToJson(fold.revs.get(id)),
+      })
+  }
+  return rows
+}
+
+function seedsOf(edit: Readonly<Record<string, unknown>>): { readonly seeds: string[]; readonly regrouped: string[] } {
+  const seeds = new Set<string>()
+  const regrouped = new Set<string>()
+  if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [] }
+  for (const each of edit.writes as unknown[]) {
+    if (typeof each !== "object" || each === null) continue
+    const { node, prop, value } = each as { node?: unknown; prop?: unknown; value?: unknown }
+    if (typeof node === "string") seeds.add(node)
+    if (typeof node === "string" && (prop === "parent" || prop === "hidden")) regrouped.add(node)
+    const parent = typeof value === "object" && value !== null ? (value as { id?: unknown }).id : undefined
+    if (prop === "parent" && typeof parent === "string") seeds.add(parent)
+  }
+  return { seeds: [...seeds], regrouped: [...regrouped] }
+}
+
+function partOf(part: Part, once: string): scene.Scene | undefined {
+  const nodes = new Map<scene.NodeId, scene.Node>()
+  const revs = new Map<scene.NodeId, ReadonlyMap<scene.WriteKey, scene.Rev>>()
+  const children = new Map<scene.NodeId, scene.NodeId[]>()
+  for (const found of part.nodes) {
+    const stored = scene.readStoredNode(found.id, found.node, found.revs)
+    if (stored === undefined) return undefined
+    nodes.set(stored.node.id, stored.node)
+    revs.set(stored.node.id, stored.revs)
+    if (stored.node.type === "slideRow") children.set(stored.node.id, [])
+  }
+  for (const node of nodes.values()) {
+    const parent = parentOf(node)
+    if (node.type === "slide" && parent != null) children.get(parent.id)?.push(node.id)
+  }
+  const runs = scene.readRuns(part.runs)
+  if (runs === undefined) return undefined
+  const onces = new Map<string, scene.Rev>(part.landed === null ? [] : [[once, scene.rev(part.landed)]])
+  return { nodes, revs, children, rev: scene.rev(part.rev), onces, runs }
 }
 
 export async function createScene(db: Sql, parsed: { readonly deck: DeckId }, email: string) {
@@ -65,22 +163,28 @@ export async function createScene(db: Sql, parsed: { readonly deck: DeckId }, em
     const edit = { ...startEdit(), rev: scene.rev(1) }
     const started = scene.applyEdit(scene.emptyScene, edit)
     if (scene.isRefusal(started)) throw new Error(`the starting scene was refused: ${started.refused}`)
+    const counts = scene.countsOf(started)
     await db.query(insertSql, [
       parsed.deck,
       email,
       scene.deckName(started),
       1,
-      JSON.stringify(scene.foldToJson(started)),
+      JSON.stringify(scene.runsToJson(started.runs)),
+      counts.elements,
+      counts.slides,
       edit.once,
       JSON.stringify(scene.readEdit({ once: edit.once, author: edit.author, writes: edit.writes }, scene.emptyScene)),
+      JSON.stringify(nodeRows(started, started.nodes.keys())),
     ])
   }
   return openScene(db, parsed, email)
 }
 
 export async function openScene(db: Sql, parsed: { readonly deck: DeckId }, email: string) {
-  const opened = openedFor(await readStored(db, parsed.deck), email)
-  return opened.ok ? answered(parsed.deck, opened.stored) : opened
+  const found = (await db.query<Stored & { readonly fold: unknown }>(openSql, [parsed.deck])).rows[0]
+  if (found === undefined) return refusal("deck")
+  if (found.owner !== email) return refusal("owner")
+  return { ok: true, deck: parsed.deck, rev: found.rev, fold: found.fold } as const
 }
 
 export async function editScene(
@@ -88,25 +192,41 @@ export async function editScene(
   parsed: { readonly deck: DeckId; readonly edit: Readonly<Record<string, unknown>> },
   email: string,
 ) {
+  const { seeds, regrouped } = seedsOf(parsed.edit)
+  const once = typeof parsed.edit.once === "string" ? parsed.edit.once : ""
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const opened = openedFor(await readStored(db, parsed.deck), email)
-    if (!opened.ok) return opened
-    const { fold } = opened
-    const read = scene.readEdit(parsed.edit, fold)
+    const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped])).rows[0]
+    if (stored === undefined) return refusal("deck")
+    if (stored.owner !== email) return refusal("owner")
+    const part = partOf(stored, once)
+    if (part === undefined) return refusal("payload")
+    const read = scene.readEdit(parsed.edit, part)
     if (scene.isRefusal(read)) return editRefusal(read)
-    const landed = { ...read, rev: scene.rev(fold.rev + 1) }
-    const next = scene.applyEdit(fold, landed)
-    if (scene.isRefusal(next)) return editRefusal(next)
-    if (next === fold) return { ok: true, deck: parsed.deck, rev: fold.onces.get(read.once) ?? fold.rev } as const
+    const landed = { ...read, rev: scene.rev(part.rev + 1) }
+    const landing = scene.landEdit(part, landed, {
+      counts: () => ({ elements: stored.elements, slides: stored.slides }),
+      deck: () => stored.has_deck,
+    })
+    if (scene.isRefusal(landing)) return editRefusal(landing)
+    if (landing.scene === part)
+      return { ok: true, deck: parsed.deck, rev: part.onces.get(read.once) ?? part.rev } as const
+    const next = landing.scene
+    const touched = nodeRows(next, new Set(landed.writes.map((each) => each.node)))
+    const deck = touched.find((row) => row.type === "deck")
+    const runsMoved =
+      next.runs.size !== part.runs.size || [...next.runs].some(([name, run]) => part.runs.get(name) !== run)
     try {
       const wrote = await db.query(updateSql, [
         parsed.deck,
         landed.rev,
-        JSON.stringify(scene.foldToJson(next)),
-        fold.rev,
+        runsMoved ? JSON.stringify(scene.runsToJson(next.runs)) : null,
+        stored.elements + landing.delta.elements,
+        stored.slides + landing.delta.slides,
+        deck === undefined ? null : ((deck.node as { name?: string }).name ?? ""),
+        part.rev,
         landed.once,
         JSON.stringify(read),
-        scene.deckName(next),
+        JSON.stringify(touched),
       ])
       if (wrote.rows.length > 0) return { ok: true, deck: parsed.deck, rev: landed.rev } as const
     } catch (error) {
