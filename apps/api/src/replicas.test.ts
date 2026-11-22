@@ -237,7 +237,7 @@ describe("an agent's run on a deck", () => {
         changes: [{ op: "add", kind: "text", slide: made.slides[0], text: "a" }],
       })
       run = opened.runId
-      added = opened.added[0]
+      added = opened.added[0].id
     })
     const typed = {
       deck,
