@@ -18,6 +18,7 @@ export type { LayerClipboard, LayerPaste, PasteMode } from "./use-canvas-clipboa
 export type { Turned } from "./transform-drag.js"
 export type { FlippedLayer, ResizeGrip, RotateGrip, TransformGrip } from "./transform-math.js"
 export {
+  flipSelection,
   normalizeDegrees,
   resizeBox,
   resizeCursor,

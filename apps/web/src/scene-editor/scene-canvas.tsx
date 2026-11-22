@@ -134,6 +134,7 @@ export function SceneCanvas(props: {
     view,
     geometry,
     selection: current,
+    slide,
     onSelection,
     onTool,
     onZoom: onZoomKey,
