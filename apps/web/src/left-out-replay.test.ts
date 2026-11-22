@@ -21,6 +21,7 @@ type Parts = ReadonlyMap<string, Uint8Array>
 
 const node = elementId("256.2")
 let file: Parts = new Map()
+let graph: Graph = { states: new Map(), edges: [] }
 
 beforeAll(async () => {
   const fsName = "node:fs/promises"
@@ -30,7 +31,8 @@ beforeAll(async () => {
   )
   if (!read.ok) throw new Error(read.reason)
   file = read.parts
-}, 30_000)
+  graph = await specGraph("left-out", "LeftOut")
+}, 60_000)
 
 async function specGraph(name: string, module: string): Promise<Graph> {
   const checks: string = new URL("../../../scripts/check-specs.mjs", import.meta.url).href
@@ -84,8 +86,7 @@ function opened(parts: Parts, v: Spec) {
   }
 }
 
-it("replays every state of the left-out spec through the tab's writer: each writable edit written, the rest left out and named", async () => {
-  const graph = await specGraph("left-out", "LeftOut")
+it("replays every state of the left-out spec through the tab's writer: each writable edit written, the rest left out and named", () => {
   const original = /<a:ln w="(\d+)"/.exec(new TextDecoder().decode(file.get("ppt/slides/slide1.xml")))?.[1]
   let checked = 0
   for (const edge of graph.edges) {

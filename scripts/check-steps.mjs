@@ -126,7 +126,7 @@ const rows = [
     gate: { order: 3 },
     showOnSuccess: true,
   },
-  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 13 } },
+  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 14 } },
   {
     name: "test-imports",
     kind: "rule",
@@ -136,7 +136,7 @@ const rows = [
     preflight: true,
     gate: { order: 1 },
   },
-  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 12 } },
+  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 13 } },
   {
     name: "unit-tests",
     kind: "tests",
@@ -206,7 +206,7 @@ const rows = [
     kind: "report",
     command: "node",
     args: ["scripts/sweep.mjs", "--at-most-every=30"],
-    gate: { order: 14 },
+    gate: { order: 15 },
     showOnSuccess: true,
   },
   {
@@ -226,6 +226,14 @@ const rows = [
     preflight: true,
     gate: { order: 11 },
     showOnSuccess: true,
+  },
+  {
+    name: "spec-timeouts",
+    kind: "rule",
+    command: "node",
+    args: ["scripts/spec-timeouts.mjs"],
+    preflight: true,
+    gate: { order: 12 },
   },
   { name: "commit-titles", kind: "rule", command: "node", args: ["scripts/commit-titles.mjs"], verdict: "warn" },
   { name: "conflict-markers", kind: "rule", command: "node", args: ["scripts/conflict-markers.mjs"], verdict: "warn" },
