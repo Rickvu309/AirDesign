@@ -1,0 +1,23 @@
+{
+  "name": "ts-packwerk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Packs, dependencies, privacy and layers for TypeScript monorepos, in the spirit of Shopify's Packwerk.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "oxc-parser": "^0.157.0",
+    "oxc-resolver": "^11.24.2",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "catalog:"
+  }
+}

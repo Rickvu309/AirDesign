@@ -23,6 +23,7 @@ const toy = {
     { name: "@airdesign/site", dir: "apps/site", deps: [] },
     { name: "web", dir: "apps/web", deps: ["@airdesign/document", "@airdesign/pptx"] },
     { name: "@airdesign/boundary-fetch", dir: "tooling/boundary-fixtures/fetch-in-document", deps: [] },
+    { name: "ts-packwerk", dir: "tooling/ts-packwerk", deps: [] },
   ],
   imports: {
     "vitest.config.mts": ["scripts/vitest-metrics.mjs"],
@@ -178,6 +179,11 @@ same(
   on(map(["tooling/boundary-fixtures/fetch-in-document/src/index.ts"])),
   ["source", "scripts"],
 )
+same(
+  "a tooling package with unit tests runs them, like any package",
+  [on(map(["tooling/ts-packwerk/src/rules.ts"])), map(["tooling/ts-packwerk/src/rules.ts"]).unitTests],
+  [["source"], ["tooling/ts-packwerk/"]],
+)
 same("the skill folders under .claude are links to .agents and run nothing", on(map([".claude/skills/x/SKILL.md"])), [])
 same("no change runs nothing", on(map([])), [])
 
@@ -284,10 +290,10 @@ same(
     .filter(Boolean)
     .map((line) => line.replace(/^\s+-\s+["']?|["']$/g, ""))
     .flatMap((pattern) =>
-      fs
-        .readdirSync(path.join(root, pattern.slice(0, -2)))
-        .map((name) => `${pattern.slice(0, -2)}/${name}`)
-        .filter((dir) => fs.existsSync(path.join(root, dir, "package.json"))),
+      (pattern.endsWith("/*")
+        ? fs.readdirSync(path.join(root, pattern.slice(0, -2))).map((name) => `${pattern.slice(0, -2)}/${name}`)
+        : [pattern]
+      ).filter((dir) => fs.existsSync(path.join(root, dir, "package.json"))),
     )
     .sort(),
 )

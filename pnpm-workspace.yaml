@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - tooling/boundary-fixtures/*
+  - tooling/ts-packwerk
 
 catalog:
   typescript: ~7.0.2
