@@ -22,6 +22,7 @@
       "/account/agents",
       "/account/agents/revoke",
       "/decks/*",
+      "/scenes/*",
       "/oauth/client",
       "/oauth/approve",
       "/oauth/register",

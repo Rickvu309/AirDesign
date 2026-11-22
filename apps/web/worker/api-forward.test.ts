@@ -9,6 +9,7 @@ import {
   airaPaths,
   countryHeader,
   deckPaths,
+  scenePaths,
   deckRoutes,
   forwardSecretHeader,
   mcpPaths,
@@ -137,9 +138,16 @@ describe("API forwarding", () => {
       entries.some((entry) => !entry.startsWith("!") && matches(entry, path)) &&
       !entries.some((entry) => entry.startsWith("!") && matches(entry.slice(1), path))
     expect(
-      [...signInPaths, ...signOutPaths, ...accountPaths, ...deckPaths, ...oauthPaths, ...mcpPaths, ...airaPaths].filter(
-        (path) => !routed(path),
-      ),
+      [
+        ...signInPaths,
+        ...signOutPaths,
+        ...accountPaths,
+        ...deckPaths,
+        ...scenePaths,
+        ...oauthPaths,
+        ...mcpPaths,
+        ...airaPaths,
+      ].filter((path) => !routed(path)),
     ).toEqual([])
     expect(routed("/version")).toBe(true)
   })

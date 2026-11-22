@@ -440,4 +440,29 @@ grant select, insert on session.credit_history to session;
 grant usage, select on sequence session.credit_history_id_seq to session;
 `,
   },
+  {
+    id: 19,
+    sql: `
+create table deck.scene (
+  id text primary key,
+  owner text not null references session.account (email) on delete cascade,
+  name text not null default '',
+  rev integer not null,
+  fold jsonb not null,
+  created timestamptz not null default now(),
+  edited timestamptz not null default now()
+);
+create index scene_owner on deck.scene (owner);
+create table deck.scene_edit (
+  deck text not null references deck.scene (id) on delete cascade,
+  rev integer not null,
+  once text not null,
+  edit jsonb not null,
+  primary key (deck, rev),
+  unique (deck, once)
+);
+grant select, insert, update on deck.scene to deck;
+grant select, insert on deck.scene_edit to deck;
+`,
+  },
 ]

@@ -118,7 +118,7 @@ To prove something no journey covers, write a journey that exports `default asyn
 - `signIn(email?)`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session and account cookies on the browser, as production does. Returns `{ email, cookie }`. An earlier `email` signs that account in again.
 - `expect`: Playwright's, for a scratch journey outside the repo, where `@playwright/test` does not resolve.
 - `post(route, body, cookie, headers)`: POST to a catalog route entry; saves the request and answer as JSON evidence. An NDJSON answer lands in `json.lines`, an event stream in `json.events`.
-- `deckRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`, `fontRoutes`: the catalog tables.
+- `deckRoutes`, `sceneRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`, `fontRoutes`: the catalog tables.
 - `holdReply(route, { afterServer, forMs, search }?)`: returns `{ release, received }`. Await `release()` to let requests through and remove the hold. The runner releases outstanding holds on exit. Use `afterServer: true` and await `received` to stop after the server answers. Set `forMs` to open the hold that many milliseconds after the first match, or `search` to match one query string.
 - `dropReply(route)`: sends the first request to the server and drops its reply, then blocks retries. Await `dropped` for `{ request, response }` and `restore()` to allow requests again.
 - `failReply(route, { status, json }?)`: answers with a connection failure or the given HTTP status and JSON. Returns a `restore()` function.

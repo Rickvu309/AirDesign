@@ -52,6 +52,16 @@ export {
   type WatchResult,
 } from "./deck-routes.js"
 export {
+  sceneRoutes,
+  scenePaths,
+  readSceneEdit,
+  readSceneSince,
+  type SceneCaught,
+  type SceneLanded,
+  type SceneOpened,
+  type SceneRefusal,
+} from "./scene-wire.js"
+export {
   notifyKey,
   parseNotifyKey,
   readApprovalRequest,

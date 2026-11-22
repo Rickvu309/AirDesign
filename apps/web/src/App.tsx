@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react"
 import { LiveProof } from "./live-proof"
+import { SceneProof } from "./scene-proof"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
@@ -45,6 +46,7 @@ function AppRoutes() {
       </Suspense>
     )
   if (path === "/live-proof") return <LiveProof />
+  if (path === "/scene-proof") return <SceneProof />
   if (path === "/oauth/authorize") return <OAuthAuthorize />
   if (path === "/screens" || path.startsWith("/screens/"))
     return (
@@ -57,7 +59,8 @@ function AppRoutes() {
 
 export default function App() {
   const path = currentPath()
-  if (path.startsWith("/screens") || path === "/live-proof" || path === "/oauth/authorize") return <AppRoutes />
+  if (path.startsWith("/screens") || path === "/live-proof" || path === "/scene-proof" || path === "/oauth/authorize")
+    return <AppRoutes />
   return (
     <AccountProfile>
       <AppRoutes />

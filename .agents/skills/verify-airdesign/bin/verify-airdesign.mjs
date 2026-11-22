@@ -232,8 +232,17 @@ export function productionStandIn(url) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes, fontRoutes, countryHeader } =
-    await catalog(state)
+  const {
+    deckRoutes,
+    sceneRoutes,
+    signInRoutes,
+    accountRoutes,
+    oauthRoutes,
+    airaRoutes,
+    mcpRoutes,
+    fontRoutes,
+    countryHeader,
+  } = await catalog(state)
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   await context.route(productionHosts, (route) =>
@@ -250,6 +259,7 @@ export async function journeyKit({ run, name, page, context }) {
     page,
     context,
     deckRoutes,
+    sceneRoutes,
     signInRoutes,
     accountRoutes,
     oauthRoutes,
