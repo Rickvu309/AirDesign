@@ -1,4 +1,5 @@
 import { traitWire, type AgentChange, type WireSet } from "@airdesign/catalog"
+import { expandedTemplateChange } from "@airdesign/engine"
 import {
   alphaKeys,
   boxOnly,
@@ -111,8 +112,9 @@ function setLines(register: Register, change: WireSet, at: number): readonly str
       change.opacity !== undefined && opacityFields(view.facts).length === 0 && !paintsBackdrop(view, "opacity")
         ? alphaKeys
         : []
+    const resolved = expandedTemplateChange(register, node, change) ?? change
     const missing = [
-      ...namedFields(change).filter((field) => !takes(view.facts).includes(field) && !paintsBackdrop(view, field)),
+      ...namedFields(resolved).filter((field) => !takes(view.facts).includes(field) && !paintsBackdrop(view, field)),
       ...faded,
     ]
     if (missing.length === 0 || (view.facts.grouped && boxOnly(missing))) return []
