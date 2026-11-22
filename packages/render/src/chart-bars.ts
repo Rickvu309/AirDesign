@@ -1,4 +1,5 @@
 import type { CanvasChart, CanvasChartLabel, CanvasChartLine } from "./chart-record.js"
+import { labelRoom } from "./chart-label-room.js"
 import { measure, words, type ChartBox, type ChartShape } from "./chart-shape.js"
 
 const gap = 4
@@ -58,8 +59,14 @@ function shrunk(chart: CanvasChart, room: ChartBox, manual: boolean): { plot: Ch
   }
   const left = horizontal ? wide(categorySizes) : wide(valueSizes)
   const bottom = horizontal ? tall(valueSizes) : tall(categorySizes)
-  const top = horizontal ? 0 : Math.max(0, ...valueSizes.map((size) => size.height / 2))
-  return { plot: { x: x + left, y: y + top, width: width - left, height: height - bottom - top }, shapes }
+  const top = horizontal
+    ? 0
+    : Math.max(0, labelRoom(chart, height - bottom, gap), ...valueSizes.map((size) => size.height / 2))
+  const right = horizontal ? labelRoom(chart, width - left, gap) : 0
+  return {
+    plot: { x: x + left, y: y + top, width: width - left - right, height: height - bottom - top },
+    shapes,
+  }
 }
 
 function labelSpot(label: CanvasChartLabel, bar: Placed, horizontal: boolean, negative: boolean) {
@@ -215,7 +222,7 @@ export function barShapes(chart: CanvasChart, room: ChartBox, manual: boolean): 
         if (value === null) return
         const share = scaled(value, at)
         const from = stacked ? (share < 0 ? below[at]! : above[at]!) : baseline
-        const to = from + share
+        const to = stacked ? from + share : share
         if (stacked && share < 0) below[at] = to
         else if (stacked) above[at] = to
         const offset = (band - group) / 2 + (stacked ? 0 : row * width * (1 - overlap))

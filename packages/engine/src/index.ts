@@ -1,4 +1,4 @@
-export { call, liveRuns, openDeck, type Caller, type Deck } from "./call.js"
+export { call, liveRuns, openDeck, openRuns, type Caller, type Deck } from "./call.js"
 export type { ImageLookup, PlacedImage } from "./apply-change.js"
 export { runFenced } from "./agent-slides.js"
 export { emptiedText } from "./emptied-text.js"

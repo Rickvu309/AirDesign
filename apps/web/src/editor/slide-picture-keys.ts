@@ -9,6 +9,7 @@ type HeldKey = {
   readonly slide: Uint8Array | undefined
   readonly rels: Uint8Array | undefined
   readonly media: string
+  readonly linked: readonly (Uint8Array | undefined)[]
   readonly key: string
 }
 
@@ -21,6 +22,8 @@ export type SlideKeys = {
 export const templatePart = /^ppt\/(slideLayouts|slideMasters|theme)\/[^/]+\.xml$/
 
 const mediaTarget = /Target="[^"]*?media\/([^"/]+)"/g
+const anyTarget = /Target="([^"]+)"/g
+const mediaPart = /^ppt\/media\//
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -54,6 +57,25 @@ function mediaOf(exported: Parts, rels: Uint8Array | undefined): string {
   return names.map((name) => `${name}:${exported.get(name)?.length ?? -1}`).join("|")
 }
 
+function resolved(part: string, target: string): string {
+  if (target.startsWith("/")) return target.slice(1)
+  const steps = part.split("/").slice(0, -1)
+  for (const step of target.split("/")) {
+    if (step === "..") steps.pop()
+    else if (step !== ".") steps.push(step)
+  }
+  return steps.join("/")
+}
+
+function linkedOf(exported: Parts, part: string, rels: Uint8Array | undefined): readonly (Uint8Array | undefined)[] {
+  if (rels === undefined) return []
+  return [...decoder.decode(rels).matchAll(anyTarget)]
+    .map(([, target = ""]) => resolved(part, target))
+    .filter((name) => exported.has(name) && !mediaPart.test(name) && !templatePart.test(name))
+    .sort()
+    .map((name) => exported.get(name))
+}
+
 async function digest(chunks: readonly (Uint8Array | string | undefined)[]): Promise<string> {
   const pieces = chunks.map((chunk) =>
     typeof chunk === "string" ? encoder.encode(chunk) : (chunk ?? new Uint8Array()),
@@ -84,12 +106,16 @@ export async function slideKeys(exported: Parts, kept: SlideKeys): Promise<reado
     const bytes = exported.get(source.part)
     const rels = exported.get(relsOf(source.part))
     const media = mediaOf(exported, rels)
+    const linked = linkedOf(exported, source.part, rels)
     const held = kept.slides.get(source.part)
-    const key =
-      held !== undefined && held.slide === bytes && held.rels === rels && held.media === media
-        ? held.key
-        : await digest([kept.templateKey, source.slide, bytes, rels, media])
-    next.set(source.part, { slide: bytes, rels, media, key })
+    const same =
+      held !== undefined &&
+      held.slide === bytes &&
+      held.rels === rels &&
+      held.media === media &&
+      sameParts(held.linked, linked)
+    const key = same ? held.key : await digest([kept.templateKey, source.slide, bytes, rels, media, ...linked])
+    next.set(source.part, { slide: bytes, rels, media, linked, key })
     keys.push({ slide, key })
   }
   kept.slides = next

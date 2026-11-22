@@ -254,6 +254,13 @@ export function liveRuns(deck: Deck): readonly string[] {
   return [...new Set(runs.filter((runId) => runId !== null))]
 }
 
+export function openRuns(register: Register): readonly string[] {
+  const ended = register.ended ?? []
+  const held = everyElement(register).flatMap((node) => runLiveOn(register, node) ?? [])
+  const ordered = register.order.flatMap((row) => row.runId ?? []).filter((runId) => !ended.includes(runId))
+  return [...new Set([...held, ...ordered])]
+}
+
 function withBackdrops(register: Register, elements: readonly WireRunElement[]): readonly WireRunElement[] {
   return elements.flatMap((element) => {
     const backdrop = readLayout(register, element.node)?.backdrop

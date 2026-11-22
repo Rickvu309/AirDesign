@@ -2,7 +2,7 @@ import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import { decide, elementId, floorFor, orderKeyAfter, presentSlides, slideId } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { indexDeck, openDeck } from "./index.js"
+import { call, indexDeck, liveRuns, openDeck, openRuns } from "./index.js"
 
 const actor = { actor: "agent", runId: "run" } as const
 const row = (node: string, value: string) =>
@@ -85,4 +85,15 @@ it("uses the layout of the slide it follows when the agent names only after", ()
   expect(added && "floor" in added ? added.floor : undefined).toEqual(
     floorFor([row("256.2", "Click to add title")], slideId("258")),
   )
+})
+
+it("counts a run open once it has added a slide, though no element holds it, until the run stops", () => {
+  const result = changeCall("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256" })
+  if (!result.ok) throw new Error(result.refusal)
+  expect(liveRuns(result.deck)).toEqual([])
+  expect(openRuns(result.deck.register)).toEqual([actor.runId])
+  const stopped = call("stop_run", result.deck, actor, { deck: "deck", runId: actor.runId })
+  if (!stopped.ok) throw new Error(stopped.refusal)
+  expect(openRuns(stopped.deck.register)).toEqual([])
+  expect(openRuns(opened().register)).toEqual([])
 })
