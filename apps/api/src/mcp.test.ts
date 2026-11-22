@@ -662,10 +662,10 @@ describe("mcp route", () => {
     expect(values(kept, sibling)).toEqual(["one", "two"])
   })
 
-  it("refuses text whose run the new element's floor lacks, and creates nothing", async () => {
+  it("refuses a bad text value on a new element and creates nothing", async () => {
     const { id, cookie } = await openedDeck("textfrom")
     const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])
-    const sent = JSON.stringify([{ from: 0, runs: [{ from: 3, text: "After" }] }])
+    const sent = JSON.stringify([{ from: 0, runs: [{ from: -2, text: "After" }] }])
     const before = await row(id)
     await withMcp(cookie, async (client) => {
       const refused = await client.callTool({
@@ -676,12 +676,12 @@ describe("mcp route", () => {
       const answer = {
         ok: false,
         revision: 0,
-        refusal: "text-from",
+        refusal: "field",
         elements: [{ node: created, value: "", version: 0 }],
       }
       expect(refused.content).toEqual([
-        { type: "text", text: editNext["text-from"] },
-        { type: "text", text: "Paragraph 0 of the file has runs 0. Use one of them, or -1 for a new run." },
+        { type: "text", text: editNext.field },
+        { type: "text", text: expect.stringContaining("Change 1: The text looks like JSON") },
         { type: "text", text: JSON.stringify(answer) },
       ])
       expect(refused.structuredContent).toEqual(answer)
@@ -1461,7 +1461,7 @@ describe("mcp route", () => {
     const { id, cookie } = await openedDeck("twofloor")
     const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "One" }] }])
     const good = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Two" }] }])
-    const bad = JSON.stringify([{ from: 9, runs: [{ from: 4, text: "bad" }] }])
+    const bad = JSON.stringify([{ from: 9, runs: [{ from: -2, text: "bad" }] }])
     const before = await row(id)
     await withMcp(cookie, async (client) => {
       const unfloored = await client.callTool({
@@ -1477,14 +1477,14 @@ describe("mcp route", () => {
       })
       expect(unfloored.isError).toBe(true)
       expect(unfloored.content).toEqual([
-        { type: "text", text: editNext["text-from"] },
-        { type: "text", text: "The file has paragraphs 0." },
+        { type: "text", text: editNext.field },
+        { type: "text", text: expect.stringContaining("Change 2: The text looks like JSON") },
         {
           type: "text",
           text: JSON.stringify({
             ok: false,
             revision: 0,
-            refusal: "text-from",
+            refusal: "field",
             elements: [{ node: created, value: "", version: 0 }],
           }),
         },

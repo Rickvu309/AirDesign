@@ -356,8 +356,9 @@ describe("the turn", () => {
     expect(turns.read(deck.id)).toBe(newer)
   })
 
-  const textFloor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])
-  const badText = JSON.stringify([{ from: 0, runs: [{ from: 3, text: "After" }] }])
+  const cells = [[{ from: 0, runs: [{ from: 0, text: "Before" }] }]]
+  const textFloor = JSON.stringify({ rows: [{ from: 0, cells }] })
+  const badText = JSON.stringify({ rows: [{ from: 9, cells }] })
   const failing = (refusal: EditCode): Host => ({
     commit: (_result, session) => Promise.resolve(editRefusal(session.deck, refusal, [sibling])),
   })

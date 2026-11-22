@@ -26,6 +26,6 @@ it("shows an agent a text a build before line height wrote under today's key, an
   ])
   const read = readDeckPage({ id: parsed.deck, revision: 1, register }, { runId: null })
   const value = read.elements.find((element) => element.node === node)?.value
-  expect(value).toBe('[{"from":0,"lineHeight":150000,"runs":[{"from":-1,"text":"Quarterly plan"}]}]')
+  expect(value).toBe('[{"from":0,"lineHeight":150000,"runs":[{"from":0,"text":"Quarterly plan"}]}]')
   expect(JSON.stringify(register.elements[node]?.landed)).toContain('\\"lineSpacing\\":150000')
 })

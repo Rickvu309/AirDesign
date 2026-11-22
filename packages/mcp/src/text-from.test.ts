@@ -21,9 +21,8 @@ const text = elementId("258.7")
 const plain = elementId("258.8")
 const created = elementId("258.9")
 
-const missingRun = "Paragraph 0 of the file has runs 0 and 1. Use one of them, or -1 for a new run."
-const missingParagraph = "The file has paragraphs 0 and 1."
-const missingSecondParagraph = "Paragraph 1 of the file has runs 0. Use one of them, or -1 for a new run."
+const badValue = '[{"from":-2,"runs":[]}]'
+
 function opened(): Deck {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error(id.refusal)
@@ -79,49 +78,6 @@ function badRun(): string {
 
 function badParagraph(): string {
   return writeTextValue([{ from: 5, runs: [{ from: 0, text: "No" }] }])
-}
-
-function badSecondParagraph(): string {
-  return writeTextValue([
-    {
-      from: 0,
-      runs: [
-        { from: 0, text: "One" },
-        { from: 1, text: "Two" },
-      ],
-    },
-    { from: 1, runs: [{ from: 2, text: "No" }] },
-  ])
-}
-
-function badSecondRun(): string {
-  return writeTextValue([
-    {
-      from: 0,
-      runs: [
-        { from: 0, text: "One" },
-        { from: 2, text: "No" },
-      ],
-    },
-  ])
-}
-
-function runInOtherParagraph(): string {
-  return writeTextValue([{ from: 1, runs: [{ from: 1, text: "No" }] }])
-}
-
-function droppedRun(): string {
-  return writeTextValue([
-    { from: 0, runs: [{ from: 0, text: "One" }] },
-    { from: 1, runs: [{ from: 0, text: "Three" }] },
-  ])
-}
-
-function restoredRun(): string {
-  return writeTextValue([
-    { from: 0, runs: [{ from: 1, text: "Back" }] },
-    { from: 1, runs: [{ from: 0, text: "Three" }] },
-  ])
 }
 
 function sessionFor(deck: Deck): Session {
@@ -185,44 +141,18 @@ describe("editText", () => {
     expect(elementBody(deck).landed).toEqual([])
   })
 
-  it("refuses a run the file does not have", () => {
+  it("lands a position the layer lacks as a new run or a new paragraph, keeping the paragraph's look", () => {
     const deck = textDeck()
-    const result = edit(deck, [{ value: badRun(), node: "258.7" }])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    const before = version(elementBody(deck))
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingRun })
-    expect(readAnswer(result)).toEqual({
-      ok: false,
-      revision: 0,
-      refusal: "text-from",
-      elements: [{ node: "258.7", value: floor, version: before }],
-    })
-    expect(version(elementBody(deck))).toBe(before)
-    expect(elementBody(deck).landed).toEqual([])
-  })
-
-  it("refuses a paragraph the file does not have", () => {
-    const deck = textDeck()
-    const result = edit(deck, [{ value: badParagraph(), node: "258.7" }])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    const before = version(elementBody(deck))
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingParagraph })
-    expect(readAnswer(result)).toEqual({
-      ok: false,
-      revision: 0,
-      refusal: "text-from",
-      elements: [{ node: "258.7", value: floor, version: before }],
-    })
-    expect(version(elementBody(deck))).toBe(before)
-    expect(elementBody(deck).landed).toEqual([])
+    const run = edit(deck, [{ value: badRun(), node: "258.7" }])
+    expect(run.ok).toBe(true)
+    if (!run.ok) return
+    expect(readTextValue(currentValue(elementBody(run.deck)))).toEqual([{ from: 0, runs: [{ from: -1, text: "No" }] }])
+    const paragraph = edit(deck, [{ value: badParagraph(), node: "258.7" }])
+    expect(paragraph.ok).toBe(true)
+    if (!paragraph.ok) return
+    expect(readTextValue(currentValue(elementBody(paragraph.deck)))).toEqual([
+      { from: 0, runs: [{ from: 0, text: "No" }] },
+    ])
   })
 
   it("lands a new run", () => {
@@ -248,13 +178,13 @@ describe("editText", () => {
 
   it("refuses a value that looks like JSON and is not a text value", () => {
     const deck = textDeck()
-    const result = edit(deck, [{ value: '[{"from":-1,"runs":[]}]', node: "258.7" }])
+    const result = edit(deck, [{ value: badValue, node: "258.7" }])
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.refusal).toBe("field")
     expect(result.deck).toBe(deck)
     expect(result.content[0]).toEqual({ type: "text", text: editNext["field"] })
-    expect(result.content[1]).toEqual({ type: "text", text: notTextValue })
+    expect(result.content[1]).toEqual({ type: "text", text: `Change 1: ${notTextValue}` })
   })
 
   it("lands a plain string and returns the current value", () => {
@@ -277,22 +207,22 @@ describe("editText", () => {
     expect(elementBody(deck, plain).landed).toEqual([])
   })
 
-  it("refuses the whole call when a later change has a bad index", () => {
+  it("refuses the whole call when a later change is not a text value, and names it", () => {
     const deck = textDeck()
     const result = edit(deck, [
       { value: "kept", node: "258.8" },
-      { value: badRun(), node: "258.7" },
+      { value: badValue, node: "258.7" },
     ])
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.refusal).toBe("text-from")
+    expect(result.refusal).toBe("field")
     expect(result.deck).toBe(deck)
-    expect(result.content[0]?.text).toBe(editNext["text-from"])
-    expect(result.content[1]?.text).toBe(missingRun)
+    expect(result.content[0]?.text).toBe(editNext.field)
+    expect(result.content[1]?.text).toBe(`Change 2: ${notTextValue}`)
     expect(readAnswer(result)).toEqual({
       ok: false,
       revision: 0,
-      refusal: "text-from",
+      refusal: "field",
       elements: [
         { node: "258.8", value: "", version: version(elementBody(deck, plain)) },
         { node: "258.7", value: floor, version: version(elementBody(deck)) },
@@ -326,57 +256,6 @@ describe("editText", () => {
     })
     expect(version(elementBody(result.deck))).toBe(before)
     expect(currentValue(elementBody(deck))).toBe("from the person")
-  })
-
-  it("refuses a bad run in the second paragraph", () => {
-    const deck = textDeck()
-    const result = edit(deck, [{ value: badSecondParagraph(), node: "258.7" }])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingSecondParagraph })
-    expect(elementBody(deck).landed).toEqual([])
-  })
-
-  it("refuses a bad from in the second run", () => {
-    const deck = textDeck()
-    const result = edit(deck, [{ value: badSecondRun(), node: "258.7" }])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingRun })
-    expect(elementBody(deck).landed).toEqual([])
-  })
-
-  it("refuses a run from that another paragraph of the file has", () => {
-    const deck = textDeck()
-    const result = edit(deck, [{ value: runInOtherParagraph(), node: "258.7" }])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingSecondParagraph })
-    expect(elementBody(deck).landed).toEqual([])
-  })
-
-  it("lands a floor run the current value dropped", () => {
-    const deck = textDeck()
-    const first = edit(deck, [{ value: droppedRun(), node: "258.7" }])
-    expect(first.ok).toBe(true)
-    if (!first.ok) return
-    expect(version(elementBody(first.deck))).toBe(1)
-    const sent = restoredRun()
-    const second = edit(first.deck, [{ value: sent, node: "258.7" }])
-    expect(second.ok).toBe(true)
-    if (!second.ok) return
-    expect(currentValue(elementBody(second.deck))).toBe(sent)
-    expect(version(elementBody(second.deck))).toBe(2)
-    expect(elementBody(deck).landed).toEqual([])
   })
 
   it("lists a node once when one call changes it twice", () => {
@@ -430,25 +309,6 @@ describe("editText", () => {
     expect(result.deck).toBe(deck)
   })
 
-  it("refuses a bad run on a new element against the change's own floor and creates nothing", () => {
-    const deck = textDeck()
-    const result = edit(deck, [{ value: badRun(), node: "258.9", floor }])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingRun })
-    expect(readAnswer(result)).toEqual({
-      ok: false,
-      revision: 0,
-      refusal: "text-from",
-      elements: [{ node: "258.9", value: "", version: 0 }],
-    })
-    expect(deck.register.nodes).not.toContain(created)
-    expect(deck.register.elements[created]).toBeUndefined()
-  })
-
   it("lands a new element whose text value uses its own floor's indexes", () => {
     const deck = textDeck()
     const sent = newRun()
@@ -461,24 +321,8 @@ describe("editText", () => {
       ok: true,
       revision: 1,
       runId: "run",
-      elements: [{ node: "258.9", value: sent, version: 1 }],
+      elements: [{ node: "258.9", value: sent.replace('"from":-1', '"from":2'), version: 1 }],
     })
-    expect(deck.register.elements[created]).toBeUndefined()
-  })
-
-  it("checks a second change on a new element that brings no floor against the first change's floor", () => {
-    const deck = textDeck()
-    const result = edit(deck, [
-      { value: changedRun(), node: "258.9", floor },
-      { value: badParagraph(), node: "258.9" },
-    ])
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("text-from")
-    expect(result.deck).toBe(deck)
-    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
-    expect(result.content[1]).toEqual({ type: "text", text: missingParagraph })
-    expect(deck.register.nodes).not.toContain(created)
     expect(deck.register.elements[created]).toBeUndefined()
   })
 
@@ -512,7 +356,7 @@ describe("editText", () => {
       ok: true,
       revision: 1,
       runId: "run",
-      elements: [{ node: "258.9", value: sent, version: 2 }],
+      elements: [{ node: "258.9", value: sent.replace('"from":-1', '"from":2'), version: 2 }],
     })
   })
 
@@ -535,24 +379,24 @@ describe("editText", () => {
     })
   })
 
-  it("refuses a missing run through the client", async () => {
+  it("refuses a value that is not a text value through the client", async () => {
     const deck = textDeck()
     const session = sessionFor(deck)
     await withClient(session, async (client) => {
       const result = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: badRun(), node: "258.7", readAt: 0 }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: badValue, node: "258.7", readAt: 0 }] },
       })
       expect(result.isError).toBe(true)
       const block = {
         ok: false,
         revision: 0,
-        refusal: "text-from",
+        refusal: "field",
         elements: [{ node: "258.7", value: floor, version: 0 }],
       }
       expect(result.content).toEqual([
-        { type: "text", text: editNext["text-from"] },
-        { type: "text", text: missingRun },
+        { type: "text", text: editNext.field },
+        { type: "text", text: `Change 1: ${notTextValue}` },
         { type: "text", text: JSON.stringify(block) },
       ])
       expect(result.structuredContent).toEqual(block)

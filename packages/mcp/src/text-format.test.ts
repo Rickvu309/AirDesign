@@ -15,7 +15,7 @@ it("lets an agent set bold, italic and underline on a run of the file", () => {
       ],
     },
   ])
-  expect(textProblem(floors, [{ node, value, readAt: 1 }])).toBeUndefined()
+  expect(textProblem(floors, [{ at: 0, change: { node, value, readAt: 1 } }])).toBeUndefined()
 })
 
 it("lets an agent set size, a scheme colour, alignment and bullets", () => {
@@ -27,24 +27,24 @@ it("lets an agent set size, a scheme colour, alignment and bullets", () => {
       runs: [{ from: 0, text: "One", size: 2400, color: { scheme: "accent2" } }],
     },
   ])
-  expect(textProblem(floors, [{ node, value, readAt: 1 }])).toBeUndefined()
+  expect(textProblem(floors, [{ at: 0, change: { node, value, readAt: 1 } }])).toBeUndefined()
 })
 
 it("refuses a format that is not true or false", () => {
   const value = '[{"from":0,"runs":[{"from":0,"text":"One","bold":"yes"}]}]'
-  expect(textProblem(floors, [{ node, value, readAt: 1 }])?.code).toBe("field")
+  expect(textProblem(floors, [{ at: 0, change: { node, value, readAt: 1 } }])?.code).toBe("field")
 })
 
 it("refuses a size or a colour the file cannot store", () => {
   const size = '[{"from":0,"runs":[{"from":0,"text":"One","size":12}]}]'
   const color = '[{"from":0,"runs":[{"from":0,"text":"One","color":{"rgb":"ff0000"}}]}]'
-  expect(textProblem(floors, [{ node, value: size, readAt: 1 }])?.code).toBe("field")
-  expect(textProblem(floors, [{ node, value: color, readAt: 1 }])?.code).toBe("field")
+  expect(textProblem(floors, [{ at: 0, change: { node, value: size, readAt: 1 } }])?.code).toBe("field")
+  expect(textProblem(floors, [{ at: 0, change: { node, value: color, readAt: 1 } }])?.code).toBe("field")
 })
 
 it("lets an agent indent a list item the way Tab does and refuses a level PowerPoint cannot hold", () => {
   const value = writeTextValue([{ from: 0, list: "bullets", level: 2, runs: [{ from: 0, text: "One" }] }])
-  expect(textProblem(floors, [{ node, value, readAt: 1 }])).toBeUndefined()
+  expect(textProblem(floors, [{ at: 0, change: { node, value, readAt: 1 } }])).toBeUndefined()
   const deep = '[{"from":0,"list":"bullets","level":9,"runs":[{"from":0,"text":"One"}]}]'
-  expect(textProblem(floors, [{ node, value: deep, readAt: 1 }])?.code).toBe("field")
+  expect(textProblem(floors, [{ at: 0, change: { node, value: deep, readAt: 1 } }])?.code).toBe("field")
 })

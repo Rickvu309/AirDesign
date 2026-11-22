@@ -178,7 +178,7 @@ function readRun(value: unknown): TextRun | null {
   return read
 }
 
-function readParagraph(value: unknown): TextParagraph | null {
+function readParagraph(value: unknown, firstFrom: number): TextParagraph | null {
   const stored = record(value)
   const paragraph = stored === null ? null : canonicalKeys(stored)
   if (
@@ -189,7 +189,7 @@ function readParagraph(value: unknown): TextParagraph | null {
   ) {
     return null
   }
-  const from = integerAtLeast(paragraph.from, 0)
+  const from = integerAtLeast(paragraph.from, firstFrom)
   const align =
     paragraph.align === undefined
       ? undefined
@@ -232,16 +232,16 @@ export function readTextValue(value: string): TextValue | null {
   } catch {
     return null
   }
-  return readParagraphs(parsed)
+  return readParagraphs(parsed, -1)
 }
 
-export function readParagraphs(parsed: unknown): TextValue | null {
+export function readParagraphs(parsed: unknown, firstFrom = 0): TextValue | null {
   if (!Array.isArray(parsed) || parsed.length === 0) {
     return null
   }
   const paragraphs: TextParagraph[] = []
   for (const item of parsed) {
-    const paragraph = readParagraph(item)
+    const paragraph = readParagraph(item, firstFrom)
     if (paragraph === null) {
       return null
     }

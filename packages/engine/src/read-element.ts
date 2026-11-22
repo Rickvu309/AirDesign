@@ -9,6 +9,7 @@ import {
   history,
   landedPatch,
   netPatch,
+  numberedText,
   openingElement,
   shapeOf,
   slideKind,
@@ -40,7 +41,7 @@ export function foldedElement(register: Register, node: ElementId): IndexElement
 }
 
 function shownValue(value: string | null): string | null {
-  return value === null ? null : withCurrentKeys(value)
+  return value === null ? null : withCurrentKeys(numberedText(value))
 }
 
 function turnOf({ place }: Routed) {

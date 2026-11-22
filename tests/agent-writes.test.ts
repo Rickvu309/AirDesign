@@ -1,5 +1,12 @@
 import { readDeckId, traitWire } from "@airdesign/catalog"
-import { openRegister, presentSlides, readSlideId, type Register } from "@airdesign/document"
+import {
+  openRegister,
+  presentSlides,
+  readSlideId,
+  readTextValue,
+  type Register,
+  type TextValue,
+} from "@airdesign/document"
 import { callTool, emptyLog, memoryTurns, type Session } from "@airdesign/mcp"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { describe, expect, it } from "vitest"
@@ -51,6 +58,15 @@ function written(parts: Parts, session: Session, at = 0): string {
 }
 
 const box = { x: 64, y: 60, w: 400, h: 60 }
+
+function readValue(session: Session, node: string | undefined): TextValue {
+  const result = callTool("airdesign_read_deck", { deck: "deck" }, session)
+  if (!result.ok || result.reported === undefined || !("elements" in result.reported)) throw new Error("read")
+  const value = result.reported.elements.find((element) => element.node === node)?.value
+  const read = typeof value === "string" ? readTextValue(value) : null
+  if (read === null) throw new Error("text value")
+  return read
+}
 
 describe("what the agent tools land, the tab writes", () => {
   it("writes a line break in plain text as a new paragraph, as Enter does", async () => {
@@ -133,12 +149,7 @@ describe("what the agent tools land, the tab writes", () => {
   it("refuses text that looks like JSON and is not a text value, in every form, and never writes it as words", async () => {
     const { session, slide } = await opened()
     const node = landed(session, [{ op: "add", kind: "shape", slide, box, text: { value: "One" } }]).elements[0]?.node
-    const newParagraph = JSON.stringify([{ from: -1, runs: [{ from: -1, text: "B" }] }])
-    for (const value of [
-      newParagraph,
-      '[{"from":0,"runs":[{"from":-1,"text":"A"}',
-      JSON.stringify({ text: "Hello" }),
-    ]) {
+    for (const value of ['[{"from":0,"runs":[{"from":-1,"text":"A"}', JSON.stringify({ text: "Hello" })]) {
       for (const change of [
         { op: "add", kind: "shape", slide, box, text: { value } },
         { op: "set", target: node, text: { value } },
@@ -153,5 +164,61 @@ describe("what the agent tools land, the tab writes", () => {
         expect(JSON.stringify(result.content)).toContain("looks like JSON")
       }
     }
+  })
+
+  it("numbers what the read returns by position and takes a from as a position in it, on a layer the agent added", async () => {
+    const { parts, session, slide } = await opened()
+    const node = landed(session, [{ op: "add", kind: "shape", slide, box, text: { value: "One" } }]).elements[0]?.node
+    const text = (froms: readonly (readonly [number, number])[]) =>
+      JSON.stringify(froms.map(([from, run], at) => ({ from, runs: [{ from: run, text: `Paragraph ${String(at)}` }] })))
+    for (const froms of [
+      [[0, 0]],
+      [
+        [0, 0],
+        [1, 0],
+      ],
+      [
+        [0, 0],
+        [-1, 0],
+      ],
+      [
+        [0, 0],
+        [0, 0],
+      ],
+      [
+        [0, -1],
+        [1, -1],
+        [2, -1],
+      ],
+    ] as const) {
+      landed(session, [{ op: "set", target: node, text: { value: text(froms) } }])
+      const shown = readValue(session, node)
+      expect(shown.map((paragraph) => paragraph.from)).toEqual(froms.map((_, at) => at))
+      expect(shown.flatMap((paragraph) => paragraph.runs.map((run) => run.from))).toEqual(froms.map(() => 0))
+      for (let at = 0; at < froms.length; at += 1)
+        expect(written(parts, session)).toContain(`<a:t>Paragraph ${String(at)}</a:t>`)
+    }
+  })
+
+  it("names the change in a refusal about a table row", async () => {
+    const { session, slide } = await opened()
+    const rows = [0, 1].map((from) => ({ from, cells: [[{ from: 0, runs: [{ from: 0, text: "Cell" }] }]] }))
+    const node = landed(session, [{ op: "add", kind: "table", slide, table: { value: JSON.stringify({ rows }) } }])
+      .elements[0]?.node
+    const outside = JSON.stringify({ rows: [{ from: 9, cells: rows[0]?.cells }] })
+    const result = callTool(
+      "airdesign_edit_deck",
+      {
+        deck: "deck",
+        base: session.deck.revision,
+        changes: [
+          { op: "set", target: node, box: { x: 70 } },
+          { op: "set", target: node, table: { value: outside } },
+        ],
+      },
+      session,
+    )
+    expect(result.ok).toBe(false)
+    expect(JSON.stringify(result.content)).toContain("Change 2")
   })
 })

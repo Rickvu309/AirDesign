@@ -27,7 +27,7 @@ function runSentence(paragraphFrom: number, runs: readonly TextRun[]): string {
   return `${name} has runs ${indexed(runs.map((run) => run.from))}. Use one of them, or -1 for a new run.`
 }
 
-export function runProblem(file: TextValue, next: TextValue): TextProblem | undefined {
+function runProblem(file: TextValue, next: TextValue): TextProblem | undefined {
   for (const paragraph of next) {
     const source = file.find((item) => item.from === paragraph.from)
     if (source === undefined) return { code: "text-from", detail: paragraphSentence(file) }
@@ -46,9 +46,8 @@ export function looksLikeJson(value: string): boolean {
 }
 
 export const notTextValue =
-  "The text looks like JSON and is not a text value, so nothing landed. A text value is [{from, runs:[{from, text}]}]: a paragraph's from is one the layer has, repeated for another paragraph, and a run's from is one it has or -1. Send plain text for plain words."
+  "The text looks like JSON and is not a text value, so nothing landed. A text value is [{from, runs:[{from, text}]}]. A from is a position in the value read, counted from 0; -1 or a position the layer lacks adds a paragraph or run. Send plain text for plain words."
 
-const newLayer: TextValue = [{ from: 0, runs: [{ from: 0, text: "" }] }]
 const emptyCell: TextValue = [{ from: 0, runs: [] }]
 
 function gridProblem(file: TableValue, next: TableValue): TextProblem | undefined {
@@ -86,28 +85,27 @@ export function cellProblem(file: TableValue, next: TableValue): TextProblem | u
   return undefined
 }
 
+export type TextedChange = { readonly at: number; readonly change: WireChange }
+
+function changeProblem(floor: string, value: string): TextProblem | undefined {
+  const table = readTableValue(floor)
+  const sent = table === null ? null : readTableValue(value)
+  if (table !== null && sent !== null) return cellProblem(table, sent)
+  const stored = floor === "" || readTextValue(floor) !== null
+  return stored && readTextValue(value) === null && looksLikeJson(value)
+    ? { code: "field", detail: notTextValue }
+    : undefined
+}
+
 export function textProblem(
   floors: ReadonlyMap<ElementId, string>,
-  changes: readonly WireChange[],
+  changes: readonly TextedChange[],
 ): TextProblem | undefined {
-  for (const change of changes) {
-    if (change.property === "box" || slideKind(change.node) !== null) continue
+  for (const { at, change } of changes) {
     const floor = floors.get(change.node)
-    if (floor === undefined) continue
-    const table = readTableValue(floor)
-    const sent = table === null ? null : readTableValue(change.value)
-    if (table !== null && sent !== null) {
-      const problem = cellProblem(table, sent)
-      if (problem !== undefined) return problem
-      continue
-    }
-    const file = floor === "" ? newLayer : readTextValue(floor)
-    if (file === null) continue
-    const next = readTextValue(change.value)
-    if (next === null && looksLikeJson(change.value)) return { code: "field", detail: notTextValue }
-    if (next === null) continue
-    const problem = runProblem(file, next)
-    if (problem !== undefined) return problem
+    if (change.property === "box" || slideKind(change.node) !== null || floor === undefined) continue
+    const problem = changeProblem(floor, change.value)
+    if (problem !== undefined) return { code: problem.code, detail: `Change ${String(at + 1)}: ${problem.detail}` }
   }
   return undefined
 }

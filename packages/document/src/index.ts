@@ -364,6 +364,7 @@ export {
   type TextValue,
 } from "./text-value.js"
 export { withCurrentKeys } from "./current-keys.js"
+export { numberedText, positionedText } from "./text-positions.js"
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
 export {
   applyRuns,

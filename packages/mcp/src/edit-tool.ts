@@ -10,7 +10,6 @@ import {
   readDeleteChange,
   slideOps,
   type AgentChange,
-  type WireChange,
 } from "@airdesign/catalog"
 import { registerScope, type ElementId, type Register, slideBirths } from "@airdesign/document"
 import { call } from "@airdesign/engine"
@@ -31,7 +30,7 @@ import { changeDetail } from "./change-detail.js"
 import { imageLookup, imageProblem } from "./named-image.js"
 import { styleProblem } from "./style-problem.js"
 import { formProblem } from "./text-form.js"
-import { textProblem } from "./text-from.js"
+import { textProblem, type TextedChange } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
 
 function startedTurn(raw: unknown, session: Session) {
@@ -102,12 +101,15 @@ function fieldDetail(raw: unknown): string | undefined {
   return undefined
 }
 
-function setTexts(register: Register, changes: readonly AgentChange[]): readonly WireChange[] {
+function textedChanges(register: Register, changes: readonly AgentChange[]): readonly TextedChange[] {
   const scope = registerScope(register)
-  return changes.flatMap((change) => {
-    const value = "op" in change && change.op === "set" ? (change.text?.value ?? change.table?.value) : undefined
-    const nodes = value === undefined || !("op" in change) || change.op !== "set" ? [] : scope.expand(change.target)
-    return value === undefined || nodes === "indexing" ? [] : nodes.map((node) => ({ node, value, readAt: 0 }))
+  return changes.flatMap((change, at) => {
+    if (!("op" in change)) return [{ at, change }]
+    const value = change.op === "set" ? (change.text?.value ?? change.table?.value) : undefined
+    const nodes = value === undefined || change.op !== "set" ? [] : scope.expand(change.target)
+    return value === undefined || nodes === "indexing"
+      ? []
+      : nodes.map((node) => ({ at, change: { node, value, readAt: 0 } }))
   })
 }
 
@@ -138,12 +140,15 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   if (unfit !== undefined) return editRefusal(before, "kind", nodes, unfit)
   const unset = setProblem(before.register, parsed.changes)
   if (unset !== undefined) return editRefusal(before, unset.code, nodes, unset.detail)
-  const checked = [...named, ...setTexts(before.register, parsed.changes)]
-  const floors = elementFloors(before.register, checked)
+  const texted = textedChanges(before.register, parsed.changes)
+  const floors = elementFloors(
+    before.register,
+    texted.map(({ change }) => change),
+  )
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
   const problem =
     formProblem(before.register, parsed.changes) ??
-    textProblem(floors.floors, checked) ??
+    textProblem(floors.floors, texted) ??
     styleProblem(before.register, parsed.changes)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
   const unfetched = imageProblem(parsed.changes, session.images)

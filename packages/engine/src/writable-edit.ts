@@ -1,11 +1,13 @@
 import type { AgentChange } from "@airdesign/catalog"
 import {
+  currentValue,
   filedText,
   openingElement,
   paragraphedTable,
   paragraphedText,
   placedTable,
   placedText,
+  positionedText,
   readTextValue,
   slideKind,
   type Register,
@@ -35,8 +37,11 @@ export function writableEdit(register: Register, edit: AgentChange): AgentChange
   const opening = openingElement(register, edit.node)
   const kind = opening?.kind
   const floor = opening?.value ?? (register.elements[edit.node] as { readonly floor?: string } | undefined)?.floor
-  if (kind === "shape" || (kind === undefined && readTextValue(floor ?? "") !== null))
-    return { ...edit, value: paragraphedText(filedText(floor, edit.value)) }
+  if (kind === "shape" || (kind === undefined && readTextValue(floor ?? "") !== null)) {
+    const body = register.elements[edit.node]
+    const current = body === undefined ? (opening?.value ?? edit.floor ?? null) : currentValue(body)
+    return { ...edit, value: paragraphedText(filedText(floor, positionedText(current, edit.value))) }
+  }
   if (kind === "table") return { ...edit, value: paragraphedTable(edit.value) }
   return edit
 }

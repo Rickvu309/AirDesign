@@ -1,6 +1,14 @@
 import type { AgentFindings } from "@airdesign/catalog"
 import { pointBox, type PointBox, type WireChange } from "@airdesign/catalog"
-import { openingElement, currentBox, currentValue, version, type ElementId, type Register } from "@airdesign/document"
+import {
+  openingElement,
+  currentBox,
+  currentValue,
+  numberedText,
+  version,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { editNext, runNext, type EditCode } from "./edit-next.js"
 
@@ -57,10 +65,10 @@ export function heldElements(register: Register, nodes: readonly ElementId[]): E
     if (body === undefined) {
       const opening = openingElement(register, node)
       const shown = opening?.box == null ? {} : { box: pointBox(opening.box) }
-      return { node, value: opening?.value ?? "", version: 0, ...shown }
+      return { node, value: numberedText(opening?.value ?? ""), version: 0, ...shown }
     }
     const box = currentBox(body)
-    const value = { node, value: currentValue(body), version: version(body) }
+    const value = { node, value: numberedText(currentValue(body)), version: version(body) }
     const held = box === null ? value : { ...value, box: pointBox(box) }
     if (body.phase === "running" && body.guarded) return { ...held, closed: true }
     return held

@@ -15,8 +15,9 @@ describe("readTextValue", () => {
     expect(readTextValue("[]")).toBeNull()
   })
 
-  it("refuses a paragraph from of -1", () => {
-    expect(readTextValue('[{"from":-1,"runs":[]}]')).toBeNull()
+  it("reads a paragraph from of -1 as a new paragraph and refuses -2", () => {
+    expect(readTextValue('[{"from":-1,"runs":[]}]')).toEqual([{ from: -1, runs: [] }])
+    expect(readTextValue('[{"from":-2,"runs":[]}]')).toBeNull()
   })
 
   it("refuses a run from of -2", () => {

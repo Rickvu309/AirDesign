@@ -7,7 +7,7 @@ export const textWire: TraitWire<"text"> = {
   fields: {
     value: {
       description:
-        "Plain text keeps the first run's look. JSON [{from,level?,runs:[{from,text,link?}]}] keeps file indexes; level 0-8 indents a list item; -1 adds a run. Run link: {kind:'url',url:'https://…'}, {kind:'slide',slide:'ID'} or {kind:'none'}; omit it to keep it.",
+        "Plain text keeps the first run's look. JSON [{from,level?,runs:[{from,text,link?}]}]: A from is a position in the value read, counted from 0; -1 or a position the layer lacks adds a paragraph or run. level 0-8 indents a list item. Run link: {kind:'url',url:'https://…'}, {kind:'slide',slide:'ID'} or {kind:'none'}; omit it to keep it.",
       example: { text: { value: "Quarterly review" } },
     },
     fill: {
