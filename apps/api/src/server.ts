@@ -45,6 +45,7 @@ import type { Sql } from "./pool.js"
 import { mediaAnswers } from "./media.js"
 import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
+import type { ImageNet } from "./image-fetch.js"
 import { sameSecret } from "./secrets.js"
 import { checkedResource, readUrl } from "./resource.js"
 import { requireDomain, requireOrigin } from "./start-origins.js"
@@ -69,6 +70,7 @@ export type ApiOptions = {
   readonly commit?: string
   readonly smokeToken?: string
   readonly originals?: OriginalStore
+  readonly imageNet?: ImageNet
   readonly aira?: AiraSettings
   readonly closing?: Closing
   readonly forwardSecret?: string
@@ -408,6 +410,8 @@ async function mcpRoute(visit: Visit): Promise<void> {
       mint: () => `${called.agentKey}-${mint()}`,
       hosts: options.hosts ?? localHosts,
       bodyCap: limits.body,
+      ...(options.originals === undefined ? {} : { originals: options.originals }),
+      ...(options.imageNet === undefined ? {} : { imageNet: options.imageNet }),
       fail: (error) => answerThrow(visit, name, error),
     },
     req,

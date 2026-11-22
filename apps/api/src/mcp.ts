@@ -3,11 +3,14 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { type DeckId, type SceneRefusal, readDeckId } from "@airdesign/catalog"
 import { scene } from "@airdesign/document"
-import { emptyLog, createServer, type DeckHost, type Host, type Session } from "@airdesign/mcp"
+import { emptyLog, createServer, type DeckHost, type Host, type NamedImage, type Session } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import { admitCaller } from "./caller-log.js"
+import { fetchImage, type ImageNet } from "./image-fetch.js"
+import { keepMedia } from "./media.js"
+import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
 import { createScene, editScene, openScene } from "./scene-deck.js"
 import { startIds } from "./scene-start.js"
@@ -21,6 +24,8 @@ export type McpHost = {
   readonly mint: () => string
   readonly hosts: readonly string[]
   readonly bodyCap: number
+  readonly originals?: OriginalStore
+  readonly imageNet?: ImageNet
   readonly fail: (error: unknown) => void
 }
 
@@ -53,7 +58,38 @@ function opened(deck: DeckId, answer: Awaited<ReturnType<typeof openScene>>) {
   return fold === undefined ? refusal("payload") : ({ ok: true, deck, rev: answer.rev, fold } as const)
 }
 
-function sceneHost(db: Sql, email: string): DeckHost {
+type ImageStore = { readonly originals: OriginalStore | undefined; readonly net: ImageNet | undefined }
+
+async function storedImages(
+  db: Sql,
+  deck: DeckId,
+  email: string,
+  addresses: readonly string[],
+  images: ImageStore,
+): Promise<ReadonlyMap<string, NamedImage>> {
+  const found = new Map<string, NamedImage>()
+  for (const address of addresses) {
+    const fetched = await fetchImage(address, images.net)
+    if (!fetched.ok) {
+      found.set(address, { ok: false, refusal: fetched.refusal })
+      continue
+    }
+    try {
+      const kept = await keepMedia(db, deck, fetched.bytes, email, images.originals)
+      found.set(
+        address,
+        kept.ok
+          ? { ok: true, asset: kept.sha256 }
+          : { ok: false, refusal: kept.refusal === "limit" ? "full" : "store" },
+      )
+    } catch {
+      found.set(address, { ok: false, refusal: "store" })
+    }
+  }
+  return found
+}
+
+function sceneHost(db: Sql, email: string, images: ImageStore): DeckHost {
   const guarded =
     <Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) =>
     async (...args: Args): Promise<Result | SceneRefusal> => {
@@ -96,6 +132,7 @@ function sceneHost(db: Sql, email: string): DeckHost {
       )
       return decoded(named) ?? opened(id.deck, await openScene(db, { deck: id.deck }, email))
     }),
+    images: async (deck, addresses) => storedImages(db, deck, email, addresses, images),
     open: guarded(async (deck) => opened(deck, await openScene(db, { deck }, email))),
     edit: guarded(async (deck, edit) => {
       const landed = await editScene(db, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)
@@ -120,7 +157,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const session: Session = { agent: host.agentKey, mint: host.mint, log: emptyLog(), now: host.now() }
   const bridge: Host = {
-    ...sceneHost(host.deck, host.email),
+    ...sceneHost(host.deck, host.email, { originals: host.originals, net: host.imageNet }),
     admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })
