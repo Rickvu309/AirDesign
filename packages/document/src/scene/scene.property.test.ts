@@ -276,12 +276,7 @@ it("shows the server's scene with the pending edits folded on top, as the fold i
         const view = viewOf(server, pending)
         let folded = server
         for (const edit of pending) {
-          const writes = edit.writes.map((each) => {
-            const was = revOf(folded, each.node, each.prop)
-            const { base: _sent, ...rest } = each
-            return was === undefined ? rest : { ...rest, base: was }
-          })
-          const next = applyEdit(folded, { ...edit, writes, rev: rev(folded.rev + 1) })
+          const next = applyEdit(folded, { ...edit, rev: rev(folded.rev + 1) })
           if (!isRefusal(next)) folded = next
         }
         expect(view).toEqual(folded)

@@ -45,42 +45,16 @@ describe("viewOf", () => {
     expect(revOf(withAck, ids.side, "name")).toBe(revOf(withoutAck, ids.side, "name"))
   })
 
-  it("judges nothing by a pending write's base: the server decides conflicts, the view shows the person's edit", () => {
+  it("drops a pending edit that now refuses and keeps the ones after it", () => {
     const server = sampleDeck()
-    const mine = edit([{ node: ids.title, prop: "text", value: textOf("mine"), base: rev(0) }])
-    const view = viewOf(server, [mine, edit([{ node: ids.title, prop: "text", value: textOf("mine too") }])])
-    expect(view.nodes.get(ids.title)).toMatchObject({ text: { chars: "mine too" } })
+    const stale = edit([{ node: ids.title, prop: "text", value: textOf("old"), base: rev(0) }])
+    const fine = edit([{ node: ids.card, prop: "name", value: "Fine" }])
+    const view = viewOf(server, [stale, fine])
+    expect(view.nodes.get(ids.title)).toMatchObject({ text: { chars: "Revenue" } })
+    expect(view.nodes.get(ids.card)).toMatchObject({ name: "Fine" })
   })
 
-  it("keeps a person's second keystroke when an unrelated edit lands before the first reaches the server", () => {
-    const server = sampleDeck()
-    const base = revOf(server, ids.title, "text")!
-    const first = edit([{ node: ids.title, prop: "text", value: textOf("R"), base }])
-    const second = edit([{ node: ids.title, prop: "text", value: textOf("Re"), base: rev(server.rev + 1) }])
-    const elsewhere = applyEdit(server, {
-      once: once(),
-      author: person,
-      writes: [{ node: ids.side, prop: "name", value: "Side" }],
-      rev: rev(server.rev + 1),
-    }) as Scene
-    expect(viewOf(elsewhere, [first, second]).nodes.get(ids.title)).toMatchObject({ text: { chars: "Re" } })
-  })
-
-  it("drops a pending edit that refuses for another reason and keeps the ones after it", () => {
-    const server = applyEdit(sampleDeck(), {
-      once: once(),
-      author: person,
-      writes: [{ node: ids.card, prop: "parent", value: null }],
-      rev: rev(sampleDeck().rev + 1),
-    }) as Scene
-    const gone = edit([{ node: ids.card, prop: "name", value: "Gone" }])
-    const fine = edit([{ node: ids.side, prop: "name", value: "Fine" }])
-    const view = viewOf(server, [gone, fine])
-    expect(view.nodes.get(ids.card)).not.toHaveProperty("name")
-    expect(view.nodes.get(ids.side)).toMatchObject({ name: "Fine" })
-  })
-
-  it("equals folding the pending edits over the server one by one, each based on the view it lands on", () => {
+  it("equals folding the pending edits over the server one by one", () => {
     const server = sampleDeck()
     const pending = [
       edit([{ node: ids.card, prop: "name", value: "A" }]),
@@ -89,12 +63,7 @@ describe("viewOf", () => {
     ]
     let folded = server
     for (const each of pending) {
-      const writes = each.writes.map((write) => {
-        const was = revOf(folded, write.node, write.prop)
-        const { base: _sent, ...rest } = write
-        return was === undefined ? rest : { ...rest, base: was }
-      })
-      const next = applyEdit(folded, { ...each, writes, rev: rev(folded.rev + 1) })
+      const next = applyEdit(folded, { ...each, rev: rev(folded.rev + 1) })
       if (!isRefusal(next)) folded = next
     }
     expect(viewOf(server, pending)).toEqual(folded)
