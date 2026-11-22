@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
+import { clearBrowser } from "../../.agents/skills/verify-airdesign/bin/clear-browser.mjs"
 import type { ReadDeckAnswer, ReadElement } from "../../packages/engine/src/index.ts"
 import { forward, signInBrowser, test } from "./api-stack"
 
@@ -54,23 +55,6 @@ async function serveOriginals(
       }
     },
   )
-}
-
-async function clearBrowser(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    localStorage.clear()
-    sessionStorage.clear()
-    const listed = indexedDB.databases === undefined ? [] : await indexedDB.databases()
-    for (const database of listed) {
-      if (database.name === undefined) continue
-      await new Promise<void>((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(database.name)
-        request.onsuccess = () => resolve()
-        request.onerror = () => reject(request.error)
-        request.onblocked = () => reject(new Error("database is still open"))
-      })
-    }
-  })
 }
 
 async function elementOn(

@@ -98,7 +98,7 @@ async function place(): Promise<Place> {
 }
 
 const onLoad = (binding: string, where: Place) => `(() => {
-  if (window !== window.top || !/^https?:$/.test(location.protocol) || location.pathname.startsWith("/screens/")) return;
+  if (window !== window.top || !/^https?:$/.test(location.protocol) || location.pathname.startsWith("/screens/") || location.pathname === "/version") return;
   const navigation = performance.getEntriesByType("navigation")[0]?.type ?? "navigate";
   const url = location.href;
   const started = performance.now();

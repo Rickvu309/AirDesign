@@ -1,3 +1,4 @@
+import { clearBrowser } from "../bin/clear-browser.mjs"
 import { productCopy } from "../bin/product-copy.mjs"
 import fs from "node:fs"
 import path from "node:path"
@@ -17,23 +18,6 @@ function textsIn(register) {
             .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
             .join(""),
         ]
-  })
-}
-
-async function clearBrowser(page) {
-  await page.evaluate(async () => {
-    localStorage.clear()
-    sessionStorage.clear()
-    for (const database of await indexedDB.databases()) {
-      await new Promise((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(database.name)
-        request.onsuccess = resolve
-        request.onerror = () => reject(request.error)
-        request.onblocked = () => reject(new Error("database open"))
-      })
-    }
-    const directory = await navigator.storage.getDirectory()
-    for await (const name of directory.keys()) await directory.removeEntry(name, { recursive: true })
   })
 }
 
