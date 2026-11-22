@@ -25,6 +25,32 @@ const nextError = (lines, from) =>
 
 const vitestFailure = /^ FAIL\s+(?:\S+\s+)??(\S+\.(?:test|spec)\.\w+)(?: > (.+?))?(?: \[ .+ \])?\s*$/
 const playwrightFailure = /^\s*\d+\) (\S+\.spec\.\w+):(\d+):\d+ › (.+?)[\s─]*$/
+const designStatesFile = "tests/browser/design-states.spec.ts"
+const quotedField = (key) => new RegExp(`"${key}": "([^"]*)"`)
+
+const failureBlock = (lines, from) => {
+  const block = []
+  for (const line of lines.slice(from + 1)) {
+    if (vitestFailure.test(line) || playwrightFailure.test(line) || /^failed: /.test(line)) break
+    block.push(line)
+  }
+  return block
+}
+
+const designStatesIn = (lines) => {
+  const states = []
+  let error
+  for (const line of lines) {
+    const found = quotedField("error").exec(line)
+    const page = quotedField("page").exec(line)
+    if (found !== null) error = found[1]
+    if (page !== null) {
+      states.push({ state: page[1], error })
+      error = undefined
+    }
+  }
+  return states
+}
 
 export const failedTests = (text) => {
   const lines = plainLog(text).split("\n")
@@ -39,14 +65,29 @@ export const failedTests = (text) => {
           ? [playwright[1], playwright[3], Number(playwright[2])]
           : []
     if (file === undefined) return
-    const test = {
-      file,
-      name: name ?? "(the whole file)",
-      error: nextError(lines, at + 1),
-      ...(lineNumber === undefined ? {} : { line: lineNumber }),
+    const headline = nextError(lines, at + 1)
+    const states = file === designStatesFile ? designStatesIn(failureBlock(lines, at)) : []
+    const tests =
+      states.length === 0
+        ? [
+            {
+              file,
+              name: name ?? "(the whole file)",
+              error: headline,
+              ...(lineNumber === undefined ? {} : { line: lineNumber }),
+            },
+          ]
+        : states.map((state) => ({
+            file,
+            name: name ?? "(the whole file)",
+            state: state.state,
+            error: state.error ?? headline,
+            ...(lineNumber === undefined ? {} : { line: lineNumber }),
+          }))
+    for (const test of tests) {
+      const key = `${file}:${test.line ?? ""} ${test.name} ${test.state ?? ""}`
+      if (!found.has(key)) found.set(key, test)
     }
-    const key = `${file}:${test.line ?? ""} ${test.name}`
-    if (!found.has(key)) found.set(key, test)
   })
   return [...found.values()]
 }

@@ -11,7 +11,7 @@ import { agentHeader, openIssues } from "./race-issue.mjs"
 import { recordEndedRaces, recordRun } from "./red-main-records.mjs"
 import { decide } from "./red-main-verdict.mjs"
 import { cleanRead, revertPull, runUrl } from "./red-main-revert-report.mjs"
-import { greenRerun, rerunProcess } from "./green-rerun.mjs"
+import { fileAddedBetween, greenRerun, rerunProcess } from "./green-rerun.mjs"
 import { drillBranch, finishDrill, removeDrillBranch } from "./red-main-drill.mjs"
 
 export const branchPrefix = "red-main/revert-"
@@ -378,7 +378,14 @@ const filesBetween = (io) => (from, to) => {
 }
 
 const decideMain = (state, io) =>
-  decide({ ...state, jobsOf: io.jobsOf, filesBetween: filesBetween(io), rerun: io.rerun, jobsReached: jobsReachedBy })
+  decide({
+    ...state,
+    jobsOf: io.jobsOf,
+    filesBetween: filesBetween(io),
+    rerun: io.rerun,
+    jobsReached: jobsReachedBy,
+    addedBetween: fileAddedBetween(io.git),
+  })
 
 export const redMainBot = async ({ repository, event, io }) => {
   const said = []

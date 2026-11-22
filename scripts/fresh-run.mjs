@@ -2,7 +2,15 @@ import { jobsReachedBy } from "./change-map.mjs"
 import { failedSteps, failedTests } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { enqueue, readPull } from "./merge-queue.mjs"
-import { agentHeader, failureExcerpt, raceTitle, recordRace } from "./race-issue.mjs"
+import {
+  agentHeader,
+  designStateFile,
+  designStatesRunner,
+  failureExcerpt,
+  namedDesignState,
+  raceTitle,
+  recordRace,
+} from "./race-issue.mjs"
 import { ruleFileSuffix } from "./rules.mjs"
 export const browserStep = "browser-tests"
 const browserTestPaths = [/^tests\/browser\//, /^tests\/journeys\//, /^playwright[\w.]*\.config\.m?ts$/]
@@ -27,14 +35,29 @@ export const outsideTheDiff = ({ jobs, files, byMap = false }) => {
     if (fault !== undefined) return { outside: false, why: fault }
   }
   if (files === undefined) return { outside: false, why: "the files this pull request changes could not be read" }
-  const touched = files.find(
-    (file) => !file.endsWith(ruleFileSuffix) && browserTestPaths.some((pattern) => pattern.test(file)),
-  )
-  if (touched !== undefined) return { outside: false, owned: true, why: `this pull request changes ${touched}` }
   const tests = jobs.flatMap((job) => failedTests(job.log))
-  const changed = tests.find((test) => files.includes(test.file))
-  if (changed !== undefined)
-    return { outside: false, owned: true, why: `this pull request changes the failed test ${changed.file}` }
+  const namedDesign = tests.filter(namedDesignState)
+  const designOnly = namedDesign.length > 0 && namedDesign.length === tests.length
+  if (designOnly) {
+    const owned = namedDesign.find(
+      (test) =>
+        files.includes(test.file) || files.includes(designStatesRunner) || files.includes(designStateFile(test.state)),
+    )
+    if (owned !== undefined)
+      return {
+        outside: false,
+        owned: true,
+        why: `this pull request changes the failed design state ${owned.state}`,
+      }
+  } else {
+    const touched = files.find(
+      (file) => !file.endsWith(ruleFileSuffix) && browserTestPaths.some((pattern) => pattern.test(file)),
+    )
+    if (touched !== undefined) return { outside: false, owned: true, why: `this pull request changes ${touched}` }
+    const changed = tests.find((test) => files.includes(test.file))
+    if (changed !== undefined)
+      return { outside: false, owned: true, why: `this pull request changes the failed test ${changed.file}` }
+  }
   if (byMap) {
     const reaches = jobsReachedBy(files)
     const reached = jobs.find((job) => reaches(job.name))
