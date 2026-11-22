@@ -14,6 +14,7 @@ export function sceneFuzzGood(deck: string) {
     "POST /scenes/open": landed({ deck }),
     "POST /scenes/edit": landed({ deck, edit }),
     "POST /scenes/since": landed({ deck, rev: 0 }),
+    "POST /scenes/run": landed({ deck, run: "fuzz-run" }),
     "POST /scenes/pictures": landed({ deck, rev: 0, pictures: { keys: [], images: [] } }),
   }
 }

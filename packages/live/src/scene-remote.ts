@@ -6,6 +6,7 @@ import {
   type SceneLanded,
   type ScenePictured,
   type SceneOpened,
+  type SceneRan,
   type SlidePictures,
 } from "@airdesign/catalog"
 import { scene } from "@airdesign/document"
@@ -19,6 +20,7 @@ export type SceneRemote = {
     body: { readonly deck: string; readonly rev: number; readonly wait?: boolean; readonly pictures?: boolean },
     signal?: AbortSignal,
   ): Promise<SceneCaught>
+  run?(body: { readonly deck: string; readonly run: string }): Promise<SceneRan>
   pictures?(body: {
     readonly deck: string
     readonly rev: number
@@ -33,10 +35,16 @@ export function httpSceneRemote(): SceneRemote {
     edit: async (body) => sceneRoutes.edit.result(await post(sceneRoutes.edit.path, body)),
     since: async (body, signal) => sceneRoutes.since.result(await post(sceneRoutes.since.path, body, signal)),
     pictures: async (body) => sceneRoutes.pictures.result(await post(sceneRoutes.pictures.path, body)),
+    run: async (body) => sceneRoutes.run.result(await post(sceneRoutes.run.path, body)),
   }
 }
 
-type Stored = { fold: scene.Scene; log: scene.Landed[]; waiting: (() => void)[] }
+type Stored = {
+  fold: scene.Scene
+  log: scene.Landed[]
+  was: Map<scene.Rev, Record<string, unknown>>
+  waiting: (() => void)[]
+}
 
 const wire = (raw: unknown): unknown => JSON.parse(JSON.stringify(raw))
 
@@ -69,7 +77,7 @@ export function memorySceneRemote(start: scene.Edit): SceneRemote {
         const first = { ...(wire(start) as scene.Edit), rev: scene.rev(1) }
         const next = scene.applyEdit(scene.emptyScene, first)
         if (scene.isRefusal(next)) return refusal("payload")
-        decks.set(id.deck, { fold: next, log: [first], waiting: [] })
+        decks.set(id.deck, { fold: next, log: [first], was: new Map(), waiting: [] })
       }
       return opened(id.deck, decks.get(id.deck)!)
     },
@@ -89,10 +97,27 @@ export function memorySceneRemote(start: scene.Edit): SceneRemote {
       if (scene.isRefusal(next)) return { ok: false, refusal: "edit", ...next }
       if (next === stored.fold)
         return { ok: true, deck: id.deck, rev: stored.fold.onces.get(read.once) ?? stored.fold.rev }
+      if (read.author.kind === "agent" && read.author.run !== undefined)
+        stored.was.set(
+          landed.rev,
+          Object.fromEntries(landed.writes.map((write) => [write.node, stored.fold.nodes.get(write.node) ?? null])),
+        )
       stored.fold = next
       stored.log.push(landed)
       wake(stored)
       return { ok: true, deck: id.deck, rev: landed.rev }
+    },
+    async run(body) {
+      const id = readDeckId(body.deck)
+      const stored = id.ok ? decks.get(id.deck) : undefined
+      if (!id.ok || stored === undefined) return refusal("deck")
+      const edits = stored.log.filter((landed) => landed.author.run === body.run)
+      const before: Record<string, unknown> = {}
+      for (const landed of edits)
+        for (const [node, snapshot] of Object.entries(stored.was.get(landed.rev) ?? {}))
+          if (!(node in before)) before[node] = snapshot
+      const present = Object.fromEntries(Object.entries(before).filter(([, snapshot]) => snapshot !== null))
+      return { ok: true, deck: id.deck, rev: stored.fold.rev, edits: edits.map(wire), before: wire(present) as never }
     },
     async since(body, signal) {
       const id = readDeckId(body.deck)

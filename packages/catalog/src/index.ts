@@ -56,6 +56,7 @@ export {
   sceneRoutes,
   scenePaths,
   type SceneCaught,
+  type SceneRan,
   type SceneLanded,
   type SceneOpened,
   type ScenePictured,
