@@ -297,7 +297,7 @@ describe("mcp route", () => {
       const landed = await tool(client, "edit_deck", {
         deck: first.deck,
         base: first.rev,
-        changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "Agent words" }],
+        changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "Agent" }],
       })
       const [{ id: added }] = landed.answer.added as { id: string }[]
       const typed = await ask(
