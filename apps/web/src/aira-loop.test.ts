@@ -1,6 +1,6 @@
 import { airaRoutes, deckRoutes } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
-import { airaChat, askAira, retryAira, undoExchange, type AiraChat } from "./aira-loop"
+import { airaChat, askAira, retryAira, undoByRoute, undoExchange, type AiraChat } from "./aira-loop"
 import {
   asking,
   call,
@@ -362,15 +362,15 @@ describe("Aira's loop in the browser", () => {
       [edited],
     )
     const { done } = await asking(airaChat(deck), "Retitle", link)
-    const undone = await undoExchange(done, 0, link.send)
+    const undone = await undoExchange(done, 0, undoByRoute(link.send))
     expect(link.sent.at(-1)).toEqual({ path: deckRoutes.undo.path, body: { deck, runId: "run-1" } })
     expect(undone?.exchanges[0]?.end).toBe("undone")
-    expect(undone === undefined ? "missing" : await undoExchange(undone, 0, link.send)).toBeUndefined()
+    expect(undone === undefined ? "missing" : await undoExchange(undone, 0, undoByRoute(link.send))).toBeUndefined()
     const fenced = { ...done, exchanges: [{ ...done.exchanges[0]!, runs: ["fenced"] }] }
-    const refused = await undoExchange(fenced, 0, link.send)
+    const refused = await undoExchange(fenced, 0, undoByRoute(link.send))
     expect(refused?.exchanges[0]).toMatchObject({ end: "done", undoRefused: true })
     const asked = link.sent.length
-    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, link.send)).toBeUndefined()
+    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, undoByRoute(link.send))).toBeUndefined()
     expect(link.sent).toHaveLength(asked)
   })
 
@@ -387,7 +387,7 @@ describe("Aira's loop in the browser", () => {
       ...airaChat(deck),
       exchanges: [{ asked: "Retitle", steps: [], end: "done", runs: ["run-1", "run-2"] }],
     }
-    const failed = await undoExchange(start, 0, send)
+    const failed = await undoExchange(start, 0, undoByRoute(send))
     expect(failed?.exchanges[0]).toEqual({
       asked: "Retitle",
       steps: [],
@@ -396,7 +396,7 @@ describe("Aira's loop in the browser", () => {
       undoFailed: true,
     })
     reachable.add("run-1")
-    const undone = failed === undefined ? undefined : await undoExchange(failed, 0, send)
+    const undone = failed === undefined ? undefined : await undoExchange(failed, 0, undoByRoute(send))
     expect(undone?.exchanges[0]).toEqual({ asked: "Retitle", steps: [], end: "undone", runs: ["run-1"] })
     expect(asked).toEqual(["run-2", "run-1", "run-1"])
   })

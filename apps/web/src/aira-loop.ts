@@ -490,10 +490,29 @@ async function converse(
   return chat
 }
 
+export type UndoRun = (deck: string, run: string) => Promise<"undone" | "refused" | "failed">
+
+export function undoByRoute(send: typeof fetch = fetch): UndoRun {
+  return async (deck, runId) => {
+    try {
+      const response = await send(deckRoutes.undo.path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ deck, runId }),
+      })
+      const undone = deckRoutes.undo.result(await response.json())
+      if (undone.ok) return "undone"
+      return lasting.has(undone.refusal) ? "refused" : "failed"
+    } catch {
+      return "failed"
+    }
+  }
+}
+
 export async function undoExchange(
   chat: AiraChat,
   exchange: number,
-  send: typeof fetch = fetch,
+  undo: UndoRun = undoByRoute(),
 ): Promise<AiraChat | undefined> {
   const found = chat.exchanges[exchange]
   if (
@@ -511,17 +530,9 @@ export async function undoExchange(
       exchange,
       runs: found.runs.slice(0, found.runs.length - index),
     })
-    try {
-      const response = await send(deckRoutes.undo.path, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ deck: chat.deck, runId }),
-      })
-      const undone = deckRoutes.undo.result(await response.json())
-      if (!undone.ok) return lasting.has(undone.refusal) ? airaStep(chat, { type: "undo-refused", exchange }) : failed
-    } catch {
-      return failed
-    }
+    const result = await undo(chat.deck, runId)
+    if (result === "refused") return airaStep(chat, { type: "undo-refused", exchange })
+    if (result === "failed") return failed
   }
   return airaStep(chat, { type: "undone", exchange })
 }

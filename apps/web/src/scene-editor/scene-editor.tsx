@@ -5,6 +5,7 @@ import { sceneEditorCopy } from "@/copy/scene-editor-copy"
 import { CanvasTools } from "./canvas-tools"
 import { EditorTopBar } from "./editor-top-bar"
 import { slidesOf } from "./node-props"
+import { SceneAgentPanel } from "./scene-agent-panel"
 import { SceneCanvas } from "./scene-canvas"
 import { noSelection, type Selection } from "./selection"
 import type { Tool } from "./use-canvas-pointer"
@@ -22,8 +23,8 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [tool, setTool] = useState<Tool>("move")
   return (
-    <div className="window-frame" data-scene-editor={id}>
-      <div className="flex h-full flex-col bg-canvas">
+    <div className="window-frame flex" data-scene-editor={id}>
+      <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
         <EditorTopBar name={deckName(view)} client={client} />
         <div className="relative flex min-h-0 flex-1 flex-col">
           {slide === undefined ? null : (
@@ -41,6 +42,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
           <CanvasTools tool={tool} onTool={setTool} />
         </div>
       </div>
+      <SceneAgentPanel deck={id} client={client} />
     </div>
   )
 }

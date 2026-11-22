@@ -1,0 +1,143 @@
+import { orderKeyBetween, scene } from "@airdesign/document"
+import { describe, expect, it } from "vitest"
+import { createSceneDeck, openSceneDeck } from "./scene-deck.js"
+import { memorySceneRemote } from "./scene-remote.js"
+import { memoryStorage } from "./scene-storage.js"
+
+const id = scene.nodeId
+const deckNode = id("s:1")
+const row = id("s:2")
+const slide = id("s:3")
+const title = id("s:4")
+const made = id("agent:1")
+const at = (parent: scene.NodeId) => ({ id: parent, at: orderKeyBetween(null, null) })
+const box = (x: number) => ({ x, y: 0, w: 100, h: 50, rotation: 0, flipH: false, flipV: false })
+
+const start: scene.Edit = {
+  once: "start",
+  author: { kind: "person", id: "start" },
+  writes: [
+    { node: deckNode, prop: "type", value: "deck" },
+    { node: row, prop: "type", value: "slideRow" },
+    { node: row, prop: "parent", value: at(deckNode) },
+    { node: slide, prop: "type", value: "slide" },
+    { node: slide, prop: "parent", value: at(row) },
+    { node: title, prop: "type", value: "shape" },
+    { node: title, prop: "parent", value: at(slide) },
+    { node: title, prop: "box", value: box(0) },
+  ],
+}
+
+const agent = (run: string): scene.Author => ({ kind: "agent", id: "aira", run })
+
+async function join(remote: ReturnType<typeof memorySceneRemote>, how: "create" | "open") {
+  let next = 0
+  const opened = await (how === "create" ? createSceneDeck : openSceneDeck)(remote, "run", {
+    once: () => `tab-${(next += 1)}`,
+    client: "tab",
+    storage: memoryStorage(),
+    pause: () => Promise.resolve(),
+  })
+  if (!opened.ok) throw new Error(JSON.stringify(opened))
+  return opened.deck
+}
+
+async function land(remote: ReturnType<typeof memorySceneRemote>, edit: scene.Edit) {
+  const answer = await remote.edit({ deck: "run", edit })
+  expect(answer.ok).toBe(true)
+}
+
+const xOf = (view: scene.Scene) => (view.nodes.get(title) as { box?: { x: number } }).box?.x
+
+describe("undoing an agent's run", () => {
+  it("takes every edit of the run back in one step and paints it at once", async () => {
+    const remote = memorySceneRemote(start)
+    const mine = await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(10) }],
+    })
+    await land(remote, {
+      once: "a2",
+      author: agent("run-1"),
+      writes: [
+        { node: title, prop: "box", value: box(20) },
+        { node: made, prop: "type", value: "shape" },
+        { node: made, prop: "parent", value: at(slide) },
+      ],
+    })
+    await land(remote, { once: "a3", author: agent("run-1"), phase: "stop", writes: [] })
+    await mine.catchUp()
+    expect(xOf(mine.view())).toBe(20)
+    expect(mine.view().children.get(slide)).toContain(made)
+
+    const turned = await mine.undoRun("run-1")
+
+    expect(turned.ok).toBe(true)
+    expect(xOf(mine.view())).toBe(0)
+    expect(mine.view().children.get(slide) ?? []).not.toContain(made)
+    if (!turned.ok) return
+    await turned.saved
+    expect((await mine.sync()).ok).toBe(true)
+    const other = await join(remote, "open")
+    expect(xOf(other.view())).toBe(0)
+  })
+
+  it("leaves what a person wrote after the run, and says so when nothing is left to undo", async () => {
+    const remote = memorySceneRemote(start)
+    const mine = await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(10) }],
+    })
+    await land(remote, { once: "a2", author: agent("run-1"), phase: "stop", writes: [] })
+    await mine.catchUp()
+    mine.push([{ node: title, prop: "box", value: box(77) }])
+    await mine.sync()
+
+    expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "nothing" })
+    expect(xOf(mine.view())).toBe(77)
+  })
+
+  it("finds a run the tab did not see land, after a reload", async () => {
+    const remote = memorySceneRemote(start)
+    await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-9"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(40) }],
+    })
+    await land(remote, { once: "a2", author: agent("run-9"), phase: "stop", writes: [] })
+    const later = await join(remote, "open")
+    await later.catchUp()
+
+    expect((await later.undoRun("run-9")).ok).toBe(true)
+    expect(xOf(later.view())).toBe(0)
+  })
+
+  it("redoes the run with the person's redo", async () => {
+    const remote = memorySceneRemote(start)
+    const mine = await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(10) }],
+    })
+    await mine.catchUp()
+    expect((await mine.undoRun("run-1")).ok).toBe(true)
+    expect(mine.redo().ok).toBe(true)
+    expect(xOf(mine.view())).toBe(10)
+  })
+
+  it("names a run the log never held", async () => {
+    const remote = memorySceneRemote(start)
+    const mine = await join(remote, "create")
+    expect(await mine.undoRun("run-none")).toEqual({ ok: false, reason: "nothing" })
+  })
+})
