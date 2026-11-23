@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, w
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { browserModuleSystemFaults, describeFault } from "./browser-module-systems.mjs"
 
 const root = path.resolve(process.argv[2] ?? ".")
 const temporary = mkdtempSync(path.join(os.tmpdir(), "browser-imports-config-"))
@@ -64,11 +65,12 @@ try {
       )
     )
   })
+  failures.push(...browserModuleSystemFaults(root).map(describeFault))
   if (failures.length > 0) {
     console.error(failures.join("\n"))
     process.exitCode = 1
   } else {
-    console.log("test-imports: browser and verification import/export diagnostics passed")
+    console.log("test-imports: browser and verification imports resolve, and each loads by one module system")
   }
 } finally {
   rmSync(temporary, { recursive: true, force: true })
