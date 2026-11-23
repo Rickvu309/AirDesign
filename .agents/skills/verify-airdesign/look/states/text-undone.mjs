@@ -7,7 +7,7 @@ async function drive(kit) {
   const { page } = kit
   await titleEdited(kit)
   await page.keyboard.press("ControlOrMeta+a")
-  await page.keyboard.type("Mine", { delay: 40 })
+  await page.keyboard.insertText("Mine")
   await leaveText(page)
   await expect(node(page, "s:4")).toHaveText("Mine")
   await page.keyboard.press("ControlOrMeta+z")
