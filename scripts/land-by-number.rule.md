@@ -1,0 +1,3 @@
+# `pnpm land --watch --pr <n>` and `--status --pr <n>` follow pull request n on its own head branch, read from GitHub
+
+In `--pr` mode land never stands in a placeholder for the branch: it asks `gh pr view` for `headRefName` and passes that branch to `followPull` and `statusLines`, so `failedRunFor` in `scripts/land-follow.mjs` finds the pull request's failed `ci` run and the one fresh run can start. A branch name that no pull request has makes GitHub answer with no runs, which reads as "no failed ci run" instead of an error (`scripts/land.mjs`, `scripts/land.test.mjs` follows pull request 394 by number from `main` and checks every runs query names its branch)
