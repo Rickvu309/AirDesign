@@ -30,6 +30,10 @@ describe("a new deck's title slide", () => {
     for (const style of Object.values(theme.textStyles)) expect(style.size).toBeGreaterThanOrEqual(36)
     expect(theme.textStyles.title.size).toBe(88)
   })
+
+  it("gives glow the default theme's look, a drop shadow with no offset, never a blur of the layer", () => {
+    expect(theme.effectStyles.glow).toEqual(doom.defaultTheme.effectStyles.glow)
+  })
 })
 
 describe("an agent's title on a new deck's first slide", () => {
