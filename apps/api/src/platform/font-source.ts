@@ -11,6 +11,8 @@ import {
 } from "@airdesign/fonts"
 import type { OriginalStore } from "./original-store.js"
 
+export type FontStore = Pick<OriginalStore, "read" | "write">
+
 const upstream = `https://raw.githubusercontent.com/google/fonts/${fontRevision}`
 const prefix = `fonts/${fontRevision}`
 const maximumFile = 32 * 1024 * 1024
@@ -23,10 +25,10 @@ const localFaces: readonly FontFile[] = [
 
 export class FontSource {
   private readonly pending = new Map<string, Promise<readonly FontFile[]>>()
-  private readonly store: OriginalStore | undefined
+  private readonly store: FontStore | undefined
   private readonly network: typeof fetch
 
-  constructor(store: OriginalStore | undefined, network: typeof fetch = fetch) {
+  constructor(store: FontStore | undefined, network: typeof fetch = fetch) {
     this.store = store
     this.network = network
   }
