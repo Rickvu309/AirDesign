@@ -6,7 +6,7 @@ import { creditsCopy, creditAmount, creditDate } from "@/copy/credits-copy"
 import { productCopy } from "@/copy/product-copy"
 import type { useCredits } from "@/credits/use-credits"
 
-import { showStatus } from "@/decks/deck-notice"
+import { showStatus } from "@/components/ui/page-notice"
 
 type CreditsState = ReturnType<typeof useCredits>
 

@@ -1,7 +1,7 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { moveFailedOf, movingOf } from "@/copy/product-copy"
 import { answered } from "@/decks/deck-request"
-import { settle, showFailed, showStatus, type ToastId } from "@/decks/deck-notice"
+import { settle, showFailed, showStatus, type ToastId } from "@/components/ui/page-notice"
 
 export async function moveDeck(
   deck: { deck: string; name: string },

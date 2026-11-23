@@ -4,10 +4,3 @@ apps/web/src/aira:
       - dependency
     files:
       - apps/web/src/credits/credits-load.ts
-apps/web/src/decks:
-  apps/web/src/decks/deck-notice.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/credits/credits-cards.tsx
-      - apps/web/src/credits/use-credits.ts

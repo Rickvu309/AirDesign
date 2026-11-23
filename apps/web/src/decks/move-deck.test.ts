@@ -1,10 +1,10 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, expect, it, vi } from "vitest"
 import { moveFailedOf } from "@/copy/product-copy"
-import { showFailed } from "./deck-notice"
+import { showFailed } from "@/components/ui/page-notice"
 import { moveDeck } from "./move-deck"
 
-vi.mock("./deck-notice", () => ({
+vi.mock("@/components/ui/page-notice", () => ({
   settle: vi.fn(),
   showStatus: () => "pending",
   showFailed: vi.fn(),

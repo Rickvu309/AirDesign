@@ -5,10 +5,3 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/doom-editor/slide-capture.ts
-  apps/web/src/thin-notice.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/doom-editor/doom-canvas.tsx
-      - apps/web/src/doom-editor/use-pictures.ts

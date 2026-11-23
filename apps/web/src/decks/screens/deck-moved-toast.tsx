@@ -1,11 +1,9 @@
-import { useEffect, type CSSProperties } from "react"
+import { useEffect } from "react"
 import { toast } from "@/components/ui/toast"
-import { Toaster } from "@/components/ui/sonner"
+import { pageToastWidth, PageToaster } from "@/components/ui/page-notice"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { movedDeckCards } from "@/decks/sample-decks"
-
-const toastWidth = "322.07px"
 
 export function MovedToast({
   name = "Pricing Strategy Review",
@@ -17,7 +15,7 @@ export function MovedToast({
   return (
     <div
       className="flex h-10 items-center rounded-[var(--shape-card)] bg-foreground pr-4 pl-4 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
-      style={{ width: toastWidth }}
+      style={{ width: pageToastWidth }}
     >
       <span className="min-w-0 flex-1 truncate">{name} moved to Trash</span>
       <button type="button" onClick={(event) => onUndo?.(event.detail > 0)} className="font-medium text-white">
@@ -27,26 +25,10 @@ export function MovedToast({
   )
 }
 
-export const movedToastOptions = {
-  unstyled: true,
-  style: { left: 0, width: toastWidth },
-}
-
 export const stillMovedToastOptions = {
   unstyled: true,
   className: "!animate-none",
-  style: { left: 0, width: toastWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
-}
-
-export function MovedToaster() {
-  return (
-    <Toaster
-      position="top-center"
-      offset={12}
-      style={{ "--width": toastWidth } as CSSProperties}
-      className="min-[601px]:![left:calc(50%+124px)]"
-    />
-  )
+  style: { left: 0, width: pageToastWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
 }
 
 export function DeckMovedToast() {
@@ -60,7 +42,7 @@ export function DeckMovedToast() {
           <DeckCard key={deck.name} name={deck.name} edited={deck.edited} />
         ))}
       </DeckGrid>
-      <MovedToaster />
+      <PageToaster />
     </DeckBrowser>
   )
 }
