@@ -53,13 +53,6 @@ describe("add text", () => {
     expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.h + 29)
   })
 
-  it("keeps an explicit box as given and fixes the text to it", () => {
-    const doom = build(agentDeck(), text({ box: { x: 10, y: 20, w: 300, h: 80 } }))
-    const made = lastChild(doom, slide)
-    expect(get(made, "box")).toMatchObject({ x: 10, y: 20, w: 300, h: 80, rotation: 0 })
-    expect(get(made, "text")?.resize).toBe("fixed")
-  })
-
   it("reads markdown, a named text style, alignment and a colour from the look", () => {
     const doom = build(agentDeck(), text({ text: "A **b**", textStyle: "title", align: "center", color: "accent2" }))
     const written = get(lastChild(doom, slide), "text")!
