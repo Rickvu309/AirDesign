@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { isChecked, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
+import { isChecked, knowsMain, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
 import { runGate } from "./gate.mjs"
 import { installHooks } from "./install-hooks.mjs"
 
@@ -102,5 +102,17 @@ same(
   uncheckedPushes(root, `${proof} ${proof} refs/heads/archive/proof ${zero}\n`).length,
   1,
 )
+
+const offline = path.join(folder, "offline")
+git(folder, "clone", "-q", remote, offline)
+const mainBefore = git(offline, "rev-parse", "origin/main")
+git(offline, "remote", "set-url", "origin", path.join(folder, "missing.git"))
+same("a failed fetch of main falls back to the local origin/main", knowsMain(offline), true)
+same("and leaves it where it was", git(offline, "rev-parse", "origin/main"), mainBefore)
+git(offline, "config", "protocol.ext.allow", "always")
+git(offline, "remote", "set-url", "origin", "ext::sleep 5")
+const started = Date.now()
+same("a fetch that hangs stops at its timeout and falls back too", knowsMain(offline, 500), true)
+same("within the timeout, not the hang", Date.now() - started < 3000, true)
 
 console.log("checked tests passed")

@@ -4,6 +4,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { measuredName } from "./spec-seconds.mjs"
+import { knowsMain } from "./checked.mjs"
 import { changedPaths, foldTimings, timingRefusals, timingsCommand } from "./timings.mjs"
 
 const pdfExport = [
@@ -99,6 +100,7 @@ try {
   fs.writeFileSync(path.join(clone, "feature.ts"), "")
   git(clone, "add", "-A")
   git(clone, "commit", "-q", "-m", "feature")
+  assert.ok(knowsMain(clone))
   assert.deepEqual(
     changedPaths(clone),
     ["feature.ts"],
