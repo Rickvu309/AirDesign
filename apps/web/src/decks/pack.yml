@@ -12,6 +12,7 @@ public:
   - deck-glyph.tsx
   - deck-notice.tsx
   - deck-time.ts
+  - decks-screens.tsx
   - decks-shell.tsx
   - delete-account.tsx
   - home.tsx

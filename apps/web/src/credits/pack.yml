@@ -7,5 +7,6 @@ dependencies:
   - apps/web/src/settings
 public:
   - credits-cards.tsx
+  - credits-screens.tsx
   - limit-panel.tsx
   - use-credits.ts
