@@ -1,4 +1,4 @@
-import { readAngle } from "./angle.js"
+import { readAngle, readRotation } from "./angle.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
@@ -329,7 +329,7 @@ const lookFields: LookFields = {
   dash: choice(["solid", "dash", "dot"], "Outline dash."),
   fit: choice(["fill", "fit", "tile"], "How a picture sits in its layer."),
   shape: choice(shapeNames, "A shape's outline. Lines and connectors are not shapes: add kind line."),
-  rotation: number(-360, 360, "Degrees clockwise."),
+  rotation: field<number>({ type: "number", description: "Degrees clockwise. Wraps past a full turn." }, readRotation),
   flip: choice(["none", "h", "v", "hv"], "Mirror the layer across, up and down, or both."),
   notes: field({ type: "string", description: "A slide's presenter notes, as plain words." }, words(limits.valueBytes)),
 }

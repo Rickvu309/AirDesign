@@ -10,7 +10,7 @@ import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./doom-walk.js"
 import { descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./doom-walk.js"
-import type { Node } from "./doom.js"
+import type { Node, Write } from "./doom.js"
 import type { Text } from "./text.js"
 import { textHeight } from "./text-estimate.js"
 
@@ -218,6 +218,23 @@ function addChart(draft: Draft, parent: Node, change: Add): void {
   create(draft, "frame", parent.id, { ...surfaceOf(change), box: givenBox(change, area), chart: chartOf(change.chart) })
 }
 
+function turnAdded(draft: Draft, from: number, change: Add): void {
+  if (change.rotation === undefined && change.flip === undefined) return
+  for (let at = from; at < draft.writes.length; at += 1) {
+    const write = draft.writes[at] as Write
+    if (write.prop !== "box") continue
+    const box = write.value as Box
+    draft.writes[at] = {
+      ...write,
+      value: {
+        ...box,
+        ...(change.rotation === undefined ? {} : { rotation: change.rotation }),
+        ...(change.flip === undefined ? {} : { flipH: change.flip.includes("h"), flipV: change.flip.includes("v") }),
+      },
+    }
+  }
+}
+
 export function compileAdd(draft: Draft, change: Add): void {
   const slide = living(draft, change.slide, "slide")
   if (slide.type !== "slide") stop("shape", slide.id, "slide")
@@ -226,6 +243,12 @@ export function compileAdd(draft: Draft, change: Add): void {
     stop("missing", parent.id, "into")
   if (get(parent, "chart") !== undefined) stop("shape", parent.id, "into")
   checkFields(change)
+  const from = draft.writes.length
+  compileKind(draft, parent, slide, change)
+  turnAdded(draft, from, change)
+}
+
+function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void {
   switch (change.kind) {
     case "text":
     case "shape":

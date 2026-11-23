@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, minter } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { childrenOf, get, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
@@ -21,8 +21,40 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
     expect(get(at(doom, ids.card), "box")).toMatchObject({ rotation: 15, flipH: false, flipV: false })
   })
 
-  it("refuses a turn past a whole one, and a rotation on a slide", () => {
-    expect(readAgentChange(set(ids.card, { rotation: 400 }))).toMatchObject({ refused: "shape" })
+  it("wraps a turn past a whole one onto the circle in tenths, as the canvas's rotate stores it", () => {
+    const turned = (rotation: number) => {
+      const read = readAgentChange(set(ids.card, { rotation }))
+      if ("refused" in read) throw new Error(JSON.stringify(read))
+      return get(at(build(agentDeck(), read), ids.card), "box")?.rotation
+    }
+    expect(turned(400)).toBe(40)
+    expect(turned(-90)).toBe(270)
+    expect(turned(12.34)).toBe(12.3)
+    expect(turned(359.97)).toBe(0)
+    expect(readAgentChange(set(ids.card, { rotation: "90" as never }))).toMatchObject({ refused: "shape" })
+    expect(readAgentChange(set(ids.card, { rotation: Infinity }))).toMatchObject({ refused: "shape" })
+  })
+
+  it("turns and mirrors a layer in the add that makes it, as the set that follows would", () => {
+    const kinds = [
+      { kind: "shape", fill: "accent1" },
+      { kind: "line" },
+      { kind: "frame" },
+      { kind: "icon", icon: "star" },
+    ]
+    for (const made of kinds) {
+      const read = readAgentChange({ op: "add", slide: ids.slide, rotation: -90, flip: "v", ...made })
+      if ("refused" in read) throw new Error(JSON.stringify(read))
+      const doom = build(agentDeck(), read)
+      expect(get(lastChild(doom, ids.slide), "box"), made.kind).toMatchObject({
+        rotation: 270,
+        flipH: false,
+        flipV: true,
+      })
+    }
+  })
+
+  it("refuses a rotation on a slide", () => {
     expect(compileAgentChange(agentDeck(), set(ids.slide, { rotation: 10 }), minter())).toMatchObject({
       refused: "shape",
     })

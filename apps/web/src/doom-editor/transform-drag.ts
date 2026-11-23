@@ -184,7 +184,7 @@ function placedWrites(input: TransformInput, member: Member, next: Tilted): read
   const w = Math.max(1, Math.round(next.w))
   const h = Math.max(1, Math.round(next.h))
   const stored = propOf(node, "box") ?? placed.node.box
-  const rotation = Math.round(normalizeDegrees(next.rotation - (parent?.rotation ?? 0)) * 10) / 10
+  const rotation = doom.wrapRotation(next.rotation - (parent?.rotation ?? 0))
   const box = { ...stored, x: Math.round(local.x - w / 2), y: Math.round(local.y - h / 2), w, h, rotation }
   const widthChanged = w !== Math.round(member.w)
   const heightChanged = h !== Math.round(member.h)
@@ -250,7 +250,7 @@ export function transformedBy(input: TransformInput): Transformed {
   if (isRotateGrip(input.grip)) {
     const { frames, shown } = rotated(members, input)
     const writes = members.flatMap((member) => placedWrites(input, member, frames.get(member.id)!))
-    return { writes, guides: [], label: `${String(Math.round(normalizeDegrees(shown) * 10) / 10)}°` }
+    return { writes, guides: [], label: `${String(doom.wrapRotation(shown))}°` }
   }
   const grip = input.grip as ResizeGrip
   const by = { x: input.at.x - input.origin.x, y: input.at.y - input.origin.y }

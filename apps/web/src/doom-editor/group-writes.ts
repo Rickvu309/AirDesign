@@ -5,8 +5,6 @@ import { apply, invert, type Placed, type Point, type SlideGeometry } from "./sl
 
 type Made = { readonly writes: readonly doom.Write[]; readonly selected: readonly doom.NodeId[] }
 
-const normalize = (degrees: number) => Math.round((((degrees % 360) + 360) % 360) * 10) / 10
-
 function localBounds(parent: Placed | undefined, members: readonly Placed[]) {
   const toLocal = (point: Point) => (parent === undefined ? point : apply(invert(parent.matrix), point))
   const points = members.flatMap((each) => each.corners.map(toLocal))
@@ -120,7 +118,7 @@ export function ungroupWrites(view: doom.Doom, geometry: SlideGeometry, ids: rea
           ...(stored ?? placed.node.box),
           x: Math.round(centre.x - w / 2),
           y: Math.round(centre.y - h / 2),
-          rotation: normalize(placed.rotation - (holder?.rotation ?? 0)),
+          rotation: doom.wrapRotation(placed.rotation - (holder?.rotation ?? 0)),
         },
       })
     }
