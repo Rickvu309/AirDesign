@@ -34,7 +34,11 @@ const first: readonly NodeId[] = [1, 2, 3, 4, 5, 6].map((number) => nodeId(`n:${
 
 const copyOf = (id: NodeId | undefined): NodeId => nodeId(`c:${String(id).slice(2)}`)
 
-type Deck = { setIds: (ids: readonly NodeId[]) => void; setCurrent: (index: number) => void }
+type Deck = {
+  other?: (order: readonly NodeId[]) => readonly NodeId[]
+  setIds: (ids: readonly NodeId[]) => void
+  setCurrent: (index: number) => void
+}
 
 function Harness({ deck }: { deck: Deck }) {
   const [ids, setIds] = useState(first)
@@ -50,14 +54,16 @@ function Harness({ deck }: { deck: Deck }) {
     onChangeSet: (change, held) => {
       if (change === "remove") {
         const gone = new Set(held.map((at) => ids[at]))
-        setIds(ids.filter((id) => !gone.has(id)))
+        const order = ids.filter((id) => !gone.has(id))
+        setIds(deck.other?.(order) ?? order)
         setCurrent(0)
-        return []
+        return { picked: [], order }
       }
       const copies = held.map((at) => copyOf(ids[at]))
-      setIds(ids.flatMap((id, at) => (held.includes(at) ? [id, copyOf(id)] : [id])))
+      const order = ids.flatMap((id, at) => (held.includes(at) ? [id, copyOf(id)] : [id]))
+      setIds(deck.other?.(order) ?? order)
       setCurrent(held[0] === undefined ? 0 : held[0] + 1)
-      return copies
+      return { picked: copies, order }
     },
     thumbHeight: 101,
     thumb: () => null,
@@ -142,6 +148,57 @@ it("leaves the pick alone when the slides change in a way no set action made", a
     await act(async () => list.deck.setIds(first.slice(0, 5)))
     await act(async () => list.deck.setIds(first))
     expect(list.picked()).toEqual(["2", "3"])
+  } finally {
+    await act(async () => list.root.unmount())
+  }
+})
+
+it("does not bring the old pick back when a later undo returns the slides to the order the duplicate made", async () => {
+  const list = await open()
+  try {
+    await list.click(2)
+    await list.click(5, true)
+    await list.press(2, { key: "d", ctrlKey: true })
+    const duplicated = [...list.host.querySelectorAll<HTMLElement>("[data-slide-entry]")].length
+    expect(duplicated).toBe(10)
+    const order = first.flatMap((id, at) => (at >= 1 && at <= 4 ? [id, copyOf(id)] : [id]))
+    await act(async () => list.deck.setIds(order))
+    await list.click(1)
+    await list.press(1, { key: "ArrowDown", altKey: true })
+    await act(async () => list.deck.setIds([order[1]!, order[0]!, ...order.slice(2)]))
+    await list.click(8)
+    await act(async () => list.deck.setIds(order))
+    expect(list.picked()).toEqual([])
+    expect(list.current()).toBe("8")
+  } finally {
+    await act(async () => list.root.unmount())
+  }
+})
+
+it("does not bring the old pick back after a third order came between the duplicate and the return", async () => {
+  const list = await open()
+  try {
+    await list.click(2)
+    await list.click(3, true)
+    await list.press(2, { key: "d", ctrlKey: true })
+    await act(async () => list.deck.setIds(first.slice(0, 5)))
+    await act(async () => list.deck.setIds(first))
+    expect(list.picked()).toEqual([])
+  } finally {
+    await act(async () => list.root.unmount())
+  }
+})
+
+it("records the order the duplicate made, so another tab's edit in the same render retires the step", async () => {
+  const list = await open()
+  try {
+    list.deck.other = (order) => order.slice(0, -1)
+    await list.click(2)
+    await list.click(3, true)
+    await list.press(2, { key: "d", ctrlKey: true })
+    list.deck.other = undefined
+    await act(async () => list.deck.setIds(first))
+    expect(list.picked()).toEqual([])
   } finally {
     await act(async () => list.root.unmount())
   }

@@ -49,27 +49,25 @@ export type PickAt = { readonly pick: HeldSlides; readonly current: string | und
 
 export type SetStep = {
   readonly before: string
+  readonly after: string
+  readonly seen: string
   readonly undone: PickAt
   readonly done: PickAt
-  seen: string
-  after: string | null
 }
 
-export function setStepOf(ids: readonly string[], undone: PickAt, done: PickAt): SetStep {
-  const before = ids.join(",")
-  return { before, undone, done, seen: before, after: null }
+export type SetTurn = { readonly at: PickAt | null; readonly step: SetStep | null }
+
+export function setStepOf(before: readonly string[], after: readonly string[], undone: PickAt, done: PickAt): SetStep {
+  const next = after.join(",")
+  return { before: before.join(","), after: next, seen: next, undone, done }
 }
 
-export function turnedPick(step: SetStep, ids: readonly string[]): PickAt | null {
+export function turnedPick(step: SetStep, ids: readonly string[]): SetTurn {
   const key = ids.join(",")
-  if (key === step.seen) return null
-  step.seen = key
-  if (step.after === null) {
-    step.after = key
-    return null
-  }
-  if (key === step.before) return step.undone
-  return key === step.after ? step.done : null
+  if (key === step.seen) return { at: null, step }
+  if (key === step.before) return { at: step.undone, step: { ...step, seen: key } }
+  if (key === step.after) return { at: step.done, step: { ...step, seen: key } }
+  return { at: null, step: null }
 }
 
 export function setDropPlace(held: readonly number[], index: number): number | null {

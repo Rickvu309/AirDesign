@@ -45,7 +45,10 @@ export function useSlideListSet(
   }, [onSelection, onSlideSelection, heldKey])
   const step = useRef<SetStep | null>(null)
   useLayoutEffect(() => {
-    const turned = step.current === null ? null : turnedPick(step.current, ids)
+    if (step.current === null) return
+    const turn = turnedPick(step.current, ids)
+    step.current = turn.step
+    const turned = turn.at
     if (turned === null) return
     setPicked(turned.pick)
     const at = turned.current === undefined ? -1 : ids.findIndex((id) => id === turned.current)
@@ -54,12 +57,14 @@ export function useSlideListSet(
     strip.onSelect(at)
   })
   const press = (index: number, how: SlidePress) => {
+    step.current = null
     const next = pressedPick(live, index, strip.current, how)
     setPicked(heldOf(next.pick, ids))
     if (next.pick !== null && how !== "menu") announce(slideListCopy.selected(next.pick.slides.size))
     strip.onSelect(next.current)
   }
   const moveSlides = (moved: readonly number[], at: number) => {
+    step.current = null
     const first = gridDrop(gridGroups(strip), moved, at)
     if (first === null || strip.onMoveMany === undefined) return
     following.current = true
@@ -71,11 +76,12 @@ export function useSlideListSet(
     follow: () => {
       following.current = true
     },
-    pick: (slides) => {
+    pick: (slides, order) => {
       const [anchor] = slides
       const made = anchor === undefined ? null : { anchor, slides: new Set(slides) }
       step.current = setStepOf(
         ids,
+        order,
         { pick: heldOf(live, ids), current: ids[strip.current] },
         { pick: made, current: anchor },
       )
