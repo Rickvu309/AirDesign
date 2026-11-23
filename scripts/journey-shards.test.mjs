@@ -46,7 +46,7 @@ for (const total of [2, 3, 4]) {
   assert.deepEqual(shares.flat().sort(), all, "the shards drive every journey once")
 }
 assert.deepEqual(
-  list({ JOURNEYS_CHANGED: '["aira-head","auto-layout-text","connected-agents"]', JOURNEYS_SHARD: "1/1" }),
-  ["aira-head", "auto-layout-text", "connected-agents"],
+  list({ JOURNEYS_CHANGED: '["account-name","aira-panel","connected-agents"]', JOURNEYS_SHARD: "1/1" }),
+  ["account-name", "aira-panel", "connected-agents"],
   "a journey-only change runs those exact tests",
 )
