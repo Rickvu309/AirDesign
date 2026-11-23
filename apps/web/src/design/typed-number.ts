@@ -1,3 +1,4 @@
+import { wrapDegrees } from "@airdesign/doom"
 import { textCopy } from "@/copy/text-copy"
 import type { Desc, NumberUnit } from "./control-desc"
 
@@ -64,9 +65,7 @@ export function clampedOf(desc: Desc, typed: number): number | null {
   const low = desc.unit === "emu" ? Math.max(desc.min, -widestSlide) : desc.min
   const high = desc.unit === "emu" ? Math.min(desc.max, widestSlide) : desc.max
   if (desc.unit === "angle") {
-    const turn = 360 * factor
-    const wrapped = (((Math.round(typed * factor) % turn) + turn) % turn) / factor
-    return storedOf(desc, wrapped)
+    return storedOf(desc, wrapDegrees(typed))
   }
   const inRange = Math.min(high / factor, Math.max(low / factor, typed))
   return storedOf(desc, desc.unit === "count" ? Math.round(inRange) : inRange)

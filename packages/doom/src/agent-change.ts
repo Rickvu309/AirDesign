@@ -1,3 +1,4 @@
+import { readAngle } from "./angle.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
@@ -214,7 +215,7 @@ const lookFields: LookFields = {
           required: ["gradient"],
           properties: {
             gradient: { type: "array", items: colorSchema, minItems: 2, maxItems: 8 },
-            angle: { type: "number", description: "Degrees; 0 runs left to right." },
+            angle: { type: "number", description: "Degrees; 0 runs left to right. Wraps past a full turn." },
             radial: { type: "boolean" },
           },
         },
@@ -224,7 +225,7 @@ const lookFields: LookFields = {
       readColor,
       readNone,
       object({ image: words(limits.address, 1) }),
-      object({ gradient: list(readColor, 8, 2) }, { angle: finite(-360, 360), radial: boolean }),
+      object({ gradient: list(readColor, 8, 2) }, { angle: readAngle, radial: boolean }),
     ),
   ),
   stroke: field(

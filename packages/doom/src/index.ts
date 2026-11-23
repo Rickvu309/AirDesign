@@ -6,6 +6,7 @@ export {
   readAgentChange,
   readAgentChanges,
 } from "./agent-change.js"
+export { wrapDegrees } from "./angle.js"
 export { compileAgentChange } from "./agent-compile.js"
 export { boardDeckChanges } from "./board-deck.js"
 export { placeholderTitle } from "./placeholder-title.js"
