@@ -25,9 +25,11 @@ public:
   - frame-fit-action.ts
   - gallery-deck.ts
   - grid-drop.ts
+  - group-actions.ts
   - icon-search.tsx
   - inserts.ts
   - kept-panel.ts
+  - layer-join.ts
   - live-design-panel.tsx
   - notes-bar.tsx
   - painted-ahead.ts

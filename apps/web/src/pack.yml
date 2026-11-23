@@ -10,7 +10,6 @@ dependencies:
   - apps/web/src/editing
   - apps/web/src/editor
   - apps/web/src/export
-  - apps/web/src/legacy-editor
   - apps/web/src/lib
   - apps/web/src/present
   - apps/web/src/settings

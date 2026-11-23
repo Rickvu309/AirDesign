@@ -5,7 +5,6 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/decks/first-slide.ts
-      - apps/web/src/decks/template-decks.ts
   apps/web/src/picture-tool.ts:
     violations:
       - dependency
@@ -28,12 +27,6 @@ apps/web/src/doom-editor:
       - dependency
     files:
       - apps/web/src/decks/doom-thumbnail.ts
-apps/web/src/export:
-  apps/web/src/export/chosen-parts.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/decks/template-decks.ts
 apps/web/src/settings:
   apps/web/src/settings/account-load.ts:
     violations:
