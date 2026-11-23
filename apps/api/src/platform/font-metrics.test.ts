@@ -102,6 +102,16 @@ it("names the characters a deck's font has no letters for, and only those", asyn
   expect(await read("収益 grew 12%")).toEqual(["収", "益"])
 })
 
+it("names a missing character on every measure, not only the first", async () => {
+  const metrics = new FontMetrics(new FontSource(undefined))
+  const deck = deckIn({ heading: family, body: family }, "Launch 🚀").doom
+  for (let time = 0; time < 3; time += 1) {
+    const measured = await metrics.measure(deck)
+    if (typeof measured === "string") throw new Error(measured)
+    expect([...measured.missing]).toEqual(["🚀"])
+  }
+})
+
 it("answers time past the budget, and at once while that font still hangs", async () => {
   const { calls, source } = anyNameIsLiberation()
   let now = 0
