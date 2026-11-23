@@ -8,7 +8,6 @@ public:
   - ai-elements/conversation.tsx
   - ai-elements/message.tsx
   - ai-elements/prompt-input.tsx
-  - ai-elements/tool.tsx
   - ui/announcer.tsx
   - ui/button.tsx
   - ui/card.tsx

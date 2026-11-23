@@ -14,7 +14,6 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import { airaCopy, airaLimitBodyOn } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy } from "@/copy/usage-copy"
-import { LimitMark } from "@/credits/limit-panel"
 import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
 import type { AiraExchange, AiraStep, ToolState } from "@/aira/aira-loop"
@@ -240,7 +239,7 @@ function LimitCard({ resets }: { resets: string | undefined }) {
   return (
     <div className={cardClass}>
       <span className="flex items-center gap-2">
-        <LimitMark mark="tile" />
+        <LimitMark />
         <span className={cardTitle}>{productCopy.usageLimitTitle}</span>
       </span>
       {resets === undefined ? null : <p className={cardBody}>{airaLimitBodyOn(resetsWhen(resets))}</p>}
@@ -419,6 +418,14 @@ function FailedMark() {
         <path d="M6 2.6v4.2" stroke="var(--background)" strokeWidth="1.9" strokeLinecap="round" />
         <circle cx="6" cy="9.2" r="1" fill="var(--background)" />
       </svg>
+    </span>
+  )
+}
+
+function LimitMark() {
+  return (
+    <span className="flex size-5 items-center justify-center rounded-[var(--shape-control)] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--danger-edge),0_1px_2px_rgb(0_0_0/12%)]">
+      <span className="size-[var(--space-8)] rounded-full shadow-[0_0_0_0.82px_var(--background),inset_0_0_0_0.82px_var(--background)]" />
     </span>
   )
 }
