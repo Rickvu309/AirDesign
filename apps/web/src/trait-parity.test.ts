@@ -265,6 +265,23 @@ describe("every control of Doom's design panel reaches every layer", () => {
     expect(writing).toEqual([])
   })
 
+  it("names a control as painting nothing only while its write changes no paint", () => {
+    const painting = layers.flatMap((name) =>
+      controlsOf(name).filter((control) => {
+        const key = `${control.trait}.${control.field}`
+        const context = { view, ids: [id(name)], geometry, size, slides: [slide] }
+        return (
+          paintsNothing.includes(key) &&
+          candidates(control).some((value) => {
+            const landing = landedBy(changeWrites(context, control, value))
+            return landing !== null && painted(landing.after) !== painted(view)
+          })
+        )
+      }),
+    )
+    expect(painting).toEqual([])
+  })
+
   it("names a property as the person's alone only while no agent change writes it", () => {
     const open = layers.flatMap((name) => [...agentProps(name)].filter((prop) => personOnlyOnDoom.includes(prop)))
     expect(open).toEqual([])
