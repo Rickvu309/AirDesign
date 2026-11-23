@@ -10,7 +10,7 @@ import {
   strokePaintWrite,
   type ShadowName,
 } from "./design-paint-values"
-import { lineNew, sizeNew } from "./design-text-values"
+import { lineFromFraction, sizeFromHundredths } from "./design-text-values"
 import { cornerEmu, pointEmu, wholeFraction } from "./design-values"
 import { propOf } from "@/editing/node-props"
 import type { SlideGeometry } from "./slide-geometry"
@@ -70,13 +70,13 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
       return style === undefined ? [] : look(context, { bold: style.weight >= 600, italic: style.italic })
     }
     case "size":
-      return number === undefined ? [] : look(context, { size: sizeNew(number) })
+      return number === undefined ? [] : look(context, { size: sizeFromHundredths(number) })
     case "letterSpacing":
       return number === undefined ? [] : look(context, { tracking: Math.round(number) / 100 })
     case "lineHeight":
       return number === undefined
         ? []
-        : eachText(context, (text) => doom.paraWrite(text, { lineHeight: lineNew(number) }))
+        : eachText(context, (text) => doom.paraWrite(text, { lineHeight: lineFromFraction(number) }))
     case "bold":
     case "italic":
     case "underline":

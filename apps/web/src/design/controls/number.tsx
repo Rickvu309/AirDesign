@@ -51,6 +51,10 @@ export function scrubbed(
   return { value: Math.round((scrub.value + steps * each) * 10) / 10, x: scrub.x + steps * scrubPixels }
 }
 
+export function scrubAfter(to: Scrub, landed: number): Scrub {
+  return landed === to.value ? to : { value: landed, x: to.x }
+}
+
 const listTrigger =
   "ml-auto flex h-full w-6 shrink-0 items-center justify-center rounded-r-[var(--shape-control)] border-l border-white text-foreground outline-none"
 
@@ -139,8 +143,12 @@ export function NumberField({
       return
     }
     const read = readNumber(to.value)
-    scrub.current = read !== null ? to : { ...from, x: to.x }
-    if (read !== null) onChange(read)
+    if (read === null) {
+      scrub.current = { ...from, x: to.x }
+      return
+    }
+    scrub.current = scrubAfter(to, Number(numberShown({ ...control, value: read }, scale).text))
+    onChange(read)
   }
 
   function endScrub() {
