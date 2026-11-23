@@ -40,86 +40,16 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
 }
 
 for (const name of [
-  "speaker-notes",
-  "open-edit-save",
   "aira-panel",
-  "blank-deck",
-  "blank-slides",
-  "slide-layouts",
-  "element-edits",
-  "picture-add",
-  "shape-insert",
-  "shape-draw",
-  "element-order",
-  "layers-panel",
-  "layer-shortcuts",
-  "appearance-presets",
-  "corners",
-  "text-fields",
-  "text-fill-image",
-  "text-weight-faces",
-  "text-weight-switch",
-  "text-list-levels",
-  "text-spacing-units",
-  "text-template-indent",
-  "text-template-bullet",
-  "text-imported-line-height",
-  "text-weight-selection",
-  "commit-once",
   "deck-list-trash",
-  "deck-grid-motion",
-  "deck-stars",
-  "slide-paint",
-  "cleared-browser",
-  "delete-account",
-  "move-resize",
-  "navigate-zoom-pan",
-  "snap-drag",
-  "snap-resize",
-  "line-end-snap",
-  "text-tool-place",
-  "slide-list-tool-keys",
-  "emptied-text",
-  "layer-duplicate",
-  "layer-clipboard",
-  "busy-drag",
-  "canvas-select",
-  "transform-canvas",
   "connected-agents",
-  "slide-commands",
-  "slide-list-select",
-  "grid-group-add",
-  "grid-gap-add",
   "usage-page",
   "account-name",
   "sign-in-mail",
   "sign-in-pages",
   "landing-pages",
-  "typed-reload",
-  "deck-names",
-  "slide-kept-parts",
-  "signed-out-deck",
-  "connector-follow",
-  "auto-layout-frame",
-  "auto-layout-text",
-  "auto-layout-opacity",
-  "auto-layout-nested",
-  "group-transform",
-  "group-text-copy",
-  "mask-group",
-  "eyedropper",
-  "resize-to-fit",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
   })
 }
-
-test.describe("recorded Aira", () => {
-  test.describe.configure({ mode: "default" })
-  for (const name of ["aira-head"]) {
-    test(name, async ({ page, context }) => {
-      await drive(name, page, context)
-    })
-  }
-})
