@@ -3,6 +3,7 @@ import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { childrenOf, get, slidesOf } from "./doom-walk.js"
 import { ids } from "./sample-deck.js"
+import { measureWith, solveLayout } from "./index.js"
 
 const slide = ids.slide
 const kpiItems = [
@@ -98,5 +99,20 @@ describe("a labelled shape looks like a card", () => {
     )
     expect(get(lastChild(doom, slide), "radius")).toBe(cardRadius)
     expect(cardRadius).toBeGreaterThan(0)
+  })
+})
+
+describe("layout none keeps the frame as it looked", () => {
+  it("fixes each card where the row put it, so the row does not collapse", () => {
+    const doom = build(agentDeck(), add({ kind: "kpi", items: kpiItems, box }))
+    const row = lastChild(doom, slide)
+    const laid = solveLayout(doom, slide, measureWith({}))
+    const off = build(doom, { op: "set", target: row.id, layout: "none" } as AgentChange)
+    expect(get(off.nodes.get(row.id)!, "layout")).toEqual({ mode: "none" })
+    const kept = solveLayout(off, slide, measureWith({}))
+    for (const card of childrenOf(doom, row.id)) {
+      expect(kept.get(card.id)).toEqual(laid.get(card.id))
+      expect(get(off.nodes.get(card.id)!, "sizing")).toEqual({ w: "fixed", h: "fixed" })
+    }
   })
 })

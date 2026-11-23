@@ -44,6 +44,7 @@
     "doom-offline-tabs.spec.ts": 9.5,
     "doom-picture-wake.spec.ts": 1.8,
     "doom-presenting.spec.ts": 6.6,
+    "doom-remove-auto-layout.spec.ts": 4.6,
     "doom-save-notices.spec.ts": 14.2,
     "doom-slide-picture.spec.ts": 14.4,
     "doom-slides-transform.spec.ts": 11.9,
