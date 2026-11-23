@@ -25,7 +25,7 @@ Preconditions:
 
 - **Unit tests.** `pnpm exec vitest run packages/render/src` holds each kind's paint, the fonts and the thumbnails.
 - **Spec.** `tests/browser/doom-editor.spec.ts` opens a new deck at `/s/<id>`, checks its title paints at its saved box, and finds it in the same place after a reload.
-- **States for look.** Most states above open a deck with its layers already landed (`openDoomDeck` and `landNodes` in `look/doom-deck.mjs`) and capture the slide; run `$V look <run> <state>` before and after a paint change and read the images.
+- **States for look.** Most states above open a deck with its layers already landed (`openDoomDeck` and `landNodes` in `../look/doom-deck.mjs`) and capture the slide; run `$V look <run> <state>` before and after a paint change and read the images.
 - **Exact places.** In a scratch journey, compare each `[data-slide-box] [data-node]` box with its saved `box` from `doomRoutes.open`, scaled by the slide box's width over the deck's width.
 
 ## Gotchas

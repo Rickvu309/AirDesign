@@ -23,7 +23,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **States for look.** `connector-follow` (the start shape held mid-drag while its elbow follows) and `connector-around` (the start held below and left of the end), both on the `connected` deck in `look/doom-canvas.mjs`; `panel-connector`.
+- **States for look.** `connector-follow` (the start shape held mid-drag while its elbow follows) and `connector-around` (the start held below and left of the end), both on the `connected` deck in `../look/doom-canvas.mjs`; `panel-connector`.
 - **Unit tests.** `apps/web/src/doom-editor/arrange-writes.test.ts` copies a frame whose connector joins two of its shapes and finds the copy's ends on the copied shapes. `packages/doom/src/agent-patterns.test.ts` checks the patterns land as frame trees Doom accepts.
 
 ## Gotchas

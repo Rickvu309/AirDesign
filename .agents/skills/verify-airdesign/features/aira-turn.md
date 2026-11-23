@@ -23,7 +23,7 @@ The browser asks Aira one model call at a time. Each call goes to `airaRoutes.tu
 Preconditions:
 
 - `$V doctor <run>` is ok.
-- The stack's model is a stand-in: `bin/scripted-aira.mjs` plays the recorded streams in `apps/api/src/testing/aira-streams/`. A journey picks them with `kit.aira([{ name, fill }])`, one per model call, the last one repeating. `fill` writes each value where the stream says `@name@`.
+- The stack's model is a stand-in: `../bin/scripted-aira.mjs` plays the recorded streams in `apps/api/src/testing/aira-streams/`. A journey picks them with `kit.aira([{ name, fill }])`, one per model call, the last one repeating. `fill` writes each value where the stream says `@name@`.
 - The front server adds `visitor-country: US` (`countryHeader` in the catalog) when the request has none, as the web worker does from Cloudflare's `request.cf.country`. Unlike the worker, it keeps a value the client sends, so `post(route, body, cookie, { [countryHeader]: "CN" })` drives the 403 `country` refusal. It sends no forward secret and the API is started without one, so the forward-secret check (`apps/api/src/platform/forward-secret.ts`) is not exercised here.
 
 - **In the browser.** `$V journey <run> aira-panel` sends a turn, its `airdesign_edit_deck` call through `/mcp` and the next turn from the panel. `tests/browser/doom-agent.spec.ts` adds the run's Undo and a Stop before the edit lands.

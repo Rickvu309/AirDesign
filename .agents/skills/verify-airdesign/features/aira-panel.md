@@ -31,7 +31,7 @@ An open deck shows the Agent panel on the right. The person types to Aira, watch
 Preconditions:
 
 - `$V doctor <run>` is ok.
-- The model is the scripted stand-in (`bin/scripted-aira.mjs`). `kit.aira([...])` picks the recorded streams in `apps/api/src/testing/aira-streams/`, one per model call.
+- The model is the scripted stand-in (`../bin/scripted-aira.mjs`). `kit.aira([...])` picks the recorded streams in `apps/api/src/testing/aira-streams/`, one per model call.
 
 - **Run it.** `$V journey <run> aira-panel`. Prints `"passed":true` and the evidence dir.
 - **Panel.** Open a new Doom deck at `/s`; the panel shows the `Ask Aira` composer. Evidence `NN-doom-agent-panel`.

@@ -30,7 +30,7 @@ Preconditions:
 - `$V doctor <run>` is ok.
 
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
-- **Make a deck.** From Home, `button "New deck"` opens `/s/<id>` (`newDoomDeck` in `bin/new-deck.mjs`). Rename it in the editor's title to `Quarterly review` and poll `post(deckRoutes.list, {})` until it carries that name.
+- **Make a deck.** From Home, `button "New deck"` opens `/s/<id>` (`newDoomDeck` in `../bin/new-deck.mjs`). Rename it in the editor's title to `Quarterly review` and poll `post(deckRoutes.list, {})` until it carries that name.
 - **Make a second deck.** `New deck` again; poll `post(deckRoutes.list, {})` until it carries `doom`.
 - **Listed.** Open `/`. `heading "Quarterly review"` is visible, and both cards paint a `[data-doom-thumbnail]`. Evidence `NN-home-lists-deck`.
 - **Move to Trash.** Click `button "Quarterly review actions"`, then `menuitem "Move to Trash"`. The text `Quarterly review moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
