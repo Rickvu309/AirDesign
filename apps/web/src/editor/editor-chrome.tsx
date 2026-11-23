@@ -62,7 +62,7 @@ export function ExportButton({
       className={cn("h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0")}
       {...(onClick === undefined ? {} : { onClick })}
     >
-      Export
+      {productCopy.exportDeck}
     </Button>
   )
 }
