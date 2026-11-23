@@ -135,6 +135,21 @@ describe("an undo of a step on a layer another tab deleted", () => {
     expect(xOf(mine.view(), card)).toBe(10)
   })
 
+  it("redoes a step that typed in a text box and deleted it once emptied, and every step above it", async () => {
+    const { mine } = await tabs()
+    expect(mine.push([{ node: card, prop: "box", value: placed(1) }]).ok).toBe(true)
+    expect(mine.push([{ node: title, prop: "text", value: words("Draft") }], { step: "text:1" }).ok).toBe(true)
+    expect(mine.push([{ node: title, prop: "parent", value: null }], { step: "text:1" }).ok).toBe(true)
+    expect(mine.push([{ node: card, prop: "box", value: placed(2) }]).ok).toBe(true)
+    expect([mine.undo().ok, mine.undo().ok, mine.undo().ok]).toEqual([true, true, true])
+    expect([parentOf(mine.view(), title), textOf(mine.view()), xOf(mine.view(), card)]).toEqual([slide, "Title", 0])
+    expect([mine.redo().ok, mine.redo().ok, mine.redo().ok]).toEqual([true, true, true])
+    expect([parentOf(mine.view(), title), textOf(mine.view()), xOf(mine.view(), card)]).toEqual([null, "Draft", 2])
+    expect(mine.redo()).toEqual({ ok: false, reason: "nothing" })
+    expect(await mine.sync()).toEqual({ ok: true })
+    expect([parentOf(mine.server(), title), xOf(mine.server(), card)]).toEqual([null, 2])
+  })
+
   it("still puts back a layer the person deleted along with what the step changed on it", async () => {
     const { mine } = await tabs()
     expect(

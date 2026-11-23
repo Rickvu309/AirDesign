@@ -10,8 +10,8 @@
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert", "onStandingLayers"],
-      "digest": "1fc159e33b72",
-      "blob": "ef5a1f105f3bae63aae81a4e504ef3f9ea5b055f"
+      "digest": "070738262b62",
+      "blob": "6c6e14206292abd70452762c0a950e890287b14c"
     },
     {
       "file": "packages/doom/src/changing-writes.ts",
