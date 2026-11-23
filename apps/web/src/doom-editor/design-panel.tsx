@@ -61,14 +61,11 @@ export function DesignPanel(props: Props) {
   const palette = useMemo(() => paletteOf(view, theme), [view, theme])
   const slides = slidesOf(view)
   const context: ChangeContext = { view, ids, geometry, size: doom.deckOf(view).size, slides }
-  const push = (writes: readonly doom.Write[]) => {
-    if (writes.length > 0) client.push(writes)
-  }
   const replaceImage = (targets: readonly doom.NodeId[], file: Blob) => {
     void storePicture(deck, file).then((asset) => {
       if (asset === null) return
       const latest = client.view()
-      push(
+      client.push(
         targets.flatMap((node): doom.Write[] => {
           const next = fillWrite(propOf(latest.nodes.get(node), "fills"), { image: asset })
           return next === undefined ? [] : [{ node, prop: "fills", value: next }]
@@ -93,7 +90,7 @@ export function DesignPanel(props: Props) {
         className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
         <DesignHead>{designCopy.slide(props.slideNumber)}</DesignHead>
-        <HiddenLockedLayers view={view} slide={slide} push={push} />
+        <HiddenLockedLayers view={view} slide={slide} push={client.push} />
         {panelPlaces("slide", panelMode).map(({ section }) => {
           if (section === "templateStyle")
             return <DoomThemeCard key={section} client={client} view={view} theme={theme} />
@@ -111,7 +108,7 @@ export function DesignPanel(props: Props) {
                 onFill={(paint) => {
                   if (isImagePick(paint)) return pickPicture((file) => replaceImage([slide], file))
                   const next = fillWrite(background, paint)
-                  if (next !== undefined) push([{ node: slide, prop: "fills", value: next }])
+                  if (next !== undefined) client.push([{ node: slide, prop: "fills", value: next }])
                 }}
               />
             )
@@ -150,7 +147,9 @@ export function DesignPanel(props: Props) {
       }
       afterTitle={
         autoLayout && only !== undefined ? (
-          <RemoveAutoLayoutButton onRemove={() => push(doom.bakeLayout(view, only, painted.measure ?? estimate))} />
+          <RemoveAutoLayoutButton
+            onRemove={() => client.push(doom.bakeLayout(view, only, painted.measure ?? estimate))}
+          />
         ) : null
       }
       selectionColors={
@@ -168,10 +167,10 @@ export function DesignPanel(props: Props) {
           return pickPicture((file) => replaceImage(ids, file))
         const link = control.trait === "link" && words !== null ? linkOf(value) : undefined
         if (link !== undefined) return props.onLinkWords(link)
-        push(changeWrites(context, control, value))
+        client.push(changeWrites(context, control, value))
       }}
     >
-      {chart && only !== undefined ? <ChartSection id={only} view={view} push={push} /> : null}
+      {chart && only !== undefined ? <ChartSection id={only} view={view} push={client.push} /> : null}
     </ElementDesign>
   )
 }

@@ -32,7 +32,7 @@ export function DoomNotes(props: {
     held.current = null
     if (pending === null) return
     const writes = notesWrites(latest.current.view, pending.slide, pending.text)
-    if (writes.length > 0) latest.current.client.push(writes, step.current === null ? {} : { step: step.current })
+    latest.current.client.push(writes, step.current === null ? {} : { step: step.current })
     setDraft((now) => (now === pending ? null : now))
   }
 

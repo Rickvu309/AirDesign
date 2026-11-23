@@ -19,6 +19,7 @@ export { type Counts, type Known, applyEdit, countsOf, hasDeck, landEdit } from 
 export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
 export type { Arrow, End, Geometry } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
+export { changingWrites } from "./changing-writes.js"
 export { invert } from "./invert.js"
 export { type Replaced, type RunEdit, type Undone, invertRun, readRunEdit, replacedBy } from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"

@@ -205,7 +205,7 @@ test("in Actions, the pointer moves the one highlight, Down walks the icon grid 
   await expect(selected).toHaveAttribute("aria-label", (await icons.nth(9).getAttribute("aria-label")) ?? "")
 })
 
-test("with one icon selected, picking an icon in Actions swaps it in place, and one undo puts the old one back", async ({
+test("with one icon selected, picking an icon in Actions swaps it in place, picking it again changes nothing, and one undo puts the old one back", async ({
   page,
   context,
   stack,
@@ -231,6 +231,9 @@ test("with one icon selected, picking an icon in Actions swaps it in place, and 
   expect(await layers.count()).toBe(count)
   expect(await selectedIds(page)).toEqual([rocket.id])
   expect(((await savedNode(stack, opened, rocket.id)) as Saved).box).toEqual(rocket.node?.box)
+  await pick("star")
+  expect(await layers.count()).toBe(count)
+  expect(await selectedIds(page)).toEqual([rocket.id])
 
   await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
   await page.keyboard.press("ControlOrMeta+z")

@@ -136,6 +136,65 @@ describe("compileAgentEdit", () => {
     expect(result.edit.writes.map((write) => write.base)).toEqual([expect.any(Number), expect.any(Number)])
   })
 
+  it("leaves out each value the node already holds, so a run never lands or undoes a write that changes nothing", () => {
+    const ask = [
+      change({ op: "set", target: ids.card, name: "Card", opacity: 0.5 }),
+      change({ op: "set", target: ids.title, text: "Revenue" }),
+    ]
+    const first = compileAgentEdit(agentDeck(), ask, by())
+    if ("refused" in first) throw new Error(JSON.stringify(first))
+    const after = landEdit(agentDeck(), first.edit as never) as Doom
+    const again = compileAgentEdit(after, [...ask, change({ op: "set", target: ids.card, name: "Kept" })], by())
+    if ("refused" in again) throw new Error(JSON.stringify(again))
+    expect(again.edit.writes).toEqual([{ node: ids.card, prop: "name", value: "Kept" }])
+  })
+
+  it("compiles to no writes when the deck already holds every value the agent sets", () => {
+    const ask = [change({ op: "set", target: ids.card, name: "Card", opacity: 0.5 })]
+    const first = compileAgentEdit(agentDeck(), ask, by())
+    if ("refused" in first) throw new Error(JSON.stringify(first))
+    const after = landEdit(agentDeck(), first.edit as never) as Doom
+    const again = compileAgentEdit(after, ask, by())
+    if ("refused" in again) throw new Error(JSON.stringify(again))
+    expect(again.edit.writes).toEqual([])
+  })
+
+  it("is refused person for a value a person set during the run, even when the agent sets that same value", () => {
+    const open = richDeck()
+    const during = land(
+      open,
+      [{ node: ids.title, prop: "text", value: textOf("Typed"), base: revOf(open, ids.title, "text")! }],
+      person,
+    )
+    const result = compileAgentEdit(
+      during,
+      [change({ op: "set", target: ids.title, text: "Typed" }), change({ op: "set", target: ids.card, name: "Kept" })],
+      by(),
+    )
+    expect(result).toMatchObject({ refused: "person", node: ids.title, prop: "text", at: 0 })
+  })
+
+  it("names the change whose write was refused, not an earlier change that set the value already there", () => {
+    const read = sampleDeck()
+    const typed = started(
+      land(
+        read,
+        [{ node: ids.title, prop: "text", value: textOf("Typed"), base: revOf(read, ids.title, "text")! }],
+        person,
+      ),
+    )
+    const ask = [
+      change({ op: "set", target: ids.title, text: "Typed" }),
+      change({ op: "set", target: ids.title, text: "Agent" }),
+    ]
+    expect(compileAgentEdit(typed, ask, by({ read }))).toMatchObject({
+      refused: "stale",
+      node: ids.title,
+      prop: "text",
+      at: 1,
+    })
+  })
+
   it("refuses an empty batch", () => {
     expect(compileAgentEdit(agentDeck(), [], by())).toEqual({ refused: "shape", change: "changes" })
   })

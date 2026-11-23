@@ -112,7 +112,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     const done = client.push(writes, { step: step.current })
     if (!done.ok) return
     pushed.current = json
-    keep(done.once, now.draft, now.node)
+    if ("once" in done) keep(done.once, now.draft, now.node)
     if (now.created !== null) set({ ...now, created: null })
   }
 
@@ -145,7 +145,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     flush()
     if (now.created === null) {
       const writes = leaveEmptyWrites({ node: now.node, keeps: now.keeps, draft: now.draft, pushed: pushed.current })
-      if (writes.length > 0) client.push(writes, { step: step.current })
+      client.push(writes, { step: step.current })
     }
     setRefused(false)
     set(null)

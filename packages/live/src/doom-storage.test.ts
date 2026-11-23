@@ -107,7 +107,7 @@ describe("two tabs on one device", () => {
       second.push([{ node: card, prop: "name", value: "from b" }]),
       first.push([{ node: title, prop: "text", value: words("a two") }]),
     ]
-    for (const each of typed) if (each.ok) await each.saved
+    for (const each of typed) if ("saved" in each) await each.saved
     const next = tab(shared)
     const reopened = await opened(next, deck, "c")
     const pending = reopened.pending().map((edit) => edit.once)

@@ -6,6 +6,7 @@ import { rev } from "./ids.js"
 import type { WriteKey } from "./props.js"
 import { kindOf } from "./agent-read.js"
 import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
+import { changingWrites } from "./changing-writes.js"
 import { nameFromTitleWrites } from "./deck-name-from-title.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
@@ -68,19 +69,21 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
   }
   const named = nameFromTitleWrites(doom, writes)
   writes.push(...named)
+  const changing = changingWrites(doom, writes)
   const edit: Edit = {
     once: by.once,
     author: by.author,
-    writes,
+    writes: changing,
     ...(by.phase === undefined ? {} : { phase: by.phase }),
   }
   const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })
   if (isRefusal(landed) && landed.refused === "last-slide")
     return { ...landed, change: nameOf(changes[emptied] as AgentChange), at: emptied }
   if (isRefusal(landed)) {
-    const index = writes.findIndex(
+    const refused = changing.find(
       (write) => write.node === landed.node && (landed.prop === undefined || write.prop === landed.prop),
     )
+    const index = refused === undefined ? -1 : writes.indexOf(refused)
     const at = Math.max(
       0,
       ends.findIndex((end) => end > index),

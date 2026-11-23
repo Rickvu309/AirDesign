@@ -301,7 +301,7 @@ export function useCanvasPointer(args: PointerArgs) {
         lockAngle: last.shiftKey,
         scale: a.scale,
       })
-      if (done.writes.length > 0) a.client.push(done.writes)
+      a.client.push(done.writes)
       return
     }
     if (gesture?.kind === "move" && gesture.copying && !commit) a.onSelection(gesture.selected)
@@ -318,10 +318,10 @@ export function useCanvasPointer(args: PointerArgs) {
       const copies = done.copies
       if (gesture.copying !== (copies !== null))
         a.onSelection(copies === null ? gesture.selected : { ids: copies.roots, inside: gesture.selected.inside })
-      if (done.writes.length > 0 && !a.client.push(done.writes).ok && copies !== null) a.onSelection(gesture.selected)
+      if (!a.client.push(done.writes).ok && copies !== null) a.onSelection(gesture.selected)
       return
     }
-    if (done.writes.length > 0) a.client.push(done.writes)
+    a.client.push(done.writes)
   }
 
   return {

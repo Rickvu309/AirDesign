@@ -109,7 +109,7 @@ export function useCanvasKeys(args: KeyArgs) {
       } else if (gesture === "delete") {
         handled()
         const writes = deleteWrites(a.view, a.selection.ids)
-        if (writes.length > 0) a.client.push(writes)
+        a.client.push(writes)
         a.onSelection(noSelection)
       } else if (gesture === "nudge" || gesture === "nudge-far") {
         const step = arrowOf(event.key)
@@ -117,7 +117,7 @@ export function useCanvasKeys(args: KeyArgs) {
         handled()
         const by = gesture === "nudge" ? nudge : nudgeFar
         const writes = moveWrites(a.view, a.geometry, a.selection.ids, { x: step.x * by, y: step.y * by })
-        if (writes.length > 0) a.client.push(writes)
+        a.client.push(writes)
       }
     }
     function up(event: KeyboardEvent) {

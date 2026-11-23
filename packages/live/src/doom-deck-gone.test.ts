@@ -60,7 +60,7 @@ describe("a deck the server no longer has", () => {
     })
     if (!opened.ok) throw new Error("the device copy should open")
     const pushed = opened.deck.push([{ node: card, prop: "name", value: "Typed after the trash" }])
-    if (pushed.ok) await pushed.saved
+    if ("saved" in pushed) await pushed.saved
     expect(await opened.deck.follow(new AbortController().signal)).toBe("gone")
     expect(server.asked).toBe(1)
     expect(await deviceStorage("trashed").read()).toBeUndefined()

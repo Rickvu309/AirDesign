@@ -20,9 +20,10 @@ export type Notice = {
   readonly because?: string
 }
 
-export type Pushed =
-  | { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
-  | { readonly ok: false; readonly refused: doom.Refusal }
+type Sent = { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
+type Refused = { readonly ok: false; readonly refused: doom.Refusal }
+
+export type Pushed = Sent | { readonly ok: true; readonly unchanged: true } | Refused
 
 export type Turned =
   | { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
@@ -353,7 +354,7 @@ function connected(
     by: doom.Author,
     runUndo?: doom.RunUndo,
     follows?: string,
-  ): Pushed & { readonly before?: doom.Doom } {
+  ): (Sent & { readonly before: doom.Doom }) | Refused {
     const before = view()
     const edit: doom.Edit = { once: nextOnce(), author: by, writes, ...(runUndo === undefined ? {} : { runUndo }) }
     const made = queueEdit(server, queue, edit)
@@ -500,7 +501,9 @@ function connected(
     },
     status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, kept, aside: notices }, shownStatus)),
     mint: () => doom.nodeId(`${client}:${(counter += 1)}`),
-    push(given, pushing) {
+    push(asked, pushing) {
+      const given = doom.changingWrites(view(), asked)
+      if (given.length === 0) return { ok: true, unchanged: true }
       const derived = doom.nameFromTitleWrites(view(), given)
       const fromTitle = derived.some((write) => write.prop === "name")
       const own = fromTitle ? given : [...given, ...derived]
@@ -520,7 +523,7 @@ function connected(
       else
         undoSteps.push({
           onces,
-          before: pushed.before!,
+          before: pushed.before,
           writes,
           ...(pushing?.step === undefined ? {} : { key: pushing.step }),
         })

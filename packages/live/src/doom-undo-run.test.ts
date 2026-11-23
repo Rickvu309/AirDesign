@@ -296,6 +296,28 @@ describe("undoing an agent's run", () => {
     expect(xOf(mine.view())).toBe(10)
   })
 
+  it("marks a run that ended where it began as undone and says nothing was kept", async () => {
+    const remote = memoryDoomRemote(start)
+    const mine = await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [{ node: title, prop: "box", value: box(10) }],
+    })
+    await land(remote, {
+      once: "a2",
+      author: agent("run-1"),
+      phase: "stop",
+      writes: [{ node: title, prop: "box", value: box(0) }],
+    })
+    await mine.catchUp()
+
+    expect(await mine.undoRun("run-1")).toMatchObject({ ok: true, kept: [] })
+    expect(mine.view().runs.get("run-1")?.undone).toBe(true)
+    expect(xOf(mine.view())).toBe(0)
+  })
+
   it("names a run the log never held", async () => {
     const remote = memoryDoomRemote(start)
     const mine = await join(remote, "create")

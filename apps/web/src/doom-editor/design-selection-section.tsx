@@ -21,8 +21,7 @@ export function DoomSelectionColors(props: {
       rows={colorRows(view, theme, scope)}
       palette={palette}
       onPick={(hex, color) => {
-        const writes = replaceColorWrites(view, theme, scope, hex, color)
-        if (writes.length > 0) client.push(writes)
+        client.push(replaceColorWrites(view, theme, scope, hex, color))
       }}
       onSelect={(hex) => {
         const found = idsWithColor(view, theme, { slide, ids: [] }, hex)
