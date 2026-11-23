@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { panelOfMany, type PanelModel, type PanelPaint } from "@/design/panel"
-import { panelPlaces } from "@/design/panel-order"
+import { panelSections } from "@/design/panel-order"
 import { DesignHead, ElementDesign } from "@/editor/design-panel"
 import { ElementTitleActions } from "@/editor/element-title-actions"
 import { SlideBackground } from "@/editor/live-design-panel"
@@ -28,7 +28,6 @@ import { geometryOf } from "./slide-geometry"
 import type { EditorClient } from "./use-doom-deck"
 import type { CaretWords } from "./doom-canvas"
 
-const panelMode = "slides"
 const estimate = doom.measureWith({})
 
 type Props = {
@@ -91,7 +90,7 @@ export function DesignPanel(props: Props) {
       >
         <DesignHead>{designCopy.slide(props.slideNumber)}</DesignHead>
         <HiddenLockedLayers view={view} slide={slide} push={client.push} />
-        {panelPlaces("slide", panelMode).map(({ section }) => {
+        {panelSections("slide").map((section) => {
           if (section === "templateStyle")
             return <DoomThemeCard key={section} client={client} view={view} theme={theme} />
           if (section === "background")
@@ -133,13 +132,12 @@ export function DesignPanel(props: Props) {
   const models = ids.map((id) => nodeModel({ view, id, theme, slides, words }))
   const [first, ...rest] = models
   if (first === undefined) return null
-  const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest], panelMode)
+  const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const autoLayout = ids.length === 1 && model.frame === "auto"
   const chart = ids.length === 1 && only !== undefined && propOf(view.nodes.get(only), "chart") !== undefined
   return (
     <ElementDesign
       model={model}
-      mode={panelMode}
       palette={palette}
       picture={url === null ? null : <PicturePreview src={url} />}
       titleActions={

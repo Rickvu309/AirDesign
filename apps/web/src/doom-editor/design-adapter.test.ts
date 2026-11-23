@@ -375,7 +375,7 @@ describe("picture, icon, frame and line", () => {
 
 describe("several layers", () => {
   it("shows the shared controls, marks differing values mixed and writes every layer", () => {
-    const many = panelOfMany([modelOf("card"), modelOf("panel")], "slides")
+    const many = panelOfMany([modelOf("card"), modelOf("panel")])
     expect(many.kind).toBe("many")
     const opacity = find(many, "opacity", "opacity")
     expect(opacity.mixed).toBe(true)
@@ -385,7 +385,7 @@ describe("several layers", () => {
   })
 
   it("aligns every selected layer to the selection's edge", () => {
-    const many = panelOfMany([modelOf("card"), modelOf("panel")], "slides")
+    const many = panelOfMany([modelOf("card"), modelOf("panel")])
     const aligned = write(["card", "panel"], find(many, "box", "align"), "left")
     expect(prop(aligned, "card", "box")?.x).toBe(prop(aligned, "panel", "box")?.x)
   })

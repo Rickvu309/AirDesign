@@ -215,7 +215,7 @@ A named group of fields that an element takes together: `identity`, `box`, `geom
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
 
 **fills**:
-A shape's or a slide background's ordered list of paints, bottom first. The code stores it as the trait `fills`, in four paint slots `p0` to `p3`, and its opacity in `fills.alpha`. An agent and the slides-mode panel set it with one paint, `fills.paint`, which fills `p0` and clears the slots above. Design mode lists every paint, top first. An older build's `fill.value` reads as that paint.
+A shape's or a slide background's ordered list of paints, bottom first. The code stores it as the trait `fills`, in four paint slots `p0` to `p3`, and its opacity in `fills.alpha`. An agent and the panel set it with one paint, `fills.paint`, which fills `p0` and clears the slots above. An older build's `fill.value` reads as that paint.
 _Avoid_: fill value, background fill
 
 **paint**:
@@ -223,7 +223,7 @@ One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none,
 _Avoid_: fill kind, layer (a layer is a thing on a slide)
 
 **border**:
-The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, the trait `border`. The Border section shows none, solid, dashed and dotted, then Color and Border width; design mode adds the paint as a word list, every setting, and arrowheads on an open shape. An old `line` is read as border. PowerPoint writes `a:ln`.
+The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, the trait `border`. The Border section shows none, solid, dashed and dotted, then Color and Border width. An old `line` is read as border. PowerPoint writes `a:ln`.
 _Avoid_: line (as a trait or a panel section), stroke, outline
 
 **line**:

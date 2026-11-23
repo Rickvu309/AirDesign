@@ -5,7 +5,7 @@ import type { TypedUnit } from "./typed-number"
 import type { CSSProperties, ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
-import { panelPlaces, sectionInMode, type PanelKind, type PanelMode } from "./panel-order"
+import { panelSections, type PanelKind } from "./panel-order"
 import { arrange, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
@@ -24,7 +24,6 @@ export type SectionName =
   | "link"
   | "geometry"
   | "templateStyle"
-  | "fillDetails"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -95,9 +94,7 @@ export function partControl(control: PanelControl, name: string, desc: Desc, val
 export type PanelSection = {
   readonly trait: SectionName
   readonly label: string | null
-  readonly open: boolean
   readonly strips: readonly (readonly PanelControl[])[]
-  readonly designStrips?: readonly (readonly PanelControl[])[]
 }
 
 export type PanelModel = {
@@ -153,16 +150,13 @@ function manyControl(controls: readonly PanelControl[], lead: PanelControl): Pan
   }
 }
 
-export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode: PanelMode): PanelModel {
+export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]]): PanelModel {
   const nodes = models.flatMap((model) => model.nodes)
   const selectionKinds = models.map(({ kind }) => kind)
-  const sections = panelPlaces("many", mode, selectionKinds).flatMap((place): PanelSection[] => {
+  const sections = panelSections("many", selectionKinds).flatMap((name): PanelSection[] => {
     const found = present(
       models.map((model) => {
-        const section = model.sections.find(({ trait }) => trait === place.section)
-        if (section === undefined) return undefined
-        const { designStrips: _list, ...single } = section
-        return sectionInMode(section.trait === "fills" ? single : section, mode)
+        return model.sections.find(({ trait }) => trait === name)
       }),
     )
     const [lead] = found ?? []
@@ -171,7 +165,7 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode
       const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === control.field)))
       return each === null ? [] : [manyControl(each, control)]
     })
-    return controls.length === 0 ? [] : [{ ...lead, open: place.open, strips: arrange(lead.trait, controls) }]
+    return controls.length === 0 ? [] : [{ ...lead, strips: arrange(lead.trait, controls) }]
   })
   const [first, ...rest] = models
   return { node: (rest.at(-1) ?? first).node, nodes, kind: "many", selectionKinds, sections }

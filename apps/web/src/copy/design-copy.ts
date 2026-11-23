@@ -14,7 +14,6 @@ export const designCopy = {
   background: "Background",
   selectOneSlide: "Select one slide to change its design.",
   selectSlide: "Select a slide to change its design.",
-  designMode: "Design mode",
   ...templateCopy,
   backgroundColor: (name: string) => `Background color, ${name}`,
   ...appearanceCopy,
@@ -38,7 +37,6 @@ export const designCopy = {
   removeAutoLayout: frameCopy.removeAutoLayout,
   resizeToFit: frameCopy.resizeToFit,
   square: "Rectangle",
-  fillDetails: "Fill details",
   nothing: "Nothing on this layer can be changed here yet.",
   refused: "Unable to make that change. Select the layer and try again, or reload the deck if it keeps happening.",
   tooLong: (max: number, wide: boolean) =>

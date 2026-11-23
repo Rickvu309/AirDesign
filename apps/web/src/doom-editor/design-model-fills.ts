@@ -74,7 +74,7 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
       iconWeightDesc,
       iconWeightOld(propOf(node, "stroke")?.weight ?? 0, Math.min(box?.w ?? 1, box?.h ?? 1)),
     )
-    return [{ trait: "pictureFill", label: fillCopy.section, open: true, strips: [[color, weight]] }]
+    return [{ trait: "pictureFill", label: fillCopy.section, strips: [[color, weight]] }]
   }
   const fills = propOf(node, "fills")
   const held = shownFill(fills)
@@ -84,7 +84,6 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const fillsSection: PanelSection = {
     trait: "fills",
     label: fillCopy.section,
-    open: true,
     strips: [...arrange("fills", [paint]), ...placement],
   }
   if (kind !== "picture") return [fillsSection]
@@ -96,7 +95,7 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
   )
   return [
     fillsSection,
-    { trait: "pictureFill", label: fillCopy.section, open: true, strips: placement },
-    { trait: "image", label: pictureCopy.section, open: false, strips: [[source]] },
+    { trait: "pictureFill", label: fillCopy.section, strips: placement },
+    { trait: "image", label: pictureCopy.section, strips: [[source]] },
   ]
 }

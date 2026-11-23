@@ -44,8 +44,8 @@ export function setFold(kind: PanelKind, section: SectionName, open: boolean): v
   for (const listener of listeners) listener()
 }
 
-export function foldOpen(shown: Folds, kind: PanelKind, section: SectionName, fallback: boolean): boolean {
-  return shown.get(`${kind}.${section}`) ?? fallback
+export function foldOpen(shown: Folds, kind: PanelKind, section: SectionName): boolean {
+  return shown.get(`${kind}.${section}`) ?? true
 }
 
 export function useFolds(): Folds {

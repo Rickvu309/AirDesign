@@ -2,11 +2,11 @@ import { Fragment, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
-import { FillDetails, UnionControl } from "@/design/controls/union"
+import { UnionControl } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/design/panel"
-import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
+import { panelSections } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -229,7 +229,6 @@ export function ElementDesign({
   afterAlignment = null,
   children = null,
   selectionColors = null,
-  mode = "slides",
 }: {
   formatting?: TextFormatting
   model: PanelModel
@@ -239,7 +238,6 @@ export function ElementDesign({
   afterAlignment?: ReactNode
   children?: ReactNode
   selectionColors?: ReactNode
-  mode?: PanelMode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
 }) {
@@ -258,13 +256,11 @@ export function ElementDesign({
   const sections =
     kind === null
       ? model.sections
-      : panelPlaces(kind, mode, model.selectionKinds).flatMap<PanelSection | "selectionColors">(({ section }) => {
+      : panelSections(kind, model.selectionKinds).flatMap<PanelSection | "selectionColors">((section) => {
           if (section === "selectionColors") return selectionColors === null ? [] : [section]
           const modelSection = model.sections.find(({ trait }) => trait === section)
-          if (modelSection === undefined) return []
-          return [sectionInMode(modelSection, mode)]
+          return modelSection === undefined ? [] : [modelSection]
         })
-  const fillDetails = mode === "design" && fill !== undefined && kind !== "picture"
   const last = sections.length - 1
   return (
     <LinkFormatting.Provider value={formatting}>
@@ -293,11 +289,7 @@ export function ElementDesign({
           if (section === "selectionColors") return <Fragment key={section}>{selectionColors}</Fragment>
           if (section.trait === "pictureFill")
             return (
-              <DesignSection
-                key={section.trait}
-                title={section.label}
-                last={at === last && children === null && !fillDetails}
-              >
+              <DesignSection key={section.trait} title={section.label} last={at === last && children === null}>
                 {fill === undefined ? null : (
                   <UnionControl control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
                 )}
@@ -320,20 +312,14 @@ export function ElementDesign({
             )
           const [strip, ...more] = section.strips
           const [lone, ...beside] = strip ?? []
-          if (
-            section.open &&
-            lone !== undefined &&
-            more.length === 0 &&
-            beside.length === 0 &&
-            lone.look.name.show === "beside"
-          )
+          if (lone !== undefined && more.length === 0 && beside.length === 0 && lone.look.name.show === "beside")
             return (
               <section
                 key={section.trait}
                 data-design-section={section.label}
                 className={cn(
                   "grid grid-cols-2 items-center gap-2 px-4 py-3",
-                  at === last && !fillDetails && children === null ? null : "border-b border-line",
+                  at === last && children === null ? null : "border-b border-line",
                 )}
               >
                 <h2 className="text-[length:var(--type-caption)] font-medium text-foreground">{section.label}</h2>
@@ -347,7 +333,7 @@ export function ElementDesign({
             <DesignSection
               key={section.trait}
               title={section.trait === "text" && kind === "text" ? null : section.label}
-              last={at === last && children === null && !fillDetails}
+              last={at === last && children === null}
               action={
                 section.trait === "link" ? (
                   <button
@@ -360,10 +346,10 @@ export function ElementDesign({
                 ) : null
               }
               fold={
-                kind === null || (section.open && openChrome.includes(section.trait))
+                kind === null || openChrome.includes(section.trait)
                   ? null
                   : {
-                      open: foldOpen(folds, kind, section.trait, section.open),
+                      open: foldOpen(folds, kind, section.trait),
                       onOpen: (open) => setFold(kind, section.trait, open),
                     }
               }
@@ -393,21 +379,6 @@ export function ElementDesign({
           )
         })}
         {children}
-        {fillDetails && fill !== undefined ? (
-          <DesignSection
-            title={designCopy.fillDetails}
-            mark="data-fill-details"
-            last={children === null}
-            fold={{
-              open: kind !== null && foldOpen(folds, kind, "fillDetails", false),
-              onOpen: (open) => {
-                if (kind !== null) setFold(kind, "fillDetails", open)
-              },
-            }}
-          >
-            <FillDetails control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
-          </DesignSection>
-        ) : null}
       </div>
     </LinkFormatting.Provider>
   )

@@ -119,7 +119,6 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const section: PanelSection = {
     trait: "text",
     label: textCopy.section,
-    open: true,
     strips: arrange("text", named),
   }
   if (kind !== "text") return [section]
@@ -129,7 +128,6 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
     {
       trait: "textFill",
       label: fillCopy.section,
-      open: true,
       strips: arrange("textFill", [resolveControl(box)]),
     },
   ]

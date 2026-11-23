@@ -170,34 +170,10 @@ function UnionList({
   )
 }
 
-export function unionValue(control: ControlProps["control"], name: string): unknown {
+function unionValue(control: ControlProps["control"], name: string): unknown {
   const desc = control.desc.kind === "union" ? control.desc.cases[name] : undefined
   if (desc === undefined) return undefined
   if (desc.kind === "mark") return { [name]: true }
   const color = firstColor(heldOf(control)) ?? { var: "accent1" }
   return { [name]: seedOf(desc, color) }
-}
-
-export function FillDetails({ control, onChange }: ControlProps) {
-  const chosen = heldOf(control)
-  return (
-    <div className="flex items-center justify-between">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        aria-pressed={chosen !== null && "pattern" in chosen}
-        onClick={() => {
-          if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, "pattern"))
-        }}
-      >
-        {optionCopy.pattern}
-      </Button>
-      {control.reset === null ? null : (
-        <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
-          {control.reset}
-        </Button>
-      )}
-    </div>
-  )
 }
