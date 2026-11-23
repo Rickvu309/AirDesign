@@ -13,7 +13,10 @@ const remote = httpDoomRemote()
 
 async function doomAt(deck: string, rev: number): Promise<doom.Doom | null> {
   const opened = await openDoomDeck(remote, deck)
-  if (!opened.ok) return null
+  if (!opened.ok) {
+    const trashed = await remote.open({ deck, trashed: true })
+    return trashed.ok ? trashed.fold : null
+  }
   if (opened.deck.server().rev < rev) await opened.deck.catchUp()
   if (opened.deck.pending().length > 0) void opened.deck.sync()
   return opened.deck.view()

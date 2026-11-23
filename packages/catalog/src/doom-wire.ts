@@ -60,6 +60,11 @@ export const readDoomEdit = readInput(
   inputRefusal,
 )
 
+export const readDoomOpen = readInput(
+  z.strictObject({ deck: deckInput, trashed: z.literal(true).optional() }),
+  inputRefusal,
+)
+
 export const readDoomSince = readInput(
   z.strictObject({
     deck: deckInput,
@@ -155,7 +160,7 @@ const pictured = decode((body, deck) =>
 
 export const doomRoutes = {
   create: { path: "/doom/create", read: readCapture, result: opened },
-  open: { path: "/doom/open", read: readCapture, result: opened },
+  open: { path: "/doom/open", read: readDoomOpen, result: opened },
   edit: { path: "/doom/edit", read: readDoomEdit, result: landed },
   since: { path: "/doom/since", read: readDoomSince, result: caught },
   pictures: { path: "/doom/pictures", read: readDoomPictures, result: pictured },

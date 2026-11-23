@@ -61,7 +61,9 @@ export function useDoomDeck(id: string | null, options: OpenOptions = {}): Openi
       }
       if (fresh) latest.current.arrived?.(deck)
       void opened.deck.sync()
-      void opened.deck.follow(stop.signal)
+      void opened.deck.follow(stop.signal).then((followed) => {
+        if (current && followed === "gone") setOpening({ status: "missing" })
+      })
       setOpening({ status: "ready", deck: opened.deck, id: deck })
     })
     return () => {

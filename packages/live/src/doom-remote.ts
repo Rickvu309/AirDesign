@@ -13,7 +13,7 @@ import * as doom from "@airdesign/doom"
 
 export type DoomRemote = {
   create(body: { readonly deck: string }): Promise<DoomOpened>
-  open(body: { readonly deck: string }): Promise<DoomOpened>
+  open(body: { readonly deck: string; readonly trashed?: true }): Promise<DoomOpened>
   edit(body: { readonly deck: string; readonly edit: doom.Edit }): Promise<DoomLanded>
   since(
     body: { readonly deck: string; readonly rev: number; readonly wait?: boolean; readonly pictures?: boolean },
