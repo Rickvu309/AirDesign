@@ -44,6 +44,8 @@ export const literals = (file, source) => {
       keysAndAddresses.has(node.callee.property.name)
     )
       keys.add(node.arguments[0])
+    if (node.type === "CallExpression" && node.callee.type === "Identifier" && node.callee.name === "covers")
+      for (const gesture of node.arguments) keys.add(gesture)
     if (keys.has(node)) return
     const value = valueOf(node)
     if (value) found.push({ value, start: node.start, end: node.end })

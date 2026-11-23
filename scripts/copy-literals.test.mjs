@@ -38,6 +38,9 @@ assert.equal(
     .length,
   1,
 )
+const moveWords = copyWords(file, 'export const arrangeMoves = ["front", "back"] as const')
+assert.deepEqual(literalFaults("tests/browser/arrange.spec.ts", "", 'covers("front", "back")', moveWords), [])
+assert.equal(literalFaults("tests/browser/arrange.spec.ts", "", 'page.getByText("front")', moveWords).length, 1)
 const oldCopy = 'export const unavailableConnect = { body: "Check your connection, then try again." } as const'
 const newCopy = 'export const unavailableConnect = { body: "Try again in a moment." } as const'
 const connect = "apps/web/src/copy/connect-copy.ts"

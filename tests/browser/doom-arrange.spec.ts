@@ -1,10 +1,8 @@
 import { expect, type Page } from "@playwright/test"
-import { arrangeMoves, groupCopy } from "../../apps/web/src/copy/arrange-copy"
 import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import type { GestureId } from "../../packages/render/src/index.ts"
 import {
   accent,
   clearSubtitle,
@@ -19,7 +17,6 @@ import {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-const [groupGesture] = Object.keys(groupCopy.label) as [GestureId]
 const shift = shortcutCopy.chord.other.shift
 
 type Stack = Parameters<typeof savedNode>[0]
@@ -55,7 +52,7 @@ test("Ctrl+] and Ctrl+[ step a layer one place, ] and [ send it to the front and
   context,
   stack,
 }) => {
-  covers(...arrangeMoves)
+  covers("front", "forward", "backward", "back")
   const opened = await threeBoxes(page, context, stack)
   expect(await stacking(stack, opened)).toEqual(["t:1", "t:2", "t:3"])
   await clickSlide(page, 200, 760)
@@ -87,7 +84,7 @@ test("Ctrl+G groups two layers, Ctrl+Shift+G ungroups them and Ctrl+Backspace un
   context,
   stack,
 }) => {
-  covers(groupGesture, "ungroup")
+  covers("group", "ungroup")
   const opened = await threeBoxes(page, context, stack)
   await clickSlide(page, 200, 760)
   await page.keyboard.down(shift)
