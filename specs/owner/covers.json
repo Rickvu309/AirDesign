@@ -4,14 +4,14 @@
     {
       "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "eebf80872441",
-      "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
+      "digest": "fe3a1e15e91d",
+      "blob": "b4ac205b212909d035ed6122644c82eed9f3e3b3"
     },
     {
       "file": "apps/api/src/oauth/tokens.ts",
       "names": ["bearerPrincipal"],
       "digest": "b1e9c31497ff",
-      "blob": "1e0b77884352c213a7ac3535261d23b7a9be5541"
+      "blob": "1fe42dcf49566d1f06c1a7a631d5f24c86b970c9"
     }
   ]
 }

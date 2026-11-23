@@ -4,26 +4,26 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit"],
-      "digest": "a5f310e06cbe",
-      "blob": "dc973422706a097210d88b15e6f1ab0c7a07e495"
+      "digest": "4ecf149e8f59",
+      "blob": "15d1837183642ecb50a9c9d1bb1c5cb6ea668eeb"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "b6c077efd4f9",
-      "blob": "60e6291dfb9db4e7a6fc6006b47ad86432ce3f2b"
+      "digest": "e230e54ff127",
+      "blob": "98297f778a866d6ac095cf665730a73bb6f9595e"
     },
     {
       "file": "packages/doom/src/view-of.ts",
       "names": ["viewOf"],
-      "digest": "309c2d96fbed",
-      "blob": "76d9fac1737ba42cdc66d75f57aee1f8ee325516"
+      "digest": "b61675a078d4",
+      "blob": "6874659e3125dec99f06bfa686ad6fe15a8006d3"
     },
     {
       "file": "packages/doom/src/read-write.ts",
       "names": ["readWrite", "readEdit"],
-      "digest": "4dc1dd10d6e8",
-      "blob": "dd8854008cfb24be058103989a4df7396a7bd070"
+      "digest": "fbe09b8dd9cd",
+      "blob": "d81c84b057c4a9491931d85c8f302eed346d6f9c"
     }
   ]
 }
