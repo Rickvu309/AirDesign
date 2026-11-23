@@ -1,9 +1,10 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { measuredName } from "./spec-seconds.mjs"
-import { foldTimings, timingRefusals, timingsCommand } from "./timings.mjs"
+import { changedPaths, foldTimings, timingRefusals, timingsCommand } from "./timings.mjs"
 
 const pdfExport = [
   "apps/web/src/export/print-page.ts",
@@ -74,6 +75,37 @@ try {
   assert.deepEqual(foldTimings(folder), [], "a second fold finds nothing measured")
 } finally {
   fs.rmSync(folder, { recursive: true, force: true })
+}
+
+const repos = fs.mkdtempSync(path.join(os.tmpdir(), "timings-base-"))
+try {
+  const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  const origin = path.join(repos, "origin")
+  const clone = path.join(repos, "clone")
+  fs.mkdirSync(path.join(origin, "tests"), { recursive: true })
+  git(origin, "init", "-q", "-b", "main")
+  git(origin, "config", "user.email", "t@example.com")
+  git(origin, "config", "user.name", "t")
+  fs.writeFileSync(path.join(origin, "tests/unit-seconds.json"), "{}\n")
+  git(origin, "add", "-A")
+  git(origin, "commit", "-q", "-m", "start")
+  git(repos, "clone", "-q", origin, clone)
+  git(clone, "config", "user.email", "t@example.com")
+  git(clone, "config", "user.name", "t")
+  fs.writeFileSync(path.join(origin, "tests/unit-seconds.json"), '{ "a.test.ts": 1 }\n')
+  git(origin, "commit", "-q", "-am", "the timing pull request lands")
+  git(clone, "checkout", "-q", "-b", "work")
+  git(clone, "pull", "-q", "--rebase", origin, "main")
+  fs.writeFileSync(path.join(clone, "feature.ts"), "")
+  git(clone, "add", "-A")
+  git(clone, "commit", "-q", "-m", "feature")
+  assert.deepEqual(
+    changedPaths(clone),
+    ["feature.ts"],
+    "a branch rebased past a landed record change is judged against the fetched main, not a stale origin/main",
+  )
+} finally {
+  fs.rmSync(repos, { recursive: true, force: true })
 }
 
 console.log(
