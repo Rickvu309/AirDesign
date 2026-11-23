@@ -1,51 +1,47 @@
-import fs from "node:fs"
-import path from "node:path"
-import { blankParts } from "../../../../../scripts/pptx-fixtures/blank-deck.mjs"
-import { storedZip } from "../../../../../scripts/stored-zip.mjs"
 import { editor } from "../editor-screen.mjs"
-import { openDeck } from "../open-deck.mjs"
+import { landNodes, openDoomDeck, spot } from "../doom-deck.mjs"
+import { emptySlide } from "../doom-slides.mjs"
 
-const red = '<a:solidFill><a:srgbClr val="C0392B"/></a:solidFill>'
-const line = (id, name, y, attributes, inside) =>
-  `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm><a:off x="609600" y="${y}"/><a:ext cx="4572000" cy="0"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln ${attributes}>${red}${inside}</a:ln></p:spPr></p:cxnSp>`
-const rectangle = (id, name, x, y, inside) =>
-  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="2286000" cy="1371600"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln w="190500">${red}${inside}</a:ln></p:spPr></p:sp>`
+const red = [{ kind: "solid", color: "#c0392b" }]
+const line = (id, name, y, weight, dash, arrows) => ({
+  id,
+  props: {
+    name,
+    box: spot(160, y, 800, 0),
+    geometry: { kind: "line", start: { x: 160, y }, end: { x: 960, y }, route: "straight", arrows },
+    strokes: red,
+    stroke: { weight, align: "center", dash },
+  },
+})
+const frame = (id, name, y, align) => ({
+  id,
+  props: {
+    name,
+    box: spot(1240, y, 480, 220),
+    geometry: { kind: "rect" },
+    fills: [],
+    strokes: red,
+    stroke: { weight: 24, align, dash: "solid" },
+  },
+})
 
-function deck() {
-  const parts = blankParts()
-  const slide = String(parts.get("ppt/slides/slide1.xml"))
-  const shapes = [
-    line(10, "Round cap dash", 457200, 'w="152400" cap="rnd"', '<a:prstDash val="dash"/>'),
-    line(
-      11,
-      "Custom dash",
-      1066800,
-      'w="76200"',
-      '<a:custDash><a:ds d="400000" sp="100000"/><a:ds d="50000" sp="250000"/></a:custDash>',
-    ),
-    line(12, "Double line", 1676400, 'w="114300" cmpd="dbl"', ""),
-    line(13, "Thick thin line", 2286000, 'w="114300" cmpd="thickThin"', ""),
-    line(14, "Triple line", 2895600, 'w="114300" cmpd="tri"', ""),
-    line(15, "Large arrow", 3505200, 'w="38100"', '<a:tailEnd type="triangle" w="lg" len="lg"/>'),
-    line(16, "Small arrow", 4114800, 'w="38100"', '<a:tailEnd type="triangle" w="sm" len="sm"/>'),
-    line(17, "Wide short arrow", 4724400, 'w="38100"', '<a:tailEnd type="stealth" w="lg" len="sm"/>'),
-    rectangle(18, "Bevel join", 6096000, 609600, "<a:bevel/>"),
-    rectangle(19, "Round join", 6096000, 2438400, "<a:round/>"),
-    rectangle(20, "Miter join", 6096000, 4267200, '<a:miter lim="800000"/>'),
-  ].join("")
-  const start = slide.indexOf("<p:sp>")
-  const end = slide.indexOf("</p:spTree>")
-  parts.set("ppt/slides/slide1.xml", Buffer.from(slide.slice(0, start) + shapes + slide.slice(end)))
-  return storedZip(parts)
-}
+const shapes = [
+  line("l:1", "Thick dash", 120, 16, "dash", ["none", "none"]),
+  line("l:2", "Dot", 240, 8, "dot", ["none", "none"]),
+  line("l:3", "Arrow end", 360, 6, "solid", ["none", "arrow"]),
+  line("l:4", "Triangle end", 480, 6, "solid", ["none", "triangle"]),
+  line("l:5", "Circle ends", 600, 6, "solid", ["circle", "circle"]),
+  line("l:6", "Both arrows", 720, 4, "solid", ["arrow", "arrow"]),
+  line("l:7", "Thin", 840, 2, "solid", ["none", "none"]),
+  frame("l:8", "Inside border", 120, "inside"),
+  frame("l:9", "Centre border", 420, "center"),
+  frame("l:10", "Outside border", 720, "outside"),
+]
 
 async function drive(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  const file = path.join(kit.out, "line-styles.pptx")
-  fs.writeFileSync(file, deck())
-  await openDeck(kit.page, file)
-  await kit.page.waitForSelector('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#20"]')
+  const opened = await openDoomDeck(kit)
+  await emptySlide(kit, opened)
+  await landNodes(kit, opened, shapes)
 }
 
 export default { name: "slide-line-styles", design: editor, drive }

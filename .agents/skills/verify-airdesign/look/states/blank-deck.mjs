@@ -1,3 +1,4 @@
 import { editor } from "../editor-screen.mjs"
+import { openDoomDeck } from "../doom-deck.mjs"
 
-export default { name: "blank-deck", design: editor, journey: "blank-slides", at: "blank-original" }
+export default { name: "blank-deck", design: editor, drive: (kit) => openDoomDeck(kit) }
