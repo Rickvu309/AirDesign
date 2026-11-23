@@ -1,38 +1,55 @@
 import { expect } from "@playwright/test"
-import { test } from "./deck-test"
-import { fillCopy } from "../../apps/web/src/copy/fill-copy"
-import { colorWords } from "./color-words"
-import { openDeck, pickColor } from "./design-panel"
-import { boxFillPanel, filled, shapeAt } from "./shape-fills"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { test } from "./api-stack"
+import { spot } from "./doom-deck"
+import { designDoom, pick, saved, section, undoOnStage } from "./doom-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a list adds an item and removes one within its bounds, and Undo brings the removed item back", async ({
+test("a list adds a gradient stop and removes one within its bounds, and Undo brings the removed stop back", async ({
   page,
+  context,
+  stack,
 }) => {
-  await openDeck(page, "clean.pptx")
-  const names = await colorWords("clean.pptx")
-  const shape = shapeAt(page, "2")
-  const panel = await boxFillPanel(page, shape)
-  await panel.getByRole("group", { name: fillCopy.box, exact: true }).getByRole("button", { name: "Gradient" }).click()
-  const stops = panel.getByRole("list", { name: "Stops" }).getByRole("listitem")
-  await expect(stops).toHaveCount(2)
-  await expect(panel.getByRole("button", { name: /^Remove stop/ })).toHaveCount(0)
-  const two = await filled(shape)
-  await panel.getByRole("button", { name: "Add stop", exact: true }).click()
-  await expect(stops).toHaveCount(3)
-  await expect.poll(() => filled(shape)).not.toBe(two)
-  await pickColor(
-    page,
-    panel.getByRole("group", { name: "Stop 2", exact: true }).locator('[data-control="color"]'),
-    names.accent6,
-  )
-  await expect.poll(() => filled(shape)).not.toBe(two)
-  const three = await filled(shape)
-  await panel.getByRole("button", { name: "Remove stop 2", exact: true }).click()
-  await expect(stops).toHaveCount(2)
-  await expect.poll(() => filled(shape)).toBe(two)
-  await page.getByRole("button", { name: "Undo fill", exact: true }).click()
-  await expect(stops).toHaveCount(3)
-  await expect.poll(() => filled(shape)).toBe(three)
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: {
+        box: spot(200, 200, 400, 300),
+        geometry: { kind: "rect" },
+        fills: [
+          {
+            kind: "gradient",
+            shape: "linear",
+            angle: 90,
+            stops: [
+              { at: 0, color: { var: "accent1" } },
+              { at: 1, color: { var: "background" } },
+            ],
+          },
+        ],
+      },
+    },
+  ])
+  const stops = async () => (await saved(stack, opened, "t:1")).fills[0].stops
+  await pick(page, "t:1", 400, 350)
+  const fill = section(page, fillCopy.section)
+  const items = fill.getByRole("list", { name: fillWords.stops, exact: true }).getByRole("listitem")
+  await expect(items).toHaveCount(2)
+  await expect(fill.getByRole("button", { name: designCopy.removeStop(1), exact: true })).toHaveCount(0)
+  await fill.getByRole("button", { name: designCopy.addStop, exact: true }).click()
+  await expect(items).toHaveCount(3)
+  await expect.poll(async () => (await stops()).length).toBe(3)
+  const three = await stops()
+  await fill.getByRole("button", { name: designCopy.removeStop(2), exact: true }).click()
+  await expect(items).toHaveCount(2)
+  await expect.poll(async () => (await stops()).length).toBe(2)
+  expect(await stops()).toEqual([three[0], three[2]])
+  await undoOnStage(page)
+  await expect.poll(stops).toEqual(three)
+  await pick(page, "t:1", 400, 350)
+  await expect(items).toHaveCount(3)
 })

@@ -1,38 +1,47 @@
-import { geometryCopy, geometryWords } from "../../apps/web/src/copy/geometry-copy"
 import { expect } from "@playwright/test"
-import { openDeck, unfold } from "./design-panel"
-import { shapeAt } from "./shape-fills"
-import { outline, pickShape } from "./shape-turns"
-import { test } from "./deck-test"
+import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
+import { test } from "./api-stack"
+import { accent, spot } from "./doom-deck"
+import { designDoom, panel, pick, reloadDesign, saved, section, typeInto } from "./doom-design"
 
-test("Corners rounds a rectangle in pixels, agrees with Shape type, persists and returns to square", async ({
+test.use({ viewport: { width: 1600, height: 1000 } })
+
+test("Corners rounds a rectangle in pixels, steps with the arrow keys, keeps it over a reload, returns to square, and an ellipse has none", async ({
   page,
-  decks,
+  context,
+  stack,
 }) => {
-  await openDeck(page, "shapes-added.pptx")
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  const shape = shapeAt(page, "4")
-  await shape.click({ position: { x: 8, y: 8 } })
-  const panel = page.locator("[data-design-element]")
-  const corners = panel.getByRole("textbox", { name: geometryCopy.corners, exact: true })
-  const square = await outline(shape)
-  await corners.fill("20.5")
-  await corners.press("Enter")
-  await expect(corners).toHaveValue("20.5")
-  await expect.poll(() => outline(shape)).not.toBe(square)
-  await corners.press("ArrowUp")
-  await expect(corners).toHaveValue("21.5")
-  await unfold(panel, geometryCopy.section)
-  await expect(panel.locator('[data-control="preset"]')).toContainText(geometryWords.roundRect ?? "")
-  await decks.ready()
-  await page.reload()
-  await decks.ready()
-  await shape.click({ position: { x: 30, y: 30 } })
-  await expect(corners).toHaveValue("21.5")
-  await corners.fill("0")
-  await corners.press("Enter")
-  await expect(corners).toHaveValue("0")
-  await expect.poll(() => outline(shape)).toBe(square)
-  await pickShape(page, panel, geometryWords.ellipse ?? "")
-  await expect(corners).toHaveCount(0)
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(200, 200, 400, 300), geometry: { kind: "rect" }, fills: accent },
+    },
+    {
+      id: "t:2",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(1000, 200, 300, 300), geometry: { kind: "ellipse" }, fills: accent },
+    },
+  ])
+  const radius = async () => (await saved(stack, opened, "t:1")).radius
+  await pick(page, "t:1", 400, 350)
+  const corners = () =>
+    section(page, geometryCopy.corners).getByRole("textbox", { name: geometryCopy.corners, exact: true })
+  await expect(corners()).toHaveValue("0")
+  await typeInto(corners(), "20")
+  await expect.poll(radius).toBe(20)
+  await corners().press("ArrowUp")
+  await expect(corners()).toHaveValue("21")
+  await corners().press("Enter")
+  await expect.poll(radius).toBe(21)
+  await reloadDesign(page)
+  await pick(page, "t:1", 400, 350)
+  await expect(corners()).toHaveValue("21")
+  await typeInto(corners(), "0")
+  await expect.poll(radius).toBeUndefined()
+  await expect(corners()).toHaveValue("0")
+  await pick(page, "t:2", 1150, 350)
+  await expect(panel(page).getByRole("textbox", { name: geometryCopy.corners, exact: true })).toHaveCount(0)
 })
