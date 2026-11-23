@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -67,7 +67,6 @@ export const timingRefusals = (paths) => {
 export const changedPaths = (root) => {
   const git = (args) =>
     execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
-  spawnSync("git", ["fetch", "--quiet", "origin", "main"], { cwd: root, stdio: "ignore" })
   const base = git(["merge-base", "origin/main", "HEAD"])
   return git(["diff", "--name-only", base]).split("\n").filter(Boolean)
 }

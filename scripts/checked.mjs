@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -33,7 +33,15 @@ export const treeOf = (root, commit) => git(root, ["rev-parse", `${commit}^{tree
 
 export const isChecked = (root, commit) => fs.existsSync(path.join(stampFolder(root), treeOf(root, commit)))
 
-export const knowsMain = (root) => {
+export const fetchMainMilliseconds = 10_000
+
+export const knowsMain = (root, timeout = fetchMainMilliseconds) => {
+  spawnSync("git", ["fetch", "--quiet", "--no-tags", "--no-write-fetch-head", "origin", "main"], {
+    cwd: root,
+    stdio: "ignore",
+    timeout,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+  })
   try {
     git(root, ["rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"])
     return true

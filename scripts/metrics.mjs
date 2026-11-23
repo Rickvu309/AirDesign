@@ -3,6 +3,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { changesFrom, unitShardVariable } from "./check-steps.mjs"
+import { knowsMain } from "./checked.mjs"
 import { importParse } from "./import-parse.mjs"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
@@ -43,17 +44,14 @@ const plantedBreaks = (root) =>
 export const longTitles = (titles) => titles.filter((title) => [...title].length > titleLimit).length
 
 export const mainTitles = (root) => {
-  try {
-    return execFileSync("git", ["log", "-50", "--no-merges", "--format=%s", "origin/main", "--"], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    })
-      .split("\n")
-      .filter((title) => title !== "")
-  } catch {
-    throw new Error("long-titles reads origin/main, which is missing. Run git fetch origin main.")
-  }
+  if (!knowsMain(root)) throw new Error("long-titles reads origin/main, which is missing. Run git fetch origin main.")
+  return execFileSync("git", ["log", "-50", "--no-merges", "--format=%s", "origin/main", "--"], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+    .split("\n")
+    .filter((title) => title !== "")
 }
 
 export const measures = {
