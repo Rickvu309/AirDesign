@@ -82,7 +82,11 @@ export async function slidePoint(page, x, y) {
 export async function clickSlide(page, x, y, options = {}) {
   const at = await slidePoint(page, x, y)
   if (options.double === true) await page.mouse.dblclick(at.x, at.y)
-  else await page.mouse.click(at.x, at.y, options.modifiers === undefined ? {} : { modifiers: options.modifiers })
+  else {
+    for (const key of options.modifiers ?? []) await page.keyboard.down(key)
+    await page.mouse.click(at.x, at.y)
+    for (const key of options.modifiers ?? []) await page.keyboard.up(key)
+  }
 }
 
 export async function dragSlide(page, from, to, options = {}) {
@@ -99,7 +103,9 @@ export async function selectNode(page, id, options = {}) {
   const box = await target.boundingBox()
   if (box === null) throw new Error(`node ${id} is not painted`)
   const position = options.position ?? { x: box.width / 2, y: box.height / 2 }
-  await page.mouse.click(box.x + position.x, box.y + position.y, options.shift ? { modifiers: ["Shift"] } : {})
+  if (options.shift) await page.keyboard.down("Shift")
+  await page.mouse.click(box.x + position.x, box.y + position.y)
+  if (options.shift) await page.keyboard.up("Shift")
   await expect(page.locator(`[data-selection-outline="${id}"]`)).toBeAttached()
 }
 
