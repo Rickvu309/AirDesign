@@ -123,6 +123,25 @@ describe("resolveSlide", () => {
     })
   })
 
+  it("lays text in an ellipse or a triangle out in the shape's text area, not its box", () => {
+    const { parts } = resolved([
+      label("oval", "hello", { box: spot(0, 0, 400, 200), geometry: { kind: "ellipse" } }, { resize: "fixed" }),
+      label(
+        "peak",
+        "hello",
+        { box: spot(0, 0, 400, 200), geometry: { kind: "preset", name: "triangle" } },
+        { resize: "fixed", alignV: "bottom" },
+      ),
+    ])
+    const [oval, peak] = parts.map((part) => part.text?.lines[0])
+    expect(oval).toMatchObject({
+      x: expect.closeTo(58.58, 2),
+      y: expect.closeTo(29.29, 2),
+      w: expect.closeTo(282.84, 2),
+    })
+    expect(peak).toMatchObject({ x: 100, y: 170, w: 200 })
+  })
+
   it("leaves text out of a shape that has none", () => {
     expect(resolved([block("a", 10, 10)]).parts[0]?.text).toBeNull()
   })

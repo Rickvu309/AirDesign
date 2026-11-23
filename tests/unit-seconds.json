@@ -486,7 +486,7 @@
   "packages/render/src/gestures.test.ts": 1.7,
   "packages/render/src/node-art.test.ts": 3,
   "packages/render/src/node-outline.test.ts": 1.3,
-  "packages/render/src/preset-path.test.ts": 5,
+  "packages/doom/src/preset-geometry.test.ts": 5,
   "packages/render/src/slide-paint-memo.test.ts": 3.9,
   "packages/render/src/snapping.test.ts": 1.5,
   "packages/render/src/store-box.test.ts": 5,

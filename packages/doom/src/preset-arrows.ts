@@ -16,6 +16,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "dx2 */ y1 dx1 hd2",
       "x2 +- x1 dx2 0",
     ],
+    sites: ["x1 t", "l vc", "x1 b", "r vc"],
     paths: [
       {
         data: "M l y1 L x1 y1 L x1 t L r vc L x1 b L x1 y2 L l y2 Z",
@@ -39,6 +40,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "dx1 */ y1 dx2 hd2",
       "x1 +- x2  0 dx1",
     ],
+    sites: ["x2 t", "l vc", "x2 b", "r vc"],
     paths: [
       {
         data: "M l vc L x2 t L x2 y1 L r y1 L r y2 L x2 y2 L x2 b Z",
@@ -62,6 +64,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "dy1 */ x1 dy2 wd2",
       "y1 +- y2  0 dy1",
     ],
+    sites: ["hc t", "l y2", "hc b", "r y2"],
     paths: [
       {
         data: "M l y2 L hc t L r y2 L x2 y2 L x2 b L x1 b L x1 y2 Z",
@@ -85,6 +88,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "dy2 */ x1 dy1 wd2",
       "y2 +- y1 dy2 0",
     ],
+    sites: ["hc t", "l y1", "hc b", "r y1"],
     paths: [
       {
         data: "M l y1 L x1 y1 L x1 t L x2 t L x2 y1 L r y1 L hc b Z",
@@ -109,6 +113,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "x1 +- x2 0 dx1",
       "x4 +- x3 dx1 0",
     ],
+    sites: ["r vc", "x3 b", "x2 b", "l vc", "x2 t", "x3 t"],
     paths: [
       {
         data: "M l vc L x2 t L x2 y1 L x3 y1 L x3 t L r vc L x3 b L x3 y2 L x2 y2 L x2 b Z",
@@ -142,6 +147,7 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "x2 +- hc 0 dx2",
       "x3 +- hc dx2 0",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l vc L x1 y1 L x1 y2 L x2 y2 L x2 t L x3 t L x3 y2 L x4 y2 L x4 y1 L r vc L x4 y4 L x4 y3 L x3 y3 L x3 b L x2 b L x2 y3 L x1 y3 L x1 y4 Z",
@@ -162,7 +168,11 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "dx1 */ w a1 200000",
       "x1 +- hc 0 dx1",
       "x2 +- hc dx1 0",
+      "dy1 */ x1 y2 wd2",
+      "y1 +- y2 0 dy1",
+      "y4 +- y3 dy1 0",
     ],
+    sites: ["hc t", "l y2", "x1 vc", "l y3", "hc b", "r y3", "x2 vc", "r y2"],
     paths: [
       {
         data: "M l y2 L hc t L r y2 L x2 y2 L x2 y3 L r y3 L hc b L l y3 L x1 y3 L x1 y2 Z",
@@ -184,7 +194,9 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       "y1 +- vc 0 dy1",
       "y2 +- vc dy1 0",
       "x1 */ dy1 dx2 hd2",
+      "x3 +- r 0 x1",
     ],
+    sites: ["x2 t", "x1 vc", "x2 b", "r vc"],
     paths: [
       {
         data: "M l y1 L x2 y1 L x2 t L r vc L x2 b L x2 y2 L l y2 L x1 vc Z",

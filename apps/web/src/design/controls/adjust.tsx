@@ -1,5 +1,5 @@
 import { resolveControl } from "@/design/panel-arrangement"
-import { adjustDefaults } from "@airdesign/render"
+import { adjustDefaults } from "@airdesign/doom"
 import { geometryCopy } from "@/copy/geometry-copy"
 import { NumberField } from "@/design/controls/number"
 import type { ControlProps } from "@/design/panel"

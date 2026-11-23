@@ -1,25 +1,10 @@
 import * as doom from "@airdesign/doom"
 import { TextLines, gestureFor } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"
 import { graphemeAfter, graphemeBefore, wordAfter, wordBefore } from "./text-edit"
 import type { TextSession } from "./use-text-session"
-
-type Line = doom.ResolvedLine
-
-function blankLine(text: doom.Text, theme: doom.Theme, width: number): Line {
-  const style = theme.textStyles[text.style]
-  return {
-    start: 0,
-    end: 0,
-    x: text.padding?.l ?? 0,
-    y: text.padding?.t ?? 0,
-    w: Math.max(2, width),
-    h: style.size * style.lineHeight,
-    align: text.paras[0]?.align ?? "left",
-    runs: [],
-  }
-}
 
 function selectionOf(host: HTMLElement): { readonly anchor: number; readonly focus: number } | null {
   const selection = host.ownerDocument.defaultView?.getSelection()
@@ -188,7 +173,7 @@ export function TextHost(props: {
     if (cut) current.replace(from, to, "")
   }
 
-  const lines = node.text?.lines ?? [blankLine(session.draft, theme, node.box.w)]
+  const lines = node.text?.lines ?? [blankLine(session.draft, theme, node)]
   return (
     <div
       key={fresh}

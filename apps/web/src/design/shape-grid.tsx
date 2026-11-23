@@ -1,5 +1,5 @@
 import { presets, type Geometry, type Preset } from "@airdesign/document"
-import { presetOutline } from "@airdesign/render"
+import { presetOutline } from "@airdesign/doom"
 import type { KeyboardEvent, Ref } from "react"
 import { Button } from "@/components/ui/button"
 import { geometryWords } from "@/copy/geometry-copy"

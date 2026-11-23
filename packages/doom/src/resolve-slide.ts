@@ -4,6 +4,7 @@ import type { NodeId } from "./ids.js"
 import { lineEnds } from "./line-ends.js"
 import type { Measure } from "./measure.js"
 import { scalePath } from "./path-scale.js"
+import { textArea } from "./preset-geometry.js"
 import type { StrokeStyle } from "./paint.js"
 import type { PropName, Props } from "./props.js"
 import { resolveEffects, resolvePaints, resolveRadius } from "./resolve-paint.js"
@@ -107,7 +108,10 @@ function resolveFresh(context: Context, node: Node, box: Box, children: readonly
     radius: resolveRadius(prop(node, "radius")),
     effects: resolveEffects(prop(node, "effects"), theme),
     geometry: node.type === "shape" ? geometryOf(context, node, box) : null,
-    text: text === undefined || text.chars === "" ? null : resolveText(text, theme, box, context.measure),
+    text:
+      text === undefined || text.chars === ""
+        ? null
+        : resolveText(text, theme, textArea(prop(node, "geometry"), box.w, box.h), context.measure),
     clip: prop(node, "clip") ?? false,
     children,
     derived: false,

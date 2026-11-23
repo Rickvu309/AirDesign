@@ -51,6 +51,18 @@ describe("what a click reaches", () => {
     expect(hitChain(round.geometry.roots, { x: 5, y: 5 }, 4)).toBeNull()
   })
 
+  it("hits a triangle only inside its outline, not in its box's empty corners", () => {
+    const peak = grow([
+      {
+        type: "shape",
+        name: "peak",
+        props: { box: spot(0, 0, 200, 100), fills: paint, geometry: { kind: "preset", name: "triangle" } },
+      },
+    ])
+    expect(hitChain(peak.geometry.roots, { x: 100, y: 80 }, 4)).not.toBeNull()
+    expect(hitChain(peak.geometry.roots, { x: 10, y: 10 }, 4)).toBeNull()
+  })
+
   it("hits a rotated shape where it is, not where its unrotated box was", () => {
     const turned = grow([{ type: "shape", name: "bar", props: { box: spot(100, 100, 200, 20, 90), fills: paint } }])
     expect(hitChain(turned.geometry.roots, { x: 200, y: 50 }, 4)).not.toBeNull()

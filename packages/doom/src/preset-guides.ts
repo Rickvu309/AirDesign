@@ -22,7 +22,12 @@ const formulas: Readonly<Record<string, (x: number, y: number, z: number) => num
   sat2: (x, y, z) => x * Math.sin(Math.atan2(z, y)),
 }
 
-export function presetGuides(rule: GuideRule, w: number, h: number, adjusts: Readonly<Record<string, number>>) {
+export function presetGuides(
+  rule: GuideRule,
+  w: number,
+  h: number,
+  adjusts: Readonly<Record<string, number>>,
+): (token: string) => number {
   const values = new Map<string, number>([
     ["w", w],
     ["h", h],

@@ -1,6 +1,7 @@
 import type { NodeId } from "./ids.js"
 import type { Box, Point } from "./resolved.js"
 import type { Doom } from "./doom.js"
+import { siteSpot } from "./preset-geometry.js"
 import type { Props } from "./props.js"
 
 type Line = Extract<NonNullable<Props["geometry"]>, { kind: "line" }>
@@ -20,14 +21,6 @@ function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, Box>, id: NodeId): Po
   return { x, y }
 }
 
-const spots = {
-  t: [0.5, 0],
-  r: [1, 0.5],
-  b: [0.5, 1],
-  l: [0, 0.5],
-  c: [0.5, 0.5],
-} as const
-
 export function lineEnds(
   doom: Doom,
   boxes: ReadonlyMap<NodeId, Box>,
@@ -40,8 +33,9 @@ export function lineEnds(
     const at = positionOf(doom, boxes, end.node)
     const box = boxes.get(end.node)
     if (at === null || box === undefined) return { x: 0, y: 0 }
-    const [across, down] = spots[end.site]
-    return { x: at.x + box.w * across - origin.x, y: at.y + box.h * down - origin.y }
+    const geometry = (doom.nodes.get(end.node) as Partial<Props> | undefined)?.geometry
+    const spot = siteSpot(geometry, box.w, box.h, end.site)
+    return { x: at.x + spot.x - origin.x, y: at.y + spot.y - origin.y }
   }
   return { from: resolve(line.start), to: resolve(line.end) }
 }

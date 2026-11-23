@@ -106,5 +106,8 @@ export const wordsHeight = (kit: Kit, look: Omit<Words, "align">): number =>
   kit.measure(textOf("0", { ...look, align: "left" }), kit.theme, null).h
 
 export function words(id: string, kit: Kit, chars: string, box: Box, look: Words): Resolved {
-  return { ...part(id, box, { kind: "rect" }), text: resolveText(textOf(chars, look), kit.theme, box, kit.measure) }
+  return {
+    ...part(id, box, { kind: "rect" }),
+    text: resolveText(textOf(chars, look), kit.theme, { x: 0, y: 0, w: box.w, h: box.h }, kit.measure),
+  }
 }
