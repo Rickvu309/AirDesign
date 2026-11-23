@@ -17,11 +17,6 @@ apps/web/src/editor:
       - dependency
     files:
       - apps/web/src/export/export-control.tsx
-  apps/web/src/editor/editor-key-ownership.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/export/export-key.ts
   apps/web/src/editor/gallery-deck.ts:
     violations:
       - dependency

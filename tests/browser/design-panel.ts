@@ -1,7 +1,5 @@
-import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
-import { decksOn } from "./deck-test"
 
 export async function setPanelMode(page: Page, mode: "slides" | "design"): Promise<void> {
   const toggle = page.locator("[data-design-mode]")
@@ -13,13 +11,7 @@ export async function setPanelMode(page: Page, mode: "slides" | "design"): Promi
   )
 }
 
-export const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
-
 type StoredRow = { readonly kind: string; readonly node?: string; readonly property?: string; readonly value?: unknown }
-
-export async function openDeck(page: Page, file: string): Promise<void> {
-  await decksOn(page).open(join(fixtures, file))
-}
 
 export async function designing(page: Page, element: Locator): Promise<Locator> {
   await page.getByRole("button", { name: "Design", exact: true }).click()

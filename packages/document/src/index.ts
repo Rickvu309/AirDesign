@@ -365,11 +365,10 @@ export type {
   ResolvedText,
   Spacing,
 } from "./resolved-slide.js"
-export { fontFace, layText, type FontWidths } from "./text-fit.js"
-export { findingLimits, type Finding } from "./finding.js"
+export { fontFace, type FontWidths } from "./text-fit.js"
+export { type Finding } from "./finding.js"
 export { contrast } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
-export { slideFindings, type SlideFindings } from "./slide-findings.js"
 export { scaleMark, typeSteps } from "./finding-scale.js"
 
 export {
@@ -381,7 +380,7 @@ export {
   type GridSide,
 } from "./grid-order.js"
 export { gridMovePlacement } from "./grid-move.js"
-export { readElementLink, readLinkTarget, type ElementLink, type LinkTarget, type LinkEdit } from "./link-target.js"
+export { readElementLink, readLinkTarget, type ElementLink, type LinkEdit } from "./link-target.js"
 
 export { slideBirths } from "./slide-births.js"
 export { cloneMany } from "./grid-set.js"
