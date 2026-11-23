@@ -1,6 +1,5 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { parentSlot, propOf, siblingsOf, slidesOf } from "@/editing/node-props"
 
 type Mint = () => doom.NodeId
 
@@ -11,7 +10,7 @@ function deckId(view: doom.Doom): doom.NodeId | null {
 }
 
 function keyOf(view: doom.Doom, id: doom.NodeId | undefined): OrderKey | null {
-  return id === undefined ? null : (parentSlot(view, id)?.at ?? null)
+  return id === undefined ? null : (doom.parentOf(view.nodes.get(id))?.at ?? null)
 }
 
 export function addSlideWrites(
@@ -20,34 +19,33 @@ export function addSlideWrites(
   mint: Mint,
   start: doom.SlideStart = "titleOnly",
 ): Added {
-  const slides = slidesOf(view)
+  const slides = doom.slidesOf(view).map((each) => each.id)
   const slide = mint()
   const writes: doom.Write[] = []
   const previous = after !== null && slides.includes(after) ? after : slides.at(-1)
-  let row = previous === undefined ? undefined : parentSlot(view, previous)?.id
+  let row = previous === undefined ? undefined : doom.parentOf(view.nodes.get(previous))?.id
   if (row === undefined) {
     const deck = deckId(view)
-    row = (deck === null ? [] : siblingsOf(view, deck)).findLast(
-      (each) => propOf(view.nodes.get(each), "hidden") !== true,
-    )
+    const deckRows = deck === null ? [] : doom.childrenOf(view, deck)
+    row = deckRows.findLast((each) => each.type === "slideRow" && doom.propOf(each, "hidden") !== true)?.id
     if (row === undefined) {
       row = mint()
-      const rowAt = deck === null ? null : keyOf(view, siblingsOf(view, deck).at(-1))
+      const rowAt = doom.parentOf(deckRows.at(-1))?.at ?? null
       writes.push(
         { node: row, prop: "type", value: "slideRow" },
         { node: row, prop: "parent", value: { id: deck as doom.NodeId, at: orderKeyBetween(rowAt, null) } },
       )
     }
   }
-  const order = siblingsOf(view, row)
-  const index = previous === undefined ? -1 : order.indexOf(previous)
-  const at = orderKeyBetween(keyOf(view, order[index]), keyOf(view, order[index + 1]))
+  const order = doom.childrenOf(view, row)
+  const index = previous === undefined ? -1 : order.findIndex((each) => each.id === previous)
+  const at = orderKeyBetween(doom.parentOf(order[index])?.at ?? null, doom.parentOf(order[index + 1])?.at ?? null)
   writes.push(
     { node: slide, prop: "type", value: "slide" },
     { node: slide, prop: "parent", value: { id: row, at } },
     { node: slide, prop: "name", value: `Slide ${String(slides.length + 1)}` },
   )
-  const fills = previous === undefined ? undefined : propOf(view.nodes.get(previous), "fills")
+  const fills = previous === undefined ? undefined : doom.propOf(view.nodes.get(previous), "fills")
   if (fills !== undefined) writes.push({ node: slide, prop: "fills", value: fills })
   const withSlide = doom.applyEdit(view, {
     once: "slide-added",
@@ -67,14 +65,14 @@ export function duplicateSlideWrites(view: doom.Doom, slides: readonly doom.Node
 }
 
 export function deleteSlideWrites(view: doom.Doom, removed: readonly doom.NodeId[]): readonly doom.Write[] {
-  const slides = slidesOf(view)
+  const slides = doom.slidesOf(view).map((each) => each.id)
   const gone = new Set(removed)
   if (!slides.some((slide) => gone.has(slide))) return []
   return slides.filter((slide) => gone.has(slide)).map((slide) => ({ node: slide, prop: "parent", value: null }))
 }
 
 export function neighbourAfterDelete(view: doom.Doom, removed: readonly doom.NodeId[]): doom.NodeId | null {
-  const slides = slidesOf(view)
+  const slides = doom.slidesOf(view).map((each) => each.id)
   const gone = new Set(removed)
   const first = slides.findIndex((slide) => gone.has(slide))
   const kept = (slide: doom.NodeId) => !gone.has(slide)
@@ -82,7 +80,7 @@ export function neighbourAfterDelete(view: doom.Doom, removed: readonly doom.Nod
 }
 
 export function moveSlideWrites(view: doom.Doom, moved: readonly doom.NodeId[], at: number): readonly doom.Write[] {
-  const slides = slidesOf(view)
+  const slides = doom.slidesOf(view).map((each) => each.id)
   const held = slides.filter((slide) => moved.includes(slide))
   if (held.length === 0) return []
   const others = slides.filter((slide) => !held.includes(slide))
@@ -92,10 +90,10 @@ export function moveSlideWrites(view: doom.Doom, moved: readonly doom.NodeId[], 
   const before = others[place - 1]
   const next = others[place]
   const anchor = next ?? before
-  const row = anchor === undefined ? undefined : parentSlot(view, anchor)?.id
+  const row = anchor === undefined ? undefined : doom.parentOf(view.nodes.get(anchor))?.id
   if (anchor === undefined || row === undefined) return []
-  let low = before !== undefined && parentSlot(view, before)?.id === row ? keyOf(view, before) : null
-  const high = next !== undefined && parentSlot(view, next)?.id === row ? keyOf(view, next) : null
+  let low = before !== undefined && doom.parentOf(view.nodes.get(before))?.id === row ? keyOf(view, before) : null
+  const high = next !== undefined && doom.parentOf(view.nodes.get(next))?.id === row ? keyOf(view, next) : null
   return held.map((slide) => {
     low = orderKeyBetween(low, high)
     return { node: slide, prop: "parent", value: { id: row, at: low } }

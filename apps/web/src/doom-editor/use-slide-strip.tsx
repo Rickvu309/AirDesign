@@ -4,7 +4,6 @@ import { useRef, type KeyboardEvent } from "react"
 import { toast } from "@/components/ui/toast"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { slidesOf } from "@/editing/node-props"
 import { slideThumbWidth, type SlideStrip } from "@/editor/slide-sidebar"
 import { TypedThumb, type TypingPreview } from "./typing-preview"
 import {
@@ -93,13 +92,13 @@ export function useSlideStrip(props: {
         const removed = remove(pick(held))
         if (removed === "last-slide") toast.error(slideListCopy.lastSlide)
         if (removed !== "removed") return null
-        return { picked: [], order: slidesOf(client.view()) }
+        return { picked: [], order: doom.slidesOf(client.view()).map((each) => each.id) }
       }
       const made = duplicateSlideWrites(view, pick(held), mint)
       const copy = made.slides[0]
       if (copy === undefined || !client.push(made.writes).ok) return null
       onCurrent(copy)
-      return { picked: made.slides, order: slidesOf(client.view()) }
+      return { picked: made.slides, order: doom.slidesOf(client.view()).map((each) => each.id) }
     },
   }
 }

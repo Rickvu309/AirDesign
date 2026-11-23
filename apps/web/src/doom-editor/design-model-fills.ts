@@ -7,7 +7,7 @@ import { arrange } from "@/design/panel-arrangement"
 import { doomControl } from "./design-controls"
 import { shownFill } from "./design-paint-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 export const imageFits = ["fill", "fit", "tile"]
 

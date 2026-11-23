@@ -19,7 +19,6 @@ import {
   type TransformGrip,
 } from "./transform-math"
 import { isGroup, scaledChildren } from "./group-scale"
-import { flows, geometryKind, lockedIn, propOf } from "@/editing/node-props"
 import { memberOf, type Member } from "./selection-frame"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
@@ -53,7 +52,7 @@ export const isRotateGrip = (grip: TransformGrip): grip is RotateGrip => grip.st
 export function transformable(view: doom.Doom, id: doom.NodeId): boolean {
   const node = view.nodes.get(id)
   if (node === undefined || (node.type !== "frame" && node.type !== "shape")) return false
-  return !lockedIn(view, id) && geometryKind(view, id) !== "line"
+  return !doom.lockedIn(view, id) && doom.propOf(node, "geometry")?.kind !== "line"
 }
 
 function visual(frame: Tilted): Bounds {
@@ -185,7 +184,7 @@ function placedWrites(input: TransformInput, member: Member, next: Tilted): read
   const local = parent === undefined ? next.center : apply(invert(parent.matrix), next.center)
   const w = Math.max(1, Math.round(next.w))
   const h = Math.max(1, Math.round(next.h))
-  const stored = propOf(node, "box") ?? placed.node.box
+  const stored = doom.propOf(node, "box") ?? placed.node.box
   const rotation = doom.wrapRotation(next.rotation - (parent?.rotation ?? 0))
   const box = { ...stored, x: Math.round(local.x - w / 2), y: Math.round(local.y - h / 2), w, h, rotation }
   const widthChanged = w !== Math.round(member.w)
@@ -196,13 +195,13 @@ function placedWrites(input: TransformInput, member: Member, next: Tilted): read
       writes.push(...scaledChildren(view, geometry, member.id, w / member.w, h / member.h))
     return writes
   }
-  const sizing = propOf(node, "sizing") ?? { w: "fixed" as const, h: "fixed" as const }
+  const sizing = doom.propOf(node, "sizing") ?? { w: "fixed" as const, h: "fixed" as const }
   const fixed = {
     w: widthChanged ? "fixed" : sizing.w,
     h: heightChanged ? "fixed" : sizing.h,
   } as const
   if (fixed.w !== sizing.w || fixed.h !== sizing.h) writes.push({ node: member.id, prop: "sizing", value: fixed })
-  const text = node.type === "shape" ? propOf(node, "text") : undefined
+  const text = node.type === "shape" ? doom.propOf(node, "text") : undefined
   if (text !== undefined) {
     const resize = textResize(text, grip, widthChanged, heightChanged)
     if (resize !== text.resize) writes.push({ node: member.id, prop: "text", value: { ...text, resize } })
@@ -243,7 +242,7 @@ function rotated(
 
 export function transformedBy(input: TransformInput): Transformed {
   const members = input.ids
-    .filter((id) => transformable(input.view, id) && (!isRotateGrip(input.grip) || !flows(input.view, id)))
+    .filter((id) => transformable(input.view, id) && (!isRotateGrip(input.grip) || !doom.flows(input.view, id)))
     .flatMap((id) => {
       const placed = input.geometry.byId.get(id)
       return placed === undefined ? [] : [memberOf(placed)]

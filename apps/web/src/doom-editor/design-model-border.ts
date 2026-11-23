@@ -10,7 +10,7 @@ import { doomControl } from "./design-controls"
 import { shownStroke } from "./design-paint-values"
 import { emuOf } from "./design-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 const widest = 20_116_800
 const routes = ["straight", "elbow", "curve"] as const

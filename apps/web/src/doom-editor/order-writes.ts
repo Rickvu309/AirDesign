@@ -1,6 +1,5 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { parentSlot, siblingsOf } from "@/editing/node-props"
 
 export type Reorder = "front" | "back" | "forward" | "backward"
 
@@ -20,13 +19,14 @@ function moved(order: readonly doom.NodeId[], chosen: ReadonlySet<doom.NodeId>, 
 
 export function orderWrites(view: doom.Doom, ids: readonly doom.NodeId[], how: Reorder): readonly doom.Write[] {
   const writes: doom.Write[] = []
-  const parents = new Set(ids.flatMap((id) => parentSlot(view, id)?.id ?? []))
+  const parents = new Set(ids.flatMap((id) => doom.parentOf(view.nodes.get(id))?.id ?? []))
   for (const parent of parents) {
-    const order = siblingsOf(view, parent)
+    const children = doom.childrenOf(view, parent)
+    const order = children.map((child) => child.id)
     const chosen = new Set(ids.filter((id) => order.includes(id)))
     const next = moved(order, chosen, how)
     if (next.every((id, at) => id === order[at])) continue
-    const keys = new Map(order.map((id) => [id, parentSlot(view, id)!.at]))
+    const keys = new Map(children.map((child) => [child.id, doom.parentOf(child)!.at]))
     let at = 0
     while (at < next.length) {
       if (!chosen.has(next[at]!)) {

@@ -1,6 +1,5 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { parentSlot, siblingsOf } from "@/editing/node-props"
 
 type Point = { readonly x: number; readonly y: number }
 type Natural = { readonly width: number; readonly height: number }
@@ -22,8 +21,8 @@ export function pictureWrites(
   natural: Natural,
   at: Point | null,
 ): readonly doom.Write[] {
-  const last = siblingsOf(view, slide).at(-1)
-  const above = last === undefined ? null : (parentSlot(view, last)?.at ?? null)
+  const last = doom.childrenOf(view, slide).at(-1)
+  const above = doom.parentOf(last)?.at ?? null
   return [
     { node: id, prop: "type", value: "shape" },
     { node: id, prop: "parent", value: { id: slide, at: orderKeyBetween(above, null) } },

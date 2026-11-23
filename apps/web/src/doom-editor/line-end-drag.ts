@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 export type EndGrip = "line-start" | "line-end"

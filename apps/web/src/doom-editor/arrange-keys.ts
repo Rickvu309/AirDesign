@@ -3,7 +3,6 @@ import type { GestureId } from "@/lib/gestures"
 import { deleteWrites } from "./delete-writes"
 import { flipWrites, toggleWrites } from "./flip-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
-import { parentSlot } from "@/editing/node-props"
 import { orderWrites } from "./order-writes"
 import { noSelection, type Selection } from "./selection"
 import type { SlideGeometry } from "./slide-geometry"
@@ -24,7 +23,7 @@ function pasteTarget(view: doom.Doom, selection: Selection, slide: doom.NodeId):
   const [first] = selection.ids
   if (first === undefined) return slide
   if (selection.ids.length === 1 && view.nodes.get(first)?.type === "frame") return first
-  return parentSlot(view, first)?.id ?? slide
+  return doom.parentOf(view.nodes.get(first))?.id ?? slide
 }
 
 function landed(context: ArrangeContext, writes: readonly doom.Write[], selected?: readonly doom.NodeId[]) {

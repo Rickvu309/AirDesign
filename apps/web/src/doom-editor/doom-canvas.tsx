@@ -16,7 +16,7 @@ import { TextBar } from "./text-bar"
 import { TextHost } from "./text-host"
 import { linkedWords, type LinkedWords } from "./text-edit"
 import { useTextSession } from "./use-text-session"
-import { propOf, slidesOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites } from "./create-writes"
@@ -161,7 +161,7 @@ export function DoomCanvas(props: {
   })
 
   const theme = doom.deckOf(shown).theme
-  const slides = useMemo(() => slidesOf(view), [view])
+  const slides = useMemo(() => doom.slidesOf(view).map((each) => each.id), [view])
 
   function leaveText() {
     const id = text.session?.node

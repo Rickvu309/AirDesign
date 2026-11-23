@@ -1,6 +1,6 @@
 import type * as doom from "@airdesign/doom"
 import { airaCopy, airaKeptLayerName } from "@/copy/aira-copy"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import { kindOf } from "./design-model"
 
 const wordsShown = 40

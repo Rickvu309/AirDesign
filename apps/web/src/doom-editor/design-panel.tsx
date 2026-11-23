@@ -20,7 +20,6 @@ import { paletteOf } from "./design-palette"
 import { fillWrite, shownFill } from "./design-paint-values"
 import { DoomSelectionColors } from "./design-selection-section"
 import { DoomThemeCard } from "./design-theme-card"
-import { propOf, slidesOf } from "@/editing/node-props"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
 import { HiddenLockedLayers } from "./hidden-locked"
@@ -58,7 +57,7 @@ export function DesignPanel(props: Props) {
   const geometry = useMemo(() => geometryOf(painted.nodes ?? []), [painted.nodes])
   const theme = doom.deckOf(view).theme
   const palette = useMemo(() => paletteOf(view, theme), [view, theme])
-  const slides = slidesOf(view)
+  const slides = doom.slidesOf(view).map((each) => each.id)
   const context: ChangeContext = { view, ids, geometry, size: doom.deckOf(view).size, slides }
   const replaceImage = (targets: readonly doom.NodeId[], file: Blob) => {
     void storePicture(deck, file).then((asset) => {
@@ -66,7 +65,7 @@ export function DesignPanel(props: Props) {
       const latest = client.view()
       client.push(
         targets.flatMap((node): doom.Write[] => {
-          const next = fillWrite(propOf(latest.nodes.get(node), "fills"), { image: asset })
+          const next = fillWrite(doom.propOf(latest.nodes.get(node), "fills"), { image: asset })
           return next === undefined ? [] : [{ node, prop: "fills", value: next }]
         }),
       )
@@ -74,10 +73,12 @@ export function DesignPanel(props: Props) {
   }
   const [only] = ids
   const pictured =
-    only === undefined ? undefined : propOf(view.nodes.get(only), "fills")?.findLast((paint) => paint.kind === "image")
+    only === undefined
+      ? undefined
+      : doom.propOf(view.nodes.get(only), "fills")?.findLast((paint) => paint.kind === "image")
   const url = useAssetUrl(deck, pictured?.kind === "image" ? pictured.asset : undefined)
   if (ids.length === 0) {
-    const background = propOf(view.nodes.get(slide), "fills")
+    const background = doom.propOf(view.nodes.get(slide), "fills")
     const solid = shownFill(background)
     const held = "solid" in solid ? solid.solid : undefined
     const shownColor = held ?? { var: "background" as const }
@@ -134,7 +135,7 @@ export function DesignPanel(props: Props) {
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const autoLayout = ids.length === 1 && model.frame === "auto"
-  const chart = ids.length === 1 && only !== undefined && propOf(view.nodes.get(only), "chart") !== undefined
+  const chart = ids.length === 1 && only !== undefined && doom.propOf(view.nodes.get(only), "chart") !== undefined
   return (
     <ElementDesign
       model={model}

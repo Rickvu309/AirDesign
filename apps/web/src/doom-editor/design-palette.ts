@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import type { Palette, Swatch } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 export function swatchesOf(theme: doom.Theme): readonly Swatch[] {
   return namedByColor(doom.colorVars.map((name) => ({ var: name, css: theme.colors[name].toUpperCase() })))

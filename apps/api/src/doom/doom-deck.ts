@@ -115,8 +115,6 @@ async function readStored(db: Sql, deck: DeckId): Promise<Stored | undefined> {
   return (await db.query<Stored>(headSql, [deck])).rows[0]
 }
 
-const parentOf = (node: doom.Node | undefined) => (node as { parent?: { id: doom.NodeId } | null } | undefined)?.parent
-
 function nodeRows(fold: doom.Doom, ids: Iterable<doom.NodeId>) {
   const rows: { id: string; type: string; parent: string | null; node: doom.Node; revs: unknown }[] = []
   for (const id of ids) {
@@ -125,7 +123,7 @@ function nodeRows(fold: doom.Doom, ids: Iterable<doom.NodeId>) {
       rows.push({
         id,
         type: node.type,
-        parent: parentOf(node)?.id ?? null,
+        parent: doom.parentOf(node)?.id ?? null,
         node,
         revs: doom.revsToJson(fold.revs.get(id)),
       })
@@ -160,7 +158,7 @@ function partOf(part: Part, once: string): doom.Doom | undefined {
     if (stored.node.type === "slideRow") children.set(stored.node.id, [])
   }
   for (const node of nodes.values()) {
-    const parent = parentOf(node)
+    const parent = doom.parentOf(node)
     if (node.type === "slide" && parent != null) children.get(parent.id)?.push(node.id)
   }
   const runs = doom.readRuns(part.runs)

@@ -3,7 +3,6 @@ dependencies:
   - apps/web/src/account
   - apps/web/src/components
   - apps/web/src/copy
-  - apps/web/src/editing
   - apps/web/src/lib
 public:
   - agent-logos.ts

@@ -1,5 +1,5 @@
 import type * as doom from "@airdesign/doom"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 export type ShowPoint = { readonly x: number; readonly y: number; readonly show: Element }
 

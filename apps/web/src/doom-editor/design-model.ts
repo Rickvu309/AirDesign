@@ -12,7 +12,7 @@ import { boxCopy } from "@/copy/box-copy"
 import { geometryCopy } from "@/copy/geometry-copy"
 import { linkCopy } from "@/copy/link-copy"
 import { shownShape } from "./design-shape-values"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import type { LinkedWords } from "./text-edit"
 
 export type ModelInput = {

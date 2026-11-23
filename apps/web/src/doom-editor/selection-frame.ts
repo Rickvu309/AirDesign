@@ -1,5 +1,4 @@
 import * as doom from "@airdesign/doom"
-import { geometryKind } from "@/editing/node-props"
 import { aroundPlaced, apply, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 export type Member = {
@@ -25,7 +24,7 @@ export function memberOf(placed: Placed): Member {
 
 export function framed(geometry: SlideGeometry, ids: readonly doom.NodeId[], view: doom.Doom): Frame | null {
   const placed = ids.flatMap((id) => geometry.byId.get(id) ?? [])
-  const boxed = placed.filter((each) => geometryKind(view, each.id) !== "line")
+  const boxed = placed.filter((each) => doom.propOf(view.nodes.get(each.id), "geometry")?.kind !== "line")
   if (boxed.length === 0 || boxed.length !== placed.length) return null
   const [only] = boxed
   if (boxed.length === 1 && only !== undefined) {
