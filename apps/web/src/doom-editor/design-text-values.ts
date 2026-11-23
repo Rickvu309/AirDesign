@@ -82,7 +82,7 @@ export function shownText(text: doom.Text, theme: doom.Theme): TextShown {
   }
 }
 
-export const sizeOld = (px: number): number => Math.round(px * hundredths)
-export const sizeNew = (old: number): number => old / hundredths
-export const lineOld = (multiple: number): number => Math.round(multiple * wholeFraction)
-export const lineNew = (old: number): number => old / wholeFraction
+export const sizeToHundredths = (px: number): number => Math.round(px * hundredths)
+export const sizeFromHundredths = (old: number): number => old / hundredths
+export const lineToFraction = (multiple: number): number => Math.round(multiple * wholeFraction)
+export const lineFromFraction = (old: number): number => old / wholeFraction

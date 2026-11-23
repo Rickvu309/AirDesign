@@ -39,3 +39,34 @@ test("a percent takes a typed number in percent, steps with the arrow keys, clam
   await pick(page, "t:1", 400, 350)
   await expect(field).toHaveValue("100")
 })
+
+test("a percent dragged past its limit moves again as soon as the pointer turns back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(200, 200, 400, 300), geometry: { kind: "rect" }, fills: accent },
+    },
+  ])
+  const opacity = async () => (await saved(stack, opened, "t:1")).opacity
+  await pick(page, "t:1", 400, 350)
+  const group = section(page, opacityCopy.section)
+  const field = group.getByRole("textbox", { name: opacityCopy.label, exact: true })
+  const box = await group.locator(".cursor-ew-resize").first().boundingBox()
+  if (box === null) throw new Error("the opacity field has no scrub handle")
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + 400, y, { steps: 20 })
+  await expect(field).toHaveValue("100")
+  await page.mouse.move(x + 300, y, { steps: 10 })
+  await page.mouse.up()
+  await expect.poll(async () => Number(await field.inputValue())).toBeLessThan(100)
+  await expect.poll(async () => (await opacity()) ?? 1).toBeLessThan(1)
+})

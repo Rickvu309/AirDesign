@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { chosenStep, numberShown, scrubbed, storedFromTyped } from "@/design/controls/number"
+import { chosenStep, numberShown, scrubAfter, scrubbed, storedFromTyped } from "@/design/controls/number"
 import { steppedFrom, untouched } from "@/design/shown-number"
 import { typedNumber } from "@/design/typed-number"
 import type { PanelControl } from "@/design/panel"
@@ -25,6 +25,17 @@ describe("scrubbing a number field", () => {
 
   it("steps by the field's own step", () => {
     expect(scrubbed({ value: 50, x: 0 }, 4, plain, 5)).toEqual({ value: 60, x: 4 })
+  })
+})
+
+describe("scrubbing past a limit", () => {
+  it("anchors at the limit, so dragging back moves the value at once", () => {
+    const past = scrubbed({ value: 100, x: 0 }, 400, plain, 1)
+    expect(past.value).toBe(300)
+    const held = scrubAfter(past, 100)
+    expect(held).toEqual({ value: 100, x: 400 })
+    expect(scrubbed(held, 300, plain, 1).value).toBe(50)
+    expect(scrubAfter(past, 300)).toBe(past)
   })
 })
 

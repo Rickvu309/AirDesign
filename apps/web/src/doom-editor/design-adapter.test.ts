@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 import { panelOfMany, type PanelControl, type PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { kindOf, nodeModel } from "./design-model"
-import { lineNew, sizeNew } from "./design-text-values"
+import { lineFromFraction, sizeFromHundredths } from "./design-text-values"
 import { distributeWrites } from "./design-align"
 import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
@@ -167,11 +167,14 @@ describe("text layer", () => {
       return desc
     }
     const size = range("size")
-    expect([sizeNew(size.min), sizeNew(size.max)]).toEqual([doom.textLimits.size.min, doom.textLimits.size.max])
+    expect([sizeFromHundredths(size.min), sizeFromHundredths(size.max)]).toEqual([
+      doom.textLimits.size.min,
+      doom.textLimits.size.max,
+    ])
     const spacing = range("letterSpacing")
     expect([spacing.min / 100, spacing.max / 100]).toEqual([doom.textLimits.tracking.min, doom.textLimits.tracking.max])
     const line = range("lineHeight")
-    expect([lineNew(line.min), lineNew(line.max)]).toEqual([
+    expect([lineFromFraction(line.min), lineFromFraction(line.max)]).toEqual([
       doom.textLimits.lineHeight.min,
       doom.textLimits.lineHeight.max,
     ])

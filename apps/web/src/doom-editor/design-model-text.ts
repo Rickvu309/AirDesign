@@ -10,7 +10,7 @@ import { arrange, resolveControl } from "@/design/panel-arrangement"
 import { spacingUnits } from "@/design/spacing-units"
 import { choiceDesc, type Desc } from "@/design/control-desc"
 import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
-import { lineOld, shownText, sizeOld } from "./design-text-values"
+import { lineToFraction, shownText, sizeToHundredths } from "./design-text-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@/editing/node-props"
 
@@ -22,16 +22,21 @@ const { size: sizeLimit, tracking: trackingLimit, lineHeight: lineLimit } = doom
 const sizeDesc: Desc = {
   kind: "number",
   unit: "hundredth-point",
-  min: sizeOld(sizeLimit.min),
-  max: sizeOld(sizeLimit.max),
+  min: sizeToHundredths(sizeLimit.min),
+  max: sizeToHundredths(sizeLimit.max),
 }
 const spacingDesc: Desc = {
   kind: "number",
   unit: "hundredth-point",
-  min: sizeOld(trackingLimit.min),
-  max: sizeOld(trackingLimit.max),
+  min: sizeToHundredths(trackingLimit.min),
+  max: sizeToHundredths(trackingLimit.max),
 }
-const lineDesc: Desc = { kind: "number", unit: "fraction", min: lineOld(lineLimit.min), max: lineOld(lineLimit.max) }
+const lineDesc: Desc = {
+  kind: "number",
+  unit: "fraction",
+  min: lineToFraction(lineLimit.min),
+  max: lineToFraction(lineLimit.max),
+}
 
 const textControl = (field: string, label: string, desc: Desc, held: Held, extra: Partial<PanelControl> = {}) =>
   doomControl({ trait: "text", field }, label, desc, held, extra)
@@ -84,7 +89,7 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
     value: { solid: look.color.value },
     mixed: look.color.mixed,
   })
-  const size = sizeOld(look.size.value)
+  const size = sizeToHundredths(look.size.value)
   const controls: PanelControl[] = [
     typography(textControl("style", textCopy.style, styleDesc, { value: shown.style }), theme, shown.style),
     textControl("font", textCopy.font, fontDesc, look.font),
@@ -98,7 +103,7 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
       spacingUnits("text", "letterSpacing", size),
     ),
     textControl("lineHeight", textCopy.lineHeight, lineDesc, {
-      value: lineOld(shown.lineHeight.value),
+      value: lineToFraction(shown.lineHeight.value),
       mixed: shown.lineHeight.mixed,
     }),
     bold,

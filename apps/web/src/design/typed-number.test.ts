@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import { textCopy } from "@/copy/text-copy"
 import type { Desc } from "./control-desc"
-import { shownInUnit, storedOf, typedNumber } from "./typed-number"
+import { clampedOf, shownInUnit, storedOf, typedNumber } from "./typed-number"
 
 it("reads a typed value with or without its unit, as Figma's fields do", () => {
   expect(typedNumber("150", {})).toBe(150)
@@ -47,4 +47,18 @@ it("bounds a length to the widest slide PowerPoint allows and refuses a typed nu
   expect(storedOf(typeSize, 0.5)).toBeNull()
   expect(storedOf(count, 2.5)).toBeNull()
   expect(storedOf({ kind: "flag" }, 1)).toBeNull()
+})
+
+it("wraps an angle around the circle and clamps every other number to its limit", () => {
+  const angle: Desc = { kind: "number", unit: "angle", min: 0, max: 21_599_999 }
+  const fraction: Desc = { kind: "number", unit: "fraction", min: 0, max: 100_000 }
+  const degrees = (typed: number) => (clampedOf(angle, typed) ?? Number.NaN) / 60_000
+  expect(degrees(400)).toBe(40)
+  expect(degrees(-10)).toBe(350)
+  expect(degrees(720)).toBe(0)
+  expect(degrees(360)).toBe(0)
+  expect(degrees(359.999999)).toBe(0)
+  expect(degrees(-1)).toBe(359)
+  expect(clampedOf(fraction, 140)).toBe(100_000)
+  expect(clampedOf(fraction, -5)).toBe(0)
 })

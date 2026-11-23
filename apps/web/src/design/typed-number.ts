@@ -63,6 +63,11 @@ export function clampedOf(desc: Desc, typed: number): number | null {
   const factor = perUnit[desc.unit]
   const low = desc.unit === "emu" ? Math.max(desc.min, -widestSlide) : desc.min
   const high = desc.unit === "emu" ? Math.min(desc.max, widestSlide) : desc.max
+  if (desc.unit === "angle") {
+    const turn = 360 * factor
+    const wrapped = (((Math.round(typed * factor) % turn) + turn) % turn) / factor
+    return storedOf(desc, wrapped)
+  }
   const inRange = Math.min(high / factor, Math.max(low / factor, typed))
   return storedOf(desc, desc.unit === "count" ? Math.round(inRange) : inRange)
 }
