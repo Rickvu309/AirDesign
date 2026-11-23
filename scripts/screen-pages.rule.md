@@ -1,0 +1,3 @@
+# A design screen draws the page a person sees, with sample data, never a copy of it
+
+The `screen-pages` step (`scripts/screen-pages.mjs`) reads every `apps/web/src/**/screens/*.tsx` and `*-screens.tsx` file and fails one that imports a module no page of the app imports, outside samples, copy and routes, and names the real page to draw. `editor-screens.tsx` drawing `DoomEditor` through `editor-sample.tsx` is the shape to copy. The reads from before the check are listed in `scripts/screen-pages-known.json`: fix them, never add to them, and the step fails a listed read that is gone. `scripts/screen-pages.test.mjs` replays the editor screens before 6809df540, which drew the old `EditorShell` behind 16 editor states.
