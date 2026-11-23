@@ -1,3 +1,4 @@
+import { shortcutCopy, textCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { designing, element, selectMany } from "../doom-design.mjs"
 
@@ -6,10 +7,10 @@ async function drive(kit) {
   await designing(kit, "text")
   await selectMany(page, ["w:1"])
   const panel = page.locator("[data-design-element]")
-  const font = panel.getByRole("textbox", { name: "Font", exact: true })
-  const weight = panel.getByRole("combobox", { name: "Weight", exact: true })
+  const font = panel.getByRole("textbox", { name: textCopy.font, exact: true })
+  const weight = panel.getByRole("combobox", { name: textCopy.weight, exact: true })
   await weight.click()
-  await page.getByRole("option", { name: "Bold", exact: true }).click()
+  await page.getByRole("option", { name: shortcutCopy.gestures.bold, exact: true }).click()
   const manifest = page.waitForResponse((response) => response.url().includes("family=Montserrat"))
   await font.fill("Montserrat")
   await manifest

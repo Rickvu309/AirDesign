@@ -1,3 +1,4 @@
+import { opacityCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { designing, element, selectMany } from "../doom-design.mjs"
 
@@ -5,7 +6,7 @@ async function drive(kit) {
   const { page } = kit
   await designing(kit, "shape")
   await selectMany(page, ["w:2"])
-  const opacity = page.locator("[data-design-element]").getByRole("textbox", { name: "Opacity", exact: true })
+  const opacity = page.locator("[data-design-element]").getByRole("textbox", { name: opacityCopy.label, exact: true })
   await opacity.fill("50")
   await opacity.press("Enter")
   await expect(opacity).toHaveValue("50")

@@ -1,3 +1,4 @@
+import { productCopy } from "../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { newDoomDeck } from "../bin/new-deck.mjs"
 
@@ -18,7 +19,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   note(`signed in as ${email} through the emailed code`)
   const deck = await newDeck(page, post, deckRoutes, cookie)
   await page.getByRole("button", { name: /^Rename deck:/ }).click()
-  const field = page.getByRole("textbox", { name: "Deck name" })
+  const field = page.getByRole("textbox", { name: productCopy.deckName })
   await field.fill(named)
   await field.press("Enter")
   await expect

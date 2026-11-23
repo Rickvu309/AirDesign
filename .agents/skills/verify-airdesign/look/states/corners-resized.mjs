@@ -1,3 +1,4 @@
+import { geometryCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { designing, element, node, selectMany } from "../doom-design.mjs"
 
@@ -5,7 +6,9 @@ async function drive(kit) {
   const { page } = kit
   await designing(kit, "shape")
   await selectMany(page, ["w:2"])
-  const corners = page.locator("[data-design-element]").getByRole("textbox", { name: "Corners", exact: true })
+  const corners = page
+    .locator("[data-design-element]")
+    .getByRole("textbox", { name: geometryCopy.corners, exact: true })
   await corners.fill("20")
   await corners.press("Enter")
   await expect(corners).toHaveValue("20")

@@ -1,3 +1,4 @@
+import { slideListCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
 import { expect } from "@playwright/test"
 import { twoShapes } from "../doom-canvas.mjs"
@@ -8,7 +9,7 @@ async function drive(kit) {
   await openDoomDeck(kit, twoShapes)
   await selectNode(page, "w:1")
   await page.keyboard.press("ControlOrMeta+KeyC")
-  await page.getByRole("button", { name: "Add slide", exact: true }).click()
+  await page.getByRole("button", { name: slideListCopy.addSlide, exact: true }).click()
   const entry = page.locator('[data-slide-entry="2"]')
   await expect(entry).toHaveAttribute("aria-current", "true")
   await page.locator("[data-canvas-stage]").focus()

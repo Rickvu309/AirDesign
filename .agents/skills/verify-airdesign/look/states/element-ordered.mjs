@@ -7,12 +7,12 @@ async function drive(kit) {
   const opened = await openDoomDeck(kit, [
     {
       id: "t:1",
-      props: { name: "Rectangle", box: spot(1100, 300, 480, 320), geometry: { kind: "rect" }, fills: accent },
+      props: { name: "Back card", box: spot(1100, 300, 480, 320), geometry: { kind: "rect" }, fills: accent },
     },
     {
       id: "t:2",
       props: {
-        name: "Ellipse",
+        name: "Front badge",
         box: spot(1300, 160, 360, 300),
         geometry: { kind: "ellipse" },
         fills: [{ kind: "solid", color: { var: "accent2" } }],
