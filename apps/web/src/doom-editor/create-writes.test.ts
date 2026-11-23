@@ -122,19 +122,39 @@ describe("inserting", () => {
     })
   })
 
-  it("adds a new icon instead when the selection is not one icon", () => {
+  it("swaps every selected icon, each keeping its own box", () => {
     const two = doom.nodeId("m:2")
     const icons = landed(built.view, [
       ...iconWrites(id, slot, "rocket", inside),
-      ...iconWrites(two, { id: slide, at: "a3" as never }, "rocket", inside),
+      ...iconWrites(two, { id: slide, at: "a3" as never }, "heart", inside),
+      { node: two, prop: "box", value: { x: 10, y: 20, w: 64, h: 64, rotation: 0, flipH: false, flipV: false } },
     ])
-    const shape = landed(
-      built.view,
-      drawWrites({ id, parent: slot, from: { x: 0, y: 0 }, to: null, square: false, center: false, kind: "rectangle" }),
-    )
+    const writes = iconSwapWrites(icons, [id, two], "star")
+    expect(writes).toEqual([
+      { node: id, prop: "geometry", value: { kind: "icon", name: "lucide/star" } },
+      { node: two, prop: "geometry", value: { kind: "icon", name: "lucide/star" } },
+    ])
+    const after = landed(icons, writes ?? [])
+    expect(after.nodes.get(two)).toMatchObject({ box: { x: 10, y: 20, w: 64, h: 64 } })
+  })
+
+  it("adds a new icon instead when the selection is empty or holds anything but icons", () => {
+    const two = doom.nodeId("m:2")
+    const icons = landed(built.view, [
+      ...iconWrites(id, slot, "rocket", inside),
+      ...drawWrites({
+        id: two,
+        parent: { id: slide, at: "a3" as never },
+        from: { x: 0, y: 0 },
+        to: null,
+        square: false,
+        center: false,
+        kind: "rectangle",
+      }),
+    ])
     expect(iconSwapWrites(icons, [], "star")).toBeNull()
     expect(iconSwapWrites(icons, [id, two], "star")).toBeNull()
-    expect(iconSwapWrites(shape, [id], "star")).toBeNull()
+    expect(iconSwapWrites(icons, [two], "star")).toBeNull()
   })
 
   it("inserts a column chart with data a person can edit, in the area it is given", () => {

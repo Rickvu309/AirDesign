@@ -153,6 +153,52 @@ test("with one icon selected, picking an icon in Actions swaps it in place, and 
   expect(await layers.count()).toBe(count)
 })
 
+test("with several icons selected, picking an icon in Actions swaps every one, and one undo puts them all back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const pick = async (name: string) => {
+    await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
+    await page.getByRole("searchbox", { name: doomEditorCopy.actionsSearch }).fill(name)
+    await page.getByRole("button", { name, exact: true }).click()
+  }
+  await pick("rocket")
+  await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("icon")
+  const left = (await picked(page, stack, opened)).id
+  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await pick("heart")
+  await expect.poll(async () => (await selectedIds(page)).length).toBe(1)
+  const right = (await picked(page, stack, opened)).id
+  const heart = await page.locator(`[data-slide-box] [data-node="${right}"]`).boundingBox()
+  await page.mouse.move((heart?.x ?? 0) + (heart?.width ?? 0) / 2, (heart?.y ?? 0) + (heart?.height ?? 0) / 2)
+  await page.mouse.down()
+  await page.mouse.move((heart?.x ?? 0) + (heart?.width ?? 0) / 2 + 120, (heart?.y ?? 0) + (heart?.height ?? 0) / 2, {
+    steps: 8,
+  })
+  await page.mouse.up()
+  await expect.poll(async () => ((await savedNode(stack, opened, right)) as Saved).box.x).toBeGreaterThan(1000)
+  const rocket = await page.locator(`[data-slide-box] [data-node="${left}"]`).boundingBox()
+  await page.keyboard.down(shortcutCopy.chord.other.shift)
+  await page.mouse.click((rocket?.x ?? 0) + (rocket?.width ?? 0) / 2, (rocket?.y ?? 0) + (rocket?.height ?? 0) / 2)
+  await page.keyboard.up(shortcutCopy.chord.other.shift)
+  expect(new Set(await selectedIds(page))).toEqual(new Set([left, right]))
+  const count = await page.locator("[data-slide-box] [data-node]").count()
+
+  await pick("star")
+  for (const id of [left, right])
+    await expect.poll(async () => (await savedNode(stack, opened, id))?.geometry).toMatchObject({ name: "lucide/star" })
+  expect(await page.locator("[data-slide-box] [data-node]").count()).toBe(count)
+
+  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect
+    .poll(async () => (await savedNode(stack, opened, left))?.geometry)
+    .toMatchObject({ name: "lucide/rocket" })
+  expect((await savedNode(stack, opened, right))?.geometry).toMatchObject({ name: "lucide/heart" })
+})
+
 test("the Move menu is dark, lined up with its chevron, and marks the tool in use", async ({
   page,
   context,
