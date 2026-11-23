@@ -4,7 +4,15 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { runner } from "./land-git.mjs"
-import { linearFault, mergesSince, pushFaults, rebuildBranch, rebuildCommand } from "./linear-branch.mjs"
+import {
+  linearFault,
+  mergesSince,
+  pushFaults,
+  rebuildBranch,
+  rebuildCommand,
+  wipFault,
+  wipsSince,
+} from "./linear-branch.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -87,7 +95,38 @@ const refused = step(shape)
 same("the check refuses a branch with a merge commit inside it", refused.status, 1)
 same("and prints the rebuild command", refused.err.includes(rebuildCommand), true)
 same("the check passes a linear branch", step(linear).status, 0)
-same("and says what it judged", step(linear).out, "linear-branch: 1 commits since origin/main, none a merge commit\n")
+same(
+  "and says what it judged",
+  step(linear).out,
+  "linear-branch: 1 commits since origin/main, none a merge or work-in-progress commit\n",
+)
+
+const wip = scratch("wip")
+wip.git("switch", "-q", "-c", "work")
+wip.commitFile("editor.txt", "half\n", "wip: remove the old editor")
+wip.commitFile("line.txt", "snap\n", "WIP: Gemini line end snap and Shift angle")
+wip.commitFile("done.txt", "done\n", "Remove the old editor")
+const wips = wipsSince(wip.run)
+same(
+  "replaying 9b0587d26 and 7f6db26e5, the two WIP commits that reached main, finds both",
+  wips.map((each) => each.subject),
+  ["WIP: Gemini line end snap and Shift angle", "wip: remove the old editor"],
+)
+same("a title that only starts with a word like wipe is not work in progress", wipsSince(linear.run), [])
+const wipRefusal = wipFault({ wips, branch: "work" })
+for (const [what, part] of [
+  ["names the commit", wips[0].hash.slice(0, 8)],
+  ["prints the rebuild command with a title", `${rebuildCommand} --message`],
+])
+  same(`the work-in-progress refusal ${what}`, wipRefusal.includes(part), true)
+const wipStep = step(wip)
+same("the check refuses a branch that holds a WIP commit", wipStep.status, 1)
+same("and names it", wipStep.err.includes("wip: remove the old editor"), true)
+same(
+  "the pre-push hook refuses to push it",
+  pushFaults(wip.root, `refs/heads/work ${wip.git("rev-parse", "HEAD")} refs/heads/work ${"0".repeat(40)}\n`).length,
+  1,
+)
 
 const githubMerge = (repo, head) => {
   const tree = repo.git("rev-parse", `${head}^{tree}`)
