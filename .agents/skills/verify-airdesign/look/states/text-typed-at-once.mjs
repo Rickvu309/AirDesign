@@ -1,25 +1,18 @@
 import { expect } from "@playwright/test"
-import { newBlankDeck } from "../../bin/new-deck.mjs"
-import { undoCopy } from "../../bin/product-copy.mjs"
+import { openDoomDeck } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
-import { placeText } from "../../bin/text-place.mjs"
+import { placeText, textEditor } from "../doom-text.mjs"
 
-async function drive({ page, context, signIn }) {
-  await signIn()
-  await page.goto("/")
-  await newBlankDeck(page)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await expect(texts).toHaveCount(0)
+async function drive({ page, context, ...kit }) {
+  await openDoomDeck({ page, context, ...kit })
   const device = await context.newCDPSession(page)
   await device.send("Emulation.setCPUThrottlingRate", { rate: 4 })
-  await placeText(page)
+  await placeText(page, 384, 860)
   const words = "Typed at once"
   await page.keyboard.type(words, { delay: 0 })
-  await expect(texts).toHaveText(words)
-  await expect(texts).toBeFocused()
+  await expect(textEditor(page)).toHaveText(words)
+  await expect(textEditor(page)).toBeFocused()
   await device.send("Emulation.setCPUThrottlingRate", { rate: 1 })
-  await expect(page.getByRole("button", { name: undoCopy.undoNamed.text, exact: true })).toBeEnabled()
 }
 
 export default { name: "text-typed-at-once", design: editor, drive }

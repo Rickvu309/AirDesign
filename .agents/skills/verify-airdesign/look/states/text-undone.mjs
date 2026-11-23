@@ -1,17 +1,17 @@
 import { expect } from "@playwright/test"
+import { node } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { leaveText, titleEdited } from "../doom-text.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit)
-  const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
-  await text.dblclick()
-  await kit.page.keyboard.press("ControlOrMeta+a")
-  await text.pressSequentially("Mine", { delay: 40 })
-  await kit.page.keyboard.press("Escape")
-  await expect(text).toHaveText("Mine")
-  await kit.page.keyboard.press("ControlOrMeta+z")
-  await expect(kit.page.getByRole("button", { name: "Redo text edit" })).toBeEnabled()
+  const { page } = kit
+  await titleEdited(kit)
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.type("Mine", { delay: 40 })
+  await leaveText(page)
+  await expect(node(page, "s:4")).toHaveText("Mine")
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(node(page, "s:4")).toHaveText("Untitled")
 }
 
 export default { name: "text-undone", design: editor, drive }

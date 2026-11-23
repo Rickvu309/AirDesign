@@ -1,26 +1,22 @@
-import { expect } from "@playwright/test"
-import { newBlankDeck } from "../../bin/new-deck.mjs"
+import { openDoomDeck, slidePoint } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
+import { leaveText, placeText } from "../doom-text.mjs"
 
-async function drive({ page, signIn }) {
-  await signIn()
-  await page.goto("/")
-  await newBlankDeck(page)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const slide = page.locator("[data-slide-paint]").first()
-  const box = await slide.boundingBox()
-  if (box === null) throw new Error("slide")
-  await slide.click({ position: { x: 4, y: 4 } })
-  await page.keyboard.press("t")
-  await page.mouse.click(box.x + box.width * 0.1, box.y + box.height * 0.15)
+async function drive(kit) {
+  const { page } = kit
+  await openDoomDeck(kit)
+  await placeText(page, 192, 160)
   await page.keyboard.type("Costs fall 12% with two shifts", { delay: 0 })
-  await page.keyboard.press("Escape")
+  await leaveText(page)
   await page.keyboard.press("Escape")
   await page.keyboard.press("t")
-  await page.mouse.move(box.x + box.width * 0.1 + 3, box.y + box.height * 0.4)
+  const start = await slidePoint(page, 198, 760)
+  const middle = await slidePoint(page, 576, 860)
+  const end = await slidePoint(page, 954, 900)
+  await page.mouse.move(start.x, start.y)
   await page.mouse.down()
-  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.5, { steps: 4 })
-  await page.mouse.move(box.x + box.width / 2 - 3, box.y + box.height * 0.6, { steps: 4 })
+  await page.mouse.move(middle.x, middle.y, { steps: 4 })
+  await page.mouse.move(end.x, end.y, { steps: 4 })
 }
 
 export default { name: "text-drag-snap-held", design: editor, drive }

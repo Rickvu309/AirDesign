@@ -1,31 +1,21 @@
 import { expect } from "@playwright/test"
-import { importTitleDeck } from "../../bin/new-deck.mjs"
+import { node, openDoomDeck, selected } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
+import { leaveText, placeText, textEditor } from "../doom-text.mjs"
 
-async function drive({ page, signIn }) {
-  await signIn()
-  await page.goto("./")
-  await importTitleDeck(page)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const slide = page.locator("[data-slide-paint]").first()
-  const texts = slide.locator('[contenteditable="true"]')
-  const box = await slide.boundingBox()
-  if (box === null) throw new Error("slide")
-  const placeholders = await texts.count()
-  await slide.click({ position: { x: 4, y: 4 } })
-  await page.keyboard.press("t")
-  await page.mouse.click(box.x + box.width * 0.1, box.y + box.height * 0.82)
+async function drive(kit) {
+  const { page } = kit
+  await openDoomDeck(kit)
+  await placeText(page, 192, 885)
   await page.keyboard.type("Source: 2026 field survey", { delay: 0 })
-  await page.keyboard.press("Escape")
-  await page.keyboard.press("Escape")
-  await expect(texts).toHaveCount(placeholders + 1)
-  await texts.last().dblclick()
-  await expect(texts.last()).toBeFocused()
+  await leaveText(page)
+  const id = await selected(page).first().getAttribute("data-selection-outline")
+  await page.keyboard.press("Enter")
+  await expect(textEditor(page)).toBeFocused()
   await page.keyboard.press("ControlOrMeta+a")
   await page.keyboard.press("Backspace")
-  await expect(texts.last()).toHaveText("")
-  await page.keyboard.press("Escape")
-  await page.waitForTimeout(500)
+  await leaveText(page)
+  await expect(node(page, id)).toHaveCount(0)
 }
 
 export default { name: "emptied-text-left", design: editor, drive }
