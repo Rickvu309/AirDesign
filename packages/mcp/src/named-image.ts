@@ -1,5 +1,5 @@
 import { webImage } from "@airdesign/catalog"
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 import type { ToolResult } from "./answer.js"
 

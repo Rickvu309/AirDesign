@@ -1,18 +1,15 @@
 import {
-  bytesOf,
   floorFor,
-  limits,
   readIndexPage,
   nextSlideId,
-  orderKeyBetween,
   readSlideId,
   type DeckIndex,
   type IndexElement,
   type IndexLayout,
-  type OrderKey,
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
+import { bytesOf, limits, orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import { designOf } from "@airdesign/catalog"
 import { deckLayouts, indexPackage, orderedParts, readTraits, slideLayouts, type DeckTraits } from "@airdesign/pptx"
 

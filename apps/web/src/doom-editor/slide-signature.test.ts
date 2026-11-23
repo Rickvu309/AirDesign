@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { landed, paint, spot } from "./doom-fixtures"
 import { sameSignature, slideSignature } from "./slide-signature"

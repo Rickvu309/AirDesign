@@ -2,7 +2,6 @@ import { linkSchema } from "./link-schema.js"
 import { readLinkTarget } from "@airdesign/document"
 import {
   alphaOf,
-  bytesOf,
   designBytes,
   designOrder,
   shadowSlotKeys,
@@ -28,6 +27,7 @@ import {
   type TemplateFont,
   type TraitReads,
 } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import { cornersAgents, foldCorners, type Size } from "./agent-corners.js"
 import { effectAgents, foldEffects } from "./agent-effects.js"
 import { foldIdentity, identityAgents } from "./agent-identity.js"

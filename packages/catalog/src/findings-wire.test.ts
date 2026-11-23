@@ -1,4 +1,4 @@
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { readFindingsReport } from "./index.js"
 

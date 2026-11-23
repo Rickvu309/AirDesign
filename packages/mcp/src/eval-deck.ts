@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 const box = (x: number, y: number, w: number, h: number) => ({ x, y, w, h, rotation: 0, flipH: false, flipV: false })
 const words = (markdown: string, style: doom.TextStyleName = "body") => doom.textFromMarkdown(markdown, style)

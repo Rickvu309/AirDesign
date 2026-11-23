@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { propOf } from "./node-props"
 
 export function holdsPaint(view: doom.Doom, id: doom.NodeId): boolean {

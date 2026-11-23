@@ -3,7 +3,6 @@ import {
   addedPictures,
   decide,
   elementId,
-  limits,
   mediaTypes,
   openRegister,
   openingElement,
@@ -13,6 +12,7 @@ import {
   type Register,
   type SlideCommand,
 } from "./index.js"
+import { limits } from "@airdesign/doom"
 
 const file = [slideId("256"), slideId("257")]
 const node = elementId("256.9")

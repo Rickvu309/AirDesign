@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { gestureFor } from "@airdesign/render"
 import { useRef, type KeyboardEvent } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"

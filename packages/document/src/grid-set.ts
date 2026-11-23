@@ -1,7 +1,7 @@
 import type { SlideId } from "./element-id.js"
 import { gridCommandVersion, orderedSpots, type GridCopy, type GridGroup, type GridCommand } from "./grid-order.js"
-import { limits } from "./limits.js"
-import { orderKeyBetween } from "./order-key.js"
+import { limits } from "@airdesign/doom"
+import { orderKeyBetween } from "@airdesign/doom"
 import { slideBirths } from "./slide-births.js"
 import {
   foldSlides,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { slideId } from "./element-id.js"
-import { orderKeyBetween } from "./order-key.js"
+import { orderKeyBetween } from "@airdesign/doom"
 import { foldSlides, presentSlides, type SlideState } from "./slide-order.js"
 import { slidesKept } from "./slide-kept.js"
 

@@ -1,5 +1,5 @@
 import { httpDoomRemote, openDoomDeck } from "@airdesign/live"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { DoomSlide } from "@airdesign/render"
 import { createElement } from "react"
 import { createRoot } from "react-dom/client"

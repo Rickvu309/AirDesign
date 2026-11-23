@@ -1,7 +1,7 @@
 import type { DeckAnswers } from "../platform/deck-answer.js"
 import { createHash } from "node:crypto"
 import type { DeckId, WireRefusal } from "@airdesign/catalog"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"

@@ -1,4 +1,4 @@
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 import { storableText } from "./storable-text.js"
 

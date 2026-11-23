@@ -3,7 +3,7 @@ import { assetMedia, readAsset } from "./asset-ref.js"
 import { readColor, type Color, type MappedSlot, type TemplateColor } from "./color.js"
 import { coordinates } from "./box.js"
 import { readElementId } from "./element-id.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import { record as plain } from "./plain-object.js"
 import { sizeCeiling, sizeFloor } from "./text-size.js"
 

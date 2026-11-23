@@ -4,7 +4,6 @@ import {
   elementId,
   format,
   openRegister,
-  orderKeyBetween,
   slideId,
   type Command,
   type ElementPatch,
@@ -12,6 +11,7 @@ import {
   type Register,
   type SlideCommand,
 } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { exportParts, orderedParts, paintReader, shownBackground, readParts, readSlides } from "./index.js"
 import { decodeUtf8 } from "./package-bytes.js"

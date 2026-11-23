@@ -1,5 +1,6 @@
 import type { BrowserContext, Page } from "@playwright/test"
-import { orderKeyBetween, doom, type OrderKey } from "../../packages/document/src/index.ts"
+import { orderKeyBetween, type OrderKey } from "../../packages/doom/src/index.ts"
+import * as doom from "../../packages/doom/src/index.ts"
 import { forward, signInBrowser, type Stack } from "./api-stack"
 
 const catalog = () => import("../../packages/catalog/src/index.ts")

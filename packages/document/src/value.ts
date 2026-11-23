@@ -1,5 +1,5 @@
 import type { Box } from "./box.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import type { Row } from "./row.js"
 
 export type Value =

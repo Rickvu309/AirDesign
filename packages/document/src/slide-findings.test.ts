@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Fill, ResolvedElement, ResolvedSlide, ResolvedText } from "./resolved-slide.js"
 import { findingLimits, type Finding } from "./finding.js"
 import { elementOverflow, slideFindings } from "./slide-findings.js"
-import { fontFace, type FontWidths } from "./text-fit.js"
+import { fontFace, type FontWidths } from "@airdesign/doom"
 
 const point = 12_700
 const even = Object.fromEntries([..."abcdefghijklmnopqrstuvwxyz"].map((char) => [char, 0.5]))

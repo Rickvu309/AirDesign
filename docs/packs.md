@@ -37,7 +37,7 @@ flowchart TD
     p_apps_web_src_copy["apps/web/src/copy"]
     p_apps_web_src_lib["apps/web/src/lib"]
   end
-  p_packages_document_src_doom["packages/document/src/doom"]
+  p_packages_doom["packages/doom"]
   p_packages_mcp["packages/mcp"]
   p_apps_api_src --> p_apps_api_src_account
   p_apps_api_src --> p_apps_api_src_aira
@@ -159,5 +159,5 @@ flowchart TD
 | `apps/web/src/present` | feature | notes-on.ts, present-button.tsx, present-keys.ts, present-layer.tsx, slide-shows.ts, use-leaving.ts, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/pricing` | feature | none | apps/web/src/components, apps/web/src/decks | none |
 | `apps/web/src/settings` | feature | account-load.ts, account-page.tsx, account-profile.tsx, agents-page.tsx, screens/usage-tab.tsx, settings-controls.tsx, settings-frame.tsx, settings-page.tsx, settings-routes.ts, settings-sample.ts, usage-page.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/decks, apps/web/src/lib | none |
-| `packages/document/src/doom` | none | index.ts | none | none |
+| `packages/doom` | none | src/index.ts | none | none |
 | `packages/mcp` | none | runtime: packages/mcp/src/index.ts; evals: packages/mcp/src/evals.ts | none | none |

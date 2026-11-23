@@ -1,5 +1,5 @@
 import type { DeckId, DoomRefusal } from "@airdesign/catalog"
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 import type { NamedImages } from "./named-image.js"
 

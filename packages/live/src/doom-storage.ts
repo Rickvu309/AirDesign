@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { Queued } from "./doom-queue.js"
 import { readSlot, replaceSlots, writeSlot } from "./store.js"
 

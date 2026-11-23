@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { box, columnOf, copy, frame, shape, sky, solid, white } from "../slide-kit.js"
 
 const ring = (name: string, size: number, opacity: number) =>

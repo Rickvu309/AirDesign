@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { reachOf, snapMove, type Bounds, type Guide, type SnapTargets } from "@airdesign/render"
 import { flows, lockedIn, propOf } from "./node-props"
 import { aroundPlaced, invert, linear, type Placed, type Point, type SlideGeometry } from "./slide-geometry"

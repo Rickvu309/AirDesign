@@ -1,4 +1,5 @@
-import { limits, readElementId, readSlideId, type ElementId, type GridSide, type SlideId } from "@airdesign/document"
+import { readElementId, readSlideId, type ElementId, type GridSide, type SlideId } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import type { JsonSchema } from "./agent-form.js"
 import { canonicalOpFields } from "./field-alias.js"
 import { slideSchema } from "./set-wire.js"

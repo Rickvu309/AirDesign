@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 function mixed(text: string): number {
   let high = 0xdeadbeef

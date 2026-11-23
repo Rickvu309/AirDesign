@@ -1,5 +1,5 @@
 import { pictureType, type SlidePictures } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 const assetPattern = /^[0-9a-f]{64}$/
 

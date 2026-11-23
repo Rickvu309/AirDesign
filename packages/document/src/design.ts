@@ -2,7 +2,7 @@ import { dropSlots, innerSlots } from "./trait-effects.js"
 import type { ElementLink } from "./link-target.js"
 import { mappedSlots, templateColors, type Color, type MappedSlot, type TemplateColor } from "./color.js"
 import type { Box } from "./box.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 import { readTypeface } from "./text-value.js"
 

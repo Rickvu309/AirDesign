@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { measureFaces } from "./doom-widths.js"
 

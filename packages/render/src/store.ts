@@ -1,4 +1,5 @@
-import { kinds, overLimit } from "@airdesign/document"
+import { kinds } from "@airdesign/document"
+import { overLimit } from "@airdesign/doom"
 import type { Box, ElementId, SlideId } from "@airdesign/document"
 import { sameBox } from "./box-gesture.js"
 import type { ElementRecord, SlideRecord } from "./record.js"

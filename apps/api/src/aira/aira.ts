@@ -11,7 +11,7 @@ import {
   type ModelTool,
   type ReplyBlock,
 } from "@airdesign/catalog"
-import { bytesOf } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import { admit, kindInstructions } from "@airdesign/mcp"
 import { usage } from "@airdesign/usage"
 import {

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { schemeNames } from "@airdesign/document"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"

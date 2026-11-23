@@ -1,4 +1,5 @@
-import { doom, orderKeyBetween } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { createDoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote } from "./doom-remote.js"

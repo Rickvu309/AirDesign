@@ -1,4 +1,4 @@
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { nameReading } from "./deck-name-edit"
 

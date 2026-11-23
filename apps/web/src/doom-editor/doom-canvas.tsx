@@ -1,4 +1,5 @@
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { SlidePaint, useDoomSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"

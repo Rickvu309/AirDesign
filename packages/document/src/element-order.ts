@@ -1,7 +1,7 @@
 import { assetIcon, readMedia, type Media } from "./asset-ref.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
-import { limits } from "./limits.js"
+import { limits } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 import { floorOf, openingElement, readFloor } from "./slide-floor.js"
 import { slideMeasure } from "./slide-measure.js"

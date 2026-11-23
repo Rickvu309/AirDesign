@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import * as z from "zod/v4"
 
 import { readDeckName } from "./deck-name.js"

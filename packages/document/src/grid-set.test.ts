@@ -2,7 +2,6 @@ import { expect, it } from "vitest"
 import {
   decide,
   gridGroups,
-  limits,
   openRegister,
   readSlideState,
   slideId,
@@ -11,6 +10,7 @@ import {
   type Register,
   type SlideCommand,
 } from "./index.js"
+import { limits } from "@airdesign/doom"
 
 const opening = (...ids: number[]) => ids.map((id) => slideId(String(id)))
 const file = opening(1, 2, 3, 4, 5, 6, 7)

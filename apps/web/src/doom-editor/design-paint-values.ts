@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { shadowBlack } from "./shadow-art"
 import { doomPaintOf, type OldPaint, oldPaintOf } from "./design-values"
 

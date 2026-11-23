@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 
 const self = fileURLToPath(import.meta.url)
 const root = path.resolve(path.dirname(self), "..")
-const mutatedPackages = ["packages/document/src", "packages/pptx/src"]
+const mutatedPackages = ["packages/doom/src", "packages/document/src", "packages/pptx/src"]
 const workers = 4
 const listedSurvivors = 50
 const tsconfigStrykerCannotParseWithTypescript7 = "no-tsconfig-to-rewrite.json"

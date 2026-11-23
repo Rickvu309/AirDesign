@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@airdesign/document": "workspace:*",
+    "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",

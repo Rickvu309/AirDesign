@@ -1,10 +1,10 @@
 import { readSlideId, type SlideId } from "./element-id.js"
-import { readOrderKey } from "./order-key.js"
+import { readOrderKey } from "@airdesign/doom"
 import { readSlideState } from "./slide-order.js"
 import { readFloor } from "./slide-floor.js"
 import type { GridCopy, GridTurn, HeadStep, GroupGuard, SlideStep, GridCommand } from "./grid-order.js"
 import type { SlideSpot } from "./person-undo.js"
-import { limits } from "./limits.js"
+import { limits } from "@airdesign/doom"
 
 function spot(raw: unknown): SlideSpot | undefined {
   if (typeof raw !== "object" || raw === null || !("present" in raw) || !("key" in raw)) return undefined

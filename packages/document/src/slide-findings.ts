@@ -4,7 +4,8 @@ import { contrastFindings, overlapFindings } from "./finding-cover.js"
 import { scaleFindings } from "./finding-scale.js"
 import { findingLimits, points, union, type Finding, type Placed, type Rect } from "./finding.js"
 import type { ResolvedElement, ResolvedSlide, ResolvedText } from "./resolved-slide.js"
-import { layText, type FontWidths, type TextLayout, type Unjudged } from "./text-fit.js"
+import type { FontWidths } from "@airdesign/doom"
+import { layText, type TextLayout, type Unjudged } from "./text-fit.js"
 
 export type SlideFindings = {
   readonly slide: string

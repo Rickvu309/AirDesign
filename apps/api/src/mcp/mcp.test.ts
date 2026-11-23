@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
-import { limits, doom } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 

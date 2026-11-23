@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export const propOf = <K extends doom.PropName>(node: doom.Node | undefined, key: K): doom.Props[K] | undefined =>
   (node as Partial<doom.Props> | undefined)?.[key]

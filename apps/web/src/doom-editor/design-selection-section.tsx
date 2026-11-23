@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { Palette } from "@/design/color-choices"
 import { SelectionColorRows } from "@/editor/selection-colors-section"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"

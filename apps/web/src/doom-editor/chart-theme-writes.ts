@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export function chartWrites(id: doom.NodeId, chart: doom.Chart): readonly doom.Write[] {
   return [{ node: id, prop: "chart", value: chart }]

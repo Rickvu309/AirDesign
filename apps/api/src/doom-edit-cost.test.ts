@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto"
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import type { Pool } from "pg"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"

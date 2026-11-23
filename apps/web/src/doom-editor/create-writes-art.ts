@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export const darkTheme: doom.Theme = {
   ...doom.defaultTheme,

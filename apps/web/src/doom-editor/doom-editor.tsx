@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { useEffect, useRef, useState } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"

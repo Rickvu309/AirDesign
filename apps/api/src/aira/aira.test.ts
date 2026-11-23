@@ -1,7 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto"
 
 import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
-import { bytesOf } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import { kindInstructions } from "@airdesign/mcp"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"

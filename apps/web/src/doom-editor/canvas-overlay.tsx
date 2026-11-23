@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { Guide } from "@airdesign/render"
 import type { Rect } from "./selection"
 import { CanvasHandles } from "./canvas-handles"

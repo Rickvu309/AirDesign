@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { doomRoutes } from "@airdesign/catalog"
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { templateTheme } from "@airdesign/templates"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"

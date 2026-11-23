@@ -1,7 +1,8 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import type { Page } from "@playwright/test"
-import type { FontWidths, ResolvedSlide } from "../../packages/document/src/index.ts"
+import type { ResolvedSlide } from "../../packages/document/src/index.ts"
+import type { FontWidths } from "../../packages/doom/src/index.ts"
 
 const styles = [
   { bold: false, italic: false },

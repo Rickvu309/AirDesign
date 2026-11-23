@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { DoomSlide } from "@airdesign/render"
 import { memo, useRef } from "react"
 import { sameSignature, slideSignature, type SlideSignature } from "./slide-signature"

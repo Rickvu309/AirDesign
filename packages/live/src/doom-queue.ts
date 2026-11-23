@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export type Queued = { readonly edit: doom.Edit; readonly after: readonly (string | null)[] }
 

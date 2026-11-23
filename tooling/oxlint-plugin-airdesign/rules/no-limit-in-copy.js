@@ -2,10 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const limitsFile = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../../packages/document/src/limits.ts",
-)
+const limitsFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../packages/doom/src/limits.ts")
 
 export const readLimits = (source) => {
   const body = /export const limits = \{([^}]*)\}/.exec(source)?.[1] ?? ""
@@ -39,13 +36,13 @@ const findings = (text) =>
   )
 
 const messageFor = ({ written, names }) =>
-  `${written} is ${names.join(" or ")} in @airdesign/document. Import limits from @airdesign/document and interpolate it, so the words change when the limit does.`
+  `${written} is ${names.join(" or ")} in @airdesign/doom. Import limits from @airdesign/doom and interpolate it, so the words change when the limit does.`
 
 const rule = {
   meta: {
     type: "problem",
     docs: {
-      description: "Reject a limit from @airdesign/document written as a number in product copy.",
+      description: "Reject a limit from @airdesign/doom written as a number in product copy.",
     },
   },
   create(context) {

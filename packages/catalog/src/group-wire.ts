@@ -1,4 +1,5 @@
-import { limits, readElementId, readSlideId, type ElementId, type SlideId } from "@airdesign/document"
+import { readElementId, readSlideId, type ElementId, type SlideId } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import type { JsonSchema } from "./agent-form.js"
 
 export const groupOps = ["group", "ungroup", "frame", "join", "leave", "duplicate"] as const

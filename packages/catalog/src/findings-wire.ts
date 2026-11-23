@@ -1,4 +1,5 @@
-import { limits, readElementId, type ElementId } from "@airdesign/document"
+import { readElementId, type ElementId } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { readSlidePictures, type SlidePictures } from "./slide-pictures-wire.js"
 import { fieldRefusal, knownKeys, readDeckId, recordOf, type DeckId, type FieldRefusal } from "./wire.js"
 

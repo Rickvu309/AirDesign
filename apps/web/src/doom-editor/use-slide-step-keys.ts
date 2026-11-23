@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { gestureFor } from "@airdesign/render"
 import { useEffect, useRef } from "react"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"

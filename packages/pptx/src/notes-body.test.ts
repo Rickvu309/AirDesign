@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
-import { orderKeyBetween, slideId } from "@airdesign/document"
+import { slideId } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import {
   notesLinkFailures,
   orderedParts,

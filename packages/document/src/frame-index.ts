@@ -1,5 +1,5 @@
 import { readElementId, shapeOf, type ElementId } from "./element-id.js"
-import { limits } from "./limits.js"
+import { limits } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 import { flows, layoutAligns, sizings } from "./trait-layout.js"
 import { coordinates } from "./box.js"

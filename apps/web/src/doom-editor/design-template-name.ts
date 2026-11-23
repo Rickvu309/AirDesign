@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { deckTemplates, templateTheme } from "@airdesign/templates"
 
 const hexOf = (value: string) => `#${value.toLowerCase()}`

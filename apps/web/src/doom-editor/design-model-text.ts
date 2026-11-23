@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { fontFamily, plainStyles, boldWeight, regularWeight, styleName } from "@airdesign/fonts"
 import { fillCopy } from "@/copy/fill-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"

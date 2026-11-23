@@ -1,4 +1,5 @@
-import { doom, type Desc } from "@airdesign/document"
+import { type Desc } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { panelOfMany, type PanelControl, type PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"

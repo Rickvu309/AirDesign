@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { deckTemplates, templateTheme } from "@airdesign/templates"
 import { describe, expect, it } from "vitest"
 import { startEdit } from "../../../api/src/doom/doom-start"

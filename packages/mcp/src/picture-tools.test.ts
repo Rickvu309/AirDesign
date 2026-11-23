@@ -1,5 +1,5 @@
 import { catalog, projectTools } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { callTool, emptyLog, type DeckHost, type Session, type ToolResult } from "./index.js"

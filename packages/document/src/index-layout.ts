@@ -1,5 +1,5 @@
 import type { IndexElement } from "./deck-index.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 
 export type IndexLayout = {

@@ -7,9 +7,7 @@ import {
   format,
   indexDue,
   indexKeys,
-  limits,
   openRegister,
-  orderKeyBetween,
   readIndexPage,
   rootElement,
   roles,
@@ -19,6 +17,7 @@ import {
   type IndexElement,
   type IndexPage,
 } from "./index.js"
+import { limits, orderKeyBetween } from "@airdesign/doom"
 import { stamps } from "./format.js"
 
 const box = { x: 1, y: 2, cx: 3, cy: 4 }

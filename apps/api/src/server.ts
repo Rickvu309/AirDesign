@@ -1,7 +1,7 @@
 import { fontRouteList } from "./platform/font-route.js"
 import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
-import { bytesOf, limits } from "@airdesign/document"
+import { bytesOf, limits } from "@airdesign/doom"
 
 import {
   signInRoutes,

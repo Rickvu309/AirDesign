@@ -2,7 +2,7 @@ import { readColor, writtenColor, type Color } from "./color.js"
 import { readElementLink, type ElementLink } from "./link-target.js"
 import { readTextFill, type TextFill } from "./text-fill.js"
 import { canonicalKeys } from "./key-alias.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import { record } from "./plain-object.js"
 
 import { readSlideNumber, type SlideNumber } from "./slide-number.js"

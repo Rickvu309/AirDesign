@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { flushMedia, keepMedia } from "@airdesign/live"
 import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObject } from "react"
 import { readPicture } from "@/editing/picture-file"

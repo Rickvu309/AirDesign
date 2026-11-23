@@ -1,5 +1,5 @@
 import { designBytes, designOrder } from "./design.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 
 export const fillsFormat = 57

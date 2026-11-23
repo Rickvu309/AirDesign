@@ -1,7 +1,8 @@
 import { lookup } from "node:dns/promises"
 import { request } from "node:https"
 import { BlockList, isIP } from "node:net"
-import { limits, mediaSize, mediaTypeOf, overPixelLimit, type MediaType } from "@airdesign/document"
+import { mediaSize, mediaTypeOf, overPixelLimit, type MediaType } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 export type FetchRefusal = "address" | "private" | "unreachable" | "status" | "type" | "size" | "timeout"
 

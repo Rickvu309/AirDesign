@@ -1,5 +1,5 @@
 import type { SlidePictures } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { reportSlidePictures, slideKey, unresolvedAssets } from "./slide-picture-report"
 import { grow, paint, spot } from "./doom-fixtures"

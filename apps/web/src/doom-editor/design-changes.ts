@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { readStyleName } from "@airdesign/fonts"
 import type { PanelControl } from "@/design/panel"
 import { alignWrites, distributeWrites, type AlignTo, type DistributeAcross } from "./design-align"

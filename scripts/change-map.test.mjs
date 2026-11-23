@@ -298,8 +298,8 @@ same(
     .sort(),
 )
 same(
-  "packages/document imports no package, so the graph does real work",
-  graph.packages.find((pkg) => pkg.dir === "packages/document").deps,
+  "packages/doom imports no package, so the graph does real work",
+  graph.packages.find((pkg) => pkg.dir === "packages/doom").deps,
   [],
 )
 same(

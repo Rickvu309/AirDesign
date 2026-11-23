@@ -1,4 +1,5 @@
-import { orderKeyBetween, doom, type OrderKey } from "@airdesign/document"
+import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { duplicateWrites } from "./copy-writes"
 import { parentSlot, propOf, siblingsOf, slidesOf } from "./node-props"
 
