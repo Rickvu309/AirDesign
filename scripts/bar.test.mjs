@@ -302,12 +302,12 @@ same("a goal that moves closer is a lower bar", withRoutes({ now: 17, goal: 50 }
 ])
 same(
   "for a count that should fall, a goal further down is a higher bar",
-  withRoutes({ now: 6, goal: 3 }, { now: 6, goal: 0 }),
+  withRoutes({ now: 6, goal: 3, better: "lower" }, { now: 6, goal: 0, better: "lower" }),
   [],
 )
 same(
   "for a count that should fall, a goal further up is a lower bar",
-  withRoutes({ now: 6, goal: 3 }, { now: 6, goal: 5 }),
+  withRoutes({ now: 6, goal: 3, better: "lower" }, { now: 6, goal: 5, better: "lower" }),
   [`The goal of ${routes} went from 3 to 5.`],
 )
 same(

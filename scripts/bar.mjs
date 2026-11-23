@@ -75,11 +75,7 @@ export const metricsFrom = (read) => {
 
 const countsProof = new Set(["fault-detection"])
 
-const directionOf = (before) => {
-  const ahead = before.goal - before.now
-  if (ahead !== 0) return Math.sign(ahead)
-  return before.better === "lower" ? -1 : 1
-}
+const directionOf = (before, after) => ((before.better ?? after.better) === "lower" ? -1 : 1)
 
 const measuredReason = (name, before, after) => {
   if (!measured(after)) {
@@ -106,7 +102,7 @@ const metricReason = (name, before, after) => {
     return `The direction of ${name} went from ${before.better} to ${after.better}.`
   }
   if (countsProof.has(name)) return undefined
-  const direction = directionOf(before)
+  const direction = directionOf(before, after)
   const ahead = before.goal - before.now
   const metGoal = ahead !== 0 || (after.now - after.goal) * direction >= 0
   const harder = direction * (after.goal - before.goal) > 0 && metGoal
