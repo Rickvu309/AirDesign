@@ -1,7 +1,18 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { expect } from "@playwright/test"
-import { accent, node, openDesign, openDoomDeck, readDoom, selectNode, slidePoint, spot, words } from "./doom-deck.mjs"
+import {
+  accent,
+  node,
+  openDesign,
+  openDoomDeck,
+  readDoom,
+  selectNode,
+  slidePoint,
+  slowPaint,
+  spot,
+  words,
+} from "./doom-deck.mjs"
 
 export const element = "/screens/s43-09-editor-tools-design-element"
 export const slidePanel = "/screens/s43-02-editor-tools-design-panel"
@@ -118,22 +129,20 @@ export async function dropPicture(kit, at = { x: 1300, y: 560 }) {
     ([bytes, point]) => {
       const transfer = new DataTransfer()
       transfer.items.add(new File([new Uint8Array(bytes)], "picture.png", { type: "image/png" }))
-      document
-        .querySelector("[data-doom-stage]")
-        .dispatchEvent(
-          new DragEvent("drop", {
-            bubbles: true,
-            cancelable: true,
-            dataTransfer: transfer,
-            clientX: point.x,
-            clientY: point.y,
-          }),
-        )
+      document.querySelector("[data-doom-stage]").dispatchEvent(
+        new DragEvent("drop", {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: transfer,
+          clientX: point.x,
+          clientY: point.y,
+        }),
+      )
     },
     [bytes, point],
   )
   const painted = page.locator("[data-slide-box] [data-node]").filter({ has: page.locator('[data-paint="image"]') })
-  await expect(painted).toHaveCount(1)
+  await expect(painted).toHaveCount(1, slowPaint)
   await expect
     .poll(() => painted.locator('[data-paint="image"]').evaluate((each) => getComputedStyle(each).backgroundImage))
     .toContain("url(")

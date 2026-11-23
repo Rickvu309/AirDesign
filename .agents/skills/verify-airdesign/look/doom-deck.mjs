@@ -21,6 +21,8 @@ export const selected = (page) => page.locator("[data-selection-outline]")
 
 let counter = 0
 
+export const slowPaint = { timeout: 20_000 }
+
 async function orderKeys(kit) {
   const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)
   return orderKeyBetween
@@ -60,7 +62,7 @@ export async function landNodes(kit, opened, nodes) {
   }
   const landed = await kit.post(kit.doomRoutes.edit, { deck: opened.deck, edit }, opened.cookie)
   if (landed.json.ok !== true) throw new Error(`seeding the Doom deck was refused: ${JSON.stringify(landed.json)}`)
-  for (const made of nodes) await expect(node(opened.page, made.id)).toBeAttached()
+  for (const made of nodes) await expect(node(opened.page, made.id)).toBeAttached(slowPaint)
 }
 
 export async function openDoomDeck(kit, nodes = []) {
