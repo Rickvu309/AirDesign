@@ -26,7 +26,6 @@ public:
   - panel.ts
   - preset-icons.ts
   - selected-weight.ts
-  - selection-colors.ts
   - served-faces.ts
   - spacing-units.ts
   - text-style-edit.tsx

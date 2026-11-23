@@ -50,17 +50,6 @@ export function elementById(
   return found
 }
 
-export function within(elements: readonly MarkupElement[], child: MarkupElement, ancestor: MarkupElement): boolean {
-  let parent = child.parent
-  while (parent >= 0) {
-    if (parent === ancestor.index) return true
-    const next = elements[parent]
-    if (next === undefined) return false
-    parent = next.parent
-  }
-  return false
-}
-
 export function insertAt(bytes: Uint8Array, at: number, next: Uint8Array): Uint8Array {
   return spliceBytes(bytes, [{ start: at, end: at, next }])
 }

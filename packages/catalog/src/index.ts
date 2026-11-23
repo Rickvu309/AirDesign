@@ -59,8 +59,6 @@ export {
   type DoomRefusal,
 } from "./doom-wire.js"
 export {
-  notifyKey,
-  parseNotifyKey,
   readApprovalRequest,
   readBearer,
   readCapture,
@@ -88,18 +86,14 @@ export {
   type FormPairs,
   type TokenRequest,
 } from "./wire.js"
-export { type AgentChange } from "./edit-wire.js"
 export { readSetChange, readTarget } from "./set-wire.js"
 
 export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
-export { readFindingsReport, type FindingsReport, type WireFinding } from "./findings-wire.js"
-export { findingsAt } from "./agent-findings.js"
+export { readFindingsReport, type FindingsReport } from "./findings-wire.js"
 export { pictureBytes, pictureType, type SlideKey, type SlidePictures } from "./slide-pictures-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
-
-export { layoutId } from "./slide-change-wire.js"
 
 export { fontRoutes } from "@airdesign/fonts"
 

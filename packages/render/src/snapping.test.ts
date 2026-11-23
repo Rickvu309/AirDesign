@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { boundsOf, nearestLine, reachOf, snapMove, snapReach, type Bounds, type SnapTargets } from "./snapping.js"
+import { nearestLine, reachOf, snapMove, snapReach, type Bounds, type SnapTargets } from "./snapping.js"
 
 const slide: Bounds = { left: 0, top: 0, right: 2000, bottom: 1000 }
 
@@ -80,12 +80,6 @@ describe("snapMove", () => {
     const snapped = snapMove(at(248, 380), targets(at(100, 100), at(400, 100)), 5)
     expect(snapped.box).toEqual(at(248, 380))
     expect(snapped.guides).toEqual([])
-  })
-
-  it("aligns to the outermost points of a turned layer", () => {
-    const turned = boundsOf({ x: 400, y: 100, cx: 200, cy: 100 }, 90)
-    expect(turned).toEqual({ left: 450, top: 50, right: 550, bottom: 250 })
-    expect(snapMove(at(553, 300), targets(turned), 5).box).toEqual(at(550, 300))
   })
 })
 

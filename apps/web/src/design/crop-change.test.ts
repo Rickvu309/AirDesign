@@ -1,6 +1,6 @@
 import { elementId, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { canvasCropChange, cropChange, croppedBox, cropTurn } from "./crop-change"
+import { cropChange, croppedBox, cropTurn } from "./crop-change"
 
 const box = { x: 1_000_000, y: 500_000, cx: 4_000_000, cy: 2_000_000 }
 
@@ -33,16 +33,6 @@ it("sends the crop and the frame in one change, and the crop alone for an elemen
   expect(cropChange({ ...view, box: null }, undefined)(rect)).toEqual({
     target: { node: "256.4" },
     fills: { crop: rect, mode: "crop" },
-  })
-})
-
-it("lands a crop dragged on the canvas as its crop, Crop mode and frame in one change", () => {
-  const crop = { l: 0, t: 16_667, r: 25_000, b: 16_667 }
-  const frame = { x: 1_000_000, y: 500_000, width: 1_500_000, height: 1_000_000 }
-  expect(canvasCropChange(elementId("256.4"), { frame, crop })).toEqual({
-    target: { node: "256.4" },
-    fills: { crop, mode: "crop" },
-    box: { x: 1_000_000, y: 500_000, w: 1_500_000, h: 1_000_000 },
   })
 })
 

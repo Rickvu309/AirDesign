@@ -41,8 +41,6 @@ const wireRefusals = [
   ...unreachable,
 ] as const
 
-export type CallRefusal = (typeof callRefusals)[number]
-
 export type EditRefusal = (typeof editRefusals)[number]
 
 export type WireRefusal = (typeof wireRefusals)[number]

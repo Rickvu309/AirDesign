@@ -1,7 +1,4 @@
 import {
-  pastedBar,
-  pastedLine,
-  pastedTitle,
   thumbInk,
   thumbInkMid,
   thumbInkSoft,
@@ -144,42 +141,6 @@ export function SlideThumb({ index, width, queued = false }: { index: number; wi
       }}
     >
       {body}
-    </div>
-  )
-}
-
-export function PastedThumb({ kind }: { kind: "region" | "churn" }) {
-  const title = kind === "region" ? "Market share by region" : "Churn is down to 4%"
-  return (
-    <div
-      className={cn(
-        "flex h-[169px] w-[300px] shrink-0 flex-col gap-3 rounded-[2px] bg-white p-[var(--space-24)]",
-        frameShadow,
-      )}
-    >
-      <span
-        className="block h-5 text-[length:var(--type-section)] leading-5 font-semibold"
-        style={{ color: pastedTitle }}
-      >
-        {title}
-      </span>
-      {kind === "region" ? (
-        <span className="flex flex-1 items-end gap-2.5">
-          {[46, 34, 58, 26].map((height) => (
-            <span key={height} className="block w-[var(--space-24)]" style={{ height, backgroundColor: pastedBar }} />
-          ))}
-        </span>
-      ) : (
-        <span className="flex flex-col gap-2">
-          {[180, 150, 164].map((width) => (
-            <span
-              key={width}
-              className="block h-[var(--space-4)] rounded-sm"
-              style={{ width, backgroundColor: pastedLine }}
-            />
-          ))}
-        </span>
-      )}
     </div>
   )
 }

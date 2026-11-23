@@ -35,9 +35,6 @@ type AgentKeys<Ops> = {
   string
 
 export type AgentOp = AgentKeys<typeof catalog>
-export type CommandOp = {
-  [Op in keyof typeof catalog]: (typeof catalog)[Op] extends { readonly kind: "command" } ? Op : never
-}[keyof typeof catalog]
 
 export type AgentTool<Op extends string = AgentOp> = {
   readonly name: string

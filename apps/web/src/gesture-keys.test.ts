@@ -70,14 +70,6 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/editor/use-grid-marquee.ts": ["Escape"],
   "apps/web/src/editor/zoom-menu.tsx": ["ArrowDown", "ArrowUp", ...field, "Tab"],
   "apps/web/src/present/use-present.ts": [" ", "Enter", "Tab"],
-  "packages/render/src/connector-ends.tsx": ["Control", "Shift"],
-  "packages/render/src/crop-frame.tsx": ["Enter", "Escape"],
-  "packages/render/src/held-keys.ts": ["Backspace", ...field, "Tab"],
-  "packages/render/src/measuring.ts": ["Alt"],
-  "packages/render/src/passage.tsx": ["Backspace", "Delete", "Enter"],
-  "packages/render/src/transform-drag.ts": ["Alt", "Control", "Shift"],
-  "packages/render/src/use-hover-outline.ts": ["Control", "Meta"],
-  "packages/render/src/use-slide-marquee.ts": ["Control", "Escape", "Meta"],
 }
 
 describe("the gesture table holds every editor key", () => {

@@ -160,11 +160,6 @@ export function keptIn(list: Held | undefined, dag: boolean): string | null {
   return names.length === 0 ? null : names.join(" ")
 }
 
-export function keptEffectText(parts: ReadonlyMap<string, Uint8Array>, at: EffectsAt): string | null {
-  const slot = effectsSlot(parts, at)
-  return slot === null ? null : keptIn(slot.list, slot.dag)
-}
-
 function closed(own: boolean): ShownEffects {
   return {
     shadow: { value: { none: true }, own },

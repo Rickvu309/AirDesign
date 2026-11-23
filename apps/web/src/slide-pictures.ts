@@ -1,12 +1,4 @@
 import { pictureBytes as pictureLimit } from "@airdesign/catalog"
-import type { Register, SlideId } from "@airdesign/document"
-import { paintStore } from "@airdesign/render"
-import { paint } from "@/deck-paint"
-import type { PictureBytes } from "@/editing/exported-parts"
-import { busyElements } from "@/editing/live-repaint"
-import { paintedPicture } from "@/editing/painted-picture"
-
-type Parts = ReadonlyMap<string, Uint8Array>
 
 export const pictureFit = { width: 1280, height: 720 } as const
 
@@ -35,24 +27,4 @@ export async function jpegOf(image: CanvasImageSource, width: number, height: nu
   context.fillRect(0, 0, width, height)
   context.drawImage(image, 0, 0, width, height)
   return encoded(canvas)
-}
-
-export async function slidePicture(
-  parts: Parts,
-  register: Register,
-  pictures: PictureBytes,
-  slide: SlideId,
-): Promise<string | null> {
-  const store = paintStore()
-  const painted = paint(store, parts, register, busyElements(), pictures)
-  try {
-    const index = painted.slides.findIndex(({ shapes }) => shapes.slide === slide)
-    const shown = index < 0 ? null : painted.canvases(index)
-    if (shown === null) return null
-    const scale = Math.min(pictureFit.width / shown.width, pictureFit.height / shown.height)
-    const { image, width, height } = await paintedPicture(store, shown, shown.elements, scale, true)
-    return await jpegOf(image, width, height)
-  } finally {
-    painted.pictures.release()
-  }
 }

@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react"
-import { readElementId, type Box, type ElementId } from "@airdesign/document"
+import { createContext, useCallback, useContext, useSyncExternalStore } from "react"
+import { type Box, type ElementId } from "@airdesign/document"
 import type { PaintStore } from "@airdesign/render"
 import type { PanelControl } from "@/design/panel"
 
@@ -10,20 +10,6 @@ const LiveBoxesContext = createContext<LiveBoxes | null>(null)
 const sides: Readonly<Record<string, keyof Box>> = { x: "x", y: "y", w: "cx", h: "cy" }
 
 const unsubscribed = () => () => undefined
-
-export function LiveBoxFields(props: {
-  readonly store: PaintStore
-  readonly nodes: readonly ElementId[]
-  readonly children: ReactNode
-}) {
-  const { store, nodes } = props
-  const key = nodes.join(" ")
-  const value = useMemo(
-    () => ({ store, nodes: key.split(" ").flatMap((raw) => readElementId(raw) ?? []) }),
-    [store, key],
-  )
-  return <LiveBoxesContext.Provider value={value}>{props.children}</LiveBoxesContext.Provider>
-}
 
 export const followsDrag = (control: PanelControl): boolean =>
   control.trait === "box" && sides[control.field] !== undefined

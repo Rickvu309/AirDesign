@@ -1,26 +1,14 @@
-import { type ElementId } from "@airdesign/document"
-import { bytesOf, limits } from "@airdesign/doom"
+import { limits } from "@airdesign/doom"
 import * as z from "zod/v4"
 
 import { readDeckName } from "./deck-name.js"
-import { storableText, unstorable } from "./storable-text.js"
+import { storableText } from "./storable-text.js"
 
 declare const deckIdBrand: unique symbol
 
 export type DeckId = string & { readonly [deckIdBrand]: true }
 
-export type WireRunElement = {
-  readonly node: ElementId
-  readonly floor?: string
-}
-
-export type LiveKey = {
-  readonly deck: DeckId
-  readonly revision: number
-}
-
 export const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
-const revisionPattern = /^(?:0|[1-9][0-9]*)$/
 const redirectCap = 5
 const emailCap = 254
 const grantIdCap = 128
@@ -40,7 +28,6 @@ export type FieldRefusal = { ok: false; refusal: "field" }
 export type DeckRefusal = { ok: false; refusal: "deck" }
 export type BatchRefusal = { ok: false; refusal: "batch" }
 export type BaseRefusal = { ok: false; refusal: "base" }
-type PayloadRefusal = { ok: false; refusal: "payload" }
 type ResourceRefusal = { ok: false; refusal: "resource" }
 type ChallengeRefusal = { ok: false; refusal: "challenge" }
 type FormRefusal = { ok: false; refusal: "invalid_request" }
@@ -50,7 +37,6 @@ export const fieldRefusal: FieldRefusal = { ok: false, refusal: "field" }
 const deckRefusal: DeckRefusal = { ok: false, refusal: "deck" }
 export const batchRefusal: BatchRefusal = { ok: false, refusal: "batch" }
 export const baseRefusal: BaseRefusal = { ok: false, refusal: "base" }
-const payloadRefusal: PayloadRefusal = { ok: false, refusal: "payload" }
 const resourceRefusal: ResourceRefusal = { ok: false, refusal: "resource" }
 const challengeRefusal: ChallengeRefusal = { ok: false, refusal: "challenge" }
 const formRefusal: FormRefusal = { ok: false, refusal: "invalid_request" }
@@ -73,12 +59,6 @@ function whole(raw: unknown): number | undefined {
   return raw
 }
 
-export function readFloor(body: Record<string, unknown>): string | undefined | null {
-  if (!Object.hasOwn(body, "floor")) return undefined
-  if (!storableText(body.floor)) return null
-  return body.floor
-}
-
 export function readDeckId(raw: unknown): { ok: true; deck: DeckId } | DeckRefusal {
   if (typeof raw !== "string" || !deckPattern.test(raw)) return deckRefusal
   return { ok: true, deck: raw as DeckId }
@@ -90,7 +70,6 @@ export const deckInput = z
   .transform((value) => value as DeckId)
   .describe("Deck id.")
 export const wholeInput = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
-export const textInput = z.string().regex(new RegExp(`^(?![\\s\\S]*(?:${unstorable.source}))[\\s\\S]*$`))
 export type WireReader = ((raw: unknown) => { readonly ok: boolean }) & {
   readonly input: z.ZodType
 }
@@ -401,24 +380,4 @@ export function readRevokeRequest(
   const form = readForm(contentType, pairs)
   if (form === undefined) return formRefusal
   return { ok: true, token: form.get("token") }
-}
-
-export function notifyKey(deck: string, revision: number): { ok: true; key: string } | PayloadRefusal {
-  if (whole(revision) === undefined) return payloadRefusal
-  const key = `${deck}:${String(revision)}`
-  if (bytesOf(key) >= limits.notify) return payloadRefusal
-  return { ok: true, key }
-}
-
-export function parseNotifyKey(key: string): ({ ok: true } & LiveKey) | PayloadRefusal {
-  if (bytesOf(key) >= limits.notify) return payloadRefusal
-  const split = key.indexOf(":")
-  if (split <= 0 || key.lastIndexOf(":") !== split) return payloadRefusal
-  const deckText = key.slice(0, split)
-  const revisionText = key.slice(split + 1)
-  const deck = readDeckId(deckText)
-  if (!deck.ok || !revisionPattern.test(revisionText)) return payloadRefusal
-  const revision = Number(revisionText)
-  if (!Number.isSafeInteger(revision) || revision < 0) return payloadRefusal
-  return { ok: true, deck: deck.deck, revision }
 }

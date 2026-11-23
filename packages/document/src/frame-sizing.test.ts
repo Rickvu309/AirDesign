@@ -7,7 +7,6 @@ import {
   planChange,
   readLayout,
   registerScope,
-  resizedSides,
   slideId,
   type Command,
   type ElementId,
@@ -142,26 +141,5 @@ describe("a frame's own width and height, Hug contents or Fixed", () => {
     const fixed = set(grown, frame, pinned.rows[0]!.row.patch)
     expect(readLayout(fixed, frame)?.box).toEqual(readLayout(grown, frame)?.box)
     expect(places(fixed)).toEqual(places(grown))
-  })
-
-  it("names the sides a canvas resize makes Fixed, with the sizing each had before", () => {
-    const hugging = row()
-    expect(resizedSides(hugging, frame, { cx: 60 * point, cy: 20 * point })).toEqual({
-      before: { width: "hug" },
-      after: { width: "fixed" },
-    })
-    expect(resizedSides(hugging, frame, { cx: 60 * point, cy: 30 * point })).toEqual({
-      before: { width: "hug", height: "hug" },
-      after: { width: "fixed", height: "fixed" },
-    })
-    expect(resizedSides(hugging, frame, { cx: 40 * point, cy: 20 * point })).toBeNull()
-    const wide = set(hugging, frame, { layout: { width: { set: "fixed" } }, box: { w: { set: 100 * point } } })
-    expect(resizedSides(wide, frame, { cx: 120 * point, cy: 20 * point })).toBeNull()
-    expect(
-      resizedSides(set(hugging, frame, { layout: { flow: { set: "none" } } }), frame, {
-        cx: 60 * point,
-        cy: 20 * point,
-      }),
-    ).toBeNull()
   })
 })

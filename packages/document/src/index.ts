@@ -8,7 +8,6 @@ export {
   slideId,
   slideNode,
   slideKind,
-  slideKinds,
   storedElements,
   templateStylesNode,
   templateStyleNode,
@@ -16,7 +15,6 @@ export {
   type ElementId,
   type SlideId,
 } from "./element-id.js"
-export { type IndexLayout } from "./index-layout.js"
 export { answeredRegister } from "./answered-register.js"
 export {
   appendIndex,
@@ -26,7 +24,6 @@ export {
   type DeckIndex,
   type IndexElement,
   type IndexPage,
-  type IndexSlide,
   type SlideSize,
 } from "./deck-index.js"
 export {
@@ -80,7 +77,7 @@ export {
   type Refusal,
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
-export { valueBytes, type Value } from "./value.js"
+export { type Value } from "./value.js"
 export type { AddChange } from "./add-change.js"
 export {
   planChange,
@@ -130,7 +127,7 @@ export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { type FileSection } from "./section-order.js"
 export { slideGroups } from "./slide-groups.js"
-export { clonedLayer, floorFor, floorNodes, newSlideElement, openingElement, readFloor } from "./slide-floor.js"
+export { clonedLayer, floorNodes, newSlideElement, openingElement } from "./slide-floor.js"
 export { type TransitionValue } from "./trait-transition.js"
 export { readGuideList, readLayoutGuides, type Guide, type LayoutGuide } from "./trait-guides.js"
 export { widestEffect } from "./trait-effects.js"
@@ -173,27 +170,22 @@ export {
 } from "./trait-border.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
-export { keptCorners } from "./kept-corners.js"
 export {
   connectorEnds,
   elbowClearance,
   outlineOf,
   route,
   routed,
-  siteKinds,
   sitePoint,
   siteTie,
-  type Bound,
   type Outline,
   type Tie,
 } from "./connector.js"
-
-export { drawnDesign } from "./drawn-design.js"
-export { siteCount, type Spot } from "./preset-sites.js"
+export { type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"
-export { cloneOf, type CopiedRows } from "./element-clone.js"
+export { cloneOf } from "./element-clone.js"
 export { pastedMedia, type PastedLayers } from "./pasted-layers.js"
 export {
   addedPictures,
@@ -218,15 +210,13 @@ export {
   plainGroup,
   type Member,
 } from "./element-group.js"
-export { groupOf, openingPlace, placeOf, throughGroup, type Place, type PlacedRow } from "./group-place.js"
+export { groupOf, openingPlace, placeOf, throughGroup, type Place } from "./group-place.js"
 export { followsGroups, rebased, rebasedGroups, shownPlace, storedPlace } from "./group-space.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
-export { fitFrameRows, fitFramesRows } from "./frame-fit.js"
 export { fittedPlace } from "./group-space.js"
 export { spotNow } from "./group-join.js"
-export { plainFrameTurn } from "./plain-frame.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
-export { placedByFrame, resizedSides, type Sides } from "./frame-sizing.js"
+export { type Sides } from "./frame-sizing.js"
 export { measureDue, measureOwed, measureStale } from "./frame-measure.js"
 export { hugsText, textOpening } from "./text-resizing.js"
 
@@ -259,25 +249,19 @@ export {
   type MappedSlot,
   type TemplateColor,
 } from "./color.js"
-export { cycledColor, presentSlots } from "./template-remix.js"
 export { fixedLineHeight } from "./text-restyle.js"
-
-export { placedText } from "./added-text.js"
 export {
   readTextValue,
   hasSlideNumber,
   alignNames,
   caseNames,
   formatNames,
-  lastListLevel,
   lineHeightPointsFloor,
   schemeNames,
   spaceCeiling,
   spacingNames,
   writeTextValue,
   type ParagraphAlign,
-  type ParagraphSpacing,
-  type RunFormat,
   type TextCase,
   type SchemeName,
   type TextFormat,
@@ -289,36 +273,9 @@ export {
 } from "./text-value.js"
 
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
-export {
-  applyRuns,
-  coveredRuns,
-  linkRange,
-  linkState,
-  alignRange,
-  alignState,
-  bulletRange,
-  bulletState,
-  colorRange,
-  colorState,
-  formatRange,
-  formatState,
-  formatWhole,
-  levelRange,
-  sameFormats,
-  sizeRange,
-  sizeState,
-  stepSize,
-  typedSize,
-  type Caret,
-  type LevelStep,
-  type SizeStep,
-  type FormatState,
-  type TextRange,
-} from "./text-format.js"
-export { slidesKept } from "./slide-kept.js"
+export { formatRange, typedSize, type SizeStep, type FormatState } from "./text-format.js"
 export {
   elementsUndoable,
-  swapUndoable,
   redoOf,
   slideUndoable,
   undoOf,
@@ -326,19 +283,10 @@ export {
   type NodeStep,
   type Undoable,
 } from "./person-undo.js"
-export type {
-  Fill,
-  ResolvedElement,
-  ResolvedParagraph,
-  ResolvedRun,
-  ResolvedSlide,
-  ResolvedText,
-  Spacing,
-} from "./resolved-slide.js"
+export type { Fill, ResolvedRun, ResolvedSlide, Spacing } from "./resolved-slide.js"
 export { type Finding } from "./finding.js"
 export { contrast } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
-export { typeSteps } from "./finding-scale.js"
 
 export {
   defaultGrid1,
@@ -349,7 +297,7 @@ export {
   type GridSide,
 } from "./grid-order.js"
 export { gridMovePlacement } from "./grid-move.js"
-export { readElementLink, readLinkTarget, type ElementLink, type LinkEdit } from "./link-target.js"
+export { readLinkTarget, type ElementLink, type LinkEdit } from "./link-target.js"
 
 export { slideBirths } from "./slide-births.js"
 

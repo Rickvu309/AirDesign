@@ -1,12 +1,9 @@
 import type { Box } from "./box.js"
-import type { ElementId } from "./element-id.js"
 import type { Place } from "./group-place.js"
 import { siteSpot, type Spot } from "./preset-sites.js"
 import { presetAdjusts, type Preset } from "./trait-geometry.js"
 
 export type Outline = { readonly preset: Preset; readonly adjust: Readonly<Record<string, number>> }
-
-export type Bound = { readonly node: ElementId; readonly site: number }
 
 export type Tie = { readonly spot: Spot; readonly way: Spot }
 

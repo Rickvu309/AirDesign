@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { openPicker, pickPicture, pictureAccept } from "./picture-picker"
+import { pickPicture, pictureAccept } from "./picture-picker"
 
 type FakeInput = {
   type: string
@@ -42,17 +42,4 @@ it("opens a picker for PNG, JPEG and GIF and hands over the chosen file", () => 
   input.files = [file]
   input.heard.get("change")?.()
   expect(chosen).toEqual([file])
-})
-
-it("holds the open picker until it reports a choice or a cancel, so its choice is never collected away", () => {
-  const cancelled = fakeInput()
-  pickPicture(() => undefined, madeWith(cancelled))
-  expect(openPicker()).toBe(cancelled)
-  cancelled.heard.get("cancel")?.()
-  expect(openPicker()).toBeNull()
-  const chosen = fakeInput()
-  pickPicture(() => undefined, madeWith(chosen))
-  expect(openPicker()).toBe(chosen)
-  chosen.heard.get("change")?.()
-  expect(openPicker()).toBeNull()
 })

@@ -9,7 +9,3 @@ export function exportBaseName(name: string | undefined): string {
   const kept = [...spaced].slice(0, nameLimit).join("").replace(trailing, "")
   return kept === "" ? productCopy.blankDeck : kept
 }
-
-export function exportFileName(name: string | undefined): string {
-  return `${exportBaseName(name)}.pptx`
-}

@@ -1,11 +1,9 @@
 import {
-  iconNamePattern,
   inheritable,
   presetAdjusts,
   readElementId,
   readSlideId,
   roles,
-  slideKinds,
   traitNames,
   traits,
   type AddChange,
@@ -17,12 +15,12 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { deckTemplates } from "@airdesign/templates"
-import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
+import { readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
 import { knownIcon } from "./icon-names.js"
-import { imageAddressLength, imageAddressPattern, webImage } from "./image-address.js"
+import { webImage } from "./image-address.js"
 import { canonicalFields, canonicalTraits } from "./field-alias.js"
 import { opacityWire } from "./opacity-wire.js"
-import { readStack, stackSchema, type Stack } from "./stack-wire.js"
+import { readStack, type Stack } from "./stack-wire.js"
 import { traitWire } from "./trait-wire.js"
 
 export type WireTemplateStyle = NonNullable<SetChange["templateStyle"]> & { readonly template?: string }
@@ -38,10 +36,6 @@ type Read<Change> = { readonly ok: true; readonly change: Change } | Refused
 type Inputs = Readonly<Record<string, unknown>>
 
 const templateIds = deckTemplates.map((each) => each.id)
-const templateFieldSchema: JsonSchema = {
-  type: "string",
-  description: "Template id: colors and fonts; keeps layouts and type scale.",
-}
 
 function unknownTemplate(value: unknown): Refused {
   const valid = templateIds.join(", ")
@@ -54,8 +48,6 @@ function unknownTemplate(value: unknown): Refused {
 
 const slidePart = "(?:[0-9]{1,10}|n[0-9a-z]{12})"
 const rolePart = `(?:${roles.join("|")})`
-const ownKinds = slideKinds.join("|")
-const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
 const addable = ["shape", "line", "arrow", "elbow"] as const
@@ -99,12 +91,6 @@ function wiredTrait(key: string): TraitName | undefined {
 
 function inherited(trait: TraitName, field: string): AgentRead {
   return inheritable(trait, field) ? { ok: true, value: null } : { ok: false }
-}
-
-function nullable(trait: TraitName, field: string, schema: JsonSchema): JsonSchema {
-  if (!inheritable(trait, field)) return schema
-  const types = Array.isArray(schema.type) ? (schema.type as readonly string[]) : [schema.type as string]
-  return { ...schema, type: [...types, "null"] }
 }
 
 function presetFits(trait: TraitName, field: string, value: unknown): boolean {
@@ -278,91 +264,8 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   }
 }
 
-function traitSchema(trait: TraitName, required: readonly string[] | null): JsonSchema {
-  const wire = traitWire[trait] as { readonly description?: string }
-  const named = Object.entries(wireFields(trait)).filter(([field]) => required === null || required.includes(field))
-  const fields = named.map(([field, { description }]) => {
-    const desc = descOf(trait, field)
-    if (desc === undefined) throw new Error(`${trait}.${field}`)
-    return [
-      field,
-      { ...nullable(trait, field, agentSchema(desc)), ...(description === undefined ? {} : { description }) },
-    ] as const
-  })
-  const properties = Object.fromEntries([
-    ...fields,
-    ...(trait === "templateStyle" && required === null ? ([["template", templateFieldSchema]] as const) : []),
-  ])
-  return {
-    type: "object",
-    additionalProperties: false,
-    ...(required === null ? { minProperties: 1 } : { required: fields.map(([field]) => field) }),
-    ...(wire.description === undefined ? {} : { description: wire.description }),
-    properties,
-  }
-}
-
-export function setChangeSchema(): JsonSchema {
-  const wired = traitNames.filter((trait) => wiredTrait(trait) !== undefined)
-  return {
-    type: "object",
-    additionalProperties: false,
-    required: ["op", "target"],
-    minProperties: 3,
-    description: "Set fields on all targets in one undo step.",
-    properties: {
-      op: { type: "string", const: "set" },
-      target: {
-        type: "string",
-        pattern: targetPattern,
-        description: "Layer (258.7, 258.notes), slide ID, slide.role (258.title), *.role, or deck.templateStyles.",
-      },
-      opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
-      stack: stackSchema,
-      ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
-    },
-  }
-}
-
-export function placedBoxSchema(): JsonSchema {
-  return {
-    ...traitSchema("box", Object.keys(boxSides)),
-    description: "Box in points.",
-  }
-}
-
 export const slideSchema: JsonSchema = {
   type: "string",
   pattern: `^${slidePart}$`,
   description: "Slide id from airdesign_read_deck.",
-}
-
-export function addChangeSchema(): JsonSchema {
-  return {
-    type: "object",
-    additionalProperties: false,
-    required: ["op", "kind", "slide"],
-    description:
-      "Add text, a Lucide icon, a web image, a line, an arrow or an elbow line. Style traits as in set: a line takes only border. Omit box to use the largest free area. A line runs from box top-left to bottom-right, w or h may be 0; omit box when both connection ends attach. Returns its id in elements.",
-    properties: {
-      op: { type: "string", const: "add" },
-      kind: { type: "string", enum: addable },
-      slide: slideSchema,
-      box: placedBoxSchema(),
-      text: traitSchema("text", null),
-      ...Object.fromEntries(styleTraits.map((trait) => [trait, traitSchema(trait, null)])),
-      icon: {
-        type: "string",
-        pattern: iconNamePattern,
-        description: "An icon name such as rocket, in place of text.",
-      },
-      image: {
-        type: "string",
-        pattern: imageAddressPattern,
-        maxLength: imageAddressLength,
-        description: "https address of a PNG, JPEG or GIF, fetched once; placed whole inside box.",
-      },
-      connection: traitSchema("connection", null),
-    },
-  }
 }

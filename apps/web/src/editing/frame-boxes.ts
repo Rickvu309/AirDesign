@@ -75,8 +75,3 @@ export function framedOf(register: Register | null): Framed {
 export function laidBox(register: Register, node: ElementId): Box | undefined {
   return laidOut(register).boxes.get(node)
 }
-
-export function storedBox(register: Register | null, node: ElementId, box: Box): Box {
-  const origin = register === null ? undefined : laidOut(register).origins.get(node)
-  return origin === undefined ? box : { ...box, x: box.x - origin.x, y: box.y - origin.y }
-}

@@ -218,25 +218,3 @@ export function ownBackground(parts: ReadonlyMap<string, Uint8Array>, part: stri
   if (held?.element.kind === "a:blipFill") return { image: true }
   return held === undefined ? null : fillValueOf(held, null)
 }
-
-export function shownBackground(parts: ReadonlyMap<string, Uint8Array>, part: string): ShownFill | null {
-  const sheet = sheetOf(parts, part)
-  const layout = sheetOf(parts, linkedPart(parts, part, "slideLayout"))
-  const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
-  const theme = master === null ? null : sheetOf(parts, linkedPart(parts, master.part, "theme"))
-  for (const level of [sheet, layout, master]) {
-    const root = level?.elements[0]
-    if (level === null || root === undefined) continue
-    const background = child(child({ element: root, children: level.children }, "p:cSld"), "p:bg")
-    if (background === undefined) continue
-    const held = fillIn(child(background, "p:bgPr"))
-    const own = level === sheet
-    if (held !== undefined)
-      return { value: held.element.kind === "a:blipFill" ? { image: true } : fillValueOf(held, null), own }
-    const reference = child(background, "p:bgRef")
-    const index = reference === undefined ? 0 : (whole(reference.element, "idx") ?? 0)
-    const entry = backgroundFills(theme)[index - backgroundIndex]
-    return { value: entry === undefined ? null : fillValueOf(entry, colorIn(reference, null)), own }
-  }
-  return null
-}

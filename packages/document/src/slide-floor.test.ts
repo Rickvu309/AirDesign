@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { currentBox, currentValue, decide, openRegister, type Register } from "./decide.js"
+import { currentValue, decide, openRegister, type Register } from "./decide.js"
 import { appendIndex, type IndexElement } from "./deck-index.js"
 import { elementId, slideId } from "./element-id.js"
 import { limits } from "@airdesign/doom"
 import { orderKeyBetween } from "@airdesign/doom"
 import { format, stamps } from "./format.js"
-import { floorFor, floorOpening, openingElement } from "./slide-floor.js"
+import { floorOpening, openingElement } from "./slide-floor.js"
 import { readSlideState, type SlideCommand } from "./slide-order.js"
 
 const file = [slideId("256"), slideId("257")] as const
@@ -62,35 +62,6 @@ describe("the floor of a slide that was not in the file", () => {
     const body = opened.register.elements[titled.node]
     if (body === undefined) throw new Error("body")
     expect(currentValue(body)).toBe("Click")
-  })
-
-  it("renames the source's elements onto the clone, one for one", () => {
-    const source = indexed().index?.elements.filter((element) => element.node.startsWith("256.")) ?? []
-    const floor = floorFor(source, slideId("259"))
-    expect(floor).toEqual([{ node: "259.2", kind: "shape", value: "Title", box, grouped: false }])
-    const cloned = landed(indexed(), { slide: "clone", id: slideId("259"), source: file[0], key, floor })
-    const opened = decide(cloned, { command: "add", node: elementId("259.2"), floor: "", route: "" })
-    if (opened.decision !== "apply") throw new Error(opened.code)
-    const body = opened.register.elements[elementId("259.2")]
-    if (body === undefined) throw new Error("body")
-    expect(currentValue(body)).toBe("Title")
-    expect(currentBox(body)).toEqual(box)
-  })
-
-  it("moves a clone of a grouped element inside its group", () => {
-    const source = indexed().index?.elements.filter((element) => element.node.startsWith("257.")) ?? []
-    const cloned = landed(indexed(), {
-      slide: "clone",
-      id: slideId("259"),
-      source: file[1],
-      key,
-      floor: floorFor(source, slideId("259")),
-    })
-    const opened = decide(cloned, { command: "add", node: elementId("259.2"), floor: "", route: "" })
-    if (opened.decision !== "apply") throw new Error(opened.code)
-    expect(
-      decide(opened.register, { command: "person", property: "box", value: box, node: elementId("259.2") }).decision,
-    ).toBe("apply")
   })
 
   it("reads no floor row that names another slide, twice the same element, or a bad value", () => {

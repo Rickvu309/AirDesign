@@ -3,7 +3,7 @@ import { fillMarkup, type Drawn } from "./fill-markup.js"
 import { changedPart } from "./fill-host.js"
 import { fillValueOf, type SlotFill } from "./fill-read.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { spliceBytes, type MarkupElement } from "./element-span.js"
+import { type MarkupElement } from "./element-span.js"
 import { paintAttribute } from "./paint-color.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
@@ -80,24 +80,4 @@ export function writtenStack(parts: Parts, at: ElementAt, paints: readonly SlotF
   const parent = decodeUtf8(bytes.subarray(properties.start, properties.end))
   const written = insertChild("p:spPr", "a:extLst", `<a:extLst>${stackXml(paints, bake)}</a:extLst>`, parent)
   return changedPart(parts, at.part, bytes, { start: properties.start, end: properties.end, next: encodeUtf8(written) })
-}
-
-export function strippedStacks(parts: Parts): Parts {
-  let next = parts
-  for (const [part, bytes] of parts) {
-    if (!part.startsWith("ppt/slides/slide") || !part.endsWith(".xml")) continue
-    const { elements } = requireMarkup(bytes)
-    const children = markupChildren(elements)
-    const gone = elements.flatMap((element) => {
-      if (element.kind !== "a:ext" || paintAttribute(element, "uri") !== stackUri) return []
-      const list = elements[element.parent]
-      return [list !== undefined && children[list.index]?.length === 1 ? list : element]
-    })
-    if (gone.length === 0) continue
-    const edits = gone.map((element) => ({ start: element.start, end: element.end, next: new Uint8Array() }))
-    const changed = new Map(next)
-    changed.set(part, spliceBytes(bytes, edits))
-    next = changed
-  }
-  return next
 }

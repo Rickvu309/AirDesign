@@ -3,11 +3,9 @@ import { attributeEdit } from "./markup-attribute.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { whole, type TraitXml } from "./xml-codec.js"
 import { slideAddresses } from "./package-address.js"
-import { readPlayback, type PlayedKind, type PlayedTransition } from "./transition-read.js"
+import { readPlayback, type PlayedTransition } from "./transition-read.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
-
-export type TransitionKind = PlayedKind
 
 export type SlideTransition = PlayedTransition
 

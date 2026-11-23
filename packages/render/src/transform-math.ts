@@ -41,16 +41,7 @@ export type SelectionResize<K = ElementId> = {
   readonly boxes: ReadonlyMap<K, Box>
 }
 
-export type SelectionRotation<K = ElementId> = {
-  readonly displayAngle: number
-  readonly layers: ReadonlyMap<K, RotatedLayer>
-}
-
-export const edges: readonly Edge[] = ["top", "right", "bottom", "left"]
-
 export const snapDegrees = 15
-
-const emuPerPoint = 12_700
 
 const handleAngle: Readonly<Record<ResizeGrip, number>> = {
   right: 0,
@@ -70,22 +61,6 @@ const rotateCornerOffset: Readonly<Record<Corner, number>> = {
   "bottom-right": 90,
   "bottom-left": 180,
   "top-left": 270,
-}
-
-export function isEdge(grip: TransformGrip): grip is Edge {
-  return grip === "top" || grip === "right" || grip === "bottom" || grip === "left"
-}
-
-export function isCorner(grip: TransformGrip): grip is Corner {
-  return grip === "top-left" || grip === "top-right" || grip === "bottom-left" || grip === "bottom-right"
-}
-
-export function isResizeGrip(grip: TransformGrip): grip is ResizeGrip {
-  return isCorner(grip) || isEdge(grip)
-}
-
-export function isRotateGrip(grip: TransformGrip): grip is RotateGrip {
-  return grip.startsWith("rotate-")
 }
 
 export function normalizeDegrees(degrees: number): number {
@@ -227,46 +202,6 @@ export function rotatedAngle(center: Point, from: Point, at: Point, startRotatio
   return roundRotation(startRotation + delta, snapAngle)
 }
 
-export function rotateSelection<K>(
-  starts: ReadonlyMap<K, RotatedLayer>,
-  centerScreen: Point,
-  from: Point,
-  at: Point,
-  snapAngle: boolean,
-): SelectionRotation<K> {
-  if (starts.size === 1) {
-    const entry = [...starts][0]
-    if (entry === undefined) return { displayAngle: 0, layers: new Map() }
-    const [id, layer] = entry
-    const rotation = rotatedAngle(centerScreen, from, at, layer.rotation, snapAngle)
-    return { displayAngle: rotation, layers: new Map([[id, { box: layer.box, rotation }]]) }
-  }
-  const frame = selectionFrame(starts)
-  if (frame === null) return { displayAngle: 0, layers: new Map() }
-  const delta = rotatedAngle(centerScreen, from, at, 0, snapAngle)
-  const centerX = frame.x + frame.cx / 2
-  const centerY = frame.y + frame.cy / 2
-  const layers = new Map<K, RotatedLayer>()
-  for (const [id, { box, rotation }] of starts) {
-    const rel = { x: box.x + box.cx / 2 - centerX, y: box.y + box.cy / 2 - centerY }
-    const orbited = rotatePoint(rel, delta)
-    layers.set(id, {
-      box: {
-        ...box,
-        x: Math.round(centerX + orbited.x - box.cx / 2),
-        y: Math.round(centerY + orbited.y - box.cy / 2),
-      },
-      rotation: normalizeDegrees(Math.round((rotation + delta) * 10) / 10),
-    })
-  }
-  return { displayAngle: delta, layers }
-}
-
-export function constrainMove(dx: number, dy: number, lockAxis: boolean): { readonly dx: number; readonly dy: number } {
-  if (!lockAxis) return { dx, dy }
-  return Math.abs(dx) >= Math.abs(dy) ? { dx, dy: 0 } : { dx: 0, dy }
-}
-
 export function flipSelection<K>(layers: ReadonlyMap<K, FlippableLayer>, axis: FlipAxis): readonly FlippedLayer<K>[] {
   const frame = selectionFrame(layers)
   if (frame === null) return []
@@ -303,13 +238,4 @@ export function rotateCursor(corner: Corner, rotation: number): string {
     `<path d="${rotateCursorPath}" stroke="black" stroke-width="1.5"/>` +
     `</g></svg>`
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, grab`
-}
-
-export function formatSizeLabel(cxEmu: number, cyEmu: number): string {
-  return `${String(Math.round(cxEmu / emuPerPoint))} × ${String(Math.round(cyEmu / emuPerPoint))}`
-}
-
-export function formatAngleLabel(degrees: number): string {
-  const rounded = normalizeDegrees(Math.round(degrees * 10) / 10)
-  return `${String(rounded)}°`
 }

@@ -1,5 +1,3 @@
-import type { Box } from "@airdesign/document"
-
 export type Bounds = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
 
 export type Axis = "x" | "y"
@@ -47,36 +45,6 @@ export const everyLine: Watched = { x: lines, y: lines, spacing: true }
 
 export function reachOf(width: number, slideWidth: number): number {
   return (snapReach * slideWidth) / width
-}
-
-function turnedSize(box: Box, rotation: number): { readonly across: number; readonly down: number } {
-  if (rotation % 90 === 0)
-    return (rotation / 90) % 2 === 0 ? { across: box.cx, down: box.cy } : { across: box.cy, down: box.cx }
-  const cos = Math.abs(Math.cos((rotation * Math.PI) / 180))
-  const sin = Math.abs(Math.sin((rotation * Math.PI) / 180))
-  return { across: box.cx * cos + box.cy * sin, down: box.cx * sin + box.cy * cos }
-}
-
-export function boundsOf(box: Box, rotation = 0): Bounds {
-  const { across, down } = turnedSize(box, rotation)
-  const middleX = box.x + box.cx / 2
-  const middleY = box.y + box.cy / 2
-  return {
-    left: middleX - across / 2,
-    top: middleY - down / 2,
-    right: middleX + across / 2,
-    bottom: middleY + down / 2,
-  }
-}
-
-export function around(boxes: readonly Bounds[]): Bounds | null {
-  if (boxes.length === 0) return null
-  return {
-    left: Math.min(...boxes.map((box) => box.left)),
-    top: Math.min(...boxes.map((box) => box.top)),
-    right: Math.max(...boxes.map((box) => box.right)),
-    bottom: Math.max(...boxes.map((box) => box.bottom)),
-  }
 }
 
 function spanOf(box: Bounds, axis: Axis): Span {

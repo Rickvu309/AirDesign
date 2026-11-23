@@ -1,13 +1,5 @@
-import {
-  addedPictures,
-  assetMedia,
-  landedPatch,
-  writeTextValue,
-  type Register,
-  type TextValue,
-} from "@airdesign/document"
+import { writeTextValue, type Register, type TextValue } from "@airdesign/document"
 import { fadedFrames, keptExport, withMedia, writtenDeck, type KeptExport, type WrittenDeck } from "@airdesign/pptx"
-import { patchImages } from "@/editing/patch-images"
 
 export { newSlideElement } from "@airdesign/document"
 
@@ -30,26 +22,9 @@ export function slideBase(parts: Parts, register: Register, pictures: PictureByt
   return writtenBase(parts, register, pictures).parts
 }
 
-export function missingPictures(register: Register, pictures: PictureBytes): readonly string[] {
-  const hashes = new Set(addedPictures(register).map((media) => media.sha256))
-  for (const node of register.nodes) {
-    const body = register.elements[node]
-    const images = body === undefined ? [] : patchImages(landedPatch(body, "text"))
-    for (const image of images) {
-      const media = assetMedia(image)
-      if (media !== null) hashes.add(media.sha256)
-    }
-  }
-  return [...hashes].filter((sha256) => !pictures.has(sha256))
-}
-
 export function editedDeck(base: Parts, register: Register, pictures: PictureBytes = noPictures): KeptExport {
   const kept = keptExport(base, register, (sha256) => pictures.get(sha256))
   return pictures.size === 0 ? kept : { ...kept, parts: withMedia(kept.parts, (part) => pictures.get(part)) }
-}
-
-export function editedParts(base: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return editedDeck(base, register, pictures).parts
 }
 
 export type ExportedDeck = {
@@ -61,8 +36,4 @@ export function exportedDeck(parts: Parts, register: Register, pictures: Picture
   const written = writtenBase(parts, register, pictures)
   const edited = editedDeck(written.parts, written.register, pictures)
   return { parts: fadedFrames(edited.parts, written.register), leftOut: [...written.leftOut, ...edited.leftOut] }
-}
-
-export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return exportedDeck(parts, register, pictures).parts
 }

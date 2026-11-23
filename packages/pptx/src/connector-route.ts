@@ -188,19 +188,6 @@ function binds(bytes: Uint8Array): boolean {
   return text.includes("<a:stCxn") || text.includes("<a:endCxn")
 }
 
-export function boundTargets(parts: Parts): ReadonlySet<string> {
-  const bound = new Set<string>()
-  for (const { slide, part } of readSlides(parts)) {
-    const bytes = parts.get(part)
-    if (bytes === undefined || !binds(bytes)) continue
-    for (const drawn of drawnOn(parts, slide, part, bytes).values()) {
-      if (drawn.kind !== "p:cxnSp") continue
-      for (const end of [drawn.start, drawn.end]) if (!("none" in end)) bound.add(end.shape.node)
-    }
-  }
-  return bound
-}
-
 export function routedParts(file: Parts, parts: Parts): Parts {
   let next = parts
   for (const { slide, part } of readSlides(parts)) {

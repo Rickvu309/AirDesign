@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest"
 import {
-  notifyKey,
-  parseNotifyKey,
   readApprovalRequest,
   readBearer,
   readCapture,
@@ -29,34 +27,6 @@ describe("readCapture", () => {
 
   it("reads the deck", () => {
     expect(readCapture({ deck: "deck" })).toEqual({ ok: true, deck: "deck" })
-  })
-})
-
-describe("notifyKey", () => {
-  it("joins the deck and the revision", () => {
-    expect(notifyKey("deck", 3)).toEqual({ ok: true, key: "deck:3" })
-  })
-
-  it("refuses a key of 8000 bytes or more", () => {
-    expect(notifyKey("a".repeat(8000), 0)).toEqual({ ok: false, refusal: "payload" })
-  })
-
-  it("refuses a fractional revision", () => {
-    expect(notifyKey("deck", 1.5)).toEqual({ ok: false, refusal: "payload" })
-  })
-})
-
-describe("parseNotifyKey", () => {
-  it("reads a deck and a revision", () => {
-    expect(parseNotifyKey("deck:3")).toEqual({ ok: true, deck: "deck", revision: 3 })
-  })
-
-  it("refuses a leading zero", () => {
-    expect(parseNotifyKey("deck:03")).toEqual({ ok: false, refusal: "payload" })
-  })
-
-  it("refuses a fractional revision", () => {
-    expect(parseNotifyKey("deck:1.5")).toEqual({ ok: false, refusal: "payload" })
   })
 })
 
