@@ -54,7 +54,6 @@ export function borderSections(input: ModelInput, kind: PanelKind): PanelSection
     {
       trait: "border",
       label: designCopy.border,
-      open: true,
       strips: arrange("border", [...route, ...(styled ? [border, colorLook, widthLook] : [border])]),
     },
   ]

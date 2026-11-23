@@ -50,7 +50,7 @@ function alignmentSection(): PanelSection {
   const distribute = doomControl({ trait: "box", field: "distribute" }, boxCopy.distribute, choiceDesc(distributions), {
     value: undefined,
   })
-  return { trait: "alignment", label: null, open: true, strips: [[align, distribute]] }
+  return { trait: "alignment", label: null, strips: [[align, distribute]] }
 }
 
 function linkSection(input: ModelInput): PanelSection[] {
@@ -64,7 +64,7 @@ function linkSection(input: ModelInput): PanelSection[] {
     { value: target },
     { slides: input.slides },
   )
-  return [{ trait: "link", label: linkCopy.section, open: true, strips: [[control]] }]
+  return [{ trait: "link", label: linkCopy.section, strips: [[control]] }]
 }
 
 const adjustDesc: Desc = {
@@ -90,7 +90,7 @@ function geometrySection(view: doom.Doom, id: doom.NodeId): PanelSection[] {
     { parent: { preset: shown.preset } },
   )
   const strips = named ? [[preset], [adjust]] : [[preset]]
-  return [{ trait: "geometry", label: geometryCopy.section, open: true, strips }]
+  return [{ trait: "geometry", label: geometryCopy.section, strips }]
 }
 
 export function nodeModel(input: ModelInput): PanelModel {

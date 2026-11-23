@@ -5,7 +5,7 @@ How an image is covered and softened, and how heavy an icon's lines are. A shape
 ## Language
 
 **overlay**:
-The paint laid over an image, a color or a gradient, and how strongly it covers it. It is the top paint above the image in the layer's fills: the slides-mode Overlay control edits it, and an agent's `fills.overlay` writes the top slot, `p3`.
+The paint laid over an image, a color or a gradient, and how strongly it covers it. It is the top paint above the image in the layer's fills: the Overlay control edits it, and an agent's `fills.overlay` writes the top slot, `p3`.
 _Avoid_: tint, wash, filter
 
 **blur**:

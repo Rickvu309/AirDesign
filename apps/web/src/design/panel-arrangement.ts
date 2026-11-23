@@ -164,7 +164,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("source")],
   ],
   templateStyle: [[placed("major", inside)], [placed("minor", inside)]],
-  fillDetails: [],
 }
 
 function placement(trait: SectionName, field: string): Placed | undefined {

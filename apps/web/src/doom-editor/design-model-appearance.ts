@@ -23,7 +23,7 @@ export function opacitySection(input: ModelInput, kind: PanelKind): PanelSection
   const shaped: PanelControl = listed
     ? { ...control, look: { ...control.look, glyph: Opacity, steps: opacitySteps } }
     : control
-  return [{ trait: "opacity", label: opacityCopy.section, open: true, strips: arrange("opacity", [shaped]) }]
+  return [{ trait: "opacity", label: opacityCopy.section, strips: arrange("opacity", [shaped]) }]
 }
 
 export function cornersSection(input: ModelInput): PanelSection[] {
@@ -43,7 +43,7 @@ export function cornersSection(input: ModelInput): PanelSection[] {
     { value: uniform ? Math.round(radius * cornerEmu) : undefined, mixed: !uniform },
   )
   const stepped = { ...control, look: { ...control.look, steps: cornerSteps } }
-  return [{ trait: "corners", label: geometryCopy.corners, open: true, strips: arrange("corners", [stepped]) }]
+  return [{ trait: "corners", label: geometryCopy.corners, strips: arrange("corners", [stepped]) }]
 }
 
 export function shadowSection(input: ModelInput): PanelSection[] {
@@ -61,5 +61,5 @@ export function shadowSection(input: ModelInput): PanelSection[] {
             value: Math.round(shown.opacity * wholeFraction),
           }),
         ]
-  return [{ trait: "shadow", label: designCopy.shadow, open: true, strips: arrange("shadow", [preset, ...opacity]) }]
+  return [{ trait: "shadow", label: designCopy.shadow, strips: arrange("shadow", [preset, ...opacity]) }]
 }
