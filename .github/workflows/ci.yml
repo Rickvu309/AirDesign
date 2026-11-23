@@ -82,17 +82,9 @@ jobs:
       - if: steps.work.outputs.needed == 'true'
         run: pnpm install --frozen-lockfile
       - if: steps.work.outputs.needed == 'true'
-        id: playwright-version
-        run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
-      - if: steps.work.outputs.needed == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        id: playwright-cache
+        uses: ./.github/actions/playwright
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-      - if: steps.work.outputs.needed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --only-shell chromium
+          fonts: ${{ matrix.part == 'browser' || matrix.part == 'design' }}
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/tla
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'source'
@@ -246,17 +238,7 @@ jobs:
       - if: steps.work.outputs.needed == 'true'
         run: pnpm install --frozen-lockfile
       - if: steps.work.outputs.needed == 'true'
-        id: playwright-version
-        run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
-      - if: steps.work.outputs.needed == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-      - if: steps.work.outputs.needed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --only-shell chromium
+        uses: ./.github/actions/playwright
       - if: steps.work.outputs.needed == 'true'
         run: pnpm --filter '!@airdesign/site' -r --if-present run build
       - if: steps.work.outputs.needed == 'true'

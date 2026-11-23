@@ -4,6 +4,7 @@ public:
   - deck-answer.ts
   - font-metrics.ts
   - font-route.ts
+  - font-source.ts
   - forward-secret.ts
   - image-fetch.ts
   - listen.ts

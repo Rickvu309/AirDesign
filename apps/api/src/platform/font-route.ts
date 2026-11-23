@@ -4,7 +4,7 @@ import { FontSource } from "./font-source.js"
 import type { OriginalStore } from "./original-store.js"
 
 type Visit = {
-  readonly store: OriginalStore | undefined
+  readonly fonts: FontSource
   readonly query: URLSearchParams
   readonly res: ServerResponse
 }
@@ -21,14 +21,14 @@ export function fontSource(store: OriginalStore | undefined): FontSource {
   return source
 }
 
-async function family({ store, query, res }: Visit): Promise<void> {
+async function family({ fonts, query, res }: Visit): Promise<void> {
   const name = query.get("family")
   if (name === null || name.length > 200) {
     res.writeHead(400)
     res.end()
     return
   }
-  const answer = await fontSource(store).family(name)
+  const answer = await fonts.family(name)
   res.writeHead(answer.ok ? 200 : 404, {
     "content-type": "application/json",
     "cache-control": answer.ok ? "public, max-age=86400" : "no-store",
@@ -36,7 +36,7 @@ async function family({ store, query, res }: Visit): Promise<void> {
   res.end(JSON.stringify(answer))
 }
 
-async function file({ store, query, res }: Visit): Promise<void> {
+async function file({ fonts, query, res }: Visit): Promise<void> {
   const name = query.get("family")
   const file = query.get("file")
   if (name === null || file === null || query.get("v") !== fontRevision) {
@@ -44,7 +44,7 @@ async function file({ store, query, res }: Visit): Promise<void> {
     res.end()
     return
   }
-  const bytes = await fontSource(store).file(name, file)
+  const bytes = await fonts.file(name, file)
   if (bytes === undefined) {
     res.writeHead(404)
     res.end()
@@ -69,7 +69,7 @@ const answers = [
 ]
 
 type FontVisit = {
-  readonly options: { readonly originals?: OriginalStore }
+  readonly options: { readonly originals?: OriginalStore; readonly fonts?: FontSource }
   readonly query: URLSearchParams
   readonly res: ServerResponse
 }
@@ -77,10 +77,11 @@ type FontVisit = {
 export const fontRouteList = answers.map(({ path, answer }) => ({
   method: "GET" as const,
   path,
-  serve: ({ options, query, res }: FontVisit) => answer({ store: options.originals, query, res }),
+  serve: ({ options, query, res }: FontVisit) =>
+    answer({ fonts: options.fonts ?? fontSource(options.originals), query, res }),
 }))
 
-export function fontMiddleware(store: OriginalStore) {
+export function fontMiddleware(fonts: FontSource) {
   return (req: IncomingMessage, res: ServerResponse, next: () => void): void => {
     const url = new URL(req.url ?? "/", "http://localhost")
     const found = req.method === "GET" ? answers.find((route) => route.path === url.pathname) : undefined
@@ -88,7 +89,7 @@ export function fontMiddleware(store: OriginalStore) {
       next()
       return
     }
-    void found.answer({ store, query: url.searchParams, res }).catch(() => {
+    void found.answer({ fonts, query: url.searchParams, res }).catch(() => {
       res.writeHead(503)
       res.end()
     })

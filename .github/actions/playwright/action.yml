@@ -1,0 +1,27 @@
+name: playwright
+description: Puts Chromium where Playwright looks and, for the browser tests, the font shelf where the preview server looks.
+inputs:
+  fonts:
+    description: true to restore and save the font shelf the browser tests serve from.
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      continue-on-error: true
+      id: chromium
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-shell-${{ runner.os }}-${{ steps.version.outputs.version }}
+    - if: steps.chromium.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm exec playwright install --only-shell chromium
+    - if: inputs.fonts == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      continue-on-error: true
+      with:
+        path: ~/.cache/airdesign/fonts
+        key: font-shelf-${{ hashFiles('packages/fonts/src/catalog.json', 'tests/browser/font-shelf.mjs') }}

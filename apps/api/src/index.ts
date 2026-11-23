@@ -15,3 +15,4 @@ export { sessionCookie } from "./account/session-cookie.js"
 
 export { fontMiddleware } from "./platform/font-route.js"
 export { servedFontMetrics } from "./platform/font-metrics.js"
+export { FontSource } from "./platform/font-source.js"
