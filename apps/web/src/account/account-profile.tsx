@@ -1,7 +1,7 @@
-import { AccountNamePage } from "@/settings/account-name-page"
+import { AccountNamePage } from "@/account/account-name-page"
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { loadAccount, type AccountLoad } from "@/settings/account-load"
-import { signOut } from "@/settings/settings-page"
+import { loadAccount, type AccountLoad } from "@/account/account-load"
+import { signOut } from "@/account/sign-out"
 
 type Profile = { name: string | null; save: (name: string) => void }
 const ProfileContext = createContext<Profile | null>(null)

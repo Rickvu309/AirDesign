@@ -1,5 +1,6 @@
 layer: feature
 dependencies:
+  - apps/web/src/account
   - apps/web/src/components
   - apps/web/src/copy
   - apps/web/src/editing

@@ -2,7 +2,7 @@ import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { Button } from "@/components/ui/button"
 import { accountCopy } from "@/copy/account-copy"
 import { settingsCopy } from "@/copy/settings-copy"
-import { NameForm } from "@/settings/name-form"
+import { NameForm } from "@/account/name-form"
 
 export function AccountNamePage({
   email,

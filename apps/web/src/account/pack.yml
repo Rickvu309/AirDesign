@@ -1,0 +1,13 @@
+layer: shared
+dependencies:
+  - apps/web/src/components
+  - apps/web/src/copy
+  - apps/web/src/lib
+public:
+  - account-load.ts
+  - account-name-page.tsx
+  - account-profile.tsx
+  - name-form.tsx
+  - settings-paths.ts
+  - sign-in-address.ts
+  - sign-out.ts

@@ -1,4 +1,4 @@
-import { signInAddress } from "@/thin-notice"
+import { signInAddress } from "@/account/sign-in-address"
 
 export async function post(path: string, body: object) {
   const response = await fetch(path, {

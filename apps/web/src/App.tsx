@@ -5,10 +5,10 @@ import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
 import { AccountPage } from "./settings/account-page"
 import { AgentsPage } from "./settings/agents-page"
-import { settingsPaths } from "./settings/settings-routes"
+import { settingsPaths } from "./account/settings-paths"
 import { UsagePage } from "./settings/usage-page"
 
-import { AccountProfile } from "./settings/account-profile"
+import { AccountProfile } from "./account/account-profile"
 
 const ScreenRoute = lazy(() => import("./screen-routes"))
 const DoomEditor = lazy(() => import("./doom-editor/doom-editor").then((module) => ({ default: module.DoomEditor })))

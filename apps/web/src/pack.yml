@@ -1,5 +1,7 @@
 layer: app
+enforce_privacy: false
 dependencies:
+  - apps/web/src/account
   - apps/web/src/aira
   - apps/web/src/components
   - apps/web/src/connect
@@ -16,4 +18,3 @@ dependencies:
   - apps/web/src/present
   - apps/web/src/pricing
   - apps/web/src/settings
-enforce_privacy: false

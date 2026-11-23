@@ -1,16 +1,17 @@
-import { useAccountProfile } from "@/settings/account-profile"
-import { NameForm } from "@/settings/name-form"
+import { useAccountProfile } from "@/account/account-profile"
+import { NameForm } from "@/account/name-form"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { accountCopy } from "@/copy/account-copy"
 import { productCopy } from "@/copy/product-copy"
 import { DeleteAccountDialog } from "@/decks/delete-account"
-import { loadAccount, type AccountLoad } from "@/settings/account-load"
+import { loadAccount, type AccountLoad } from "@/account/account-load"
 import { AccountCard } from "@/settings/account-card"
-import { SettingsPage, signOut } from "@/settings/settings-page"
+import { SettingsPage } from "@/settings/settings-page"
+import { signOut } from "@/account/sign-out"
 import { settingsCopy } from "@/copy/settings-copy"
-import { signInAddress } from "@/thin-notice"
+import { signInAddress } from "@/account/sign-in-address"
 
 export function AccountPage({
   navigate,
