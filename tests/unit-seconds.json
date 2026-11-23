@@ -2,7 +2,6 @@
   ".agents/skills/show-airdesign/bin/logic.test.mjs": 1.2,
   ".agents/skills/show-airdesign/logic/page.test.mjs": 0.4,
   ".agents/skills/show-airdesign/logic/tree.test.mjs": 0.4,
-  ".agents/skills/verify-airdesign/bin/agent-bench.test.mjs": 6.3,
   ".agents/skills/verify-airdesign/bin/aira-choice.test.mjs": 0.6,
   ".agents/skills/verify-airdesign/bin/aira-counts.test.mjs": 0.4,
   ".agents/skills/verify-airdesign/bin/bench-verdict.test.mjs": 0.8,
