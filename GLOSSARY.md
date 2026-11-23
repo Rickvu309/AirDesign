@@ -317,7 +317,7 @@ An element that lies outside the slide.
 _Avoid_: out of bounds, cropped
 
 **overlap**:
-Text hidden by text, or by something painted over it.
+Text that crosses other text, runs under something painted over it, or runs onto a layer it does not sit inside.
 _Avoid_: collision, intersection
 
 **small text**:

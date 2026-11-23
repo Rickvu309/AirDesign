@@ -2,6 +2,7 @@ import { readDeckEdit, readNamedDeck } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
+import { type Findings, findingsNote, layoutOf } from "./layout-answer.js"
 import type { DeckHost } from "./deck-host.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
@@ -49,22 +50,19 @@ function rootsInFold(fold: doom.Doom, client: string, changes: readonly doom.Age
   }))
 }
 
-const findingsWords =
-  "The findings name a value off the deck's own choices: change it to the named choice unless the person asked for it."
-
 function landedAnswer(
   deck: string,
   rev: number,
   run: string,
   added: readonly Added[],
-  findings: readonly doom.AgentFinding[] = [],
+  findings: Findings = { findings: [], layout: "untouched" },
 ): ToolResult {
   const words = added.map(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
   )
   const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${words.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
-  const found = findings.length === 0 ? {} : { findings }
-  return answered(findings.length === 0 ? lead : `${lead} ${findingsWords}`, {
+  const found = findings.findings.length === 0 ? {} : { findings: findings.findings }
+  return answered([lead, ...findingsNote(findings)].join(" "), {
     ok: true,
     deck,
     rev,
@@ -91,8 +89,15 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   const ids = onceIds(once)
   const run = parsed.runId ?? ids.run
   const before = opened.fold.onces.get(once)
-  if (before !== undefined)
-    return landedAnswer(opened.deck, before, run, rootsInFold(opened.fold, ids.client, read.changes))
+  if (before !== undefined) {
+    const roots = rootsInFold(opened.fold, ids.client, read.changes)
+    const slides = doom.touchedSlides(
+      opened.fold,
+      opened.fold,
+      roots.map((root) => root.id as doom.NodeId),
+    )
+    return landedAnswer(opened.deck, before, run, roots, await layoutOf(host, opened.fold, slides))
+  }
   const names = imageNames(fonts.changes)
   const found: NamedImages | undefined =
     names.length > 0 && host.images !== undefined
@@ -120,5 +125,14 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
   const landed = await host.edit(parsed.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)
-  return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added), compiled.findings)
+  const slides = doom.touchedSlides(
+    opened.fold,
+    compiled.after,
+    compiled.edit.writes.map((write) => write.node),
+  )
+  const laid = await layoutOf(host, compiled.after, slides)
+  return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added), {
+    findings: [...compiled.findings, ...laid.findings],
+    layout: laid.layout,
+  })
 }

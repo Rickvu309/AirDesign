@@ -187,7 +187,7 @@ describe("edit_deck", () => {
     )
     const answer = landed.answer as { note: string; findings: { code: string; note: string }[] }
     expect(landed.ok).toBe(true)
-    expect(answer.note).toContain("change it to the named choice unless the person asked for it")
+    expect(answer.note).toContain("fix it unless the person asked for it")
     expect(answer.findings).toMatchObject([{ code: "off-palette", color: offTheme, to: expect.any(String) }])
     expect(answer.findings[0]!.note).toContain(
       `${offTheme} is not a theme colour, so a new template will not recolour it`,
