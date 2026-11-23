@@ -6,7 +6,7 @@ import { notesText } from "./notes-text.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
-import { descendantsOf, get } from "./doom-walk.js"
+import { descendantsOf, get, slidesOf } from "./doom-walk.js"
 
 type SetChange = Extract<AgentChange, { op: "set" }>
 
@@ -68,6 +68,14 @@ function setBar(draft: Draft, change: SetChange, at: number): void {
   })
 }
 
+function setEverySlide(draft: Draft, change: SetChange, role: string): void {
+  const slides = slidesOf(draft.doom).filter((slide) =>
+    descendantsOf(draft.doom, slide.id).some((node) => get(node, "role") === role),
+  )
+  if (slides.length === 0) stop("missing", undefined, "target")
+  for (const slide of slides) compileSet(draft, { ...change, target: `${slide.id}.${role}` })
+}
+
 function geometryOf(node: Node, change: SetChange): Geometry | undefined {
   const geometry = get(node, "geometry")
   if (change.icon !== undefined) {
@@ -89,6 +97,7 @@ function geometryOf(node: Node, change: SetChange): Geometry | undefined {
 }
 
 export function compileSet(draft: Draft, change: SetChange): void {
+  if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))
   const at = change.target.indexOf("#")
   if (at >= 0) return setBar(draft, change, at)
   const node = targetNode(draft, change.target)

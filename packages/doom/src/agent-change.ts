@@ -327,7 +327,10 @@ const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
 
 const readSlideAdd = object({}, { after: readId })
 const readSlideMove = object({ slide: readId, after: readAfter })
-const readTarget = matching(/^[a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,240})?$/, 280)
+const readTarget = matching(
+  /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,240})?|\*\.(title|subtitle|body))$/,
+  280,
+)
 
 const placeFields = {
   kind: choice(addKinds, kindWords),
@@ -337,7 +340,7 @@ const placeFields = {
     {
       type: "string",
       description:
-        "A node id; '<slide>.title', '<slide>.subtitle' or '<slide>.body', the node with that role; or a chart bar '<chart>#<series>:<category>', which takes only fill.",
+        "A node id; '<slide>.title', '<slide>.subtitle' or '<slide>.body', the node with that role; '*.title' and the like, that role on every slide; or a chart bar '<chart>#<series>:<category>', which takes only fill.",
     },
     readTarget,
   ),

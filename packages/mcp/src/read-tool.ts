@@ -47,10 +47,42 @@ function themeOf(fold: doom.Doom) {
 const lead = (opened: Opened, count: number) =>
   `Deck ${opened.deck} "${doom.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
 
+const foundLimit = 400
+
+function foundAnswer(opened: Opened, find: string): ToolResult {
+  const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
+  const wanted = find.toLowerCase()
+  const lines = slides.flatMap((slide) =>
+    doom
+      .readForAgent(opened.fold, [slide])
+      .split("\n")
+      .slice(1)
+      .filter((line) => line.toLowerCase().includes(wanted))
+      .map((line) => `${slide} ${line.trim()}`),
+  )
+  const shown = lines.slice(0, foundLimit)
+  const more = lines.length > shown.length ? ` The first ${String(shown.length)} are listed: narrow the words.` : ""
+  const note = `${String(lines.length)} layers in deck ${opened.deck} at rev ${String(opened.rev)} hold "${find}"; each line starts with its slide id.${more} Send rev as base to airdesign_edit_deck.`
+  return answered(note, {
+    ok: true,
+    deck: opened.deck,
+    rev: opened.rev,
+    name: doom.deckName(opened.fold),
+    slides,
+    found: lines.length,
+    layers: shown.join("\n"),
+  })
+}
+
 export function readAnswer(
   opened: Opened,
-  query: { readonly slide?: string | undefined; readonly cursor?: string | undefined },
+  query: {
+    readonly slide?: string | undefined
+    readonly cursor?: string | undefined
+    readonly find?: string | undefined
+  },
 ): ToolResult {
+  if (query.find !== undefined) return foundAnswer(opened, query.find)
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const { slide, cursor } = query
   const alone = slide === undefined ? undefined : slides.find((id) => id === slide)
@@ -86,7 +118,7 @@ export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolRe
   const parsed = readDeckQuery(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   const read = readAnswer(opened, parsed)
-  if (parsed.picture !== true || !read.ok) return read
+  if (parsed.picture !== true || !read.ok || parsed.find !== undefined) return read
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const from = parsed.cursor === undefined ? 0 : slides.findIndex((id) => id === parsed.cursor)
   const wanted = parsed.slide === undefined ? slides.slice(from) : slides.filter((id) => id === parsed.slide)
