@@ -135,6 +135,8 @@ test("the current slide or a range prints only those slides, and a wrong range s
   for (const value of ["4", "", "0"]) {
     await first.fill(value)
     await expect(first).toHaveAttribute("aria-invalid", "true")
+    await expect(first).toHaveCSS("box-shadow", "none")
+    await expect(first).toHaveCSS("outline-style", "solid")
     await expect(first).toHaveAccessibleDescription(exportCopy.rangeOf(3))
     await expect(action).toBeDisabled()
   }

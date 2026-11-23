@@ -227,9 +227,11 @@
   outline-offset: -1px;
 }
 
-:where([data-slot="input"], [data-slot="textarea"])[aria-invalid="true"] {
-  border-color: var(--danger-text);
-  outline-color: var(--danger-text);
+:where([aria-invalid="true"]:not([data-focus-ring] > *), [data-focus-ring]:has(> [aria-invalid="true"])) {
+  --focus-ring: var(--danger-text);
+  box-shadow: none;
+  outline: 1px solid var(--danger-text);
+  outline-offset: -1px;
 }
 
 @theme inline {

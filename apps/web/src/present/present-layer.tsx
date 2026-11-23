@@ -13,6 +13,7 @@ export function PresentLayer({
   size,
   paint,
   notesOf,
+  onFollow,
 }: {
   present: Present
   title: string
@@ -20,6 +21,7 @@ export function PresentLayer({
   size: SlideSize | null
   paint: SlidePaint
   notesOf?: (index: number) => string
+  onFollow?: (point: { readonly x: number; readonly y: number; readonly show: Element }) => boolean
 }) {
   const { show } = present
   if (show === null || size === null) return null
@@ -57,6 +59,7 @@ export function PresentLayer({
       onWake={present.wake}
       transitionOf={present.transitionOf}
       morphOf={present.morphOf}
+      {...(onFollow === undefined ? {} : { onFollow })}
     />,
     document.body,
   )

@@ -56,7 +56,12 @@ export function TextLines({
             </span>
           )}
           {line.runs.map((run, index) => (
-            <span key={index} data-run="" style={runLook(run)}>
+            <span
+              key={index}
+              data-run=""
+              {...(run.link === undefined ? {} : { "data-link": run.link })}
+              style={runLook(run)}
+            >
               {!editing && index === line.runs.length - 1 ? run.text.trimEnd() : run.text}
             </span>
           ))}

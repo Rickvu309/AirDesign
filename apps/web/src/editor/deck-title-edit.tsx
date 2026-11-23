@@ -141,7 +141,7 @@ export function DeckTitleEdit({
             close(true)
           }
         }}
-        className="h-7 w-full min-w-0 flex-1 rounded-md bg-background px-1.5 [--focus-ring-offset:0px] text-[length:var(--type-dense)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)] aria-invalid:shadow-[0_0_0_2px_var(--destructive)]"
+        className="h-7 w-full min-w-0 flex-1 rounded-md bg-background px-1.5 [--focus-ring-offset:0px] text-[length:var(--type-dense)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)]"
       />
       {words === null ? null : (
         <span

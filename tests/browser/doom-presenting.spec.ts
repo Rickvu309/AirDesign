@@ -6,7 +6,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { openDoomEditor, savedNode, savedSlides, type Opened } from "./doom-deck"
+import { accent, landNodes, openDoomEditor, savedNode, savedSlides, spot, type Opened } from "./doom-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -172,4 +172,70 @@ test("Shift+F5 shows from the current slide and p switches between the audience 
   await page.keyboard.press("Escape")
   await expect(page.locator("[data-present-show]")).toHaveCount(0)
   await expect(current(page)).toHaveAttribute("data-slide-entry", "3")
+})
+
+test("a click on a linked layer or linked words in the show follows the link, and a click elsewhere steps on", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await deckOfSlides(page, context, stack, 3)
+  const [first, , third] = await savedSlides(stack, opened)
+  await landNodes(stack, opened, [
+    {
+      id: "k:1",
+      type: "shape",
+      parent: first!,
+      props: { box: spot(150, 800, 400, 150), fills: accent, link: third },
+    },
+    { id: "k:3", type: "shape", parent: first!, props: { box: spot(450, 820, 300, 100), fills: accent } },
+    { id: "k:4", type: "shape", parent: first!, props: { box: spot(1000, 850, 300, 100), fills: accent, link: "z:9" } },
+    {
+      id: "k:2",
+      type: "shape",
+      parent: first!,
+      props: {
+        box: spot(1000, 600, 700, 120),
+        text: {
+          chars: "Read the site",
+          spans: [{ end: 9 }, { end: 13, link: "https://example.com/" }],
+          paras: [{}],
+          style: "body",
+          resize: "fixed",
+          alignV: "top",
+        },
+      },
+    },
+  ])
+  await page.locator('[data-slide-entry="1"]').click()
+  await page.keyboard.press("F5")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+  await page.locator('[data-present-show] [data-node="k:1"]').filter({ visible: true }).click({ force: true })
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "3")
+  await page.keyboard.press("Home")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+  await context.route("https://example.com/**", (route) => route.fulfill({ body: "linked" }))
+  const popup = context.waitForEvent("page")
+  await page
+    .locator('[data-present-show] [data-link="https://example.com/"]')
+    .filter({ visible: true })
+    .click({ force: true })
+  expect((await popup).url()).toBe("https://example.com/")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+  await page
+    .locator('[data-present-show] [data-node="k:3"]')
+    .filter({ visible: true })
+    .click({ position: { x: 10, y: 10 }, force: true })
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+  await page.keyboard.press("Home")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+  await page.locator('[data-present-show] [data-node="k:4"]').filter({ visible: true }).click({ force: true })
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+  await page.keyboard.press("Home")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+  await page
+    .locator('[data-present-show] [data-node="k:2"]')
+    .filter({ visible: true })
+    .click({ position: { x: 5, y: 5 }, force: true })
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
 })

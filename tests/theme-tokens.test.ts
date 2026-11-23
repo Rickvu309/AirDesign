@@ -82,4 +82,28 @@ describe("theme tokens", () => {
     const styled = sources.filter((relative) => own.test(read(relative)))
     expect(styled).toEqual([])
   })
+
+  it("draws one invalid edge from the theme, and no component draws its own", () => {
+    const tokens = read("packages/theme/src/tokens.css")
+    expect(tokens).toMatch(/\[aria-invalid="true"\][^{]*\{[^}]*outline: 1px solid var\(--danger-text\);/)
+    expect(tokens, "the invalid edge replaces a field's own resting edge").toMatch(
+      /\[aria-invalid="true"\][^{]*\{[^}]*box-shadow: none;/,
+    )
+    const own =
+      /aria-invalid:(?:ring|border|shadow|outline)|has-\[\[aria-invalid|invalid\s*&&\s*"[^"]*(?:danger|destructive)/
+    const sources: string[] = []
+    const walk = (folder: string) => {
+      for (const entry of readdirSync(path.join(repoRoot, folder), { withFileTypes: true })) {
+        const relative = path.join(folder, entry.name)
+        if (entry.isDirectory()) walk(relative)
+        else if (/\.(tsx|css|astro)$/.test(entry.name) && !entry.name.includes(".test.")) sources.push(relative)
+      }
+    }
+    walk("apps/web/src")
+    walk("apps/site/src")
+    const styled = sources.filter((relative) => own.test(read(relative)))
+    expect(styled, "mark the field aria-invalid and let the theme's invalid rule in tokens.css draw the edge").toEqual(
+      [],
+    )
+  })
 })
