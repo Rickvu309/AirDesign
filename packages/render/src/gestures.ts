@@ -449,7 +449,7 @@ export const gestures = [
     ],
     where: ["element"],
   },
-  { id: "numbers", group: "text", keys: [{ code: "Digit7", mod: true, shift: true }], where: ["element"] },
+  { id: "numbers", group: "text", keys: [{ code: "Digit7", mod: true, shift: true }], where: ["element", "text"] },
   {
     id: "weight-up",
     group: "text",

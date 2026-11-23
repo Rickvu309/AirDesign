@@ -156,6 +156,27 @@ test("Ctrl+Shift+8 bullets every paragraph selected and a second press takes the
   await expect.poll(async () => (await textOf(stack, opened))?.paras).toEqual([{}, {}])
 })
 
+test("Ctrl+Shift+7 numbers every paragraph selected and a second press takes the numbers off", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("numbers")
+  const opened = await openDoomEditor(page, context, stack)
+  await seeded(page, stack, opened, "One\nTwo")
+  await edit(page)
+  await page.keyboard.press("ControlOrMeta+Shift+Digit7")
+  await expect(labels(page)).toHaveText(["1.", "2."])
+  await leave(page)
+  await expect.poll(async () => (await textOf(stack, opened))?.paras).toEqual([{ list: "number" }, { list: "number" }])
+
+  await edit(page)
+  await page.keyboard.press("ControlOrMeta+Shift+Digit7")
+  await expect(labels(page)).toHaveCount(0)
+  await leave(page)
+  await expect.poll(async () => (await textOf(stack, opened))?.paras).toEqual([{}, {}])
+})
+
 test("Tab and Ctrl+] indent a bulleted paragraph, Shift+Tab and Ctrl+[ take it back, and plain paragraphs do not move", async ({
   page,
   context,
