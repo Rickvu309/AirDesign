@@ -1,6 +1,7 @@
 import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import type { Point } from "./slide-geometry"
+import { propOf } from "@/editing/node-props"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
 type Slot = { readonly id: doom.NodeId; readonly at: OrderKey }
@@ -142,6 +143,17 @@ export function iconWrites(id: doom.NodeId, parent: Slot, name: string, inside: 
     { node: id, prop: "strokes", value: [themed("text")] },
     { node: id, prop: "stroke", value: { weight: side / 12, align: "center", dash: "solid" } },
   ]
+}
+
+export function iconSwapWrites(
+  view: doom.Doom,
+  ids: readonly doom.NodeId[],
+  name: string,
+): readonly doom.Write[] | null {
+  const [only] = ids
+  const geometry = ids.length === 1 && only !== undefined ? propOf(view.nodes.get(only), "geometry") : undefined
+  if (only === undefined || geometry?.kind !== "icon") return null
+  return [{ node: only, prop: "geometry", value: { ...geometry, name: `lucide/${name}` } }]
 }
 
 export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {

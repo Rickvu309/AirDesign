@@ -19,7 +19,7 @@ import { useTextSession } from "./use-text-session"
 import { propOf } from "@/editing/node-props"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
-import { chartArea, chartWrites, drawWrites, iconWrites } from "./create-writes"
+import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites } from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-doom-deck"
@@ -237,6 +237,11 @@ export function DoomCanvas(props: {
 
   const inserts = {
     icon(name: string) {
+      const swapped = iconSwapWrites(view, current.ids, name)
+      if (swapped !== null) {
+        client.push(swapped)
+        return
+      }
       const { parent, inside } = insertTarget()
       const id = client.mint()
       inserted(id, iconWrites(id, slotIn(parent), name, inside))

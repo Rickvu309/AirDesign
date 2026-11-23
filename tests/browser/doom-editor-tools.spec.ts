@@ -116,6 +116,43 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   await expect.poll(() => page.locator("[data-slide-box] [data-derived]").count()).toBeGreaterThan(4)
 })
 
+test("with one icon selected, picking an icon in Actions swaps it in place, and one undo puts the old one back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const pick = async (name: string) => {
+    await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
+    await page.getByRole("searchbox", { name: doomEditorCopy.actionsSearch }).fill(name)
+    await page.getByRole("button", { name, exact: true }).click()
+  }
+  const layers = page.locator("[data-slide-box] [data-node]")
+  await pick("rocket")
+  await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("icon")
+  const rocket = await picked(page, stack, opened)
+  const count = await layers.count()
+
+  await pick("star")
+  await expect
+    .poll(async () => (await savedNode(stack, opened, rocket.id))?.geometry)
+    .toMatchObject({
+      name: "lucide/star",
+    })
+  expect(await layers.count()).toBe(count)
+  expect(await selectedIds(page)).toEqual([rocket.id])
+  expect(((await savedNode(stack, opened, rocket.id)) as Saved).box).toEqual(rocket.node?.box)
+
+  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect
+    .poll(async () => (await savedNode(stack, opened, rocket.id))?.geometry)
+    .toMatchObject({
+      name: "lucide/rocket",
+    })
+  expect(await layers.count()).toBe(count)
+})
+
 test("the Move menu is dark, lined up with its chevron, and marks the tool in use", async ({
   page,
   context,

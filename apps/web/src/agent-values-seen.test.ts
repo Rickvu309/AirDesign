@@ -39,7 +39,7 @@ const seen: Readonly<Record<string, Seen>> = {
   },
   gap: { owedToPerson: "the space between a frame's children: no auto layout controls" },
   padding: { owedToPerson: "the space inside a frame: no auto layout controls" },
-  icon: { owedToPerson: "which icon a layer draws: the icon picker writes nothing", partly: ["actions:icon"] },
+  icon: { person: ["actions:icon#swap"] },
   arrow: {
     owedToPerson: "an arrowhead on a line already drawn: lines have no end controls",
     partly: ["gesture:tool-arrow"],
@@ -75,7 +75,7 @@ const seen: Readonly<Record<string, Seen>> = {
   nameFollows: { person: ["strip:deck-name"] },
 }
 
-const owedToPerson = ["align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name"]
+const owedToPerson = ["align", "layout", "gap", "padding", "arrow", "chart", "rows", "name"]
 
 const structural = new Set([
   "op",

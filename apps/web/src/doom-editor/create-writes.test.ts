@@ -1,7 +1,7 @@
 import { contrast } from "@airdesign/document"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { chartArea, chartWrites, drawWrites, iconWrites, type Drawing } from "./create-writes"
+import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
 import { darkTheme } from "@/testing/create-writes-art"
 import { grow, landed } from "@/testing/doom-fixtures"
 
@@ -103,6 +103,38 @@ describe("inserting", () => {
       geometry: { kind: "icon", name: "lucide/rocket" },
       stroke: { weight: 10 },
     })
+  })
+
+  it("swaps the one selected icon in place, keeping its box, colour and weight", () => {
+    const icon = landed(built.view, [
+      ...iconWrites(id, slot, "rocket", inside),
+      { node: id, prop: "box", value: { x: 40, y: 50, w: 300, h: 300, rotation: 15, flipH: false, flipV: false } },
+      { node: id, prop: "stroke", value: { weight: 4, align: "center", dash: "solid" } },
+    ])
+    const writes = iconSwapWrites(icon, [id], "star")
+    expect(writes).toEqual([{ node: id, prop: "geometry", value: { kind: "icon", name: "lucide/star" } }])
+    const after = landed(icon, writes ?? [])
+    expect(after.nodes.get(id)).toMatchObject({
+      box: { x: 40, y: 50, w: 300, h: 300, rotation: 15 },
+      geometry: { kind: "icon", name: "lucide/star" },
+      stroke: { weight: 4 },
+      strokes: [{ kind: "solid", color: { var: "text" } }],
+    })
+  })
+
+  it("adds a new icon instead when the selection is not one icon", () => {
+    const two = doom.nodeId("m:2")
+    const icons = landed(built.view, [
+      ...iconWrites(id, slot, "rocket", inside),
+      ...iconWrites(two, { id: slide, at: "a3" as never }, "rocket", inside),
+    ])
+    const shape = landed(
+      built.view,
+      drawWrites({ id, parent: slot, from: { x: 0, y: 0 }, to: null, square: false, center: false, kind: "rectangle" }),
+    )
+    expect(iconSwapWrites(icons, [], "star")).toBeNull()
+    expect(iconSwapWrites(icons, [id, two], "star")).toBeNull()
+    expect(iconSwapWrites(shape, [id], "star")).toBeNull()
   })
 
   it("inserts a column chart with data a person can edit, in the area it is given", () => {

@@ -222,6 +222,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:remove-auto-layout": { agent: "set.layout", props: ["layout"] },
   "panel:show-hidden": { agent: "set.hidden", writes: "hidden", on: "card", props: ["hidden"] },
   "actions:icon": { agent: "add.icon", props: ["geometry"] },
+  "actions:icon#swap": { agent: "set.icon", writes: "geometry", on: "star", props: ["geometry"] },
   "actions:chart": { agent: "add.chart", props: ["chart"] },
   "drop:picture": { agent: "add.picture", props: ["fills"] },
 }
