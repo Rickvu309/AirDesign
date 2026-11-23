@@ -3,7 +3,6 @@
     "paths": ["apps/web/src/", "packages/render/", "tests/browser/"],
     "except": [
       "apps/web/src/aira/",
-      "apps/web/src/usage-",
       "apps/web/src/copy/aira-",
       "apps/web/src/copy/usage-",
       "apps/web/src/copy/account-",
@@ -24,14 +23,11 @@
   "aira": {
     "paths": [
       "apps/web/src/aira/",
-      "apps/web/src/usage-",
       "apps/web/src/copy/aira-",
       "apps/web/src/copy/usage-",
       "apps/web/src/credits/",
       "apps/web/src/settings/usage-",
       "apps/api/src/aira",
-      "apps/api/src/agent-",
-      "apps/api/src/turn",
       "apps/api/src/mcp",
       "packages/mcp/",
       "packages/usage/",
@@ -54,11 +50,8 @@
       "apps/site/src/pages/sign-in",
       "apps/api/src/sign-in",
       "apps/api/src/sign-out",
-      "apps/api/src/session-cookie",
       "apps/api/src/oauth",
       "apps/api/src/grant",
-      "apps/api/src/consent",
-      "apps/api/src/clients",
       "apps/api/src/account",
       "apps/web/src/connect/",
       "apps/web/src/settings/",
@@ -74,14 +67,7 @@
     "paths": ["packages/pptx/", "scripts/pptx-"]
   },
   "document": {
-    "paths": [
-      "packages/document/",
-      "packages/catalog/",
-      "packages/live/",
-      "apps/api/src/slide-",
-      "apps/api/src/undo",
-      "apps/api/src/parallel-edits"
-    ]
+    "paths": ["packages/document/", "packages/catalog/", "packages/live/"]
   },
   "verify": {
     "paths": [".agents/skills/", "tests/journeys/"]

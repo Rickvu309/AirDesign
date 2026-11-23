@@ -211,3 +211,25 @@ same(
   ),
   [],
 )
+
+same(
+  "replaying scripts/areas.json at 95d815a94, which deleted apps/web/src/pricing/ and kept it in the aira area, names the folder and a prefix no file starts with",
+  cited(
+    codeFaults(
+      "scripts/areas.json",
+      '      "apps/web/src/pricing/",\n      "apps/web/src/gone-usage-",\n      "apps/web/src/credits/",\n      "apps/web/src/copy/usage-",',
+      repoIndex(tracked.filter((file) => !file.startsWith("apps/web/src/pricing/"))),
+    ),
+  ),
+  ["apps/web/src/pricing/", "apps/web/src/gone-usage-"],
+)
+
+same(
+  "urls, globs, placeholders, builds, words with a slash and prefixes some file starts with are not faults in code",
+  codeFaults(
+    "scripts/land.mjs",
+    'const a = ["https://studio.airdesign.app/mcp", "packages/*/src/", "apps/${name}/", "specs/<topic>/", "apps/web/dist/", "node_modules/.bin/", "and/or", "apps/web/src/doom-", "scripts/"]',
+    repoIndex(tracked, builtFolders("node_modules/\ndist/\n")),
+  ),
+  [],
+)
