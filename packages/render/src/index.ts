@@ -13,8 +13,6 @@ export {
   type Watched,
 } from "./snapping.js"
 export type { Copied } from "./layer-copies.js"
-export { pastedOffset, pastedOver } from "./paste-place.js"
-export type { PasteMode } from "./use-canvas-clipboard.js"
 export type { Turned } from "./transform-drag.js"
 export type { FlippedLayer, ResizeGrip, RotateGrip, TransformGrip } from "./transform-math.js"
 export {
@@ -53,13 +51,13 @@ export {
   type ElementRecord,
   type PaintBox,
 } from "./record.js"
-export { holdKeys, type HeldKeys } from "./held-keys.js"
+export { holdKeys } from "./held-keys.js"
 export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
 export type { TextPlace } from "./text-placing.js"
 export type { ShapeDrawing, ShapeDrawn, ShapeLook } from "./shape-drawing.js"
 
-export { paintStore, type MeasuredFit, type PaintStore } from "./store.js"
+export { paintStore, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"
 export {
   arrowOf,
