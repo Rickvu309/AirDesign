@@ -102,6 +102,44 @@ same(
   ["apps/web/src/editor/screens/editor-view.tsx -> own PreferenceRow"],
 )
 
+const mock = ["apps/web/src/zz/mock.tsx", "export const MockPanel = () => <div />\n"]
+
+same(
+  "a side-effect import of a module the app never reaches is seen",
+  withScreen('import "@/zz/mock"\nexport const EditorView = () => null\n', [mock]),
+  ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/zz/mock.tsx"],
+)
+
+same(
+  "a re-export after an export type in a file with no semicolons is seen",
+  withScreen('export type Props = { readonly size: number }\nexport { MockPanel as EditorView } from "@/zz/mock"\n', [
+    mock,
+  ]),
+  ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/zz/mock.tsx"],
+)
+
+same(
+  "a component of its own drawn as <K.R />, called as R() or passed as a prop is seen",
+  withScreen(
+    'import { DoomEditor } from "@/doom-editor/doom-editor"\nconst Kit = { Row: () => <div /> }\nfunction Called() {\n  return <div />\n}\nfunction Passed() {\n  return <div />\n}\nexport const EditorView = () => (\n  <>\n    <Kit.Row />\n    {Called()}\n    <DoomEditor render={Passed} />\n  </>\n)\n',
+    [],
+  ),
+  [
+    "apps/web/src/editor/screens/editor-view.tsx -> own Called",
+    "apps/web/src/editor/screens/editor-view.tsx -> own Kit",
+    "apps/web/src/editor/screens/editor-view.tsx -> own Passed",
+  ],
+)
+
+same(
+  "a screen's own export that it does not draw is not its own component",
+  withScreen(
+    'import { EditorSample } from "@/doom-editor/editor-sample"\nfunction EditorView() {\n  return <EditorSample />\n}\nexport { EditorView }\nexport default EditorView\n',
+    [],
+  ),
+  [],
+)
+
 same(
   "a new screen-only read fails and names what to draw instead",
   screenFaults(["a/screens/x.tsx -> a/frame.tsx"], [])[0].startsWith(

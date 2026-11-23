@@ -12,12 +12,24 @@ const source = /\.(?:tsx?|mts)$/
 const test = /\.test\.[cm]?[jt]sx?$/
 export const isScreen = (file) => /\/screens\/[^/]+\.tsx$/.test(file) || /-screens\.tsx$/.test(file)
 
-const specifiers = (text) =>
-  [
-    ...text
-      .replace(/^\s*(?:import|export)\s+type\b[^;]*?from\s+"[^"]+"/gm, "")
-      .matchAll(/\bfrom\s+"([^"]+)"|\bimport\(\s*"([^"]+)"\s*\)/g),
-  ].map((m) => m[1] ?? m[2])
+const literalSource = (node) => (node?.type === "Literal" && typeof node.value === "string" ? node.value : undefined)
+
+export const specifiers = (program) => {
+  const found = []
+  for (const statement of program.body) {
+    if (statement.type === "ImportDeclaration" && statement.importKind !== "type") found.push(statement.source.value)
+    if (
+      (statement.type === "ExportNamedDeclaration" || statement.type === "ExportAllDeclaration") &&
+      statement.source &&
+      statement.exportKind !== "type"
+    )
+      found.push(statement.source.value)
+  }
+  walk(program, (node) => {
+    if (node.type === "ImportExpression" && literalSource(node.source) !== undefined) found.push(node.source.value)
+  })
+  return found
+}
 
 export const resolver = (files) => {
   const known = new Set(files)
@@ -44,7 +56,7 @@ const children = (node) =>
   )
 
 const walk = (node, visit) => {
-  visit(node)
+  if (visit(node) === false) return
   for (const child of children(node)) walk(child, visit)
 }
 
@@ -65,32 +77,43 @@ const importedNames = (program) =>
       statement.specifiers.map((specifier) => ({ name: specifier.local.name, from: statement.source.value })),
     )
 
-const drawnNames = (program) => {
-  const drawn = new Set()
+const used = (program) => {
+  const counts = new Map()
   walk(program, (node) => {
-    if (node.type === "JSXOpeningElement" && node.name.type === "JSXIdentifier") drawn.add(node.name.name)
+    if (node.type === "ExportNamedDeclaration" && node.declaration === null) return false
+    if (node.type === "ExportDefaultDeclaration" && node.declaration.type === "Identifier") return false
+    if (node.type === "Identifier" || node.type === "JSXIdentifier")
+      counts.set(node.name, (counts.get(node.name) ?? 0) + 1)
   })
-  return drawn
+  return (name) => (counts.get(name) ?? 0) > 1
 }
 
-export const ownComponents = (file, text) => {
-  const program = parseSync(file, text).program
-  const declared = new Set(program.body.flatMap(declaredNames))
-  const drawn = new Set()
-  walk(program, (node) => {
-    if (node.type === "JSXOpeningElement" && node.name.type === "JSXIdentifier" && declared.has(node.name.name))
-      drawn.add(node.name.name)
-  })
-  return [...drawn].toSorted()
+const drawnNames = (program) => {
+  const isUsed = used(program)
+  return new Set(
+    importedNames(program)
+      .map(({ name }) => name)
+      .filter(isUsed),
+  )
+}
+
+const componentName = /^[A-Z]/
+
+export const ownComponents = (program) => {
+  const isUsed = used(program)
+  return [...new Set(program.body.flatMap(declaredNames))]
+    .filter((name) => componentName.test(name) && isUsed(name))
+    .toSorted()
 }
 
 export const screenFaultReads = (sources) => {
   const files = [...sources.keys()]
   const resolve = resolver(files)
+  const programs = new Map(files.map((file) => [file, parseSync(file, sources.get(file)).program]))
   const importsOf = new Map(
     files.map((file) => [
       file,
-      specifiers(sources.get(file))
+      specifiers(programs.get(file))
         .map((specifier) => resolve(file, specifier))
         .filter((target) => target !== undefined),
     ]),
@@ -115,19 +138,19 @@ export const screenFaultReads = (sources) => {
   }
   const pages = new Set((importsOf.get(appRoot) ?? []).filter((target) => !target.endsWith("screen-routes.tsx")))
   const drawsAPage = (file) => {
-    const program = parseSync(file, sources.get(file)).program
+    const program = programs.get(file)
     const drawn = drawnNames(program)
     return importedNames(program).some(({ name, from }) => drawn.has(name) && pages.has(resolve(file, from)))
   }
   const drawsOnlyTheApp = (file) =>
     file.endsWith(".tsx") &&
-    ownComponents(file, sources.get(file)).length === 0 &&
+    ownComponents(programs.get(file)).length === 0 &&
     importsOf.get(file).every((target) => reached.has(target) || plainData(target)) &&
     drawsAPage(file)
   return files
     .filter(isScreen)
     .flatMap((screen) => [
-      ...ownComponents(screen, sources.get(screen)).map((name) => `${screen} -> own ${name}`),
+      ...ownComponents(programs.get(screen)).map((name) => `${screen} -> own ${name}`),
       ...importsOf
         .get(screen)
         .filter((target) => !isScreen(target) && !reached.has(target) && !plainData(target))
