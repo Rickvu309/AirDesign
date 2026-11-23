@@ -36,16 +36,10 @@ export function titleSlide(): doom.TreeSlide {
       }),
       frame("copy", { box: box(120, 330, 1040, 100), sizing: { w: "fixed", h: "hug" }, layout: columnOf(32) }, [
         copy("eyebrow", "Annual strategy review 2026", { style: "label", color: { var: "accent2", tint: 0.45 } }),
-        copy("title", "Scaling profitable growth across three markets", {
-          style: "title",
-          color: white,
-          size: 88,
-          lineHeight: 1.08,
-        }),
+        copy("title", "Scaling profitable growth across three markets", { style: "display", color: white }),
         copy("subtitle", "Where we invest, what we stop, and how we will measure it", {
           style: "body",
           color: { var: "accent2", tint: 0.72 },
-          size: 32,
         }),
       ]),
       frame("rule", { box: box(120, 936, 1680, 2), fills: [solid(white, 0.25)] }),

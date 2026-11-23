@@ -4,7 +4,7 @@ import { type Reader, boolean, finite, integer, list, literal, object, reject, w
 import { readLink } from "./link.js"
 import type { NodeId } from "./ids.js"
 
-export const textStyleNames = ["bigNumber", "title", "heading", "body", "body2", "caption", "label"] as const
+export const textStyleNames = ["display", "bigNumber", "title", "heading", "body", "body2", "caption", "label"] as const
 export type TextStyleName = (typeof textStyleNames)[number]
 
 export type Span = {

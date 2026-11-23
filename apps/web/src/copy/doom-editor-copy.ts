@@ -118,6 +118,7 @@ export const doomEditorCopy = {
   bullets: "Bulleted list",
   numbers: "Numbered list",
   textStyles: {
+    display: "Display",
     bigNumber: "Big number",
     title: "Title",
     heading: "Heading",

@@ -53,6 +53,7 @@ export function theme(): Theme {
     ) as Theme["colors"],
     fonts: { heading: "Inter", body: "Inter" },
     textStyles: {
+      display: { ...style, size: 112, font: "heading" },
       bigNumber: { ...style, size: 96 },
       title: { ...style, size: 64, font: "heading" },
       heading: { ...style, size: 44, font: "heading" },

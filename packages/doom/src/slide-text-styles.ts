@@ -2,6 +2,7 @@ import type { TextStyleName } from "./text.js"
 import type { TextStyle } from "./theme.js"
 
 export const slideTextStyles: Readonly<Record<TextStyleName, TextStyle>> = {
+  display: { size: 88, font: "heading", weight: 700, lineHeight: 1.08, tracking: -1.5 },
   bigNumber: { size: 80, font: "heading", weight: 700, lineHeight: 1, tracking: -1.5 },
   title: { size: 56, font: "heading", weight: 700, lineHeight: 1.1, tracking: -1 },
   heading: { size: 40, font: "heading", weight: 600, lineHeight: 1.2, tracking: 0 },

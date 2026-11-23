@@ -10,8 +10,8 @@ describe("a new deck's title slide", () => {
   const text = written(startIds.title, "text") as doom.Text
   const box = written(startIds.title, "box") as doom.Box
 
-  it("sets the title in the theme's title style, resting on the slide's middle line", () => {
-    expect(text.style).toBe("title")
+  it("sets the title in the theme's display style, resting on the slide's middle line", () => {
+    expect(text.style).toBe("display")
     expect(text.alignV).toBe("bottom")
     expect(box.y + box.h).toBe(540)
   })
@@ -58,7 +58,7 @@ describe("an agent's title on a new deck's first slide", () => {
     expect(onSlide).toHaveLength(2)
     expect((landed.nodes.get(startIds.title) as { text?: doom.Text }).text).toMatchObject({
       chars: "Q3 board update",
-      style: "title",
+      style: "display",
     })
   })
 })
