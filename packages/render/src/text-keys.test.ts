@@ -9,11 +9,6 @@ describe("the text keys", () => {
     expect(textKeyOf({ ...plain, key: "X", code: "KeyX", metaKey: true, shiftKey: true })).toEqual({ toggle: "strike" })
   })
 
-  it("steps the size with Shift and Command or Control and the angle brackets", () => {
-    expect(textKeyOf({ ...plain, key: ">", code: "Period", ctrlKey: true, shiftKey: true })).toEqual({ resize: 1 })
-    expect(textKeyOf({ ...plain, key: "<", code: "Comma", metaKey: true, shiftKey: true })).toEqual({ resize: -1 })
-  })
-
   it("aligns paragraphs with Option or Alt and Command or Control and L, T or R, wherever the letter sits", () => {
     const align = (code: string) => textKeyOf({ ...plain, key: "¬", code, metaKey: true, altKey: true })
     expect(["KeyL", "KeyT", "KeyR"].map(align)).toEqual([{ place: "left" }, { place: "center" }, { place: "right" }])

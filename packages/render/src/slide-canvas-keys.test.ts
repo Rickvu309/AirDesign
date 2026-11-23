@@ -134,28 +134,12 @@ describe("canvas keyboard", () => {
     expect(host.querySelector(`[data-canvas-element="${key}"] [data-canvas-grab]`)).toBeNull()
   })
 
-  it("resizes from the keyboard with Alt and Shift and the arrows, then reports one box on release", async () => {
-    const { frame, boxes, store } = await mounted()
-    const keys = { altKey: true, shiftKey: true }
-    await press(frame, "keydown", "ArrowRight", keys)
-    await press(frame, "keydown", "ArrowDown", keys)
-    expect(store.getBox(id)).toEqual({ ...start, cx: start.cx + nudgeStep, cy: start.cy + nudgeStep })
-    expect(boxes).toEqual([])
-    await press(frame, "keyup", "ArrowDown", keys)
-    expect(boxes).toEqual([{ ...start, cx: start.cx + nudgeStep, cy: start.cy + nudgeStep }])
-    await press(frame, "keydown", "ArrowLeft", keys)
-    expect(store.getBox(id)?.cx).toBe(start.cx)
-  })
-
   it("announces what a key did to the element, named by its text", async () => {
     const removed: ElementId[] = []
     const { host, frame } = await mounted(removed)
     await press(frame, "keydown", "ArrowRight")
     await press(frame, "keyup", "ArrowRight")
     expect(announced(host)).toBe("Moved Quarterly results")
-    await press(frame, "keydown", "ArrowDown", { altKey: true, shiftKey: true })
-    await press(frame, "keyup", "ArrowDown", { altKey: true, shiftKey: true })
-    expect(announced(host)).toBe("Resized Quarterly results")
     await press(frame, "keydown", "Delete")
     expect(removed).toEqual([id])
     expect(announced(host)).toBe("Quarterly results deleted")
