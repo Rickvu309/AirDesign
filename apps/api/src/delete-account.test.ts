@@ -91,7 +91,7 @@ it("deletes every row and stored file of the account, refuses its credentials, a
   expect(emptied(before)).toEqual([
     "session.aira_ask",
     "session.agent_turn",
-    "deck.media",
+    "deck.saved",
     "deck.once",
     "deck.original_delete",
   ])

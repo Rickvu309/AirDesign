@@ -29,7 +29,7 @@ it("decodes the star answer and refuses one without the deck or the star", () =>
 })
 
 it("lists whether each deck is starred and refuses a star that is not yes or no", () => {
-  const row = { deck: "deck", name: "", edited: "2026-11-11", created: "2026-11-10", starred: true }
+  const row = { deck: "deck", name: "", edited: "2026-11-11", created: "2026-11-10", starred: true, doom: { rev: 1 } }
   const listed = { ok: true, account: { email: "wire@example.com" }, decks: [row], trash: [] }
   expect(deckRoutes.list.result(listed)).toEqual(listed)
   expect(deckRoutes.list.result({ ...listed, decks: [{ ...row, starred: "yes" }] })).toEqual(payload)

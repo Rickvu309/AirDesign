@@ -11,8 +11,6 @@ import { test as base } from "./deck-test.ts"
 import { sessionCookie, type Production } from "./production.ts"
 
 type Mail = { readonly to: string; readonly subject: string; readonly text: string; readonly html: string }
-type Landed = { readonly value: string; readonly visible: boolean }
-export type SavedRegister = { readonly elements: Record<string, { readonly landed: readonly Landed[] }> }
 export type Answer = {
   readonly status: number
   readonly json: Record<string, unknown>
@@ -25,10 +23,8 @@ export type Stack = {
   readonly hop: string
   readonly mcp: string
   readonly post: (path: string, body: unknown, cookie?: string) => Promise<Answer>
-  readonly callTool: (name: string, args: unknown, cookie: string) => Promise<Record<string, unknown>>
   readonly toolBlocks: (name: string, args: unknown, cookie: string) => Promise<readonly ToolBlock[]>
   readonly signIn: () => Promise<string>
-  readonly saved: (deck: string) => Promise<{ owner: string; register: SavedRegister } | undefined>
   readonly emailOf: (cookie: string) => Promise<string>
   readonly aira: (...scripts: readonly [Script, ...Script[]]) => void
   readonly hold: () => Promise<void>
@@ -103,21 +99,6 @@ function toolBlocker(origin: string, mcp: string): Stack["toolBlocks"] {
   }
 }
 
-function toolCaller(origin: string, mcp: string): Stack["callTool"] {
-  return async (name, args, cookie) => {
-    const response = await fetch(`${origin}${mcp}`, {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json, text/event-stream", cookie },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
-    })
-    const data = (await response.text()).split("\n").find((line) => line.startsWith("data:"))
-    const answer = JSON.parse(data?.slice("data:".length) ?? "{}") as {
-      result?: { structuredContent?: Record<string, unknown> }
-    }
-    return answer.result?.structuredContent ?? {}
-  }
-}
-
 function localOnly(name: string): () => never {
   return () => {
     throw new Error(`${name} needs the local stack, and this run targets the deployed app`)
@@ -132,10 +113,8 @@ async function deployedStack(production: Production): Promise<Stack> {
     hop: production.web,
     mcp: mcpRoutes.mcp.path,
     post: poster(production.web),
-    callTool: toolCaller(production.web, mcpRoutes.mcp.path),
     toolBlocks: toolBlocker(production.web, mcpRoutes.mcp.path),
     signIn: async () => cookie,
-    saved: localOnly("saved"),
     emailOf: localOnly("emailOf"),
     aira: localOnly("aira"),
     hold: localOnly("hold"),
@@ -174,8 +153,6 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
       const { Replay } = await import("../../apps/api/src/testing/aira-replay.js")
       const { readSignInMail } = await import("../../apps/api/src/account/sign-in-mail.js")
       const { mcpRoutes, signInRoutes, accountRoutes } = await import("../../packages/catalog/src/index.ts")
-      const { readDeckPage } = await import("../../packages/engine/src/index.ts")
-      const { deckAccess, readSaved } = await import("../../apps/api/src/legacy-decks/saved.js")
       const { LocalOriginalStore } = await import("../../apps/api/src/platform/local-original-store.js")
       const originals = new LocalOriginalStore(Date.now, "https://original.test")
       const { allowance } = await import("../../packages/usage/src/index.ts")
@@ -233,22 +210,6 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
         mcp: mcpRoutes.mcp.path,
         post,
         toolBlocks: toolBlocker(origin, mcpRoutes.mcp.path),
-        async callTool(name, args, cookie) {
-          if (name !== "airdesign_read_deck") throw new Error(`${name} does not reach an element deck`)
-          const { deck: id, slide, cursor } = args as { deck: string; slide?: string; cursor?: string }
-          const found = await readSaved(deck, id)
-          const access = found === undefined ? undefined : deckAccess(found, owners.get(cookie) ?? "")
-          if (access?.ok !== true) return { ok: false }
-          const page = readDeckPage(
-            { id: id as never, revision: access.saved.revision, register: access.saved.register },
-            {
-              runId: null,
-              ...(slide === undefined ? {} : { slide }),
-              ...(cursor === undefined ? {} : { cursor }),
-            },
-          )
-          return JSON.parse(JSON.stringify(page)) as Record<string, unknown>
-        },
         async signIn() {
           const email = `person${randomBytes(4).toString("hex")}@example.com`
           expect((await post(signInRoutes.email.path, { email })).status).toBe(202)
@@ -261,13 +222,6 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
           return signed.cookie
         },
         emailOf: async (cookie) => owners.get(cookie) ?? "",
-        async saved(id) {
-          const found = await admin.query<{ owner: string; register: SavedRegister }>(
-            "select owner, register from deck.saved where id = $1 and deleted is null",
-            [id],
-          )
-          return found.rows[0]
-        },
         aira: (...scripts) => replay.play(...scripts),
         hold: () => replay.hold(),
         release: () => replay.release(),

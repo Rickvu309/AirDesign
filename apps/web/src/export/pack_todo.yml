@@ -5,12 +5,6 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/export/mask-picture.ts
-  apps/web/src/picture-tool.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/export/export-deck.ts
 apps/web/src/editor:
   apps/web/src/editor/editor-chrome.tsx:
     violations:

@@ -19,7 +19,7 @@ import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chro
 import type { GridMoveSide } from "@/editor/grid-drop"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
 import type { SelectedCopy, SlideSetChange } from "@/editing/slide-edit"
-import type { SaveStatus } from "@/editor/use-deck-status"
+import type { SaveStatus } from "@/editor/save-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
 import { heldGroups, groupAt } from "@/editor/collapsed-groups"

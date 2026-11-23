@@ -650,7 +650,7 @@ describe("oauth host", () => {
         const approved = await approveFor(cookie, clientId, challenge)
         expect(approved.status).toBe(401)
         expect(approved.json).toEqual({ ok: false, refusal: "session" })
-        const opened = await ask(base, "POST", "/decks/open", { deck: "cookie-deck" }, cookie)
+        const opened = await ask(base, "POST", "/decks/list", {}, cookie)
         expect(opened.status).toBe(401)
         expect(opened.json).toEqual({ ok: false, refusal: "session" })
       }

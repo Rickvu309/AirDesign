@@ -10,7 +10,6 @@ import {
   type SlidePictures,
 } from "@airdesign/catalog"
 import { doom } from "@airdesign/document"
-import { post } from "./remote.js"
 
 export type DoomRemote = {
   create(body: { readonly deck: string }): Promise<DoomOpened>
@@ -26,6 +25,22 @@ export type DoomRemote = {
     readonly rev: number
     readonly pictures: SlidePictures<doom.NodeId>
   }): Promise<DoomPictured>
+}
+
+export async function post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown> {
+  const response = await fetch(path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  if (response.status === 401) return { ok: false, refusal: "session" }
+  if (response.status >= 500) throw new TypeError(`AirDesign did not answer: ${String(response.status)}`)
+  const answer: unknown = await response.json().catch(() => undefined)
+  if (answer !== undefined) return answer
+  if (response.ok) throw new TypeError(`AirDesign's answer was cut off: ${String(response.status)}`)
+  return null
 }
 
 export function httpDoomRemote(): DoomRemote {

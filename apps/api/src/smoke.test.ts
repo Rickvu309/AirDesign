@@ -186,7 +186,7 @@ describe("POST /smoke/session", () => {
     expect(reply.status).toBe(404)
   })
 
-  it("answers 200 with a cookie that opens a deck for the right token", async () => {
+  it("answers 200 with a cookie that creates a deck for the right token", async () => {
     const api = await start({ smokeToken })
     const reply = await smokePost(api.base, bearer(smokeToken))
     expect(reply.status).toBe(200)
@@ -194,9 +194,9 @@ describe("POST /smoke/session", () => {
     const cookie = cookieFrom(reply.headers)
     if (cookie === undefined) throw new Error("cookie")
     const name = `smoke${randomBytes(4).toString("hex")}`
-    const opened = await ask(api.base, "POST", "/decks/open", { deck: name }, cookie)
+    const opened = await ask(api.base, "POST", "/doom/create", { deck: name }, cookie)
     expect(opened.status).toBe(200)
-    expect(opened.json).toMatchObject({ ok: true, deck: name, revision: 0 })
+    expect(opened.json).toMatchObject({ ok: true, deck: name, rev: 1 })
   })
 
   it("sends no mail", async () => {
@@ -216,25 +216,22 @@ describe("POST /smoke/session", () => {
     expect(cookieFrom(first.headers)).not.toBe(cookieFrom(second.headers))
   })
 
-  it("lets the smoke account commit on element 1.1 of the deck smoke and read it back", async () => {
+  it("lets the smoke account rename its deck and read the name back at the next revision", async () => {
     const api = await start({ smokeToken })
     const cookie = cookieFrom((await smokePost(api.base, bearer(smokeToken))).headers)
     if (cookie === undefined) throw new Error("cookie")
-    const before = (await ask(api.base, "POST", "/decks/open", { deck: "smoke" }, cookie)).json as { revision: number }
+    const deck = `smoke${randomBytes(4).toString("hex")}`
+    const before = (await ask(api.base, "POST", "/doom/create", { deck }, cookie)).json as { rev: number }
     const value = `value-${randomBytes(4).toString("hex")}`
-    const wrote = await ask(
-      api.base,
-      "POST",
-      "/decks/commit",
-      { deck: "smoke", batch: [{ value, node: "1.1" }] },
-      cookie,
-    )
-    expect(wrote.json).toMatchObject({ ok: true, revision: before.revision + 1 })
-    const after = await ask(api.base, "POST", "/decks/open", { deck: "smoke" }, cookie)
-    expect(after.json).toMatchObject({
-      revision: before.revision + 1,
-      register: { elements: { "1.1": { landed: [{ value }] } } },
-    })
+    const edit = {
+      once: value,
+      author: { kind: "person", id: "smoke" },
+      writes: [{ node: "s:1", prop: "name", value }],
+    }
+    const wrote = await ask(api.base, "POST", "/doom/edit", { deck, edit }, cookie)
+    expect(wrote.json).toMatchObject({ ok: true, rev: before.rev + 1 })
+    const after = await ask(api.base, "POST", "/doom/open", { deck }, cookie)
+    expect(after.json).toMatchObject({ rev: before.rev + 1, fold: { nodes: { "s:1": { name: value } } } })
   })
 
   it("gives a cookie the other routes read as the smoke account", async () => {

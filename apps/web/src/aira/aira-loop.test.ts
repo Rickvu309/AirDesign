@@ -1,6 +1,6 @@
-import { airaRoutes, deckRoutes } from "@airdesign/catalog"
+import { airaRoutes } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
-import { airaChat, askAira, retryAira, undoByRoute, undoExchange, type AiraChat } from "./aira-loop"
+import { airaChat, askAira, retryAira, undoExchange, type AiraChat, type UndoRun } from "./aira-loop"
 import {
   asking,
   call,
@@ -362,32 +362,34 @@ describe("Aira's loop in the browser", () => {
       [edited],
     )
     const { done } = await asking(airaChat(deck), "Retitle", link)
-    const undone = await undoExchange(done, 0, undoByRoute(link.send))
-    expect(link.sent.at(-1)).toEqual({ path: deckRoutes.undo.path, body: { deck, runId: "run-1" } })
+    const asked: string[] = []
+    const undo: UndoRun = async (_deck, run) => {
+      asked.push(run)
+      return run === "fenced" ? "refused" : "undone"
+    }
+    const undone = await undoExchange(done, 0, undo)
+    expect(asked).toEqual(["run-1"])
     expect(undone?.exchanges[0]?.end).toBe("undone")
-    expect(undone === undefined ? "missing" : await undoExchange(undone, 0, undoByRoute(link.send))).toBeUndefined()
+    expect(undone === undefined ? "missing" : await undoExchange(undone, 0, undo)).toBeUndefined()
     const fenced = { ...done, exchanges: [{ ...done.exchanges[0]!, runs: ["fenced"] }] }
-    const refused = await undoExchange(fenced, 0, undoByRoute(link.send))
+    const refused = await undoExchange(fenced, 0, undo)
     expect(refused?.exchanges[0]).toMatchObject({ end: "done", undoRefused: true })
-    const asked = link.sent.length
-    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, undoByRoute(link.send))).toBeUndefined()
-    expect(link.sent).toHaveLength(asked)
+    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, undo)).toBeUndefined()
+    expect(asked).toEqual(["run-1", "fenced"])
   })
 
   it("says an undo failed when the server cannot be reached, and undoes only the runs still left when the person tries again", async () => {
     const reachable = new Set(["run-2"])
     const asked: string[] = []
-    const send: typeof fetch = async (_input, init) => {
-      const { runId } = JSON.parse(String(init?.body)) as { runId: string }
-      asked.push(runId)
-      if (!reachable.has(runId)) throw new TypeError("Failed to fetch")
-      return Response.json({ ok: true, deck, revision: 4, key: `${deck}:4` })
+    const undo: UndoRun = async (_deck, run) => {
+      asked.push(run)
+      return reachable.has(run) ? "undone" : "failed"
     }
     const start: AiraChat = {
       ...airaChat(deck),
       exchanges: [{ asked: "Retitle", steps: [], end: "done", runs: ["run-1", "run-2"] }],
     }
-    const failed = await undoExchange(start, 0, undoByRoute(send))
+    const failed = await undoExchange(start, 0, undo)
     expect(failed?.exchanges[0]).toEqual({
       asked: "Retitle",
       steps: [],
@@ -396,7 +398,7 @@ describe("Aira's loop in the browser", () => {
       undoFailed: true,
     })
     reachable.add("run-1")
-    const undone = failed === undefined ? undefined : await undoExchange(failed, 0, undoByRoute(send))
+    const undone = failed === undefined ? undefined : await undoExchange(failed, 0, undo)
     expect(undone?.exchanges[0]).toEqual({ asked: "Retitle", steps: [], end: "undone", runs: ["run-1"] })
     expect(asked).toEqual(["run-2", "run-1", "run-1"])
   })

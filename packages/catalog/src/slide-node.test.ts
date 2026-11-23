@@ -9,7 +9,6 @@ import {
   storedElements,
 } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { deckRoutes } from "./index.js"
 
 const node = () => ({
   route: "slide",
@@ -42,17 +41,12 @@ it("reads a slide's own node, 258.slide, wherever a node id is read", () => {
     "256.7",
   ])
   const register = openRegister("", "deck")
-  const answer = {
-    ok: true,
-    deck: "deck",
-    revision: 0,
-    register: {
-      ...register,
-      nodes: [rootElement, "256.slide"],
-      elements: { ...register.elements, "256.slide": node() },
-    },
-  }
-  expect(deckRoutes.open.result(answer)).toMatchObject({ ok: true })
+  const read = readRegister({
+    ...register,
+    nodes: [rootElement, "256.slide"],
+    elements: { ...register.elements, "256.slide": node() },
+  })
+  expect(read.ok).toBe(true)
 })
 
 it("lands a fill on a slide's own node and refuses text there, while notes still take text", () => {

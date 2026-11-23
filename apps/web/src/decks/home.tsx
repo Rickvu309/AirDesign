@@ -2,7 +2,7 @@ import { post, answered } from "@/decks/deck-request"
 import { settle, showFailed, showStatus, type ToastId } from "@/decks/deck-notice"
 import { moveDeck } from "@/decks/move-deck"
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { connect, dropDeck, memoryRemote, sendQueued, starDeck } from "@airdesign/live"
+import { dropDeck, sendQueued, starDeck } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,6 @@ import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
-import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { DoomPreview } from "@/decks/doom-preview"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
@@ -32,24 +31,15 @@ import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, deckPath, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { signInAddress } from "@/thin-notice"
 
-type Deck = ListedDeck
+type Deck = ListedDeck & { readonly doom: { readonly rev: number } }
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
 
 async function withDevice(listing: Listing): Promise<Listing> {
-  const doom = (decks: Deck[]) => decks.filter((deck) => deck.doom !== undefined)
-  const kept = { ...listing, decks: doom(listing.decks), trash: doom(listing.trash) }
-  const listed = [...kept.decks, ...kept.trash].map((deck) => deck.deck)
-  const queued = await sendQueued(listed).catch(() => ({
-    names: new Map<string, string>(),
-    stars: new Map<string, boolean>(),
-  }))
+  const listed = [...listing.decks, ...listing.trash].map((deck) => deck.deck)
+  const stars = await sendQueued(listed).catch(() => new Map<string, boolean>())
   const shown = (decks: Deck[]) =>
-    decks.map((deck) => ({
-      ...deck,
-      name: queued.names.get(deck.deck) ?? deck.name,
-      starred: queued.stars.get(deck.deck) ?? deck.starred === true,
-    }))
-  return { ...kept, decks: shown(kept.decks), trash: shown(kept.trash) }
+    decks.map((deck) => ({ ...deck, starred: stars.get(deck.deck) ?? deck.starred === true }))
+  return { ...listing, decks: shown(listing.decks), trash: shown(listing.trash) }
 }
 
 function starredIn(listing: Listing, deck: string, starred: boolean): Listing {
@@ -152,11 +142,7 @@ export function Home({
     }
   }
   useEffect(() => {
-    void refresh().then(() =>
-      connect(memoryRemote())
-        .sweep()
-        .catch(() => undefined),
-    )
+    void refresh()
     const focused = () => void refresh()
     window.addEventListener("focus", focused)
     return () => window.removeEventListener("focus", focused)
@@ -313,13 +299,7 @@ export function Home({
                   }
                   href={trash ? undefined : deckPath(deck)}
                   previewClassName={section !== "recents" ? "h-[136px]" : undefined}
-                  preview={
-                    deck.doom === undefined ? (
-                      <DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />
-                    ) : (
-                      <DoomPreview deck={deck.deck} rev={deck.doom.rev} name={deck.name} />
-                    )
-                  }
+                  preview={<DoomPreview deck={deck.deck} rev={deck.doom.rev} name={deck.name} />}
                   action={
                     trash ? (
                       <RestoreButton onClick={(pointer) => void restore(deck, pointer)} />

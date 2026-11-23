@@ -231,9 +231,6 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../../packages/document
-      '@airdesign/engine':
-        specifier: workspace:*
-        version: link:../../packages/engine
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts
@@ -329,9 +326,6 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../../packages/document
-      '@airdesign/engine':
-        specifier: workspace:*
-        version: link:../../packages/engine
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts
@@ -464,25 +458,6 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
-  packages/engine:
-    dependencies:
-      '@airdesign/catalog':
-        specifier: workspace:*
-        version: link:../catalog
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../document
-      '@airdesign/templates':
-        specifier: workspace:*
-        version: link:../templates
-    devDependencies:
-      oxlint:
-        specifier: ^1.90.0
-        version: 1.92.0
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-
   packages/fonts:
     devDependencies:
       oxlint:
@@ -516,9 +491,6 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
-      '@airdesign/engine':
-        specifier: workspace:*
-        version: link:../engine
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0

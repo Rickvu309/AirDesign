@@ -127,7 +127,7 @@ function holdWatch(port: number): Promise<void> {
     socket.once("connect", () => {
       socket.off("error", fail)
       socket.on("error", () => undefined)
-      socket.write("POST /decks/watch HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100000\r\n\r\n")
+      socket.write("POST /doom/since HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100000\r\n\r\n")
       resolve()
     })
   })
@@ -294,13 +294,7 @@ describe("start entry", () => {
     const { port } = await reportedPort(child)
     await untilHealth(port, child)
     const health = await ask(`http://127.0.0.1:${String(port)}`, "GET", "/health")
-    const opened = await ask(
-      `http://127.0.0.1:${String(port)}`,
-      "POST",
-      "/decks/open",
-      { deck: "deck" },
-      "airdesign.session=missing",
-    )
+    const opened = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/decks/list", {}, "airdesign.session=missing")
     expect(health.status).toBe(200)
     expect(health.json).toEqual({ ok: true })
     expect(opened.status).not.toBe(200)

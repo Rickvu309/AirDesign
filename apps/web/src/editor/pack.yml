@@ -9,7 +9,6 @@ dependencies:
 public:
   - adjust-tone.tsx
   - agent-panel.tsx
-  - auto-layout-removal.ts
   - canvas-zoom.ts
   - deck-colors.ts
   - design-panel-art.ts
@@ -22,12 +21,10 @@ public:
   - editor-shell.tsx
   - editor-toolbar.tsx
   - element-title-actions.tsx
-  - frame-fit-action.ts
   - gallery-deck.ts
   - grid-drop.ts
   - group-actions.ts
   - icon-search.tsx
-  - inserts.ts
   - kept-panel.ts
   - layer-join.ts
   - live-design-panel.tsx
@@ -45,15 +42,10 @@ public:
   - selection-colors-section.tsx
   - shape-grid.tsx
   - shape-tool.tsx
-  - slide-guides.ts
   - slide-sidebar.tsx
   - slide-thumb.tsx
   - template-style-card.tsx
   - tone-link.ts
-  - tone-scope.ts
   - use-canvas-room.ts
-  - use-deck-paint.ts
-  - use-deck-status.ts
-  - use-undo.ts
   - view-bar.tsx
   - zoom-menu.tsx

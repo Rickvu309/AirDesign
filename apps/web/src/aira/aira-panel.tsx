@@ -61,7 +61,7 @@ export function AiraPanel({
   toneLink?: ToneLink
   showAgent?: () => void
   opened?: () => Promise<unknown>
-  undo?: UndoRun
+  undo: UndoRun
   online?: boolean
   now?: () => number
   mint?: () => string

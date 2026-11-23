@@ -9,7 +9,6 @@ exclude:
   - "apps/api/src/testing/**"
 layers:
   - app
-  - legacy
   - feature
   - shared
   - platform

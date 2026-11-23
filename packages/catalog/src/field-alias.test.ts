@@ -1,5 +1,4 @@
 import { expect, it } from "vitest"
-import { readAgentEdit } from "./index.js"
 import { readAddChange, readSetChange } from "./set-wire.js"
 
 const target = "258.7"
@@ -23,12 +22,6 @@ it("refuses both spellings of one field in one change and names the field the to
     ok: false,
     refusal: "field",
     field: "text.lineHeight",
-  })
-  const edit = { deck: "deck", base: 0, changes: [{ op: "set", target, text: { lineHeight: 150, lineSpacing: 120 } }] }
-  expect(readAgentEdit(edit)).toEqual({ ok: false, refusal: "field" })
-  expect(readAgentEdit({ ...edit, changes: [{ op: "set", target, text: { lineSpacing: 150 } }] })).toMatchObject({
-    ok: true,
-    changes: [{ op: "set", text: { lineHeight: 150_000 } }],
   })
 })
 
@@ -117,8 +110,10 @@ it("reads an agent's line, the border's old name, as the border, with every fiel
   expect(readSetChange({ op: "set", target, line: { fill: null } })).toEqual(
     readSetChange({ op: "set", target, border: { fill: null } }),
   )
-  const edit = { deck: "deck", base: 0, changes: [{ op: "set", target, line: { width: 2 } }] }
-  expect(readAgentEdit(edit)).toMatchObject({ ok: true, changes: [{ op: "set", border: { width: 25_400 } }] })
+  expect(readSetChange({ op: "set", target, line: { width: 2 } })).toMatchObject({
+    ok: true,
+    change: { border: { width: 25_400 } },
+  })
 })
 
 it("refuses the border spelled both ways in one change and names the field the tools advertise", () => {
@@ -151,10 +146,9 @@ it("reads an agent's theme and template, the template style's old names, and its
   const chosen = readSetChange({ op: "set", target: "258", templateStyle: { id: "ppt/theme/theme2.xml" } })
   expect(chosen).toMatchObject({ ok: true, change: { templateStyle: { id: "ppt/theme/theme2.xml" } } })
   expect(readSetChange({ op: "set", target: "258", template: { id: "ppt/theme/theme2.xml" } })).toEqual(chosen)
-  const edit = { deck: "deck", base: 0, changes: [{ op: "set", target: "deck.theme", theme: { minor: "Verdana" } }] }
-  expect(readAgentEdit(edit)).toMatchObject({
+  expect(readSetChange({ op: "set", target: "deck.theme", theme: { minor: "Verdana" } })).toMatchObject({
     ok: true,
-    changes: [{ op: "set", target: { node: "deck.templateStyles" }, templateStyle: { minor: "Verdana" } }],
+    change: { target: { node: "deck.templateStyles" }, templateStyle: { minor: "Verdana" } },
   })
 })
 

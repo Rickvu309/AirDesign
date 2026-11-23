@@ -1,4 +1,4 @@
-import { bytesOf, limits, readElementId, type ElementId } from "@airdesign/document"
+import { bytesOf, limits, type ElementId } from "@airdesign/document"
 import * as z from "zod/v4"
 
 import { readDeckName } from "./deck-name.js"
@@ -38,7 +38,6 @@ const accountKeyPattern = /^[0-9a-f]{32}$/
 export type FieldRefusal = { ok: false; refusal: "field" }
 export type DeckRefusal = { ok: false; refusal: "deck" }
 export type BatchRefusal = { ok: false; refusal: "batch" }
-type CursorRefusal = { ok: false; refusal: "cursor" }
 export type BaseRefusal = { ok: false; refusal: "base" }
 type PayloadRefusal = { ok: false; refusal: "payload" }
 type ResourceRefusal = { ok: false; refusal: "resource" }
@@ -49,7 +48,6 @@ type GrantRefusal = { ok: false; refusal: "unsupported_grant_type" }
 export const fieldRefusal: FieldRefusal = { ok: false, refusal: "field" }
 const deckRefusal: DeckRefusal = { ok: false, refusal: "deck" }
 export const batchRefusal: BatchRefusal = { ok: false, refusal: "batch" }
-const cursorRefusal: CursorRefusal = { ok: false, refusal: "cursor" }
 export const baseRefusal: BaseRefusal = { ok: false, refusal: "base" }
 const payloadRefusal: PayloadRefusal = { ok: false, refusal: "payload" }
 const resourceRefusal: ResourceRefusal = { ok: false, refusal: "resource" }
@@ -83,20 +81,6 @@ export function readFloor(body: Record<string, unknown>): string | undefined | n
 export function readDeckId(raw: unknown): { ok: true; deck: DeckId } | DeckRefusal {
   if (typeof raw !== "string" || !deckPattern.test(raw)) return deckRefusal
   return { ok: true, deck: raw as DeckId }
-}
-
-export function readWatch(
-  raw: unknown,
-): { ok: true; deck: DeckId; cursor: number | null } | FieldRefusal | DeckRefusal | CursorRefusal {
-  const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "cursor"]) || !Object.hasOwn(body, "deck")) return fieldRefusal
-  if (!Object.hasOwn(body, "cursor")) return fieldRefusal
-  const deck = readDeckId(body.deck)
-  if (!deck.ok) return deckRefusal
-  if (body.cursor === null) return { ok: true, deck: deck.deck, cursor: null }
-  const cursor = whole(body.cursor)
-  if (cursor === undefined) return cursorRefusal
-  return { ok: true, deck: deck.deck, cursor }
 }
 
 export const deckInput = z
@@ -133,56 +117,6 @@ export function inputRefusal(issues: readonly z.core.$ZodIssue[], raw: unknown):
   return deckRefusal
 }
 
-function readRunId(raw: unknown): string | undefined {
-  if (typeof raw !== "string" || !deckPattern.test(raw)) return undefined
-  return raw
-}
-
-function readRunElement(raw: unknown): { ok: true; element: WireRunElement } | FieldRefusal {
-  const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["node", "floor"])) return fieldRefusal
-  const node = readElementId(body.node)
-  if (node === undefined) return fieldRefusal
-  const floor = readFloor(body)
-  if (floor === null) return fieldRefusal
-  if (floor === undefined) return { ok: true, element: { node } }
-  return { ok: true, element: { node, floor } }
-}
-
-function readRunElementBatch(
-  raw: unknown,
-): { ok: true; elements: readonly WireRunElement[] } | FieldRefusal | BatchRefusal {
-  if (!Array.isArray(raw) || raw.length < 1 || raw.length > limits.batch) return batchRefusal
-  const elements: WireRunElement[] = []
-  for (const item of raw) {
-    const element = readRunElement(item)
-    if (!element.ok) return fieldRefusal
-    elements.push(element.element)
-  }
-  return { ok: true, elements }
-}
-
-export function readRunStart(
-  raw: unknown,
-):
-  | { ok: true; deck: DeckId; runId: string; elements: readonly WireRunElement[] }
-  | FieldRefusal
-  | DeckRefusal
-  | BatchRefusal {
-  const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "runId", "elements"]) || !Object.hasOwn(body, "deck")) {
-    return fieldRefusal
-  }
-  const deck = readDeckId(body.deck)
-  if (!deck.ok) return deckRefusal
-  const runId = readRunId(body.runId)
-  if (runId === undefined) return fieldRefusal
-  if (!Object.hasOwn(body, "elements")) return batchRefusal
-  const elements = readRunElementBatch(body.elements)
-  if (!elements.ok) return elements
-  return { ok: true, deck: deck.deck, runId, elements: elements.elements }
-}
-
 export const readRun = readInput(
   z.strictObject({
     deck: deckInput,
@@ -199,7 +133,7 @@ export function readNamedDeck(raw: unknown): { ok: true; deck: DeckId } | FieldR
   return readCapture({ deck: body.deck })
 }
 
-export function readOriginalUpload(
+export function readMediaUpload(
   raw: unknown,
 ): { ok: true; deck: DeckId; bytes: number; sha256: string } | FieldRefusal | DeckRefusal {
   const body = recordOf(raw)

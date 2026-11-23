@@ -2,7 +2,7 @@ import { deckRoutes } from "@airdesign/catalog"
 import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
 
-type AnsweredName = Exclude<keyof typeof deckRoutes, "watch" | "findings">
+type AnsweredName = keyof typeof deckRoutes
 type Parsed<Name extends AnsweredName> = ReturnType<(typeof deckRoutes)[Name]["read"]>
 type Answer<Parsed> = (
   db: Sql,
@@ -26,6 +26,6 @@ export function answeredDeckRoutes<Serve>(
     return { method: "POST", path: route.path, serve: serve(route.read, answers[name]) }
   }
   return Object.keys(deckRoutes)
-    .filter((name): name is AnsweredName => name !== "watch" && name !== "findings")
+    .filter((name): name is AnsweredName => name in catalog)
     .map(row)
 }

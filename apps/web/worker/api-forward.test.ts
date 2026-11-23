@@ -168,7 +168,7 @@ describe("API forwarding", () => {
   it("forwards the commit request and returns the API response", async () => {
     const body = '{"edits":["é"]}'
     const response = await worker.fetch(
-      new Request("https://example.com/decks/commit", {
+      new Request("https://example.com/decks/rename", {
         method: "POST",
         headers: { cookie: "airdesign.session=abc", "content-type": "application/json" },
         body,
@@ -178,7 +178,7 @@ describe("API forwarding", () => {
     expect(seen).toEqual([
       {
         method: "POST",
-        url: "/decks/commit",
+        url: "/decks/rename",
         cookie: "airdesign.session=abc",
         contentType: "application/json",
         country: undefined,
@@ -207,13 +207,13 @@ describe("API forwarding", () => {
   })
 
   it("passes the visitor's country from Cloudflare to the API", async () => {
-    const request = new Request("https://example.com/decks/open", { method: "POST" })
+    const request = new Request("https://example.com/decks/list", { method: "POST" })
     await worker.fetch(Object.assign(request, { cf: { country: "VN" } }), env())
     expect(seen[0]?.country).toBe("VN")
   })
 
   it("replaces a country the visitor sent with the one Cloudflare saw", async () => {
-    const request = new Request("https://example.com/decks/open", {
+    const request = new Request("https://example.com/decks/list", {
       method: "POST",
       headers: { [countryHeader]: "US" },
     })
@@ -222,7 +222,7 @@ describe("API forwarding", () => {
   })
 
   it("forwards no country when Cloudflare gave none, even one the visitor sent", async () => {
-    const request = new Request("https://example.com/decks/open", {
+    const request = new Request("https://example.com/decks/list", {
       method: "POST",
       headers: { [countryHeader]: "US" },
     })
@@ -231,13 +231,13 @@ describe("API forwarding", () => {
   })
 
   it("forwards the shared secret to the API when set in the worker environment", async () => {
-    const request = new Request("https://example.com/decks/open", { method: "POST" })
+    const request = new Request("https://example.com/decks/list", { method: "POST" })
     await worker.fetch(request, env({ FORWARD_SECRET: "worker-secret" }))
     expect(seen[0]?.forwardSecret).toBe("worker-secret")
   })
 
   it("strips any forward secret header sent by the visitor", async () => {
-    const request = new Request("https://example.com/decks/open", {
+    const request = new Request("https://example.com/decks/list", {
       method: "POST",
       headers: { [forwardSecretHeader]: "visitor-secret" },
     })
@@ -246,7 +246,7 @@ describe("API forwarding", () => {
   })
 
   it("forwards no secret header when unset in worker environment, even if visitor sent one", async () => {
-    const request = new Request("https://example.com/decks/open", {
+    const request = new Request("https://example.com/decks/list", {
       method: "POST",
       headers: { [forwardSecretHeader]: "visitor-secret" },
     })
@@ -300,7 +300,7 @@ describe("API forwarding", () => {
     "/sign-in/check",
     "/sign-in",
     "/decks",
-    "/decks/open/x",
+    "/decks/list/x",
     "/screens/example",
   ])("serves %s from assets", async (path) => {
     const request = new Request(`https://example.com${path}`)
@@ -311,7 +311,7 @@ describe("API forwarding", () => {
   })
 
   it.each([undefined, ""])("returns 503 when the API origin is absent or empty", async (apiOrigin) => {
-    const response = await worker.fetch(new Request("https://example.com/decks/open", { method: "POST" }), {
+    const response = await worker.fetch(new Request("https://example.com/decks/list", { method: "POST" }), {
       ...env(),
       API_ORIGIN: apiOrigin,
     })
@@ -327,8 +327,6 @@ describe("API forwarding", () => {
     "/account/delete",
     "/account/agents",
     "/account/agents/revoke",
-    "/decks/open",
-    "/decks/watch",
     "/decks/list",
     "/decks/rename",
     "/decks/star",
@@ -340,7 +338,6 @@ describe("API forwarding", () => {
     "/oauth/register",
     "/oauth/token",
     "/oauth/revoke",
-    "/decks/undo",
     "/mcp",
     "/aira/turn",
     "/aira/usage",

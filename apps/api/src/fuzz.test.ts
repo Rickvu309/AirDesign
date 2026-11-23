@@ -6,11 +6,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { accountFuzzGood } from "./testing/account-fuzz.js"
 import { fuzzGood, fuzzAira } from "./testing/aira-fuzz.js"
-import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./testing/fuzz-attack.js"
+import { attacks, hostileEscapes, hostileValues, leaks, type Attack } from "./testing/fuzz-attack.js"
 import { badTargets } from "./testing/fuzz-target.js"
 import { storageFuzzGood } from "./testing/storage-fuzz.js"
 import { deckListFuzzGood } from "./testing/deck-list-fuzz.js"
-import { tabFuzzGood } from "./testing/tab-fuzz.js"
+import { doomFuzzGood } from "./testing/doom-fuzz.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp/mcp.js"
@@ -245,7 +245,7 @@ describe("hostile input over every route", () => {
       await deckPool.end()
     }
     cookie = await signInByCode(base, mails, "fuzz@example.com")
-    await ask(base, "POST", "/decks/open", { deck }, cookie)
+    await ask(base, "POST", "/doom/create", { deck }, cookie)
     const registered = await ask(base, "POST", "/oauth/register", { redirect_uris: ["https://client.example/cb"] })
     const clientId = (registered.json as { client_id: string }).client_id
     const redirect = "https://client.example/cb"
@@ -337,29 +337,13 @@ describe("hostile input over every route", () => {
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
       ...fuzzGood(deck),
       ...accountFuzzGood,
-      ...indexFuzzGood,
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],
       "GET /sign-in/link": [{ shape: "query", answers: 302, fields: { token: "t" } }],
       "POST /sign-out": [{ shape: "none", answers: 200 }],
-      "POST /decks/open": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
-      "POST /decks/commit": [
-        {
-          shape: "json",
-          answers: 200,
-          says: '"ok":true',
-          fields: { deck, batch: [{ value: "v", node: "258.7", floor: "f" }] },
-        },
-        {
-          shape: "json",
-          answers: 200,
-          says: '"ok":true',
-          fields: { deck, batch: [{ value: "w", node: "258.7" }], once: "fuzzonce" },
-        },
-      ],
       ...deckListFuzzGood(deck),
       ...storageFuzzGood(deck),
-      ...tabFuzzGood(deck),
+      ...doomFuzzGood(`${deck}doom`),
     }
   })
 
@@ -655,19 +639,6 @@ describe("hostile input over every route", () => {
 
   const unstorable = ["a\u0000b", "\ud800", "a\udc00b"]
 
-  it("refuses a commit value or floor Postgres cannot store and writes nothing", async () => {
-    let node = 1000
-    for (const text of unstorable) {
-      for (const edit of [{ value: text }, { value: "ok", floor: text }]) {
-        node += 1
-        const batch = [{ node: `258.${String(node)}`, ...edit }]
-        const answer = await ask(base, "POST", "/decks/commit", { deck, batch }, cookie)
-        expect(answer.status).toBe(200)
-        expect(answer.json).toEqual({ ok: false, refusal: "field" })
-      }
-    }
-  })
-
   it("refuses a deck name Postgres cannot store", async () => {
     await ask(base, "POST", "/decks/rename", { deck, name: "kept" }, cookie)
     for (const name of unstorable)
@@ -737,7 +708,7 @@ describe("hostile input over every route", () => {
     expect(text.endsWith('{"ok":false,"refusal":"size"}')).toBe(true)
   })
 
-  for (const route of ["/decks/open", "/oauth/client", "/mcp", "/no-such-route"]) {
+  for (const route of ["/decks/list", "/oauth/client", "/mcp", "/no-such-route"]) {
     it(`reads the whole body before it refuses a signed-out request to ${route}`, async () => {
       const received: Buffer[] = []
       const socket = connect(port, "127.0.0.1")

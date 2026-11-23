@@ -1,38 +1,21 @@
-import { readAccountCookie, type CommitResult, type DeckId } from "@airdesign/catalog"
+import { readAccountCookie } from "@airdesign/catalog"
 import { format } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
 
-type CommitRefusal = { readonly ok: false; readonly refusal: "storage" | "size" }
-
 type Page = {
   readonly factory: IDBFactory
   account?: string | undefined
   database?: Promise<IDBDatabase> | undefined
-  readonly decks: Map<string, unknown>
-  readonly edits: Map<string, string>
-  readonly adopted: Map<string, number>
-  readonly seen: Set<string>
-  readonly commitRefusals: Map<DeckId, CommitRefusal>
   newer?: true
 }
 
 let page: Page | undefined
 
-const watching = new Set<() => void>()
-
 function current(): Page {
   const factory = globalThis.indexedDB
-  if (page === undefined || page.factory !== factory)
-    page = {
-      factory,
-      decks: new Map(),
-      edits: new Map(),
-      adopted: new Map(),
-      seen: new Set(),
-      commitRefusals: new Map(),
-    }
+  if (page === undefined || page.factory !== factory) page = { factory }
   return page
 }
 
@@ -40,58 +23,10 @@ export function newPage(): void {
   page = undefined
 }
 
-export function storeNewer(): boolean {
-  return current().newer === true
-}
-
-export function markNewer(): void {
-  const held = current()
-  if (held.newer === true) return
-  held.newer = true
-  held.decks.clear()
-  for (const listener of watching) listener()
-}
-
-export function watchNewer(listener: () => void): () => void {
-  watching.add(listener)
-  return () => {
-    watching.delete(listener)
-  }
-}
-
 export function accountKey(): string | undefined {
   const held = current()
   held.account ??= readAccountCookie(globalThis.document?.cookie)
   return held.account
-}
-
-export function heldDecks(): Map<string, unknown> {
-  return current().decks
-}
-
-export function pageEdits(): Map<string, string> {
-  return current().edits
-}
-
-export function pageAdopted(): Map<string, number> {
-  return current().adopted
-}
-
-export function commitRefusal(deck: DeckId): CommitRefusal | undefined {
-  return current().commitRefusals.get(deck)
-}
-
-export function keepCommitRefusal(deck: DeckId, declined: Extract<CommitResult, { ok: false }>): typeof declined {
-  const { refusal } = declined
-  if (refusal === "storage" || refusal === "size") current().commitRefusals.set(deck, { ok: false, refusal })
-  return declined
-}
-
-export function firstOnPage(key: string): boolean {
-  const seen = current().seen
-  if (seen.has(key)) return false
-  seen.add(key)
-  return true
 }
 
 const separator = "\u0005"
@@ -104,12 +39,9 @@ export function accountRange(account: string): IDBKeyRange {
   return IDBKeyRange.bound(`${account}${separator}`, `${account}${separator}\uffff`)
 }
 
-export function legacyRange(deck: string): IDBKeyRange {
-  return IDBKeyRange.bound(`${deck}\u0000`, `${deck}${separator}`, false, true)
-}
-
 export function deckRange(account: string, deck: string): IDBKeyRange {
-  return legacyRange(scoped(account, deck))
+  const scope = scoped(account, deck)
+  return IDBKeyRange.bound(`${scope}\u0000`, `${scope}${separator}`, false, true)
 }
 
 function connectDatabase(held: Page): Promise<IDBDatabase> {
@@ -123,7 +55,6 @@ function connectDatabase(held: Page): Promise<IDBDatabase> {
       const database = request.result
       const forget = () => {
         if (held.database === opening) held.database = undefined
-        held.decks.clear()
       }
       database.onversionchange = () => {
         database.close()
@@ -134,7 +65,7 @@ function connectDatabase(held: Page): Promise<IDBDatabase> {
     }
     request.onerror = () => {
       if (held.database === opening) held.database = undefined
-      if (request.error?.name === "VersionError") markNewer()
+      if (request.error?.name === "VersionError") held.newer = true
       reject(request.error)
     }
   })
@@ -153,9 +84,7 @@ export async function transaction(mode: IDBTransactionMode): Promise<IDBTransact
   try {
     return database.transaction(storeName, mode)
   } catch (error) {
-    const held = current()
-    held.database = undefined
-    held.decks.clear()
+    current().database = undefined
     if (!(error instanceof DOMException) || error.name !== "InvalidStateError") throw error
     return (await openDatabase()).transaction(storeName, mode)
   }
@@ -173,7 +102,6 @@ export async function closeDatabase(): Promise<void> {
   const held = current()
   const open = held.database
   held.database = undefined
-  held.decks.clear()
   if (open !== undefined) (await open.catch(() => undefined))?.close()
 }
 

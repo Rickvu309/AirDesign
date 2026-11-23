@@ -16,18 +16,18 @@ export {
   type ToolAnswer,
   type ToolCall,
 } from "./aira-turn.js"
-export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
+export { catalog, projectTools, toolInputSchema, type AgentOp } from "./catalog.js"
 export { readAccountName, accountNameLimit } from "./account-name.js"
 export { blankDeckName, readCreateDeck } from "./create-wire.js"
 export { deckName, readDeckName } from "./deck-name.js"
-export { pointBox, pointSize, type PointBox, type PointSize } from "./agent-box.js"
-export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign } from "./agent-form.js"
-export { templateFontDesign } from "./template-font.js"
+
+export { agentNumberOf, designOf, readAgent } from "./agent-form.js"
+
 export { iconNames, knownIcon } from "./icon-names.js"
 export { webImage } from "./image-address.js"
 export { opacityWire } from "./opacity-wire.js"
 export { traitWire } from "./trait-wire.js"
-export { printDesign } from "./design-print.js"
+
 export { storableText } from "./storable-text.js"
 export {
   deckRoutes,
@@ -44,12 +44,8 @@ export {
   countryHeader,
   forwardSecretHeader,
   signOutPaths,
-  type CallRefusal,
   type EditRefusal,
   type WireRefusal,
-  type OpenResult,
-  type CommitResult,
-  type WatchResult,
 } from "./deck-routes.js"
 export {
   picturesWantedMilliseconds,
@@ -83,40 +79,27 @@ export {
   readStar,
   readRevokeRequest,
   readRun,
-  readRunStart,
   readAccountCookie,
   readSessionCookie,
   readTokenRequest,
-  readWatch,
   accountCookieName,
   sessionCookieName,
   type DeckId,
   type FormPairs,
   type TokenRequest,
-  type WireRunElement,
 } from "./wire.js"
-export { readAgentEdit, readCommit, readEdit, type AgentChange, type WireChange, type WireEdit } from "./edit-wire.js"
-export {
-  readAddChange,
-  readSetChange,
-  readTarget,
-  type WireAdd,
-  type WireSet,
-  type WireTemplateStyle,
-} from "./set-wire.js"
-export { type WireGroup } from "./group-wire.js"
-export { type PatternItem, type WireDiagram } from "./diagram-wire.js"
+export { type AgentChange } from "./edit-wire.js"
+export { readSetChange, readTarget } from "./set-wire.js"
+
 export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
-export { readDeckIndex } from "./index-wire.js"
 export { readFindingsReport, type FindingsReport, type WireFinding } from "./findings-wire.js"
-export { findingsAt, type AgentFindings } from "./agent-findings.js"
+export { findingsAt } from "./agent-findings.js"
 export { pictureBytes, pictureType, type SlideKey, type SlidePictures } from "./slide-pictures-wire.js"
-export { slideEditCommand, type WireSlide } from "./slide-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
 
-export { layoutId, type SlideOp, type WireDelete, type WireSlideChange } from "./slide-change-wire.js"
+export { layoutId } from "./slide-change-wire.js"
 
 export { fontRoutes } from "@airdesign/fonts"
 

@@ -1,6 +1,6 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { getPart, hex, owned, putPart } from "./part.js"
-import { post } from "./remote.js"
+import { post } from "./doom-remote.js"
 import { changeSlot, readSlot } from "./store.js"
 
 const queueKey = (deck: string) => `${deck}\u0003media`

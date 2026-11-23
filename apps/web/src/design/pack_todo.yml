@@ -1,16 +1,3 @@
-apps/web/src:
-  apps/web/src/deck-paint.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/design/design-change.ts
-  apps/web/src/undo-names.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/design/trait-edit.ts
 apps/web/src/editor:
   apps/web/src/editor/editor-icons.tsx:
     violations:
@@ -29,27 +16,9 @@ apps/web/src/editor:
       - layer
     files:
       - apps/web/src/design/controls/asset.tsx
-  apps/web/src/editor/painted-ahead.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/design/trait-edit.ts
   apps/web/src/editor/shape-grid.tsx:
     violations:
       - dependency
       - layer
     files:
       - apps/web/src/design/controls/preset.tsx
-  apps/web/src/editor/use-deck-paint.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/design/design-change.ts
-  apps/web/src/editor/use-undo.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/design/design-change.ts

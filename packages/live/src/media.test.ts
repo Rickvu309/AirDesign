@@ -1,7 +1,7 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, installParts } from "./browser-fixtures.js"
-import { deleteDatabase, flushMedia, flushOriginal, keepMedia, readMedia } from "./index.js"
+import { deleteDatabase, flushMedia, keepMedia, readMedia } from "./index.js"
 
 const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3])
 
@@ -87,17 +87,6 @@ it("leaves out bytes that have not landed or do not match their hash", async () 
       : new Response(new Uint8Array([9])),
   )
   expect((await readMedia("deck-four", [sha256])).has(sha256)).toBe(false)
-})
-
-it("retries a picture's upload when the editor flushes the original on open or back online", async () => {
-  installParts()
-  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
-  await keepMedia("deck-five", bytes)
-  const calls = server((call) =>
-    call.path === deckRoutes.mediaUpload.path ? Response.json(signed) : new Response(null, { status: 200 }),
-  )
-  expect(await flushOriginal("deck-five")).toEqual({ ok: true })
-  expect(calls.map((call) => call.path)).toEqual([deckRoutes.mediaUpload.path, "https://bucket.test/put"])
 })
 
 it("keeps a picture queued while an earlier picture uploads", async () => {

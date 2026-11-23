@@ -1,7 +1,6 @@
 import {
   airaRoutes,
   catalog,
-  deckRoutes,
   mcpRoutes,
   onceMeta,
   projectTools,
@@ -110,8 +109,6 @@ type Called = {
 const indexingTries = 15
 const indexingPause = 1000
 const accept = "application/json, text/event-stream"
-const lasting: ReadonlySet<string> = new Set(["run-fenced", "person-protected", "dead"])
-
 const tools = projectTools(catalog)
 const opOf: ReadonlyMap<string, AgentOp> = new Map(tools.map((tool) => [tool.name, tool.op]))
 const stopTool = tools.find((tool) => tool.op === "stop_run")?.name ?? ""
@@ -492,28 +489,7 @@ async function converse(
 
 export type UndoRun = (deck: string, run: string) => Promise<"undone" | "refused" | "failed">
 
-export function undoByRoute(send: typeof fetch = fetch): UndoRun {
-  return async (deck, runId) => {
-    try {
-      const response = await send(deckRoutes.undo.path, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ deck, runId }),
-      })
-      const undone = deckRoutes.undo.result(await response.json())
-      if (undone.ok) return "undone"
-      return lasting.has(undone.refusal) ? "refused" : "failed"
-    } catch {
-      return "failed"
-    }
-  }
-}
-
-export async function undoExchange(
-  chat: AiraChat,
-  exchange: number,
-  undo: UndoRun = undoByRoute(),
-): Promise<AiraChat | undefined> {
+export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoRun): Promise<AiraChat | undefined> {
   const found = chat.exchanges[exchange]
   if (
     found === undefined ||

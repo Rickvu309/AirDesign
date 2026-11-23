@@ -10,7 +10,7 @@ The model uses six opening ids and two additional ids. It abstracts fractional k
 
 A planted stale-anchor implementation failed the concurrent-tail unit case. A planted model that put the new head before the foreign tail slide violated `ForeignRowKept`. Both faults were removed before the passing run.
 
-Person-undo continues to describe node-field interference; Grid covers its new structural spot/head branch. Slide-undo continues to describe run fencing and all-or-none run undo. Offline describes the node queue. Tabs and lost-answer retain their transport bounds; lost-answer now sends a tagged anchored add.
+Person-undo continues to describe node-field interference; Grid covers its new structural spot/head branch.
 
 Sync: `specs/grid/covers.json`.
 

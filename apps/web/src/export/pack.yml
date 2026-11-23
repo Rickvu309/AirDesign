@@ -6,5 +6,4 @@ dependencies:
 public:
   - chosen-parts.ts
   - export-control.tsx
-  - export-deck.ts
   - export-options.ts

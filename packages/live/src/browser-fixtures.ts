@@ -1,12 +1,6 @@
-import type { WireEdit } from "@airdesign/catalog"
-import { elementId } from "@airdesign/document"
 import { accountCookieName } from "@airdesign/catalog"
 import { accountKey, finished, newPage, scoped, storeName, transaction } from "./device.js"
-import { memoryRemote, type OpenResult, type Remote } from "./index.js"
-import type { StoredRow } from "./store.js"
 
-export const node = elementId("258.7")
-export const other = elementId("258.8")
 export const firstAccount = "a".repeat(32)
 export const secondAccount = "b".repeat(32)
 
@@ -26,8 +20,8 @@ export function quiet(): void {
   traffic.puts = 0
 }
 
-export async function writeRows(
-  puts: readonly { readonly key: string; readonly row: StoredRow }[],
+export async function writeSlots(
+  puts: readonly { readonly key: string; readonly value: unknown }[],
   deletes: readonly string[],
 ): Promise<void> {
   const account = accountKey()
@@ -35,7 +29,7 @@ export async function writeRows(
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)
   for (const key of deletes) store.delete(scoped(account, key))
-  for (const put of puts) store.put(put.row, scoped(account, put.key))
+  for (const put of puts) store.put(put.value, scoped(account, put.key))
   await finished(writing, () => undefined)
 }
 
@@ -350,39 +344,4 @@ export function installParts(): Map<string, Uint8Array> {
   }
   Object.defineProperty(globalThis, "navigator", { value: { storage }, configurable: true })
   return files
-}
-
-export function countingRemote(): { remote: Remote; commits: WireEdit["value"][][] } {
-  const remote = memoryRemote()
-  const commits: WireEdit["value"][][] = []
-  return {
-    commits,
-    remote: {
-      open: (body) => remote.open(body),
-      watch: (body) => remote.watch(body),
-      commit: async (body) => {
-        commits.push(body.batch.map((edit) => ("slide" in edit ? edit.slide : edit.value)))
-        return remote.commit(body)
-      },
-    },
-  }
-}
-
-export function tracedRemote(answer?: OpenResult): { remote: Remote; calls: string[] } {
-  const real = memoryRemote()
-  const calls: string[] = []
-  return {
-    calls,
-    remote: {
-      open: async (body) => {
-        calls.push(`open ${body.deck}`)
-        return answer ?? real.open(body)
-      },
-      watch: (body) => real.watch(body),
-      commit: async (body) => {
-        calls.push(`commit ${body.deck}`)
-        return real.commit(body)
-      },
-    },
-  }
 }

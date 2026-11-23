@@ -7,7 +7,7 @@ const hexCommit = /^[0-9a-f]{7,64}$/
 const requestTimeoutMs = 15_000
 const gitTimeoutMs = 60_000
 const graceMs = 20 * 60_000
-const elementName = "1.1"
+const deckNode = "s:1"
 export const studioOrigin = "https://studio.airdesign.app"
 
 export function deckIdFor(token) {
@@ -92,9 +92,8 @@ function cookiePair(reply) {
   return first === undefined ? undefined : first.split(";")[0]
 }
 
-function landedValues(opened) {
-  const landed = opened.json?.register?.elements?.[elementName]?.landed
-  return Array.isArray(landed) ? landed.map((each) => each?.value) : []
+function deckNameOf(opened) {
+  return opened.json?.fold?.nodes?.[deckNode]?.name
 }
 
 export async function studio({ origin = studioOrigin }) {
@@ -143,27 +142,29 @@ export async function smoke({
   if (session.status !== 200 || session.json?.ok !== true || cookie === undefined) {
     return failure("session", cookie === undefined && session.status === 200 ? "no session cookie" : describe(session))
   }
-  const first = await fetched(`${origin}/decks/open`, jsonPost(cookie, { deck }))
-  const before = first.json?.revision
+  const first = await fetched(`${origin}/doom/create`, jsonPost(cookie, { deck }))
+  const before = first.json?.rev
   if (first.status !== 200 || first.json?.ok !== true || !Number.isInteger(before)) {
     return failure("open", `${describe(first)} ${String(first.json?.refusal ?? "")}`.trim())
   }
   const value = unique()
-  const written = await fetched(
-    `${origin}/decks/commit`,
-    jsonPost(cookie, { deck, batch: [{ value, node: elementName }] }),
-  )
-  if (written.status !== 200 || written.json?.ok !== true) {
-    return failure("commit", `${describe(written)} ${String(written.json?.refusal ?? "")}`.trim())
+  const edit = {
+    once: value,
+    author: { kind: "person", id: "smoke" },
+    writes: [{ node: deckNode, prop: "name", value }],
   }
-  const second = await fetched(`${origin}/decks/open`, jsonPost(cookie, { deck }))
+  const written = await fetched(`${origin}/doom/edit`, jsonPost(cookie, { deck, edit }))
+  if (written.status !== 200 || written.json?.ok !== true) {
+    return failure("edit", `${describe(written)} ${String(written.json?.refusal ?? "")}`.trim())
+  }
+  const second = await fetched(`${origin}/doom/open`, jsonPost(cookie, { deck }))
   if (second.status !== 200 || second.json?.ok !== true)
     return failure("read", `${describe(second)} ${String(second.json?.refusal ?? "")}`.trim())
-  if (!landedValues(second).includes(value)) {
-    return failure("read", `element ${elementName} does not hold the value that was committed`)
+  if (deckNameOf(second) !== value) {
+    return failure("read", "the deck name is not the value that was written")
   }
-  if (second.json.revision !== before + 1) {
-    return failure("revision", `revision is ${String(second.json.revision)}, expected ${String(before + 1)}`)
+  if (second.json.rev !== before + 1) {
+    return failure("revision", `revision is ${String(second.json.rev)}, expected ${String(before + 1)}`)
   }
   return {
     ok: true,

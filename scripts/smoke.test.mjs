@@ -36,7 +36,7 @@ function fakeGit({ listed = settled, listStatus = 0, known = [], afterFetch = []
 }
 
 function fakeApi(behaviour) {
-  const state = { revision: 0, landed: [], sessions: 0, versionCalls: 0, decks: [] }
+  const state = { revision: 1, name: "Untitled", writes: 0, sessions: 0, versionCalls: 0, decks: [] }
   const server = createServer((req, res) => {
     const chunks = []
     req.on("data", (chunk) => chunks.push(chunk))
@@ -60,19 +60,21 @@ function fakeApi(behaviour) {
       if (req.headers.cookie !== cookieValue) return send(401, { ok: false, refusal: "session" })
       state.decks.push(body.deck)
       if (body.deck !== deckIdFor(token) || behaviour.refuseOpen) return send(200, { ok: false, refusal: "owner" })
-      if (req.method === "POST" && req.url === "/decks/open") {
-        if (behaviour.refuseRead && state.revision > 0) return send(200, { ok: false, refusal: "owner" })
-        const register = { elements: { 1.1: { landed: state.landed } } }
-        return send(200, { ok: true, deck: body.deck, revision: state.revision, register })
+      if (req.method === "POST" && (req.url === "/doom/create" || req.url === "/doom/open")) {
+        if (behaviour.refuseRead && state.revision > 1) return send(200, { ok: false, refusal: "owner" })
+        const fold = { rev: state.revision, nodes: { "s:1": { id: "s:1", type: "deck", name: state.name } } }
+        return send(200, { ok: true, deck: body.deck, rev: state.revision, fold })
       }
-      if (req.method === "POST" && req.url === "/decks/commit") {
-        if (behaviour.refuseCommit || body.batch[0].node !== "1.1") return send(200, { ok: false, refusal: "limit" })
+      if (req.method === "POST" && req.url === "/doom/edit") {
+        const write = body.edit.writes[0]
+        if (behaviour.refuseEdit || write.node !== "s:1" || write.prop !== "name")
+          return send(200, { ok: false, refusal: "limit" })
         state.revision += behaviour.skipRevision ? 0 : 1
         if (!behaviour.dropWrite) {
-          const value = behaviour.wrongValue ? "something else" : body.batch[0].value
-          state.landed = [...state.landed, { actor: "person", value, visible: true }]
+          state.name = behaviour.wrongValue ? "something else" : write.value
+          state.writes += 1
         }
-        return send(200, { ok: true, deck: body.deck, revision: state.revision })
+        return send(200, { ok: true, deck: body.deck, rev: state.revision })
       }
       return send(404)
     })
@@ -97,8 +99,8 @@ async function run(behaviour, options = {}) {
 
 const good = await run({})
 same("the good path passes", good.result.ok, true)
-same("the good path leaves one committed value", good.state.landed.length, 1)
-same("the good path raises the revision by one", good.state.revision, 1)
+same("the good path leaves one written value", good.state.writes, 1)
+same("the good path raises the revision by one", good.state.revision, 2)
 same("the good path opens only the deck made from the token", [...new Set(good.state.decks)], [deckIdFor(token)])
 same(
   "the good path asks git about no ancestor",
@@ -153,7 +155,7 @@ same(
   young.git.calls.map((args) => args[0]),
   ["fetch", "rev-list"],
 )
-same("no commit old enough still writes and reads", young.state.revision, 1)
+same("no commit old enough still writes and reads", young.state.revision, 2)
 
 const noMain = await run({}, { git: fakeGit({ listStatus: 128 }) })
 same("an unreadable origin/main fails", noMain.result.line, "smoke failed at version: git could not read origin/main")
@@ -195,7 +197,7 @@ same(
 
 const refusedSession = await run({ refuseSession: true })
 same("a refused session says what it got", refusedSession.result.line, "smoke failed at session: status 404")
-same("a refused session commits nothing", refusedSession.state.revision, 0)
+same("a refused session writes nothing", refusedSession.state.writes, 0)
 
 const wrongToken = await run({}, { token: "not-the-token" })
 same("a wrong token fails", wrongToken.result.ok, false)
@@ -203,8 +205,8 @@ same("a wrong token fails", wrongToken.result.ok, false)
 const refusedOpen = await run({ refuseOpen: true })
 same("a refused open names the refusal", refusedOpen.result.line, "smoke failed at open: status 200 owner")
 
-const refusedCommit = await run({ refuseCommit: true })
-same("a refused commit names the refusal", refusedCommit.result.line, "smoke failed at commit: status 200 limit")
+const refusedEdit = await run({ refuseEdit: true })
+same("a refused edit names the refusal", refusedEdit.result.line, "smoke failed at edit: status 200 limit")
 
 const refusedRead = await run({ refuseRead: true })
 same("a refused read names the refusal", refusedRead.result.line, "smoke failed at read: status 200 owner")
@@ -222,7 +224,7 @@ for (const outcome of [
   wrongToken,
   flatRevision,
   refusedOpen,
-  refusedCommit,
+  refusedEdit,
   refusedRead,
   notContained,
 ]) {

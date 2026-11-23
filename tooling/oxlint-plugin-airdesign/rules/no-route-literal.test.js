@@ -109,13 +109,13 @@ expectAccepts("a proof may spell a path", "apps/web/src/decks/home.proof.ts", `e
 expectAccepts(
   "the smoke probe may spell the production paths it calls",
   "scripts/smoke.mjs",
-  "export const p = (origin) => `${origin}/decks/open`\n",
+  "export const p = (origin) => `${origin}/decks/list`\n",
   rule,
 )
 expectRejects(
   "another script fails",
   "scripts/second.mjs",
-  "export const p = (origin) => `${origin}/decks/open`\n",
+  "export const p = (origin) => `${origin}/decks/list`\n",
   rule,
   message,
 )

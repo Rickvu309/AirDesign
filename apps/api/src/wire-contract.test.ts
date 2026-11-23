@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto"
-import { deckRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
+import { deckRoutes, doomRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
@@ -71,15 +71,11 @@ it("serves every catalog oauth path with POST", () => {
 
 it("decodes the API's real answers for every deck route without changing their shape", async () => {
   const deck = `wire${randomBytes(6).toString("hex")}`
+  expect((await ask(base, "POST", doomRoutes.create.path, { deck }, cookie)).status).toBe(200)
   const calls = [
-    { route: deckRoutes.open, body: { deck } },
-    { route: deckRoutes.commit, body: { deck, batch: [{ node: "258.7", value: "hello" }] } },
-    { route: deckRoutes.watch, body: { deck, cursor: null } },
     { route: deckRoutes.rename, body: { deck, name: "Wire deck" } },
     { route: deckRoutes.list, body: {} },
-    { route: deckRoutes.originalUpload, body: { deck, bytes: 5, sha256: "a".repeat(64) } },
-    { route: deckRoutes.originalDone, body: { deck } },
-    { route: deckRoutes.original, body: { deck } },
+    { route: deckRoutes.mediaUpload, body: { deck, bytes: 5, sha256: "a".repeat(64) } },
     { route: deckRoutes.trash, body: { deck } },
     { route: deckRoutes.list, body: {} },
     { route: deckRoutes.restore, body: { deck } },

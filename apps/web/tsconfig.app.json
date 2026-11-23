@@ -29,7 +29,6 @@
   "references": [
     { "path": "../../packages/catalog" },
     { "path": "../../packages/document" },
-    { "path": "../../packages/engine" },
     { "path": "../../packages/fonts" },
     { "path": "../../packages/live" },
     { "path": "../../packages/pptx" },

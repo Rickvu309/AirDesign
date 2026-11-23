@@ -18,23 +18,6 @@ export type Attack = {
   readonly host?: string
 }
 
-export const indexFuzzGood = {
-  "POST /decks/index": [
-    {
-      shape: "json" as const,
-      answers: 200,
-      fields: {
-        deck: "fuzzdeck",
-        once: "index-page",
-        offset: 0,
-        total: 1,
-        slides: [{ id: "258", position: 0 }],
-        elements: [{ node: "258.7", kind: "shape", value: "Title", box: { x: 1, y: 2, cx: 3, cy: 4 }, grouped: false }],
-      },
-    },
-  ],
-}
-
 export const attacks: readonly Attack[] = [
   { name: "no body" },
   { name: "not json", body: "{not json", type: jsonType },

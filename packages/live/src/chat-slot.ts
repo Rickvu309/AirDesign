@@ -1,6 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import { accountKey, finished, scoped, storeName, transaction } from "./device.js"
-import { pageShelf, type Shelf } from "./unsaved.js"
+import { pageShelf, type Shelf } from "./shelf.js"
 
 export type ChatSlot = { readonly id: string }
 

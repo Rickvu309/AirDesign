@@ -1,11 +1,10 @@
 import { accountKey } from "./device.js"
 import { readSlot, swapSlot, writeSlot } from "./store.js"
-import { pageShelf, type Shelf } from "./unsaved.js"
+import { pageShelf, type Shelf } from "./shelf.js"
 
 export type DeckQueue = {
   readonly slot: string
   readonly send: (deck: string, value: string) => Promise<boolean>
-  readonly keep?: (deck: string, value: string) => Promise<{ readonly ok: boolean }>
 }
 
 type Mark = { readonly shelf: Shelf; readonly at: string; readonly value: string }
@@ -73,10 +72,9 @@ function release(mark: Mark | undefined): void {
 }
 
 async function keepValue(queue: DeckQueue, deck: string, mark: Mark | undefined, value: string) {
-  const kept = (await queue.keep?.(deck, value)) ?? { ok: true }
-  if (kept.ok) await swapSlot(key(queue, deck), value, () => mark === undefined || holds(mark))
+  await swapSlot(key(queue, deck), value, () => mark === undefined || holds(mark))
   release(mark)
-  return kept
+  return { ok: true }
 }
 
 export function queueValue(queue: DeckQueue, deck: string, value: string): Promise<{ readonly ok: boolean }> {

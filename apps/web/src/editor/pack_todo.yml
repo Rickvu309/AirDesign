@@ -1,19 +1,10 @@
 apps/web/src:
-  apps/web/src/deck-paint.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/use-deck-paint.ts
-      - apps/web/src/editor/use-undo.ts
   apps/web/src/design-shown.ts:
     violations:
       - dependency
       - layer
     files:
       - apps/web/src/editor/live-design-panel.tsx
-      - apps/web/src/editor/live-selection-colors.tsx
-      - apps/web/src/editor/slide-design-tabs.tsx
   apps/web/src/element-edit.ts:
     violations:
       - dependency
@@ -21,39 +12,7 @@ apps/web/src:
     files:
       - apps/web/src/editor/editor-shell.tsx
       - apps/web/src/editor/editor-toolbar.tsx
-      - apps/web/src/editor/inserts.ts
       - apps/web/src/editor/placed-text.ts
-  apps/web/src/layer-paste.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/inserts.ts
-  apps/web/src/picture-add.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/inserts.ts
-  apps/web/src/picture-tool.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/inserts.ts
-      - apps/web/src/editor/use-deck-paint.ts
-  apps/web/src/thin-notice.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/use-deck-status.ts
-  apps/web/src/undo-names.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/inserts.ts
 apps/web/src/aira:
   apps/web/src/aira/aira-prompts.ts:
     violations:
@@ -61,7 +20,6 @@ apps/web/src/aira:
     files:
       - apps/web/src/editor/adjust-tone.tsx
       - apps/web/src/editor/tone-link.ts
-      - apps/web/src/editor/tone-scope.ts
   apps/web/src/aira/usage-ring.tsx:
     violations:
       - dependency

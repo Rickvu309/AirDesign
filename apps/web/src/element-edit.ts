@@ -1,19 +1,12 @@
 import {
-  cloneOf,
-  decide,
-  elementsUndoable,
   lineGeometries,
   nextElementId,
   placeNewBox,
   readSlideId,
   shapeOf,
-  slideUndoable,
   stackTarget,
-  swapUndoable,
   textOpening,
-  type Command,
   type CopiedRows,
-  type ElementClone,
   type ElementCommand,
   type StackMove,
   type Box,
@@ -23,21 +16,15 @@ import {
   type Register,
   type SlideCommand,
   type SlideId,
-  type Undoable,
 } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
 import { applyRoute, freeShapeId, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
-import { boxOf, type Copied, type Moved, type PaintBox, type ShapeDrawn } from "@airdesign/render"
-import { toast } from "@/components/ui/toast"
-import { flushPending, type CommitOutcome } from "@/editing/commit-edit"
-import { elementCopy, type CopyRefusal, type RemovalRefusal } from "@/copy/element-copy"
-import { groupPlanned, type GroupChange } from "@/editor/group-actions"
-import { joinPlanned, type LayerJoin } from "@/editor/layer-join"
-import { storeCommand } from "@/editing/command-store"
+import { boxOf, type Moved, type PaintBox, type ShapeDrawn } from "@airdesign/render"
+import { type RemovalRefusal } from "@/copy/element-copy"
+import { type GroupChange } from "@/editor/group-actions"
+import { type LayerJoin } from "@/editor/layer-join"
 import { slideBase } from "@/editing/exported-parts"
 import { framedOf } from "@/editing/frame-boxes"
 import { indexedRegister } from "@/editing/indexed-register"
-import { fileSlides } from "@/editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -199,175 +186,4 @@ function drawnPlace(
   return Object.keys(flips).length === 0 ? { box } : { box, opening: { box: flips } }
 }
 
-export type ElementPlan = {
-  readonly commands: readonly Command[]
-  readonly added: ElementId | null
-  readonly undo: (stored: readonly Command[]) => Undoable | null
-  readonly partial: boolean
-}
-
-function removalPlan(parts: Parts, register: Register, nodes: readonly ElementId[]): ElementPlan | null {
-  const { edits, refused } = removals(parts, register, nodes)
-  for (const refusal of refused)
-    toast.refusal(elementCopy.removeRefusedTitle, {
-      id: `remove-refused-${refusal}`,
-      description: elementCopy.removeRefusedBody[refusal],
-    })
-  if (edits.length === 0) return null
-  const file = fileSlides(parts, register)
-  const commands = edits.map((edit): Command => ({ command: "slide", file, edit }))
-  const removed = (stored: readonly Command[]) =>
-    stored.flatMap((command) =>
-      command.command === "slide" && command.edit.slide === "element-remove" ? [command.edit] : [],
-    )
-  return { commands, added: null, undo: (stored) => elementsUndoable(register, file, removed(stored)), partial: true }
-}
-
-export function planElement(parts: Parts, register: Register, change: ElementChange): ElementPlan | null {
-  if (
-    change.change === "group" ||
-    change.change === "ungroup" ||
-    change.change === "frame" ||
-    change.change === "plain-frame" ||
-    change.change === "mask"
-  ) {
-    const grouped = groupPlanned(parts, register, change)
-    return grouped === null
-      ? null
-      : { commands: grouped.commands, added: grouped.made, undo: () => grouped.undoable, partial: false }
-  }
-  if (change.change === "remove") return removalPlan(parts, register, change.nodes)
-  if (change.change === "join") {
-    const joined = joinPlanned(parts, register, change)
-    return joined === null
-      ? null
-      : { commands: joined.commands, added: null, undo: () => joined.undoable, partial: false }
-  }
-  const edit = elementCommand(parts, register, change)
-  if (edit === null) return null
-  const file = fileSlides(parts, register)
-  const undoable = slideUndoable(register, file, edit)
-  const added = edit.slide === "element-add" ? edit.element.node : null
-  return { commands: [{ command: "slide", file, edit }], added, undo: () => undoable, partial: false }
-}
-
-export async function storePlan(deckId: string, plan: ElementPlan): Promise<readonly Command[] | null> {
-  const stored: Command[] = []
-  for (const command of plan.commands) {
-    if (await storeCommand(deckId, command)) stored.push(command)
-    else if (!plan.partial) return null
-  }
-  return stored.length === 0 ? null : stored
-}
-
-export async function commitElement(
-  deckId: string,
-  parts: Parts,
-  register: Register,
-  change: ElementChange,
-  paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
-): Promise<CommitOutcome> {
-  const plan = planElement(parts, register, change)
-  const stored = plan === null ? null : await storePlan(deckId, plan)
-  if (plan === null || stored === null) return "refused"
-  await paint(plan.added, plan.undo(stored))
-  return flushPending(connect, deckId)
-}
-
 export type CopyAsked = Moved & { readonly onto?: SlideId; readonly rows?: CopiedRows }
-
-export function copyCommands(
-  parts: Parts,
-  register: Register,
-  copies: readonly CopyAsked[],
-): { readonly edits: readonly ElementClone[]; readonly refused: readonly CopyRefusal[] } {
-  const base = slideBase(parts, register)
-  const slides = readSlides(base)
-  const file = fileSlides(parts, register)
-  let current = indexedRegister(parts, register)
-  const edits: ElementClone[] = []
-  const refused: CopyRefusal[] = []
-  for (const { id: source, box, onto, rows } of copies) {
-    const found = slides.find((each) => each.slide === (onto ?? shapeOf(source).slide))
-    const slide = found === undefined ? undefined : readSlideId(found.slide)
-    if (found === undefined || slide === undefined) continue
-    const node = nextElementId(current, slide, freeShapeId(base, found.part))
-    const cloned = cloneOf(current, source, node, box, rows)
-    if (!cloned.ok) {
-      if (cloned.refusal !== "dead" && !refused.includes(cloned.refusal)) refused.push(cloned.refusal)
-      continue
-    }
-    const decision = decide(current, { command: "slide", file, edit: cloned.command })
-    if (decision.decision !== "apply") continue
-    current = decision.register
-    edits.push(cloned.command)
-  }
-  return { edits, refused }
-}
-
-type Born = ElementClone | Extract<ElementCommand, { readonly slide: "element-add" }>
-
-export async function replacedUndoable(
-  deckId: string,
-  parts: Parts,
-  register: Register,
-  added: readonly Born[],
-  replacing: readonly ElementId[],
-): Promise<Undoable | null> {
-  const file = fileSlides(parts, register)
-  if (replacing.length === 0) return elementsUndoable(register, file, added)
-  const { edits, refused } = removals(parts, register, replacing)
-  for (const refusal of refused)
-    toast.refusal(elementCopy.removeRefusedTitle, {
-      id: `remove-refused-${refusal}`,
-      description: elementCopy.removeRefusedBody[refusal],
-    })
-  const gone: Removal[] = []
-  for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) gone.push(edit)
-  return swapUndoable(register, file, added, gone)
-}
-
-export function copyPlan(
-  parts: Parts,
-  register: Register,
-  copies: readonly CopyAsked[],
-  title: string = elementCopy.copyRefusedTitle,
-): { readonly plan: ElementPlan; readonly copies: readonly Copied[] } | null {
-  const { edits, refused } = copyCommands(parts, register, copies)
-  for (const refusal of refused)
-    toast.refusal(title, { id: `copy-refused-${refusal}`, description: elementCopy.copyRefusedBody[refusal] })
-  if (edits.length === 0) return null
-  const file = fileSlides(parts, register)
-  const cloned = (stored: readonly Command[]) =>
-    stored.flatMap((command) =>
-      command.command === "slide" && command.edit.slide === "element-clone" ? [command.edit] : [],
-    )
-  const plan: ElementPlan = {
-    commands: edits.map((edit): Command => ({ command: "slide", file, edit })),
-    added: null,
-    undo: (stored) => elementsUndoable(register, file, cloned(stored)),
-    partial: true,
-  }
-  return { plan, copies: edits.map((edit) => ({ copy: edit.element.node, source: edit.source })) }
-}
-
-export async function commitCopies(
-  deckId: string,
-  parts: Parts,
-  register: Register,
-  copies: readonly CopyAsked[],
-  paint: (undoable: Undoable | null) => Promise<void>,
-  title: string = elementCopy.copyRefusedTitle,
-  replacing: readonly ElementId[] = [],
-): Promise<{ readonly copies: readonly Copied[]; readonly flushed: Promise<CommitOutcome> }> {
-  const { edits, refused } = copyCommands(parts, register, copies)
-  for (const refusal of refused)
-    toast.refusal(title, { id: `copy-refused-${refusal}`, description: elementCopy.copyRefusedBody[refusal] })
-  const file = fileSlides(parts, register)
-  const went: ElementClone[] = []
-  for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) went.push(edit)
-  if (went.length === 0) return { copies: [], flushed: Promise.resolve("refused") }
-  await paint(await replacedUndoable(deckId, parts, register, went, replacing))
-  const made = went.map((edit) => ({ copy: edit.element.node, source: edit.source }))
-  return { copies: made, flushed: flushPending(connect, deckId) }
-}

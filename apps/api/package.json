@@ -21,7 +21,6 @@
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
     "@airdesign/document": "workspace:*",
-    "@airdesign/engine": "workspace:*",
     "@airdesign/mcp": "workspace:*",
     "@airdesign/oauth": "workspace:*",
     "@airdesign/templates": "workspace:*",
