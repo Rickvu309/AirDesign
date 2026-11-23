@@ -13,7 +13,6 @@ scripts/browser-export.mjs
 scripts/paragraph-export.mjs
 scripts/slide-export.mjs
 scripts/slide-edits.mjs
-scripts/blank-export.mjs
 scripts/deck-templates
 scripts/diagram-edits.mjs
 scripts/pptx-render.mjs
