@@ -1,6 +1,5 @@
 import { useState } from "react"
 import * as doom from "@airdesign/doom"
-import { schemeNames } from "@airdesign/document"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { designCopy } from "@/copy/design-copy"
@@ -10,7 +9,6 @@ import { DesignSection, SectionStrips } from "@/editor/design-panel"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { TemplateStyleFace } from "@/editor/template-style-card"
 import { oldControl } from "./design-controls"
-import { slotOfVar } from "./design-values"
 import { swatchesOf } from "./design-palette"
 import { templateNameOf } from "./design-template-name"
 import { themeColorWrites } from "./chart-theme-writes"
@@ -31,7 +29,7 @@ export function DoomThemeCard(props: {
     name: templateName,
     major: theme.fonts.heading,
     minor: theme.fonts.body,
-    swatches: swatches.filter((swatch) => (schemeNames as readonly string[]).includes(swatch.scheme)),
+    swatches,
   }
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
   const fonts = [
@@ -80,18 +78,18 @@ export function DoomThemeCard(props: {
             <section className="flex flex-col gap-3">
               <h3 className="font-medium">{designCopy.templateColors}</h3>
               <div className="grid grid-cols-6 gap-2">
-                {(Object.keys(slotOfVar) as doom.ColorVar[]).map((name, at) => {
+                {doom.colorVars.map((name, at) => {
                   const hex = theme.colors[name]
                   const label = swatches[at]?.name ?? name
                   return (
                     <ColorPicker
                       key={name}
                       title={label}
-                      value={{ rgb: hex.slice(1).toUpperCase() }}
+                      value={hex}
                       palette={{ templateColors: [], deck: [] }}
                       showTemplateColors={false}
                       onPick={(color) => {
-                        if ("rgb" in color) client.push(themeColorWrites(view, name, `#${color.rgb}`))
+                        if (typeof color === "string") client.push(themeColorWrites(view, name, color))
                       }}
                       children={null}
                       trigger={

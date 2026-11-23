@@ -4,7 +4,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { designCopy } from "@/copy/design-copy"
 import { FillDetails, UnionControl } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
-import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/design/panel"
 import { visibleEffects } from "@/design/effects-list"
@@ -157,10 +156,6 @@ function SectionReset({
 export function ControlView({ control, palette, onChange }: ControlProps): ReactNode {
   if (control.field.startsWith("kept."))
     return <p className="text-[length:var(--type-caption)] text-quiet">{control.label}</p>
-  if (control.trait === "image" && control.field === "overlay")
-    return <OverlayControl control={control} palette={palette} onChange={onChange} />
-  if (control.trait === "image" && control.field === "blur")
-    return <BlurControl control={control} palette={palette} onChange={onChange} />
   const View = controlViews[control.kind]
   return View === undefined ? null : (
     <View control={control} palette={palette} onChange={onChange} inner={ControlView} />

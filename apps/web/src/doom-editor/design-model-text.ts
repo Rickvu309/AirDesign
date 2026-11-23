@@ -9,7 +9,6 @@ import { arrange, resolveControl } from "@/design/panel-arrangement"
 import { spacingUnits } from "@/design/spacing-units"
 import { choiceDesc, oldControl, doomControl } from "./design-controls"
 import { lineOld, shownText, sizeOld } from "./design-text-values"
-import { oldColorOf } from "./design-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@/editing/node-props"
 
@@ -61,7 +60,7 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const bold = oldControl("text", "bold", look.bold)
   const italic = oldControl("text", "italic", look.italic)
   const fill = doomControl({ trait: "text", field: "fill" }, textCopy.value, fillDesc, {
-    value: { solid: oldColorOf(look.color.value) },
+    value: { solid: look.color.value },
     mixed: look.color.mixed,
   })
   const size = sizeOld(look.size.value)

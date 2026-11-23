@@ -1,4 +1,3 @@
-import { colorPattern } from "./agent-color.js"
 import { unstorable } from "./storable-text.js"
 
 type Schema = Readonly<Record<string, unknown>>
@@ -25,10 +24,7 @@ function readerOnly(key: string, value: unknown, outermost: boolean): boolean {
     case "maximum":
       return typeof value === "number" && Math.abs(value) >= sanityBound
     case "pattern":
-      return (
-        typeof value === "string" &&
-        (value.includes(unstorable.source) || (value.includes(colorPattern) && value !== `^${colorPattern}$`))
-      )
+      return typeof value === "string" && value.includes(unstorable.source)
     default:
       return false
   }

@@ -1,12 +1,11 @@
 import { controlLabel } from "@/design/controls/control-label"
-import type { Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { designCopy } from "@/copy/design-copy"
 import { fillCopy } from "@/copy/fill-copy"
 import { optionCopy } from "@/copy/option-copy"
-import { caseSeed, firstColor, seedOf } from "@/design/control-seed"
+import { firstColor, seedOf } from "@/design/control-seed"
 import { partControl, type ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
@@ -26,7 +25,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
   const chosenDesc = chosen === undefined ? undefined : cases[chosen]
 
   function pick(name: string) {
-    const value = unionValue(control, palette, name)
+    const value = unionValue(control, name)
     if (value !== undefined && name !== chosen) onChange(value)
   }
 
@@ -171,20 +170,15 @@ function UnionList({
   )
 }
 
-export function unionValue(control: ControlProps["control"], palette: ControlProps["palette"], name: string): unknown {
+export function unionValue(control: ControlProps["control"], name: string): unknown {
   const desc = control.desc.kind === "union" ? control.desc.cases[name] : undefined
   if (desc === undefined) return undefined
   if (desc.kind === "mark") return { [name]: true }
-  const accent = palette.templateColors.find((swatch) => swatch.scheme === "accent1")
-  const color: Color = firstColor(heldOf(control)) ?? { scheme: accent?.scheme ?? "accent1" }
-  return {
-    [name]:
-      caseSeed(`${control.trait}.${control.field}.${name}`, color) ??
-      seedOf(desc, color, 0, 1, control.nodes?.[0]?.node),
-  }
+  const color = firstColor(heldOf(control)) ?? { var: "accent1" }
+  return { [name]: seedOf(desc, color, 0, 1, control.nodes?.[0]?.node) }
 }
 
-export function FillDetails({ control, palette, onChange }: ControlProps) {
+export function FillDetails({ control, onChange }: ControlProps) {
   const chosen = heldOf(control)
   return (
     <div className="flex items-center justify-between">
@@ -194,7 +188,7 @@ export function FillDetails({ control, palette, onChange }: ControlProps) {
         size="sm"
         aria-pressed={chosen !== null && "pattern" in chosen}
         onClick={() => {
-          if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, palette, "pattern"))
+          if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, "pattern"))
         }}
       >
         {optionCopy.pattern}

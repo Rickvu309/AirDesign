@@ -1,9 +1,7 @@
 import * as doom from "@airdesign/doom"
-import type { Color as OldColor } from "@airdesign/document"
 import { propOf } from "@/editing/node-props"
-import { oldColorOf } from "./design-values"
 
-export type ColorRow = { readonly hex: string; readonly color: OldColor }
+export type ColorRow = { readonly hex: string; readonly color: doom.Color }
 
 type Scope = { readonly slide: doom.NodeId; readonly ids: readonly doom.NodeId[] }
 
@@ -60,7 +58,7 @@ export function colorRows(view: doom.Doom, theme: doom.Theme, scope: Scope): rea
       if (!rows.has(hex)) rows.set(hex, color)
     }
   return [...rows]
-    .map(([hex, color]) => ({ hex, color: oldColorOf(color) }))
+    .map(([hex, color]) => ({ hex, color }))
     .sort((a, b) => brightness(a.hex) - brightness(b.hex) || a.hex.localeCompare(b.hex))
 }
 

@@ -1,28 +1,8 @@
-import {
-  bareTransforms,
-  coordinates,
-  mappedSlots,
-  templateColors,
-  valuedTransforms,
-  type Desc,
-} from "@airdesign/document"
+import { coordinates, type Desc } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { colorPattern, readAgentColor } from "./agent-color.js"
 import { readAgent } from "./agent-form.js"
 
 const navy = "1F4E79"
-const black = "000000"
-
-it("spells every template color and transform once in a compact colour pattern, and nothing else", () => {
-  const exact = new RegExp(`^${colorPattern}$`)
-  const slots = [...templateColors, ...mappedSlots]
-  for (const slot of slots) expect(exact.test(slot), slot).toBe(true)
-  for (const op of valuedTransforms) expect(exact.test(`accent1 ${op} 50`), op).toBe(true)
-  for (const op of bareTransforms) expect(exact.test(`#${navy} ${op}`), op).toBe(true)
-  for (const wrong of ["accent7", "dk3", "accent1 lumAdd 5", "accent1 tintMod 5", "accent1 comp 5", "hlink1", "bg"])
-    expect(exact.test(wrong), wrong).toBe(false)
-  expect(colorPattern.length).toBeLessThan(220)
-})
 
 describe("the agent form reads what an agent sends into stored values, in agent units", () => {
   const read = (desc: Desc, raw: unknown) => readAgent(desc, raw)
@@ -59,21 +39,27 @@ describe("the agent form reads what an agent sends into stored values, in agent 
     expect(read(emu, "72")).toEqual({ ok: false })
   })
 
-  it("reads a colour as a template color or hex, then each transform in percent", () => {
-    expect(readAgentColor("accent1")).toEqual({ scheme: "accent1" })
-    expect(readAgentColor(`#${navy.toLowerCase()}`)).toEqual({ rgb: navy })
-    expect(readAgentColor("tx1 lumMod 75 lumOff 25")).toEqual({
-      scheme: "tx1",
-      transforms: [
-        { op: "lumMod", val: 75_000 },
-        { op: "lumOff", val: 25_000 },
-      ],
-    })
-    expect(readAgentColor(`#${black} alpha 35.5`)).toEqual({ rgb: black, transforms: [{ op: "alpha", val: 35_500 }] })
-    expect(readAgentColor("accent2 inv")).toEqual({ scheme: "accent2", transforms: [{ op: "inv" }] })
-    for (const wrong of ["accent9", "accent1 lumMod", "red", "#12345", "accent1 alpha 150", "", 7]) {
-      expect(readAgentColor(wrong), String(wrong)).toBeNull()
-    }
+  it("reads a colour as Doom stores it, a hex in lower case or a theme colour with its tint", () => {
+    const color: Desc = { kind: "color" }
+    expect(read(color, `#${navy}`)).toEqual({ ok: true, value: `#${navy.toLowerCase()}` })
+    expect(read(color, { var: "accent1" })).toEqual({ ok: true, value: { var: "accent1" } })
+    expect(read(color, { var: "text2", tint: -0.25 })).toEqual({ ok: true, value: { var: "text2", tint: -0.25 } })
+    for (const wrong of [
+      "accent1",
+      "tx1 lumMod 75",
+      { scheme: "accent1" },
+      { rgb: navy },
+      `#${navy} alpha 35.5`,
+      "",
+      7,
+    ])
+      expect(read(color, wrong), JSON.stringify(wrong)).toEqual({ ok: false })
+  })
+
+  it("reads a bare hex as six upper-case digits", () => {
+    const hex: Desc = { kind: "hex" }
+    expect(read(hex, `#${navy.toLowerCase()}`)).toEqual({ ok: true, value: navy })
+    for (const wrong of [navy, `#${navy}0`, { var: "accent1" }]) expect(read(hex, wrong)).toEqual({ ok: false })
   })
 
   it("reads a mark case by its name, the plain case bare, and any other case as its one key", () => {

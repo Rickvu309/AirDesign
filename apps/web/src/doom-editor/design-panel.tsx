@@ -1,10 +1,9 @@
 import * as doom from "@airdesign/doom"
-import type { FieldValue } from "@airdesign/document"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
-import { panelOfMany, type PanelModel } from "@/design/panel"
+import { panelOfMany, type PanelModel, type PanelPaint } from "@/design/panel"
 import { panelPlaces } from "@/design/panel-order"
 import { DesignHead, ElementDesign } from "@/editor/design-panel"
 import { ElementTitleActions } from "@/editor/element-title-actions"
@@ -21,7 +20,6 @@ import { paletteOf } from "./design-palette"
 import { fillWrite, shownFill } from "./design-paint-values"
 import { DoomSelectionColors } from "./design-selection-section"
 import { DoomThemeCard } from "./design-theme-card"
-import { doomColorOf, type OldPaint } from "./design-values"
 import { propOf, slidesOf } from "@/editing/node-props"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
@@ -45,8 +43,8 @@ type Props = {
   readonly onLinkWords: (link: string | null) => void
 }
 
-function backgroundFill(held: OldPaint): FieldValue<"fills", "p0"> | null {
-  if ("gradient" in held) return held as FieldValue<"fills", "p0">
+function backgroundFill(held: PanelPaint): PanelPaint | null {
+  if ("gradient" in held) return held
   return "image" in held ? { image: true } : null
 }
 
@@ -85,7 +83,7 @@ export function DesignPanel(props: Props) {
   if (ids.length === 0) {
     const background = propOf(view.nodes.get(slide), "fills")
     const solid = shownFill(background)
-    const held = "solid" in solid ? doomColorOf(solid.solid) : undefined
+    const held = "solid" in solid ? solid.solid : undefined
     const shownColor = held ?? { var: "background" as const }
     return (
       <div

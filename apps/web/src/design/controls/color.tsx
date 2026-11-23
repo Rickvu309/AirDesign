@@ -1,5 +1,5 @@
 import { controlLabel } from "@/design/controls/control-label"
-import { alphaKeys, alphaOf, fadedColor, opaque, type Color } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -49,12 +49,9 @@ export const fieldLook =
 export function ColorControl({ control, palette, onChange }: ControlProps) {
   const label = useId()
   const named = useId()
-  const held = control.mixed ? null : (control.value as Color | undefined)
-  const shown = held === null || held === undefined ? undefined : fadedColor(held, opaque)
-  const carried = alphaKeys.some((key) => key.startsWith(`${control.trait}.`)) || shown === undefined
-  const picked = (color: Color) => (carried ? color : fadedColor(color, alphaOf(held ?? color)))
-  const css = shown === undefined ? null : `#${shownHex(shown, palette.templateColors)}`
-  const name = control.mixed ? designCopy.mixed : shown === undefined ? "" : shownName(shown, palette.templateColors)
+  const held = control.mixed ? undefined : doom.readColor(control.value)
+  const css = held === undefined ? null : `#${shownHex(held, palette.templateColors)}`
+  const name = control.mixed ? designCopy.mixed : held === undefined ? "" : shownName(held, palette.templateColors)
   return (
     <div
       role="group"
@@ -68,9 +65,9 @@ export function ColorControl({ control, palette, onChange }: ControlProps) {
       </span>
       <ColorPicker
         title={control.label}
-        value={held ?? undefined}
+        value={held}
         palette={palette}
-        onPick={(color) => onChange(picked(color))}
+        onPick={onChange}
         trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}
       >
         <ColorField id={named} css={css} name={name} inherited={control.inherited} />

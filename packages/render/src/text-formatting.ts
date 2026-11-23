@@ -1,22 +1,6 @@
-import type {
-  ElementLink,
-  LinkEdit,
-  FormatState,
-  MappedSlot,
-  ParagraphAlign,
-  Color,
-  SchemeName,
-  SizeStep,
-  TextFormat,
-} from "@airdesign/document"
+import type { ElementLink, LinkEdit, FormatState, ParagraphAlign, SizeStep, TextFormat } from "@airdesign/document"
 import type { NodeId } from "@airdesign/doom"
 import type { FontStyle } from "@airdesign/fonts"
-
-export type CanvasTemplateColor = {
-  readonly scheme: SchemeName
-  readonly css: string
-  readonly mapped?: readonly MappedSlot[]
-}
 
 export type FormatTarget = {
   readonly link: (editing: boolean) => ElementLink | "mixed" | null
@@ -28,8 +12,6 @@ export type FormatTarget = {
   readonly size: (editing: boolean) => number | "mixed" | null
   readonly resize: (step: SizeStep, editing: boolean) => void
   readonly sizeTo: (size: number, editing: boolean) => void
-  readonly color: (editing: boolean) => Color | "mixed" | null
-  readonly choose: (color: Color, editing: boolean) => void
   readonly align: (editing: boolean) => ParagraphAlign | "mixed" | null
   readonly place: (align: ParagraphAlign, editing: boolean) => void
   readonly bullet: (editing: boolean) => FormatState
@@ -37,7 +19,6 @@ export type FormatTarget = {
   readonly weight: (step: 1 | -1, editing: boolean) => void
   readonly fontStyle: (editing: boolean) => FontStyle | "mixed" | null
   readonly weightTo: (style: FontStyle, editing: boolean) => void
-  readonly swatches: () => readonly CanvasTemplateColor[]
 }
 
 export type TextFormatting = {
@@ -53,8 +34,6 @@ export type TextFormatting = {
   readonly size: () => number | "mixed" | null
   readonly resize: (step: SizeStep) => void
   readonly sizeTo: (size: number, focus?: boolean) => void
-  readonly color: () => Color | "mixed" | null
-  readonly choose: (color: Color) => void
   readonly align: () => ParagraphAlign | "mixed" | null
   readonly place: (align: ParagraphAlign) => void
   readonly bullet: () => FormatState | null
@@ -62,7 +41,6 @@ export type TextFormatting = {
   readonly weight: (step: 1 | -1) => void
   readonly fontStyle: () => FontStyle | "mixed" | null
   readonly weightTo: (style: FontStyle) => void
-  readonly swatches: () => readonly CanvasTemplateColor[]
   readonly across: (ids: readonly NodeId[], key: TextKey) => boolean
   readonly together: () => object | null
   readonly changed: () => void

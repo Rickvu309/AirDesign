@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Color, Desc } from "@airdesign/document"
+import type { Desc } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import type { PanelControl } from "./design/panel"
 import { templateColorColumns, typedColor } from "./design/color-choices"
@@ -7,7 +7,6 @@ import { namedByColor } from "./design/color-names"
 import { changeWrites } from "./doom-editor/design-changes"
 import { nodeModel } from "./doom-editor/design-model"
 import { swatchesOf } from "./doom-editor/design-palette"
-import { doomColorOf } from "./doom-editor/design-values"
 import { grow, landed, spot } from "@/testing/doom-fixtures"
 
 const hash = "#"
@@ -107,11 +106,13 @@ function colorControls(name: string): readonly PanelControl[] {
     .filter((control) => colored(control.desc))
 }
 
-const sent = (control: PanelControl, color: Color) => (control.desc.kind === "color" ? color : { solid: color })
+const sent = (control: PanelControl, color: doom.Color) => (control.desc.kind === "color" ? color : { solid: color })
 
-function personColors(): readonly Color[] {
+function personColors(): readonly doom.Color[] {
   const columns = templateColorColumns(namedByColor(swatchesOf(theme)))
-  const tint = columns.flatMap((column) => column.shades).find((shade) => shade.color.transforms?.length === 2)
+  const tint = columns
+    .flatMap((column) => column.shades)
+    .find((shade) => typeof shade.color !== "string" && (shade.color.tint ?? 0) > 0)
   return [...columns.map((column) => column.swatch.color), tint!.color, typedColor(`${hash}1F4E79`)!]
 }
 
@@ -130,7 +131,7 @@ function shows(after: doom.Doom, name: string, prop: string, color: doom.Color):
   return colorsIn(value).includes(JSON.stringify(color))
 }
 
-function personLands(name: string, control: PanelControl, color: Color): doom.Doom | null {
+function personLands(name: string, control: PanelControl, color: doom.Color): doom.Doom | null {
   const context = { view, ids: [id(name)], geometry, size, slides: [] }
   const writes = changeWrites(context, control, sent(control, color))
   return writes.length === 0 ? null : landed(view, writes)
@@ -143,11 +144,8 @@ describe("a person reaches every colour an agent can send", () => {
       for (const control of colorControls(name))
         for (const color of personColors()) {
           const after = personLands(name, control, color)
-          const wanted = doomColorOf(color)
           const landedIt =
-            after !== null &&
-            wanted !== undefined &&
-            ["fills", "strokes", "text"].some((prop) => shows(after, name, prop, wanted))
+            after !== null && ["fills", "strokes", "text"].some((prop) => shows(after, name, prop, color))
           if (!landedIt) missed.push(`${name} ${control.trait}.${control.field} ${JSON.stringify(color)}`)
         }
     expect(missed).toEqual([])
@@ -169,8 +167,7 @@ describe("a person reaches every colour an agent can send", () => {
           }
           const reached = colorControls(name).some((control) =>
             personColors().some((choice) => {
-              const doomChoice = doomColorOf(choice)
-              if (JSON.stringify(doomChoice) !== JSON.stringify(wanted) && !color.startsWith(hash)) return false
+              if (JSON.stringify(choice) !== JSON.stringify(wanted) && !color.startsWith(hash)) return false
               const typed = color.startsWith(hash) ? typedColor(color)! : choice
               const after = personLands(name, control, typed)
               return after !== null && shows(after, name, prop, wanted)
@@ -181,17 +178,9 @@ describe("a person reaches every colour an agent can send", () => {
     expect(missed).toEqual([])
   })
 
-  it("offers a tint written as the slot with lumMod and lumOff, so it follows a template color change", () => {
-    const templateColors = namedByColor([{ scheme: "accent1" as const, css: "4472C4" }])
-    const tint = templateColorColumns(templateColors)
-      .flatMap((column) => column.shades)
-      .find((shade) => shade.color.transforms?.some((each) => each.op === "lumOff") === true)
-    expect(tint?.color).toEqual({
-      scheme: "accent1",
-      transforms: [
-        { op: "lumMod", val: 20_000 },
-        { op: "lumOff", val: 80_000 },
-      ],
-    })
+  it("offers a tint written as the theme colour and its tint, so it follows a template color change", () => {
+    const templateColors = namedByColor([{ var: "accent1" as const, css: "4472C4" }])
+    const [tint] = templateColorColumns(templateColors).flatMap((column) => column.shades)
+    expect(tint?.color).toEqual({ var: "accent1", tint: 0.8 })
   })
 })

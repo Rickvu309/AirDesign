@@ -9,21 +9,17 @@ import { PickerBody } from "@/design/color-picker"
 
 const palette: Palette = {
   templateColors: namedByColor([
-    { scheme: "dk1" as const, css: "000000" },
-    { scheme: "lt1" as const, css: "FFFFFF" },
-    { scheme: "dk2" as const, css: "000000" },
-    { scheme: "accent1" as const, css: "4472C4" },
+    { var: "text" as const, css: "000000" },
+    { var: "background" as const, css: "FFFFFF" },
+    { var: "text2" as const, css: "000000" },
+    { var: "accent1" as const, css: "4472C4" },
   ]),
   deck: ["C00000", "4472C4"],
 }
 
-const tint = {
-  scheme: "accent1",
-  transforms: [
-    { op: "lumMod", val: 60_000 },
-    { op: "lumOff", val: 40_000 },
-  ],
-} as const
+const hash = "#"
+
+const tint = { var: "accent1", tint: 0.4 } as const
 
 function buttons(markup: string): readonly { readonly name: string; readonly pressed: string }[] {
   return [...markup.matchAll(/<button[^>]*>/g)].map((tag) => ({
@@ -74,7 +70,7 @@ describe("the colour list", () => {
     const hexOnly = renderToStaticMarkup(
       <PickerBody
         title={colorNameCopy.blue}
-        value={{ rgb: "1F4E79" }}
+        value={`${hash}1f4e79`}
         palette={palette}
         showTemplateColors={false}
         onPick={() => undefined}
@@ -86,7 +82,7 @@ describe("the colour list", () => {
       <PickerBody
         title={colorNameCopy.blue}
         picking
-        value={{ rgb: "1F4E79" }}
+        value={`${hash}1f4e79`}
         palette={palette}
         showTemplateColors={false}
         onPick={() => undefined}

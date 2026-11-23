@@ -14,11 +14,12 @@ export function HexControl({ control, palette, onChange }: ControlProps) {
     <div className="min-w-0" data-control="hex">
       <ColorPicker
         title={control.label}
-        value={shown === null ? undefined : { rgb: shown }}
+        value={shown === null ? undefined : `#${shown.toLowerCase()}`}
         palette={palette}
         showTemplateColors={false}
         onPick={(color) => {
-          if ("rgb" in color && color.rgb !== shown) onChange(color.rgb)
+          const picked = typeof color === "string" ? color.slice(1).toUpperCase() : null
+          if (picked !== null && picked !== shown) onChange(picked)
         }}
         trigger={
           <Button
