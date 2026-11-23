@@ -1,4 +1,3 @@
-import { contrast } from "@airdesign/document"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
@@ -7,6 +6,19 @@ import { grow, landed } from "@/testing/doom-fixtures"
 
 const quiet = { var: "background2", tint: -0.06 }
 const ink = { var: "text" }
+
+function luminance(hex: doom.Hex): number {
+  const [red = 0, green = 0, blue = 0] = [1, 3, 5].map((at) => {
+    const channel = Number.parseInt(hex.slice(at, at + 2), 16) / 255
+    return channel <= 0.040_45 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+function contrast(left: doom.Hex, right: doom.Hex): number {
+  const [light, dark] = [luminance(left), luminance(right)].sort((a, b) => b - a)
+  return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05)
+}
 
 const built = grow([])
 const slide = built.slides[0]!
@@ -62,9 +74,7 @@ describe("drawing a shape", () => {
 
   it("keeps the theme's text readable on a new shape, in a light and in a dark theme", () => {
     for (const theme of [doom.defaultTheme, darkTheme])
-      expect(
-        contrast(doom.resolveColor(quiet as doom.Color, theme).slice(1), theme.colors.text.slice(1)),
-      ).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(doom.resolveColor(quiet as doom.Color, theme), theme.colors.text)).toBeGreaterThanOrEqual(4.5)
   })
 
   it("draws a named preset shape at the default size", () => {

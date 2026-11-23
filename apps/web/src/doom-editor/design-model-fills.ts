@@ -6,7 +6,6 @@ import type { PanelKind } from "@/design/panel-order"
 import { arrange } from "@/design/panel-arrangement"
 import { choiceDesc, descOf, oldControl } from "./design-controls"
 import { shownFill } from "./design-paint-values"
-import { oldColorOf } from "./design-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@/editing/node-props"
 
@@ -58,7 +57,7 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
     const top = strokes.findLast((paint) => paint.visible !== false)
     const box = propOf(node, "box")
     const color = oldControl("fills", "color", {
-      value: top?.kind === "solid" ? oldColorOf(top.color) : undefined,
+      value: top?.kind === "solid" ? top.color : undefined,
     })
     const weight = oldControl("fills", "weight", {
       value: iconWeightOld(propOf(node, "stroke")?.weight ?? 0, Math.min(box?.w ?? 1, box?.h ?? 1)),

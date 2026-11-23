@@ -1,7 +1,16 @@
-import type { TemplateStyle } from "@airdesign/pptx"
 import { designCopy } from "@/copy/design-copy"
+import type { Swatch } from "@/design/color-choices"
 
-export function TemplateStyleFace({ style }: { style: TemplateStyle }) {
+type TemplateFace = {
+  readonly name: string | null
+  readonly major: string | null
+  readonly minor: string | null
+  readonly swatches: readonly Pick<Swatch, "var" | "css">[]
+}
+
+const barColors = ["background", "text", "accent1"] as const
+
+export function TemplateStyleFace({ style }: { style: TemplateFace }) {
   const { name, major, minor, swatches } = style
   const fonts =
     major && minor
@@ -13,7 +22,7 @@ export function TemplateStyleFace({ style }: { style: TemplateStyle }) {
         : minor
           ? designCopy.bodyFont(minor)
           : designCopy.templateFontsMissing
-  const bars = ["lt1", "dk1", "accent1"].map((slot) => swatches.find(({ scheme }) => scheme === slot))
+  const bars = barColors.map((name) => swatches.find((swatch) => swatch.var === name))
   return (
     <>
       <span aria-hidden="true" className="flex h-8 w-8 shrink-0 overflow-hidden rounded-sm border border-line">

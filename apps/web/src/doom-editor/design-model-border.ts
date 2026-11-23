@@ -7,7 +7,7 @@ import { borderWidths } from "@/design/appearance-presets"
 import { arrange } from "@/design/panel-arrangement"
 import { choiceDesc, doomControl } from "./design-controls"
 import { shownStroke } from "./design-paint-values"
-import { oldColorOf, emuOf } from "./design-values"
+import { emuOf } from "./design-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@/editing/node-props"
 
@@ -27,7 +27,7 @@ export function borderSections(input: ModelInput, kind: PanelKind): PanelSection
     { trait: "border", field: "color" },
     borderCopy.color,
     { kind: "color" },
-    { value: shown.color === undefined ? undefined : oldColorOf(shown.color) },
+    { value: shown.color },
   )
   const width = doomControl(
     { trait: "border", field: "width" },

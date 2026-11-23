@@ -7,7 +7,6 @@ import { kindOf, nodeModel } from "./design-model"
 import { distributeWrites } from "./design-align"
 import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
-import { oldColorOf, doomColorOf } from "./design-values"
 import { propOf } from "@/editing/node-props"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { optionCopy } from "@/copy/option-copy"
@@ -119,18 +118,6 @@ describe("which panel a layer gets", () => {
   })
 })
 
-describe("colours between Doom and the old panel", () => {
-  it("round-trips a hex, a theme colour and a tint", () => {
-    for (const color of [
-      hexes.blue,
-      { var: "accent1" },
-      { var: "text2", tint: 0.4 },
-      { var: "accent3", tint: -0.25 },
-    ] as const)
-      expect(doomColorOf(oldColorOf(color))).toEqual(color)
-  })
-})
-
 describe("text layer", () => {
   const model = modelOf("words")
   it("reads the old Text section from the layer's text and style", () => {
@@ -141,7 +128,7 @@ describe("text layer", () => {
     expect(find(model, "text", "align").value).toBe("left")
     expect(find(model, "text", "list").value).toBe("none")
     expect(find(model, "text", "bold").value).toBe(false)
-    expect(find(model, "textFill", "value").value).toEqual({ solid: { scheme: "dk1" } })
+    expect(find(model, "textFill", "value").value).toEqual({ solid: { var: "text" } })
   })
 
   it("writes size, weight, toggles, alignment, list, case and colour onto every span", () => {
@@ -161,7 +148,7 @@ describe("text layer", () => {
     ).toBeUndefined()
     const upper = write(["words"], find(model, "text", "case"), "upper")
     expect(prop(upper, "words", "text")?.spans[0]?.case).toBe("upper")
-    const tinted = write(["words"], find(model, "textFill", "value"), { solid: { rgb: "FF0000" } })
+    const tinted = write(["words"], find(model, "textFill", "value"), { solid: hexes.red })
     expect(prop(tinted, "words", "text")?.spans[0]?.color).toBe(hexes.red)
   })
 
@@ -212,23 +199,23 @@ describe("text layer", () => {
 describe("shape layer", () => {
   const model = modelOf("card")
   it("reads fill, opacity, corners, border and shadow like the old panel", () => {
-    expect(find(model, "fills", "paint").value).toEqual({ solid: { rgb: "336699" } })
+    expect(find(model, "fills", "paint").value).toEqual({ solid: hexes.blue })
     expect(find(model, "opacity", "opacity").value).toBe(50_000)
     expect(find(model, "corners", "corners").value).toBe(8 * 9525)
     expect(find(model, "border", "border").value).toBe("dash")
-    expect(find(model, "border", "color").value).toEqual({ scheme: "accent2" })
+    expect(find(model, "border", "color").value).toEqual({ var: "accent2" })
     expect(find(model, "border", "width").value).toBe(2 * 12_700)
     expect(find(model, "shadow", "shadow").value).toBe("none")
   })
 
   it("writes the paint, switching between solid, gradient and none", () => {
-    const solid = write(["card"], find(model, "fills", "paint"), { solid: { scheme: "accent1" } })
+    const solid = write(["card"], find(model, "fills", "paint"), { solid: { var: "accent1" } })
     expect(prop(solid, "card", "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
     const gradient = write(["card"], find(model, "fills", "paint"), {
       gradient: {
         stops: [
-          { pos: 0, color: { scheme: "accent1" } },
-          { pos: 100_000, color: { rgb: "FFFFFF" } },
+          { pos: 0, color: { var: "accent1" } },
+          { pos: 100_000, color: hexes.white },
         ],
         shade: { linear: { angle: 90 * 60_000, scaled: false } },
         rotateWithShape: true,
@@ -273,7 +260,7 @@ describe("shape layer", () => {
     expect(prop(write(["card"], find(model, "border", "border"), "none"), "card", "strokes")).toBeUndefined()
     expect(prop(write(["card"], find(model, "border", "border"), "dot"), "card", "stroke")?.dash).toBe("dot")
     expect(prop(write(["card"], find(model, "border", "width"), 6 * 12_700), "card", "stroke")?.weight).toBe(6)
-    expect(prop(write(["card"], find(model, "border", "color"), { rgb: "00FF00" }), "card", "strokes")).toEqual([
+    expect(prop(write(["card"], find(model, "border", "color"), hexes.green), "card", "strokes")).toEqual([
       { kind: "solid", color: hexes.green },
     ])
     const shadowed = write(["card"], find(model, "shadow", "shadow"), "lifted")
@@ -307,7 +294,7 @@ describe("shape layer", () => {
   })
 
   it("turning the border on gives a layer with none a visible one", () => {
-    const bare = write(["panel"], find(modelOf("panel"), "fills", "paint"), { solid: { rgb: "FFFFFF" } })
+    const bare = write(["panel"], find(modelOf("panel"), "fills", "paint"), { solid: hexes.white })
     const bordered = write(["panel"], find(modelOf("panel", bare), "border", "border"), "solid", bare)
     expect(prop(bordered, "panel", "strokes")).toEqual([{ kind: "solid", color: { var: "text" } }])
     expect(prop(bordered, "panel", "stroke")?.dash).toBe("solid")
@@ -319,7 +306,7 @@ describe("shape layer", () => {
         { kind: "solid", color: hexes.grey1 },
         { kind: "solid", color: hexes.grey2 },
       ],
-      { solid: { rgb: "333333" } },
+      { solid: hexes.grey3 },
     )
     expect(stacked).toEqual([
       { kind: "solid", color: hexes.grey1 },
@@ -347,20 +334,20 @@ describe("picture, icon, frame and line", () => {
 
   it("shows an icon's colour and weight and writes them to its stroke", () => {
     const model = modelOf("star")
-    expect(find(model, "image", "color").value).toEqual({ scheme: "dk1" })
+    expect(find(model, "image", "color").value).toEqual({ var: "text" })
     expect(find(model, "image", "weight").value).toBe(200)
-    const coloured = write(["star"], find(model, "image", "color"), { scheme: "accent1" })
+    const coloured = write(["star"], find(model, "image", "color"), { var: "accent1" })
     expect(prop(coloured, "star", "strokes")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
     const heavier = write(["star"], find(model, "image", "weight"), 300)
     expect(prop(heavier, "star", "stroke")?.weight).toBe(15)
   })
 
   it("shows a frame's fill and corners, and a line's border without a none choice", () => {
-    expect(find(modelOf("panel"), "fills", "paint").value).toEqual({ solid: { scheme: "lt2" } })
+    expect(find(modelOf("panel"), "fills", "paint").value).toEqual({ solid: { var: "background2" } })
     expect(find(modelOf("panel"), "corners", "corners").value).toBe(0)
     const line = modelOf("rule")
     expect(find(line, "border", "border").desc).toEqual({ kind: "choice", options: ["solid", "dash", "dot"] })
-    expect(find(line, "border", "color").value).toEqual({ rgb: "FF0000" })
+    expect(find(line, "border", "color").value).toEqual(hexes.red)
     expect(() => find(line, "fills", "paint")).toThrow()
   })
 })
@@ -386,17 +373,17 @@ describe("several layers", () => {
 describe("selection colours", () => {
   const scope = { slide: built.slides[0]!, ids: [] as readonly doom.NodeId[] }
 
-  it("lists each colour the slide's layers use once, darkest first, with the old panel's colour values", () => {
+  it("lists each colour the slide's layers use once, darkest first, with the colour Doom stores", () => {
     const rows = colorRows(view, theme, scope)
-    const hexes = rows.map((row) => row.hex)
-    expect(new Set(hexes).size).toBe(hexes.length)
-    expect(hexes).toContain("336699")
-    expect(rows.find((row) => row.hex === "336699")?.color).toEqual({ rgb: "336699" })
+    const shown = rows.map((row) => row.hex)
+    expect(new Set(shown).size).toBe(shown.length)
+    expect(shown).toContain("336699")
+    expect(rows.find((row) => row.hex === "336699")?.color).toEqual(hexes.blue)
     const brightness = (hex: string) =>
       0.2126 * Number.parseInt(hex.slice(0, 2), 16) +
       0.7152 * Number.parseInt(hex.slice(2, 4), 16) +
       0.0722 * Number.parseInt(hex.slice(4, 6), 16)
-    expect(hexes.map(brightness)).toEqual([...hexes.map(brightness)].sort((a, b) => a - b))
+    expect(shown.map(brightness)).toEqual([...shown.map(brightness)].sort((a, b) => a - b))
   })
 
   it("replaces one colour in fills, strokes and text on every layer that uses it", () => {

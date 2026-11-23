@@ -77,9 +77,7 @@ const transformRanges = {
   blueMod: unbounded,
   blueOff: unbounded,
 } as const satisfies Record<string, readonly [number, number]>
-export const bareTransforms = ["comp", "inv", "gray", "gamma", "invGamma"] as const
-
-export const valuedTransforms = Object.keys(transformRanges) as readonly (keyof typeof transformRanges)[]
+const bareTransforms = ["comp", "inv", "gray", "gamma", "invGamma"] as const
 
 export type TemplateColor = (typeof templateColors)[number]
 export type MappedSlot = (typeof mappedSlots)[number]

@@ -2,19 +2,13 @@ import * as doom from "@airdesign/doom"
 import type { Palette, Swatch } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
 import { propOf } from "@/editing/node-props"
-import { slotOfVar } from "./design-values"
 
 export function swatchesOf(theme: doom.Theme): readonly Swatch[] {
-  return namedByColor(
-    (Object.keys(slotOfVar) as doom.ColorVar[]).map((name) => ({
-      scheme: slotOfVar[name] as Swatch["scheme"],
-      css: theme.colors[name].toUpperCase(),
-    })),
-  )
+  return namedByColor(doom.colorVars.map((name) => ({ var: name, css: theme.colors[name].toUpperCase() })))
 }
 
 export const colorNameOf = (theme: doom.Theme, name: doom.ColorVar): string =>
-  swatchesOf(theme)[Object.keys(slotOfVar).indexOf(name)]?.name ?? name
+  swatchesOf(theme).find((swatch) => swatch.var === name)?.name ?? name
 
 function literalHexes(paints: readonly doom.Paint[] | undefined): readonly string[] {
   return (paints ?? []).flatMap((paint) => {

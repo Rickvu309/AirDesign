@@ -8,7 +8,6 @@ export const picturePanelCopy = {
   recolor: "Recolor",
   overlay: "Overlay",
   blur: "Blur",
-  overlayOpacity: "Overlay opacity",
   crop: "Crop",
 } as const
 

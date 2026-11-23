@@ -106,9 +106,9 @@ function candidates(control: PanelControl): readonly unknown[] {
     case "number":
       return typeof value === "number" && value > 0 ? [Math.round(value / 2)] : [50_800, 200]
     case "color":
-      return [{ scheme: "accent2" }]
+      return [{ var: "accent2" }]
     case "union":
-      return [{ solid: { scheme: "accent2" } }]
+      return [{ solid: { var: "accent2" } }]
     default:
       return []
   }

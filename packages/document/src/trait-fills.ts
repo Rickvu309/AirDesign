@@ -13,7 +13,6 @@ import {
   pointsWithin,
   record,
   union,
-  type ValueOf,
 } from "./value-kind.js"
 
 export const patternPresets = [
@@ -104,11 +103,7 @@ const slotPaint = union({ ...fillCases, image: mark, group: mark, hidden: shownP
 
 export const overlay = union({ none: mark, solid: color, gradient }, "solid")
 
-export type Overlay = ValueOf<typeof overlay>
-
 export const paint = union({ ...fillCases, image: pictureSource, group: mark }, "solid")
-
-export type Paint = ValueOf<typeof paint>
 
 export const paintSlots = ["p0", "p1", "p2", "p3"] as const
 

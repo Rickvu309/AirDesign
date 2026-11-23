@@ -11,11 +11,10 @@ import {
   type ShadowName,
 } from "./design-paint-values"
 import { lineNew, sizeNew } from "./design-text-values"
-import { cornerEmu, pointEmu, doomColorOf, wholeFraction } from "./design-values"
+import { cornerEmu, pointEmu, wholeFraction } from "./design-values"
 import { propOf } from "@/editing/node-props"
 import type { SlideGeometry } from "./slide-geometry"
 import { shapeWrite, shownShape } from "./design-shape-values"
-import type { Color as OldColor } from "@airdesign/document"
 
 export type ChangeContext = {
   readonly view: doom.Doom
@@ -42,7 +41,7 @@ function look(context: ChangeContext, patch: doom.TextPatch): Writes {
 
 function onlyColor(value: unknown): doom.Color | undefined {
   if (typeof value !== "object" || value === null || !("solid" in value)) return undefined
-  return doomColorOf(value.solid as OldColor)
+  return doom.readColor(value.solid)
 }
 
 function setEach<K extends doom.PropName>(
@@ -157,7 +156,7 @@ function strokeChange(context: ChangeContext, control: PanelControl, value: unkn
           })
         : []
     case "border.color": {
-      const color = doomColorOf(value as OldColor)
+      const color = doom.readColor(value)
       if (color === undefined) return []
       return setEach(context, "strokes", (id) => strokePaintWrite(propOf(context.view.nodes.get(id), "strokes"), color))
     }
@@ -169,7 +168,7 @@ function strokeChange(context: ChangeContext, control: PanelControl, value: unkn
           }))
         : []
     case "image.color": {
-      const color = doomColorOf(value as OldColor)
+      const color = doom.readColor(value)
       return color === undefined
         ? []
         : setEach(context, "strokes", (id) => strokePaintWrite(propOf(context.view.nodes.get(id), "strokes"), color))

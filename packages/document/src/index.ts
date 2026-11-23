@@ -34,10 +34,8 @@ export { refusals, type Refusal } from "./refusals.js"
 export { coordinates, readBox, type Box } from "./box.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
 export {
-  alphaKeys,
   traitNames,
   traits,
-  type HasAlpha,
   type SlotField,
   type FieldName,
   type FieldValue,
@@ -53,7 +51,7 @@ export { type TransitionValue } from "./trait-transition.js"
 export { readGuideList, readLayoutGuides, type Guide, type LayoutGuide } from "./trait-guides.js"
 export { widestEffect } from "./trait-effects.js"
 export { readTextFill, type TextFill } from "./text-fill.js"
-export { iconWeights, paintSlots, patternPresets, type Overlay, type Paint } from "./trait-fills.js"
+export { iconWeights, paintSlots, patternPresets } from "./trait-fills.js"
 export { nameBytes } from "./trait-identity.js"
 export { assetIcon, assetMedia, type Media } from "./asset-ref.js"
 
@@ -95,7 +93,6 @@ export {
 } from "./slide-order.js"
 export {
   alphaOf,
-  bareTransforms,
   fadedColor,
   mappedSlots,
   namesAlpha,
@@ -103,7 +100,6 @@ export {
   readColor,
   sameColor,
   templateColors,
-  valuedTransforms,
   type Color,
   type ColorTransform,
   type MappedSlot,
@@ -145,4 +141,3 @@ export { slideBirths } from "./slide-births.js"
 export { type TemplateStyle } from "./template-style.js"
 export { readTextStyles, type TextStyle, type TextStyleFields } from "./text-style.js"
 export { plainSlideNumber, shownSlideNumber, type SlideNumber, type SlideNumbers } from "./slide-number.js"
-export { contrast } from "./contrast.js"

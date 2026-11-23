@@ -1,4 +1,4 @@
-import { sameColor, type Color } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { colorCopy } from "@/copy/color-copy"
@@ -75,9 +75,9 @@ export function CustomColor({
   palette,
   onPick,
 }: {
-  value: Color | undefined
+  value: doom.Color | undefined
   palette: Palette
-  onPick: (color: Color) => void
+  onPick: (color: doom.Color) => void
 }) {
   const start = value === undefined ? "FFFFFF" : shownHex(value, palette.templateColors)
   const [hsv, setHsv] = useState<Hsv>(() => hsvOf(start))
@@ -105,8 +105,8 @@ export function CustomColor({
   }
 
   function commit() {
-    const color = { rgb: hexOf(latest.current) }
-    if (value !== undefined && sameColor(color, value)) return
+    const color: doom.Hex = `#${hexOf(latest.current).toLowerCase()}`
+    if (value !== undefined && doom.sameColor(color, value)) return
     onPick(color)
   }
 
@@ -136,15 +136,15 @@ export function CustomColor({
   function commitTyped(text: string) {
     setTyped(null)
     const color = typedColor(text)
-    if (color === null || !("rgb" in color)) return
-    show(hsvOf(color.rgb))
+    if (color === null) return
+    show(hsvOf(color.slice(1)))
     commit()
   }
 
   function dropped() {
     void pickScreenColor().then((color) => {
-      if (color === null || !("rgb" in color)) return
-      show(hsvOf(color.rgb))
+      if (color === null) return
+      show(hsvOf(color.slice(1)))
       commit()
     })
   }

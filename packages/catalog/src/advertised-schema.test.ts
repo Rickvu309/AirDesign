@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { advertisedSchema } from "./advertised-schema.js"
-import { colorPattern } from "./agent-color.js"
 import { toolInputSchema } from "./catalog.js"
 
-const color = { type: "string", pattern: `^${colorPattern}$` }
+const color = { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" }
 const paint = {
   type: ["string", "object"],
-  pattern: `^(?:none|${colorPattern}|group)$`,
   properties: { pattern: { type: "string", enum: ["dkDnDiag"] }, solid: color },
   additionalProperties: false,
   maxProperties: 1,

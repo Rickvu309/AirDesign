@@ -1,4 +1,4 @@
-import type { Color } from "@airdesign/document"
+import type * as doom from "@airdesign/doom"
 import { useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { colorCopy } from "@/copy/color-copy"
@@ -133,7 +133,7 @@ function ColorGrid({
   label: string
   choices: readonly Choice[]
   pressed: number
-  onPick: (color: Color) => void
+  onPick: (color: doom.Color) => void
 }) {
   const focus = pressed < 0 ? "0,0" : atOf(pressed)
   return (
@@ -171,11 +171,11 @@ export function PickerBody({
   onClose,
 }: {
   title: string
-  value: Color | undefined
+  value: doom.Color | undefined
   palette: Palette
   showTemplateColors?: boolean
   picking?: boolean
-  onPick: (color: Color) => void
+  onPick: (color: doom.Color) => void
   onSwatch?: () => void
   onAdd?: () => void
   onBack?: () => void
@@ -183,7 +183,7 @@ export function PickerBody({
 }) {
   const [moreOthers, setMoreOthers] = useState(false)
   const [moreTints, setMoreTints] = useState(false)
-  const swatch = (color: Color) => {
+  const swatch = (color: doom.Color) => {
     onPick(color)
     onSwatch?.()
   }
@@ -306,7 +306,7 @@ export function ColorPicker({
   onPick,
 }: {
   title: string
-  value: Color | undefined
+  value: doom.Color | undefined
   palette: Palette
   showTemplateColors?: boolean
   keepsFormat?: boolean
@@ -315,7 +315,7 @@ export function ColorPicker({
   align?: "start" | "center" | "end"
   trigger: ReactElement
   children: ReactNode
-  onPick: (color: Color) => void
+  onPick: (color: doom.Color) => void
 }) {
   const [open, setOpen] = useState(false)
   const [picking, setPicking] = useState(false)

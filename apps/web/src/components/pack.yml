@@ -24,7 +24,6 @@ public:
   - ui/select.tsx
   - ui/shadows.ts
   - ui/skeleton.tsx
-  - ui/slider.tsx
   - ui/sonner.tsx
   - ui/status-pill.tsx
   - ui/switch.tsx

@@ -1,6 +1,6 @@
 import { Target } from "lucide-react"
 import { useId } from "react"
-import type { Color } from "@airdesign/document"
+import type * as doom from "@airdesign/doom"
 import { Button } from "@/components/ui/button"
 import { selectionColorsCopy } from "@/copy/selection-colors-copy"
 import { shownName, type Palette } from "@/design/color-choices"
@@ -14,9 +14,9 @@ export function SelectionColorRows({
   onPick,
   onSelect,
 }: {
-  rows: readonly { readonly hex: string; readonly color: Color }[]
+  rows: readonly { readonly hex: string; readonly color: doom.Color }[]
   palette: Palette
-  onPick: (hex: string, color: Color) => void
+  onPick: (hex: string, color: doom.Color) => void
   onSelect: (hex: string) => void
 }) {
   const id = useId()

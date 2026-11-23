@@ -25,7 +25,7 @@ describe("eyedropper API wrapper", () => {
     vi.stubGlobal("window", { EyeDropper: FakeDropper })
     const controller = new AbortController()
     expect(dropperOf()).toBe(FakeDropper)
-    expect(await pickScreenColor(controller.signal)).toEqual({ rgb: "1E40AF" })
+    expect(await pickScreenColor(controller.signal)).toBe(hex("1e40af"))
     expect(seenSignal).toBe(controller.signal)
   })
 

@@ -1,6 +1,5 @@
 import { readLinkTarget, type Desc, type NumberUnit } from "@airdesign/document"
-import { bytesOf, readNodeId } from "@airdesign/doom"
-import { readAgentColor, readAgentHex } from "./agent-color.js"
+import { bytesOf, readColor, readNodeId } from "@airdesign/doom"
 import { knownIcon } from "./icon-names.js"
 import { webImage } from "./image-address.js"
 import { storableText } from "./storable-text.js"
@@ -28,6 +27,8 @@ const agentScale: { readonly [Unit in NumberUnit]: number } = {
 const powerPointWidestSlide = 51_206_400
 
 const refused: AgentRead = { ok: false }
+
+const agentHex = /^#[0-9A-Fa-f]{6}$/
 
 function plainObject(raw: unknown): raw is Readonly<Record<string, unknown>> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw)
@@ -133,13 +134,11 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
         ? readFields({ custom: desc.custom }, raw)
         : readString(raw, (text) => desc.options.includes(text))
     case "color": {
-      const color = readAgentColor(raw)
-      return color === null ? refused : { ok: true, value: color }
+      const color = readColor(raw)
+      return color === undefined ? refused : { ok: true, value: color }
     }
-    case "hex": {
-      const hex = readAgentHex(raw)
-      return hex === null ? refused : { ok: true, value: hex }
-    }
+    case "hex":
+      return typeof raw === "string" && agentHex.test(raw) ? { ok: true, value: raw.slice(1).toUpperCase() } : refused
     case "alpha":
       return refused
     case "record":

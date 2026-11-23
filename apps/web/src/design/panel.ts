@@ -1,6 +1,6 @@
 import { formatCopy } from "@/copy/format-copy"
 import { type Desc, type TraitName } from "@airdesign/document"
-import type { NodeId } from "@airdesign/doom"
+import type { Color, NodeId } from "@airdesign/doom"
 import type { TypedUnit } from "./typed-number"
 import type { CSSProperties, ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
@@ -49,6 +49,25 @@ export type PanelControl = {
   readonly nodes?: readonly NodeChoice[]
   readonly faceFallback?: () => string | null
 }
+
+export type PanelGradient = {
+  readonly stops: readonly { readonly pos: number; readonly color: Color }[]
+  readonly shade:
+    | { readonly linear: { readonly angle: number; readonly scaled: boolean } }
+    | {
+        readonly path: {
+          readonly kind: "circle"
+          readonly focus: { readonly l: number; readonly t: number; readonly r: number; readonly b: number }
+        }
+      }
+  readonly rotateWithShape: boolean
+}
+
+export type PanelPaint =
+  | { readonly none: true }
+  | { readonly solid: Color }
+  | { readonly gradient: PanelGradient }
+  | { readonly image: string | true | null }
 
 export type NodeChoice = {
   readonly node: NodeId

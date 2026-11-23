@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { doomPaintOf, type OldPaint, oldPaintOf } from "./design-values"
+import type { PanelPaint } from "@/design/panel"
+import { doomPaintOf, panelPaintOf } from "./design-values"
 
 export const shadowNames = ["none", ...doom.effectStyleNames] as const
 export type ShadowName = (typeof shadowNames)[number]
@@ -19,15 +20,10 @@ const opacityOf = (effects: readonly doom.Effect[]): number | null => {
 const fadedTo = (effects: readonly doom.Effect[], opacity: number): readonly doom.Effect[] =>
   effects.map((effect) => ("color" in effect ? { ...effect, opacity } : effect))
 
-const colorKey = (color: doom.Color): string =>
-  typeof color === "string" ? color.toLowerCase() : `${color.var}:${String(color.tint ?? 0)}`
-
 function sameEffect(a: doom.Effect, b: doom.Effect): boolean {
   if (a.kind !== b.kind) return false
   if ("radius" in a || "radius" in b) return "radius" in a && "radius" in b && a.radius === b.radius
-  return (
-    a.x === b.x && a.y === b.y && a.blur === b.blur && a.spread === b.spread && colorKey(a.color) === colorKey(b.color)
-  )
+  return a.x === b.x && a.y === b.y && a.blur === b.blur && a.spread === b.spread && doom.sameColor(a.color, b.color)
 }
 
 const sameLook = (a: readonly doom.Effect[], b: readonly doom.Effect[]): boolean =>
@@ -54,9 +50,9 @@ export function shadowOpacityWrite(
   return fadedTo(theme.effectStyles[name], Math.min(1, Math.max(0, opacity)))
 }
 
-export function shownFill(fills: readonly doom.Paint[] | undefined): OldPaint {
+export function shownFill(fills: readonly doom.Paint[] | undefined): PanelPaint {
   const last = (fills ?? []).findLast((paint) => paint.visible !== false)
-  return last === undefined ? { none: true } : oldPaintOf(last)
+  return last === undefined ? { none: true } : panelPaintOf(last)
 }
 
 export function fillWrite(

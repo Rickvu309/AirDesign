@@ -14,7 +14,7 @@ import { show } from "./trait-show.js"
 import { text } from "./trait-text.js"
 import { templateStyle } from "./trait-template-style.js"
 import { transition } from "./trait-transition.js"
-import type { Alpha, Fields, ValueOf } from "./value-kind.js"
+import type { Alpha, ValueOf } from "./value-kind.js"
 
 export const traits = {
   identity,
@@ -42,7 +42,6 @@ export type FieldName<T extends TraitName> = keyof FieldKinds<T> & string
 export type InputName<T extends TraitName> = keyof InputKinds<T> & string
 export type FieldValue<T extends TraitName, F extends FieldName<T>> = ValueOf<FieldKinds<T>[F]>
 export type TraitValue<T extends TraitName> = { readonly [F in FieldName<T>]: FieldValue<T, F> }
-export type FieldKey = { [T in TraitName]: `${T}.${FieldName<T>}` }[TraitName]
 
 export type SlotField<T extends TraitName> = (typeof traits)[T]["slots"][number] & FieldName<T>
 
@@ -50,16 +49,8 @@ export type AlphaField<T extends TraitName> = {
   [F in FieldName<T>]: FieldValue<T, F> extends Alpha ? F : never
 }[FieldName<T>]
 
-export type HasAlpha = { [T in TraitName]: AlphaField<T> }[TraitName] extends never ? false : true
-
 export type WireField<T extends TraitName> =
   | Exclude<FieldName<T>, AlphaField<T> | (T extends "effects" ? never : SlotField<T>)>
   | InputName<T>
 
 export const traitNames = Object.keys(traits) as readonly TraitName[]
-
-export const alphaKeys: readonly FieldKey[] = traitNames.flatMap((trait) =>
-  Object.entries(traits[trait].fields as Fields).flatMap(([field, kind]) =>
-    kind.desc.kind === "alpha" ? [`${trait}.${field}` as FieldKey] : [],
-  ),
-)

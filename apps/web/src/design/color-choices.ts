@@ -1,43 +1,28 @@
-import { fadedColor, opaque, sameColor, type Color, type SchemeName } from "@airdesign/document"
-import { colorHex } from "@airdesign/pptx"
+import * as doom from "@airdesign/doom"
 import { colorCopy } from "@/copy/color-copy"
 
-export type Swatch = { readonly scheme: SchemeName; readonly css: string; readonly name: string }
+export type Swatch = { readonly var: doom.ColorVar; readonly css: string; readonly name: string }
 
 export type Palette = {
   readonly templateColors: readonly Swatch[]
   readonly deck: readonly string[]
 }
 
-export type Choice = { readonly color: Color; readonly css: string; readonly name: string }
+export type Choice = { readonly color: doom.Color; readonly css: string; readonly name: string }
 
 export type TemplateColorColumn = { readonly swatch: Choice; readonly shades: readonly Choice[] }
 
-type Step = { readonly op: "lumMod" | "lumOff"; readonly val: number }
-
-export type Shade = {
-  readonly direction: "lighter" | "darker"
-  readonly percent: number
-  readonly transforms: readonly Step[]
-}
+export type Shade = { readonly direction: "lighter" | "darker"; readonly percent: number }
 
 export type Hsv = { readonly hue: number; readonly saturation: number; readonly value: number }
 
 const hexDigits = /^#?([0-9A-Fa-f]{6})$/
-const usualSlots: Readonly<Record<string, SchemeName>> = { tx1: "dk1", bg1: "lt1", tx2: "dk2", bg2: "lt2" }
 
-function lighter(percent: number): Shade {
-  const kept = (100 - percent) * 1000
-  const transforms: Step[] = [
-    { op: "lumMod", val: kept },
-    { op: "lumOff", val: percent * 1000 },
-  ]
-  return { direction: "lighter", percent, transforms }
-}
+const lighter = (percent: number): Shade => ({ direction: "lighter", percent })
 
-function darker(percent: number): Shade {
-  return { direction: "darker", percent, transforms: [{ op: "lumMod", val: (100 - percent) * 1000 }] }
-}
+const darker = (percent: number): Shade => ({ direction: "darker", percent })
+
+const tintOf = (shade: Shade): number => (shade.direction === "lighter" ? shade.percent : -shade.percent) / 100
 
 function channels(hex: string): readonly [number, number, number] {
   return [0, 2, 4].map((at) => Number.parseInt(hex.slice(at, at + 2), 16) / 255) as unknown as [number, number, number]
@@ -65,49 +50,44 @@ function shadeName(name: string, shade: Shade): string {
   return shade.direction === "lighter" ? colorCopy.lighter(name, shade.percent) : colorCopy.darker(name, shade.percent)
 }
 
-function painted(color: Color, templateColors: readonly Swatch[]): string {
-  return `#${colorHex(color, templateColors) ?? "000000"}`
+export function shownHex(value: doom.Color, templateColors: readonly Swatch[]): string {
+  if (typeof value === "string") return bare(value)
+  const css = templateColors.find((swatch) => swatch.var === value.var)?.css
+  if (css === undefined) return "000000"
+  const base: doom.Hex = `#${bare(css).toLowerCase()}`
+  return bare(value.tint === undefined || value.tint === 0 ? base : doom.tinted(base, value.tint))
 }
 
 export function templateColorColumns(templateColors: readonly Swatch[]): readonly TemplateColorColumn[] {
   return templateColors.map((swatch) => {
-    const css = bare(swatch.css)
-    const shades = shadesOf(css).map((shade) => {
-      const color: Color = { scheme: swatch.scheme, transforms: shade.transforms }
-      return { color, css: painted(color, templateColors), name: shadeName(swatch.name, shade) }
+    const shades = shadesOf(swatch.css).map((shade) => {
+      const color: doom.Color = { var: swatch.var, tint: tintOf(shade) }
+      return { color, css: `#${shownHex(color, templateColors)}`, name: shadeName(swatch.name, shade) }
     })
-    return { swatch: { color: { scheme: swatch.scheme }, css: `#${css}`, name: swatch.name }, shades }
+    return { swatch: { color: { var: swatch.var }, css: `#${bare(swatch.css)}`, name: swatch.name }, shades }
   })
 }
 
-function normalized(color: Color): Color {
-  return "scheme" in color ? { ...color, scheme: usualSlots[color.scheme] ?? color.scheme } : color
-}
-
-export function matches(choice: Color, value: Color): boolean {
-  return sameColor(normalized(choice), normalized(fadedColor(value, opaque)))
-}
+export const matches = (choice: doom.Color, value: doom.Color): boolean => doom.sameColor(choice, value)
 
 export function deckChoices(palette: Palette): readonly Choice[] {
   const taken = new Set(palette.templateColors.map((swatch) => bare(swatch.css)))
   return palette.deck
     .filter((hex) => !taken.has(hex))
-    .map((hex) => ({ color: { rgb: hex }, css: `#${hex}`, name: hex }))
+    .map((hex) => ({ color: `#${hex.toLowerCase()}`, css: `#${hex}`, name: hex }))
 }
 
-export function tintChoices(templateColors: readonly Swatch[], value: Color | undefined): readonly Choice[] {
+export function tintChoices(templateColors: readonly Swatch[], value: doom.Color | undefined): readonly Choice[] {
   const shades = templateColorColumns(templateColors).flatMap((column) => column.shades)
-  if (value === undefined) return shades
-  const plain = fadedColor(value, opaque)
-  if (!("scheme" in plain) || plain.transforms === undefined || plain.transforms.length === 0) return shades
-  if (shades.some((choice) => matches(choice.color, plain))) return shades
-  const hex = shownHex(plain, templateColors)
-  return [{ color: plain, css: `#${hex}`, name: hex }, ...shades]
+  if (value === undefined || typeof value === "string" || value.tint === undefined || value.tint === 0) return shades
+  if (shades.some((choice) => matches(choice.color, value))) return shades
+  const hex = shownHex(value, templateColors)
+  return [{ color: value, css: `#${hex}`, name: hex }, ...shades]
 }
 
-export function typedColor(text: string): Color | null {
+export function typedColor(text: string): doom.Hex | null {
   const hex = hexDigits.exec(text.trim())?.[1]
-  return hex === undefined ? null : { rgb: hex.toUpperCase() }
+  return hex === undefined ? null : `#${hex.toLowerCase()}`
 }
 
 export function hexOf({ hue, saturation, value }: Hsv): string {
@@ -152,15 +132,9 @@ export function hsvOf(hex: string): Hsv {
   return { hue: Math.round(sector * 60), saturation: high === 0 ? 0 : delta / high, value: high }
 }
 
-export function shownHex(value: Color, templateColors: readonly Swatch[]): string {
-  return bare(painted(fadedColor(value, opaque), templateColors))
-}
-
-export function shownName(value: Color, templateColors: readonly Swatch[]): string {
-  const plain = fadedColor(value, opaque)
-  if ("scheme" in plain && (plain.transforms === undefined || plain.transforms.length === 0)) {
-    const scheme = usualSlots[plain.scheme] ?? plain.scheme
-    const named = templateColors.find((swatch) => swatch.scheme === scheme)
+export function shownName(value: doom.Color, templateColors: readonly Swatch[]): string {
+  if (typeof value !== "string" && (value.tint === undefined || value.tint === 0)) {
+    const named = templateColors.find((swatch) => swatch.var === value.var)
     if (named !== undefined) return named.name
   }
   return shownHex(value, templateColors)

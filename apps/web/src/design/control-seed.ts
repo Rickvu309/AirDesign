@@ -1,33 +1,13 @@
-import type { Color, Desc } from "@airdesign/document"
+import type { Desc } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
-const backdrop: Color = { scheme: "lt1" }
+const backdrop: doom.Color = { var: "background" }
 const downward = 5_400_000
-const seen = { op: "alpha", val: 40_000 } as const
-const startingIcon = "star"
 
-export function caseSeed(key: string, color: Color): unknown {
-  switch (key) {
-    case "effects.shadow.outer":
-    case "effects.innerShadow.inner":
-      return { blur: 50_800, distance: 38_100, direction: 2_700_000, color: { rgb: "000000", transforms: [seen] } }
-    case "effects.glow.halo":
-      return { radius: 63_500, color: { ...color, transforms: [...(color.transforms ?? []), seen] } }
-    case "effects.softEdge.radius":
-    case "effects.blur.radius":
-      return 63_500
-    case "image.recolor.duotone":
-      return { dark: color, light: backdrop }
-    case "fills.paint.image":
-    case "textFill.value.image":
-      return startingIcon
-    default:
-      return undefined
-  }
-}
-
-export function firstColor(value: unknown): Color | null {
+export function firstColor(value: unknown): doom.Color | null {
+  const color = doom.readColor(value)
+  if (color !== undefined) return color
   if (typeof value !== "object" || value === null) return null
-  if ("scheme" in value || "rgb" in value || "system" in value || "preset" in value) return value as Color
   for (const item of Object.values(value)) {
     const found = firstColor(item)
     if (found !== null) return found
@@ -35,7 +15,7 @@ export function firstColor(value: unknown): Color | null {
   return null
 }
 
-export function seedOf(desc: Desc, color: Color, at = 0, count = 1, node: string | null = null): unknown {
+export function seedOf(desc: Desc, color: doom.Color, at = 0, count = 1, node: string | null = null): unknown {
   switch (desc.kind) {
     case "number":
       if (desc.unit === "fraction" && count > 1) return Math.round((at / (count - 1)) * desc.max)

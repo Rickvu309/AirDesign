@@ -1,5 +1,5 @@
 import { useId } from "react"
-import { traits, type Desc, type Paint } from "@airdesign/document"
+import { traits, type Desc } from "@airdesign/document"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { UnionControl } from "@/design/controls/union"
@@ -8,6 +8,7 @@ import { fillIcons } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import { type DesignShown } from "@/design/design-shown"
+import type { PanelPaint } from "@/design/panel"
 import { ControlView, DesignSection } from "@/editor/design-panel"
 
 export function SlideBackground({
@@ -18,7 +19,7 @@ export function SlideBackground({
 }: {
   shown: Pick<DesignShown, "background" | "fill" | "templateColors">
   deck: readonly string[]
-  onFill: (paint: Paint) => void
+  onFill: (paint: PanelPaint) => void
   paint?: Desc
 }) {
   const { background } = shown
@@ -52,7 +53,7 @@ export function SlideBackground({
       <UnionControl
         control={control}
         palette={{ templateColors: shown.templateColors, deck }}
-        onChange={(value) => onFill(value as Paint)}
+        onChange={(value) => onFill(value as PanelPaint)}
         inner={(props) =>
           props.control.field === "paint.solid" ? (
             <ColorPicker
