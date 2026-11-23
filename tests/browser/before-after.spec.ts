@@ -36,7 +36,7 @@ test("verification states share copy after a spec loads it through CommonJS", as
     const journey = await load<{ default: unknown }>(`../journeys/${name}.mjs`)
     expect(journey.default).toBeInstanceOf(Function)
   }
-  expect(states.some((state) => state.name === "new-deck-menu-focused")).toBe(true)
+  expect(states.some((state) => state.name === "decks-all")).toBe(true)
 })
 
 test("verification states load after a spec reads fill copy through CommonJS", async () => {
