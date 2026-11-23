@@ -59,6 +59,8 @@ export type TextSession = {
 
 const idle = 700
 
+let sessions = 0
+
 const empty = (resize: doom.Text["resize"]): doom.Text => ({ ...doom.textFromMarkdown("", "body"), resize })
 
 function creationWrites(created: Created, draft: doom.Text): readonly doom.Write[] {
@@ -74,6 +76,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
   const [session, setState] = useState<Session | null>(null)
   const ref = useRef<Session | null>(null)
   const pushed = useRef<string>("")
+  const step = useRef("")
   const viewRef = useRef(view)
   useEffect(() => {
     viewRef.current = view
@@ -90,13 +93,14 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     const json = JSON.stringify(now.draft)
     if (json === pushed.current || now.draft.chars === "") return
     if (now.created !== null) {
-      if (client.push(creationWrites(now.created, now.draft)).ok) {
+      if (client.push(creationWrites(now.created, now.draft), { step: step.current }).ok) {
         pushed.current = json
         set({ ...now, created: null })
       }
       return
     }
-    if (client.push([{ node: now.node, prop: "text", value: now.draft }]).ok) pushed.current = json
+    if (client.push([{ node: now.node, prop: "text", value: now.draft }], { step: step.current }).ok)
+      pushed.current = json
   }
 
   function finish() {
@@ -105,7 +109,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     flush()
     if (now.created === null) {
       const writes = leaveEmptyWrites({ node: now.node, keeps: now.keeps, draft: now.draft, pushed: pushed.current })
-      if (writes.length > 0) client.push(writes)
+      if (writes.length > 0) client.push(writes, { step: step.current })
     }
     set(null)
   }
@@ -130,6 +134,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     const keeps = holdsPaint(viewRef.current, node)
     const text = propOf(viewRef.current.nodes.get(node), "text") ?? blankTextFor(keeps)
     pushed.current = JSON.stringify(text)
+    step.current = `text:${String((sessions += 1))}`
     const from = entry.kind === "all" ? 0 : text.chars.length
     set({
       node,
@@ -148,6 +153,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
   function beginNew(created: Created, resize: doom.Text["resize"]) {
     const text = empty(resize)
     pushed.current = JSON.stringify(text)
+    step.current = `text:${String((sessions += 1))}`
     set({
       node: created.id,
       created,
