@@ -16,7 +16,6 @@ import { LinkFormatting } from "@/design/controls/link"
 import { isWeight, selectedWeight, useSelectedWeight, weightPicked } from "@/design/selected-weight"
 import type { TextFormatting } from "@airdesign/render"
 import { linkCopy } from "@/copy/link-copy"
-import { followsDrag, useLiveBoxControl } from "@/editor/live-box-fields"
 import { panelTitle } from "@/editor/panel-title"
 
 const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity"]
@@ -155,15 +154,7 @@ function SectionReset({
   )
 }
 
-export function ControlView(props: ControlProps) {
-  return followsDrag(props.control) ? <LiveBoxControl {...props} /> : shownControl(props)
-}
-
-function LiveBoxControl(props: ControlProps) {
-  return shownControl({ ...props, control: useLiveBoxControl(props.control) })
-}
-
-function shownControl({ control, palette, onChange }: ControlProps): ReactNode {
+export function ControlView({ control, palette, onChange }: ControlProps): ReactNode {
   if (control.field.startsWith("kept."))
     return <p className="text-[length:var(--type-caption)] text-quiet">{control.label}</p>
   if (control.trait === "image" && control.field === "overlay")

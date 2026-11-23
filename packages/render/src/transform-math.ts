@@ -1,7 +1,8 @@
 import type { Box, ElementId } from "@airdesign/document"
-import type { Corner, Point } from "./box-gesture.js"
 
-export { type Corner, type Point } from "./box-gesture.js"
+export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
+
+export type Point = { readonly x: number; readonly y: number }
 
 export type Edge = "top" | "right" | "bottom" | "left"
 

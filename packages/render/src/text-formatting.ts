@@ -3,13 +3,20 @@ import type {
   LinkEdit,
   ElementId,
   FormatState,
+  MappedSlot,
   ParagraphAlign,
   Color,
+  SchemeName,
   SizeStep,
   TextFormat,
 } from "@airdesign/document"
 import type { FontStyle } from "@airdesign/fonts"
-import type { CanvasTemplateColor } from "./record.js"
+
+export type CanvasTemplateColor = {
+  readonly scheme: SchemeName
+  readonly css: string
+  readonly mapped?: readonly MappedSlot[]
+}
 
 export type FormatTarget = {
   readonly link: (editing: boolean) => ElementLink | "mixed" | null

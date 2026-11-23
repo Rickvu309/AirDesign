@@ -1,7 +1,7 @@
 import { act, createElement, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { Filmstrip, useSettled } from "./index.js"
+import { Filmstrip } from "./index.js"
 
 const hosts: { host: HTMLDivElement; root: Root }[] = []
 
@@ -154,78 +154,5 @@ describe("Filmstrip", () => {
       report(false)
     })
     expect(host.querySelector("[data-painted]")).toBeNull()
-  })
-
-  function observedThumbs(): (isIntersecting: boolean) => void {
-    const callbacks: IntersectionObserverCallback[] = []
-    class FakeObserver {
-      constructor(callback: IntersectionObserverCallback) {
-        callbacks.push(callback)
-      }
-      observe(): void {}
-      disconnect(): void {}
-      unobserve(): void {}
-      takeRecords(): IntersectionObserverEntry[] {
-        return []
-      }
-    }
-    vi.stubGlobal("IntersectionObserver", FakeObserver)
-    return (isIntersecting) => {
-      for (const callback of callbacks)
-        callback([{ isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver)
-    }
-  }
-
-  function watched(seen: boolean[]) {
-    return function Watch() {
-      seen.push(useSettled())
-      return null
-    }
-  }
-
-  it("keeps the deck unsettled from mount until a near thumb has painted", async () => {
-    const { frames, flush } = framesOf()
-    const report = observedThumbs()
-    const seen: boolean[] = []
-    const host = await render(
-      createElement(
-        "div",
-        { "data-slide-list": true },
-        createElement(watched(seen)),
-        createElement(Filmstrip, {
-          width: 32,
-          height: 18,
-          paint: () => createElement("span", { "data-painted": "yes" }, "Slide"),
-        }),
-      ),
-    )
-    expect(seen.at(-1)).toBe(false)
-    await act(async () => {
-      report(true)
-    })
-    expect(frames).toHaveLength(1)
-    expect(seen.at(-1)).toBe(false)
-    await flush(0)
-    expect(host.querySelector("[data-painted]")?.textContent).toBe("Slide")
-    expect(seen.at(-1)).toBe(true)
-  })
-
-  it("a thumb out of view leaves the deck settled", async () => {
-    framesOf()
-    const report = observedThumbs()
-    const seen: boolean[] = []
-    await render(
-      createElement(
-        "div",
-        { "data-slide-list": true },
-        createElement(watched(seen)),
-        createElement(Filmstrip, { width: 32, height: 18, paint: () => createElement("span", null, "Slide") }),
-      ),
-    )
-    expect(seen.at(-1)).toBe(false)
-    await act(async () => {
-      report(false)
-    })
-    expect(seen.at(-1)).toBe(true)
   })
 })
