@@ -34,12 +34,17 @@ const start = (name: string): doom.Edit => ({
   ],
 })
 
-async function open(name: string, remote: DoomRemote = memoryDoomRemote(start(name)), client = "a") {
+async function open(
+  name: string,
+  remote: DoomRemote = memoryDoomRemote(start(name)),
+  client = "a",
+  storage = memoryStorage(),
+) {
   let next = 0
   const opened = await createDoomDeck(remote, "deck-name", {
     once: () => `${client}-${(next += 1)}`,
     client,
-    storage: memoryStorage(),
+    storage,
   })
   if (!opened.ok) throw new Error(JSON.stringify(opened))
   return opened.deck
@@ -95,5 +100,28 @@ describe("a title typed in a tab that is behind", () => {
     expect(nameOf(server.fold)).toBe("Mine")
     expect((server.fold.nodes.get(title) as { text?: doom.Text }).text?.chars).toBe("Stale title")
     expect(behind.notices()).toEqual([])
+  })
+})
+
+describe("a title typed before a reload, in a tab that is behind", () => {
+  it("still lets the server refuse only the derived name, with no notice after the reload", async () => {
+    const shared = memoryDoomRemote(start(doom.blankDeckName))
+    const offline: DoomRemote = { ...shared, edit: () => Promise.reject(new Error("offline")) }
+    const kept = memoryStorage()
+    const behind = await open(doom.blankDeckName, offline, "a", kept)
+    expect(behind.push([retitle(behind.view(), "Stale title")]).ok).toBe(true)
+    await behind.sync()
+    expect(behind.pending()).toHaveLength(2)
+    const ahead = await open(doom.blankDeckName, shared, "b")
+    expect(ahead.push([{ node: deck, prop: "name", value: "Mine" }]).ok).toBe(true)
+    expect((await ahead.sync()).ok).toBe(true)
+    const reopened = await open(doom.blankDeckName, shared, "a", kept)
+    await reopened.sync()
+    const server = await shared.open({ deck: "deck-name" })
+    if (!server.ok) throw new Error(JSON.stringify(server))
+    expect(nameOf(server.fold)).toBe("Mine")
+    expect((server.fold.nodes.get(title) as { text?: doom.Text }).text?.chars).toBe("Stale title")
+    expect(reopened.notices()).toEqual([])
+    expect(reopened.pending()).toEqual([])
   })
 })

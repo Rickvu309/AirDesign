@@ -124,7 +124,6 @@ function connected(
   let redoSteps: Step[] = []
   const turned: string[] = []
   let notices: readonly Notice[] = []
-  const quiet = new Set<string>()
   let link: Reach = "reached"
   let kept = true
   let shownStatus: DeckStatus = { kind: "saved" }
@@ -181,6 +180,7 @@ function connected(
   }
 
   function drop(once: string, refusal: Omit<Notice, "once">) {
+    const quiet = new Set(queue.flatMap((each) => (each.follows === undefined ? [] : [each.edit.once])))
     const result = dropped(queue, once)
     if (result.gone.length === 0) return
     queue = result.queue
@@ -352,6 +352,7 @@ function connected(
     writes: readonly doom.Write[],
     by: doom.Author,
     runUndo?: doom.RunUndo,
+    follows?: string,
   ): Pushed & { readonly before?: doom.Doom } {
     const before = view()
     const edit: doom.Edit = { once: nextOnce(), author: by, writes, ...(runUndo === undefined ? {} : { runUndo }) }
@@ -359,7 +360,7 @@ function connected(
     if (doom.isRefusal(made)) return { ok: false, refused: made }
     const trial = appliedOn(before, made.edit)
     if (doom.isRefusal(trial)) return { ok: false, refused: trial }
-    queue = [...queue, made]
+    queue = [...queue, follows === undefined ? made : { ...made, follows }]
     const saved = save({ queue })
     tell()
     void sync()
@@ -506,8 +507,7 @@ function connected(
       const named = fromTitle ? derived : []
       const pushed = pushEdit(own, pushing?.author ?? author)
       if (!pushed.ok) return pushed
-      const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author)
-      if (follow?.ok === true) quiet.add(follow.once)
+      const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author, undefined, pushed.once)
       const writes = follow?.ok === true ? [...own, ...named] : own
       const onces = follow?.ok === true ? [pushed.once, follow.once] : [pushed.once]
       const open = undoSteps.at(-1)

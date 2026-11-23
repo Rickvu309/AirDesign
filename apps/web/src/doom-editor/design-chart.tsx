@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Plus, Trash2 } from "lucide-react"
 import { Fragment } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
-import { NumberField, PanelSection } from "./panel-fields"
+import { NumberField } from "./number-cell"
+import { PanelSection } from "./panel-fields"
 import { propOf } from "@/editing/node-props"
 import {
   chartAddRow,

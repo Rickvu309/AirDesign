@@ -192,11 +192,7 @@ function addPicture(draft: Draft, parent: Node, change: Add): void {
   const natural = draft.reading.pictures?.get(change.fill.image)
   const fitted =
     change.box !== undefined || natural === undefined ? area : { ...area, ...centred(area, pictureFit(natural, area)) }
-  create(draft, "shape", parent.id, {
-    ...surfaceOf(change),
-    box: givenBox(change, fitted),
-    geometry: { kind: "rect" },
-  })
+  create(draft, "shape", parent.id, { ...surfaceOf(change), box: givenBox(change, fitted), geometry: { kind: "rect" } })
 }
 
 function addIcon(draft: Draft, parent: Node, change: Add): void {

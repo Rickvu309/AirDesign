@@ -18,10 +18,10 @@ const stampLength = 11
 
 function readQueued(raw: unknown): Queued | undefined {
   if (typeof raw !== "object" || raw === null) return undefined
-  const { edit, after } = raw as { edit?: doom.Edit; after?: unknown }
+  const { edit, after, follows } = raw as { edit?: doom.Edit; after?: unknown; follows?: unknown }
   if (edit === undefined || typeof edit.once !== "string" || !Array.isArray(edit.writes)) return undefined
   if (!Array.isArray(after) || after.length !== edit.writes.length) return undefined
-  return { edit, after: after as (string | null)[] }
+  return { edit, after: after as (string | null)[], ...(typeof follows === "string" ? { follows } : {}) }
 }
 
 export function deviceStorage(deck: string): DoomStorage {

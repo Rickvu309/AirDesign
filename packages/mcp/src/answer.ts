@@ -93,19 +93,13 @@ function whereWords(where: Where): string {
   return [change, named].filter((part) => part !== "").join(": ")
 }
 
-const fieldHints: Readonly<Record<string, string>> = {
-  shape: "A shape takes one of the outlines its shape field lists. Lines and connectors are not shapes: add kind line.",
-}
-
 export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): ToolResult {
   const where = whereWords(more)
-  const hint = more.field === undefined ? undefined : fieldHints[more.field]
-  const words = hint === undefined ? refusalWords[code] : `${refusalWords[code]} ${hint}`
   return told(false, {
     ok: false,
     refusal: code,
     ...more,
-    note: where === "" ? words : `${where}. ${words}`,
+    note: where === "" ? refusalWords[code] : `${where}. ${refusalWords[code]}`,
   })
 }
 
