@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { duplicateWrites, pasteWrites } from "./copy-writes"
 import { flipWrites, toggleWrites } from "./flip-writes"
+import { moveWrites } from "./move-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
 import { orderWrites } from "./order-writes"
 import { geometryOf } from "./slide-geometry"
@@ -159,6 +160,36 @@ describe("group, frame and ungroup", () => {
     expect(now.left).toBeCloseTo(before.left, 0)
     expect(now.top).toBeCloseTo(before.top, 0)
     expect(boxOf(after, built.ids.k!).rotation).toBe(90)
+  })
+
+  it("ungroups a group around a hugging group at the size the inner group shows, not the size it stored", () => {
+    const built = grow([{ type: "shape", name: "k", props: { box: spot(320, 280, 160, 90), fills: paint } }])
+    const { ids, slides } = built
+    const mint = minter()
+    const inner = wrapWrites(built.view, built.geometry, [ids.k!], "group", mint)!
+    let view = landed(built.view, inner.writes)
+    const outer = wrapWrites(view, regeometry(view, slides[0]!), inner.selected, "group", mint)!
+    view = landed(view, outer.writes)
+    view = landed(view, moveWrites(view, regeometry(view, slides[0]!), [ids.k!], { x: 0, y: 30 }))
+    const shown = regeometry(view, slides[0]!).byId.get(ids.k!)!.bounds
+    const made = ungroupWrites(view, regeometry(view, slides[0]!), outer.selected)!
+    const after = regeometry(landed(view, made.writes), slides[0]!).byId.get(ids.k!)!.bounds
+    expect(after).toEqual(shown)
+  })
+
+  it("ungroups a group around a hugging group that holds a turned layer, and the layer stays put", () => {
+    const built = grow([{ type: "shape", name: "k", props: { box: spot(540, 120, 160, 90, 30), fills: paint } }])
+    const { ids, slides } = built
+    const mint = minter()
+    const inner = wrapWrites(built.view, built.geometry, [ids.k!], "group", mint)!
+    let view = landed(built.view, inner.writes)
+    const outer = wrapWrites(view, regeometry(view, slides[0]!), inner.selected, "group", mint)!
+    view = landed(view, outer.writes)
+    const shown = regeometry(view, slides[0]!).byId.get(ids.k!)!.bounds
+    const made = ungroupWrites(view, regeometry(view, slides[0]!), outer.selected)!
+    const after = regeometry(landed(view, made.writes), slides[0]!).byId.get(ids.k!)!.bounds
+    expect(after.left).toBeCloseTo(shown.left, 6)
+    expect(after.top).toBeCloseTo(shown.top, 6)
   })
 
   it("does nothing to a layer that is not a frame", () => {
