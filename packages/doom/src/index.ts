@@ -41,14 +41,8 @@ export { bakeLayout } from "./bake-layout.js"
 export { deriveChart } from "./derive-chart.js"
 export type { Box, Point, Resolved, ResolvedEffect, ResolvedLine, ResolvedPaint, ResolvedRun } from "./resolved.js"
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
-export {
-  adjustDefaults,
-  distanceToSegment,
-  presetHolds,
-  presetOutline,
-  presetSites,
-  textArea,
-} from "./preset-geometry.js"
+export { adjustDefaults, presetHolds, presetOutline, presetSites, textArea } from "./preset-geometry.js"
+export { routeDistance } from "./line-ends.js"
 export { defaultTheme } from "./default-theme-art.js"
 export { slideTextStyles } from "./slide-text-styles.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } from "./doom-tree.js"
