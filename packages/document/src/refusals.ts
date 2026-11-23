@@ -8,6 +8,7 @@ export const refusals = [
   "group-box",
   "locked",
   "kind",
+  "last-slide",
 ] as const
 
 export type Refusal = (typeof refusals)[number]

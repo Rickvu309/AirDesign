@@ -209,6 +209,19 @@ export const suite: readonly SuiteRow[] = [
   ),
   words("long-text", "Set the title of the opening slide to a run of seven thousand n characters.", bigRun, "n"),
   row(
+    "delete-every-slide",
+    "Delete every slide in the deck.",
+    { steps: [refused("last-slide")], landed: unchanged },
+    [
+      edit(
+        Object.values(slides).map((slide) => ({ op: "slide", delete: slide })),
+        baseRev,
+      ),
+    ],
+    one({ op: "slide", delete: slides.roadmap }),
+    "tool",
+  ),
+  row(
     "over-long-text",
     "Set the title of the opening slide to a run of nine thousand n characters.",
     { steps: [refused("limit")], landed: unchanged },

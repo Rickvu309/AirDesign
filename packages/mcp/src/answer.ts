@@ -32,6 +32,8 @@ export const refusalWords = {
     "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or send the edit without runId to start a new run.",
   "run-fenced":
     "That run has stopped, never started, or is another agent's, and nothing landed. Send the edit without runId to start a new run.",
+  "last-slide":
+    "A deck keeps at least one slide, so nothing landed. Leave one slide in the deck, or add the new slide in the same edit.",
   payload: "The deck is too large for this call, and nothing landed.",
   store: "The deck could not be read or saved, and nothing changed. Send the call again.",
 } as const satisfies Partial<Record<EditRefusal, string>>
@@ -46,6 +48,7 @@ const doomCodes = {
   missing: "dead",
   stale: "stale",
   "run-fenced": "run-fenced",
+  "last-slide": "last-slide",
 } as const satisfies Record<doom.Refusal["refused"], Refused>
 
 const hostCodes = {

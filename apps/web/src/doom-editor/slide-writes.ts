@@ -69,8 +69,7 @@ export function duplicateSlideWrites(view: doom.Doom, slides: readonly doom.Node
 export function deleteSlideWrites(view: doom.Doom, removed: readonly doom.NodeId[]): readonly doom.Write[] {
   const slides = slidesOf(view)
   const gone = new Set(removed)
-  const kept = slides.filter((slide) => !gone.has(slide))
-  if (kept.length === 0 || kept.length === slides.length) return []
+  if (!slides.some((slide) => gone.has(slide))) return []
   return slides.filter((slide) => gone.has(slide)).map((slide) => ({ node: slide, prop: "parent", value: null }))
 }
 

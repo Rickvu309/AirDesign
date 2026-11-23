@@ -267,6 +267,7 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   const delta = countDelta(work, doom, landed)
   const crowded = overLimit(delta, known)
   if (crowded !== undefined) return crowded
+  if (delta.slides < 0 && known.counts().slides + delta.slides <= 0) return refuse("last-slide")
   const turned = landed.runUndo === undefined ? undefined : work.runs.get(landed.runUndo.run)
   if (landed.runUndo !== undefined && (turned === undefined || landed.author.kind !== "person")) return refuse("shape")
   if (landed.runUndo !== undefined && turned !== undefined)

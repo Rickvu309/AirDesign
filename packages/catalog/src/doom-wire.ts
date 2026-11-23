@@ -50,7 +50,16 @@ export const picturesWantedMilliseconds = 120_000
 export const nodeIdPattern = new RegExp(doom.agentChangesSchema.$defs.id.pattern)
 
 const payload: DoomRefusal = { ok: false, refusal: "payload" }
-const refusedKinds: readonly string[] = ["shape", "limit", "cycle", "person", "missing", "stale", "run-fenced"]
+const refusedKinds: readonly string[] = [
+  "shape",
+  "limit",
+  "cycle",
+  "person",
+  "missing",
+  "stale",
+  "run-fenced",
+  "last-slide",
+]
 
 export const readDoomEdit = readInput(
   z.strictObject({ deck: deckInput, edit: z.record(z.string(), z.unknown()) }),

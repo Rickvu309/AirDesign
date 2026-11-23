@@ -1,6 +1,7 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
 import { agentKeptLayers } from "./agent-runs-copy.ts"
 import { elementCopy } from "./element-copy.ts"
+import { slideListCopy } from "./slide-list-copy.ts"
 
 export type StepWords = {
   readonly working: string
@@ -57,6 +58,7 @@ export const airaRefusalWords: Readonly<Record<EditRefusal | "unreached", string
   present: "That layer is already in the deck.",
   "group-box": "That layer is inside a group. Ungroup it to change it on its own.",
   kind: "That layer can't take this change.",
+  "last-slide": slideListCopy.lastSlide,
   locked: elementCopy.removeRefusedBody.animated,
   deck: "Aira couldn't find this deck.",
   owner: "This deck belongs to another account.",

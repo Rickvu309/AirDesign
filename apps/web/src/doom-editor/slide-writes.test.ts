@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { slidesOf } from "@/editing/node-props"
-import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
+import { landed, paint, spot } from "@/testing/doom-fixtures"
 import {
   addSlideWrites,
   deleteSlideWrites,
@@ -97,8 +97,7 @@ describe("add slide", () => {
   })
 
   it("makes a first slide when the deck has none", () => {
-    const grown = grow([])
-    const withoutSlides = landed(grown.view, [{ node: grown.slides[0]!, prop: "parent", value: null }])
+    const withoutSlides = doom.doomFromTree({ theme: doom.defaultTheme, slides: [] }).doom
     expect(slidesOf(withoutSlides)).toEqual([])
     const writes = addSlideWrites(withoutSlides, null, minter())
     expect(slidesOf(landed(withoutSlides, writes.writes))).toEqual([writes.slide])
@@ -150,11 +149,13 @@ describe("delete slides", () => {
     expect(slidesOf(landed(view, deleteSlideWrites(view, [slides[3]!, slides[1]!])))).toEqual([slides[0], slides[2]])
   })
 
-  it("never deletes the last slide, nor every slide at once", () => {
-    const grown = grow([])
-    expect(deleteSlideWrites(grown.view, [grown.slides[0]!])).toEqual([])
+  it("leaves the deck's last slide to the core, which refuses to land it", () => {
     const { view, slides } = three()
-    expect(deleteSlideWrites(view, slides)).toEqual([])
+    const writes = deleteSlideWrites(view, slides)
+    expect(writes).toHaveLength(slides.length)
+    expect(
+      doom.applyEdit(view, { once: "all", author: { kind: "person", id: "p" }, writes, rev: doom.rev(view.rev + 1) }),
+    ).toEqual({ refused: "last-slide" })
   })
 
   it("lands on the slide that takes the first one's place, or the one before at the end", () => {
