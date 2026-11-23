@@ -1,14 +1,16 @@
 import { Client, type Notification } from "pg"
 
-export type Channel = "deck" | "aira"
+export type Topic = "aira" | { readonly deck: string }
+
+const deckOf = (payload: string | undefined) => payload?.slice(0, payload.lastIndexOf(":")) ?? ""
 
 export class DeckListen {
   private client: Client | undefined
   private trusted = false
   private stopped = true
   private opening: Promise<void> | undefined
-  private pendingWake = false
-  private readonly waiters: Record<Channel, Set<() => void>> = { deck: new Set(), aira: new Set() }
+  private readonly aira = new Set<() => void>()
+  private readonly decks = new Map<string, Set<() => void>>()
   private readonly connectionString: string
 
   constructor(connectionString: string) {
@@ -23,7 +25,6 @@ export class DeckListen {
   async close(): Promise<void> {
     this.stopped = true
     this.trusted = false
-    this.pendingWake = false
     const client = this.client
     this.client = undefined
     this.opening = undefined
@@ -40,12 +41,15 @@ export class DeckListen {
     await this.ensure()
   }
 
-  wait(signal: AbortSignal, channel: Channel = "deck"): Promise<void> {
+  wait(signal: AbortSignal, topic: Topic): Promise<void> {
     if (signal.aborted) return Promise.resolve()
-    const waiters = this.waiters[channel]
+    const deck = topic === "aira" ? undefined : topic.deck
+    const waiters = deck === undefined ? this.aira : (this.decks.get(deck) ?? new Set())
+    if (deck !== undefined) this.decks.set(deck, waiters)
     return new Promise((resolve) => {
       const finish = () => {
         waiters.delete(finish)
+        if (deck !== undefined && waiters.size === 0 && this.decks.get(deck) === waiters) this.decks.delete(deck)
         signal.removeEventListener("abort", finish)
         resolve()
       }
@@ -54,8 +58,13 @@ export class DeckListen {
     })
   }
 
-  private wake(channel: Channel = "deck"): void {
-    for (const waiter of [...this.waiters[channel]]) waiter()
+  private wake(waiters: Set<() => void> | undefined): void {
+    for (const waiter of [...(waiters ?? [])]) waiter()
+  }
+
+  private wakeEveryone(): void {
+    this.wake(this.aira)
+    for (const waiters of [...this.decks.values()]) this.wake(waiters)
   }
 
   private async ensure(): Promise<void> {
@@ -76,7 +85,6 @@ export class DeckListen {
 
   private async connect(): Promise<void> {
     this.trusted = false
-    this.pendingWake = false
     const previous = this.client
     this.client = undefined
     if (previous !== undefined) {
@@ -95,17 +103,9 @@ export class DeckListen {
       this.fail(client)
     })
     client.on("notification", (message: Notification) => {
-      if (this.client !== client) return
-      if (message.channel === "aira") {
-        if (this.trusted) this.wake("aira")
-        return
-      }
-      if (message.channel !== "deck") return
-      if (!this.trusted) {
-        this.pendingWake = true
-        return
-      }
-      this.wake()
+      if (this.client !== client || !this.trusted) return
+      if (message.channel === "aira") this.wake(this.aira)
+      if (message.channel === "deck") this.wake(this.decks.get(deckOf(message.payload)))
     })
     await client.connect()
     if (this.stopped) {
@@ -117,11 +117,7 @@ export class DeckListen {
     await client.query("listen aira")
     this.client = client
     this.trusted = true
-    this.wake("aira")
-    if (this.pendingWake) {
-      this.pendingWake = false
-      this.wake()
-    }
+    this.wakeEveryone()
   }
 
   private fail(client: Client): void {

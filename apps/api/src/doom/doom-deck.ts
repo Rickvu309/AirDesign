@@ -80,8 +80,14 @@ const runSql =
 
 const runEdits = 500
 
-const editsSql =
-  "select rev, edit, octet_length(edit::text) as bytes from deck.doom_edit where deck = $1 and rev > $2 order by rev limit $3"
+const sinceSql = `
+select s.owner, s.rev, s.trashed is not null as trashed,
+  case when s.owner = $4 and s.trashed is null then coalesce(
+    (select jsonb_agg(jsonb_build_object('rev', e.rev, 'edit', e.edit, 'bytes', octet_length(e.edit::text)) order by e.rev)
+     from (select rev, edit from deck.doom_edit where deck = s.id and rev > $2 order by rev limit $3) e),
+    '[]'::jsonb
+  ) else '[]'::jsonb end as edits
+from deck.doom s where s.id = $1`
 
 const attempts = 8
 const answerEdits = 100
@@ -250,26 +256,24 @@ export async function editDoom(
   return refusal("stale")
 }
 
+type Caught = Omit<Stored, "id"> & {
+  readonly edits: readonly { readonly rev: number; readonly edit: object; readonly bytes: number }[]
+}
+
 export async function sinceDoom(db: Sql, parsed: { readonly deck: DeckId; readonly rev: number }, email: string) {
-  const stored = await readStored(db, parsed.deck)
+  const stored = (await db.query<Caught>(sinceSql, [parsed.deck, parsed.rev, answerEdits, email])).rows[0]
   if (stored === undefined) return refusal("deck")
   if (stored.owner !== email) return refusal("owner")
   if (stored.trashed) return refusal("deck")
   if (parsed.rev > stored.rev) return refusal("cursor")
-  const rows = await db.query<{ rev: number; edit: unknown; bytes: number }>(editsSql, [
-    parsed.deck,
-    parsed.rev,
-    answerEdits,
-  ])
   const edits: unknown[] = []
   let bytes = 0
-  for (const row of rows.rows) {
+  for (const row of stored.edits) {
     bytes += row.bytes
     if (edits.length > 0 && bytes > limits.body) break
-    edits.push({ ...(row.edit as object), rev: row.rev })
+    edits.push({ ...row.edit, rev: row.rev })
   }
-  const head = await readStored(db, parsed.deck)
-  return { ok: true, deck: parsed.deck, rev: Math.max(head?.rev ?? 0, rows.rows.at(-1)?.rev ?? 0), edits } as const
+  return { ok: true, deck: parsed.deck, rev: stored.rev, edits } as const
 }
 
 export async function runDoom(db: Sql, parsed: { readonly deck: DeckId; readonly run: string }, email: string) {

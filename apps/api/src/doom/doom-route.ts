@@ -53,7 +53,7 @@ async function heldSince(
   for (;;) {
     const answered = new AbortController()
     const hold = AbortSignal.any([signal, answered.signal])
-    const woken = options.listen.wait(hold).then(() => false)
+    const woken = options.listen.wait(hold, { deck: parsed.deck }).then(() => false)
     const asked = options.pictures.asked(parsed.deck, hold)
     try {
       await options.listen.ready()
