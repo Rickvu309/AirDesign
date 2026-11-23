@@ -79,6 +79,7 @@
     "doom-editor.spec.ts": 3.2,
     "doom-picture-wake.spec.ts": 1.8,
     "doom-slide-picture.spec.ts": 14.4,
+    "doom-slides-transform.spec.ts": 11.9,
     "doom-speed.spec.ts": 16.1,
     "drag-feel.spec.ts": 3.6,
     "editor-design-shortcuts.spec.ts": 2.8,
