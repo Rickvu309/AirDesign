@@ -33,15 +33,12 @@ export function slideSetAction(
       if (at !== null) moveSlides(held, at)
       return
     }
-    if (change === "remove" && held.length >= strip.count) {
-      toast.error(slideListCopy.lastSlide)
-      return
-    }
     if (change === "clone" && held.length + strip.count > limits.slides) {
       toast.error(slideListCopy.slideLimit(limits.slides))
       return
     }
     const result = strip.onChangeSet?.(change, held)
+    if (result === null && change === "remove") toast.error(slideListCopy.lastSlide)
     if (result === undefined || result === null) return
     const picked = result.picked
     follow()
