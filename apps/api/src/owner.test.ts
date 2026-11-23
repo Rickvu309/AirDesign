@@ -193,7 +193,7 @@ describe("only a deck's owner acts on it", () => {
       text: content[0]?.text ?? body,
       challenge,
       ...(answered === undefined ? {} : { answer: answered }),
-      ...(content.length > 1 ? { last: content.at(-1)?.text ?? "" } : {}),
+      ...(content.length > 0 ? { last: content.at(-1)?.text ?? "" } : {}),
     }
   }
 

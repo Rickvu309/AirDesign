@@ -46,7 +46,7 @@ const net: ImageNet = {
   },
 }
 
-type Text = { readonly text: string }
+type Said = { readonly note: string; readonly layers: string }
 type Answer = { readonly deck: string; readonly rev: number; readonly slides: readonly string[] }
 
 describe("an agent adds an image from the web to a Doom deck through the MCP address", () => {
@@ -110,7 +110,7 @@ describe("an agent adds an image from the web to a Doom deck through the MCP add
       expect(answer.isError, JSON.stringify(answer.content)).not.toBe(true)
       expect(fetches).toEqual([logo])
       const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: made.deck } })
-      const words = (read.content as readonly Text[]).map((block) => block.text).join("\n")
+      const words = (read.structuredContent as Said).layers
       expect(words).toContain(`image:${sha256}`)
       expect(words).not.toContain(logo)
       const media = await ask(base, "POST", "/decks/media", { deck: made.deck, sha256 }, cookie)
@@ -150,7 +150,7 @@ describe("an agent adds an image from the web to a Doom deck through the MCP add
       })
       expect(answer.isError, JSON.stringify(answer.content)).not.toBe(true)
       const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: made.deck } })
-      const words = (read.content as readonly Text[]).map((block) => block.text).join("\n")
+      const words = (read.structuredContent as Said).layers
       const box = /picture @\d+,\d+ (\d+)x(\d+)/.exec(words)
       expect(box, words).not.toBeNull()
       expect(Number(box?.[1]) / Number(box?.[2])).toBeCloseTo(4, 1)
@@ -165,7 +165,7 @@ describe("an agent adds an image from the web to a Doom deck through the MCP add
       for (const image of ["d".repeat(64), "logo.png"]) {
         const answer = await client.callTool({ name: "airdesign_edit_deck", arguments: add(made, image) })
         expect(answer.isError).toBe(true)
-        const words = (answer.content as readonly Text[]).map((block) => block.text).join("\n")
+        const words = (answer.structuredContent as Said).note
         expect(words).toContain(`Change 1: "${image}" was not used because`)
       }
     } finally {
@@ -179,7 +179,7 @@ describe("an agent adds an image from the web to a Doom deck through the MCP add
       fetches.length = 0
       const answer = await client.callTool({ name: "airdesign_edit_deck", arguments: add(made, inside) })
       expect(answer.isError).toBe(true)
-      const words = (answer.content as readonly Text[]).map((block) => block.text).join("\n")
+      const words = (answer.structuredContent as Said).note
       expect(words).toContain(`"${inside}" was not used because it leads to a private or local network`)
       expect(fetches).toEqual([])
       const rows = await pool.query("select key from deck.media where deck = $1", [made.deck])

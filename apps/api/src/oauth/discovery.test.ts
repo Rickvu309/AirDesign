@@ -144,7 +144,11 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     expect(created.json).toMatchObject({ ok: true, deck: "discovery", rev: 1 })
     const listed = await sdk.callTool({ name: "airdesign_list_decks", arguments: {} })
     expect(listed.isError).not.toBe(true)
-    expect(listed.structuredContent).toEqual({ ok: true, decks: [{ deck: "discovery", name: "Blank deck", rev: 1 }] })
+    expect(listed.structuredContent).toEqual({
+      ok: true,
+      decks: [{ deck: "discovery", name: "Blank deck", rev: 1 }],
+      note: "Your decks.",
+    })
     const read = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
     expect(read.isError).not.toBe(true)
     const seen = read.structuredContent as { rev: number; slides: string[] }
@@ -160,7 +164,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     expect(called.isError).not.toBe(true)
     expect(called.structuredContent).toMatchObject({ ok: true, deck: "discovery", rev: 2 })
     const again = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
-    expect((again.content as { text: string }[])[1]?.text).toContain('text="Connected"')
+    expect((again.structuredContent as { layers: string }).layers).toContain('text="Connected"')
     const saved = await ask(base, "POST", "/doom/open", { deck: "discovery" }, cookie)
     expect(saved.json).toMatchObject({ rev: 2 })
   } finally {

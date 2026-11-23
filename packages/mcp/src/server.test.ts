@@ -158,7 +158,7 @@ describe("createServer", () => {
       expect(decks.decks.size).toBe(1)
       const bad = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("not allowed!") })
       expect(bad.isError).toBe(true)
-      expect(bad.structuredContent).toEqual({ ok: false, refusal: "field" })
+      expect(bad.structuredContent).toMatchObject({ ok: false, refusal: "field" })
     })
   })
 
@@ -166,8 +166,75 @@ describe("createServer", () => {
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const refused = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "nothere" } })
       expect(refused.isError).toBe(true)
-      expect(refused.structuredContent).toEqual({ ok: false, refusal: "deck" })
-      expect(refused.content).toHaveLength(2)
+      expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "deck" })
+      expect(refused.content).toEqual([{ type: "text", text: JSON.stringify(refused.structuredContent) }])
+    })
+  })
+})
+
+describe("an answer read from structuredContent alone", () => {
+  const shot = "/9j/AAAA"
+  const textOf = (result: { content: unknown }) =>
+    (result.content as { type: string; text?: string }[]).filter((block) => block.type === "text")
+
+  it("carries every word the tool says, as a client that reads only structuredContent needs", async () => {
+    const host: Host = {
+      ...memoryDecks(started),
+      pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
+    }
+    await withClient(sessionFor(), host, async (client) => {
+      const call = (name: string, args: Record<string, unknown>) =>
+        client.callTool({ name: `airdesign_${name}`, arguments: args })
+      const made = await call("create_deck", { name: "Board" })
+      const deck = (made.structuredContent as { deck: string }).deck
+      const first = (made.structuredContent as { slides: string[] }).slides[0]!
+      const read = await call("read_deck", { deck, picture: true })
+      const edited = await call("edit_deck", {
+        deck,
+        base: (read.structuredContent as { rev: number }).rev,
+        changes: [{ op: "add", kind: "text", slide: first, text: "Plan" }],
+      })
+      const runId = (edited.structuredContent as { runId: string }).runId
+      const answers = {
+        made,
+        read,
+        edited,
+        listed: await call("list_decks", {}),
+        stopped: await call("stop_run", { deck, runId }),
+        unknown: await call("read_deck", { deck: "nothere" }),
+        wrong: await call("edit_deck", { deck, base: 1, changes: [{ op: "set", node: "z:9", fill: 3 }] }),
+      }
+      for (const result of Object.values(answers))
+        expect(textOf(result)).toEqual([{ type: "text", text: JSON.stringify(result.structuredContent) }])
+
+      const seen = read.structuredContent as { note: string; layers: string; pictures: string[] }
+      expect(seen.note).toContain("Send rev as base to airdesign_edit_deck.")
+      expect(seen.layers.split("\n")[0]).toBe(`slide ${first} "Title"`)
+      expect(seen.layers).toContain('text="Untitled"')
+      expect(seen.pictures).toEqual([first])
+      expect(read.content).toContainEqual({ type: "image", data: shot, mimeType: "image/jpeg" })
+      expect((made.structuredContent as { layers: string }).layers).toContain('text="Untitled"')
+      expect((edited.structuredContent as { note: string }).note).toMatch(/^Landed at rev \d+, adding \S+ text/)
+      expect((answers.stopped.structuredContent as { note: string }).note).toBe("The run has stopped.")
+      expect(answers.unknown.structuredContent).toEqual({
+        ok: false,
+        refusal: "deck",
+        note: "This session can reach no deck with this id. airdesign_list_decks lists the decks you own.",
+      })
+      expect((answers.wrong.structuredContent as { note: string }).note).toMatch(/^Change 1 \(set\)/)
+    })
+  })
+
+  it("says in structuredContent which slides have no picture yet", async () => {
+    const host: Host = { ...memoryDecks(started), pictures: async () => new Map() }
+    await withClient(sessionFor(), host, async (client) => {
+      const made = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      const { deck, slides } = made.structuredContent as { deck: string; slides: string[] }
+      const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck, picture: true } })
+      const seen = read.structuredContent as { note: string; pictures?: string[] }
+      expect(seen.note).toContain(`No current picture of slide ${slides[0]!}`)
+      expect(seen.pictures).toBeUndefined()
+      expect(textOf(read)).toEqual([{ type: "text", text: JSON.stringify(read.structuredContent) }])
     })
   })
 })
@@ -191,7 +258,7 @@ describe("a host that admits each tool call", () => {
       expect(made.isError).not.toBe(true)
       const refused = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
       expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([{ type: "text", text }])
+      expect(refused.structuredContent).toEqual({ ok: false, refusal: "rate", note: text })
     })
     expect(asked).toEqual([0, 0])
     expect(decks.decks.size).toBe(1)
@@ -203,7 +270,7 @@ describe("a host that admits each tool call", () => {
     await withClient(sessionFor(), host, async (client) => {
       const refused = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
       expect(refused.isError).toBe(true)
-      expect(refused.structuredContent).toEqual({ ok: false, refusal: "store" })
+      expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "store" })
     })
     expect(decks.decks.size).toBe(0)
   })
@@ -217,9 +284,10 @@ describe("a host that admits each tool call", () => {
       }
       const refused = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
       expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([
-        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds." },
-      ])
+      expect(refused.structuredContent).toMatchObject({
+        refusal: "rate",
+        note: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds.",
+      })
     })
   })
 })

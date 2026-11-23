@@ -1,7 +1,7 @@
 import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { answered, hostRefused, refused, type ToolContent, type ToolResult } from "./answer.js"
+import { answered, hostRefused, refused, told, type ToolImage, type ToolResult } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 
 const readBytes = 24_000
@@ -12,18 +12,14 @@ const pictureWords = {
     `No current picture of ${slides.length === 1 ? "slide" : "slides"} ${slides.join(", ")} at rev ${String(rev)} yet. The owner's open AirDesign tab paints a slide a moment after it changes and none has sent it. Read again in a few seconds, or ask the owner to open the deck.`,
   more: (shown: number, total: number) =>
     `Pictures of the first ${String(shown)} of ${String(total)} slides. Read with slide and picture for another.`,
-  slide: (position: number, id: string, rev: number) => `Slide ${String(position)} (${id}) at rev ${String(rev)}:`,
 } as const
 
-async function pictureBlocks(
-  opened: Opened,
-  slides: readonly doom.NodeId[],
-  all: readonly doom.NodeId[],
-  host: DeckHost,
-): Promise<readonly ToolContent[]> {
+async function withPictures(read: ToolResult, opened: Opened, slides: readonly doom.NodeId[], host: DeckHost) {
   const wanted = slides.slice(0, picturesPerRead)
-  const shots = host.pictures === undefined ? new Map() : await host.pictures(opened.deck, opened.fold, wanted)
-  const blocks: ToolContent[] = []
+  const shots: ReadonlyMap<string, string> =
+    host.pictures === undefined ? new Map() : await host.pictures(opened.deck, opened.fold, wanted)
+  const images: ToolImage[] = []
+  const pictures: string[] = []
   const waiting: string[] = []
   for (const id of wanted) {
     const data = shots.get(id)
@@ -31,13 +27,16 @@ async function pictureBlocks(
       waiting.push(id)
       continue
     }
-    blocks.push({ type: "text", text: pictureWords.slide(all.indexOf(id) + 1, id, opened.rev) })
-    blocks.push({ type: "image", data, mimeType: "image/jpeg" })
+    images.push({ type: "image", data, mimeType: "image/jpeg" })
+    pictures.push(id)
   }
-  if (waiting.length > 0) blocks.push({ type: "text", text: pictureWords.none(waiting, opened.rev) })
-  if (slides.length > wanted.length)
-    blocks.push({ type: "text", text: pictureWords.more(wanted.length, slides.length) })
-  return blocks
+  const note = [
+    read.answer.note,
+    ...(waiting.length > 0 ? [pictureWords.none(waiting, opened.rev)] : []),
+    ...(slides.length > wanted.length ? [pictureWords.more(wanted.length, slides.length)] : []),
+  ].join(" ")
+  const result = told(true, { ...read.answer, note, ...(pictures.length === 0 ? {} : { pictures }) })
+  return { ...result, content: [...images, ...result.content] }
 }
 
 const lead = (opened: Opened, count: number) =>
@@ -70,7 +69,7 @@ export function readAnswer(
     slides,
     ...(next === undefined ? {} : { next }),
   }
-  return answered(lead(opened, slides.length), answer, doom.readForAgent(opened.fold, chosen))
+  return answered(lead(opened, slides.length), { ...answer, layers: doom.readForAgent(opened.fold, chosen) })
 }
 
 export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolResult> {
@@ -85,7 +84,5 @@ export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolRe
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const from = parsed.cursor === undefined ? 0 : slides.findIndex((id) => id === parsed.cursor)
   const wanted = parsed.slide === undefined ? slides.slice(from) : slides.filter((id) => id === parsed.slide)
-  const pictures = await pictureBlocks(opened, wanted, slides, host)
-  const last = read.content.length - 1
-  return { ...read, content: [...read.content.slice(0, last), ...pictures, ...read.content.slice(last)] }
+  return withPictures(read, opened, wanted, host)
 }

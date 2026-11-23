@@ -67,7 +67,7 @@ describe("create_deck and list_decks", () => {
       name: "Board",
       slides: [expect.any(String)],
     })
-    expect(made.content.map((block) => block.text).join("\n")).toContain("Untitled")
+    expect(made.answer.layers).toContain('text="Untitled"')
     expect(by.decks.decks.size).toBe(1)
   })
 
@@ -83,13 +83,20 @@ describe("create_deck and list_decks", () => {
     const by = agent()
     const made = await created(by)
     const listed = await by.call("list_decks", {})
-    expect(listed.answer).toEqual({ ok: true, decks: [{ deck: made.deck, name: "Blank deck", rev: made.rev }] })
+    expect(listed.answer).toEqual({
+      ok: true,
+      decks: [{ deck: made.deck, name: "Blank deck", rev: made.rev }],
+      note: "Your decks.",
+    })
   })
 
   it("refuses a field it does not take", async () => {
     const by = agent()
-    expect((await by.call("create_deck", { template: "neutral" })).answer).toEqual({ ok: false, refusal: "field" })
-    expect((await by.call("list_decks", { deck: "x" })).answer).toEqual({ ok: false, refusal: "field" })
+    expect((await by.call("create_deck", { template: "neutral" })).answer).toMatchObject({
+      ok: false,
+      refusal: "field",
+    })
+    expect((await by.call("list_decks", { deck: "x" })).answer).toMatchObject({ ok: false, refusal: "field" })
   })
 })
 
@@ -99,7 +106,7 @@ describe("read_deck", () => {
     const { deck, rev, slides } = await created(by)
     const read = await by.call("read_deck", { deck })
     expect(read.answer).toMatchObject({ ok: true, deck, rev, slides })
-    const lines = (read.content[1]?.text ?? "").split("\n")
+    const lines = String(read.answer.layers).split("\n")
     expect(lines[0]).toMatch(/^slide /)
     expect(lines[1]).toMatch(/^ {2}\S+ text:title @160,380 1600x160 .*text="Untitled"/)
   })
@@ -139,13 +146,13 @@ describe("read_deck", () => {
     const next = (first.answer as { next?: string }).next
     expect(next).toBeDefined()
     const rest = await by.call("read_deck", { deck, cursor: next })
-    expect((rest.content[1]?.text ?? "").split("\n")[0]).toContain(next)
-    expect(first.content[1]!.text).not.toContain(`slide ${next}`)
+    expect(String(rest.answer.layers).split("\n")[0]).toContain(next)
+    expect(String(first.answer.layers)).not.toContain(`slide ${next}`)
   })
 
   it("refuses an unknown deck", async () => {
     const by = agent()
-    expect((await by.call("read_deck", { deck: "nothere" })).answer).toEqual({ ok: false, refusal: "deck" })
+    expect((await by.call("read_deck", { deck: "nothere" })).answer).toMatchObject({ ok: false, refusal: "deck" })
   })
 })
 
@@ -167,7 +174,7 @@ describe("edit_deck", () => {
     const fold = by.decks.decks.get(deck as never)!
     expect(fold.runs.get((landed.answer as { runId: string }).runId)?.phase).toBe("running")
     const read = await by.call("read_deck", { deck })
-    expect(read.content[1]!.text).toContain('text="Hello **there**"')
+    expect(String(read.answer.layers)).toContain('text="Hello **there**"')
   })
 
   it("answers only the root of what a pattern added", async () => {
@@ -233,7 +240,7 @@ describe("edit_deck", () => {
       node: "z:9",
     })
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev)
-    expect(refused.content[0]!.text).toContain("Change 2 (set z:9)")
+    expect(String(refused.answer.note)).toContain("Change 2 (set z:9)")
   })
 
   it("names the change that has a field the op does not take", async () => {
@@ -268,7 +275,7 @@ describe("edit_deck", () => {
     const { deck, rev, slides } = await created(by)
     const change = { op: "add", kind: "text", slide: slides[0], text: "A" }
     expect((await by.call("edit_deck", edit(deck, rev + 5, [change]))).answer).toMatchObject({ refusal: "base", rev })
-    expect((await by.call("edit_deck", edit(deck, rev, []))).answer).toEqual({ ok: false, refusal: "batch" })
+    expect((await by.call("edit_deck", edit(deck, rev, []))).answer).toMatchObject({ ok: false, refusal: "batch" })
     expect(
       (
         await by.call(
@@ -280,9 +287,12 @@ describe("edit_deck", () => {
           ),
         )
       ).answer,
-    ).toEqual({ ok: false, refusal: "batch" })
-    expect((await by.call("edit_deck", { deck, changes: [change] })).answer).toEqual({ ok: false, refusal: "base" })
-    expect((await by.call("edit_deck", { ...edit(deck, rev, [change]), actor: "person" })).answer).toEqual({
+    ).toMatchObject({ ok: false, refusal: "batch" })
+    expect((await by.call("edit_deck", { deck, changes: [change] })).answer).toMatchObject({
+      ok: false,
+      refusal: "base",
+    })
+    expect((await by.call("edit_deck", { ...edit(deck, rev, [change]), actor: "person" })).answer).toMatchObject({
       ok: false,
       refusal: "field",
     })
@@ -312,7 +322,7 @@ describe("edit_deck", () => {
       { change: 2, id: expect.any(String), kind: "slide" },
     ])
     const [shape, slide] = first.answer.added as { id: string }[]
-    expect(first.content[0]!.text).toContain(`adding ${shape!.id} shape (change 1), ${slide!.id} slide (change 2).`)
+    expect(String(first.answer.note)).toContain(`adding ${shape!.id} shape (change 1), ${slide!.id} slide (change 2).`)
     expect((await by.call("edit_deck", args, "labels")).answer).toEqual(first.answer)
   })
 

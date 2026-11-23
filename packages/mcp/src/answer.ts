@@ -60,16 +60,16 @@ const hostCodes = {
   server: "store",
 } as const satisfies Record<Exclude<DoomRefusal["refusal"], "edit">, Refused>
 
-export function answered(lead: string, answer: Readonly<Record<string, unknown>>, body?: string): ToolResult {
-  return {
-    ok: true,
-    content: [
-      { type: "text", text: lead },
-      ...(body === undefined ? [] : [{ type: "text" as const, text: body }]),
-      { type: "text", text: JSON.stringify(answer) },
-    ],
-    answer,
-  }
+export function told(ok: boolean, answer: Readonly<Record<string, unknown>>): ToolResult {
+  return { ok, content: [{ type: "text", text: JSON.stringify(answer) }], answer }
+}
+
+export function answered(note: string, answer: Readonly<Record<string, unknown>>): ToolResult {
+  return told(true, { ...answer, note })
+}
+
+export function limited(note: string): ToolResult {
+  return told(false, { ok: false, refusal: "rate", note })
 }
 
 type Where = {
@@ -94,16 +94,13 @@ function whereWords(where: Where): string {
 }
 
 export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): ToolResult {
-  const answer = { ok: false, refusal: code, ...more }
   const where = whereWords(more)
-  return {
+  return told(false, {
     ok: false,
-    content: [
-      { type: "text", text: where === "" ? refusalWords[code] : `${where}. ${refusalWords[code]}` },
-      { type: "text", text: JSON.stringify(answer) },
-    ],
-    answer,
-  }
+    refusal: code,
+    ...more,
+    note: where === "" ? refusalWords[code] : `${where}. ${refusalWords[code]}`,
+  })
 }
 
 export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Readonly<Record<string, unknown>> = {}) {
