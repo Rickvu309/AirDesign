@@ -2,7 +2,7 @@ import { post, answered } from "@/decks/deck-request"
 import { settle, showFailed, showStatus, type ToastId } from "@/decks/deck-notice"
 import { moveDeck } from "@/decks/move-deck"
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { connect, dropDeck, memoryRemote, sendQueued, sendUnopened, starDeck } from "@airdesign/live"
+import { connect, dropDeck, memoryRemote, sendQueued, starDeck } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
@@ -24,36 +24,32 @@ import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
 import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
-import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
-import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
 import { DoomPreview } from "@/decks/doom-preview"
-import { TemplatePicker } from "@/decks/template-picker"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, deckPath, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
-import { server } from "@/editing/commit-edit"
 import { signInAddress } from "@/thin-notice"
 
 type Deck = ListedDeck
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
-type Importing = { name: string; failed: false } | { name: string; failed: true; reason: ImportFailureReason }
 
 async function withDevice(listing: Listing): Promise<Listing> {
-  const listed = [...listing.decks, ...listing.trash].map((deck) => deck.deck)
-  const [queued, unopened] = await Promise.all([
-    sendQueued(listed).catch(() => ({ names: new Map<string, string>(), stars: new Map<string, boolean>() })),
-    sendUnopened(server, listed).catch(() => []),
-  ])
+  const doom = (decks: Deck[]) => decks.filter((deck) => deck.doom !== undefined)
+  const kept = { ...listing, decks: doom(listing.decks), trash: doom(listing.trash) }
+  const listed = [...kept.decks, ...kept.trash].map((deck) => deck.deck)
+  const queued = await sendQueued(listed).catch(() => ({
+    names: new Map<string, string>(),
+    stars: new Map<string, boolean>(),
+  }))
   const shown = (decks: Deck[]) =>
     decks.map((deck) => ({
       ...deck,
       name: queued.names.get(deck.deck) ?? deck.name,
       starred: queued.stars.get(deck.deck) ?? deck.starred === true,
     }))
-  const device = unopened.map((deck) => ({ ...deck, edited: deck.created }))
-  return { ...listing, decks: [...device, ...shown(listing.decks)], trash: shown(listing.trash) }
+  return { ...kept, decks: shown(kept.decks), trash: shown(kept.trash) }
 }
 
 function starredIn(listing: Listing, deck: string, starred: boolean): Listing {
@@ -121,11 +117,8 @@ export function Home({
   const [deleting, setDeleting] = useState<Deck[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [deleteFailed, setDeleteFailed] = useState(false)
-  const [importing, setImporting] = useState<Importing | null>(null)
   const [said, setSaid] = useState("")
-  const [choosing, setChoosing] = useState(false)
   const result = useRef("")
-  const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
   const [query, setQuery] = useState(() => addressRead(window.location.search).query)
   const [typed, setTyped] = useState<string | null>(() => (query.trim() === "" ? null : query))
@@ -236,31 +229,15 @@ export function Home({
     void starDeck(deck.deck, starred).catch(() => undefined)
   }
 
-  async function choose(file: File) {
-    setImporting({ name: file.name, failed: false })
-    try {
-      const { importDeck } = await import("@/editing/import-deck")
-      const imported = await importDeck(file)
-      if (!imported.ok) {
-        setImporting({ name: file.name, failed: true, reason: imported.reason })
-        return
-      }
-      navigate(`/deck/${imported.deck.id}`)
-    } catch {
-      setImporting({ name: file.name, failed: true, reason: "save" })
-    }
-  }
-
   const loading = listing === null && !unavailable
   const held = (trash ? listing?.trash : listing?.decks) ?? []
   const searching = query.trim() !== ""
   const ordered = trash ? held : section === "recents" && !searching ? recentDecks(held) : allDecks(held)
   const decks = decksMatching(ordered, query)
   const noMatch = listing !== null && searching && held.length > 0 && decks.length === 0
-  const firstVisit =
-    listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
-  const noDecks = listing !== null && !trash && held.length === 0 && importing === null
-  const showGrid = !listView || trash || importing !== null
+  const firstVisit = listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0
+  const noDecks = listing !== null && !trash && held.length === 0
+  const showGrid = !listView || trash
   result.current = noDecks
     ? productCopy.noDecksTitle
     : noMatch
@@ -285,40 +262,13 @@ export function Home({
       }}
       search={{ value: query, onChange: search }}
       starred={listing?.decks.filter((deck) => deck.starred === true)}
-      newDeck={{
-        onImport: () => picker.current?.click(),
-        onBlank: () => navigate("/s"),
-        onTemplate: () => setChoosing(true),
-      }}
+      newDeck={{ onBlank: () => navigate("/s") }}
       onSignOut={() => void signOut()}
       onNavigate={navigate}
       trailing={
         trash ? <EmptyTrashButton disabled={decks.length === 0} onClick={() => setDeleting([...decks])} /> : undefined
       }
     >
-      <TemplatePicker
-        open={choosing}
-        onOpenChange={setChoosing}
-        onScratch={() => {
-          setChoosing(false)
-          navigate("/s")
-        }}
-        onChoose={(template, slide) => {
-          setChoosing(false)
-          void import("@/decks/template-decks").then(({ templateDeck }) => templateDeck(template, slide)).then(choose)
-        }}
-      />
-      <input
-        className="hidden"
-        ref={picker}
-        type="file"
-        accept=".pptx"
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0]
-          event.currentTarget.value = ""
-          if (file) void choose(file)
-        }}
-      />
       {trash && <TrashNote />}
       {unavailable && (
         <div className="mt-8" role="alert">
@@ -343,41 +293,15 @@ export function Home({
             title={productCopy.noDecksTitle}
             description={productCopy.noDecksBody}
             actions={
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => navigate("/s")}>
-                  {productCopy.blankDeck}
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => picker.current?.click()}>
-                  {productCopy.importPowerPoint}
-                </Button>
-              </div>
+              <Button size="sm" onClick={() => navigate("/s")}>
+                {productCopy.blankDeck}
+              </Button>
             }
           />
         </div>
       )}
-      {(listing !== null || importing !== null) && showGrid && !noDecks && (!noMatch || importing !== null) && (
+      {listing !== null && showGrid && !noDecks && !noMatch && (
         <DeckGrid ref={grid} className={trash ? "mt-6 grid-cols-3" : section !== "recents" ? "mt-6" : undefined}>
-          {importing &&
-            (importing.failed ? (
-              <div role="alert">
-                <DeckCard
-                  name={importing.name}
-                  edited={importFailureWords(importing.reason).title}
-                  editedClassName="text-danger-text"
-                  previewClassName="h-auto bg-background"
-                  preview={
-                    <ImportFailedPreview
-                      detail={importFailureWords(importing.reason).detail}
-                      focusChoose
-                      onChoose={() => picker.current?.click()}
-                      onRemove={() => setImporting(null)}
-                    />
-                  }
-                />
-              </div>
-            ) : (
-              <DeckCard name={importing.name} edited={productCopy.importing} preview={<ImportingPreview />} />
-            ))}
           {!listView || trash
             ? decks.map((deck) => (
                 <DeckCard
@@ -414,7 +338,7 @@ export function Home({
         </DeckGrid>
       )}
       {noMatch && (
-        <div className={importing === null ? "mt-8" : "mt-5"}>
+        <div className="mt-8">
           <Card
             className="w-full"
             title={noMatchTitleOf(query.trim())}

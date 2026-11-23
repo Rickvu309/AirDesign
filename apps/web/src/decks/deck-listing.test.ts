@@ -72,8 +72,7 @@ describe("recentDecks", () => {
 })
 
 describe("deckPath", () => {
-  it("opens an element deck in the old editor and a doom deck at /s", () => {
-    expect(deckPath({ deck: "old" })).toBe("/deck/old")
-    expect(deckPath({ deck: "new", doom: { rev: 3 } })).toBe("/s/new")
+  it("opens every deck in the Doom editor at /s", () => {
+    expect(deckPath({ deck: "new" })).toBe("/s/new")
   })
 })

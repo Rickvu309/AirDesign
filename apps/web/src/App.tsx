@@ -11,7 +11,6 @@ import { UsagePage } from "./settings/usage-page"
 
 import { AccountProfile } from "./settings/account-profile"
 
-const ThinDeck = lazy(() => import("./thin-deck").then((module) => ({ default: module.ThinDeck })))
 const ScreenRoute = lazy(() => import("./screen-routes"))
 const DoomEditor = lazy(() => import("./doom-editor/doom-editor").then((module) => ({ default: module.DoomEditor })))
 
@@ -35,17 +34,10 @@ function AppRoutes() {
   if (path === settingsPaths.account) return <AccountPage navigate={navigate} />
   if (path === settingsPaths.agents) return <AgentsPage navigate={navigate} />
   if (path === settingsPaths.usage) return <UsagePage navigate={navigate} />
-  if (path === "/deck") {
+  if (path === "/deck" || path.startsWith("/deck/")) {
     window.location.replace("/")
     return null
   }
-  const deck = /^\/deck\/([A-Za-z0-9_-]{1,64})$/.exec(path)
-  if (deck?.[1] !== undefined)
-    return (
-      <Suspense>
-        <ThinDeck id={deck[1]} />
-      </Suspense>
-    )
   const doomDeck = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
   if (doomDeck !== null)
     return (

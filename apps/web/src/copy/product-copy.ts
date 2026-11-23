@@ -85,7 +85,7 @@ export const productCopy = {
   deckName: "Deck name",
   noMatchBody: "Check the spelling or search for another name.",
   clearSearch: "Clear search",
-  noDecksBody: "Decks hold your slides, ready to edit or export to PowerPoint.",
+  noDecksBody: "Decks hold your slides, ready to edit and present.",
   importPowerPoint: "Import PowerPoint",
   usageTitle: "Weekly usage",
   usageResets: usageResetsOn(sampleReset),

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { NewDeckMenu, type NewDeckActions } from "@/decks/new-deck-menu"
+import { NewDeckButton, type NewDeckActions } from "@/decks/new-deck-button"
 import { ViewSwitch } from "@/decks/view-switch"
 
 export function BrowseHeader({
@@ -27,7 +27,7 @@ export function BrowseHeader({
       </h1>
       {trailing ?? (
         <div className="flex items-center gap-2">
-          <NewDeckMenu {...newDeck} />
+          <NewDeckButton {...newDeck} />
           {view && (scope || links) ? <ViewSwitch active={view} scope={scope} links={links} /> : null}
         </div>
       )}
