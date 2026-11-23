@@ -14,6 +14,10 @@ describe("routePath", () => {
     expect(routePath({ route: "elbow", points })).toBe("M0 0L100 0L100 100L200 100")
   })
 
+  it("draws both ends of a route of no length, so its caps and arrowheads still paint", () => {
+    expect(routePath({ route: "elbow", points: [points[1]!, points[1]!] })).toBe("M100 0L100 0")
+  })
+
   it("draws a curve as one cubic through its two pulls", () => {
     expect(routePath({ route: "curve", points })).toBe("M0 0C100 0 100 100 200 100")
   })

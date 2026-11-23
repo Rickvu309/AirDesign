@@ -223,3 +223,31 @@ export function presetHolds(
   if (paths === null) return at.x >= 0 && at.y >= 0 && at.x <= w && at.y <= h
   return paths.some((path) => (path.fill && inside(path.rings, at)) || (path.stroke && near(path.rings, at, reach)))
 }
+
+export type Rings = readonly (readonly Point[])[]
+
+const roundSteps = 32
+
+export function outlineRings(shaped: Shaped | null | undefined, w: number, h: number): Rings {
+  const box: Rings = [
+    [
+      { x: 0, y: 0 },
+      { x: w, y: 0 },
+      { x: w, y: h },
+      { x: 0, y: h },
+    ],
+  ]
+  if (shaped?.kind === "ellipse")
+    return [
+      Array.from({ length: roundSteps }, (_, step) => {
+        const angle = (step / roundSteps) * Math.PI * 2
+        return { x: (w / 2) * (1 + Math.cos(angle)), y: (h / 2) * (1 + Math.sin(angle)) }
+      }),
+    ]
+  if (shaped?.kind !== "preset" || shaped.name === undefined) return box
+  const filled = (presetOutline(shaped.name, w, h, shaped.adjust ?? []) ?? [])
+    .filter((path) => path.fill)
+    .flatMap((path) => path.rings)
+    .filter((ring) => ring.length > 2)
+  return filled.length === 0 ? box : filled
+}

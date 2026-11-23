@@ -247,6 +247,36 @@ describe("resolveSlide", () => {
     })
   })
 
+  it("keeps both ends of an elbow between touching shapes whose sites meet, in a box of no size at the seam, with no arrowhead", () => {
+    const { parts } = resolved([
+      { type: "shape", name: "a", props: { box: spot(100, 100, 100, 100) } },
+      { type: "shape", name: "b", props: { box: spot(200, 100, 100, 100) } },
+      {
+        type: "shape",
+        name: "l",
+        props: (ids: Record<string, string>) =>
+          ({
+            geometry: {
+              kind: "line",
+              start: { node: ids.a, site: "r" },
+              end: { node: ids.b, site: "l" },
+              route: "elbow",
+              arrows: ["none", "arrow"],
+            },
+          }) as never,
+      },
+    ])
+    const line = parts[2]!
+    expect(line.box).toMatchObject({ x: 200, y: 150, w: 0, h: 0 })
+    expect(line.geometry).toMatchObject({
+      points: [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ],
+      arrows: ["none", "none"],
+    })
+  })
+
   it("attaches an elbow to a turned shape's turned site and routes round its turned outline", () => {
     const { parts } = resolved([
       { type: "shape", name: "a", props: { box: spot(100, 100, 100, 100) } },

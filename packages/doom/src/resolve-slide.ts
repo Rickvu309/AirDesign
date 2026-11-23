@@ -33,13 +33,14 @@ function geometryOf(context: Context, node: Node, box: Box): ResolvedGeometry {
   const parent = (node as { parent?: { id: NodeId } | null }).parent?.id
   const { from, to, points } = lineRoute(context.doom, context.boxes, parent, geometry)
   const local = (point: { readonly x: number; readonly y: number }) => ({ x: point.x - box.x, y: point.y - box.y })
+  const hasLength = points.some((point) => point.x !== from.x || point.y !== from.y)
   return {
     kind: "line",
     from: local(from),
     to: local(to),
     points: points.map(local),
     route: geometry.route,
-    arrows: geometry.arrows,
+    arrows: hasLength ? geometry.arrows : ["none", "none"],
   }
 }
 
