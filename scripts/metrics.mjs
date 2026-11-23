@@ -122,6 +122,8 @@ const judgedBy = {
   "paint-fidelity": "scripts/paint-fidelity-run.mjs",
 }
 
+const directions = new Set(["higher", "lower"])
+
 const record = (root) => JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))
 
 export const overLimit = ({ name, now, limit }) =>
@@ -163,6 +165,8 @@ export const readMetrics = async (root, measuring = measures) => {
     else drift.push(`${name} is timed by ${runner} and has no limit in metrics.json.`)
   }
   for (const [name, metric] of Object.entries(recorded)) {
+    if ("goal" in metric && !directions.has(metric.better))
+      drift.push(`${name} has a goal and no direction. Record "better": "higher" or "lower" beside it in metrics.json.`)
     if (name in measures || name in timedMetrics || name in timedOnCi || name in reportedMetrics || name in judgedBy)
       continue
     if ("limit" in metric) drift.push(`${name} has a limit in metrics.json and no runner times it.`)
