@@ -54,6 +54,9 @@ export async function slideTitles(kit, opened) {
 }
 
 export async function titleSlides(kit, opened, titles) {
+  await expect
+    .poll(async () => (await slideTitles(kit, opened)).filter(Boolean).length)
+    .toBeGreaterThanOrEqual(titles.length)
   const shown = await slideTitles(kit, opened)
   const writes = titles.flatMap((chars, at) => {
     const title = shown[at]
