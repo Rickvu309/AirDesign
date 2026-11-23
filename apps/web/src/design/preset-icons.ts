@@ -12,7 +12,7 @@ export const DottedBorder = createLucideIcon("DottedBorder", [
   ["rect", { ...borderOutline, strokeDasharray: "0 2.75" }],
 ])
 
-function shadowIcon(name: string, offset: number, width: number, opacity: number) {
+function shadowIcon(name: string, offset: number, width: number, opacity: number, height = 14) {
   return createLucideIcon(name, [
     [
       "rect",
@@ -20,7 +20,7 @@ function shadowIcon(name: string, offset: number, width: number, opacity: number
         x: (24 - width) / 2,
         y: 3 + offset,
         width,
-        height: 14,
+        height,
         rx: 3,
         fill: "currentColor",
         stroke: "none",
@@ -32,9 +32,9 @@ function shadowIcon(name: string, offset: number, width: number, opacity: number
   ])
 }
 
-export const SubtleShadow = shadowIcon("SubtleShadow", 3, 14, 0.35)
-export const MediumShadow = shadowIcon("MediumShadow", 4.5, 16, 0.45)
-export const StrongShadow = shadowIcon("StrongShadow", 6, 18, 0.55)
+export const SoftShadow = shadowIcon("SoftShadow", 3, 14, 0.35)
+export const LiftedShadow = shadowIcon("LiftedShadow", 6, 18, 0.55)
+export const GlowShadow = shadowIcon("GlowShadow", -2, 18, 0.45, 18)
 
 export const PatternFill = createLucideIcon("PatternFill", [
   ["rect", { x: 4, y: 3, width: 16, height: 18, rx: 1, key: "edge" }],

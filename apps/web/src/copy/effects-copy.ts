@@ -15,9 +15,9 @@ export const effectsCopy = {
 } as const
 
 export const effectsWords: Readonly<Record<string, string>> = {
-  "shadow.subtle": "Smaller",
-  "shadow.medium": "Middle",
-  "shadow.strong": "Larger",
+  "shadow.soft": "Soft",
+  "shadow.lifted": "Lifted",
+  "shadow.glow": "Glow",
   outer: "Outer",
   inner: "Inner",
   halo: "Glow",

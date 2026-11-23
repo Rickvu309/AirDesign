@@ -1,7 +1,8 @@
 import * as doom from "@airdesign/doom"
 import { memo, type CSSProperties, type ReactNode } from "react"
 import { iconNodes, type IconNode } from "./icon-nodes.js"
-import { effectLook } from "./node-effects.js"
+import { InnerShadowFilter } from "./inner-shadow.js"
+import { effectLook, type ShadowFrom } from "./node-effects.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
 import { outlineOf } from "./node-outline.js"
 import { NodeStrokes } from "./node-strokes.js"
@@ -99,10 +100,11 @@ export const NodeArt = memo(function NodeArt({
   const { box, geometry } = node
   const boxy = geometry === null || geometry.kind === "rect" || geometry.kind === "ellipse"
   const outline = outlineOf(node)
-  const look = effectLook(node.effects, boxy)
+  const painted = node.fills.length > 0 && geometry?.kind !== "line" && geometry?.kind !== "icon"
+  const from: ShadowFrom = painted ? (boxy ? "box" : "outline") : node.text === null ? "contents" : "letters"
+  const look = effectLook(node.effects, from)
   const round = geometry?.kind === "ellipse" ? "50%" : node.radius.map((corner) => `${String(corner)}px`).join(" ")
   const clipped = !boxy && outline.fill !== null ? `path("${outline.fill}")` : undefined
-  const painted = node.fills.length > 0 && geometry?.kind !== "line" && geometry?.kind !== "icon"
   const icon = geometry?.kind === "icon" ? iconNodes(geometry.name) : undefined
   const missing =
     waiting !== undefined && node.fills.some((paint) => paint.kind === "image" && assetUrl(paint.asset) === undefined)
@@ -121,12 +123,14 @@ export const NodeArt = memo(function NodeArt({
         pointerEvents: "none",
         ...(node.opacity === 1 ? {} : { opacity: node.opacity }),
         ...(box.rotation === 0 ? {} : { transform: `rotate(${String(box.rotation)}deg)` }),
-        ...(look.blur === undefined ? {} : { filter: look.blur }),
+        ...(look.wholeFilter === undefined ? {} : { filter: look.wholeFilter }),
+        ...(look.textShadow === undefined ? {} : { textShadow: look.textShadow }),
       }}
     >
+      {look.inner === undefined ? null : <InnerShadowFilter inner={look.inner} />}
       <div style={{ ...fill, ...(flipOf(box) === undefined ? {} : { transform: flipOf(box) }) }}>
-        {painted || missing || look.boxShadow !== undefined ? (
-          <div style={{ ...fill, ...(look.dropFilter === undefined ? {} : { filter: look.dropFilter }) }}>
+        {painted || missing ? (
+          <div style={{ ...fill, ...(look.bodyFilter === undefined ? {} : { filter: look.bodyFilter }) }}>
             <div
               data-body=""
               style={{

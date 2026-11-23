@@ -9,8 +9,8 @@ async function drive(kit) {
   await selectMany(page, ["w:2"])
   const panel = page.locator("[data-design-element]")
   const shadow = group(panel, appearanceCopy.shadowPreset)
-  await shadow.getByRole("button", { name: effectsWords["shadow.medium"], exact: true }).click()
-  await expect(shadow.getByRole("button", { name: effectsWords["shadow.medium"], exact: true })).toHaveAttribute(
+  await shadow.getByRole("button", { name: effectsWords["shadow.glow"], exact: true }).click()
+  await expect(shadow.getByRole("button", { name: effectsWords["shadow.glow"], exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )

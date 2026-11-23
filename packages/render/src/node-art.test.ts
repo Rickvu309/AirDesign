@@ -239,6 +239,62 @@ describe("NodeArt", () => {
     expect(preset).toContain("filter:drop-shadow(")
   })
 
+  it("casts a text layer's shadow or glow from its letters, not its box", () => {
+    const glow = { kind: "dropShadow", color: swatches.black, opacity: 0.5, x: 0, y: 0, blur: 28, spread: 6 }
+    const html = painted([
+      shape("t", {
+        box: spot(0, 0, 300, 80),
+        effects: [glow],
+        text: { chars: "Glow", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" },
+      }),
+    ])
+    expect(html).toContain("text-shadow:0px 0px 28px rgb(0 0 0 / 0.5)")
+    expect(html).not.toContain("box-shadow")
+  })
+
+  it("casts an unfilled frame's shadow from what it holds", () => {
+    const html = painted([
+      {
+        type: "frame",
+        name: "f",
+        props: {
+          box: spot(0, 0, 200, 200),
+          effects: [{ kind: "dropShadow", color: swatches.black, opacity: 0.2, x: 0, y: 8, blur: 24, spread: 0 }],
+        } as never,
+        children: [shape("c", { box: spot(0, 0, 50, 50), fills: [solid(swatches.black)] })],
+      },
+    ])
+    expect(html).toContain("filter:drop-shadow(0px 8px 12px rgb(0 0 0 / 0.2))")
+    expect(html).not.toContain("box-shadow")
+  })
+
+  it("paints an inner shadow inside a preset's or a path's outline", () => {
+    const inner = { kind: "innerShadow", color: swatches.black, opacity: 0.3, x: 2, y: 4, blur: 10, spread: 0 }
+    const preset = painted([
+      shape("s", {
+        box: spot(0, 0, 100, 100),
+        fills: [solid(swatches.white)],
+        geometry: { kind: "preset", name: "triangle" },
+        effects: [inner],
+      }),
+    ])
+    const id = /<filter id="([^"]+)"/.exec(preset)?.[1]
+    expect(id).toBeDefined()
+    expect(preset).toContain(`filter:url(#${id!})`)
+    expect(preset).toContain('<feOffset in="SourceAlpha" dx="2" dy="4"')
+    expect(preset).toContain('stdDeviation="5"')
+    expect(preset).toContain('flood-opacity="0.3"')
+    const path = painted([
+      shape("p", {
+        box: spot(0, 0, 100, 100),
+        fills: [solid(swatches.white)],
+        geometry: { kind: "path", d: "M0 0 L100 0 L50 100 Z" },
+        effects: [inner],
+      }),
+    ])
+    expect(path).toContain(`filter:url(#${id!})`)
+  })
+
   it("turns a node by its rotation and mirrors its drawing by its flips", () => {
     const html = painted([
       shape("s", { box: spot(0, 0, 100, 100, { rotation: 15, flipH: true }), fills: [solid(swatches.black)] }),

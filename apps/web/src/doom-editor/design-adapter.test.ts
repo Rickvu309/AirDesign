@@ -260,10 +260,14 @@ describe("shape layer", () => {
     expect(prop(write(["card"], find(model, "border", "color"), { rgb: "00FF00" }), "card", "strokes")).toEqual([
       { kind: "solid", color: hexes.green },
     ])
-    const shadowed = write(["card"], find(model, "shadow", "shadow"), "medium")
-    expect(shownShadow(prop(shadowed, "card", "effects")).name).toBe("medium")
+    const shadowed = write(["card"], find(model, "shadow", "shadow"), "lifted")
+    expect(prop(shadowed, "card", "effects")).toBe("lifted")
+    expect(find(modelOf("card", shadowed), "shadow", "shadow").value).toBe("lifted")
     const faded = write(["card"], find(modelOf("card", shadowed), "shadow", "opacity"), 40_000, shadowed)
-    expect(shownShadow(prop(faded, "card", "effects"))).toEqual({ name: "medium", opacity: 0.4 })
+    expect(shownShadow(prop(faded, "card", "effects"), doom.deckOf(faded).theme)).toEqual({
+      name: "lifted",
+      opacity: 0.4,
+    })
     expect(
       prop(write(["card"], find(modelOf("card", shadowed), "shadow", "shadow"), "none", shadowed), "card", "effects"),
     ).toBeUndefined()

@@ -280,7 +280,7 @@ test("a shape shows fill, opacity, corners, border and shadow like the old panel
   await typeInto(border.getByRole("textbox", { name: borderCopy.width, exact: true }), "6")
   await expect.poll(async () => (await read()).stroke.weight).toBe(6)
   await section(page, designCopy.shadow).locator("[data-segments] button").nth(2).click()
-  await expect.poll(async () => (await read()).effects).toHaveLength(1)
+  await expect.poll(async () => (await read()).effects).toBe("lifted")
 
   const colors = section(page, selectionColorsCopy.section)
   await expect(colors.locator("[data-selection-colors] > div")).toHaveCount(1)
