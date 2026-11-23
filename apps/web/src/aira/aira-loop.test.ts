@@ -365,7 +365,7 @@ describe("Aira's loop in the browser", () => {
     const asked: string[] = []
     const undo: UndoRun = async (_deck, run) => {
       asked.push(run)
-      return run === "fenced" ? "refused" : "undone"
+      return run === "fenced" ? "refused" : { kept: [] }
     }
     const undone = await undoExchange(done, 0, undo)
     expect(asked).toEqual(["run-1"])
@@ -383,7 +383,7 @@ describe("Aira's loop in the browser", () => {
     const asked: string[] = []
     const undo: UndoRun = async (_deck, run) => {
       asked.push(run)
-      return reachable.has(run) ? "undone" : "failed"
+      return reachable.has(run) ? { kept: [] } : "failed"
     }
     const start: AiraChat = {
       ...airaChat(deck),

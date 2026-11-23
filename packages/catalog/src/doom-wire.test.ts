@@ -117,14 +117,16 @@ it("reads the slide keys and slide pictures an open tab sends for a doom deck, a
   expect(doomRoutes.pictures.result({ ok: false, refusal: "stale" })).toEqual({ ok: false, refusal: "stale" })
 })
 
-it("reads a run's id for a deck, and answers the run's edits with the nodes as they were before it", () => {
+it("reads a run's id for a deck, and answers the run's edits with the values each one replaced", () => {
   expect(doomRoutes.run.read({ deck, run: "run-1" })).toEqual({ ok: true, deck, run: "run-1" })
   expect(doomRoutes.run.read({ deck, run: "" })).toEqual(field)
   expect(doomRoutes.run.read({ deck })).toEqual(field)
   expect(doomRoutes.run.read({ deck, run: "r", wait: true })).toEqual(field)
-  const answer = { ok: true, deck, rev: 4, edits: [{ once: "a", rev: 3 }], before: { "s:4": { id: "s:4" } } }
+  const replaced = [[{ node: "s:4", key: "box", value: null, rev: null }]]
+  const answer = { ok: true, deck, rev: 4, edits: [{ once: "a", rev: 3 }], replaced }
   expect(doomRoutes.run.result(answer)).toEqual(answer)
-  expect(doomRoutes.run.result({ ...answer, before: [] })).toEqual(payload)
+  expect(doomRoutes.run.result({ ...answer, replaced: {} })).toEqual(payload)
+  expect(doomRoutes.run.result({ ...answer, replaced: [] })).toEqual(payload)
   expect(doomRoutes.run.result({ ...answer, edits: "none" })).toEqual(payload)
   expect(doomRoutes.run.result({ ok: false, refusal: "size" })).toEqual({ ok: false, refusal: "size" })
 })

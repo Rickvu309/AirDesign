@@ -7,7 +7,7 @@ export function AgentPanel({
   deck,
   start,
 }: {
-  readonly deck: Pick<EditorClient, "deck" | "undoRun">
+  readonly deck: Pick<EditorClient, "deck" | "undoRun" | "view">
   readonly start?: AiraStart
 }) {
   const undo = useMemo(() => doomAgentUndo(deck), [deck])

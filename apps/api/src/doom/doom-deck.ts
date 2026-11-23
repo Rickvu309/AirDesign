@@ -69,14 +69,14 @@ with updated as (
   returning id, rev
 ),
 logged as (
-  insert into deck.doom_edit (deck, rev, once, edit, was) select id, rev, $8, $9::jsonb, $11::jsonb from updated returning deck, rev
+  insert into deck.doom_edit (deck, rev, once, edit, replaced) select id, rev, $8, $9::jsonb, $11::jsonb from updated returning deck, rev
 ),
 landed as (select id from updated),
 written as (${writeNodesSql.replace("$NODES", "$10")})
 select rev, pg_notify('deck', deck || ':' || rev::text) as notified from logged`
 
 const runSql =
-  "select rev, edit, was, octet_length(edit::text) as bytes from deck.doom_edit where deck = $1 and edit -> 'author' ->> 'run' = $2 order by rev limit $3"
+  "select rev, edit, replaced, octet_length(edit::text) + coalesce(octet_length(replaced::text), 0) as bytes from deck.doom_edit where deck = $1 and edit -> 'author' ->> 'run' = $2 order by rev limit $3"
 
 const runEdits = 500
 
@@ -239,7 +239,7 @@ export async function editDoom(
         JSON.stringify(read),
         JSON.stringify(touched),
         read.author.kind === "agent" && read.author.run !== undefined
-          ? JSON.stringify(Object.fromEntries(touched.map((row) => [row.id, part.nodes.get(row.id as never) ?? null])))
+          ? JSON.stringify(doom.replacedBy(part, landed))
           : null,
       ])
       if (wrote.rows.length > 0) return { ok: true, deck: parsed.deck, rev: landed.rev } as const
@@ -277,23 +277,23 @@ export async function runDoom(db: Sql, parsed: { readonly deck: DeckId; readonly
   if (stored === undefined) return refusal("deck")
   if (stored.owner !== email) return refusal("owner")
   if (stored.trashed) return refusal("deck")
-  const rows = await db.query<{ rev: number; edit: object; was: Record<string, unknown> | null; bytes: number }>(
-    runSql,
-    [parsed.deck, parsed.run, runEdits + 1],
-  )
+  const rows = await db.query<{ rev: number; edit: object; replaced: unknown; bytes: number }>(runSql, [
+    parsed.deck,
+    parsed.run,
+    runEdits + 1,
+  ])
   if (rows.rows.length > runEdits) return refusal("size")
   const edits: unknown[] = []
-  const before: Record<string, unknown> = {}
+  const replaced: unknown[] = []
   let bytes = 0
   for (const row of rows.rows) {
-    if (row.was === null) return refusal("payload")
+    if (!Array.isArray(row.replaced)) return refusal("payload")
     bytes += row.bytes
     edits.push({ ...row.edit, rev: row.rev })
-    for (const [node, snapshot] of Object.entries(row.was)) if (!(node in before)) before[node] = snapshot
+    replaced.push(row.replaced)
   }
   if (bytes > limits.body) return refusal("size")
-  const present = Object.fromEntries(Object.entries(before).filter(([, snapshot]) => snapshot !== null))
-  return { ok: true, deck: parsed.deck, rev: stored.rev, edits, before: present } as const
+  return { ok: true, deck: parsed.deck, rev: stored.rev, edits, replaced } as const
 }
 
 export async function doomRev(db: Sql, deck: DeckId, email: string) {

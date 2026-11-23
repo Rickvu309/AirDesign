@@ -57,7 +57,7 @@ export function httpDoomRemote(): DoomRemote {
 type Stored = {
   fold: doom.Doom
   log: doom.Landed[]
-  was: Map<doom.Rev, Record<string, unknown>>
+  replaced: Map<doom.Rev, readonly doom.Replaced[]>
   waiting: (() => void)[]
 }
 
@@ -92,7 +92,7 @@ export function memoryDoomRemote(start: doom.Edit): DoomRemote {
         const first = { ...(wire(start) as doom.Edit), rev: doom.rev(1) }
         const next = doom.applyEdit(doom.emptyDoom, first)
         if (doom.isRefusal(next)) return refusal("payload")
-        decks.set(id.deck, { fold: next, log: [first], was: new Map(), waiting: [] })
+        decks.set(id.deck, { fold: next, log: [first], replaced: new Map(), waiting: [] })
       }
       return opened(id.deck, decks.get(id.deck)!)
     },
@@ -113,10 +113,7 @@ export function memoryDoomRemote(start: doom.Edit): DoomRemote {
       if (next === stored.fold)
         return { ok: true, deck: id.deck, rev: stored.fold.onces.get(read.once) ?? stored.fold.rev }
       if (read.author.kind === "agent" && read.author.run !== undefined)
-        stored.was.set(
-          landed.rev,
-          Object.fromEntries(landed.writes.map((write) => [write.node, stored.fold.nodes.get(write.node) ?? null])),
-        )
+        stored.replaced.set(landed.rev, doom.replacedBy(stored.fold, landed))
       stored.fold = next
       stored.log.push(landed)
       wake(stored)
@@ -127,12 +124,13 @@ export function memoryDoomRemote(start: doom.Edit): DoomRemote {
       const stored = id.ok ? decks.get(id.deck) : undefined
       if (!id.ok || stored === undefined) return refusal("deck")
       const edits = stored.log.filter((landed) => landed.author.run === body.run)
-      const before: Record<string, unknown> = {}
-      for (const landed of edits)
-        for (const [node, snapshot] of Object.entries(stored.was.get(landed.rev) ?? {}))
-          if (!(node in before)) before[node] = snapshot
-      const present = Object.fromEntries(Object.entries(before).filter(([, snapshot]) => snapshot !== null))
-      return { ok: true, deck: id.deck, rev: stored.fold.rev, edits: edits.map(wire), before: wire(present) as never }
+      return {
+        ok: true,
+        deck: id.deck,
+        rev: stored.fold.rev,
+        edits: edits.map(wire),
+        replaced: edits.map((landed) => wire(stored.replaced.get(landed.rev) ?? [])),
+      }
     },
     async since(body, signal) {
       const id = readDeckId(body.deck)

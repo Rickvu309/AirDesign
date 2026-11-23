@@ -24,6 +24,7 @@
     "core-screens.spec.ts": 10,
     "credits.spec.ts": 1.7,
     "design-detectors.spec.ts": 2.7,
+    "doom-agent-undo-kept.spec.ts": 4,
     "doom-agent-undo-reload.spec.ts": 6.3,
     "doom-agent.spec.ts": 6.9,
     "doom-arrange.spec.ts": 11.6,

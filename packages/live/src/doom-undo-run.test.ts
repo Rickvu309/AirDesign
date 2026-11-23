@@ -31,10 +31,10 @@ const start: doom.Edit = {
 
 const agent = (run: string): doom.Author => ({ kind: "agent", id: "aira", run })
 
-async function join(remote: ReturnType<typeof memoryDoomRemote>, how: "create" | "open") {
+async function join(remote: ReturnType<typeof memoryDoomRemote>, how: "create" | "open", tab = "tab") {
   let next = 0
   const opened = await (how === "create" ? createDoomDeck : openDoomDeck)(remote, "run", {
-    once: () => `tab-${(next += 1)}`,
+    once: () => `${tab}-${(next += 1)}`,
     client: "tab",
     storage: memoryStorage(),
     pause: () => Promise.resolve(),
@@ -133,6 +133,66 @@ describe("undoing an agent's run", () => {
     expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "nothing" })
     expect(xOf(mine.view())).toBe(77)
   })
+
+  it.each(["watched", "after a reload"] as const)(
+    "puts back another agent's write that the run wrote over (T7), %s",
+    async (how) => {
+      const remote = memoryDoomRemote(start)
+      const first = await join(remote, "create")
+      const claude = (run: string): doom.Author => ({ kind: "agent", id: "claude", run })
+      await land(remote, {
+        once: "a1",
+        author: agent("run-1"),
+        phase: "start",
+        writes: [{ node: title, prop: "box", value: box(10) }],
+      })
+      await land(remote, {
+        once: "b1",
+        author: claude("run-2"),
+        phase: "start",
+        writes: [{ node: title, prop: "box", value: box(20) }],
+      })
+      await land(remote, {
+        once: "a2",
+        author: agent("run-1"),
+        phase: "stop",
+        writes: [{ node: title, prop: "box", value: box(30) }],
+      })
+      await first.catchUp()
+      const mine = how === "watched" ? first : await join(remote, "open")
+
+      expect(await mine.undoRun("run-1")).toMatchObject({ ok: true, kept: [] })
+      expect(xOf(mine.view())).toBe(20)
+    },
+  )
+
+  it.each(["watched", "after a reload"] as const)(
+    "keeps a layer the run added that the person moved since, and names it (T8), %s",
+    async (how) => {
+      const remote = memoryDoomRemote(start)
+      const first = await join(remote, "create")
+      await land(remote, {
+        once: "a1",
+        author: agent("run-1"),
+        phase: "start",
+        writes: [
+          { node: made, prop: "type", value: "shape" },
+          { node: made, prop: "parent", value: at(slide) },
+          { node: made, prop: "box", value: box(5) },
+          { node: title, prop: "box", value: box(40) },
+        ],
+      })
+      await first.catchUp()
+      first.push([{ node: made, prop: "box", value: box(90) }])
+      await first.sync()
+      const mine = how === "watched" ? first : await join(remote, "open", "reloaded")
+
+      expect(await mine.undoRun("run-1")).toMatchObject({ ok: true, kept: [made] })
+      expect(mine.view().children.get(slide)).toContain(made)
+      expect((mine.view().nodes.get(made) as { box?: { x: number } }).box?.x).toBe(90)
+      expect(xOf(mine.view())).toBe(0)
+    },
+  )
 
   it("finds a run the tab did not see land, after a reload", async () => {
     const remote = memoryDoomRemote(start)

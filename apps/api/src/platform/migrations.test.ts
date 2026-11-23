@@ -223,6 +223,23 @@ describe("database migrations", () => {
     await expect(migrator.query("select id from deck.later")).resolves.toMatchObject({ rowCount: 0 })
   })
 
+  it("names the stored replaced values of an agent's edit at migration 26, keeping each row's value", async () => {
+    const database = await bootstrappedDatabase()
+    const migrator = await open(roleUrl("migrator", database))
+    await applySchema(
+      migrator,
+      migrations.filter((migration) => migration.id < 26),
+    )
+    await migrator.query("insert into session.account (email) values ('kept@example.com')")
+    await migrator.query("insert into deck.doom (id, owner, rev) values ('fresh', 'kept@example.com', 1)")
+    await migrator.query(
+      `insert into deck.doom_edit (deck, rev, once, edit, was) values ('fresh', 1, 'a1', '{}', '[{"node":"s:4"}]')`,
+    )
+    expect(await applySchema(migrator)).toEqual({ applied: 1, at: latest })
+    const kept = await migrator.query("select replaced from deck.doom_edit where deck = 'fresh'")
+    expect(kept.rows).toEqual([{ replaced: [{ node: "s:4" }] }])
+  })
+
   it("drops the old deck tables at migration 25 and queues their stored files, keeping a Doom deck's media", async () => {
     const database = await bootstrappedDatabase()
     const migrator = await open(roleUrl("migrator", database))
@@ -243,7 +260,12 @@ describe("database migrations", () => {
       `insert into deck.media (key, deck, sha256, bytes)
        values ('media/old', 'old', 'aa', 5), ('media/fresh', 'fresh', 'bb', 6)`,
     )
-    expect(await applySchema(migrator)).toEqual({ applied: 1, at: latest })
+    expect(
+      await applySchema(
+        migrator,
+        migrations.filter((migration) => migration.id <= 25),
+      ),
+    ).toEqual({ applied: 1, at: 25 })
     const gone = await migrator.query<{ saved: string | null; once: string | null }>(
       "select to_regclass('deck.saved')::text as saved, to_regclass('deck.once')::text as once",
     )

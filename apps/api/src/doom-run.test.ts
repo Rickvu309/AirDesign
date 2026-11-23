@@ -83,8 +83,8 @@ async function deckWithRun() {
   return deck
 }
 
-describe("a run's edits and the nodes as they were before it", () => {
-  it("answers the run's edits in order, each at its revision, and each touched node's first earlier state", async () => {
+describe("a run's edits and the values each one replaced", () => {
+  it("answers the run's edits in order, each at its revision, with the value and revision each write replaced", async () => {
     const deck = await deckWithRun()
     const answer = await post(doomRoutes.run.path, { deck, run: "run-1" })
     expect(answer.ok).toBe(true)
@@ -92,14 +92,23 @@ describe("a run's edits and the nodes as they were before it", () => {
       ["a1", 3],
       ["a2", 4],
     ])
-    expect(Object.keys(answer.before)).toEqual([startIds.title])
-    expect(answer.before[startIds.title].box.x).toBe(5)
+    expect(answer.replaced).toEqual([
+      [{ node: startIds.title, key: "box", value: box(5), rev: 2 }],
+      [
+        { node: startIds.title, key: "box", value: box(10), rev: 3 },
+        { node: made, key: "parent", value: null, rev: null },
+      ],
+    ])
     expect(doomRoutes.run.result(answer)).toMatchObject({ ok: true })
   })
 
   it("answers nothing for a run that never landed an edit", async () => {
     const deck = await deckWithRun()
-    expect(await post(doomRoutes.run.path, { deck, run: "nobody" })).toMatchObject({ ok: true, edits: [], before: {} })
+    expect(await post(doomRoutes.run.path, { deck, run: "nobody" })).toMatchObject({
+      ok: true,
+      edits: [],
+      replaced: [],
+    })
   })
 
   it("is the owner's alone, and refuses a deck that is not there", async () => {
@@ -108,10 +117,10 @@ describe("a run's edits and the nodes as they were before it", () => {
     expect(await post(doomRoutes.run.path, { deck: "nothere", run: "run-1" })).toEqual({ ok: false, refusal: "deck" })
   })
 
-  it("keeps the earlier state of a node only for an agent's edit", async () => {
+  it("keeps the replaced values only for an agent's edit", async () => {
     const deck = await deckWithRun()
     const rows = await admin.query(
-      "select once, was is not null as kept from deck.doom_edit where deck = $1 order by rev",
+      "select once, replaced is not null as kept from deck.doom_edit where deck = $1 order by rev",
       [deck],
     )
     expect(rows.rows).toEqual([
