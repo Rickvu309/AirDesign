@@ -1,4 +1,4 @@
-import { AirdesignMark } from "@/decks/airdesign-mark"
+import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { ClaudeMark, CodexMark } from "@/connect/agent-marks"
 
 export function AgentPair({ agent }: { agent: "claude" | "codex" | null }) {

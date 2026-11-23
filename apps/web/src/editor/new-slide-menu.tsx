@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { EditorMenuContent } from "@/editor/editor-menu"
 import type { LayoutChoice } from "@/editing/slide-layout"
 

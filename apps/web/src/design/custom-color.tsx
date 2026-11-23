@@ -5,7 +5,7 @@ import { colorCopy } from "@/copy/color-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { hexOf, hsvOf, shownHex, typedColor, type Hsv, type Palette } from "@/design/color-choices"
 import { dropperOf, pickScreenColor } from "@/design/eyedropper"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 
 const hueStops = [0, 60, 120, 180, 240, 300, 360]
 const hueTrack = `linear-gradient(to right, ${hueStops.map((hue) => `#${hexOf({ hue, saturation: 1, value: 1 })}`).join(", ")})`

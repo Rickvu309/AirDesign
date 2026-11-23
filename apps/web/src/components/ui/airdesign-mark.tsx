@@ -1,4 +1,4 @@
-import { markBar, markColor, markSlash, markStem } from "@/decks/airdesign-mark-art"
+import { markBar, markColor, markSlash, markStem } from "@/components/ui/airdesign-mark-art"
 
 export function AirdesignMark({ size }: { size: number }) {
   return (

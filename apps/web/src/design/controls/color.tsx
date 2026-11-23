@@ -6,7 +6,7 @@ import { designCopy } from "@/copy/design-copy"
 import { shownHex, shownName } from "@/design/color-choices"
 import { ColorPicker, lightCss } from "@/design/color-picker"
 import type { ControlProps } from "@/design/panel"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export function ColorField({

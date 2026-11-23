@@ -12,9 +12,3 @@ apps/web/src/aira:
     files:
       - apps/web/src/editor/adjust-tone.tsx
       - apps/web/src/editor/tone-link.ts
-apps/web/src/decks:
-  apps/web/src/decks/airdesign-mark.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-chrome.tsx

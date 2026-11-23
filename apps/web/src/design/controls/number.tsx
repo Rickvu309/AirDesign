@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { NoneFill, Opacity } from "@/design/preset-icons"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { lineHeightPointsFloor, spaceCeiling } from "@airdesign/document"
 import { fixedLine, typedFixed, typedNumber } from "@/design/typed-number"

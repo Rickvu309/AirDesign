@@ -8,7 +8,7 @@ import {
 import { EditorMenuContent } from "@/editor/editor-menu"
 import { deckActionsOf, productCopy } from "@/copy/product-copy"
 import { nameReading } from "@/editor/deck-name-edit"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export function DeckTitleEdit({

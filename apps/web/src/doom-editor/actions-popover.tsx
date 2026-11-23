@@ -2,7 +2,7 @@ import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, Search }
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useId, useMemo, useState, type ComponentType, type ReactNode } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
-import { iconMatches, startingIcons } from "@/editor/icon-search"
+import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
 import * as doom from "@airdesign/doom"
 

@@ -13,7 +13,7 @@ import {
   type Palette,
 } from "@/design/color-choices"
 import { CustomColor } from "@/design/custom-color"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 const lightest = 0xe0

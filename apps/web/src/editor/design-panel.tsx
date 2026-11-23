@@ -10,7 +10,7 @@ import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/des
 import { visibleEffects } from "@/design/effects-list"
 import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { optionWord } from "@/copy/option-copy"
 import { cn } from "@/lib/class-names"
 import { LinkFormatting } from "@/design/controls/link"

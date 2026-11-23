@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { DeckInitial } from "@/decks/deck-card"
 import { fittedWidth, usePreviewBox, type Size } from "@/decks/deck-preview"
 import { doomThumbnail, thumbnailWidth } from "@/decks/doom-thumbnail"
-import { hairlineShadow } from "@/editor/editor-chrome"
+import { hairlineShadow } from "@/components/ui/shadows"
 import { cn } from "@/lib/class-names"
 
 const slideRatio = 1080 / 1920

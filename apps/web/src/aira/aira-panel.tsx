@@ -6,7 +6,7 @@ import { useConversationFollow } from "@/components/ai-elements/conversation-fol
 import { airaBackOn, airaCopy } from "@/copy/aira-copy"
 import { productCopy } from "@/copy/product-copy"
 import { UsageRing } from "@/aira/usage-ring"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import {
   airaChat,

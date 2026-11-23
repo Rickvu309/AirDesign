@@ -1,4 +1,4 @@
-import { AirdesignMark } from "@/decks/airdesign-mark"
+import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { Button } from "@/components/ui/button"
 import { accountCopy } from "@/copy/account-copy"
 import { settingsCopy } from "@/copy/settings-copy"

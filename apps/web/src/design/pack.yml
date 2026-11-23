@@ -18,6 +18,7 @@ public:
   - corners-control.ts
   - effects-list.ts
   - eyedropper.ts
+  - icon-search.tsx
   - opacity-control.ts
   - panel-arrangement.ts
   - panel-folds.ts
@@ -26,6 +27,8 @@ public:
   - preset-icons.ts
   - selected-weight.ts
   - served-faces.ts
+  - shape-grid.tsx
+  - shape-marks.tsx
   - spacing-units.ts
   - text-style-edit.tsx
   - trait-controls.ts

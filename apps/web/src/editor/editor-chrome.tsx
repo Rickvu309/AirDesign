@@ -1,20 +1,12 @@
 import type { ReactNode, Ref } from "react"
 import { Button } from "@/components/ui/button"
-import { AirdesignMark } from "@/decks/airdesign-mark"
+import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { DeckTitleEdit } from "@/editor/deck-title-edit"
 import { SaveStatusLine } from "@/editor/save-status"
 import type { SaveStatus } from "@/editor/save-status"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
-
-export const surfaceShadow = "shadow-[0px_0px_0px_1px_var(--field-edge),0px_1px_2px_var(--black-4)]"
-
-export const cardShadow = "shadow-[0px_0px_0px_1px_var(--black-7),0px_2px_8px_var(--black-4)]"
-
-export const floatShadow = "shadow-[0px_0px_0px_1px_var(--black-8),0px_12px_32px_var(--black-12)]"
-
-export const hairlineShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 
 export function DeckTitle({
   title,

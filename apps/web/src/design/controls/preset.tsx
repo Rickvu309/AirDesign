@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { optionWord } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
-import { PresetThumb, ShapeGrid } from "@/editor/shape-grid"
+import { PresetThumb, ShapeGrid } from "@/design/shape-grid"
 import { cn } from "@/lib/class-names"
 
 function isPreset(value: unknown): value is Preset {

@@ -6,7 +6,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
+import { EditorIcon, type EditorIconName } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 const menuRow =

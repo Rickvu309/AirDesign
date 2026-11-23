@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { AirdesignMark } from "@/decks/airdesign-mark"
+import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { pricingCopy, pricingFeatures } from "@/pricing/pricing-plan"
 
 function FeatureCheck() {

@@ -9,7 +9,7 @@ import { optionWord } from "@/copy/option-copy"
 import { shownHex } from "@/design/color-choices"
 import { PickerBody } from "@/design/color-picker"
 import type { ControlProps } from "@/design/panel"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 
 const half = 50_000
 const black: Color = { rgb: "000000" }

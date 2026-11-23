@@ -11,7 +11,7 @@ import {
   type TonePoint,
   type ToneScope,
 } from "@/aira/aira-prompts"
-import { ToneIcon } from "@/editor/editor-icons"
+import { ToneIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export type ToneAction = {
