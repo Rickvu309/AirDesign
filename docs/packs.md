@@ -37,8 +37,25 @@ flowchart TD
     p_apps_web_src_copy["apps/web/src/copy"]
     p_apps_web_src_lib["apps/web/src/lib"]
   end
-  p_packages_doom["packages/doom"]
-  p_packages_mcp["packages/mcp"]
+  subgraph p_layer_service["service"]
+    p_packages_live["packages/live"]
+    p_packages_mcp["packages/mcp"]
+  end
+  subgraph p_layer_model["model"]
+    p_packages_catalog["packages/catalog"]
+    p_packages_document["packages/document"]
+    p_packages_pptx["packages/pptx"]
+    p_packages_render["packages/render"]
+  end
+  subgraph p_layer_core["core"]
+    p_packages_device["packages/device"]
+    p_packages_doom["packages/doom"]
+    p_packages_fonts["packages/fonts"]
+    p_packages_oauth["packages/oauth"]
+    p_packages_templates["packages/templates"]
+    p_packages_theme["packages/theme"]
+    p_packages_usage["packages/usage"]
+  end
   p_apps_api_src --> p_apps_api_src_account
   p_apps_api_src --> p_apps_api_src_aira
   p_apps_api_src --> p_apps_api_src_doom
@@ -163,5 +180,16 @@ flowchart TD
 | `apps/web/src/present` | feature | present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, slide-shows.ts, use-leaving.ts, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/pricing` | feature | pricing-screens.tsx | apps/web/src/components, apps/web/src/decks | none |
 | `apps/web/src/settings` | feature | account-load.ts, account-page.tsx, account-profile.tsx, agents-page.tsx, screens/usage-tab.tsx, settings-controls.tsx, settings-frame.tsx, settings-page.tsx, settings-routes.ts, settings-sample.ts, settings-screens.tsx, usage-page.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/decks, apps/web/src/lib | none |
-| `packages/doom` | none | src/index.ts | none | none |
-| `packages/mcp` | none | runtime: packages/mcp/src/index.ts; evals: packages/mcp/src/evals.ts | none | none |
+| `packages/catalog` | model | src/index.ts | none | none |
+| `packages/device` | core | src/index.ts | none | none |
+| `packages/document` | model | src/index.ts | none | none |
+| `packages/doom` | core | src/index.ts | none | none |
+| `packages/fonts` | core | src/index.ts | none | none |
+| `packages/live` | service | src/index.ts | none | none |
+| `packages/mcp` | service | runtime: packages/mcp/src/index.ts; evals: packages/mcp/src/evals.ts | none | none |
+| `packages/oauth` | core | src/index.ts | none | none |
+| `packages/pptx` | model | src/index.ts | none | none |
+| `packages/render` | model | src/index.ts | none | none |
+| `packages/templates` | core | src/index.ts | none | none |
+| `packages/theme` | core | src/index.ts | none | none |
+| `packages/usage` | core | src/index.ts | none | none |

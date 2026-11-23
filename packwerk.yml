@@ -13,6 +13,9 @@ layers:
   - feature
   - shared
   - platform
+  - service
+  - model
+  - core
 table_exempt:
   - "apps/api/src/platform/migrations.ts"
   - "apps/api/src/platform/doom-migrations.ts"
