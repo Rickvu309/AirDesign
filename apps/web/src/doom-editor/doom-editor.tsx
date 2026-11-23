@@ -155,7 +155,7 @@ function Editing({
           <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
         </div>
       </div>
-      <ResizablePanel panel="agent">
+      <ResizablePanel panel={panel}>
         <PanelHead>
           <ZoomMenu
             zoom={zoom === "fit" ? "fit" : percent}
