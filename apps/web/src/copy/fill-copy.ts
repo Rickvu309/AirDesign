@@ -79,7 +79,7 @@ export const fillWords: Readonly<Record<string, string>> = {
   "paint.solid": "Color",
   gradient: "Gradient",
   pattern: "Pattern",
-  image: "Icon",
+  image: "Image",
   group: "Group fill",
   stops: "Stops",
   pos: "Position",

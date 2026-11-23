@@ -9,6 +9,10 @@ import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
 import { oldColorOf, doomColorOf } from "./design-values"
 import { propOf } from "@/editing/node-props"
+import { doomEditorCopy } from "@/copy/doom-editor-copy"
+import { optionCopy } from "@/copy/option-copy"
+import { designCopy } from "@/copy/design-copy"
+import { panelTitle } from "@/editor/panel-title"
 import { hexes } from "@/testing/design-adapter-art"
 import { grow, landed, spot } from "@/testing/doom-fixtures"
 
@@ -301,6 +305,15 @@ describe("picture, icon, frame and line", () => {
     expect(find(model, "image", "mode").value).toBe("fit")
     const tiled = write(["photo"], find(model, "image", "mode"), "tile")
     expect(prop(tiled, "photo", "fills")).toEqual([{ kind: "image", asset: "a".repeat(64), fit: "tile" }])
+  })
+
+  it("names the image paint Image, as the Doom paint kinds do", () => {
+    expect(optionCopy.image).toBe(doomEditorCopy.paintKinds.image)
+  })
+
+  it("titles an icon's panel Icon and a picture's Image", () => {
+    expect(panelTitle(modelOf("star"))).toBe(designCopy.titles.icon)
+    expect(panelTitle(modelOf("photo"))).toBe(designCopy.titles.picture)
   })
 
   it("shows an icon's colour and weight and writes them to its stroke", () => {
