@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { airaCopy, airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
+import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { forward, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US" })

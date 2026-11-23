@@ -4,7 +4,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
-import { handKeptMessage, references } from "../scripts/reference-order.mjs"
+import { handKeptMessage } from "../scripts/reference-order.mjs"
+import { typecheckProjects } from "../scripts/typecheck.mjs"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const generator = path.join(repoRoot, "scripts/new-package.mjs")
@@ -46,7 +47,7 @@ describe("new:package", () => {
       const packageJson = JSON.parse(readFileSync(path.join(dir, "packages/probe/package.json"), "utf8"))
       expect(packageJson.name).toBe("@airdesign/probe")
       expect(Object.keys(packageJson.exports)).toEqual(["."])
-      expect(references(dir)).toContain("./packages/probe")
+      expect(typecheckProjects(dir)).toContain("./packages/probe")
       expect(JSON.parse(readFileSync(path.join(dir, "tsconfig.json"), "utf8"))).toEqual({ files: [] })
 
       const typecheck = run([tsc, "-b", "packages/probe", "--pretty", "false"], dir)
@@ -111,7 +112,7 @@ describe("new:package", () => {
       )
       const created = run([generator, "probe"], dir)
       expect(created.status, `${created.stdout}\n${created.stderr}`).toBe(0)
-      expect(references(dir)).toEqual(["./packages/probe", "./packages/theme"])
+      expect(typecheckProjects(dir)).toEqual([".", "./packages/probe", "./packages/theme"])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

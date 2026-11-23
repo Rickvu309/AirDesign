@@ -296,7 +296,7 @@ const rows = [
     preflight: true,
     gate: { order: 8 },
   },
-  { name: "typecheck", kind: "rule", command: "pnpm", args: ["typecheck"], lane: "outputs" },
+  { name: "typecheck", kind: "rule", command: "pnpm", args: ["typecheck"], lane: "outputs", gate: { order: 20 } },
   {
     name: "build",
     kind: "build",

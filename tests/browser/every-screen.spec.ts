@@ -17,6 +17,7 @@ const root = process.cwd()
 const screenIndexPath = "/screens"
 const notFoundScreens: ReadonlySet<string> = new Set([deckRoutes.deckNotFound, deckRoutes.addressNotFound])
 const pageCount = 4
+const firstLine = (error: unknown) => String(error).split("\n")[0] ?? ""
 
 async function screenFaults(page: Page, screenPath: string) {
   const faults: string[] = []
@@ -32,7 +33,7 @@ async function screenFaults(page: Page, screenPath: string) {
     if (!notFoundScreens.has(screenPath))
       await expect(page.locator("[data-not-found]"), "Page not found").toHaveCount(0)
   } catch (error) {
-    faults.push(String(error).split("\n")[0])
+    faults.push(firstLine(error))
   }
   page.off("pageerror", recordPageError)
   page.off("console", recordConsoleError)
@@ -72,7 +73,7 @@ test("every registered screen opens with no error", async ({ context, page }) =>
           rows.push({ page: screenPath, findings: scanned.findings })
           for (const index of scanned.used) used.add(index)
         } catch (error) {
-          failures.push({ page: screenPath, error: String(error).split("\n")[0] })
+          failures.push({ page: screenPath, error: firstLine(error) })
         }
         scanning += performance.now() - started
       }

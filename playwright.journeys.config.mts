@@ -3,16 +3,17 @@ import { journeyGrep } from "./tests/journeys/journey-shards.mjs"
 
 const reporter: ReporterDescription[] = [["line"], ["./tests/journeys/journey-timings.mjs"]]
 if (process.env.JOURNEYS_REPORT) reporter.push(["json", { outputFile: process.env.JOURNEYS_REPORT }])
+const grep = journeyGrep({
+  root: import.meta.dirname,
+  changed: process.env.JOURNEYS_CHANGED,
+  shard: process.env.JOURNEYS_SHARD,
+})
 
 export default defineConfig({
   testDir: "tests/journeys",
   retries: 0,
   fullyParallel: true,
-  grep: journeyGrep({
-    root: import.meta.dirname,
-    changed: process.env.JOURNEYS_CHANGED,
-    shard: process.env.JOURNEYS_SHARD,
-  }),
+  ...(grep === undefined ? {} : { grep }),
   reporter,
   globalSetup: "./tests/journeys/launch.ts",
   use: {

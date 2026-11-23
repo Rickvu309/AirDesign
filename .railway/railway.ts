@@ -1,5 +1,7 @@
 import { bucket, defineRailway, github, postgres, project, service, volume } from "railway/iac"
 
+type CliProjectDefinition = Parameters<typeof project>[1] & { variables: { managed: boolean } }
+
 export default defineRailway(() => {
   const Postgres = postgres("Postgres", { region: "asia-southeast1-eqsg3a" })
   Postgres.networking = { privateNetworkEndpoint: "postgres" }
@@ -21,8 +23,9 @@ export default defineRailway(() => {
     deploy: { restartPolicyMaxRetries: 5 },
   })
 
-  return project("airdesign-next", {
+  const definition: CliProjectDefinition = {
     variables: { managed: false },
     resources: [Postgres, api, postgresVolume, PostgresPITR],
-  })
+  }
+  return project("airdesign-next", definition)
 })

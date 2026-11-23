@@ -12,7 +12,7 @@ export const picturePanelCopy = {
   crop: "Crop",
 } as const
 
-export const pictureWords: Readonly<Record<string, string>> = {
+export const pictureWords = {
   fill: "Fill",
   fit: "Fit",
   crop: "Crop",
@@ -22,4 +22,4 @@ export const pictureWords: Readonly<Record<string, string>> = {
   duotone: "Duotone",
   dark: "Dark",
   light: "Light",
-}
+} as const satisfies Readonly<Record<string, string>>

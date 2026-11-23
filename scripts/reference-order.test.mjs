@@ -1,13 +1,7 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import {
-  handKeptMessage,
-  handKeptReferences,
-  references,
-  unbuiltDependencies,
-  workspaceRoot,
-} from "./reference-order.mjs"
+import { handKeptMessage, handKeptReferences, unbuiltDependencies, workspaceRoot } from "./reference-order.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -18,38 +12,16 @@ const same = (name, actual, expected) => {
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-references-"))
 const project = (folder, compilerOptions) => {
   fs.mkdirSync(path.join(root, folder, "src"), { recursive: true })
-  if (compilerOptions !== undefined) {
-    fs.writeFileSync(path.join(root, folder, "tsconfig.json"), JSON.stringify({ compilerOptions }))
-  }
+  fs.writeFileSync(path.join(root, folder, "tsconfig.json"), JSON.stringify({ compilerOptions }))
 }
 
 try {
   fs.writeFileSync(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - apps/*\n  - packages/*\n")
   project("packages/zeta", { composite: true })
   project("packages/alpha", { composite: true })
-  project("packages/plain", {})
-  project("packages/bare", undefined)
-  project("apps/api", { composite: true })
-  project("apps/web", { noEmit: true })
-  project("tooling/checker", { composite: true })
-  project("tooling/fixtures/failing", { composite: true })
-  fs.writeFileSync(path.join(root, "packages", "notes.txt"), "")
-
-  same("every composite project directly under apps, packages and tooling, sorted", references(root), [
-    "./apps/api",
-    "./packages/alpha",
-    "./packages/zeta",
-    "./tooling/checker",
-  ])
   project("packages/beta", { composite: true })
-  same("a new package is referenced with no list to edit", references(root), [
-    "./apps/api",
-    "./packages/alpha",
-    "./packages/beta",
-    "./packages/zeta",
-    "./tooling/checker",
-  ])
-  same("a workspace with neither folder has none", references(path.join(root, "packages", "bare")), [])
+  project("apps/api", { composite: true })
+
   same("the root is found from a nested folder", workspaceRoot(path.join(root, "packages", "alpha", "src")), root)
   same("no workspace above has no root", workspaceRoot(path.parse(root).root), undefined)
 

@@ -112,7 +112,9 @@ test("a photo too wide for its box, a photo that did not load and a word too lon
   browser,
 }) => {
   const broken = structuredClone(result)
-  broken.answer.children[2].claim = "One run still fails on the incomprehensibilitiesandsomemore screen"
+  broken.answer.children = broken.answer.children.map((child, index) =>
+    index === 2 ? { ...child, claim: "One run still fails on the incomprehensibilitiesandsomemore screen" } : child,
+  )
   const faults = await faultsOf(browser, broken, {
     "before.png": photo(900),
     "failed.png": "data:image/png;base64,AAAA",
@@ -122,7 +124,7 @@ test("a photo too wide for its box, a photo that did not load and a word too lon
     "photo-missing B1",
     "text-past-box C",
   ])
-  expect(faults[0].message).toBe(
+  expect(faults[0]?.message).toBe(
     "The photo is drawn at 67% of its size, so its text is too small to read. Crop it to at most 604 px wide.",
   )
 })

@@ -1,3 +1,28 @@
 {
-  "files": []
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "checkJs": false,
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./apps/web/src/*"],
+      "@airdesign/*": ["./packages/*/src/index.ts"],
+      "@airdesign/mcp/*": ["./packages/mcp/src/*.ts"]
+    }
+  },
+  "include": [
+    ".railway/railway.ts",
+    "apps/api/src/source-hooks.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.mts",
+    "tests",
+    "*.ts",
+    "*.mts"
+  ]
 }

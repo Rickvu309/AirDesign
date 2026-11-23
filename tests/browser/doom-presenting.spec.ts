@@ -72,7 +72,7 @@ test("F5 starts the show on the first slide of a Doom deck, the show keys step t
   await expect(shown(page)).toContainText(placeholderRoles.subTitle)
   const box = await shown(page).boundingBox()
   expect(box?.width).toBeGreaterThan(1500)
-  expect(await page.locator("[data-doom-editor]").evaluate((node) => node.inert)).toBe(true)
+  expect(await page.locator("[data-doom-editor]").evaluate((node: HTMLElement) => node.inert)).toBe(true)
 
   for (const [key, slide] of [
     ["ArrowRight", "2"],
