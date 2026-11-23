@@ -42,7 +42,7 @@ test("verification states share copy after a spec loads it through CommonJS", as
 test("verification states load after a spec reads fill copy through CommonJS", async () => {
   expect(fillCopy.reset).toBeTruthy()
   const { states } = await load<{ states: { name: string }[] }>("states.mjs")
-  expect(states.some((state) => state.name === "design-reset-fill-picked")).toBe(true)
+  expect(states.some((state) => state.name === "design-border")).toBe(true)
 })
 
 const fixture = `<body style="margin:0;font:16px sans-serif">
