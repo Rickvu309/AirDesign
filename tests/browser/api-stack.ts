@@ -155,6 +155,8 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
       const { mcpRoutes, signInRoutes, accountRoutes } = await import("../../packages/catalog/src/index.ts")
       const { LocalOriginalStore } = await import("../../apps/api/src/platform/local-original-store.js")
       const originals = new LocalOriginalStore(Date.now, "https://original.test")
+      const { FontSource } = await import("../../apps/api/src/platform/font-source.js")
+      const { fontShelf, offShelf, shelfFolder } = await import("../../scripts/font-shelf.mjs")
       const { allowance } = await import("../../packages/usage/src/index.ts")
       const cluster = await startEmptyCluster()
       const role = (name: string) =>
@@ -193,6 +195,7 @@ export const test = base.extend<{ requests: void }, { stack: Stack; production: 
           log: () => undefined,
         },
         originals,
+        fonts: new FontSource(fontShelf(shelfFolder), offShelf),
         send: async (mail) => {
           mails.push(mail)
         },

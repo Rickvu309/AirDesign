@@ -437,13 +437,18 @@ same(
     .map((step) => [step.if, step["timeout-minutes"]]),
   [[undefined, 20]],
 )
-for (const cache of ["~/.cache/ms-playwright", "~/.cache/pptx-tools", "~/.cache/airdesign/pptx-renders"]) {
+for (const cache of ["~/.cache/pptx-tools", "~/.cache/airdesign/pptx-renders"]) {
   same(
     `paint keeps ${cache}`,
     paintSteps.some((step) => step.with?.path === cache),
     true,
   )
 }
+same(
+  "paint keeps Chromium through the shared Playwright action",
+  paintSteps.some((step) => step.uses === "./.github/actions/playwright"),
+  true,
+)
 same("paint reports a separate main issue", paintSteps.find((step) => (step.run ?? "").includes("red-main.sh"))?.env, {
   GH_TOKEN: "${{ github.token }}",
   RED_TITLE: "paint fidelity is red",

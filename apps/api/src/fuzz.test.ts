@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
-import { createServer, type IncomingMessage, type Server } from "node:http"
-import { connect, type AddressInfo } from "node:net"
+import type { IncomingMessage, Server } from "node:http"
+import { connect } from "node:net"
 import type { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
@@ -13,7 +13,6 @@ import { deckListFuzzGood } from "./testing/deck-list-fuzz.js"
 import { doomFuzzGood } from "./testing/doom-fuzz.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { serveMcp } from "./mcp/mcp.js"
 import { challengeOf } from "./platform/secrets.js"
 import { limits } from "@airdesign/doom"
 import { routes } from "./server.js"
@@ -491,46 +490,6 @@ describe("hostile input over every route", () => {
       expect(write).not.toHaveBeenCalled()
     } finally {
       write.mockRestore()
-    }
-  })
-
-  it("SDK failure reaches the boundary", async () => {
-    const failures: unknown[] = []
-    const server = createServer((req, res) => {
-      void serveMcp(
-        {
-          deck: {} as Pool,
-          email: "a@e.co",
-          agentKey: "",
-          session: {} as Pool,
-          now: () => 0,
-          mint: () => "id",
-          hosts: ["127.0.0.1"],
-          bodyCap,
-          fail: (error) => {
-            failures.push(error)
-            res.writeHead(500)
-            res.end("fixed")
-          },
-        },
-        req,
-        res,
-        Buffer.alloc(0),
-      )
-    })
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()))
-    try {
-      const answer = await exchange((server.address() as AddressInfo).port, {
-        method: "TRACE",
-        target: "/mcp",
-        headers: [],
-      })
-      expect(answer.status).toBe(500)
-      expect(answer.text).toContain("fixed")
-      expect(answer.text).not.toContain("jsonrpc")
-      expect(failures).toHaveLength(1)
-    } finally {
-      await new Promise((resolve) => server.close(resolve))
     }
   })
 

@@ -1,9 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { boldWeight, regularWeight } from "@airdesign/fonts"
 import * as hb from "harfbuzzjs"
-import { fontSource } from "./font-route.js"
 import type { FontSource } from "./font-source.js"
-import type { OriginalStore } from "./original-store.js"
 
 const paintedOpticalSize = 32
 const heldLimit = 200_000
@@ -216,12 +214,11 @@ export class FontMetrics {
   }
 }
 
-const held = new WeakMap<FontSource, FontMetrics>()
+type Fonts = Pick<FontSource, "family" | "file">
+const held = new WeakMap<Fonts, FontMetrics>()
 
-function metricsOf(fonts: FontSource): FontMetrics {
+export function servedFontMetrics(fonts: Fonts): FontMetrics {
   let metrics = held.get(fonts)
   if (metrics === undefined) held.set(fonts, (metrics = new FontMetrics(fonts)))
   return metrics
 }
-
-export const servedFontMetrics = (store: OriginalStore | undefined): FontMetrics => metricsOf(fontSource(store))

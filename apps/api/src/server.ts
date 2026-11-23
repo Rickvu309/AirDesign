@@ -1,5 +1,5 @@
 import { fontRouteList } from "./platform/font-route.js"
-import type { FontSource } from "./platform/font-source.js"
+import { FontSource } from "./platform/font-source.js"
 import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 import { bytesOf, limits } from "@airdesign/doom"
@@ -74,6 +74,7 @@ export type ApiOptions = {
 }
 
 type ServedOptions = ApiOptions & {
+  readonly fonts: FontSource
   readonly closing: Closing
   readonly followers: DeckFollowers
   readonly pictures: DeckPictures
@@ -416,6 +417,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
       hosts: options.hosts ?? localHosts,
       bodyCap: limits.body,
       ...(options.originals === undefined ? {} : { originals: options.originals }),
+      fonts: options.fonts,
       ...(options.imageNet === undefined ? {} : { imageNet: options.imageNet }),
       pictures: options.pictures,
       ...(options.pictureWait === undefined ? {} : { pictureWait: options.pictureWait }),
@@ -530,6 +532,7 @@ async function handle(context: Context): Promise<void> {
 export function createApi(given: ApiOptions): Server {
   const options: ServedOptions = {
     ...given,
+    fonts: given.fonts ?? new FontSource(given.originals),
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
     followers: new DeckFollowers(given.now ?? Date.now),
     pictures: new DeckPictures(),
