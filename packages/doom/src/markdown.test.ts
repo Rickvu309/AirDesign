@@ -66,7 +66,7 @@ describe("textFromMarkdown", () => {
   })
 
   it("reads text a doom reader accepts", () => {
-    for (const markdown of ["", "a", "- a\n- **b**\n\n1. [c](d)", "**a***b*"]) {
+    for (const markdown of ["", "a", "- a\n- **b**\n\n1. [c](https://d.example)", "**a***b*"]) {
       expect(() => readText(JSON.parse(JSON.stringify(read(markdown))))).not.toThrow()
     }
   })

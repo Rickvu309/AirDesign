@@ -1,6 +1,7 @@
 import { limits } from "./limits.js"
 import { type Color, type Px, type Sides, readColor, readSides, px, size } from "./paint.js"
 import { type Reader, boolean, finite, integer, list, literal, object, reject, words } from "./read-kit.js"
+import { readLink } from "./link.js"
 import type { NodeId } from "./ids.js"
 
 export const textStyleNames = ["bigNumber", "title", "heading", "body", "body2", "caption", "label"] as const
@@ -49,7 +50,7 @@ const readSpan = object(
     color: readColor,
     tracking: px(-100, 100),
     case: literal(["upper", "lower", "title"]),
-    link: words(limits.address, 1),
+    link: readLink,
   },
 )
 
