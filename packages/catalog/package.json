@@ -22,7 +22,6 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "@airdesign/document": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
     "zod": "^4.6.7"

@@ -9,7 +9,6 @@ export {
   readStyleName,
   regularWeight,
   styleName,
-  type FontStyle,
   type ServedFace,
 } from "./named-face.js"
 export { plainStyles } from "./plain-styles.js"

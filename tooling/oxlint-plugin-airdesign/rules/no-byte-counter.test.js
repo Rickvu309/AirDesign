@@ -144,7 +144,7 @@ expectAccepts(
 expectAccepts(
   "bytesOf stays",
   source,
-  `import { bytesOf, limits } from "@airdesign/document"\nexport const fits = (text: string) => bytesOf(text) <= limits.valueBytes\n`,
+  `import { bytesOf, limits } from "@airdesign/doom"\nexport const fits = (text: string) => bytesOf(text) <= limits.valueBytes\n`,
   rule,
 )
 expectAccepts(

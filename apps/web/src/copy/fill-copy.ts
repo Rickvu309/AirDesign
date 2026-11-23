@@ -1,7 +1,3 @@
-import type { patternPresets } from "@airdesign/document"
-
-type Preset = (typeof patternPresets)[number]
-
 export const fillCopy = {
   section: "Fill",
   box: "Box fill",
@@ -11,63 +7,6 @@ export const fillCopy = {
   add: "Add",
   paint: (at: number, count: number) => (count === 1 ? "Fill" : `Fill ${String(count - at)} of ${String(count)}`),
 } as const
-
-const presets: Readonly<Record<Preset, string>> = {
-  pct5: "5%",
-  pct10: "10%",
-  pct20: "20%",
-  pct25: "25%",
-  pct30: "30%",
-  pct40: "40%",
-  pct50: "50%",
-  pct60: "60%",
-  pct70: "70%",
-  pct75: "75%",
-  pct80: "80%",
-  pct90: "90%",
-  horz: "Horizontal",
-  vert: "Vertical",
-  ltHorz: "Light horizontal",
-  ltVert: "Light vertical",
-  dkHorz: "Dark horizontal",
-  dkVert: "Dark vertical",
-  narHorz: "Narrow horizontal",
-  narVert: "Narrow vertical",
-  dashHorz: "Dashed horizontal",
-  dashVert: "Dashed vertical",
-  cross: "Cross",
-  dnDiag: "Downward diagonal",
-  upDiag: "Upward diagonal",
-  ltDnDiag: "Light downward diagonal",
-  ltUpDiag: "Light upward diagonal",
-  dkDnDiag: "Dark downward diagonal",
-  dkUpDiag: "Dark upward diagonal",
-  wdDnDiag: "Wide downward diagonal",
-  wdUpDiag: "Wide upward diagonal",
-  dashDnDiag: "Dashed downward diagonal",
-  dashUpDiag: "Dashed upward diagonal",
-  diagCross: "Diagonal cross",
-  smCheck: "Small checkerboard",
-  lgCheck: "Large checkerboard",
-  smGrid: "Small grid",
-  lgGrid: "Large grid",
-  dotGrid: "Dotted grid",
-  smConfetti: "Small confetti",
-  lgConfetti: "Large confetti",
-  horzBrick: "Horizontal brick",
-  diagBrick: "Diagonal brick",
-  solidDmnd: "Solid diamond",
-  openDmnd: "Outlined diamond",
-  dotDmnd: "Dotted diamond",
-  plaid: "Plaid",
-  sphere: "Sphere",
-  weave: "Weave",
-  divot: "Divot",
-  shingle: "Shingle",
-  wave: "Wave",
-  trellis: "Trellis",
-  zigZag: "Zigzag",
-}
 
 export const fillWords = {
   hide: "Hide",
@@ -102,5 +41,4 @@ export const fillWords = {
   preset: "Pattern",
   fg: "Foreground",
   bg: "Background",
-  ...presets,
 } as const satisfies Readonly<Record<string, string>>

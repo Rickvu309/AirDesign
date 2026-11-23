@@ -8,10 +8,6 @@ const strip: SlideStrip = {
   count: 4,
   slideIds: [nodeId("n:1"), nodeId("n:2"), nodeId("n:3"), nodeId("n:4")],
   current: 2,
-  groups: [
-    { name: "Opening", start: 0, key: "f0" },
-    { name: "Results", start: 2, key: "f1" },
-  ],
   onSelect: () => undefined,
   thumbHeight: 101,
   thumb: () => null,
@@ -29,7 +25,7 @@ describe("slide list", () => {
   it("enables Add slide once the deck's first slide has painted", () => {
     const onAdd = () => undefined
     const add = (html: string) => tags(html, /<button[^>]*aria-label="Add slide"[^>]*>/g)[0]
-    expect(add(markup({ count: 0, slideIds: [], groups: [], onAdd }))).toMatch(/ disabled(?:=|[ >])/)
+    expect(add(markup({ count: 0, slideIds: [], onAdd }))).toMatch(/ disabled(?:=|[ >])/)
     expect(add(markup({ onAdd }))).not.toMatch(/ disabled(?:=|[ >])/)
   })
 
@@ -45,29 +41,13 @@ describe("slide list", () => {
     ])
   })
 
-  it("is one tab stop: only the current slide takes Tab, and the slide groups and other slides wait for the arrows", () => {
+  it("is one tab stop: only the current slide takes Tab, and the other slides wait for the arrows", () => {
     const html = markup()
-    const stops = tags(html, /<button[^>]*data-(?:slide-entry|group-head)[^>]*>/g)
+    const stops = tags(html, /<button[^>]*data-slide-entry[^>]*>/g)
     const reachable = stops.filter((tag) => tag.includes('tabindex="0"'))
     expect(reachable).toHaveLength(1)
     expect(reachable[0]).toContain('data-slide-entry="3"')
     expect(stops.filter((tag) => tag.includes('tabindex="-1"'))).toHaveLength(stops.length - 1)
-  })
-
-  it("keeps the one tab stop on the current slide when the deck has a single section", () => {
-    const html = markup({ current: 0, groups: [{ name: "Opening", start: 0, key: "f0" }] })
-    const reachable = tags(html, /<button[^>]*data-(?:slide-entry|group-head)[^>]*>/g).filter((tag) =>
-      tag.includes('tabindex="0"'),
-    )
-    expect(reachable).toHaveLength(1)
-    expect(reachable[0]).toContain('data-slide-entry="1"')
-  })
-
-  it("tells a screen reader a section's name, its state and, when collapsed, its slides", () => {
-    const html = markup()
-    const heads = tags(html, /<button[^>]*data-group-head[^>]*>/g)
-    expect(heads.map((tag) => /aria-label="([^"]*)"/.exec(tag)?.[1])).toEqual(["Opening", "Results"])
-    expect(heads.every((tag) => tag.includes('aria-expanded="true"'))).toBe(true)
   })
 
   it("keeps a polite status region ready to announce what a slide command did", () => {

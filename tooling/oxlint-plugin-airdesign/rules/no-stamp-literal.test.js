@@ -15,8 +15,8 @@ expect(stamps.command).toBe(16)`,
 )
 expectRejects(
   "an aliased row stamp pin fails",
-  live,
-  `import { stamps as current } from "@airdesign/document"
+  document,
+  `import { stamps as current } from "./index.js"
 expect(current["row"]).toEqual(2)`,
   rule,
   message,
@@ -39,8 +39,8 @@ expect(stamps).toMatchObject({ command: 16 })`,
 )
 expectRejects(
   "a current format pin fails",
-  live,
-  `import { format } from "@airdesign/document"
+  document,
+  `import { format } from "./format.js"
 expect(format).toBe(78)`,
   rule,
   message,
@@ -56,7 +56,7 @@ expect({ format, count: 2 }).toEqual({ format, count: 2 })`,
   rule,
 )
 expectAccepts(
-  "unrelated formats and stamps stay",
+  "another package's formats and stamps stay",
   live,
   `expect(format).toBe(1)
 expect(stamps.rows[0]?.same).toBe(true)`,

@@ -1,4 +1,3 @@
-import { presets, type Geometry, type Preset } from "@airdesign/document"
 import { presetOutline } from "@airdesign/doom"
 import type { KeyboardEvent, Ref } from "react"
 import { Button } from "@/components/ui/button"
@@ -13,9 +12,67 @@ const thumbSide = 20
 
 export const gridColumns = 11
 
-const drawnNatively: Readonly<Partial<Record<Preset, string>>> = { rect: "square", ellipse: "circle" }
+export const moreShapes: readonly string[] = [
+  "rect",
+  "roundRect",
+  "ellipse",
+  "triangle",
+  "rtTriangle",
+  "diamond",
+  "parallelogram",
+  "trapezoid",
+  "pentagon",
+  "hexagon",
+  "octagon",
+  "homePlate",
+  "chevron",
+  "plus",
+  "frame",
+  "corner",
+  "star4",
+  "star5",
+  "line",
+  "straightConnector1",
+  "rightArrow",
+  "leftArrow",
+  "upArrow",
+  "downArrow",
+  "leftRightArrow",
+  "leftRightArrowCallout",
+  "upDownArrow",
+  "notchedRightArrow",
+  "round1Rect",
+  "round2SameRect",
+  "snip1Rect",
+  "snip2DiagRect",
+  "wedgeRectCallout",
+  "wedgeRoundRectCallout",
+  "pieWedge",
+  "flowChartProcess",
+  "flowChartDecision",
+  "flowChartTerminator",
+  "bracketPair",
+  "bracePair",
+  "donut",
+  "arc",
+  "can",
+  "cube",
+  "rightBrace",
+  "leftBrace",
+  "cloud",
+  "flowChartInputOutput",
+  "flowChartManualOperation",
+  "flowChartMerge",
+  "flowChartExtract",
+  "flowChartPreparation",
+  "flowChartManualInput",
+  "flowChartOffpageConnector",
+  "flowChartPunchedCard",
+]
 
-export function PresetThumb({ preset, size = 26 }: { preset: Preset; size?: number }) {
+const drawnNatively: Readonly<Record<string, string>> = { rect: "square", ellipse: "circle" }
+
+export function PresetThumb({ preset, size = 26 }: { preset: string; size?: number }) {
   const native = drawnNatively[preset]
   if (native !== undefined) return <ShapeSvg markup={basicShapes[native] ?? ""} size={size} />
   if (preset === "line" || preset === "straightConnector1")
@@ -63,14 +120,14 @@ function moveFocus(event: KeyboardEvent<HTMLDivElement>): void {
 export function ShapeGrid({
   onShape,
   label = shapeCopy.more,
-  shapes = presets,
+  shapes = moreShapes,
   chosen = null,
   chosenRef,
 }: {
-  onShape: (geometry: Geometry) => void
+  onShape: (shape: string) => void
   label?: string
-  shapes?: readonly Preset[]
-  chosen?: Preset | null
+  shapes?: readonly string[]
+  chosen?: string | null
   chosenRef?: Ref<HTMLButtonElement>
 }) {
   const reached = chosen !== null && shapes.includes(chosen) ? chosen : shapes[0]

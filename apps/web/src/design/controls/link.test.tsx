@@ -30,10 +30,8 @@ afterAll(() => {
   window.close()
 })
 
-it.each([
-  ["Doom", ["s:1", "s:2"]],
-  ["the old editor", ["3", "7"]],
-])("links to a slide by its number on %s, and shows that number for the link it holds", async (_editor, slides) => {
+it("links to a slide by its number, and shows that number for the link it holds", async () => {
+  const slides = ["s:1", "s:2"]
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
@@ -120,6 +118,16 @@ it("marks an address it cannot use as invalid and says why, beside the field", a
       input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
     })
     expect(onChange).toHaveBeenCalledWith({ kind: "url", url: "mailto:ana@example.com" })
+    onChange.mockClear()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, "s:7")
+      input.dispatchEvent(new window.Event("input", { bubbles: true }))
+    })
+    await act(async () => {
+      input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    })
+    expect(onChange).not.toHaveBeenCalled()
+    expect(input.getAttribute("aria-invalid")).toBe("true")
   } finally {
     await act(async () => root.unmount())
     host.remove()

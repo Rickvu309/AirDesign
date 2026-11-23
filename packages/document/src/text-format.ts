@@ -4,10 +4,7 @@ import { formatNames } from "./text-value.js"
 
 export type Caret = { readonly paragraph: number; readonly offset: number }
 export type TextRange = { readonly start: Caret; readonly end: Caret }
-export type FormatState = "on" | "off" | "mixed"
 export type FileFormat = (paragraph: number, run: number, format: TextFormat) => boolean
-
-export type SizeStep = 1 | -1
 
 type Piece = { readonly run: TextRun; readonly covered: boolean }
 

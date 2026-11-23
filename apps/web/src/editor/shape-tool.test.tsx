@@ -1,8 +1,8 @@
-import { presets, type Geometry } from "@airdesign/document"
+import { shapeNames } from "@airdesign/doom"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
 import { geometryWords } from "@/copy/geometry-copy"
-import { gridColumns, gridStep, ShapeGrid } from "@/design/shape-grid"
+import { gridColumns, gridStep, moreShapes, ShapeGrid } from "@/design/shape-grid"
 import { ShapeTrayItems, trayGeometries } from "@/editor/shape-tool"
 
 function tagsOf(markup: string) {
@@ -46,13 +46,18 @@ it("maps each tray shape to the PowerPoint preset it inserts", () => {
     "Right arrow": "rightArrow",
     "Speech bubble": "wedgeRectCallout",
   })
-  for (const geometry of Object.values(trayGeometries)) expect(presets).toContain(geometry)
+  for (const shape of Object.values(trayGeometries)) expect(moreShapes).toContain(shape)
 })
 
-it("lists every preset in the More shapes grid, each one on and named as the Shape type list names it", () => {
-  const picked: Geometry[] = []
-  const tags = tagsOf(renderToStaticMarkup(<ShapeGrid onShape={(geometry) => picked.push(geometry)} />))
-  expect(tags.map(labelOf)).toEqual(presets.map((preset) => geometryWords[preset]))
+it("offers every Doom shape and the two lines in the More shapes grid, each once and named", () => {
+  expect([...moreShapes].sort()).toEqual(["line", "straightConnector1", ...shapeNames].sort())
+  expect(moreShapes.filter((shape) => geometryWords[shape] === undefined)).toEqual([])
+})
+
+it("lists every shape in the More shapes grid, each one on and named as the Shape type list names it", () => {
+  const picked: string[] = []
+  const tags = tagsOf(renderToStaticMarkup(<ShapeGrid onShape={(shape) => picked.push(shape)} />))
+  expect(tags.map(labelOf)).toEqual(moreShapes.map((shape) => geometryWords[shape]))
   expect(tags.filter((tag) => / disabled=""/.test(tag))).toEqual([])
   expect(picked).toEqual([])
 })
@@ -64,7 +69,7 @@ it("marks the chosen preset pressed and lets Tab reach only it, so arrows move f
 })
 
 it("steps through the grid by row and column and stops at its edges", () => {
-  const count = presets.length
+  const count = moreShapes.length
   expect(gridStep("ArrowRight", 0, count)).toBe(1)
   expect(gridStep("ArrowLeft", 0, count)).toBe(0)
   expect(gridStep("ArrowDown", 2, count)).toBe(2 + gridColumns)

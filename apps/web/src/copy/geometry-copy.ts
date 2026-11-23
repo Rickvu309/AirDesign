@@ -1,5 +1,3 @@
-import type { Preset } from "@airdesign/document"
-
 export const geometryCopy = {
   corners: "Corners",
   section: "Shape",
@@ -39,7 +37,7 @@ const adjustNames: Readonly<Record<string, Readonly<Record<string, string>>>> = 
   cube: { adj: "Depth" },
 }
 
-const presets: Readonly<Record<Preset, string>> = {
+const shapeWords: Readonly<Record<string, string>> = {
   rect: "Rectangle",
   roundRect: "Rounded rectangle",
   ellipse: "Ellipse",
@@ -100,5 +98,5 @@ const presets: Readonly<Record<Preset, string>> = {
 export const geometryWords: Readonly<Record<string, string>> = {
   adjust: "Adjust",
   "shape.preset": "Type",
-  ...presets,
+  ...shapeWords,
 }

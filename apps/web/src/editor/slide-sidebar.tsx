@@ -1,9 +1,7 @@
 import { SlideItem } from "@/editor/slide-list-item"
 import { Filmstrip, gestureFor } from "@airdesign/render"
-import type { GridSide } from "@airdesign/document"
 import type { NodeId } from "@airdesign/doom"
 import {
-  Fragment,
   useCallback,
   useLayoutEffect,
   useRef,
@@ -22,7 +20,6 @@ import { slideKey, type SlideKey } from "@/editor/slide-keys"
 import type { SaveStatus } from "@/editor/save-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
-import { heldGroups, groupAt } from "@/editor/collapsed-groups"
 import type { LayoutChoice } from "@/editing/slide-layout"
 import { cn } from "@/lib/class-names"
 import { setDropPlace } from "@/editor/slide-list-pick"
@@ -34,22 +31,17 @@ const thumbWidth = slideThumbWidth
 
 const thumbCard = cn("block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
 
-export type StripGroup = { readonly name: string | null; readonly start: number; readonly key: string }
-
-const noGroups: readonly StripGroup[] = []
-
 export type SetChange = { readonly picked: readonly string[]; readonly order: readonly string[] }
 
 export type SlideStrip = {
   readonly count: number
   readonly slideIds: readonly NodeId[]
-  readonly groups?: readonly StripGroup[]
   readonly current: number
   readonly skipped?: readonly boolean[]
   readonly onSkip?: (indices: readonly number[], skipped: boolean) => void
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
-  readonly onAdd?: (layoutPart?: string, after?: number, placement?: GridSide) => void
+  readonly onAdd?: (layoutPart?: string, after?: number) => void
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
@@ -106,7 +98,7 @@ export function SlideSidebar({
   )
 }
 
-const stops = "[data-slide-item], [data-group-head]"
+const stops = "[data-slide-item]"
 
 function stopsOf(list: HTMLElement): HTMLElement[] {
   return [...list.querySelectorAll<HTMLElement>(stops)]
@@ -155,9 +147,6 @@ function DeckStrip({
     following.current = false
     if (next !== document.activeElement) next.focus()
   }, [current, count])
-  const groups = strip.groups ?? noGroups
-  const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
-  const collapsed = heldGroups(folded, groups)
   const [stop, setStop] = useState<string | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
   const announce = useCallback(
@@ -171,12 +160,6 @@ function DeckStrip({
     announce,
     onSlideSelection,
   })
-  const [seen, setSeen] = useState(strip.current)
-  if (seen !== strip.current) {
-    setSeen(strip.current)
-    const key = groups[groupAt(groups, strip.current)]?.key
-    if (key !== undefined && folded.has(key)) setFolded(new Set([...folded].filter((each) => each !== key)))
-  }
   const item = (index: number) => (
     <SlideItem
       key={index}
@@ -224,22 +207,11 @@ function DeckStrip({
       />
     </SlideItem>
   )
-  const visible = (index: number) => {
-    const at = groupAt(groups, index)
-    return at === -1 || !collapsed.has(at)
-  }
-  const fallback = visible(strip.current)
-    ? `slide:${String(strip.current)}`
-    : `group:${String(groupAt(groups, strip.current))}`
   const present = (key: string) => {
-    const [kind, number] = key.split(":")
-    const at = Number(number)
-    if (kind === "group") return (groups[at]?.name ?? null) !== null
-    return at >= 0 && at < strip.count && visible(at)
+    const at = Number(key.split(":")[1])
+    return at >= 0 && at < strip.count
   }
-  const reachable = stop !== null && present(stop) ? stop : fallback
-  const toggle = (key: string) =>
-    setFolded((held) => (held.has(key) ? new Set([...held].filter((each) => each !== key)) : new Set([...held, key])))
+  const reachable = stop !== null && present(stop) ? stop : `slide:${String(strip.current)}`
   return (
     <>
       <div className="flex px-3 pb-2">
@@ -289,89 +261,8 @@ function DeckStrip({
             following.current = false
         }}
       >
-        {groups.every((group) => group.name === null)
-          ? Array.from({ length: strip.count }, (_, index) => item(index))
-          : groups.map((group, number) => {
-              const end = groups[number + 1]?.start ?? strip.count
-              const open = !collapsed.has(number)
-              if (group.name === null)
-                return (
-                  <Fragment key={group.key}>
-                    {number === 0 ? null : <span aria-hidden="true" className="mx-3 my-1 block h-px bg-line" />}
-                    {Array.from({ length: end - group.start }, (_, offset) => item(group.start + offset))}
-                  </Fragment>
-                )
-              return (
-                <GroupBlock
-                  key={group.key}
-                  name={group.name}
-                  reachable={reachable === `group:${String(number)}`}
-                  stop={`group:${String(number)}`}
-                  open={open}
-                  range={open ? undefined : rangeOf(group.start, end)}
-                  onToggle={() => toggle(group.key)}
-                  stack={
-                    <Filmstrip
-                      className={thumbCard}
-                      height={strip.thumbHeight}
-                      paint={() => strip.thumb(group.start, thumbWidth)}
-                      width={thumbWidth}
-                    />
-                  }
-                >
-                  {Array.from({ length: end - group.start }, (_, offset) => item(group.start + offset))}
-                </GroupBlock>
-              )
-            })}
+        {Array.from({ length: strip.count }, (_, index) => item(index))}
       </div>
-    </>
-  )
-}
-
-function rangeOf(start: number, end: number): string {
-  return end - start > 1 ? `${start + 1} to ${end}` : String(start + 1)
-}
-
-function GroupBlock({
-  name,
-  stop,
-  reachable,
-  open,
-  range,
-  onToggle,
-  stack,
-  children,
-}: {
-  name: string
-  stop: string
-  reachable: boolean
-  open: boolean
-  range: string | undefined
-  onToggle: () => void
-  stack: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <>
-      <GroupHead
-        name={name}
-        stop={stop}
-        reachable={reachable}
-        open={open}
-        {...(range === undefined ? {} : { range })}
-        onToggle={onToggle}
-      />
-      {open ? (
-        children
-      ) : (
-        <div className="flex pt-1 pl-[var(--space-32)]" data-group-stack>
-          <div className="flex w-[197px] flex-col items-center">
-            {stack}
-            <span className="block h-1.5 w-[183px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-            <span className="block h-1.5 w-[167px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -409,56 +300,4 @@ function onSlideKey(
   event.preventDefault()
   if (onSet === null) runSlideChange(strip, index, change, announce)
   else onSet(change)
-}
-
-function GroupHead({
-  name,
-  stop,
-  reachable = true,
-  open = false,
-  range,
-  onToggle,
-}: {
-  name: string
-  stop?: string
-  reachable?: boolean
-  open?: boolean
-  range?: string
-  onToggle?: () => void
-}) {
-  const look = "flex min-h-8 shrink-0 items-start gap-2 px-2 py-1.5"
-  const body = (
-    <>
-      <EditorIcon name={open ? "chev" : "chevr"} size={14} className="mt-0.5 shrink-0 text-faint" />
-      <span className="min-w-0 text-[length:var(--type-dense)] leading-[var(--leading-dense)] font-semibold wrap-break-word text-foreground">
-        {name}
-      </span>
-      {range ? (
-        <span className="flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[length:var(--type-caption)] whitespace-nowrap text-muted-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]">
-          {range}
-        </span>
-      ) : null}
-    </>
-  )
-  if (onToggle === undefined) {
-    return (
-      <div className={look} data-group-head>
-        {body}
-      </div>
-    )
-  }
-  return (
-    <button
-      type="button"
-      aria-expanded={open}
-      aria-label={range === undefined ? name : `${name}, ${slideListCopy.groupRange(range)}`}
-      tabIndex={reachable ? 0 : -1}
-      className={cn(look, "w-full text-left")}
-      {...(stop === undefined ? {} : { "data-stop": stop })}
-      data-group-head
-      onClick={onToggle}
-    >
-      {body}
-    </button>
-  )
 }

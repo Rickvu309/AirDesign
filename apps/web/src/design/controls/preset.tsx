@@ -1,5 +1,4 @@
 import { controlLabel } from "@/design/controls/control-label"
-import type { Preset } from "@airdesign/document"
 import { ChevronDownIcon } from "lucide-react"
 import { useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -14,8 +13,9 @@ export function PresetControl({ control, onChange }: ControlProps) {
   const shown = useId()
   const [open, setOpen] = useState(false)
   const chosenRef = useRef<HTMLButtonElement>(null)
-  const shapes = (control.desc.kind === "choice" ? control.desc.options : []) as readonly Preset[]
-  const chosen = !control.mixed && shapes.includes(control.value as Preset) ? (control.value as Preset) : null
+  const shapes = control.desc.kind === "choice" ? control.desc.options : []
+  const chosen =
+    !control.mixed && typeof control.value === "string" && shapes.includes(control.value) ? control.value : null
   return (
     <div className="flex flex-col gap-1" data-control="preset" data-inherited={control.inherited ? "" : undefined}>
       <span id={label} className={control.look.name.show === "hidden" ? "sr-only" : controlLabel}>

@@ -1,5 +1,4 @@
 import { creditsRoutes } from "./credits-routes.js"
-import { refusals } from "@airdesign/document"
 import {
   readCapture,
   readDecks,
@@ -10,9 +9,31 @@ import {
   type DeckId,
 } from "./wire.js"
 
-const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "kept", "site", "image"] as const
-
-const editRefusals = [...callRefusals, "text-from", "owner", "deleted", "store", "held"] as const
+const editRefusals = [
+  "stale",
+  "person-protected",
+  "run-fenced",
+  "dead",
+  "present",
+  "limit",
+  "group-box",
+  "locked",
+  "kind",
+  "last-slide",
+  "field",
+  "deck",
+  "batch",
+  "base",
+  "payload",
+  "kept",
+  "site",
+  "image",
+  "text-from",
+  "owner",
+  "deleted",
+  "store",
+  "held",
+] as const
 
 const wireRefusals = [
   ...editRefusals,

@@ -30,7 +30,6 @@ export {
   type TemplateFont,
   type TraitReads,
 } from "./design.js"
-export { refusals, type Refusal } from "./refusals.js"
 export { readBox, type Box } from "./box.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
 export type { FieldName, FieldValue, TraitName, TraitValue } from "./traits.js"
@@ -56,7 +55,7 @@ export {
   widestBorder,
 } from "./trait-border.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
-export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
+export { adjustLimit, presetAdjusts, presets } from "./trait-geometry.js"
 export { outlineOf, route, routed, siteTie, type Outline, type Tie } from "./connector.js"
 export { type Spot } from "./preset-sites.js"
 export { alignments } from "./trait-box.js"
@@ -101,9 +100,7 @@ export {
   hasSlideNumber,
   caseNames,
   formatNames,
-  lineHeightPointsFloor,
   schemeNames,
-  spaceCeiling,
   spacingNames,
   writeTextValue,
   type ParagraphAlign,
@@ -117,12 +114,11 @@ export {
 } from "./text-value.js"
 
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
-export { formatRange, type SizeStep, type FormatState } from "./text-format.js"
+export { formatRange } from "./text-format.js"
 export type { Fill, ResolvedRun, ResolvedSlide } from "./resolved-slide.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
 
-export { defaultGrid1, gridSectionStarts, foldGrid, type GridSide } from "./grid-order.js"
-export { gridMovePlacement } from "./grid-move.js"
+export { gridSectionStarts, foldGrid } from "./grid-order.js"
 export { readLinkTarget, type ElementLink, type LinkEdit } from "./link-target.js"
 
 export { slideBirths } from "./slide-births.js"

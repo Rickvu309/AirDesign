@@ -16,18 +16,16 @@ const rule = {
   meta: {
     type: "problem",
     docs: {
-      description: "Reject equality between a live document stamp or format and a numeric literal in tests.",
+      description: "Reject equality between a document stamp or format and a numeric literal in document's tests.",
     },
   },
   create(context) {
     const filename = String(context.filename ?? context.getFilename?.() ?? "").replaceAll("\\", "/")
-    if (!/(?:^|\/)(apps|packages)\/.*\.(test|spec)\.[cm]?[jt]sx?$/.test(filename)) return {}
+    if (!/(?:^|\/)packages\/document\/src\/.*\.(test|spec)\.[cm]?[jt]sx?$/.test(filename)) return {}
 
     const stamps = new Set()
     const formats = new Set()
-    const fromDocument = (source) =>
-      source === "@airdesign/document" ||
-      (filename.includes("/packages/document/src/") && (source === "./format.js" || source === "./index.js"))
+    const fromDocument = (source) => source === "./format.js" || source === "./index.js"
 
     const isStamp = (node) => stampNames.has(memberOf(node)) && stamps.has(identifier(node.object))
     const pins = (actual, expected) => {

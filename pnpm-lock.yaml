@@ -332,9 +332,6 @@ importers:
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../../packages/document
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../../packages/doom
@@ -429,9 +426,6 @@ importers:
 
   packages/catalog:
     dependencies:
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../document
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
@@ -554,9 +548,6 @@ importers:
 
   packages/render:
     dependencies:
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../document
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
@@ -615,9 +606,9 @@ importers:
 
   tooling/boundary-fixtures/deep-import:
     dependencies:
-      '@airdesign/document':
+      '@airdesign/doom':
         specifier: workspace:*
-        version: link:../../../packages/document
+        version: link:../../../packages/doom
 
   tooling/boundary-fixtures/fetch-in-document: {}
 

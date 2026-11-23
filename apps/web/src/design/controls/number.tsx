@@ -8,8 +8,7 @@ import type { ControlProps } from "@/design/panel"
 import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
-import { lineHeightPointsFloor, spaceCeiling } from "@airdesign/document"
-import { clampedOf, fixedLine, shownInUnit, typedFixed, typedNumber } from "@/design/typed-number"
+import { clampedOf, shownInUnit, typedNumber } from "@/design/typed-number"
 import { roundedShown, steppedFrom, untouched, type Shown } from "@/design/shown-number"
 import { composing } from "@/lib/composing"
 
@@ -80,11 +79,10 @@ export function NumberField({
           : undefined)
   const named = Icon !== undefined || look.name.show === "letter" || look.name.show === "inside"
   const [draft, setDraft] = useState<string | null>(null)
-  const fixed = fixedLine(control.value)
-  const held = fixed === null ? numberShown(control, scale) : roundedShown(fixed.points / 100, 2)
+  const held = numberShown(control, scale)
   const shown = held.text
   const typedUnit = control.typed ?? {}
-  const auto = fixed === null && typedUnit.auto !== undefined && shown !== "" && Number(shown) === typedUnit.auto
+  const auto = typedUnit.auto !== undefined && shown !== "" && Number(shown) === typedUnit.auto
   const field = useRef<HTMLInputElement>(null)
   const scrub = useRef<Scrub | null>(null)
 
@@ -94,19 +92,9 @@ export function NumberField({
       : clampedOf({ ...control.desc, unit: "count" }, Math.round(value * scale))
   }
 
-  function commitFixed(points: number) {
-    if (points < lineHeightPointsFloor || points > spaceCeiling) return
-    if (points !== fixed?.points || control.inherited) onChange({ points })
-  }
-
   function commit(text: string) {
     setDraft(null)
     if (untouched(text, held)) return
-    const points = typedFixed(text, typedUnit, fixed !== null)
-    if (points !== null) {
-      commitFixed(points)
-      return
-    }
     const typed = typedNumber(text, typedUnit)
     if (typed === null || !Number.isFinite(typed)) return
     const read = readNumber(typed)
@@ -137,11 +125,6 @@ export function NumberField({
     if (from === null) return
     const to = scrubbed(from, event.clientX, event, step)
     if (to === from) return
-    if (fixed !== null) {
-      scrub.current = to
-      commitFixed(Math.round(to.value * 100))
-      return
-    }
     const read = readNumber(to.value)
     if (read === null) {
       scrub.current = { ...from, x: to.x }
@@ -155,8 +138,7 @@ export function NumberField({
     scrub.current = null
   }
 
-  const suffix =
-    size || borderWidth || unit === "" || (auto && draft === null) ? "" : fixed === null ? unit : designCopy.points
+  const suffix = size || borderWidth || unit === "" || (auto && draft === null) ? "" : unit
   const value = draft ?? (auto ? textCopy.auto : shown)
   const steps = look.steps
   const list = size ? (

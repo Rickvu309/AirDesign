@@ -24,7 +24,6 @@ export const slideListCopy = {
   deleted: (number: number) => `Slide ${String(number)} deleted`,
   moved: (from: number, to: number) => `Moved slide ${String(from)} to position ${String(to)}`,
   movedSeveral: (count: number, to: number) => `Moved ${slidesOf(count)} to position ${String(to)}`,
-  groupRange: (range: string) => `slides ${range}`,
   skip: "Skip slide",
   unskip: "Unskip slide",
   skipSet: (count: number) => `Skip ${slidesOf(count)}`,
