@@ -1,6 +1,5 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { duplicateWrites, pasteWrites } from "./copy-writes"
 import { flipWrites, toggleWrites } from "./flip-writes"
 import { moveWrites } from "./move-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
@@ -28,7 +27,7 @@ describe("duplicate and paste", () => {
   it("copies a layer with a new id directly above it, props and all", () => {
     const built = grow(tree)
     const { ids, view, slides } = built
-    const copies = duplicateWrites(view, [ids.a!], minter())
+    const copies = doom.duplicateWrites(view, [ids.a!], minter())
     const after = landed(view, copies.writes)
     const order = childrenOf(after, slides[0]!)
     expect(order).toHaveLength(4)
@@ -62,7 +61,7 @@ describe("duplicate and paste", () => {
         ],
       },
     ])
-    const copies = duplicateWrites(built.view, [built.ids.card!], minter())
+    const copies = doom.duplicateWrites(built.view, [built.ids.card!], minter())
     const after = landed(built.view, copies.writes)
     const [copy] = copies.roots
     const inner = childrenOf(after, copy!)
@@ -75,7 +74,7 @@ describe("duplicate and paste", () => {
   it("pastes a copy of what was copied at the front of another parent", () => {
     const built = grow(tree)
     const mint = minter()
-    const pasted = pasteWrites(
+    const pasted = doom.pasteWrites(
       { view: built.view, roots: [built.ids.b!, built.ids.c!] },
       built.view,
       built.slides[0]!,

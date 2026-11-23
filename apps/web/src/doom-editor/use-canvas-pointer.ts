@@ -8,7 +8,6 @@ import {
   type RefObject,
 } from "react"
 import type { Preview } from "./canvas-overlay"
-import { copiedMove, duplicateWrites, type Copies } from "./copy-writes"
 import { hitChain } from "./hit-test"
 import { movedBy } from "./move-writes"
 import { holdsText, lockedIn } from "@/editing/node-props"
@@ -72,7 +71,7 @@ type Active =
       readonly geometry: SlideGeometry
       readonly alone: Selection | null
       readonly selected: Selection
-      copies: Copies | null
+      copies: doom.Copies | null
       copying: boolean
       moved: boolean
     }
@@ -134,7 +133,7 @@ export function useCanvasPointer(args: PointerArgs) {
     view: doom.Doom,
   ) => hitChain(geometry.roots, toSlide(event), 4.5 / latest.current.scale, (id) => lockedIn(view, id))
 
-  type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: Copies | null }
+  type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: doom.Copies | null }
 
   function evaluate(
     gesture: Extract<Active, { kind: "move" | "transform" }>,
@@ -154,9 +153,9 @@ export function useCanvasPointer(args: PointerArgs) {
         size: a.size,
       })
       if (!event.altKey) return { writes: moved.writes, guides: moved.guides, label: null, copies: null }
-      gesture.copies ??= duplicateWrites(gesture.view, gesture.ids, a.client.mint)
+      gesture.copies ??= doom.duplicateWrites(gesture.view, gesture.ids, a.client.mint)
       return {
-        writes: copiedMove(gesture.copies, moved.writes),
+        writes: doom.copiedMove(gesture.copies, moved.writes),
         guides: moved.guides,
         label: null,
         copies: gesture.copies,
