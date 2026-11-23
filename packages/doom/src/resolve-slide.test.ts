@@ -247,6 +247,41 @@ describe("resolveSlide", () => {
     })
   })
 
+  it("attaches an elbow to a turned shape's turned site and routes round its turned outline", () => {
+    const { parts } = resolved([
+      { type: "shape", name: "a", props: { box: spot(100, 100, 100, 100) } },
+      { type: "shape", name: "b", props: { box: { ...spot(400, 100, 200, 100), rotation: 90 } } },
+      {
+        type: "shape",
+        name: "l",
+        props: (ids: Record<string, string>) =>
+          ({
+            geometry: {
+              kind: "line",
+              start: { node: ids.a, site: "r" },
+              end: { node: ids.b, site: "t" },
+              route: "elbow",
+              arrows: ["none", "arrow"],
+            },
+          }) as never,
+      },
+    ])
+    const line = parts[2]!
+    if (line.geometry?.kind !== "line") throw new Error("not a line")
+    const points = line.geometry.points.map((point) => ({
+      x: point.x + line.box.x,
+      y: point.y + line.box.y,
+    }))
+    expect(points).toEqual([
+      { x: 200, y: 150 },
+      { x: 325, y: 150 },
+      { x: 325, y: 26 },
+      { x: 574, y: 26 },
+      { x: 574, y: 150 },
+      { x: 550, y: 150 },
+    ])
+  })
+
   it("draws a preset, an ellipse and an icon as named, and a rectangle when the shape has no geometry", () => {
     const geometries = [
       { kind: "preset", name: "star5", adjust: [1] },

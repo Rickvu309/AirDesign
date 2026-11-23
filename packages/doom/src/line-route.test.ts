@@ -15,6 +15,20 @@ describe("an elbow line's route", () => {
     ])
   })
 
+  it("splits a gap narrower than two stubs halfway, rather than going round", () => {
+    expect(
+      elbowPoints(
+        { at: { x: 100, y: 50 }, side: "r", around: box(0, 0, 100, 100) },
+        { at: { x: 130, y: 110 }, side: "l", around: box(130, 60, 100, 100) },
+      ),
+    ).toEqual([
+      { x: 100, y: 50 },
+      { x: 115, y: 50 },
+      { x: 115, y: 110 },
+      { x: 130, y: 110 },
+    ])
+  })
+
   it("leaves by its side's stub and goes around when the target is behind it", () => {
     expect(
       elbowPoints(
@@ -41,17 +55,33 @@ describe("an elbow line's route", () => {
     ])
   })
 
-  it("never enters through its target: it comes round to the attached side", () => {
+  it("never enters through its target: it comes round to the attached side, its upright leg midway in the gap", () => {
     const points = elbowPoints(
       { at: { x: 0, y: 100 }, side: "r", around: null },
       { at: { x: 200, y: 0 }, side: "t", around: box(150, 0, 100, 100) },
     )
     expect(points).toEqual([
       { x: 0, y: 100 },
-      { x: 24, y: 100 },
-      { x: 24, y: -24 },
+      { x: 75, y: 100 },
+      { x: 75, y: -24 },
       { x: 200, y: -24 },
       { x: 200, y: 0 },
+    ])
+  })
+
+  it("keeps both sides and stubs, and crosses the overlap, when a site sits inside the other shape", () => {
+    expect(
+      elbowPoints(
+        { at: { x: 100, y: 50 }, side: "r", around: box(0, 0, 100, 100) },
+        { at: { x: 50, y: 80 }, side: "l", around: box(50, 30, 100, 100) },
+      ),
+    ).toEqual([
+      { x: 100, y: 50 },
+      { x: 124, y: 50 },
+      { x: 124, y: 65 },
+      { x: 26, y: 65 },
+      { x: 26, y: 80 },
+      { x: 50, y: 80 },
     ])
   })
 

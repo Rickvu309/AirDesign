@@ -1,7 +1,7 @@
 import type { NodeId } from "./ids.js"
 import type { Box, Point } from "./resolved.js"
 import type { Doom } from "./doom.js"
-import { curvePoints, elbowPoints, type RouteEnd } from "./line-route.js"
+import { curvePoints, elbowPoints, type RouteEnd, type Side } from "./line-route.js"
 import { distanceToSegment, siteSpot } from "./preset-geometry.js"
 import type { Props } from "./props.js"
 
@@ -22,6 +22,41 @@ function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, Box>, id: NodeId): Po
   return { x, y }
 }
 
+const sideTurns: readonly Side[] = ["t", "r", "b", "l"]
+
+function turned(box: Box, x: number, y: number, spot: Point, side: Side | null): RouteEnd {
+  const center = { x: x + box.w / 2, y: y + box.h / 2 }
+  const radians = (box.rotation * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const turn = (point: Point): Point =>
+    box.rotation % 360 === 0
+      ? point
+      : {
+          x: center.x + (point.x - center.x) * cos - (point.y - center.y) * sin,
+          y: center.y + (point.x - center.x) * sin + (point.y - center.y) * cos,
+        }
+  const corners = [
+    turn({ x, y }),
+    turn({ x: x + box.w, y }),
+    turn({ x: x + box.w, y: y + box.h }),
+    turn({ x, y: y + box.h }),
+  ]
+  const left = Math.min(...corners.map((corner) => corner.x))
+  const top = Math.min(...corners.map((corner) => corner.y))
+  const quarter = Math.round(box.rotation / 90)
+  return {
+    at: turn({ x: x + spot.x, y: y + spot.y }),
+    side: side === null ? null : sideTurns[(((sideTurns.indexOf(side) + quarter) % 4) + 4) % 4]!,
+    around: {
+      x: left,
+      y: top,
+      w: Math.max(...corners.map((corner) => corner.x)) - left,
+      h: Math.max(...corners.map((corner) => corner.y)) - top,
+    },
+  }
+}
+
 export type LineRoute = { readonly from: Point; readonly to: Point; readonly points: readonly Point[] }
 
 export function lineRoute(
@@ -38,13 +73,7 @@ export function lineRoute(
     if (at === null || box === undefined) return { at: { x: 0, y: 0 }, side: null, around: null }
     const geometry = (doom.nodes.get(end.node) as Partial<Props> | undefined)?.geometry
     const spot = siteSpot(geometry, box.w, box.h, end.site)
-    const x = at.x - origin.x
-    const y = at.y - origin.y
-    return {
-      at: { x: x + spot.x, y: y + spot.y },
-      side: end.site === "c" ? null : end.site,
-      around: { x, y, w: box.w, h: box.h },
-    }
+    return turned(box, at.x - origin.x, at.y - origin.y, spot, end.site === "c" ? null : end.site)
   }
   const start = resolve(line.start)
   const end = resolve(line.end)
