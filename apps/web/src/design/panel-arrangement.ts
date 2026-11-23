@@ -72,7 +72,6 @@ export type ControlLook = {
   readonly glyph?: LucideIcon
   readonly steps?: readonly number[]
   readonly slider?: boolean
-  readonly unnamed?: boolean
   readonly unit?: string
 }
 
@@ -87,7 +86,6 @@ type Placed = {
   readonly glyph?: LucideIcon
   readonly steps?: readonly number[]
   readonly slider?: boolean
-  readonly unnamed?: boolean
 }
 
 type Strip = readonly Placed[]
@@ -221,7 +219,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
           lifted: LiftedShadow,
           glow: GlowShadow,
         },
-        unnamed: true,
       }),
     ],
     [placed("opacity", above, { slider: true })],
@@ -339,7 +336,6 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       ...(place?.unit === undefined ? {} : { unit: place.unit }),
       ...(place?.steps === undefined ? {} : { steps: place.steps }),
       ...(place?.slider === undefined ? {} : { slider: true }),
-      ...(place?.unnamed === undefined ? {} : { unnamed: true }),
     },
   }
 }
