@@ -216,10 +216,8 @@ function appearanceChange(context: ChangeContext, control: PanelControl, value: 
           )
         : []
     case "link.target": {
-      const target = value as { readonly kind?: string; readonly url?: string; readonly slide?: string } | null
-      if (target === null || target.kind === "none") return setEach(context, "link", () => null)
-      const next = target.kind === "url" ? addressOf(target.url) : target.slide
-      return next === undefined ? [] : setEach(context, "link", () => next as doom.Props["link"])
+      const next = linkOf(value)
+      return next === undefined ? [] : setEach(context, "link", () => next as doom.Props["link"] | null)
     }
     case "geometry.preset": {
       const next = shapeWrite({ preset: value, adjust: {} })
@@ -241,6 +239,12 @@ function appearanceChange(context: ChangeContext, control: PanelControl, value: 
 
 const addressOf = (typed: string | undefined): string | undefined =>
   typed === undefined || /^[a-z][a-z0-9+.-]*:/i.test(typed) ? typed : `https://${typed}`
+
+export function linkOf(value: unknown): string | null | undefined {
+  const target = value as { readonly kind?: string; readonly url?: string; readonly slide?: string } | null
+  if (target === null || target.kind === "none") return null
+  return target.kind === "url" ? addressOf(target.url) : target.slide
+}
 
 export function changeWrites(context: ChangeContext, control: PanelControl, value: unknown): Writes {
   if (control.trait === "text" || control.trait === "textFill") {

@@ -6,7 +6,8 @@ import { pinnedOpticalSize } from "./doom-widths.js"
 type Run = doom.ResolvedRun
 
 function runLook(run: Run): CSSProperties {
-  const decoration = [run.underline ? "underline" : "", run.strike ? "line-through" : ""].filter(Boolean).join(" ")
+  const underline = run.underline || run.link !== undefined
+  const decoration = [underline ? "underline" : "", run.strike ? "line-through" : ""].filter(Boolean).join(" ")
   return {
     fontFamily: fontFamily(run.font),
     fontSize: run.size,

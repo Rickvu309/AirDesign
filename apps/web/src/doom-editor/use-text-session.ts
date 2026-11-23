@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { propOf } from "@/editing/node-props"
 import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
 import {
+  linkedWords,
+  linkWords,
   lookAt,
   markOn,
   replaceRange,
@@ -48,6 +50,7 @@ export type TextSession = {
   beginNew(created: Created, resize: doom.Text["resize"]): void
   replace(from: number, to: number, insert: string): void
   mark(mark: Mark): void
+  link(link: string | null): void
   align(align: NonNullable<doom.Para["align"]>): void
   list(kind: "bullet" | "number"): void
   indent(by: 1 | -1): void
@@ -238,6 +241,12 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
         return
       }
       change({ draft: toggleMark(now.draft, low, high, mark) })
+    },
+    link(link) {
+      const now = ref.current
+      const words = now === null ? null : linkedWords(now.draft, now.anchor, now.focus)
+      if (now === null || words === null) return
+      change({ draft: linkWords(now.draft, words.from, words.to, link) })
     },
     align(align) {
       const now = ref.current

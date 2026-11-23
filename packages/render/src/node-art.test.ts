@@ -195,6 +195,31 @@ describe("NodeArt", () => {
     expect(html).not.toContain("aaaa </span>")
   })
 
+  it("underlines linked words, as on the slide in Present, and only those words", () => {
+    const html = painted([
+      shape("t", {
+        box: spot(0, 0, 900, 80),
+        text: {
+          chars: "Read the report now",
+          spans: [{ end: 9 }, { end: 15, link: "https://example.com/report" }, { end: 19 }],
+          paras: [{}],
+          style: "body",
+          resize: "fixed",
+          alignV: "top",
+        },
+      }),
+    ])
+    const runs = [...html.matchAll(/<span data-run=""([^>]*)>([^<]*)<\/span>/g)].map(([, attributes, text]) => ({
+      text,
+      underlined: attributes!.includes("text-decoration:underline"),
+    }))
+    expect(runs).toEqual([
+      { text: "Read the ", underlined: false },
+      { text: "report", underlined: true },
+      { text: " now", underlined: false },
+    ])
+  })
+
   it("nests children inside their frame and clips them only when the frame clips", () => {
     const frame = (clip: boolean) =>
       painted([

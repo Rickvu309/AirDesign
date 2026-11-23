@@ -14,6 +14,7 @@ import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
 import { TextBar } from "./text-bar"
 import { TextHost } from "./text-host"
+import { linkedWords, type LinkedWords } from "./text-edit"
 import { useTextSession } from "./use-text-session"
 import { propOf } from "@/editing/node-props"
 import { useCanvasKeys } from "./use-canvas-keys"
@@ -30,7 +31,13 @@ import { doomEditorCopy } from "@/copy/doom-editor-copy"
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
 
-export type CanvasCommands = { zoomTo: (zoom: Zoom) => void; zoomSelection: (() => void) | null }
+export type CanvasCommands = {
+  zoomTo: (zoom: Zoom) => void
+  zoomSelection: (() => void) | null
+  linkWords: (link: string | null) => void
+}
+
+export type CaretWords = LinkedWords & { readonly node: doom.NodeId }
 
 export function DoomCanvas(props: {
   readonly deck: string
@@ -59,6 +66,7 @@ export function DoomCanvas(props: {
   readonly onTryAgain: (notice: ThinNotice) => void
   readonly onTyping?: (writes: readonly doom.Write[], slide: doom.NodeId | undefined) => void
   readonly onExport: () => void
+  readonly onWords?: (words: CaretWords | null) => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -79,10 +87,15 @@ export function DoomCanvas(props: {
     editingFirst.current = undefined
     if (node !== undefined) text.begin(node, { kind: "all" })
   }, [text])
-  const { onTyping } = props
+  const { onTyping, onWords } = props
   const typedOn =
     text.session === null ? undefined : doom.slideOf(view, text.session.created?.parent.id ?? text.session.node)
   useEffect(() => onTyping?.(text.preview, typedOn), [onTyping, text.preview, typedOn])
+  const session = text.session
+  const words = session === null ? null : linkedWords(session.draft, session.anchor, session.focus)
+  const caret = session === null || words === null ? null : { ...words, node: session.node }
+  const caretKey = caret === null ? "" : JSON.stringify(caret)
+  useEffect(() => onWords?.(caret), [onWords, caretKey])
   const shown = useMemo(() => {
     const edits = [
       ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),
@@ -318,6 +331,7 @@ export function DoomCanvas(props: {
     props.onCommands({
       zoomTo: (next) => zoomTo(next),
       zoomSelection: current.ids.length === 0 ? null : () => onZoomKey("selection"),
+      linkWords: (link) => text.link(link),
     })
     return () => props.onCommands(null)
   })

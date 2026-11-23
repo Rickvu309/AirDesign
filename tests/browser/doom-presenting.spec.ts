@@ -210,6 +210,13 @@ test("a click on a linked layer or linked words in the show follows the link, an
   await page.locator('[data-slide-entry="1"]').click()
   await page.keyboard.press("F5")
   await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+  const run = (selector: string) =>
+    page
+      .locator(`[data-present-show] [data-node="k:2"] ${selector}`)
+      .filter({ visible: true })
+      .evaluate((node) => getComputedStyle(node).textDecorationLine)
+  expect(await run('[data-link="https://example.com/"]')).toBe("underline")
+  expect(await run("[data-run]:not([data-link])")).toBe("none")
   await page.locator('[data-present-show] [data-node="k:1"]').filter({ visible: true }).click({ force: true })
   await expect(shown(page)).toHaveAttribute("data-present-slide", "3")
   await page.keyboard.press("Home")

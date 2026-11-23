@@ -24,7 +24,7 @@ import { renameWrites } from "./deck-writes"
 import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
 import { propOf, slidesOf } from "@/editing/node-props"
-import { DoomCanvas, type CanvasCommands } from "./doom-canvas"
+import { DoomCanvas, type CanvasCommands, type CaretWords } from "./doom-canvas"
 import { DoomNotes } from "./doom-notes"
 import { DoomThumb } from "./doom-thumb"
 import { typingPreview } from "./typing-preview"
@@ -73,7 +73,9 @@ function Editing({
   const [panel, setPanel] = useKeptPanel(id, start.panel)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
-  const commands = useRef<CanvasCommands>({ zoomTo: setZoom, zoomSelection: null })
+  const idle: CanvasCommands = { zoomTo: setZoom, zoomSelection: null, linkWords: () => undefined }
+  const commands = useRef<CanvasCommands>(idle)
+  const [words, setWords] = useState<CaretWords | null>(null)
   const presentButton = useRef<HTMLButtonElement>(null)
   const canvas = useCanvasRoom()
   const { size } = doom.deckOf(view)
@@ -153,7 +155,7 @@ function Editing({
             overlay={canvas.overlay}
             onZoom={setZoom}
             onCommands={(next) => {
-              commands.current = next ?? { zoomTo: setZoom, zoomSelection: null }
+              commands.current = next ?? idle
             }}
             toolbarHost={toolbarHost}
             notice={exporting.failed ? "export-failed" : saved.notice}
@@ -162,6 +164,7 @@ function Editing({
               if (notice === "export-failed") exporting.tryAgain()
             }}
             onTyping={typing.set}
+            onWords={setWords}
             {...(start.editing === undefined ? {} : { editing: start.editing })}
             {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />
@@ -212,6 +215,8 @@ function Editing({
             slideNumber={strip.current + 1}
             selection={selection}
             onSelection={setSelection}
+            words={words}
+            onLinkWords={(link) => commands.current.linkWords(link)}
           />
         ) : null}
       </ResizablePanel>
