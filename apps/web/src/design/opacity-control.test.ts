@@ -29,6 +29,8 @@ import {
 } from "@/parity-probe"
 import { panelOf } from "./panel"
 
+const unjudgedOnDoom: readonly string[] = ["border.alpha", "fills.alpha", "layout.opacity", "text.alpha"]
+
 type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "pptx-case" | "copy"
 
 type Problem = { readonly field: string; readonly missing: Layer }
@@ -111,7 +113,9 @@ async function kindProblems(probe: OpacityProbe): Promise<readonly Problem[]> {
   const turn = panel === null || step === null ? null : undoOf(panel.register, { steps: [step] })
   const undone = panel === null || turn === null || !turn.ok ? null : landed(panel.register, turn.commands)
   if (undone === null || !sameParts(written(parts, undone), parts)) problems.push(...missing(keys, "undo"))
-  const judged = keys.filter((key) => !judgedCases.some((each) => each.covers?.includes(key)))
+  const judged = keys.filter(
+    (key) => !unjudgedOnDoom.includes(key) && !judgedCases.some((each) => each.covers?.includes(key)),
+  )
   problems.push(...missing(judged, "pptx-case"))
   return problems
 }
@@ -135,4 +139,8 @@ it("probes every alpha field some kind takes, and has words for the Opacity row 
   expect(alphaKeys.filter((key) => !probed.includes(key))).toEqual([])
   for (const words of [opacityCopy.section, opacityCopy.label, opacityWire.description])
     expect(words.trim()).not.toBe("")
+})
+
+it("exempts an alpha from its PowerPoint case only while no case judges it", () => {
+  expect(unjudgedOnDoom.filter((key) => judgedCases.some((each) => each.covers?.includes(key)))).toEqual([])
 })
