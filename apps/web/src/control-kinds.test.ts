@@ -9,6 +9,8 @@ const specs = Object.keys(import.meta.glob("../../../tests/browser/control-*.spe
   (path) => /control-([a-z]+)\.spec\.ts$/.exec(path)?.[1] ?? path,
 )
 
+const notInDoomPanel: readonly string[] = ["adjust", "asset", "count", "hex", "node", "preset", "site"]
+
 function inside(desc: Desc): readonly Desc[] {
   if (desc.kind === "union") return Object.values(desc.cases).flatMap((item) => [item, ...inside(item)])
   if (desc.kind === "record") return Object.values(desc.fields).flatMap((item) => [item, ...inside(item)])
@@ -31,12 +33,16 @@ describe("every control kind a field uses", () => {
   it("has one component and one browser spec of its name, inside a union, a record or a list too", () => {
     const used = kindsInUse()
     expect(used.filter((kind) => !Object.hasOwn(controlViews, kind))).toEqual([])
-    expect(used.filter((kind) => !specs.includes(kind))).toEqual([])
+    expect(used.filter((kind) => !specs.includes(kind) && !notInDoomPanel.includes(kind))).toEqual([])
   })
 
   it("has one component and one browser spec of its name for every kind, the action rows too", () => {
     expect(controlKinds.filter((kind) => !Object.hasOwn(controlViews, kind))).toEqual([])
-    expect(controlKinds.filter((kind) => !specs.includes(kind))).toEqual([])
+    expect(controlKinds.filter((kind) => !specs.includes(kind) && !notInDoomPanel.includes(kind))).toEqual([])
+  })
+
+  it("lists a kind as missing from Doom's design panel only while it has no browser spec", () => {
+    expect(notInDoomPanel.filter((kind) => specs.includes(kind))).toEqual([])
   })
 
   it("names no spec or component for a kind outside the closed list", () => {
