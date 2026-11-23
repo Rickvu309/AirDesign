@@ -1,5 +1,4 @@
 import { creditsRoutes } from "./credits-routes.js"
-import { unreachable } from "@airdesign/device"
 import { refusals } from "@airdesign/document"
 import {
   readCapture,
@@ -26,7 +25,6 @@ const wireRefusals = [
   "code",
   "device",
   "newer",
-  ...unreachable,
 ] as const
 
 export type EditRefusal = (typeof editRefusals)[number]

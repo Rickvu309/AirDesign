@@ -96,21 +96,6 @@ export function EditorIcon({
   )
 }
 
-export function ToneIcon({ size = 14, className }: { size?: number; className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={cn("shrink-0", className)} aria-hidden="true">
-      <path
-        d="M10 1.5Q12.6 7.4 18.5 10 12.6 12.6 10 18.5 7.4 12.6 1.5 10 7.4 7.4 10 1.5z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M15 15.5h7M18.5 15.5v6M17 21.5h3" fill="none" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  )
-}
-
 export function SparkIcon({ size = 14, className }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} className={cn("shrink-0", className)} aria-hidden="true">

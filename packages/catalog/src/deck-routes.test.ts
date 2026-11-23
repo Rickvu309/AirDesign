@@ -1,4 +1,3 @@
-import { unreachable } from "@airdesign/device"
 import { refusals } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { deckRoutes } from "./index.js"
@@ -63,9 +62,9 @@ it("refuses malformed answer envelopes for every deck route", () => {
   }
 })
 
-it("decodes every code document refuses with and every code device cannot reach with", () => {
+it("decodes every code document refuses with", () => {
   for (const route of Object.values(deckRoutes)) {
-    for (const refusal of [...refusals, ...unreachable]) {
+    for (const refusal of refusals) {
       expect(route.result({ ok: false, refusal })).toEqual({ ok: false, refusal })
     }
   }

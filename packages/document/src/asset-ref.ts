@@ -14,7 +14,7 @@ export function assetMedia(ref: string): Media | null {
     : null
 }
 
-export const iconNamePattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+const iconNamePattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
 
 const iconName = new RegExp(iconNamePattern)
 const iconLength = 64

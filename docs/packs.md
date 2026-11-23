@@ -49,7 +49,6 @@ flowchart TD
     p_packages_render["packages/render"]
   end
   subgraph p_layer_core["core"]
-    p_packages_device["packages/device"]
     p_packages_doom["packages/doom"]
     p_packages_fonts["packages/fonts"]
     p_packages_oauth["packages/oauth"]
@@ -188,7 +187,6 @@ flowchart TD
 | `apps/web/src/pricing` | feature | pricing-screens.tsx | apps/web/src/components | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/catalog` | model | src/index.ts | none | none |
-| `packages/device` | core | src/index.ts | none | none |
 | `packages/document` | model | src/index.ts | none | none |
 | `packages/doom` | core | src/index.ts | none | none |
 | `packages/fonts` | core | src/index.ts | none | none |

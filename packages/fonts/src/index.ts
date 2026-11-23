@@ -12,4 +12,4 @@ export {
   type FontStyle,
   type ServedFace,
 } from "./named-face.js"
-export { plainStyles } from "./weight-step.js"
+export { plainStyles } from "./plain-styles.js"

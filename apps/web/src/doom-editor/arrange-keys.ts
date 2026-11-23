@@ -20,10 +20,6 @@ export type ArrangeContext = {
 
 let held: doom.Clipboard | null = null
 
-export function emptyClipboard(): void {
-  held = null
-}
-
 function pasteTarget(view: doom.Doom, selection: Selection, slide: doom.NodeId): doom.NodeId {
   const [first] = selection.ids
   if (first === undefined) return slide

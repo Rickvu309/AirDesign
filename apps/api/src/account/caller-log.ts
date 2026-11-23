@@ -1,4 +1,4 @@
-import { admit, refund, type Admission, type CallerLog, type LimitKind } from "@airdesign/mcp"
+import { admit, type Admission, type CallerLog, type LimitKind } from "@airdesign/mcp"
 
 import { withAddress } from "./account.js"
 import type { Sql } from "../platform/pool.js"
@@ -28,11 +28,5 @@ export async function admitCaller(
     const admission = admit(await lockedLog(client, email), kind, now, agent)
     if (admission.ok) await writeLog(client, email, admission.log)
     return admission
-  })
-}
-
-export async function refundCaller(db: Sql, email: string, kind: LimitKind, agent?: string): Promise<void> {
-  await withAddress(db, email, async (client) => {
-    await writeLog(client, email, refund(await lockedLog(client, email), kind, agent))
   })
 }

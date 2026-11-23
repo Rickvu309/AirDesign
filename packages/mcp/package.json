@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
-    "@airdesign/document": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@modelcontextprotocol/server": "^2.4.0",
     "zod": "^4.6.7"

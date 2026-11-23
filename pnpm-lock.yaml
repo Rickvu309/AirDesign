@@ -423,9 +423,6 @@ importers:
 
   packages/catalog:
     dependencies:
-      '@airdesign/device':
-        specifier: workspace:*
-        version: link:../device
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
@@ -435,21 +432,9 @@ importers:
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../fonts
-      '@airdesign/templates':
-        specifier: workspace:*
-        version: link:../templates
       zod:
         specifier: ^4.6.7
         version: 4.6.7
-    devDependencies:
-      oxlint:
-        specifier: ^1.90.0
-        version: 1.92.0
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-
-  packages/device:
     devDependencies:
       oxlint:
         specifier: ^1.90.0
@@ -513,9 +498,6 @@ importers:
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../document
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom

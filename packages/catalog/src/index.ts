@@ -87,7 +87,7 @@ export {
 
 export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
-export { pictureBytes, pictureType, type SlideKey, type SlidePictures } from "./slide-pictures-wire.js"
+export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
 
@@ -101,4 +101,3 @@ export {
   readAutoReset,
   type Credits,
 } from "./credits-routes.js"
-export { type Stack } from "./stack-wire.js"

@@ -22,11 +22,9 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "@airdesign/device": "workspace:*",
     "@airdesign/document": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
-    "@airdesign/templates": "workspace:*",
     "zod": "^4.6.7"
   }
 }

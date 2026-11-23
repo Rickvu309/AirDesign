@@ -53,12 +53,6 @@ function live(log: CallerLog, now: number): CallerLog {
   return { events }
 }
 
-export function refund(log: CallerLog, kind: LimitKind, agent?: string): CallerLog {
-  const at = log.events.findLastIndex((event) => event.kind === kind && event.agent === agent)
-  if (at < 0) return log
-  return { events: log.events.filter((_, position) => position !== at) }
-}
-
 function oldest(events: CallerLog["events"]): number {
   return Math.min(...events.map((event) => event.at))
 }

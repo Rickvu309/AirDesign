@@ -19,14 +19,6 @@ export function unitOf(chain: readonly Placed[], inside: doom.NodeId | null, dee
   return index < 0 ? chain[0]! : (chain[index + 1] ?? chain[index]!)
 }
 
-export function same(one: Selection, other: Selection): boolean {
-  return (
-    one.inside === other.inside &&
-    one.ids.length === other.ids.length &&
-    one.ids.every((id, at) => id === other.ids[at])
-  )
-}
-
 export function picked(
   chain: readonly Placed[],
   selection: Selection,
