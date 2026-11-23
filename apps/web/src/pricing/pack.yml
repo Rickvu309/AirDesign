@@ -1,6 +1,5 @@
 layer: feature
 dependencies:
   - apps/web/src/components
-  - apps/web/src/decks
 public:
   - pricing-screens.tsx

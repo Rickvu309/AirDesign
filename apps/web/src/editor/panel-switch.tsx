@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
+import { EditorIcon, SparkIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 const roomy = "group-has-[[data-text-format]]/toolbar:sr-only"

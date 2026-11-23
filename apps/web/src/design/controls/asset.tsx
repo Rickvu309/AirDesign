@@ -1,6 +1,6 @@
 import type { ControlProps } from "@/design/panel"
 import { pictureCopy } from "@/copy/picture-copy"
-import { IconSearch } from "@/editor/icon-search"
+import { IconSearch } from "@/design/icon-search"
 
 export function AssetControl({ control, onChange }: ControlProps) {
   const current = typeof control.value === "string" ? control.value : null

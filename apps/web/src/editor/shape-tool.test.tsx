@@ -2,7 +2,7 @@ import { presets, type Geometry } from "@airdesign/document"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
 import { geometryWords } from "@/copy/geometry-copy"
-import { gridColumns, gridStep, ShapeGrid } from "@/editor/shape-grid"
+import { gridColumns, gridStep, ShapeGrid } from "@/design/shape-grid"
 import { ShapeTrayItems, trayGeometries } from "@/editor/shape-tool"
 
 function tagsOf(markup: string) {

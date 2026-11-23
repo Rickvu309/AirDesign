@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 
 export function RemoveAutoLayoutButton({ onRemove }: { readonly onRemove: () => void }) {
   return (

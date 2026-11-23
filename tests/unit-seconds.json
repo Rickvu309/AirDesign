@@ -134,7 +134,7 @@
   "apps/web/src/decks/account-deletion.test.ts": 4.5,
   "apps/web/src/decks/account-name.test.ts": 0.3,
   "apps/web/src/decks/agent-promo.test.tsx": 0.8,
-  "apps/web/src/decks/airdesign-mark.test.tsx": 0.4,
+  "apps/web/src/components/ui/airdesign-mark.test.tsx": 0.4,
   "apps/web/src/decks/deck-address.test.ts": 0.5,
   "apps/web/src/decks/deck-card.test.tsx": 1.5,
   "apps/web/src/decks/deck-listing.test.ts": 0.8,

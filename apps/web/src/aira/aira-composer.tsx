@@ -1,8 +1,8 @@
 import { useRef, type KeyboardEvent, type RefObject } from "react"
 import { PromptInput, PromptInputButton, PromptInputTextarea } from "@/components/ai-elements/prompt-input"
 import { airaCopy } from "@/copy/aira-copy"
-import { surfaceShadow } from "@/editor/editor-chrome"
-import { EditorIcon } from "@/editor/editor-icons"
+import { surfaceShadow } from "@/components/ui/shadows"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 const buttonRing = "outline-hidden"

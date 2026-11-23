@@ -4,7 +4,7 @@ import { accountCopy } from "@/copy/account-copy"
 import { cn } from "@/lib/class-names"
 import { promoFill } from "@/decks/agent-promo-art"
 import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
-import { AirdesignMark } from "@/decks/airdesign-mark"
+import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { deckRoutes } from "@/decks/deck-routes"
 

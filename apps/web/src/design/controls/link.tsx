@@ -1,6 +1,6 @@
 import { readLinkTarget, slideId, type LinkEdit } from "@airdesign/document"
 import type { TextFormatting } from "@airdesign/render"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { createContext, useContext, useState, useSyncExternalStore } from "react"
 import { linkCopy } from "@/copy/link-copy"

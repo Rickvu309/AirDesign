@@ -3,11 +3,9 @@ dependencies:
   - apps/web/src/components
   - apps/web/src/copy
   - apps/web/src/editing
-  - apps/web/src/editor
   - apps/web/src/lib
 public:
   - agent-logos.ts
-  - airdesign-mark.tsx
   - danger-dialog.tsx
   - deck-glyph.tsx
   - deck-notice.tsx

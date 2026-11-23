@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export type StepStatus = "running" | "error" | "stopped"

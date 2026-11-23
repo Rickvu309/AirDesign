@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { fitWidth, type SlideSize } from "@/editor/canvas-zoom"
-import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
+import { EditorIcon, type EditorIconName } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { useRoom } from "@/present/present-room"
 

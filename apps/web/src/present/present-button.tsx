@@ -1,7 +1,7 @@
 import type { Ref } from "react"
 import { Button } from "@/components/ui/button"
 import { presentCopy } from "@/copy/present-copy"
-import { EditorIcon } from "@/editor/editor-icons"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export function PresentButton({

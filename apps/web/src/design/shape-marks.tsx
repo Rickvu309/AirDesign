@@ -1,4 +1,4 @@
-import { lineStroke, shapeFill, shapeStroke } from "@/editor/shape-marks-art"
+import { lineStroke, shapeFill, shapeStroke } from "@/design/shape-marks-art"
 
 export const basicShapes: Record<string, string> = {
   square: '<rect x="3" y="3" width="18" height="18" rx="2.5"/>',
