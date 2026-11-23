@@ -12,6 +12,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 const budget = {
   slides: 40,
   idleTaskMilliseconds: 150,
+  idleLongTaskMilliseconds: 50,
   typeScriptPerKey: 8,
   typeMeasureCalls: 6,
   dragScriptPerFrame: 8,
@@ -94,6 +95,20 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
   await frames(page, 240)
 
+  const idleFrom = await page.evaluate(() => {
+    const holder = window as unknown as {
+      idleLongTasks: { start: number; duration: number }[]
+      idleLongTaskObserver?: PerformanceObserver
+    }
+    holder.idleLongTasks = []
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries())
+        holder.idleLongTasks.push({ start: entry.startTime, duration: entry.duration })
+    })
+    observer.observe({ type: "longtask", buffered: true })
+    holder.idleLongTaskObserver = observer
+    return performance.now()
+  })
   const before = await engineMilliseconds(device, "TaskDuration")
   await page.waitForTimeout(
     keptWait(3000, {
@@ -103,9 +118,30 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
     }),
   )
   const idle = (await engineMilliseconds(device, "TaskDuration")) - before
+  const idleLongTasks = await page.evaluate((from) => {
+    const holder = window as unknown as {
+      idleLongTasks: { start: number; duration: number }[]
+      idleLongTaskObserver?: PerformanceObserver
+    }
+    for (const entry of holder.idleLongTaskObserver?.takeRecords() ?? [])
+      holder.idleLongTasks.push({ start: entry.startTime, duration: entry.duration })
+    holder.idleLongTaskObserver?.disconnect()
+    return holder.idleLongTasks.filter((task) => task.start >= from)
+  }, idleFrom)
+  const idleStutters = idleLongTasks.filter((task) => task.duration > budget.idleLongTaskMilliseconds)
   expect(idle, `an open deck idles at most ${String(budget.idleTaskMilliseconds)} ms of work in 3 s`).toBeLessThan(
     budget.idleTaskMilliseconds,
   )
+  const stutterSummary = idleStutters
+    .map(
+      (task) =>
+        `${String(Math.round(task.duration))} ms starting at ${String(Math.round(task.start))} ms (${String(Math.round(task.start - idleFrom))} ms into the window)`,
+    )
+    .join("; ")
+  expect(
+    idleStutters,
+    `an open deck runs no idle task over ${String(budget.idleLongTaskMilliseconds)} ms in 3 s (saw ${stutterSummary})`,
+  ).toEqual([])
 
   await page.mouse.dblclick(from.x, from.y)
   await expect(page.locator("[data-text-editor]")).toHaveCount(1)
@@ -178,7 +214,7 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   const agentEditPaint = painted[2]!
   test.info().annotations.push({
     type: "metric",
-    description: `idle ${String(Math.round(idle))} ms in 3 s; ${String(measured)} text measurements; typing script ${String(Math.round((typing / keys) * 10) / 10)} ms a key; agent edit to paint ${String(agentEditPaint)} ms; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
+    description: `idle ${String(Math.round(idle * 10) / 10)} ms in 3 s, ${String(idleLongTasks.length)} long tasks (${String(idleStutters.length)} over ${String(budget.idleLongTaskMilliseconds)} ms); ${String(measured)} text measurements; typing script ${String(Math.round((typing / keys) * 10) / 10)} ms a key; agent edit to paint ${String(agentEditPaint)} ms; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
   })
   expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
     budget.typeMeasureCalls,
