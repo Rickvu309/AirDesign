@@ -120,7 +120,7 @@ export const frame = (name: string, props: Given, children: readonly Node[] = []
 export const shape = (name: string, props: Given): Node => ({ type: "shape", name, props })
 
 export function slideTitle(chars: string): Node {
-  return copy("title", chars, { style: "heading", x: margin, y: 104, width: contentWidth })
+  return copy("title", chars, { style: "title", x: margin, y: 104, width: contentWidth })
 }
 
 export function accentTick(): Node {

@@ -176,7 +176,7 @@ describe("NodeArt", () => {
   it("draws the lines the text was broken into, each at its place, with each run's look", () => {
     const html = painted([
       shape("t", {
-        box: spot(10, 20, 160, 200),
+        box: spot(10, 20, 120, 200),
         text: {
           chars: "aaaa bbbb",
           spans: [{ end: 5, bold: true, color: swatches.red }, { end: 9 }],

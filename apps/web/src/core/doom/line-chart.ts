@@ -56,7 +56,7 @@ export function lineChart(): doom.TreeSlide {
           },
           [
             copy("callout label", "Studio since Q1 2024", { style: "label", color: quiet }),
-            copy("callout number", "5.2x", { style: "bigNumber", color: navy, size: 120 }),
+            copy("callout number", "5.2x", { style: "bigNumber", color: navy }),
             copy("callout body", "monthly active users, from 18 thousand to 94 thousand", {
               style: "body2",
               color: ink,
@@ -67,7 +67,7 @@ export function lineChart(): doom.TreeSlide {
               sizing: { w: "fill", h: "fixed" },
               fills: [solid({ var: "text2", tint: 0.7 })],
             }),
-            copy("share number", "38%", { style: "bigNumber", color: navy, size: 120 }),
+            copy("share number", "38%", { style: "bigNumber", color: navy }),
             copy("share body", "of new users arrive from a deck someone sent them", {
               style: "body2",
               color: ink,

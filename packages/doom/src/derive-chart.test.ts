@@ -193,15 +193,15 @@ describe("deriveChart", () => {
       expect(numbersIn(derive(chart)).filter((value) => !Number.isFinite(value))).toEqual([])
   })
 
-  it("sizes the legend swatches and line markers with the chart's words, 20 px or more on the slide type scale", () => {
+  it("sizes the legend swatches and line markers with the chart's words, 16 px or more on the slide type scale", () => {
     const scaled = (chart: Chart) => deriveChart(frame, chart, spot(0, 0, 1600, 700), defaultTheme, measure)
     const sides = (parts: readonly Resolved[], marker: string) =>
       parts.filter((part) => part.id.includes(marker)).map((part) => part.box.w)
     const legend = sides(scaled(column), "~swatch")
     expect(legend.length).toBeGreaterThan(0)
-    for (const side of legend) expect(side).toBeGreaterThanOrEqual(20)
+    for (const side of legend) expect(side).toBeGreaterThanOrEqual(16)
     const dots = scaled({ ...column, kind: "line" }).filter((part) => part.geometry?.kind === "ellipse")
     expect(dots.length).toBeGreaterThan(0)
-    for (const dot of dots) expect(dot.box.w).toBeGreaterThanOrEqual(20)
+    for (const dot of dots) expect(dot.box.w).toBeGreaterThanOrEqual(16)
   })
 })

@@ -27,8 +27,8 @@ describe("a new deck's title slide", () => {
 
   it("takes the slide type scale for its text styles, so a person's Text tool and the agent's patterns share it", () => {
     expect(theme.textStyles).toEqual(doom.slideTextStyles)
-    for (const style of Object.values(theme.textStyles)) expect(style.size).toBeGreaterThanOrEqual(36)
-    expect(theme.textStyles.title.size).toBe(88)
+    for (const style of Object.values(theme.textStyles)) expect(style.size).toBeGreaterThanOrEqual(24)
+    expect(theme.textStyles.title.size).toBe(56)
   })
 
   it("takes the default theme's effect styles, so glow is a drop shadow with no offset, never a blur of the layer", () => {
