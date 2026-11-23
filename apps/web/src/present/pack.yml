@@ -10,7 +10,6 @@ public:
   - present-button.tsx
   - present-keys.ts
   - present-layer.tsx
-  - present-links.tsx
   - slide-shows.ts
   - use-leaving.ts
   - use-present.ts

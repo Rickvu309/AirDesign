@@ -4,7 +4,6 @@ public:
   - adjust-tone-copy.ts
   - aira-copy.ts
   - appearance-copy.ts
-  - arrange-copy.ts
   - body-copy.ts
   - border-copy.ts
   - box-copy.ts
@@ -23,8 +22,6 @@ public:
   - geometry-copy.ts
   - guide-copy.ts
   - identity-copy.ts
-  - import-failure-words.ts
-  - layers-copy.ts
   - link-copy.ts
   - notes-copy.ts
   - opacity-copy.ts
@@ -39,7 +36,6 @@ public:
   - shortcut-copy.ts
   - slide-list-copy.ts
   - slide-number-copy.ts
-  - template-picker-copy.ts
   - template-style-copy.ts
   - text-copy.ts
   - toolbar-copy.ts
