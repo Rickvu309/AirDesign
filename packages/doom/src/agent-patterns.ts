@@ -1,6 +1,7 @@
 import type { AgentChange, AgentItem, PatternName } from "./agent-change.js"
 import { type Draft, type Values, stop } from "./agent-draft.js"
-import { iconName, sidesOf, solid, surfaceOf } from "./agent-look.js"
+import { iconName, sidesOf, solid, surfaceOf, turnOf } from "./agent-look.js"
+import { wrapRotation } from "./angle.js"
 import { type Area, areaFor, gapFor, padFor, slideSize, themeOf } from "./agent-place.js"
 import type { Px } from "./paint.js"
 import {
@@ -213,7 +214,12 @@ const matrix: Build = (area, items, scale) => {
   return frameOf({ ...scale.root, box: boxIn(area, area.h) }, [
     quadrants,
     axisLabel(scale.axes[0], { x: strip, y: grid.h + lower, w: grid.w, h: strip - lower }, 0, scale),
-    axisLabel(scale.axes[1], { x: strip / 2 - grid.h / 2, y: grid.h / 2 - strip / 2, w: grid.h, h: strip }, -90, scale),
+    axisLabel(
+      scale.axes[1],
+      { x: strip / 2 - grid.h / 2, y: grid.h / 2 - strip / 2, w: grid.h, h: strip },
+      wrapRotation(-90),
+      scale,
+    ),
   ])
 }
 
@@ -378,7 +384,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
       {
         ...surfaceOf(change),
         name: change.name ?? "Grid",
-        box: boxIn(area, stretched(area, total, change.box !== undefined, gridShare)),
+        box: { ...boxIn(area, stretched(area, total, change.box !== undefined, gridShare)), ...turnOf(change) },
         layout: {
           mode: "grid",
           columns: Array.from({ length: columns }, () => ({ fr: 1 })),

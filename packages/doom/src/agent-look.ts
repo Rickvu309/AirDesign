@@ -56,6 +56,11 @@ export const iconName = (icon: string): string => (icon.includes("/") ? icon : `
 
 export const sidesOf = (all: number): Sides => ({ t: all, r: all, b: all, l: all })
 
+export const turnOf = (look: AgentLook): Partial<Box> => ({
+  ...(look.rotation === undefined ? {} : { rotation: look.rotation }),
+  ...(look.flip === undefined ? {} : { flipH: look.flip.includes("h"), flipV: look.flip.includes("v") }),
+})
+
 export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside"): Values {
   const drawn = (look.stroke !== undefined && look.stroke !== "none") || look.dash !== undefined
   const weight =
@@ -83,8 +88,7 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
           box: {
             ...(now.box ?? zeroBox),
             ...look.box,
-            ...(look.rotation === undefined ? {} : { rotation: look.rotation }),
-            ...(look.flip === undefined ? {} : { flipH: look.flip.includes("h"), flipV: look.flip.includes("v") }),
+            ...turnOf(look),
           },
         }),
   }
