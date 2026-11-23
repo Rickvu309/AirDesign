@@ -68,6 +68,14 @@ describe("readForAgent", () => {
     )
   })
 
+  it("names a shape's outline in the word the agent sets, and says nothing for a rectangle", () => {
+    const starred = build(doom, change({ op: "set", target: ids.caption, shape: "star5" }))
+    expect(readForAgent(starred, "all")).toContain(" shape=star5")
+    expect(readForAgent(build(doom, change({ op: "set", target: ids.caption, shape: "rect" })), "all")).not.toContain(
+      "shape=",
+    )
+  })
+
   it("leaves out what is the default: the plain ink colour and a padding of nothing", () => {
     const plain = readForAgent(
       build(richDeck(), change({ op: "add", kind: "kpi", slide: more.slide2, items: [{ title: "A", value: "1" }] })),

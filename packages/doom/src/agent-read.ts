@@ -123,6 +123,8 @@ function looksOf(node: Node): readonly string[] {
     if (color !== undefined && colorWords(color) !== "text") out.push(`color=${colorWords(color)}`)
     out.push(...overrideWords(text))
   }
+  if (geometry?.kind === "ellipse") out.push("shape=ellipse")
+  if (geometry?.kind === "preset") out.push(`shape=${geometry.name}`)
   if (geometry?.kind === "icon") out.push(`icon=${iconWords(geometry.name)}`)
   if (geometry?.kind === "line") out.push(...lineWords(geometry))
   const chart = chartWords(node)

@@ -7,6 +7,7 @@ import { presetConnectors } from "./preset-connectors.js"
 import { presetGuides } from "./preset-guides.js"
 import { presetPath, type PresetRule, type Shade } from "./preset-rule.js"
 import type { Point } from "./resolved.js"
+import type { Geometry } from "./geometry.js"
 
 export type Shaped = { readonly kind: string; readonly name?: string; readonly adjust?: readonly number[] }
 export type Area = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
@@ -49,6 +50,19 @@ const presets: Readonly<Record<string, PresetRule>> = {
   ...presetCallouts,
   ...presetSpecial,
   ...presetConnectors,
+}
+
+const connectorNames = new Set(Object.keys(presetConnectors))
+
+export const shapeNames: readonly string[] = [
+  "rect",
+  "ellipse",
+  ...Object.keys(presets).filter((name) => !connectorNames.has(name)),
+]
+
+export function shapeGeometry(name: string): Geometry {
+  if (name === "rect" || name === "ellipse") return { kind: name }
+  return { kind: "preset", name }
 }
 
 function ruleOf(shaped: Shaped | null | undefined): PresetRule | undefined {

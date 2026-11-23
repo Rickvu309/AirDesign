@@ -58,6 +58,7 @@ export {
   presetHolds,
   presetOutline,
   presetSites,
+  shapeNames,
   siteSpot,
   textArea,
 } from "./preset-geometry.js"

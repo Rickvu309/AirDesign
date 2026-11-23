@@ -2,15 +2,41 @@ import type { Preset } from "@airdesign/document"
 
 export const geometryCopy = {
   corners: "Corners",
-  section: "Shape type",
-  shape: "Shape type",
-  adjust: (name: string) => adjustNames[name] ?? `Adjust ${name.replace(/^adj/, "")}`,
+  section: "Shape",
+  shape: "Shape",
+  adjust: (preset: string, name: string): string | undefined => adjustNames[preset]?.[name],
 } as const
 
-const adjustNames: Readonly<Record<string, string>> = {
-  adj: "Adjust",
-  hf: "Width factor",
-  vf: "Height factor",
+const arrow = { adj1: "Shaft width", adj2: "Head length" }
+
+const adjustNames: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  roundRect: { adj: "Corner" },
+  round1Rect: { adj: "Corner" },
+  round2SameRect: { adj1: "Corner" },
+  snip1Rect: { adj: "Cut" },
+  triangle: { adj: "Peak" },
+  parallelogram: { adj: "Slant" },
+  trapezoid: { adj: "Slant" },
+  hexagon: { adj: "Side cut" },
+  octagon: { adj: "Corner cut" },
+  homePlate: { adj: "Point depth" },
+  chevron: { adj: "Point depth" },
+  plus: { adj: "Arm width" },
+  frame: { adj1: "Border width" },
+  star4: { adj: "Inner radius" },
+  star5: { adj: "Inner radius" },
+  rightArrow: arrow,
+  leftArrow: arrow,
+  upArrow: arrow,
+  downArrow: arrow,
+  leftRightArrow: arrow,
+  upDownArrow: arrow,
+  notchedRightArrow: arrow,
+  bracketPair: { adj: "Curve" },
+  bracePair: { adj: "Curve" },
+  donut: { adj: "Ring width" },
+  can: { adj: "Rim depth" },
+  cube: { adj: "Depth" },
 }
 
 const presets: Readonly<Record<Preset, string>> = {

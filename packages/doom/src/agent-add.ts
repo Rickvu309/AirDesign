@@ -1,4 +1,5 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
+import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, create, living, put, stop } from "./agent-draft.js"
 import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
@@ -34,7 +35,7 @@ const patternFields = ["box", "name", "hidden", "items"] as const
 
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words],
-  shape: [...common, ...painted, ...words],
+  shape: [...common, ...painted, ...words, "shape"],
   line: [...common, "stroke", "strokeWidth", "arrow", "dash", "from", "to", "route"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit"],
@@ -127,7 +128,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     ...(labelled && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
     ...(filled ? { fills: [solid("accent1")] } : {}),
     box: givenBox(change, area, high, grows),
-    geometry: { kind: "rect" },
+    geometry: shapeGeometry(change.shape ?? "rect"),
     ...(titled ? { role: "title" as const } : {}),
     ...(made === undefined
       ? {}
@@ -191,7 +192,11 @@ function addPicture(draft: Draft, parent: Node, change: Add): void {
   const natural = draft.reading.pictures?.get(change.fill.image)
   const fitted =
     change.box !== undefined || natural === undefined ? area : { ...area, ...centred(area, pictureFit(natural, area)) }
-  create(draft, "shape", parent.id, { ...surfaceOf(change), box: givenBox(change, fitted), geometry: { kind: "rect" } })
+  create(draft, "shape", parent.id, {
+    ...surfaceOf(change),
+    box: givenBox(change, fitted),
+    geometry: { kind: "rect" },
+  })
 }
 
 function addIcon(draft: Draft, parent: Node, change: Add): void {

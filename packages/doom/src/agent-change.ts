@@ -1,5 +1,6 @@
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { limits } from "./limits.js"
+import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import {
   type ColorVar,
@@ -24,11 +25,13 @@ import {
   pair,
   reject,
   rejected,
+  rejectedField,
   variant,
   words,
 } from "./read-kit.js"
 import { type Refusal, refuse } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
+import { shapeNames } from "./preset-geometry.js"
 
 export const patternNames = ["kpi", "cards", "compare", "matrix", "timeline", "flow"] as const
 export type PatternName = (typeof patternNames)[number]
@@ -91,6 +94,7 @@ export type AgentLook = {
   readonly strike?: boolean
   readonly dash?: "solid" | "dash" | "dot"
   readonly fit?: "fill" | "fit" | "tile"
+  readonly shape?: string
   readonly rotation?: number
   readonly flip?: "none" | "h" | "v" | "hv"
   readonly notes?: string
@@ -121,10 +125,6 @@ export type AgentChange =
 
 export type AgentRefusal = Refusal & { readonly change: string; readonly at?: number; readonly field?: string }
 
-type JsonSchema = Readonly<Record<string, unknown>>
-type Field<T> = { readonly schema: JsonSchema; readonly read: Reader<T> }
-const field = <T>(schema: JsonSchema, read: Reader<T>): Field<T> => ({ schema, read })
-
 const idSchema = { $ref: "#/$defs/id" }
 const kindWords =
   "text and shape hold words. line. frame groups and lays out its children, or with rows is a grid of words. picture (fill: {image}). icon (icon). chart (chart). Patterns: kpi (items: title, value, note), cards (title, points, icon), compare (2 or 3 items: title, points), matrix (up to 4 items, axes), timeline (2 to 8: value, title, note), flow (2 to 6: title, note)."
@@ -133,13 +133,6 @@ const readId: Reader<NodeId> = (raw) => readNodeId(raw) ?? reject()
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
 const readColor: Reader<AgentColor> = oneOf<AgentColor>(matching(tintedName, 16) as Reader<AgentColor>, readHex)
 const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
-const choice = <const V extends string>(values: readonly V[], description?: string) =>
-  field<V>({ enum: values, ...(description === undefined ? {} : { description }) }, literal(values))
-const number = (min: number, max: number, description: string) =>
-  field<number>({ type: "number", minimum: min, maximum: max, description }, finite(min, max))
-const flag = (description: string) => field<boolean>({ type: "boolean", description }, boolean)
-const string = (maxBytes: number, description: string) =>
-  field<string>({ type: "string", description }, words(maxBytes, 1))
 
 const readNone = literal(["none"] as const)
 
@@ -329,6 +322,7 @@ const lookFields: LookFields = {
   strike: flag("Strike through all the words."),
   dash: choice(["solid", "dash", "dot"], "Outline dash."),
   fit: choice(["fill", "fit", "tile"], "How a picture sits in its layer."),
+  shape: choice(shapeNames, "A shape's outline. Lines and connectors are not shapes: add kind line."),
   rotation: number(-360, 360, "Degrees clockwise."),
   flip: choice(["none", "h", "v", "hv"], "Mirror the layer across, up and down, or both."),
   notes: field({ type: "string", description: "A slide's presenter notes, as plain words." }, words(limits.valueBytes)),
@@ -431,11 +425,12 @@ const readChange = variant("op", {
   deck: object({}, { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["colors", "fonts", "nameFollows"]) }),
 })
 
-export function readAgentChange(raw: unknown): AgentChange | Refusal {
+export function readAgentChange(raw: unknown): AgentChange | (Refusal & { readonly field?: string }) {
   try {
     return readChange(raw) as AgentChange
   } catch (thrown) {
-    return refuse(rejected(thrown))
+    const field = rejectedField(thrown)
+    return { ...refuse(rejected(thrown)), ...(field === undefined ? {} : { field }) }
   }
 }
 
