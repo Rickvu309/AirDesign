@@ -46,7 +46,7 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   const right = page.locator("[data-editor-panel]")
   await expect(right.locator("[data-zoom-readout]")).toBeVisible()
   await expect(right.getByRole("button", { name: presentCopy.present })).toBeVisible()
-  await expect(right.getByRole("button", { name: "Export", exact: true })).toBeDisabled()
+  await expect(right.getByRole("button", { name: productCopy.exportDeck, exact: true })).toBeDisabled()
   await expect(right.locator("[data-aira-panel]")).toBeVisible()
   await expect(page.locator("[data-zoom-percent]")).toHaveCount(0)
 })
