@@ -17,6 +17,16 @@ function keysOf(edit: Landed): readonly { readonly node: NodeId; readonly key: W
   return keys
 }
 
+const parentIn = (doom: Doom, node: NodeId) =>
+  (doom.nodes.get(node) as { parent?: { readonly id: NodeId } | null } | undefined)?.parent ?? null
+
+function depthIn(doom: Doom, node: NodeId): number {
+  if (!doom.nodes.has(node)) return doom.nodes.size
+  let depth = 0
+  for (let at = parentIn(doom, node); at !== null && depth < doom.nodes.size; at = parentIn(doom, at.id)) depth += 1
+  return depth
+}
+
 export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlySet<Rev> = new Set()): readonly Write[] {
   const writes: Write[] = []
   for (const { node, key } of keysOf(edit)) {
@@ -32,5 +42,8 @@ export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlyS
       : (was as Record<string, unknown>)[key as PropName]
     writes.push({ node, prop: key, value: value ?? null, base: writer })
   }
-  return [...writes.filter((each) => each.prop === "parent"), ...writes.filter((each) => each.prop !== "parent")]
+  const moves = writes.filter((each) => each.prop === "parent")
+  const depths = new Map(moves.map((each) => [each.node, depthIn(before, each.node)]))
+  moves.sort((one, other) => depths.get(one.node)! - depths.get(other.node)!)
+  return [...moves, ...writes.filter((each) => each.prop !== "parent")]
 }

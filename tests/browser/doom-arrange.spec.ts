@@ -118,6 +118,37 @@ test("Ctrl+G groups two layers, Ctrl+Shift+G ungroups them and Ctrl+Backspace un
   expect((await savedNode(stack, opened, "t:2"))?.box).toMatchObject({ x: 600, y: 700 })
 })
 
+test("Ctrl+Z after an ungroup brings the group back, and a second Ctrl+Z takes the group away", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await threeBoxes(page, context, stack)
+  await clickSlide(page, 200, 760)
+  await page.keyboard.down(shift)
+  await clickSlide(page, 700, 760)
+  await page.keyboard.up(shift)
+  await page.keyboard.press("ControlOrMeta+g")
+  await expect.poll(async () => (await selectedIds(page)).length).toBe(1)
+  const [group = ""] = await selectedIds(page)
+  await expect.poll(async () => (await parentOf(stack, opened, "t:2"))?.id).toBe(group)
+  await page.keyboard.press("ControlOrMeta+Shift+g")
+  await expect.poll(async () => (await savedNode(stack, opened, group))?.parent).toBeNull()
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await parentOf(stack, opened, group))?.id).toBe(opened.slide)
+  expect((await parentOf(stack, opened, "t:1"))?.id).toBe(group)
+  expect((await parentOf(stack, opened, "t:2"))?.id).toBe(group)
+  expect((await savedNode(stack, opened, "t:2"))?.box).toMatchObject({ x: 500, y: 0 })
+  expect((await savedNode(stack, opened, group))?.box).toMatchObject({ x: 100, y: 700, w: 700, h: 120 })
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await savedNode(stack, opened, group))?.parent).toBeNull()
+  expect((await parentOf(stack, opened, "t:1"))?.id).toBe(opened.slide)
+  expect((await parentOf(stack, opened, "t:2"))?.id).toBe(opened.slide)
+  expect((await savedNode(stack, opened, "t:2"))?.box).toMatchObject({ x: 600, y: 700 })
+})
+
 test("Ctrl+Alt+G wraps the selection in a clipping frame that covers it, and one undo takes the frame away", async ({
   page,
   context,

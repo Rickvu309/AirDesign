@@ -110,6 +110,29 @@ describe("invert", () => {
     expect(isRefusal(tryLand(removed.after, writes))).toBe(false)
   })
 
+  it("brings an ungrouped frame back before its children move back into it", () => {
+    const ungrouped = step(sampleDeck(), [
+      { node: ids.title, prop: "parent", value: place(ids.slide) },
+      { node: ids.card, prop: "parent", value: null },
+    ])
+    const undone = tryLand(ungrouped.after, invert(ungrouped.before, ungrouped.after, ungrouped.edit))
+    expect(isRefusal(undone)).toBe(false)
+    expect((undone as Doom).children.get(ids.slide)).toEqual([ids.card, ids.side])
+    expect((undone as Doom).children.get(ids.card)).toEqual([ids.title])
+  })
+
+  it("moves a node out of the way before its old child takes it back", () => {
+    const nested = step(sampleDeck(), [{ node: ids.side, prop: "parent", value: place(ids.card) }]).after
+    const swapped = step(nested, [
+      { node: ids.side, prop: "parent", value: place(ids.slide) },
+      { node: ids.card, prop: "parent", value: place(ids.side) },
+    ])
+    const undone = tryLand(swapped.after, invert(swapped.before, swapped.after, swapped.edit))
+    expect(isRefusal(undone)).toBe(false)
+    expect((undone as Doom).children.get(ids.slide)).toEqual([ids.card])
+    expect((undone as Doom).children.get(ids.card)).toEqual([ids.side, ids.title])
+  })
+
   it("leaves a node alone that someone put back somewhere else", () => {
     const removed = step(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
     const revived = step(removed.after, [{ node: ids.card, prop: "parent", value: place(ids.side) }])
