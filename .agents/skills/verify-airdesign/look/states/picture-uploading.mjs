@@ -8,7 +8,7 @@ async function drive(kit) {
   await page.goto("/s")
   await page.locator("[data-doom-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
-  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)
+  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)
   const opened = await post(doomRoutes.open, { deck }, cookie)
   const slide = Object.values(opened.json.fold.nodes).find((node) => node.type === "slide").id
   const box = { x: 360, y: 240, w: 1200, h: 600, rotation: 0, flipH: false, flipV: false }
