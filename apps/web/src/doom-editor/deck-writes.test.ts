@@ -1,5 +1,6 @@
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { deckNodeOf, notesOf, notesText, notesWrites, renameWrites } from "./deck-writes"
+import { deckNodeOf, notesOf, notesWrites, renameWrites } from "./deck-writes"
 import { grow, landed } from "@/testing/doom-fixtures"
 
 describe("deck name", () => {
@@ -13,8 +14,8 @@ describe("deck name", () => {
 
 describe("presenter notes", () => {
   it("keeps one paragraph per line", () => {
-    expect(notesText("one\ntwo").paras).toHaveLength(2)
-    expect(notesText("").paras).toHaveLength(1)
+    expect(doom.notesText("one\ntwo").paras).toHaveLength(2)
+    expect(doom.notesText("").paras).toHaveLength(1)
   })
 
   it("writes a slide's notes and reads them back", () => {

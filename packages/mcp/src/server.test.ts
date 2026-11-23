@@ -82,6 +82,8 @@ describe("createServer", () => {
         "unwrap",
         "delete",
         "slide",
+        "duplicate",
+        "deck",
       ])
       const advertised = tools.map((tool) => ({
         name: tool.name,

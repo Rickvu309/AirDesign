@@ -14,7 +14,7 @@ import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
 
-const common = ["box", "name", "hidden", "opacity", "effect"] as const
+const common = ["box", "name", "hidden", "opacity", "effect", "rotation", "flip"] as const
 const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [
   "text",

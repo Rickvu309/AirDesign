@@ -39,6 +39,11 @@ async function withPictures(read: ToolResult, opened: Opened, slides: readonly d
   return { ...result, content: [...images, ...result.content] }
 }
 
+function themeOf(fold: doom.Doom) {
+  const { colors, fonts } = doom.deckOf(fold).theme
+  return { colors, fonts }
+}
+
 const lead = (opened: Opened, count: number) =>
   `Deck ${opened.deck} "${doom.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
 
@@ -68,6 +73,7 @@ export function readAnswer(
     name: doom.deckName(opened.fold),
     slides,
     ...(next === undefined ? {} : { next }),
+    theme: themeOf(opened.fold),
   }
   return answered(lead(opened, slides.length), { ...answer, layers: doom.readForAgent(opened.fold, chosen) })
 }

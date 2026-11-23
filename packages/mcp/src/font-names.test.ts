@@ -74,4 +74,23 @@ describe("a raw size and font over the protocol", () => {
     )
     expect((await call("read_deck", { deck })).answer.rev).toBe(rev)
   })
+  it("sets the theme's fonts under the catalog's own names, and refuses a family it does not serve", async () => {
+    const call = agent()
+    const { deck, rev } = (await call("create_deck", {})).answer as { deck: string; rev: number }
+    const themed = await call("edit_deck", {
+      deck,
+      base: rev,
+      changes: [{ op: "deck", name: "Board", fonts: { heading: "lora" } }],
+    })
+    expect(themed.ok).toBe(true)
+    expect((await call("read_deck", { deck })).answer).toMatchObject({ theme: { fonts: { heading: "Lora" } } })
+    const unknown = await call("edit_deck", {
+      deck,
+      base: rev + 1,
+      runId: (themed.answer as { runId: string }).runId,
+      changes: [{ op: "deck", fonts: { body: "Nowhere Grotesk" } }],
+    })
+    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", at: 0 })
+    expect((await call("list_decks", {})).answer).toMatchObject({ decks: [{ deck, name: "Board" }] })
+  })
 })

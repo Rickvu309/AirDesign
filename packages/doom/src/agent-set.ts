@@ -2,6 +2,7 @@ import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { gapFor, slideSize } from "./agent-place.js"
+import { notesText } from "./notes-text.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
@@ -16,6 +17,8 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     ...wordsOnly,
     "dash",
     "fit",
+    "rotation",
+    "flip",
     "stroke",
     "strokeWidth",
     "color",
@@ -33,8 +36,8 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "chart",
     "box",
   ],
-  frame: ["color", "text", "textStyle", "icon", "arrow", ...wordsOnly],
-  shape: ["layout", "gap", "padding", "chart"],
+  frame: ["color", "text", "textStyle", "icon", "arrow", "notes", ...wordsOnly],
+  shape: ["layout", "gap", "padding", "chart", "notes"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
@@ -117,6 +120,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
     ...(layout === undefined ? {} : { layout }),
     ...(shaped === undefined ? {} : { geometry: shaped }),
     ...(change.chart === undefined ? {} : { chart: chartOf(change.chart) }),
+    ...(change.notes === undefined ? {} : { notes: notesText(change.notes) }),
   }
   put(draft, node.id, values)
 }
