@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { chosenStep, numberShown, scrubbed } from "@/design/controls/number"
+import { chosenStep, numberShown, scrubbed, storedFromTyped } from "@/design/controls/number"
 import { steppedFrom, untouched } from "@/design/shown-number"
 import { typedNumber } from "@/design/typed-number"
 import type { PanelControl } from "@/design/panel"
@@ -65,5 +65,17 @@ describe("letter spacing", () => {
     expect(shown.exact).toBeCloseTo(-1.7045, 4)
     expect(steppedFrom(shown.text, shown, read) + 1).toBeCloseTo(-0.7045, 4)
     expect(steppedFrom("-3", shown, read)).toBe(-3)
+  })
+
+  it("is clamped to Doom's limit and written, never dropped, when typed past it", () => {
+    const control = {
+      desc: { kind: "number", unit: "hundredth-point", min: -10_000, max: 10_000 },
+      value: 0,
+      mixed: false,
+      ...spacingUnits("text", "letterSpacing", 200_000),
+    } as unknown as PanelControl
+    expect(storedFromTyped(control, 100)).toBe(10_000)
+    expect(storedFromTyped(control, -100)).toBe(-10_000)
+    expect(storedFromTyped(control, 3)).toBe(6_000)
   })
 })

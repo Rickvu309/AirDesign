@@ -18,9 +18,20 @@ const casings = ["none", "upper", "lower", "title"]
 const lists = ["none", "bullets", "numbers"]
 const fillDesc: Desc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } }
 const styleDesc: Desc = { kind: "words", max: 200 }
-const sizeDesc: Desc = { kind: "number", unit: "hundredth-point", min: 100, max: 400_000 }
-const spacingDesc: Desc = { kind: "number", unit: "hundredth-point", min: -400_000, max: 400_000 }
-const lineDesc: Desc = { kind: "number", unit: "fraction", min: 10_000, max: 1_000_000 }
+const { size: sizeLimit, tracking: trackingLimit, lineHeight: lineLimit } = doom.textLimits
+const sizeDesc: Desc = {
+  kind: "number",
+  unit: "hundredth-point",
+  min: sizeOld(sizeLimit.min),
+  max: sizeOld(sizeLimit.max),
+}
+const spacingDesc: Desc = {
+  kind: "number",
+  unit: "hundredth-point",
+  min: sizeOld(trackingLimit.min),
+  max: sizeOld(trackingLimit.max),
+}
+const lineDesc: Desc = { kind: "number", unit: "fraction", min: lineOld(lineLimit.min), max: lineOld(lineLimit.max) }
 
 const textControl = (field: string, label: string, desc: Desc, held: Held, extra: Partial<PanelControl> = {}) =>
   doomControl({ trait: "text", field }, label, desc, held, extra)

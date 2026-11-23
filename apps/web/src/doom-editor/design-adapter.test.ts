@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 import { panelOfMany, type PanelControl, type PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { kindOf, nodeModel } from "./design-model"
+import { lineNew, sizeNew } from "./design-text-values"
 import { distributeWrites } from "./design-align"
 import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
@@ -157,6 +158,23 @@ describe("text layer", () => {
     expect(prop(lined, "words", "text")?.paras[0]?.lineHeight).toBe(1.5)
     const spaced = write(["words"], find(model, "text", "letterSpacing"), 250)
     expect(prop(spaced, "words", "text")?.spans[0]?.tracking).toBe(2.5)
+  })
+
+  it("takes every text number range from Doom, so the panel offers nothing Doom refuses", () => {
+    const range = (field: string) => {
+      const desc = find(model, "text", field).desc
+      if (desc.kind !== "number") throw new Error(field)
+      return desc
+    }
+    const size = range("size")
+    expect([sizeNew(size.min), sizeNew(size.max)]).toEqual([doom.textLimits.size.min, doom.textLimits.size.max])
+    const spacing = range("letterSpacing")
+    expect([spacing.min / 100, spacing.max / 100]).toEqual([doom.textLimits.tracking.min, doom.textLimits.tracking.max])
+    const line = range("lineHeight")
+    expect([lineNew(line.min), lineNew(line.max)]).toEqual([
+      doom.textLimits.lineHeight.min,
+      doom.textLimits.lineHeight.max,
+    ])
   })
 
   it("links a typed address over https, so the deck's link reader takes it", () => {
