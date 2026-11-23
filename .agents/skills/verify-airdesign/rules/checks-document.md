@@ -2,7 +2,7 @@
 
 Each entry: what the check promises, the code it covers, its bounds, how to run it alone, its replay, what it leaves out, and its sync: the `covers.json` that records the code the model was last confirmed against, or for sections, the commit. Replays live in `tests/spec-replay.test.ts` and the `tests/*-replay.ts` files it calls. Run them with `pnpm vitest run tests/spec-replay.test.ts`.
 
-The register code is `packages/document/src/decide.ts`: `decide` and, per element, `personEdit`, `startRun`, `agentEdit`, `stopRun`, `decideUndo`, `version`. Its product callers are `packages/engine/src/call.ts` (`applyPersonEdits`, `applyAgentEdits`, `startRun`, `stopRun`, `undoRun`, `endOnTouched`, `decideOnElement`, `liveRuns`) and `packages/mcp/src/run.ts` (`openRun`, `joinRun`, `stopLiveRuns`). Text and box rows share one register per element, so "one property" in a model means one element's register.
+The register code is `packages/document/src/decide.ts`: `decide` and, per element, `personEdit`, `startRun`, `agentEdit`, `stopRun`, `decideUndo`, `version`. No product path calls it: the editor and the agent tools write Doom decks, which [checks-doom.md](checks-doom.md) checks. Its callers are these replays, the register cases of `pnpm check:pptx` (`scripts/pptx-cases/`) and unit tests. Text and box rows share one register per element, so "one property" in a model means one element's register.
 
 ## edit
 
@@ -15,7 +15,7 @@ One run edits one element while a person edits it too.
 - `StopFences`: after Stop, no agent row of that run lands. Harm: a stopped agent keeps writing.
 - `UndoRevertsOnlyTheRun`: run Undo hides only that run's rows and keeps every person edit. Harm: Undo erases a person's work.
 
-Bounds: one element, one run, two agent rows, one person edit before and one after the run's first row. Assumes the element and its slide are present and its kind takes the edit: `takenRefusal`, the first check in `decide`, refuses a box edit on a grouped element `group-box` and any other edit its kind cannot take `kind`, before this model starts. Group and ungroup change which elements are grouped, so once a group command takes in an element, a box edit of it is refused this way too; structure models grouping. Run: `pnpm check:specs edit`. Replay: `replayEdit` drives every edge through `decide`. Edit, undo and run replays land later agent rows as trait field rows (`set`). Leaves out: agent slide commands under a run (`packages/engine/src/agent-slides.ts`). `agentSlide` refuses `run-fenced` once every element the run touched has ended, and refuses `person-protected` for deleting a slide that holds an element guarded against the run (`packages/engine/src/slide-run-fence.test.ts`). A run with slide rows that stop_run or run Undo ended is recorded in the register's `ended` list, so `agentSlide` refuses its later slide commands `run-fenced` too. Speaker notes need no model of their own: a note is the element `<slide>.notes` (`openedRegister` in `packages/engine/src/call.ts`), so a person or agent edit of it goes through `decide` like text, and this model and run, undo and rerun cover it per element. `packages/engine/src/notes.test.ts` checks that both actors use that path. Writing a first note's parts on export is a PowerPoint question for `pnpm check:pptx`, not an order one.
+Bounds: one element, one run, two agent rows, one person edit before and one after the run's first row. Assumes the element and its slide are present and its kind takes the edit: `takenRefusal`, the first check in `decide`, refuses a box edit on a grouped element `group-box` and any other edit its kind cannot take `kind`, before this model starts. Group and ungroup change which elements are grouped, so once a group command takes in an element, a box edit of it is refused this way too; structure models grouping. Run: `pnpm check:specs edit`. Replay: `replayEdit` drives every edge through `decide`. Edit, undo and run replays land later agent rows as trait field rows (`set`).
 
 Sync: `specs/edit/covers.json`.
 
@@ -29,7 +29,7 @@ Undo of a run hides only that run's rows.
 - `CompactKeepsHead`, `HorizonIsGiven`: compaction drops a hidden row only after a horizon, and keeps the person row.
 - `VersionNeverReused`: the version never falls, and each change to what the element shows raises it. Harm: a client trusts a stale version and drops an edit.
 
-Bounds: one element, one person row, two runs with one row each. Run: `pnpm check:specs undo`. Replay: `replayUndo` through `decide`, `decideUndo` and `compactChain`. Leaves out: `compactChain` has no product caller, so the compaction half verifies library code nothing runs. Run Undo of slide rows goes through `undoSlides` in `packages/document/src/person-undo.ts`; slide-undo covers it.
+Bounds: one element, one person row, two runs with one row each. Run: `pnpm check:specs undo`. Replay: `replayUndo` through `decide`, `decideUndo` and `compactChain`. Leaves out: `compactChain` has no product caller, so the compaction half verifies library code nothing runs. Run Undo of slide rows goes through `undoSlides` in `packages/document/src/person-undo.ts`, outside this model.
 
 Sync: `specs/undo/covers.json`.
 
@@ -43,7 +43,7 @@ Two runs on one element in turn: the guard, the claim and the stop mark of each.
 - `SecondUndoKeepsOtherRows`: undo of the second run keeps the first run's row and person rows.
 - `VersionNeverReused`: as in undo.
 
-Bounds: one element, two runs, the second starting from a stopped or undone first. Run: `pnpm check:specs rerun`. Replay: `replayRerun` through `decide`. Leaves out: as in edit.
+Bounds: one element, two runs, the second starting from a stopped or undone first. Run: `pnpm check:specs rerun`. Replay: `replayRerun` through `decide`.
 
 Sync: `specs/rerun/covers.json`.
 
@@ -56,13 +56,13 @@ A run's lifecycle: start, stop, undo, a later run, and reads.
 - `UndoLeavesTheOtherRun`, `EarlierUndoWaitsForEnd`: undo leaves another run's row, and undo of an earlier run waits for the live run to end.
 - `ReadMatchesStoredRun`, `UnstartedHasNoWrites`, `ResumeContinuesSameRun`, `LimitEndsLikeStop`.
 
-Bounds: one element, run ids `s` and `t`, one write, two generations. Run: `pnpm check:specs run`. Replay: `replayRun` through `decide`. Leaves out: `Limit` and `Resume` have no code; the replay counts them as unconnected. The `read` command (`readNodes`) has no product caller. Agent slide rows, as in edit.
+Bounds: one element, run ids `s` and `t`, one write, two generations. Run: `pnpm check:specs run`. Replay: `replayRun` through `decide`. Leaves out: `Limit` and `Resume` have no code; the replay counts them as unconnected. The `read` command (`readNodes`) has no caller outside the replay.
 
 Sync: `specs/run/covers.json`.
 
 ## sections
 
-A deck's PowerPoint sections carried through the slide command log by `foldSections` in `packages/document/src/section-order.ts`, which the slide list and export (`packages/pptx/src/slide-order-route.ts`) both read.
+A deck's PowerPoint sections carried through the slide command log by `foldSections` in `packages/document/src/section-order.ts`. It folds through `sectionRuns`, which `foldGrid` and the export (`packages/pptx/src/slide-order-route.ts`) read too.
 
 This is a pure function of the log, with no concurrency, so it has no TLA+ model. A property test runs the real code on generated logs of add, duplicate, move, delete and restore over two sections: `packages/document/src/section-order.property.test.ts`.
 

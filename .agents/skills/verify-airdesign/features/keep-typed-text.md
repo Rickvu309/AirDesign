@@ -1,21 +1,20 @@
-# Keep typed text and paint from the device
+# Keep edits on the device and paint from it
 
-What a person types survives a reload or a closed tab, even one that comes before the edit was written to the device or sent to the server. The device copy of a deck belongs to the account signed in on that browser: it paints before the server answers, and another account on the same browser sees none of it. A deck the server refuses closes.
+Every edit a person makes is first applied on the device and queued there, then sent to the server. A reload, a closed tab or a lost network keeps the queued edits, and they are sent once the deck is open and online again. The device copy of a deck belongs to the account signed in on that browser: it paints before the server answers, and another account on the same browser sees none of it. A browser that holds no copy, a cleared one or a new device, opens the server's copy.
 
 ## Sub-features
 
-- `journal` each keystroke's text, each new box and each slide command is first written to `localStorage` under `airdesign:unsaved:<account>:<deck>` in the keystroke's own task, then to IndexedDB, and the journal entry is dropped once IndexedDB has it. Only the newest text and box per element is kept. On the next open the journal is replayed before the first paint, then sent to the server. Speaker notes and slides take the same path (`tests/browser/keep-typed-text.spec.ts`).
-- `reload-at-once` text typed and reloaded at once shows after the reload, reaches `deckRoutes.open`, and the journal ends empty. Driven live on 2026-11-13: a typed title, the text of a new text box, speaker notes, a nudge, a rename and bold, each reloaded with no wait, and a new text box, a deleted element, a new slide, a deleted slide and a picture, each reloaded once the server had it, all showed after the reload, and a fresh device then read the same deck from the server.
-- `tab-closed` text typed and the tab closed at once shows in a new tab and reaches the server.
-- `lost-answer` when a commit lands and its answer is lost, the next page resends the batch with the same `once` key. The revision rises once. `commit-once` drives a text edit. `tests/browser/real-save.spec.ts` drops an **Add slide** answer and opens the same two-slide deck after two reloads.
-- `device-paint` a deck this account opened before on this browser paints from the device copy while `deckRoutes.open` is still on its way, then applies the server's answer on top and sets `.thin-page[data-deck-ready]`.
-- `device-account` the device copy, the journal, the queued names, the pictures and the Aira chats are kept under the account (`accountKey` in `packages/live`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees no deck, name, picture or chat of the first, and a deck address of the first shows `Deck not found` with nothing painted; the first account finds all of it again after signing in again. Signing out from Settings and deleting the account drop the chats kept for a closing page (`airdesign:chats:<account>:<deck>`).
-- `refused` when `deckRoutes.open` or `deckRoutes.watch` answers `owner`, `deleted` or `deck`, the editor drops the painted deck and shows `Deck not found` with `link "Go to your decks"` (`[data-deck-refused]`), with no editable text and no Export, and it stays closed through a reload. A `session` refusal goes to sign-in; any other refusal or a network failure keeps the deck open.
+- `queue` each edit is applied to the view at once and kept with the server's last fold in IndexedDB (`deviceStorage` in `packages/live/src/doom-storage.ts`, keys `<deck>\u0004fold` and `<deck>\u0004queue`). Edits land in order, each on the one before it; offline they keep painting and queueing, and replay in order on reconnect (`packages/live/src/doom-deck.test.ts`).
+- `lost-answer` an edit whose answer was lost lands once: it is sent again with the same `once`, and the server does not apply it twice.
+- `device-paint` a deck this account opened before on this browser opens from the kept fold and queue without waiting for `doomRoutes.open`, then catches up with `doomRoutes.since` (`openDoomDeck` in `packages/live/src/doom-deck.ts`). `[data-doom-ready]` marks the open editor.
+- `device-account` the kept decks, queued edits, stars, pictures and Aira chats are kept under the account (`accountKey` in `packages/live/src/device.ts`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees none of the first one's; signed out, the device shows and keeps nothing (`packages/live/src/device-account.test.ts`).
+- `fresh-device` a browser with no copy of the deck opens it from `doomRoutes.open`: the saved edits and pictures show (`tests/browser/doom-editor-picture.spec.ts` opens a dropped picture on a fresh device).
+- `refused` when the server does not know the deck and this browser holds no copy, the editor shows `Deck not found` with `link "Go to your decks"`. Signed out, it goes to sign-in with `next` set to the deck address (`sign-in.md`).
 
 ## How to get to it (user POV)
 
-- Type in a text box, then reload, close the tab, or lose the network.
-- Open a deck you opened before in this browser.
+- Edit a deck, then reload, close the tab, or lose the network.
+- Open a deck you opened before in this browser, or open it in another browser.
 - Sign out and sign in as someone else on the same browser.
 
 ## Driving it with verify-airdesign
@@ -24,16 +23,13 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> typed-reload`. Prints `"passed":true`.
-- **Reload at once.** Import `clean.pptx`, select the text, type `Kept` with no delay and reload in the same breath. The slide reads `Kept`, `deckRoutes.open` holds `Kept`, and no `airdesign:unsaved:` key is left. Evidence `NN-reloaded`.
-- **Device paint.** Hold `deckRoutes.open` with `page.route` and reload: the slide reads `Kept` while the open is held, and `data-deck-ready` is set once it lands. Evidence `NN-device-paint`.
-- **Tab closed.** Type `Closed` and close the page at once; a new page on the deck address reads `Closed` and so does the server. The kit's `capture` uses the first page, so the journey does this after its captures.
-- **Refused.** On that new page, answer `deckRoutes.open` with `{ok:false, refusal:"deleted"}`: `[data-deck-refused]` shows and no `[contenteditable]` is left.
-- **Two accounts.** `signed-out-deck` signs out from Home and from Settings and opens a deck address. A scratch journey with `kit.signIn(email)` drove the round trip in `deck-names.md`.
-- **Lost answer.** Intercept batches with a slide row on `deckRoutes.commit`. Forward each request with `route.fetch()` and drop its answer with `route.abort()`. After `deckRoutes.open` shows the added slide, remove the intercept and reload twice. Each reload opens the two-slide deck. The server holds one added row.
+- **Unit tests.** `pnpm exec vitest run packages/live/src/doom-deck.test.ts packages/live/src/device-account.test.ts` holds the queue, the replay, a lost answer, the reload offline and the account scoping.
+- **Reload.** `tests/browser/doom-editor.spec.ts` moves and deletes a layer and finds the moves after a reload; `tests/browser/doom-editor-text.spec.ts` keeps typed text through a reload.
+- **Offline.** `tests/browser/doom-editor-picture.spec.ts` lands a dropped picture in the deck while its upload fails and sends it once the device is back online.
+- **In a scratch journey.** Make a deck with `newDoomDeck`, type in its title, reload with no wait, and poll `post(doomRoutes.open, { deck }, cookie)` for the text. For a fresh device, open the deck address in a new `browser.newContext()` signed in with the same cookie.
+- **States for look.** `text-typed-at-once`, `text-placed-while-storing`, `deck-gone`.
 
 ## Gotchas
 
-- A faked refusal closes the deck for good in that browser: a reload after `unroute` still shows `Deck not found`. Drive the refusal last, or in a fresh context.
-- `.thin-page[data-deck-ready]` says the open finished, not that every edit was saved. Poll `deckRoutes.open`.
-- `tests/browser/open-from-device.spec.ts` slows IndexedDB with `window.deviceDelay` to widen the window; the journey reloads with no wait instead.
+- `[data-doom-ready]` says the editor opened, not that every edit was saved. Poll `doomRoutes.open`.
+- A deck opened from the device copy opens even when the server would refuse it; drive a refusal in a fresh context.

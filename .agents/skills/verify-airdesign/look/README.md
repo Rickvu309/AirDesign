@@ -15,7 +15,7 @@ Every capture is the design's frame: 1470 by 923 CSS px, device scale 2, fonts a
 
 Rank 1: a person loses content or a control. Rank 2: readability or layout. Rank 3: a hint.
 
-A path signs in a fresh account. `--import deck.pptx [--slide n]` opens a file through Home first, the way a person does. `--cookie name=value` uses an account you already have.
+A path signs in a fresh account. `--cookie name=value` uses an account you already have.
 
 ## compare
 

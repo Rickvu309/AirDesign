@@ -1,26 +1,20 @@
 # Slide paint
 
-An opened deck shows its current slide as a canvas with the deck's own aspect ratio. Each shape, text box, picture, connector, SmartArt diagram paints at its place from the PowerPoint, including shapes in groups, shapes and pictures the layout and master draw, and titles that take their box from the layout. Text paints with its paragraphs, bullets and numbering, in fonts with the same widths as PowerPoint's. The slide list on the left shows a painted thumbnail of every slide.
+An opened deck shows its current slide on the canvas at the deck's own size and aspect ratio, and a painted thumbnail of every slide in the slide list and on the deck's Home card. Each layer paints at its box from the deck: shapes and their fills, gradients, pictures, strokes and line ends, text broken into lines with each run's look, frames with their children, icons, charts, effects, rotation and flips. Text waits for its font face, loaded by name from AirDesign's font server, so lines break where they will stay.
 
 ## Sub-features
 
-- `paint-canvas` `[data-slide-paint]` has the deck's aspect ratio at the shell's slide width.
-- `paint-place` each `[data-canvas-element="<key>"]` sits inside the canvas at its PowerPoint box.
-- `paint-text` imported text shows in its box (`Hello` for `clean.pptx`).
-- `paint-slides` `[data-slide-entry="<n>"]` switches the open slide (`aria-current="true"`); only that slide's elements are on the canvas. Thumbnails are `[data-thumb-paint]` and hold no `[contenteditable]`, but their diagrams paint there too (`[data-diagram-shape]`), so scope element queries to `[data-slide-paint]` or to one `[data-slide-entry]`.
-- `paint-kinds` pictures (painted on the canvas, checked by pixels in `tests/browser/picture-paint.spec.ts`), preset and custom shapes and connectors (`[data-canvas-path]`, `[data-canvas-line]`), paragraphs (`[data-paragraph]`, with `--bullet` for bullets and numbering) and runs (`[data-run]`).
-- `paint-diagrams` a SmartArt diagram paints from the drawing PowerPoint saved with it: each shape is a `[data-diagram-shape]` with its text, on the canvas and in the thumbnail.
-- `paint-unshown` a chart, a table or any other kept frame keeps a box; a box at least 1,800,000 by 450,000 EMU says `This object can't be shown here` (a picture it cannot draw says `<FORMAT> picture can't be shown here`) in `[data-unshown-label]`.
-- `paint-read-only` diagrams cannot be selected, moved, resized or typed in: a click passes through to the slide, Delete leaves them, and the export writes their parts and frames byte for byte. An imported chart is a kept frame: it cannot be picked on the canvas, and an untouched one exports byte for byte. A duplicate gets its own copy of each chart, diagram and notes part, and an export where two slides point at one such part fails the PowerPoint check; after the original slide is deleted, its copy points at the original parts (`slide-kept-parts` exports 7 chart parts, every one the original's bytes).
+- `paint-canvas` `[data-slide-box]` holds the slide inside `[data-doom-stage]`; the painted slide is `[data-doom-slide][data-slide-paint]`, scaled from the deck's size to the width it is given (`DoomSlide` in `packages/render/src/doom-slide.tsx`).
+- `paint-place` each layer is `[data-slide-box] [data-node="<id>"]`, placed by its box, turned by its rotation and mirrored by its flips; `data-geometry` names its shape (`packages/render/src/node-art.tsx`).
+- `paint-kinds` fills in order (solid, gradient, image), a PowerPoint preset's outline, strokes inside, centred or outside with dashes and arrow ends, lines along their route, text lines (`[data-line]`) of runs (`[data-run]`), frames that nest and clip their children, Lucide icons, charts from their data, shadows and layer blur (`packages/render/src/node-art.test.ts`). States `slide-effects`, `slide-group-effects`, `slide-line-styles`, `slide-line-and-gradient`, `slide-text-fit`, `slide-chart`, `shape-faces`.
+- `paint-fonts` a text's faces come from `fontRoutes.family` and `fontRoutes.file`; while a slide's face loads, the slide holds `[data-fonts-pending]`, and print and capture wait for it. An unknown name or a failed load falls back and is reported (`packages/render/src/font-load.test.ts`, `font-wait.test.ts`). State `font-catalog`.
+- `paint-waiting` a picture whose bytes this device does not hold yet says it is still uploading in its box (`[data-unshown-label]`); a thumbnail says nothing. State `picture-uploading`, spec `tests/browser/doom-slide-picture.spec.ts`.
+- `paint-slides` `[data-slide-entry="<n>"]` in the slide list switches the open slide (`aria-current="true"`); only that slide's layers are in `[data-slide-box]`. Thumbnails paint only while the list can see them (`packages/render/src/filmstrip.test.ts`).
 - `paint-device` a deck this browser opened before paints from the device copy before the server answers. See `keep-typed-text.md`.
-- `paint-fonts` Calibri, Cambria, Arial, Helvetica and Times New Roman fall back to Carlito, Caladea, Arimo and Tinos, which have the same widths, and a single line is 1.2 times the size, so lines break where PowerPoint breaks them.
-- `paint-prompts` an empty placeholder shows its prompt, such as `Click to add title` or `Click to add subtitle`, in `[data-placeholder-prompt]` with a dashed outline. Thumbnails show no prompts.
-- `paint-sections` a deck with sections lists `[data-group-head]` headings, each named from the PowerPoint, above its slides, and numbers the slides straight through. A heading collapses its section to one row with the range of its slides, such as `1 to 2` and opens again; it opens by itself for the slide in view. `scripts/pptx-fixtures/sections-before.pptx` has two sections, `Opening` and `Numbers`; `tests/browser/slide-sections.spec.ts` proves the rest.
 
 ## How to get to it (user POV)
 
-- Import a PowerPoint on Home; the deck opens on slide 1.
-- Open a deck from Home or `/deck/<id>`.
+- Open a deck from Home or `/s/<id>`.
 - Choose a slide in the left slide list.
 
 ## Driving it with verify-airdesign
@@ -29,21 +23,13 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> slide-paint`. Prints `"passed":true`.
-- **Open.** Sign in and import `clean.pptx` from Home. The URL becomes `/deck/<id>`.
-- **Canvas.** `[data-slide-paint]` is visible.
-- **Elements inside.** Every `[data-slide-paint] [data-canvas-element]` box lies within the canvas box, within 1 px. Evidence `NN-painted-slide` and the `proof.md` line with the canvas size and element count.
-- **Text.** `[contenteditable="true"]` reads `Hello`.
-- **Fonts.** `$V journey <run> dynamic-fonts`: sets Montserrat through MCP, holds the font response and checks the canvas waits, checks two loaded FontFace styles and same-origin requests, exports Montserrat in the slide XML, and imports that export. Measured 2026-11-17. Unknown names keep fallback and report it. The `font-catalog` look state opens an imported Montserrat slide.
-- **Kept parts and diagrams.** `$V journey <run> slide-kept-parts`: imports `census-updating-spm.pptx`, checks slide 5 paints `[data-diagram-shape]`s on the canvas and in its thumbnail and slide 19 shows 3 labelled boxes and no `svg[data-chart]`, duplicates slide 19 (Ctrl/Cmd+D, the copy is current and focused), deletes the original, undoes and redoes the delete, exports, and checks every `ppt/charts/*` and `ppt/embeddings/*` part is byte for byte the original's and the copy's rels still name the charts. Evidence `NN-diagram-slide`, `NN-chart-slide`, `NN-chart-slide-deleted`, the exported file in the journey's folder.
-- **Exact places.** Not in the journey. The repo's `tests/browser/slide-paint.spec.ts` compares each element to its box from the parts; for a paint change, run `pnpm exec playwright test tests/browser/slide-paint.spec.ts` as well and attach a screenshot from this journey.
+- **Unit tests.** `pnpm exec vitest run packages/render/src` holds each kind's paint, the fonts and the thumbnails.
+- **Spec.** `tests/browser/doom-editor.spec.ts` opens a new deck at `/s/<id>`, checks its title paints at its saved box, and finds it in the same place after a reload.
+- **States for look.** Most states above open a deck with its layers already landed (`openDoomDeck` and `landNodes` in `look/doom-deck.mjs`) and capture the slide; run `$V look <run> <state>` before and after a paint change and read the images.
+- **Exact places.** In a scratch journey, compare each `[data-slide-box] [data-node]` box with its saved `box` from `doomRoutes.open`, scaled by the slide box's width over the deck's width.
 
 ## Gotchas
 
-- `clean.pptx` has one slide and one text box. For the other kinds import `scripts/pptx-fixtures/doe-heat-pumps.pptx`: slide 4 has pictures, slide 9 preset shapes and connectors, slides 10, 11 and 40 tables kept as labelled frames, slide 7 bullets and slide 16 numbering. It runs in Calibri, so `[data-run]` reads `Calibri, Carlito, ...`. Prompts need a blank deck: `New deck` > `Blank deck`.
-- `scripts/pptx-fixtures/census-updating-spm.pptx` has a diagram on slide 5 (`ppt/slides/slide5.xml#6`) and three chart frames on slide 19 (`ppt/slides/slide19.xml#11`); the deck has 26 slides, so wait for `[data-slide-entry="19"]` before you count entries. `tests/browser/diagram-export.spec.ts` judges an edit and a duplicate through the PowerPoint check; the look state is `slide-chart`.
-- A diagram ignores the pointer, so Playwright's `click()` on one times out with `[data-slide-paint]` intercepting it; use `click({ force: true })` to prove the click selects nothing.
-- The journey's export after a duplicate and a delete gave Microsoft's validator (`scripts/pptx-judge`) the same 12 schema findings as the original file and no new one.
-- The canvas has no `img` for pictures; check a picture by its `[data-canvas-element]` screenshot, as `tests/browser/picture-paint.spec.ts` does.
 - A screenshot shows the paint but not the places. Assert boxes, then capture.
-- The canvas width depends on the viewport. `$V journey` uses the design's 1470x923; the repo's browser tests use 1600x1000, where the canvas is 800 px wide.
+- Wait for `[data-fonts-pending]` to leave before you measure text or capture.
+- The canvas width depends on the viewport. `$V journey` uses the design's 1470x923; the repo's browser tests use 1600x1000.

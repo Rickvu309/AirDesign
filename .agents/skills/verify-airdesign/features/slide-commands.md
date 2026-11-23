@@ -1,26 +1,24 @@
 # Add, duplicate, move and delete slides
 
-The slide list on the left of an open deck lists every slide. The person adds a slide with the `Add slide` button, and, on a focused slide entry, duplicates it with Ctrl/Cmd+D, moves it with Alt+ArrowUp or Alt+ArrowDown (or by dragging), and deletes it with Delete or Backspace. Each change paints at once, can be undone, reaches the server as a slide order row and survives a reload and the export.
+The slide list on the left of an open deck lists every slide. The person adds a slide with the `Add slide` button or a starting slide from the `New slide` menu, and, on a focused slide entry, adds one after it with Enter, duplicates it with Ctrl/Cmd+D, moves it with Alt+ArrowUp or Alt+ArrowDown (or by dragging), and deletes it with Delete or Backspace. Each change paints at once, is one undo step, reaches the server as writes to the slide nodes, and survives a reload. `Present` shows the deck full screen.
 
 ## Sub-features
 
-- `grid-group-add` Hover or focus below a Grid slide group to preview a dashed line at the first column. Below the last slide group a full slide outline appears if it fits. Click or press Enter to add one slide in its own slide group and select it. At small zoom use New slide. At 50 slides the inline controls are removed. Journey `grid-group-add`; browser `grid-group-add.spec.ts` also covers touch, editing and offline Undo.
-- `slide-add` `button "Add slide"` adds a slide after the current one with the current slide's layout (the deck's content layout after a title slide), and opens it. The new slide takes typed text.
-- `slide-layout` the chevron beside `New slide` (`button "Choose a layout for the new slide"`) lists the deck's layouts by the names in the file. Choosing one adds a slide after the current one with that layout's placeholders. `Add slide` uses the current slide's layout, and the deck's content layout after a title slide. Journey `slide-layouts`.
-- `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current. The copy keeps the text the slide had when it was made.
-- `slide-move` Alt+ArrowUp or Alt+ArrowDown on a focused entry moves that slide one place, and the moved slide becomes current. Dragging an entry onto another moves it there.
-- `slide-delete` Delete or Backspace on a focused entry deletes that slide.
-- `slide-focus` after an add with `Add slide`, a duplicate, a move or a delete, keyboard focus moves to the entry of the slide that is now current, so the next key acts on it. Choosing from the layout menu does not move focus. `tests/browser/slide-focus.spec.ts`.
-- `slide-undo` each change is on the person's undo list: `Undo new slide`, `Undo duplicate slide`, `Undo slide order`, `Undo delete slide`, and the matching `Redo` names. See `person-undo.md`.
-- `slide-sections` in a deck with sections, a new or duplicated slide joins the section of the slide it comes after, sections follow moves and deletes, and the export writes them back (`tests/browser/slide-sections.spec.ts`).
-- `slide-saved` the server's `register.order` gets `add`, `clone`, `move` and `remove` rows, and a `restore` for an undone delete. See [lost answers](./keep-typed-text.md) for **Add slide** after a dropped commit answer.
-- `slide-said` the slide list's status says what a command did, such as `Added slide 2`. The canvas says `Slide N of M` for the slide it now shows, not `<name> deleted` for each element of the slide left behind (`element-said` in `element-edits.md`).
+- `slide-add` `button "Add slide"` adds a slide with a title after the current one and opens it; Enter on a focused entry adds one after that entry. The status line says `Added slide <n>` (`useSlideStrip` in `apps/web/src/doom-editor/use-slide-strip.tsx`).
+- `slide-start` `button "Choose a layout for the new slide"` beside `New slide` lists the designed starting slides: `Title`, `Title and text`, `KPIs`, `Cards`, `Chart`, `Timeline`, `Grid` and `Blank`. Choosing one adds that slide after the current one (`tests/browser/doom-editor-page.spec.ts`). States `new-slide-menu`, `new-slide-layout`, `slide-chart`, `slide-added-title`.
+- `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current.
+- `slide-move` Alt+ArrowUp or Alt+ArrowDown, or Ctrl/Cmd+[ and ], on a focused entry moves that slide one place, and the moved slide stays current. Dragging an entry onto another moves it there (`tests/browser/doom-slides-transform.spec.ts`). State `slide-moved-twice`.
+- `slide-delete` Delete or Backspace on a focused entry deletes that slide. The last slide cannot be deleted: the status line says `The last slide cannot be deleted.`
+- `slide-menu` a right-click on an entry, the Menu key or Shift+F10 opens the slide menu with `Duplicate`, `Delete`, `Move up` and `Move down` and their keys; Escape closes it. States `slide-actions-menu`, `slide-deleted`.
+- `slide-step` ArrowUp, ArrowDown, PageUp and PageDown on a focused entry step through the slides.
+- `slide-undo` each change is one step of the person's undo: Ctrl/Cmd+Z takes back an add, a duplicate, a move or a delete. See `person-undo.md`.
+- `slide-saved` the server's fold holds each slide as a `slide` node; a deleted slide's `parent` is `null`, and the order follows the slides' order keys.
+- `present` `button "Present"` at the top right, F5 (from the first slide), Shift+F5 or Ctrl/Cmd+Enter (from the current slide) start the show; the show keys step through it, `p` switches to the presenter view with the notes, the next slide and the time, and Escape returns to the editor on the slide the show stopped on (`tests/browser/doom-presenting.spec.ts`). States `present-show`, `present-slide`, `present-controls`, `present-end`, `present-go-to`, `presenter`, `presenter-view`, `presenter-last`.
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: the `+` button (`Add slide`) at the top of the slide list.
+- An open deck `/s/<id>`: the `+` button (`Add slide`) and the `New slide` chevron at the top of the slide list.
 - Click a slide in the list, then the keys.
-- Open Grid, then the round plus below the first slide of a row. Tab reaches it. Escape returns to the originating slide.
 
 ## Driving it with verify-airdesign
 
@@ -28,19 +26,12 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Grid slide group.** `$V journey <run> grid-group-add` imports ten slides, previews without saving, adds an interior slide group, reads the server’s semantic anchor and folded slide groups, undoes, redoes and reloads. It then adds a slide group in a deck with named PowerPoint sections and checks that the section markers remain separate.
-- **Run it.** `$V journey <run> slide-commands`. Prints `"passed":true`.
-- **Several slides in the list.** `$V journey <run> slide-list-select`. Shift-click selects a range, Ctrl/Cmd-click adds or removes one slide, and Design says how many are selected. Ctrl/Cmd+D, Delete, Undo, the slide menu and a drag act on the whole set through the same set commands as Grid. Evidence `NN-three-selected`, `NN-middle-taken-out`, `NN-set-duplicated`, `NN-set-deleted`, `NN-set-dragged`, `NN-reloaded`.
-- **Add and type.** `New deck` > `Blank deck`, click `Add slide`, type `Second slide` in the new title. Evidence `NN-added-and-typed`.
-- **Duplicate.** Click entry 2, press Ctrl/Cmd+D. Three entries; entry 3 reads `Second slide`. Evidence `NN-duplicated`.
-- **Move.** Click entry 3, Alt+ArrowUp; then click entry 2, Alt+ArrowUp. Entry 1 reads `Second slide`. Evidence `NN-moved-to-top`.
-- **Delete, undo, redo.** Click entry 1, Delete; `Undo delete slide` is enabled. Ctrl/Cmd+Z brings it back; `Redo delete slide` deletes it again. Evidence `NN-deleted`, `NN-undone-and-redone`.
-- **Server and reload.** Poll `deckRoutes.open` until `register.order` holds `add`, `clone` and `remove`; reload shows two slides. Evidence `NN-reloaded`.
-- **Present a transition.** In **Design** > **Animate**, choose **Dissolve** from **Style**. Confirm the style after reloading, then click **Present** and press Escape to return. `tests/browser/slide-transition.spec.ts` also checks Undo, Redo, and the PowerPoint export.
-- **Export.** Not in this journey. `blank-slides` exports a deck with an added slide and checks every untouched part; `tests/browser/slide-edits.spec.ts` checks a duplicate and an added slide through the export.
+- **Specs.** `pnpm test:browser tests/browser/doom-editor-slides.spec.ts tests/browser/doom-slides-transform.spec.ts tests/browser/doom-presenting.spec.ts`: add, step, drag, move, duplicate, delete, undo and reload, each read from the server's fold with `savedSlides`; the last slide kept; the slide menu from the keyboard; the show and the presenter view.
+- **In a scratch journey.** Make a deck with `newDoomDeck`, click `Add slide` twice, click entry 1, press Alt+ArrowDown, then poll `post(doomRoutes.open, { deck }, cookie)` until the slide order in `json.fold` has the first slide second. Reload; the list shows three entries in that order.
+- **States for look.** `slides-several`, `slide-list-set`, plus the states named above.
 
 ## Gotchas
 
-- Focus follows the current slide after every slide command, so two Alt+ArrowUp presses in a row move the same slide twice. The journey still clicks an entry before each key; that proves the key, not the focus.
-- A slide that holds a kept chart or a diagram duplicates, moves and deletes like any other; `slide-kept-parts` drives it.
+- Focus stays on the current slide's entry after a slide command, so two Alt+ArrowDown presses in a row move the same slide twice.
 - An entry's text is its thumbnail's text plus its number, so `toContainText` works and `toHaveText` does not.
+- Enter adds a slide only while an entry has focus; on the canvas it edits the selected layer.

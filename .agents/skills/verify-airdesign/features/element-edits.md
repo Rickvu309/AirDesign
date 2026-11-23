@@ -1,24 +1,20 @@
-# Add a text box and delete an element
+# Add a text layer and delete a layer
 
-In an open deck, `Add text box` in the toolbar puts a new text box in clear space on the slide with the caret in it, ready to type. A selected element is deleted with Delete or Backspace. Both paint at once, can be undone, are said aloud to a screen reader, reach the server as element rows, survive a reload and are written by the export. Aira and an outside agent add and delete elements with the same rows.
+In an open deck the Text tool (T, or `Text` in the toolbar) places a text layer where the person clicks, with the caret in it, ready to type; a drag draws a fixed-width box instead. A selected layer is deleted with Delete or Backspace. Both paint at once, can be undone, reach the server as Doom writes, and survive a reload. Aira and an outside agent add and delete layers through `airdesign_edit_deck`, which lands the same writes.
 
 ## Sub-features
 
-- `element-add` place a box with **Add text** or T. The placed box takes focus for typing. The first character starts the saved box, and `register.order` gets one `element-add` row. `tests/browser/element-edits.spec.ts` checks that typing immediately after placement keeps the first letters.
-- `element-type` text typed into the new box reaches the server like any text edit.
-- `text-tool-place` T or Add text arms the Text tool. A click places text at the click; until its first character it lives only in the tab. Escape or a click away with no characters removes it, with no undo step and no `element-add` on the server, and focus stays on the slide so T works again. A drag snaps both corners to layers, the slide, ruler guides and layout grid lines within 4.5 screen pixels with red guides; Control held lets them go.
-- `slide-list-tool-keys` After Add slide, focus sits on the new slide in the list, and T, R, O and L still reach the editor from there: T arms the Text tool, a click places text and the typed title fills it; R, O and L after a click in the list each add one shape. A focused button elsewhere still takes none of them.
-- `emptied-text` A saved text layer whose words are all deleted is removed when editing ends, by Escape or a click away, as Figma removes an empty text layer. The server gets one `element-remove` row, and one `Undo delete layer` brings the layer back with its words. Text typed and emptied in the same visit leaves no undo step. A placeholder and a shape with a fill or border stay. An agent that empties a text layer removes it in the same run.
-- `element-remove` Delete or Backspace on a selected frame, outside its text and with no modifier key, removes the element. The server gets one `slide: "element-remove"` row. While the caret is in the text, the keys edit the text instead. An animated shape or a group is not removed: a toast says why and no undo step is recorded.
-- `element-undo` `Undo add text box` takes the box away and `Undo delete element` brings the element back (see `person-undo.md`).
-- `element-said` after each paint the canvas's `[role="status"]` says `<name> added` or `<name> deleted`, by the name the keyboard uses, and nothing for a refused delete. A change of slide says `Slide N of M` and does not say the elements of the slide left behind were deleted.
-- `element-agent` `airdesign_edit_deck` with `add` and `delete` changes land the same rows; run Undo takes them back (see `aira-turn.md`).
-- `element-export` the export keeps the added box and drops the deleted one, and a new import of that file shows the same slide.
+- `text-place` T arms the Text tool (`button "Text"` is pressed). A click places a text layer at the click that grows with its words (`resize: "widthAndHeight"`); a drag draws a box of that width that wraps them (`resize: "fixed"`). The tool goes back to Move. Escape with no words typed leaves no layer behind.
+- `text-type` typing writes the text's `chars` and `spans`; Ctrl/Cmd+B and the other text keys format the selected words while typing. Escape ends the edit and keeps the layer selected.
+- `text-edit` a double-click on a text layer edits it where it was clicked; Enter on a selected text layer edits it with all its words selected. A double-click on a shape with no words starts words inside it and makes no new layer.
+- `emptied-text` a text layer whose words are all deleted is removed when the edit ends, and one undo brings it back with its words. A shape left with no words stays.
+- `delete` Delete or Backspace on a selected layer, outside its text, removes it with what it holds: the node's `parent` becomes `null` on the server (`deleteWrites` in `apps/web/src/doom-editor/delete-writes.ts`). While the caret is in the text, the keys edit the text. One undo brings the layer back.
+- `agent` `airdesign_edit_deck` with `{ op: "add", kind: "text", slide, text }` adds a text layer and `{ op: "delete", nodes: [...] }` deletes layers (`AgentChange` in `packages/doom/src/agent-change.ts`); the Agent panel's Undo takes the run back (see `aira-panel.md`).
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: the `Add text box` button in the toolbar under the slide.
-- Click an element, press Escape to leave its text, then Delete.
+- An open deck `/s/<id>`: `Text` in the toolbar under the slide, or T, then a click or a drag on the slide.
+- Click a layer, press Escape if its text is being edited, then Delete.
 
 ## Driving it with verify-airdesign
 
@@ -26,19 +22,11 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> element-edits`. Prints `"passed":true`.
-- **Blank deck.** `New deck` > `Blank deck`. Two `[data-slide-paint] [contenteditable="true"]`. Evidence `NN-before-add`.
-- **Add.** Click `button "Add text"`. Three boxes, the last one focused. Evidence `NN-added-box`. Type `Added text`; poll `deckRoutes.open` for one `element-add` row and the text. Evidence `NN-added-text`.
-- **Delete.** Reload, click the title, Escape, Delete. Two boxes; poll for one `element-remove` row. Evidence `NN-deleted-element`.
-- **Reload, export, import.** The deleted title stays gone and `Added text` stays. Evidence `NN-reloaded`, `NN-reimported`.
-- **States for look.** `element-added`, `element-deleted`, `text-drag-snap-held`.
-- **Emptied text.** `$V journey <run> emptied-text`. Evidence `NN-text-emptied-editing`, `NN-emptied-text-removed`, `NN-emptied-text-undone` (words back), `NN-emptied-placeholder-kept`; `deckRoutes.open` shows `element-add`, `element-remove`, `element-restore`.
-- **Text tool.** `$V journey <run> text-tool-place`. Evidence `NN-text-placed-empty`, `NN-empty-text-removed`, `NN-text-drag-snapped` (two red guides), `NN-text-drag-control-held` (none), `NN-text-drawn-snapped`; `deckRoutes.open` shows no `element-add` until the first character, then one per kept text.
-- **Tool keys from the slide list.** `$V journey <run> slide-list-tool-keys`. Evidence `NN-text-armed-from-slide-list`, `NN-title-typed-after-add-slide`, `NN-shapes-from-slide-list`; `deckRoutes.open` shows one `element-add` for the title, then 4 after R, O and L.
-- **First letters and the announcement.** Driven live on 2026-11-13 with scratch journeys: typing `Offline box` at 20 ms a key right after the click showed `ffline box` or `fline box` four times out of four, online and offline; waiting 150 ms first kept every letter. `Add slide` says `Slide 2 of 2` on the canvas and `Added slide 2` on the slide list. It does not say the previous slide's elements were deleted.
+- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-text.spec.ts`: the Text tool places a layer, typing and Ctrl+B write it, Escape keeps it through a reload; a drag draws a fixed box and an empty one leaves no layer; a double-click edits where it was clicked, Enter edits with all selected, and emptying removes it in one undo; a double-click on a shape starts words inside it. `tests/browser/doom-editor.spec.ts` deletes the title, polls `doomRoutes.open` for its `parent: null`, and undoes.
+- **States for look.** `text-tool-placed`, `text-typed-at-once` (typing under CPU throttle 4 keeps every letter), `text-placed-while-storing`, `element-added`, `element-deleted`, `elements-deleted`, `group-deleted`, `empty-text-left`, `emptied-text-left`, `shape-typed`, `shape-text-area`.
 
 ## Gotchas
 
-- Delete inside the text deletes characters. Press Escape first so the frame, not the text, has focus.
-- Count text boxes inside `[data-slide-paint]`; the slide list's thumbnails paint text too.
-- Wait for the new box to be focused before typing into it.
+- Delete inside the text deletes characters. Press Escape first so the layer, not the text, has focus.
+- The text being edited is `[data-text-editor]`; count painted layers inside `[data-slide-box]`, since the slide strip's thumbnails paint them too.
+- Wait for `[data-text-editor]` to be focused before typing into a new layer.

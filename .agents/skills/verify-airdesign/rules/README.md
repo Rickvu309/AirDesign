@@ -2,7 +2,7 @@
 
 Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
 
-The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps and the known bugs. Each spec's `specs/<topic>/covers.json` names the declarations its model describes, file by file, with a digest of their source at the last sync. [checks-document.md](checks-document.md) holds edit, undo, rerun, run and sections. [checks-structure.md](checks-structure.md) holds structure. [checks-left-out.md](checks-left-out.md) holds left-out. [checks-server.md](checks-server.md) holds turn, agents, stop, aira-loop, usage, oauth and owner. [checks-undo.md](checks-undo.md) holds person-undo. [checks-doom.md](checks-doom.md) holds doom. [checks-credits.md](checks-credits.md) holds paid usage resets and credit history. Read the entry for every check your change touches before you trust a pass.
+The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps and the known bugs. Each spec's `specs/<topic>/covers.json` names the declarations its model describes, file by file, with a digest of their source at the last sync. [checks-document.md](checks-document.md) holds edit, undo, rerun, run and sections. [checks-structure.md](checks-structure.md) holds structure. [checks-left-out.md](checks-left-out.md) holds left-out. [checks-server.md](checks-server.md) holds agents, stop, aira-loop, usage, oauth and owner. [checks-undo.md](checks-undo.md) holds person-undo. [checks-doom.md](checks-doom.md) holds doom. [checks-credits.md](checks-credits.md) holds paid usage resets and credit history. Read the entry for every check your change touches before you trust a pass.
 
 For stored slide groups, read [checks-grid.md](checks-grid.md).
 
@@ -13,13 +13,13 @@ node scripts/spec-sync.mjs                     # every spec whose covered declar
 node scripts/spec-sync.mjs --since origin/main # the specs whose covered declarations this branch moved
 ```
 
-The first is the `spec-drift` step of `pnpm check`. Each line names the spec, the declarations and the file, and gives the `git diff` of what moved since the sync. A spec it names needs a look. A declaration that no longer exists is named too: rename it in that spec's `covers.json`. A name inside a declaration is covered by naming the declaration that holds it, and `"*"` covers a whole file. Also look for new code that writes the state a check guards, even in a file the entry does not list: a new op that writes run rows, a new path to a register, a new writer of the index queue. That is how the slide tools reached the turn model.
+The first is the `spec-drift` step of `pnpm check`. Each line names the spec, the declarations and the file, and gives the `git diff` of what moved since the sync. A spec it names needs a look. A declaration that no longer exists is named too: rename it in that spec's `covers.json`. A name inside a declaration is covered by naming the declaration that holds it, and `"*"` covers a whole file. Also look for new code that writes the state a check guards, even in a file the entry does not list: a new Doom op that writes a run, a new writer of a deck's edits, a new path that spends a once.
 
 ## 2. Run the check
 
 ```sh
 pnpm check:specs                 # every spec, then each known failure
-pnpm check:specs turn undo       # only the named specs
+pnpm check:specs doom stop       # only the named specs
 ```
 
 Each line says the distinct state count, the verdict and the time. TLC takes 1 to 5 s per spec, mostly JVM start, and about 40 s for the full set. A spec must stay under 500 distinct states. Results are cached by a hash of every `.tla` and `.cfg` file in the folder, so any edit to them reruns TLC, and an unchanged spec answers from the cache. `pnpm check` keeps its cache in `~/.cache/airdesign/spec-results`. To force a fresh run, set `AIRDESIGN_SPEC_CACHE` to an empty folder.
