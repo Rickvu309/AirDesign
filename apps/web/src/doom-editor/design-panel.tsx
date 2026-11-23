@@ -16,6 +16,7 @@ import { ChartSection } from "./design-chart"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { storePicture, useAssetUrl } from "./design-media"
 import { nodeModel } from "./design-model"
+import { paintDesc } from "./design-model-fills"
 import { paletteOf } from "./design-palette"
 import { fillWrite, shownFill } from "./design-paint-values"
 import { DoomSelectionColors } from "./design-selection-section"
@@ -100,7 +101,7 @@ export function DesignPanel(props: Props) {
             return (
               <SlideBackground
                 key={section}
-                plainImage
+                paint={paintDesc()}
                 shown={{
                   slide: slideId(slide),
                   background: resolveColorOf(shownColor, theme, palette),

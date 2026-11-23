@@ -78,6 +78,7 @@
     "doom-editor-transform.spec.ts": 10.7,
     "doom-editor-view.spec.ts": 1.9,
     "doom-editor.spec.ts": 3.2,
+    "doom-gradient-fill.spec.ts": 5.8,
     "doom-picture-wake.spec.ts": 1.8,
     "doom-slide-picture.spec.ts": 14.4,
     "doom-slides-transform.spec.ts": 11.9,

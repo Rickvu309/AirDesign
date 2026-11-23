@@ -439,18 +439,16 @@ export function SlideBackground({
   shown,
   deck,
   onFill,
-  plainImage = false,
+  paint = traits.fills.inputs.paint.desc,
 }: {
   shown: Pick<DesignShown, "slide" | "background" | "fill" | "templateColors">
   deck: readonly string[]
   onFill: (paint: Paint) => void
-  plainImage?: boolean
+  paint?: Desc
 }) {
   const { background } = shown
   const named = useId()
-  const desc = traits.fills.inputs.paint.desc
-  const cases = desc.kind === "union" ? desc.cases : {}
-  const image: Record<string, Desc> = plainImage ? { image: { kind: "mark" } } : {}
+  const cases = paint.kind === "union" ? paint.cases : {}
   const base = resolveControl({
     trait: "fills",
     field: "paint",
@@ -460,7 +458,6 @@ export function SlideBackground({
       plain: null,
       cases: {
         ...Object.fromEntries(Object.entries(cases).filter(([key]) => ["solid", "gradient", "image"].includes(key))),
-        ...image,
       },
     },
     value: shown.fill ?? (background.value === undefined ? { image: null } : { solid: background.value }),
