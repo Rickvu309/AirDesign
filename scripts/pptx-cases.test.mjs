@@ -28,7 +28,6 @@ assert.deepEqual(
     "group-transform.mjs",
     "layer-paste-decks.mjs",
     "layer-paste.mjs",
-    "patterns.mjs",
     "section-list.mjs",
   ],
 )
