@@ -1,3 +1,3 @@
-# A text an agent adds keeps the place and width it names and grows with its words, as Figma's auto height, so its box is never smaller than its painted words; only a shape's label stays fixed to its shape
+# A text an agent adds keeps the place and width it names and grows with its words, as Figma's auto height, so its box is never smaller than its painted words; a height the agent sets later fixes the box, as a height dragged by hand does, and the read names which one a text is
 
-`packages/doom/src/agent-add-grow.test.ts` adds a text with a box too short for its words and fails unless it lands with `resize: "height"` and a box taller than the one the agent named
+`packages/doom/src/agent-add-grow.test.ts` adds a text with a box too short for its words and fails unless it lands with `resize: "height"` and a taller box, fails unless a later height set lands `resize: "fixed"` and lays out at that height while a move with the same height keeps auto height, and fails unless the read prints `resize=height` and then `resize=fixed`

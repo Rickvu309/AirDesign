@@ -115,7 +115,7 @@ function looksOf(node: Node): readonly string[] {
   const layout = get(node, "layout")
   if (layout !== undefined && node.type === "frame") out.push(...layoutWords(layout))
   if (text !== undefined) {
-    out.push(`style=${text.style}`)
+    out.push(`style=${text.style}`, `resize=${text.resize}`)
     const align = uniformAlign(text)
     if (align !== undefined && align !== "left") out.push(`align=${align}`)
     const color = uniformColor(text)

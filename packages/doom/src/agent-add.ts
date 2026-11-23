@@ -52,10 +52,8 @@ const lineWeight = 3
 const iconWeightShare = 12
 
 const boxOf = (area: Area, h: number = area.h): Box => ({ ...zeroBox, x: area.x, y: area.y, w: area.w, h })
-const givenBox = (look: AgentLook, area: Area, h?: number): Box =>
-  look.box === undefined ? boxOf(area, h) : { ...zeroBox, ...look.box }
-const grownBox = (look: AgentLook, area: Area, h: number): Box =>
-  look.box === undefined ? boxOf(area, h) : { ...zeroBox, ...look.box, h }
+const givenBox = (look: AgentLook, area: Area, h?: number, grows = false): Box =>
+  look.box === undefined ? boxOf(area, h) : { ...zeroBox, ...look.box, ...(grows && h !== undefined ? { h } : {}) }
 
 function checkFields(change: Add): void {
   const allowed = new Set<string>(["op", "kind", "slide", "into", ...takes[change.kind]])
@@ -109,13 +107,13 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
   }
   const area =
     kind === "text" && change.box === undefined ? areaFor(draft, parent, undefined) : areaFor(draft, parent, change.box)
+  const grows = !labelled && made !== undefined
   const wordsHigh = (w: number) => Math.max(1, Math.round(textHeight(made!, themeOf(draft), w)))
-  const high =
-    labelled || made === undefined
-      ? area.h
-      : change.box === undefined
-        ? Math.min(area.h, wordsHigh(area.w))
-        : wordsHigh(change.box.w)
+  const high = !grows
+    ? area.h
+    : change.box === undefined
+      ? Math.min(area.h, wordsHigh(area.w))
+      : wordsHigh(change.box.w)
   const filled = kind === "shape" && change.fill === undefined && change.stroke === undefined
   const titled =
     kind === "text" &&
@@ -125,7 +123,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     ...surfaceOf(change),
     ...(labelled && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
     ...(filled ? { fills: [solid("accent1")] } : {}),
-    box: labelled || made === undefined ? givenBox(change, area, high) : grownBox(change, area, high),
+    box: givenBox(change, area, high, grows),
     geometry: { kind: "rect" },
     ...(titled ? { role: "title" as const } : {}),
     ...(made === undefined
