@@ -144,6 +144,40 @@ describe("an undo of a step on a layer another tab deleted", () => {
     expect(xOf(mine.server(), card)).toBe(0)
   })
 
+  it("leaves a layer framed in a frame another tab deleted where it is, so their undo brings it back", async () => {
+    const { mine, theirs, fromTheirs } = await tabs()
+    const wrap = id("a:90")
+    expect(
+      mine.push([
+        { node: card, prop: "parent", value: at(inner) },
+        { node: card, prop: "box", value: placed(20) },
+      ]).ok,
+    ).toBe(true)
+    expect(
+      mine.push([
+        { node: wrap, prop: "type", value: "frame" },
+        { node: wrap, prop: "parent", value: at(inner) },
+        { node: wrap, prop: "box", value: placed(20) },
+        { node: card, prop: "parent", value: at(wrap) },
+        { node: card, prop: "box", value: placed(0) },
+      ]).ok,
+    ).toBe(true)
+    await fromTheirs([{ node: outer, prop: "parent", value: null }])
+    expect(mine.undo()).toEqual({ ok: false, reason: "nothing" })
+    expect(await mine.sync()).toEqual({ ok: true })
+    await theirs.catchUp()
+    expect(theirs.undo().ok).toBe(true)
+    expect(await theirs.sync()).toEqual({ ok: true })
+    await mine.catchUp()
+    for (const view of [mine.view(), theirs.view()])
+      expect([parentOf(view, card), parentOf(view, wrap), parentOf(view, outer), xOf(view, card)]).toEqual([
+        wrap,
+        inner,
+        slide,
+        0,
+      ])
+  })
+
   it("does nothing on a redo of it, and the next redo puts back the step above", async () => {
     const { mine, fromTheirs } = await tabs()
     expect(mine.push([{ node: title, prop: "text", value: words("Typed") }], { step: "typing" }).ok).toBe(true)

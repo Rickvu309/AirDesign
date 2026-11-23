@@ -42,7 +42,7 @@ describe("edit_deck refusals", () => {
     const refused = await by.call("edit_deck", { deck, base, changes })
     expect(refused.answer).toMatchObject({ ok: false, refusal: "dead", refused: "missing", at: 1, node: outer })
     expect(String(refused.answer.note)).toContain(`Change 2 (move ${outer})`)
-    expect(String(refused.answer.note)).toContain("an earlier change in this edit deleted it or a frame it sits in")
+    expect(String(refused.answer.note)).toContain("a frame above the frame you move the layer into")
     expect(rev()).toBe(base)
   })
 })
