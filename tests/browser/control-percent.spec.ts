@@ -6,7 +6,7 @@ import { designDoom, painted, pick, saved, section, typeInto, undoOnStage } from
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a percent takes a typed number in percent, steps with the arrow keys, refuses more than the whole, and Undo puts it back", async ({
+test("a percent takes a typed number in percent, steps with the arrow keys, clamps more than the whole to the whole, and Undo puts it back", async ({
   page,
   context,
   stack,
@@ -30,8 +30,10 @@ test("a percent takes a typed number in percent, steps with the arrow keys, refu
   await expect.poll(opacity).toBe(0.59)
   await expect.poll(() => painted(page, "t:1").evaluate((node) => getComputedStyle(node).opacity)).toBe("0.59")
   await typeInto(field, "140")
-  await expect(field).toHaveValue("59")
-  expect(await opacity()).toBe(0.59)
+  await expect(field).toHaveValue("100")
+  await expect.poll(opacity).toBeUndefined()
+  await undoOnStage(page)
+  await expect.poll(opacity).toBe(0.59)
   await undoOnStage(page)
   await expect.poll(opacity).toBeUndefined()
   await pick(page, "t:1", 400, 350)

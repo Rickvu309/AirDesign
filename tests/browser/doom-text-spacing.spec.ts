@@ -41,3 +41,42 @@ test("letter spacing typed past Doom's limit at the largest size is clamped and 
   await expect.poll(spans).toEqual([{ end: 11, size: 2000, tracking: 100 }])
   await expect(spacing).toHaveValue("5")
 })
+
+test("text size and line height typed past Doom's limit are clamped and saved on Tab and on Enter", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        box: spot(200, 600, 800, 300),
+        text: { chars: "Hello there", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" },
+      },
+    },
+  ])
+  await clickSlide(page, 300, 640)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const panel = page.locator("[data-design-panel]")
+  const text = async () =>
+    (await savedNode(stack, opened, "t:1")) as { text: { spans: unknown[]; paras: { lineHeight?: number }[] } }
+  const size = panel.getByRole("textbox", { name: formatCopy.sizeGroup, exact: true })
+  const line = panel.getByRole("textbox", { name: textCopy.lineHeight, exact: true })
+
+  await size.fill("2001")
+  await size.press("Tab")
+  await expect.poll(async () => (await text()).text.spans).toEqual([{ end: 11, size: 2000 }])
+  await size.fill("0")
+  await size.press("Enter")
+  await expect.poll(async () => (await text()).text.spans).toEqual([{ end: 11, size: 1 }])
+  await line.fill("501")
+  await line.press("Tab")
+  await expect.poll(async () => (await text()).text.paras[0]?.lineHeight).toBe(5)
+  await line.fill("0")
+  await line.press("Enter")
+  await expect.poll(async () => (await text()).text.paras[0]?.lineHeight).toBe(0.5)
+})

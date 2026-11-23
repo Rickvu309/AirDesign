@@ -79,3 +79,18 @@ describe("letter spacing", () => {
     expect(storedFromTyped(control, 3)).toBe(6_000)
   })
 })
+
+describe("a typed number past its range", () => {
+  const ranged = (unit: string, min: number, max: number) =>
+    ({ desc: { kind: "number", unit, min, max }, value: 0, mixed: false }) as unknown as PanelControl
+
+  it("is clamped to the limit and stored, never dropped", () => {
+    const size = ranged("hundredth-point", 100, 200_000)
+    expect(storedFromTyped(size, 2001)).toBe(200_000)
+    expect(storedFromTyped(size, 0)).toBe(100)
+    const line = ranged("fraction", 50_000, 500_000)
+    expect(storedFromTyped(line, 501)).toBe(500_000)
+    expect(storedFromTyped(line, 1)).toBe(50_000)
+    expect(storedFromTyped(line, Number.NaN)).toBeNull()
+  })
+})

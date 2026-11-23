@@ -6,7 +6,7 @@ import { designDoom, pick, saved, section, typeInto, undoOnStage } from "./doom-
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("an angle takes a typed number in degrees, refuses a full turn, and Undo puts it back", async ({
+test("an angle takes a typed number in degrees, clamps past a full turn, and Undo puts it back", async ({
   page,
   context,
   stack,
@@ -40,12 +40,14 @@ test("an angle takes a typed number in degrees, refuses a full turn, and Undo pu
   await typeInto(field(), "0")
   await expect.poll(angle).toBe(0)
   await expect(field()).toHaveValue("0")
-  await typeInto(field(), "360")
+  await typeInto(field(), "400")
   await expect(field()).toHaveValue("0")
-  expect(await angle()).toBe(0)
+  await expect.poll(angle).toBe(360)
   await typeInto(field(), "45")
   await expect.poll(angle).toBe(45)
   await undoOnStage(page)
+  await expect.poll(angle).toBe(360)
+  await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(angle).toBe(0)
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(angle).toBe(90)
