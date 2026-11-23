@@ -6,7 +6,7 @@ export { indexPackage } from "./index-package.js"
 export { markupBytesRead } from "./markup-reader.js"
 export type { PaintColor, PaintFill } from "./paint-color.js"
 export type { PaintLine, StackPaint } from "./paint-shape.js"
-export type { PaintEffects, PaintInner, PaintShadow } from "./paint-effects.js"
+export type { PaintEffects, PaintInner } from "./paint-effects.js"
 export { paintReader, type PaintBox, type PaintElement, type PaintReader, type SlidePaint } from "./paint-reader.js"
 export type { PaintTie } from "./paint-connection.js"
 export { themeSwatches } from "./theme-swatches.js"
@@ -43,16 +43,7 @@ export { fileSlideGroups } from "./slide-group-write.js"
 export { requireMarkup } from "./part-markup.js"
 export { shapeSiblings } from "./element-stack-route.js"
 export { deckLayouts } from "./deck-layouts.js"
-export {
-  addedPicturePart,
-  iconInk,
-  iconOfPart,
-  iconParts,
-  installedPicture,
-  unheldIcons,
-  withMedia,
-  type IconRef,
-} from "./picture-write.js"
+export { addedPicturePart, iconInk, iconOfPart, iconParts, withMedia } from "./picture-write.js"
 export { shownCrop, shownIdentity, shownImage } from "./picture-read.js"
 export { drawablePicture } from "./picture-drawable.js"
 
@@ -60,7 +51,7 @@ export { shownConnection } from "./trait-xml-connection.js"
 export { slideLayouts } from "./slide-layouts.js"
 export { slideExportFailures } from "./slide-export.js"
 export { paintKind } from "./shape-tree.js"
-export { readNotes, writeNotes, type SlideNotes } from "./notes-body.js"
+export { readNotes, writeNotes } from "./notes-body.js"
 export { readShows, type SlideTransition } from "./slide-show.js"
 export { readArrival, readPlayback } from "./transition-read.js"
 export { readSlideGuides } from "./guide-list.js"
@@ -72,17 +63,10 @@ export { fadedFrames } from "./frame-fade.js"
 export { readTraits, type DeckTraits } from "./trait-read.js"
 export { ownBackground, shownBackground, shownFill } from "./fill-read.js"
 export { shownSlots } from "./trait-xml-fills.js"
-export { bakedFill } from "./fill-bake.js"
-export { strippedStacks } from "./fill-stack.js"
-export { keptEffectText, shownEffects } from "./effects-read.js"
-export { clearedInners, extensionDrops } from "./effects-extension.js"
-export { writtenStandIn } from "./stand-in.js"
-export { maskRuns, type MaskRun } from "./mask-runs.js"
-export { bakedMask } from "./mask-stand.js"
+export { shownEffects } from "./effects-read.js"
 
 export { shownBorder } from "./border-read.js"
 export { shownBody } from "./body-read.js"
-export { shrunkBody } from "./shrink-fit.js"
 export { shownTextStyle } from "./text-style-read.js"
 export { shownGeometry } from "./geometry-read.js"
 export { shownTurn } from "./turn-read.js"
