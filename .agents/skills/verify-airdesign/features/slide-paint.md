@@ -41,7 +41,7 @@ Preconditions:
 ## Gotchas
 
 - `clean.pptx` has one slide and one text box. For the other kinds import `scripts/pptx-fixtures/doe-heat-pumps.pptx`: slide 4 has pictures, slide 9 preset shapes and connectors, slides 10, 11 and 40 tables kept as labelled frames, slide 7 bullets and slide 16 numbering. It runs in Calibri, so `[data-run]` reads `Calibri, Carlito, ...`. Prompts need a blank deck: `New deck` > `Blank deck`.
-- `scripts/pptx-fixtures/census-updating-spm.pptx` has a diagram on slide 5 (`ppt/slides/slide5.xml#6`) and three chart frames on slide 19 (`ppt/slides/slide19.xml#11`); the deck has 26 slides, so wait for `[data-slide-entry="19"]` before you count entries. `tests/browser/diagram-export.spec.ts` judges an edit and a duplicate through the PowerPoint check; the look states are `slide-chart` and `slide-diagram`.
+- `scripts/pptx-fixtures/census-updating-spm.pptx` has a diagram on slide 5 (`ppt/slides/slide5.xml#6`) and three chart frames on slide 19 (`ppt/slides/slide19.xml#11`); the deck has 26 slides, so wait for `[data-slide-entry="19"]` before you count entries. `tests/browser/diagram-export.spec.ts` judges an edit and a duplicate through the PowerPoint check; the look state is `slide-chart`.
 - A diagram ignores the pointer, so Playwright's `click()` on one times out with `[data-slide-paint]` intercepting it; use `click({ force: true })` to prove the click selects nothing.
 - The journey's export after a duplicate and a delete gave Microsoft's validator (`scripts/pptx-judge`) the same 12 schema findings as the original file and no new one.
 - The canvas has no `img` for pictures; check a picture by its `[data-canvas-element]` screenshot, as `tests/browser/picture-paint.spec.ts` does.

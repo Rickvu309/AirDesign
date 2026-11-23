@@ -18,7 +18,7 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 - `list-signed-out` signed out, Home's list call answers 401 and the page goes to the sign-in page with `next=<path and query>`.
 - `home-queued-name` a deck name still queued on this device for the signed-in account shows on its card at once, and Home sends it (see `deck-names.md`).
 - Not in the app today: a menu on deck cards, and renaming from Home. A name is typed only in the editor (its title, and the file name after an import); Home only sends a name already queued.
-- `home-unopened` a deck imported or made blank and left before its editor opens shows on Home at once, under its file's name, and Home sends its first open, name and original; it leaves the device's queue once the server lists it (PR 439, `tests/browser/deck-rename.spec.ts`). State `home-after-import-back`.
+- `home-unopened` a deck imported or made blank and left before its editor opens shows on Home at once, under its file's name, and Home sends its first open, name and original; it leaves the device's queue once the server lists it (PR 439, `tests/browser/deck-rename.spec.ts`).
 
 ## How to get to it (user POV)
 
