@@ -24,7 +24,7 @@ let counter = 0
 export const slowPaint = { timeout: 20_000 }
 
 async function orderKeys(kit) {
-  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)
+  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)
   return orderKeyBetween
 }
 

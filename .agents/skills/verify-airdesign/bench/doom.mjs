@@ -136,7 +136,7 @@ export const doomAgentEdit = {
   name: "doom-agent-edit-40",
   async setup(kit) {
     const made = await seated(kit)
-    const { doom } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)
+    const doom = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)
     return { ...made, doom, runs: 0 }
   },
   async measure(kit, state) {

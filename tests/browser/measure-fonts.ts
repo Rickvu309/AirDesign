@@ -16,7 +16,7 @@ function quotedName(family: string): string {
 }
 
 export async function measureFaces(page: Page, families: readonly string[], chars: string): Promise<FontWidths> {
-  const { fontFace } = await import(pathToFileURL(join(process.cwd(), "packages/document/dist/index.js")).href)
+  const { fontFace } = await import(pathToFileURL(join(process.cwd(), "packages/doom/dist/index.js")).href)
   const requests = families.flatMap((family) =>
     styles.map(({ bold, italic }) => ({
       family,
