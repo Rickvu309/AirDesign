@@ -1,52 +1,30 @@
 import { expect } from "@playwright/test"
-import { fixtureDeck } from "./fixture-deck.mjs"
-import { setPanelMode } from "./panel-mode.mjs"
-
-const element = (number) => `[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#${number}"]`
+import { designing, dropPicture, panelTop, selectMany } from "./doom-design.mjs"
 
 const kinds = {
-  text: { fixture: "clean.pptx", text: true },
-  shape: { fixture: "shapes-added.pptx", elements: [4] },
-  picture: { fixture: "picture-png.pptx", elements: [4] },
-  connector: { fixture: "shapes-added.pptx", elements: [6] },
-  pair: { fixture: "shapes-added.pptx", elements: [4, 5] },
-  frame: { fixture: "shapes-added.pptx", elements: [4, 5], wrap: true },
-  slide: { fixture: "clean.pptx", elements: [] },
+  text: { seeds: ["text"], ids: ["w:1"] },
+  shape: { seeds: ["shape"], ids: ["w:2"] },
+  picture: { seeds: [], picture: true },
+  connector: { seeds: ["shape", "line"], ids: ["w:4"] },
+  pair: { seeds: ["shape", "ellipse"], ids: ["w:2", "w:3"] },
+  frame: { seeds: ["frame"], ids: ["w:7"] },
+  slide: { seeds: ["shape"], ids: [] },
 }
 
 export const panelKinds = Object.keys(kinds)
 
-export async function reachPanel(kit, kind, mode) {
-  const { fixture, text = false, elements = [], wrap = false } = kinds[kind]
-  await fixtureDeck(kit, fixture)
+export async function reachPanel(kit, kind) {
+  const { seeds, ids = [], picture = false } = kinds[kind]
   const { page } = kit
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  await setPanelMode(page, mode)
-  if (text) {
-    await page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  }
-  for (const [index, number] of elements.entries()) {
-    const box = await page.locator(element(number)).boundingBox()
-    if (index > 0) await page.keyboard.down("Shift")
-    await page.mouse.click(box.x + Math.min(4, box.width / 2), box.y + Math.min(4, box.height / 2))
-    if (index > 0) await page.keyboard.up("Shift")
-  }
-  if (elements.length > 1) await expect(page.locator("[data-chosen]")).toHaveCount(elements.length)
-  if (wrap) {
-    await page.keyboard.press("Shift+A")
-    await expect(page.locator('[data-panel-kind="frame"]')).toBeVisible()
-  }
+  await designing(kit, ...seeds)
+  if (picture) {
+    const id = await dropPicture(kit)
+    await selectMany(page, [id])
+  } else if (ids.length > 0) await selectMany(page, ids)
   await expect(page.locator(kind === "slide" ? "[data-design-panel]" : "[data-design-element]")).toBeVisible()
-  await page.mouse.move(4, 4)
-  await page.locator("[data-design-panel]").evaluate((panel) => {
-    panel.scrollTop = 0
-  })
+  await panelTop(page)
 }
 
-export function panelState(kind, mode) {
-  return {
-    name: mode === "slides" ? `panel-${kind}` : `panel-${kind}-design`,
-    design: null,
-    drive: (kit) => reachPanel(kit, kind, mode),
-  }
+export function panelState(kind) {
+  return { name: `panel-${kind}`, design: null, drive: (kit) => reachPanel(kit, kind) }
 }

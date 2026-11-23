@@ -1,3 +1,3 @@
 import { panelState } from "../panel-kinds.mjs"
 
-export default panelState("slide", "slides")
+export default panelState("slide")
