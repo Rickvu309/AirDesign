@@ -1,7 +1,6 @@
 import type {
   ElementLink,
   LinkEdit,
-  ElementId,
   FormatState,
   MappedSlot,
   ParagraphAlign,
@@ -10,6 +9,7 @@ import type {
   SizeStep,
   TextFormat,
 } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 import type { FontStyle } from "@airdesign/fonts"
 
 export type CanvasTemplateColor = {
@@ -44,9 +44,9 @@ export type TextFormatting = {
   readonly link: () => ElementLink | "mixed" | null
   readonly linkTo: (link: LinkEdit) => void
   readonly selection: () => boolean
-  readonly register: (id: ElementId, target: FormatTarget) => () => void
-  readonly aim: (id: ElementId | null, focused?: HTMLElement) => void
-  readonly aimed: () => ElementId | null
+  readonly register: (id: NodeId, target: FormatTarget) => () => void
+  readonly aim: (id: NodeId | null, focused?: HTMLElement) => void
+  readonly aimed: () => NodeId | null
   readonly typingIn: () => HTMLElement | null
   readonly state: (format: TextFormat) => FormatState | null
   readonly toggle: (format: TextFormat) => void
@@ -63,7 +63,7 @@ export type TextFormatting = {
   readonly fontStyle: () => FontStyle | "mixed" | null
   readonly weightTo: (style: FontStyle) => void
   readonly swatches: () => readonly CanvasTemplateColor[]
-  readonly across: (ids: readonly ElementId[], key: TextKey) => boolean
+  readonly across: (ids: readonly NodeId[], key: TextKey) => boolean
   readonly together: () => object | null
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void

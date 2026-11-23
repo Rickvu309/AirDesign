@@ -1,8 +1,8 @@
 import { readAccountCookie } from "@airdesign/catalog"
-import { format } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
+const databaseVersion = 99
 
 type Page = {
   readonly factory: IDBFactory
@@ -46,7 +46,7 @@ export function deckRange(account: string, deck: string): IDBKeyRange {
 
 function connectDatabase(held: Page): Promise<IDBDatabase> {
   const opening: Promise<IDBDatabase> = new Promise((resolve, reject) => {
-    const request = held.factory.open(databaseName, format)
+    const request = held.factory.open(databaseName, databaseVersion)
     request.onupgradeneeded = () => {
       const database = request.result
       if (!database.objectStoreNames.contains(storeName)) database.createObjectStore(storeName)

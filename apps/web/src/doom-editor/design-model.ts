@@ -83,10 +83,9 @@ export function nodeModel(input: ModelInput): PanelModel {
   const layout = propOf(view.nodes.get(id), "layout")
   const iconed = propOf(view.nodes.get(id), "geometry")?.kind === "icon"
   const drawn = kind === "shape" || kind === "frame" || kind === "connector" || (kind === "picture" && !iconed)
-  const node = id as unknown as PanelModel["node"]
   return {
-    node,
-    nodes: [node],
+    node: id,
+    nodes: [id],
     kind,
     ...(layout !== undefined && layout.mode !== "none" ? { frame: "auto" as const } : {}),
     sections: [

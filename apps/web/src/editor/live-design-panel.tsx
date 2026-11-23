@@ -16,7 +16,7 @@ export function SlideBackground({
   onFill,
   paint = traits.fills.inputs.paint.desc,
 }: {
-  shown: Pick<DesignShown, "slide" | "background" | "fill" | "templateColors">
+  shown: Pick<DesignShown, "background" | "fill" | "templateColors">
   deck: readonly string[]
   onFill: (paint: Paint) => void
   paint?: Desc
@@ -39,7 +39,6 @@ export function SlideBackground({
     mixed: false,
     inherited: false,
     reset: null,
-    change: (value) => ({ target: { slide: shown.slide }, fills: { paint: value as Paint } }),
   })
   const control = {
     ...base,

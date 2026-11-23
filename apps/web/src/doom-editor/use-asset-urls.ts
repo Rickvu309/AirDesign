@@ -1,4 +1,3 @@
-import { mediaTypeOf } from "@airdesign/document"
 import * as doom from "@airdesign/doom"
 import { readMedia } from "@airdesign/live"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -26,7 +25,7 @@ export function useAssetUrls(deck: string, view: doom.Doom): AssetUrls {
 
   const keepUrl = useCallback((asset: string, bytes: Uint8Array) => {
     if (urls.current.has(asset)) return
-    const type = mediaTypeOf(bytes) ?? "application/octet-stream"
+    const type = doom.mediaTypeOf(bytes) ?? "application/octet-stream"
     urls.current.set(asset, URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type })))
     setVersion((was) => was + 1)
   }, [])

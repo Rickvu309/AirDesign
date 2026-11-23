@@ -46,9 +46,6 @@ function lineHeight(value: number): PanelControl {
       mixed: false,
       inherited: false,
       reset: null,
-      change: () => {
-        throw new Error("unused")
-      },
     }),
     typed: { auto: 100, points: 100 / 24 },
   }

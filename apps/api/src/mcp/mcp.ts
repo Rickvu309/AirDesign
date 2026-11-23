@@ -2,7 +2,6 @@ import { createHash } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { type DeckId, type DoomRefusal, readDeckId } from "@airdesign/catalog"
-import { mediaSize } from "@airdesign/document"
 import * as doom from "@airdesign/doom"
 import { emptyLog, createServer, type DeckHost, type Host, type NamedImage, type Session } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
@@ -62,7 +61,7 @@ type ImageStore = { readonly originals: OriginalStore | undefined; readonly net:
 type Pictured = { readonly pictures: DeckPictures | undefined; readonly wait: number }
 
 const sizeOf = (bytes: Uint8Array) => {
-  const size = mediaSize(bytes)
+  const size = doom.mediaSize(bytes)
   return size === null ? {} : size
 }
 

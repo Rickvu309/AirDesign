@@ -5,7 +5,7 @@ export { indexPackage } from "./index-package.js"
 
 export { markupBytesRead } from "./markup-reader.js"
 export type { PaintFill } from "./paint-color.js"
-export { paintReader, type PaintBox, type SlidePaint } from "./paint-reader.js"
+export { paintReader, type SlidePaint } from "./paint-reader.js"
 export { colorHex } from "./color-shown.js"
 export { readShapes, readSlides } from "./read-shapes.js"
 export { readParts } from "./package-container.js"

@@ -50,9 +50,6 @@ it.each([
         mixed: false,
         inherited: false,
         reset: null,
-        change: () => {
-          throw new Error("unused")
-        },
       }),
       slides,
     },

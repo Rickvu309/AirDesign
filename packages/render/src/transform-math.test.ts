@@ -1,4 +1,4 @@
-import { elementId, type Box } from "@airdesign/document"
+import { nodeId } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import {
   flipSelection,
@@ -15,7 +15,9 @@ import {
   type RotatedLayer,
 } from "./transform-math.js"
 
-const base: Box = { x: 1_000_000, y: 2_000_000, cx: 4_000_000, cy: 2_000_000 }
+type Box = Parameters<typeof resizeBox>[0]
+
+const base: Box = { x: 1_000_000, y: 2_000_000, w: 4_000_000, h: 2_000_000 }
 const free = { keepRatio: false, fromCenter: false } as const
 const proportional = { keepRatio: true, fromCenter: false } as const
 const centered = { keepRatio: false, fromCenter: true } as const
@@ -25,11 +27,11 @@ function screenPoint(box: Box, grip: ResizeGrip, degrees: number): { readonly x:
   const rad = (degrees * Math.PI) / 180
   const sx = grip.includes("left") ? -1 : grip.includes("right") ? 1 : 0
   const sy = grip.includes("top") ? -1 : grip.includes("bottom") ? 1 : 0
-  const lx = (sx * box.cx) / 2
-  const ly = (sy * box.cy) / 2
+  const lx = (sx * box.w) / 2
+  const ly = (sy * box.h) / 2
   return {
-    x: box.x + box.cx / 2 + lx * Math.cos(rad) - ly * Math.sin(rad),
-    y: box.y + box.cy / 2 + lx * Math.sin(rad) + ly * Math.cos(rad),
+    x: box.x + box.w / 2 + lx * Math.cos(rad) - ly * Math.sin(rad),
+    y: box.y + box.h / 2 + lx * Math.sin(rad) + ly * Math.cos(rad),
   }
 }
 
@@ -46,48 +48,48 @@ const oppositeGrip: Readonly<Record<ResizeGrip, ResizeGrip>> = {
 
 describe("resizeBox", () => {
   it.each([
-    ["bottom-right", 200_000, 100_000, { x: 1_000_000, y: 2_000_000, cx: 4_200_000, cy: 2_100_000 }],
-    ["top-left", 200_000, 100_000, { x: 1_200_000, y: 2_100_000, cx: 3_800_000, cy: 1_900_000 }],
-    ["top-right", 200_000, 100_000, { x: 1_000_000, y: 2_100_000, cx: 4_200_000, cy: 1_900_000 }],
-    ["bottom-left", 200_000, 100_000, { x: 1_200_000, y: 2_000_000, cx: 3_800_000, cy: 2_100_000 }],
+    ["bottom-right", 200_000, 100_000, { x: 1_000_000, y: 2_000_000, w: 4_200_000, h: 2_100_000 }],
+    ["top-left", 200_000, 100_000, { x: 1_200_000, y: 2_100_000, w: 3_800_000, h: 1_900_000 }],
+    ["top-right", 200_000, 100_000, { x: 1_000_000, y: 2_100_000, w: 4_200_000, h: 1_900_000 }],
+    ["bottom-left", 200_000, 100_000, { x: 1_200_000, y: 2_000_000, w: 3_800_000, h: 2_100_000 }],
   ] as const)("resizes freely from corner %s while pinning the opposite corner", (grip, dx, dy, expected) => {
     expect(resizeBox(base, grip, dx, dy, free)).toEqual(expected)
   })
 
   it.each([
-    ["right", 300_000, 500_000, { x: 1_000_000, y: 2_000_000, cx: 4_300_000, cy: 2_000_000 }],
-    ["left", 300_000, 500_000, { x: 1_300_000, y: 2_000_000, cx: 3_700_000, cy: 2_000_000 }],
-    ["bottom", 500_000, 300_000, { x: 1_000_000, y: 2_000_000, cx: 4_000_000, cy: 2_300_000 }],
-    ["top", 500_000, 300_000, { x: 1_000_000, y: 2_300_000, cx: 4_000_000, cy: 1_700_000 }],
+    ["right", 300_000, 500_000, { x: 1_000_000, y: 2_000_000, w: 4_300_000, h: 2_000_000 }],
+    ["left", 300_000, 500_000, { x: 1_300_000, y: 2_000_000, w: 3_700_000, h: 2_000_000 }],
+    ["bottom", 500_000, 300_000, { x: 1_000_000, y: 2_000_000, w: 4_000_000, h: 2_300_000 }],
+    ["top", 500_000, 300_000, { x: 1_000_000, y: 2_300_000, w: 4_000_000, h: 1_700_000 }],
   ] as const)("resizes only the dragged axis on edge %s", (edge, dx, dy, expected) => {
     expect(resizeBox(base, edge, dx, dy, free)).toEqual(expected)
   })
 
   it("resizes an edge down to a 4 pt accent bar, as Figma does", () => {
     const bar = 50_800
-    expect(resizeBox(base, "bottom", 0, bar - base.cy, free)).toEqual({ ...base, cy: bar })
-    expect(resizeBox(base, "top", 0, base.cy - bar, free)).toEqual({ ...base, y: base.y + base.cy - bar, cy: bar })
+    expect(resizeBox(base, "bottom", 0, bar - base.h, free)).toEqual({ ...base, h: bar })
+    expect(resizeBox(base, "top", 0, base.h - bar, free)).toEqual({ ...base, y: base.y + base.h - bar, h: bar })
   })
 
   it("stops an edge or corner resize at zero without moving the opposite edge", () => {
-    expect(resizeBox(base, "left", 10_000_000, 0, free)).toEqual({ x: base.x + base.cx, y: base.y, cx: 0, cy: base.cy })
-    expect(resizeBox(base, "top", 0, 10_000_000, free)).toEqual({ x: base.x, y: base.y + base.cy, cx: base.cx, cy: 0 })
-    expect(resizeBox(base, "right", -10_000_000, 0, free)).toEqual({ ...base, cx: 0 })
-    expect(resizeBox(base, "bottom", 0, -10_000_000, free)).toEqual({ ...base, cy: 0 })
+    expect(resizeBox(base, "left", 10_000_000, 0, free)).toEqual({ x: base.x + base.w, y: base.y, w: 0, h: base.h })
+    expect(resizeBox(base, "top", 0, 10_000_000, free)).toEqual({ x: base.x, y: base.y + base.h, w: base.w, h: 0 })
+    expect(resizeBox(base, "right", -10_000_000, 0, free)).toEqual({ ...base, w: 0 })
+    expect(resizeBox(base, "bottom", 0, -10_000_000, free)).toEqual({ ...base, h: 0 })
   })
 
   it("keeps aspect ratio with Shift on corners and pins the opposite corner", () => {
     expect(resizeBox(base, "bottom-right", 800_000, 0, proportional)).toEqual({
       x: 1_000_000,
       y: 2_000_000,
-      cx: 4_800_000,
-      cy: 2_400_000,
+      w: 4_800_000,
+      h: 2_400_000,
     })
     expect(resizeBox(base, "top-left", 0, 500_000, proportional)).toEqual({
       x: 2_000_000,
       y: 2_500_000,
-      cx: 3_000_000,
-      cy: 1_500_000,
+      w: 3_000_000,
+      h: 1_500_000,
     })
   })
 
@@ -95,26 +97,26 @@ describe("resizeBox", () => {
     expect(resizeBox(base, "right", 1_000_000, 0, proportional)).toEqual({
       x: 1_000_000,
       y: 1_750_000,
-      cx: 5_000_000,
-      cy: 2_500_000,
+      w: 5_000_000,
+      h: 2_500_000,
     })
     expect(resizeBox(base, "left", 1_000_000, 0, proportional)).toEqual({
       x: 2_000_000,
       y: 2_250_000,
-      cx: 3_000_000,
-      cy: 1_500_000,
+      w: 3_000_000,
+      h: 1_500_000,
     })
     expect(resizeBox(base, "bottom", 0, 500_000, proportional)).toEqual({
       x: 500_000,
       y: 2_000_000,
-      cx: 5_000_000,
-      cy: 2_500_000,
+      w: 5_000_000,
+      h: 2_500_000,
     })
     expect(resizeBox(base, "top", 0, 500_000, proportional)).toEqual({
       x: 1_500_000,
       y: 2_500_000,
-      cx: 3_000_000,
-      cy: 1_500_000,
+      w: 3_000_000,
+      h: 1_500_000,
     })
   })
 
@@ -122,26 +124,26 @@ describe("resizeBox", () => {
     expect(resizeBox(base, "bottom-right", 200_000, 100_000, centered)).toEqual({
       x: 800_000,
       y: 1_900_000,
-      cx: 4_400_000,
-      cy: 2_200_000,
+      w: 4_400_000,
+      h: 2_200_000,
     })
     expect(resizeBox(base, "top-left", 200_000, 100_000, centered)).toEqual({
       x: 1_200_000,
       y: 2_100_000,
-      cx: 3_600_000,
-      cy: 1_800_000,
+      w: 3_600_000,
+      h: 1_800_000,
     })
     expect(resizeBox(base, "right", 250_000, 999_999, centered)).toEqual({
       x: 750_000,
       y: 2_000_000,
-      cx: 4_500_000,
-      cy: 2_000_000,
+      w: 4_500_000,
+      h: 2_000_000,
     })
     expect(resizeBox(base, "top", 999_999, -200_000, centered)).toEqual({
       x: 1_000_000,
       y: 1_800_000,
-      cx: 4_000_000,
-      cy: 2_400_000,
+      w: 4_000_000,
+      h: 2_400_000,
     })
   })
 
@@ -150,18 +152,18 @@ describe("resizeBox", () => {
     expect(cornerResized).toEqual({
       x: 600_000,
       y: 1_800_000,
-      cx: 4_800_000,
-      cy: 2_400_000,
+      w: 4_800_000,
+      h: 2_400_000,
     })
-    expect(cornerResized.x + cornerResized.cx / 2).toBe(base.x + base.cx / 2)
-    expect(cornerResized.y + cornerResized.cy / 2).toBe(base.y + base.cy / 2)
+    expect(cornerResized.x + cornerResized.w / 2).toBe(base.x + base.w / 2)
+    expect(cornerResized.y + cornerResized.h / 2).toBe(base.y + base.h / 2)
 
     const edgeResized = resizeBox(base, "top", 0, -250_000, both)
     expect(edgeResized).toEqual({
       x: 500_000,
       y: 1_750_000,
-      cx: 5_000_000,
-      cy: 2_500_000,
+      w: 5_000_000,
+      h: 2_500_000,
     })
   })
 
@@ -169,9 +171,9 @@ describe("resizeBox", () => {
     "keeps the center fixed on screen when Alt-resizing a 45-degree rotated box from %s",
     (grip) => {
       const next = resizeBox(base, grip, 250_000, 120_000, both, 45)
-      expect(Math.abs(next.x + next.cx / 2 - (base.x + base.cx / 2))).toBeLessThanOrEqual(1)
-      expect(Math.abs(next.y + next.cy / 2 - (base.y + base.cy / 2))).toBeLessThanOrEqual(1)
-      expect(next.cx / next.cy).toBeCloseTo(base.cx / base.cy, 4)
+      expect(Math.abs(next.x + next.w / 2 - (base.x + base.w / 2))).toBeLessThanOrEqual(1)
+      expect(Math.abs(next.y + next.h / 2 - (base.y + base.h / 2))).toBeLessThanOrEqual(1)
+      expect(next.w / next.h).toBeCloseTo(base.w / base.h, 4)
     },
   )
 
@@ -183,16 +185,16 @@ describe("resizeBox", () => {
       const anchorAfter = screenPoint(next, oppositeGrip[grip], 30)
       expect(Math.abs(anchorAfter.x - anchorBefore.x)).toBeLessThanOrEqual(1)
       expect(Math.abs(anchorAfter.y - anchorBefore.y)).toBeLessThanOrEqual(1)
-      expect(next.cx / next.cy).toBeCloseTo(base.cx / base.cy, 4)
+      expect(next.w / next.h).toBeCloseTo(base.w / base.h, 4)
     },
   )
 })
 
 describe("selectionFrame and resizeSelection", () => {
-  const first = elementId("256.2")
-  const second = elementId("256.3")
-  const boxA: Box = { x: 1_000_000, y: 1_000_000, cx: 2_000_000, cy: 1_000_000 }
-  const boxB: Box = { x: 4_000_000, y: 2_500_000, cx: 1_000_000, cy: 1_500_000 }
+  const first = nodeId("s:2")
+  const second = nodeId("s:3")
+  const boxA: Box = { x: 1_000_000, y: 1_000_000, w: 2_000_000, h: 1_000_000 }
+  const boxB: Box = { x: 4_000_000, y: 2_500_000, w: 1_000_000, h: 1_500_000 }
 
   function layers(): ReadonlyMap<typeof first, RotatedLayer> {
     return new Map([
@@ -202,50 +204,50 @@ describe("selectionFrame and resizeSelection", () => {
   }
 
   it("computes visual bounds of a rotated layer", () => {
-    const upright: Box = { x: 1_000_000, y: 1_000_000, cx: 2_000_000, cy: 1_000_000 }
-    expect(visualBounds(upright, 90)).toEqual({ x: 1_500_000, y: 500_000, cx: 1_000_000, cy: 2_000_000 })
+    const upright: Box = { x: 1_000_000, y: 1_000_000, w: 2_000_000, h: 1_000_000 }
+    expect(visualBounds(upright, 90)).toEqual({ x: 1_500_000, y: 500_000, w: 1_000_000, h: 2_000_000 })
   })
 
   it("computes the shared bounding box across multiple layers", () => {
-    expect(selectionFrame(layers())).toEqual({ x: 1_000_000, y: 1_000_000, cx: 4_000_000, cy: 3_000_000 })
+    expect(selectionFrame(layers())).toEqual({ x: 1_000_000, y: 1_000_000, w: 4_000_000, h: 3_000_000 })
   })
 
   it("scales positions and sizes together on multi-selection corner resize", () => {
     const result = resizeSelection(layers(), "bottom-right", 2_000_000, 1_500_000, free)
-    expect(result.frame).toEqual({ x: 1_000_000, y: 1_000_000, cx: 6_000_000, cy: 4_500_000 })
-    expect(result.boxes.get(first)).toEqual({ x: 1_000_000, y: 1_000_000, cx: 3_000_000, cy: 1_500_000 })
-    expect(result.boxes.get(second)).toEqual({ x: 5_500_000, y: 3_250_000, cx: 1_500_000, cy: 2_250_000 })
+    expect(result.frame).toEqual({ x: 1_000_000, y: 1_000_000, w: 6_000_000, h: 4_500_000 })
+    expect(result.boxes.get(first)).toEqual({ x: 1_000_000, y: 1_000_000, w: 3_000_000, h: 1_500_000 })
+    expect(result.boxes.get(second)).toEqual({ x: 5_500_000, y: 3_250_000, w: 1_500_000, h: 2_250_000 })
   })
 
   it("scales only one axis on multi-selection edge resize", () => {
     const result = resizeSelection(layers(), "right", 2_000_000, 999_999, free)
-    expect(result.boxes.get(first)).toEqual({ x: 1_000_000, y: 1_000_000, cx: 3_000_000, cy: 1_000_000 })
-    expect(result.boxes.get(second)).toEqual({ x: 5_500_000, y: 2_500_000, cx: 1_500_000, cy: 1_500_000 })
+    expect(result.boxes.get(first)).toEqual({ x: 1_000_000, y: 1_000_000, w: 3_000_000, h: 1_000_000 })
+    expect(result.boxes.get(second)).toEqual({ x: 5_500_000, y: 2_500_000, w: 1_500_000, h: 1_500_000 })
   })
 
   it("supports Shift and Alt when resizing a multi-selection", () => {
     const result = resizeSelection(layers(), "bottom-right", 1_000_000, 0, both)
-    expect(result.frame).toEqual({ x: 0, y: 250_000, cx: 6_000_000, cy: 4_500_000 })
-    expect(result.boxes.get(first)).toEqual({ x: 0, y: 250_000, cx: 3_000_000, cy: 1_500_000 })
-    expect(result.boxes.get(second)).toEqual({ x: 4_500_000, y: 2_500_000, cx: 1_500_000, cy: 2_250_000 })
+    expect(result.frame).toEqual({ x: 0, y: 250_000, w: 6_000_000, h: 4_500_000 })
+    expect(result.boxes.get(first)).toEqual({ x: 0, y: 250_000, w: 3_000_000, h: 1_500_000 })
+    expect(result.boxes.get(second)).toEqual({ x: 4_500_000, y: 2_500_000, w: 1_500_000, h: 2_250_000 })
   })
 
   it("scales a 90-degree rotated member along its visual screen axis inside a multi-selection", () => {
     const rotated = new Map([
-      [first, { box: { x: 1_000_000, y: 1_000_000, cx: 2_000_000, cy: 1_000_000 }, rotation: 90 }],
-      [second, { box: { x: 3_000_000, y: 500_000, cx: 1_000_000, cy: 2_000_000 }, rotation: 0 }],
+      [first, { box: { x: 1_000_000, y: 1_000_000, w: 2_000_000, h: 1_000_000 }, rotation: 90 }],
+      [second, { box: { x: 3_000_000, y: 500_000, w: 1_000_000, h: 2_000_000 }, rotation: 0 }],
     ])
     const result = resizeSelection(rotated, "right", 2_500_000, 0, free)
     const firstBox = result.boxes.get(first)
-    expect(firstBox?.cx).toBe(2_000_000)
-    expect(firstBox?.cy).toBe(2_000_000)
+    expect(firstBox?.w).toBe(2_000_000)
+    expect(firstBox?.h).toBe(2_000_000)
   })
 
   it("shrinks every member of a multi-selection down to zero and never below", () => {
     const result = resizeSelection(layers(), "bottom-right", -10_000_000, -10_000_000, free)
     for (const member of [first, second]) {
-      expect(result.boxes.get(member)?.cx).toBe(0)
-      expect(result.boxes.get(member)?.cy).toBe(0)
+      expect(result.boxes.get(member)?.w).toBe(0)
+      expect(result.boxes.get(member)?.h).toBe(0)
     }
   })
 })
@@ -276,8 +278,8 @@ describe("rotatedAngle and rotateSelection", () => {
 })
 
 describe("flipSelection", () => {
-  const first = elementId("256.2")
-  const second = elementId("256.3")
+  const first = nodeId("s:2")
+  const second = nodeId("s:3")
 
   it("toggles only flipH or flipV on a single upright layer", () => {
     const single = new Map<typeof first, FlippableLayer>([
@@ -299,34 +301,34 @@ describe("flipSelection", () => {
     const upright = new Map<typeof first, FlippableLayer>([
       [
         first,
-        { box: { x: 1_000_000, y: 1_000_000, cx: 1_000_000, cy: 1_000_000 }, rotation: 0, flipH: false, flipV: false },
+        { box: { x: 1_000_000, y: 1_000_000, w: 1_000_000, h: 1_000_000 }, rotation: 0, flipH: false, flipV: false },
       ],
       [
         second,
-        { box: { x: 4_000_000, y: 2_000_000, cx: 2_000_000, cy: 1_000_000 }, rotation: 0, flipH: true, flipV: false },
+        { box: { x: 4_000_000, y: 2_000_000, w: 2_000_000, h: 1_000_000 }, rotation: 0, flipH: true, flipV: false },
       ],
     ])
     expect(flipSelection(upright, "horizontal")).toEqual([
       {
         id: first,
-        box: { x: 5_000_000, y: 1_000_000, cx: 1_000_000, cy: 1_000_000 },
+        box: { x: 5_000_000, y: 1_000_000, w: 1_000_000, h: 1_000_000 },
         flipH: true,
       },
       {
         id: second,
-        box: { x: 1_000_000, y: 2_000_000, cx: 2_000_000, cy: 1_000_000 },
+        box: { x: 1_000_000, y: 2_000_000, w: 2_000_000, h: 1_000_000 },
         flipH: false,
       },
     ])
     expect(flipSelection(upright, "vertical")).toEqual([
       {
         id: first,
-        box: { x: 1_000_000, y: 2_000_000, cx: 1_000_000, cy: 1_000_000 },
+        box: { x: 1_000_000, y: 2_000_000, w: 1_000_000, h: 1_000_000 },
         flipV: true,
       },
       {
         id: second,
-        box: { x: 4_000_000, y: 1_000_000, cx: 2_000_000, cy: 1_000_000 },
+        box: { x: 4_000_000, y: 1_000_000, w: 2_000_000, h: 1_000_000 },
         flipV: true,
       },
     ])
@@ -336,11 +338,11 @@ describe("flipSelection", () => {
     const multi = new Map<typeof first, FlippableLayer>([
       [
         first,
-        { box: { x: 1_000_000, y: 1_000_000, cx: 1_000_000, cy: 1_000_000 }, rotation: 30, flipH: false, flipV: false },
+        { box: { x: 1_000_000, y: 1_000_000, w: 1_000_000, h: 1_000_000 }, rotation: 30, flipH: false, flipV: false },
       ],
       [
         second,
-        { box: { x: 4_000_000, y: 2_000_000, cx: 2_000_000, cy: 1_000_000 }, rotation: 0, flipH: true, flipV: false },
+        { box: { x: 4_000_000, y: 2_000_000, w: 2_000_000, h: 1_000_000 }, rotation: 0, flipH: true, flipV: false },
       ],
     ])
     const beforeFrame = selectionFrame(multi)
@@ -355,7 +357,7 @@ describe("flipSelection", () => {
     )
     const afterFrame = selectionFrame(afterMap)
     expect(Math.abs((afterFrame?.x ?? 0) - (beforeFrame?.x ?? 0))).toBeLessThanOrEqual(1)
-    expect(Math.abs((afterFrame?.cx ?? 0) - (beforeFrame?.cx ?? 0))).toBeLessThanOrEqual(1)
+    expect(Math.abs((afterFrame?.w ?? 0) - (beforeFrame?.w ?? 0))).toBeLessThanOrEqual(1)
   })
 })
 

@@ -81,8 +81,8 @@ function boundsAround(frames: readonly Tilted[]): Bounds {
 const startBox = (member: Member) => ({
   x: member.center.x - member.w / 2,
   y: member.center.y - member.h / 2,
-  cx: member.w,
-  cy: member.h,
+  w: member.w,
+  h: member.h,
 })
 
 type Resized = { readonly frames: ReadonlyMap<doom.NodeId, Tilted>; readonly bounds: Bounds }
@@ -99,9 +99,9 @@ function resized(
   if (members.length === 1 && only !== undefined) {
     const box = resizeBox(startBox(only), grip, dx, dy, modifiers, only.rotation)
     frames.set(only.id, {
-      center: { x: box.x + box.cx / 2, y: box.y + box.cy / 2 },
-      w: box.cx,
-      h: box.cy,
+      center: { x: box.x + box.w / 2, y: box.y + box.h / 2 },
+      w: box.w,
+      h: box.h,
       rotation: only.rotation,
     })
   } else {
@@ -109,9 +109,9 @@ function resized(
     for (const [id, box] of resizeSelection(starts, grip, dx, dy, modifiers).boxes) {
       const member = members.find((each) => each.id === id)!
       frames.set(id, {
-        center: { x: box.x + box.cx / 2, y: box.y + box.cy / 2 },
-        w: box.cx,
-        h: box.cy,
+        center: { x: box.x + box.w / 2, y: box.y + box.h / 2 },
+        w: box.w,
+        h: box.h,
         rotation: member.rotation,
       })
     }

@@ -1,4 +1,4 @@
-import { mediaSize, mediaTypeOf } from "@airdesign/document"
+import { mediaSize, mediaTypeOf } from "@airdesign/doom"
 import { drawablePicture } from "./picture-drawable.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { markupDocument } from "./element-span.js"

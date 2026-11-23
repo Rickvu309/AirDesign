@@ -23,7 +23,7 @@ export type DoomRemote = {
   pictures?(body: {
     readonly deck: string
     readonly rev: number
-    readonly pictures: SlidePictures<doom.NodeId>
+    readonly pictures: SlidePictures
   }): Promise<DoomPictured>
 }
 

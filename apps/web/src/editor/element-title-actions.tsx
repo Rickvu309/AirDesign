@@ -1,4 +1,4 @@
-import type { ElementId } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 import type { PanelModel } from "@/design/panel"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -12,7 +12,7 @@ export function ElementTitleActions({
   model,
 }: {
   onMatch: (() => void) | undefined
-  onReplace?: ((node: ElementId, file: File) => void) | undefined
+  onReplace?: ((node: NodeId, file: File) => void) | undefined
   model?: PanelModel
 }) {
   if (onMatch === undefined && onReplace === undefined) return null

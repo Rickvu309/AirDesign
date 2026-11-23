@@ -1,6 +1,4 @@
-export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
-
-export type MediaType = (typeof mediaTypes)[number]
+import { mediaTypes, type MediaType } from "@airdesign/doom"
 
 export type Media = { readonly sha256: string; readonly type: MediaType }
 

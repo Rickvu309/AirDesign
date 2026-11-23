@@ -55,7 +55,7 @@ export type DoomDeck = {
   sync(): Promise<Synced>
   catchUp(): Promise<{ readonly ok: boolean }>
   follow(signal: AbortSignal): Promise<Followed>
-  reportPictures(rev: number, pictures: SlidePictures<doom.NodeId>): Promise<DoomPictured>
+  reportPictures(rev: number, pictures: SlidePictures): Promise<DoomPictured>
   picturesWanted(): boolean
   subscribe(listener: () => void): () => void
 }

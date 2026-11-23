@@ -21,7 +21,7 @@ export function flipWrites(
         [
           id,
           {
-            box: { x: member.center.x - member.w / 2, y: member.center.y - member.h / 2, cx: member.w, cy: member.h },
+            box: { x: member.center.x - member.w / 2, y: member.center.y - member.h / 2, w: member.w, h: member.h },
             rotation: member.rotation,
             flipH: stored.flipH,
             flipV: stored.flipV,
@@ -35,7 +35,7 @@ export function flipWrites(
     const stored = propOf(view.nodes.get(flipped.id), "box") ?? placed.node.box
     const parent = placed.parent === null ? undefined : geometry.byId.get(placed.parent)
     const box = flipped.box ?? layers.get(flipped.id)!.box
-    const centre = { x: box.x + box.cx / 2, y: box.y + box.cy / 2 }
+    const centre = { x: box.x + box.w / 2, y: box.y + box.h / 2 }
     const local = parent === undefined ? centre : apply(invert(parent.matrix), centre)
     const turn = flipped.rotation ?? layers.get(flipped.id)!.rotation
     return [

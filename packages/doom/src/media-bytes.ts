@@ -1,5 +1,8 @@
-import type { MediaType } from "./asset-ref.js"
-import { limits } from "@airdesign/doom"
+import { limits } from "./limits.js"
+
+export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
+
+export type MediaType = (typeof mediaTypes)[number]
 
 export type PixelSize = { readonly width: number; readonly height: number }
 

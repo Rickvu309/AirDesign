@@ -23,9 +23,6 @@ it.each([
       mixed: false,
       inherited: false,
       reset: null,
-      change: () => {
-        throw new Error("unused")
-      },
     })
     const html = renderToStaticMarkup(
       createElement(ToggleControl, { control, palette: { templateColors: [], deck: [] }, onChange: () => {} }),

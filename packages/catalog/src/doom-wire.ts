@@ -49,9 +49,6 @@ export const picturesWantedMilliseconds = 120_000
 
 export const nodeIdPattern = new RegExp(doom.agentChangesSchema.$defs.id.pattern)
 
-const readNodeId = (raw: unknown): doom.NodeId | undefined =>
-  typeof raw === "string" && nodeIdPattern.test(raw) ? (raw as doom.NodeId) : undefined
-
 const payload: DoomRefusal = { ok: false, refusal: "payload" }
 const refusedKinds: readonly string[] = ["shape", "limit", "cycle", "person", "missing", "stale", "run-fenced"]
 
@@ -84,8 +81,8 @@ export const readDoomPictures = readInput(
   z.strictObject({
     deck: deckInput,
     rev: wholeInput,
-    pictures: z.unknown().transform((raw, ctx): SlidePictures<doom.NodeId> => {
-      const read = readSlidePictures(raw, readNodeId)
+    pictures: z.unknown().transform((raw, ctx): SlidePictures => {
+      const read = readSlidePictures(raw)
       if (read === undefined) ctx.issues.push({ code: "custom", message: "pictures", input: raw })
       return read ?? { keys: [], images: [] }
     }),
@@ -155,7 +152,7 @@ const ran = decode((body, deck) =>
 )
 
 const pictured = decode((body, deck) =>
-  Array.isArray(body.missing) && body.missing.every((each) => readNodeId(each) !== undefined)
+  Array.isArray(body.missing) && body.missing.every((each) => doom.readNodeId(each) !== undefined)
     ? { deck, missing: body.missing as doom.NodeId[] }
     : undefined,
 )

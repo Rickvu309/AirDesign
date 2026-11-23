@@ -2,61 +2,61 @@ import { describe, expect, it } from "vitest"
 import type { Corner } from "./transform-math.js"
 import { resizeBox } from "./transform-math.js"
 
-const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
+const start = { x: 457_200, y: 457_200, w: 5_486_400, h: 1_828_800 }
 const free = { keepRatio: false, fromCenter: false } as const
 const proportional = { keepRatio: true, fromCenter: false } as const
 
 describe("resizeBox by a corner", () => {
   it.each([
-    ["bottom-right", 100, 200, { x: start.x, y: start.y, cx: start.cx + 100, cy: start.cy + 200 }],
-    ["top-left", 100, 200, { x: start.x + 100, y: start.y + 200, cx: start.cx - 100, cy: start.cy - 200 }],
-    ["top-right", 100, 200, { x: start.x, y: start.y + 200, cx: start.cx + 100, cy: start.cy - 200 }],
-    ["bottom-left", 100, 200, { x: start.x + 100, y: start.y, cx: start.cx - 100, cy: start.cy + 200 }],
+    ["bottom-right", 100, 200, { x: start.x, y: start.y, w: start.w + 100, h: start.h + 200 }],
+    ["top-left", 100, 200, { x: start.x + 100, y: start.y + 200, w: start.w - 100, h: start.h - 200 }],
+    ["top-right", 100, 200, { x: start.x, y: start.y + 200, w: start.w + 100, h: start.h - 200 }],
+    ["bottom-left", 100, 200, { x: start.x + 100, y: start.y, w: start.w - 100, h: start.h + 200 }],
   ] as const)("moves only the %s corner and keeps the opposite one", (corner, dx, dy, box) => {
     expect(resizeBox(start, corner, dx, dy, free)).toEqual(box)
   })
 
   it("keeps a picture's ratio from the side that moved most and keeps the opposite corner", () => {
     const grown = resizeBox(start, "bottom-right", 548_640, 0, proportional)
-    expect(grown).toEqual({ x: start.x, y: start.y, cx: start.cx + 548_640, cy: start.cy + 182_880 })
+    expect(grown).toEqual({ x: start.x, y: start.y, w: start.w + 548_640, h: start.h + 182_880 })
     const shrunk = resizeBox(start, "top-left", 0, 914_400, proportional)
     expect(shrunk).toEqual({
       x: start.x + 2_743_200,
       y: start.y + 914_400,
-      cx: start.cx - 2_743_200,
-      cy: start.cy - 914_400,
+      w: start.w - 2_743_200,
+      h: start.h - 914_400,
     })
-    expect(resizeBox(start, "top-left", 20_000_000, 20_000_000, proportional).cy).toBe(0)
+    expect(resizeBox(start, "top-left", 20_000_000, 20_000_000, proportional).h).toBe(0)
   })
 
   it("stops at zero on each side and keeps the opposite corner", () => {
     const shrunk = resizeBox(start, "top-left", 20_000_000, 20_000_000, free)
-    expect(shrunk).toEqual({ x: start.x + start.cx, y: start.y + start.cy, cx: 0, cy: 0 })
+    expect(shrunk).toEqual({ x: start.x + start.w, y: start.y + start.h, w: 0, h: 0 })
   })
 
   it("never turns a box inside out", () => {
     expect(resizeBox(start, "bottom-right", -20_000_000, -20_000_000, free)).toEqual({
       ...start,
-      cx: 0,
-      cy: 0,
+      w: 0,
+      h: 0,
     })
   })
 
   it("lets a line with no height grow one but never go below zero", () => {
-    const line = { x: 0, y: 0, cx: 3_000_000, cy: 0 }
+    const line = { x: 0, y: 0, w: 3_000_000, h: 0 }
     expect(resizeBox(line, "bottom-right", 0, -5_000, free)).toEqual(line)
-    expect(resizeBox(line, "bottom-right", 0, 5_000, free)).toEqual({ ...line, cy: 5_000 })
+    expect(resizeBox(line, "bottom-right", 0, 5_000, free)).toEqual({ ...line, h: 5_000 })
   })
 })
 
 describe("resizeBox on a turned box", () => {
   function onScreen(box: typeof start, corner: Corner, degrees: number) {
     const turn = (degrees * Math.PI) / 180
-    const across = (corner.endsWith("left") ? -1 : 1) * (box.cx / 2)
-    const down = (corner.startsWith("top") ? -1 : 1) * (box.cy / 2)
+    const across = (corner.endsWith("left") ? -1 : 1) * (box.w / 2)
+    const down = (corner.startsWith("top") ? -1 : 1) * (box.h / 2)
     return {
-      x: box.x + box.cx / 2 + across * Math.cos(turn) - down * Math.sin(turn),
-      y: box.y + box.cy / 2 + across * Math.sin(turn) + down * Math.cos(turn),
+      x: box.x + box.w / 2 + across * Math.cos(turn) - down * Math.sin(turn),
+      y: box.y + box.h / 2 + across * Math.sin(turn) + down * Math.cos(turn),
     }
   }
 
@@ -71,14 +71,14 @@ describe("resizeBox on a turned box", () => {
     expect(resizeBox(start, "bottom-right", -100_000, 200_000, free, 90)).toEqual({
       x: 307_200,
       y: 507_200,
-      cx: 5_686_400,
-      cy: 1_928_800,
+      w: 5_686_400,
+      h: 1_928_800,
     })
   })
 
   it.each([
-    ["bottom-right", { x: 452_296, y: 538_899, cx: 5_796_208, cy: 1_765_403 }],
-    ["top-left", { x: 762_104, y: 475_502, cx: 5_176_592, cy: 1_892_197 }],
+    ["bottom-right", { x: 452_296, y: 538_899, w: 5_796_208, h: 1_765_403 }],
+    ["top-left", { x: 762_104, y: 475_502, w: 5_176_592, h: 1_892_197 }],
   ] as const)("resizes a box turned 30 degrees from its %s corner", (corner, box) => {
     expect(resizeBox(start, corner, 300_000, 100_000, free, 30)).toEqual(box)
   })
@@ -100,7 +100,7 @@ describe("resizeBox on a turned box", () => {
 
   it("keeps the opposite corner on screen when a turned box stops at zero", () => {
     const box = resizeBox(start, "top-left", 20_000_000, 20_000_000, free, 30)
-    expect([box.cx, box.cy]).toEqual([0, 0])
+    expect([box.w, box.h]).toEqual([0, 0])
     const kept = onScreen(start, "bottom-right", 30)
     const now = onScreen(box, "bottom-right", 30)
     expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)

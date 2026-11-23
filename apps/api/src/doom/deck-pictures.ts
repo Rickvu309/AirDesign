@@ -1,6 +1,5 @@
 import { picturesWantedMilliseconds, type DeckId, type SlidePictures } from "@airdesign/catalog"
-
-type SlideId = string
+import type { NodeId } from "@airdesign/doom"
 
 export const picturesCap = 200_000_000
 
@@ -8,8 +7,8 @@ type Held = { readonly key: string; readonly data: string }
 
 type Shots = {
   readonly revision: number
-  readonly keys: ReadonlyMap<SlideId, string>
-  readonly held: Map<SlideId, Held>
+  readonly keys: ReadonlyMap<NodeId, string>
+  readonly held: Map<NodeId, Held>
 }
 
 function heldBytes(shots: Shots): number {
@@ -18,11 +17,11 @@ function heldBytes(shots: Shots): number {
   return total
 }
 
-function missingOf(shots: Shots): readonly SlideId[] {
+function missingOf(shots: Shots): readonly NodeId[] {
   return [...shots.keys].flatMap(([slide, key]) => (shots.held.get(slide)?.key === key ? [] : [slide]))
 }
 
-type Wanted = { readonly until: number; readonly slides: ReadonlySet<SlideId> }
+type Wanted = { readonly until: number; readonly slides: ReadonlySet<NodeId> }
 
 export class DeckPictures {
   private readonly decks = new Map<DeckId, Shots>()
@@ -38,7 +37,7 @@ export class DeckPictures {
     this.now = now
   }
 
-  want(deck: DeckId, slides: readonly SlideId[]): void {
+  want(deck: DeckId, slides: readonly NodeId[]): void {
     const held = this.wanting.get(deck)
     const kept = held !== undefined && held.until > this.now() ? held.slides : []
     this.wanting.set(deck, { until: this.now() + picturesWantedMilliseconds, slides: new Set([...kept, ...slides]) })
@@ -52,7 +51,7 @@ export class DeckPictures {
     return held !== undefined && held.until > this.now()
   }
 
-  wantedAmong(deck: DeckId, slides: readonly SlideId[]): readonly SlideId[] {
+  wantedAmong(deck: DeckId, slides: readonly NodeId[]): readonly NodeId[] {
     const held = this.wanting.get(deck)
     if (held === undefined || held.until <= this.now()) return []
     return slides.filter((slide) => held.slides.has(slide))
@@ -79,11 +78,11 @@ export class DeckPictures {
     })
   }
 
-  keep(deck: DeckId, revision: number, pictures: SlidePictures<SlideId>): readonly SlideId[] {
+  keep(deck: DeckId, revision: number, pictures: SlidePictures): readonly NodeId[] {
     const was = this.decks.get(deck)
     if (was !== undefined && was.revision > revision) return missingOf(was)
     const keys = new Map(pictures.keys.map(({ slide, key }) => [slide, key]))
-    const held = new Map<SlideId, Held>()
+    const held = new Map<NodeId, Held>()
     for (const [slide, each] of was?.held ?? []) if (keys.get(slide) === each.key) held.set(slide, each)
     for (const { slide, key, data } of pictures.images) held.set(slide, { key, data })
     const next: Shots = { revision, keys, held }
@@ -96,7 +95,7 @@ export class DeckPictures {
     return missingOf(next)
   }
 
-  fresh(deck: DeckId, slide: SlideId, key: string): string | undefined {
+  fresh(deck: DeckId, slide: NodeId, key: string): string | undefined {
     const shots = this.decks.get(deck)
     const held = shots?.held.get(slide)
     if (shots === undefined || held === undefined || held.key !== key) return undefined
@@ -109,7 +108,7 @@ export class DeckPictures {
     return this.decks.get(deck)?.revision
   }
 
-  missing(deck: DeckId): readonly SlideId[] {
+  missing(deck: DeckId): readonly NodeId[] {
     const shots = this.decks.get(deck)
     return shots === undefined ? [] : missingOf(shots)
   }

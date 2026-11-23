@@ -8,10 +8,10 @@ const other = "b".repeat(64)
 const data = "/9j/4AAQSkZJRgABAQ=="
 const pictures = {
   keys: [
-    { slide: "256", key },
-    { slide: "257", key: other },
+    { slide: "s:256", key },
+    { slide: "s:257", key: other },
   ],
-  images: [{ slide: "256", key, type: "image/jpeg", data }],
+  images: [{ slide: "s:256", key, type: "image/jpeg", data }],
 }
 
 it("reads the slide keys and the pictures a tab reports", () => {
@@ -26,19 +26,22 @@ it("refuses pictures it cannot trust", () => {
     {
       ...pictures,
       keys: [
-        { slide: "256", key },
-        { slide: "256", key: other },
+        { slide: "s:256", key },
+        { slide: "s:256", key: other },
       ],
     },
-    { ...pictures, keys: [{ slide: "256", key: "short" }] },
+    { ...pictures, keys: [{ slide: "s:256", key: "short" }] },
     { ...pictures, keys: [{ slide: "not a slide", key }] },
     { ...pictures, images: [{ ...image, key: other }] },
-    { ...pictures, images: [{ ...image, slide: "999" }] },
+    { ...pictures, images: [{ ...image, slide: "s:999" }] },
     { ...pictures, images: [{ ...image, type: "image/png" }] },
     { ...pictures, images: [{ ...image, data: "not base64!" }] },
     { ...pictures, images: [{ ...image, data: "A".repeat(pictureBytes + 4) }] },
     { ...pictures, images: [image, image] },
-    { ...pictures, keys: Array.from({ length: limits.slides + 1 }, (_, at) => ({ slide: String(300 + at), key })) },
+    {
+      ...pictures,
+      keys: Array.from({ length: limits.slides + 1 }, (_, at) => ({ slide: `s:${String(300 + at)}`, key })),
+    },
     { ...pictures, extra: true },
   ])
     expect(readSlidePictures(bad)).toBeUndefined()
