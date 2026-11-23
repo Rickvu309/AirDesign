@@ -4,6 +4,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { installHooks, preCommitHook } from "./install-hooks.mjs"
+import { formatWhole, unparsed } from "./pre-commit.mjs"
 
 const source = path.resolve(import.meta.dirname, "..")
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "pre-commit-"))
@@ -66,6 +67,14 @@ try {
   assert.ok(wip.stderr.includes("left half.ts as staged: it does not parse yet."), wip.stderr)
   assert.equal(git("show", "HEAD:half.ts"), half)
   assert.equal(git("show", "HEAD:whole.ts"), "const whole = 1\n")
+  const many = Array.from({ length: 60 }, (_, at) => `many-${String(at)}.ts`)
+  for (const name of many) fs.writeFileSync(path.join(root, name), `const value${name.length}=1\n`)
+  fs.writeFileSync(path.join(root, "many-half.ts"), half)
+  git("add", ...many, "many-half.ts")
+  const big = commit()
+  assert.equal(big.status, 0, big.stderr)
+  assert.ok(big.stderr.includes("left many-half.ts as staged: it does not parse yet."), big.stderr)
+  assert.equal(git("show", "HEAD:many-0.ts"), "const value9 = 1\n")
   fs.unlinkSync(path.join(root, "node_modules"))
   fs.writeFileSync(path.join(root, "other.ts"), "const other=2\n")
   git("add", "other.ts")
@@ -73,3 +82,25 @@ try {
 } finally {
   fs.rmSync(root, { recursive: true, force: true })
 }
+
+const calls = []
+const counted =
+  (broken, { names = true } = {}) =>
+  (batch) => {
+    calls.push(batch.length)
+    const failed = batch.filter((file) => broken.includes(file))
+    return failed.length === 0 ? [] : names ? failed : undefined
+  }
+const sixty = Array.from({ length: 60 }, (_, at) => `file-${String(at)}.ts`)
+assert.deepEqual(formatWhole(sixty, counted([])), { formatted: sixty, left: [] })
+assert.deepEqual(calls, [60], "sixty files that parse take one formatter run")
+calls.length = 0
+assert.deepEqual(formatWhole(sixty, counted(["file-7.ts"])).left, ["file-7.ts"])
+assert.deepEqual(calls, [60], "a file the run names as unparsed is left out with no second run")
+calls.length = 0
+assert.deepEqual(formatWhole(sixty, counted(["file-7.ts"], { names: false })).left, ["file-7.ts"])
+assert.equal(calls.length, 61, "only a failure that names no file falls back to one run per file")
+assert.deepEqual(
+  unparsed("  x Expected `)` but found `EOF`\n   ,-[many-half.ts:2:1]\n", ["many-0.ts", "many-half.ts"]),
+  ["many-half.ts"],
+)
