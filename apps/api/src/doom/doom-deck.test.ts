@@ -7,7 +7,9 @@ import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
+import { heldQueries } from "../testing/held-queries.js"
 import { DeckListen, openPool, type Mail } from "../index.js"
+import { editDoom, spendOnce } from "./doom-deck.js"
 import { startIds } from "./doom-start.js"
 
 const mails: Mail[] = []
@@ -16,6 +18,7 @@ let admin = new Client()
 let owner = { email: "", cookie: "" }
 let stranger = { email: "", cookie: "" }
 let close = async () => {}
+let decks = openPool("postgres://deck@127.0.0.1/api")
 
 const person: doom.Author = { kind: "person", id: "tab-1" }
 const at = (parent: doom.NodeId, after: string | null = null) => ({
@@ -32,6 +35,8 @@ beforeAll(async () => {
   const info = await postgresInfo()
   const session = openPool(info.session, "doom-session")
   const deck = openPool(info.deck, "doom-deck")
+  await decks.end()
+  decks = deck
   const listen = new DeckListen(info.listen)
   admin = new Client({ connectionString: info.admin })
   await admin.connect()
@@ -207,6 +212,32 @@ describe("an edit", () => {
     expect((await admin.query("select count(*)::int as n from deck.doom_edit where deck = $1", [deck])).rows).toEqual([
       { n: 3 },
     ])
+  })
+
+  it("lands nothing for an edit whose once a Stop spent between the edit's read and its write", async () => {
+    const deck = await made()
+    const held = heldQueries(decks)
+    const write = held.hold("with updated as")
+    const late = editDoom(
+      held.db,
+      {
+        deck: deck as never,
+        edit: {
+          once: "cut",
+          author: { kind: "agent", id: "aira", run: "r-cut" },
+          phase: "start",
+          writes: [{ node: startIds.slide, prop: "name", value: "Late" }],
+        },
+      },
+      owner.email,
+    )
+    await write.reached
+    expect(await spendOnce(decks, owner.email, deck, "cut")).toBeUndefined()
+    write.release()
+    expect(await late).toEqual({ ok: true, deck, rev: 2 })
+    const fold = await foldOf(deck)
+    expect(fold.runs.size).toBe(0)
+    expect(fold.nodes.get(startIds.slide)).not.toMatchObject({ name: "Late" })
   })
 
   it("lands two edits sent at the same moment one after the other with distinct revisions", async () => {
