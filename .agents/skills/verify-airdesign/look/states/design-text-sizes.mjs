@@ -1,7 +1,4 @@
+import { element } from "../doom-design.mjs"
 import { textTypography } from "../text-typography.mjs"
 
-export default {
-  name: "design-text-sizes",
-  design: "/screens/s43-09-editor-tools-design-element",
-  drive: (kit) => textTypography(kit, "sizes"),
-}
+export default { name: "design-text-sizes", design: element, drive: (kit) => textTypography(kit, "sizes") }

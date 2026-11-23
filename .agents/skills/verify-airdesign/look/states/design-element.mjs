@@ -1,11 +1,11 @@
 import { expect } from "@playwright/test"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { designing, element, selectTitle } from "../doom-design.mjs"
 
-async function drive(kit) {
-  await fixtureDeck(kit)
-  await kit.page.getByRole("button", { name: "Design", exact: true }).click()
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  await expect(kit.page.locator("[data-design-panel]")).toBeVisible()
+export async function titleChosen(kit) {
+  const opened = await designing(kit)
+  await selectTitle(kit, opened)
+  await expect(kit.page.locator("[data-design-element]")).toBeVisible()
+  return opened
 }
 
-export default { name: "design-element", design: "/screens/s43-09-editor-tools-design-element", drive }
+export default { name: "design-element", design: element, drive: titleChosen }
