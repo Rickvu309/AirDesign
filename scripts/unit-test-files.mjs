@@ -5,7 +5,7 @@ const unitGlobs = [
   "apps/**/*.test.tsx",
   "packages/**/*.test.ts",
   "tests/**/*.test.ts",
-  "tooling/ts-packwerk/src/**/*.test.ts",
+  "tooling/*/src/**/*.test.ts",
   ".agents/skills/**/*.test.mjs",
 ]
 
