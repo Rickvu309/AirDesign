@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import {
@@ -28,6 +29,10 @@ type Saved = {
 const textOf = async (stack: Stack, opened: Opened, id: string) =>
   (await savedNode(stack, opened, id))?.text as Saved | undefined
 const editor = (page: Page) => page.locator("[data-text-editor]")
+const savedFold = async (stack: Stack, opened: Opened) => {
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  return (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json.fold as unknown
+}
 
 test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape keeps it through a reload", async ({
   page,
@@ -255,4 +260,36 @@ test("the slide's thumbnail follows typing before the words are kept", async ({ 
   await expect(thumb.locator("[data-line]").filter({ hasText: "Typed" })).toHaveCount(1, { timeout: 2_500 })
   await expect(editor(page)).toBeFocused()
   await typing
+})
+
+test("leaving a slide while typing keeps the typed words in its thumbnail every frame until they are kept", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: slideListCopy.addSlide }).click()
+  await page.locator("[data-slide-entry='1']").click()
+  await page.keyboard.press("t")
+  await clickSlide(page, 300, 700)
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.type("Typed then left")
+  const thumb = page.locator("[data-slide-entry='1'] [data-slide-thumb]")
+  await expect(thumb.locator("[data-line]").filter({ hasText: "Typed then left" })).toHaveCount(1)
+  await page.evaluate(() => {
+    const frames: boolean[] = []
+    Object.assign(window, { thumbFrames: frames })
+    const sample = () => {
+      const lines = [...document.querySelectorAll("[data-slide-entry='1'] [data-slide-thumb] [data-line]")]
+      frames.push(lines.some((line) => line.textContent.includes("Typed then left")))
+      if (frames.length < 120) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  })
+  await page.locator("[data-slide-entry='2']").click()
+  await expect(page.locator("[data-slide-entry='2']")).toHaveAttribute("aria-current", "true")
+  await expect.poll(async () => JSON.stringify(await savedFold(stack, opened)).includes("Typed then left")).toBe(true)
+  const frames = () => page.evaluate(() => (window as unknown as { thumbFrames: boolean[] }).thumbFrames)
+  await expect.poll(async () => (await frames()).length).toBe(120)
+  expect((await frames()).filter((shown) => !shown)).toHaveLength(0)
 })

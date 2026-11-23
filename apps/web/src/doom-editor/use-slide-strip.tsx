@@ -4,7 +4,6 @@ import { useRef, type KeyboardEvent } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { slideThumbWidth, type SlideStrip } from "@/editor/slide-sidebar"
-import { DoomThumb } from "./doom-thumb"
 import { TypedThumb, type TypingPreview } from "./typing-preview"
 import {
   addSlideWrites,
@@ -40,11 +39,8 @@ export function useSlideStrip(props: {
     thumbHeight: Math.round((slideThumbWidth * size.h) / size.w),
     thumb: (at, width) => {
       const slide = slides[at]
-      if (slide === undefined) return null
-      return slide === current ? (
+      return slide === undefined ? null : (
         <TypedThumb typing={typing} view={view} slide={slide} width={width} assetUrl={assetUrl} />
-      ) : (
-        <DoomThumb view={view} slide={slide} width={width} assetUrl={assetUrl} />
       )
     },
     onSelect: (at) => {
