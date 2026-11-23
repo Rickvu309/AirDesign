@@ -1,0 +1,23 @@
+{
+  "check": "checks-undo-steps.md#undo-steps",
+  "covers": [
+    {
+      "file": "packages/live/src/doom-deck.ts",
+      "names": ["connected"],
+      "digest": "373b1f893643",
+      "blob": "1443b8d34b2239e435865010db8f0afbc4408505"
+    },
+    {
+      "file": "packages/doom/src/invert.ts",
+      "names": ["invert", "onStandingLayers"],
+      "digest": "1fc159e33b72",
+      "blob": "ef5a1f105f3bae63aae81a4e504ef3f9ea5b055f"
+    },
+    {
+      "file": "packages/doom/src/changing-writes.ts",
+      "names": ["changingWrites"],
+      "digest": "e4b638c476c0",
+      "blob": "2e721d98678d10d37a7f422b552f00c763566d4d"
+    }
+  ]
+}

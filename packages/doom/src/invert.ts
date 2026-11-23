@@ -42,8 +42,25 @@ export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlyS
       : (was as Record<string, unknown>)[key as PropName]
     writes.push({ node, prop: key, value: value ?? null, base: writer })
   }
-  const moves = writes.filter((each) => each.prop === "parent")
+  const standing = onStandingLayers(after, writes)
+  const moves = standing.filter((each) => each.prop === "parent")
   const depths = new Map(moves.map((each) => [each.node, depthIn(before, each.node)]))
   moves.sort((one, other) => depths.get(one.node)! - depths.get(other.node)!)
-  return [...moves, ...writes.filter((each) => each.prop !== "parent")]
+  return [...moves, ...standing.filter((each) => each.prop !== "parent")]
+}
+
+const deletedIn = (doom: Doom, node: NodeId) =>
+  (doom.nodes.get(node) as { parent?: { readonly id: NodeId } | null } | undefined)?.parent === null
+
+function onStandingLayers(after: Doom, writes: readonly Write[]): readonly Write[] {
+  let kept = writes
+  for (;;) {
+    const placed = new Set(kept.flatMap((each) => (each.prop === "parent" && each.value !== null ? [each.node] : [])))
+    const stands = (node: NodeId) => placed.has(node) || !deletedIn(after, node)
+    const next = kept.filter((each) =>
+      each.prop !== "parent" ? stands(each.node) : each.value === null || stands((each.value as { id: NodeId }).id),
+    )
+    if (next.length === kept.length) return next
+    kept = next
+  }
 }
