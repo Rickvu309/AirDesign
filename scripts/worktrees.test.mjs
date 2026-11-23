@@ -305,7 +305,11 @@ same("removed source worktrees warn, while a held source stays quiet", warned.le
 same("a default WIP stash names its branch without a worktree", warnings[0].includes("branch-only"), true)
 same("the historical cleanup message names the gone source path", warnings[1].includes(saved), true)
 same("warnings identify the stash entry", warnings[1].includes("stash@{2}"), true)
-same("warnings offer a read-only way to inspect the saved patch", warnings[1].includes("git stash show -p"), true)
+same(
+  "warnings offer a read-only way to inspect the saved patch",
+  warnings[1].includes("git diff ") && !warnings[1].includes("git stash"),
+  true,
+)
 same(
   "warning leaves every stash hash and message unchanged",
   git(root, "stash", "list", "--format=%H %gs"),

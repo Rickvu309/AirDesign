@@ -60,7 +60,7 @@ export const warnStashes = ({ root, say = console.warn }) => {
           ? `branch ${branch}, which has no worktree`
           : undefined
     if (reason === undefined) continue
-    const warning = `${entry} was saved from ${reason}. The stash is shared. Inspect it with git stash show -p ${hash}; recover it on its branch only if it is yours. Leave other people's entries alone.`
+    const warning = `${entry} was saved from ${reason}. The stash is shared. Inspect it with git diff ${hash}^1 ${hash}; recover it on its branch only if it is yours. Leave other people's entries alone.`
     say(warning)
     warnings.push(warning)
   }
