@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -52,14 +53,72 @@ function stopRun(run) {
   execFileSync(process.execPath, [self, "stop", run], { stdio: "ignore" })
 }
 
-function treeAt(repo, commit) {
-  const dir = path.join(scratchRoot, `tree-${commit.slice(0, 12)}`)
-  const built = `${dir}.built`
+export const carriedFolders = [
+  ".agents/skills/verify-airdesign/look",
+  ".agents/skills/verify-airdesign/journeys",
+  "apps/api/src/testing/aira-streams",
+]
+
+const lines = (text) => text.split("\n").filter((line) => line !== "")
+
+export function carried(repo, base, head) {
+  const git = gitIn(repo)
+  const changed = lines(
+    git([
+      "diff",
+      "--no-renames",
+      "--name-status",
+      "--diff-filter=AM",
+      base,
+      ...(head ? [head] : []),
+      "--",
+      ...carriedFolders,
+    ]),
+  ).map((line) => {
+    const [status, file] = line.split("\t")
+    return { file, added: status === "A" }
+  })
+  const untracked = head
+    ? []
+    : lines(git(["ls-files", "--others", "--exclude-standard", "--", ...carriedFolders])).map((file) => ({
+        file,
+        added: true,
+      }))
+  return [...changed, ...untracked]
+    .toSorted((a, b) => a.file.localeCompare(b.file))
+    .map(({ file, added }) => ({
+      file,
+      added,
+      bytes: head
+        ? execFileSync("git", ["-C", repo, "show", `${head}:${file}`], { maxBuffer: 1 << 28 })
+        : readFileSync(path.join(repo, file)),
+    }))
+}
+
+function treeName(commit, carry) {
+  if (carry.length === 0) return `tree-${commit.slice(0, 12)}`
+  const hash = createHash("sha256")
+  for (const { file, bytes } of carry) hash.update(file).update("\0").update(bytes).update("\0")
+  return `tree-${commit.slice(0, 12)}-${hash.digest("hex").slice(0, 10)}`
+}
+
+export function baseTree(repo, commit, carry = [], root = scratchRoot) {
+  const dir = path.join(root, treeName(commit, carry))
   if (!existsSync(dir)) {
-    mkdirSync(scratchRoot, { recursive: true })
-    rmSync(built, { force: true })
+    mkdirSync(root, { recursive: true })
+    rmSync(`${dir}.built`, { force: true })
     gitIn(repo)(["worktree", "add", "--detach", "--quiet", dir, commit])
+    for (const { file, bytes } of carry) {
+      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+      writeFileSync(path.join(dir, file), bytes)
+    }
   }
+  return dir
+}
+
+function treeAt(repo, commit, carry) {
+  const dir = baseTree(repo, commit, carry)
+  const built = `${dir}.built`
   if (!existsSync(path.join(dir, "node_modules"))) {
     try {
       execFileSync("pnpm", ["install", "--frozen-lockfile", "--prefer-offline"], {
@@ -78,13 +137,13 @@ function treeAt(repo, commit) {
   return { dir, built }
 }
 
-export function stackFor({ run, ref, runtime, cleanup, args }) {
+export function stackFor({ run, ref, runtime, cleanup, args, carry = [] }) {
   if (run !== undefined) return run
   let at
   if (ref === undefined) at = launchAt(runtime.repo, true, args)
   else {
     const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
-    const tree = treeAt(runtime.repo, commit)
+    const tree = treeAt(runtime.repo, commit, carry)
     at = launchAt(tree.dir, !existsSync(tree.built))
     writeFileSync(tree.built, commit)
     cleanup.trees.push(tree)
@@ -108,8 +167,8 @@ export function cleanUp(cleanup, keep, runtime) {
 
 export const mergeBase = (runtime) => gitIn(runtime.repo)(["merge-base", "HEAD", "origin/main"])
 
-async function sideOf({ key, name, label, missing, run, ref, runtime, cleanup }) {
-  const at = stackFor({ run, ref, runtime, cleanup })
+async function sideOf({ key, name, label, missing, run, ref, runtime, cleanup, carry = [] }) {
+  const at = stackFor({ run, ref, runtime, cleanup, carry })
   const state = runtime.readState(at)
   const repo = state.repo ?? runtime.repo
   return {
@@ -121,7 +180,8 @@ async function sideOf({ key, name, label, missing, run, ref, runtime, cleanup })
     origin: state.origin,
     repo,
     commit: state.commit,
-    driver: await driverFor(repo),
+    carried: carry.map(({ file }) => file),
+    driver: await driverFor(repo, carry),
   }
 }
 
@@ -186,6 +246,7 @@ async function beforeAfter(command, values, flags, runtime) {
   mkdirSync(out, { recursive: true })
   const cleanup = { runs: [], trees: [] }
   const base = flags.base ?? mergeBase(runtime)
+  const carry = annotate || flags["before-run"] !== undefined ? [] : carried(runtime.repo, base, flags.head)
   const labels = { before: flags.base ? `${flags.base}` : "main", after: flags.head ?? "this PR" }
   try {
     const sides = annotate
@@ -200,6 +261,7 @@ async function beforeAfter(command, values, flags, runtime) {
             ref: base,
             runtime,
             cleanup,
+            carry,
           }),
           await sideOf({
             key: "after",
@@ -228,7 +290,9 @@ async function beforeAfter(command, values, flags, runtime) {
           ...Object.fromEntries(Object.entries(files).map(([side, file]) => [side, relative(file)])),
         })),
       })),
-      sides: Object.fromEntries(sides.map((side) => [side.key, { run: side.run, commit: side.commit }])),
+      sides: Object.fromEntries(
+        sides.map((side) => [side.key, { run: side.run, commit: side.commit, carried: side.carried }]),
+      ),
       warnings: [...warnings, ...shot.warnings],
     }
     writeFileSync(path.join(out, "before-after.json"), `${JSON.stringify(summary, null, 2)}\n`)

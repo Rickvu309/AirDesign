@@ -1,0 +1,3 @@
+# A before/after needs no commit: the base carries the head's look states, journeys and Aira streams
+
+`before-after` (`proof.mjs`) copies the head's added and changed files under `.agents/skills/verify-airdesign/look/`, `.agents/skills/verify-airdesign/journeys/` and `apps/api/src/testing/aira-streams/` onto its scratch base worktree, uncommitted, before it builds and drives the base, so no agent makes a throwaway base commit (four did on 2026-11-23, with hooks off). `proof.test.mjs` reaches a state that exists only on the head, through a journey step only the head has, on the carried base, and still calls it new when the base cannot reach it.
