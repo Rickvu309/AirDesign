@@ -1,7 +1,6 @@
 layer: platform
 public:
   - account-copy.ts
-  - adjust-tone-copy.ts
   - aira-copy.ts
   - appearance-copy.ts
   - body-copy.ts
