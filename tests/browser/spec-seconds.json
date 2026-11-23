@@ -66,6 +66,7 @@
     "diagram-export.spec.ts": 3.4,
     "doom-agent-undo-reload.spec.ts": 6.3,
     "doom-agent.spec.ts": 6.7,
+    "doom-arrange.spec.ts": 11.6,
     "doom-editor-arrange.spec.ts": 11.6,
     "doom-editor-design.spec.ts": 133.8,
     "doom-editor-page.spec.ts": 13.7,
