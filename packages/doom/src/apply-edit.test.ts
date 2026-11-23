@@ -107,6 +107,17 @@ describe("delete and missing", () => {
     refusedWith(tryLand(gone, [{ node: ids.title, prop: "parent", value: place(ids.card) }]), "missing")
   })
 
+  it("refuses a move into a layer under a frame the same edit deleted before it", () => {
+    const [inner, innermost] = [nodeId("t:10"), nodeId("t:11")]
+    const nested = land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(innermost, "frame", inner)])
+    const hide = { node: ids.card, prop: "parent" as const, value: place(innermost) }
+    refusedWith(tryLand(nested, [{ node: inner, prop: "parent", value: null }, hide]), "missing", ids.card, "parent")
+    const tucked = { node: ids.side, prop: "parent" as const, value: place(innermost) }
+    const gone = { node: ids.card, prop: "parent" as const, value: null }
+    expect(isRefusal(tryLand(nested, [tucked, gone]))).toBe(false)
+    expect(isRefusal(tryLand(land(nested, [gone]), [tucked]))).toBe(false)
+  })
+
   it("lets one edit revive a node and write to it, parent first", () => {
     const gone = land(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
     const back = land(gone, [

@@ -114,6 +114,24 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     expect(nodeOf(undone, ids.side).parent).toMatchObject({ id: frame })
   })
 
+  it("leaves a layer where it is when the frame it came from, or a frame above that, was deleted since", () => {
+    const inner = nodeId("t:10")
+    let world = by(opened(), person, create(inner, "frame", ids.card))
+    world = run(world, runA, [
+      { node: ids.card, prop: "opacity", value: 0.5 },
+      { node: ids.title, prop: "parent", value: place(ids.slide) },
+      { node: inner, prop: "parent", value: place(ids.side) },
+    ])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+    const undone = undoRun(world, "a")
+    expect(undone.writes).toEqual([])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: place(ids.side) }])
+    world = by(world, person, [{ node: ids.side, prop: "parent", value: null }])
+    const { world: after } = undo(world)
+    expect(nodeOf(after, ids.title).parent).toMatchObject({ id: ids.slide })
+    expect(nodeOf(after, ids.card).opacity).toBeUndefined()
+  })
+
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {
     const made = nodeId("a:1")
     let world = run(opened(), runA, create(made, "shape", ids.slide, { node: made, prop: "box", value: box(10) }))

@@ -5,6 +5,7 @@ import {
   create,
   hex,
   ids,
+  land,
   once,
   person,
   place,
@@ -198,6 +199,41 @@ describe("invert", () => {
     const { before, after, edit } = step(sampleDeck(), [{ node: ids.title, prop: "parent", value: place(ids.side) }])
     const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
     expect(invert(before, later.after, edit)).toEqual([])
+  })
+
+  it("leaves a layer where it is when the layer it came from sits in a frame deleted since", () => {
+    const [inner, innermost] = [nodeId("t:10"), nodeId("t:11")]
+    const nested = land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(innermost, "frame", inner)])
+    const { before, after, edit } = step(nested, [{ node: innermost, prop: "parent", value: place(ids.side) }])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(before, later.after, edit)).toEqual([])
+  })
+
+  it("leaves a layer where it is when putting it back would put it inside itself", () => {
+    const [inner, innermost] = [nodeId("t:10"), nodeId("t:11")]
+    const nested = land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(innermost, "frame", inner)])
+    const out = step(nested, [{ node: innermost, prop: "parent", value: place(ids.side) }])
+    const under = step(out.after, [{ node: inner, prop: "parent", value: place(innermost) }])
+    const later = step(under.after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(under.before, later.after, under.edit)).toEqual([])
+    expect(invert(out.before, later.after, out.edit)).toEqual([])
+  })
+
+  it("puts a layer back into a frame that stands, though the move that would put that frame back is left out", () => {
+    const [inner, innermost, leaf] = [nodeId("t:10"), nodeId("t:11"), nodeId("t:12")]
+    const nested = land(sampleDeck(), [
+      ...create(inner, "frame", ids.card),
+      ...create(innermost, "frame", inner),
+      ...create(leaf, "shape", innermost),
+    ])
+    const { before, after, edit } = step(nested, [
+      { node: inner, prop: "parent", value: place(ids.slide) },
+      { node: leaf, prop: "parent", value: place(inner) },
+    ])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    const writes = invert(before, later.after, edit)
+    expect(writes).toEqual([{ node: leaf, prop: "parent", value: place(innermost), base: edit.rev }])
+    expect(tryLand(later.after, writes)).not.toHaveProperty("refused")
   })
 
   it("keeps the writes to a layer the undo itself puts back", () => {
