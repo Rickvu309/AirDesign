@@ -31,6 +31,19 @@ const extensions = new Set([
 
 const gateNote = "The gate's format step checks it before any push."
 
+export const unparsed = (output, batch) => {
+  const named = new Set([...output.matchAll(/-\[(?:\.\/)?([^\]]+?):\d+:\d+\]/g)].map(([, file]) => file))
+  return batch.filter((file) => named.has(file))
+}
+
+const leftOf = (whole, format) => format(whole) ?? whole.filter((file) => (format([file]) ?? [file]).length > 0)
+
+export const formatWhole = (whole, format) => {
+  if (whole.length === 0) return { formatted: [], left: [] }
+  const left = leftOf(whole, format)
+  return { formatted: whole.filter((file) => !left.includes(file)), left }
+}
+
 export const formatStaged = (root, say = (line) => console.error(line)) => {
   const formatter = path.join(root, "node_modules", ".bin", "oxfmt")
   if (!fs.existsSync(formatter)) return
@@ -51,12 +64,16 @@ export const formatStaged = (root, say = (line) => console.error(line)) => {
     if (formatted.status !== 0 || formatted.stdout !== staged)
       say(`left ${file} as staged: it has unstaged changes. ${gateNote}`)
   }
-  const formatted = []
-  for (const file of whole) {
-    const run = spawnSync(formatter, ["--no-error-on-unmatched-pattern", `./${file}`], { cwd: root, encoding: "utf8" })
-    if (run.status === 0) formatted.push(file)
-    else say(`left ${file} as staged: it does not parse yet. ${gateNote}`)
-  }
+  const { formatted, left } = formatWhole(whole, (batch) => {
+    const run = spawnSync(formatter, ["--no-error-on-unmatched-pattern", ...batch.map((file) => `./${file}`)], {
+      cwd: root,
+      encoding: "utf8",
+    })
+    if (run.status === 0) return []
+    const named = unparsed(`${run.stdout}${run.stderr}`, batch)
+    return named.length > 0 ? named : undefined
+  })
+  for (const file of left) say(`left ${file} as staged: it does not parse yet. ${gateNote}`)
   if (formatted.length > 0) git("add", "--", ...formatted)
 }
 
