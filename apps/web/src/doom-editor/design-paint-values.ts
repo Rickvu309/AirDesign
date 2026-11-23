@@ -19,8 +19,19 @@ const opacityOf = (effects: readonly doom.Effect[]): number | null => {
 const fadedTo = (effects: readonly doom.Effect[], opacity: number): readonly doom.Effect[] =>
   effects.map((effect) => ("color" in effect ? { ...effect, opacity } : effect))
 
+const colorKey = (color: doom.Color): string =>
+  typeof color === "string" ? color.toLowerCase() : `${color.var}:${String(color.tint ?? 0)}`
+
+function sameEffect(a: doom.Effect, b: doom.Effect): boolean {
+  if (a.kind !== b.kind) return false
+  if ("radius" in a || "radius" in b) return "radius" in a && "radius" in b && a.radius === b.radius
+  return (
+    a.x === b.x && a.y === b.y && a.blur === b.blur && a.spread === b.spread && colorKey(a.color) === colorKey(b.color)
+  )
+}
+
 const sameLook = (a: readonly doom.Effect[], b: readonly doom.Effect[]): boolean =>
-  JSON.stringify(fadedTo(a, 1)) === JSON.stringify(fadedTo(b, 1))
+  a.length === b.length && a.every((effect, at) => sameEffect(effect, b[at]!))
 
 export function shownShadow(effects: doom.Props["effects"] | undefined, theme: doom.Theme): Shown {
   if (effects === undefined || (Array.isArray(effects) && effects.length === 0)) return { name: "none", opacity: null }
