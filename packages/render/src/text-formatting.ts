@@ -78,15 +78,11 @@ const textKeys: Partial<Readonly<Record<GestureId, TextKey>>> = {
   italic: { toggle: "italic" },
   underline: { toggle: "underline" },
   strike: { toggle: "strike" },
-  "size-up": { resize: 1 },
-  "size-down": { resize: -1 },
   "text-left": { place: "left" },
   "text-center": { place: "center" },
   "text-right": { place: "right" },
   "text-justify": { place: "justify" },
   bullets: { bullets: true },
-  "weight-up": { weight: 1 },
-  "weight-down": { weight: -1 },
 }
 
 export function textKeyOf(event: KeyLike): TextKey | null {

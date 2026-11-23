@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
+import { useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
@@ -18,23 +18,20 @@ import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type DesignMode, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
-import { typing, usePointerTool } from "@/editor/pointer-tool"
+import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToneSource } from "@/editor/tone-link"
-import { gestureFor, type Selection, type ShapeDrawing, type TextFormatting } from "@airdesign/render"
-import { editorOwnsKey } from "@/editor/editor-key-ownership"
+import { type Selection, type ShapeDrawing, type TextFormatting } from "@airdesign/render"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
-import { useShortcutsKey } from "@/editor/shortcuts-key"
 import { useToolKeys } from "@/editor/tool-keys"
-import { shapeDrawing, useArmedShapeEnter, type ShapeAdd } from "@/editor/shape-draw-tool"
+import { shapeDrawing, type ShapeAdd } from "@/editor/shape-draw-tool"
 import type { TextPlace } from "@/element-edit"
-import { useChromeKeys } from "@/editor/chrome-keys"
 import type { PartsWatch } from "@/editor/use-deck-paint"
 import { useKeptView } from "@/editor/kept-view"
 import type { GuidesShown } from "@/editor/slide-guides"
@@ -141,14 +138,12 @@ export function EditorShell({
   const [gridPanel, setGridPanel] = useState(false)
   const [selectedSlides, setSelectedSlides] = useState(0)
   const [shortcutsOpen, setShortcutsOpen] = useState(shortcutsShown)
-  const [bare, setBare] = useState(false)
-  const [listHidden, setListHidden] = useState(false)
   const [rulers, setRulers] = useKeptView("rulers")
   const [layoutGuides, setLayoutGuides] = useKeptView("layoutGuides")
   const watched = deck?.displayed
   const version = watched?.version ?? unchanged
   useSyncExternalStore(watched?.subscribe ?? unwatched, version, version)
-  const listShown = rail === "slides" && !bare && !listHidden
+  const listShown = rail === "slides"
   const sideContent =
     typeof side === "function" ? side(gridOpen || (listShown && deck !== undefined) ? selectedSlides : 1) : side
   const pointer = usePointerTool(deck !== undefined, !gridOpen)
@@ -176,16 +171,7 @@ export function EditorShell({
   )
   useToolKeys(deck !== undefined && !gridOpen && present.show === null, {
     onShape: deck?.onShape === undefined ? undefined : pointer.arm,
-    onPicture: deck?.onPicture,
   })
-  useArmedShapeEnter(pointer, deck?.onShape)
-  useChromeKeys(deck !== undefined && !gridOpen && present.show === null, {
-    onHideAll: () => setBare((now) => !now),
-    onSlideList: () => setListHidden((now) => !now),
-    onRulers: () => setRulers(!rulers),
-    onLayoutGuides: () => setLayoutGuides(!layoutGuides),
-  })
-  useShortcutsKey(deck !== undefined && present.show === null, () => setShortcutsOpen((open) => !open))
   function withShortcuts(editor: ReactNode) {
     if (!shortcutsOpen || present.show !== null) return editor
     return (
@@ -195,21 +181,6 @@ export function EditorShell({
       </div>
     )
   }
-  const mode = designMode?.value
-  const changeMode = designMode?.onChange
-  useEffect(() => {
-    if (mode === undefined || changeMode === undefined || size === null || present.show !== null) return
-    function toggle(event: KeyboardEvent) {
-      if (event.repeat || event.isComposing || event.defaultPrevented || typing(event.target)) return
-      const gesture = gestureFor(event, "editor")
-      if ((gesture !== "design-mode" && gesture !== "layers-panel") || !editorOwnsKey(event)) return
-      if (document.querySelector('[role="dialog"][data-open], [role="alertdialog"][data-open]') !== null) return
-      event.preventDefault()
-      changeMode?.(gesture === "layers-panel" || mode === "slides" ? "design" : "slides")
-    }
-    window.addEventListener("keydown", toggle)
-    return () => window.removeEventListener("keydown", toggle)
-  }, [mode, changeMode, size, present.show])
   const presenting =
     deck === undefined ? null : (
       <PresentLayer
@@ -386,7 +357,7 @@ export function EditorShell({
           data-canvas-overlay
           className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
         >
-          {notes === undefined || bare ? null : (
+          {notes === undefined ? null : (
             <>
               <div data-notes-width style={{ width: Math.min(width, room.width) }}>
                 <NotesBar
@@ -397,11 +368,9 @@ export function EditorShell({
               <span className="block h-3" />
             </>
           )}
-          {bare ? null : (
-            <div className="w-full px-4">
-              <EditorToolbar {...tools} textTool />
-            </div>
-          )}
+          <div className="w-full px-4">
+            <EditorToolbar {...tools} textTool />
+          </div>
         </div>
         {shapeTray ? (
           <div className="absolute inset-x-0 bottom-[72px] flex justify-center">
@@ -409,53 +378,51 @@ export function EditorShell({
           </div>
         ) : null}
       </div>
-      {bare ? null : (
-        <ResizablePanel panel={panel === "design" ? "design" : "agent"}>
-          <PanelHead>
-            {deck === undefined ? (
-              <ZoomReadout value="64%" />
-            ) : size === null ? (
-              <span />
-            ) : (
-              <ZoomMenu
-                zoom={zoom}
-                percent={zoomPercent(width, size)}
-                onZoom={zoomTo}
-                {...(deck.rulers === undefined
-                  ? {}
-                  : {
-                      rulers: { shown: rulers, onChange: setRulers },
-                      layoutGuides: { shown: layoutGuides, onChange: setLayoutGuides },
-                    })}
-                {...(deck.selection === undefined || deck.selection.ids.length === 0
-                  ? {}
-                  : { onSelection: zoomToSelection })}
-              />
-            )}
-            <span className="flex items-center gap-1">
-              <PresentButton
-                ref={presentButton}
-                {...(deck === undefined ? {} : { onClick: () => present.start(deck.slides.current) })}
-              />
-              <ExportControl
-                {...(deck === undefined
-                  ? {}
-                  : {
-                      target: {
-                        name: title,
-                        count: deck.slides.count,
-                        current: deck.slides.current,
-                        size,
-                        slide: deck.slides.thumb,
-                        onExport: deck.onExport,
-                      },
-                    })}
-              />
-            </span>
-          </PanelHead>
-          {sideContent}
-        </ResizablePanel>
-      )}
+      <ResizablePanel panel={panel === "design" ? "design" : "agent"}>
+        <PanelHead>
+          {deck === undefined ? (
+            <ZoomReadout value="64%" />
+          ) : size === null ? (
+            <span />
+          ) : (
+            <ZoomMenu
+              zoom={zoom}
+              percent={zoomPercent(width, size)}
+              onZoom={zoomTo}
+              {...(deck.rulers === undefined
+                ? {}
+                : {
+                    rulers: { shown: rulers, onChange: setRulers },
+                    layoutGuides: { shown: layoutGuides, onChange: setLayoutGuides },
+                  })}
+              {...(deck.selection === undefined || deck.selection.ids.length === 0
+                ? {}
+                : { onSelection: zoomToSelection })}
+            />
+          )}
+          <span className="flex items-center gap-1">
+            <PresentButton
+              ref={presentButton}
+              {...(deck === undefined ? {} : { onClick: () => present.start(deck.slides.current) })}
+            />
+            <ExportControl
+              {...(deck === undefined
+                ? {}
+                : {
+                    target: {
+                      name: title,
+                      count: deck.slides.count,
+                      current: deck.slides.current,
+                      size,
+                      slide: deck.slides.thumb,
+                      onExport: deck.onExport,
+                    },
+                  })}
+            />
+          </span>
+        </PanelHead>
+        {sideContent}
+      </ResizablePanel>
       {templatePicker ? <TemplatePicker /> : null}
       {toast}
       {overlay}

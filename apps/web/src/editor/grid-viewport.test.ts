@@ -19,7 +19,6 @@ import {
   gridCardBounds,
   wheeledGrid,
   gridScaleMoved,
-  arrowGrid,
   readGridViewport,
   type GridGeometry,
 } from "./grid-viewport"
@@ -148,11 +147,6 @@ describe("grid wheel", () => {
 })
 
 describe("grid keys and storage", () => {
-  it("pans arrow keys in screen pixels independent of zoom", () => {
-    expect(arrowGrid({ x: 20, y: 40, scale: 0.2 }, "ArrowRight")).toEqual({ x: -60, y: 40, scale: 0.2 })
-    expect(arrowGrid({ x: 20, y: 40, scale: 3 }, "ArrowUp")).toEqual({ x: 20, y: 120, scale: 3 })
-  })
-
   it("reads only finite valid kept places, including fit scales below ten percent", () => {
     expect(readGridViewport('{"x":-120,"y":800,"scale":0.04}')).toEqual({ x: -120, y: 800, scale: 0.04 })
     for (const raw of [null, "oops", "{}", '{"x":0,"y":0,"scale":0}', '{"x":0,"y":0,"scale":1e999}'])

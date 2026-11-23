@@ -117,23 +117,6 @@ export function childrenSelection(slide: CanvasSlide, selection: Selection): Sel
   return children.length === 0 ? null : selectionOf(slide, children)
 }
 
-export function siblingSelection(slide: CanvasSlide, selection: Selection, step: 1 | -1): Selection | null {
-  const lead = leadOf(selection)
-  const scope = selection.acrossGroups === true && lead !== null ? parentOf(slide, lead) : selection.inside
-  const siblings: ElementId[] = []
-  for (const each of slide.elements) {
-    if (each.id === null || each.backdrop === true) continue
-    if (parentIn(each) === scope) siblings.push(each.id)
-  }
-  if (siblings.length === 0) return null
-  const anchor = step === 1 ? lead : (selection.ids[0] ?? null)
-  const current = anchor === null ? -1 : siblings.indexOf(anchor)
-  const index =
-    current === -1 ? (step === 1 ? 0 : siblings.length - 1) : (current + step + siblings.length) % siblings.length
-  const next = siblings[index]
-  return next === undefined ? null : alone(slide, next)
-}
-
 function levelOf(slide: CanvasSlide, selection: Selection): ElementId | null {
   const lead = leadOf(selection)
   return selection.acrossGroups === true && lead !== null ? parentOf(slide, lead) : selection.inside
@@ -151,15 +134,8 @@ export function allSelection(slide: CanvasSlide, selection: Selection): Selectio
   return ids.length === 0 ? noSelection : { ids, inside: level }
 }
 
-export function inverseSelection(slide: CanvasSlide, selection: Selection): Selection {
-  const level = levelOf(slide, selection)
-  const ids = layersAt(slide, level).filter((id) => !selection.ids.includes(id))
-  return ids.length === 0 ? noSelection : { ids, inside: level }
-}
-
 export function keyedSelection(slide: CanvasSlide, selection: Selection, gesture: GestureId | null): Selection | null {
-  if (gesture === "select-all") return allSelection(slide, selection)
-  return gesture === "select-inverse" ? inverseSelection(slide, selection) : null
+  return gesture === "select-all" ? allSelection(slide, selection) : null
 }
 
 export function hoverTarget(

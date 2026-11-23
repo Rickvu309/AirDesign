@@ -1,4 +1,3 @@
-import { gestureFor } from "@airdesign/render"
 import { slideKey } from "@/editor/slide-keys"
 
 export type GridBox = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
@@ -49,10 +48,6 @@ export function gridCommand(event: {
   readonly altKey: boolean
   readonly shiftKey: boolean
 }): GridCommand | null {
-  const gesture = gestureFor(event, "grid")
-  if (gesture === "slide-open") return "open"
-  if (gesture === "slide-earlier") return "earlier"
-  if (gesture === "slide-later") return "later"
   const change = slideKey(event)
   if (change === "remove" || change === "clone") return change
   if (change === "up") return "earlier"

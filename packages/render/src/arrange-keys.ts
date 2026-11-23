@@ -19,13 +19,6 @@ export function handleArrangeKey(
   grouping?: Grouping,
   onOrder?: (id: ElementId, move: StackMove) => void,
 ): boolean {
-  if (gesture === "auto-layout") {
-    if (grouping?.onFrame !== undefined) {
-      event.preventDefault()
-      grouping.onFrame(ids)
-    }
-    return true
-  }
   if (gesture === "frame") {
     if (ids.length > 0 && grouping?.onPlainFrame !== undefined) {
       event.preventDefault()

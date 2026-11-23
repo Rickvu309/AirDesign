@@ -8,13 +8,11 @@ import {
   deepToggled,
   focused,
   hoverTarget,
-  inverseSelection,
   kept,
   leadOf,
   noSelection,
   parentSelection,
   picked,
-  siblingSelection,
   steppedIn,
   toggled,
   unitOf,
@@ -114,13 +112,6 @@ describe("layers that name their top group and their own parent, as the canvas p
     expect(unitOf(painted, noSelection, innerBackdrop)).toBe(outer)
     expect(unitOf(painted, { ids: [inner], inside: outer }, innerBackdrop)).toBe(inner)
   })
-
-  it("goes back up one level, down to the children, across siblings and over the whole level by the parent", () => {
-    expect(parentSelection(painted, { ids: [deep], inside: inner })).toEqual({ ids: [inner], inside: outer })
-    expect(childrenSelection(painted, { ids: [inner], inside: outer })).toEqual({ ids: [deep, second], inside: inner })
-    expect(siblingSelection(painted, { ids: [deep], inside: inner }, 1)).toEqual({ ids: [second], inside: inner })
-    expect(allSelection(painted, { ids: [deep], inside: inner })).toEqual({ ids: [deep, second], inside: inner })
-  })
 })
 
 describe("deep select", () => {
@@ -154,23 +145,6 @@ describe("hierarchy traversal", () => {
     expect(childrenSelection(slide, many(outer))).toEqual({ ids: [first, second, inner], inside: outer })
     expect(childrenSelection(slide, { ids: [inner], inside: outer })).toEqual({ ids: [deep], inside: inner })
     expect(childrenSelection(slide, many(loose))).toBeNull()
-  })
-
-  it("cycles direct siblings with Tab and Shift+Tab, skipping backdrops and wrapping around", () => {
-    expect(siblingSelection(slide, many(outer), 1)).toEqual({ ids: [loose], inside: null })
-    expect(siblingSelection(slide, many(other), 1)).toEqual({ ids: [outer], inside: null })
-    expect(siblingSelection(slide, many(outer), -1)).toEqual({ ids: [other], inside: null })
-    expect(siblingSelection(slide, { ids: [first], inside: outer }, 1)).toEqual({ ids: [second], inside: outer })
-    expect(siblingSelection(slide, { ids: [inner], inside: outer }, 1)).toEqual({ ids: [first], inside: outer })
-    expect(siblingSelection(slide, { ids: [first], inside: outer }, -1)).toEqual({ ids: [inner], inside: outer })
-    expect(siblingSelection(slide, { ids: [first, second, inner], inside: outer }, 1)).toEqual({
-      ids: [first],
-      inside: outer,
-    })
-    expect(siblingSelection(slide, { ids: [first, second, inner], inside: outer }, -1)).toEqual({
-      ids: [inner],
-      inside: outer,
-    })
   })
 })
 
@@ -259,15 +233,5 @@ describe("select all and select inverse", () => {
       ids: [first, second, inner],
       inside: outer,
     })
-  })
-
-  it("selects the other layers at that level, or none when all were selected", () => {
-    expect(inverseSelection(withLocked, many(loose))).toEqual({ ids: [outer, other], inside: null })
-    expect(inverseSelection(withLocked, noSelection)).toEqual({ ids: [outer, loose, other], inside: null })
-    expect(inverseSelection(withLocked, { ids: [first, inner], inside: outer })).toEqual({
-      ids: [second],
-      inside: outer,
-    })
-    expect(inverseSelection(withLocked, many(outer, loose, other))).toEqual(noSelection)
   })
 })

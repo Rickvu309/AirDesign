@@ -29,7 +29,6 @@ import {
   parentSelection,
   sameSelection,
   keyedSelection,
-  siblingSelection,
   steppedIn,
   toggled,
   unitOf,
@@ -49,7 +48,7 @@ import {
   type TransformModifiers,
 } from "./transform-drag.js"
 import { hudChannel, type TransformHudState } from "./transform-hud.js"
-import { isRotateGrip, resizedByKey, type TransformGrip } from "./transform-math.js"
+import { isRotateGrip, type TransformGrip } from "./transform-math.js"
 import type { OwnsKey } from "./use-slide-marquee.js"
 import { useLayerCopies, type Duplicate } from "./use-layer-copies.js"
 import type { Moves } from "./moves.js"
@@ -431,10 +430,9 @@ export function useMoves(
       }
       return
     }
-    if (gesture === "select-next" || gesture === "select-all" || gesture === "select-inverse") {
+    if (gesture === "select-all") {
       if (now !== null) return
-      const next =
-        keyedSelection(size, latest.current, gesture) ?? siblingSelection(size, latest.current, event.shiftKey ? -1 : 1)
+      const next = keyedSelection(size, latest.current, gesture)
       if (next !== null && owns(event)) {
         event.preventDefault()
         choose(next)
@@ -477,17 +475,6 @@ export function useMoves(
     }
     if (now?.by === "pointer") return
     const ids = now?.by === "keys" ? now.ids : movingWith(id)
-    if (gesture === "resize-keys") {
-      const start = startOf(element)
-      if (ids.length > 1 || start === null || !canDrag(element)) return
-      const grown = resizedByKey(start, event.key, element.box?.rotation ?? 0)
-      if (grown === null) return
-      event.preventDefault()
-      if (now === null) hold({ by: "keys", ids, starts: new Map([[id, start]]) })
-      keyed.current = { verb: "Resized", label: frame.getAttribute("aria-label") ?? "" }
-      place(new Map([[id, grown]]))
-      return
-    }
     if (gesture !== "nudge" && gesture !== "nudge-far") return
     const starts = startsOf(ids)
     const next = nudgedBoxes(starts, event.key, gesture === "nudge-far", size)
