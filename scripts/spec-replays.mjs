@@ -2,7 +2,11 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-export const unreplayed = {}
+export const unreplayed = {
+  agents:
+    "no Doom code holds RunsAreOwn, StopsOnlyOwn or HeldOnlyWhileLive: guardRun accepts any running run, stopRunTool stops any run of the deck, nothing holds elements",
+  turn: "no Doom code holds a turn: nothing closes an element to agent writes until the turn ends",
+}
 
 const testFolders = ["tests", "apps", "packages"]
 
