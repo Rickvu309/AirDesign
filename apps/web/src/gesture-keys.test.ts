@@ -52,6 +52,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/design/controls/number.tsx": ["ArrowDown", "ArrowUp", ...field],
   "apps/web/src/design/controls/text.tsx": field,
   "apps/web/src/design/custom-color.tsx": [...list, ...field],
+  "apps/web/src/doom-editor/actions-popover.tsx": ["ArrowDown", "ArrowUp", "Enter"],
   "apps/web/src/doom-editor/number-cell.tsx": ["ArrowDown", "ArrowUp"],
   "apps/web/src/editor/deck-title-edit.tsx": field,
   "apps/web/src/editor/editor-key-ownership.ts": ["Escape"],
