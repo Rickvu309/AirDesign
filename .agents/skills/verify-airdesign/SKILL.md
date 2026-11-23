@@ -190,8 +190,6 @@ Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, 
 
 `$V bench` times what a person feels in the editor (Add text box to the first letter painted, frame time while dragging, reopening a 41-slide deck, importing decks) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
 
-[agent-bench.md](agent-bench.md): run Aira’s deck tasks by hand, never in checks.
-
 ## Pick the proof
 
 `pnpm gate` and `pnpm check` skip the browser tests on this machine, and `ci` runs them. Before `pnpm land`, run the proof your diff needs:

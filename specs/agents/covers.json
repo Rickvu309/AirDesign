@@ -8,18 +8,6 @@
       "blob": "7a7e56261c8ddbe61730eb109fcfc5eca0820592"
     },
     {
-      "file": "packages/mcp/src/turn.ts",
-      "names": ["heldRun", "holders", "settleTurn"],
-      "digest": "128abc2bf562",
-      "blob": "cf44ccb491249fed1a66f0ba3f5a63e6c59b79e3"
-    },
-    {
-      "file": "packages/mcp/src/run.ts",
-      "names": ["freed", "joinRun", "openRun", "stopForNewTurn", "stopLiveRuns"],
-      "digest": "94f3a301812c",
-      "blob": "b8ba8cce8637137691707b645117529f4ca7f41b"
-    },
-    {
       "file": "packages/mcp/src/call-tool.ts",
       "names": ["stopRun"],
       "digest": "280d7a16b2fd",
@@ -30,12 +18,6 @@
       "names": ["editDeck", "addTurn"],
       "digest": "6b1698ca9ae1",
       "blob": "eeecbcba01d7a409d301071fd436d6a9998ba1b5"
-    },
-    {
-      "file": "apps/api/src/agent-turn.ts",
-      "names": ["storedTurns"],
-      "digest": "679177026d58",
-      "blob": "15f5bbeae83d94b8bcf9d6e2ef95c82858ecc0d8"
     },
     {
       "file": "apps/api/src/server.ts",

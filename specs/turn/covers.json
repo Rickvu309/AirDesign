@@ -2,28 +2,10 @@
   "check": "checks-server.md#turn",
   "covers": [
     {
-      "file": "packages/mcp/src/turn.ts",
-      "names": ["liveTurn", "heldRun", "settleTurn", "dropGoneTurn"],
-      "digest": "d7dddbc880f0",
-      "blob": "cf44ccb491249fed1a66f0ba3f5a63e6c59b79e3"
-    },
-    {
-      "file": "packages/mcp/src/run.ts",
-      "names": ["openRun", "joinRun", "stopLiveRuns", "stopForNewTurn"],
-      "digest": "894f15dc7920",
-      "blob": "b8ba8cce8637137691707b645117529f4ca7f41b"
-    },
-    {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeck", "addTurn"],
       "digest": "6b1698ca9ae1",
       "blob": "eeecbcba01d7a409d301071fd436d6a9998ba1b5"
-    },
-    {
-      "file": "apps/api/src/agent-turn.ts",
-      "names": ["storedTurns"],
-      "digest": "679177026d58",
-      "blob": "15f5bbeae83d94b8bcf9d6e2ef95c82858ecc0d8"
     },
     {
       "file": "packages/document/src/decide.ts",
