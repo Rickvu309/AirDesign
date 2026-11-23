@@ -35,12 +35,9 @@ Preconditions:
 - The model is the scripted stand-in (`bin/scripted-aira.mjs`). `kit.aira([...])` picks the recorded streams, one per model call.
 
 - **Run it.** `$V journey <run> aira-panel`. Prints `"passed":true` and the evidence dir.
-- **Panel.** Import `clean.pptx`; the panel shows the `Ask Aira` composer. Evidence `NN-agent-panel`, `NN-typed`.
-- **Working.** Send the ask with `edit.sse` then `edited.sse`. The journey holds `/mcp` in the browser so the working state can be captured: the streamed words, the running `Editing slides` row, `Stop`. Evidence `NN-working`.
-- **Done.** Release `/mcp`. The slide reads `Hello from Aira`, the reply ends, `Undo` shows, and `deckRoutes.open` agrees. Evidence `NN-done`.
-- **Usage.** Open the ring. Evidence `NN-usage`.
-- **Undo.** The slide reads `Hello` again in the same page load and the server agrees. Evidence `NN-undone`.
-- **Failed.** Send again with `overloaded.sse`. Evidence `NN-failed`.
+- **Panel.** Open a new Doom deck at `/s`; the panel shows the `Ask Aira` composer. Evidence `NN-doom-agent-panel`.
+- **Working.** Send the ask with `add-kpi.sse` then `added-kpi.sse`. The journey holds `/mcp` in the browser so the working state can be captured: the streamed words, the running `Editing slides` row, `Stop`. Evidence `NN-working`.
+- **Done.** Release `/mcp`. The slide shows `$4.2M` without a reload, the reply ends and `Undo` shows. Evidence `NN-done`.
 - **Head, stop, retry, history, not offered.** `$V journey <run> aira-head`: before any ask it opens the history menu and the usage popover; then it holds `/mcp`, clicks `Stop`, releases the call and checks the step reads `Stopped editing slides`, the title still reads `Hello` and no second reply came; then `overloaded.sse` followed by `turn.sse` behind `Try again`; then a reload that reopens the chat, `New chat`, and a `/aira/usage` answer rewritten to `available: false`. It also checks `airaRoutes.stop` and a turn sent with the country header `CN` through the API.
 - **Two accounts.** A scratch journey asked with `turn.sse`, signed out, signed in a second account (no chat on the deck's address, which is refused), and signed the first account in again with `kit.signIn(email)`: the chat was there.
 - **Slide tools.** `$V journey <run> aira-slides` plays `add-slide.sse` and `title-slide.sse`, checks the new slide on the canvas and the server, and undoes the run.
