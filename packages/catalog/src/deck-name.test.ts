@@ -1,9 +1,9 @@
 import { expect, it } from "vitest"
-import { deckName, readRename } from "./index.js"
+import { deckName, readDeckName } from "./index.js"
 
 const smile = "\ud83d\ude00"
 
-it("deckName makes a file name into the name readRename keeps", () => {
+it("deckName makes a file name into the name readDeckName keeps", () => {
   const named: readonly (readonly [string, string])[] = [
     ["Board deck.PPTX", "Board deck"],
     ["Board deck.pptx.pptx", "Board deck.pptx"],
@@ -17,7 +17,7 @@ it("deckName makes a file name into the name readRename keeps", () => {
   ]
   for (const [file, name] of named) {
     expect(deckName(file)).toBe(name)
-    expect(readRename({ deck: "d", name: deckName(file) })).toEqual({ ok: true, deck: "d", name })
+    expect(readDeckName(deckName(file))).toBe(name)
   }
 })
 

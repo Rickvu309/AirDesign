@@ -7,23 +7,11 @@ import {
   readNoFields,
   readMediaRequest,
   readMediaUpload,
-  readRename,
   readStar,
   type DeckId,
 } from "./wire.js"
 
-const callRefusals = [
-  ...refusals,
-  "field",
-  "deck",
-  "batch",
-  "base",
-  "payload",
-  "indexing",
-  "kept",
-  "site",
-  "image",
-] as const
+const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "kept", "site", "image"] as const
 
 const editRefusals = [...callRefusals, "text-from", "owner", "deleted", "store", "held"] as const
 
@@ -121,10 +109,6 @@ function deckAnswer(raw: unknown): raw is { readonly deck: DeckId } & Record<str
   return recordAnswer(raw) && readCapture({ deck: raw.deck }).ok
 }
 
-function renameAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly name: string } {
-  return deckAnswer(raw) && typeof raw.name === "string"
-}
-
 function starAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly starred: boolean } {
   return deckAnswer(raw) && typeof raw.starred === "boolean"
 }
@@ -164,7 +148,6 @@ function mediaAnswer(raw: unknown): raw is Signed & { readonly bytes: number; re
 
 export const deckRoutes = {
   list: { path: "/decks/list", read: readNoFields, result: decode(listAnswer) },
-  rename: { path: "/decks/rename", read: readRename, result: decode(renameAnswer) },
   star: { path: "/decks/star", read: readStar, result: decode(starAnswer) },
   trash: { path: "/decks/trash", read: readCapture, result: decode(trashAnswer) },
   restore: { path: "/decks/restore", read: readCapture, result: decode(deckAnswer) },

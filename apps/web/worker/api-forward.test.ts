@@ -168,7 +168,7 @@ describe("API forwarding", () => {
   it("forwards the commit request and returns the API response", async () => {
     const body = '{"edits":["é"]}'
     const response = await worker.fetch(
-      new Request("https://example.com/decks/rename", {
+      new Request("https://example.com/decks/star", {
         method: "POST",
         headers: { cookie: "airdesign.session=abc", "content-type": "application/json" },
         body,
@@ -178,7 +178,7 @@ describe("API forwarding", () => {
     expect(seen).toEqual([
       {
         method: "POST",
-        url: "/decks/rename",
+        url: "/decks/star",
         cookie: "airdesign.session=abc",
         contentType: "application/json",
         country: undefined,
@@ -328,7 +328,6 @@ describe("API forwarding", () => {
     "/account/agents",
     "/account/agents/revoke",
     "/decks/list",
-    "/decks/rename",
     "/decks/star",
     "/decks/trash",
     "/decks/restore",

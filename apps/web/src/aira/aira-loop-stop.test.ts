@@ -4,9 +4,7 @@ import { airaChat, askAira, undoExchange, type AiraChat } from "./aira-loop"
 import { call, deck, edit, editCall, edited, ended, read, scripted, stop } from "@/testing/aira-loop-script"
 
 describe("Aira's loop when Stop comes while a tool call is still waiting for the server", () => {
-  const never = () => new Promise<void>(() => undefined)
-
-  async function stoppedInFlight(calls: readonly ReplyBlock[], pause: () => Promise<void>) {
+  async function stoppedInFlight(calls: readonly ReplyBlock[]) {
     const controller = new AbortController()
     const link = scripted([{ lines: [ended(calls)] }, { lines: [ended([{ type: "text", text: "Ok" }])] }], [], {
       onTool: () => void setTimeout(() => controller.abort(), 0),
@@ -16,7 +14,6 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
       signal: controller.signal,
       fetch: link.send,
       show: () => undefined,
-      pause,
     })
     return { done, link }
   }
@@ -33,7 +30,6 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
       fetch: link.send,
       mint: () => "ask-1",
       show: (next) => shown.push(next),
-      pause: never,
     })
     await vi.waitFor(() => {
       expect(link.toolsSent()).toEqual([edit])
@@ -93,7 +89,7 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
   })
 
   it("ends the hung call, marks its step stopped, and tells the model an edit may have landed", async () => {
-    const { done, link } = await stoppedInFlight([editCall], async () => undefined)
+    const { done, link } = await stoppedInFlight([editCall])
     expect(done.exchanges[0]?.end).toBe("stopped")
     expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: edit, state: "stopped" }])
     expect(link.toolsSent()).toEqual([edit])
@@ -104,7 +100,7 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
   })
 
   it("says a read changed nothing", async () => {
-    const { done } = await stoppedInFlight([call("call_1", read, { deck })], never)
+    const { done } = await stoppedInFlight([call("call_1", read, { deck })])
     expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: read, state: "stopped" }])
     expect(JSON.stringify(done.answers[0])).toContain("Nothing changed")
   })

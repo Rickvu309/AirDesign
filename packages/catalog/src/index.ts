@@ -73,7 +73,6 @@ export {
   readLinkToken,
   readNamedDeck,
   readNoFields,
-  readRename,
   readStar,
   readRevokeRequest,
   readRun,

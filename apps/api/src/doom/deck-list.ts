@@ -1,13 +1,9 @@
-import { randomUUID } from "node:crypto"
-
 import type { DeckAnswers } from "../platform/deck-answer.js"
 import type { DeckId } from "@airdesign/catalog"
 
 import type { Sql } from "../platform/pool.js"
 import { drainOriginals } from "./original.js"
 import type { OriginalStore } from "../platform/original-store.js"
-import { editDoom } from "./doom-deck.js"
-import { startAuthor, startIds } from "./doom-start.js"
 
 type Listed = {
   readonly deck: DeckId
@@ -105,23 +101,6 @@ export async function listDecks(
   return { ok: true, account: { email }, decks, trash }
 }
 
-export async function renameDeck(
-  db: Sql,
-  parsed: { readonly deck: DeckId; readonly name: string },
-  email: string,
-): Promise<
-  | { readonly ok: true; readonly deck: DeckId; readonly name: string }
-  | { readonly ok: false; readonly refusal: Refusal }
-> {
-  const edit = {
-    once: `rename-${randomUUID()}`,
-    author: startAuthor,
-    writes: [{ node: startIds.deck, prop: "name", value: parsed.name }],
-  }
-  const landed = await editDoom(db, { deck: parsed.deck, edit }, email)
-  return landed.ok ? { ok: true, deck: parsed.deck, name: parsed.name } : missed
-}
-
 export async function starDeck(
   db: Sql,
   parsed: { readonly deck: DeckId; readonly starred: boolean },
@@ -166,7 +145,6 @@ export async function deleteDecks(
 
 export const deckListAnswers = {
   list: (db, _, email, store) => listDecks(db, email, store),
-  rename: renameDeck,
   star: starDeck,
   trash: trashDeck,
   restore: restoreDeck,

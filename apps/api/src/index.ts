@@ -1,6 +1,6 @@
 export { acceptCode, acceptLink, findAccess, issueMail } from "./account/account.js"
 export { screenFor, type Screen } from "./oauth/clients.js"
-export { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./doom/deck-list.js"
+export { deleteDecks, listDecks, restoreDeck, trashDeck } from "./doom/deck-list.js"
 export { DeckListen } from "./platform/listen.js"
 export { sendWithResend, signLink, type Mail, type ResendAccount, type Sender } from "./platform/mail.js"
 export { openPool, type Sql } from "./platform/pool.js"
