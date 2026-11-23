@@ -11,6 +11,7 @@ import {
   readHex,
 } from "./paint.js"
 import { type Reader, finite, integer, keyed, literal, object, words } from "./read-kit.js"
+import { slideTextStyles } from "./slide-text-styles.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
 
 export type TextStyle = {
@@ -46,10 +47,14 @@ const readTextStyle: Reader<TextStyle> = object(
   { case: literal(["upper"]) },
 )
 
+const readEveryTextStyle = keyed(textStyleNames, readTextStyle)
+const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
+  readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...slideTextStyles, ...raw } : raw)
+
 export const readTheme: Reader<Theme> = object({
   colors: keyed(colorVars, readHex),
   fonts: object({ heading: readFontName, body: readFontName }),
-  textStyles: keyed(textStyleNames, readTextStyle),
+  textStyles: readTextStyles,
   effectStyles: keyed(effectStyleNames, readEffectList),
 })
 

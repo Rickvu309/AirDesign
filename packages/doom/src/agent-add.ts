@@ -47,6 +47,7 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   matrix: [...patternFields, "axes"],
 }
 
+const titleStyles: ReadonlySet<Text["style"]> = new Set(["display", "title"])
 const iconSide = 96
 const lineWeight = 3
 const iconWeightShare = 12
@@ -69,7 +70,7 @@ function emptyPlaceholderOf(draft: Draft, slide: Node, role: "title" | "subtitle
 }
 
 function emptyPlaceholderFor(draft: Draft, slide: Node, style: Text["style"], boxed: boolean): Node | undefined {
-  if (style === "title") return emptyPlaceholderOf(draft, slide, "title", placeholderTitle)
+  if (titleStyles.has(style)) return emptyPlaceholderOf(draft, slide, "title", placeholderTitle)
   return boxed ? undefined : emptyPlaceholderOf(draft, slide, "subtitle", placeholderSubtitle)
 }
 
@@ -115,7 +116,8 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
   const filled = kind === "shape" && change.fill === undefined && change.stroke === undefined
   const titled =
     kind === "text" &&
-    made?.style === "title" &&
+    made !== undefined &&
+    titleStyles.has(made.style) &&
     !descendantsOf(draft.doom, slide.id).some((node) => get(node, "role") === "title")
   create(draft, "shape", parent.id, {
     ...surfaceOf(change),

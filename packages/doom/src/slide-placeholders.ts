@@ -17,11 +17,11 @@ const subtitleHighShare = 1 / 8
 const titleTopShare = 2 / 27
 const titleOnlyHighShare = 1 / 9
 
-const titleText = (resize: Text["resize"], alignV: Text["alignV"]): Text => ({
+const titleText = (style: Text["style"], resize: Text["resize"], alignV: Text["alignV"]): Text => ({
   chars: placeholderTitle,
   spans: [],
   paras: [{}],
-  style: "title",
+  style,
   resize,
   alignV,
 })
@@ -69,7 +69,7 @@ export function titleSlideWrites(slide: NodeId, mint: () => NodeId, size: Size):
       "Title",
       "title",
       { x, y: bottom - high, w, h: high },
-      titleText("fixed", "bottom"),
+      titleText("display", "fixed", "bottom"),
     ),
     ...placeholder(
       mint(),
@@ -92,6 +92,6 @@ export function titleOnlyWrites(slide: NodeId, mint: () => NodeId, size: Size): 
     "Title",
     "title",
     { x, y: Math.round(size.h * titleTopShare), w: size.w - 2 * x, h: Math.round(size.h * titleOnlyHighShare) },
-    titleText("height", "top"),
+    titleText("title", "height", "top"),
   )
 }

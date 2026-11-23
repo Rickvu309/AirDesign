@@ -7,7 +7,7 @@ const size = (name: (typeof textStyleNames)[number]) => slideTextStyles[name].si
 
 describe("the slide type scale at 1920 by 1080", () => {
   it("names a size for each style, from the big number down to the label", () => {
-    expect(textStyleNames.map(size)).toEqual([80, 56, 40, 32, 28, 24, 24])
+    expect(textStyleNames.map(size)).toEqual([88, 80, 56, 40, 32, 28, 24, 24])
   })
 
   it("keeps every style at 24 px or more, so no text on a slide is small", () => {
@@ -27,9 +27,17 @@ describe("the slide type scale at 1920 by 1080", () => {
     expect(size("bigNumber")).toBeGreaterThanOrEqual(size("label") * 3)
   })
 
-  it("sets a consulting slide at 2 px a point: a 28 pt action title, 20 pt lead, 16 pt body and 12 pt notes", () => {
+  it("sets a cover's title above every step a content slide uses, bold", () => {
+    for (const name of textStyleNames) if (name !== "display") expect(size("display")).toBeGreaterThan(size(name))
+    expect(size("display")).toBeGreaterThanOrEqual(size("title") * 1.5)
+    expect(slideTextStyles.display.weight).toBeGreaterThanOrEqual(700)
+  })
+
+  it("sets a consulting slide at 2 px a point: a 44 pt cover, 28 pt action title, 20 pt lead, 16 pt body and 12 pt notes", () => {
     const points = (name: (typeof textStyleNames)[number]) => size(name) / 2
-    expect([points("title"), points("heading"), points("body"), points("caption")]).toEqual([28, 20, 16, 12])
+    expect([points("display"), points("title"), points("heading"), points("body"), points("caption")]).toEqual([
+      44, 28, 20, 16, 12,
+    ])
   })
 
   it("sets a label no smaller than a note, and heavier, so a KPI's label leads its delta", () => {

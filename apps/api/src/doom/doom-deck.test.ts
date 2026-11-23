@@ -120,6 +120,7 @@ describe("creating a doom deck", () => {
     expect(theme.colors.accent1).toBe(`#${neutral.colors.accent1.toLowerCase()}`)
     expect(theme.fonts).toEqual({ heading: neutral.fonts.major, body: neutral.fonts.minor })
     expect(Object.keys(theme.textStyles)).toEqual([
+      "display",
       "bigNumber",
       "title",
       "heading",

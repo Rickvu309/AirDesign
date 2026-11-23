@@ -21,14 +21,14 @@ const byRole = (doom: Doom, role: string) => childrenOf(doom, ids.slide).find((n
 const titleAndSubtitle = (doom: Doom) => ({ title: byRole(doom, "title"), subtitle: byRole(doom, "subtitle") })
 
 describe("a title slide's placeholders", () => {
-  it("sets the title in the title style so a typical title fits on one line", () => {
+  it("sets the title in the display style so a typical cover title fits on one line", () => {
     const { title } = titleAndSubtitle(withTitleSlide())
     const text = get(title, "text")!
     const box = get(title, "box")!
     expect(get(title, "role")).toBe("title")
-    expect(text).toMatchObject({ chars: placeholderTitle, style: "title", resize: "fixed", alignV: "bottom" })
+    expect(text).toMatchObject({ chars: placeholderTitle, style: "display", resize: "fixed", alignV: "bottom" })
     const typical = { ...text, chars: "Q3 board update" }
-    expect(textHeight(typical, theme, box.w)).toBe(theme.textStyles.title.size * theme.textStyles.title.lineHeight)
+    expect(textHeight(typical, theme, box.w)).toBe(theme.textStyles.display.size * theme.textStyles.display.lineHeight)
     expect(box.y + box.h).toBe(540)
   })
 
@@ -57,7 +57,7 @@ describe("a title slide's placeholders", () => {
 })
 
 describe("a title-only slide's placeholder", () => {
-  it("sets the title in the same style as the title slide, at the top left of the content margins", () => {
+  it("sets the title in the title style, a step under the cover's display, at the top left of the content margins", () => {
     const doom = apply(agentDeck(), titleOnlyWrites(ids.slide, minter("q"), size))
     const title = byRole(doom, "title")
     expect(get(title, "role")).toBe("title")
@@ -80,7 +80,7 @@ describe("an agent's words on a title slide", () => {
     const doom = build(titled, word({ text: "Revenue grew while margin held", textStyle: "heading" }), minter("g"))
     expect(childrenOf(doom, ids.slide)).toHaveLength(childrenOf(before, ids.slide).length)
     const { title, subtitle } = titleAndSubtitle(doom)
-    expect(get(title, "text")).toMatchObject({ chars: "Q3 board update", style: "title" })
+    expect(get(title, "text")).toMatchObject({ chars: "Q3 board update", style: "display" })
     expect(get(subtitle, "text")).toMatchObject({
       chars: "Revenue grew while margin held",
       style: "body",
@@ -89,6 +89,14 @@ describe("an agent's words on a title slide", () => {
       spans: [{ end: 30, color: { var: "text2" } }],
     })
     expect(get(subtitle, "box")).toEqual(get(titleAndSubtitle(before).subtitle, "box"))
+  })
+
+  it("fill the title placeholder when the agent names the display style", () => {
+    const before = withTitleSlide()
+    const doom = build(before, word({ text: "Q3 board update", textStyle: "display" }), minter("d"))
+    expect(childrenOf(doom, ids.slide)).toHaveLength(childrenOf(before, ids.slide).length)
+    expect(get(titleAndSubtitle(doom).title, "text")).toMatchObject({ chars: "Q3 board update", style: "display" })
+    expect(get(titleAndSubtitle(doom).subtitle, "text")!.chars).toBe(placeholderSubtitle)
   })
 
   it("add a second text once the subtitle is filled", () => {

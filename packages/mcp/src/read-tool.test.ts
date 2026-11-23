@@ -65,7 +65,9 @@ describe("read_deck's theme", () => {
     const { deck } = (await call("create_deck", {})).answer as { deck: string }
     const read = await call("read_deck", { deck })
     expect(read.answer).toMatchObject({
-      theme: { sizes: { bigNumber: 80, title: 56, heading: 40, body: 32, body2: 28, caption: 24, label: 24 } },
+      theme: {
+        sizes: { display: 88, bigNumber: 80, title: 56, heading: 40, body: 32, body2: 28, caption: 24, label: 24 },
+      },
     })
   })
 })
