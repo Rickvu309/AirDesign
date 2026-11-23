@@ -124,6 +124,7 @@ function connected(
   const turned: string[] = []
   let notices: readonly Notice[] = []
   let link: Reach = "reached"
+  let kept = true
   let shownStatus: DeckStatus = { kind: "saved" }
   const watched = new Map<string, doom.RunEdit[]>()
   let memo: { readonly server: doom.Doom; readonly queue: readonly Queued[]; readonly view: doom.Doom } | undefined
@@ -145,8 +146,19 @@ function connected(
   }
 
   const save = (changed: { fold?: doom.Doom; queue?: readonly Queued[] }): Promise<void> => {
-    saving = saving.then(() => (gone ? undefined : storage.write(changed))).catch(() => undefined)
+    saving = saving
+      .then(() => (gone ? undefined : storage.write(changed)))
+      .then(
+        () => keep(true),
+        () => keep(false),
+      )
     return saving
+  }
+
+  function keep(now: boolean) {
+    if (kept === now) return
+    kept = now
+    tell()
   }
 
   const leave = async (): Promise<Followed> => {
@@ -475,7 +487,7 @@ function connected(
       notices = []
       tell()
     },
-    status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, aside: notices }, shownStatus)),
+    status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, kept, aside: notices }, shownStatus)),
     mint: () => doom.nodeId(`${client}:${(counter += 1)}`),
     push(given, pushing) {
       const writes = [...given, ...doom.nameFromTitleWrites(view(), given)]

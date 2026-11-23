@@ -5,6 +5,7 @@ export type DeckStatus =
   | { readonly kind: "saving" }
   | { readonly kind: "offline" }
   | { readonly kind: "blocked" }
+  | { readonly kind: "storage-failed" }
   | { readonly kind: "set-aside"; readonly edits: number; readonly tooLarge: boolean }
 
 export type Reach = "reached" | "offline" | "blocked"
@@ -14,12 +15,14 @@ const plain = {
   saving: { kind: "saving" },
   offline: { kind: "offline" },
   blocked: { kind: "blocked" },
+  storageFailed: { kind: "storage-failed" },
 } as const satisfies Record<string, DeckStatus>
 
 export function statusOf(
   shown: {
     readonly unsent: number
     readonly reach: Reach
+    readonly kept: boolean
     readonly aside: readonly { readonly refused: doom.Refusal["refused"] }[]
   },
   last: DeckStatus,
@@ -32,5 +35,6 @@ export function statusOf(
       : { kind: "set-aside", edits, tooLarge }
   }
   if (shown.unsent === 0) return plain.saved
+  if (!shown.kept) return plain.storageFailed
   return shown.reach === "reached" ? plain.saving : plain[shown.reach]
 }
