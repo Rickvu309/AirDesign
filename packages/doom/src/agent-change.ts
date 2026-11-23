@@ -305,10 +305,13 @@ const lookFields: LookFields = {
     },
     object({ x: px(), y: px(), w: size, h: size }),
   ),
-  name: field<string>({ type: "string", description: "Layer name." }, (raw) => {
-    const name = words(limits.name, 1)(raw)
-    return name.trim() === "" ? reject() : name
-  }),
+  name: field<string>(
+    { type: "string", description: "Layer name, or with op deck the deck's name. Never empty." },
+    (raw) => {
+      const name = words(limits.name, 1)(raw)
+      return name.trim() === "" ? reject() : name
+    },
+  ),
   hidden: flag("Hide the layer."),
   size: number(1, 2_000, "Overrides the text style's size, in pixels."),
   font: field(

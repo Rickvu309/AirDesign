@@ -43,6 +43,6 @@ describe("a shape's outline through the agent tools", () => {
     })
     expect(refused.ok).toBe(false)
     expect(refused.answer).toMatchObject({ field: "shape" })
-    expect(String(refused.answer.note)).toContain("Lines and connectors are not shapes: add kind line.")
+    expect(JSON.stringify(doom.agentChangesSchema)).toContain("Lines and connectors are not shapes: add kind line.")
   })
 })

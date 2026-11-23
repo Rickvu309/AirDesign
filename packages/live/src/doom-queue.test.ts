@@ -170,6 +170,19 @@ describe("an edit dropped", () => {
     expect(rest.queue).toEqual([])
   })
 
+  it("takes the follow-up that names it, such as the deck name a title edit derived", () => {
+    const base = server()
+    const [typed, named] = queued(
+      base,
+      queued(base, [], edit("title", [{ node: title, prop: "text", value: words("Q3") }])),
+      edit("name", [{ node: deck, prop: "name", value: "Q3" }]),
+    )
+    const queue = [typed!, { ...named!, follows: "title" }]
+    const rest = dropped(queue, "title")
+    expect(rest.gone).toEqual(["title", "name"])
+    expect(rest.queue).toEqual([])
+  })
+
   it("drops one that is not queued as nothing", () => {
     const base = server()
     const queue = queued(base, [], edit("a", [{ node: card, prop: "name", value: "A" }]))

@@ -1,6 +1,10 @@
 import * as doom from "@airdesign/doom"
 
-export type Queued = { readonly edit: doom.Edit; readonly after: readonly (string | null)[] }
+export type Queued = {
+  readonly edit: doom.Edit
+  readonly after: readonly (string | null)[]
+  readonly follows?: string
+}
 
 export const shown = (server: doom.Doom, queue: readonly Queued[]): doom.Doom =>
   doom.viewOf(
@@ -75,6 +79,7 @@ export function landed(queue: readonly Queued[], once: string, rev: doom.Rev): Q
       continue
     }
     rest.push({
+      ...each,
       edit: {
         ...each.edit,
         writes: each.edit.writes.map((write, index) => (each.after[index] === once ? { ...write, base: rev } : write)),
@@ -91,7 +96,12 @@ export function dropped(
 ): { readonly queue: readonly Queued[]; readonly gone: readonly string[] } {
   if (!queue.some((each) => each.edit.once === once)) return { queue, gone: [] }
   const gone = new Set([once])
-  for (const each of queue) if (each.after.some((name) => name !== null && gone.has(name))) gone.add(each.edit.once)
+  for (const each of queue)
+    if (
+      each.after.some((name) => name !== null && gone.has(name)) ||
+      (each.follows !== undefined && gone.has(each.follows))
+    )
+      gone.add(each.edit.once)
   return {
     queue: queue.filter((each) => !gone.has(each.edit.once)),
     gone: queue.filter((each) => gone.has(each.edit.once)).map((each) => each.edit.once),
