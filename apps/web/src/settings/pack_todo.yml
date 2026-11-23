@@ -1,13 +1,4 @@
 apps/web/src:
-  apps/web/src/thin-notice.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/settings/account-page.tsx
-      - apps/web/src/settings/agents-page.tsx
-      - apps/web/src/settings/settings-page.tsx
-      - apps/web/src/settings/usage-page.tsx
   apps/web/src/usage-load.ts:
     violations:
       - dependency

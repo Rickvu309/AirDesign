@@ -1,10 +1,3 @@
-apps/web/src:
-  apps/web/src/thin-notice.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/credits/use-credits.ts
 apps/web/src/aira:
   apps/web/src/aira/aira-wire.ts:
     violations:

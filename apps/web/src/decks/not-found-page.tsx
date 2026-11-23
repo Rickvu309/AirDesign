@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { NotFound, type NotFoundKind } from "@/decks/not-found"
-import { loadAccount } from "@/settings/account-load"
-import { signOut } from "@/settings/settings-page"
-import { signInAddress } from "@/thin-notice"
+import { loadAccount } from "@/account/account-load"
+import { signOut } from "@/account/sign-out"
+import { signInAddress } from "@/account/sign-in-address"
 
 export function NotFoundPage({ kind }: { kind: NotFoundKind }) {
   const [email, setEmail] = useState("")

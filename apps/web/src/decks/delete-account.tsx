@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { askDeletion, matchesEmail, type Deletion } from "@/decks/account-deletion"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { settingsCopy } from "@/copy/settings-copy"
-import { signInAddress } from "@/thin-notice"
+import { signInAddress } from "@/account/sign-in-address"
 
 async function leave(deletion: Deletion, account: string | undefined): Promise<boolean> {
   if (deletion === "refused") return false

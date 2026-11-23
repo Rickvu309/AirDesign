@@ -5,34 +5,9 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/decks/deck-notice.tsx
-      - apps/web/src/decks/deck-request.ts
-      - apps/web/src/decks/delete-account.tsx
-      - apps/web/src/decks/home.tsx
-      - apps/web/src/decks/not-found-page.tsx
 apps/web/src/doom-editor:
   apps/web/src/doom-editor/node-props.ts:
     violations:
       - dependency
     files:
       - apps/web/src/decks/doom-thumbnail.ts
-apps/web/src/settings:
-  apps/web/src/settings/account-load.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/decks/not-found-page.tsx
-  apps/web/src/settings/account-profile.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/decks/decks-shell.tsx
-  apps/web/src/settings/settings-page.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/decks/not-found-page.tsx
-  apps/web/src/settings/settings-routes.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/decks/decks-shell.tsx

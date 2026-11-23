@@ -225,7 +225,7 @@
   "apps/web/src/present/use-present.test.tsx": 4.1,
   "apps/web/src/real-words.test.ts": 6.7,
   "apps/web/src/screen-routes.test.tsx": 15.2,
-  "apps/web/src/settings/account-load.test.ts": 4.4,
+  "apps/web/src/account/account-load.test.ts": 4.4,
   "apps/web/src/thin-notice.test.tsx": 6.8,
   "apps/web/src/trait-parity.test.ts": 13,
   "apps/web/src/usage-load.test.ts": 4.2,

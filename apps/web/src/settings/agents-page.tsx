@@ -7,10 +7,11 @@ import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { deckTime } from "@/decks/deck-time"
 import { ModuleRow } from "@/settings/module-row"
-import { SettingsPage, signOut } from "@/settings/settings-page"
+import { SettingsPage } from "@/settings/settings-page"
+import { signOut } from "@/account/sign-out"
 import { AgentTile } from "@/settings/settings-controls"
 import { settingsCopy } from "@/copy/settings-copy"
-import { signInAddress } from "@/thin-notice"
+import { signInAddress } from "@/account/sign-in-address"
 
 type ConnectedAgent = {
   id: string

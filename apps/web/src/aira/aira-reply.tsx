@@ -20,7 +20,7 @@ import type { AiraExchange, AiraStep, ToolState } from "@/aira/aira-loop"
 import { replyPieces, type ReplyPiece } from "@/aira/aira-steps"
 import { resetsWhen, usagePercent } from "@/aira/aira-usage"
 import type { WeekUsage } from "@/aira/aira-wire"
-import { settingsPaths } from "@/settings/settings-routes"
+import { settingsPaths } from "@/account/settings-paths"
 
 type Segment =
   | { readonly from: "user"; readonly text: string }

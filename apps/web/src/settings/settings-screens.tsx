@@ -3,7 +3,7 @@ import { AgentsTab } from "@/settings/screens/agents-tab"
 import { UsageTab } from "@/settings/screens/usage-tab"
 import { settingsRoutes } from "@/settings/settings-routes"
 
-import { AccountNameScreen } from "@/settings/account-name-page"
+import { AccountNameScreen } from "@/account/account-name-page"
 
 export const screens = {
   "/screens/s01-01-sign-up-name": AccountNameScreen,

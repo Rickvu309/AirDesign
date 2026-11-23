@@ -1,7 +1,7 @@
 import { post, answered } from "@/decks/deck-request"
 import { settle, showFailed, showStatus, type ToastId } from "@/decks/deck-notice"
 import { moveDeck } from "@/decks/move-deck"
-import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
+import { deckRoutes } from "@airdesign/catalog"
 import { dropDeck, sendQueued, starDeck } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "@/components/ui/toast"
@@ -29,7 +29,7 @@ import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, deckPath, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
-import { signInAddress } from "@/thin-notice"
+import { signOut } from "@/account/sign-out"
 
 type Deck = ListedDeck & { readonly doom: { readonly rev: number } }
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
@@ -45,11 +45,6 @@ async function withDevice(listing: Listing): Promise<Listing> {
 function starredIn(listing: Listing, deck: string, starred: boolean): Listing {
   const shown = (decks: Deck[]) => decks.map((each) => (each.deck === deck ? { ...each, starred } : each))
   return { ...listing, decks: shown(listing.decks), trash: shown(listing.trash) }
-}
-
-async function signOut(): Promise<void> {
-  const response = await fetch(signOutRoutes.session.path, { method: signOutRoutes.session.method })
-  if (response.ok) window.location.assign(signInAddress(window.location))
 }
 
 function DeckGridSkeleton({ className }: { className?: string }) {
