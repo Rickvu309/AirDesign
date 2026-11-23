@@ -16,5 +16,4 @@ dependencies:
   - apps/web/src/export
   - apps/web/src/lib
   - apps/web/src/present
-  - apps/web/src/pricing
   - apps/web/src/settings

@@ -71,8 +71,6 @@ export function emptyTrashTitleOf(count: number): string {
   return `Delete ${new Intl.NumberFormat("en").format(count)} ${decks} for good?`
 }
 
-const sampleReset = "Mon 8:00 AM"
-
 export const productCopy = {
   noDecksTitle: "No decks yet",
   nameEmpty: "Enter a name for this deck.",
@@ -83,27 +81,11 @@ export const productCopy = {
   clearSearch: "Clear search",
   noDecksBody: "Decks hold your slides, ready to edit and present.",
   usageTitle: "Weekly usage",
-  usageResets: usageResetsOn(sampleReset),
   usageLimitTitle: "You've hit this week's limit",
-  usagePercent: "62% used",
   agentName: "Aira",
-  creditsTitle: "Credits",
-  creditsFacts: "Each reset is $5. Credits never expire.",
-  creditsAdd: "Add credits",
-  creditsMinimum: "Minimum $10.",
-  autoTitle: "Auto reset",
-  autoBody: "When usage runs out, reset for $5 from your credits.",
-  payContinue: "Continue to payment",
-  payNewTab: "Opens a secure page in a new tab.",
-  payOpen: "Open payment page",
-  payFailedTitle: "Unable to complete payment",
-  payExpiredTitle: "Payment expired",
-  payNotCharged: "Nothing was charged. Try again.",
   payTryAgain: "Try again",
-  historyAdded: "Credits added",
   cancel: "Cancel",
   close: "Close",
-  notNow: "Not now",
   done: "Done",
   undo: "Undo",
   exportFailed: "Unable to export. Your deck is unchanged.",
@@ -125,15 +107,11 @@ export const productCopy = {
   editSetAside: "Unable to save an edit. The deck changed, so make it again if you need it.",
   textRefused: "Unable to save this text. Your words are kept here, so you can copy them or try again.",
   editSetAsideTooLarge: "Unable to save an edit. It was too large to save, so it was undone.",
-  editTooLarge: "Unable to save edits to this layer. It is too large to send, so it stays as it was.",
   trashEmptyBody: "This can't be undone.",
   trashEmptyAction: "Delete for good",
-  importing: "Importing",
   moveToTrash: "Move to Trash",
   starred: "Starred",
   starredEmpty: "Star a deck to keep it here.",
-  importChooseAnother: "Choose another file",
-  importRemove: "Remove",
   deckOpenFailed: "Unable to open this deck",
   goToDecks: "Go to your decks",
   deckNotFoundTitle: "Deck not found",
@@ -151,13 +129,6 @@ export const productCopy = {
   newDeck: "New deck",
   exportDeck: "Export",
   blankDeck: "Blank deck",
-  amount: "Amount",
-  currentBalance: "Current balance",
-  adding: "Adding",
-  newBalance: "New balance",
-  presetTen: "$10",
-  presetTwentyFive: "$25",
-  presetFifty: "$50",
 } as const
 
 export const zoomCopy = {

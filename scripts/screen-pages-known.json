@@ -10,13 +10,9 @@
     "apps/web/src/export/screens/export-states.tsx -> apps/web/src/export/export-dialog.tsx",
     "apps/web/src/export/screens/export-states.tsx -> apps/web/src/export/export-toast.tsx",
     "apps/web/src/present/screens/present-states.tsx -> apps/web/src/editor/slide-thumb.tsx",
-    "apps/web/src/pricing/screens/pricing-default.tsx -> own FeatureCheck",
     "apps/web/src/settings/screens/account-tab.tsx -> apps/web/src/settings/settings-frame.tsx",
     "apps/web/src/settings/screens/account-tab.tsx -> own PreferenceRow",
     "apps/web/src/settings/screens/agents-tab.tsx -> apps/web/src/settings/settings-frame.tsx",
-    "apps/web/src/settings/screens/credits-dialogs.tsx -> apps/web/src/credits/add-credits-dialog.tsx",
-    "apps/web/src/settings/screens/credits-dialogs.tsx -> apps/web/src/credits/result-dialog.tsx",
-    "apps/web/src/settings/screens/usage-stage.tsx -> apps/web/src/settings/settings-frame.tsx",
     "apps/web/src/settings/screens/usage-tab.tsx -> apps/web/src/settings/settings-frame.tsx"
   ]
 }

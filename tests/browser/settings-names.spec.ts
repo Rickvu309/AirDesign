@@ -8,20 +8,6 @@ test("each Account preference names its choice by its row", async ({ page }) => 
   await expect(page.getByRole("combobox", { name: "Slide size" })).toMatchAriaSnapshot('- combobox "Slide size": 16:9')
 })
 
-const creditDialogs = [
-  ["/screens/s91-01-credits-add-credits-amount", productCopy.creditsAdd],
-  ["/screens/s91-03-credits-add-credits-credits-added", "$25.00 added"],
-  ["/screens/s99-01-credits-errors-payment-failed", productCopy.payFailedTitle],
-  ["/screens/s99-02-credits-errors-payment-expired", productCopy.payExpiredTitle],
-] as const
-
-for (const [path, title] of creditDialogs) {
-  test(`the credits dialog at ${path} is named by its title`, async ({ page }) => {
-    await page.goto(path)
-    await expect(page.getByRole("dialog", { name: title })).toBeVisible()
-  })
-}
-
 test("the warning dialog's Close sits at the same inset as its warning tile", async ({ page }) => {
   await page.goto("/screens/s33-03-decks-trash-empty-trash-confirm")
   const dialog = page.getByRole("dialog")
