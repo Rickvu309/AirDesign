@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { memo, type CSSProperties, type ReactNode } from "react"
+import { memo, useId, type CSSProperties, type ReactNode } from "react"
 import { iconNodes, type IconNode } from "./icon-nodes.js"
 import { InnerShadowFilter } from "./inner-shadow.js"
 import { effectLook, type ShadowFrom } from "./node-effects.js"
@@ -101,8 +101,10 @@ export const NodeArt = memo(function NodeArt({
   const boxy = geometry === null || geometry.kind === "rect" || geometry.kind === "ellipse"
   const outline = outlineOf(node)
   const painted = node.fills.length > 0 && geometry?.kind !== "line" && geometry?.kind !== "icon"
-  const from: ShadowFrom = painted ? (boxy ? "box" : "outline") : node.text === null ? "contents" : "letters"
-  const look = effectLook(node.effects, from)
+  const typing = host?.id === node.id && node.text !== null
+  const from: ShadowFrom = painted ? (boxy ? "box" : "outline") : typing ? "typing" : "contents"
+  const filterId = useId()
+  const look = effectLook(node.effects, from, `inner-shadow${filterId.replace(/[^\w-]/g, "-")}`)
   const round = geometry?.kind === "ellipse" ? "50%" : node.radius.map((corner) => `${String(corner)}px`).join(" ")
   const clipped = !boxy && outline.fill !== null ? `path("${outline.fill}")` : undefined
   const icon = geometry?.kind === "icon" ? iconNodes(geometry.name) : undefined

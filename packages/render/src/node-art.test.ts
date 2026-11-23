@@ -240,7 +240,7 @@ describe("NodeArt", () => {
   })
 
   it("casts a text layer's shadow or glow from its letters, not its box", () => {
-    const glow = { kind: "dropShadow", color: swatches.black, opacity: 0.5, x: 0, y: 0, blur: 28, spread: 6 }
+    const glow = { kind: "dropShadow", color: swatches.black, opacity: 0.5, x: 0, y: 0, blur: 28, spread: 0 }
     const html = painted([
       shape("t", {
         box: spot(0, 0, 300, 80),
@@ -248,8 +248,77 @@ describe("NodeArt", () => {
         text: { chars: "Glow", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" },
       }),
     ])
-    expect(html).toContain("text-shadow:0px 0px 28px rgb(0 0 0 / 0.5)")
+    expect(html).toContain("filter:drop-shadow(0px 0px 14px rgb(0 0 0 / 0.5))")
     expect(html).not.toContain("box-shadow")
+  })
+
+  it("while a text layer is edited, shadows only its letters, never the caret or the selection", () => {
+    const shadow = { kind: "dropShadow", color: swatches.black, opacity: 0.5, x: 4, y: 6, blur: 0, spread: 0 }
+    const inner = { kind: "innerShadow", color: swatches.black, opacity: 0.3, x: 0, y: 2, blur: 4, spread: 0 }
+    const words = { chars: "Edit", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" }
+    const grown = doom.doomFromTree({
+      theme: doom.defaultTheme,
+      slides: [{ children: [shape("t", { box: spot(0, 0, 300, 80), effects: [shadow, inner], text: words })] }],
+    })
+    const [node] = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
+    const html = renderToStaticMarkup(
+      createElement(NodeArt, {
+        node: node!,
+        assetUrl: () => undefined,
+        host: { id: node!.id, render: () => createElement("div", { "data-text-editor": "" }) },
+      }),
+    ).replaceAll("&quot;", '"')
+    expect(html).toContain("text-shadow:4px 6px 0px rgb(0 0 0 / 0.5)")
+    expect(html).not.toContain("filter:")
+    expect(html).not.toContain("<filter")
+  })
+
+  it("spreads a shadow only on a filled rectangle, ellipse or frame, as Figma does", () => {
+    const spread = { kind: "dropShadow", color: swatches.black, opacity: 0.5, x: 0, y: 0, blur: 20, spread: 6 }
+    const words = { chars: "Glow", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" }
+    expect(
+      painted([shape("r", { box: spot(0, 0, 100, 100), fills: [solid(swatches.white)], effects: [spread] })]),
+    ).toContain("box-shadow:0px 0px 20px 6px rgb(0 0 0 / 0.5)")
+    for (const unspread of [
+      shape("t", { box: spot(0, 0, 300, 80), effects: [spread], text: words }),
+      shape("p", {
+        box: spot(0, 0, 100, 100),
+        fills: [solid(swatches.white)],
+        geometry: { kind: "preset", name: "triangle" },
+        effects: [spread],
+      }),
+    ])
+      expect(painted([unspread])).toContain("drop-shadow(0px 0px 10px rgb(0 0 0 / 0.5))")
+  })
+
+  it("paints an inner shadow inside a text layer's letters", () => {
+    const inner = { kind: "innerShadow", color: swatches.black, opacity: 0.3, x: 0, y: 2, blur: 4, spread: 0 }
+    const html = painted([
+      shape("t", {
+        box: spot(0, 0, 300, 80),
+        effects: [inner],
+        text: { chars: "Deep", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" },
+      }),
+    ])
+    const id = /<filter id="([^"]+)"/.exec(html)?.[1]
+    expect(id).toBeDefined()
+    expect(html).toContain(`filter:url(#${id!})`)
+  })
+
+  it("gives each layer its own inner shadow filter, so one hidden copy cannot blank the others", () => {
+    const inner = { kind: "innerShadow", color: swatches.black, opacity: 0.3, x: 2, y: 4, blur: 10, spread: 0 }
+    const layer = (name: string, x: number) =>
+      shape(name, {
+        box: spot(x, 0, 100, 100),
+        fills: [solid(swatches.white)],
+        geometry: { kind: "preset", name: "triangle" },
+        effects: [inner],
+      })
+    const ids = [...painted([layer("a", 0), layer("b", 200)]).matchAll(/<filter id="([^"]+)"/g)].map(
+      (match) => match[1],
+    )
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids).size).toBe(2)
   })
 
   it("casts an unfilled frame's shadow from what it holds", () => {

@@ -277,6 +277,23 @@ describe("shape layer", () => {
     ).toBeUndefined()
   })
 
+  it("knows a theme shadow whose fields were written in another order", () => {
+    const lifted = doom.defaultTheme.effectStyles.lifted[0]!
+    if (!("color" in lifted)) throw new Error("lifted is a shadow")
+    const reordered = [
+      {
+        spread: lifted.spread,
+        blur: lifted.blur,
+        y: lifted.y,
+        x: lifted.x,
+        opacity: 0.4,
+        color: lifted.color,
+        kind: lifted.kind,
+      },
+    ] as const
+    expect(shownShadow(reordered, doom.defaultTheme)).toEqual({ name: "lifted", opacity: 0.4 })
+  })
+
   it("turning the border on gives a layer with none a visible one", () => {
     const bare = write(["panel"], find(modelOf("panel"), "fills", "paint"), { solid: { rgb: "FFFFFF" } })
     const bordered = write(["panel"], find(modelOf("panel", bare), "border", "border"), "solid", bare)

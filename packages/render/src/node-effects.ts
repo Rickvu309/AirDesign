@@ -18,7 +18,7 @@ const letterShadowText = (effect: Shadow) =>
 const dropShadowText = (effect: Shadow) =>
   `drop-shadow(${String(effect.x)}px ${String(effect.y)}px ${String(effect.blur / 2)}px ${withOpacity(effect.color, effect.opacity)})`
 
-export type ShadowFrom = "box" | "outline" | "letters" | "contents"
+export type ShadowFrom = "box" | "outline" | "contents" | "typing"
 
 export type InnerShadows = { readonly id: string; readonly shadows: readonly Shadow[] }
 
@@ -34,31 +34,24 @@ export type EffectLook = {
 const joined = (parts: readonly string[], by: string): string | undefined =>
   parts.length === 0 ? undefined : parts.join(by)
 
-const innerId = (shadows: readonly Shadow[]): string => {
-  let hash = 5381
-  for (const char of JSON.stringify(shadows)) hash = (hash * 33 + char.charCodeAt(0)) >>> 0
-  return `inner-shadow-${hash.toString(36)}`
-}
-
-export function effectLook(effects: readonly Effect[], from: ShadowFrom): EffectLook {
+export function effectLook(effects: readonly Effect[], from: ShadowFrom, innerId: string): EffectLook {
   const shadows = effects.filter((effect): effect is Shadow => "color" in effect)
   const drops = shadows.filter((effect) => effect.kind === "dropShadow")
   const inners = shadows.filter((effect) => effect.kind === "innerShadow")
   const layer = effects.find((effect) => effect.kind === "layerBlur")
   const behind = effects.find((effect) => effect.kind === "backgroundBlur")
-  const inner = from === "outline" && inners.length > 0 ? { id: innerId(inners), shadows: inners } : undefined
+  const inner =
+    (from === "outline" || from === "contents") && inners.length > 0 ? { id: innerId, shadows: inners } : undefined
+  const filtered = [...(inner === undefined ? [] : [`url(#${inner.id})`]), ...drops.map(dropShadowText)]
   const layerBlur = layer === undefined || !("radius" in layer) ? [] : [`blur(${String(layer.radius / 2)}px)`]
   return {
     boxShadow:
       from === "box"
         ? joined([...drops.map((e) => shadowText(e, false)), ...inners.map((e) => shadowText(e, true))], ", ")
         : undefined,
-    bodyFilter:
-      from === "outline"
-        ? joined([...(inner === undefined ? [] : [`url(#${inner.id})`]), ...drops.map(dropShadowText)], " ")
-        : undefined,
-    wholeFilter: joined([...(from === "contents" ? drops.map(dropShadowText) : []), ...layerBlur], " "),
-    textShadow: from === "letters" ? joined(drops.map(letterShadowText), ", ") : undefined,
+    bodyFilter: from === "outline" ? joined(filtered, " ") : undefined,
+    wholeFilter: joined([...(from === "contents" ? filtered : []), ...layerBlur], " "),
+    textShadow: from === "typing" ? joined(drops.map(letterShadowText), ", ") : undefined,
     inner,
     backdrop: behind === undefined || !("radius" in behind) ? undefined : `blur(${String(behind.radius / 2)}px)`,
   }
