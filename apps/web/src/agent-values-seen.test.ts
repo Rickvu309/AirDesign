@@ -67,6 +67,8 @@ const seen: Readonly<Record<string, Seen>> = {
   case: { person: ["panel:text.case"] },
   underline: { person: ["panel:text.underline"] },
   strike: { person: ["panel:text.strike"] },
+  dash: { person: ["panel:border.border"] },
+  fit: { person: ["panel:image.mode"] },
 }
 
 const owedToPerson = [

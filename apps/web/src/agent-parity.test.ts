@@ -18,10 +18,6 @@ import {
 const slideOps = new Set(["add", "move", "delete"])
 
 const owedToAgent = [
-  "panel:textFill.value#tint",
-  "panel:fills.paint#gradient",
-  "panel:border.border",
-  "panel:image.mode",
   "panel:shadow.opacity",
   "panel:link.target",
   "panel:geometry.shape",

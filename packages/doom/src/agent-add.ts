@@ -15,7 +15,7 @@ import { textHeight } from "./text-estimate.js"
 type Add = Extract<AgentChange, { op: "add" }>
 
 const common = ["box", "name", "hidden", "opacity", "effect"] as const
-const painted = ["fill", "stroke", "strokeWidth", "radius"] as const
+const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [
   "text",
   "textStyle",
@@ -34,9 +34,9 @@ const patternFields = ["box", "name", "hidden", "items"] as const
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words],
   shape: [...common, ...painted, ...words],
-  line: [...common, "stroke", "strokeWidth", "arrow"],
+  line: [...common, "stroke", "strokeWidth", "arrow", "dash"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows"],
-  picture: [...common, "fill", "stroke", "strokeWidth", "radius"],
+  picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
   chart: [...common, ...painted, "chart"],
   kpi: patternFields,
@@ -169,7 +169,7 @@ const centred = (area: Area, size: { readonly w: number; readonly h: number }) =
 })
 
 function addPicture(draft: Draft, parent: Node, change: Add): void {
-  if (typeof change.fill !== "object") stop("shape", undefined, "fill")
+  if (typeof change.fill !== "object" || !("image" in change.fill)) stop("shape", undefined, "fill")
   const area = areaFor(draft, parent, change.box)
   const natural = draft.reading.pictures?.get(change.fill.image)
   const fitted =

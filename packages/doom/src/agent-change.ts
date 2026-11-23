@@ -34,8 +34,13 @@ export type PatternName = (typeof patternNames)[number]
 export const addKinds = ["text", "shape", "line", "frame", "picture", "icon", "chart", ...patternNames] as const
 export type AgentAdd = (typeof addKinds)[number]
 
-export type AgentColor = ColorVar | Hex
-export type AgentFill = AgentColor | "none" | { readonly image: string }
+export type AgentColor = ColorVar | `${ColorVar}${"+" | "-"}${number}` | Hex
+export type AgentGradient = {
+  readonly gradient: readonly AgentColor[]
+  readonly angle?: number
+  readonly radial?: boolean
+}
+export type AgentFill = AgentColor | "none" | { readonly image: string } | AgentGradient
 export type AgentBox = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
 export type AgentItem = {
   readonly title?: string
@@ -80,6 +85,8 @@ export type AgentLook = {
   readonly case?: "none" | "upper" | "lower" | "title"
   readonly underline?: boolean
   readonly strike?: boolean
+  readonly dash?: "solid" | "dash" | "dot"
+  readonly fit?: "fill" | "fit" | "tile"
 }
 export type SlideAdd = { readonly after?: NodeId }
 export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null }
@@ -108,7 +115,8 @@ const kindWords =
   "text and shape hold words. line. frame groups and lays out its children, or with rows is a grid of words. picture (fill: {image}). icon (icon). chart (chart). Patterns: kpi (items: title, value, note), cards (title, points, icon), compare (2 or 3 items: title, points), matrix (up to 4 items, axes), timeline (2 to 8: value, title, note), flow (2 to 6: title, note)."
 const colorSchema = { $ref: "#/$defs/color" }
 const readId: Reader<NodeId> = (raw) => readNodeId(raw) ?? reject()
-const readColor: Reader<AgentColor> = oneOf<AgentColor>(literal(colorVars), readHex)
+const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
+const readColor: Reader<AgentColor> = oneOf<AgentColor>(matching(tintedName, 16) as Reader<AgentColor>, readHex)
 const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
 const choice = <const V extends string>(values: readonly V[], description?: string) =>
   field<V>({ enum: values, ...(description === undefined ? {} : { description }) }, literal(values))
@@ -180,7 +188,8 @@ type LookFields = { readonly [K in keyof AgentLook]-?: Field<Exclude<AgentLook[K
 const lookFields: LookFields = {
   fill: field(
     {
-      description: "Paint inside the layer: a colour, none, or {image} for a picture. Text takes color instead.",
+      description:
+        "Paint inside the layer: a colour, none, {image} for a picture, or {gradient} through two to eight colours. Text takes color instead.",
       anyOf: [
         colorSchema,
         { const: "none" },
@@ -190,9 +199,24 @@ const lookFields: LookFields = {
           required: ["image"],
           properties: { image: { type: "string", description: "An https address, or an asset read from the deck." } },
         },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["gradient"],
+          properties: {
+            gradient: { type: "array", items: colorSchema, minItems: 2, maxItems: 8 },
+            angle: { type: "number", description: "Degrees; 0 runs left to right." },
+            radial: { type: "boolean" },
+          },
+        },
       ],
     },
-    oneOf<AgentFill>(readColor, readNone, object({ image: words(limits.address, 1) })),
+    oneOf<AgentFill>(
+      readColor,
+      readNone,
+      object({ image: words(limits.address, 1) }),
+      object({ gradient: list(readColor, 8, 2) }, { angle: finite(-360, 360), radial: boolean }),
+    ),
   ),
   stroke: field(
     { description: "Outline colour, or none.", anyOf: [colorSchema, { const: "none" }] },
@@ -282,6 +306,8 @@ const lookFields: LookFields = {
   case: choice(["none", "upper", "lower", "title"], "Letter case."),
   underline: flag("Underline all the words."),
   strike: flag("Strike through all the words."),
+  dash: choice(["solid", "dash", "dot"], "Outline dash."),
+  fit: choice(["fill", "fit", "tile"], "How a picture sits in its layer."),
 }
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
@@ -399,8 +425,9 @@ export const agentChangesSchema = {
     id: { type: "string", pattern: "^[a-z0-9]{1,16}:[0-9]{1,12}$" },
     color: {
       type: "string",
-      pattern: "^(text|background|text2|background2|accent[1-6]|link|#[0-9a-fA-F]{6})$",
-      description: "A theme colour name or #rrggbb. Prefer names: a template recolours them.",
+      pattern: "^((text|background|text2|background2|accent[1-6]|link)([+-][0-9]{1,3})?|#[0-9a-fA-F]{6})$",
+      description:
+        "A theme colour name, lighter or darker by a percent (accent1+40, text-20), or #rrggbb. Prefer names: a template recolours them.",
     },
     change: {
       type: "object",

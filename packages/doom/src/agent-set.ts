@@ -14,6 +14,8 @@ const wordsOnly = ["size", "font", "lineHeight", "letterSpacing", "case", "under
 const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentLook)[]>> = {
   slide: [
     ...wordsOnly,
+    "dash",
+    "fit",
     "stroke",
     "strokeWidth",
     "color",
@@ -90,7 +92,10 @@ export function compileSet(draft: Draft, change: SetChange): void {
   if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape") stop("shape", node.id, "target")
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field)
+  if (change.fit !== undefined && !(get(node, "fills") ?? []).some((paint) => paint.kind === "image"))
+    stop("shape", node.id, "fit")
   const now = {
+    fills: get(node, "fills"),
     stroke: get(node, "stroke"),
     box: get(node, "box"),
     layout: get(node, "layout"),

@@ -150,6 +150,8 @@ describe("the advertised schema", () => {
       "case",
       "underline",
       "strike",
+      "dash",
+      "fit",
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))

@@ -12,14 +12,26 @@ const quoted = (words: string) => JSON.stringify(words)
 const num = (value: number) => String(Number(value.toFixed(1)))
 const iconWords = (name: string) => (name.startsWith("lucide/") ? name.slice("lucide/".length) : name)
 
-const colorWords = (color: Color): AgentColor => (typeof color === "string" ? color : color.var)
+const tintWords = (tint: number) => `${tint > 0 ? "+" : "-"}${String(Math.round(Math.abs(tint) * 100))}`
+const colorWords = (color: Color): AgentColor =>
+  typeof color === "string"
+    ? color
+    : color.tint === undefined || color.tint === 0
+      ? color.var
+      : (`${color.var}${tintWords(color.tint)}` as AgentColor)
+
+function oneWords(paint: Paint): string {
+  if (paint.kind === "solid") return colorWords(paint.color)
+  if (paint.kind === "image")
+    return `image:${paint.asset}${paint.fit === "fill" || paint.fit === "crop" ? "" : `/${paint.fit}`}`
+  const stops = paint.stops.map((stop) => colorWords(stop.color)).join(">")
+  return paint.shape === "radial" ? `radial(${stops})` : `gradient(${stops}@${num(paint.angle)})`
+}
 
 function paintWords(paints: readonly Paint[]): string {
   return paints
     .filter((paint) => paint.visible !== false)
-    .map((paint) =>
-      paint.kind === "solid" ? colorWords(paint.color) : paint.kind === "image" ? `image:${paint.asset}` : "gradient",
-    )
+    .map(oneWords)
     .join(",")
 }
 
@@ -90,6 +102,8 @@ function looksOf(node: Node): readonly string[] {
   if (fills !== undefined && fills.length > 0) out.push(`fill=${paintWords(fills)}`)
   if (strokes !== undefined && strokes.length > 0) out.push(`stroke=${paintWords(strokes)}`)
   if (stroke !== undefined && strokes !== undefined && strokes.length > 0) out.push(`strokeWidth=${num(stroke.weight)}`)
+  if (stroke !== undefined && stroke.dash !== "solid" && strokes !== undefined && strokes.length > 0)
+    out.push(`dash=${stroke.dash}`)
   if (radius !== undefined && radius !== 0)
     out.push(`radius=${typeof radius === "number" ? num(radius) : radius.map(num).join(",")}`)
   if (effects !== undefined && (typeof effects === "string" || effects.length > 0))
