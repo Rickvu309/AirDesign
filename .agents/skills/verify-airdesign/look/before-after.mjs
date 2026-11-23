@@ -23,7 +23,9 @@ function sharePlaywright() {
   })
 }
 
-export async function driverFor(repo) {
+const isStateFile = (file) => file.startsWith(`${skillPath}/look/states/`) && file.endsWith(".mjs")
+
+export async function driverFor(repo, carry = []) {
   sharePlaywright()
   const theirs = path.join(repo, skillPath, "look/states.mjs")
   const journeys = path.join(repo, skillPath, "journeys")
@@ -31,9 +33,16 @@ export async function driverFor(repo) {
   if (path.resolve(theirs) === ownStates || !existsSync(theirs)) return { reach: own, lacks: () => false }
   const registry = await import(pathToFileURL(theirs).href)
   const has = (name) => registry.states?.some((each) => each.name === name) === true
+  const carriedNew = new Set(
+    await Promise.all(
+      carry
+        .filter(({ file, added }) => added && isStateFile(file))
+        .map(async ({ file }) => (await import(pathToFileURL(path.join(repo, file)).href)).default?.name),
+    ),
+  )
   return {
     reach: (name) => (has(name) ? (kit) => registry.reach(registry.find(name), { ...kit, journeys }) : own(name)),
-    lacks: (name) => Array.isArray(registry.states) && !has(name),
+    lacks: (name) => carriedNew.has(name) || (Array.isArray(registry.states) && !has(name)),
   }
 }
 
