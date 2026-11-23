@@ -126,6 +126,7 @@ const preflight = [
   "linear-branch",
   "spec-timeouts",
   "cited-paths",
+  "package-reads",
 ]
 const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],

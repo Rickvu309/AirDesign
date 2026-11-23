@@ -2,11 +2,12 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import twins from "../packages/fonts/src/twins.json" with { type: "json" }
 import { deckParts } from "./fidelity-refs.mjs"
+import { packageBuild } from "./package-build.mjs"
 
 const xml = (value) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;")
 
 export async function referenceSource({ origin, files, folder }) {
-  const { fontRoutes } = await import("../packages/fonts/dist/index.js")
+  const { fontRoutes } = await packageBuild(path.resolve(import.meta.dirname, ".."), "@airdesign/fonts")
   const names = new Set()
   for (const file of files)
     for (const [name, bytes] of await deckParts(file)) {

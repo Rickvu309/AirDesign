@@ -1,5 +1,5 @@
-import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { packageBuild } from "../../../../scripts/package-build.mjs"
 
 export const spot = (x, y, w, h, rotation = 0) => ({ x, y, w, h, rotation, flipH: false, flipV: false })
 
@@ -24,7 +24,7 @@ let counter = 0
 export const slowPaint = { timeout: 20_000 }
 
 async function orderKeys(kit) {
-  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)
+  const { orderKeyBetween } = await packageBuild(kit.repo, "@airdesign/doom")
   return orderKeyBetween
 }
 

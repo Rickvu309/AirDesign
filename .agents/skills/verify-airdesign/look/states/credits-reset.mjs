@@ -1,9 +1,10 @@
 import { creditsCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
+import { packageBuild } from "../../../../../scripts/package-build.mjs"
 
 async function drive(kit) {
   await kit.signIn()
-  const { creditsRoutes } = await import("../../../../../packages/catalog/dist/index.js")
+  const { creditsRoutes } = await packageBuild(kit.repo, "@airdesign/catalog")
   await kit.page.route(
     (url) => url.pathname === creditsRoutes.read.path,
     (route) =>

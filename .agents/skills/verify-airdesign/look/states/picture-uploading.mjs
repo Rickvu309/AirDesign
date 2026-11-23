@@ -1,6 +1,6 @@
-import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
+import { packageBuild } from "../../../../../scripts/package-build.mjs"
 
 async function drive(kit) {
   const { page, post, doomRoutes } = kit
@@ -8,7 +8,7 @@ async function drive(kit) {
   await page.goto("/s")
   await page.locator("[data-doom-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
-  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)
+  const { orderKeyBetween } = await packageBuild(kit.repo, "@airdesign/doom")
   const opened = await post(doomRoutes.open, { deck }, cookie)
   const slide = Object.values(opened.json.fold.nodes).find((node) => node.type === "slide").id
   const box = { x: 360, y: 240, w: 1200, h: 600, rotation: 0, flipH: false, flipV: false }

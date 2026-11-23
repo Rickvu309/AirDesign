@@ -1,0 +1,3 @@
+# Code loads a workspace package's build by the package's name, and reads only what that package's source exports
+
+`scripts/package-build.mjs` is the one place that finds a package's build: `packageBuild(repo, "@airdesign/<name>")` reads the package's `package.json`, and `packageBuild(repo, "@airdesign/api", "<folder>/<file>.js")` reads one built file. The `package-reads` step (`scripts/package-reads.mjs`) fails any other code that names `apps/<name>/dist/…js` or `packages/<name>/dist/…js`, and any name read from a `packageBuild` call that the package's `packages/<name>/src/index.ts`, or the named source file, does not export. `scripts/package-reads.test.mjs` replays the reads that 59690055a, 69a81a8e0 and PR 475 fixed by hand.

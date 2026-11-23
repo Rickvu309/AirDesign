@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
+import { packageBuild } from "./package-build.mjs"
 
 const self = fileURLToPath(import.meta.url)
 const root = path.resolve(path.dirname(self), "..")
@@ -29,12 +30,6 @@ export const deckDiffArgs = (argv) => {
   }
   if (files.length !== 2) throw new Error(`Give two files. Usage: ${usage}`)
   return { before: files[0], after: files[1], allow: argv.includes("--allow") ? allow : null, json, limit }
-}
-
-const built = (name) => {
-  const entry = path.join(root, "packages", name, "dist/index.js")
-  if (!fs.existsSync(entry)) throw new Error(`packages/${name} is not built. Run pnpm build, then run this again.`)
-  return import(pathToFileURL(entry).href)
 }
 
 const bytes = (count) => `${count.toLocaleString("en-US")} bytes`
@@ -70,7 +65,7 @@ export const deckDiffReport = (pptx, before, after, { allow, limit, names }) => 
 
 const main = async () => {
   const args = deckDiffArgs(process.argv.slice(2))
-  const pptx = await built("pptx")
+  const pptx = await packageBuild(root, "@airdesign/pptx")
   const read = (file) => pptx.readParts(new Uint8Array(fs.readFileSync(file)))
   const report = deckDiffReport(pptx, await read(args.before), await read(args.after), {
     allow: args.allow,

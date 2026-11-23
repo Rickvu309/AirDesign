@@ -1,17 +1,13 @@
 import fs from "node:fs"
 import path from "node:path"
-import { pathToFileURL } from "node:url"
 import { corpusInputs } from "./pptx-corpus.mjs"
+import { packageBuild } from "./package-build.mjs"
 
 const markupPart = (name) => name.endsWith(".xml") || name.endsWith(".rels")
 
 export const parsePercent = ({ parsed, markup }) => (markup === 0 ? 0 : Math.round((100 * parsed) / markup))
 
-const loadPptx = async (root) => {
-  const entry = path.join(root, "packages/pptx/dist/index.js")
-  if (!fs.existsSync(entry)) throw new Error("packages/pptx is not built. Run pnpm build, then run this again.")
-  return import(pathToFileURL(entry).href)
-}
+const loadPptx = (root) => packageBuild(root, "@airdesign/pptx")
 
 export const importParse = async (root) => {
   const pptx = await loadPptx(root)

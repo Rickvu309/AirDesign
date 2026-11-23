@@ -91,9 +91,11 @@ test("every named state of this design shard is reached and scanned in one stack
     const selected = shardStates(states, shard)
     for (const state of selected) ours.add(state.name)
     const { scan } = await load<Scanner>(join(skill, "look/scan.mjs"))
-    const catalog = await load<{ catalog: unknown; projectTools: (all: unknown) => { name: string }[] }>(
-      join(root, "packages/catalog/dist/index.js"),
-    )
+    const { packageBuild } = await import("../../scripts/package-build.mjs")
+    const catalog = (await packageBuild(root, "@airdesign/catalog")) as {
+      catalog: unknown
+      projectTools: (all: unknown) => { name: string }[]
+    }
     const identifiers = catalog.projectTools(catalog.catalog).map((tool) => tool.name)
     const rows: { page: string; findings: Finding[] }[] = []
     const used = new Set<number>()

@@ -1,7 +1,12 @@
 import { fileURLToPath } from "node:url"
-import { fontMiddleware, LocalOriginalStore } from "../../apps/api/dist/index.js"
 import { previewPortLine } from "./preview-port.ts"
 import { startPreview } from "./preview-server.mjs"
+import { packageBuild } from "../../scripts/package-build.mjs"
+
+const { fontMiddleware, LocalOriginalStore } = await packageBuild(
+  fileURLToPath(new URL("../..", import.meta.url)),
+  "@airdesign/api",
+)
 
 const fonts = fontMiddleware(new LocalOriginalStore())
 const { port } = await startPreview({

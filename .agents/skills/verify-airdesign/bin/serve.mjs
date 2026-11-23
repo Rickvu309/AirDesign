@@ -1,12 +1,12 @@
 import { appendFileSync, createReadStream, existsSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { request as httpRequest, createServer } from "node:http"
 import path from "node:path"
-import { pathToFileURL } from "node:url"
 import { randomBytes } from "node:crypto"
 import { countedTransport } from "./aira-counts.mjs"
 import { scriptedAira } from "./scripted-aira.mjs"
 import { verifyImages } from "./verify-images.mjs"
 import { fakeOrigins, moveLocation, siteFile, withAppOrigin } from "./site.mjs"
+import { packageBuild } from "../../../../scripts/package-build.mjs"
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -85,18 +85,17 @@ export async function serve(
   { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head, choice },
 ) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
-  const load = (name) => import(pathToFileURL(path.join(apiDist, name)).href)
-  const { startEmptyCluster } = await load("testing/postgres-setup.js")
-  const { runBootstrap, runSetup } = await load("platform/provision.js")
-  const { openPool } = await load("platform/pool.js")
-  const { DeckListen } = await load("platform/listen.js")
-  const { createApi, routes } = await load("server.js")
-  const { LocalOriginalStore } = await load("platform/local-original-store.js")
-  const { Replay } = await load("testing/aira-replay.js")
-  const { airaModel, airaEffort } = await load("aira/aira.js")
-  const { anthropicTransport } = await load("aira/anthropic-transport.js")
+  const { startEmptyCluster } = await packageBuild(repo, "@airdesign/api", "testing/postgres-setup.js")
+  const { runBootstrap, runSetup } = await packageBuild(repo, "@airdesign/api", "platform/provision.js")
+  const { openPool } = await packageBuild(repo, "@airdesign/api", "platform/pool.js")
+  const { DeckListen } = await packageBuild(repo, "@airdesign/api", "platform/listen.js")
+  const { createApi, routes } = await packageBuild(repo, "@airdesign/api", "server.js")
+  const { LocalOriginalStore } = await packageBuild(repo, "@airdesign/api", "platform/local-original-store.js")
+  const { Replay } = await packageBuild(repo, "@airdesign/api", "testing/aira-replay.js")
+  const { airaModel, airaEffort } = await packageBuild(repo, "@airdesign/api", "aira/aira.js")
+  const { anthropicTransport } = await packageBuild(repo, "@airdesign/api", "aira/anthropic-transport.js")
   const imageNet = existsSync(path.join(apiDist, "platform/image-fetch.js"))
-    ? verifyImages(repo, (await load("platform/image-fetch.js")).nodeNet)
+    ? verifyImages(repo, (await packageBuild(repo, "@airdesign/api", "platform/image-fetch.js")).nodeNet)
     : undefined
   const cluster = await startEmptyCluster()
   const role = (name) => `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
@@ -169,7 +168,7 @@ export async function serve(
   await new Promise((resolve) => api.listen(0, "127.0.0.1", resolve))
   const apiPort = api.address().port
   const apiPaths = new Set(routes.map((route) => route.path))
-  const { countryHeader, signInPaths, signOutPaths } = await import(pathToFileURL(catalogDist).href)
+  const { countryHeader, signInPaths, signOutPaths } = await packageBuild(repo, "@airdesign/catalog")
   const sitePaths = new Set([...signInPaths, ...signOutPaths])
   const origins = { app: "", site: "" }
   const site = createServer((req, res) => {

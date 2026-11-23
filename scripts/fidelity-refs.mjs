@@ -3,9 +3,10 @@ import { createHash } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { imageLink, publish } from "../.agents/skills/verify-airdesign/bin/publish.mjs"
 import { readCorpus } from "./pptx-corpus.mjs"
+import { packageBuild } from "./package-build.mjs"
 
 const self = fileURLToPath(import.meta.url)
 const root = path.resolve(path.dirname(self), "..")
@@ -83,11 +84,7 @@ export const fetchedFile = (entry, got) =>
     ? undefined
     : `${entry.asset} arrived with sha256 ${got} and fidelity-refs.json says ${entry.sha256}`
 
-const loadPptx = async () => {
-  const entry = path.join(root, "packages/pptx/dist/index.js")
-  if (!fs.existsSync(entry)) throw new Error("packages/pptx is not built. Run pnpm build, then run this again.")
-  return import(pathToFileURL(entry).href)
-}
+const loadPptx = () => packageBuild(root, "@airdesign/pptx")
 
 const text = (parts, name) => new TextDecoder().decode(parts.get(name) ?? new Uint8Array())
 

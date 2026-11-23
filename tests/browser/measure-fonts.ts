@@ -1,5 +1,4 @@
 import { join } from "node:path"
-import { pathToFileURL } from "node:url"
 import type { Page } from "@playwright/test"
 import type { ResolvedSlide } from "../../packages/document/src/index.ts"
 import type { FontWidths } from "../../packages/doom/src/index.ts"
@@ -16,7 +15,8 @@ function quotedName(family: string): string {
 }
 
 export async function measureFaces(page: Page, families: readonly string[], chars: string): Promise<FontWidths> {
-  const { fontFace } = await import(pathToFileURL(join(process.cwd(), "packages/doom/dist/index.js")).href)
+  const { packageBuild } = await import("../../scripts/package-build.mjs")
+  const { fontFace } = await packageBuild(process.cwd(), "@airdesign/doom")
   const requests = families.flatMap((family) =>
     styles.map(({ bold, italic }) => ({
       family,

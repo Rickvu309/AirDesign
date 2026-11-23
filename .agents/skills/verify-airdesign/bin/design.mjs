@@ -1,6 +1,5 @@
 import { mkdirSync } from "node:fs"
 import path from "node:path"
-import { pathToFileURL } from "node:url"
 import { designContext, openBrowser, settle } from "./browser.mjs"
 import { pageMatches, readAllow, staleEntries } from "../look/allow.mjs"
 import { captureLook, themeValues } from "../look/capture.mjs"
@@ -9,6 +8,7 @@ import { contextPool } from "../look/context-pool.mjs"
 import { pageReady } from "../look/page-ready.mjs"
 import { writeSheet } from "../look/sheet.mjs"
 import { find, matching, reach, states, sweep } from "../look/states.mjs"
+import { packageBuild } from "../../../../scripts/package-build.mjs"
 
 const valued = ["--state", "--only", "--cookie", "--out"]
 
@@ -45,7 +45,7 @@ export async function designCommand(command, args, runtime) {
     throw new Error(`name a state or a page path: verify-airdesign ${command} <run> <state-or-path>`)
   const out = flags.out ? path.resolve(flags.out) : path.join(runtime.evidenceDir(run), `${command}-${Date.now()}`)
   mkdirSync(out, { recursive: true })
-  const catalog = await import(pathToFileURL(path.join(runtime.repo, "packages/catalog/dist/index.js")).href)
+  const catalog = await packageBuild(runtime.repo, "@airdesign/catalog")
   const identifiers = catalog.projectTools(catalog.catalog).map((tool) => tool.name)
   const allow = readAllow()
   const browser = await openBrowser()
