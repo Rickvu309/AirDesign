@@ -1,6 +1,5 @@
 import type { Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { zoomRanges } from "@/editor/canvas-zoom"
 
 let act: typeof import("react").act
 let ZoomMenu: typeof import("@/editor/zoom-menu").ZoomMenu
@@ -89,15 +88,7 @@ async function opened() {
   window.document.body.append(host)
   root = createRoot(host)
   await act(async () =>
-    root?.render(
-      <ZoomMenu
-        zoom={100}
-        percent={100}
-        onZoom={() => undefined}
-        canvas={{ current: canvas }}
-        range={zoomRanges.grid}
-      />,
-    ),
+    root?.render(<ZoomMenu zoom={100} percent={100} onZoom={() => undefined} canvas={{ current: canvas }} />),
   )
   const trigger = host.querySelector<HTMLButtonElement>("[data-zoom-readout]")
   if (trigger === null) throw new Error("missing zoom readout")

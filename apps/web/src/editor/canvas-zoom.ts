@@ -8,18 +8,11 @@ export const zoomPresets = [50, 100, 200] as const
 
 const zoomStops = [10, 25, 50, 75, 100, 150, 200, 300, 400] as const
 
-export const zoomRanges = {
-  slides: { least: 10, most: 400 },
-  grid: { least: 1, most: 400 },
-} as const
+const zoomRange = { least: 10, most: 400 } as const
 
-export type ZoomRange = { readonly least: number; readonly most: number }
-
-export function boundedZoom(percent: number, range: ZoomRange): number {
-  return Math.min(range.most, Math.max(range.least, percent))
+export function boundedZoom(percent: number): number {
+  return Math.min(zoomRange.most, Math.max(zoomRange.least, percent))
 }
-
-const emuPerPixel = 9525
 
 export function slideRoom(width: number): SlideSize {
   return { width, height: (width * 3) / 4 }
@@ -43,10 +36,6 @@ export function fitWidth(room: SlideSize, slide: SlideSize): number {
   return Math.floor(Math.min(room.width, (room.height * slide.width) / slide.height))
 }
 
-export function percentWidth(percent: number, slide: SlideSize): number {
-  return Math.round(((slide.width / emuPerPixel) * percent) / 100)
-}
-
 export type ZoomKey = "in" | "out" | "fit" | "selection" | "actual"
 
 export function zoomKey(event: {
@@ -67,15 +56,14 @@ export function zoomKey(event: {
   return gesture === "zoom-fit" ? "fit" : null
 }
 
-export function steppedZoom(direction: "in" | "out", percent: number, range: ZoomRange = zoomRanges.slides): number {
-  const stops = [range.least, ...(range.least < 10 ? [5] : []), ...zoomStops]
-  if (direction === "in") return stops.find((stop) => stop > percent) ?? range.most
-  return [...stops].reverse().find((stop) => stop < percent) ?? range.least
+export function steppedZoom(direction: "in" | "out", percent: number): number {
+  if (direction === "in") return zoomStops.find((stop) => stop > percent) ?? zoomRange.most
+  return [...zoomStops].reverse().find((stop) => stop < percent) ?? zoomRange.least
 }
 
-export function typedZoom(text: string, range: ZoomRange = zoomRanges.slides): number | null {
+export function typedZoom(text: string): number | null {
   const match = /^\s*(\d+(?:\.\d+)?)\s*%?\s*$/.exec(text)
   if (match === null) return null
   const percent = Math.round(Number(match[1]))
-  return boundedZoom(percent, range)
+  return boundedZoom(percent)
 }

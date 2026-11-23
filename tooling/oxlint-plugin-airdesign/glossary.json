@@ -16,11 +16,6 @@
       "file": "scripts/bar.mjs",
       "text": "\"known faults\": \"known-failures\",",
       "reason": "bar maps the old metric name to the new one"
-    },
-    {
-      "file": "apps/web/src/editor/grid-group.tsx",
-      "text": "<div style={{ gridColumn: offset + 1, gridRow: 1 }}>{children}</div>",
-      "reason": "the CSS property gridRow places a line of thumbnails"
     }
   ]
 }
