@@ -1,4 +1,5 @@
 import { fontRouteList } from "./platform/font-route.js"
+import type { FontSource } from "./platform/font-source.js"
 import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 import { bytesOf, limits } from "@airdesign/doom"
@@ -64,6 +65,7 @@ export type ApiOptions = {
   readonly commit?: string
   readonly smokeToken?: string
   readonly originals?: OriginalStore
+  readonly fonts?: FontSource
   readonly imageNet?: ImageNet
   readonly pictureWait?: number
   readonly aira?: AiraSettings
