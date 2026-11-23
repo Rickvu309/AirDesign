@@ -6,3 +6,4 @@ dependencies:
 public:
   - export-control.tsx
   - export-options.ts
+  - export-screens.tsx

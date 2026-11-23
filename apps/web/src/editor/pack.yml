@@ -17,6 +17,7 @@ public:
   - editor-grid.tsx
   - editor-icons.tsx
   - editor-key-ownership.ts
+  - editor-screens.tsx
   - editor-shell.tsx
   - editor-toolbar.tsx
   - element-title-actions.tsx

@@ -4,4 +4,5 @@ dependencies:
   - apps/web/src/copy
   - apps/web/src/decks
 public:
+  - connect-screens.tsx
   - oauth-authorize.tsx

@@ -15,4 +15,5 @@ public:
   - settings-page.tsx
   - settings-routes.ts
   - settings-sample.ts
+  - settings-screens.tsx
   - usage-page.tsx
