@@ -87,7 +87,6 @@ export {
 
 export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
-export { readFindingsReport, type FindingsReport } from "./findings-wire.js"
 export { pictureBytes, pictureType, type SlideKey, type SlidePictures } from "./slide-pictures-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"

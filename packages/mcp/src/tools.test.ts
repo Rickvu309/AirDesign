@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
 import { memoryDecks, type MemoryDecks } from "./memory-decks.js"
+import { offTheme } from "./suite-art.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
@@ -175,6 +176,32 @@ describe("edit_deck", () => {
     expect(fold.runs.get((landed.answer as { runId: string }).runId)?.phase).toBe("running")
     const read = await by.call("read_deck", { deck })
     expect(String(read.answer.layers)).toContain('text="Hello **there**"')
+  })
+
+  it("lands a hex colour and names the nearest theme colour in the answer's JSON, and finds nothing on names", async () => {
+    const by = agent()
+    const { deck, rev, slides } = await created(by)
+    const landed = await by.call(
+      "edit_deck",
+      edit(deck, rev, [{ op: "set", target: `${slides[0]!}.title`, color: offTheme }]),
+    )
+    const answer = landed.answer as { note: string; findings: { code: string; note: string }[] }
+    expect(landed.ok).toBe(true)
+    expect(answer.note).toContain("change it to the named choice unless the person asked for it")
+    expect(answer.findings).toMatchObject([{ code: "off-palette", color: offTheme, to: expect.any(String) }])
+    expect(answer.findings[0]!.note).toContain(
+      `${offTheme} is not a theme colour, so a new template will not recolour it`,
+    )
+    const plain = await by.call(
+      "edit_deck",
+      edit(
+        deck,
+        rev + 1,
+        [{ op: "set", target: `${slides[0]!}.title`, color: "accent1" }],
+        (landed.answer as { runId: string }).runId,
+      ),
+    )
+    expect(plain.answer).not.toHaveProperty("findings")
   })
 
   it("answers only the root of what a pattern added", async () => {

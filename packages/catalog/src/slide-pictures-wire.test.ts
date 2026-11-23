@@ -1,11 +1,11 @@
 import { limits } from "@airdesign/doom"
 import { expect, it } from "vitest"
-import { pictureBytes, readFindingsReport } from "./index.js"
+import { pictureBytes } from "./index.js"
+import { readSlidePictures } from "./slide-pictures-wire.js"
 
 const key = "a".repeat(64)
 const other = "b".repeat(64)
 const data = "/9j/4AAQSkZJRgABAQ=="
-const report = { deck: "deck", revision: 4, findings: [] }
 const pictures = {
   keys: [
     { slide: "256", key },
@@ -14,14 +14,9 @@ const pictures = {
   images: [{ slide: "256", key, type: "image/jpeg", data }],
 }
 
-it("reads the slide keys and the pictures a tab adds to its findings report", () => {
-  expect(readFindingsReport({ ...report, pictures })).toEqual({ ok: true, ...report, pictures })
-  expect(readFindingsReport({ ...report, pictures: { ...pictures, images: [] } })).toEqual({
-    ok: true,
-    ...report,
-    pictures: { ...pictures, images: [] },
-  })
-  expect(readFindingsReport(report)).toEqual({ ok: true, ...report })
+it("reads the slide keys and the pictures a tab reports", () => {
+  expect(readSlidePictures(pictures)).toEqual(pictures)
+  expect(readSlidePictures({ ...pictures, images: [] })).toEqual({ ...pictures, images: [] })
 })
 
 it("refuses pictures it cannot trust", () => {
@@ -46,5 +41,5 @@ it("refuses pictures it cannot trust", () => {
     { ...pictures, keys: Array.from({ length: limits.slides + 1 }, (_, at) => ({ slide: String(300 + at), key })) },
     { ...pictures, extra: true },
   ])
-    expect(readFindingsReport({ ...report, pictures: bad })).toEqual({ ok: false, refusal: "field" })
+    expect(readSlidePictures(bad)).toBeUndefined()
 })
