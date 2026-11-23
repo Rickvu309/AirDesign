@@ -203,7 +203,7 @@ describe("the limits an account's calls share hold on every server and after a r
     }
     for (const on of [first, second, await replica()]) {
       await withMcp(account.cookie, on, async (client) => {
-        expect((await listed(client)).content).toEqual([{ type: "text", text: toolLimit }])
+        expect((await listed(client)).structuredContent).toEqual({ ok: false, refusal: "rate", note: toolLimit })
       })
     }
   })

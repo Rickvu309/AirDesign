@@ -33,8 +33,8 @@ describe("images an agent names by address", () => {
     const found: NamedImages = new Map([[logo, { ok: false, refusal: "private" }]])
     const problem = imageProblem(pictures, found)
     expect(problem?.ok).toBe(false)
-    expect(problem?.content[0]?.text).toContain(`Change 1: "${logo}" was not used because it leads to a private`)
-    expect(problem?.content[0]?.text).toContain("Change 4:")
+    expect(problem?.answer.note).toContain(`Change 1: "${logo}" was not used because it leads to a private`)
+    expect(problem?.answer.note).toContain("Change 4:")
     expect(
       imageProblem(
         pictures,

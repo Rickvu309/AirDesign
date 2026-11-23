@@ -58,8 +58,8 @@ describe("an image an agent names that is no address and no stored asset", () =>
       changes: [addPicture(made.slides[0]!, "logo.png")],
     })
     expect(sent.ok).toBe(false)
-    expect(sent.content[0]?.text).toContain('Change 1: "logo.png" was not used because')
-    expect(sent.content[0]?.text).toContain("https address")
+    expect(sent.answer.note).toContain('Change 1: "logo.png" was not used because')
+    expect(sent.answer.note).toContain("https address")
     const [{ rev }] = [await by.decks.open(made.deck as never)] as [{ rev: number }]
     expect(rev).toBe(made.rev)
   })
@@ -75,7 +75,7 @@ describe("an image an agent names that is no address and no stored asset", () =>
       changes: [addPicture(made.slides[0]!, stored)],
     })
     expect(sent.ok).toBe(false)
-    expect(sent.content[0]?.text).toContain(`Change 1: "${stored}" was not used because this deck holds no picture`)
+    expect(sent.answer.note).toContain(`Change 1: "${stored}" was not used because this deck holds no picture`)
   })
 
   it("lands for a hash the deck holds", async () => {
@@ -134,9 +134,9 @@ describe("read_deck with picture", () => {
     const made = await deckOf(by)
     const read = await by.call("read_deck", { deck: made.deck, picture: true })
     expect(read.content.filter((block) => block.type === "image")).toHaveLength(1)
-    const words = read.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n")
-    expect(words).toContain(`No current picture of slide ${made.slides[1]}`)
-    expect(words).toContain("open AirDesign tab")
+    expect(read.answer.pictures).toEqual([made.slides[0]])
+    expect(read.answer.note).toContain(`No current picture of slide ${made.slides[1]}`)
+    expect(read.answer.note).toContain("open AirDesign tab")
   })
 
   it("adds nothing when picture is not asked for", async () => {

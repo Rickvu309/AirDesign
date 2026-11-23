@@ -114,11 +114,12 @@ export async function connected(headers: Record<string, string>): Promise<Agent>
       const result = (
         JSON.parse(line) as { result: { isError?: boolean; content: { text: string }[]; structuredContent?: unknown } }
       ).result
+      const body = (result.structuredContent ?? {}) as Record<string, unknown>
       return {
         ok: result.isError !== true,
-        text: result.content[0]?.text ?? "",
+        text: typeof body.note === "string" ? body.note : "",
         said: result.content.map((block) => block.text).join("\n"),
-        body: (result.structuredContent ?? {}) as Record<string, unknown>,
+        body,
       }
     },
   }

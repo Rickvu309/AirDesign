@@ -5,7 +5,7 @@ import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
 import { limits, readFold, textFromMarkdown } from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { sessionRefusal, storeFailure, toolLimit } from "./mcp-expected.js"
+import { sessionRefusal, storeFailure, toolLimit, toolLimited } from "./mcp-expected.js"
 
 import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "../index.js"
@@ -215,7 +215,7 @@ describe("mcp route", () => {
 
       const read = await tool(client, "read_deck", { deck: first.deck })
       expect(read.answer.rev).toBe(first.rev + 1)
-      const lines = (read.content as { text: string }[])[1]!.text
+      const lines = read.answer.layers as string
       expect(lines).toContain('text="Q3 **board** update"')
       expect(lines).toContain("Revenue")
 
@@ -263,14 +263,14 @@ describe("mcp route", () => {
     await withMcp(await sign(address("else")), async (client) => {
       const read = await tool(client, "read_deck", { deck: owned.deck })
       expect(read.isError).toBe(true)
-      expect(read.answer).toEqual({ ok: false, refusal: "owner" })
+      expect(read.answer).toMatchObject({ ok: false, refusal: "owner" })
       const edit = await tool(client, "edit_deck", {
         deck: owned.deck,
         base: owned.rev,
         changes: [{ op: "add", kind: "text", slide: owned.slides[0], text: "mine now" }],
       })
-      expect(edit.answer).toEqual({ ok: false, refusal: "owner" })
-      expect((await tool(client, "stop_run", { deck: owned.deck, runId: "run" })).answer).toEqual({
+      expect(edit.answer).toMatchObject({ ok: false, refusal: "owner" })
+      expect((await tool(client, "stop_run", { deck: owned.deck, runId: "run" })).answer).toMatchObject({
         ok: false,
         refusal: "owner",
       })
@@ -282,7 +282,7 @@ describe("mcp route", () => {
   it("refuses a deck that was never made with deck and makes nothing", async () => {
     await withMcp(await sign(address("miss")), async (client) => {
       const refused = await tool(client, "read_deck", { deck: "neverthere" })
-      expect(refused.answer).toEqual({ ok: false, refusal: "deck" })
+      expect(refused.answer).toMatchObject({ ok: false, refusal: "deck" })
     })
     expect(await stored("neverthere")).toBeUndefined()
   })
@@ -327,7 +327,7 @@ describe("mcp route", () => {
       })
       expect(reopened.answer).toMatchObject({ ok: true })
       const read = await tool(client, "read_deck", { deck: first.deck })
-      expect((read.content as { text: string }[])[1]!.text).toContain('name="Agent"')
+      expect(read.answer.layers).toContain('name="Agent"')
     })
   })
 
@@ -397,7 +397,7 @@ describe("mcp route", () => {
           for (let call = 1; call < 30; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
           const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
           expect(blocked.isError).toBe(true)
-          expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
+          expect(blocked.structuredContent).toEqual(toolLimited)
           clock += 300_000
           expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
         },
@@ -414,11 +414,11 @@ describe("mcp route", () => {
     await withMcp(cookie, async (client) => {
       for (let call = 0; call < 30; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
       const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
-      expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
+      expect(blocked.structuredContent).toEqual(toolLimited)
     })
     await withMcp(await sign(email), async (client) => {
       const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
-      expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
+      expect(blocked.structuredContent).toEqual(toolLimited)
     })
   })
 
@@ -531,7 +531,7 @@ describe("mcp route", () => {
         async (client) => {
           const refused = await tool(client, "create_deck", {})
           expect(refused.isError).toBe(true)
-          expect(refused.answer).toEqual(storeFailure)
+          expect(refused.answer).toMatchObject(storeFailure)
           for (const name of ["list_decks", "read_deck", "edit_deck", "stop_run"]) {
             const args = {
               list_decks: {},
@@ -540,7 +540,7 @@ describe("mcp route", () => {
               stop_run: { deck: "a", runId: "r" },
             }[name]
             const answered = await tool(client, name, args)
-            expect(answered.answer).toEqual(storeFailure)
+            expect(answered.answer).toMatchObject(storeFailure)
             expect(JSON.stringify(answered)).not.toContain("ECONNREFUSED")
           }
         },

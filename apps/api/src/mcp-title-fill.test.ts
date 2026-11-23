@@ -51,7 +51,7 @@ describe("an agent's title on a deck made over MCP", () => {
     )
     try {
       const first = (await tool(client, "create_deck", { name: "Board" })).answer
-      const read = async () => (await tool(client, "read_deck", { deck: first.deck })).content[1]!.text
+      const read = async () => (await tool(client, "read_deck", { deck: first.deck })).answer.layers as string
       expect(await read()).toContain("Untitled")
       const landed = await tool(client, "edit_deck", {
         deck: first.deck,

@@ -2,7 +2,7 @@ import { catalog, projectTools, readOnce, toolInputSchema } from "@airdesign/cat
 import { McpServer } from "@modelcontextprotocol/server"
 
 import { type Admission, admit } from "./admit.js"
-import { refused, type ToolResult } from "./answer.js"
+import { limited, refused, type ToolResult } from "./answer.js"
 import { callTool, opOf, type Session } from "./call-tool.js"
 import type { DeckHost } from "./deck-host.js"
 import { kindInstructions } from "./instructions.js"
@@ -54,7 +54,7 @@ export function createServer(session: Session, host: Host): McpServer {
         } catch {
           return mcpResult(refused("store"))
         }
-        if (!admitted.ok) return mcpResult({ ok: false, content: [{ type: "text", text: admitted.text }], answer: {} })
+        if (!admitted.ok) return mcpResult(limited(admitted.text))
         session.log = admitted.log
         return mcpResult(await callTool(tool.name, args, session, host))
       },

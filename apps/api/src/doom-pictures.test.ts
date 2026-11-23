@@ -148,7 +148,7 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       expect(Date.now() - started).toBeGreaterThanOrEqual(100)
       const blocks = answer.content as readonly Block[]
       expect(blocks.some((block) => block.type === "image")).toBe(false)
-      expect(blocks.map((block) => block.text ?? "").join("\n")).toContain(`No current picture of slide ${slide}`)
+      expect((answer.structuredContent as { note: string }).note).toContain(`No current picture of slide ${slide}`)
     } finally {
       await client.close()
     }

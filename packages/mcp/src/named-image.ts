@@ -1,7 +1,7 @@
 import { webImage } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import type { ToolResult } from "./answer.js"
+import { told, type ToolResult } from "./answer.js"
 
 export type ImageRefusal =
   | "address"
@@ -90,13 +90,5 @@ export function imageProblem(
     return [`Change ${String(at + 1)}: ${JSON.stringify(address)} was not used because ${reason}`]
   })
   if (lines.length === 0) return undefined
-  const answer = { ok: false, refusal: "field", field: "fill", because: lines }
-  return {
-    ok: false,
-    content: [
-      { type: "text", text: lines.join("\n") },
-      { type: "text", text: JSON.stringify(answer) },
-    ],
-    answer,
-  }
+  return told(false, { ok: false, refusal: "field", field: "fill", note: lines.join("\n") })
 }
