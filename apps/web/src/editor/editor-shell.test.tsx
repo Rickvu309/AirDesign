@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { EditorShell, type EditorDeck } from "@/editor/editor-shell"
 import { EditorView } from "@/editor/screens/editor-view"
-import { AgentComplete, AgentWorking, DesignPanelScreen } from "@/legacy-editor/screens/slide-views"
+import { AgentComplete, AgentWorking, DesignPanelScreen } from "@/editor/screens/slide-views"
 
 const sampleWords = [
   "Your deck is ready",

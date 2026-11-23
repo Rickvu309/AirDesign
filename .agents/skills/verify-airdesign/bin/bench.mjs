@@ -2,16 +2,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
-import addText from "../bench/add-text.mjs"
-import addText170 from "../bench/add-text-170.mjs"
 import { doomCases } from "../bench/doom.mjs"
-import drag from "../bench/drag.mjs"
-import dragBusy from "../bench/drag-busy.mjs"
-import { defaultDecks, importCase, judgedDecks } from "../bench/import.mjs"
-import openDeck from "../bench/open-41.mjs"
-import typeDeck from "../bench/type-41.mjs"
-import switchDeck from "../bench/switch-41.mjs"
-import openFifty from "../bench/open-50.mjs"
 import { benchTable, schedule, sides, summary, verdict } from "./bench-verdict.mjs"
 import { designContext, openBrowser } from "./browser.mjs"
 import { load } from "./load.mjs"
@@ -21,16 +12,7 @@ export const throttle = 4
 const caseLimit = 180_000
 const ledger = path.join(os.homedir(), ".cache", "airdesign", "bench.jsonl")
 const valued = ["--cases", "--runs", "--base", "--before-run", "--after-run", "--out"]
-const defaultCases = [
-  "add-text",
-  "type-41",
-  "switch-41",
-  "drag",
-  "drag-busy",
-  "open-41",
-  ...doomCases.map((each) => each.name),
-  ...defaultDecks.map((deck) => `import-${deck}`),
-]
+const defaultCases = doomCases.map((each) => each.name)
 
 function read(args) {
   const flags = {}
@@ -45,18 +27,7 @@ function read(args) {
 }
 
 export function casesFor(given, repo) {
-  const known = [
-    addText,
-    addText170,
-    typeDeck,
-    switchDeck,
-    drag,
-    dragBusy,
-    openDeck,
-    openFifty,
-    ...doomCases,
-    ...judgedDecks(repo).map(importCase),
-  ]
+  const known = [...doomCases]
   if (given === "all") return known
   return (given?.split(",") ?? defaultCases).map((name) => {
     const found = known.find((each) => each.name === name)

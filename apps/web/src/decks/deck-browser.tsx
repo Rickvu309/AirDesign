@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { BrowseHeader } from "@/decks/browse-header"
-import type { NewDeckActions } from "@/decks/new-deck-menu"
+import type { NewDeckActions } from "@/decks/new-deck-button"
 import { DecksShell } from "@/decks/decks-shell"
 import type { DeckSection } from "@/decks/deck-routes"
 

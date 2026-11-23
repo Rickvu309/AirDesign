@@ -12,7 +12,7 @@ import {
 import { readParts, readShapes, shownIdentity, textNamedNow } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { copyCommands, elementCommand } from "./element-edit"
-import { groupCommands } from "./legacy-editor/group-actions"
+import { groupCommands } from "./editor/group-actions"
 import { exportedParts } from "./editing/exported-parts"
 
 type Parts = ReadonlyMap<string, Uint8Array>
