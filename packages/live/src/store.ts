@@ -14,12 +14,34 @@ export async function readSlot(key: string): Promise<unknown> {
   return finished(reading, () => (request.result as unknown[])[0] ?? null)
 }
 
-export function writeSlot(key: string, value: unknown): Promise<void> {
-  return putSlots([{ key, value }]).then(() => undefined)
+export async function readRange(prefix: string): Promise<readonly { readonly key: string; readonly value: unknown }[]> {
+  const account = accountKey()
+  if (account === undefined) return []
+  const reading = await transaction("readonly")
+  const store = reading.objectStore(storeName)
+  const range = IDBKeyRange.bound(scoped(account, prefix), scoped(account, `${prefix}\uffff`))
+  const keys = store.getAllKeys(range)
+  const values = store.getAll(range)
+  const from = scoped(account, "").length
+  return finished(reading, () =>
+    (keys.result as string[]).map((key, at) => ({ key: key.slice(from), value: (values.result as unknown[])[at] })),
+  )
 }
 
-export function replaceSlots(puts: readonly { readonly key: string; readonly value: unknown }[]): Promise<void> {
-  return putSlots(puts).then(() => undefined)
+export async function changeSlots(
+  puts: readonly { readonly key: string; readonly value: unknown }[],
+  drops: readonly string[],
+): Promise<void> {
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  for (const key of drops) store.delete(scoped(account, key))
+  for (const { key, value } of puts) store.put(value, scoped(account, key))
+  await finished(writing, () => undefined)
+}
+
+export function writeSlot(key: string, value: unknown): Promise<void> {
+  return putSlots([{ key, value }]).then(() => undefined)
 }
 
 export async function changeSlot(key: string, change: (current: unknown) => unknown): Promise<void> {
