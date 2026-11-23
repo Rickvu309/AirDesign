@@ -1,24 +1,35 @@
 const steps = {
   AgentReads: "an agent reads the deck",
-  AgentEdits: "an agent edits x with the version it holds",
-  AgentStops: "an agent stops the run its turn names",
-  AgentStopsOther: "an agent names the other agent's run in stop_run",
-  Idle: "ten minutes pass with no call from one agent",
+  AgentStarts: "an agent edits x without a runId, starting a run",
+  AgentWrites: "an agent edits x naming a run",
+  AgentStops: "an agent stops a run",
   Done: "nothing is left to do",
 }
 
-export const state = (v) =>
-  `x ${v.holder === "none" ? "runs under no run" : `runs under ${v.holder}`} at version ${v.ver}, a's turn ${v.turnA}${v.liveA ? "" : " (idle)"}, b's turn ${v.turnB}${v.liveB ? "" : " (idle)"}, a read ${v.readA}, b read ${v.readB}${v.who === "none" ? "" : `, ${v.who} was answered ${v.out}`}`
+const runs = ["a1", "a2", "b1", "b2"]
+
+const running = (v) => runs.filter((run) => v[`p${run}`] === "running")
+
+export const state = (v) => {
+  const live = running(v)
+  const stopped = runs.filter((run) => v[`p${run}`] === "stopped")
+  return `x at version ${v.ver}, ${live.length === 0 ? "no run running" : `${live.join(" and ")} running`}${stopped.length === 0 ? "" : `, ${stopped.join(" and ")} stopped`}, a read ${v.readA}, b read ${v.readB}${v.out === "none" ? "" : `, the last call was answered ${v.out}`}`
+}
 
 export const step = (action) => steps[action] ?? null
 
-export const group = (v) =>
-  v.holder === "none" ? "x free" : v.holder.startsWith("a") ? "x held by a's run" : "x held by b's run"
+export const group = (v) => {
+  const live = running(v)
+  const a = live.some((run) => run.startsWith("a"))
+  const b = live.some((run) => run.startsWith("b"))
+  return a && b ? "both running" : a ? "a running" : b ? "b running" : "none running"
+}
 
 export const colors = {
-  "x free": "gray",
-  "x held by a's run": "teal",
-  "x held by b's run": "blue",
+  "none running": "gray",
+  "a running": "teal",
+  "b running": "blue",
+  "both running": "purple",
 }
 
 export const title = "Each agent works in its own run, and no agent's edit silently replaces another's"

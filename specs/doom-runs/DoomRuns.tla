@@ -3,6 +3,8 @@
 \* notes of a slide (N), each on its own node. A value is the number of the edit that first wrote it (0 is the
 \* file's own) and a rev is the number of the edit that wrote last: the person's write is 1, run a's write 2,
 \* its undo 3 and run b's write 5.
+\* Runs a and b belong to two agents, so neither start stops the other run: a start stops only its own
+\* agent's running run, which specs/agents models.
 \* A run starts with an id no run used before (applyEdit refuses a start that names a known run), writes one
 \* property once with the property's rev as its base, and stops. Run b starts once run a has started, so the
 \* two may run at once, and writes the text. A person's edit protects the nodes it wrote from each run that is

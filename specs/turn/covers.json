@@ -10,8 +10,8 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "protect"],
-      "digest": "3d6d3087d131",
-      "blob": "15d1837183642ecb50a9c9d1bb1c5cb6ea668eeb"
+      "digest": "b317fdf8c2a0",
+      "blob": "e2331922b5ba9f59aa2e3314860b12780aa3843c"
     }
   ]
 }

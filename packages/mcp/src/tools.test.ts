@@ -404,6 +404,32 @@ describe("stop_run", () => {
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 2)
   })
 
+  it("refuses another agent's run, which keeps running and taking its agent's edits", async () => {
+    const by = agent()
+    const other = agent(by.decks, "claude")
+    const { deck, rev, slides } = await created(by)
+    const first = await by.call(
+      "edit_deck",
+      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
+    )
+    const { runId } = first.answer as { runId: string }
+    expect((await other.call("stop_run", { deck, runId }, "other-stop")).answer).toMatchObject({
+      ok: false,
+      refusal: "run-fenced",
+    })
+    const intruded = await other.call(
+      "edit_deck",
+      edit(deck, rev + 1, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      "other-edit",
+    )
+    expect(intruded.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
+    const more = await by.call(
+      "edit_deck",
+      edit(deck, rev + 1, [{ op: "add", kind: "text", slide: slides[0], text: "C" }], runId),
+    )
+    expect(more.ok).toBe(true)
+  })
+
   it("refuses a run the deck never held", async () => {
     const by = agent()
     const { deck } = await created(by)

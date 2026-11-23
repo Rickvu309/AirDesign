@@ -22,14 +22,14 @@
     {
       "file": "packages/mcp/src/stop-tool.ts",
       "names": ["stopRunTool"],
-      "digest": "e26df309bf03",
-      "blob": "f8dd05133f3573e1375687f712faa47a30be2fca"
+      "digest": "ecaf7b33d9f9",
+      "blob": "3ec1ac6828bbead572b9c41443b6873e1a7896bc"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",
-      "names": ["guardRun", "protect"],
-      "digest": "3d6d3087d131",
-      "blob": "15d1837183642ecb50a9c9d1bb1c5cb6ea668eeb"
+      "names": ["guardRun", "landEdit", "protect"],
+      "digest": "165c6b530105",
+      "blob": "e2331922b5ba9f59aa2e3314860b12780aa3843c"
     },
     {
       "file": "packages/mcp/src/admit.ts",

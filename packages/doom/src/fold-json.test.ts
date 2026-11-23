@@ -17,8 +17,8 @@ function sameDoom(left: Doom, right: Doom) {
   expect(childrenOf(right)).toEqual(childrenOf(left))
   expect(right.rev).toBe(left.rev)
   expect([...right.onces]).toEqual([...left.onces])
-  expect([...right.runs].map(([name, run]) => [name, run.phase, [...run.guarded]])).toEqual(
-    [...left.runs].map(([name, run]) => [name, run.phase, [...run.guarded]]),
+  expect([...right.runs].map(([name, run]) => [name, { ...run, guarded: [...run.guarded] }])).toEqual(
+    [...left.runs].map(([name, run]) => [name, { ...run, guarded: [...run.guarded] }]),
   )
 }
 
@@ -39,6 +39,14 @@ describe("the fold's JSON form", () => {
     const read = readFold(wire(foldToJson(doom)))
     expect(read).toBeDefined()
     sameDoom(doom, read!)
+  })
+
+  it("reads a stored run that names no agent as nobody's, so no agent can write into it or stop it", () => {
+    const read = readFold({
+      ...(wire(foldToJson(sampleDeck())) as object),
+      runs: { old: { phase: "running", guarded: [] } },
+    })
+    expect(read?.runs.get("old")).toMatchObject({ phase: "running", agent: "" })
   })
 
   it("keeps a deleted node out of its parent's children and still holds its props", () => {

@@ -112,10 +112,18 @@ function guardRun(work: Working, landed: Landed): Refusal | undefined {
   const run = author.run === undefined ? undefined : work.runs.get(author.run)
   if (phase === "start") {
     if (run !== undefined || author.run === undefined) return refuse("run-fenced")
-    work.runs.set(author.run, { phase: "running", guarded: new Set() })
+    for (const [name, other] of work.runs)
+      if (other.phase === "running" && other.agent === author.id) work.runs.set(name, { ...other, phase: "stopped" })
+    work.runs.set(author.run, {
+      phase: "running",
+      guarded: new Set(),
+      agent: author.id,
+      started: landed.rev,
+      wrote: landed.rev,
+    })
     return undefined
   }
-  return run?.phase === "running" ? undefined : refuse("run-fenced")
+  return run?.phase === "running" && run.agent === author.id ? undefined : refuse("run-fenced")
 }
 
 function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Known): Refusal | undefined {
@@ -247,10 +255,14 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   const delta = countDelta(work, doom, landed)
   const crowded = overLimit(delta, known)
   if (crowded !== undefined) return crowded
-  if (landed.phase === "stop") {
-    const run = work.runs.get(landed.author.run!)!
-    work.runs.set(landed.author.run!, { ...run, phase: "stopped" })
-  }
+  const name = landed.author.kind === "agent" ? landed.author.run : undefined
+  const own = name === undefined ? undefined : work.runs.get(name)
+  if (name !== undefined && own !== undefined)
+    work.runs.set(name, {
+      ...own,
+      ...(landed.writes.length > 0 ? { wrote: landed.rev } : {}),
+      ...(landed.phase === "stop" ? { phase: "stopped" as const } : {}),
+    })
   protect(work, landed, new Set(landed.writes.map((each) => each.node)))
   return {
     doom: {

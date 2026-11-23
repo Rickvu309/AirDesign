@@ -95,5 +95,5 @@ What the agent saw when it last read the deck. Its text and list writes carry th
 _Avoid_: snapshot, readAt
 
 **run**:
-One agent turn on a deck. Its first edit opens it (`phase: start`) and `stop_run` closes it. A person's change to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
+One agent turn on a deck, and that agent's alone. Its first edit opens it (`phase: start`), and `stop_run` or the same agent's next start closes it, so an agent has one open run per deck. Another agent's write into it or stop of it is refused `run-fenced`. A person's change to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
 _Avoid_: session, turn

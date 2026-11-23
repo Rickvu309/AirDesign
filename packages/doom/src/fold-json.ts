@@ -98,7 +98,7 @@ export function readStoredNode(id: string, rawNode: unknown, rawRevs: unknown): 
 export const revsToJson = (revs: ReadonlyMap<WriteKey, Rev> | undefined): unknown => Object.fromEntries(revs ?? [])
 
 export const runsToJson = (runs: ReadonlyMap<string, Run>): unknown =>
-  Object.fromEntries([...runs].map(([name, run]) => [name, { phase: run.phase, guarded: [...run.guarded] }]))
+  Object.fromEntries([...runs].map(([name, run]) => [name, { ...run, guarded: [...run.guarded] }]))
 
 function readOnces(raw: unknown): Map<string, Rev> | undefined {
   const found = plain(raw)
@@ -126,7 +126,11 @@ export function readRuns(raw: unknown, nodes?: ReadonlyMap<NodeId, Node>): Map<s
       if (id === undefined || (nodes !== undefined && !nodes.has(id))) return undefined
       guarded.add(id)
     }
-    runs.set(name, { phase: run.phase, guarded })
+    const started = readRev(run.started ?? 0)
+    const wrote = readRev(run.wrote ?? 0)
+    const agent = run.agent ?? ""
+    if (typeof agent !== "string" || started === undefined || wrote === undefined) return undefined
+    runs.set(name, { phase: run.phase, guarded, agent, started, wrote })
   }
   return runs
 }

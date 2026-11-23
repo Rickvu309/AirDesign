@@ -31,7 +31,7 @@ export const refusalWords = {
   "person-protected":
     "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or send the edit without runId to start a new run.",
   "run-fenced":
-    "That run has stopped, or never started, and nothing landed. Send the edit without runId to start a new run.",
+    "That run has stopped, never started, or is another agent's, and nothing landed. Send the edit without runId to start a new run.",
   payload: "The deck is too large for this call, and nothing landed.",
   store: "The deck could not be read or saved, and nothing changed. Send the call again.",
 } as const satisfies Partial<Record<EditRefusal, string>>

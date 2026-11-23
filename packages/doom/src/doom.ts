@@ -21,7 +21,13 @@ export type Edit = {
 }
 export type Landed = Edit & { readonly rev: Rev }
 
-export type Run = { readonly phase: "running" | "stopped"; readonly guarded: ReadonlySet<NodeId> }
+export type Run = {
+  readonly phase: "running" | "stopped"
+  readonly guarded: ReadonlySet<NodeId>
+  readonly agent: string
+  readonly started: Rev
+  readonly wrote: Rev
+}
 
 export type Doom = {
   readonly nodes: ReadonlyMap<NodeId, Node>

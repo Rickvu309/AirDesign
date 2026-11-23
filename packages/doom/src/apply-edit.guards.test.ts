@@ -146,6 +146,45 @@ describe("agent runs", () => {
     expect(isRefusal(tryLand(running, [{ node: ids.card, prop: "opacity", value: 0.5 }], agent("r1")))).toBe(false)
   })
 
+  const claude = (run: string) => ({ kind: "agent" as const, id: "claude", run })
+  const startBy = (doom: Doom, author: ReturnType<typeof claude>) =>
+    applyEdit(doom, { once: once(), author, writes: [], phase: "start", rev: rev(doom.rev + 1) })
+
+  it("keeps a run to the agent that started it: another agent can neither write into it nor stop it", () => {
+    const running = start(sampleDeck(), "r1") as Doom
+    expect(running.runs.get("r1")).toMatchObject({ agent: "aira", started: running.rev })
+    const write = [{ node: ids.card, prop: "name" as const, value: "Claude" }]
+    refusedWith(tryLand(running, write, claude("r1")), "run-fenced")
+    refusedWith(
+      applyEdit(running, { once: once(), author: claude("r1"), writes: [], phase: "stop", rev: rev(running.rev + 1) }),
+      "run-fenced",
+    )
+    expect(isRefusal(tryLand(running, write, agent("r1")))).toBe(false)
+  })
+
+  it("stops an agent's running run when the same agent starts another, in the same edit", () => {
+    const first = start(sampleDeck(), "r1") as Doom
+    const second = start(first, "r2") as Doom
+    expect(second.runs.get("r1")?.phase).toBe("stopped")
+    expect(second.runs.get("r2")?.phase).toBe("running")
+    refusedWith(tryLand(second, [{ node: ids.card, prop: "name", value: "late" }], agent("r1")), "run-fenced")
+  })
+
+  it("leaves another agent's run running when an agent starts its own", () => {
+    const mine = start(sampleDeck(), "r1") as Doom
+    const both = startBy(mine, claude("c1")) as Doom
+    expect(both.runs.get("r1")?.phase).toBe("running")
+    expect(both.runs.get("c1")).toMatchObject({ phase: "running", agent: "claude" })
+  })
+
+  it("records the rev a run last wrote at", () => {
+    const running = start(sampleDeck(), "r1") as Doom
+    const wrote = land(running, [{ node: ids.card, prop: "name", value: "A" }], agent("r1"))
+    expect(wrote.runs.get("r1")).toMatchObject({ started: running.rev, wrote: wrote.rev })
+    const stopped = stop(wrote, "r1") as Doom
+    expect(stopped.runs.get("r1")).toMatchObject({ wrote: wrote.rev })
+  })
+
   it("lets a start edit carry its first writes and a stop edit its last", () => {
     const doom = start(sampleDeck(), "r1", [{ node: ids.card, prop: "name", value: "First" }]) as Doom
     expect(doom.nodes.get(ids.card)).toMatchObject({ name: "First" })
