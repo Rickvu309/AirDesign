@@ -1,8 +1,9 @@
 import * as doom from "@airdesign/doom"
 
-import { blank, blankDeck, evalDeck, named, person, slides } from "./eval-deck.js"
+import { blank, blankDeck, evalDeck, named, slides } from "./eval-deck.js"
 import { onceIds } from "./once-ids.js"
 import { swatch } from "./suite-art.js"
+import { heldRun, noteTouched, runningWith, stoppedRun, typedByAPerson } from "./suite-changed-decks.js"
 import { type Attempt, type Reason, type Step, type Task, edit, read, stop } from "./score.js"
 
 export type SuiteRow = {
@@ -123,58 +124,6 @@ const pattern = (id: string, prompt: string, make: Record<string, unknown>, show
 const bigRun = "n".repeat(7_000)
 const tooBig = "n".repeat(9_000)
 const slideCount = 3
-
-function typedByAPerson(): doom.Doom {
-  const start = evalDeck()
-  const landed = doom.applyEdit(start, {
-    once: "typed",
-    author: person,
-    writes: [
-      {
-        node: named.title,
-        prop: "text",
-        value: doom.textFromMarkdown("Typed by a person", "title"),
-        base: start.revs.get(named.title)!.get("text")!,
-      },
-    ],
-    rev: doom.rev(start.rev + 1),
-  })
-  if (doom.isRefusal(landed)) throw new Error("typed")
-  return landed
-}
-
-const heldRun = "held"
-
-function runningWith(then: readonly doom.Write[], by: doom.Author = person): doom.Doom {
-  const start = evalDeck()
-  const began = doom.applyEdit(start, {
-    once: "begin",
-    author: { kind: "agent", id: "eval", run: heldRun },
-    writes: [],
-    phase: "start",
-    rev: doom.rev(start.rev + 1),
-  })
-  if (doom.isRefusal(began)) throw new Error("begin")
-  if (then.length === 0) return began
-  const next = doom.applyEdit(began, { once: "then", author: by, writes: then, rev: doom.rev(began.rev + 1) })
-  if (doom.isRefusal(next)) throw new Error("then")
-  return next
-}
-
-const noteTouched = () => runningWith([{ node: named.note, prop: "name", value: "Mine" }])
-
-function stoppedRun(): doom.Doom {
-  const began = runningWith([])
-  const stopped = doom.applyEdit(began, {
-    once: "end",
-    author: { kind: "agent", id: "eval", run: heldRun },
-    writes: [],
-    phase: "stop",
-    rev: doom.rev(began.rev + 1),
-  })
-  if (doom.isRefusal(stopped)) throw new Error("end")
-  return stopped
-}
 
 const boardOnce = "call2"
 const boardIds = onceIds(boardOnce)
