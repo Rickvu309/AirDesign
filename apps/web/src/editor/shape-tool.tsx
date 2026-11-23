@@ -126,6 +126,7 @@ export function ShapeTool({
         sideOffset={12}
         className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0"
         data-keeps-format
+        {...(shown === undefined ? {} : { initialFocus: false })}
       >
         {more ? <ShapeGrid onShape={pick} /> : <ShapeTrayItems onShape={pick} onMore={() => setMore(true)} />}
       </PopoverContent>
