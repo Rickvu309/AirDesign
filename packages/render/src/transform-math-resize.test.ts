@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { Corner } from "./box-gesture.js"
+import type { Corner } from "./transform-math.js"
 import { resizeBox } from "./transform-math.js"
 
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
