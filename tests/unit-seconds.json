@@ -115,7 +115,6 @@
   "apps/web/src/aira/aira-loop-stop.test.ts": 3.9,
   "apps/web/src/aira/aira-loop.test.ts": 4.2,
   "apps/web/src/aira/aira-pictures.test.ts": 4.7,
-  "apps/web/src/aira/aira-prompts.test.ts": 3.5,
   "apps/web/src/aira/aira-reply.test.tsx": 4.9,
   "apps/web/src/aira/aira-steps.test.ts": 4.2,
   "apps/web/src/aira/aira-usage.test.ts": 0.5,
