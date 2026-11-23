@@ -1,6 +1,15 @@
 import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Search } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
-import { useId, useMemo, useState, type ComponentType, type ReactNode } from "react"
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
@@ -27,7 +36,7 @@ const charts: readonly { readonly kind: doom.Chart["kind"]; readonly icon: Compo
 ]
 
 const rowClass =
-  "flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left text-[length:var(--type-dense)] hover:bg-muted"
+  "flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left text-[length:var(--type-dense)] hover:bg-muted data-[active]:bg-muted"
 
 function IconGrid({
   names,
@@ -46,7 +55,8 @@ function IconGrid({
           type="button"
           aria-label={name}
           title={name}
-          className="flex size-8 items-center justify-center rounded-md hover:bg-muted"
+          data-action-row=""
+          className="flex size-8 items-center justify-center rounded-md hover:bg-muted data-[active]:bg-muted"
           onClick={() => {
             run.icon(name)
             finish()
@@ -66,7 +76,9 @@ const chartsGroup: Group = {
     const words = query.trim().toLowerCase()
     const found = charts.filter(
       ({ kind }) =>
-        words === "" || doomEditorCopy.chartKinds[kind].toLowerCase().includes(words) || "chart".includes(words),
+        words === "" ||
+        doomEditorCopy.chartKinds[kind].toLowerCase().includes(words) ||
+        doomEditorCopy.chartsGroup.toLowerCase().includes(words),
     )
     if (found.length === 0) return null
     return (
@@ -75,6 +87,7 @@ const chartsGroup: Group = {
           <button
             key={kind}
             type="button"
+            data-action-row=""
             className={rowClass}
             onClick={() => {
               run.chart(kind)
@@ -95,10 +108,12 @@ const deckGroup: Group = {
   title: doomEditorCopy.deckGroup,
   render(query, run, finish) {
     const words = query.trim().toLowerCase()
-    if (words !== "" && !`${doomEditorCopy.exportPdf} print`.toLowerCase().includes(words)) return null
+    if (words !== "" && !`${doomEditorCopy.deckGroup} ${doomEditorCopy.exportPdf} print`.toLowerCase().includes(words))
+      return null
     return (
       <button
         type="button"
+        data-action-row=""
         className={rowClass}
         onClick={() => {
           finish()
@@ -116,8 +131,10 @@ const actionGroups: readonly Group[] = [chartsGroup, deckGroup]
 
 export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: () => void }) {
   const id = useId()
+  const panel = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState("")
   const [all, setAll] = useState(false)
+  const [active, setActive] = useState<number | null>(null)
   const words = query.trim()
   const names = useMemo(() => (words === "" ? startingIcons.slice(0, 8) : iconMatches(words, 32)), [words])
   const iconNames = all && words === "" ? iconMatches("", 24) : names
@@ -127,8 +144,36 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
         .map((group) => ({ group, shown: group.render(query, props.run, props.finish) }))
         .filter((each) => each.shown !== null)
   const nothing = sections.length === 0 && iconNames.length === 0
+  const rowsOf = () => Array.from(panel.current?.querySelectorAll<HTMLElement>("[data-action-row]") ?? [])
+  useEffect(() => {
+    const rows = rowsOf()
+    const input = panel.current?.querySelector("input")
+    rows.forEach((row, index) => {
+      row.id = `${id}-row-${index}`
+      if (index === active) row.setAttribute("data-active", "")
+      else row.removeAttribute("data-active")
+    })
+    const row = active === null ? undefined : rows[active]
+    if (row === undefined) input?.removeAttribute("aria-activedescendant")
+    else {
+      input?.setAttribute("aria-activedescendant", row.id)
+      row.scrollIntoView?.({ block: "nearest" })
+    }
+  })
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    const last = rowsOf().length - 1
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault()
+      if (last < 0) return
+      const step = event.key === "ArrowDown" ? 1 : -1
+      setActive((now) => Math.min(last, Math.max(0, (now ?? (step === 1 ? -1 : 1)) + step)))
+    } else if (event.key === "Enter" && active !== null) {
+      event.preventDefault()
+      rowsOf()[active]?.click()
+    }
+  }
   return (
-    <div className="flex flex-col gap-1 text-[length:var(--type-dense)]" data-actions-panel="">
+    <div ref={panel} className="flex flex-col gap-1 text-[length:var(--type-dense)]" data-actions-panel="">
       <label htmlFor={id} className="sr-only">
         {doomEditorCopy.actionsSearch}
       </label>
@@ -140,7 +185,11 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
           autoFocus
           placeholder={doomEditorCopy.actionsSearch}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            setActive(event.target.value.trim() === "" ? null : 0)
+          }}
+          onKeyDown={onKeyDown}
           className="h-8 w-full min-w-0 bg-transparent text-[length:var(--type-dense)] outline-none placeholder:text-quiet"
         />
       </div>

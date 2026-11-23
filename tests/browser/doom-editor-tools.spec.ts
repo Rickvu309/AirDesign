@@ -116,6 +116,35 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   await expect.poll(() => page.locator("[data-slide-box] [data-derived]").count()).toBeGreaterThan(4)
 })
 
+test("in Actions, Enter runs the top match, the arrow keys move the highlight, and the Deck group title finds Export as PDF", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const open = () => page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
+  const search = page.getByRole("searchbox", { name: doomEditorCopy.actionsSearch })
+  await open()
+  await search.fill("pie")
+  await expect(page.locator("[data-action-row][data-active]")).toHaveText(doomEditorCopy.chartKinds.pie)
+  await page.keyboard.press("Enter")
+  await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "pie" })
+  await expect(search).toBeHidden()
+
+  await open()
+  await search.fill("chart")
+  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("ArrowUp")
+  await expect(page.locator("[data-action-row][data-active]")).toHaveText(doomEditorCopy.chartKinds.bar)
+  await page.keyboard.press("Enter")
+  await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "bar" })
+
+  await open()
+  await search.fill(doomEditorCopy.deckGroup.toLowerCase())
+  await expect(page.getByRole("button", { name: doomEditorCopy.exportPdf })).toBeVisible()
+})
+
 test("with one icon selected, picking an icon in Actions swaps it in place, and one undo puts the old one back", async ({
   page,
   context,
