@@ -1,16 +1,15 @@
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
-import { roundedShown, untouched } from "@/design/shown-number"
 import { alphaOf, fadedColor, type Color } from "@airdesign/document"
-import { useState, type CSSProperties, type KeyboardEvent } from "react"
+import { type CSSProperties } from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Slider } from "@/components/ui/slider"
 import { pictureCopy } from "@/copy/picture-copy"
 import { optionWord } from "@/copy/option-copy"
 import { shownHex } from "@/design/color-choices"
 import { PickerBody } from "@/design/color-picker"
 import type { ControlProps } from "@/design/panel"
 import { EditorIcon } from "@/components/ui/editor-icons"
+import { PercentRow } from "@/design/controls/percent-row"
 
 const half = 50_000
 const black: Color = { rgb: "000000" }
@@ -44,47 +43,6 @@ function cssOf(color: Color, templateColors: ControlProps["palette"]["templateCo
 function laid(color: Color, current: Overlay): Color {
   if ("solid" in current) return fadedColor(color, alphaOf(current.solid))
   return alphaOf(color) >= 100_000 ? fadedColor(color, half) : color
-}
-
-function PercentRow({ label, exact, onCommit }: { label: string; exact: number; onCommit: (percent: number) => void }) {
-  const [draft, setDraft] = useState<string | null>(null)
-  const shown = roundedShown(exact, 0)
-  function commit(text: string) {
-    setDraft(null)
-    if (untouched(text, shown)) return
-    const typed = Number(text.trim().replace(",", "."))
-    if (text.trim() === "" || !Number.isFinite(typed)) return
-    onCommit(Math.min(100, Math.max(0, typed)))
-  }
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") commit(event.currentTarget.value)
-    if (event.key === "Escape") setDraft(null)
-  }
-  return (
-    <div className="flex h-[var(--control-dense)] items-center gap-2">
-      <Slider
-        label={label}
-        valueText={(value) => `${String(value)}%`}
-        min={0}
-        max={100}
-        step={1}
-        value={Number(shown.text)}
-        onValueChange={(value) => onCommit(Math.round(value))}
-        className="min-w-0 flex-1"
-      />
-      <input
-        className="w-12 bg-transparent text-right text-[length:var(--type-caption)] text-foreground tabular-nums outline-none"
-        inputMode="decimal"
-        aria-label={label}
-        value={draft ?? shown.text}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => {
-          if (draft !== null) commit(event.currentTarget.value)
-        }}
-        onKeyDown={onKeyDown}
-      />
-    </div>
-  )
 }
 
 export function OverlayControl({ control, palette, onChange }: ControlProps) {

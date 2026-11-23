@@ -1,9 +1,7 @@
-import { alphaOf, fadedColor, opaque, sameColor, type Color } from "@airdesign/document"
-import { roundedShown, untouched } from "@/design/shown-number"
+import { sameColor, type Color } from "@airdesign/document"
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { colorCopy } from "@/copy/color-copy"
-import { opacityCopy } from "@/copy/opacity-copy"
 import { hexOf, hsvOf, shownHex, typedColor, type Hsv, type Palette } from "@/design/color-choices"
 import { dropperOf, pickScreenColor } from "@/design/eyedropper"
 import { EditorIcon } from "@/components/ui/editor-icons"
@@ -65,10 +63,6 @@ function percent(value: number): number {
   return Math.round(value * 100)
 }
 
-function opacityTrack(hex: string): string {
-  return `linear-gradient(to right, transparent, #${hex}), repeating-conic-gradient(rgb(212 212 212) 0% 25%, white 0% 50%)`
-}
-
 const areaSteps: Readonly<Record<string, readonly [number, number]>> = {
   ArrowLeft: [-1, 0],
   ArrowRight: [1, 0],
@@ -87,12 +81,8 @@ export function CustomColor({
 }) {
   const start = value === undefined ? "FFFFFF" : shownHex(value, palette.templateColors)
   const [hsv, setHsv] = useState<Hsv>(() => hsvOf(start))
-  const [alpha, setAlpha] = useState(() => (value === undefined ? opaque : alphaOf(value)))
   const [typed, setTyped] = useState<string | null>(null)
-  const [opacityTyped, setOpacityTyped] = useState<string | null>(null)
   const latest = useRef(hsv)
-  const alphaRef = useRef(alpha)
-  const edited = useRef(false)
   const dragging = useRef(false)
   const areaRef = useRef<HTMLDivElement>(null)
   const Eyedropper = dropperOf()
@@ -105,10 +95,6 @@ export function CustomColor({
   useEffect(() => {
     if (dragging.current || seen.current === start) return
     seen.current = start
-    edited.current = false
-    const nextAlpha = value === undefined ? opaque : alphaOf(value)
-    alphaRef.current = nextAlpha
-    setAlpha(nextAlpha)
     latest.current = hsvOf(start)
     setHsv(latest.current)
   }, [start, value])
@@ -118,16 +104,8 @@ export function CustomColor({
     setHsv(next)
   }
 
-  function showAlpha(next: number) {
-    alphaRef.current = next
-    setAlpha(next)
-  }
-
-  function commit(fromField: boolean) {
-    const nextAlpha = alphaRef.current
-    const base =
-      fromField || edited.current || value === undefined ? { rgb: hexOf(latest.current) } : fadedColor(value, opaque)
-    const color = nextAlpha >= opaque ? base : fadedColor(base, nextAlpha)
+  function commit() {
+    const color = { rgb: hexOf(latest.current) }
     if (value !== undefined && sameColor(color, value)) return
     onPick(color)
   }
@@ -151,41 +129,27 @@ export function CustomColor({
       saturation: clamp(latest.current.saturation + step[0] * size),
       value: clamp(latest.current.value + step[1] * size),
     }
-    edited.current = true
     show(next)
-    commit(true)
+    commit()
   }
 
   function commitTyped(text: string) {
     setTyped(null)
     const color = typedColor(text)
     if (color === null || !("rgb" in color)) return
-    edited.current = true
     show(hsvOf(color.rgb))
-    commit(true)
-  }
-
-  function commitOpacity(text: string) {
-    setOpacityTyped(null)
-    if (untouched(text, shownAlpha)) return
-    const parsed = Number.parseInt(text, 10)
-    if (!Number.isInteger(parsed)) return
-    showAlpha(Math.min(100, Math.max(0, parsed)) * 1_000)
-    commit(false)
+    commit()
   }
 
   function dropped() {
     void pickScreenColor().then((color) => {
       if (color === null || !("rgb" in color)) return
-      edited.current = true
       show(hsvOf(color.rgb))
-      commit(true)
+      commit()
     })
   }
 
   const hex = hexOf(hsv)
-  const shownAlpha = roundedShown(alpha / 1_000, 0)
-  const shownPercent = shownAlpha.text
   return (
     <div className="flex flex-col gap-2" data-custom-color>
       <div
@@ -202,7 +166,6 @@ export function CustomColor({
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
           dragging.current = true
-          edited.current = true
           show(placed(event))
         }}
         onPointerMove={(event) => {
@@ -212,7 +175,7 @@ export function CustomColor({
           if (!dragging.current) return
           dragging.current = false
           show(placed(event))
-          commit(true)
+          commit()
         }}
         onKeyDown={areaKey}
       >
@@ -247,20 +210,9 @@ export function CustomColor({
             value={hsv.hue % 360}
             track={hueTrack}
             onChange={(hue) => {
-              edited.current = true
               show({ ...latest.current, hue })
             }}
-            onCommit={() => commit(true)}
-          />
-          <Slider
-            label={opacityCopy.label}
-            min={0}
-            max={100}
-            value={Number(shownPercent)}
-            track={opacityTrack(hex)}
-            size="100% 100%, 8px 8px"
-            onChange={(next) => showAlpha(next * 1_000)}
-            onCommit={() => commit(false)}
+            onCommit={() => commit()}
           />
         </div>
       </div>
@@ -289,32 +241,6 @@ export function CustomColor({
             }}
             className="min-w-0 flex-1 bg-transparent text-[length:var(--type-dense)] text-foreground uppercase tabular-nums outline-none"
           />
-        </label>
-        <label className="flex h-8 w-16 shrink-0 items-center gap-1 rounded-lg bg-white px-2 shadow-[0px_0px_0px_1px_var(--field-edge)]">
-          <input
-            aria-label={colorCopy.opacityPercent}
-            inputMode="numeric"
-            spellCheck={false}
-            autoComplete="off"
-            maxLength={3}
-            value={opacityTyped ?? shownPercent}
-            onChange={(event) => setOpacityTyped(event.target.value)}
-            onBlur={(event) => {
-              if (opacityTyped !== null) commitOpacity(event.currentTarget.value)
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault()
-                commitOpacity(event.currentTarget.value)
-              }
-              if (event.key === "Escape" && opacityTyped !== null) {
-                event.stopPropagation()
-                setOpacityTyped(null)
-              }
-            }}
-            className="min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] text-foreground tabular-nums outline-none"
-          />
-          <span className="text-[length:var(--type-caption)] text-quiet">%</span>
         </label>
       </div>
     </div>
