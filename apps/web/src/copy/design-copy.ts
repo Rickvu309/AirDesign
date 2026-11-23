@@ -6,6 +6,9 @@ import { frameCopy } from "./frame-copy"
 
 type Named = Exclude<PaintFill["type"], "solid" | "none">
 
+const layerCount = (count: number, kind: string) =>
+  `${new Intl.NumberFormat("en").format(count)} ${kind} ${count === 1 ? "layer" : "layers"}`
+
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
@@ -50,6 +53,11 @@ export const designCopy = {
   remove: "Remove",
   removeStop: (number: number) => `Remove stop ${String(number)}`,
   stop: (number: number) => `Stop ${String(number)}`,
+  heldLayers: {
+    hidden: (count: number) => layerCount(count, "hidden"),
+    locked: (count: number) => layerCount(count, "locked"),
+  },
+  heldLayersBack: { hidden: "Show all", locked: "Unlock all" },
   cell: (row: number, column: number) => `Row ${String(row)}, column ${String(column)}`,
 } as const satisfies {
   readonly fills: Record<Named, string>

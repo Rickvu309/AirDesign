@@ -59,7 +59,7 @@ const seen: Readonly<Record<string, Seen>> = {
   route: { person: ["panel:border.route"] },
   box: { person: ["gesture:move", "gesture:resize", "panel:box.align"] },
   name: { owedToPerson: "a layer's name: no layers panel" },
-  hidden: { owedToPerson: "a hidden layer cannot be seen or shown again: no layers panel", partly: ["gesture:hide"] },
+  hidden: { person: ["gesture:hide", "panel:show-hidden"] },
   size: { person: ["panel:text.size"] },
   font: { person: ["panel:text.font"] },
   lineHeight: { person: ["panel:text.lineHeight"] },
@@ -78,7 +78,7 @@ const seen: Readonly<Record<string, Seen>> = {
   nameFollows: { person: ["strip:deck-name"] },
 }
 
-const owedToPerson = ["text", "align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name", "hidden"]
+const owedToPerson = ["text", "align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name"]
 
 const structural = new Set([
   "op",

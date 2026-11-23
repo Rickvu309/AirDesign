@@ -1,4 +1,6 @@
 import { expect, type Page } from "@playwright/test"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
 import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
@@ -129,4 +131,46 @@ test("Shift+H flips a layer, and Ctrl+Shift+H hides and Ctrl+Shift+L locks it", 
   await page.keyboard.press("ControlOrMeta+Shift+h")
   await expect.poll(async () => (await savedNode(stack, opened, "t:2"))?.hidden).toBe(true)
   await expect.poll(() => shapeCount(page)).toBe(3)
+})
+
+test("the slide panel counts hidden and locked layers, and Show all and Unlock all bring them back as one undo each", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await threeBoxes(page, context, stack)
+  await clickSlide(page, 200, 760)
+  await page.keyboard.press("ControlOrMeta+Shift+h")
+  await page.keyboard.press("Escape")
+  await clickSlide(page, 700, 760)
+  await page.keyboard.press("ControlOrMeta+Shift+h")
+  await page.keyboard.press("Escape")
+  await clickSlide(page, 1200, 760)
+  await page.keyboard.press("ControlOrMeta+Shift+l")
+  await page.keyboard.press("Escape")
+  await expect.poll(() => shapeCount(page)).toBe(2)
+
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const panel = page.locator("[data-design-panel]")
+  const hidden = panel.locator('[data-held="hidden"]')
+  const locked = panel.locator('[data-held="locked"]')
+  await expect(hidden).toContainText(designCopy.heldLayers.hidden(2))
+  await expect(locked).toContainText(designCopy.heldLayers.locked(1))
+
+  await hidden.getByRole("button", { name: designCopy.heldLayersBack.hidden }).click()
+  await expect.poll(() => shapeCount(page)).toBe(4)
+  await expect(hidden).toHaveCount(0)
+  await expect.poll(async () => (await savedNode(stack, opened, "t:2"))?.hidden ?? false).toBe(false)
+  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(() => shapeCount(page)).toBe(2)
+  await expect(hidden).toContainText(designCopy.heldLayers.hidden(2))
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect.poll(() => shapeCount(page)).toBe(4)
+
+  await locked.getByRole("button", { name: designCopy.heldLayersBack.locked }).click()
+  await expect(panel.locator("[data-held-layers]")).toHaveCount(0)
+  await expect.poll(async () => (await savedNode(stack, opened, "t:3"))?.locked ?? false).toBe(false)
+  await clickSlide(page, 1200, 760)
+  expect(await selectedIds(page)).toEqual(["t:3"])
 })

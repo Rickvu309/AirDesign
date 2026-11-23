@@ -25,6 +25,7 @@ import { doomColorOf, type OldPaint } from "./design-values"
 import { propOf, slidesOf } from "@/editing/node-props"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
+import { HiddenLockedLayers } from "./hidden-locked"
 import { geometryOf } from "./slide-geometry"
 import type { EditorClient } from "./use-doom-deck"
 
@@ -91,6 +92,7 @@ export function DesignPanel(props: Props) {
         className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
         <DesignHead>{designCopy.slide(props.slideNumber)}</DesignHead>
+        <HiddenLockedLayers view={view} slide={slide} push={push} />
         {panelPlaces("slide", panelMode).map(({ section }) => {
           if (section === "templateStyle")
             return <DoomThemeCard key={section} client={client} view={view} theme={theme} />
