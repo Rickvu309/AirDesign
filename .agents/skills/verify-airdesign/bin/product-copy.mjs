@@ -22,9 +22,6 @@ export const { airaCopy, airaStepWords } = createRequire(import.meta.url)("../..
 export const { adjustToneCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/adjust-tone-copy.ts")
 export const { toolbarCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/toolbar-copy.ts")
 export const { undoCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/undo-copy.ts")
-export const { templatePickerCopy } = createRequire(import.meta.url)(
-  "../../../../apps/web/src/copy/template-picker-copy.ts",
-)
 
 export const { fillCopy, fillWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/fill-copy.ts")
 export const { colorCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/color-copy.ts")
@@ -58,10 +55,6 @@ export const { slideListCopy } = createRequire(import.meta.url)("../../../../app
 export const { notesCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/notes-copy.ts")
 export const { frameCopy, layoutWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/frame-copy.ts")
 export const { shapeCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/shape-copy.ts")
-export const { arrangeCopy, groupCopy } = createRequire(import.meta.url)(
-  "../../../../apps/web/src/copy/arrange-copy.ts",
-)
-export const { layersCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/layers-copy.ts")
 export const { shortcutCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/shortcut-copy.ts")
 
 export const { guideCopy, guideWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/guide-copy.ts")
