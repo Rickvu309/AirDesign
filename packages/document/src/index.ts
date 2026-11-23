@@ -32,7 +32,6 @@ export {
 } from "./design.js"
 export { refusals, type Refusal } from "./refusals.js"
 export { coordinates, readBox, type Box } from "./box.js"
-export { type SetChange, type Target } from "./set-change.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
 export {
   alphaKeys,
