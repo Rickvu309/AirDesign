@@ -60,8 +60,6 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/editor/format-buttons.tsx": [...arrows, ...field],
   "apps/web/src/editor/grid-group-add.tsx": ["Escape"],
   "apps/web/src/editor/grid-menu.tsx": ["Enter"],
-  "apps/web/src/legacy-editor/layer-name-field.tsx": field,
-  "apps/web/src/legacy-editor/layers-panel.tsx": [...list, "Enter", "F2"],
   "apps/web/src/editor/live-template-style.tsx": ["Enter"],
   "apps/web/src/editor/notes-bar.tsx": upDown,
   "apps/web/src/editor/resizable-panel.tsx": ["ArrowLeft", "ArrowRight", "End", "Home"],
