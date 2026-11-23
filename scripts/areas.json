@@ -103,7 +103,7 @@
       "CHECKS.md",
       "COMMANDS.md",
       "GLOSSARY.md",
-      "check-words.md",
+      "docs/words/check-words.md",
       "metrics.json",
       "package.json",
       "pnpm-",
