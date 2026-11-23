@@ -13,6 +13,7 @@ import noRaw from "./rules/no-raw.js"
 import noRouteLiteral from "./rules/no-route-literal.js"
 import noRunLiteral from "./rules/no-run-literal.js"
 import noStampLiteral from "./rules/no-stamp-literal.js"
+import noWallTimeMetrics from "./rules/no-wall-time-metrics.js"
 import noXmlSearch from "./rules/no-xml-search.js"
 
 const plugin = {
@@ -33,6 +34,7 @@ const plugin = {
     "no-route-literal": noRouteLiteral,
     "no-run-literal": noRunLiteral,
     "no-stamp-literal": noStampLiteral,
+    "no-wall-time-metrics": noWallTimeMetrics,
     "no-xml-search": noXmlSearch,
   },
 }

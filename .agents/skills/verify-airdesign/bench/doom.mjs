@@ -16,7 +16,7 @@ async function seated(kit) {
 
 async function taskMilliseconds(kit) {
   const session = (kit.cdp ??= await kit.context.newCDPSession(kit.page))
-  await session.send("Performance.enable")
+  await session.send("Performance.enable", { timeDomain: "threadTicks" })
   const { metrics } = await session.send("Performance.getMetrics")
   return metrics.find((metric) => metric.name === "TaskDuration").value * 1000
 }

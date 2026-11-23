@@ -5,6 +5,7 @@ import { expect, type CDPSession, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { dragFeel, type Feel } from "./drag-feel"
 import { openDoomEditor } from "./doom-deck"
+import { keptWait, keptWaitApproval } from "./kept-wait"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -81,7 +82,7 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   const device = await context.newCDPSession(page)
   await boardDeck(kit, opened.cookie, budget.slides, opened.deck)
   await page.reload()
-  await device.send("Performance.enable")
+  await device.send("Performance.enable", { timeDomain: "threadTicks" })
   await page.locator(`[data-doom-ready="${opened.deck}"]`).waitFor()
   await page.locator('[data-slide-entry="2"]').click()
   const node = page.locator("[data-slide-box] [data-node]").first()
@@ -94,7 +95,13 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   await frames(page, 240)
 
   const before = await engineMilliseconds(device, "TaskDuration")
-  await frames(page, 180)
+  await page.waitForTimeout(
+    keptWait(3000, {
+      why: "the quiet span is what is measured, and frames the test drove would count as the deck's own work",
+      until: "2027-02-18",
+      approval: keptWaitApproval,
+    }),
+  )
   const idle = (await engineMilliseconds(device, "TaskDuration")) - before
   expect(idle, `an open deck idles at most ${String(budget.idleTaskMilliseconds)} ms of work in 3 s`).toBeLessThan(
     budget.idleTaskMilliseconds,
