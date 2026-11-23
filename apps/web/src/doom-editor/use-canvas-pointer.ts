@@ -9,6 +9,7 @@ import {
 } from "react"
 import type { Preview } from "./canvas-overlay"
 import { hitChain } from "./hit-test"
+import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
 import { movedBy } from "./move-writes"
 import { holdsText, lockedIn } from "@/editing/node-props"
 import {
@@ -85,6 +86,15 @@ type Active =
       moved: boolean
     }
   | {
+      readonly kind: "end"
+      readonly grip: EndGrip
+      readonly origin: Point
+      readonly line: doom.NodeId
+      readonly view: doom.Doom
+      readonly geometry: SlideGeometry
+      moved: boolean
+    }
+  | {
       readonly kind: "draw"
       readonly origin: Point
       readonly chain: readonly Placed[] | null
@@ -105,9 +115,9 @@ function inEditor(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest("[data-text-editor]") !== null
 }
 
-function gripOf(target: EventTarget | null): TransformGrip | null {
+function gripOf(target: EventTarget | null): TransformGrip | EndGrip | null {
   const found = target instanceof Element ? target.closest("[data-grip]")?.getAttribute("data-grip") : null
-  return found === null || found === undefined ? null : (found as TransformGrip)
+  return found === null || found === undefined ? null : (found as TransformGrip | EndGrip)
 }
 
 export function useCanvasPointer(args: PointerArgs) {
@@ -193,6 +203,20 @@ export function useCanvasPointer(args: PointerArgs) {
     const far = Math.hypot(at.x - gesture.origin.x, at.y - gesture.origin.y) * a.scale >= threshold
     if (!gesture.moved && !far) return
     gesture.moved = true
+    if (gesture.kind === "end") {
+      const done = lineEndDrag({
+        view: gesture.view,
+        geometry: gesture.geometry,
+        line: gesture.line,
+        grip: gesture.grip,
+        at,
+        snap: !event.ctrlKey,
+        lockAngle: event.shiftKey,
+        scale: a.scale,
+      })
+      a.setPreview({ kind: "end", writes: done.writes, guides: [], label: null, aim: done.aim })
+      return
+    }
     if (gesture.kind === "move" || gesture.kind === "transform") {
       const done = evaluate(gesture, event)
       if (gesture.kind === "move" && (done.copies !== null) !== gesture.copying) {
@@ -265,6 +289,21 @@ export function useCanvasPointer(args: PointerArgs) {
       })
       return
     }
+    if (gesture?.kind === "end") {
+      if (!commit || last === null || !gesture.moved) return
+      const done = lineEndDrag({
+        view: gesture.view,
+        geometry: gesture.geometry,
+        line: gesture.line,
+        grip: gesture.grip,
+        at: toSlide(last),
+        snap: !last.ctrlKey,
+        lockAngle: last.shiftKey,
+        scale: a.scale,
+      })
+      if (done.writes.length > 0) a.client.push(done.writes)
+      return
+    }
     if (gesture?.kind === "move" && gesture.copying && !commit) a.onSelection(gesture.selected)
     if (gesture === null || (gesture.kind !== "move" && gesture.kind !== "transform") || !commit || last === null)
       return
@@ -311,7 +350,12 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const grip = gripOf(event.target)
-      if (grip !== null) {
+      const [only] = a.selection.ids
+      if (grip !== null && isEndGrip(grip) && only !== undefined && a.selection.ids.length === 1) {
+        active.current = { kind: "end", grip, origin, line: only, view: a.view, geometry: a.geometry, moved: false }
+        return
+      }
+      if (grip !== null && !isEndGrip(grip)) {
         active.current = {
           kind: "transform",
           grip,

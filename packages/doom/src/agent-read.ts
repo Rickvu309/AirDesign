@@ -1,5 +1,6 @@
 import type { AgentChart, AgentColor } from "./agent-change.js"
 import { uniformAlign, uniformColor } from "./agent-look.js"
+import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Color, Paint, Sides } from "./paint.js"
@@ -123,11 +124,23 @@ function looksOf(node: Node): readonly string[] {
     out.push(...overrideWords(text))
   }
   if (geometry?.kind === "icon") out.push(`icon=${iconWords(geometry.name)}`)
-  if (geometry?.kind === "line" && geometry.arrows[1] !== "none") out.push("arrow")
+  if (geometry?.kind === "line") out.push(...lineWords(geometry))
   const chart = chartWords(node)
   if (chart !== undefined) out.push(chart)
   if (text !== undefined) out.push(`text=${quoted(textToMarkdown(text))}`)
   return out
+}
+
+const sideWords = { t: "top", r: "right", b: "bottom", l: "left", c: "center" } as const
+
+function lineWords(line: Extract<Geometry, { kind: "line" }>): readonly string[] {
+  const end = (name: string, at: End) => ("node" in at ? [`${name}=${at.node}:${sideWords[at.site]}`] : [])
+  return [
+    ...end("from", line.start),
+    ...end("to", line.end),
+    ...(line.route === "straight" ? [] : [`route=${line.route}`]),
+    ...(line.arrows[1] === "none" ? [] : ["arrow"]),
+  ]
 }
 
 function overrideWords(text: Text): readonly string[] {

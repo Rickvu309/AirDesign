@@ -1,3 +1,4 @@
+import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { limits } from "./limits.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import {
@@ -71,6 +72,9 @@ export type AgentLook = {
   readonly padding?: Px
   readonly icon?: string
   readonly arrow?: boolean
+  readonly from?: AgentEnd
+  readonly to?: AgentEnd
+  readonly route?: "straight" | "elbow" | "curve"
   readonly chart?: AgentChart
   readonly rows?: readonly (readonly string[])[]
   readonly items?: readonly AgentItem[]
@@ -258,6 +262,9 @@ const lookFields: LookFields = {
   padding: number(0, 1_000, "Space between a frame's edge and its children."),
   icon: field({ type: "string", description: "An icon name such as star, arrow-right or trending-up." }, readIconName),
   arrow: flag("Put an arrowhead at the end of a line."),
+  from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
+  to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
+  route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
   chart: field(
     {
       ...chartSchema,

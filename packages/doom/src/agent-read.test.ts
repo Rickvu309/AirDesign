@@ -100,3 +100,14 @@ describe("readForAgent", () => {
     expect(lines(readForAgent(doom, [ids.slide], solved))[2]).toContain("@11,12 13x14")
   })
 })
+
+describe("readForAgent of a line", () => {
+  it("names the layer and side each attached end follows, and a route that is not straight", () => {
+    const doom = build(
+      richDeck(),
+      change({ op: "set", target: more.line, from: { layer: ids.card, side: "bottom" }, route: "curve", arrow: true }),
+    )
+    const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
+    expect(line).toContain(`from=${ids.card}:bottom route=curve arrow`)
+  })
+})

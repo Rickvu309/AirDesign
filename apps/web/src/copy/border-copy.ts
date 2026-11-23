@@ -10,6 +10,7 @@ export const borderCopy = {
   join: "Join",
   head: "Start arrow",
   tail: "End arrow",
+  route: "Line type",
   reset: {
     fill: "Reset border color",
     width: "Reset border width",
@@ -27,6 +28,9 @@ export const borderWords: Readonly<Record<string, string>> = {
   "border.solid": "Solid",
   "border.dash": "Dashed",
   "border.dot": "Dotted",
+  "route.straight": "Straight",
+  "route.elbow": "Elbowed",
+  "route.curve": "Curved",
   "dash.solid": "Solid",
   "fill.solid": "Border color",
   dot: "Dot",
