@@ -82,7 +82,8 @@ describe("layout findings in the answers, measured by the host with the deck's f
       changes: [{ op: "add", kind: "shape", slide: slides[0], box: { x: 1800, y: 900, w: 300, h: 100 } }],
     })
     const read = (await call("read_deck", { deck })).answer as { layers: string; findings: Found[] }
-    expect(read.layers.split("\n")[1]).toContain("1600x96.8")
+    const title = estimate(doom.textFromMarkdown("Untitled", "title"), doom.defaultTheme, 1600).h
+    expect(read.layers.split("\n")[1]).toContain(`1600x${String(Number(title.toFixed(1)))}`)
     expect(read.findings).toMatchObject([{ code: "off-slide" }])
   })
 
