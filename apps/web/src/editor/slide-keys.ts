@@ -1,4 +1,4 @@
-import { gestureFor, type GestureId } from "@airdesign/render"
+import { gestureFor, type GestureId } from "@/lib/gestures"
 
 export type SlideKey = "remove" | "clone" | "up" | "down"
 

@@ -1,4 +1,4 @@
-import { gestureFor } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import { useEffect, useRef, useState } from "react"
 import type { SlideTransition } from "@airdesign/pptx"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"

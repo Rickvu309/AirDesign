@@ -3,7 +3,7 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { loadIcon } from "./icon-nodes.js"
-import { NodeArt } from "./index.js"
+import { NodeArt } from "./node-art.js"
 import { swatches } from "./swatches-art.js"
 
 const navy = doom.defaultTheme.colors.accent1

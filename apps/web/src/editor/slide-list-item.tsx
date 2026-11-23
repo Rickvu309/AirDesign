@@ -1,4 +1,4 @@
-import { gestureFor } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import {
   useCallback,
   useLayoutEffect,

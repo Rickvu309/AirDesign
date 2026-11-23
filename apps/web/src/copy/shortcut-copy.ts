@@ -1,4 +1,4 @@
-import type { GestureId, GestureRow, Pointing } from "@airdesign/render"
+import type { GestureId, GestureRow, Pointing } from "@/lib/gestures"
 import { zoomToOf } from "./product-copy.ts"
 
 export const shortcutCopy = {

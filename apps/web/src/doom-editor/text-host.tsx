@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { TextLines, gestureFor } from "@airdesign/render"
+import { TextLines } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"

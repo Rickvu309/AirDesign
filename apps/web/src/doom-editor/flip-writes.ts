@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { flipSelection } from "@airdesign/render"
+import { flipSelection } from "./transform-math"
 import { propOf } from "@/editing/node-props"
 import { memberOf } from "./selection-frame"
 import { apply, invert, type SlideGeometry } from "./slide-geometry"

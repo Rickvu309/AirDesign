@@ -1,4 +1,4 @@
-import { gestures } from "@airdesign/render"
+import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 
 const sources: Readonly<Record<string, string>> = import.meta.glob(
@@ -8,7 +8,7 @@ const sources: Readonly<Record<string, string>> = import.meta.glob(
     "!./**/*.test.{ts,tsx}",
     "!../../../packages/render/src/**/*.test.{ts,tsx}",
     "!./copy/**",
-    "!../../../packages/render/src/gestures.ts",
+    "!./lib/gestures.ts",
   ],
   { query: "?raw", import: "default", eager: true },
 )

@@ -3,19 +3,21 @@ import {
   guidesAt,
   lineAt,
   nearestLine,
-  normalizeDegrees,
   reachOf,
-  resizeBox,
-  resizeSelection,
-  rotatedAngle,
   type Bounds,
   type Guide,
   type Line,
+  type SnapTargets,
+} from "./snapping"
+import {
+  normalizeDegrees,
+  resizeBox,
+  resizeSelection,
+  rotatedAngle,
   type ResizeGrip,
   type RotateGrip,
-  type SnapTargets,
   type TransformGrip,
-} from "@airdesign/render"
+} from "./transform-math"
 import { isGroup, scaledChildren } from "./group-scale"
 import { flows, geometryKind, lockedIn, propOf } from "@/editing/node-props"
 import { memberOf, type Member } from "./selection-frame"

@@ -1,10 +1,10 @@
 export type Bounds = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
 
-export type Axis = "x" | "y"
+type Axis = "x" | "y"
 
 export type Line = "start" | "middle" | "end"
 
-export type SnapGuide = {
+type SnapGuide = {
   readonly kind: "snap"
   readonly axis: Axis
   readonly at: number
@@ -13,7 +13,7 @@ export type SnapGuide = {
   readonly marks: readonly number[]
 }
 
-export type SpacingGuide = {
+type SpacingGuide = {
   readonly kind: "spacing"
   readonly axis: Axis
   readonly from: number
@@ -23,13 +23,13 @@ export type SpacingGuide = {
 
 export type Guide = SnapGuide | SpacingGuide
 
-export type GuideLines = { readonly x: readonly number[]; readonly y: readonly number[] }
+type GuideLines = { readonly x: readonly number[]; readonly y: readonly number[] }
 
 export type SnapTargets = { readonly layers: readonly Bounds[]; readonly slide: Bounds; readonly guides?: GuideLines }
 
-export type Snapped = { readonly box: Bounds; readonly guides: readonly Guide[] }
+type Snapped = { readonly box: Bounds; readonly guides: readonly Guide[] }
 
-export type Watched = { readonly x: readonly Line[]; readonly y: readonly Line[]; readonly spacing: boolean }
+type Watched = { readonly x: readonly Line[]; readonly y: readonly Line[]; readonly spacing: boolean }
 
 type Span = { readonly start: number; readonly end: number }
 
@@ -41,7 +41,7 @@ const tolerance = 1
 
 const lines: readonly Line[] = ["start", "middle", "end"]
 
-export const everyLine: Watched = { x: lines, y: lines, spacing: true }
+const everyLine: Watched = { x: lines, y: lines, spacing: true }
 
 export function reachOf(width: number, slideWidth: number): number {
   return (snapReach * slideWidth) / width
@@ -223,7 +223,7 @@ export function snapMove(box: Bounds, targets: SnapTargets, reach: number): Snap
   return { box: snapped, guides: guidesAt(snapped, targets, everyLine) }
 }
 
-export type LineSnap = { readonly line: Line; readonly offset: number }
+type LineSnap = { readonly line: Line; readonly offset: number }
 
 export function lineAt(box: Bounds, axis: Axis, line: Line): number {
   return lineOf(spanOf(box, axis), line)

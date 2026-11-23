@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { gestureFor, gestures, type Keys, type KeyLike } from "./gestures.js"
+import { gestureFor, gestures, type Keys, type KeyLike } from "./gestures"
 
 const plain = { code: "", metaKey: false, ctrlKey: false, altKey: false, shiftKey: false }
 

@@ -4,9 +4,9 @@ type Box = Pick<doom.Box, "x" | "y" | "w" | "h">
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
-export type Point = { readonly x: number; readonly y: number }
+type Point = { readonly x: number; readonly y: number }
 
-export type Edge = "top" | "right" | "bottom" | "left"
+type Edge = "top" | "right" | "bottom" | "left"
 
 export type ResizeGrip = Corner | Edge
 
@@ -14,7 +14,7 @@ export type RotateGrip = `rotate-${Corner}`
 
 export type TransformGrip = "move" | ResizeGrip | RotateGrip
 
-export type ResizeModifiers = {
+type ResizeModifiers = {
   readonly keepRatio: boolean
   readonly fromCenter: boolean
 }
@@ -29,9 +29,9 @@ export type FlippableLayer = RotatedLayer & {
   readonly flipV: boolean
 }
 
-export type FlipAxis = "horizontal" | "vertical"
+type FlipAxis = "horizontal" | "vertical"
 
-export type FlippedLayer<K> = {
+type FlippedLayer<K> = {
   readonly id: K
   readonly box?: Box
   readonly rotation?: number
@@ -39,12 +39,12 @@ export type FlippedLayer<K> = {
   readonly flipV?: boolean
 }
 
-export type SelectionResize<K> = {
+type SelectionResize<K> = {
   readonly frame: Box
   readonly boxes: ReadonlyMap<K, Box>
 }
 
-export const snapDegrees = 15
+const snapDegrees = 15
 
 const handleAngle: Readonly<Record<ResizeGrip, number>> = {
   right: 0,
@@ -193,7 +193,7 @@ export function resizeSelection<K>(
   return { frame: nextFrame, boxes }
 }
 
-export function roundRotation(degrees: number, snapAngle: boolean): number {
+function roundRotation(degrees: number, snapAngle: boolean): number {
   if (snapAngle) return normalizeDegrees(Math.round(degrees / snapDegrees) * snapDegrees)
   return normalizeDegrees(Math.round(degrees * 10) / 10)
 }

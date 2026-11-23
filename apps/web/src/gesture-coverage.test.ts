@@ -1,4 +1,4 @@
-import { gestures } from "@airdesign/render"
+import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 
 const specs: Readonly<Record<string, string>> = import.meta.glob("../../../tests/browser/*.spec.ts", {

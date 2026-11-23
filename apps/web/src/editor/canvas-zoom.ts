@@ -1,4 +1,4 @@
-import { gestureFor } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 
 export type SlideSize = { readonly width: number; readonly height: number }
 

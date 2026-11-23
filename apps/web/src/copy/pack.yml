@@ -1,4 +1,6 @@
 layer: platform
+dependencies:
+  - apps/web/src/lib
 public:
   - account-copy.ts
   - agent-runs-copy.ts

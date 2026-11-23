@@ -1,5 +1,5 @@
 import type * as doom from "@airdesign/doom"
-import { gestureFor } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import { useEffect, useRef, useState } from "react"
 import { chosenSlides, firstChoice, type ExportChoice } from "@/export/export-choice"
 

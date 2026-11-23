@@ -1,4 +1,4 @@
-import { resizeCursor, rotateCursor, type ResizeGrip } from "@airdesign/render"
+import { resizeCursor, rotateCursor, type ResizeGrip } from "./transform-math"
 import type { Frame } from "./selection-frame"
 import type { Point } from "./slide-geometry"
 

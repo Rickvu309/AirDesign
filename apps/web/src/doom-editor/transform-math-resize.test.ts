@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import type { Corner } from "./transform-math.js"
-import { resizeBox } from "./transform-math.js"
+import type { Corner } from "./transform-math"
+import { resizeBox } from "./transform-math"
 
 const start = { x: 457_200, y: 457_200, w: 5_486_400, h: 1_828_800 }
 const free = { keepRatio: false, fromCenter: false } as const

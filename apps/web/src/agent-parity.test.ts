@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { gestures } from "@airdesign/render"
+import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./doom-editor/design-model"
 import {
