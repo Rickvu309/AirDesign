@@ -1,30 +1,39 @@
 import { expect } from "@playwright/test"
-import { test } from "./deck-test"
-import { fillCopy } from "../../apps/web/src/copy/fill-copy"
-import { openDeck } from "./design-panel"
-import { boxFillPanel, filled, shapeAt } from "./shape-fills"
+import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
+import { test } from "./api-stack"
+import { accent, spot } from "./doom-deck"
+import { designDoom, painted, pick, saved, section, typeInto, undoOnStage } from "./doom-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a percent takes a typed number in percent, steps with the arrow keys, and one Undo puts back the whole visit", async ({
+test("a percent takes a typed number in percent, steps with the arrow keys, refuses more than the whole, and Undo puts it back", async ({
   page,
+  context,
+  stack,
 }) => {
-  await openDeck(page, "clean.pptx")
-  const shape = shapeAt(page, "2")
-  const panel = await boxFillPanel(page, shape)
-  await panel.getByRole("group", { name: fillCopy.box, exact: true }).getByRole("button", { name: "Gradient" }).click()
-  const position = panel.getByRole("group", { name: "Stop 2", exact: true }).getByRole("textbox", { name: "Position" })
-  await expect(position).toHaveValue("100")
-  const before = await filled(shape)
-  await position.fill("60")
-  await position.press("ArrowDown")
-  await expect(position).toHaveValue("59")
-  await position.press("Enter")
-  await expect.poll(() => filled(shape)).toContain("59%")
-  await position.fill("140")
-  await position.press("Enter")
-  await expect(position).toHaveValue("59")
-  await page.getByRole("button", { name: "Undo fill", exact: true }).click()
-  await expect(position).toHaveValue("100")
-  await expect.poll(() => filled(shape)).toBe(before)
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(200, 200, 400, 300), geometry: { kind: "rect" }, fills: accent },
+    },
+  ])
+  const opacity = async () => (await saved(stack, opened, "t:1")).opacity
+  await pick(page, "t:1", 400, 350)
+  const field = section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true })
+  await expect(field).toHaveValue("100")
+  await field.fill("60")
+  await field.press("ArrowDown")
+  await expect(field).toHaveValue("59")
+  await field.press("Enter")
+  await expect.poll(opacity).toBe(0.59)
+  await expect.poll(() => painted(page, "t:1").evaluate((node) => getComputedStyle(node).opacity)).toBe("0.59")
+  await typeInto(field, "140")
+  await expect(field).toHaveValue("59")
+  expect(await opacity()).toBe(0.59)
+  await undoOnStage(page)
+  await expect.poll(opacity).toBeUndefined()
+  await pick(page, "t:1", 400, 350)
+  await expect(field).toHaveValue("100")
 })

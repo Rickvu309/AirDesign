@@ -1,41 +1,46 @@
 import { expect } from "@playwright/test"
-import { designing, openDeck, pendingValues } from "./design-panel"
-import { test } from "./deck-test"
+import { textCopy } from "../../apps/web/src/copy/text-copy"
+import { test } from "./api-stack"
+import { spot } from "./doom-deck"
+import { designDoom, painted, panel, pick, saved, typeInto, undoOnStage, words } from "./doom-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("typing on the canvas rewrites the element's words in their own size and colour, and Undo brings the words back", async ({
+test("a text field takes typed words, writes them to the whole text, leaves a blank alone, and Undo takes them back", async ({
   page,
-  decks,
+  context,
+  stack,
 }) => {
-  await openDeck(page, "clean.pptx")
-  const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  const panel = await designing(page, editor)
-  await expect(panel.getByRole("textbox", { name: "Text", exact: true })).toHaveCount(0)
-  const words = editor
-  await expect(words).toHaveText("Hello")
-  await words.click()
-  await words.press("ControlOrMeta+a")
-  await page.keyboard.insertText("Hello there")
-  await words.press("Enter")
-  await page.keyboard.insertText("Second line")
-  await words.blur()
-  await expect(editor).toHaveText("Hello thereSecond line")
-  await expect(editor.locator("[data-paragraph]")).toHaveCount(2)
-  const sizes = () =>
-    editor.locator("[data-run]").evaluateAll((runs) => runs.map((run) => getComputedStyle(run).fontSize))
-  const [size] = await sizes()
-  await expect.poll(async () => [...new Set(await sizes())]).toEqual([size])
-  await expect.poll(async () => (await pendingValues(page, "256.2")).length).toBe(1)
-  await page.getByRole("button", { name: "Undo text edit", exact: true }).click()
-  await expect(editor).toHaveText("Hello")
-  await expect(words).toHaveText("Hello")
-  await words.click()
-  await words.press("ControlOrMeta+a")
-  await page.keyboard.insertText("Kept")
-  await words.blur()
-  await expect(editor).toHaveText("Kept")
-  await page.reload()
-  await decks.ready()
-  await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Kept")
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(100, 100, 900, 160), text: words("Quarterly review") },
+    },
+  ])
+  const font = async () => (await saved(stack, opened, "t:1")).text.spans[0]?.font
+  await pick(page, "t:1", 400, 180)
+  const field = panel(page).getByRole("textbox", { name: textCopy.font, exact: true })
+  const shown = await field.inputValue()
+  expect(shown).not.toBe("")
+  await typeInto(field, "Georgia")
+  await expect.poll(font).toBe("Georgia")
+  await expect(field).toHaveValue("Georgia")
+  await expect
+    .poll(() =>
+      painted(page, "t:1")
+        .locator("span")
+        .filter({ hasText: "Quarterly" })
+        .last()
+        .evaluate((node) => getComputedStyle(node).fontFamily),
+    )
+    .toMatch(/^"?Georgia/)
+  await typeInto(field, "  ")
+  await expect(field).toHaveValue("Georgia")
+  expect(await font()).toBe("Georgia")
+  await undoOnStage(page)
+  await expect.poll(font).toBeUndefined()
+  await pick(page, "t:1", 400, 180)
+  await expect(field).toHaveValue(shown)
 })

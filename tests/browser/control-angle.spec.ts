@@ -1,27 +1,54 @@
 import { expect } from "@playwright/test"
-import { test } from "./deck-test"
-import { fillCopy } from "../../apps/web/src/copy/fill-copy"
-import { openDeck } from "./design-panel"
-import { boxFillPanel, filled, shapeAt } from "./shape-fills"
+import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { test } from "./api-stack"
+import { spot } from "./doom-deck"
+import { designDoom, pick, saved, section, typeInto, undoOnStage } from "./doom-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("an angle takes a typed number in degrees, refuses a full turn, and Undo puts it back", async ({ page }) => {
-  await openDeck(page, "clean.pptx")
-  const shape = shapeAt(page, "2")
-  const panel = await boxFillPanel(page, shape)
-  await panel.getByRole("group", { name: fillCopy.box, exact: true }).getByRole("button", { name: "Gradient" }).click()
-  const angle = panel.getByRole("textbox", { name: "Angle" })
-  await expect(angle).toHaveValue("90")
-  const down = await filled(shape)
-  await angle.fill("0")
-  await angle.press("Enter")
-  await expect(angle).toHaveValue("0")
-  await expect.poll(() => filled(shape)).not.toBe(down)
-  await angle.fill("360")
-  await angle.press("Enter")
-  await expect(angle).toHaveValue("0")
-  await page.getByRole("button", { name: "Undo fill", exact: true }).click()
-  await expect(angle).toHaveValue("90")
-  await expect.poll(() => filled(shape)).toBe(down)
+test("an angle takes a typed number in degrees, refuses a full turn, and Undo puts it back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: {
+        box: spot(200, 200, 400, 300),
+        geometry: { kind: "rect" },
+        fills: [
+          {
+            kind: "gradient",
+            shape: "linear",
+            angle: 90,
+            stops: [
+              { at: 0, color: { var: "accent1" } },
+              { at: 1, color: { var: "background" } },
+            ],
+          },
+        ],
+      },
+    },
+  ])
+  const angle = async () => (await saved(stack, opened, "t:1")).fills[0].angle
+  await pick(page, "t:1", 400, 350)
+  const field = () => section(page, fillCopy.section).getByRole("textbox", { name: fillWords.angle, exact: true })
+  await expect(field()).toHaveValue("90")
+  await typeInto(field(), "0")
+  await expect.poll(angle).toBe(0)
+  await expect(field()).toHaveValue("0")
+  await typeInto(field(), "360")
+  await expect(field()).toHaveValue("0")
+  expect(await angle()).toBe(0)
+  await typeInto(field(), "45")
+  await expect.poll(angle).toBe(45)
+  await undoOnStage(page)
+  await expect.poll(angle).toBe(0)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(angle).toBe(90)
+  await pick(page, "t:1", 400, 350)
+  await expect(field()).toHaveValue("90")
 })

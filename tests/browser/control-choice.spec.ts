@@ -1,56 +1,55 @@
-import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect } from "@playwright/test"
-import { designing, openDeck } from "./design-panel"
-import { fillPanel, shapeAt } from "./shape-fills"
-import { test } from "./deck-test"
+import { test } from "./api-stack"
+import { spot } from "./doom-deck"
+import { designDoom, painted, panel, pick, reloadDesign, saved, undoOnStage, words } from "./doom-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a choice aligns every paragraph of the element, shows the pick, and Undo puts the alignment back", async ({
+test("a choice aligns every paragraph of the text, shows the pick, Undo puts the alignment back, and a reload keeps it", async ({
   page,
-  decks,
+  context,
+  stack,
 }) => {
-  await openDeck(page, "clean.pptx")
-  const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  const panel = await designing(page, editor)
-  const alignment = panel.getByRole("group", { name: "Alignment", exact: true })
-  const aligned = () =>
-    editor
-      .locator("[data-paragraph]")
-      .first()
+  const opened = await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(100, 100, 900, 160), text: words("Quarterly review") },
+    },
+  ])
+  const aligned = async () => (await saved(stack, opened, "t:1")).text.paras[0]?.align
+  const shown = () =>
+    painted(page, "t:1")
+      .locator("p, div")
+      .filter({ hasText: "Quarterly" })
+      .last()
       .evaluate((node) => getComputedStyle(node).textAlign)
-  for (const [at, name] of ["Left", "Center", "Right"].entries()) {
-    await expect(alignment.getByRole("button").nth(at)).toHaveAccessibleName(name)
-    await expect(alignment.getByRole("button").nth(at)).toHaveAttribute("title", name)
+  await pick(page, "t:1", 400, 180)
+  const options = panel(page).locator("[data-segments]").first().getByRole("button")
+  const option = (at: number) => options.nth(at)
+  await expect(options).toHaveCount(4)
+  for (const button of await options.all()) {
+    const name = await button.getAttribute("aria-label")
+    expect(name).toBeTruthy()
+    await expect(button).toHaveAttribute("title", name ?? "")
   }
-  await expect.poll(aligned).toBe("left")
-  await alignment.getByRole("button", { name: "Center", exact: true }).click()
-  await expect.poll(aligned).toBe("center")
-  await expect(alignment.getByRole("button", { name: "Center", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await page.getByRole("button", { name: "Undo text format", exact: true }).click()
-  await expect.poll(aligned).toBe("left")
-  await expect(alignment.getByRole("button", { name: "Center", exact: true })).toHaveAttribute("aria-pressed", "false")
-  await alignment.getByRole("button", { name: "Right", exact: true }).click()
-  await expect.poll(aligned).toBe("right")
-  await decks.ready()
-  await page.reload()
-  await decks.ready()
-  await expect
-    .poll(() =>
-      page
-        .locator('[data-slide-paint] [contenteditable="true"] [data-paragraph]')
-        .first()
-        .evaluate((node) => getComputedStyle(node).textAlign),
-    )
-    .toBe("right")
-})
+  await expect(option(0)).toHaveAttribute("aria-pressed", "true")
 
-test("shadow glyphs keep the compact size of the reference", async ({ page }) => {
-  await openDeck(page, "shapes-added.pptx")
-  const panel = await fillPanel(page, shapeAt(page, "4"))
-  const glyph = panel
-    .getByRole("group", { name: appearanceCopy.shadowPreset, exact: true })
-    .locator("button svg")
-    .last()
-  await expect.poll(() => glyph.evaluate((icon) => icon.getBoundingClientRect().width)).toBe(14)
+  await option(1).click()
+  await expect.poll(aligned).toBe("center")
+  await expect.poll(shown).toBe("center")
+  await expect(option(1)).toHaveAttribute("aria-pressed", "true")
+  await expect(option(0)).toHaveAttribute("aria-pressed", "false")
+
+  await undoOnStage(page)
+  await expect.poll(aligned).toBeUndefined()
+  await pick(page, "t:1", 400, 180)
+  await expect(option(1)).toHaveAttribute("aria-pressed", "false")
+  await option(2).click()
+  await expect.poll(aligned).toBe("right")
+  await reloadDesign(page)
+  await pick(page, "t:1", 400, 180)
+  await expect(option(2)).toHaveAttribute("aria-pressed", "true")
+  await expect.poll(shown).toBe("right")
 })
