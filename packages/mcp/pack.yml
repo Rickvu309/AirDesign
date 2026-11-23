@@ -1,3 +1,4 @@
+layer: service
 public:
   runtime: [src/index.ts]
   evals: [src/evals.ts]
