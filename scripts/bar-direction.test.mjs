@@ -34,6 +34,16 @@ same(
   ["The goal of import-parse went from 100 to 110."],
 )
 same(
+  "a goal lowered under a count that overshot it needs the owner",
+  withMetricNamed("eval-coverage", { now: 60, goal: 50, better: "higher" }, { now: 60, goal: 40, better: "higher" }),
+  ["The goal of eval-coverage went from 50 to 40."],
+)
+same(
+  "a goal raised from a count that overshot it, met in the same change, needs nobody",
+  withMetricNamed("eval-coverage", { now: 25, goal: 20, better: "higher" }, { now: 30, goal: 30, better: "higher" }),
+  [],
+)
+same(
   "a flipped direction needs the owner",
   withMetricNamed("eval-coverage", { now: 46, goal: 46, better: "higher" }, { now: 46, goal: 46, better: "lower" }),
   ["The direction of eval-coverage went from higher to lower."],
