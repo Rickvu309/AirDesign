@@ -1,0 +1,5 @@
+# An open Doom deck that nobody touches works at most 150 ms in 3 s, read over a quiet span the test does not drive
+
+`tests/browser/doom-speed.spec.ts` reads the renderer's `TaskDuration` in thread time before and after a kept 3 s wait, and fails at 150 ms. The test sends no frame of its own in that span, so what it reads is only what the deck schedules: timers, animation frames, idle callbacks, observers and the frames they cause.
+
+Until 2026-11-23 the span was 180 animation frames the test requested itself. Each one ran a full frame of the 40-slide editor, about 1 ms of style, intersection and commit work, so the reading was mostly the test's own frames: 149 to 154 ms with three runs at once, 524 to 618 ms under 6x CPU throttling, and the budget failed whenever the machine was busy. Measured on 2026-11-23 over the quiet span, the deck worked 10 to 38 ms in 3 s, and 31 to 58 ms under 6x CPU throttling. A planted 2 ms timer every 16 ms read 367 ms, a planted animation frame loop that moves the slide read 745 ms, and a planted 60 ms task every second read 156 ms.
