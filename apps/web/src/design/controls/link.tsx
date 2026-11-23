@@ -1,4 +1,4 @@
-import { readLinkTarget } from "@airdesign/document"
+import { readLinkTarget, slideId, type LinkEdit } from "@airdesign/document"
 import type { TextFormatting } from "@airdesign/render"
 import { EditorIcon } from "@/editor/editor-icons"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
@@ -9,6 +9,16 @@ import type { ControlProps } from "@/design/panel"
 export const LinkFormatting = createContext<TextFormatting | undefined>(undefined)
 const noop = () => () => undefined
 
+function heldTarget(raw: unknown, slides: readonly string[]): LinkEdit | null {
+  const slide =
+    typeof raw === "object" && raw !== null && "kind" in raw && raw.kind === "slide" && "slide" in raw
+      ? raw.slide
+      : undefined
+  return typeof slide === "string" && slides.includes(slide)
+    ? { kind: "slide", slide: slideId(slide) }
+    : readLinkTarget(raw)
+}
+
 export function LinkControl({ control, onChange }: ControlProps) {
   const formatting = useContext(LinkFormatting)
   useSyncExternalStore(
@@ -18,8 +28,8 @@ export function LinkControl({ control, onChange }: ControlProps) {
   )
   const selection = formatting?.selection() === true
   const current = selection ? formatting?.link() : control.value
-  const value = readLinkTarget(current)
   const slides = control.slides ?? []
+  const value = heldTarget(current, slides)
   const unsupported =
     typeof current === "object" && current !== null && "kind" in current && current.kind === "unsupported"
   const shown =
@@ -43,9 +53,10 @@ export function LinkControl({ control, onChange }: ControlProps) {
     }
     const slide = /^\d+$/.test(text) ? slides[Number(text) - 1] : undefined
     const url = /^[\w.-]+\.[a-z]{2,}(?:[/?#].*)?$/i.test(text) ? `https://${text}` : text
-    const target = readLinkTarget(
-      text === "" ? { kind: "none" } : slide === undefined ? { kind: "url", url } : { kind: "slide", slide },
-    )
+    const target: LinkEdit | null =
+      slide === undefined
+        ? readLinkTarget(text === "" ? { kind: "none" } : { kind: "url", url })
+        : { kind: "slide", slide: slideId(slide) }
     if (target === null) {
       setInvalid(true)
       return
