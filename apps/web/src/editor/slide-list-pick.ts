@@ -45,6 +45,33 @@ export function heldSlides(pick: GridPick, current: number): readonly number[] {
   return pickedSlides(pick, current)
 }
 
+export type PickAt = { readonly pick: HeldSlides; readonly current: string | undefined }
+
+export type SetStep = {
+  readonly before: string
+  readonly undone: PickAt
+  readonly done: PickAt
+  seen: string
+  after: string | null
+}
+
+export function setStepOf(ids: readonly string[], undone: PickAt, done: PickAt): SetStep {
+  const before = ids.join(",")
+  return { before, undone, done, seen: before, after: null }
+}
+
+export function turnedPick(step: SetStep, ids: readonly string[]): PickAt | null {
+  const key = ids.join(",")
+  if (key === step.seen) return null
+  step.seen = key
+  if (step.after === null) {
+    step.after = key
+    return null
+  }
+  if (key === step.before) return step.undone
+  return key === step.after ? step.done : null
+}
+
 export function setDropPlace(held: readonly number[], index: number): number | null {
   if (held.includes(index)) return null
   return index > (held.at(-1) ?? index) ? index + 1 : index

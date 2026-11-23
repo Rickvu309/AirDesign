@@ -57,6 +57,7 @@ test("several slides picked in the list move, duplicate and delete together, eac
   await page.keyboard.press("ControlOrMeta+z")
   await expect(entries(page)).toHaveCount(4)
   await expect.poll(saved).toEqual([three, one, two, four])
+  expect(await picked(page)).toEqual(["2", "3"])
 
   await entry(page, 2).click()
   await entry(page, 3).click({ modifiers: [shift] })
@@ -67,6 +68,19 @@ test("several slides picked in the list move, duplicate and delete together, eac
   await expect(entry(page, 2)).toBeFocused()
   await page.keyboard.press("ControlOrMeta+z")
   await expect(entries(page)).toHaveCount(4)
+  await expect.poll(saved).toEqual([three, one, two, four])
+  expect(await picked(page)).toEqual(["2", "3"])
+
+  await page.keyboard.press("Alt+ArrowDown")
+  await expect.poll(saved).toEqual([three, four, one, two])
+  await expect(entry(page, 4)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(saved).toEqual([three, one, two, four])
+  await expect(page.locator("[data-slide-entry][aria-current]")).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect.poll(saved).toEqual([three, four, one, two])
+  await expect(page.locator("[data-slide-entry][aria-current]")).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(saved).toEqual([three, one, two, four])
 
   await entry(page, 1).click()
