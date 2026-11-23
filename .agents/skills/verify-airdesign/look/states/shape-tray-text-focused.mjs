@@ -1,11 +1,18 @@
 import { expect } from "@playwright/test"
-import { designElementAt } from "../element-window.mjs"
+import { shapeCopy } from "../../bin/product-copy.mjs"
+import { centre } from "../doom-canvas.mjs"
+import { openDoomDeck, spot, words } from "../doom-deck.mjs"
 
 async function drive(kit) {
-  await designElementAt(kit, { width: 1470, height: 923 })
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  await kit.page.getByRole("button", { name: "Shapes", exact: true }).click()
-  const line = kit.page.locator("[data-shape-tray]").getByRole("button", { name: "Line", exact: true })
+  const { page } = kit
+  await openDoomDeck(kit, [
+    { id: "w:1", props: { name: "Words", box: spot(960, 260, 760, 120), text: words("Quarterly review") } },
+  ])
+  const at = await centre(page, "w:1")
+  await page.mouse.dblclick(at.x, at.y)
+  await expect(page.locator('[data-slide-box] [contenteditable="true"]')).toBeFocused()
+  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
+  const line = page.locator("[data-shape-tray]").getByRole("button", { name: shapeCopy.line, exact: true })
   await line.focus()
   await expect(line).toBeFocused()
 }

@@ -1,18 +1,17 @@
-import { expect } from "@playwright/test"
-import { transitionCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
-
-const leaf = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]'
+import { expect } from "@playwright/test"
+import { centre, nested } from "../doom-canvas.mjs"
+import { openDesign } from "../doom-deck.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await fixtureDeck(kit, "nested-groups.pptx")
-  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
-  await page.locator(leaf).click()
-  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.2$/)
-  await page.locator(leaf).dblclick()
-  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.[34]$/)
+  await nested(kit)
+  await openDesign(page)
+  const at = await centre(page, "w:4")
+  await page.mouse.click(at.x, at.y)
+  await expect(page.locator('[data-selection-outline="g:1"]')).toBeAttached()
+  await page.mouse.dblclick(at.x, at.y)
+  await expect(page.locator('[data-selection-outline="g:2"]')).toBeAttached()
   await page.mouse.move(4, 4)
 }
 

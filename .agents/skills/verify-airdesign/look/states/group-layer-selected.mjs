@@ -1,4 +1,9 @@
 import { editor } from "../editor-screen.mjs"
-import { leafPicked } from "../nested-groups.mjs"
+import { deepPick, nested } from "../doom-canvas.mjs"
 
-export default { name: "group-layer-selected", design: editor, drive: leafPicked }
+async function drive(kit) {
+  await nested(kit)
+  await deepPick(kit.page, "w:4")
+}
+
+export default { name: "group-layer-selected", design: editor, drive }

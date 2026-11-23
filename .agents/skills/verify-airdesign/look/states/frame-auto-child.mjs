@@ -1,19 +1,17 @@
-import { expect } from "@playwright/test"
-import { transitionCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
-import { setPanelMode } from "../panel-mode.mjs"
-
-const element = (shape) => `[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#${shape}"]`
+import { expect } from "@playwright/test"
+import { autoRow, centre } from "../doom-canvas.mjs"
+import { openDesign, openDoomDeck } from "../doom-deck.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await fixtureDeck(kit, "frame.pptx")
-  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
-  await setPanelMode(page, "design")
-  await page.locator(element(5)).click()
-  await page.locator(element(5)).dblclick()
-  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.5$/)
+  await openDoomDeck(kit, autoRow())
+  await openDesign(page)
+  const at = await centre(page, "w:2")
+  await page.mouse.click(at.x, at.y)
+  await expect(page.locator('[data-selection-outline="f:1"]')).toBeAttached()
+  await page.mouse.dblclick(at.x, at.y)
+  await expect(page.locator('[data-selection-outline="w:2"]')).toBeAttached()
   await page.mouse.move(4, 4)
 }
 

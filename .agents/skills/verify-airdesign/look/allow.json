@@ -1,11 +1,5 @@
 [
   {
-    "page": "*",
-    "detector": "truncated-text",
-    "selector": "[data-layer-row] > span",
-    "reason": "A layer row is one line in the fixed-width Layers panel. A text layer is named by its words, as in Figma, so a long one is cut with an ellipsis as Figma cuts it; the full name shows when the row is renamed."
-  },
-  {
     "page": "/screens/s43-*",
     "detector": "stacked-frames",
     "selector": "span[class*='shadow-[0_0_0_2px_var(--ring)]']",
@@ -36,22 +30,10 @@
     "reason": "The demo's pause button gets its click handler from playEditorDemoAnimation with addEventListener, which the detector cannot see; product-demo-pause.spec.ts clicks it."
   },
   {
-    "page": "connector-*",
-    "detector": "empty-region",
-    "selector": "[data-design-panel] > section:nth-of-type(4)",
-    "reason": "The design panel is scrolled down to the Connector section, so the Line section above it sits outside the window and only its last few pixels show. It is full of controls when scrolled into view."
-  },
-  {
     "page": "slide-group-effects",
     "detector": "invisible-control",
     "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#12\"], [data-canvas-element=\"ppt/slides/slide1.xml#20\"], [data-canvas-element=\"ppt/slides/slide1.xml#30\"], [data-canvas-element=\"ppt/slides/slide1.xml#40\"]",
     "reason": "A group's frame is where a person grabs the group, so it paints nothing of its own. The shapes it holds paint under it with plain fills, which the detector does not count as a sign that something is there."
-  },
-  {
-    "page": "layers-*",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"]",
-    "reason": "The frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
   },
   {
     "page": "grid-groups-eleven",
@@ -70,59 +52,5 @@
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",
     "reason": "The row hover frame intentionally surrounds each card edge, matching the supplied Figma row-handle reference. It indicates the whole row without changing the separate selected-slide ring."
-  },
-  {
-    "page": "canvas-drag-*",
-    "detector": "overflowing-text",
-    "selector": "[data-slide-paint]",
-    "reason": "The state drags six cards onto the cards below them, so their text paints over those cards' text on the slide, as the drag asks."
-  },
-  {
-    "page": "layer-pasted*",
-    "detector": "overflowing-text",
-    "selector": "[data-slide-paint]",
-    "reason": "The state pastes slide 1's rectangle onto slide 2 at its own place, on top of the slide's layers as a paste lands, so it covers the two text lines under it, as the paste asks."
-  },
-  {
-    "page": "frame-joined",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#6\"]",
-    "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
-  },
-  {
-    "page": "frame-auto-child",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"]",
-    "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
-  },
-  {
-    "page": "frame-fill-resizing",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"]",
-    "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
-  },
-  {
-    "page": "frame-fixed",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"]",
-    "reason": "The auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
-  },
-  {
-    "page": "frame-nested",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#9\"]",
-    "reason": "The outer auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the frames and shapes it holds paint under it."
-  },
-  {
-    "page": "group-stepped-in",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#2\"], [data-canvas-element=\"ppt/slides/slide1.xml#3\"]",
-    "reason": "A group's own layer is where a person grabs the group, so it paints nothing of its own; the layers it holds paint under it."
-  },
-  {
-    "page": "frame-wrapped-inside",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#7\"]",
-    "reason": "The outer auto layout frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the frames and shapes it holds paint under it."
   }
 ]

@@ -1,18 +1,19 @@
 import { expect } from "@playwright/test"
-import { importTitleDeck } from "../../bin/new-deck.mjs"
+import { shapeCopy } from "../../bin/product-copy.mjs"
+import { pickShape } from "../doom-canvas.mjs"
+import { clickSlide, dragSlide, openDoomDeck } from "../doom-deck.mjs"
 
 async function drive(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  await importTitleDeck(kit.page)
-  await expect(kit.page.locator("[data-slide-entry]")).toHaveCount(1)
-  for (const name of ["Line", "Rectangle"]) {
-    await kit.page.getByRole("button", { name: "Shapes", exact: true }).click()
-    await kit.page.getByRole("button", { name, exact: true }).click()
-    await kit.page.keyboard.press("Enter")
-  }
-  await expect(kit.page.locator('[data-slide-paint] [data-canvas-element$="#5"]')).toBeVisible()
-  await expect(kit.page.locator("[data-slide-paint] [data-canvas-line]").first()).toBeVisible()
+  const { page } = kit
+  await openDoomDeck(kit)
+  const shapes = page.locator("[data-slide-box] [data-node]")
+  const before = await shapes.count()
+  await pickShape(page, shapeCopy.line)
+  await dragSlide(page, { x: 1000, y: 760 }, { x: 1500, y: 760 })
+  await pickShape(page, shapeCopy.shapes.square)
+  await clickSlide(page, 1600, 760)
+  await expect(shapes).toHaveCount(before + 2)
+  await page.mouse.move(4, 4)
 }
 
 export default { name: "shape-after-line", design: null, drive }

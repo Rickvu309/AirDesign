@@ -1,17 +1,19 @@
 import { expect } from "@playwright/test"
 import { frameCopy } from "../../bin/product-copy.mjs"
-import { reachPanel } from "../panel-kinds.mjs"
-
-const shape = (number) => `[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#${number}"]`
+import { autoRow, centre } from "../doom-canvas.mjs"
+import { openDesign, openDoomDeck, selectNode } from "../doom-deck.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await reachPanel(kit, "frame", "slides")
+  await openDoomDeck(kit, autoRow())
+  await openDesign(page)
+  await selectNode(page, "f:1", { position: { x: 12, y: 12 } })
   const panel = page.locator("[data-design-panel]")
   await panel.getByRole("button", { name: frameCopy.removeAutoLayout }).click()
-  await expect(panel.getByText(frameCopy.frame, { exact: true })).toBeVisible()
-  await page.locator(shape(5)).dblclick({ position: { x: 8, y: 8 } })
-  await expect(page.locator("[data-slide-paint] [data-grip]").first()).toBeVisible()
+  const at = await centre(page, "w:2")
+  await page.mouse.click(at.x, at.y)
+  await page.mouse.dblclick(at.x, at.y)
+  await expect(page.locator('[data-selection-outline="w:2"]')).toBeAttached()
   await page.mouse.move(4, 4)
 }
 

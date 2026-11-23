@@ -1,31 +1,21 @@
-import path from "node:path"
-import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
-import { openDeck } from "../open-deck.mjs"
-
-const rectangle = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#2"]'
+import { expect } from "@playwright/test"
+import { centre, drag, selectedIds, twoShapes } from "../doom-canvas.mjs"
+import { openDoomDeck, selectNode } from "../doom-deck.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await kit.signIn()
-  await page.goto(".")
-  await openDeck(page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
-  await page.locator(rectangle).click({ position: { x: 70, y: 50 } })
-  const chosen = page.locator("[data-slide-paint] [data-selection]")
-  await expect(chosen).toHaveAttribute("data-selection", "256.2")
-  const slide = await page.locator("[data-slide-paint]").boundingBox()
-  if (slide === null) throw new Error("no slide")
-  const from = { x: slide.x + 100, y: slide.y + 80 }
-  await page.mouse.move(from.x, from.y)
-  await page.keyboard.down("AltLeft")
-  await page.mouse.down()
-  await page.mouse.move(from.x + 40, from.y + 150, { steps: 10 })
-  await page.mouse.up()
-  await page.keyboard.up("AltLeft")
-  await expect(chosen).toHaveAttribute("data-selection", "256.3")
+  await openDoomDeck(kit, twoShapes)
+  await selectNode(page, "w:1")
+  const from = await centre(page, "w:1")
+  await page.keyboard.down("Alt")
+  await drag(page, from, { x: from.x + 40, y: from.y + 150 }, 10)
+  await page.keyboard.up("Alt")
+  const [copy] = await selectedIds(page)
+  expect(copy).not.toBe("w:1")
   await page.keyboard.press("ControlOrMeta+KeyD")
-  await expect(chosen).toHaveAttribute("data-selection", "256.4")
-  await expect(page.locator("[data-copied-layer]")).toHaveCount(0)
+  await expect(page.locator(`[data-selection-outline="${copy}"]`)).toHaveCount(0)
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(6)
 }
 
 export default { name: "layer-duplicated", design: editor, drive }
