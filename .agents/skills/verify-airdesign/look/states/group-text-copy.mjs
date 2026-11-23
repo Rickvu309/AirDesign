@@ -1,35 +1,32 @@
 import { expect } from "@playwright/test"
-import { newBlankDeck } from "../../bin/new-deck.mjs"
-import { productCopy, readPictureToolCopy, transitionCopy } from "../../bin/product-copy.mjs"
+import { selectMany, selectedIds } from "../doom-canvas.mjs"
+import { accent, openDoomDeck, spot, words as text } from "../doom-deck.mjs"
 
 const words = "Market context and sizing"
-const label = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#7"]'
 
 async function drive(kit) {
-  const iconCopy = readPictureToolCopy()
   const { page } = kit
-  await kit.signIn()
-  await page.goto(".")
-  await newBlankDeck(page)
-  await expect(page.locator(".thin-page[data-deck-ready]")).toHaveCount(1)
-  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
-  await page.locator("[data-design-mode]").click()
-  await page.getByRole("button", { name: iconCopy.addIcon, exact: true }).click()
-  await page.locator("[data-icon-tool]").getByRole("searchbox", { name: iconCopy.search }).fill("star")
-  await page.locator("[data-icon-tool]").getByRole("button", { name: "star", exact: true }).click()
-  const slide = await page.locator("[data-slide-paint]").boundingBox()
-  if (slide === null) throw new Error("no slide")
-  await page.keyboard.press("t")
-  await page.mouse.click(slide.x + slide.width * 0.56, slide.y + slide.height * 0.48)
-  await page.keyboard.type(words)
-  await page.keyboard.press("Escape")
-  await page.keyboard.press("ControlOrMeta+KeyA")
+  await openDoomDeck(kit, [
+    {
+      id: "w:1",
+      props: {
+        name: "Star",
+        box: spot(960, 220, 160, 160),
+        geometry: { kind: "icon", name: "lucide/star" },
+        strokes: accent,
+        stroke: { weight: 12, align: "center", dash: "solid" },
+      },
+    },
+    { id: "w:2", props: { name: words, box: spot(1160, 250, 600, 100), text: text(words) } },
+  ])
+  await selectMany(page, ["w:1", "w:2"])
   await page.keyboard.press("ControlOrMeta+KeyG")
-  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", "256.4")
+  await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
+  const [group] = await selectedIds(page)
   await page.keyboard.press("ControlOrMeta+KeyD")
-  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", "256.5")
+  await expect(page.locator(`[data-selection-outline="${group}"]`)).toHaveCount(0)
   for (let step = 0; step < 20; step += 1) await page.keyboard.press("Shift+ArrowDown")
-  await expect(page.locator(label)).toHaveCount(1)
+  await expect(page.locator("[data-slide-box]").getByText(words, { exact: true })).toHaveCount(2)
 }
 
 export default { name: "group-text-copy", design: "/screens/s43-10-editor-tools-layers", drive }

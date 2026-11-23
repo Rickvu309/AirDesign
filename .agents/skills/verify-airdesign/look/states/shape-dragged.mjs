@@ -1,23 +1,14 @@
-import path from "node:path"
-import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
-import { openDeck } from "../open-deck.mjs"
-
-const element = "ppt/slides/slide1.xml#2"
+import { expect } from "@playwright/test"
+import { centre, drag, twoShapes } from "../doom-canvas.mjs"
+import { openDoomDeck } from "../doom-deck.mjs"
 
 async function drive(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
-  await expect(kit.page.locator(`[data-slide-list] [data-thumb-element="${element}"]`)).toBeAttached()
-  const slide = await kit.page.locator("[data-slide-paint]").boundingBox()
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  const from = { x: slide.x + 300, y: slide.y + 120 }
-  await kit.page.mouse.move(from.x, from.y)
-  await kit.page.mouse.down()
-  await kit.page.mouse.move(from.x + 240, from.y + 240, { steps: 8 })
-  await kit.page.mouse.up()
-  await expect(kit.page.getByRole("button", { name: "Undo move" })).toBeEnabled()
+  const { page } = kit
+  await openDoomDeck(kit, twoShapes)
+  const from = await centre(page, "w:1")
+  await drag(page, from, { x: from.x - 120, y: from.y + 170 }, 8)
+  await expect(page.locator('[data-selection-outline="w:1"]')).toBeAttached()
 }
 
 export default { name: "shape-dragged", design: editor, drive }

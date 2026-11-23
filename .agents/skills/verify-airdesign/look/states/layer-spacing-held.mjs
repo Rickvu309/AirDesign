@@ -1,34 +1,20 @@
-import { shapeCopy } from "../../bin/product-copy.mjs"
-import path from "node:path"
-import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
-import { openDeck } from "../open-deck.mjs"
-
-const added = '[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#7"]'
+import { centre, hold, solid } from "../doom-canvas.mjs"
+import { accent, openDoomDeck, slidePoint, spot } from "../doom-deck.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await kit.signIn()
-  await page.goto("/")
-  await openDeck(page, path.join(kit.repo, "scripts/pptx-fixtures/shapes-added.pptx"))
-  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
-  await page.getByRole("button", { name: shapeCopy.shapes.square, exact: true }).click()
-  await page.keyboard.press("Enter")
-  await expect(page.locator(added)).toBeVisible()
-  const slide = await page.locator("[data-slide-paint]").boundingBox()
-  const box = await page.locator(added).boundingBox()
-  const middle = (left, top) => ({ x: slide.x + left + box.width / 2, y: slide.y + top + box.height / 2 })
-  const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  await page.mouse.move(start.x, start.y)
-  await page.mouse.down()
-  await page.keyboard.down("Control")
-  await page.mouse.move(middle(600, 100).x, middle(600, 100).y, { steps: 10 })
-  await page.mouse.up()
-  await page.keyboard.up("Control")
-  await expect(page.locator(added)).toHaveCSS("left", "600px")
-  await page.mouse.move(middle(600, 100).x, middle(600, 100).y)
-  await page.mouse.down()
-  await page.mouse.move(middle(483, 100).x, middle(483, 100).y, { steps: 10 })
+  await openDoomDeck(kit, [
+    { id: "w:1", props: { name: "First", box: spot(860, 300, 220, 220), geometry: { kind: "rect" }, fills: accent } },
+    { id: "w:2", props: { name: "Second", box: spot(1200, 300, 220, 220), geometry: { kind: "rect" }, fills: accent } },
+    {
+      id: "w:3",
+      props: { name: "Third", box: spot(1600, 640, 220, 220), geometry: { kind: "rect" }, fills: solid("accent2") },
+    },
+  ])
+  const from = await centre(page, "w:3")
+  const target = await slidePoint(page, 1540 + 110 + 6, 300 + 110 + 3)
+  await hold(page, from, target, 10)
 }
 
 export default { name: "layer-spacing-held", design: editor, drive }

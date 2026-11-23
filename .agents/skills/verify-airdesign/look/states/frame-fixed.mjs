@@ -1,31 +1,16 @@
-import { expect } from "@playwright/test"
-import { frameCopy, layoutWords, transitionCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
-import { setPanelMode } from "../panel-mode.mjs"
-
-const element = (shape) => `[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#${shape}"]`
+import { expect } from "@playwright/test"
+import { autoRow, drag, grip } from "../doom-canvas.mjs"
+import { openDesign, openDoomDeck, savedNode, selectNode } from "../doom-deck.mjs"
 
 async function drive(kit) {
   const { page } = kit
-  await fixtureDeck(kit, "frame.pptx")
-  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
-  await setPanelMode(page, "design")
-  await page.locator(element(4)).click()
-  const width = page.locator("[data-design-panel]").getByRole("combobox", { name: frameCopy.width, exact: true })
-  await expect(width).toBeVisible()
-  const hugging = (await width.textContent()) ?? ""
-  const grip = await page.locator("[data-selection] [data-grip='right']").boundingBox()
-  if (grip === null) throw new Error("no right grip")
-  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(grip.x + grip.width / 2 + 160, grip.y + grip.height / 2, { steps: 12 })
-  await page.mouse.up()
-  await expect(width).not.toHaveText(hugging)
-  await page
-    .locator("[data-design-panel]")
-    .getByRole("button", { name: layoutWords["layout.align.top"], exact: true })
-    .click()
+  const opened = await openDoomDeck(kit, autoRow())
+  await openDesign(page)
+  await selectNode(page, "f:1", { position: { x: 12, y: 12 } })
+  const from = await grip(page, "right")
+  await drag(page, from, { x: from.x + 60, y: from.y }, 12)
+  await expect.poll(async () => (await savedNode(kit, opened, "f:1"))?.sizing?.w).toBe("fixed")
   await page.mouse.move(4, 4)
 }
 
