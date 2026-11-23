@@ -1,10 +1,18 @@
+import { distanceToSegment } from "./preset-geometry.js"
 import type { Point } from "./resolved.js"
 
 export type Side = "t" | "r" | "b" | "l"
 type Rect = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
-export type RouteEnd = { readonly at: Point; readonly side: Side | null; readonly around: Rect | null }
+type Rings = readonly (readonly Point[])[]
+export type RouteEnd = {
+  readonly at: Point
+  readonly side: Side | null
+  readonly around: Rect | null
+  readonly outline?: Rings
+}
 
 export const stub = 24
+const shorterStubs = [6, 12]
 const turnCost = 24
 
 const outward: Readonly<Record<Side, Point>> = {
@@ -86,10 +94,17 @@ function spanOf(end: RouteEnd, leg: Leg, axis: "x" | "y"): Span {
     : { low: box[axis], high: box[axis] + box[length], edge: leg.edge[axis] }
 }
 
-function lanes(axis: "x" | "y", legs: readonly Leg[], boxes: readonly Rect[], middle: number): readonly number[] {
+function lanes(
+  axis: "x" | "y",
+  legs: readonly Leg[],
+  boxes: readonly Rect[],
+  middle: number,
+  extra: readonly Point[],
+): readonly number[] {
   const length = axis === "x" ? "w" : "h"
   const values = [
     middle,
+    ...extra.map((point) => point[axis]),
     ...legs.flatMap((leg) => [
       leg.at[axis],
       leg.edge[axis],
@@ -104,7 +119,9 @@ type Search = {
   readonly start: Leg
   readonly end: Leg
   readonly boxes: readonly Rect[]
+  readonly blocked: (from: Point, to: Point) => boolean
   readonly middle: Point
+  readonly extra: readonly Point[]
 }
 
 class Queue {
@@ -172,33 +189,26 @@ function shortfallAt(x: number, y: number, edge: Point, side: Side | null, way: 
   return onRay && along >= 0 ? Math.max(0, stub - along) : 0
 }
 
-function search({ start, end, boxes, middle }: Search): readonly Point[] | null {
-  const xs = lanes("x", [start, end], boxes, middle.x)
-  const ys = lanes("y", [start, end], boxes, middle.y)
+function search({ start, end, boxes, blocked, middle, extra }: Search): readonly Point[] | null {
+  const xs = lanes("x", [start, end], boxes, middle.x, extra)
+  const ys = lanes("y", [start, end], boxes, middle.y, extra)
   const width = xs.length
   const nodes = width * ys.length
   const pointOf = (node: number): Point => ({ x: xs[node % width]!, y: ys[Math.floor(node / width)]! })
   const nodeOf = (point: Point) => ys.indexOf(point.y) * width + xs.indexOf(point.x)
-  const steps = new Int32Array(nodes * 4).fill(-1)
-  for (let row = 0; row < ys.length; row += 1)
-    for (let column = 0; column < width; column += 1) {
-      const node = row * width + column
-      const here = { x: xs[column]!, y: ys[row]! }
-      if (column + 1 < width) {
-        const there = { x: xs[column + 1]!, y: here.y }
-        if (!boxes.some((box) => crosses(here, there, box))) {
-          steps[node * 4 + 1] = node + 1
-          steps[(node + 1) * 4 + 3] = node
-        }
-      }
-      if (row + 1 < ys.length) {
-        const there = { x: here.x, y: ys[row + 1]! }
-        if (!boxes.some((box) => crosses(here, there, box))) {
-          steps[node * 4 + 2] = node + width
-          steps[(node + width) * 4] = node
-        }
-      }
-    }
+  const steps = new Int32Array(nodes * 4).fill(-2)
+  const stepFrom = (node: number, way: number): number => {
+    const known = steps[node * 4 + way]!
+    if (known !== -2) return known
+    const column = (node % width) + stepX[way]!
+    const row = Math.floor(node / width) + stepY[way]!
+    const reached = column < 0 || column >= width || row < 0 || row >= ys.length ? -1 : row * width + column
+    const [low, high] = node < reached ? [node, reached] : [reached, node]
+    const open = reached !== -1 && !blocked(pointOf(low), pointOf(high))
+    steps[node * 4 + way] = open ? reached : -1
+    if (reached !== -1) steps[reached * 4 + backOf(way)] = open ? node : -1
+    return open ? reached : -1
+  }
   const opening = nodeOf(start.edge) * 5 + (start.side === null ? 4 : ways.indexOf(outward[start.side]))
   const goal = nodeOf(end.edge)
   const endWay = end.side === null ? 4 : backOf(ways.indexOf(outward[end.side]))
@@ -226,10 +236,11 @@ function search({ start, end, boxes, middle }: Search): readonly Point[] | null 
     const x = xs[node % width]!
     const y = ys[Math.floor(node / width)]!
     for (let next = 0; next < 4; next += 1) {
-      const reachedNode = steps[node * 4 + next]!
-      if (reachedNode === -1 || (way !== 4 && next === (way + 2) % 4)) continue
+      if (way !== 4 && next === backOf(way)) continue
       const turns = way !== 4 && next !== way
       if (turns && state === opening && start.side !== null) continue
+      const reachedNode = stepFrom(node, next)
+      if (reachedNode === -1) continue
       const vertical = stepX[next] === 0
       const stretch = vertical
         ? Math.abs(ys[Math.floor(reachedNode / width)]! - y)
@@ -255,20 +266,186 @@ function search({ start, end, boxes, middle }: Search): readonly Point[] | null 
   return null
 }
 
+function turnOf(p: Point, q: Point, r: Point): number {
+  const area = (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x)
+  return Math.abs(area) < 1e-6 ? 0 : Math.sign(area)
+}
+
+function properlyCross(a: Point, b: Point, c: Point, d: Point): boolean {
+  return turnOf(a, b, c) * turnOf(a, b, d) < 0 && turnOf(c, d, a) * turnOf(c, d, b) < 0
+}
+
+function runsAlong(a: Point, b: Point, c: Point, d: Point): boolean {
+  if (turnOf(a, b, c) !== 0 || turnOf(a, b, d) !== 0) return false
+  const along = (point: Point) => (b.x - a.x) * (point.x - a.x) + (b.y - a.y) * (point.y - a.y)
+  const length = along(b)
+  const low = Math.max(0, Math.min(along(c), along(d)))
+  const high = Math.min(length, Math.max(along(c), along(d)))
+  return length > 0 && high - low > 1e-6 * length
+}
+
+function within(rings: Rings, at: Point): boolean {
+  let crossed = false
+  for (const ring of rings)
+    ring.forEach((a, index) => {
+      const b = ring[(index + 1) % ring.length]!
+      if (a.y > at.y !== b.y > at.y && at.x < a.x + ((at.y - a.y) * (b.x - a.x)) / (b.y - a.y)) crossed = !crossed
+    })
+  const onEdge = rings.some((ring) =>
+    ring.some((a, index) => distanceToSegment(at, a, ring[(index + 1) % ring.length]!) < 1e-6),
+  )
+  return crossed && !onEdge
+}
+
+type Outline = { readonly rings: Rings; readonly bounds: Rect }
+
+function outlineOf(rings: Rings): Outline {
+  const xs = rings.flatMap((ring) => ring.map((point) => point.x))
+  const ys = rings.flatMap((ring) => ring.map((point) => point.y))
+  const x = Math.min(...xs)
+  const y = Math.min(...ys)
+  return { rings, bounds: { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y } }
+}
+
+function crossesOutline(from: Point, to: Point, { rings, bounds }: Outline, hugs: boolean): boolean {
+  if (
+    Math.max(from.x, to.x) < bounds.x ||
+    Math.min(from.x, to.x) > bounds.x + bounds.w ||
+    Math.max(from.y, to.y) < bounds.y ||
+    Math.min(from.y, to.y) > bounds.y + bounds.h
+  )
+    return false
+  const cut = rings.some((ring) =>
+    ring.some((a, index) => {
+      const b = ring[(index + 1) % ring.length]!
+      return properlyCross(from, to, a, b) || (!hugs && runsAlong(from, to, a, b))
+    }),
+  )
+  return (
+    cut ||
+    [0.25, 0.5, 0.75].some((share) =>
+      within(rings, { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share }),
+    )
+  )
+}
+
+function freeRun(leg: Leg, outlines: readonly Rings[]): number {
+  if (leg.side === null) return stub
+  const toward = outward[leg.side]
+  const far = { x: leg.edge.x + toward.x * stub * 2, y: leg.edge.y + toward.y * stub * 2 }
+  let run = stub * 2
+  for (const rings of outlines)
+    for (const ring of rings)
+      ring.forEach((a, index) => {
+        const b = ring[(index + 1) % ring.length]!
+        const edge = { x: b.x - a.x, y: b.y - a.y }
+        const ray = { x: far.x - leg.edge.x, y: far.y - leg.edge.y }
+        const cross = ray.x * edge.y - ray.y * edge.x
+        if (cross === 0) return
+        const share = ((a.x - leg.edge.x) * edge.y - (a.y - leg.edge.y) * edge.x) / cross
+        const along = ((a.x - leg.edge.x) * ray.y - (a.y - leg.edge.y) * ray.x) / cross
+        if (share > 1e-9 && share <= 1 && along >= 0 && along <= 1) run = Math.min(run, share * stub * 2)
+      })
+  return run
+}
+
+function corners({ rings, bounds }: Outline): readonly Point[] {
+  const center = { x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2 }
+  return rings.flatMap((ring) =>
+    ring.length > 12
+      ? []
+      : ring.flatMap((point) => [
+          point,
+          {
+            x: point.x + Math.sign(point.x - center.x) * (stub / 2),
+            y: point.y + Math.sign(point.y - center.y) * (stub / 2),
+          },
+        ]),
+  )
+}
+
+function shortStubs(legs: readonly Leg[], outlines: readonly Rings[], shorter: readonly number[]): readonly Point[] {
+  return legs.flatMap((leg) => {
+    if (leg.side === null) return []
+    const toward = outward[leg.side]
+    const free = freeRun(leg, outlines)
+    return [Math.min(stub, free / 2), ...shorter.filter((by) => by < free)].map((by) => ({
+      x: leg.edge.x + toward.x * by,
+      y: leg.edge.y + toward.y * by,
+    }))
+  })
+}
+
+function sharedEdge(one: Rect, two: Rect, axis: "x" | "y"): number {
+  const length = axis === "x" ? "w" : "h"
+  return Math.min(one[axis] + one[length], two[axis] + two[length]) - Math.max(one[axis], two[axis])
+}
+
+function touching(start: RouteEnd, end: RouteEnd, from: Leg, to: Leg): readonly Point[] | null {
+  if (start.side === null || end.side === null || start.around === null || end.around === null) return null
+  const leave = outward[start.side]
+  const enter = outward[end.side]
+  if (leave.x !== -enter.x || leave.y !== -enter.y) return null
+  const level = leave.x === 0 ? from.edge.y === to.edge.y : from.edge.x === to.edge.x
+  const along = leave.x === 0 ? "x" : "y"
+  return level && sharedEdge(start.around, end.around, along) > 0 ? [start.at, from.edge, to.edge, end.at] : null
+}
+
 function routed(start: RouteEnd, end: RouteEnd): readonly Point[] {
   const from = legOf(start)
   const to = legOf(end)
+  const flush = touching(start, end, from, to)
+  if (flush !== null) return flush
   const middle = {
     x: middleOf(spanOf(start, from, "x"), spanOf(end, to, "x")),
     y: middleOf(spanOf(start, from, "y"), spanOf(end, to, "y")),
   }
-  const boxes = [start, end].flatMap((each) => (each.side === null || each.around === null ? [] : [each.around]))
-  const found = search({ start: from, end: to, boxes, middle }) ?? search({ start: from, end: to, boxes: [], middle })
-  return found === null ? [start.at, end.at] : [start.at, ...found, end.at]
+  const attached = [start, end].filter((each) => each.side !== null)
+  const boxes = attached.flatMap((each) => (each.around === null ? [] : [each.around]))
+  const outlines = attached.flatMap((each) => (each.outline === undefined ? [] : [outlineOf(each.outline)]))
+  const fromSite = { ...from, edge: start.at }
+  const toSite = { ...to, edge: end.at }
+  const tries = [
+    {
+      start: from,
+      end: to,
+      blocked: (here: Point, there: Point) => boxes.some((box) => crosses(here, there, box)),
+      extra: [],
+    },
+    ...(outlines.length === 0
+      ? []
+      : ([
+          [false, []],
+          [true, []],
+          [true, shorterStubs],
+        ] as const)
+    ).map(([hugs, shorter]) => ({
+      start: fromSite,
+      end: toSite,
+      blocked: (here: Point, there: Point) => outlines.some((outline) => crossesOutline(here, there, outline, hugs)),
+      extra: [
+        ...shortStubs(
+          [fromSite, toSite],
+          outlines.map((outline) => outline.rings),
+          shorter,
+        ),
+        ...outlines.flatMap(corners),
+      ],
+    })),
+    { start: from, end: to, blocked: () => false, extra: [] },
+  ]
+  for (const each of tries) {
+    const found = search({ ...each, boxes, middle })
+    if (found !== null) return [start.at, ...found, end.at]
+  }
+  return [start.at, end.at]
 }
 
 export function elbowPoints(start: RouteEnd, end: RouteEnd): readonly Point[] {
-  if (start.side !== null || end.side !== null) return tidy(routed(start, end))
+  if (start.side !== null || end.side !== null) {
+    const points = tidy(routed(start, end))
+    return points.length === 1 ? [start.at, end.at] : points
+  }
   const side = towardOther(start.at, end.at)
   const from = start.at
   const to = end.at

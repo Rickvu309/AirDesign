@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest"
+import { endOnShape } from "./line-ends.js"
 import { curvePoints, elbowPoints } from "./line-route.js"
 
 const box = (x: number, y: number, w: number, h: number) => ({ x, y, w, h })
+const placed = (x: number, y: number, w: number, h: number, rotation = 0) => ({
+  x,
+  y,
+  w,
+  h,
+  rotation,
+  flipH: false,
+  flipV: false,
+})
 
 describe("an elbow line's route", () => {
   it("splits halfway between two ends that face each other", () => {
@@ -82,6 +92,70 @@ describe("an elbow line's route", () => {
       { x: 26, y: 65 },
       { x: 26, y: 80 },
       { x: 50, y: 80 },
+    ])
+  })
+
+  it("draws one plain line along the shared edge of two shapes that touch, as PowerPoint does", () => {
+    expect(
+      elbowPoints(
+        { at: { x: 100, y: 30 }, side: "r", around: box(0, 0, 100, 60) },
+        { at: { x: 100, y: 70 }, side: "l", around: box(100, 40, 100, 60) },
+      ),
+    ).toEqual([
+      { x: 100, y: 30 },
+      { x: 100, y: 70 },
+    ])
+  })
+
+  it("takes the stubbed route, not a line through empty space, when facing sides sit level but share no edge", () => {
+    expect(
+      elbowPoints(
+        { at: { x: 50, y: 0 }, side: "t", around: box(0, 0, 100, 60) },
+        { at: { x: -150, y: 0 }, side: "b", around: box(-200, -60, 100, 60) },
+      ),
+    ).toEqual([
+      { x: 50, y: 0 },
+      { x: 50, y: -24 },
+      { x: -50, y: -24 },
+      { x: -50, y: 24 },
+      { x: -150, y: 24 },
+      { x: -150, y: 0 },
+    ])
+  })
+
+  it("keeps both ends of a line between touching shapes whose sites meet", () => {
+    expect(
+      elbowPoints(
+        { at: { x: 100, y: 30 }, side: "r", around: box(0, 0, 100, 60) },
+        { at: { x: 100, y: 30 }, side: "l", around: box(100, 0, 100, 60) },
+      ),
+    ).toEqual([
+      { x: 100, y: 30 },
+      { x: 100, y: 30 },
+    ])
+  })
+
+  it("leaves a shape turned 45 degrees from its site and goes round the other shape, not through it", () => {
+    const turned = endOnShape({ kind: "rect" }, placed(0, 0, 100, 60, 45), 0, 0, "t")
+    const level = endOnShape({ kind: "rect" }, placed(100, 0, 100, 60), 100, 0, "t")
+    expect(elbowPoints(turned, level)).toEqual([
+      { x: 71.213203, y: 8.786797 },
+      { x: 95.213203, y: 8.786797 },
+      { x: 95.213203, y: -12 },
+      { x: 150, y: -12 },
+      { x: 150, y: 0 },
+    ])
+  })
+
+  it("leaves a triangle's side site between its slope and a shape inside its box, without touching either", () => {
+    const triangle = endOnShape({ kind: "preset", name: "triangle" }, placed(0, 0, 100, 100), 0, 0, "r")
+    const square = endOnShape({ kind: "rect" }, placed(80, 20, 100, 100), 80, 20, "t")
+    expect(elbowPoints(triangle, square)).toEqual([
+      { x: 75, y: 50 },
+      { x: 77.5, y: 50 },
+      { x: 77.5, y: 8 },
+      { x: 130, y: 8 },
+      { x: 130, y: 20 },
     ])
   })
 

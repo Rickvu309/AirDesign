@@ -94,6 +94,30 @@ describe("what a click reaches", () => {
     expect(hitChain(lined.geometry.roots, { x: 200, y: 3 }, 4)).not.toBeNull()
     expect(hitChain(lined.geometry.roots, { x: 200, y: 30 }, 4)).toBeNull()
   })
+
+  it("reaches an elbow of no length at the seam of two touching shapes", () => {
+    const seam = grow([
+      { type: "shape", name: "a", props: { box: spot(100, 100, 100, 100), fills: paint } },
+      { type: "shape", name: "b", props: { box: spot(200, 100, 100, 100), fills: paint } },
+      {
+        type: "shape",
+        name: "line",
+        props: (ids: Record<string, string>) =>
+          ({
+            strokes: paint,
+            stroke: { weight: 2, align: "center", dash: "solid" },
+            geometry: {
+              kind: "line",
+              start: { node: ids.a, site: "r" },
+              end: { node: ids.b, site: "l" },
+              route: "elbow",
+              arrows: ["none", "arrow"],
+            },
+          }) as never,
+      },
+    ])
+    expect(hitChain(seam.geometry.roots, { x: 201, y: 152 }, 4)?.map((each) => each.id)).toEqual([seam.ids.line])
+  })
 })
 
 describe("selecting", () => {

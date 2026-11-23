@@ -2,7 +2,7 @@ import type { NodeId } from "./ids.js"
 import type { Box, Point } from "./resolved.js"
 import type { Doom } from "./doom.js"
 import { curvePoints, elbowPoints, type RouteEnd, type Side } from "./line-route.js"
-import { distanceToSegment, siteSpot } from "./preset-geometry.js"
+import { distanceToSegment, outlineRings, type Shaped, type Site, siteSpot } from "./preset-geometry.js"
 import type { Props } from "./props.js"
 
 type Line = Extract<NonNullable<Props["geometry"]>, { kind: "line" }>
@@ -24,36 +24,39 @@ function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, Box>, id: NodeId): Po
 
 const sideTurns: readonly Side[] = ["t", "r", "b", "l"]
 
-function turned(box: Box, x: number, y: number, spot: Point, side: Side | null): RouteEnd {
+export function endOnShape(shaped: Shaped | null | undefined, box: Box, x: number, y: number, site: Site): RouteEnd {
   const center = { x: x + box.w / 2, y: y + box.h / 2 }
   const radians = (box.rotation * Math.PI) / 180
   const cos = Math.cos(radians)
   const sin = Math.sin(radians)
+  const settle = (value: number) => Math.round(value * 1e6) / 1e6
   const turn = (point: Point): Point =>
     box.rotation % 360 === 0
-      ? point
+      ? { x: x + point.x, y: y + point.y }
       : {
-          x: center.x + (point.x - center.x) * cos - (point.y - center.y) * sin,
-          y: center.y + (point.x - center.x) * sin + (point.y - center.y) * cos,
+          x: settle(center.x + (x + point.x - center.x) * cos - (y + point.y - center.y) * sin),
+          y: settle(center.y + (x + point.x - center.x) * sin + (y + point.y - center.y) * cos),
         }
+  const outline = outlineRings(shaped, box.w, box.h).map((ring) => ring.map(turn))
   const corners = [
-    turn({ x, y }),
-    turn({ x: x + box.w, y }),
-    turn({ x: x + box.w, y: y + box.h }),
-    turn({ x, y: y + box.h }),
+    turn({ x: 0, y: 0 }),
+    turn({ x: box.w, y: 0 }),
+    turn({ x: box.w, y: box.h }),
+    turn({ x: 0, y: box.h }),
   ]
   const left = Math.min(...corners.map((corner) => corner.x))
   const top = Math.min(...corners.map((corner) => corner.y))
   const quarter = Math.round(box.rotation / 90)
   return {
-    at: turn({ x: x + spot.x, y: y + spot.y }),
-    side: side === null ? null : sideTurns[(((sideTurns.indexOf(side) + quarter) % 4) + 4) % 4]!,
+    at: turn(siteSpot(shaped, box.w, box.h, site)),
+    side: site === "c" ? null : sideTurns[(((sideTurns.indexOf(site) + quarter) % 4) + 4) % 4]!,
     around: {
       x: left,
       y: top,
       w: Math.max(...corners.map((corner) => corner.x)) - left,
       h: Math.max(...corners.map((corner) => corner.y)) - top,
     },
+    outline,
   }
 }
 
@@ -72,8 +75,7 @@ export function lineRoute(
     const box = boxes.get(end.node)
     if (at === null || box === undefined) return { at: { x: 0, y: 0 }, side: null, around: null }
     const geometry = (doom.nodes.get(end.node) as Partial<Props> | undefined)?.geometry
-    const spot = siteSpot(geometry, box.w, box.h, end.site)
-    return turned(box, at.x - origin.x, at.y - origin.y, spot, end.site === "c" ? null : end.site)
+    return endOnShape(geometry, box, at.x - origin.x, at.y - origin.y, end.site)
   }
   const start = resolve(line.start)
   const end = resolve(line.end)
