@@ -2,7 +2,7 @@
 
 Use one word per idea: the bold term, never its Avoid terms.
 
-The words for how a change is checked, measured, proven and named are in [check-words.md](check-words.md).
+The words for how a change is checked, measured, proven and named are in [check-words.md](docs/words/check-words.md).
 
 ## Product words
 
@@ -159,7 +159,7 @@ A frame's bottom layer, a rectangle with its fill, border and corners, never sel
 _Avoid_: background (slide fills)
 
 **selection**:
-The layers a person selects on a slide. Click selects one, Shift+click adds or removes, and dragging a [marquee](select.md) selects touched layers. One has handles, several a ring inside one outline. Drag, arrows and Delete act as one undo step. An agent's delete drops that layer.
+The layers a person selects on a slide. Click selects one, Shift+click adds or removes, and dragging a [marquee](docs/words/select.md) selects touched layers. One has handles, several a ring inside one outline. Drag, arrows and Delete act as one undo step. An agent's delete drops that layer.
 _Avoid_: chosen, picked, active element
 
 **connector**:
@@ -175,7 +175,7 @@ Shapes joined by connectors and grouped, which an agent adds in one change with 
 _Avoid_: flowchart, SmartArt
 
 **effects**:
-A layer's Drop shadow, Inner shadow, glow, soft edge and blur. See [Effects](effects.md) for slots and strengths.
+A layer's Drop shadow, Inner shadow, glow, soft edge and blur. See [Effects](docs/words/effects.md) for slots and strengths.
 _Avoid_: filters, shadow styles
 
 **request**:
