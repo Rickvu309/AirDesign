@@ -114,6 +114,16 @@ export const gestures = [
     ],
     where: ["slide"],
   },
+  {
+    id: "snap-off",
+    group: "move",
+    keys: [],
+    pointing: [
+      { on: "element", drag: true, ctrl: true },
+      { on: "corner", drag: true, ctrl: true },
+    ],
+    where: ["slide"],
+  },
   { id: "nudge", group: "move", keys: arrows.map((key) => ({ key })), where: ["element"] },
   {
     id: "nudge-far",

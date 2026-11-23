@@ -244,3 +244,15 @@ test("the text bar sets the named style and Underline for the selected words", a
   await expect.poll(async () => (await textOf(stack, opened, "s:4"))?.style).toBe("heading")
   expect((await textOf(stack, opened, "s:4"))?.spans).toEqual([{ end: 8, underline: true }])
 })
+
+test("the slide's thumbnail follows typing before the words are kept", async ({ page, context, stack }) => {
+  await openDoomEditor(page, context, stack)
+  await page.keyboard.press("t")
+  await clickSlide(page, 300, 700)
+  await expect(editor(page)).toBeFocused()
+  const thumb = page.locator("[data-slide-entry='1'] [data-slide-thumb]")
+  const typing = page.keyboard.type("Typed while the thumbnail follows", { delay: 120 })
+  await expect(thumb.locator("[data-line]").filter({ hasText: "Typed" })).toHaveCount(1, { timeout: 2_500 })
+  await expect(editor(page)).toBeFocused()
+  await typing
+})

@@ -186,3 +186,24 @@ test("Escape during an Alt-drag drops the copy and keeps the original selected",
   await expect(layers).toHaveCount(3)
   expect(await selectedIds(page)).toEqual(["t:1"])
 })
+
+test("a drag snaps a layer's edge to another's, and holding Ctrl stops the snap", async ({ page, context, stack }) => {
+  covers("move", "snap-off")
+  const opened = await openDoomEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "q:1", type: "shape", parent: opened.slide, props: { box: spot(1000, 150, 200, 120), fills: accent } },
+    { id: "q:2", type: "shape", parent: opened.slide, props: { box: spot(1500, 700, 200, 120), fills: accent } },
+  ])
+  const xOf = async () => ((await savedNode(stack, opened, "q:2"))?.box as Saved).x
+  const from = await slidePoint(page, 1600, 760)
+  const to = await slidePoint(page, 1103, 760)
+  await dragFrom(page, from, to, ["Control"])
+  await expect.poll(xOf).not.toBe(1500)
+  expect(Math.abs((await xOf()) - 1003)).toBeLessThanOrEqual(2)
+  expect(await xOf()).not.toBe(1000)
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(xOf).toBe(1500)
+  await dragFrom(page, from, to)
+  await expect.poll(xOf).toBe(1000)
+})

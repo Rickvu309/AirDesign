@@ -179,11 +179,7 @@ test("the landing header keeps its name clear beside the product demo", () => {
   ).toEqual([])
 })
 
-test("the Doom slide canvas shows a ring while it holds keyboard focus", () => {
+test("the Doom slide canvas paints no ring the theme does not draw while it holds focus", () => {
   const canvasKeys = ["group-deleted", "two-selected", "three-moved", "tone-many", "zoom-selection"]
-  test.fail(
-    canvasKeys.some((name) => ours.has(name)),
-    "after a key or a Shift-click the slide canvas holds keyboard focus and paints no ring",
-  )
   expect(seen(canvasKeys, "focus-visible"), "the slide canvas holds focus with no ring").toEqual([])
 })
