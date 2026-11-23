@@ -110,7 +110,9 @@ export function markOn(text: doom.Text, from: number, to: number, mark: Mark, pe
   return inside.length > 0 && inside.every((run) => run.look[mark] === true)
 }
 
-export type LinkedWords = { readonly from: number; readonly to: number; readonly link: string | undefined }
+export type LinkedWords =
+  | { readonly from: number; readonly to: number; readonly link: string | undefined; readonly mixed: false }
+  | { readonly from: number; readonly to: number; readonly link: undefined; readonly mixed: true }
 
 export function linkedWords(text: doom.Text, anchor: number, focus: number): LinkedWords | null {
   const [from, to] = [Math.min(anchor, focus), Math.max(anchor, focus)]
@@ -118,16 +120,16 @@ export function linkedWords(text: doom.Text, anchor: number, focus: number): Lin
   if (from < to) {
     const links = new Set(runs.filter((run) => run.end > from && run.start < to).map((run) => run.look.link))
     const [only] = links
-    return { from, to, link: links.size === 1 ? only : undefined }
+    return links.size > 1 ? { from, to, link: undefined, mixed: true } : { from, to, link: only, mixed: false }
   }
-  const link = lookBefore(runs, from).link
-  if (link === undefined) return null
   const at = runs.findIndex((run) => run.start < from && from <= run.end)
+  const link = at === -1 ? undefined : runs[at]!.look.link
+  if (link === undefined) return null
   let first = at
   let last = at
   while (runs[first - 1]?.look.link === link) first -= 1
   while (runs[last + 1]?.look.link === link) last += 1
-  return { from: runs[first]!.start, to: runs[last]!.end, link }
+  return { from: runs[first]!.start, to: runs[last]!.end, link, mixed: false }
 }
 
 export function linkWords(text: doom.Text, from: number, to: number, link: string | null): doom.Text {
