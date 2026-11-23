@@ -23,7 +23,7 @@ const toy = {
     { name: "@airdesign/site", dir: "apps/site", deps: [] },
     { name: "web", dir: "apps/web", deps: ["@airdesign/document", "@airdesign/pptx"] },
     { name: "@airdesign/boundary-fetch", dir: "tooling/boundary-fixtures/fetch-in-document", deps: [] },
-    { name: "ts-packwerk", dir: "tooling/ts-packwerk", deps: [] },
+    { name: "checker", dir: "tooling/checker", deps: [] },
   ],
   imports: {
     "vitest.config.mts": ["scripts/vitest-metrics.mjs"],
@@ -181,8 +181,8 @@ same(
 )
 same(
   "a tooling package with unit tests runs them, like any package",
-  [on(map(["tooling/ts-packwerk/src/rules.ts"])), map(["tooling/ts-packwerk/src/rules.ts"]).unitTests],
-  [["source"], ["tooling/ts-packwerk/"]],
+  [on(map(["tooling/checker/src/rules.ts"])), map(["tooling/checker/src/rules.ts"]).unitTests],
+  [["source"], ["tooling/checker/"]],
 )
 same("the skill folders under .claude are links to .agents and run nothing", on(map([".claude/skills/x/SKILL.md"])), [])
 same("no change runs nothing", on(map([])), [])

@@ -2,7 +2,6 @@ packages:
   - apps/*
   - packages/*
   - tooling/boundary-fixtures/*
-  - tooling/ts-packwerk
 
 catalog:
   typescript: ~7.0.2
@@ -17,5 +16,6 @@ packageExtensions:
       "@emnapi/runtime": "1.11.3"
 
 minimumReleaseAgeExclude:
+  - "ts-packwerk"
   - "oxfmt"
   - "@oxfmt/*"

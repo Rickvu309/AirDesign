@@ -10,7 +10,7 @@ import { checkSteps, unitTestsIn } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { timeMetric } from "./metrics.mjs"
 import { testFilesByProject } from "./unit-test-files.mjs"
-import { affectedDistances, loadWorkspace, unitOf } from "../tooling/ts-packwerk/src/index.ts"
+import { affectedDistances, loadWorkspace, unitOf } from "ts-packwerk"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const prove = ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs"
