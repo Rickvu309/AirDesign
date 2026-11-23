@@ -128,6 +128,30 @@ it("marks an address it cannot use as invalid and says why, beside the field", a
     })
     expect(onChange).not.toHaveBeenCalled()
     expect(input.getAttribute("aria-invalid")).toBe("true")
+    for (const accepted of ["mailto:a@b.c", "mailto:a@b.c?subject=x"]) {
+      onChange.mockClear()
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, accepted)
+        input.dispatchEvent(new window.Event("input", { bubbles: true }))
+      })
+      await act(async () => {
+        input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+      })
+      expect(onChange).toHaveBeenCalledWith({ kind: "url", url: accepted })
+      expect(input.hasAttribute("aria-invalid")).toBe(false)
+    }
+    for (const refused of ["mailto:?x", `https://example.com/${"a".repeat(2_000)}`]) {
+      onChange.mockClear()
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, refused)
+        input.dispatchEvent(new window.Event("input", { bubbles: true }))
+      })
+      await act(async () => {
+        input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+      })
+      expect(onChange).not.toHaveBeenCalled()
+      expect(input.getAttribute("aria-invalid")).toBe("true")
+    }
   } finally {
     await act(async () => root.unmount())
     host.remove()

@@ -227,6 +227,51 @@ describe("a gradient angle past a full turn", () => {
   })
 })
 
+describe("link addresses over the protocol", () => {
+  it("accepts mailto addresses with or without a query and refuses bare mailto queries and over-limit URLs", async () => {
+    const betweenLimits = `https://example.com/${"a".repeat(2_000)}`
+    let minted = 0
+    const session: Session = { agent: "aira", mint: () => `link${String((minted += 1))}`, log: emptyLog(), now: 0 }
+    await withClient(session, memoryDecks(started), async (client) => {
+      const call = async (name: string, args: Record<string, unknown>) =>
+        client.callTool({ name: `airdesign_${name}`, arguments: args })
+      const made = (await call("create_deck", { name: "Links" })).structuredContent as {
+        deck: string
+        rev: number
+        slides: string[]
+      }
+      const target = `${made.slides[0]!}.title`
+      let rev = made.rev
+      for (const link of ["mailto:a@b.c", "mailto:a@b.c?subject=x"]) {
+        const landed = await call("edit_deck", {
+          deck: made.deck,
+          base: rev,
+          changes: [{ op: "set", target, text: `[contact](${link})` }],
+        })
+        expect(landed.isError).not.toBe(true)
+        expect(landed.structuredContent).toMatchObject({ ok: true })
+        rev = (landed.structuredContent as { rev: number }).rev
+        const read = (await call("read_deck", { deck: made.deck })).structuredContent as { layers: string }
+        expect(read.layers).toContain(`[contact](${link})`)
+      }
+      const bareMailto = await call("edit_deck", {
+        deck: made.deck,
+        base: rev,
+        changes: [{ op: "set", target, text: "[contact](mailto:?x)" }],
+      })
+      expect(bareMailto.isError).toBe(true)
+      expect(bareMailto.structuredContent).toMatchObject({ ok: false, refusal: "field", refused: "shape" })
+      const tooLong = await call("edit_deck", {
+        deck: made.deck,
+        base: rev,
+        changes: [{ op: "set", target, text: `[contact](${betweenLimits})` }],
+      })
+      expect(tooLong.isError).toBe(true)
+      expect(tooLong.structuredContent).toMatchObject({ ok: false, refusal: "limit", refused: "limit" })
+    })
+  })
+})
+
 describe("an answer read from structuredContent alone", () => {
   const shot = "/9j/AAAA"
   const textOf = (result: { content: unknown }) =>
