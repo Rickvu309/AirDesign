@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { propOf } from "@/editing/node-props"
 import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
 import {
+  insertSlice,
   linkedWords,
   linkWords,
   lookAt,
@@ -14,6 +15,7 @@ import {
   withParagraphs,
   type Look,
   type Mark,
+  type TextSlice,
 } from "./text-edit"
 import type { EditorClient } from "./use-doom-deck"
 import { refusedText, type Sent } from "./text-refused"
@@ -49,6 +51,7 @@ export type TextSession = {
   begin(node: doom.NodeId, entry: Entry): void
   beginNew(created: Created, resize: doom.Text["resize"]): void
   replace(from: number, to: number, insert: string): void
+  paste(from: number, to: number, slice: TextSlice): void
   mark(mark: Mark): void
   link(link: string | null): void
   align(align: NonNullable<doom.Para["align"]>): void
@@ -227,6 +230,13 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
       const collapsed = from === to && now.pending !== null
       const draft = replaceRange(now.draft, from, to, insert, collapsed ? (now.pending ?? undefined) : undefined)
       const caret = Math.min(from, to) + insert.length
+      change({ draft, anchor: caret, focus: caret, pending: null })
+    },
+    paste(from, to, slice) {
+      const now = ref.current
+      if (now === null) return
+      const draft = insertSlice(now.draft, from, to, slice)
+      const caret = Math.min(from, to) + slice.chars.length
       change({ draft, anchor: caret, focus: caret, pending: null })
     },
     mark(mark) {

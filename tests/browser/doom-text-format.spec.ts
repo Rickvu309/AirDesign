@@ -296,3 +296,170 @@ test("selecting across two different links shows Mixed, leaves them alone on Ent
   await address.press("Enter")
   await expect.poll(async () => (await textOf(stack, opened))?.spans).toEqual([{ end: 11, link: "https://c.example/" }])
 })
+
+test("copying and pasting linked words keeps web links within a deck and between decks, and drops foreign slide links", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const first = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const source = {
+    ...layer("Read site and slide"),
+    text: {
+      ...layer("Read site and slide").text,
+      spans: [{ end: 5 }, { end: 9, link: "https://a.example/" }, { end: 14 }, { end: 19, link: first.slide }],
+    },
+  }
+  const target = { ...layer("Here: "), box: spot(200, 920, 800, 120) }
+  await landNodes(stack, first, [
+    { id: "t:1", type: "shape", parent: first.slide, props: source },
+    { id: "t:2", type: "shape", parent: first.slide, props: target },
+  ])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(4)
+
+  await clickSlide(page, 300, 640)
+  await edit(page)
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("ControlOrMeta+c")
+  await leave(page)
+
+  await clickSlide(page, 300, 960)
+  await edit(page)
+  await page.keyboard.press("End")
+  await page.keyboard.press("ControlOrMeta+v")
+  await leave(page)
+  await expect
+    .poll(async () => (await savedNode(stack, first, "t:2"))?.text)
+    .toMatchObject({
+      chars: "Here: Read site and slide",
+      spans: [{ end: 11 }, { end: 15, link: "https://a.example/" }, { end: 20 }, { end: 25, link: first.slide }],
+    })
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-slide-box] [data-node="t:2"] [data-link="https://a.example/"]')
+        .evaluate((node) => getComputedStyle(node).textDecorationLine),
+    )
+    .toBe("underline")
+
+  const second = await openDoomEditor(page, context, stack)
+  await landNodes(stack, second, [{ id: "t:1", type: "shape", parent: second.slide, props: layer("Deck two: ") }])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+  await clickSlide(page, 300, 640)
+  await edit(page)
+  await page.keyboard.press("End")
+  await page.keyboard.press("ControlOrMeta+v")
+  await leave(page)
+  await expect
+    .poll(async () => (await textOf(stack, second))?.spans)
+    .toEqual([{ end: 15 }, { end: 19, link: "https://a.example/" }, { end: 29 }])
+  expect((await textOf(stack, second))?.chars).toBe("Deck two: Read site and slide")
+})
+
+test("undo after pasting linked words restores the text in one step and redo brings the link back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const source = {
+    ...layer("Read site"),
+    text: { ...layer("Read site").text, spans: [{ end: 5 }, { end: 9, link: "https://a.example/" }] },
+  }
+  const target = { ...layer("Go "), box: spot(200, 920, 800, 120) }
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: source },
+    { id: "t:2", type: "shape", parent: opened.slide, props: target },
+  ])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(4)
+
+  await clickSlide(page, 300, 640)
+  await edit(page)
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("ControlOrMeta+c")
+  await leave(page)
+
+  await clickSlide(page, 300, 960)
+  await edit(page)
+  await page.keyboard.press("End")
+  await page.keyboard.press("ControlOrMeta+v")
+  await leave(page)
+  await expect
+    .poll(async () => (await savedNode(stack, opened, "t:2"))?.text)
+    .toMatchObject({
+      chars: "Go Read site",
+      spans: [{ end: 8 }, { end: 12, link: "https://a.example/" }],
+    })
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect
+    .poll(async () => (await savedNode(stack, opened, "t:2"))?.text)
+    .toMatchObject({ chars: "Go ", spans: [] })
+  await expect(page.locator('[data-slide-box] [data-node="t:2"] [data-link="https://a.example/"]')).toHaveCount(0)
+
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect
+    .poll(async () => (await savedNode(stack, opened, "t:2"))?.text)
+    .toMatchObject({
+      chars: "Go Read site",
+      spans: [{ end: 8 }, { end: 12, link: "https://a.example/" }],
+    })
+  await expect(page.locator('[data-slide-box] [data-node="t:2"] [data-link="https://a.example/"]')).toHaveCount(1)
+})
+
+test("pasting linked words into a layer with a layer-level link keeps both the word link and the layer link", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const source = {
+    ...layer("Read site"),
+    text: { ...layer("Read site").text, spans: [{ end: 5 }, { end: 9, link: "https://a.example/" }] },
+  }
+  const target = {
+    ...layer("Go "),
+    box: spot(200, 920, 800, 120),
+    link: "https://layer.example/",
+  }
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: source },
+    { id: "t:2", type: "shape", parent: opened.slide, props: target },
+  ])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(4)
+
+  await clickSlide(page, 300, 640)
+  await edit(page)
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("ControlOrMeta+c")
+  await leave(page)
+
+  const address = page.locator(`[data-design-section="${linkCopy.section}"]`).getByRole("textbox")
+  await clickSlide(page, 300, 960)
+  await expect(address).toHaveValue("https://layer.example/")
+  await edit(page)
+  await page.keyboard.press("End")
+  await page.keyboard.press("ControlOrMeta+v")
+  await expect(address).toHaveValue("https://a.example/")
+  await leave(page)
+  await expect(address).toHaveValue("https://layer.example/")
+
+  await expect
+    .poll(async () => await savedNode(stack, opened, "t:2"))
+    .toMatchObject({
+      link: "https://layer.example/",
+      text: {
+        chars: "Go Read site",
+        spans: [{ end: 8 }, { end: 12, link: "https://a.example/" }],
+      },
+    })
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-slide-box] [data-node="t:2"] [data-link="https://a.example/"]')
+        .evaluate((node) => getComputedStyle(node).textDecorationLine),
+    )
+    .toBe("underline")
+})

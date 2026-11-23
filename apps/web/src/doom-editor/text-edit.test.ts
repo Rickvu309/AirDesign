@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest"
 import {
   graphemeAfter,
   graphemeBefore,
+  insertSlice,
   linkedWords,
   linkWords,
   markOn,
   replaceRange,
+  sliceText,
   toggleMark,
   toggledList,
   withParagraphs,
@@ -147,6 +149,26 @@ describe("linked words", () => {
     expect(markOn(removed, 9, 20, "bold")).toBe(true)
     const added = valid(linkWords(plain("Read the report"), 9, 15, "https://c.example"))
     expect(linkedWords(added, 11, 11)).toEqual({ from: 9, to: 15, link: "https://c.example", mixed: false })
+  })
+
+  it("slices and inserts linked words with their formatting intact", () => {
+    const copied = sliceText(linked(), 9, 20)
+    expect(copied.chars).toBe("full report")
+    expect(copied.spans).toEqual([{ end: 11, bold: true, link: "https://a.example" }])
+    const pasted = valid(insertSlice(plain("See  here"), 4, 4, copied))
+    expect(pasted.chars).toBe("See full report here")
+    expect(pasted.spans).toEqual([{ end: 4 }, { end: 15, bold: true, link: "https://a.example" }, { end: 20 }])
+
+    const merged = valid(insertSlice(linked(), 20, 20, sliceText(linked(), 14, 20)))
+    expect(merged.chars).toBe("Read the full reportreport now")
+    expect(merged.spans).toEqual([{ end: 9 }, { end: 26, bold: true, link: "https://a.example" }, { end: 30 }])
+
+    const multi = doom.textFromMarkdown("**[full report](https://a.example)**\nSecond", "body")
+    const twoLines = sliceText(multi, 0, multi.chars.length)
+    const intoBullet = valid(insertSlice({ ...plain("Item: "), paras: [{ list: "bullet" }] }, 6, 6, twoLines))
+    expect(intoBullet.chars).toBe("Item: full report\nSecond")
+    expect(intoBullet.paras).toEqual([{ list: "bullet" }, {}])
+    expect(intoBullet.spans).toEqual([{ end: 6 }, { end: 17, bold: true, link: "https://a.example" }, { end: 24 }])
   })
 })
 

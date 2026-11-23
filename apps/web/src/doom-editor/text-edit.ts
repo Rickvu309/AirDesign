@@ -12,7 +12,7 @@ const sameLook = (one: Look, two: Look): boolean => {
   )
 }
 
-function runsOf(text: doom.Text): readonly Run[] {
+function runsOf(text: Pick<doom.Text, "chars" | "spans">): readonly Run[] {
   if (text.chars.length === 0) return []
   if (text.spans.length === 0) return [{ start: 0, end: text.chars.length, look: {} }]
   let start = 0
@@ -143,6 +143,71 @@ export function linkWords(text: doom.Text, from: number, to: number, link: strin
     ]
   })
   return { ...text, spans: spansFrom(runs) }
+}
+
+export type TextSlice = {
+  readonly chars: string
+  readonly spans: readonly doom.Span[]
+  readonly paras: readonly doom.Para[]
+}
+
+export function sliceText(text: doom.Text, from: number, to: number): TextSlice {
+  const low = Math.max(0, Math.min(from, to))
+  const high = Math.min(text.chars.length, Math.max(from, to))
+  const chars = text.chars.slice(low, high)
+  const runs = runsOf(text).flatMap((run): Run[] =>
+    run.end > low && run.start < high
+      ? [{ start: Math.max(run.start, low) - low, end: Math.min(run.end, high) - low, look: run.look }]
+      : [],
+  )
+  const first = breaksIn(text.chars.slice(0, low))
+  const last = breaksIn(text.chars.slice(0, high))
+  return { chars, spans: spansFrom(runs), paras: text.paras.slice(first, last + 1) }
+}
+
+export function insertSlice(text: doom.Text, from: number, to: number, slice: TextSlice): doom.Text {
+  const low = Math.max(0, Math.min(from, to))
+  const high = Math.min(text.chars.length, Math.max(from, to))
+  const runs = runsOf(text)
+  const inserted = runsOf(slice).map((run) => ({
+    start: run.start + low,
+    end: run.end + low,
+    look: run.look,
+  }))
+  const next: Run[] = [
+    ...runs.flatMap((run) => (run.start < low ? [{ ...run, end: Math.min(run.end, low) }] : [])),
+    ...inserted,
+    ...runs.flatMap((run) =>
+      run.end > high
+        ? [
+            {
+              ...run,
+              start: Math.max(run.start, high) - high + low + slice.chars.length,
+              end: run.end - high + low + slice.chars.length,
+            },
+          ]
+        : [],
+    ),
+  ]
+  const chars = text.chars.slice(0, low) + slice.chars + text.chars.slice(high)
+  const first = breaksIn(text.chars.slice(0, low))
+  const removed = breaksIn(text.chars.slice(low, high))
+  const added = breaksIn(slice.chars)
+  const paras = [
+    ...text.paras.slice(0, first + 1),
+    ...Array.from({ length: added }, (_, at) => ({ ...(slice.paras[at + 1] ?? {}) })),
+    ...text.paras.slice(first + removed + 1),
+  ]
+  return { ...text, chars, spans: spansFrom(next), paras: paras.slice(0, breaksIn(chars) + 1) }
+}
+
+export function filterSliceLinks(slice: TextSlice, keep: (link: string) => boolean): TextSlice {
+  const runs = runsOf(slice).map((run) => {
+    if (run.look.link === undefined || keep(run.look.link)) return run
+    const { link: _was, ...rest } = run.look
+    return { ...run, look: rest }
+  })
+  return { ...slice, spans: spansFrom(runs) }
 }
 
 export function lookAt(text: doom.Text, offset: number): Look {
