@@ -47,8 +47,10 @@ test("Aira adds KPIs through the MCP address, the canvas paints them as they lan
   await expect(side.getByText("I will add three KPIs to the slide.", { exact: true })).toBeVisible()
   await expect(side.getByText("The slide now shows revenue, customers and churn.", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
+  await expect
+    .poll(async () => [...(await saved(stack, opened)).runs.values()].map((run) => run.phase))
+    .toEqual(["stopped"])
   const added = await saved(stack, opened)
-  expect([...added.runs.values()].map((run) => run.phase)).toEqual(["stopped"])
   expect(added.children.get(opened.slide as doom.NodeId)?.length).toBeGreaterThan(before)
 
   await side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true }).click()
