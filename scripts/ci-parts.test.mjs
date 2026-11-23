@@ -449,6 +449,13 @@ same(
   paintSteps.some((step) => step.uses === "./.github/actions/playwright"),
   true,
 )
+same(
+  "the shared Playwright action keeps Chromium",
+  parse(fs.readFileSync(path.join(root, ".github/actions/playwright/action.yml"), "utf8")).runs.steps.some(
+    (step) => step.with?.path === "~/.cache/ms-playwright",
+  ),
+  true,
+)
 same("paint reports a separate main issue", paintSteps.find((step) => (step.run ?? "").includes("red-main.sh"))?.env, {
   GH_TOKEN: "${{ github.token }}",
   RED_TITLE: "paint fidelity is red",
