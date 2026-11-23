@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
-import * as doom from "@airdesign/doom"
+import { limits, readFold, textFromMarkdown } from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -221,7 +221,7 @@ describe("mcp route", () => {
       expect(lines).toContain('text="Q3 **board** update"')
       expect(lines).toContain("Revenue")
 
-      const folded = doom.readFold((await stored(first.deck))!.fold)!
+      const folded = readFold((await stored(first.deck))!.fold)!
       expect(folded.runs.get(landed.answer.runId)?.phase).toBe("running")
       const stopped = await tool(client, "stop_run", { deck: first.deck, runId: landed.answer.runId })
       expect(stopped.answer).toMatchObject({ ok: true, rev: first.rev + 2 })
@@ -232,7 +232,7 @@ describe("mcp route", () => {
         changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "late" }],
       })
       expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
-      expect(doom.readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
+      expect(readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
     })
   })
 
@@ -338,7 +338,7 @@ describe("mcp route", () => {
     await withMcp(cookie, async (client) => {
       const first = await made(client)
       const title = (await stored(first.deck))!
-      const fold = doom.readFold(title.fold)!
+      const fold = readFold(title.fold)!
       const node = fold.children.get(first.slides[0])![0]!
       const typed = await ask(
         base,
@@ -353,7 +353,7 @@ describe("mcp route", () => {
               {
                 node,
                 prop: "text",
-                value: doom.textFromMarkdown("Typed", "title"),
+                value: textFromMarkdown("Typed", "title"),
                 base: fold.revs.get(node)!.get("text"),
               },
             ],
@@ -513,13 +513,13 @@ describe("mcp route", () => {
     const cookie = await sign(address("size"))
     const padded = (size: number) =>
       JSON.stringify({ ...listCall, params: { ...listCall.params, pad: "x".repeat(size) } })
-    const over = padded(doom.limits.body)
-    expect(Buffer.byteLength(over)).toBeGreaterThan(doom.limits.body)
+    const over = padded(limits.body)
+    expect(Buffer.byteLength(over)).toBeGreaterThan(limits.body)
     const blocked = await posted(base, { cookie }, over)
     expect(blocked.status).toBe(413)
     expect(JSON.parse(blocked.text)).toEqual({ ok: false, refusal: "size" })
-    const under = padded(doom.limits.body - Buffer.byteLength(padded(0)) - 1)
-    expect(Buffer.byteLength(under)).toBe(doom.limits.body - 1)
+    const under = padded(limits.body - Buffer.byteLength(padded(0)) - 1)
+    expect(Buffer.byteLength(under)).toBe(limits.body - 1)
     expect((await posted(base, { cookie }, under)).status).toBe(200)
   })
 
