@@ -1,15 +1,12 @@
 import { expect } from "@playwright/test"
-import { newBlankDeck } from "../../bin/new-deck.mjs"
+import { openDoomDeck } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
 
 async function drive(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  await newBlankDeck(kit.page)
+  await openDoomDeck(kit)
   await expect(kit.page.locator("[data-slide-entry]")).toHaveCount(1)
-  const actions = kit.page.getByRole("button", { name: "Blank deck actions" })
-  if (await actions.count()) await actions.click()
-  else await kit.page.getByRole("button", { name: /^Rename deck:/ }).click()
+  await kit.page.getByRole("button", { name: "Blank deck actions" }).click()
+  await expect(kit.page.getByRole("menuitem", { name: "Rename" })).toBeVisible()
 }
 
 export default { name: "deck-title-menu", design: editor, drive }
