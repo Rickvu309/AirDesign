@@ -1,0 +1,3 @@
+# An elbow line between two shapes never crosses either shape outside the stub that leaves or enters its site
+
+`packages/doom/src/line-route.ts` finds the route by searching only moves that stay out of both shapes' bounds, so no case can be forgotten. `packages/doom/src/line-route-sweep.test.ts` routes every side pair between five common presets at gaps from 0 to 60 px, behind, beside and overlapping, and fails on any leg that enters either shape or a route that leaves or arrives off its side. Only a pair whose site, or its stub, lies inside the other shape is exempt, because no route can stay out of it.
