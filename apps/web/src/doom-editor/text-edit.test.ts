@@ -170,6 +170,21 @@ describe("linked words", () => {
     expect(intoBullet.paras).toEqual([{ list: "bullet" }, {}])
     expect(intoBullet.spans).toEqual([{ end: 6 }, { end: 17, bold: true, link: "https://a.example" }, { end: 24 }])
   })
+
+  it("extends a link when typing just after its last letter, and stays plain before its first", () => {
+    const extended = valid(replaceRange(linked(), 20, 20, "s"))
+    expect(extended.chars).toBe("Read the full reports now")
+    expect(extended.spans).toEqual([{ end: 9 }, { end: 21, bold: true, link: "https://a.example" }, { end: 25 }])
+
+    const atEnd = doom.textFromMarkdown("Read [site](https://a.example)", "body")
+    const extendedEnd = valid(replaceRange(atEnd, 9, 9, "s"))
+    expect(extendedEnd.chars).toBe("Read sites")
+    expect(extendedEnd.spans).toEqual([{ end: 5 }, { end: 10, link: "https://a.example" }])
+
+    const before = valid(replaceRange(linked(), 9, 9, "new "))
+    expect(before.chars).toBe("Read the new full report now")
+    expect(before.spans).toEqual([{ end: 13 }, { end: 24, bold: true, link: "https://a.example" }, { end: 28 }])
+  })
 })
 
 describe("paragraphs", () => {

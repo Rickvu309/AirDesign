@@ -463,3 +463,41 @@ test("pasting linked words into a layer with a layer-level link keeps both the w
     )
     .toBe("underline")
 })
+
+test("typing just after a link's last letter extends the link, while typing before its first letter stays plain", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const linked = {
+    ...layer("Read site now"),
+    text: {
+      ...layer("Read site now").text,
+      spans: [{ end: 5 }, { end: 9, link: "https://a.example/" }, { end: 13 }],
+    },
+  }
+  await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: linked }])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+
+  await clickSlide(page, 300, 640)
+  const address = page.locator(`[data-design-section="${linkCopy.section}"]`).getByRole("textbox")
+  await edit(page)
+  await page.keyboard.press("Home")
+  for (let step = 0; step < 9; step++) await page.keyboard.press("ArrowRight")
+  await expect(address).toHaveValue("https://a.example/")
+  await page.keyboard.type("map")
+  await expect(address).toHaveValue("https://a.example/")
+
+  await page.keyboard.press("Home")
+  for (let step = 0; step < 5; step++) await page.keyboard.press("ArrowRight")
+  await expect(address).toHaveValue("")
+  await page.keyboard.type("a ")
+  await leave(page)
+
+  await expect
+    .poll(async () => (await textOf(stack, opened))?.spans)
+    .toEqual([{ end: 7 }, { end: 14, link: "https://a.example/" }, { end: 18 }])
+  expect((await textOf(stack, opened))?.chars).toBe("Read a sitemap now")
+})
