@@ -43,7 +43,7 @@ Preconditions:
 - **Growing text.** `$V journey <run> auto-layout-text`: two growing text boxes wrapped in a column; three more lines typed into the top one push the bottom one down, and `deckRoutes.open` holds a `box.h` row on the top one.
 - **Opacity.** `$V journey <run> auto-layout-opacity` (and `tests/browser/frame-opacity.spec.ts`): `frame.pptx`, the frame's Opacity set to 50 fades the group layer to 0.5 with every child's own fill unchanged; Undo opacity, Redo, reload; the export writes `alpha 50000` on the backdrop and both children.
 - **Design mode and Aira.** `$V journey <run> auto-layout-agent`: the fixture `frame.pptx` opens as an auto layout frame; design mode's Auto layout section reads Horizontal (`NN-auto-layout-section`) and Vertical stacks the children (`NN-made-vertical`). Aira's recorded `frame-layout.sse` sets the frame back to a row with a 24 pt gap and a teal fill, which lands on the backdrop as the agent's row (`NN-aira-row-teal`); the panel's Undo brings the column back (`NN-aira-undone`).
-- **States for look.** `panel-frame`, `panel-frame-design`, `frame-nested`.
+- **States for look.** `panel-frame`, `frame-nested`.
 
 ## Gotchas
 
