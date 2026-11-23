@@ -8,7 +8,8 @@ import { ColorPicker } from "@/design/color-picker"
 import { DesignSection, SectionStrips } from "@/editor/design-panel"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { TemplateStyleFace } from "@/editor/template-style-card"
-import { oldControl } from "./design-controls"
+import { templateStyleCopy } from "@/copy/template-style-copy"
+import { doomControl, fontDesc } from "./design-controls"
 import { swatchesOf } from "./design-palette"
 import { templateNameOf } from "./design-template-name"
 import { themeColorWrites } from "./chart-theme-writes"
@@ -33,8 +34,12 @@ export function DoomThemeCard(props: {
   }
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
   const fonts = [
-    oldControl("templateStyle", "major", { value: theme.fonts.heading }),
-    oldControl("templateStyle", "minor", { value: theme.fonts.body }),
+    doomControl({ trait: "templateStyle", field: "major" }, templateStyleCopy.major, fontDesc, {
+      value: theme.fonts.heading,
+    }),
+    doomControl({ trait: "templateStyle", field: "minor" }, templateStyleCopy.minor, fontDesc, {
+      value: theme.fonts.body,
+    }),
   ]
   const setFont = (field: string, value: unknown) => {
     if (deck === undefined || typeof value !== "string" || value === "") return

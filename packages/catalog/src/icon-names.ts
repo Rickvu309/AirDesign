@@ -169,9 +169,3 @@ function unpacked(): readonly string[] {
 }
 
 export const iconNames: readonly string[] = unpacked()
-
-const known = new Set(iconNames)
-
-export function knownIcon(name: string): boolean {
-  return known.has(name)
-}

@@ -31,19 +31,10 @@ export {
   type TraitReads,
 } from "./design.js"
 export { refusals, type Refusal } from "./refusals.js"
-export { coordinates, readBox, type Box } from "./box.js"
+export { readBox, type Box } from "./box.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
-export {
-  traitNames,
-  traits,
-  type SlotField,
-  type FieldName,
-  type FieldValue,
-  type TraitName,
-  type TraitValue,
-  type WireField,
-} from "./traits.js"
-export type { Alpha, Desc, Fields, NumberUnit } from "./value-kind.js"
+export type { FieldName, FieldValue, TraitName, TraitValue } from "./traits.js"
+export type { Alpha } from "./value-kind.js"
 export { kinds, type Kind } from "./kinds.js"
 export { type FileSection } from "./section-order.js"
 export { slideGroups } from "./slide-groups.js"
@@ -108,7 +99,6 @@ export {
 export {
   readTextValue,
   hasSlideNumber,
-  alignNames,
   caseNames,
   formatNames,
   lineHeightPointsFloor,
@@ -124,7 +114,6 @@ export {
   type TextList,
   type TextRun,
   type TextValue,
-  plainText,
 } from "./text-value.js"
 
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"

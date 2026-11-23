@@ -1,5 +1,4 @@
 import { resolveControl } from "@/design/panel-arrangement"
-import { traits } from "@airdesign/document"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { ControlProps } from "@/design/panel"
@@ -45,7 +44,7 @@ it.each([
         trait: "link",
         field: "target",
         label: "Link",
-        desc: traits.link.fields.target.desc,
+        desc: { kind: "link" },
         value,
         mixed: false,
         inherited: false,
@@ -87,7 +86,7 @@ it("marks an address it cannot use as invalid and says why, beside the field", a
       trait: "link",
       field: "target",
       label: "Link",
-      desc: traits.link.fields.target.desc,
+      desc: { kind: "link" },
       value: undefined,
       mixed: false,
       inherited: false,

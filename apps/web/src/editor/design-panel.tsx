@@ -6,7 +6,6 @@ import { FillDetails, UnionControl } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/design/panel"
-import { visibleEffects } from "@/design/effects-list"
 import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { EditorIcon } from "@/components/ui/editor-icons"
@@ -163,8 +162,6 @@ export function ControlView({ control, palette, onChange }: ControlProps): React
 }
 
 function stripColumns(strip: readonly PanelControl[]): string {
-  if (strip[0]?.trait === "layout" && strip[0].field !== "padding")
-    return `repeat(${strip.length}, minmax(0, 1fr)) var(--control-dense)`
   if (strip.some((control) => control.field.startsWith("remove.")))
     return strip.map((control) => (control.field.startsWith("remove.") ? "24px" : "minmax(0, 1fr)")).join(" ")
   if (strip.every((control) => control.kind === "action"))
@@ -265,8 +262,7 @@ export function ElementDesign({
           if (section === "selectionColors") return selectionColors === null ? [] : [section]
           const modelSection = model.sections.find(({ trait }) => trait === section)
           if (modelSection === undefined) return []
-          const placed = sectionInMode(modelSection, mode)
-          return [placed.trait === "effects" ? visibleEffects(placed) : placed]
+          return [sectionInMode(modelSection, mode)]
         })
   const fillDetails = mode === "design" && fill !== undefined && kind !== "picture"
   const last = sections.length - 1
@@ -372,7 +368,7 @@ export function ElementDesign({
                     }
               }
             >
-              {(section.trait === "fills" || section.trait === "boxFill") &&
+              {section.trait === "fills" &&
               section.strips.some((row) => row.some((control) => control.trait === "image")) ? (
                 <>
                   <SectionStrips

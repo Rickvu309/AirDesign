@@ -98,7 +98,7 @@ export function DesignPanel(props: Props) {
             return (
               <SlideBackground
                 key={section}
-                paint={paintDesc()}
+                paint={paintDesc}
                 shown={{
                   background: resolveColorOf(shownColor, theme, palette),
                   fill: backgroundFill(solid),

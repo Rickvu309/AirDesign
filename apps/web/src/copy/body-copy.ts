@@ -1,21 +1,3 @@
-export const bodyCopy = {
-  section: "Text box",
-  insets: "Margins",
-  anchor: "Vertical alignment",
-  wrap: "Wrap text",
-  autofit: "Autofit",
-  vertical: "Text direction",
-  columns: "Columns",
-  reset: {
-    insets: "Reset margins",
-    anchor: "Reset vertical alignment",
-    wrap: "Reset wrap text",
-    autofit: "Reset autofit",
-    vertical: "Reset text direction",
-    columns: "Reset columns",
-  },
-} as const
-
 export const bodyWords: Readonly<Record<string, string>> = {
   "anchor.t": "Top",
   "anchor.ctr": "Middle",

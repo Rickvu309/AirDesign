@@ -1,1 +1,1 @@
-export const notesCopy = { section: "Presenter notes", value: "Presenter notes" } as const
+export const notesCopy = { value: "Presenter notes" } as const

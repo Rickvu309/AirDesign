@@ -3,39 +3,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { fontNames } from "@airdesign/fonts"
 import { servedFaces } from "@/design/served-faces"
 import { useFaceFallback } from "@/design/face-fallback"
-import { plainText, readTextValue, writeTextValue, type TextRun, type TextValue } from "@airdesign/document"
-import { bytesOf, limits } from "@airdesign/doom"
-import { useId, useState, type KeyboardEvent } from "react"
-import { Textarea } from "@/components/ui/textarea"
+import { bytesOf } from "@airdesign/doom"
+import { useId, useState } from "react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"
-
-function styleOf(run: TextRun | undefined): Omit<TextRun, "from" | "text"> {
-  if (run === undefined) return {}
-  const { from: _from, text: _text, ...style } = run
-  return style
-}
-
-export function typedText(value: string, words: string): string {
-  const before: TextValue = readTextValue(value) ?? []
-  const typed = words.split("\n").map((line, at) => {
-    const source = before[Math.min(at, before.length - 1)]
-    const { runs = [], ...paragraph } = source ?? { from: 0 }
-    const from = runs[0]?.from ?? -1
-    return {
-      ...paragraph,
-      from: source?.from ?? 0,
-      runs: line === "" ? [] : [{ ...styleOf(runs[0]), from, text: line }],
-    }
-  })
-  return writeTextValue(typed)
-}
-
-export function passageWords(value: string): string {
-  return plainText(readTextValue(value) ?? [{ from: 0, runs: [{ from: 0, text: value }] }])
-}
 
 function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean } {
   let bytes = 0
@@ -43,10 +16,10 @@ function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean
   return { bytes, wide: bytes > [...words].length }
 }
 
-function useTextProblem(words: string, max: number, message = designCopy.tooLong) {
+function useTextProblem(words: string, max: number) {
   const problemId = useId()
   const size = sizeOf(words)
-  const problem = size.bytes > max ? message(max, size.wide) : null
+  const problem = size.bytes > max ? designCopy.tooLong(max, size.wide) : null
   const correction =
     problem === null ? null : (
       <p id={problemId} className="text-[length:var(--type-caption)] leading-[var(--leading-body)] text-danger-text">
@@ -145,79 +118,6 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
 }
 
 export function TextControl(props: ControlProps) {
-  const { control, onChange } = props
-  if (control.desc.kind === "words") return <WordsField {...props} max={control.desc.max} />
-  const value = typeof control.value === "string" ? control.value : ""
-  const rich = control.desc.kind === "text"
-  return (
-    <PassageField
-      label={control.label}
-      values={[value]}
-      rich={rich}
-      onChange={(words) => onChange(rich ? typedText(value, words) : words)}
-    />
-  )
-}
-
-export function PassageField({
-  label,
-  values,
-  rich,
-  onChange,
-}: {
-  readonly label: string
-  readonly values: readonly string[]
-  readonly rich: boolean
-  readonly onChange: (words: string) => void
-}) {
-  const id = useId()
-  const [draft, setDraft] = useState<string | null>(null)
-  const shown = values.map((value) => (rich ? passageWords(value) : value))
-  const first = shown[0] ?? ""
-  const mixed = shown.some((value) => value !== first)
-  const words = draft ?? (mixed ? "" : first)
-  const largest = values.reduce((longest, value) => {
-    const stored = rich ? typedText(value, words) : words
-    return bytesOf(stored) > bytesOf(longest) ? stored : longest
-  }, "")
-  const { problemId, problem, correction } = useTextProblem(largest, limits.valueBytes, designCopy.textTooLong)
-
-  function commit() {
-    if (draft === null || problem !== null) return
-    setDraft(null)
-    if (mixed || draft !== first) onChange(draft)
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (composing(event)) return
-    if (event.key === "Escape") {
-      event.stopPropagation()
-      setDraft(null)
-    }
-    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault()
-      commit()
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-1" data-control="text">
-      <label htmlFor={id} className="sr-only">
-        {label}
-      </label>
-      <Textarea
-        id={id}
-        aria-invalid={problem !== null ? true : undefined}
-        aria-describedby={problem !== null ? problemId : undefined}
-        rows={2}
-        className="max-h-40 min-h-16 resize-none bg-white text-[length:var(--type-caption)] md:text-[length:var(--type-caption)]"
-        value={words}
-        placeholder={mixed ? designCopy.mixed : undefined}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={onKeyDown}
-      />
-      {correction}
-    </div>
-  )
+  const { desc } = props.control
+  return desc.kind === "words" ? <WordsField {...props} max={desc.max} /> : null
 }

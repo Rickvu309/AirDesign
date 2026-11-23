@@ -1,27 +1,30 @@
 import { formatCopy } from "@/copy/format-copy"
-import { type Desc, type TraitName } from "@airdesign/document"
+import type { Desc } from "./control-desc"
 import type { Color, NodeId } from "@airdesign/doom"
 import type { TypedUnit } from "./typed-number"
 import type { CSSProperties, ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
-import { loneRows, panelPlaces, sectionInMode, type PanelKind, type PanelMode } from "./panel-order"
+import { panelPlaces, sectionInMode, type PanelKind, type PanelMode } from "./panel-order"
 import { arrange, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
 export type SectionName =
-  | TraitName
-  | "opacity"
   | "alignment"
-  | "shadow"
-  | "pictureFill"
+  | "box"
+  | "text"
   | "textFill"
-  | "boxFill"
-  | "corners"
-  | "paragraphSpacing"
-  | "fillDetails"
+  | "fills"
+  | "pictureFill"
   | "image"
-  | "crop"
+  | "opacity"
+  | "corners"
+  | "border"
+  | "shadow"
+  | "link"
+  | "geometry"
+  | "templateStyle"
+  | "fillDetails"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -46,7 +49,6 @@ export type PanelControl = {
   readonly typed?: TypedUnit
   readonly parent?: unknown
   readonly slides?: readonly string[]
-  readonly nodes?: readonly NodeChoice[]
   readonly faceFallback?: () => string | null
 }
 
@@ -68,12 +70,6 @@ export type PanelPaint =
   | { readonly solid: Color }
   | { readonly gradient: PanelGradient }
   | { readonly image: string | true | null }
-
-export type NodeChoice = {
-  readonly node: NodeId
-  readonly name: string
-  readonly sites: readonly string[]
-}
 
 export type ControlProps = {
   readonly control: PanelControl
@@ -111,15 +107,6 @@ export type PanelModel = {
   readonly frame?: "auto" | "free"
   readonly selectionKinds?: readonly (PanelKind | null)[]
   readonly sections: readonly PanelSection[]
-}
-
-const imageFields: readonly string[] = ["mode", "tileScale", "source", "weight", "color", "recolor", "overlay", "blur"]
-
-export function shownPlace(trait: TraitName, field: string): { readonly trait: SectionName; readonly field: string } {
-  if (trait === "geometry" && field === "corners") return { trait: "corners", field }
-  if (trait !== "fills") return { trait, field }
-  if (field === "crop") return { trait: "crop", field: "rect" }
-  return imageFields.includes(field) ? { trait: "image", field } : { trait, field }
 }
 
 function present<T>(items: readonly (T | undefined)[]): readonly T[] | null {
@@ -181,7 +168,6 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode
     const [lead] = found ?? []
     if (found === null || lead === undefined) return []
     const controls = lead.strips.flat().flatMap((control): PanelControl[] => {
-      if (loneRows.includes(`${control.trait}.${control.field}`)) return []
       const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === control.field)))
       return each === null ? [] : [manyControl(each, control)]
     })

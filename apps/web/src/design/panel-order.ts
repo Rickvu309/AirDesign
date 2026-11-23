@@ -24,15 +24,8 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("link"),
     slides("textFill"),
     slides("opacity"),
-    design("boxFill"),
-    design("paragraphSpacing"),
-    design("layout", true),
-    design("box"),
     design("border"),
-    design("effects"),
-    design("body"),
     design("geometry"),
-    design("identity"),
     design("image"),
     design("selectionColors", true),
   ],
@@ -45,14 +38,8 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("shadow"),
     slides("selectionColors"),
     slides("geometry"),
-    design("effects"),
-    design("layout", true),
-    design("box"),
     design("text"),
-    design("paragraphSpacing"),
     design("link"),
-    design("body"),
-    design("identity"),
     design("image"),
   ],
   picture: [
@@ -64,34 +51,18 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("shadow"),
     design("fills", true),
     design("image"),
-    design("crop"),
-    design("layout", true),
-    design("box"),
-    design("effects"),
     design("geometry"),
-    design("identity"),
     design("selectionColors", true),
   ],
   connector: [
     slides("alignment"),
     slides("border"),
     slides("shadow"),
-    design("connection"),
     design("opacity"),
-    design("box"),
-    design("effects"),
     design("geometry"),
-    design("identity"),
     design("selectionColors", true),
   ],
-  group: [
-    slides("alignment"),
-    slides("selectionColors"),
-    design("layout", true),
-    design("box"),
-    design("effects"),
-    design("identity"),
-  ],
+  group: [slides("alignment"), slides("selectionColors")],
   frame: [
     slides("alignment"),
     slides("fills"),
@@ -100,27 +71,19 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("border"),
     slides("shadow"),
     slides("selectionColors"),
-    design("layout", true),
-    design("box"),
-    design("effects"),
-    design("identity"),
   ],
-  kept: [design("identity", true), design("selectionColors", true)],
+  kept: [design("selectionColors", true)],
   many: [
     slides("alignment"),
     slides("text"),
     slides("textFill"),
     slides("fills"),
     slides("opacity"),
-    design("boxFill"),
     slides("link"),
     slides("corners"),
     slides("border"),
     slides("shadow"),
     slides("selectionColors"),
-    design("paragraphSpacing"),
-    design("box"),
-    design("effects"),
   ],
   slide: [slides("templateStyle"), slides("background"), slides("selectionColors"), design("layoutGuides", true)],
 }
@@ -137,24 +100,5 @@ export function panelPlaces(
 
 export function sectionInMode(section: PanelSection, mode: PanelMode): PanelSection {
   const { designStrips, ...shown } = section
-  if (mode === "design") return designStrips === undefined ? shown : { ...shown, strips: designStrips }
-  if (section.trait !== "fills") return shown
-  return {
-    ...shown,
-    strips: section.strips.map((strip) =>
-      strip.map((control) => {
-        if (control.desc.kind !== "union") return control
-        const { pattern: _pattern, ...cases } = control.desc.cases
-        return { ...control, desc: { ...control.desc, cases } }
-      }),
-    ),
-  }
+  return mode === "design" && designStrips !== undefined ? { ...shown, strips: designStrips } : shown
 }
-
-export const loneRows: readonly string[] = [
-  "identity.name",
-  "identity.alt",
-  "crop.rect",
-  "connection.start",
-  "connection.end",
-]

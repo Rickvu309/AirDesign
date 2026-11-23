@@ -1,14 +1,14 @@
-import { opacityWire } from "@airdesign/catalog"
 import { designCopy } from "@/copy/design-copy"
 import { geometryCopy } from "@/copy/geometry-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import type { PanelControl, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
 import { cornerSteps } from "@/design/corners-control"
-import { opacitySteps } from "@/design/opacity-control"
+import { opacityDesc, opacitySteps } from "@/design/opacity-control"
 import { arrange } from "@/design/panel-arrangement"
 import { Opacity } from "@/design/preset-icons"
-import { choiceDesc, doomControl } from "./design-controls"
+import { choiceDesc } from "@/design/control-desc"
+import { doomControl } from "./design-controls"
 import { shadowNames, shownShadow } from "./design-paint-values"
 import { cornerEmu, wholeFraction } from "./design-values"
 import type { ModelInput } from "./design-model"
@@ -16,7 +16,7 @@ import { propOf } from "@/editing/node-props"
 
 export function opacitySection(input: ModelInput, kind: PanelKind): PanelSection[] {
   const held = propOf(input.view.nodes.get(input.id), "opacity") ?? 1
-  const control = doomControl({ trait: "opacity", field: "opacity" }, opacityCopy.label, opacityWire.desc, {
+  const control = doomControl({ trait: "opacity", field: "opacity" }, opacityCopy.label, opacityDesc, {
     value: Math.round(held * wholeFraction),
   })
   const listed = kind !== "connector"
@@ -57,12 +57,9 @@ export function shadowSection(input: ModelInput): PanelSection[] {
     shown.opacity === null
       ? []
       : [
-          doomControl(
-            { trait: "shadow", field: "opacity" },
-            opacityCopy.label,
-            { kind: "number", unit: "fraction", min: 0, max: wholeFraction },
-            { value: Math.round(shown.opacity * wholeFraction) },
-          ),
+          doomControl({ trait: "shadow", field: "opacity" }, opacityCopy.label, opacityDesc, {
+            value: Math.round(shown.opacity * wholeFraction),
+          }),
         ]
   return [{ trait: "shadow", label: designCopy.shadow, open: true, strips: arrange("shadow", [preset, ...opacity]) }]
 }

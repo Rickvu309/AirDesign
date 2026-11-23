@@ -1,19 +1,29 @@
 import * as doom from "@airdesign/doom"
 import { fontFamily, plainStyles, boldWeight, regularWeight, styleName } from "@airdesign/fonts"
 import { fillCopy } from "@/copy/fill-copy"
+import { formatCopy } from "@/copy/format-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { PanelControl, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
 import { arrange, resolveControl } from "@/design/panel-arrangement"
 import { spacingUnits } from "@/design/spacing-units"
-import { choiceDesc, oldControl, doomControl } from "./design-controls"
+import { choiceDesc, type Desc } from "@/design/control-desc"
+import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
 import { lineOld, shownText, sizeOld } from "./design-text-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@/editing/node-props"
 
 const casings = ["none", "upper", "lower", "title"]
-const fillDesc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } } as const
+const lists = ["none", "bullets", "numbers"]
+const fillDesc: Desc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } }
+const styleDesc: Desc = { kind: "words", max: 200 }
+const sizeDesc: Desc = { kind: "number", unit: "hundredth-point", min: 100, max: 400_000 }
+const spacingDesc: Desc = { kind: "number", unit: "hundredth-point", min: -400_000, max: 400_000 }
+const lineDesc: Desc = { kind: "number", unit: "fraction", min: 10_000, max: 1_000_000 }
+
+const textControl = (field: string, label: string, desc: Desc, held: Held, extra: Partial<PanelControl> = {}) =>
+  doomControl({ trait: "text", field }, label, desc, held, extra)
 
 function typography(control: PanelControl, theme: doom.Theme, current: doom.TextStyleName): PanelControl {
   const names = Object.keys(doomEditorCopy.textStyles) as doom.TextStyleName[]
@@ -57,32 +67,36 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const { theme } = input
   const shown = shownText(text, theme)
   const { look } = shown
-  const bold = oldControl("text", "bold", look.bold)
-  const italic = oldControl("text", "italic", look.italic)
-  const fill = doomControl({ trait: "text", field: "fill" }, textCopy.value, fillDesc, {
+  const bold = textControl("bold", formatCopy.named.bold, flagDesc, look.bold)
+  const italic = textControl("italic", formatCopy.named.italic, flagDesc, look.italic)
+  const fill = textControl("fill", textCopy.value, fillDesc, {
     value: { solid: look.color.value },
     mixed: look.color.mixed,
   })
   const size = sizeOld(look.size.value)
   const controls: PanelControl[] = [
-    typography(oldControl("text", "style", { value: shown.style }), theme, shown.style),
-    oldControl("text", "font", look.font),
+    typography(textControl("style", textCopy.style, styleDesc, { value: shown.style }), theme, shown.style),
+    textControl("font", textCopy.font, fontDesc, look.font),
     weight(bold, italic),
-    oldControl("text", "size", { value: size, mixed: look.size.mixed }),
-    oldControl(
-      "text",
+    textControl("size", formatCopy.sizeGroup, sizeDesc, { value: size, mixed: look.size.mixed }),
+    textControl(
       "letterSpacing",
+      textCopy.letterSpacing,
+      spacingDesc,
       { value: Math.round(look.tracking.value * 100), mixed: look.tracking.mixed },
       spacingUnits("text", "letterSpacing", size),
     ),
-    oldControl("text", "lineHeight", { value: lineOld(shown.lineHeight.value), mixed: shown.lineHeight.mixed }),
+    textControl("lineHeight", textCopy.lineHeight, lineDesc, {
+      value: lineOld(shown.lineHeight.value),
+      mixed: shown.lineHeight.mixed,
+    }),
     bold,
     italic,
-    oldControl("text", "underline", look.underline),
-    oldControl("text", "strike", look.strike),
-    oldControl("text", "align", shown.align),
-    oldControl("text", "list", shown.list),
-    oldControl("text", "case", look.case, { desc: choiceDesc(casings) }),
+    textControl("underline", formatCopy.named.underline, flagDesc, look.underline),
+    textControl("strike", formatCopy.named.strike, flagDesc, look.strike),
+    textControl("align", formatCopy.alignGroup, choiceDesc(doom.paragraphAligns), shown.align),
+    textControl("list", textCopy.list, choiceDesc(lists), shown.list),
+    textControl("case", textCopy.case, choiceDesc(casings), look.case),
     fill,
   ]
   const named = kind === "text" ? controls.filter((control) => control !== fill) : controls

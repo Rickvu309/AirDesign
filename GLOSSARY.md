@@ -238,7 +238,7 @@ One value of a trait, written `trait.field`, such as `box.x`, `border.width` or 
 _Avoid_: property, attribute, setting
 
 **control**:
-One field in the design panel: its name, the selection's value, whether mixed or inherited, and the edit a change makes.
+One field in the design panel: its name, the selection's value, what that value can be (its `Desc`: kind, unit, range and choices), whether mixed or inherited, and the edit a change makes. The design panel owns the `Desc`; the Doom editor builds each control from the Doom property it edits.
 _Avoid_: row (a row is a stored edit), input, widget
 
 **strip**:

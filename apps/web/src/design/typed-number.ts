@@ -1,4 +1,5 @@
 import { textCopy } from "@/copy/text-copy"
+import type { Desc, NumberUnit } from "./control-desc"
 
 export type TypedUnit = { readonly auto?: number; readonly points?: number; readonly fixed?: boolean }
 
@@ -30,4 +31,29 @@ export function typedFixed(text: string, unit: TypedUnit, fixedNow: boolean): nu
 export function fixedLine(value: unknown): FixedLine | null {
   if (typeof value !== "object" || value === null || !("points" in value)) return null
   return typeof value.points === "number" ? { points: value.points } : null
+}
+
+const perUnit: { readonly [Unit in NumberUnit]: number } = {
+  emu: 12_700,
+  angle: 60_000,
+  fraction: 1_000,
+  "hundredth-point": 100,
+  count: 1,
+}
+
+const widestSlide = 51_206_400
+
+export function shownInUnit(unit: NumberUnit, stored: number): number {
+  return Math.round((stored / perUnit[unit]) * 10) / 10
+}
+
+export function storedOf(desc: Desc, typed: number): number | null {
+  if (desc.kind !== "number") return null
+  const factor = perUnit[desc.unit]
+  const low = desc.unit === "emu" ? Math.max(desc.min, -widestSlide) : desc.min
+  const high = desc.unit === "emu" ? Math.min(desc.max, widestSlide) : desc.max
+  if (!Number.isFinite(typed) || typed < low / factor || typed > high / factor) return null
+  if (desc.unit === "count" && !Number.isInteger(typed)) return null
+  const stored = Math.round(typed * factor)
+  return Object.is(stored, -0) ? 0 : stored
 }

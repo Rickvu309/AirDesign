@@ -175,7 +175,7 @@ export function unionValue(control: ControlProps["control"], name: string): unkn
   if (desc === undefined) return undefined
   if (desc.kind === "mark") return { [name]: true }
   const color = firstColor(heldOf(control)) ?? { var: "accent1" }
-  return { [name]: seedOf(desc, color, 0, 1, control.nodes?.[0]?.node) }
+  return { [name]: seedOf(desc, color) }
 }
 
 export function FillDetails({ control, onChange }: ControlProps) {

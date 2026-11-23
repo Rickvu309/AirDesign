@@ -1,14 +1,9 @@
 export const picturePanelCopy = {
   mode: "Fill mode",
-  tileScale: "Tile scale",
   section: "Image",
   source: "Icon",
   weight: "Weight",
   color: "Color",
-  recolor: "Recolor",
-  overlay: "Overlay",
-  blur: "Blur",
-  crop: "Crop",
 } as const
 
 export const pictureWords = {

@@ -1,5 +1,3 @@
-import { opacityWire } from "@airdesign/catalog"
-import { traits } from "@airdesign/document"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
@@ -7,6 +5,7 @@ import { designCopy } from "@/copy/design-copy"
 import { borderCopy } from "@/copy/border-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { textCopy } from "@/copy/text-copy"
+import { opacityDesc } from "@/design/opacity-control"
 import { resolveControl } from "@/design/panel-arrangement"
 import type { PanelControl } from "@/design/panel"
 import { NumberField } from "./number"
@@ -65,7 +64,7 @@ it("shows a border width without a point suffix while keeping its stored value",
     trait: "border",
     field: "width",
     label: borderCopy.width,
-    desc: traits.border.fields.width.desc,
+    desc: { kind: "number", unit: "emu", min: 0, max: 20_116_800 },
     value,
     mixed: false,
     inherited: false,
@@ -91,7 +90,7 @@ it("leads the opacity value with its glyph and keeps its percentage", () => {
     trait: "opacity",
     field: "opacity",
     label: opacityCopy.section,
-    desc: opacityWire.desc,
+    desc: opacityDesc,
     value: 100000,
     mixed: false,
     inherited: false,
@@ -117,7 +116,7 @@ function lineHeight(value: number): PanelControl {
       trait: "text",
       field: "lineHeight",
       label: textCopy.lineHeight,
-      desc: traits.text.inputs.lineHeight.desc,
+      desc: { kind: "number", unit: "fraction", min: 10_000, max: 1_000_000 },
       value,
       mixed: false,
       inherited: false,
