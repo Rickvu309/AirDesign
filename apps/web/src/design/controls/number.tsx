@@ -9,7 +9,7 @@ import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { lineHeightPointsFloor, spaceCeiling } from "@airdesign/document"
-import { fixedLine, shownInUnit, storedOf, typedFixed, typedNumber } from "@/design/typed-number"
+import { clampedOf, fixedLine, shownInUnit, typedFixed, typedNumber } from "@/design/typed-number"
 import { roundedShown, steppedFrom, untouched, type Shown } from "@/design/shown-number"
 import { composing } from "@/lib/composing"
 
@@ -27,12 +27,7 @@ export function numberShown(control: ControlProps["control"], scale?: number): S
 }
 
 export function storedFromTyped(control: ControlProps["control"], value: number): number | null {
-  const { desc, numberScale = 1 } = control
-  if (desc.kind !== "number") return null
-  const points = value * numberScale
-  const floor = shownInUnit(desc.unit, desc.min)
-  const ceiling = shownInUnit(desc.unit, desc.max)
-  return storedOf(desc, Math.min(ceiling, Math.max(floor, points)))
+  return clampedOf(control.desc, value * (control.numberScale ?? 1))
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -90,10 +85,9 @@ export function NumberField({
   const scrub = useRef<Scrub | null>(null)
 
   function readNumber(value: number) {
-    if (control.numberScale !== undefined) return storedFromTyped(control, value)
-    return scale === undefined || control.desc.kind !== "number"
-      ? storedOf(control.desc, value)
-      : storedOf({ ...control.desc, unit: "count" }, Math.round(value * scale))
+    return scale === undefined || control.numberScale !== undefined || control.desc.kind !== "number"
+      ? storedFromTyped(control, value)
+      : clampedOf({ ...control.desc, unit: "count" }, Math.round(value * scale))
   }
 
   function commitFixed(points: number) {

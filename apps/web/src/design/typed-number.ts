@@ -57,3 +57,12 @@ export function storedOf(desc: Desc, typed: number): number | null {
   const stored = Math.round(typed * factor)
   return Object.is(stored, -0) ? 0 : stored
 }
+
+export function clampedOf(desc: Desc, typed: number): number | null {
+  if (desc.kind !== "number" || !Number.isFinite(typed)) return null
+  const factor = perUnit[desc.unit]
+  const low = desc.unit === "emu" ? Math.max(desc.min, -widestSlide) : desc.min
+  const high = desc.unit === "emu" ? Math.min(desc.max, widestSlide) : desc.max
+  const inRange = Math.min(high / factor, Math.max(low / factor, typed))
+  return storedOf(desc, desc.unit === "count" ? Math.round(inRange) : inRange)
+}
