@@ -9,7 +9,7 @@ import {
   corpusInputs,
   corpusPartition,
 } from "./pptx-corpus.mjs"
-import { readSpecSeconds } from "./spec-seconds.mjs"
+import { readSpecSeconds, specFolder, unrecordedSeconds } from "./spec-seconds.mjs"
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url))
 const same = (name, actual, expected) => assert.deepEqual(actual, expected, name)
@@ -100,8 +100,18 @@ assert.ok(
 )
 assert.deepEqual(corpusCases({ argv: ["--corpus"], entries, seconds: exported }), entries)
 assert.deepEqual(corpusCases({ argv: [], entries, seconds: exported }), entries)
-const { loads } = corpusCaseShares({ entries, seconds: exported })
-assert.ok(Math.abs(loads[0] - loads[1]) <= Math.max(...Object.values(exported)), "the export specs split evenly")
+for (const seconds of [exported, {}]) {
+  const weigh = unrecordedSeconds(seconds)
+  const heaviest = Math.max(
+    0,
+    ...entries.flatMap((entry) => entry.specs ?? []).map((spec) => weigh(spec.slice(`${specFolder}/`.length))),
+  )
+  const { loads } = corpusCaseShares({ entries, seconds })
+  assert.ok(
+    Math.abs(loads[0] - loads[1]) <= heaviest,
+    `the export specs split evenly with ${Object.keys(seconds).length} recorded`,
+  )
+}
 const unknown = { file: "unknown.mjs", specs: ["tests/browser/unknown.spec.ts"], exports: ["exported-unknown.pptx"] }
 const withUnknown = [1, 2].map((shard) =>
   corpusCases({ argv: ["--corpus", `--shard=${shard}/2`], entries: [...entries, unknown], seconds: exported }),
