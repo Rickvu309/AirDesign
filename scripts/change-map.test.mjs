@@ -356,7 +356,7 @@ const listedIn = (paths) => {
 }
 same(
   "the command prints one line per part, the unit test folders as JSON, and the check jobs whose part runs",
-  said(["--paths", listedIn(["tests/browser/home.spec.ts"])]),
+  said(["--paths", listedIn(["tests/browser/doom-presenting.spec.ts"])]),
   {
     source: "true",
     scripts: "false",
@@ -368,14 +368,17 @@ same(
     "model-check": "false",
     "journey-names": "",
     "unit-tests": "[]",
-    check: JSON.stringify([{ part: "source" }, { part: "browser", browserSpecs: ["tests/browser/home.spec.ts"] }]),
+    check: JSON.stringify([
+      { part: "source" },
+      { part: "browser", browserSpecs: ["tests/browser/doom-presenting.spec.ts"] },
+    ]),
   },
 )
-const connectorJourney = ".agents/skills/verify-airdesign/journeys/connector-follow.mjs"
+const accountJourney = ".agents/skills/verify-airdesign/journeys/account-name.mjs"
 same(
-  "the workflow gets the connector journey, while design still runs",
-  [said(["--paths", listedIn([connectorJourney])])["journey-names"], real([connectorJourney]).parts.design],
-  ['["connector-follow"]', true],
+  "the workflow gets the account journey, while design still runs",
+  [said(["--paths", listedIn([accountJourney])])["journey-names"], real([accountJourney]).parts.design],
+  ['["account-name"]', true],
 )
 same(
   "an account journey change selects that journey",

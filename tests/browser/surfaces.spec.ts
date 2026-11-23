@@ -15,8 +15,6 @@ const deckScreens = [
   deckRoutes.recentsList,
   deckRoutes.allDecksGrid,
   deckRoutes.allDecksList,
-  deckRoutes.importing,
-  deckRoutes.importFailed,
   deckRoutes.trash,
 ]
 

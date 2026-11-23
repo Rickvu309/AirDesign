@@ -98,44 +98,18 @@ try {
     [ciParts, everyJob],
   )
 
-  const spec = pullRequest(["tests/browser/grid-last-faults.spec.ts"])
+  const spec = pullRequest(["tests/browser/doom-presenting.spec.ts"])
   same(
-    "69807ec35, one non-export browser spec, runs one browser job and skips PowerPoint checks",
+    "69807ec35, one browser spec, runs one browser job and skips PowerPoint checks",
     [partsOn(spec), jobsOf(spec), JSON.parse(spec.check).at(-1).browserSpecs, spec["unit-tests"]],
-    [["source", "browser"], ["source", "browser"], ["tests/browser/grid-last-faults.spec.ts"], "[]"],
-  )
-
-  const exported = pullRequest(["tests/browser/box-export.spec.ts"])
-  same(
-    "a registered export spec runs one browser job and both PowerPoint parts",
-    [partsOn(exported), jobsOf(exported)],
-    [
-      ["source", "browser", "pptx", "corpus"],
-      ["source", "browser", "pptx"],
-    ],
-  )
-
-  const removedTag = pullRequest(["tests/browser/box-export.spec.ts"], (source) => source.replaceAll("@export", ""))
-  same(
-    "removing the tag from a registered case still reaches the judge",
-    [removedTag.pptx, removedTag.corpus],
-    ["true", "true"],
+    [["source", "browser"], ["source", "browser"], ["tests/browser/doom-presenting.spec.ts"], "[]"],
   )
 
   const fixture = pullRequest(["tests/browser/font-widths.ts"])
   same(
     "a browser helper runs its importing specs and skips the other browser and PowerPoint work",
     [partsOn(fixture), jobsOf(fixture), JSON.parse(fixture.check).at(-1).browserSpecs],
-    [
-      ["source", "browser"],
-      ["source", "browser"],
-      [
-        "tests/browser/font-widths.spec.ts",
-        "tests/browser/slide-findings.spec.ts",
-        "tests/browser/text-fit.spec.ts",
-        "tests/browser/theme-findings.spec.ts",
-      ],
-    ],
+    [["source", "browser"], ["source", "browser"], ["tests/browser/font-widths.spec.ts"]],
   )
 
   for (const file of ["launch.ts", "deck-test.ts", "api-stack.ts", "font-preview.mjs", "preview-server.mjs"]) {

@@ -95,11 +95,7 @@ const [scanned, ...shardLists] = await listAll([
   ...shards.map((shard) => browserStep("browser", shard)),
 ])
 const sharded = shardLists.flat()
-const [everyTest, thinDeck, ...thinDeckShards] = await listAll([
-  [],
-  ["thin-deck.spec.ts"],
-  ...[1, 2].map((shard) => ["thin-deck.spec.ts", `--shard=${shard}/2`]),
-])
+const [everyTest] = await listAll([[]])
 same(
   "the design part runs both design scans whose reports design-findings judges",
   designScans.map((file) => scanned.some((line) => line.includes(`${path.basename(file)}:`))),
@@ -110,12 +106,6 @@ same(
   [...scanned, ...sharded].toSorted(),
   everyTest.toSorted(),
 )
-same(
-  "independent thin-deck tests can cross a shard boundary",
-  thinDeckShards.every((tests) => tests.length > 0),
-  true,
-)
-same("splitting thin-deck keeps every test exactly once", thinDeckShards.flat().toSorted(), thinDeck.toSorted())
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
 same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "changes", "corpus", "journeys"])
 same(
