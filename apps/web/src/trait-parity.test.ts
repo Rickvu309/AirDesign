@@ -21,6 +21,7 @@ import {
   agentRegister,
   deckParts,
   indexed,
+  judgedCases,
   landed,
   painted,
   panelRegister,
@@ -31,7 +32,9 @@ import {
 } from "./parity-probe"
 import { probes } from "./trait-probes"
 
-type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit"
+const unjudgedOnDoom: readonly string[] = ["link.target"]
+
+type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
 
 type Problem = { readonly field: string; readonly missing: Layer } | { readonly word: string; readonly missing: "copy" }
 
@@ -137,6 +140,8 @@ async function fieldProblems(
     if (shape?.inherited === undefined || !shape.inherited(back, at) || shape.inherited(parts, at))
       problems.push({ field: key, missing: "inherit" })
   }
+  if (!unjudgedOnDoom.includes(key) && !judgedCases.some((each) => each.covers?.includes(key)))
+    problems.push({ field: key, missing: "pptx-case" })
   return problems
 }
 
@@ -233,4 +238,8 @@ describe("every live trait field reaches every layer", () => {
     }
     expect(optionWords(desc)).toEqual(["none", "preset", "dash", "dot"])
   })
+})
+
+it("exempts a field from its PowerPoint case only while no case judges it", () => {
+  expect(unjudgedOnDoom.filter((key) => judgedCases.some((each) => each.covers?.includes(key)))).toEqual([])
 })
