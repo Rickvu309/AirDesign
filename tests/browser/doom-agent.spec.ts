@@ -85,3 +85,48 @@ test("Stop ends Aira's turn before its edit lands and the deck stays as it was",
   expect(requests).not.toContain("/mcp")
   expect((await saved(stack, opened)).rev).toBe(base)
 })
+
+test("Stop while Aira's edit is on its way spends its call, so the edit arriving after Stop lands nothing", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const base = (await saved(stack, opened)).rev
+  const side = page.locator("[data-editor-panel]")
+  const canvas = page.locator("[data-slide-box]")
+  stack.aira({ name: "add-kpi.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } })
+  let sent: string | undefined
+  const inFlight = new Promise<void>((reached) => {
+    void page.route("**/mcp", (route) => {
+      const request = route.request()
+      sent = request.postData() ?? ""
+      reached()
+    })
+  })
+  const stopped = page.waitForResponse((response) => new URL(response.url()).pathname === "/aira/stop")
+  await ask(page, asked)
+  await inFlight
+  await side.getByRole("button", { name: "Stop" }).click()
+  expect(JSON.parse((await stopped).request().postData() ?? "{}")).toMatchObject({ call: { deck: opened.deck } })
+  await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
+  const spent = (await saved(stack, opened)).rev
+  expect(spent).toBe(base + 1)
+
+  if (sent === undefined) throw new Error("no edit call")
+  const late = await fetch(`${stack.origin}${stack.mcp}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      cookie: opened.cookie,
+    },
+    body: sent,
+  })
+  expect(late.status, await late.text()).toBe(200)
+  const after = await saved(stack, opened)
+  expect(after.rev).toBe(spent)
+  expect(after.runs.size).toBe(0)
+  await expect(canvas.getByText("$4.2M", { exact: true })).toHaveCount(0)
+  await expect(side.getByRole("button", { name: productCopy.undo, exact: true })).toHaveCount(0)
+})

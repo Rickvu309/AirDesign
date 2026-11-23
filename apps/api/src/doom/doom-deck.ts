@@ -1,9 +1,9 @@
-import type { DeckId, DoomRefusal } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type DoomRefusal } from "@airdesign/catalog"
 import { limits } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
-import { startEdit } from "./doom-start.js"
+import { startAuthor, startEdit } from "./doom-start.js"
 
 const headSql = "select id, owner, rev from deck.doom where id = $1"
 
@@ -315,14 +315,8 @@ select edit -> 'author' ->> 'run' as run from deck.doom_edit
 join deck.doom on deck.doom.id = deck.doom_edit.deck
 where deck.doom.owner = $1 and deck.doom_edit.deck = $2 and deck.doom_edit.once = $3`
 
-export async function doomOnceRun(
-  db: Sql,
-  email: string,
-  deck: string,
-  once: string,
-): Promise<{ readonly landed: false } | { readonly landed: true; readonly run?: string }> {
-  const found = await db.query<{ run: string | null }>(onceRunSql, [email, deck, once])
-  if (found.rows.length === 0) return { landed: false }
-  const run = found.rows[0]?.run
-  return run === null || run === undefined ? { landed: true } : { landed: true, run }
+export async function spendOnce(db: Sql, email: string, deck: string, once: string): Promise<string | undefined> {
+  const named = readDeckId(deck)
+  if (named.ok) await editDoom(db, { deck: named.deck, edit: { once, author: startAuthor, writes: [] } }, email)
+  return (await db.query<{ run: string | null }>(onceRunSql, [email, deck, once])).rows[0]?.run ?? undefined
 }

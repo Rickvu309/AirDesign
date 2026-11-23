@@ -3,7 +3,7 @@ import { once } from "node:events"
 import { request } from "node:http"
 import type { Socket } from "node:net"
 
-import { airaTools, countryHeader } from "@airdesign/catalog"
+import { airaTools, countryHeader, doomRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -391,8 +391,68 @@ describe("a stop that names the edit call it cut", () => {
       headers,
     )
     expect(answer.text).toContain('"runId"')
-    return { deck: created.deck, runId: /"runId":"([^"]+)"/.exec(answer.text)?.[1] }
+    return { deck: created.deck, runId: /"runId":"([^"]+)"/.exec(answer.text)?.[1], slide: created.slides[0] }
   }
+
+  async function editCall(account: Account, deckName: string, base: number, slide: string, once: string) {
+    return ask(
+      main,
+      "POST",
+      "/mcp",
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "airdesign_edit_deck",
+          arguments: { deck: deckName, base, changes: [{ op: "add", kind: "text", slide, text: "Late" }] },
+          _meta: { "app.airdesign/once": once },
+        },
+      },
+      account.cookie,
+      { accept: "application/json, text/event-stream" },
+    )
+  }
+
+  async function opened(account: Account, deckName: string) {
+    const answer = await ask(main, "POST", doomRoutes.open.path, { deck: deckName }, account.cookie)
+    return JSON.parse(answer.text) as { rev: number; fold: { runs: Record<string, unknown>; nodes: object } }
+  }
+
+  it("spends the once of a call that had not landed, so the call arriving after Stop lands nothing", async () => {
+    const account = await signIn()
+    const { deck: name, slide } = await landedEdit(account, "edit-1")
+    const before = await opened(account, name)
+    const stopped = await ask(
+      main,
+      "POST",
+      "/aira/stop",
+      { ask: "ask-late", call: { deck: name, once: "edit-2" } },
+      account.cookie,
+    )
+    expect(JSON.parse(stopped.text)).toEqual({ ok: true })
+    const spent = await opened(account, name)
+    await editCall(account, name, spent.rev, slide!, "edit-2")
+    const after = await opened(account, name)
+    expect(Object.keys(after.fold.runs)).toEqual(Object.keys(before.fold.runs))
+    expect(Object.keys(after.fold.nodes)).toEqual(Object.keys(before.fold.nodes))
+    expect(after.rev).toBe(spent.rev)
+  })
+
+  it("answers the run of a call that landed before its Stop, and spends nothing", async () => {
+    const account = await signIn()
+    const { deck: name, runId } = await landedEdit(account, "edit-1")
+    const before = await opened(account, name)
+    const stopped = await ask(
+      main,
+      "POST",
+      "/aira/stop",
+      { ask: "ask-landed", call: { deck: name, once: "edit-1" } },
+      account.cookie,
+    )
+    expect(JSON.parse(stopped.text)).toEqual({ ok: true, runId })
+    expect((await opened(account, name)).rev).toBe(before.rev)
+  })
 
   it("answers the run the call landed, so the browser can offer Undo for it", async () => {
     const account = await signIn()
