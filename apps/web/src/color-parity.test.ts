@@ -1,45 +1,89 @@
-import { readAgent, traitWire } from "@airdesign/catalog"
-import {
-  alphaOf,
-  fadedColor,
-  readColor,
-  slotted,
-  traitNames,
-  traits,
-  type Color,
-  type Desc,
-  type TraitName,
-} from "@airdesign/document"
-import { exportParts, themeSwatches } from "@airdesign/pptx"
-import { beforeAll, describe, expect, it } from "vitest"
-import { templateColorColumns, typedColor, type Swatch } from "./design/color-choices"
+import * as doom from "@airdesign/doom"
+import type { Color, Desc } from "@airdesign/document"
+import { describe, expect, it } from "vitest"
+import type { PanelControl } from "./design/panel"
+import { templateColorColumns, typedColor } from "./design/color-choices"
 import { namedByColor } from "./design/color-names"
-import { deckParts, indexed, painted, panelRegister, placed, type At, type Parts } from "@/testing/parity-probe"
-import { probes } from "@/testing/trait-probes"
+import { changeWrites } from "./doom-editor/design-changes"
+import { nodeModel } from "./doom-editor/design-model"
+import { swatchesOf } from "./doom-editor/design-palette"
+import { doomColorOf } from "./doom-editor/design-values"
+import { grow, landed, spot } from "@/testing/doom-fixtures"
 
 const hash = "#"
+const theme = doom.defaultTheme
 
-type Loose = {
-  readonly deck: string
-  readonly kind: Parameters<typeof placed>[1]
-  readonly node?: string
-  readonly fields: Readonly<
-    Record<
-      string,
-      | {
-          file: (parts: Parts, at: At) => unknown
-          shows: (value: unknown) => unknown
-          prepare?: (parts: Parts, at: At) => Parts
-          on?: { readonly deck: string; readonly kind: Parameters<typeof placed>[1]; readonly node: string }
-        }
-      | undefined
-    >
-  >
+const built = grow([
+  {
+    type: "shape",
+    name: "words",
+    props: {
+      box: spot(100, 100, 300, 60),
+      text: { chars: "Hello", spans: [], paras: [{}], style: "body", resize: "widthAndHeight", alignV: "top" },
+    },
+  },
+  {
+    type: "shape",
+    name: "card",
+    props: {
+      box: spot(100, 300, 200, 100),
+      geometry: { kind: "rect" },
+      fills: [{ kind: "solid", color: { var: "background2" } }],
+      strokes: [{ kind: "solid", color: { var: "text2" } }],
+      stroke: { weight: 2, align: "inside", dash: "solid" },
+    },
+  },
+  {
+    type: "shape",
+    name: "rule",
+    props: {
+      box: spot(0, 0, 100, 0),
+      geometry: {
+        kind: "line",
+        start: { x: 0, y: 0 },
+        end: { x: 100, y: 0 },
+        route: "straight",
+        arrows: ["none", "none"],
+      },
+      strokes: [{ kind: "solid", color: { var: "text2" } }],
+      stroke: { weight: 4, align: "center", dash: "solid" },
+    },
+  },
+  {
+    type: "shape",
+    name: "star",
+    props: {
+      box: spot(0, 0, 120, 120),
+      geometry: { kind: "icon", name: "lucide/star" },
+      strokes: [{ kind: "solid", color: { var: "text2" } }],
+      stroke: { weight: 10, align: "center", dash: "solid" },
+    },
+  },
+  {
+    type: "frame",
+    name: "panel",
+    props: { box: spot(0, 500, 400, 200), fills: [{ kind: "solid", color: { var: "background2" } }] },
+    children: [],
+  },
+])
+const { view, geometry } = built
+const size = doom.deckOf(view).size
+const id = (name: string) => built.ids[name]!
+
+type Field = "fill" | "stroke" | "color"
+const sends: Readonly<Record<string, readonly Field[]>> = {
+  words: ["color"],
+  card: ["fill", "stroke"],
+  rule: ["stroke"],
+  star: ["stroke"],
+  panel: ["fill"],
 }
-
-type Wire = { readonly fields?: Readonly<Record<string, { readonly example: unknown } | undefined>> }
-
-type Landed = { readonly field: string; readonly color: string; readonly landed: boolean }
+const propOfField: Readonly<Record<Field, "fills" | "strokes" | "text">> = {
+  fill: "fills",
+  stroke: "strokes",
+  color: "text",
+}
+const agentColors: readonly doom.AgentColor[] = [...(Object.keys(theme.colors) as doom.ColorVar[]), `${hash}1f4e79`]
 
 function colored(desc: Desc): boolean {
   switch (desc.kind) {
@@ -57,86 +101,92 @@ function colored(desc: Desc): boolean {
   }
 }
 
-function recolored(value: unknown, color: Color): unknown {
-  if (Array.isArray(value)) return value.map((each) => recolored(each, color))
-  if (typeof value !== "object" || value === null) return value
-  const held = readColor(value)
-  if (held !== null && held !== undefined) return fadedColor(color, alphaOf(held))
-  return Object.fromEntries(Object.entries(value).map(([key, each]) => [key, recolored(each, color)]))
+function colorControls(name: string): readonly PanelControl[] {
+  return nodeModel({ view, id: id(name), theme, slides: [] })
+    .sections.flatMap((section) => section.strips.flat())
+    .filter((control) => colored(control.desc))
 }
 
-function personColors(templateColors: readonly Swatch[]): Readonly<Record<string, Color | null>> {
-  const columns = templateColorColumns(templateColors)
-  const accent = columns.find((column) => "scheme" in column.swatch.color && column.swatch.color.scheme === "accent1")
-  const tinted = columns
-    .flatMap((column) => column.shades)
-    .find((shade) => shade.color.transforms?.some((each) => each.op === "lumOff") === true)
-  return {
-    "template color": accent?.swatch.color ?? null,
-    "template tint": tinted?.color ?? null,
-    hex: typedColor(`${hash}1F4E79`),
-  }
+const sent = (control: PanelControl, color: Color) => (control.desc.kind === "color" ? color : { solid: color })
+
+function personColors(): readonly Color[] {
+  const columns = templateColorColumns(namedByColor(swatchesOf(theme)))
+  const tint = columns.flatMap((column) => column.shades).find((shade) => shade.color.transforms?.length === 2)
+  return [...columns.map((column) => column.swatch.color), tint!.color, typedColor(`${hash}1F4E79`)!]
 }
 
-function colorFields(trait: TraitName): readonly (readonly [string, Desc, boolean])[] {
-  const loose = (shown: object) => Object.entries(shown as Readonly<Record<string, { readonly desc: Desc }>>)
-  return [
-    ...loose(traits[trait].fields)
-      .filter(([field]) => !slotted(trait, field))
-      .map(([field, kind]) => [field, kind.desc, false] as const),
-    ...loose(traits[trait].inputs).map(
-      ([field, kind]) => [field, kind.desc, traits[trait].slots.length === 0] as const,
-    ),
-  ].filter(([, desc]) => colored(desc))
+function colorsIn(value: unknown): readonly string[] {
+  if (Array.isArray(value)) return value.flatMap(colorsIn)
+  if (typeof value !== "object" || value === null) return []
+  const own = "color" in value ? [JSON.stringify(value.color)] : []
+  return [...own, ...Object.values(value).flatMap(colorsIn)]
 }
 
-async function landings(): Promise<readonly Landed[]> {
-  const found: Landed[] = []
-  for (const trait of traitNames) {
-    const probe = probes[trait] as unknown as Loose
-    const wire = traitWire[trait] as Wire
-    for (const [field, desc, input] of colorFields(trait)) {
-      const sent = (wire.fields?.[field]?.example as Readonly<Record<string, Readonly<Record<string, unknown>>>>)?.[
-        trait
-      ]?.[field]
-      const read = readAgent(desc, sent)
-      const on = probe.fields[field]?.on ?? probe
-      const source = await deckParts(on.deck)
-      const at = placed(source, on.kind, on.node)
-      const parts = probe.fields[field]?.prepare?.(source, at) ?? source
-      const templateColors = namedByColor(themeSwatches(parts, at.part))
-      for (const [name, color] of Object.entries(personColors(templateColors))) {
-        const value = read.ok && color !== null ? recolored(read.value, color) : undefined
-        const register = value === undefined ? null : panelRegister(indexed(parts), at, trait, field, value, parts)
-        const exported = register === null ? null : exportParts(parts, register)
-        const shape = probe.fields[field]
-        const shown =
-          exported !== null &&
-          (input || shape === undefined
-            ? painted(exported, at) !== painted(parts, at)
-            : JSON.stringify(shape.file(exported, at)) === JSON.stringify(shape.shows(value)))
-        found.push({ field: `${trait}.${field}`, color: name, landed: shown })
-      }
-    }
-  }
-  return found
+const doomColor = (color: doom.AgentColor): doom.Color =>
+  color.startsWith(hash) ? (color.toLowerCase() as doom.Hex) : { var: color as doom.ColorVar }
+
+function shows(after: doom.Doom, name: string, prop: string, color: doom.Color): boolean {
+  const value = (after.nodes.get(id(name)) as unknown as Record<string, unknown>)[prop]
+  return colorsIn(value).includes(JSON.stringify(color))
 }
 
-let found: readonly Landed[] = []
-
-beforeAll(async () => {
-  found = await landings()
-}, 120_000)
+function personLands(name: string, control: PanelControl, color: Color): doom.Doom | null {
+  const context = { view, ids: [id(name)], geometry, size, slides: [] }
+  const writes = changeWrites(context, control, sent(control, color))
+  return writes.length === 0 ? null : landed(view, writes)
+}
 
 describe("a person reaches every colour an agent can send", () => {
-  it("lands a template color, a template tint and a hex colour from the picker in every colour field", () => {
-    expect(found.length).toBeGreaterThanOrEqual(15)
-    expect(found.filter((each) => !each.landed)).toEqual([])
+  it("offers a template colour, a tint and a typed hex in every colour control of Doom's panel, and each lands", () => {
+    const missed: string[] = []
+    for (const name of Object.keys(sends))
+      for (const control of colorControls(name))
+        for (const color of personColors()) {
+          const after = personLands(name, control, color)
+          const wanted = doomColorOf(color)
+          const landedIt =
+            after !== null &&
+            wanted !== undefined &&
+            ["fills", "strokes", "text"].some((prop) => shows(after, name, prop, wanted))
+          if (!landedIt) missed.push(`${name} ${control.trait}.${control.field} ${JSON.stringify(color)}`)
+        }
+    expect(missed).toEqual([])
+  })
+
+  it("lands every colour an agent sends to a layer from Doom's panel too, on the same property", () => {
+    const missed: string[] = []
+    let next = 0
+    const mint = () => doom.nodeId(`m:${String((next += 1))}`)
+    for (const [name, fields] of Object.entries(sends))
+      for (const field of fields)
+        for (const color of agentColors) {
+          const writes = doom.compileAgentChange(view, { op: "set", target: id(name), [field]: color }, mint)
+          const prop = propOfField[field]
+          const wanted = doomColor(color)
+          if (doom.isRefusal(writes) || !shows(landed(view, writes), name, prop, wanted)) {
+            missed.push(`agent ${name} ${field} ${color}`)
+            continue
+          }
+          const reached = colorControls(name).some((control) =>
+            personColors().some((choice) => {
+              const doomChoice = doomColorOf(choice)
+              if (JSON.stringify(doomChoice) !== JSON.stringify(wanted) && !color.startsWith(hash)) return false
+              const typed = color.startsWith(hash) ? typedColor(color)! : choice
+              const after = personLands(name, control, typed)
+              return after !== null && shows(after, name, prop, wanted)
+            }),
+          )
+          if (!reached) missed.push(`${name} ${field} ${color}`)
+        }
+    expect(missed).toEqual([])
   })
 
   it("offers a tint written as the slot with lumMod and lumOff, so it follows a template color change", () => {
     const templateColors = namedByColor([{ scheme: "accent1" as const, css: "4472C4" }])
-    expect(personColors(templateColors)["template tint"]).toEqual({
+    const tint = templateColorColumns(templateColors)
+      .flatMap((column) => column.shades)
+      .find((shade) => shade.color.transforms?.some((each) => each.op === "lumOff") === true)
+    expect(tint?.color).toEqual({
       scheme: "accent1",
       transforms: [
         { op: "lumMod", val: 20_000 },
