@@ -170,6 +170,34 @@ describe("invert", () => {
     expect(valuesOf(undone)[ids.deck]).toEqual(valuesOf(original)[ids.deck])
   })
 
+  it("leaves out a layer someone deleted since, and puts back the rest of the edit", () => {
+    const { before, after, edit } = step(sampleDeck(), [
+      { node: ids.card, prop: "opacity", value: 0.5 },
+      { node: ids.side, prop: "opacity", value: 0.5 },
+    ])
+    const later = step(after, [{ node: ids.side, prop: "parent", value: null }])
+    const writes = invert(before, later.after, edit)
+    expect(writes).toEqual([{ node: ids.card, prop: "opacity", value: null, base: edit.rev }])
+    expect(tryLand(later.after, writes)).not.toHaveProperty("refused")
+  })
+
+  it("leaves a layer where it is when the layer it came from was deleted since", () => {
+    const { before, after, edit } = step(sampleDeck(), [{ node: ids.title, prop: "parent", value: place(ids.side) }])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(before, later.after, edit)).toEqual([])
+  })
+
+  it("keeps the writes to a layer the undo itself puts back", () => {
+    const { before, after, edit } = step(sampleDeck(), [
+      { node: ids.caption, prop: "opacity", value: 0.5 },
+      { node: ids.caption, prop: "parent", value: null },
+    ])
+    const writes = invert(before, after, edit)
+    expect(writes.map((write) => write.prop)).toEqual(["parent", "opacity"])
+    const undone = tryLand(after, writes) as Doom
+    expect(undone.nodes.get(ids.caption)).toMatchObject({ parent: { id: ids.side } })
+  })
+
   it("treats a rev the caller owns as the edit's own, and bases the write on the rev it found", () => {
     const first = step(sampleDeck(), [{ node: ids.card, prop: "opacity", value: 0.5 }])
     const second = step(first.after, [{ node: ids.card, prop: "opacity", value: 0.2 }])

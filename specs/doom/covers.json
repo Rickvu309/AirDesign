@@ -5,13 +5,13 @@
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit"],
       "digest": "4ecf149e8f59",
-      "blob": "15d1837183642ecb50a9c9d1bb1c5cb6ea668eeb"
+      "blob": "0b83a7df7dec83ca233c8b0369d3158b3f664214"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "e230e54ff127",
-      "blob": "98297f778a866d6ac095cf665730a73bb6f9595e"
+      "digest": "a7ce7fdb9d5c",
+      "blob": "ef5a1f105f3bae63aae81a4e504ef3f9ea5b055f"
     },
     {
       "file": "packages/doom/src/view-of.ts",
@@ -22,8 +22,8 @@
     {
       "file": "packages/doom/src/read-write.ts",
       "names": ["readWrite", "readEdit"],
-      "digest": "fbe09b8dd9cd",
-      "blob": "d81c84b057c4a9491931d85c8f302eed346d6f9c"
+      "digest": "1f1968f66679",
+      "blob": "0109d49bae3741c354ecd8ef5f7a252255fb4406"
     }
   ]
 }
