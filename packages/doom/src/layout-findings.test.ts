@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { block, label, measure, plainTheme, spot } from "./doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
-import { layoutFindings, touchedSlides } from "./layout-findings.js"
+import { layoutFindings, touchedSlides, unmeasuredTexts } from "./layout-findings.js"
 
 const filled = { fills: [{ kind: "solid", color: { var: "accent1" } }] }
 const fixed = { resize: "fixed" } as const
@@ -125,5 +125,28 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
     expect(touchedSlides(grown.doom, grown.doom, [{ node: deck, prop: "theme.fonts.body" }])).toEqual(grown.slides)
     expect(touchedSlides(grown.doom, grown.doom, [{ node: deck, prop: "name" }])).toEqual([])
     expect(touchedSlides(grown.doom, grown.doom, [{ node: deck, prop: "theme.colors.accent1" }])).toEqual([])
+  })
+
+  it("leaves out only the words its fonts have no letters for, and still judges their box", () => {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        {
+          children: [
+            label("emoji", "aaaa bbbb cccc dddd 🚀", { box: spot(100, 100, 200, 30) }, { resize: "fixed" }),
+            block("chart", 300, 200, { box: spot(100, 110, 300, 200), ...filled }),
+            label("edge", "x 🚀", { box: spot(1850, 900, 200, 30) }, { spans: [{ end: 4, size: 14 }] }),
+            label("plain", "aaaa bbbb cccc dddd", { box: spot(600, 100, 200, 30) }, { resize: "fixed" }),
+          ],
+        },
+      ],
+    })
+    const findings = layoutFindings(grown.doom, grown.slides, measure, new Set(["🚀"]))
+    expect(findings.map((found) => [found.code, found.node])).toEqual([
+      ["small-text", grown.ids.edge],
+      ["overflow", grown.ids.plain],
+      ["off-slide", grown.ids.edge],
+    ])
+    expect(unmeasuredTexts(grown.doom, grown.slides, new Set(["🚀"]))).toEqual([grown.ids.emoji, grown.ids.edge])
   })
 })

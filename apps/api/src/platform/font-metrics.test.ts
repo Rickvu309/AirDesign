@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
-import { FontMetrics, measureWithin } from "./font-metrics.js"
+import { FontMetrics } from "./font-metrics.js"
 import { FontSource } from "./font-source.js"
 
 const family = "Liberation Sans Narrow"
@@ -58,8 +58,8 @@ it("reads a served face's advances and pair kerning as Chromium's canvas measure
     texts: [line, "AV"],
   })
   if (typeof widths === "string") throw new Error(widths)
-  const regular = widths[doom.fontFace(family, false, false)]!
-  const bold = widths[doom.fontFace(family, true, false)]!
+  const regular = widths.widths[doom.fontFace(family, false, false)]!
+  const bold = widths.widths[doom.fontFace(family, true, false)]!
   expect(widthOf(regular, line)).toBeCloseTo(canvas.regular, 4)
   expect(widthOf(bold, line)).toBeCloseTo(canvas.bold, 4)
   expect(regular.kerning?.AV).toBeCloseTo(canvas.kernAV, 4)
@@ -68,9 +68,9 @@ it("reads a served face's advances and pair kerning as Chromium's canvas measure
 
 it("measures a deck's words with its theme fonts, so a fixed box too short for them is found", async () => {
   const grown = deckIn({ heading: family, body: family })
-  const measure = await new FontMetrics(new FontSource(undefined)).measure(grown.doom)
-  if (typeof measure === "string") throw new Error(measure)
-  expect(doom.layoutFindings(grown.doom, grown.slides, measure)).toMatchObject([
+  const measured = await new FontMetrics(new FontSource(undefined)).measure(grown.doom)
+  if (typeof measured === "string") throw new Error(measured)
+  expect(doom.layoutFindings(grown.doom, grown.slides, measured.measure)).toMatchObject([
     { code: "overflow", node: grown.ids.title, room: 100 },
   ])
 })
@@ -80,26 +80,63 @@ it("answers fonts when a deck's font cannot be served, and asks again only after
   let now = 0
   const metrics = new FontMetrics(source, () => now)
   const deck = deckIn({ heading: "Never", body: family }).doom
+  const asked = () => calls.filter((name) => name === "Never").length
   expect(await metrics.measure(deck)).toBe("fonts")
+  const first = asked()
   now = 30_000
   expect(await metrics.measure(deck)).toBe("fonts")
-  expect(calls.filter((name) => name === "Never")).toHaveLength(1)
+  expect(asked()).toBe(first)
   now = 61_000
   expect(await metrics.measure(deck)).toBe("fonts")
-  expect(calls.filter((name) => name === "Never")).toHaveLength(2)
+  expect(asked()).toBe(first * 2)
 })
 
-it("answers glyphs when the deck holds a character its font has no letter for, never a clear layout", async () => {
+it("names the characters a deck's font has no letters for, and only those", async () => {
   const metrics = new FontMetrics(new FontSource(undefined))
-  expect(await metrics.measure(deckIn({ heading: family, body: family }, "Doanh thu quý 3 tăng").doom)).not.toBe(
-    "glyphs",
-  )
-  expect(await metrics.measure(deckIn({ heading: family, body: family }, "収益 grew 12%").doom)).toBe("glyphs")
+  const read = async (words: string) => {
+    const measured = await metrics.measure(deckIn({ heading: family, body: family }, words).doom)
+    if (typeof measured === "string") throw new Error(measured)
+    return [...measured.missing]
+  }
+  expect(await read("Doanh thu quý 3 tăng")).toEqual([])
+  expect(await read("収益 grew 12%")).toEqual(["収", "益"])
 })
 
-it("answers time when the fonts take longer than the budget", async () => {
-  const { source } = anyNameIsLiberation()
-  expect(await measureWithin(new FontMetrics(source), deckIn({ heading: "Slow", body: "Slow" }).doom, 50)).toBe("time")
+it("answers time past the budget, and at once while that font still hangs", async () => {
+  const { calls, source } = anyNameIsLiberation()
+  let now = 0
+  const metrics = new FontMetrics(source, () => now)
+  const deck = deckIn({ heading: "Slow", body: "Slow" }).doom
+  expect(await metrics.measure(deck, 50)).toBe("time")
+  now = 120_000
+  expect(await metrics.measure(deck, 60_000)).toBe("time")
+  expect(calls.filter((name) => name === "Slow")).toHaveLength(2)
+})
+
+it("asks for every face of a deck at once, not one after another", async () => {
+  const asked: string[] = []
+  const local = new FontSource(undefined)
+  let open: () => void = () => undefined
+  const gate = new Promise<void>((resolve) => (open = resolve))
+  const metrics = new FontMetrics({
+    family: async (name) => {
+      asked.push(name)
+      await gate
+      return local.family(family)
+    },
+    file: (_name, file) => local.file(family, file),
+  })
+  const pending = metrics.widths({
+    faces: [
+      { font: "One", bold: false, italic: false },
+      { font: "Two", bold: false, italic: false },
+    ],
+    texts: ["a"],
+  })
+  await Promise.resolve()
+  expect(asked).toEqual(["One", "Two"])
+  open()
+  expect(typeof (await pending)).toBe("object")
 })
 
 it("keeps at most twenty faces, loading the oldest again when it comes back", async () => {

@@ -10,7 +10,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import { admitCaller } from "../account/caller-log.js"
 import type { DeckPictures } from "../doom/deck-pictures.js"
-import { measureWithin, servedFontMetrics } from "../platform/font-metrics.js"
+import { servedFontMetrics } from "../platform/font-metrics.js"
 import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
@@ -169,7 +169,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): D
       return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
-    measure: (fold) => measureWithin(servedFontMetrics(images.originals), fold, measureBudget),
+    measure: (fold) => servedFontMetrics(images.originals).measure(fold, measureBudget),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),

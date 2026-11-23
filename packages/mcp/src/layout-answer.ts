@@ -4,7 +4,11 @@ import type { DeckHost, Unmeasured } from "./deck-host.js"
 
 export type Finding = doom.AgentFinding | doom.LayoutFinding
 export type Layout = "measured" | "untouched" | "fault" | Unmeasured
-export type Findings = { readonly findings: readonly Finding[]; readonly layout: Layout }
+export type Findings = {
+  readonly findings: readonly Finding[]
+  readonly layout: Layout
+  readonly unread?: readonly doom.NodeId[]
+}
 export type Laid = Findings & { readonly boxes?: ReadonlyMap<doom.NodeId, doom.Box> }
 
 const shownFindings = 10
@@ -15,9 +19,10 @@ const words = {
   read: "Each finding names what is off on the slides read, and the fix: fix it unless the person asked for it.",
   clear: "Layout clear: no overflow, overlap, off-slide or small text.",
   more: (count: number, where: string) => `${String(count)} more findings are not listed: ${where}.`,
+  unread: (nodes: readonly doom.NodeId[]) =>
+    `${String(nodes.length)} ${nodes.length === 1 ? "text" : "texts"} could not be measured, since the deck's fonts have no letters for some of their characters, so their overflow and overlap are unknown: ${nodes.slice(0, shownFindings).join(", ")}.`,
   unchecked: {
     fonts: "the deck's fonts could not be read",
-    glyphs: "its fonts have no letters for some of its characters, so those words would paint in another font",
     time: "the fonts took too long to load; read the deck again in a moment",
     fault: "it could not be worked out",
   },
@@ -29,6 +34,8 @@ const unchecked = (layout: Exclude<Layout, "measured" | "untouched">) =>
 function layoutWords(findings: Findings): readonly string[] {
   if (findings.layout === "untouched") return []
   if (findings.layout !== "measured") return [unchecked(findings.layout)]
+  const unread = findings.unread ?? []
+  if (unread.length > 0) return [words.unread(unread)]
   return findings.findings.some((found) => layoutCodes.has(found.code)) ? [] : [words.clear]
 }
 
@@ -52,13 +59,21 @@ export function listed(
     .map((found) => (layoutCodes.has(found.code) ? { code: found.code, node: found.node, note: found.note } : found))
 }
 
-export async function layoutOf(host: DeckHost, fold: doom.Doom, slides: readonly doom.NodeId[]): Promise<Laid> {
-  if (host.measure === undefined || slides.length === 0) return { findings: [], layout: "untouched" }
+export async function layoutOf(host: DeckHost, fold: doom.Doom, touched: () => readonly doom.NodeId[]): Promise<Laid> {
+  if (host.measure === undefined) return { findings: [], layout: "untouched" }
   try {
+    const slides = touched()
+    if (slides.length === 0) return { findings: [], layout: "untouched" }
     const measured = await host.measure(fold)
     if (typeof measured === "string") return { findings: [], layout: measured }
-    const boxes = new Map(slides.flatMap((slide) => [...doom.solveLayout(fold, slide, measured)]))
-    return { findings: doom.layoutFindings(fold, slides, measured), layout: "measured", boxes }
+    const { measure, missing } = measured
+    const boxes = new Map(slides.flatMap((slide) => [...doom.solveLayout(fold, slide, measure)]))
+    return {
+      findings: doom.layoutFindings(fold, slides, measure, missing),
+      layout: "measured",
+      boxes,
+      unread: doom.unmeasuredTexts(fold, slides, missing),
+    }
   } catch {
     return { findings: [], layout: "fault" }
   }

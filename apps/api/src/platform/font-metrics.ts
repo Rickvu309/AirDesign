@@ -79,13 +79,33 @@ function shaperOf(bytes: Uint8Array, face: ServedFace, weight: number): Shaper {
   }
 }
 
-export type Unmeasured = "fonts" | "glyphs" | "time"
+export type Unmeasured = "fonts" | "time"
+export type Measured = { readonly measure: doom.Measure; readonly missing: ReadonlySet<string> }
+type Widths = { readonly widths: doom.FontWidths; readonly missing: ReadonlySet<string> }
+
+function within<T>(work: Promise<T>, budget: number): Promise<T | "time"> {
+  if (budget === Number.POSITIVE_INFINITY) return work
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve("time"), budget)
+    work.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
 
 export class FontMetrics {
   private readonly fonts: Pick<FontSource, "family" | "file">
   private readonly now: () => number
   private readonly shapers = new Map<string, Promise<Shaper | undefined>>()
   private readonly failed = new Map<string, number>()
+  private readonly loading = new Map<string, number>()
 
   constructor(fonts: Pick<FontSource, "family" | "file">, now: () => number = Date.now) {
     this.fonts = fonts
@@ -108,8 +128,10 @@ export class FontMetrics {
     if (failedAt !== undefined && this.now() - failedAt < failedFor) return Promise.resolve(undefined)
     let pending = this.shapers.get(key)
     if (pending === undefined) {
+      this.loading.set(key, this.now())
       pending = this.load(face).catch(() => undefined)
       void pending.then((shaper) => {
+        this.loading.delete(key)
         if (shaper !== undefined) return
         this.shapers.delete(key)
         this.failed.set(key, this.now())
@@ -121,7 +143,14 @@ export class FontMetrics {
     return pending
   }
 
-  async widths(needs: doom.FaceNeeds, used: ReadonlySet<string> = new Set()): Promise<doom.FontWidths | Unmeasured> {
+  private hung(needs: doom.FaceNeeds, budget: number): boolean {
+    return needs.faces.some((face) => {
+      const since = this.loading.get(doom.fontFace(face.font, face.bold, face.italic))
+      return since !== undefined && this.now() - since >= budget
+    })
+  }
+
+  async widths(needs: doom.FaceNeeds, used: ReadonlySet<string> = new Set()): Promise<Widths | "fonts"> {
     const chars = new Set<string>()
     const pairs = new Set<string>()
     for (const text of needs.texts) {
@@ -131,15 +160,17 @@ export class FontMetrics {
         if (at > 0) pairs.add(letters[at - 1]! + char)
       }
     }
+    const shapers = await Promise.all(needs.faces.map((face) => this.shaper(face)))
     const widths: Record<string, doom.FontFace> = {}
-    for (const face of needs.faces) {
-      const shaper = await this.shaper(face)
+    const missing = new Set<string>()
+    for (const [at, face] of needs.faces.entries()) {
+      const shaper = shapers[at]
       if (shaper === undefined) return "fonts"
       if (shaper.advances.size + shaper.kerning.size > heldLimit) {
         shaper.advances.clear()
         shaper.kerning.clear()
       }
-      if (![...used].every((char) => shaper.advances.has(char) || holds(shaper, char))) return "glyphs"
+      for (const char of used) if (!shaper.advances.has(char) && !holds(shaper, char)) missing.add(char)
       const advance = (char: string) => {
         let known = shaper.advances.get(char)
         if (known === undefined) shaper.advances.set(char, (known = advanceOf(shaper, char)))
@@ -162,39 +193,20 @@ export class FontMetrics {
         ),
       }
     }
-    return widths
+    return { widths, missing }
   }
 
-  async measure(fold: doom.Doom): Promise<doom.Measure | Unmeasured> {
+  async measure(fold: doom.Doom, budget = Number.POSITIVE_INFINITY): Promise<Measured | Unmeasured> {
     const needs = doom.doomFaces(fold)
+    if (this.hung(needs, budget)) return "time"
     const used = new Set(
       [...fold.nodes.values()].flatMap((node) =>
         node.type === "shape" && node.text !== undefined ? [...node.text.chars] : [],
       ),
     )
-    const widths = await this.widths(needs, used)
-    return typeof widths === "string" ? widths : doom.measureWith(widths)
+    const read = await within(this.widths(needs, used), budget)
+    return typeof read === "string" ? read : { measure: doom.measureWith(read.widths), missing: read.missing }
   }
-}
-
-export function measureWithin(
-  metrics: FontMetrics,
-  fold: doom.Doom,
-  budget: number,
-): Promise<doom.Measure | Unmeasured> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => resolve("time"), budget)
-    metrics.measure(fold).then(
-      (measured) => {
-        clearTimeout(timer)
-        resolve(measured)
-      },
-      (error: unknown) => {
-        clearTimeout(timer)
-        reject(error)
-      },
-    )
-  })
 }
 
 const held = new WeakMap<FontSource, FontMetrics>()

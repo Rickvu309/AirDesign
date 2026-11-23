@@ -76,7 +76,7 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
     )
     const theme = { ...doom.defaultTheme, fonts: { heading: family, body: family } }
     const canvas = doom.measureWith(painted)
-    const server = doom.measureWith(served)
+    const server = doom.measureWith(served.widths)
     for (const chars of words)
       for (const style of styles)
         for (const width of boxWidths) {
@@ -95,5 +95,6 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
     theme: missing,
     slides: [{ children: [{ type: "shape", props: { text: doom.textFromMarkdown(vietnamese, "body") } }] }],
   })
-  expect(await metrics.measure(deck.doom)).toBe("glyphs")
+  const unread = await metrics.measure(deck.doom)
+  expect(typeof unread === "string" ? unread : [...unread.missing].sort()).toEqual([..."ệợậữởứ"].sort())
 })

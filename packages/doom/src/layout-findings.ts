@@ -1,6 +1,6 @@
 import { deckOf } from "./deck-of.js"
 import type { Doom, Write } from "./doom.js"
-import { get, slideOf, slidesOf } from "./doom-walk.js"
+import { descendantsOf, get, slideOf, slidesOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Measure } from "./measure.js"
 import { textArea } from "./preset-geometry.js"
@@ -36,6 +36,7 @@ type Slide = {
   readonly measure: Measure
   readonly size: { readonly w: number; readonly h: number }
   readonly found: LayoutFinding[]
+  readonly missing: ReadonlySet<string>
 }
 
 const right = (rect: Rect) => rect.x + rect.w
@@ -86,7 +87,9 @@ function place(slide: Slide, node: Resolved, x: number, y: number): Placed {
   const kids = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y))
   judgeKids(slide, kids)
   const own =
-    !upright || node.text === null ? [] : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
+    !upright || node.text === null || unread(slide, node.id)
+      ? []
+      : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
   const inks = [...own, ...kids.flatMap((kid) => kid.inks)]
   const line = node.geometry?.kind === "line"
   const content = line
@@ -99,11 +102,19 @@ function place(slide: Slide, node: Resolved, x: number, y: number): Placed {
   return { node, inks, content, bounds }
 }
 
+function holdsMissing(doom: Doom, id: NodeId, missing: ReadonlySet<string>): boolean {
+  const node = doom.nodes.get(id)
+  const text = node === undefined ? undefined : get(node, "text")
+  return missing.size > 0 && text !== undefined && [...text.chars].some((char) => missing.has(char))
+}
+
+const unread = (slide: Slide, id: string) => holdsMissing(slide.doom, id as NodeId, slide.missing)
+
 function judgeOwn(slide: Slide, node: Resolved, box: Rect): void {
   const stored = slide.doom.nodes.get(node.id as NodeId)
   const text = stored === undefined ? undefined : get(stored, "text")
   if (stored === undefined || text === undefined || node.text === null) return
-  if (text.resize === "fixed") {
+  if (text.resize === "fixed" && !unread(slide, stored.id)) {
     const area = textArea(get(stored, "geometry"), box.w, box.h)
     const need = Math.ceil(slide.measure(text, slide.theme, area.w).h)
     const room = Math.round(area.h)
@@ -187,17 +198,33 @@ function judgeEdges(slide: Slide, top: Placed): void {
   })
 }
 
-export function layoutFindings(doom: Doom, slides: readonly NodeId[], measure: Measure): readonly LayoutFinding[] {
+export function layoutFindings(
+  doom: Doom,
+  slides: readonly NodeId[],
+  measure: Measure,
+  missing: ReadonlySet<string> = new Set(),
+): readonly LayoutFinding[] {
   const { theme, size } = deckOf(doom)
   const found: LayoutFinding[] = []
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
-    const slide: Slide = { doom, theme, measure, size, found }
+    const slide: Slide = { doom, theme, measure, size, found, missing }
     const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0))
     judgeKids(slide, tops)
     for (const top of tops) judgeEdges(slide, top)
   }
   return found
+}
+
+export function unmeasuredTexts(
+  doom: Doom,
+  slides: readonly NodeId[],
+  missing: ReadonlySet<string>,
+): readonly NodeId[] {
+  if (missing.size === 0) return []
+  return slides.flatMap((slide) =>
+    descendantsOf(doom, slide).flatMap((node) => (holdsMissing(doom, node.id, missing) ? [node.id] : [])),
+  )
 }
 
 const laysOut = (prop: string) =>

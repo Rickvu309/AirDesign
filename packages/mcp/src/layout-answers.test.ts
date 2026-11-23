@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type DeckHost, type Session } from "./index.js"
+import { layoutOf } from "./layout-answer.js"
 import { memoryDecks } from "./memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -29,8 +30,9 @@ const titled = () =>
   }).doom
 
 const estimate = doom.measureWith({})
+const measured = (missing: readonly string[] = []) => ({ measure: estimate, missing: new Set(missing) })
 
-function agent(measure: DeckHost["measure"] = async () => estimate) {
+function agent(measure: DeckHost["measure"] = async () => measured()) {
   const host = { ...memoryDecks(titled), measure }
   let minted = 0
   let calls = 0
@@ -120,18 +122,42 @@ describe("layout findings in the answers, measured by the host with the deck's f
     return String(landed.answer.note)
   }
 
-  it("lands the edit and says why the layout went unchecked: fonts, glyphs, time or a fault", async () => {
+  it("lands the edit and says why the layout went unchecked: fonts, time or a fault", async () => {
     expect(await unchecked(async () => "fonts")).toContain(
       "The layout went unchecked: the deck's fonts could not be read",
     )
-    expect(await unchecked(async () => "glyphs")).toContain("its fonts have no letters for")
     expect(await unchecked(async () => "time")).toContain("the fonts took too long to load")
-    expect(await unchecked(async () => estimate)).toContain("Layout clear")
+    expect(await unchecked(async () => measured())).toContain("Layout clear")
     expect(
-      await unchecked(async () => () => {
-        throw new Error("measure broke")
-      }),
+      await unchecked(async () => ({
+        measure: () => {
+          throw new Error("measure broke")
+        },
+        missing: new Set<string>(),
+      })),
     ).toContain("The layout went unchecked: it could not be worked out")
+  })
+
+  it("names only the texts whose letters the fonts lack, and still checks the rest of the slide", async () => {
+    const call = agent(async () => measured(["🚀"]))
+    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+      deck: string
+      rev: number
+      slides: string[]
+    }
+    const landed = await call("edit_deck", {
+      deck,
+      base: rev,
+      changes: [
+        { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 700, w: 600, h: 60 } },
+        { op: "add", kind: "shape", slide: slides[0], box: { x: 1850, y: 900, w: 200, h: 100 } },
+      ],
+    })
+    const answer = landed.answer as { note: string; added: { id: string }[]; findings: Found[] }
+    expect(answer.findings).toMatchObject([{ code: "off-slide", node: answer.added[1]!.id }])
+    expect(answer.note).toContain(`1 text could not be measured`)
+    expect(answer.note).toContain(answer.added[0]!.id)
+    expect(answer.note).not.toContain("Layout clear")
   })
 
   it("lists at most ten findings and says how many more the read holds", async () => {
@@ -152,5 +178,15 @@ describe("layout findings in the answers, measured by the host with the deck's f
     expect(answer.findings).toHaveLength(10)
     expect(answer.findings[0]).toEqual({ code: "off-slide", node: expect.any(String), note: expect.any(String) })
     expect(answer.note).toContain("2 more findings")
+  })
+})
+
+describe("the layout call never fails a landed edit", () => {
+  it("answers a fault when working out the touched slides throws", async () => {
+    const host = { ...memoryDecks(titled), measure: async () => measured() }
+    const laid = await layoutOf(host, titled(), () => {
+      throw new Error("touched broke")
+    })
+    expect(laid).toEqual({ findings: [], layout: "fault" })
   })
 })
