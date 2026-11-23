@@ -25,7 +25,6 @@ export const caseNames = ["none", "upper", "lower", "title", "small"] as const
 export type TextCase = (typeof caseNames)[number]
 import { sizeFloor, sizeCeiling } from "./text-size.js"
 export { sizeFloor, sizeCeiling } from "./text-size.js"
-export const sizeDefault = 1800
 export const typefaceBytes = 64
 export const letterSpacingFloor = -400_000
 export const letterSpacingCeiling = 400_000

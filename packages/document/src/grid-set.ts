@@ -1,16 +1,9 @@
 import type { SlideId } from "./element-id.js"
-import { gridCommandVersion, orderedSpots, type GridCopy, type GridGroup, type GridCommand } from "./grid-order.js"
+import { type GridGroup, type GridCommand } from "./grid-order.js"
 import { limits } from "@airdesign/doom"
 import { orderKeyBetween } from "@airdesign/doom"
 import { slideBirths } from "./slide-births.js"
-import {
-  foldSlides,
-  nextSlideId,
-  type FoldedSlide,
-  type LegacySlideCommand,
-  type SlideRefusal,
-  type SlideState,
-} from "./slide-order.js"
+import { type FoldedSlide, type LegacySlideCommand, type SlideRefusal, type SlideState } from "./slide-order.js"
 
 type SlideSet = Extract<GridCommand, { readonly slide: "remove-many" | "clone-many" }>
 
@@ -31,25 +24,6 @@ export function setRefusal(state: SlideState, command: SlideSet, present: Readon
   const sources = new Set(command.copies.map((copy) => copy.source))
   if (sources.size !== command.copies.length || [...sources].some((source) => !present.has(source))) return "dead"
   return present.size + ids.size > limits.slides ? "limit" : null
-}
-
-export function cloneMany(
-  state: SlideState,
-  ids: readonly SlideId[],
-  floor: (source: SlideId, id: SlideId) => GridCopy["floor"],
-): Extract<SlideSet, { slide: "clone-many" }> | null {
-  const spots = foldSlides(state)
-  const taken = spots.map((spot) => spot.id)
-  const sources = orderedSpots(spots).filter((spot) => ids.includes(spot.id))
-  if (sources.length !== ids.length) return null
-  const copies = sources.map(({ id: source }) => {
-    const id = nextSlideId(taken)
-    taken.push(id)
-    const opening = floor(source, id)
-    return { id, source, ...(opening === undefined ? {} : { floor: opening }) }
-  })
-  const [first, ...rest] = copies
-  return first === undefined ? null : { slide: "clone-many", grid: gridCommandVersion(state), copies: [first, ...rest] }
 }
 
 export function changeSet(

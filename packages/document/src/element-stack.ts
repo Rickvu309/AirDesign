@@ -1,6 +1,6 @@
 import type { DeckIndex } from "./deck-index.js"
 import { readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
-import { groupCommand, groupParent } from "./element-group.js"
+import { groupCommand } from "./element-group.js"
 import { elementGone, type ElementOrder } from "./element-order.js"
 import { limits } from "@airdesign/doom"
 import type { SlideState } from "./slide-order.js"
@@ -155,36 +155,6 @@ export function stackRefusal(state: Indexed, command: ElementOrder): "dead" | "s
   if (command.among.some((id) => elementGone(state, id) || !knownNode(state, id))) return "dead"
   if (take(fold(state), command.id, command.among) === "stale") return "stale"
   return sitsBefore(command.among, command.node) === command.before ? "dead" : null
-}
-
-function openingLayers(state: Indexed, slide: SlideId): ElementId[] | undefined {
-  if (state.index === undefined || !indexComplete(state)) return undefined
-  return state.index.elements
-    .filter((element) => !element.grouped && shapeOf(element.node).slide === slide)
-    .map((element) => element.node)
-}
-
-export function slideLayers(state: Indexed, slide: SlideId): readonly ElementId[] | undefined {
-  let ids = openingLayers(state, slide)
-  const held: Held[] = []
-  for (const command of state.order) {
-    if (!("id" in command) || command.id !== slide) continue
-    if (groupCommand(command)) ids = undefined
-    else if (command.slide === "element-order") {
-      if (groupParent(state, command.node) === null) ids = moved(command.among, command.node, command.before)
-    } else if (ids === undefined) continue
-    else if (command.slide === "element-add" && !command.element.grouped) ids = placed(ids, command.element.node, null)
-    else if (command.slide === "element-clone" && ids.includes(command.source)) {
-      ids = placed(ids, command.element.node, ids[ids.indexOf(command.source) + 1] ?? null)
-    } else if (command.slide === "element-remove" && ids.includes(command.node)) {
-      held.push({ node: command.node, before: ids[ids.indexOf(command.node) + 1] ?? null })
-      ids = ids.filter((id) => id !== command.node)
-    } else if (command.slide === "element-restore") {
-      const back = held.find((item) => item.node === command.node)
-      if (back !== undefined) ids = placed(ids, back.node, back.before)
-    }
-  }
-  return ids
 }
 
 export function elementStacks(state: Indexed): readonly ElementStack[] {

@@ -175,19 +175,3 @@ const known = new Set(iconNames)
 export function knownIcon(name: string): boolean {
   return known.has(name)
 }
-
-export function closeIcons(name: string, most = 12): readonly string[] {
-  const words = name
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((word) => word.length > 1)
-  const scored = iconNames.flatMap((icon) => {
-    const parts = icon.split("-").filter((part) => part.length > 1)
-    const score = words.filter((word) => parts.some((part) => part.startsWith(word) || word.startsWith(part))).length
-    return score === 0 ? [] : [{ icon, score }]
-  })
-  return scored
-    .sort((left, right) => right.score - left.score || left.icon.length - right.icon.length)
-    .slice(0, most)
-    .map((each) => each.icon)
-}

@@ -13,7 +13,7 @@ import {
 } from "@airdesign/document"
 import { orderKeyBetween } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { exportParts, orderedParts, paintReader, shownBackground, readParts, readSlides } from "./index.js"
+import { exportParts, orderedParts, paintReader, readParts, readSlides } from "./index.js"
 import { decodeUtf8 } from "./package-bytes.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -95,51 +95,6 @@ describe("a slide's fill is its background", () => {
     const own = /<p:bg>.*?<\/p:bg>/.exec(before)?.[0] ?? ""
     expect(text(next.get(first.part))).toBe(before.replace(own, ""))
     expect(changedParts(parts, next)).toEqual([first.part])
-  })
-
-  it("writes a gradient background and paints it", async () => {
-    const { parts, first, node } = await firstOf("blank.pptx")
-    const gradient: ElementPatch = {
-      fills: {
-        p0: {
-          set: {
-            gradient: {
-              stops: [
-                { pos: 0, color: { scheme: "accent1" } },
-                { pos: 100_000, color: { rgb: "0F2433" } },
-              ],
-              shade: { linear: { angle: 5_400_000, scaled: false } },
-              rotateWithShape: false,
-            },
-          },
-        },
-      },
-    }
-    const next = filled(parts, [[node, gradient]])
-    expect(text(next.get(first.part))).toContain(
-      '<p:cSld><p:bg><p:bgPr><a:gradFill rotWithShape="0"><a:gsLst><a:gs pos="0"><a:schemeClr val="accent1"/></a:gs><a:gs pos="100000"><a:srgbClr val="0F2433"/></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill><a:effectLst/></p:bgPr></p:bg><p:spTree>',
-    )
-    expect(shown(next, first.part)?.type).toBe("gradient")
-    expect(shownBackground(next, first.part)).toEqual({
-      value: typeof gradient.fills?.p0 === "object" && "set" in gradient.fills.p0 ? gradient.fills.p0.set : null,
-      own: true,
-    })
-  })
-
-  it("writes a native picture background and reads its existing fill control value", async () => {
-    const { parts, first, node } = await firstOf("blank.pptx")
-    const next = filled(parts, [[node, { fills: { p0: { set: { image: true } }, source: { set: "star" } } }]])
-    expect(text(next.get(first.part))).toContain("<p:bg><p:bgPr><a:blipFill")
-    expect(shown(next, first.part)?.type).toBe("picture")
-    expect(shownBackground(next, first.part)).toEqual({ value: { image: true }, own: true })
-    expect(changedParts(next, filled(next, []))).toEqual([])
-  })
-
-  it("reads an inherited fill without adding a slide override", async () => {
-    const { parts, first } = await firstOf("blank.pptx")
-    const before = text(parts.get(first.part))
-    expect(shownBackground(parts, first.part)?.own).toBe(false)
-    expect(text(filled(parts, []).get(first.part))).toBe(before)
   })
 
   it("gives a duplicate the background its floor carries, and a later colour stays on its own slide", async () => {

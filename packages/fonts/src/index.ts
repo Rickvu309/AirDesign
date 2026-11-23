@@ -13,4 +13,4 @@ export {
   type FontStyle,
   type ServedFace,
 } from "./named-face.js"
-export { listedStyles, plainStyles, steppedWeight } from "./weight-step.js"
+export { listedStyles, plainStyles } from "./weight-step.js"

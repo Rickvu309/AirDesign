@@ -18,13 +18,6 @@ export function writeSlot(key: string, value: unknown): Promise<void> {
   return putSlots([{ key, value }]).then(() => undefined)
 }
 
-export function installSlots(
-  absent: string,
-  puts: readonly { readonly key: string; readonly value: unknown }[],
-): Promise<void> {
-  return putSlots(puts, { key: absent, keep: (value) => value === undefined }).then(() => undefined)
-}
-
 export function replaceSlots(puts: readonly { readonly key: string; readonly value: unknown }[]): Promise<void> {
   return putSlots(puts).then(() => undefined)
 }

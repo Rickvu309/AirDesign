@@ -6,29 +6,7 @@ import { selectionColorsCopy } from "@/copy/selection-colors-copy"
 import { shownName, type Palette } from "@/design/color-choices"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
-import { selectionColors, type ColorSource } from "@/design/selection-colors"
 import { DesignSection } from "./design-panel"
-
-export function SelectionColorsSection({
-  sources,
-  palette,
-  onPick,
-  onSelect,
-}: {
-  sources: readonly ColorSource[]
-  palette: Palette
-  onPick: (hex: string, color: Color) => void
-  onSelect: (hex: string) => void
-}) {
-  return (
-    <SelectionColorRows
-      rows={selectionColors(sources, palette)}
-      palette={palette}
-      onPick={onPick}
-      onSelect={onSelect}
-    />
-  )
-}
 
 export function SelectionColorRows({
   rows,

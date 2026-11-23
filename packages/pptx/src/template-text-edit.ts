@@ -242,43 +242,6 @@ function heldAttribute(element: MarkupElement | undefined, name: string): string
   return element?.attributes.find((attribute) => attribute.name === name)?.value ?? null
 }
 
-const masterRoles = ["title", "body", "other"] as const
-
-export function masterTextStyles(
-  parts: Parts,
-  theme: string,
-): readonly {
-  readonly id: string
-  readonly role: (typeof masterRoles)[number]
-  readonly font: string
-  readonly size: number | null
-}[] {
-  const master = masterFor(parts, theme)
-  if (master === null) return []
-  const bytes = parts.get(master)
-  if (bytes === undefined) return []
-  const { elements, kids } = parsed(bytes)
-  const styles = elements.find((element) => element.kind === "p:txStyles")
-  if (styles === undefined) return []
-  return masterRoles.flatMap((role) => {
-    const style = child(kids, styles, `p:${role}Style`)
-    if (style === undefined) return []
-    const defaults = elements.find(
-      (element) => element.kind === "a:defRPr" && element.start > style.start && element.end < style.end,
-    )
-    const latin = defaults === undefined ? undefined : child(kids, defaults, "a:latin")
-    const amount = Number(heldAttribute(defaults, "sz"))
-    return [
-      {
-        id: `${master}/${role}Style/0`,
-        role,
-        font: heldAttribute(latin, "typeface") ?? (role === "title" ? "+mj-lt" : "+mn-lt"),
-        size: Number.isInteger(amount) && amount > 0 ? amount : null,
-      },
-    ]
-  })
-}
-
 export function readTemplateTextEdit(parts: Parts, theme: string, id: string): TemplateTextEdit | null {
   const master = masterId.exec(id)
   if (master !== null) {

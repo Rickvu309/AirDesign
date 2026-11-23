@@ -1,5 +1,5 @@
 import { readElement, type DeckIndex, type IndexElement } from "./deck-index.js"
-import { elementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { borderElement } from "./border-conversion.js"
 import { fillsElement } from "./fills-conversion.js"
 import { templateStyleElement } from "./template-style-conversion.js"
@@ -130,18 +130,6 @@ export function clonedLayer(state: Floored, node: ElementId): IndexElement | und
 
 export function floorNodes(state: Floored): readonly ElementId[] {
   return state.order.flatMap((command) => floorOf(command).map((element) => element.node))
-}
-
-function onSlide(node: ElementId, slide: SlideId): ElementId {
-  return elementId(`${slide}.${shapeOf(node).shape}`)
-}
-
-export function floorFor(elements: readonly IndexElement[], slide: SlideId): readonly IndexElement[] {
-  return elements.map((element) => ({
-    ...element,
-    node: onSlide(element.node, slide),
-    ...(element.group === undefined ? {} : { group: onSlide(element.group, slide) }),
-  }))
 }
 
 const carried: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text.value", "notes.value"]

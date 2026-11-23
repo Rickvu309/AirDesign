@@ -1,12 +1,5 @@
-import {
-  installedFaces,
-  SlideCanvas,
-  waitForFonts,
-  type CanvasElement,
-  type CanvasSlide,
-  type PaintStore,
-} from "@airdesign/render"
-import { createElement, type ReactElement } from "react"
+import { installedFaces, waitForFonts } from "@airdesign/render"
+import { type ReactElement } from "react"
 import { createRoot } from "react-dom/client"
 
 export type PaintedPicture = { readonly image: HTMLImageElement; readonly width: number; readonly height: number }
@@ -202,26 +195,4 @@ export async function paintedElement(
     root.unmount()
     host.remove()
   }
-}
-
-export async function paintedPicture(
-  store: PaintStore,
-  slide: CanvasSlide,
-  elements: readonly CanvasElement[],
-  scale: number,
-  background = false,
-): Promise<PaintedPicture> {
-  const width = Math.ceil(slide.width * scale)
-  const height = Math.ceil(slide.height * scale)
-  return paintedElement(
-    createElement(SlideCanvas, {
-      store,
-      slide: { ...slide, background: background ? slide.background : null, elements },
-      width,
-      quiet: true,
-    }),
-    width,
-    height,
-    background,
-  )
 }

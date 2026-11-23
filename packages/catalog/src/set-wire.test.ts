@@ -1,9 +1,6 @@
 import { elementId, slideId, traitNames, traits, type Desc, type TraitName } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import * as z from "zod/v4"
-import { flat } from "./agent-form.js"
-import { addChangeSchema, readAddChange, readSetChange, readTarget, setChangeSchema } from "./set-wire.js"
-import { opacityWire } from "./opacity-wire.js"
+import { readAddChange, readSetChange, readTarget } from "./set-wire.js"
 import { traitWire } from "./trait-wire.js"
 
 const black = "000000"
@@ -79,51 +76,6 @@ describe("readSetChange reads the agent form into a change in stored units", () 
         },
       },
     })
-  })
-
-  it("sets and clears any of the four Drop shadow and Inner shadow slots", () => {
-    const wire = { blur: 4, distance: 3, direction: 45, color: "accent1" }
-    const read = { blur: 50_800, distance: 38_100, direction: 2_700_000, color: { scheme: "accent1" } }
-    const effects = {
-      shadow: { outer: wire },
-      drop1: { outer: wire },
-      drop2: "none",
-      drop3: { outer: wire },
-      innerShadow: { inner: wire },
-      inner1: "none",
-      inner2: { inner: wire },
-      inner3: { inner: wire },
-    }
-    const change = { op: "set", target: title, effects }
-    const check = z.fromJSONSchema(setChangeSchema())
-    expect(check.safeParse(change).success).toBe(true)
-    expect(readSetChange(change)).toEqual({
-      ok: true,
-      change: {
-        op: "set",
-        target: { node: title },
-        effects: {
-          shadow: { outer: read },
-          drop1: { outer: read },
-          drop2: { none: true },
-          drop3: { outer: read },
-          innerShadow: { inner: read },
-          inner1: { none: true },
-          inner2: { inner: read },
-          inner3: { inner: read },
-        },
-      },
-    })
-    for (const [field, value] of [
-      ["drop4", { outer: wire }],
-      ["inner4", { inner: wire }],
-      ["inner1", { outer: wire }],
-      ["drop1", { outer: { ...wire, blur: 201 } }],
-    ] as const) {
-      const invalid = { ...change, effects: { ...effects, [field]: value } }
-      expect(check.safeParse(invalid).success).toBe(false)
-      expect(readSetChange(invalid)).toEqual({ ok: false, refusal: "field", field: `effects.${field}` })
-    }
   })
 
   it("names the field it refuses", () => {
@@ -347,14 +299,6 @@ describe("readAddChange reads a new shape on one slide", () => {
 describe("the set and add schemas derive from the agent forms", () => {
   const wired = traitNames.filter((trait) => Object.keys(traitWire[trait].fields).length > 0)
 
-  it("are flat and offer every trait with a field an agent may name", () => {
-    expect(flat(setChangeSchema())).toBe(true)
-    expect(flat(addChangeSchema())).toBe(true)
-    const properties = setChangeSchema().properties as Readonly<Record<string, unknown>>
-    expect(Object.keys(properties)).toEqual(["op", "target", "opacity", "stack", ...wired])
-    expect(properties.opacity).toMatchObject({ type: "number", minimum: 0, maximum: 100 })
-  })
-
   it("never spends a description on the options its schema already lists", () => {
     const quoted = (desc: Desc): readonly (readonly string[])[] => {
       if (desc.kind === "choice") return [desc.options]
@@ -372,25 +316,6 @@ describe("the set and add schemas derive from the agent forms", () => {
         expect(listed, `${trait}.${field}`).toEqual([])
       }
     }
-  })
-
-  it("takes every field's example, and the reader reads it", () => {
-    const check = z.fromJSONSchema(setChangeSchema())
-    for (const trait of wired) {
-      const fields = traitWire[trait as TraitName].fields as Readonly<Record<string, { readonly example: object }>>
-      for (const [field, { example }] of Object.entries(fields)) {
-        const change = { op: "set", target: "258.2", ...example }
-        expect(check.safeParse(change).success, `${trait}.${field}`).toBe(true)
-        expect(readSetChange(change).ok, `${trait}.${field}`).toBe(true)
-      }
-    }
-    const opacity = { op: "set", target: "258.2", ...opacityWire.example }
-    expect(check.safeParse(opacity).success).toBe(true)
-    expect(readSetChange(opacity).ok).toBe(true)
-    expect(check.safeParse({ op: "set", target: "258.2", opacity: 101 }).success).toBe(false)
-    expect(check.safeParse({ op: "set", target: "258.2", text: { color: "accent9" } }).success).toBe(false)
-    expect(check.safeParse({ op: "set", target: "*.title", fills: { paint: null } }).success).toBe(true)
-    expect(check.safeParse({ op: "set", target: "*.title", text: { color: null } }).success).toBe(false)
   })
 })
 

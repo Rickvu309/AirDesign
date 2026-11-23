@@ -1,6 +1,5 @@
-export { boxOf, ownBox, sameBox, type Moved } from "./box-gesture.js"
+export { boxOf, sameBox } from "./box-gesture.js"
 export {
-  around,
   guidesAt,
   lineAt,
   nearestLine,
@@ -12,9 +11,7 @@ export {
   type SnapTargets,
   type Watched,
 } from "./snapping.js"
-export type { Copied } from "./layer-copies.js"
-export type { Turned } from "./transform-drag.js"
-export type { FlippedLayer, ResizeGrip, RotateGrip, TransformGrip } from "./transform-math.js"
+export type { ResizeGrip, RotateGrip, TransformGrip } from "./transform-math.js"
 export {
   flipSelection,
   normalizeDegrees,
@@ -24,17 +21,13 @@ export {
   rotateCursor,
   rotatedAngle,
 } from "./transform-math.js"
-export { ElementView, OpenSlide, useElement } from "./element-view.js"
 export { Filmstrip } from "./filmstrip.js"
 export { NodeArt } from "./node-art.js"
 export { TextLines } from "./node-text.js"
 export { DoomSlide, SlidePaint, useDoomSlide } from "./doom-slide.js"
 export { startSettling, useSettled } from "./settling.js"
-export { textValue } from "./paragraph-edit.js"
-export { Passage } from "./passage.js"
 export { singleLineHeight } from "./text-look.js"
 export type { CanvasCrop, Framing, GroupOf, Measure } from "./element-paint.js"
-export type { Cropped } from "./crop-frame.js"
 export { placedFrame } from "./crop-drag.js"
 export type { CanvasLayer } from "./fill-layers.js"
 export {
@@ -51,14 +44,11 @@ export {
   type ElementRecord,
   type PaintBox,
 } from "./record.js"
-export { holdKeys } from "./held-keys.js"
 export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
-export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
-export type { TextPlace } from "./text-placing.js"
 export type { ShapeDrawing, ShapeDrawn, ShapeLook } from "./shape-drawing.js"
 
 export { paintStore, type PaintStore } from "./store.js"
-export { textFormatting, type TextFormatting } from "./text-formatting.js"
+export { type TextFormatting } from "./text-formatting.js"
 export {
   arrowOf,
   gestureFor,
@@ -70,6 +60,6 @@ export {
   type Keys,
   type Pointing,
 } from "./gestures.js"
-export { leadOf, noSelection, type Selection } from "./selection.js"
-export { bulletLabel } from "./bullet-label.js"
+export { noSelection, type Selection } from "./selection.js"
 export { fontsFor, installedFaces, waitForFonts } from "./font-load.js"
+export { unshownFill } from "./unshown-fill.js"

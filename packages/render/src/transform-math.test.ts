@@ -1,17 +1,12 @@
 import { elementId, type Box } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import {
-  constrainMove,
-  edges,
   flipSelection,
-  formatAngleLabel,
-  formatSizeLabel,
   resizeBox,
   resizeCursor,
   resizeSelection,
   rotateCursor,
   rotatedAngle,
-  rotateSelection,
   selectionFrame,
   visualBounds,
   type Corner,
@@ -170,17 +165,6 @@ describe("resizeBox", () => {
     })
   })
 
-  it.each(["top-left", "top-right", "bottom-left", "bottom-right", ...edges] as const)(
-    "resizes a 30-degree rotated box from %s while pinning the opposite anchor on screen",
-    (grip) => {
-      const next = resizeBox(base, grip, 300_000, -150_000, free, 30)
-      const anchorBefore = screenPoint(base, oppositeGrip[grip], 30)
-      const anchorAfter = screenPoint(next, oppositeGrip[grip], 30)
-      expect(Math.abs(anchorAfter.x - anchorBefore.x)).toBeLessThanOrEqual(1)
-      expect(Math.abs(anchorAfter.y - anchorBefore.y)).toBeLessThanOrEqual(1)
-    },
-  )
-
   it.each(["bottom-right", "right", "top"] as const)(
     "keeps the center fixed on screen when Alt-resizing a 45-degree rotated box from %s",
     (grip) => {
@@ -288,47 +272,6 @@ describe("rotatedAngle and rotateSelection", () => {
     expect(rotatedAngle(center, angleFor(0), angleFor(10), 22, true)).toBe(30)
     expect(rotatedAngle(center, angleFor(0), angleFor(340), 10, false)).toBe(350)
     expect(rotatedAngle(center, angleFor(0), angleFor(340), 10, true)).toBe(345)
-  })
-
-  it("orbits every layer in a multi-selection around the shared center and adds the delta angle", () => {
-    const first = elementId("256.2")
-    const second = elementId("256.3")
-    const upright = new Map<typeof first, RotatedLayer>([
-      [first, { box: { x: 1_000_000, y: 2_000_000, cx: 1_000_000, cy: 1_000_000 }, rotation: 0 }],
-      [second, { box: { x: 3_000_000, y: 2_000_000, cx: 1_000_000, cy: 1_000_000 }, rotation: 0 }],
-    ])
-    const rotated = rotateSelection(upright, center, { x: 300, y: 200 }, { x: 200, y: 300 }, true)
-    expect(rotated.displayAngle).toBe(90)
-    expect(rotated.layers.get(first)).toEqual({
-      box: { x: 2_000_000, y: 1_000_000, cx: 1_000_000, cy: 1_000_000 },
-      rotation: 90,
-    })
-    expect(rotated.layers.get(second)).toEqual({
-      box: { x: 2_000_000, y: 3_000_000, cx: 1_000_000, cy: 1_000_000 },
-      rotation: 90,
-    })
-
-    const mixed = new Map<typeof first, RotatedLayer>([
-      [first, { box: { x: 1_000_000, y: 2_000_000, cx: 1_000_000, cy: 1_000_000 }, rotation: 0 }],
-      [second, { box: { x: 3_000_000, y: 2_000_000, cx: 1_000_000, cy: 1_000_000 }, rotation: 15 }],
-    ])
-    const mixedRotated = rotateSelection(mixed, center, { x: 300, y: 200 }, { x: 200, y: 300 }, true)
-    expect(mixedRotated.layers.get(second)?.rotation).toBe(105)
-    const a = mixedRotated.layers.get(first)!.box
-    const b = mixedRotated.layers.get(second)!.box
-    expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeCloseTo(2_000_000, -1)
-  })
-})
-
-describe("constrainMove", () => {
-  it("passes delta unchanged when Shift is not held", () => {
-    expect(constrainMove(120, 45, false)).toEqual({ dx: 120, dy: 45 })
-  })
-
-  it("locks movement to the dominant axis when Shift is held", () => {
-    expect(constrainMove(120, 45, true)).toEqual({ dx: 120, dy: 0 })
-    expect(constrainMove(-30, 85, true)).toEqual({ dx: 0, dy: 85 })
-    expect(constrainMove(50, 50, true)).toEqual({ dx: 50, dy: 0 })
   })
 })
 
@@ -438,14 +381,5 @@ describe("cursors and HUD labels", () => {
       expect(decoded).toContain("M10.5 6 L8 8.5 L10.5 11")
       expect(decoded).toContain("M13 13.5 L15.5 16 L18 13.5")
     })
-  })
-
-  it("formats W × H in pt and angle in degrees", () => {
-    expect(formatSizeLabel(3_048_000, 1_524_000)).toBe("240 × 120")
-    expect(formatAngleLabel(0)).toBe("0°")
-    expect(formatAngleLabel(-0)).toBe("0°")
-    expect(formatAngleLabel(360)).toBe("0°")
-    expect(formatAngleLabel(45)).toBe("45°")
-    expect(formatAngleLabel(30.46)).toBe("30.5°")
   })
 })

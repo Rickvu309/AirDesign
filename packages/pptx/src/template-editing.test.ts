@@ -1,20 +1,9 @@
-import {
-  decide,
-  elementId,
-  format,
-  openRegister,
-  planChange,
-  registerScope,
-  type ElementPatch,
-  type Register,
-  type SetChange,
-} from "@airdesign/document"
+import { decide, elementId, format, openRegister, type ElementPatch, type Register } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { exportParts } from "./export-parts.js"
 import { indexPackage } from "./index-package.js"
 import { readParts } from "./package-container.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
-import { remixTargets } from "./template-remix.js"
 import { themeCustomColors } from "./template-colors.js"
 
 declare const process: {
@@ -38,33 +27,6 @@ function edited(node: string, patch: ElementPatch): Register {
     register = next.register
   }
   return register
-}
-
-function applied(parts: ReadonlyMap<string, Uint8Array>, changes: readonly SetChange[]) {
-  const index = indexPackage(parts)
-  let register: Register = { ...openRegister("", "file"), index: { ...index, total: index.elements.length, pages: [] } }
-  const scope = registerScope(register)
-  for (const change of changes) {
-    const plan = planChange(change, scope)
-    if (!plan.ok) throw new Error(plan.refusals.map((item) => item.code).join(" "))
-    for (const { node, row } of plan.rows) {
-      for (const command of [
-        { command: "add" as const, node, floor: "", route: "file" as const },
-        { command: "person" as const, node, ...row },
-      ]) {
-        const next = decide(register, command)
-        if (next.decision === "refuse") throw new Error(next.code)
-        register = next.register
-      }
-    }
-  }
-  return exportParts(parts, register)
-}
-
-function schemes(parts: ReadonlyMap<string, Uint8Array>, part: string): readonly string[] {
-  return [...decodeUtf8(parts.get(part) ?? new Uint8Array()).matchAll(/<a:schemeClr val="([^"]+)"/g)].map(
-    (match) => match[1] ?? "",
-  )
 }
 
 it("stores an added colour on one theme and leaves the other theme byte for byte", async () => {
@@ -124,23 +86,4 @@ it("drops an unused template and keeps a template a slide still uses", async () 
   const used = exportParts(doe, edited("deck.templateStyles", { templateStyle: { removed: { set: true } } }))
   expect(used.has("ppt/theme/theme1.xml")).toBe(true)
   expect(used.has("ppt/theme/theme2.xml")).toBe(true)
-})
-
-it("rotates the slide's template colours one step and leaves an explicit colour", async () => {
-  const parts = await load("two-templates.pptx")
-  const slide = "ppt/slides/slide1.xml"
-  const before = schemes(parts, slide)
-  const once = remixTargets(parts, slide)
-  expect(once[0]).toMatchObject({
-    target: { node: "256.5" },
-    fills: { paint: { solid: { scheme: "accent2" } } },
-  })
-  expect(once.some((change) => "text" in change)).toBe(false)
-  const first = applied(parts, once)
-  expect(schemes(first, slide)).toEqual(["dk2", "tx1", "tx1", "accent2"])
-  expect(decodeUtf8(first.get(slide)!)).toContain('val="123456"')
-  expect(before).toEqual(["tx1", "tx1", "accent1"])
-  const twice = applied(first, remixTargets(first, slide))
-  expect(schemes(twice, slide)).toEqual(["lt2", "tx1", "tx1", "accent3"])
-  expect(remixTargets(parts, "ppt/slides/missing.xml")).toEqual([])
 })

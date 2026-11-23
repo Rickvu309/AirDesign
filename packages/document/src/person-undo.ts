@@ -152,26 +152,6 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
   return gridUndoable(register, decision.register, file, edit)
 }
 
-export function swapUndoable(
-  register: Register,
-  file: readonly SlideId[],
-  added: readonly ElementEdit[],
-  removed: readonly ElementEdit[],
-): Undoable | null {
-  const born = elementsUndoable(register, file, added)
-  if (born === null || !("elements" in born)) return null
-  let current = register
-  for (const edit of added) {
-    const decision = decide(current, { command: "slide", file, edit })
-    if (decision.decision === "apply") current = decision.register
-  }
-  const gone = elementsUndoable(current, file, removed)
-  if (gone === null || !("elements" in gone)) return born
-  const turned = (undoable: typeof born) =>
-    undoable.elements.map((each) => ({ ...each, before: undoable.before, after: undoable.after }))
-  return { ...born, elements: [...turned(born), ...turned(gone)] }
-}
-
 export function elementsUndoable(
   register: Register,
   file: readonly SlideId[],

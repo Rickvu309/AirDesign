@@ -7,8 +7,6 @@ import {
   planChange,
   readLayout,
   registerScope,
-  placedByFrame,
-  resizedSides,
   slideId,
   takes,
   type Command,
@@ -134,22 +132,5 @@ describe("a layer that fills its auto layout frame", () => {
     expect(taken(b)).toEqual(["layout.width", "layout.height"])
     expect(taken(backdrop)).toEqual([])
     expect(taken(frame)).toContain("layout.flow")
-  })
-
-  it("makes a filling side of a layer Fixed when its handle resizes it, and leaves a Fixed layer's sides alone", () => {
-    const filled = set(fixed(row(), 100 * point), b, { layout: { width: { set: "fill" } } })
-    expect(resizedSides(filled, b, { cx: 50 * point, cy: 20 * point })).toEqual({
-      before: { width: "fill" },
-      after: { width: "fixed" },
-    })
-    expect(resizedSides(filled, b, { cx: 70 * point, cy: 20 * point })).toBeNull()
-    expect(resizedSides(filled, a, { cx: 30 * point, cy: 10 * point })).toBeNull()
-  })
-
-  it("lets a layer's handle write only its size, which the frame lays out", () => {
-    const framed = row()
-    expect(placedByFrame(framed, a)).toBe(true)
-    expect(placedByFrame(framed, backdrop)).toBe(false)
-    expect(placedByFrame(indexed, a)).toBe(false)
   })
 })

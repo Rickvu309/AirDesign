@@ -2,7 +2,6 @@ export {
   type AgentChange,
   type AgentColor,
   type AgentRefusal,
-  type PatternName,
   agentChangesSchema,
   readAgentChange,
   readAgentChanges,
@@ -49,5 +48,5 @@ export { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.j
 export { blankDeckName, nameFromTitleWrites } from "./deck-name-from-title.js"
 export { placeNewBox } from "./box-placement.js"
 export { bytesOf, limits, overLimit } from "./limits.js"
-export { type FontFace, type FontWidths, type Glyph, type LineSpan, fontFace, spansOf } from "./line-breaks.js"
+export { type FontFace, type FontWidths, type Glyph, fontFace } from "./line-breaks.js"
 export { type OrderKey, orderKeyBetween, readOrderKey } from "./order-key.js"

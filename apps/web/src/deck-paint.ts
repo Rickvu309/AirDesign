@@ -34,7 +34,6 @@ import { fallbackPrompt } from "@/copy/placeholder-copy"
 import { numberedText } from "@/editing/numbered-text"
 import { designRows } from "@/editing/design-rows"
 import {
-  namedShapes,
   paintCanvas,
   sameMedia,
   sameSlide,
@@ -73,10 +72,6 @@ export type Painted = {
   readonly shared: Parts
   readonly slides: readonly PaintedSlide[]
   readonly leftOut: readonly (SlideCommand | LeftOutEdit)[]
-}
-
-export function elementIds(parts: Parts): readonly ElementId[] {
-  return namedShapes(parts).map((named) => named.id)
 }
 
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {

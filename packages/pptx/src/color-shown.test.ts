@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { encodeUtf8 } from "./package-bytes.js"
-import { colorHex, deckColors } from "./color-shown.js"
+import { colorHex } from "./color-shown.js"
 
 const theme = [
   { scheme: "dk1", css: "000000" },
@@ -38,22 +37,5 @@ describe("the colour a stored colour shows", () => {
     expect(colorHex({ system: "windowText", last: "101010" }, theme)).toBe("101010")
     expect(colorHex({ preset: "red" }, theme)).toBe("FF0000")
     expect(colorHex({ scheme: "accent6" }, theme)).toBeNull()
-  })
-})
-
-describe("the colours already in a deck", () => {
-  it("lists each slide's rgb colours once, most used first", () => {
-    const slide = (colors: readonly string[]) =>
-      encodeUtf8(
-        `<p:sld xmlns:a="a" xmlns:p="p"><p:cSld><p:spTree>${colors
-          .map((color) => `<a:solidFill><a:srgbClr val="${color}"><a:alpha val="50000"/></a:srgbClr></a:solidFill>`)
-          .join("")}<a:schemeClr val="accent1"/></p:spTree></p:cSld></p:sld>`,
-      )
-    const parts = new Map([
-      ["ppt/slides/slide1.xml", slide(["1F4E79", "c00000"])],
-      ["ppt/slides/slide2.xml", slide(["C00000", "00B050", "C00000"])],
-      ["ppt/slideLayouts/slideLayout1.xml", slide(["ABCDEF", "ABCDEF", "ABCDEF", "ABCDEF"])],
-    ])
-    expect(deckColors(parts)).toEqual(["C00000", "1F4E79", "00B050"])
   })
 })

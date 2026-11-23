@@ -6,7 +6,7 @@ import { blurPercent } from "./picture-adjust.js"
 import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./blip-edit.js"
 import { colorsIn } from "./color-read.js"
 import { decodedXmlText, type MarkupElement } from "./element-span.js"
-import { whole, type Held } from "./markup-held.js"
+import { whole } from "./markup-held.js"
 import { iconInk, iconOfPart, type IconColor, type IconRef } from "./picture-write.js"
 import { requireMarkup } from "./part-markup.js"
 import type { Drawn, Sheet } from "./paint-sheet.js"
@@ -57,11 +57,6 @@ export function shownIcon(parts: Parts, at: ElementAt): IconRef | null {
   const blip = found?.blip
   if (found === null || blip === undefined || embedded(blip) === null) return null
   return iconOf(parts, at.part, found.children, blip)
-}
-
-export function heldIcon(parts: Parts, part: string, held: Held): IconRef | null {
-  const blip = held.children[held.element.index]?.find((each) => each.kind === "a:blip")
-  return blip === undefined ? null : iconOf(parts, part, held.children, blip)
 }
 
 export function recolorOf(found: PictureFill, blip: MarkupElement): Recolor | null {

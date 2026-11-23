@@ -97,8 +97,6 @@ export const fillModes = ["fill", "fit", "crop", "tile", "stretch"] as const
 
 export const iconWeights = { lightest: 50, lucide: 200, heaviest: 300 } as const
 
-export const iconTextColor = { scheme: "tx1" } as const
-
 const iconWeight = pointsWithin(iconWeights.lightest, iconWeights.heaviest)
 
 const shownPaint = union({ ...fillCases, image: mark, group: mark }, "solid")

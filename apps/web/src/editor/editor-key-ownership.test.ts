@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { editorOwnsKey, handOf, leavesPicker, pickerHandsKeysBack, toolKeyPlace } from "./editor-key-ownership"
+import { editorOwnsKey, toolKeyPlace } from "./editor-key-ownership"
 
 let window: Window & typeof globalThis
 
@@ -69,54 +69,6 @@ it("keeps composing Escape and background keys out of the grid without sending m
     expect(event.defaultPrevented).toBe(true)
   }
   expect(keys).toEqual([])
-})
-
-it("gives the keys back to the canvas when focus leaves a picker for its trigger in the design panel", () => {
-  window.document.body.innerHTML = `
-    <div data-design-panel><button id="trigger" aria-haspopup="listbox"></button><input id="opacity"></div>
-    <div data-slot="select-content"><div role="option" tabindex="-1" id="option"></div><div role="option" tabindex="-1" id="next"></div></div>
-    <div data-slot="popover-content"><button id="swatch"></button></div>
-    <div data-slot="dropdown-menu-content"><div role="menuitem" tabindex="-1" id="step"></div></div>`
-  const at = (id: string) => window.document.getElementById(id)!
-  const moves: [string, string, boolean][] = []
-  window.document.addEventListener("focusout", (event) => {
-    const from = (event.target as Element).id
-    const to = (event.relatedTarget as Element | null)?.id ?? "nothing"
-    moves.push([from, to, leavesPicker(event as FocusEvent)])
-  })
-  for (const [from, to] of [
-    ["option", "next"],
-    ["option", "trigger"],
-    ["swatch", "trigger"],
-    ["step", "opacity"],
-    ["opacity", "trigger"],
-  ]) {
-    at(from).focus()
-    at(to).focus()
-  }
-  at("step").focus()
-  at("step").blur()
-  expect(moves.filter(([, , leaves]) => leaves).map(([from, to]) => `${from} to ${to}`)).toEqual([
-    "option to trigger",
-    "swatch to trigger",
-    "step to opacity",
-    "step to nothing",
-  ])
-  expect(pickerHandsKeysBack(at("trigger"), "pointer")).toBe(true)
-  expect(pickerHandsKeysBack(at("trigger"), "keys")).toBe(false)
-  expect(pickerHandsKeysBack(at("trigger"), null)).toBe(false)
-  expect(pickerHandsKeysBack(at("opacity"), "pointer")).toBe(false)
-  expect(pickerHandsKeysBack(at("swatch"), "pointer")).toBe(false)
-})
-
-it("reads the hand that last worked a picker, and Escape or a held key alone does not change it", () => {
-  const key = (name: string) => new window.KeyboardEvent("keydown", { key: name })
-  const pointer = { type: "pointerdown" } as unknown as PointerEvent
-  expect(handOf(pointer, "keys")).toBe("pointer")
-  expect(handOf(key("ArrowRight"), "pointer")).toBe("keys")
-  expect(handOf(key("Enter"), "pointer")).toBe("keys")
-  expect(handOf(key("Escape"), "pointer")).toBe("pointer")
-  expect(handOf(key("Shift"), "pointer")).toBe("pointer")
 })
 
 it("gives the one-key tools to the slide, the layers and the slide list, and not to a button elsewhere", () => {

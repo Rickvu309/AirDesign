@@ -15,7 +15,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { boundTargets, routedParts } from "./connector-route.js"
+import { routedParts } from "./connector-route.js"
 import { exportParts } from "./export-parts.js"
 import { indexPackage } from "./index-package.js"
 import { readParts } from "./package-container.js"
@@ -134,14 +134,6 @@ describe("a connector bound to two shapes on export", () => {
     )
     expect(decodeUtf8(exported.get(part)!)).toContain("<p:cNvCxnSpPr><a:cxnSpLocks/></p:cNvCxnSpPr>")
     expect(xfrmOf(exported, "26")).toBe(xfrmOf(parts, "26"))
-  })
-
-  it("names the shapes a connector binds, so a move of one repaints its connector", async () => {
-    const { parts, slide } = await census()
-    const bound = boundTargets(parts)
-    expect(bound.has(`${slide}.6`) && bound.has(`${slide}.15`)).toBe(true)
-    expect(bound.has(`${slide}.23`)).toBe(false)
-    expect(bound.size).toBe(8)
   })
 
   it("routes nothing on a slide whose bytes did not change", async () => {

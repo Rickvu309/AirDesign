@@ -5,7 +5,6 @@ import {
   shapeOf,
   stackTarget,
   textOpening,
-  type CopiedRows,
   type ElementCommand,
   type StackMove,
   type Box,
@@ -14,11 +13,10 @@ import {
   type Geometry,
   type Register,
   type SlideCommand,
-  type SlideId,
 } from "@airdesign/document"
 import { placeNewBox } from "@airdesign/doom"
 import { applyRoute, freeShapeId, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
-import { boxOf, type Moved, type PaintBox, type ShapeDrawn } from "@airdesign/render"
+import { boxOf, type PaintBox, type ShapeDrawn } from "@airdesign/render"
 import { type RemovalRefusal } from "@/copy/element-copy"
 import { type GroupChange } from "@/editor/group-actions"
 import { type LayerJoin } from "@/editor/layer-join"
@@ -185,5 +183,3 @@ function drawnPlace(
   const flips = { ...(flipH ? { flipH: { set: true } } : {}), ...(flipV ? { flipV: { set: true } } : {}) }
   return Object.keys(flips).length === 0 ? { box } : { box, opening: { box: flips } }
 }
-
-export type CopyAsked = Moved & { readonly onto?: SlideId; readonly rows?: CopiedRows }

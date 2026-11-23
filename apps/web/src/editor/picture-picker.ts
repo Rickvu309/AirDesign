@@ -4,10 +4,6 @@ export const pictureAccept = mediaTypes.join(",")
 
 let held: HTMLInputElement | null = null
 
-export function openPicker(): HTMLInputElement | null {
-  return held
-}
-
 function letGo(input: HTMLInputElement) {
   if (held === input) held = null
 }

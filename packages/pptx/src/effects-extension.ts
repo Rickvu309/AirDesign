@@ -200,39 +200,6 @@ export function writtenExtra<F extends ExtraSlot>(
   return writtenList(parts, at, { ...readHeld(parts, at), [slot]: value })
 }
 
-export function clearedInners(parts: Parts, at: HostAt): Parts {
-  const current = readHeld(parts, at)
-  const present = innerSlots.some((slot) => {
-    const value = current[slot]
-    return value !== undefined && value !== null && !("none" in value)
-  })
-  if (!present) return parts
-  return writtenList(parts, at, {
-    ...current,
-    inner1: { none: true },
-    inner2: { none: true },
-    inner3: { none: true },
-  })
-}
-
-export function clearedDrops(parts: Parts, at: HostAt): Parts {
-  const current = readHeld(parts, at)
-  return writtenList(parts, at, { ...current, drop1: { none: true }, drop2: { none: true }, drop3: { none: true } })
-}
-
-function numbered(slot: ExtraSlot, offset: Offset): StoredDrop {
-  const n = Number(slot.at(-1))
-  return { n: n === 2 || n === 3 ? n : 1, ...offset }
-}
-
-export function extensionDrops(parts: Parts, at: HostAt): readonly StoredDrop[] {
-  const values = readHeld(parts, at)
-  return dropSlots.flatMap((slot) => {
-    const value = values[slot]
-    return value !== undefined && value !== null && "outer" in value ? [numbered(slot, value.outer)] : []
-  })
-}
-
 export function storedDrops(children: MarkupChildren, parent: MarkupElement): readonly StoredDrop[] {
   const drops: StoredDrop[] = []
   for (const element of children[parent.index] ?? []) {

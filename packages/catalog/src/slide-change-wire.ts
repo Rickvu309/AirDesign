@@ -1,4 +1,4 @@
-import { readElementId, readSlideId, type ElementId, type GridSide, type SlideId } from "@airdesign/document"
+import { readSlideId, type GridSide, type SlideId } from "@airdesign/document"
 import { limits } from "@airdesign/doom"
 import type { JsonSchema } from "./agent-form.js"
 import { canonicalOpFields } from "./field-alias.js"
@@ -33,8 +33,6 @@ export type WireSlideChange =
   | { readonly op: "duplicate_slide" | "delete_slide"; readonly slide: SlideId }
   | { readonly op: "move_slide"; readonly slide: SlideId; readonly after: SlideId | null }
 
-export type WireDelete = { readonly op: "delete"; readonly node: ElementId }
-
 type Read<Change> =
   | { readonly ok: true; readonly change: Change }
   | { readonly ok: false; readonly refusal: "field"; readonly field: string }
@@ -62,10 +60,6 @@ function bodyOf(raw: unknown): Readonly<Record<string, unknown>> | undefined {
 }
 
 const layoutIdPattern = /^L([1-9][0-9]?)$/
-
-export function layoutId(at: number): string {
-  return `L${String(at + 1)}`
-}
 
 function readLayoutId(raw: unknown): number | undefined {
   const found = typeof raw === "string" ? layoutIdPattern.exec(raw) : null
@@ -125,16 +119,6 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
   return { ok: true, change: { op, slide, after } }
 }
 
-export function readDeleteChange(raw: unknown): Read<WireDelete> {
-  const body = bodyOf(raw)
-  if (body === undefined || body.op !== "delete") return refused("op")
-  const extra = Object.keys(body).find((key) => key !== "op" && key !== "node")
-  if (extra !== undefined) return refused(extra)
-  const node = readElementId(body.node)
-  if (node === undefined) return refused("node")
-  return { ok: true, change: { op: "delete", node } }
-}
-
 export function slideChangeSchema(): JsonSchema {
   return {
     type: "object",
@@ -160,23 +144,6 @@ export function slideChangeSchema(): JsonSchema {
         enum: ["same", "new", "keep"],
         description:
           "Slide group. add_slide: same (default) or new. move_slides: same joins one, new starts one, keep moves a whole one; new/keep follow the anchor's slide group; null moves to the front.",
-      },
-    },
-  }
-}
-
-export function deleteChangeSchema(): JsonSchema {
-  return {
-    type: "object",
-    additionalProperties: false,
-    required: ["op", "node"],
-    description: "Delete one layer; a group takes its layers. A layer in a plain group or an animated layer cannot be.",
-    properties: {
-      op: { type: "string", const: "delete" },
-      node: {
-        type: "string",
-        pattern: "^(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12})$",
-        description: "Layer id such as 258.7.",
       },
     },
   }

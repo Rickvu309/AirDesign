@@ -138,13 +138,6 @@ function namedTraits(change: TraitInputs): readonly (readonly [TraitName, Loose]
   })
 }
 
-export function namedFields(change: TraitInputs): readonly FieldKey[] {
-  const fields = namedTraits(change).flatMap(([trait, input]) =>
-    Object.keys(input).map((key) => writtenField(trait, key)),
-  )
-  return [...new Set(fields)]
-}
-
 function refusalOf(view: ScopedElement, trait: TraitName, input: Loose): PlanRefusal | null {
   const taken = takes(view.facts)
   const unset = Object.entries(input).some(([key, value]) => value === null && !inheritable(trait, key))
@@ -273,10 +266,6 @@ function planNode(
 }
 
 const backdropKeys: readonly string[] = ["fills", "border", "geometry"]
-
-export function paintsBackdrop(view: ScopedElement, field: string): boolean {
-  return view.backdrop !== undefined && backdropKeys.includes(field.split(".")[0] ?? "")
-}
 
 function framePaint(
   change: SetChange,

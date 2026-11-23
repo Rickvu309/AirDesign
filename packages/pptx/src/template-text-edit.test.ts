@@ -18,7 +18,7 @@ import { readParts } from "./package-container.js"
 import { paintReader, type PaintElement } from "./paint-reader.js"
 import { readSlides } from "./read-shapes.js"
 import { slideTextStyles } from "./slide-text-styles.js"
-import { masterTextStyles, readTemplateTextEdit, type TemplateTextEdit } from "./template-text-edit.js"
+import { readTemplateTextEdit, type TemplateTextEdit } from "./template-text-edit.js"
 import { templateStyles } from "./template-style.js"
 import { slideTheme } from "./theme-swatches.js"
 
@@ -230,22 +230,4 @@ it("writes a layout placeholder style without touching the slide", async () => {
   expect(differing(baseline, edited)).toEqual([layout])
   expect(readTemplateTextEdit(edited, theme, edit.id)).toEqual(edit)
   expect(decodeUtf8(edited.get(layout)!)).toContain(`sz="${String(edit.size)}"`)
-})
-
-it("keeps a master text style that has no level of its own", async () => {
-  const parts = await load("clean.pptx")
-  const theme = templateStyles(parts)[0]?.id
-  if (theme === undefined) throw new Error("theme")
-  const styles = masterTextStyles(parts, theme)
-  expect(styles.map((style) => style.role)).toEqual(["title", "body", "other"])
-  expect(styles.map((style) => style.size)).toEqual([null, null, null])
-  expect(styles.map((style) => style.font)).toEqual(["+mj-lt", "+mn-lt", "+mn-lt"])
-  const title = styles[0]
-  if (title === undefined) throw new Error("title")
-  const index = templateStyles(parts).findIndex((item) => item.id === theme)
-  const edited = exportParts(
-    parts,
-    apply(opened(parts), changeOf(elementId(`deck.templateStyle${String(index + 1)}`), { ...title, size: 3200 })),
-  )
-  expect(readTemplateTextEdit(edited, theme, title.id)).toEqual({ id: title.id, size: 3200, font: title.font })
 })

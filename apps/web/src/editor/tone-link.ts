@@ -12,22 +12,3 @@ export type ToneSource = {
   readonly link: ToneLink
   readonly scope: (node: ElementId) => ToneScope | null
 }
-
-export function toneLink(): ToneLink {
-  const listeners = new Set<() => void>()
-  let held: ToneControlFor | null = null
-  return {
-    publish(toneFor) {
-      if (held === toneFor) return
-      held = toneFor
-      for (const listener of listeners) listener()
-    },
-    current: () => held,
-    subscribe(listener) {
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
-      }
-    },
-  }
-}

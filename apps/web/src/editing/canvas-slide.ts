@@ -3,7 +3,7 @@ import type { CanvasElement, CanvasSlide, CanvasText, CanvasTemplateColor } from
 import { backgroundOf } from "@/editing/canvas-background"
 import { isGroupKind } from "@/editing/canvas-group"
 import { paintElements } from "@/editing/canvas-kind"
-import type { CanvasSource, SlideCanvases } from "@/editing/canvas-source"
+import type { CanvasSource } from "@/editing/canvas-source"
 import { fileTexts } from "@/editing/file-text"
 import type { PictureSource } from "@/editing/picture-fill"
 
@@ -86,23 +86,4 @@ export function slideCanvas(
   return swatches.length === 0
     ? canvas
     : { ...canvas, elements: canvas.elements.map((element) => withColors(element, swatches)) }
-}
-
-export function slideCanvases(
-  reader: PaintReader,
-  sources: readonly CanvasSource[],
-  src: PictureSource = () => null,
-  texts?: PaintReader,
-  colors: (part: string) => readonly CanvasTemplateColor[] = () => [],
-): SlideCanvases {
-  const known = new Map<number, CanvasSlide>()
-  return (index) => {
-    const painted = known.get(index)
-    if (painted !== undefined) return painted
-    const source = sources[index]
-    if (source === undefined) return null
-    const tinted = slideCanvas(reader, source, src, texts, colors(source.part))
-    known.set(index, tinted)
-    return tinted
-  }
 }

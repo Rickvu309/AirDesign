@@ -1,7 +1,6 @@
 import {
   elementId,
   hasSlideNumber,
-  landedPatch,
   readTextValue,
   shapeOf,
   slideBirths,
@@ -63,17 +62,6 @@ export function textNamedLayers(register: Register): ReadonlySet<ElementId> {
       for (const element of birth.floor ?? [])
         if (named.has(elementId(`${birth.source}.${shapeOf(element.node).shape}`))) named.add(element.node)
     }
-  }
-  return named
-}
-
-export function textNamedNow(register: Register): ReadonlySet<ElementId> {
-  const named = new Set<ElementId>()
-  const nodes = new Set(register.nodes)
-  for (const node of textNamedLayers(register)) {
-    const body = nodes.has(node) ? register.elements[node] : undefined
-    const renamed = body !== undefined && landedPatch(body, "text").identity?.name !== undefined
-    if (!renamed) named.add(node)
   }
   return named
 }
