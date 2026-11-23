@@ -1,15 +1,15 @@
 import { expect } from "@playwright/test"
-import { readPictureToolCopy } from "../../bin/product-copy.mjs"
-import element from "./design-element.mjs"
+import { designing } from "../doom-design.mjs"
 
 async function drive(kit) {
-  await element.drive(kit)
-  await kit.page.getByRole("button", { name: readPictureToolCopy().addIcon, exact: true }).click()
-  const icons = kit.page.locator("[data-icon-search] [role=group] button")
+  const { page } = kit
+  await designing(kit)
+  await page.getByRole("button", { name: "Actions", exact: true }).click()
+  const icons = page.getByRole("group", { name: "Icons", exact: true }).getByRole("button")
   await expect(icons.first()).toBeVisible()
-  await expect(icons.filter({ hasNot: kit.page.locator("svg") })).toHaveCount(0)
-  const field = kit.page.getByRole("searchbox")
-  await kit.page.keyboard.press("Tab")
+  await expect(icons.filter({ hasNot: page.locator("svg") })).toHaveCount(0)
+  const field = page.getByRole("searchbox")
+  await page.keyboard.press("Tab")
   await field.focus()
   await expect(field).toBeFocused()
 }

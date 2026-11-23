@@ -1,17 +1,13 @@
 import { expect } from "@playwright/test"
 import { colorCopy } from "../../bin/product-copy.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { designing, element, selectMany } from "../doom-design.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit, "shapes-added.pptx")
-  await kit.page.getByRole("button", { name: "Design", exact: true }).click()
-  await kit.page
-    .locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]')
-    .click({ position: { x: 4, y: 4 } })
+  await designing(kit, "shape")
+  await selectMany(kit.page, ["w:2"])
   const panel = kit.page.locator("[data-design-element]")
-  await panel.getByRole("group", { name: "Fill", exact: true }).waitFor()
-  await panel.locator('[data-control="color"]').first().getByRole("button").first().click()
+  await panel.getByRole("group", { name: "Color", exact: true }).getByRole("button").first().click()
   await expect(kit.page.locator("[data-color-picker]").getByRole("group", { name: colorCopy.template })).toBeVisible()
 }
 
-export default { name: "color-picker-fill", design: "/screens/s43-09-editor-tools-design-element", drive }
+export default { name: "color-picker-fill", design: element, drive }

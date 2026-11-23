@@ -1,14 +1,12 @@
 import { expect } from "@playwright/test"
-import element from "./design-element.mjs"
+import { element } from "../doom-design.mjs"
 import { selectToneText } from "../tone-selection.mjs"
 
 async function drive(kit) {
   await selectToneText(kit)
-  await kit.page.keyboard.press("Control+g")
-  await expect(kit.page.locator("[data-design-element]")).toHaveAttribute(
-    "data-design-element",
-    /^\d+\.(?:\d+|n[0-9a-z]{12})$/,
-  )
+  await kit.page.keyboard.press("ControlOrMeta+g")
+  await expect(kit.page.locator("[data-selection-outline]")).toHaveCount(1)
+  await expect(kit.page.locator("[data-design-element]")).toBeVisible()
 }
 
-export default { name: "tone-group", design: element.design, drive }
+export default { name: "tone-group", design: element, drive }

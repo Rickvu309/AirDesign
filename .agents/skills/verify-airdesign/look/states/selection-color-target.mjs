@@ -1,22 +1,14 @@
-import { createRequire } from "node:module"
-import { join } from "node:path"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { expect } from "@playwright/test"
+import { clickSlide } from "../doom-deck.mjs"
+import { designing, element } from "../doom-design.mjs"
 
 async function drive(kit) {
-  const { page, expect, repo } = kit
-  const require = createRequire(import.meta.url)
-  const { shapeCopy } = require(join(repo, "apps/web/src/copy/shape-copy.ts"))
-  const { transitionCopy } = require(join(repo, "apps/web/src/copy/transition-copy.ts"))
-  await fixtureDeck(kit, "clean.pptx")
-  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
-  const layers = page.locator("[data-slide-paint] [data-canvas-element]")
-  const count = await layers.count()
-  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
-  await page.getByRole("button", { name: shapeCopy.shapes.circle, exact: true }).click()
-  await page.keyboard.press("Enter")
-  await expect(layers).toHaveCount(count + 1)
-  await layers.last().click()
+  const { page } = kit
+  await designing(kit)
+  await page.keyboard.press("o")
+  await clickSlide(page, 1300, 420)
+  await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
   await expect(page.locator("[data-selection-colors]")).toBeVisible()
 }
 
-export default { name: "selection-color-target", design: "/screens/s43-09-editor-tools-design-element", drive }
+export default { name: "selection-color-target", design: element, drive }

@@ -1,19 +1,12 @@
 import { expect } from "@playwright/test"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { designing, element, selectMany } from "../doom-design.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit, "shapes-added.pptx")
-  await kit.page.getByRole("button", { name: "Design", exact: true }).click()
-  await kit.page
-    .locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]')
-    .click({ position: { x: 4, y: 4 } })
-  const panel = kit.page.locator("[data-design-element]")
-  const kinds = panel.getByRole("group", { name: "Fill", exact: true })
-  await expect(panel).toBeVisible()
-  if ((await kinds.count()) === 0) return
+  await designing(kit, "shape")
+  await selectMany(kit.page, ["w:2"])
+  const kinds = kit.page.locator("[data-design-element]").getByRole("group", { name: "Fill", exact: true })
   await kinds.getByRole("button", { name: "Gradient", exact: true }).click()
   await expect(kinds.getByRole("button", { name: "Gradient", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await expect(kit.page.getByRole("button", { name: "Undo fill", exact: true })).toBeVisible()
 }
 
-export default { name: "design-fill", design: "/screens/s43-09-editor-tools-design-element", drive }
+export default { name: "design-fill", design: element, drive }

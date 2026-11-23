@@ -1,29 +1,23 @@
 import { expect } from "@playwright/test"
-import { toolbarWords } from "../../bin/color-words.mjs"
-import { boxCopy } from "../../bin/product-copy.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
-import { unfold } from "../unfold.mjs"
+import { designing, element, selectMany } from "../doom-design.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit)
-  const menu = await toolbarWords(kit.repo, "clean.pptx")
-  await kit.page.getByRole("button", { name: "Design", exact: true }).click()
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
-  const panel = kit.page.locator("[data-design-element]")
-  await unfold(panel, boxCopy.section)
-  const x = panel.getByRole("textbox", { name: "X", exact: true })
-  await x.fill("96")
-  await x.press("Enter")
+  const { page } = kit
+  await designing(kit, "text")
+  await selectMany(page, ["w:1"])
+  const panel = page.locator("[data-design-element]")
   await panel.getByRole("button", { name: "Bold", exact: true }).click()
   await panel.getByRole("group", { name: "Text color" }).getByRole("button").first().click()
-  await kit.page.locator("[data-color-picker]").getByRole("button", { name: menu.accent2, exact: true }).click()
-  await kit.page.keyboard.press("Escape")
+  await page.locator("[data-color-picker]").getByRole("group").first().getByRole("button").nth(5).click()
+  await page.keyboard.press("Escape")
   await panel
     .getByRole("group", { name: "Alignment", exact: true })
     .getByRole("button", { name: "Center", exact: true })
     .click()
   await expect(panel.getByRole("button", { name: "Bold", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await expect(kit.page.getByRole("button", { name: "Undo text format", exact: true })).toBeVisible()
+  await expect(
+    panel.getByRole("group", { name: "Alignment", exact: true }).getByRole("button", { name: "Center", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true")
 }
 
-export default { name: "design-element-changed", design: "/screens/s43-09-editor-tools-design-element", drive }
+export default { name: "design-element-changed", design: element, drive }

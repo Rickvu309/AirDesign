@@ -1,30 +1,22 @@
-import { templateCopy } from "../../bin/product-copy.mjs"
-import { colorWords } from "../../bin/color-words.mjs"
 import { expect } from "@playwright/test"
 import { colorCopy } from "../../bin/product-copy.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { designing, slidePanel } from "../doom-design.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit, "clean.pptx")
-  const accent = await colorWords(kit.repo, "clean.pptx")
-  const accentRed = await colorWords(kit.repo, "clean.pptx", { slots: { accent1: "c00000" } })
-  await kit.page.getByRole("button", { name: "Design", exact: true }).click()
-  await expect(kit.page.locator("[data-design-panel]")).toBeVisible()
-  const settings = kit.page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true })
-  if (await settings.count()) await settings.click()
-  else if (await kit.page.locator("[data-template-style]").count())
-    await kit.page.locator("[data-template-style]").click()
-  const theme = kit.page.locator("[data-template-style-dialog]")
-  if ((await theme.count()) === 0) return
-  await theme.getByRole("button", { name: accent.accent1, exact: true }).click()
-  const picker = kit.page.locator("[data-color-picker]")
-  await picker.getByRole("button", { name: colorCopy.add, exact: true }).click()
+  const { page } = kit
+  await designing(kit)
+  await page.locator("[data-design-panel] [data-template-style]").click()
+  const theme = page.locator("[data-template-style-dialog]")
+  await expect(theme).toBeVisible()
+  const swatch = theme.locator("button[title]").nth(4)
+  await swatch.click()
+  const picker = page.locator("[data-color-picker]")
   const hex = picker.getByRole("textbox", { name: colorCopy.hex, exact: true })
+  if ((await hex.count()) === 0) await picker.getByRole("button", { name: colorCopy.add, exact: true }).click()
   await hex.fill("#c00000")
   await hex.press("Enter")
-  await kit.page.keyboard.press("Escape")
-  await expect(theme.getByRole("button", { name: accentRed.accent1, exact: true })).toHaveAttribute("title", /#C00000/i)
-  await theme.scrollIntoViewIfNeeded()
+  await page.keyboard.press("Escape")
+  await expect(swatch).toHaveAttribute("title", /#C00000/i)
 }
 
-export default { name: "design-theme", design: "/screens/s43-02-editor-tools-design-panel", drive }
+export default { name: "design-theme", design: slidePanel, drive }
