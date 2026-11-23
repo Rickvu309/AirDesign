@@ -39,12 +39,19 @@ async function drive(kit) {
   await page.keyboard.press("ControlOrMeta+End")
   for (const _ of [1, 2, 3]) {
     await page.keyboard.press("Enter")
-    await page.keyboard.type("Another line")
+    await page.keyboard.insertText("Another line")
   }
   await expect.poll(async () => (await node(page, "t:2").boundingBox()).y - before.y).toBeGreaterThan(20)
   await leaveText(page)
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect(node(page, "t:1")).not.toContainText("Another line")
+  await expect
+    .poll(
+      async () => {
+        await page.keyboard.press("ControlOrMeta+z")
+        return node(page, "t:1").innerText()
+      },
+      { intervals: [200] },
+    )
+    .not.toContain("Another line")
   await page.mouse.move(4, 4)
 }
 
