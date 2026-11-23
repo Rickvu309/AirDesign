@@ -4,7 +4,9 @@ import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideRoom } from "@/editor/canvas-zoom"
-import { ExportButton, PanelHead } from "@/editor/editor-chrome"
+import { PanelHead } from "@/editor/editor-chrome"
+import { ExportControl } from "@/export/export-control"
+import { useExport, type ExportStart } from "@/export/export-flow"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { useKeptPanel, type ShownPanel } from "@/editor/kept-panel"
 import type { ShapesShown } from "@/editor/shape-tool"
@@ -47,6 +49,7 @@ export type EditorStart = {
   readonly shapes?: ShapesShown
   readonly aira?: AiraStart
   readonly save?: Saving
+  readonly export?: ExportStart
 }
 
 function Editing({
@@ -94,6 +97,10 @@ function Editing({
   usePresentKeys(present.show === null, (from) => present.start(from === "first" ? 0 : strip.current))
   useSlideStepKeys({ slides, current: slide, selecting: selection.ids.length > 0, onCurrent: choose })
   const title = deckName(view)
+  const exporting = useExport(
+    { name: title, view, slides, current: strip.current, assetUrl: assets.assetUrl },
+    start.export,
+  )
   useEffect(() => {
     if (title === "") return
     const before = document.title
@@ -137,7 +144,10 @@ function Editing({
               commands.current = next ?? { zoomTo: setZoom, zoomSelection: null }
             }}
             toolbarHost={toolbarHost}
-            notice={saved.notice}
+            notice={exporting.failed ? "export-failed" : saved.notice}
+            onTryAgain={(notice) => {
+              if (notice === "export-failed") exporting.tryAgain()
+            }}
             {...(start.editing === undefined ? {} : { editing: start.editing })}
             {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />
@@ -168,7 +178,7 @@ function Editing({
           />
           <span className="flex items-center gap-1">
             <PresentButton ref={presentButton} onClick={() => present.start(strip.current)} />
-            <ExportButton disabled />
+            <ExportControl flow={exporting} />
           </span>
         </PanelHead>
         <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>

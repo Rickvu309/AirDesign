@@ -3,6 +3,8 @@ dist/
 *.tsbuildinfo
 test-results/
 tests/browser/exported-*.pptx
+tests/browser/exported-*.pdf
+tests/browser/exported-*.json
 playwright-report/
 blob-report/
 

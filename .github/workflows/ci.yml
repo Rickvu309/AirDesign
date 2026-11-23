@@ -177,7 +177,7 @@ jobs:
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
         run: pnpm --filter '!@airdesign/site' -r --if-present run build
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        run: pnpm check:pptx
+        run: pnpm check:pptx && pnpm check:pdf
         env:
           AIRDESIGN_WEB_BUILT: "1"
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && !cancelled()

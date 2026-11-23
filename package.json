@@ -19,6 +19,7 @@
     "typecheck": "node scripts/typecheck.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs && ts-packwerk check && ts-packwerk docs --out docs/packs.md --check",
     "check:specs": "node scripts/check-specs.mjs",
+    "check:pdf": "bash scripts/pptx-tools.sh node scripts/pdf-check.mjs",
     "check:pptx": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs",
     "check:pptx:corpus": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs --corpus",
     "check:mutation": "node scripts/check-mutation.mjs",

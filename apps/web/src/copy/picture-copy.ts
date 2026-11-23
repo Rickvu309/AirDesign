@@ -11,7 +11,6 @@ export const pictureCopy = {
   "picture-size": `Unable to add image. Choose one under ${largest} and ${most}.`,
   "picture-unread": "Unable to add image. Its file can't be read, so choose another PNG, JPEG or GIF file.",
   uploading: "Image is still uploading from another device",
-  exportWaiting: "Unable to export. An image is uploading.",
   ...picturePanelCopy,
   addIcon: "Add icon",
   search: "Search icons",

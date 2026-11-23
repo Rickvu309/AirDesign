@@ -1,6 +1,6 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 import { memoryDoomRemote, memoryStorage } from "@airdesign/live"
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import type { AiraChat, AiraExchange, AiraStep } from "@/aira/aira-loop"
 import type { AiraStart } from "@/aira/aira-panel"
 import { sampleDeck } from "@/core/core-doom"
@@ -77,12 +77,11 @@ function opened() {
   return { remote, storage: memoryStorage() }
 }
 
-export function EditorSample({ start, children }: { readonly start: EditorStart; readonly children?: ReactNode }) {
+export function EditorSample({ start }: { readonly start: EditorStart }) {
   const [open] = useState(opened)
   return (
     <div className="relative">
       <DoomEditor id={deck} open={open} start={{ ...start, aira: { usage: loadUsage, ...start.aira } }} />
-      {children}
     </div>
   )
 }

@@ -7,8 +7,6 @@
     "apps/web/src/decks/screens/trash-list.tsx -> own EmptyTrashDialog",
     "apps/web/src/decks/screens/trash-list.tsx -> own RestoreButton",
     "apps/web/src/decks/screens/trash-list.tsx -> own TrashNote",
-    "apps/web/src/export/screens/export-states.tsx -> apps/web/src/export/export-dialog.tsx",
-    "apps/web/src/export/screens/export-states.tsx -> apps/web/src/export/export-toast.tsx",
     "apps/web/src/present/screens/present-states.tsx -> apps/web/src/editor/slide-thumb.tsx",
     "apps/web/src/settings/screens/account-tab.tsx -> apps/web/src/settings/settings-frame.tsx",
     "apps/web/src/settings/screens/account-tab.tsx -> own PreferenceRow",

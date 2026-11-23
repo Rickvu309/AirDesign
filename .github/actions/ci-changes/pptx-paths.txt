@@ -2,6 +2,8 @@ packages/pptx
 packages/document
 pnpm-lock.yaml
 scripts/pptx-check.mjs
+scripts/pdf-check.mjs
+scripts/pdf-sample.mjs
 scripts/pptx-cases
 scripts/pptx-cases.mjs
 scripts/pptx-memo.mjs

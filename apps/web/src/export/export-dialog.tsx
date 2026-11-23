@@ -114,7 +114,6 @@ function SlideNumber({
 export function ExportDialog({
   choice,
   count,
-  selected = 0,
   open = true,
   exporting = false,
   onChoice = () => undefined,
@@ -124,7 +123,6 @@ export function ExportDialog({
 }: {
   choice: ExportChoice
   count: number
-  selected?: number
   open?: boolean
   exporting?: boolean
   onChoice?: (choice: ExportChoice) => void
@@ -184,7 +182,7 @@ export function ExportDialog({
                 <OptionSelect<SlideChoice>
                   labelId={slidesId}
                   value={choice.slides}
-                  names={slideNames(selected)}
+                  names={slideNames}
                   disabled={exporting}
                   onValue={(slides) => onChoice({ ...choice, slides })}
                 />
@@ -219,11 +217,9 @@ export function ExportDialog({
                   {problem}
                 </p>
               )}
-              {choice.format === "pdf" ? (
-                <p className="text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
-                  {exportCopy.printWindow}
-                </p>
-              ) : null}
+              <p className="text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
+                {exportCopy.printWindow}
+              </p>
             </div>
             <div className="border-t border-line">
               <div className="flex h-[60px] items-center justify-end gap-2 px-5">
