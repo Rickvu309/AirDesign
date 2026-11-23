@@ -11,6 +11,7 @@ import {
   writeChat,
 } from "./index.js"
 import { dropShelvedChats } from "./chat-slot.js"
+import { doomFoldKey, doomQueueKey } from "./doom-storage.js"
 import { readRows, readSlot, rowKey, writeSlot } from "./store.js"
 
 async function readSlotsLeft(): Promise<string[]> {
@@ -31,6 +32,16 @@ afterEach(async () => {
 })
 
 describe("a deck's chats on this device", () => {
+  it("reads none of the deck's Doom slots as chats, and dropping the chats keeps them", async () => {
+    await writeSlot(doomFoldKey("deckone"), { id: "fold", rev: 3 })
+    await writeSlot(doomQueueKey("deckone"), [{ id: "queued" }])
+    await writeChat("deckone", { id: "a", text: "first" })
+    expect(await readChats("deckone")).toEqual([{ id: "a", text: "first" }])
+    await dropChats("deckone")
+    expect(await readSlot(doomFoldKey("deckone"))).toEqual({ id: "fold", rev: 3 })
+    expect(await readSlot(doomQueueKey("deckone"))).toEqual([{ id: "queued" }])
+  })
+
   it("keeps each chat by id beside the deck's rows, and reads only that deck's chats", async () => {
     await writeChat("deckone", { id: "a", text: "first" })
     await writeChat("deckone", { id: "b", text: "second" })
