@@ -4,7 +4,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideKey } from "@/editor/slide-keys"
 
 export const slideMenuItem =
-  "h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white not-data-[variant=destructive]:focus:**:text-white"
+  "h-8 gap-5.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white not-data-[variant=destructive]:focus:**:text-white"
 
 const keys: Record<SlideKey, { readonly label: string; readonly shown: string; readonly shortcuts: string }> = {
   clone: { label: slideListCopy.duplicate, shown: slideListCopy.duplicateKey, shortcuts: "Control+D Meta+D" },

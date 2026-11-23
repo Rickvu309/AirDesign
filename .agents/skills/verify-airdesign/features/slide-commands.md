@@ -8,7 +8,7 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 - `slide-start` `button "Choose a layout for the new slide"` beside `New slide` lists the designed starting slides: `Title`, `Title and text`, `KPIs`, `Cards`, `Chart`, `Timeline`, `Grid` and `Blank`. Choosing one adds that slide after the current one (`tests/browser/doom-editor-page.spec.ts`). States `new-slide-menu`, `new-slide-layout`, `slide-chart`, `slide-added-title`.
 - `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current.
 - `slide-move` Alt+ArrowUp or Alt+ArrowDown, or Ctrl/Cmd+[ and ], on a focused entry moves that slide one place, and the moved slide stays current. Dragging an entry onto another moves it there (`tests/browser/doom-slides-transform.spec.ts`). State `slide-moved-twice`.
-- `slide-delete` Delete or Backspace on a focused entry deletes that slide. The last slide cannot be deleted: the status line says `The last slide cannot be deleted.`
+- `slide-delete` Delete or Backspace on a focused entry deletes that slide. The last slide cannot be deleted: the status line says `A deck keeps at least one slide.`
 - `slide-menu` a right-click on an entry, the Menu key or Shift+F10 opens the slide menu with `Duplicate`, `Delete`, `Move up` and `Move down` and their keys; Escape closes it. States `slide-actions-menu`, `slide-deleted`.
 - `slide-step` ArrowUp, ArrowDown, PageUp and PageDown on a focused entry step through the slides.
 - `slide-undo` each change is one step of the person's undo: Ctrl/Cmd+Z takes back an add, a duplicate, a move or a delete. See `person-undo.md`.
