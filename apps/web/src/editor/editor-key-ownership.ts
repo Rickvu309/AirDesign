@@ -1,4 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react"
+import { composing } from "@/lib/composing"
 
 export function editorOwnsKey(event: KeyboardEvent | ReactKeyboardEvent): boolean {
   const overlays = [
@@ -14,7 +15,8 @@ export function editorOwnsKey(event: KeyboardEvent | ReactKeyboardEvent): boolea
   event.preventDefault()
   event.stopPropagation()
   native.stopImmediatePropagation()
-  if (event.key === "Escape" && !native.isComposing)
+  if (composing(event)) return false
+  if (event.key === "Escape")
     overlay.dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true, cancelable: true }),
     )

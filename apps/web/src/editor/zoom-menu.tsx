@@ -35,9 +35,13 @@ function ZoomField({ percent, onZoom }: { percent: number; onZoom: (zoom: Zoom) 
     return () => cancelAnimationFrame(frame)
   }, [])
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (composing(event)) {
+      event.stopPropagation()
+      return
+    }
     if (menuKeys.has(event.key)) return
     event.stopPropagation()
-    if (composing(event) || event.key !== "Enter") return
+    if (event.key !== "Enter") return
     event.preventDefault()
     const next = typedZoom(text)
     if (next === null) setText(shown)

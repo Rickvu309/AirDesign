@@ -88,3 +88,29 @@ test("a doom deck moves to the Trash and comes back from the home, and its thumb
   await expect(page.locator(`[data-deck="${deck}"] [data-doom-thumbnail]`)).toContainText("Untitled")
   expect(deckReads).toEqual([])
 })
+
+test("Escape while an IME composes in the deck search, as it cancels a conversion in Chrome and in Safari, keeps the query, and a plain Escape then clears it", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  await page.goto("/")
+  const search = page.getByRole("searchbox", { name: "Search" })
+  await search.click()
+  await page.keyboard.type("sales")
+  await search.evaluate((field) =>
+    field.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", isComposing: true, bubbles: true, cancelable: true }),
+    ),
+  )
+  await expect(search).toHaveValue("sales")
+  await search.evaluate((field) =>
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 229, bubbles: true, cancelable: true })),
+  )
+  await expect(search).toHaveValue("sales")
+  await page.keyboard.press("Escape")
+  await expect(search).toHaveValue("")
+})

@@ -119,3 +119,25 @@ it.each(["DialogContent", "DialogPopup"] as const)(
     }
   },
 )
+
+it.each([
+  ["Chrome and Firefox", { isComposing: true }],
+  ["Safari", { keyCode: 229 }],
+])("keeps an open menu open when an IME cancels its conversion with Escape in %s", (_browser, init) => {
+  const document = window.document
+  document.body.innerHTML = `<button id="slide"></button><div data-open role="menu"><input></div>`
+  const slide = document.querySelector("button")!
+  const popup = document.querySelector<HTMLElement>("[data-open]")!
+  const closed = vi.fn()
+  const capture = (event: KeyboardEvent) => void editorOwnsKey(event)
+  window.addEventListener("keydown", capture, true)
+  popup.addEventListener("keydown", closed)
+  try {
+    slide.dispatchEvent(
+      new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true, ...init }),
+    )
+    expect(closed).not.toHaveBeenCalled()
+  } finally {
+    window.removeEventListener("keydown", capture, true)
+  }
+})
