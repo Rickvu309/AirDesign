@@ -48,3 +48,36 @@ test("an undo of typing in a layer another tab deleted does nothing, and the nex
   expect((await savedNode(stack, opened, "s:4"))?.parent).toBeNull()
   await other.close()
 })
+
+test("a text box emptied and left goes in one step with its typing, and redo deletes it again after an undo", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await page.clock.install()
+  const opened = await openDoomEditor(page, context, stack)
+  const saved = () => savedNode(stack, opened, "s:4")
+  const before = await saved()
+  const box = before?.box as Box
+  const shownTitle = page.locator('[data-slide-box] [data-node="s:4"]')
+
+  await clickSlide(page, box.x + box.w / 2, box.y + box.h / 2)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.keyboard.type("Draft")
+  await page.clock.runFor(1000)
+  await expect.poll(async () => ((await saved())?.text as { chars: string }).chars).toContain("Draft")
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("Backspace")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await saved())?.parent).toBeNull()
+  await expect(shownTitle).toHaveCount(0)
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(shownTitle).toHaveCount(1)
+  await expect.poll(async () => (await saved())?.text).toEqual(before?.text)
+
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(shownTitle).toHaveCount(0)
+  await expect.poll(async () => (await saved())?.parent).toBeNull()
+})

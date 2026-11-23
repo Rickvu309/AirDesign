@@ -10,8 +10,8 @@
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "a7ce7fdb9d5c",
-      "blob": "ef5a1f105f3bae63aae81a4e504ef3f9ea5b055f"
+      "digest": "da8296d4e8d0",
+      "blob": "6c6e14206292abd70452762c0a950e890287b14c"
     },
     {
       "file": "packages/doom/src/view-of.ts",

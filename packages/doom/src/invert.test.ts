@@ -110,6 +110,19 @@ describe("invert", () => {
     expect(isRefusal(tryLand(removed.after, writes))).toBe(false)
   })
 
+  it("puts a delete last, so the redo of typing and a delete in one step writes the text before the delete", () => {
+    const base = revOf(sampleDeck(), ids.title, "text")!
+    const emptied = step(sampleDeck(), [
+      { node: ids.title, prop: "text", value: textOf("Draft"), base },
+      { node: ids.title, prop: "parent", value: null },
+    ])
+    const undone = step(emptied.after, invert(emptied.before, emptied.after, emptied.edit))
+    const redo = invert(undone.before, undone.after, undone.edit)
+    expect(redo.map((write) => write.prop)).toEqual(["text", "parent"])
+    const redone = tryLand(undone.after, redo) as Doom
+    expect(redone.nodes.get(ids.title)).toMatchObject({ parent: null, text: { chars: "Draft" } })
+  })
+
   it("brings an ungrouped frame back before its children move back into it", () => {
     const ungrouped = step(sampleDeck(), [
       { node: ids.title, prop: "parent", value: place(ids.slide) },
