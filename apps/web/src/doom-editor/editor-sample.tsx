@@ -8,9 +8,14 @@ import { DoomEditor, type EditorStart } from "./doom-editor"
 
 const deck = "sample-deck"
 const asked = "Make a strategy review for the board from my notes. Lead with the numbers, then the three levers."
-const usage = { used: 38, allowed: 100, resets: "2026-11-30T08:00:00.000Z" }
-const loadUsage: NonNullable<AiraStart["usage"]> = () =>
-  Promise.resolve({ kind: "usage", email: "sample@airdesign.app", usage, available: true })
+const resets = "2026-11-30T08:00:00.000Z"
+const usage = { used: 38, allowed: 100, resets }
+const spent = { used: 100, allowed: 100, resets }
+const usageReader =
+  (week: typeof usage): NonNullable<AiraStart["usage"]> =>
+  () =>
+    Promise.resolve({ kind: "usage", email: "sample@airdesign.app", usage: week, available: true })
+const loadUsage = usageReader(usage)
 
 const toolOf = (op: AgentOp) => projectTools(catalog).find((tool) => tool.op === op)?.name ?? op
 
@@ -24,8 +29,8 @@ const step = (op: AgentOp, at: number, state: "working" | "done"): AiraStep => (
 const read = step("read_deck", 1, "done")
 const said: AiraStep = { kind: "text", text: "Seven slides from your notes, numbers first, then the three levers." }
 
-function chatOf(exchange: Omit<AiraExchange, "asked">): AiraChat {
-  return { deck, history: [], answers: [], usage, exchanges: [{ asked, ...exchange }] }
+function chatOf(exchange: Omit<AiraExchange, "asked">, week = usage): AiraChat {
+  return { deck, history: [], answers: [], usage: week, exchanges: [{ asked, ...exchange }] }
 }
 
 const done = chatOf({
@@ -45,12 +50,16 @@ export const airaSamples = {
   },
   done: { chat: done },
   failed: { chat: chatOf({ steps: [read, said, step("edit_deck", 2, "done")], end: "failed", runs: ["sample-run"] }) },
+  limit: {
+    chat: chatOf({ steps: [read, said], end: "out-of-usage", runs: [] }, spent),
+    usage: usageReader(spent),
+  },
   long: {
     chat: done,
     draft:
       "Make the revenue chart tell the story faster. Lead with the 2025 number, then show the trend across all five years. Keep our colors and label each bar with its value. Add one takeaway line under the title, and cut the source note down to a single line so the slide breathes.",
   },
-} satisfies Record<string, Omit<AiraStart, "usage">>
+} satisfies Record<string, AiraStart>
 
 export const sampleText = sampleDeck.ids["subtitle"]
 

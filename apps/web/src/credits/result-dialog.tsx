@@ -95,14 +95,6 @@ export function OkTile() {
   )
 }
 
-export function MoneyTile() {
-  return (
-    <span className={blueTile}>
-      <span className="text-[18px] leading-none font-semibold text-white">$</span>
-    </span>
-  )
-}
-
 export function ErrorTile() {
   return (
     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0_0_0_1px_var(--danger-edge),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]">

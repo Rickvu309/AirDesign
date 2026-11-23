@@ -1,5 +1,5 @@
 import { creditsRoutes } from "@/credits/credits-routes"
-import { AddCreditsFirst, ConfirmReset, LimitReached, ResetComplete } from "@/credits/screens/editor-dialogs"
+import { LimitReached } from "@/credits/screens/limit-reached"
 import {
   AddCreditsAmount,
   CreditsAdded,
@@ -13,9 +13,6 @@ export const screens = {
   [creditsRoutes.waiting]: WaitingForPayment,
   [creditsRoutes.added]: CreditsAdded,
   [creditsRoutes.limit]: LimitReached,
-  [creditsRoutes.confirmReset]: ConfirmReset,
-  [creditsRoutes.addFirst]: AddCreditsFirst,
-  [creditsRoutes.resetComplete]: ResetComplete,
   [creditsRoutes.paymentFailed]: PaymentFailed,
   [creditsRoutes.paymentExpired]: PaymentExpired,
 }

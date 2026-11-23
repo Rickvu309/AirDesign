@@ -11,8 +11,6 @@ test("each Account preference names its choice by its row", async ({ page }) => 
 const creditDialogs = [
   ["/screens/s91-01-credits-add-credits-amount", productCopy.creditsAdd],
   ["/screens/s91-03-credits-add-credits-credits-added", "$25.00 added"],
-  ["/screens/s92-02-credits-out-of-usage-confirm-reset", productCopy.usageResetConfirmTitle],
-  ["/screens/s92-03-credits-out-of-usage-add-credits-first", productCopy.creditsAdd],
   ["/screens/s99-01-credits-errors-payment-failed", productCopy.payFailedTitle],
   ["/screens/s99-02-credits-errors-payment-expired", productCopy.payExpiredTitle],
 ] as const

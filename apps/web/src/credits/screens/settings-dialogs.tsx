@@ -1,6 +1,6 @@
 import { AddCreditsDialog } from "@/credits/add-credits-dialog"
 import { addedBalance, addedHistory, amountEntry, creditsCopy } from "@/credits/credits-sample"
-import { ErrorTile, ExpiredTile, MoneyTile, OkTile, ResultDialog } from "@/credits/result-dialog"
+import { ErrorTile, ExpiredTile, OkTile, ResultDialog } from "@/credits/result-dialog"
 import { UsageStage, WaitingBanner } from "@/credits/usage-stage"
 import { productCopy } from "@/copy/product-copy"
 import { UsageTab } from "@/settings/screens/usage-tab"
@@ -56,17 +56,5 @@ export function PaymentExpired() {
         primary={productCopy.payTryAgain}
       />
     </UsageTab>
-  )
-}
-
-export function ConfirmResetDialog() {
-  return (
-    <ResultDialog
-      icon={<MoneyTile />}
-      title={productCopy.usageResetConfirmTitle}
-      body={productCopy.usageResetConfirmBody}
-      secondary={productCopy.cancel}
-      primary={productCopy.usageResetAction}
-    />
   )
 }

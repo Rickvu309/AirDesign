@@ -2,10 +2,6 @@ export function usageResetsOn(when: string): string {
   return `Resets ${when}`
 }
 
-export function usageLimitBodyOn(when: string): string {
-  return `${usageResetsOn(when)}. Your request is saved.`
-}
-
 export function noMatchTitleOf(query: string): string {
   return `No decks match “${query}”`
 }
@@ -88,15 +84,8 @@ export const productCopy = {
   noDecksBody: "Decks hold your slides, ready to edit and present.",
   usageTitle: "Weekly usage",
   usageResets: usageResetsOn(sampleReset),
-  usageResetAction: "Reset",
   usageLimitTitle: "You've hit this week's limit",
-  usageLimitBody: usageLimitBodyOn(sampleReset),
-  usageResetDone: "Usage reset. $5 used from your credits.",
-  usageResetConfirmTitle: "Reset usage?",
-  usageResetConfirmBody: "This uses $5 of your credits.",
   usagePercent: "62% used",
-  agentResumeLine: "Pick up where you left off.",
-  agentResume: "Resume",
   agentName: "Aira",
   creditsTitle: "Credits",
   creditsFacts: "Each reset is $5. Credits never expire.",
@@ -112,7 +101,6 @@ export const productCopy = {
   payNotCharged: "Nothing was charged. Try again.",
   payTryAgain: "Try again",
   historyAdded: "Credits added",
-  historyReset: "Usage reset",
   cancel: "Cancel",
   close: "Close",
   notNow: "Not now",
