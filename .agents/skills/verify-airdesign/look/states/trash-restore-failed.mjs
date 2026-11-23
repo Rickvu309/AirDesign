@@ -3,7 +3,14 @@ import { expect } from "@playwright/test"
 async function drive(kit) {
   await kit.signIn()
   const when = new Date().toISOString()
-  const deck = { deck: "deck-restore", name: "Pricing Strategy Review", edited: when, created: when, trashed: when }
+  const deck = {
+    deck: "deck-restore",
+    name: "Pricing Strategy Review",
+    edited: when,
+    created: when,
+    trashed: when,
+    doom: { rev: 1 },
+  }
   await kit.page.route(
     (url) => url.pathname === kit.deckRoutes.list.path,
     (route) =>

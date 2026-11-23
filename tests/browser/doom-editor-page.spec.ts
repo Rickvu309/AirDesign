@@ -3,7 +3,6 @@ import { guideWords } from "../../apps/web/src/copy/guide-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { productCopy, tabTitleOf, zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
-import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { openDoomEditor, savedNode, savedSlides } from "./doom-deck"
@@ -47,7 +46,7 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   const right = page.locator("[data-editor-panel]")
   await expect(right.locator("[data-zoom-readout]")).toBeVisible()
   await expect(right.getByRole("button", { name: presentCopy.present })).toBeVisible()
-  await expect(right.getByRole("button", { name: shortcutCopy.gestures.export, exact: true })).toBeDisabled()
+  await expect(right.getByRole("button", { name: "Export", exact: true })).toBeDisabled()
   await expect(right.locator("[data-aira-panel]")).toBeVisible()
   await expect(page.locator("[data-zoom-percent]")).toHaveCount(0)
 })

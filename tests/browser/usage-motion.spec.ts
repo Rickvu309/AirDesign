@@ -46,12 +46,12 @@ test("the usage popover grows from its ring on the micro curve, holds still with
   page,
   context,
   stack,
-  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
-  await decks.open()
+  await page.goto("/s")
+  await page.locator("[data-doom-ready]").waitFor()
   const side = page.locator("[data-editor-panel]")
   const ring = side.getByRole("button", { name: productCopy.usageTitle })
   const grown = await usageGrowth(page, side)

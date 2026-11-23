@@ -13,12 +13,12 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   page,
   context,
   stack,
-  decks,
 }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   const paths = await forward(page, stack)
-  await decks.open()
+  await page.goto("/s")
+  await page.locator("[data-doom-ready]").waitFor()
   const side = page.locator("[data-editor-panel]")
   const ring = side.getByRole("button", { name: productCopy.usageTitle })
   await expect(ring).toBeVisible()
