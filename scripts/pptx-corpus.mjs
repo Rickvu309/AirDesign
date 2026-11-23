@@ -2,7 +2,7 @@ import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { replay, settleRun } from "./judge-proof.mjs"
-import { againSuffix, renderName } from "./pptx-render.mjs"
+import { againSuffix } from "./pptx-render.mjs"
 import { scoreWrittenRoute } from "./pptx-route-judge.mjs"
 import { specFolder, unrecordedSeconds, weightedShares } from "./spec-seconds.mjs"
 
@@ -134,7 +134,7 @@ export const corpusCases = ({ argv, entries, seconds }) => {
   return entries.filter((entry) => chosen.has(entry))
 }
 
-export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, browser, size = rotatingDecks }) => {
+export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, size = rotatingDecks }) => {
   const full = argv.includes("--corpus")
   const { seed, fresh } = seeds.at(-1)
   const partition = corpusPartition({ argv, listed, every, fixed })
@@ -155,9 +155,7 @@ export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, brows
       return { pages: [], line: `corpus render ${render}: ${error.message}` }
     },
     duration: (measure) => (full ? { line: "the corpus check has no duration limit", fails: false } : measure()),
-    renders: rendersOf({ cases: partition.fixedWork ? cases : [], added: full ? added : [] }).filter(
-      (render) => renderName(render) !== browser,
-    ),
+    renders: rendersOf({ cases: partition.fixedWork ? cases : [], added: full ? added : [] }),
     rendersAdded: full,
     excusable: !full && fresh,
     announce: full

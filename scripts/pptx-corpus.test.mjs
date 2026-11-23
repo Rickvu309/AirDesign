@@ -52,7 +52,6 @@ same("a subset larger than the list stops at the list", rotatingSubset({ names, 
 const decisionCases = [
   { before: "real.pptx", after: "real.pptx" },
   { before: "clean.pptx", after: "text.pptx" },
-  { before: "clean.pptx", after: "browser.pptx" },
 ]
 const decide = (argv, seeds) =>
   corpusDecision({
@@ -62,7 +61,6 @@ const decide = (argv, seeds) =>
     every: ["real.pptx", ...names],
     fixed: ["census.pptx", "real.pptx"],
     cases: decisionCases,
-    browser: "browser.pptx",
     size: 2,
   })
 const caseRenders = ["real.pptx", "real.pptx again", "clean.pptx", "text.pptx"]
@@ -163,7 +161,6 @@ for (const follows of [
   seeds: proofSeeds,
   ...inputs,
   cases,
-  browser: textExportName,
 })`,
   "const waiting = [...decision.renders]",
   'committedArgs("HEAD")',
@@ -251,7 +248,6 @@ const judgedRun = ({ broken, full, seed, fresh, freshFails }) => {
     every: names,
     fixed: [],
     cases: [],
-    browser: "browser.pptx",
     size: 2,
   })
   const lists = new Map(

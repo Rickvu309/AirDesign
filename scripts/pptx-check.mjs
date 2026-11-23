@@ -7,7 +7,6 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { validatorFiles } from "./paragraph-export.mjs"
 import { freshBrowserExport, playwrightTestLines } from "./browser-export.mjs"
 import { browserExportArgs, caseExports, caseOriginals, loadCases, writeCases } from "./pptx-cases.mjs"
-import { textExportName } from "./pptx-cases/text.mjs"
 import { judgeParts, validatorBlindFaults } from "./judge.mjs"
 import {
   changedSinceArgs,
@@ -186,7 +185,6 @@ const decision = corpusDecision({
   seeds: proofSeeds,
   ...inputs,
   cases,
-  browser: textExportName,
 })
 const waiting = [...decision.renders]
 console.log(`${decision.announce}: ${decision.added.join(", ")}`)
