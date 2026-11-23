@@ -73,7 +73,6 @@ it("decodes the API's real answers for every deck route without changing their s
   const deck = `wire${randomBytes(6).toString("hex")}`
   expect((await ask(base, "POST", doomRoutes.create.path, { deck }, cookie)).status).toBe(200)
   const calls = [
-    { route: deckRoutes.rename, body: { deck, name: "Wire deck" } },
     { route: deckRoutes.list, body: {} },
     { route: deckRoutes.mediaUpload, body: { deck, bytes: 5, sha256: "a".repeat(64) } },
     { route: deckRoutes.trash, body: { deck } },

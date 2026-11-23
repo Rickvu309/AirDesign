@@ -90,7 +90,6 @@ export type AskOptions = {
   readonly mint?: () => string
   readonly after?: Promise<AiraChat | undefined>
   readonly opened?: Promise<unknown>
-  readonly pause?: (ms: number, signal: AbortSignal) => Promise<void>
 }
 
 type Turned =
@@ -106,8 +105,6 @@ type Called = {
   readonly refusal?: string
 }
 
-const indexingTries = 15
-const indexingPause = 1000
 const accept = "application/json, text/event-stream"
 const tools = projectTools(catalog)
 const opOf: ReadonlyMap<string, AgentOp> = new Map(tools.map((tool) => [tool.name, tool.op]))
@@ -308,20 +305,6 @@ function untilStopped(work: Promise<unknown>, signal: AbortSignal): Promise<void
   })
 }
 
-function pauseFor(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms)
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timer)
-        resolve()
-      },
-      { once: true },
-    )
-  })
-}
-
 function changes(call: ToolCall): boolean {
   return catalog[opOf.get(call.name) ?? "read_deck"].kind === "command"
 }
@@ -331,22 +314,12 @@ async function callTool(
   rpc: number,
   call: ToolCall,
   signal: AbortSignal,
-  pause: NonNullable<AskOptions["pause"]>,
   once: string,
   again = true,
 ): Promise<Called> {
   const sent = changes(call) ? once : undefined
   try {
-    let outcome = await sendTool(send, rpc, call.name, call.input, signal, sent)
-    for (
-      let tried = 0;
-      outcome.fields?.refusal === "indexing" && tried < indexingTries && !signal.aborted;
-      tried += 1
-    ) {
-      await pause(indexingPause, signal)
-      if (signal.aborted) break
-      outcome = await sendTool(send, rpc, call.name, call.input, signal, sent)
-    }
+    const outcome = await sendTool(send, rpc, call.name, call.input, signal, sent)
     const run = outcome.fields?.runId
     const edited = outcome.ok && changes(call) && typeof run === "string"
     const answer = toolAnswer(call.id, outcome.text, outcome.ok, outcome.pictures)
@@ -358,7 +331,7 @@ async function callTool(
       const stopped = { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true } as const
       return sent === undefined ? stopped : { ...stopped, cut: sent }
     }
-    if (sent !== undefined && again) return callTool(send, rpc, call, signal, pause, once, false)
+    if (sent !== undefined && again) return callTool(send, rpc, call, signal, once, false)
     const lost =
       sent === undefined
         ? "The call did not reach the server. Nothing landed."
@@ -464,7 +437,7 @@ async function converse(
         update({ type: "answered", answer: stoppedAnswer(call), state: "stopped", run: undefined })
         continue
       }
-      const called = await callTool(send, rpc, call, signal, options.pause ?? pauseFor, `${ask}-${String(rpc)}`)
+      const called = await callTool(send, rpc, call, signal, `${ask}-${String(rpc)}`)
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)

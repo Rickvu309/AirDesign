@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs"
+import { mkdirSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { designContext, openBrowser, settle } from "./browser.mjs"
@@ -8,9 +8,9 @@ import { captureCompare } from "../look/compare.mjs"
 import { contextPool } from "../look/context-pool.mjs"
 import { pageReady } from "../look/page-ready.mjs"
 import { writeSheet } from "../look/sheet.mjs"
-import { find, matching, openDeck, reach, states, sweep } from "../look/states.mjs"
+import { find, matching, reach, states, sweep } from "../look/states.mjs"
 
-const valued = ["--state", "--only", "--cookie", "--out", "--import", "--slide"]
+const valued = ["--state", "--only", "--cookie", "--out"]
 
 function read(args) {
   const values = []
@@ -43,8 +43,6 @@ export async function designCommand(command, args, runtime) {
   const where = named ? undefined : target
   if (command !== "sheet" && named === undefined && !where?.startsWith("/"))
     throw new Error(`name a state or a page path: verify-airdesign ${command} <run> <state-or-path>`)
-  const deck = flags.import === undefined ? undefined : path.resolve(flags.import)
-  if (deck !== undefined && !existsSync(deck)) throw new Error(`no file at ${deck}`)
   const out = flags.out ? path.resolve(flags.out) : path.join(runtime.evidenceDir(run), `${command}-${Date.now()}`)
   mkdirSync(out, { recursive: true })
   const catalog = await import(pathToFileURL(path.join(runtime.repo, "packages/catalog/dist/index.js")).href)
@@ -120,7 +118,6 @@ export async function designCommand(command, args, runtime) {
         } else if (!where.startsWith("/screens/")) await kit.signIn()
         await kit.page.goto(where)
         await pageReady(kit.page, where)
-        if (deck !== undefined) await openDeck(kit.page, deck, flags.slide)
       }
       const scope = named?.name ?? where
       if (command === "look") {

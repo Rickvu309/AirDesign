@@ -12,7 +12,6 @@ import {
   readLinkToken,
   readNamedDeck,
   readNoFields,
-  readRename,
   readRevokeRequest,
   readRun,
   readSessionCookie,
@@ -95,7 +94,6 @@ describe("every reader of text that reaches Postgres refuses what Postgres canno
     code_challenge_method: "S256",
   }
   const readers: readonly (readonly [string, (text: string) => unknown])[] = [
-    ["a deck name", (text) => readRename({ deck: "d", name: text })],
     ["an email", (text) => readEmail({ email: `a${text}@example.com` })],
     ["a client name", (text) => readClientMetadata({ redirect_uris: [redirect], client_name: text })],
     ["a redirect address", (text) => readClientMetadata({ redirect_uris: [`${redirect}${text}`] })],
@@ -286,16 +284,6 @@ describe("deck list readers", () => {
     expect(readNamedDeck({ deck: "a b" })).toEqual({ ok: false, refusal: "deck" })
     expect(readNamedDeck(JSON.parse('{"__proto__":{"deck":"d"}}'))).toEqual(field)
     for (const body of [...wrongBodies, {}]) expect(readNamedDeck(body)).toEqual(field)
-  })
-
-  it("readRename trims and bounds the name", () => {
-    expect(readRename({ deck: "d", name: "  n  " })).toEqual({ ok: true, deck: "d", name: "n" })
-    expect(readRename({ deck: "d", name: "\ud83d\ude00".repeat(200) })).toMatchObject({ ok: true })
-    expect(readRename({ deck: "d", name: "x".repeat(201) })).toEqual(field)
-    expect(readRename({ deck: "d", name: "   " })).toEqual(field)
-    expect(readRename({ deck: "d", name: 7 })).toEqual(field)
-    expect(readRename({ deck: "a b", name: "n" })).toEqual({ ok: false, refusal: "deck" })
-    expect(readRename({ deck: "d", name: "n", extra: 1 })).toEqual(field)
   })
 
   it("readDecks bounds and folds the list", () => {

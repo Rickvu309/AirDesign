@@ -2,8 +2,6 @@ import { readdirSync } from "node:fs"
 import { availableParallelism } from "node:os"
 import { walk } from "./walk.mjs"
 
-export { openDeck } from "./open-deck.mjs"
-
 const folder = new URL("./states/", import.meta.url)
 
 async function readStates() {

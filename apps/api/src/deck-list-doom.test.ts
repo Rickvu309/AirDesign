@@ -111,34 +111,7 @@ describe("a doom deck in the deck list", () => {
   })
 })
 
-describe("renaming, starring, trashing and deleting a doom deck", () => {
-  it("renames it through the deck name, so the stored deck and the list agree", async () => {
-    const deck = await made()
-    expect(await post("/decks/rename", { deck, name: "Board update" })).toEqual({
-      ok: true,
-      deck,
-      name: "Board update",
-    })
-    expect((await found(deck)).live?.name).toBe("Board update")
-    const opened = doomRoutes.open.result(await post(doomRoutes.open.path, { deck }))
-    if (!opened.ok) throw new Error("open")
-    expect(opened.fold.nodes.get("s:1" as never)).toMatchObject({ name: "Board update" })
-  })
-
-  it("refuses a rename by someone else", async () => {
-    const deck = await made()
-    expect(await post("/decks/rename", { deck, name: "Mine" }, stranger)).toEqual({ ok: false, refusal: "owner" })
-    expect((await found(deck)).live?.name).toBe(blankDeckName)
-  })
-
-  it("refuses a name Postgres cannot store and keeps the old name", async () => {
-    const deck = await made()
-    await post("/decks/rename", { deck, name: "kept" })
-    for (const name of ["a\u0000b", "\ud800", "a\udc00b"])
-      expect(await post("/decks/rename", { deck, name })).toEqual({ ok: false, refusal: "field" })
-    expect((await found(deck)).live?.name).toBe("kept")
-  })
-
+describe("starring, trashing and deleting a doom deck", () => {
   it("stars and unstars it", async () => {
     const deck = await made()
     expect(await post("/decks/star", { deck, starred: true })).toEqual({ ok: true, deck, starred: true })
@@ -238,14 +211,7 @@ describe("renaming, starring, trashing and deleting a doom deck", () => {
   })
 
   it("refuses every deck list route without a session", async () => {
-    for (const path of [
-      "/decks/list",
-      "/decks/rename",
-      "/decks/star",
-      "/decks/trash",
-      "/decks/restore",
-      "/decks/delete",
-    ]) {
+    for (const path of ["/decks/list", "/decks/star", "/decks/trash", "/decks/restore", "/decks/delete"]) {
       const response = await ask(base, "POST", path, { deck: "abc", name: "x", starred: true, decks: ["abc"] })
       expect(response.status).toBe(401)
       expect(response.json).toEqual({ ok: false, refusal: "session" })

@@ -5,7 +5,7 @@ import { deckRoutes } from "./index.js"
 
 const payload = { ok: false, refusal: "payload" }
 
-it("checks each list, rename and media field independently", () => {
+it("checks each list and media field independently", () => {
   const row = { deck: "deck", name: "", edited: "2026-11-11", created: "2026-11-10", doom: { rev: 3 } }
   const listed = {
     ok: true,
@@ -31,10 +31,6 @@ it("checks each list, rename and media field independently", () => {
     { trash: [{ ...row, trashed: 1 }] },
   ])
     expect(deckRoutes.list.result({ ...listed, ...changed })).toEqual(payload)
-  const renamed = { ok: true, deck: "deck", name: "" }
-  expect(deckRoutes.rename.result(renamed)).toEqual(renamed)
-  expect(deckRoutes.rename.result({ ...renamed, deck: "bad deck" })).toEqual(payload)
-  expect(deckRoutes.rename.result({ ...renamed, name: null })).toEqual(payload)
   const deleted = { ok: true, deleted: [] }
   expect(deckRoutes.delete.result(deleted)).toEqual(deleted)
   const signed = { ok: true, url: "https://storage.example/media", expires: "2026-11-11" }
@@ -79,25 +75,12 @@ it("decodes deleted on every deck route", () => {
   for (const route of Object.values(deckRoutes)) {
     expect(route.result({ ok: false, refusal: "deleted" })).toEqual({ ok: false, refusal: "deleted" })
   }
-  expect(Object.keys(deckRoutes)).toEqual([
-    "list",
-    "rename",
-    "star",
-    "trash",
-    "restore",
-    "delete",
-    "mediaUpload",
-    "media",
-  ])
+  expect(Object.keys(deckRoutes)).toEqual(["list", "star", "trash", "restore", "delete", "mediaUpload", "media"])
 })
 
 it("refuses missing and malformed success fields for every deck route", () => {
   const wrong = {
     list: [{ ok: true }, { ok: true, account: { email: "a" }, decks: [{}], trash: [] }],
-    rename: [
-      { ok: true, deck: "deck" },
-      { ok: true, deck: "deck", name: 1 },
-    ],
     star: [
       { ok: true, deck: "deck" },
       { ok: true, deck: "deck", starred: "yes" },

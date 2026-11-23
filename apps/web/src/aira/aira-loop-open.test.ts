@@ -1,6 +1,6 @@
 import { airaRoutes, catalog, mcpRoutes, projectTools } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
-import { airaChat, askAira, type AiraChat } from "./aira-loop"
+import { airaChat, askAira } from "./aira-loop"
 
 const deck = "deck"
 const addSlide = projectTools(catalog).find((tool) => tool.op === "edit_deck")?.name ?? ""
@@ -11,13 +11,7 @@ const add = {
   name: addSlide,
   input: { deck, base: 0, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
 }
-const indexing = {
-  isError: true,
-  structuredContent: { ok: false, refusal: "indexing" },
-  text: "The deck is still being indexed.",
-}
 const landed = { structuredContent: { ok: true, revision: 1, runId: "run-1", slides: ["257"] } }
-const stale = { isError: true, structuredContent: { ok: false, refusal: "stale" }, text: "Changed." }
 
 function lines(content: readonly unknown[]) {
   const stopReason = content.some((block) => (block as { type: string }).type === "tool_use") ? "tool_use" : "end_turn"
@@ -48,73 +42,6 @@ function link(answers: readonly object[]) {
   }
   return { send, sent }
 }
-
-async function ask(answers: readonly object[], paused: number[], signal = new AbortController().signal) {
-  const held = link(answers)
-  const shown: AiraChat[] = []
-  const done = await askAira(airaChat(deck), "Add a slide", {
-    signal,
-    fetch: held.send,
-    show: (next) => shown.push(next),
-    pause: async (ms) => {
-      paused.push(ms)
-    },
-  })
-  return { done, shown, held }
-}
-
-describe("Aira's loop when the deck is still being indexed", () => {
-  it("sends the refused call again after a pause, shows the step as working meanwhile, and lands it", async () => {
-    const paused: number[] = []
-    const { done, shown, held } = await ask([indexing, indexing, landed], paused)
-    expect(held.sent.filter((name) => name === addSlide)).toHaveLength(3)
-    expect(paused).toEqual([1000, 1000])
-    const rows = shown.flatMap((chat) => chat.exchanges[0]?.steps ?? []).filter((step) => step.kind === "tool")
-    expect(rows.map((step) => step.state)).not.toContain("refused")
-    expect(done.exchanges[0]?.steps.find((step) => step.kind === "tool")).toMatchObject({ state: "done" })
-    expect(done.exchanges[0]?.runs).toEqual(["run-1"])
-  })
-
-  it("gives up after a bounded number of tries and tells Aira the deck was still being indexed", async () => {
-    const paused: number[] = []
-    const { done, held } = await ask(
-      Array.from({ length: 40 }, () => indexing),
-      paused,
-    )
-    const sentCount = held.sent.filter((name) => name === addSlide).length
-    expect(sentCount).toBe(paused.length + 1)
-    expect(sentCount).toBeLessThan(21)
-    expect(done.exchanges[0]?.steps.find((step) => step.kind === "tool")).toMatchObject({ state: "refused" })
-    expect(done.history[2]).toMatchObject({
-      content: [{ type: "tool_result", content: "The deck is still being indexed.", is_error: true }],
-    })
-  })
-
-  it("does not send again after any other refusal", async () => {
-    const paused: number[] = []
-    const { held } = await ask([stale, landed], paused)
-    expect(held.sent.filter((name) => name === addSlide)).toHaveLength(1)
-    expect(paused).toEqual([])
-  })
-
-  it("does not send again once the person pressed Stop during the wait", async () => {
-    const stopping = new AbortController()
-    const paused: number[] = []
-    const held = link([indexing, indexing, landed])
-    const done = await askAira(airaChat(deck), "Add a slide", {
-      signal: stopping.signal,
-      fetch: held.send,
-      show: () => undefined,
-      pause: async (ms) => {
-        paused.push(ms)
-        stopping.abort()
-      },
-    })
-    expect(paused).toEqual([1000])
-    expect(held.sent.filter((name) => name === addSlide)).toHaveLength(1)
-    expect(done.exchanges[0]?.end).toBe("stopped")
-  })
-})
 
 describe("Aira's loop before the server's first open of the deck", () => {
   it("holds the first call until the open lands, then sends it once", async () => {

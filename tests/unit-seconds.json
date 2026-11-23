@@ -109,7 +109,7 @@
   "apps/site/worker/sign-in-forward.test.ts": 3.9,
   "apps/web/src/aira/aira-answers.test.ts": 5.2,
   "apps/web/src/aira/aira-history.test.ts": 3.9,
-  "apps/web/src/aira/aira-loop-indexing.test.ts": 3.9,
+  "apps/web/src/aira/aira-loop-open.test.ts": 3.9,
   "apps/web/src/aira/aira-loop-stop.test.ts": 3.9,
   "apps/web/src/aira/aira-loop.test.ts": 4.2,
   "apps/web/src/aira/aira-pictures.test.ts": 4.7,

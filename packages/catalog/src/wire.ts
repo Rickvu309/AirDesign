@@ -1,7 +1,6 @@
 import { limits } from "@airdesign/doom"
 import * as z from "zod/v4"
 
-import { readDeckName } from "./deck-name.js"
 import { storableText } from "./storable-text.js"
 
 declare const deckIdBrand: unique symbol
@@ -142,16 +141,6 @@ export function readNoFields(raw: unknown): { ok: true } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined || Object.keys(body).length > 0) return fieldRefusal
   return { ok: true }
-}
-
-export function readRename(raw: unknown): { ok: true; deck: DeckId; name: string } | FieldRefusal | DeckRefusal {
-  const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "name"]) || !Object.hasOwn(body, "deck")) return fieldRefusal
-  const deck = readDeckId(body.deck)
-  if (!deck.ok) return deckRefusal
-  const name = readDeckName(body.name)
-  if (name === undefined) return fieldRefusal
-  return { ok: true, deck: deck.deck, name }
 }
 
 export function readStar(raw: unknown): { ok: true; deck: DeckId; starred: boolean } | FieldRefusal | DeckRefusal {
