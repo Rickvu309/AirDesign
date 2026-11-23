@@ -69,6 +69,13 @@ export const metricsFrom = (read) => {
 }
 
 const countsProof = new Set(["fault-detection"])
+const fallingCounts = new Set(["import-parse", "design-findings"])
+
+const directionOf = (name, before) => {
+  const ahead = before.goal - before.now
+  if (ahead !== 0) return Math.sign(ahead)
+  return fallingCounts.has(name) ? -1 : 1
+}
 
 const measuredReason = (name, before, after) => {
   if (!measured(after)) {
@@ -92,10 +99,12 @@ const metricReason = (name, before, after) => {
   }
   if (!counted(after)) return `The metric ${name} stopped being a count with a goal.`
   if (countsProof.has(name)) return undefined
+  const direction = directionOf(name, before)
   const ahead = before.goal - before.now
-  const harder = ahead * (after.goal - before.goal) > 0
+  const metGoal = ahead !== 0 || (after.now - after.goal) * direction >= 0
+  const harder = direction * (after.goal - before.goal) > 0 && metGoal
   if (harder) {
-    return (after.now - before.now) * ahead >= 0
+    return (after.now - before.now) * direction >= 0
       ? undefined
       : `${name} went from ${before.now} to ${after.now}, away from its goal of ${before.goal}.`
   }
