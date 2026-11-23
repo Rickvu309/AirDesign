@@ -1,5 +1,12 @@
 import { post, answered } from "@/decks/deck-request"
-import { settle, showFailed, showStatus, type ToastId } from "@/decks/deck-notice"
+import {
+  pageToastOptions,
+  PageToaster,
+  settle,
+  showFailed,
+  showStatus,
+  type ToastId,
+} from "@/components/ui/page-notice"
 import { moveDeck } from "@/decks/move-deck"
 import { deckRoutes } from "@airdesign/catalog"
 import { dropDeck, sendQueued, starDeck } from "@airdesign/live"
@@ -24,7 +31,7 @@ import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { DoomPreview } from "@/decks/doom-preview"
-import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
+import { MovedToast } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
@@ -197,7 +204,7 @@ export function Home({
       await refresh(shiftAt)
       if (held) keepFocus()
       toast.notice((id) => <MovedToast name={deck.name} onUndo={(pointer) => void restore(deck, pointer, id)} />, {
-        ...movedToastOptions,
+        ...pageToastOptions,
         id: pending,
       })
     })
@@ -386,7 +393,7 @@ export function Home({
       <p role="status" className="sr-only">
         {said}
       </p>
-      <MovedToaster />
+      <PageToaster />
     </DeckBrowser>
   )
 }

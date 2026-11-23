@@ -1,5 +1,5 @@
 import type { ExportFormat } from "@/export/export-options"
-import { exportCopy } from "@/export/export-options"
+import { exportCopy } from "@/copy/export-copy"
 
 export type SlideChoice = "all" | "current" | "range" | "selected"
 

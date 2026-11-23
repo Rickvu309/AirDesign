@@ -9,7 +9,6 @@ public:
   - agent-logos.ts
   - danger-dialog.tsx
   - deck-glyph.tsx
-  - deck-notice.tsx
   - deck-time.ts
   - decks-screens.tsx
   - decks-shell.tsx
@@ -17,4 +16,3 @@ public:
   - home.tsx
   - move-deck.ts
   - not-found-page.tsx
-  - screens/deck-moved-toast.tsx

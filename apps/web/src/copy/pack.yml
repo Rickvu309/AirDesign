@@ -16,6 +16,7 @@ public:
   - doom-editor-copy.ts
   - effects-copy.ts
   - element-copy.ts
+  - export-copy.ts
   - fill-copy.ts
   - format-copy.ts
   - frame-copy.ts

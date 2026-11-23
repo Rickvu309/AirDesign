@@ -5,5 +5,4 @@ dependencies:
   - apps/web/src/doom-editor
   - apps/web/src/editing
 public:
-  - export-options.ts
   - export-screens.tsx

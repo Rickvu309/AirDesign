@@ -8,6 +8,7 @@ public:
   - ai-elements/conversation.tsx
   - ai-elements/message.tsx
   - ai-elements/prompt-input.tsx
+  - ui/action-pill.tsx
   - ui/airdesign-mark.tsx
   - ui/announcer.tsx
   - ui/button.tsx
@@ -18,6 +19,7 @@ public:
   - ui/dropdown-menu.tsx
   - ui/editor-icons.tsx
   - ui/input.tsx
+  - ui/page-notice.tsx
   - ui/popover.tsx
   - ui/select.tsx
   - ui/shadows.ts

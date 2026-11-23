@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { showStatus } from "@/decks/deck-notice"
+import { showStatus } from "@/components/ui/page-notice"
 import { creditsCopy } from "@/copy/credits-copy"
 import { signInAddress } from "@/account/sign-in-address"
 import { changeCredits, loadCredits, type CreditsChange, type CreditsLoad } from "@/credits/credits-load"

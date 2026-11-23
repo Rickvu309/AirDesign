@@ -1,7 +1,7 @@
 import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
-import { productCopy } from "./copy/product-copy"
+import { productCopy } from "../copy/product-copy"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 
 type JsdomModule = {

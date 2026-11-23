@@ -1,10 +1,3 @@
-apps/web/src:
-  apps/web/src/thin-notice.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/decks/deck-notice.tsx
 apps/web/src/doom-editor:
   apps/web/src/doom-editor/node-props.ts:
     violations:
