@@ -52,7 +52,7 @@ test("Undo of Aira's request keeps the layer the person moved since, says so, an
   await page.keyboard.press("Shift+ArrowRight")
   await expect.poll(async () => x(await saved(stack, opened))).toBe(from + 10)
 
-  await side.getByRole("button", { name: productCopy.undo, exact: true }).click()
+  await side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true }).click()
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
   await expect(canvas.getByText("Q3 summary", { exact: true })).toBeVisible()
   await expect(

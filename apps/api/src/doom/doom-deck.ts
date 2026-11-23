@@ -207,6 +207,7 @@ export async function editDoom(
   db: Sql,
   parsed: { readonly deck: DeckId; readonly edit: Readonly<Record<string, unknown>> },
   email: string,
+  still: (part: doom.Doom) => boolean = () => true,
 ) {
   const { seeds, regrouped } = seedsOf(parsed.edit)
   const once = typeof parsed.edit.once === "string" ? parsed.edit.once : ""
@@ -217,6 +218,7 @@ export async function editDoom(
     if (stored.trashed) return refusal("deck")
     const part = partOf(stored, once)
     if (part === undefined) return refusal("payload")
+    if (!still(part)) return refusal("stale")
     const read = doom.readEdit(parsed.edit, part)
     if (doom.isRefusal(read)) return editRefusal(read)
     const landed = { ...read, rev: doom.rev(part.rev + 1) }

@@ -11,6 +11,7 @@ import { stopRunTool } from "./stop-tool.js"
 
 export type Session = {
   readonly agent: string
+  readonly name?: string
   readonly mint: () => string
   log: CallerLog
   now: number
@@ -31,9 +32,9 @@ export async function callTool(name: string, raw: unknown, session: Session, hos
     case "create_deck":
       return createDeckTool(raw, once, host)
     case "read_deck":
-      return readDeckTool(raw, host)
+      return readDeckTool(raw, session.agent, host)
     case "edit_deck":
-      return editDeckTool(raw, session.agent, once, host)
+      return editDeckTool(raw, { id: session.agent, name: session.name }, once, host)
     case "stop_run":
       return stopRunTool(raw, session.agent, once, host)
   }

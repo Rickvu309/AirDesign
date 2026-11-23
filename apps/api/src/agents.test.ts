@@ -183,3 +183,25 @@ describe("tool call limits", () => {
     expect(ninetyFirst.text).toMatch(/^Ninety tool calls in five minutes from this account's agents\./)
   }, 60_000)
 })
+
+describe("an agent reading a deck another agent has a run open on", () => {
+  it("sees that agent by the name its person connected it under, and Aira as Aira", async () => {
+    const owner = await account()
+    const aira = await connected({ cookie: owner.cookie })
+    const cursor = await connected({ authorization: `Bearer ${await grant(owner, "Cursor")}` })
+    const start = await made(aira)
+    const a = await aira.call("edit_deck", { deck: start.deck, base: start.rev, changes: [text(start.slide, "one")] })
+    expect(a.ok, a.said).toBe(true)
+    const seen = await cursor.call("read_deck", { deck: start.deck })
+    expect(seen.body.otherRuns).toEqual([{ agent: "Aira", slide: start.slide, wrote: a.body.rev }])
+    const b = await cursor.call("edit_deck", {
+      deck: start.deck,
+      base: a.body.rev,
+      changes: [text(start.slide, "two")],
+    })
+    expect(b.ok, b.said).toBe(true)
+    expect((await aira.call("read_deck", { deck: start.deck })).body.otherRuns).toEqual([
+      { agent: "Cursor", slide: start.slide, wrote: b.body.rev },
+    ])
+  })
+})

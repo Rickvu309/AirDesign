@@ -74,6 +74,7 @@ type Step = {
   readonly before: doom.Doom
   readonly writes: readonly doom.Write[]
   readonly key?: string
+  readonly run?: string
 }
 
 const retryMilliseconds = 2_000
@@ -344,9 +345,13 @@ function connected(
     return run
   }
 
-  function pushEdit(writes: readonly doom.Write[], by: doom.Author): Pushed & { readonly before?: doom.Doom } {
+  function pushEdit(
+    writes: readonly doom.Write[],
+    by: doom.Author,
+    runUndo?: doom.RunUndo,
+  ): Pushed & { readonly before?: doom.Doom } {
     const before = view()
-    const edit: doom.Edit = { once: nextOnce(), author: by, writes }
+    const edit: doom.Edit = { once: nextOnce(), author: by, writes, ...(runUndo === undefined ? {} : { runUndo }) }
     const made = queueEdit(server, queue, edit)
     if (doom.isRefusal(made)) return { ok: false, refused: made }
     const trial = appliedOn(before, made.edit)
@@ -389,10 +394,14 @@ function connected(
       from.pop()
       return { ok: false, reason: "nothing" }
     }
-    const pushed = pushEdit(writes, author)
+    const pushed = pushEdit(
+      writes,
+      author,
+      step.run === undefined ? undefined : { run: step.run, undone: to === redoSteps },
+    )
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     from.pop()
-    to.push({ onces: [pushed.once], before: now, writes })
+    to.push({ onces: [pushed.once], before: now, writes, ...(step.run === undefined ? {} : { run: step.run }) })
     turned.push(pushed.once)
     if (turned.length > 500) turned.shift()
     return { ok: true, once: pushed.once, saved: pushed.saved }
@@ -422,7 +431,8 @@ function connected(
     } catch {
       return { ok: false, reason: "offline" }
     }
-    if (edits === undefined || edits.length === 0) return { ok: false, reason: "nothing" }
+    if (edits === undefined || edits.length === 0 || view().runs.get(run)?.undone === true)
+      return { ok: false, reason: "nothing" }
     const now = view()
     const owned = new Set<doom.Rev>()
     for (const name of turned) {
@@ -431,9 +441,9 @@ function connected(
     }
     const { writes, kept } = doom.invertRun(now, edits, owned)
     if (writes.length === 0) return { ok: false, reason: "nothing" }
-    const pushed = pushEdit(writes, author)
+    const pushed = pushEdit(writes, author, { run, undone: true })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    redoSteps.push({ onces: [pushed.once], before: now, writes })
+    redoSteps.push({ onces: [pushed.once], before: now, writes, run })
     turned.push(pushed.once)
     if (turned.length > 500) turned.shift()
     return { ok: true, once: pushed.once, saved: pushed.saved, kept }

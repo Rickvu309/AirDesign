@@ -45,7 +45,7 @@ test("Undo takes an agent's run back after the tab reloaded, reading only that r
   await page.reload()
   page.on("request", (request) => requested.push(new URL(request.url()).pathname))
   await expect(canvas.getByText("$4.2M", { exact: true })).toBeVisible()
-  await side.getByRole("button", { name: productCopy.undo, exact: true }).click()
+  await side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true }).click()
   await expect(canvas.getByText("$4.2M", { exact: true })).toHaveCount(0)
   await expect.poll(async () => await canvas.locator("[data-node]").count()).toBe(before)
   expect(requested).toContain("/doom/run")

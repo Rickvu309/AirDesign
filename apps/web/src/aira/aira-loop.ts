@@ -466,6 +466,16 @@ async function converse(
   return chat
 }
 
+export function settledByRuns(exchange: AiraExchange, undoneRun: (run: string) => boolean | undefined): AiraExchange {
+  if ((exchange.end !== "done" && exchange.end !== "undone") || exchange.runs.length === 0) return exchange
+  const states = exchange.runs.map(undoneRun)
+  if (states.some((state) => state === undefined)) return exchange
+  const undone = states.every((state) => state === true)
+  if (undone === (exchange.end === "undone")) return exchange
+  const { undoRefused: _refused, undoFailed: _failed, kept: _kept, ...settled } = exchange
+  return undone ? { ...settled, end: "undone" } : { ...settled, end: "done" }
+}
+
 export type RunUndone = { readonly kept: readonly string[] } | "refused" | "failed"
 export type UndoRun = (deck: string, run: string) => Promise<RunUndone>
 

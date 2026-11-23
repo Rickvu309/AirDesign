@@ -51,7 +51,7 @@ test("Aira adds KPIs through the MCP address, the canvas paints them as they lan
   expect([...added.runs.values()].map((run) => run.phase)).toEqual(["stopped"])
   expect(added.children.get(opened.slide as doom.NodeId)?.length).toBeGreaterThan(before)
 
-  await side.getByRole("button", { name: productCopy.undo, exact: true }).click()
+  await side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true }).click()
   await expect(canvas.getByText("$4.2M", { exact: true })).toHaveCount(0)
   await expect.poll(async () => await canvas.locator("[data-node]").count()).toBe(before)
   await expect(side.getByText(airaCopy.undone, { exact: true })).toBeVisible()
@@ -128,5 +128,5 @@ test("Stop while Aira's edit is on its way spends its call, so the edit arriving
   expect(after.rev).toBe(spent)
   expect(after.runs.size).toBe(0)
   await expect(canvas.getByText("$4.2M", { exact: true })).toHaveCount(0)
-  await expect(side.getByRole("button", { name: productCopy.undo, exact: true })).toHaveCount(0)
+  await expect(side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true })).toHaveCount(0)
 })

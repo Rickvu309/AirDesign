@@ -28,7 +28,17 @@ export { type NodeType, type Origin, type PropName, type Props, type WriteKey, a
 export { textFromMarkdown, textToMarkdown } from "./markdown.js"
 export { readEdit, readWrite } from "./read-write.js"
 export { type Refusal, isRefusal } from "./refusal.js"
-export { type Author, type Edit, type Landed, type Node, type Run, type Doom, type Write, emptyDoom } from "./doom.js"
+export {
+  type Author,
+  type Edit,
+  type Landed,
+  type Node,
+  type Run,
+  type RunUndo,
+  type Doom,
+  type Write,
+  emptyDoom,
+} from "./doom.js"
 export type { Para, Span, Text, TextStyleName } from "./text.js"
 export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
@@ -54,6 +64,7 @@ export { slideTextStyles } from "./slide-text-styles.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } from "./doom-tree.js"
 export { deckName, deckOf } from "./deck-of.js"
 export { slidesOf } from "./doom-walk.js"
+export { type ListedRun, liveRuns, runsOf } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
 export { contentAreaOf } from "./agent-place.js"
 export { sampleChart } from "./sample-charts.js"

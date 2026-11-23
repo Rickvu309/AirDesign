@@ -8,6 +8,7 @@ public:
   - doom-deck.ts
   - doom-route.ts
   - doom-start.ts
+  - idle-runs.ts
   - media.ts
   - original.ts
 owns_tables:

@@ -12,21 +12,31 @@ export type Write = {
   readonly value: unknown
   readonly base?: Rev
 }
-export type Author = { readonly kind: "person" | "agent"; readonly id: string; readonly run?: string }
+export type Author = {
+  readonly kind: "person" | "agent"
+  readonly id: string
+  readonly run?: string
+  readonly name?: string
+}
 export type Edit = {
   readonly once: string
   readonly author: Author
   readonly writes: readonly Write[]
   readonly phase?: "start" | "stop"
+  readonly runUndo?: RunUndo
 }
+export type RunUndo = { readonly run: string; readonly undone: boolean }
 export type Landed = Edit & { readonly rev: Rev }
 
 export type Run = {
   readonly phase: "running" | "stopped"
   readonly guarded: ReadonlySet<NodeId>
   readonly agent: string
+  readonly name: string
   readonly started: Rev
   readonly wrote: Rev
+  readonly slide?: NodeId
+  readonly undone: boolean
 }
 
 export type Doom = {

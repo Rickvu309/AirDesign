@@ -12,6 +12,8 @@ export type Client = {
   readonly redirectUris: readonly string[]
 }
 
+const agentNameLimit = 60
+
 export type Screen = "claude" | "claude-code" | "codex" | "other"
 
 const claudeCallbacks = ["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]
@@ -29,6 +31,18 @@ export function screenFor(name: string | null, address: string): Screen {
   if (named.startsWith("claude code") && loopback(address)) return "claude-code"
   if (named.startsWith("codex") && loopback(address)) return "codex"
   return "other"
+}
+
+export function agentNameOf(name: string | null, address: string): string {
+  const screen = screenFor(name, address)
+  if (screen === "claude") return "Claude"
+  if (screen === "claude-code") return "Claude Code"
+  if (screen === "codex") return "Codex"
+  const trimmed = (name ?? "")
+    .replace(/[\p{Cc}\p{Cf}]/gu, "")
+    .trim()
+    .slice(0, agentNameLimit)
+  return trimmed.length > 0 ? trimmed : (readUrl(address)?.host ?? "")
 }
 
 function redirectAllowed(address: string): boolean {
@@ -81,4 +95,14 @@ export async function readClient(db: Sql, id: string): Promise<Client | undefine
   const row = result.rows[0]
   if (row === undefined) return undefined
   return { id: row.id, name: row.name, redirectUris: row.redirect_uris }
+}
+
+export async function grantAgentName(db: Sql, grant: string): Promise<string> {
+  const found = await db.query<{ name: string | null; redirect_uri: string }>(
+    `select c.name, g.redirect_uri from session.oauth_grant g
+     join session.oauth_client c on c.id = g.client_id where g.id = $1`,
+    [grant],
+  )
+  const row = found.rows[0]
+  return row === undefined ? "" : agentNameOf(row.name, row.redirect_uri)
 }

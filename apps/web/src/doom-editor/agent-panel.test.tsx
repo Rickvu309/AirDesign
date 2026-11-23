@@ -15,7 +15,7 @@ const deck = {
 
 describe("the Agent side of the Doom editor", () => {
   it("is today's Aira panel: the empty state and the Ask Aira composer, with no column of its own", () => {
-    const markup = renderToStaticMarkup(<AgentPanel deck={deck} />)
+    const markup = renderToStaticMarkup(<AgentPanel deck={deck} view={emptyDoom} />)
     expect(markup).toContain("data-aira-panel")
     expect(markup).toContain("data-aira-welcome")
     expect(markup).toContain(airaCopy.askAira)

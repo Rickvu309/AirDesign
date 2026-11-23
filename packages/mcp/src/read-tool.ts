@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, told, type ToolImage, type ToolResult } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
+import { withOtherRuns } from "./other-runs.js"
 
 const readBytes = 24_000
 const picturesPerRead = 10
@@ -110,14 +111,14 @@ export function readAnswer(
   return answered(lead(opened, slides.length), { ...answer, layers: doom.readForAgent(opened.fold, chosen) })
 }
 
-export async function readDeckTool(raw: unknown, host: DeckHost): Promise<ToolResult> {
+export async function readDeckTool(raw: unknown, agent: string, host: DeckHost): Promise<ToolResult> {
   const named = readNamedDeck(raw)
   if (!named.ok) return refused(named.refusal)
   const opened = await host.open(named.deck)
   if (!opened.ok) return hostRefused(opened)
   const parsed = readDeckQuery(raw)
   if (!parsed.ok) return refused(parsed.refusal)
-  const read = readAnswer(opened, parsed)
+  const read = withOtherRuns(readAnswer(opened, parsed), opened.fold, agent)
   if (parsed.picture !== true || !read.ok || parsed.find !== undefined) return read
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const from = parsed.cursor === undefined ? 0 : slides.findIndex((id) => id === parsed.cursor)
