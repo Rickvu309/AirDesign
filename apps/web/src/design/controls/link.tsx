@@ -1,48 +1,46 @@
-import { readLinkTarget, slideId, type LinkEdit } from "@airdesign/document"
-import type { TextFormatting } from "@airdesign/render"
+import { readLinkAddress } from "@airdesign/doom"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { createContext, useContext, useId, useState, useSyncExternalStore } from "react"
+import { useId, useState } from "react"
 import { linkCopy } from "@/copy/link-copy"
 import type { ControlProps } from "@/design/panel"
 import { composing } from "@/lib/composing"
 
-export const LinkFormatting = createContext<TextFormatting | undefined>(undefined)
-const noop = () => () => undefined
+type LinkTarget =
+  | { readonly kind: "url"; readonly url: string }
+  | { readonly kind: "slide"; readonly slide: string }
+  | { readonly kind: "none" }
 
-function heldTarget(raw: unknown, slides: readonly string[]): LinkEdit | null {
-  const slide =
-    typeof raw === "object" && raw !== null && "kind" in raw && raw.kind === "slide" && "slide" in raw
-      ? raw.slide
-      : undefined
-  return typeof slide === "string" && slides.includes(slide)
-    ? { kind: "slide", slide: slideId(slide) }
-    : readLinkTarget(raw)
+function heldTarget(raw: unknown, slides: readonly string[]): LinkTarget | null {
+  if (typeof raw !== "object" || raw === null || !("kind" in raw)) return null
+  if (raw.kind === "slide" && "slide" in raw && typeof raw.slide === "string" && slides.includes(raw.slide))
+    return { kind: "slide", slide: raw.slide }
+  const url = raw.kind === "url" && "url" in raw ? readLinkAddress(raw.url) : undefined
+  return url === undefined ? null : { kind: "url", url }
+}
+
+function typedTarget(text: string, slide: string | undefined): LinkTarget | null {
+  if (slide !== undefined) return { kind: "slide", slide }
+  if (text === "") return { kind: "none" }
+  const typed = /^[^\s@/]+@[^\s@/]+\.[a-z]{2,}$/i.test(text)
+    ? `mailto:${text}`
+    : /^[\w.-]+\.[a-z]{2,}(?:[/?#].*)?$/i.test(text)
+      ? `https://${text}`
+      : text
+  const url = readLinkAddress(typed)
+  return url === undefined ? null : { kind: "url", url }
 }
 
 export function LinkControl({ control, onChange }: ControlProps) {
-  const formatting = useContext(LinkFormatting)
-  useSyncExternalStore(
-    formatting?.subscribe ?? noop,
-    () => JSON.stringify([formatting?.selection(), formatting?.link()]),
-    () => "",
-  )
-  const selection = formatting?.selection() === true
-  const current = selection ? formatting?.link() : control.value
   const slides = control.slides ?? []
-  const value = heldTarget(current, slides)
-  const unsupported =
-    typeof current === "object" && current !== null && "kind" in current && current.kind === "unsupported"
-  const shown =
-    current === "mixed" || control.mixed
-      ? linkCopy.mixed
-      : unsupported
-        ? linkCopy.unsupported
-        : value?.kind === "url"
-          ? value.url
-          : value?.kind === "slide"
-            ? String(slides.indexOf(value.slide) + 1 || "")
-            : ""
+  const value = heldTarget(control.value, slides)
+  const shown = control.mixed
+    ? linkCopy.mixed
+    : value?.kind === "url"
+      ? value.url
+      : value?.kind === "slide"
+        ? String(slides.indexOf(value.slide) + 1)
+        : ""
   const [draft, setDraft] = useState<string | null>(null)
   const [invalid, setInvalid] = useState(false)
   const issue = useId()
@@ -53,24 +51,14 @@ export function LinkControl({ control, onChange }: ControlProps) {
       setDraft(null)
       return
     }
-    const slide = /^\d+$/.test(text) ? slides[Number(text) - 1] : undefined
-    const url = /^[^\s@/]+@[^\s@/]+\.[a-z]{2,}$/i.test(text)
-      ? `mailto:${text}`
-      : /^[\w.-]+\.[a-z]{2,}(?:[/?#].*)?$/i.test(text)
-        ? `https://${text}`
-        : text
-    const target: LinkEdit | null =
-      slide === undefined
-        ? readLinkTarget(text === "" ? { kind: "none" } : { kind: "url", url })
-        : { kind: "slide", slide: slideId(slide) }
+    const target = typedTarget(text, /^\d+$/.test(text) ? slides[Number(text) - 1] : undefined)
     if (target === null) {
       setInvalid(true)
       return
     }
     setInvalid(false)
     setDraft(null)
-    if (selection) formatting?.linkTo(target)
-    else onChange(target)
+    onChange(target)
   }
 
   return (
@@ -82,7 +70,7 @@ export function LinkControl({ control, onChange }: ControlProps) {
       >
         <input
           aria-label={control.label}
-          placeholder={unsupported ? linkCopy.unsupported : linkCopy.target}
+          placeholder={linkCopy.target}
           title={control.label}
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? issue : undefined}

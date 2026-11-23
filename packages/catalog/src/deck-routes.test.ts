@@ -1,4 +1,3 @@
-import { refusals } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { deckRoutes } from "./index.js"
 
@@ -59,14 +58,6 @@ it("refuses malformed answer envelopes for every deck route", () => {
       expect(route.result(raw)).toEqual(payload)
     }
     expect(route.result({ ok: false, refusal: "owner" })).toEqual({ ok: false, refusal: "owner" })
-  }
-})
-
-it("decodes every code document refuses with", () => {
-  for (const route of Object.values(deckRoutes)) {
-    for (const refusal of refusals) {
-      expect(route.result({ ok: false, refusal })).toEqual({ ok: false, refusal })
-    }
   }
 })
 

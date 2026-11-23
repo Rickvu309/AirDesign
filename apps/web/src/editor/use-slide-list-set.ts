@@ -1,7 +1,7 @@
 import { limits } from "@airdesign/doom"
 import { useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { gridDrop, gridGroups, gridMoveMessage } from "@/editor/grid-drop"
+import { droppedAt, slideMoveMessage } from "@/editor/slide-drop"
 import {
   heldOf,
   heldSlides,
@@ -65,12 +65,12 @@ export function useSlideListSet(
   }
   const moveSlides = (moved: readonly number[], at: number) => {
     step.current = null
-    const first = gridDrop(gridGroups(strip), moved, at)
+    const first = droppedAt(strip.count, moved, at)
     if (first === null || strip.onMoveMany === undefined) return
     following.current = true
     strip.onMoveMany(moved, at)
     setPicked(moved.length > 1 ? heldOf({ anchor: moved[0] ?? first, slides: new Set(moved) }, ids) : null)
-    announce(gridMoveMessage(moved, at))
+    announce(slideMoveMessage(moved, at))
   }
   const actOnSet = slideSetAction(strip, held, {
     follow: () => {

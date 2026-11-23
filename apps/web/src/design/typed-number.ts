@@ -2,9 +2,7 @@ import { wrapDegrees } from "@airdesign/doom"
 import { textCopy } from "@/copy/text-copy"
 import type { Desc, NumberUnit } from "./control-desc"
 
-export type TypedUnit = { readonly auto?: number; readonly points?: number; readonly fixed?: boolean }
-
-export type FixedLine = { readonly points: number }
+export type TypedUnit = { readonly auto?: number; readonly points?: number }
 
 const typed = /^(-?(?:\d+(?:\.\d+)?|\.\d+))\s*(%|pt)?$/
 
@@ -20,18 +18,6 @@ export function typedNumber(text: string, unit: TypedUnit): number | null {
   const value = Number(match[1])
   if (match[2] !== "pt") return value
   return unit.points === undefined ? null : value * unit.points
-}
-
-export function typedFixed(text: string, unit: TypedUnit, fixedNow: boolean): number | null {
-  if (unit.fixed !== true) return null
-  const match = matched(text)
-  if (match === null || (match[2] !== "pt" && (match[2] !== undefined || !fixedNow))) return null
-  return Math.round(Number(match[1]) * 100)
-}
-
-export function fixedLine(value: unknown): FixedLine | null {
-  if (typeof value !== "object" || value === null || !("points" in value)) return null
-  return typeof value.points === "number" ? { points: value.points } : null
 }
 
 const perUnit: { readonly [Unit in NumberUnit]: number } = {

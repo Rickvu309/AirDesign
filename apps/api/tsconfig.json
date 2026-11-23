@@ -16,9 +16,6 @@
   "references": [
     { "path": "../../packages/doom" },
     {
-      "path": "../../packages/document"
-    },
-    {
       "path": "../../packages/catalog"
     },
     {

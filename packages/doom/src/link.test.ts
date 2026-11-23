@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, minter } from "./agent-fixtures.js"
-import { readWrite } from "./index.js"
+import { readLinkAddress, readWrite } from "./index.js"
 import { agent, ids, sampleDeck, textOf } from "./sample-deck.js"
 
 const doom = sampleDeck()
@@ -36,5 +36,13 @@ describe("a link goes to a web or mail address or a slide", () => {
       mint: minter(),
     })
     expect(edit).toMatchObject({ refused: "shape" })
+  })
+
+  it("reads a typed web or mail address the way a link holds it, and never a slide id", () => {
+    for (const address of ["https://example.com/a?b=1", "http://example.com", "mailto:jane@example.com"])
+      expect(readLinkAddress(address)).toBe(address)
+    for (const raw of [ids.slide, "example.com", "https://", "https://a b.com", "javascript:alert(1)", "", 7, null])
+      expect(readLinkAddress(raw)).toBeUndefined()
+    expect(readLinkAddress(`https://example.com/${"a".repeat(2_000)}`)).toBeUndefined()
   })
 })

@@ -1,4 +1,3 @@
-import type { Geometry } from "@airdesign/document"
 import { useState, type ReactNode, type RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -9,7 +8,7 @@ import { ShapeGrid } from "@/design/shape-grid"
 import { basicShapes, LineArt, ShapeSvg, trayShapes } from "@/design/shape-marks"
 import { cn } from "@/lib/class-names"
 
-const trayNames: Readonly<Record<string, Geometry>> = {
+const trayNames: Readonly<Record<string, string>> = {
   square: "rect",
   circle: "ellipse",
   diamond: "diamond",
@@ -21,7 +20,7 @@ const trayNames: Readonly<Record<string, Geometry>> = {
   bubble: "wedgeRectCallout",
 }
 
-export const trayGeometries: Readonly<Record<string, Geometry>> = {
+export const trayGeometries: Readonly<Record<string, string>> = {
   [shapeCopy.line]: "line",
   [shapeCopy.arrow]: "straightConnector1",
   ...Object.fromEntries(trayShapes.map((name) => [shapeCopy.shapes[name] ?? name, trayNames[name]])),
@@ -35,16 +34,16 @@ function TrayItem({
   children,
 }: {
   label: string
-  onShape: (geometry: Geometry) => void
+  onShape: (shape: string) => void
   children: ReactNode
 }) {
-  const geometry = trayGeometries[label]
+  const shape = trayGeometries[label]
   return (
     <Button
       type="button"
       variant="ghost"
       aria-label={label}
-      onClick={() => geometry !== undefined && onShape(geometry)}
+      onClick={() => shape !== undefined && onShape(shape)}
       className={itemClass}
     >
       {children}
@@ -52,7 +51,7 @@ function TrayItem({
   )
 }
 
-export function ShapeTrayItems({ onShape, onMore }: { onShape: (geometry: Geometry) => void; onMore: () => void }) {
+export function ShapeTrayItems({ onShape, onMore }: { onShape: (shape: string) => void; onMore: () => void }) {
   return (
     <div className={cn("flex items-center gap-0.5 rounded-xl bg-white p-1.5", floatShadow)} data-shape-tray>
       <TrayItem label={shapeCopy.line} onShape={onShape}>
@@ -91,7 +90,7 @@ export function ShapeTool({
   anchor,
   shown,
 }: {
-  onShape: (geometry: Geometry) => void
+  onShape: (shape: string) => void
   anchor?: RefObject<HTMLElement | null>
   shown?: ShapesShown
 }) {
@@ -101,9 +100,9 @@ export function ShapeTool({
     setOpen(next)
     setMore(false)
   }
-  const pick = (geometry: Geometry) => {
+  const pick = (shape: string) => {
     change(false)
-    onShape(geometry)
+    onShape(shape)
   }
   return (
     <Popover open={open} onOpenChange={change}>

@@ -6,6 +6,5 @@ export const linkCopy = {
   open: "Open link",
   section: "Link",
   target: "Add URL or slide number",
-  unsupported: "Unsupported action",
   invalid: "Use a URL, email or slide number.",
 }

@@ -23,7 +23,6 @@ public:
   - panel-order.ts
   - panel.ts
   - preset-icons.ts
-  - selected-weight.ts
   - shape-grid.tsx
   - shape-marks.tsx
   - shown-number.ts

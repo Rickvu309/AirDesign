@@ -16,9 +16,6 @@
   "references": [
     { "path": "../doom" },
     {
-      "path": "../document"
-    },
-    {
       "path": "../fonts"
     }
   ]

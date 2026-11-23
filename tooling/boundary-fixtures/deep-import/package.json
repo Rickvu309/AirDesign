@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@airdesign/document": "workspace:*"
+    "@airdesign/doom": "workspace:*"
   }
 }

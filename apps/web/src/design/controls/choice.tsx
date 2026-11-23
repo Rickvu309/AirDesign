@@ -1,8 +1,7 @@
 import { AlignmentGrid } from "@/design/controls/alignment-grid"
 import { controlLabel } from "@/design/controls/control-label"
 import { designCopy } from "@/copy/design-copy"
-import { useContext, useId, useRef } from "react"
-import { LinkFormatting } from "@/design/controls/link"
+import { useId, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { optionWord, shownWord } from "@/copy/option-copy"
@@ -17,7 +16,6 @@ function ChoiceList({
 }: ControlProps & { label: string; options: readonly string[] }) {
   const value = !control.mixed && typeof control.value === "string" ? control.value : null
   const trigger = useRef<HTMLButtonElement>(null)
-  const formatting = useContext(LinkFormatting)
   return (
     <Select
       value={value}
@@ -46,16 +44,7 @@ function ChoiceList({
           }}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent
-        data-keeps-format
-        data-keeps-selection
-        finalFocus={() => {
-          const text = formatting?.typingIn()
-          if (text == null) return true
-          setTimeout(() => text.focus({ preventScroll: true }))
-          return false
-        }}
-      >
+      <SelectContent data-keeps-format data-keeps-selection>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
             {control.choices?.find((choice) => choice.value === option)?.label ?? optionWord(control.field, option)}
