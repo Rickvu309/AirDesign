@@ -13,7 +13,7 @@ The box a layer has when no gesture holds it. During a drag the canvas shows the
 _Avoid_: settled box, committed box, saved box
 
 **shape tool**:
-The tool R (Rectangle), O (Ellipse), L (Line), Shift+L (Arrow) or a pick in the Shapes menu arms, as Figma's shape tools. A drag on the slide draws the shape at the size dragged, its dragged corner snapping as a resize does and Control turning that off; Shift keeps it square or round, or a line to 45° steps, and Alt draws from the press as the centre. A click places the shape's default size with its top left at the click, and Enter places it where an added shape used to land, with no pointer. Either goes back to Move; Esc or V puts the tool down. In grid view a pick in the Shapes menu still adds the shape to the chosen slide at once, as Add text does there. The add is the same `element-add` an agent sends; a line drawn up or to the left keeps its start where the drag began through the box's flips.
+The tool R (Rectangle), O (Ellipse), L (Line), Shift+L (Arrow) or a pick in the Shapes menu arms, as Figma's shape tools. A drag on the slide draws the shape at the size dragged, its dragged corner snapping as a resize does and Control turning that off; Shift keeps it square or round, or a line to 45° steps, and Alt draws from the press as the centre. A click places the shape's default size with its top left at the click, and Enter places it where an added shape used to land, with no pointer. Either goes back to Move; Esc or V puts the tool down. The add is the same `element-add` an agent sends; a line drawn up or to the left keeps its start where the drag began through the box's flips.
 _Avoid_: shape insert, drop a shape
 
 **line end drag**:
