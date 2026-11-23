@@ -127,12 +127,10 @@ export const accountTables = [
   ["session.agent_turn", "email = $1", "email"],
   ["session.credits", "email = $1", "email"],
   ["session.credit_history", "email = $1", "email"],
-  ["deck.saved", "owner = $1", "email"],
   ["deck.doom", "owner = $1", "email"],
   ["deck.doom_edit", "deck in (select id from deck.doom where owner = $1)", "email"],
   ["deck.doom_node", "deck in (select id from deck.doom where owner = $1)", "email"],
   ["deck.media", "deck = any($1::text[])", "decks"],
-  ["deck.once", "deck = any($1::text[])", "decks"],
   ["deck.original_delete", "owner = $1", "email"],
 ] as const
 
