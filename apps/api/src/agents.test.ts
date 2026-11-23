@@ -75,6 +75,51 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
       expect(fenced.body.refusal).toBe("run-fenced")
     })
 
+    it("neither writes into nor stops the other's run, and each one's next start closes only its own", async () => {
+      const owner = await account()
+      const [first, second] = await pair(owner)
+      const start = await made(first)
+      const a = await first.call("edit_deck", {
+        deck: start.deck,
+        base: start.rev,
+        changes: [text(start.slide, "one")],
+      })
+      const b = await second.call("edit_deck", {
+        deck: start.deck,
+        base: a.body.rev,
+        changes: [text(start.slide, "two")],
+      })
+      expect(a.ok && b.ok, `${a.said} ${b.said}`).toBe(true)
+      const intruded = await second.call("edit_deck", {
+        deck: start.deck,
+        base: b.body.rev,
+        runId: a.body.runId,
+        changes: [text(start.slide, "into a")],
+      })
+      expect(intruded.body.refusal).toBe("run-fenced")
+      expect((await second.call("stop_run", { deck: start.deck, runId: a.body.runId })).body.refusal).toBe("run-fenced")
+      const again = await first.call("edit_deck", {
+        deck: start.deck,
+        base: b.body.rev,
+        changes: [text(start.slide, "a again")],
+      })
+      expect(again.ok, again.said).toBe(true)
+      const old = await first.call("edit_deck", {
+        deck: start.deck,
+        base: again.body.rev,
+        runId: a.body.runId,
+        changes: [text(start.slide, "old run")],
+      })
+      expect(old.body.refusal).toBe("run-fenced")
+      const kept = await second.call("edit_deck", {
+        deck: start.deck,
+        base: again.body.rev,
+        runId: b.body.runId,
+        changes: [text(start.slide, "b still")],
+      })
+      expect(kept.ok, kept.said).toBe(true)
+    })
+
     it("both lose a layer a person changes while their runs are open", async () => {
       const owner = await account()
       const [first, second] = await pair(owner)

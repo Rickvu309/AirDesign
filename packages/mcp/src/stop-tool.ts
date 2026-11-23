@@ -11,7 +11,7 @@ export async function stopRunTool(raw: unknown, agent: string, once: string, hos
   const parsed = readRun(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   const run = opened.fold.runs.get(parsed.runId)
-  if (run === undefined) return refused("run-fenced", { rev: opened.rev })
+  if (run === undefined || run.agent !== agent) return refused("run-fenced", { rev: opened.rev })
   if (run.phase === "stopped")
     return answered("That run had already stopped.", {
       ok: true,

@@ -488,6 +488,7 @@
   "packages/render/src/transform-math-resize.test.ts": 1.4,
   "packages/render/src/transform-math.test.ts": 3.2,
   "packages/usage/src/usage.test.ts": 0.6,
+  "tests/agents-replay.test.ts": 6.2,
   "tests/aira-loop-replay.test.ts": 4.5,
   "tests/browser-workers.test.ts": 0.6,
   "tests/clean-environment.test.ts": 0.7,

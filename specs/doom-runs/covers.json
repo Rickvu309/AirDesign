@@ -4,8 +4,8 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit", "landEdit", "guardRun", "write", "protect"],
-      "digest": "9ddbce7cfa22",
-      "blob": "15d1837183642ecb50a9c9d1bb1c5cb6ea668eeb"
+      "digest": "d17ac37bb249",
+      "blob": "e2331922b5ba9f59aa2e3314860b12780aa3843c"
     },
     {
       "file": "packages/doom/src/invert.ts",
