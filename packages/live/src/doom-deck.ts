@@ -215,7 +215,7 @@ function connected(
 
   async function catchUp(): Promise<{ readonly ok: boolean }> {
     const answer = await remote.since({ deck, rev: server.rev })
-    if (!answer.ok) return { ok: false }
+    if (!answer.ok) return { ok: answer.refusal === "cursor" && (await resync()) }
     if (!apply(answer.edits)) return { ok: await resync() }
     while (server.rev < answer.rev) {
       const more = await remote.since({ deck, rev: server.rev })
@@ -423,6 +423,7 @@ function connected(
         )
         if (signal.aborted) return "stopped"
         if (!answer.ok && answer.refusal === "deck") return await leave()
+        if (!answer.ok && answer.refusal === "cursor" && (await resync())) continue
         if (!answer.ok) {
           await pause(retryMilliseconds)
           continue
