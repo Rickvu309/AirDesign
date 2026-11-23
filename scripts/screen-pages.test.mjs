@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { knownFile, screenFaults, screenOnlyReads, webSources } from "./screen-pages.mjs"
+import { knownFile, screenFaultReads, screenFaults, webSources } from "./screen-pages.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -27,20 +27,22 @@ const beforeDoomScreens = new Map([
   ["apps/web/src/editor/agent-panel.tsx", "export const AgentPanel = () => null\n"],
   ["apps/web/src/editor/gallery-deck.ts", "export const galleryDeck = {}\n"],
   ["apps/web/src/copy/editor-copy.ts", "export const editorCopy = {}\n"],
+  ["apps/web/src/main.tsx", 'import App from "./App.tsx"\ncreateRoot(root).render(<App />)\n'],
   [
     "apps/web/src/App.tsx",
     'import { DoomEditor } from "./doom-editor/doom-editor"\nexport default () => <DoomEditor />\n',
   ],
-  ["apps/web/src/doom-editor/doom-editor.tsx", "export const DoomEditor = () => null\n"],
+  ["apps/web/src/components/ui/button.tsx", "export const Button = () => null\n"],
+  [
+    "apps/web/src/doom-editor/doom-editor.tsx",
+    'import { Button } from "@/components/ui/button"\nexport const DoomEditor = () => <Button />\n',
+  ],
 ])
 
 same(
-  "replaying the editor screens before 6809df540 names the old shell and deck that no page of the app drew",
-  screenOnlyReads(beforeDoomScreens),
-  [
-    "apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/editor/editor-shell.tsx",
-    "apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/editor/gallery-deck.ts",
-  ],
+  "replaying the editor screens before 6809df540 names the old shell, which the app never reached; the sample deck is plain data",
+  screenFaultReads(beforeDoomScreens),
+  ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/editor/editor-shell.tsx"],
 )
 
 const afterDoomScreens = new Map([
@@ -55,12 +57,55 @@ const afterDoomScreens = new Map([
   ],
 ])
 
-same("a screen that draws the real editor through its sample seam passes", screenOnlyReads(afterDoomScreens), [])
+same("a screen that draws the real editor through its sample seam passes", screenFaultReads(afterDoomScreens), [])
+
+const withScreen = (screen, extra) =>
+  screenFaultReads(new Map([...afterDoomScreens, ["apps/web/src/editor/screens/editor-view.tsx", screen], ...extra]))
+
+same(
+  "a dead wrapper the app never reaches does not hide the mock it draws",
+  withScreen('import { Wrap } from "@/zz/wrap"\nexport const EditorView = () => <Wrap />\n', [
+    ["apps/web/src/zz/wrap.tsx", 'import { MockPanel } from "./mock"\nexport const Wrap = () => <MockPanel />\n'],
+    ["apps/web/src/zz/mock.tsx", "export const MockPanel = () => <div />\n"],
+  ]),
+  ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/zz/wrap.tsx"],
+)
+
+same(
+  "a file named like a sample that defines its own mock component fails",
+  withScreen('import { PanelSample } from "@/zz/panel-sample"\nexport const EditorView = () => <PanelSample />\n', [
+    [
+      "apps/web/src/zz/panel-sample.tsx",
+      'import { DoomEditor } from "@/doom-editor/doom-editor"\nfunction MockPanel() {\n  return <aside />\n}\nexport const PanelSample = () => (\n  <>\n    <DoomEditor />\n    <MockPanel />\n  </>\n)\n',
+    ],
+  ]),
+  ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/zz/panel-sample.tsx"],
+)
+
+same(
+  "a harness built only from the app's parts, drawing no page, fails like the settings frame",
+  withScreen('import { Frame } from "@/zz/frame-sample"\nexport const EditorView = () => <Frame />\n', [
+    [
+      "apps/web/src/zz/frame-sample.tsx",
+      'import { Button } from "@/components/ui/button"\nexport const Frame = () => <Button />\n',
+    ],
+  ]),
+  ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/zz/frame-sample.tsx"],
+)
+
+same(
+  "a screen that defines and draws its own row fails by name",
+  withScreen(
+    "function PreferenceRow() {\n  return <div />\n}\nexport const EditorView = () => <PreferenceRow />\n",
+    [],
+  ),
+  ["apps/web/src/editor/screens/editor-view.tsx -> own PreferenceRow"],
+)
 
 same(
   "a new screen-only read fails and names what to draw instead",
   screenFaults(["a/screens/x.tsx -> a/frame.tsx"], [])[0].startsWith(
-    "a/screens/x.tsx draws a/frame.tsx, which no page of the app draws.",
+    "a/screens/x.tsx draws a/frame.tsx, which the app never reaches from apps/web/src/main.tsx.",
   ),
   true,
 )
@@ -72,7 +117,7 @@ same("a listed read that is fixed must leave the list", screenFaults([], ["a/scr
 same(
   "today's screens add nothing to the known list",
   screenFaults(
-    screenOnlyReads(webSources(root)),
+    screenFaultReads(webSources(root)),
     JSON.parse(fs.readFileSync(path.join(root, knownFile), "utf8")).known,
   ),
   [],
