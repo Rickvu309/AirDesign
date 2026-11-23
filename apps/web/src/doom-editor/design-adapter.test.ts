@@ -168,6 +168,16 @@ describe("text layer", () => {
     expect(prop(spaced, "words", "text")?.spans[0]?.tracking).toBe(2.5)
   })
 
+  it("links a typed address over https, so the deck's link reader takes it", () => {
+    const link = find(model, "link", "target")
+    expect(prop(write(["words"], link, { kind: "url", url: "example.com/plan" }), "words", "link")).toBe(
+      "https://example.com/plan",
+    )
+    expect(prop(write(["words"], link, { kind: "url", url: "mailto:jane@example.com" }), "words", "link")).toBe(
+      "mailto:jane@example.com",
+    )
+  })
+
   it("a text style resets the size and weight a span set", () => {
     const sized = write(["words"], find(model, "text", "size"), 3200)
     const heading = write(["words"], find(modelOf("words", sized), "text", "style"), "heading", sized)

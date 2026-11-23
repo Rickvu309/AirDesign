@@ -33,10 +33,13 @@ export const integer =
   (raw) =>
     typeof raw === "number" && Number.isInteger(raw) && raw >= min && raw <= max ? raw : reject()
 
+const unsafe =
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/
+
 export const words =
   (maxBytes: number, minLength = 0): Reader<string> =>
   (raw) => {
-    if (typeof raw !== "string" || raw.length < minLength) return reject()
+    if (typeof raw !== "string" || raw.length < minLength || unsafe.test(raw)) return reject()
     return bytesOf(raw) > maxBytes ? reject("limit") : raw
   }
 

@@ -210,7 +210,7 @@ function appearanceChange(context: ChangeContext, control: PanelControl, value: 
     case "link.target": {
       const target = value as { readonly kind?: string; readonly url?: string; readonly slide?: string } | null
       if (target === null || target.kind === "none") return setEach(context, "link", () => null)
-      const next = target.kind === "url" ? target.url : target.slide
+      const next = target.kind === "url" ? addressOf(target.url) : target.slide
       return next === undefined ? [] : setEach(context, "link", () => next as doom.Props["link"])
     }
     case "box.align":
@@ -221,6 +221,9 @@ function appearanceChange(context: ChangeContext, control: PanelControl, value: 
       return null
   }
 }
+
+const addressOf = (typed: string | undefined): string | undefined =>
+  typed === undefined || /^[a-z][a-z0-9+.-]*:/i.test(typed) ? typed : `https://${typed}`
 
 export function changeWrites(context: ChangeContext, control: PanelControl, value: unknown): Writes {
   if (control.trait === "text" || control.trait === "textFill") {

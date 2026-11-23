@@ -31,6 +31,7 @@ import {
   rejected,
   words,
 } from "./read-kit.js"
+import { readLink } from "./link.js"
 import type { Refusal } from "./refusal.js"
 import { type Text, readText } from "./text.js"
 import { type Theme, type ThemeKey, readTheme } from "./theme.js"
@@ -228,7 +229,7 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   layout: spec(readLayout, "custom", "How a frame lays out what is inside it.", "dropped"),
   clip: spec(boolean, "toggle", null, "dropped"),
   chart: spec(readChart, "custom", "The data a chart frame draws.", "picture"),
-  link: spec(words(limits.address, 1), "text", null, "native"),
+  link: spec(readLink, "text", null, "native"),
   role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null, "native"),
   slideLayout: spec(readId, "none", null, "dropped"),
   notes: spec(readText, "text", "A slide's presenter notes.", "native", "base"),
