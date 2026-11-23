@@ -1,118 +1,118 @@
-import { readAgent, traitWire } from "@airdesign/catalog"
-import {
-  inheritable,
-  rowOf,
-  slotted,
-  traitNames,
-  traits,
-  undoOf,
-  type Desc,
-  type Kind,
-  type TraitName,
-  type Value,
-} from "@airdesign/document"
-import { exportParts } from "@airdesign/pptx"
-import { beforeAll, describe, expect, it } from "vitest"
+import * as doom from "@airdesign/doom"
+import type { Desc } from "@airdesign/document"
+import { describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
-import { canvasControl } from "./design/panel-arrangement"
-import { traitControls } from "./design/trait-controls"
-import {
-  agentRegister,
-  deckParts,
-  indexed,
-  judgedCases,
-  landed,
-  painted,
-  panelRegister,
-  placed,
-  sameParts,
-  type At,
-  type Parts,
-} from "@/testing/parity-probe"
-import { probes } from "@/testing/trait-probes"
+import type { PanelControl } from "./design/panel"
+import { changeWrites } from "./doom-editor/design-changes"
+import { nodeModel } from "./doom-editor/design-model"
+import { grow, spot } from "@/testing/doom-fixtures"
 
-const unjudgedOnDoom: readonly string[] = [
-  "body.anchor",
-  "body.autofit",
-  "body.columns",
-  "body.insets",
-  "body.vertical",
-  "body.wrap",
-  "border.cap",
-  "border.compound",
-  "border.dash",
-  "border.fill",
-  "border.head",
-  "border.join",
-  "border.tail",
-  "border.width",
-  "box.flipH",
-  "box.flipV",
-  "box.h",
-  "connection.end",
-  "connection.start",
-  "effects.blur",
-  "effects.glow",
-  "effects.innerShadow",
-  "effects.shadow",
-  "effects.softEdge",
-  "fills.blur",
-  "fills.color",
-  "fills.crop",
-  "fills.mode",
-  "fills.overlay",
-  "fills.paint",
-  "fills.recolor",
-  "fills.source",
-  "fills.tileScale",
-  "fills.weight",
-  "geometry.shape",
-  "guides.layout",
-  "guides.ruler",
-  "identity.alt",
-  "identity.hidden",
-  "identity.locked",
-  "identity.mask",
-  "identity.name",
-  "layout.align",
-  "layout.flow",
-  "layout.gap",
-  "layout.height",
-  "layout.padding",
-  "layout.width",
-  "link.target",
-  "notes.value",
-  "show.skipped",
-  "templateStyle.accent1",
-  "templateStyle.accent2",
-  "templateStyle.accent3",
-  "templateStyle.accent4",
-  "templateStyle.accent5",
-  "templateStyle.accent6",
-  "templateStyle.custom",
-  "templateStyle.dk1",
-  "templateStyle.dk2",
-  "templateStyle.folHlink",
-  "templateStyle.hlink",
-  "templateStyle.id",
-  "templateStyle.lt1",
-  "templateStyle.lt2",
-  "templateStyle.major",
-  "templateStyle.minor",
-  "templateStyle.name",
-  "templateStyle.removed",
-  "templateStyle.textStyle",
-  "text.value",
-  "transition.value",
-]
+type Problem = { readonly control: string; readonly missing: "label" | "copy" | "write" | "paint" | "undo" | "agent" }
 
-type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
+const theme = doom.defaultTheme
+const words: doom.Text = {
+  chars: "Hello",
+  spans: [],
+  paras: [{}],
+  style: "body",
+  resize: "widthAndHeight",
+  alignV: "top",
+}
+const solid = (name: doom.ColorVar) => [{ kind: "solid" as const, color: { var: name } }]
+const outline: doom.StrokeStyle = { weight: 2, align: "inside", dash: "solid" }
 
-type Problem = { readonly field: string; readonly missing: Layer } | { readonly word: string; readonly missing: "copy" }
+const built = grow([
+  { type: "shape", name: "words", props: { box: spot(100, 100, 300, 60), text: words } },
+  {
+    type: "shape",
+    name: "card",
+    props: {
+      box: spot(100, 300, 200, 100),
+      geometry: { kind: "rect" },
+      fills: solid("accent1"),
+      strokes: solid("text2"),
+      stroke: outline,
+      text: words,
+    },
+  },
+  {
+    type: "shape",
+    name: "rule",
+    props: {
+      box: spot(600, 40, 100, 0),
+      geometry: {
+        kind: "line",
+        start: { x: 0, y: 0 },
+        end: { x: 100, y: 0 },
+        route: "straight",
+        arrows: ["none", "none"],
+      },
+      strokes: solid("text2"),
+      stroke: { weight: 4, align: "center", dash: "solid" },
+    },
+  },
+  {
+    type: "shape",
+    name: "star",
+    props: {
+      box: spot(800, 200, 120, 120),
+      geometry: { kind: "icon", name: "lucide/star" },
+      strokes: solid("text2"),
+      stroke: { weight: 10, align: "center", dash: "solid" },
+    },
+  },
+  {
+    type: "shape",
+    name: "photo",
+    props: {
+      box: spot(500, 300, 200, 100),
+      geometry: { kind: "rect" },
+      fills: [{ kind: "image", asset: "a".repeat(64), fit: "fit" }],
+    },
+  },
+  {
+    type: "frame",
+    name: "panel",
+    props: { box: spot(300, 500, 400, 200), fills: solid("background2") },
+    children: [],
+  },
+])
+const { view, geometry } = built
+const slide = built.slides[0]!
+const size = doom.deckOf(view).size
+const layers = ["words", "card", "rule", "star", "photo", "panel"] as const
+const id = (name: string) => built.ids[name]!
 
-function fromAgent(desc: Desc, raw: unknown): unknown {
-  const read = readAgent(desc, raw)
-  return read.ok ? read.value : undefined
+const writesNothingOnDoom: readonly string[] = ["geometry.shape", "image.source"]
+const paintsNothing: readonly string[] = ["link.target"]
+const personOnlyOnDoom: readonly string[] = ["link"]
+
+const kept: Readonly<Record<string, readonly unknown[]>> = {
+  "text.style": ["heading", "caption"],
+  "text.font": ["Georgia"],
+  "fills.source": ["b".repeat(64)],
+  "link.target": [{ kind: "url", url: "https://example.com" }],
+  "geometry.shape": [{ preset: "ellipse", adjust: {} }],
+}
+
+function candidates(control: PanelControl): readonly unknown[] {
+  const named = kept[`${control.trait}.${control.field}`]
+  if (named !== undefined) return named
+  const { desc, value } = control
+  switch (desc.kind) {
+    case "choice":
+      return desc.options.filter((option) => option !== value)
+    case "flag":
+      return [value !== true]
+    case "number":
+      return typeof value === "number" && value > 0 ? [Math.round(value / 2)] : [50_800, 200]
+    case "color":
+      return [{ scheme: "accent2" }]
+    case "union":
+      return [{ solid: { scheme: "accent2" } }]
+    default:
+      return []
+  }
 }
 
 function optionWords(desc: Desc): readonly string[] {
@@ -131,173 +131,114 @@ function optionWords(desc: Desc): readonly string[] {
   }
 }
 
-function same(left: unknown, right: unknown): boolean {
-  return left !== undefined && JSON.stringify(left) === JSON.stringify(right)
-}
+const painted = (from: doom.Doom) => JSON.stringify(doom.resolveSlide(from, slide, doom.measureWith({})))
 
-type Loose = {
-  readonly deck: string
-  readonly kind: Kind
-  readonly node?: string
-  readonly opening: (parts: Parts, at: At) => Value
-  readonly edit: (opening: Value, field: string, value: unknown) => Value
-  readonly fields: Readonly<
-    Record<
-      string,
-      {
-        file: (parts: Parts, at: At) => unknown
-        shows: (value: unknown) => unknown
-        prepare?: (parts: Parts, at: At) => Parts
-        inherited?: (parts: Parts, at: At) => boolean
-        on?: { readonly deck: string; readonly kind: Kind; readonly node: string }
-      }
-    >
-  >
-  readonly painted?: (parts: Parts, at: At, field: string) => string
-}
-
-type LooseWire = {
-  readonly description: string
-  readonly fields: Readonly<Record<string, { readonly description?: string; readonly example: unknown }>>
-}
-
-type LooseControls = {
-  readonly section: string
-  readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
-}
-
-async function fieldProblems(
-  trait: TraitName,
-  field: string,
-  probe: Loose,
-  wire: Partial<LooseWire>,
-): Promise<Problem[]> {
-  const key = `${trait}.${field}`
-  const desc = kindsOf(trait)[field]?.desc
-  const sent = wire.fields?.[field]?.example as Readonly<Record<string, Readonly<Record<string, unknown>>>> | undefined
-  const example = sent?.[trait]?.[field]
-  const value = desc === undefined ? undefined : fromAgent(desc, example)
-  if (desc === undefined || sent === undefined || value === undefined) return [{ field: key, missing: "wire" }]
-  const shape = probe.fields[field]
-  const on = shape?.on ?? probe
-  const source = await deckParts(on.deck)
-  const at = placed(source, on.kind, on.node)
-  const parts = shape?.prepare?.(source, at) ?? source
-  const opening = probe.opening(parts, at)
-  const edit = probe.edit(opening, field, value)
-  const shown = (exported: Parts) => shape !== undefined && same(shape.file(exported, at), shape.shows(value))
-  const problems: Problem[] = shown(parts) ? [{ field: key, missing: "change" }] : []
-  const agent = agentRegister(indexed(parts), at, sent)
-  if (agent === null || !shown(exportParts(parts, agent))) problems.push({ field: key, missing: "wire" })
-  const person = landed(indexed(parts), [
-    { command: "add", node: at.node, floor: "", route: "clean" },
-    { command: "person", node: at.node, ...edit },
-  ])
-  const panel = canvasControl(trait, field) ? person : panelRegister(indexed(parts), at, trait, field, value, parts)
-  if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
-  const exported = person === null ? parts : exportParts(parts, person)
-  if (person === null || !shown(exported)) problems.push({ field: key, missing: "round-trip" })
-  const paint = probe.painted ?? painted
-  if (probe.kind !== "slide" && paint(exported, at, field) === paint(parts, at, field)) {
-    problems.push({ field: key, missing: "paint-change" })
+function landedBy(writes: readonly doom.Write[], author: doom.Author = { kind: "person", id: "quan" }) {
+  const landed: doom.Landed = {
+    once: "probe",
+    author,
+    writes: writes.map((write) => {
+      const was = view.revs.get(write.node)?.get(write.prop)
+      return was === undefined ? write : { ...write, base: was }
+    }),
+    rev: doom.rev(view.rev + 1),
   }
-  const holder = trait === "notes" ? trait : "text"
-  const step = { node: at.node, before: rowOf(opening, holder).patch, after: rowOf(edit, holder).patch }
-  const turn = person === null ? null : undoOf(person, { steps: [step] })
-  const undone = person === null || turn === null || !turn.ok ? null : landed(person, turn.commands)
-  if (undone === null || !sameParts(exportParts(parts, undone), parts)) problems.push({ field: key, missing: "undo" })
-  if (inheritable(trait, field)) {
-    const reset = panelRegister(indexed(parts), at, trait, field, null)
-    const back = reset === null ? parts : exportParts(parts, reset)
-    if (shape?.inherited === undefined || !shape.inherited(back, at) || shape.inherited(parts, at))
-      problems.push({ field: key, missing: "inherit" })
-  }
-  if (!unjudgedOnDoom.includes(key) && !judgedCases.some((each) => each.covers?.includes(key)))
-    problems.push({ field: key, missing: "pptx-case" })
-  return problems
+  const after = doom.applyEdit(view, landed)
+  return doom.isRefusal(after) ? null : { landed, after }
 }
 
-async function inputProblems(
-  trait: TraitName,
-  input: string,
-  probe: Loose,
-  wire: Partial<LooseWire>,
-): Promise<Problem[]> {
-  const key = `${trait}.${input}`
-  const example = wire.fields?.[input]?.example
-  if (example === undefined) return [{ field: key, missing: "wire" }]
-  const parts = await deckParts(key === "text.style" ? "doe-heat-pumps.pptx" : probe.deck)
-  const at = placed(parts, probe.kind, probe.node)
-  const agent = agentRegister(indexed(parts), at, example as object)
-  if (agent === null) return [{ field: key, missing: "wire" }]
-  const desc = (traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>)[input]?.desc
-  const sent = (example as Readonly<Record<string, Readonly<Record<string, unknown>>>>)[trait]?.[input]
-  const value = desc === undefined ? undefined : fromAgent(desc, sent)
-  const panel = value === undefined ? null : panelRegister(indexed(parts), at, trait, input, value)
-  const problems: Problem[] = []
-  if (panel === null || painted(exportParts(parts, panel), at) === painted(parts, at))
-    problems.push({ field: key, missing: "control" })
-  if (painted(exportParts(parts, agent), at) === painted(parts, at))
-    problems.push({ field: key, missing: "paint-change" })
-  return problems
+function controlsOf(name: string): readonly PanelControl[] {
+  return nodeModel({ view, id: id(name), theme, slides: [slide] }).sections.flatMap((section) => section.strips.flat())
 }
 
-function kindsOf(trait: TraitName): Readonly<Record<string, { readonly desc: Desc }>> {
-  return { ...traits[trait].fields, ...traits[trait].inputs }
-}
-
-function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: Partial<LooseWire>): Problem[] {
-  const fields = [
-    ...Object.entries(traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>).filter(
-      ([field]) => !alphaField(trait, field) && !slotted(trait, field),
-    ),
-    ...Object.entries(traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>),
+function agentProps(name: string): ReadonlySet<string> {
+  const looks: readonly Record<string, unknown>[] = [
+    { fill: "accent2" },
+    { stroke: "accent2", strokeWidth: 3 },
+    { color: "accent2" },
+    { radius: 6 },
+    { effect: "soft" },
+    { opacity: 0.5 },
+    { text: "Changed", textStyle: "heading", align: "center" },
+    { name: "Renamed", hidden: true },
+    { box: { x: 10, y: 10, w: 50, h: 50 } },
   ]
-  const wanted = [
-    [`${trait} section`, controls.section],
-    [`${trait} description`, wire.description],
-    ...fields.flatMap(([field, kind]) => [
-      [`${trait}.${field} label`, controls.fields?.[field]?.label],
-      ...(inheritable(trait, field) ? [[`${trait}.${field} reset`, controls.fields?.[field]?.reset]] : []),
-      ...optionWords(kind.desc).map((word) => [`option ${word}`, optionCopy[word]]),
-    ]),
-  ]
-  return wanted
-    .filter(([, words]) => (words ?? "").trim() === "")
-    .map(([word]) => ({ word: word ?? "", missing: "copy" }))
-}
-
-function alphaField(trait: TraitName, field: string): boolean {
-  return (traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>)[field]?.desc.kind === "alpha"
-}
-
-async function parityProblems(): Promise<readonly Problem[]> {
-  const problems: Problem[] = []
-  for (const trait of traitNames) {
-    if (Object.keys(traits[trait].fields).length === 0) continue
-    const probe = probes[trait] as Loose
-    const wire = traitWire[trait] as Partial<LooseWire>
-    problems.push(...copyProblems(trait, traitControls[trait] as Partial<LooseControls>, wire))
-    for (const field of Object.keys(traits[trait].fields))
-      if (!alphaField(trait, field) && !slotted(trait, field))
-        problems.push(...(await fieldProblems(trait, field, probe, wire)))
-    const slots = traits[trait].slots.length > 0
-    for (const input of Object.keys(traits[trait].inputs))
-      problems.push(
-        ...(await (slots ? fieldProblems(trait, input, probe, wire) : inputProblems(trait, input, probe, wire))),
-      )
+  let next = 0
+  const mint = () => doom.nodeId(`m:${String((next += 1))}`)
+  const found = new Set<string>()
+  for (const look of looks) {
+    const writes = doom.compileAgentChange(view, { op: "set", target: id(name), ...look } as doom.AgentChange, mint)
+    if (!doom.isRefusal(writes)) for (const write of writes) if (write.node === id(name)) found.add(write.prop)
   }
+  return found
+}
+
+function sorted(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sorted)
+  if (typeof value !== "object" || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => key !== "rev")
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, each]) => [key, sorted(each)]),
+  )
+}
+
+const sameNodes = (left: doom.Doom, right: doom.Doom) =>
+  [...left.nodes].every(([key, node]) => JSON.stringify(sorted(node)) === JSON.stringify(sorted(right.nodes.get(key))))
+
+function controlProblems(name: string, control: PanelControl, agent: ReadonlySet<string>): Problem[] {
+  const key = `${control.trait}.${control.field}`
+  const named = `${name} ${key}`
+  const problems: Problem[] = []
+  if (control.label.trim() === "" && control.trait !== "box") problems.push({ control: named, missing: "label" })
+  const shown =
+    control.choices === undefined
+      ? optionWords(control.desc).map((word) => optionCopy[`${control.field}.${word}`] ?? optionCopy[word] ?? "")
+      : control.choices.map((choice) => choice.label)
+  if (shown.some((words) => words.trim() === "")) problems.push({ control: named, missing: "copy" })
+  const selection = control.field === "distribute" ? ["words", "card", "panel"].map(id) : [id(name)]
+  const context = { view, ids: selection, geometry, size, slides: [slide] }
+  const landings = candidates(control).flatMap((value) => {
+    const writes = changeWrites(context, control, value)
+    const landing = writes.length === 0 ? null : landedBy(writes)
+    return landing === null ? [] : [{ writes, ...landing }]
+  })
+  const landing = landings.find((each) => painted(each.after) !== painted(view)) ?? landings[0]
+  if (landing === undefined) {
+    if (!writesNothingOnDoom.includes(key)) problems.push({ control: named, missing: "write" })
+    return problems
+  }
+  const { writes } = landing
+  if (!paintsNothing.includes(key) && painted(landing.after) === painted(view))
+    problems.push({ control: named, missing: "paint" })
+  const back = doom.invert(view, landing.after, landing.landed)
+  const undone = doom.applyEdit(landing.after, {
+    once: "undo",
+    author: { kind: "person", id: "quan" },
+    writes: back,
+    rev: doom.rev(landing.after.rev + 1),
+  })
+  if (doom.isRefusal(undone) || !sameNodes(view, undone)) problems.push({ control: named, missing: "undo" })
+  const personOnly = writes.some(
+    (write) => write.node === id(name) && !agent.has(write.prop) && !personOnlyOnDoom.includes(write.prop),
+  )
+  if (personOnly && control.field !== "align" && control.field !== "distribute")
+    problems.push({ control: named, missing: "agent" })
   return problems
 }
 
-let found: readonly Problem[] = []
+function parityProblems(): readonly Problem[] {
+  return layers.flatMap((name) => {
+    const agent = agentProps(name)
+    return controlsOf(name).flatMap((control) => controlProblems(name, control, agent))
+  })
+}
 
-beforeAll(async () => {
-  found = await parityProblems()
-}, 120_000)
+const found = parityProblems()
 
-describe("every live trait field reaches every layer", () => {
-  it("lands each field's example as an agent and as a person, exports it, reads it, paints it, undoes it and judges it", () => {
+describe("every control of Doom's design panel reaches every layer", () => {
+  it("has its words, writes the layer, paints the change, undoes to the same layer, and is open to an agent", () => {
     expect(found).toEqual([])
   })
 
@@ -309,8 +250,23 @@ describe("every live trait field reaches every layer", () => {
     }
     expect(optionWords(desc)).toEqual(["none", "preset", "dash", "dot"])
   })
-})
 
-it("exempts a field from its PowerPoint case only while no case judges it", () => {
-  expect(unjudgedOnDoom.filter((key) => judgedCases.some((each) => each.covers?.includes(key)))).toEqual([])
+  it("names a control as writing nothing on Doom only while it writes nothing", () => {
+    const writing = layers.flatMap((name) =>
+      controlsOf(name).filter((control) => {
+        const key = `${control.trait}.${control.field}`
+        const context = { view, ids: [id(name)], geometry, size, slides: [slide] }
+        return (
+          writesNothingOnDoom.includes(key) &&
+          candidates(control).some((value) => changeWrites(context, control, value).length > 0)
+        )
+      }),
+    )
+    expect(writing).toEqual([])
+  })
+
+  it("names a property as the person's alone only while no agent change writes it", () => {
+    const open = layers.flatMap((name) => [...agentProps(name)].filter((prop) => personOnlyOnDoom.includes(prop)))
+    expect(open).toEqual([])
+  })
 })
