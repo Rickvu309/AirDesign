@@ -71,6 +71,14 @@ describe("set by node id", () => {
     })
   })
 
+  it("locks and unlocks a layer, and refuses to lock a slide", () => {
+    const locked = build(agentDeck(), set(ids.card, { locked: true }))
+    expect(get(locked.nodes.get(ids.card)!, "locked")).toBe(true)
+    const open = build(locked, set(ids.card, { locked: false }))
+    expect(get(open.nodes.get(ids.card)!, "locked")).toBe(false)
+    expect(refusal(agentDeck(), set(ids.slide, { locked: true }))).toMatchObject({ refused: "shape", field: "locked" })
+  })
+
   it("turns a drawn layer into a rectangle, an ellipse or a named preset, and refuses an unknown outline", () => {
     const star = build(agentDeck(), set(ids.caption, { shape: "star5" }))
     expect(get(star.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "preset", name: "star5" })

@@ -76,6 +76,7 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
     ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
     ...(look.name === undefined ? {} : { name: look.name }),
     ...(look.hidden === undefined ? {} : { hidden: look.hidden }),
+    ...(look.locked === undefined ? {} : { locked: look.locked }),
     ...(look.box === undefined && look.rotation === undefined && look.flip === undefined
       ? {}
       : {

@@ -146,6 +146,7 @@ describe("the advertised schema", () => {
       "box",
       "name",
       "hidden",
+      "locked",
       "size",
       "font",
       "lineHeight",

@@ -21,7 +21,6 @@ const owedToAgent = [
   "panel:shadow.opacity",
   "panel:link.target",
   "gesture:frame",
-  "gesture:lock",
   "gesture:underline",
   "gesture:strike",
 ]

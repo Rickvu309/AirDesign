@@ -21,6 +21,7 @@ const wordsOnly = ["size", "font", "lineHeight", "letterSpacing", "case", "under
 const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentLook)[]>> = {
   slide: [
     ...wordsOnly,
+    "locked",
     "shape",
     "dash",
     "fit",
