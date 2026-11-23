@@ -23,7 +23,6 @@ assert.deepEqual(
   [
     "blank.mjs",
     "box.mjs",
-    "color-picker.mjs",
     "color-transforms.mjs",
     "deck-templates.mjs",
     "diagram-edits.mjs",
@@ -77,7 +76,6 @@ assert.deepEqual(
     "trait-effects.mjs",
     "trait-fill.mjs",
     "trait-geometry.mjs",
-    "trait-link.mjs",
     "trait-opacity.mjs",
     "trait-picture.mjs",
     "trait-text.mjs",
