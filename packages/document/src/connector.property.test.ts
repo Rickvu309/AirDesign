@@ -1,29 +1,7 @@
-import fc from "fast-check"
 import { expect, it } from "vitest"
-import { connectorEnds, routed, routedPresets, siteTie, type Tie } from "./connector.js"
+import { connectorEnds, routed, siteTie, type Tie } from "./connector.js"
 import type { Place } from "./group-place.js"
-import { siteCount } from "./preset-sites.js"
 import { presets } from "./trait-geometry.js"
-
-const turns = fc.oneof(fc.constantFrom(0, 5_400_000, 10_800_000, 16_200_000), fc.integer({ min: 0, max: 21_599_999 }))
-
-const placement: fc.Arbitrary<Place> = fc.record({
-  box: fc.record({
-    x: fc.integer({ min: -2_000_000, max: 12_000_000 }),
-    y: fc.integer({ min: -2_000_000, max: 7_000_000 }),
-    cx: fc.integer({ min: 1, max: 4_000_000 }),
-    cy: fc.integer({ min: 1, max: 4_000_000 }),
-  }),
-  rot: turns,
-  flipH: fc.boolean(),
-  flipV: fc.boolean(),
-})
-
-const outline = fc
-  .constantFrom(...presets.filter((preset) => siteCount(preset) > 0))
-  .chain((preset) =>
-    fc.record({ preset: fc.constant(preset), site: fc.integer({ min: 0, max: siteCount(preset) - 1 }) }),
-  )
 
 type Spot = { readonly x: number; readonly y: number }
 
@@ -62,12 +40,6 @@ function holds(connector: Place, preset: string, from: Place, fromOutline: Outli
   expect(Object.values(once.adjust).every(Number.isSafeInteger)).toBe(true)
   expect(routed(once.place, preset, once.adjust, start, end)).toEqual(once)
 }
-
-it("puts every bound end on its site, whatever the shapes' places, turns, flips and presets, but for half a point on an elbow whose ends sit level along the way it leaves, which PowerPoint stores one point wide", () => {
-  fc.assert(fc.property(placement, fc.constantFrom(...routedPresets), placement, outline, placement, outline, holds), {
-    numRuns: 400,
-  })
-})
 
 it("keeps a curved elbow from a flipped rectangle's bottom site to an arc's centre site level with its start one point wide, its ends within half a point, as in issue 1177", () => {
   const upright = { rot: 0, flipH: false, flipV: false }

@@ -1,33 +1,9 @@
 import type { SlideId } from "./element-id.js"
-import { gridGroups, type GridGroup, type GridCommand } from "./grid-order.js"
+import { type GridGroup, type GridCommand } from "./grid-order.js"
 import { orderKeyBetween } from "@airdesign/doom"
-import {
-  presentSlides,
-  type FoldedSlide,
-  type LegacySlideCommand,
-  type SlideRefusal,
-  type SlideState,
-} from "./slide-order.js"
+import { type FoldedSlide, type LegacySlideCommand } from "./slide-order.js"
 
 type Move = Extract<GridCommand, { readonly slide: "move-many" }>
-
-export function groupRefusal(state: SlideState, command: Move): SlideRefusal | null {
-  const present = new Set(presentSlides(state).map((spot) => spot.id))
-  const anchor = command.row === "before" ? command.before : command.after
-  if (
-    command.ids.some((id) => !present.has(id)) ||
-    (anchor !== null && (!present.has(anchor) || command.ids.includes(anchor)))
-  )
-    return "dead"
-  if (
-    command.row === "keep" &&
-    !gridGroups(state, command.grid).some(
-      (group) => group.length === command.ids.length && group.every((id) => command.ids.includes(id)),
-    )
-  )
-    return "stale"
-  return null
-}
 
 export function moveGroup(
   before: readonly FoldedSlide[],

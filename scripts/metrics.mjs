@@ -7,7 +7,7 @@ import { importParse } from "./import-parse.mjs"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
 import { titleLimit } from "./title.mjs"
-import { readMeasured, readRun } from "./vitest-metrics.mjs"
+import { readRun } from "./vitest-metrics.mjs"
 
 const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seeds.json")
 
@@ -30,8 +30,6 @@ export const browserFaults = (root) =>
   )
 
 const knownFailures = (root) => readRun(root).faults + listedMisses(root) + browserFaults(root)
-
-const measuredByRun = (root, name) => readRun(root).measured?.[name]
 
 const realDecks = (root) => judgedDecks(root).length
 
@@ -69,12 +67,11 @@ export const measures = {
   "fault-detection": plantedBreaks,
   "long-titles": (root) => longTitles(mainTitles(root)),
   "import-parse": importParse,
-  "slides-repainted": (root) => readMeasured(root, "slides-repainted"),
 }
 
-export const measuredLive = new Set(["known-failures", "long-titles", "slides-repainted"])
+export const measuredLive = new Set(["known-failures", "long-titles"])
 
-export const readFromUnitRun = new Set(["known-failures", "slides-repainted"])
+export const readFromUnitRun = new Set(["known-failures"])
 
 export const unitShardOf = (env) => {
   const [current, total] =
@@ -95,7 +92,6 @@ const splitMeasures = ({ current, total }) => {
       (root) => readRun(root).faults + (current === 1 ? listedMisses(root) + browserFaults(root) : 0),
       { note },
     ),
-    "slides-repainted": (root) => measuredByRun(root, "slides-repainted"),
   }
 }
 

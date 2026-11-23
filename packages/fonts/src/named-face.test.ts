@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { familyStyles, namedFace, readStyleName, styleName, styleTypeface } from "./named-face.js"
+import { namedFace, readStyleName, styleName } from "./named-face.js"
 import { resolveFont } from "./source.js"
 
 it("reads a weight from any served family's named face and keeps the stored typeface", () => {
@@ -25,47 +25,6 @@ it("leaves families, twins and unknown names alone", () => {
   expect(namedFace("Calibri Light")).toBeUndefined()
   expect(namedFace("Segoe UI Semibold")).toBeUndefined()
   expect(namedFace("Arial Medium")).toBeUndefined()
-})
-
-it("lists each weight and italic a family's files hold, lightest first", () => {
-  expect(
-    familyStyles([
-      { style: "normal", weight: "100 900" },
-      { style: "italic", weight: "300 700" },
-    ]),
-  ).toEqual([
-    { weight: 100, italic: false },
-    { weight: 200, italic: false },
-    { weight: 300, italic: false },
-    { weight: 300, italic: true },
-    { weight: 400, italic: false },
-    { weight: 400, italic: true },
-    { weight: 500, italic: false },
-    { weight: 500, italic: true },
-    { weight: 600, italic: false },
-    { weight: 600, italic: true },
-    { weight: 700, italic: false },
-    { weight: 700, italic: true },
-    { weight: 800, italic: false },
-    { weight: 900, italic: false },
-  ])
-  expect(
-    familyStyles([
-      { style: "normal", weight: "400" },
-      { style: "normal", weight: "700" },
-      { style: "normal", weight: "350" },
-    ]),
-  ).toEqual([
-    { weight: 400, italic: false },
-    { weight: 700, italic: false },
-  ])
-})
-
-it("names the typeface a style is stored as", () => {
-  expect(styleTypeface("Inter", 600)).toBe("Inter SemiBold")
-  expect(styleTypeface("Inter", 400)).toBe("Inter")
-  expect(styleTypeface("Inter", 700)).toBe("Inter")
-  expect(styleTypeface("Lato", 900)).toBe("Lato Black")
 })
 
 it("names each style as a font names it and reads the name back", () => {

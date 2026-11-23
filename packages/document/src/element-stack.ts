@@ -1,10 +1,7 @@
 import type { DeckIndex } from "./deck-index.js"
-import { readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { type ElementId, type SlideId } from "./element-id.js"
 import { groupCommand } from "./element-group.js"
-import { elementGone, type ElementOrder } from "./element-order.js"
-import { limits } from "@airdesign/doom"
 import type { SlideState } from "./slide-order.js"
-import { openingElement } from "./slide-floor.js"
 
 type Indexed = SlideState & { readonly index?: DeckIndex }
 
@@ -18,27 +15,6 @@ type Chain = {
 }
 
 export type ElementStack = { readonly slide: SlideId; readonly ids: readonly ElementId[] }
-
-export type StackMove = "front" | "forward" | "backward" | "back"
-
-export function sitsBefore(among: readonly ElementId[], node: ElementId): ElementId | null | undefined {
-  const at = among.indexOf(node)
-  if (at < 0) return undefined
-  return among[at + 1] ?? null
-}
-
-export function stackTarget(
-  among: readonly ElementId[],
-  node: ElementId,
-  move: StackMove,
-): ElementId | null | undefined {
-  const at = among.indexOf(node)
-  if (at < 0) return undefined
-  if (move === "front") return at === among.length - 1 ? undefined : null
-  if (move === "back") return at === 0 ? undefined : among[0]
-  if (move === "backward") return at === 0 ? undefined : among[at - 1]
-  return among[at + 1] === undefined ? undefined : (among[at + 2] ?? null)
-}
 
 function sameIds(left: readonly ElementId[], right: readonly ElementId[]): boolean {
   return left.length === right.length && left.every((id, index) => id === right[index])
@@ -57,15 +33,6 @@ function placed(ids: readonly ElementId[], node: ElementId, before: ElementId | 
   if (before === null || !ids.includes(before)) return [...ids, node]
   const at = ids.indexOf(before)
   return [...ids.slice(0, at), node, ...ids.slice(at)]
-}
-
-function indexComplete(state: Indexed): boolean {
-  return state.index !== undefined && state.index.total === state.index.elements.length
-}
-
-function knownNode(state: Indexed, node: ElementId): boolean {
-  if (openingElement(state, node) !== undefined) return true
-  return !indexComplete(state)
 }
 
 function acceptsAdds(among: readonly ElementId[], index: DeckIndex | undefined): boolean {
@@ -142,36 +109,6 @@ function fold(state: Indexed): Chain[] {
   return chains
 }
 
-function listed(command: ElementOrder): boolean {
-  if (command.among.length === 0 || command.among.length > limits.elements) return false
-  if (new Set(command.among).size !== command.among.length) return false
-  if (!command.among.includes(command.node)) return false
-  if (command.before !== null && !command.among.includes(command.before)) return false
-  return command.before !== command.node && command.among.every((id) => shapeOf(id).slide === command.id)
-}
-
-export function stackRefusal(state: Indexed, command: ElementOrder): "dead" | "stale" | null {
-  if (shapeOf(command.node).slide !== command.id || !listed(command)) return "dead"
-  if (command.among.some((id) => elementGone(state, id) || !knownNode(state, id))) return "dead"
-  if (take(fold(state), command.id, command.among) === "stale") return "stale"
-  return sitsBefore(command.among, command.node) === command.before ? "dead" : null
-}
-
 export function elementStacks(state: Indexed): readonly ElementStack[] {
   return fold(state).map((chain) => ({ slide: chain.slide, ids: chain.ids }))
-}
-
-export function readElementOrder(raw: Record<string, unknown>, id: SlideId): ElementOrder | undefined {
-  const node = readElementId(raw.node)
-  if (node === undefined || shapeOf(node).slide !== id) return undefined
-  const before = raw.before === null ? null : readElementId(raw.before)
-  if (before === undefined || (before !== null && shapeOf(before).slide !== id)) return undefined
-  if (!Array.isArray(raw.among) || raw.among.length === 0 || raw.among.length > limits.elements) return undefined
-  const among: ElementId[] = []
-  for (const item of raw.among) {
-    const read = readElementId(item)
-    if (read === undefined || shapeOf(read).slide !== id || among.includes(read)) return undefined
-    among.push(read)
-  }
-  return { slide: "element-order", id, node, before, among }
 }

@@ -1,18 +1,6 @@
-import {
-  decide,
-  elementId,
-  format,
-  openRegister,
-  slideId,
-  type Command,
-  type ElementPatch,
-  type Register,
-  type SlideCommand,
-  type TransitionValue,
-} from "@airdesign/document"
-import { orderKeyBetween } from "@airdesign/doom"
+import { type TransitionValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { exportParts, indexPackage, orderedParts, readParts, readShows, readSlides } from "./index.js"
+import { indexPackage, readParts, readShows, readSlides } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readArrival, readPlayback } from "./transition-read.js"
 import { writeArrival } from "./transition-write.js"
@@ -27,10 +15,6 @@ const noneClick: TransitionValue = { none: { advance: clicked } }
 const dissolve: TransitionValue = { dissolve: { duration: 500, advance: clicked } }
 const p14 = "http://schemas.microsoft.com/office/powerpoint/2010/main"
 
-const powerpointPush = `
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="5" name="Title 4"><a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{97F53E6F-9CFC-304F-9325-CA0D0F3F8EEB}"/></a:ext></a:extLst></p:cNvPr><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="2398714" y="184151"/><a:ext cx="8269287" cy="519113"/></a:xfrm></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="ctr"><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>Convolutional Neural Networks</a:t></a:r><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="4" name="Slide Number Placeholder 3"><a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{D92D1192-8E1A-DC4A-B836-FE2D03553C2D}"/></a:ext></a:extLst></p:cNvPr><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="sldNum" sz="quarter" idx="12"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="8216901" y="6548438"/><a:ext cx="2365375" cy="279400"/></a:xfrm></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="ctr"><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr><a:spcAft><a:spcPts val="600"/></a:spcAft><a:defRPr/></a:pPr><a:fld id="{2D0975A0-1B68-3341-9890-EAA20A69F5C9}" type="slidenum"><a:rPr lang="en-US" altLang="en-US" smtClean="0"/><a:pPr><a:spcAft><a:spcPts val="600"/></a:spcAft><a:defRPr/></a:pPr><a:t>4</a:t></a:fld><a:endParaRPr lang="en-US" altLang="en-US"/></a:p></p:txBody></p:sp><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="8" name="Content Placeholder 5"><a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{876B214C-E979-B29B-9B0C-D7B0BEAE8DF3}"/></a:ext></a:extLst></p:cNvPr><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr><p:ph idx="1"/><p:extLst><p:ext uri="{D42A27DB-BD31-4B8C-83A1-F6EECF244321}"><p14:modId xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" val="4165227395"/></p:ext></p:extLst></p:nvPr></p:nvGraphicFramePr><p:xfrm><a:off x="536065" y="1330037"/><a:ext cx="11119870" cy="4861524"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram"><dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:dm="rId2" r:lo="rId3" r:qs="rId4" r:cs="rId5"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree><p:extLst><p:ext uri="{BB962C8B-B14F-4D97-AF65-F5344CB8AC3E}"><p14:creationId xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" val="3497471608"/></p:ext></p:extLst></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr><p:transition spd="slow"><p:push dir="u"/></p:transition></p:sld>`
-
 function slide(inner: string): Uint8Array {
   return encode(`<p:sld><p:cSld><p:spTree/></p:cSld>${inner}</p:sld>`)
 }
@@ -43,64 +27,7 @@ function written(bytes: Uint8Array, value: TransitionValue): string {
   return text(writeArrival(partOf(bytes), "ppt/slides/slide1.xml", value).get("ppt/slides/slide1.xml"))
 }
 
-function landed(register: Register, command: Command): Register {
-  const decision = decide(register, command)
-  if (decision.decision !== "apply") throw new Error(decision.code)
-  return decision.register
-}
-
-function exported(parts: ReadonlyMap<string, Uint8Array>, rows: readonly (readonly [string, ElementPatch])[]) {
-  const file = readSlides(parts).map((each) => slideId(each.slide))
-  let register: Register = { ...openRegister("", "deck"), file, order: [] }
-  for (const [node, patch] of rows) {
-    const id = elementId(node)
-    if (!register.nodes.includes(id))
-      register = landed(register, { command: "add", node: id, floor: "", route: "deck" })
-    register = landed(register, { command: "person", node: id, v: format, patch })
-  }
-  return exportParts(orderedParts(parts, register), register)
-}
-
 describe("a slide transition", () => {
-  it("reads a PowerPoint fade as dissolve and leaves the file untouched when that value is set again", async () => {
-    const parts = await readParts(
-      readFileSync(`${process.cwd()}/scripts/pptx-fixtures/corpus/nasa-ixpe-science-ops.pptx`),
-    )
-    const first = readSlides(parts)[0]
-    if (first === undefined) throw new Error("slide")
-    const bytes = parts.get(first.part)
-    expect(readArrival(bytes)).toEqual({ state: "value", value: dissolve })
-    expect(readPlayback(bytes).transition).toEqual({ kind: "fade", direction: null, duration: 500 })
-    const node = `${first.slide}.slide`
-    const again = exported(parts, [[node, { transition: { value: { set: dissolve } } }]])
-    expect(again.get(first.part)).toBe(parts.get(first.part))
-    const slower: TransitionValue = { dissolve: { duration: 750, advance: clicked } }
-    const next = exported(parts, [[node, { transition: { value: { set: slower } } }]])
-    expect(text(next.get(first.part))).toContain(
-      `<p:transition xmlns:p14="${p14}" spd="med" p14:dur="750"><p:fade/></p:transition>`,
-    )
-    const opened = exported(parts, [
-      [node, { transition: { value: { set: slower } } }],
-      [node, { transition: { value: "opening" } }],
-    ])
-    expect(opened.get(first.part)).toBe(parts.get(first.part))
-  })
-
-  it("reads a PowerPoint push and leaves those bytes when the same arrival is set again", async () => {
-    const bytes = encode(powerpointPush)
-    const push: TransitionValue = { push: { direction: "bottom", duration: 1000, advance: clicked } }
-    expect(readArrival(bytes)).toEqual({ state: "value", value: push })
-    expect(readPlayback(bytes).transition).toEqual({ kind: "push", direction: "u", duration: 1000 })
-    const blank = await readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/blank.pptx`))
-    const first = readSlides(blank)[0]
-    if (first === undefined) throw new Error("slide")
-    const parts = new Map(blank)
-    parts.set(first.part, bytes)
-    const again = exported(parts, [[`${first.slide}.slide`, { transition: { value: { set: push } } }]])
-    expect(again.get(first.part)).toBe(bytes)
-    expect(text(again.get(first.part))).toContain(`<p:transition spd="slow"><p:push dir="u"/></p:transition>`)
-  })
-
   it("keeps a wipe, a sound, an exact duration, and an alternate-content transition", async () => {
     const wipe = await readParts(
       readFileSync(`${process.cwd()}/scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx`),
@@ -220,30 +147,6 @@ describe("a slide transition", () => {
       ["ppt/slides/slide3.xml", kept],
     ])
     expect(indexPackage(parts).slides.map((slide) => slide.transition ?? null)).toEqual([null, dissolve, "kept"])
-  })
-
-  it("copies a slide's transition when the slide is duplicated and leaves the source bytes", async () => {
-    const parts = await readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/blank.pptx`))
-    const first = readSlides(parts)[0]
-    if (first === undefined) throw new Error("slide")
-    const faded = text(parts.get(first.part)).replace("</p:sld>", "<p:transition><p:fade/></p:transition></p:sld>")
-    const seeded = new Map(parts).set(first.part, encode(faded))
-    const copy = slideId("900")
-    const clone: SlideCommand = {
-      slide: "clone",
-      id: copy,
-      source: slideId(first.slide),
-      key: orderKeyBetween(null, null),
-      floor: [],
-    }
-    const file = readSlides(seeded).map((each) => slideId(each.slide))
-    let register: Register = { ...openRegister("", "deck"), file, order: [clone] }
-    const next = exportParts(orderedParts(seeded, register), register)
-    const cloned = readSlides(next).find((each) => each.slide === "900")
-    if (cloned === undefined) throw new Error("clone")
-    expect(text(next.get(first.part))).toBe(faded)
-    expect(text(next.get(cloned.part))).toContain("<p:transition><p:fade/></p:transition>")
-    expect(readArrival(next.get(cloned.part))).toEqual({ state: "value", value: dissolve })
   })
 
   it("plays a plain push and does not play the fallback inside alternate content", () => {

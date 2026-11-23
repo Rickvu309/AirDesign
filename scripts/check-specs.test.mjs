@@ -3,24 +3,18 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { assertJar, checkSpec, chosenTopics, jarPath, javaBin, readableTrace, topics } from "./check-specs.mjs"
-import * as editView from "../specs/edit/view.mjs"
+import * as runsView from "../specs/doom-runs/view.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const source = fs.readFileSync(path.join(root, "specs/edit/Edit.tla"), "utf8")
-const guard = [
-  "AgentWrites ==",
-  '  /\\ phase = "running"',
-  "  /\\ guarded = FALSE",
-  "  /\\ agent = 0",
-  "  /\\ readAt = Version",
-].join("\n")
-const opened = ["AgentWrites ==", '  /\\ phase = "running"', "  /\\ agent = 0"].join("\n")
-if (!source.includes(guard)) throw new Error("the agent write guard was not found")
+const source = fs.readFileSync(path.join(root, "specs/doom-runs/DoomRuns.tla"), "utf8")
+const guard = "  /\\ Protect(TRUE, FALSE)\n"
+const opened = "  /\\ Protect(TRUE, TRUE)\n"
+if (!source.includes(guard)) throw new Error("the person's protection of the text was not found")
 
-const directory = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-edit-"))
+const directory = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-doom-runs-"))
 process.on("exit", () => fs.rmSync(directory, { recursive: true, force: true }))
-fs.cpSync(path.join(root, "specs/edit"), directory, { recursive: true })
-fs.writeFileSync(path.join(directory, "Edit.tla"), source.replace(guard, opened))
+fs.cpSync(path.join(root, "specs/doom-runs"), directory, { recursive: true })
+fs.writeFileSync(path.join(directory, "DoomRuns.tla"), source.replace(guard, opened))
 fs.writeFileSync(path.join(directory, "Stamp.tla"), `---- MODULE Stamp ----\nStamp == ${Date.now()}\n====\n`)
 
 const java = javaBin()
@@ -37,40 +31,35 @@ fs.rmSync = (target, options) => {
 }
 let result
 try {
-  result = checkSpec(directory, java, jar)
+  result = checkSpec(directory, java, jar, "DoomRuns.tla", "DoomRuns.cfg")
 } finally {
   fs.rmSync = realRemove
 }
 if (!integersInModuleDir) throw new Error("Integers.tla was not in the private module directory")
 const trace = result.output
-const read = trace.indexOf("<RunStarts")
-const edited = trace.indexOf("<PersonWrites")
-const wrote = trace.indexOf("<AgentWrites")
-if (result.passed || !trace.includes("Invariant AgentSawCurrent is violated.")) {
-  throw new Error(`the stale write was accepted\n${trace}`)
+const started = trace.indexOf("<StartA")
+const wrote = trace.indexOf("<PersonWrites")
+if (result.passed || !trace.includes("Invariant ProtectedOnlyByThePerson is violated.")) {
+  throw new Error(`a protection of a node the person never wrote was accepted\n${trace}`)
 }
-if (!(read >= 0 && edited > read && wrote > edited)) {
-  throw new Error(`the stale-write path was not shown\n${trace}`)
-}
-if (!trace.includes("guarded = TRUE") || !trace.includes("agent = 1")) {
-  throw new Error(`the agent wrote on a guarded property\n${trace}`)
-}
+if (!(started >= 0 && wrote > started)) throw new Error(`the path to the wrong protection was not shown\n${trace}`)
+if (!trace.includes("gaN = TRUE")) throw new Error(`the notes were not shown protected\n${trace}`)
 
-const told = readableTrace(trace, editView)
+const told = readableTrace(trace, runsView)
 if (
-  !told.startsWith("Invariant AgentSawCurrent is violated.") ||
-  !told.includes("the person edits [during the run] [PersonWrites]: Person edit, person is guarding") ||
-  !told.includes("guarded false -> true")
+  !told.startsWith("Invariant ProtectedOnlyByThePerson is violated.") ||
+  !told.includes("the person writes the text [PersonWrites]") ||
+  !told.includes("gaN false -> true")
 ) {
   throw new Error(`the counterexample was not told step by step\n${told}`)
 }
 const every = topics(root)
 if (
-  chosenTopics(every, ["edit"])
+  chosenTopics(every, ["doom-runs"])
     .map((topic) => topic.name)
-    .join() !== "edit"
+    .join() !== "doom-runs"
 )
-  throw new Error("edit alone was not chosen")
+  throw new Error("doom-runs alone was not chosen")
 if (chosenTopics(every, []).length !== every.length) throw new Error("no name did not choose every spec")
 let unknown = ""
 try {

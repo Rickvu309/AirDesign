@@ -1,4 +1,3 @@
-import type { Register } from "./decide.js"
 import type { Color } from "./color.js"
 import { canonicalKeys } from "./key-alias.js"
 import { bytesOf } from "@airdesign/doom"
@@ -57,23 +56,4 @@ export function readTextStyles(raw: unknown): readonly TextStyle[] | null {
     styles.push({ id: row.id, name: row.name, fields })
   }
   return styles
-}
-
-export function textStylesOf(register: Register, slide: string): readonly TextStyle[] {
-  const slides = register.index?.slides ?? []
-  let source = slide
-  for (let count = 0; count <= register.order.length; count += 1) {
-    const styles = slides.find((each) => each.id === source)?.textStyles
-    if (styles !== undefined) {
-      const resolved = typeof styles === "string" ? slides.find((each) => each.id === styles)?.textStyles : styles
-      return typeof resolved === "string" ? [] : (readTextStyles(resolved ?? []) ?? [])
-    }
-    const birth = register.order.find(
-      (command) => (command.slide === "add" || command.slide === "clone") && command.id === source,
-    )
-    if (birth?.slide === "add") source = birth.layout
-    else if (birth?.slide === "clone") source = birth.source
-    else return []
-  }
-  return []
 }

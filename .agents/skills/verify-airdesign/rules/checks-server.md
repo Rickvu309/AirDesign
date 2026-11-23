@@ -1,6 +1,6 @@
 # Checks on agents, Aira stop, the Aira loop, usage, OAuth and deck ownership
 
-Same fields as [checks-document.md](checks-document.md). The `apps/api` tests start the real API on their own Postgres database: `pnpm vitest run apps/api/src/agents.test.ts apps/api/src/aira/aira-closing.test.ts apps/api/src/owner.test.ts`.
+Same fields as [checks-doom.md](checks-doom.md). The `apps/api` tests start the real API on their own Postgres database: `pnpm vitest run apps/api/src/agents.test.ts apps/api/src/aira/aira-closing.test.ts apps/api/src/owner.test.ts`.
 
 ## agents
 

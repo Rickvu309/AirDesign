@@ -1,4 +1,3 @@
-import type { TraitPatch } from "./row.js"
 import { trait } from "./trait-decl.js"
 import {
   alphaOver,
@@ -111,13 +110,7 @@ export const paint = union({ ...fillCases, image: pictureSource, group: mark }, 
 
 export type Paint = ValueOf<typeof paint>
 
-export type SlotPaint = ValueOf<typeof slotPaint>
-
-export type ShownPaint = Exclude<Paint, { readonly image: string }> | { readonly image: string | null }
-
 export const paintSlots = ["p0", "p1", "p2", "p3"] as const
-
-export type PaintSlot = (typeof paintSlots)[number]
 
 export const fills = trait(
   "whole",
@@ -141,55 +134,3 @@ export const fills = trait(
   ["p0", "paint"],
   paintSlots,
 )
-
-export type ShownFills = { readonly [S in PaintSlot]?: SlotPaint } & { readonly source?: string | null }
-
-export type ResolvedFills = { readonly paints: readonly ShownPaint[]; readonly slidesMode: ShownPaint }
-
-export function readFills(shown: ShownFills): ResolvedFills {
-  const paints = paintSlots.flatMap((slot): ShownPaint[] => {
-    const held = shown[slot]
-    if (held === undefined || "none" in held || "hidden" in held) return []
-    return "image" in held ? [{ image: shown.source ?? null }] : [held]
-  })
-  const image = paints.find((each) => "image" in each)
-  return { paints, slidesMode: image ?? paints.at(-1) ?? { none: true } }
-}
-
-export type FillsEdit =
-  | { readonly paint: Paint | { readonly image: true } | null }
-  | { readonly overlay: Overlay | null }
-  | { readonly slots: readonly SlotPaint[] }
-
-const empty: SlotPaint = { none: true }
-
-function same(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
-}
-
-export function changeFills(edit: FillsEdit, current: ShownFills = {}): TraitPatch<"fills"> {
-  if ("overlay" in edit) return { p3: { set: edit.overlay ?? empty } }
-  if ("slots" in edit)
-    return Object.fromEntries(
-      paintSlots.flatMap((slot, at) => {
-        const next = edit.slots[at] ?? empty
-        return same(next, current[slot] ?? empty) ? [] : [[slot, { set: next }]]
-      }),
-    )
-  const [bottom, ...above] = paintSlots
-  const cleared = Object.fromEntries(above.map((slot) => [slot, { set: { none: true } }]))
-  const { paint: chosen } = edit
-  if (chosen === null) return { [bottom]: "inherit", ...cleared }
-  if (!("image" in chosen)) return { [bottom]: { set: chosen }, ...cleared }
-  if (chosen.image === true) return { [bottom]: { set: { image: true } }, ...cleared }
-  return { [bottom]: { set: { image: true } }, ...cleared, source: { set: chosen.image } }
-}
-
-export function inputFills(input: Readonly<Record<string, unknown>>): TraitPatch<"fills"> {
-  return {
-    ...(Object.hasOwn(input, "paint")
-      ? changeFills({ paint: input.paint as Paint | { readonly image: true } | null })
-      : {}),
-    ...(Object.hasOwn(input, "overlay") ? changeFills({ overlay: input.overlay as Overlay | null }) : {}),
-  }
-}

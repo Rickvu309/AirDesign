@@ -1,31 +1,9 @@
-import { readElement, type DeckIndex, type IndexElement } from "./deck-index.js"
-import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
-import { borderElement } from "./border-conversion.js"
-import { fillsElement } from "./fills-conversion.js"
-import { templateStyleElement } from "./template-style-conversion.js"
-import { overlayElement } from "./overlay-conversion.js"
-import { bytesOf, limits } from "@airdesign/doom"
-import { record } from "./plain-object.js"
-import { readOpening, type ElementPatch, type FieldEdit } from "./row.js"
+import { type DeckIndex, type IndexElement } from "./deck-index.js"
+import { shapeOf, type ElementId } from "./element-id.js"
 import { slideBirths } from "./slide-births.js"
-import { hasSlideNumber } from "./text-value.js"
 import type { SlideCommand, SlideState } from "./slide-order.js"
 
 type Floored = SlideState & { readonly index?: DeckIndex }
-
-export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[] | undefined {
-  if (!Array.isArray(raw) || raw.length > limits.elements) return undefined
-  const slides = new Set([slide])
-  const floor: IndexElement[] = []
-  for (const item of raw) {
-    const { opening, ...rest } = record(overlayElement(templateStyleElement(borderElement(fillsElement(item))))) ?? {}
-    const element = readElement(rest, slides)
-    const patch = opening === undefined ? undefined : readOpening(opening)
-    if (element === null || patch === null || floor.some((kept) => kept.node === element.node)) return undefined
-    floor.push(patch === undefined ? element : { ...element, opening: patch })
-  }
-  return floor
-}
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
   if (command.slide === "element-add")
@@ -35,12 +13,6 @@ export function floorOf(command: SlideCommand): readonly IndexElement[] {
   if (command.slide === "element-group")
     return command.backdrop === undefined ? [command.element] : [command.element, command.backdrop]
   return slideBirths(command).flatMap((birth) => birth.floor ?? [])
-}
-
-export function floorFits(state: Floored, command: SlideCommand): boolean {
-  if (bytesOf(JSON.stringify(command)) >= limits.row) return false
-  const opened = state.order.reduce((count, kept) => count + floorOf(kept).length, state.index?.total ?? 0)
-  return opened + floorOf(command).length <= limits.elements
 }
 
 type FloorIndex = {
@@ -112,39 +84,4 @@ function floorIndexOf(state: Floored): FloorIndex {
 
 export function openingElement(state: Floored, node: ElementId): IndexElement | undefined {
   return floorIndexOf(state).opening.get(node)
-}
-
-export function newSlideElement(state: Floored | null, node: ElementId): IndexElement | undefined {
-  if (state === null || !node.includes(".")) return undefined
-  const index = floorIndexOf(state)
-  if (index.bornSlides.has(shapeOf(node).slide)) return index.opening.get(node)
-  const cloned = index.clonedElement.get(node)
-  if (cloned !== undefined) return cloned
-  const added = index.addedElement.get(node)
-  return added !== undefined && hasSlideNumber(added.value) ? added : undefined
-}
-
-export function clonedLayer(state: Floored, node: ElementId): IndexElement | undefined {
-  return floorIndexOf(state).clonedLayers.get(node)
-}
-
-export function floorNodes(state: Floored): readonly ElementId[] {
-  return state.order.flatMap((command) => floorOf(command).map((element) => element.node))
-}
-
-const carried: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text.value", "notes.value"]
-
-type Edits = Record<string, Record<string, FieldEdit<unknown>>>
-
-export function floorOpening(state: Floored, node: ElementId, landed: ElementPatch): ElementPatch | undefined {
-  const opening: Edits = {}
-  for (const patch of [openingElement(state, node)?.opening ?? {}, landed]) {
-    for (const [trait, fields] of Object.entries(patch as Readonly<Edits>)) {
-      for (const [field, edit] of Object.entries(fields)) {
-        if (edit === "opening" || carried.includes(`${trait}.${field}`)) continue
-        opening[trait] = { ...opening[trait], [field]: edit }
-      }
-    }
-  }
-  return Object.keys(opening).length === 0 ? undefined : (opening as ElementPatch)
 }

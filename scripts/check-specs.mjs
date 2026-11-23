@@ -162,7 +162,7 @@ const runTlc = (directory, java, jar, spec, config, extra, dot) => {
   return { output, status: result?.status, graph }
 }
 
-export const checkSpec = (directory, java, jar, spec = "Edit.tla", config = "Edit.cfg") => {
+export const checkSpec = (directory, java, jar, spec, config) => {
   const result = cachedDump(directory, java, jar, spec, config)
   return { states: result.states, passed: result.passed, output: result.output, cached: result.cached === true }
 }

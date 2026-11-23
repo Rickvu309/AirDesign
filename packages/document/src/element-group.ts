@@ -1,11 +1,8 @@
-import { readBox, type Box } from "./box.js"
+import { type Box } from "./box.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
-import { readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { type ElementId, type SlideId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
-import type { Kind } from "./kinds.js"
-import { limits } from "@airdesign/doom"
-import { onlyKeys, record } from "./plain-object.js"
-import { floorOf, openingElement, readFloor } from "./slide-floor.js"
+import { floorOf, openingElement } from "./slide-floor.js"
 import type { SlideState } from "./slide-order.js"
 
 export type Member = {
@@ -53,10 +50,6 @@ type Tree = {
   readonly vacated: ReadonlySet<ElementId>
   readonly rejoined: ReadonlySet<ElementId>
 }
-
-export const groupable: readonly Kind[] = ["shape", "connector", "group"]
-
-const fullTurn = 21_600_000
 
 export function groupCommand(command: { readonly slide: string }): command is GroupCommand {
   return (
@@ -233,48 +226,6 @@ export function groupParent(state: Indexed, node: ElementId): ElementId | null |
   return above === "unknown" ? undefined : above
 }
 
-export function groupedNow(state: Indexed, node: ElementId): boolean {
-  const above = treeOf(state).parent.get(node)
-  if (above === undefined) return openingElement(state, node)?.grouped ?? false
-  return above !== null
-}
-
-export function groupChildren(state: Indexed, node: ElementId): readonly ElementId[] {
-  return treeOf(state).children.get(node) ?? []
-}
-
-export function formerChildren(state: Indexed, node: ElementId): readonly ElementId[] {
-  return treeOf(state).former.get(node) ?? []
-}
-
-export function joinedMember(state: Indexed, node: ElementId): Member | undefined {
-  const tree = treeOf(state)
-  const member = tree.joined.get(node)
-  return member === undefined || tree.parent.get(node) === null ? undefined : member
-}
-
-export function groupEmptied(state: Indexed, node: ElementId): boolean {
-  const tree = treeOf(state)
-  return (
-    tree.vacated.has(node) &&
-    plainGroup(state, node) &&
-    childrenIn(tree.parent, node).every((child) => elementGone(state, child))
-  )
-}
-
-export function groupRejoined(state: Indexed, node: ElementId): boolean {
-  return treeOf(state).rejoined.has(node)
-}
-
-export function rejoinedGroups(state: Indexed): readonly ElementId[] {
-  return [...treeOf(state).rejoined]
-}
-
-export function groupFlow(state: Indexed, node: ElementId): readonly ElementId[] {
-  const tree = treeOf(state)
-  return (tree.flow.get(node) ?? []).filter((child) => tree.parent.get(child) === node && !elementGone(state, child))
-}
-
 export function plainGroup(state: Indexed, node: ElementId): boolean {
   return groupFormed(state, node) && !groupDissolved(state, node) && frameBackdrop(state, node) === null
 }
@@ -306,119 +257,11 @@ export function frameSource(state: Indexed, node: ElementId): FrameSource | null
   return { backdrop: filed.framing.backdrop, box: filed.box, members }
 }
 
-export function frameMembers(state: Indexed, node: ElementId): readonly Member[] {
-  const tree = treeOf(state)
-  const source = frameSource(state, node)
-  return (tree.flow.get(node) ?? []).flatMap((child) => {
-    if (tree.parent.get(child) !== node || elementGone(state, child)) return []
-    const member = tree.joined.get(child) ?? source?.members.find((each) => each.node === child)
-    return member === undefined ? [] : [member]
-  })
-}
-
 export function frameBackdrop(state: Indexed, node: ElementId): ElementId | null {
   const backdrop = frameSource(state, node)?.backdrop
   return backdrop === undefined || groupDissolved(state, node) || elementGone(state, node) ? null : backdrop
 }
 
-export function groupFrame(state: Indexed, node: ElementId): Box | null {
-  const made = madeGroup(state, node)
-  if (made !== undefined) return made.element.box
-  return openingElement(state, node)?.frame ?? null
-}
-
 export function groupFormed(state: Indexed, node: ElementId): boolean {
   return openingElement(state, node)?.kind === "group" && !elementGone(state, node)
-}
-
-function memberBounds(members: readonly Member[], scaleX = 1, scaleY = 1): Box {
-  let left = Number.POSITIVE_INFINITY
-  let top = Number.POSITIVE_INFINITY
-  let right = Number.NEGATIVE_INFINITY
-  let bottom = Number.NEGATIVE_INFINITY
-  for (const member of members) {
-    const { x, y, cx, cy } = member.box
-    const radians = ((member.rot ?? 0) / 60_000) * (Math.PI / 180)
-    const [cos, sin] = [Math.abs(Math.cos(radians)), Math.abs(Math.sin(radians))]
-    const halfWidth = (cx * scaleX * cos + cy * scaleY * sin) / 2 / scaleX
-    const halfHeight = (cx * scaleX * sin + cy * scaleY * cos) / 2 / scaleY
-    const middleX = x + cx / 2
-    const middleY = y + cy / 2
-    left = Math.min(left, middleX - halfWidth)
-    top = Math.min(top, middleY - halfHeight)
-    right = Math.max(right, middleX + halfWidth)
-    bottom = Math.max(bottom, middleY + halfHeight)
-  }
-  const x = Math.floor(left + 1e-6)
-  const y = Math.floor(top + 1e-6)
-  return { x, y, cx: Math.ceil(right - 1e-6) - x, cy: Math.ceil(bottom - 1e-6) - y }
-}
-
-export function groupBounds(members: readonly Member[], scaleX = 1, scaleY = 1): Box {
-  return memberBounds(members, scaleX, scaleY)
-}
-
-function readTurn(raw: unknown): number | null | undefined {
-  if (raw === undefined) return undefined
-  return typeof raw === "number" && Number.isSafeInteger(raw) && raw > 0 && raw < fullTurn ? raw : null
-}
-
-function readMember(raw: unknown, id: SlideId): Member | undefined {
-  const row = record(raw)
-  if (row === null) return undefined
-  const keys = ["node", "box", "rot", "flipH", "flipV"].filter(
-    (key) => key === "node" || key === "box" || row[key] !== undefined,
-  )
-  if (!onlyKeys(row, keys)) return undefined
-  const node = readElementId(row.node)
-  const box = readBox(row.box)
-  const rot = readTurn(row.rot)
-  if (node === undefined || shapeOf(node).slide !== id || box === null || rot === null) return undefined
-  if ((row.flipH !== undefined && row.flipH !== true) || (row.flipV !== undefined && row.flipV !== true))
-    return undefined
-  return {
-    node,
-    box,
-    ...(rot === undefined ? {} : { rot }),
-    ...(row.flipH === true ? { flipH: true } : {}),
-    ...(row.flipV === true ? { flipV: true } : {}),
-  }
-}
-
-export function readGroupCommand(raw: Record<string, unknown>, id: SlideId): GroupCommand | undefined {
-  if (raw.slide === "element-group") {
-    const element = readFloor([raw.element], id)?.[0]
-    if (element === undefined || !Array.isArray(raw.members)) return undefined
-    const backdrop = raw.backdrop === undefined ? undefined : readFloor([raw.backdrop], id)?.[0]
-    if (raw.backdrop !== undefined && backdrop === undefined) return undefined
-    const fewest = backdrop === undefined ? 2 : 1
-    if (raw.members.length < fewest || raw.members.length > limits.batch) return undefined
-    const members: Member[] = []
-    for (const item of raw.members) {
-      const member = readMember(item, id)
-      if (
-        member === undefined ||
-        member.node === element.node ||
-        member.node === backdrop?.node ||
-        members.some((kept) => kept.node === member.node)
-      )
-        return undefined
-      members.push(member)
-    }
-    return { slide: "element-group", id, element, members, ...(backdrop === undefined ? {} : { backdrop }) }
-  }
-  if (raw.slide === "element-join") {
-    const member = readMember(raw.member, id)
-    const frame = raw.frame === null ? null : readElementId(raw.frame)
-    const before = raw.before === null ? null : readElementId(raw.before)
-    if (member === undefined || frame === undefined || before === undefined) return undefined
-    if ((frame !== null && shapeOf(frame).slide !== id) || (before !== null && shapeOf(before).slide !== id))
-      return undefined
-    return { slide: "element-join", id, member, frame, before }
-  }
-  const node = readElementId(raw.node)
-  if (node === undefined || shapeOf(node).slide !== id) return undefined
-  if (raw.slide === "element-ungroup") return { slide: "element-ungroup", id, node }
-  if (raw.slide === "element-regroup") return { slide: "element-regroup", id, node }
-  return undefined
 }

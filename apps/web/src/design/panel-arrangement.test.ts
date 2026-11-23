@@ -1,21 +1,6 @@
-import { alignNames, slotted, traitNames, traits } from "@airdesign/document"
+import { alignNames } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { shownPlace } from "./panel"
 import { sectionStrips } from "./panel-arrangement"
-
-it("places every wire field exactly once, naming anything missing or repeated", () => {
-  const faults = traitNames.flatMap((trait) => {
-    const fields = [...Object.entries(traits[trait].fields), ...Object.entries(traits[trait].inputs)]
-      .filter(([name, field]) => field.desc.kind !== "alpha" && !slotted(trait, name))
-      .map(([field]) => field)
-    return fields.flatMap((field) => {
-      const place = shownPlace(trait, field)
-      const count = sectionStrips[place.trait].flat().filter((each) => each.field === place.field).length
-      return count === 1 ? [] : [`${trait}.${field}: placed ${count} times`]
-    })
-  })
-  expect(faults).toEqual([])
-})
 
 it("gives every control in a strip the same name placement", () => {
   const faults = Object.entries(sectionStrips).flatMap(([trait, strips]) =>

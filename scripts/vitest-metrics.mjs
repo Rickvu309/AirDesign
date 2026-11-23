@@ -17,15 +17,13 @@ export const isFault = (test) => {
 export const countRun = (modules) => {
   let tests = 0
   let faults = 0
-  const measured = {}
   for (const mod of modules) {
     for (const test of mod.children.allTests()) {
       tests += 1
       if (isFault(test)) faults += 1
-      Object.assign(measured, test.meta().measured)
     }
   }
-  return { tests, faults, measured }
+  return { tests, faults }
 }
 
 export const writeRun = (root, count) => {
@@ -42,13 +40,6 @@ export const readRun = (root) => {
     throw new Error("Vitest's result is missing tests or faults.")
   }
   return parsed
-}
-
-export const readMeasured = (root, name) => {
-  const value = readRun(root).measured?.[name]
-  if (typeof value !== "number")
-    throw new Error(`Vitest did not measure ${name}. Run pnpm test:unit, then run this again.`)
-  return value
 }
 
 export const moduleSeconds = (mod) => {

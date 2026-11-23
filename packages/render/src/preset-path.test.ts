@@ -1,6 +1,5 @@
 import { expect, it } from "vitest"
-import { presets as pickable } from "@airdesign/document"
-import { openPreset, presetOutline } from "./preset-path.js"
+import { presetOutline } from "./preset-path.js"
 import { presetGuides } from "./preset-rule.js"
 
 it("reads DrawingML formulas with repeated whitespace without changing their operands", () => {
@@ -23,36 +22,6 @@ it("sizes an arrowhead from the short side, not the width", () => {
 
 it("draws a pie wedge as the quarter ellipse around its bottom right corner", () => {
   expect(presetOutline("pieWedge", 200, 100)?.[0]?.d).toBe("M0 100A200 100 0 0 1 200 0L200 100Z")
-})
-
-it("calls a line, a connector and an unclosed stroke open, and a closed preset closed", () => {
-  expect(pickable.filter((name) => openPreset(name))).toEqual([
-    "line",
-    "straightConnector1",
-    "bracketPair",
-    "bracePair",
-    "arc",
-    "can",
-    "cube",
-    "rightBrace",
-    "leftBrace",
-    "cloud",
-  ])
-  for (const name of [
-    "bentConnector2",
-    "bentConnector3",
-    "bentConnector4",
-    "bentConnector5",
-    "curvedConnector2",
-    "curvedConnector3",
-    "curvedConnector4",
-    "curvedConnector5",
-  ])
-    expect(openPreset(name)).toBe(true)
-  expect(openPreset("rect")).toBe(false)
-  expect(openPreset("ellipse")).toBe(false)
-  expect(openPreset("donut")).toBe(false)
-  expect(openPreset("unknown")).toBe(false)
 })
 
 it("keeps unknown and custom geometry on the rectangle fallback", () => {

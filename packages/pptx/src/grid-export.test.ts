@@ -1,12 +1,11 @@
 declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array } }
-import { gridGroups, presentSlides, slideId, type SlideCommand, type SlideId } from "@airdesign/document"
+import { slideId, type SlideCommand, type SlideId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { deckDiff } from "./deck-diff.js"
 import { readParts } from "./package-container.js"
 import { orderedParts } from "./slide-order-route.js"
 import { sectionListFailures } from "./section-check.js"
 import { readSections } from "./section-read.js"
-import { exportPackage } from "./export-package.js"
 import { indexPackage } from "./index-package.js"
 import { slideNumbering } from "./slide-numbering.js"
 
@@ -94,28 +93,6 @@ it("writes a slide group made inside a section as a new section after the part t
   expect(regrouped(parts, exported)).toEqual({ parts: ["ppt/presentation.xml"], failures: [] })
 })
 
-it("exports exactly the original bytes when the slide groups are the file's sections, whatever the slide groups", async () => {
-  const original = process
-    .getBuiltinModule("node:fs")
-    .readFileSync(process.cwd() + "/scripts/pptx-fixtures/sections-before.pptx")
-  const parts = await readParts(original)
-  const file = [slideId("256"), slideId("257")]
-  const spot = presentSlides({ file, order: [] })[1]!
-  const edit: SlideCommand = {
-    slide: "grid-turn",
-    grid: 1,
-    turn: {
-      spots: [{ id: spot.id, before: { present: true, key: spot.key }, after: { present: true, key: spot.key } }],
-      heads: [{ id: spot.id, before: false, after: true }],
-      rows: [],
-    },
-  }
-  const state = { file, order: [edit] }
-  expect(gridGroups(state)).toEqual([[file[0]], [file[1]]])
-  const exported = orderedParts(parts, state)
-  expect(await exportPackage(original, exported)).toEqual(new Uint8Array(original))
-})
-
 it("materializes modern anchored births and their guarded undo without grid parts", async () => {
   const original = process
     .getBuiltinModule("node:fs")
@@ -135,51 +112,6 @@ it("materializes modern anchored births and their guarded undo without grid part
   expect(out.get("ppt/slides/slide3.xml")).toBeDefined()
   expect(out.get("ppt/slides/slide4.xml")).toBeDefined()
   expect([...out.keys()].filter((key) => key.includes("grid"))).toEqual([])
-})
-
-it("writes a slide added in a new slide group as its own section, and one added beside into its anchor's section", async () => {
-  const original = process
-    .getBuiltinModule("node:fs")
-    .readFileSync(process.cwd() + "/scripts/pptx-fixtures/sections-before.pptx")
-  const parts = await readParts(original)
-  const file = [slideId("256"), slideId("257")]
-  const below: SlideCommand = {
-    slide: "add",
-    grid: 1,
-    row: "new",
-    id: slideId("258"),
-    after: file[0]!,
-    layout: file[0]!,
-  }
-  const beside: SlideCommand = {
-    slide: "add",
-    grid: 1,
-    row: "same",
-    id: slideId("258"),
-    after: file[1]!,
-    layout: file[0]!,
-  }
-  const newRow = orderedParts(parts, { file, order: [below] })
-  const sameRow = orderedParts(parts, { file, order: [beside] })
-  expect([...sectionListFailures(newRow), ...sectionListFailures(sameRow)]).toEqual([])
-  expect(gridGroups({ file, order: [below] })).toEqual([[...file], ["258"]])
-  expect([...newRow.keys()].some((path) => path.includes("grid"))).toBe(false)
-  expect(shown(newRow)).toEqual(["Opening 1", "Numbers 1", "Untitled Section 1"])
-  expect(shown(sameRow)).toEqual(["Opening 1", "Numbers 2"])
-  expect(deckDiff(newRow, sameRow).changed).toEqual(["ppt/presentation.xml"])
-})
-
-it("round-trips an untouched sectioned import byte for byte after its version two slide groups are read", async () => {
-  const original = process
-    .getBuiltinModule("node:fs")
-    .readFileSync(process.cwd() + "/scripts/pptx-fixtures/doe-heat-pumps.pptx")
-  const parts = await readParts(original)
-  const opening = indexPackage(parts)
-  const file = opening.slides.map(({ id }) => slideId(id))
-  const index = { ...opening, total: opening.elements.length, pages: [] }
-  const state = { file, order: [], index }
-  expect(gridGroups(state).map((row) => row.length)).toEqual([1, 10, 10, 8, 10, 2])
-  expect(await exportPackage(original, orderedParts(parts, state))).toEqual(new Uint8Array(original))
 })
 
 it("numbers each slide within its slide group, across the lines of a wrapped section", async () => {

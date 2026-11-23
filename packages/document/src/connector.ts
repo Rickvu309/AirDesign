@@ -15,8 +15,6 @@ export type Routed = {
 
 type Elbow = { readonly segments: number; readonly adjusts: readonly string[] }
 
-export const siteKinds: readonly string[] = ["shape"]
-
 export const routedPresets: readonly string[] = [
   "line",
   "straightConnector1",
