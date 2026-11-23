@@ -60,8 +60,10 @@ const walk = (node, visit) => {
 
 const documentImportLines = (file, source) => {
   if (!source.includes("@airdesign/document")) return []
+  const parsed = parseSync(file, source)
+  if (parsed.errors.length > 0) return undefined
   const lines = []
-  walk(parseSync(file, source).program, (node) => {
+  walk(parsed.program, (node) => {
     const target = specifierOf(node)
     const specifier = stringOf(target)
     if (specifier !== undefined && namesDocument(specifier)) lines.push(lineOf(source, target.start))
@@ -80,9 +82,10 @@ export function documentReachFaults(files, read) {
     if (path.basename(file) === "package.json")
       return dependsOnDocument(read(file)) ? [`${file} depends on @airdesign/document. ${documentAdvice}`] : []
     if (!sources.test(file)) return []
-    return documentImportLines(file, read(file)).map(
-      (line) => `${file}:${String(line)} imports @airdesign/document. ${documentAdvice}`,
-    )
+    const lines = documentImportLines(file, read(file))
+    if (lines === undefined)
+      return [`${file} names @airdesign/document and does not parse, so its imports cannot be checked. Fix its syntax.`]
+    return lines.map((line) => `${file}:${String(line)} imports @airdesign/document. ${documentAdvice}`)
   })
 }
 
