@@ -98,8 +98,8 @@ if (
 )
   throw new Error("time-to-merge and time-to-notice are medians the failure report prints")
 if (
-  reportedMetrics["drag-frame"] !== "tests/browser/drag-feel.spec.ts" ||
-  reportedMetrics["drag-delay"] !== "tests/browser/drag-feel.spec.ts"
+  reportedMetrics["drag-frame"] !== "tests/browser/doom-speed.spec.ts" ||
+  reportedMetrics["drag-delay"] !== "tests/browser/doom-speed.spec.ts"
 )
   throw new Error("drag-frame and drag-delay are the milliseconds the drag feel check prints")
 if (!fs.readFileSync(path.join(repoRoot, "scripts/check.mjs"), "utf8").includes('timeMetric(root, "check-duration"'))

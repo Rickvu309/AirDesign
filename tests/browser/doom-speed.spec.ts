@@ -1,7 +1,9 @@
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, type CDPSession, type Page } from "@playwright/test"
 import { test } from "./api-stack"
-import { dragFeel } from "./drag-feel"
+import { dragFeel, type Feel } from "./drag-feel"
 import { openDoomEditor } from "./doom-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -27,6 +29,27 @@ async function frames(page: Page, count: number): Promise<void> {
       }),
     count,
   )
+}
+
+async function reportDrag(feel: Feel): Promise<void> {
+  const limits = JSON.parse(await readFile(join(process.cwd(), "metrics.json"), "utf8")) as Record<
+    string,
+    { readonly limit?: number }
+  >
+  for (const [name, now] of [
+    ["drag-frame", feel.frameP95],
+    ["drag-delay", feel.delayP95],
+  ] as const) {
+    const limit = limits[name]?.limit
+    if (limit === undefined) throw new Error(`${name} has no limit in metrics.json.`)
+    const notes = test.info().annotations
+    notes.push({ type: "metric", description: `metric ${name}  now ${String(now)}  limit ${String(limit)}` })
+    if (now > limit)
+      notes.push({
+        type: "warning",
+        description: `${name} is ${String(now)} and its limit is ${String(limit)}. Make it faster.`,
+      })
+  }
 }
 
 async function engineMilliseconds(device: CDPSession, name: "TaskDuration" | "ScriptDuration"): Promise<number> {
@@ -102,6 +125,7 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
 
   const feel = await dragFeel(page, from, { x: 240, y: 90 }, 120, "dragged")
+  await reportDrag(feel)
 
   const target = await page.locator("[data-slide-box] [data-node]").nth(1).getAttribute("data-node")
   const painted: number[] = []
