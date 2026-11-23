@@ -34,10 +34,6 @@ function AppRoutes() {
   if (path === settingsPaths.account) return <AccountPage navigate={navigate} />
   if (path === settingsPaths.agents) return <AgentsPage navigate={navigate} />
   if (path === settingsPaths.usage) return <UsagePage navigate={navigate} />
-  if (path === "/deck" || path.startsWith("/deck/")) {
-    window.location.replace("/")
-    return null
-  }
   const doomDeck = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
   if (doomDeck !== null)
     return (

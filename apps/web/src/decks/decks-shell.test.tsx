@@ -53,7 +53,7 @@ describe("Starred", () => {
   it("lists a real account's starred decks as links that open them", () => {
     const html = withStars([{ deck: "d1", name: "Board pack" }])
     expect(html).toMatch(/<nav aria-labelledby="[^"]+"[^>]*>[^]*Starred/)
-    expect(html).toMatch(/<a href="\/deck\/d1"[^>]*>[^]*Board pack/)
+    expect(html).toMatch(/<a href="\/s\/d1"[^>]*>[^]*Board pack/)
     expect(html).not.toContain("Star a deck to keep it here.")
   })
 
