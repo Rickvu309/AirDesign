@@ -46,13 +46,12 @@ export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): reado
   if (isRefusal(after)) return []
   const { id, chars } = firstTitleOf(after)
   const before = firstTitleOf(doom).id
-  const removed =
-    before !== undefined &&
-    writes.some((write) => write.node === before && write.prop === "parent" && write.value === null)
-  if (!removed && !writes.some((write) => write.node === id && write.prop === "text")) return []
-  const typed = nameOf(chars)
+  if (before === id && !writes.some((write) => write.node === id && write.prop === "text")) return []
+  const unwritten = chars === placeholderTitle
+  if (unwritten && before === id) return []
+  const typed = unwritten ? "" : nameOf(chars)
   const name = typed === "" ? blankDeckName : typed
-  if (chars === placeholderTitle || name === get(deck, "name")) return []
+  if (name === get(deck, "name")) return []
   const based = (prop: "name" | "nameFollows", value: unknown): Write => {
     const base = doom.revs.get(deck.id)?.get(prop)
     return { node: deck.id, prop, value, ...(base === undefined ? {} : { base }) }
