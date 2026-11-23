@@ -6,10 +6,7 @@ dependencies:
   - apps/web/src/doom-editor
   - apps/web/src/lib
 public:
-  - add-credits-dialog.tsx
   - credits-cards.tsx
   - credits-routes.ts
-  - credits-sample.ts
   - credits-screens.tsx
-  - result-dialog.tsx
   - use-credits.ts

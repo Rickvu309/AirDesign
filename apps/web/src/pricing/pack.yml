@@ -1,5 +1,0 @@
-layer: feature
-dependencies:
-  - apps/web/src/components
-public:
-  - pricing-screens.tsx
