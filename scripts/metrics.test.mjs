@@ -39,11 +39,11 @@ const record = (faults, tests = 2) => {
   write(
     "metrics.json",
     JSON.stringify({
-      "known-failures": { now: faults, goal: 0 },
-      "corpus-size": { now: 1, goal: 20 },
-      "export-coverage": { now: 2, goal: 3 },
-      "fault-detection": { now: 1, goal: 2 },
-      "long-titles": { goal: 0 },
+      "known-failures": { now: faults, goal: 0, better: "lower" },
+      "corpus-size": { now: 1, goal: 20, better: "higher" },
+      "export-coverage": { now: 2, goal: 3, better: "higher" },
+      "fault-detection": { now: 1, goal: 2, better: "higher" },
+      "long-titles": { goal: 0, better: "lower" },
       "check-duration": { limit: 40 },
       "gate-duration": { limit: 60 },
       "ci-duration": { limit: 40 },
@@ -191,6 +191,8 @@ write(
     "fault-detection": { now: 1, goal: 3 },
     "nobody measures": { now: 1, goal: 0 },
     "nobody times": { limit: 5 },
+    "no direction": { now: 1, goal: 2 },
+    "odd direction": { now: 1, goal: 2, better: "up" },
   }),
 )
 const loose = (await readMetrics(root)).drift.join("\n")
@@ -204,6 +206,11 @@ if (!loose.includes("check-duration is timed by scripts/check.mjs and has no lim
 if (!loose.includes("ci-duration is timed by .github/workflows/ci.yml and has no limit in metrics.json."))
   throw new Error(loose)
 if (!loose.includes("nobody measures is in metrics.json and nothing measures it.")) throw new Error(loose)
+const needsDirection = (name) =>
+  `${name} has a goal and no direction. Record "better": "higher" or "lower" beside it in metrics.json.`
+if (!loose.includes(needsDirection("no direction"))) throw new Error(loose)
+if (!loose.includes(needsDirection("odd direction"))) throw new Error(loose)
+if (!loose.includes(needsDirection("known-failures"))) throw new Error(loose)
 if (!loose.includes("corpus-size is measured and missing from metrics.json.")) throw new Error(loose)
 
 const proveVitest = () => {

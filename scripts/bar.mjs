@@ -42,7 +42,12 @@ export const packageFile = (file) => file === "package.json" || file.endsWith("/
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value)
 const keysOf = (metric) =>
-  metric !== null && typeof metric === "object" && !Array.isArray(metric) ? Object.keys(metric).sort().join() : ""
+  metric !== null && typeof metric === "object" && !Array.isArray(metric)
+    ? Object.keys(metric)
+        .filter((key) => key !== "better")
+        .sort()
+        .join()
+    : ""
 const timed = (metric) => keysOf(metric) === "limit" && finite(metric.limit)
 const counted = (metric) => keysOf(metric) === "goal,now" && finite(metric.now) && finite(metric.goal)
 const measured = (metric) => keysOf(metric) === "goal" && finite(metric.goal)
@@ -69,12 +74,11 @@ export const metricsFrom = (read) => {
 }
 
 const countsProof = new Set(["fault-detection"])
-const fallingCounts = new Set(["import-parse", "design-findings"])
 
-const directionOf = (name, before) => {
+const directionOf = (before) => {
   const ahead = before.goal - before.now
   if (ahead !== 0) return Math.sign(ahead)
-  return fallingCounts.has(name) ? -1 : 1
+  return before.better === "lower" ? -1 : 1
 }
 
 const measuredReason = (name, before, after) => {
@@ -98,8 +102,11 @@ const metricReason = (name, before, after) => {
     return after.limit <= before.limit ? undefined : `The limit of ${name} went from ${before.limit} to ${after.limit}.`
   }
   if (!counted(after)) return `The metric ${name} stopped being a count with a goal.`
+  if (before.better !== undefined && after.better !== before.better) {
+    return `The direction of ${name} went from ${before.better} to ${after.better}.`
+  }
   if (countsProof.has(name)) return undefined
-  const direction = directionOf(name, before)
+  const direction = directionOf(before)
   const ahead = before.goal - before.now
   const metGoal = ahead !== 0 || (after.now - after.goal) * direction >= 0
   const harder = direction * (after.goal - before.goal) > 0 && metGoal
