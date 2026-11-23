@@ -26,6 +26,15 @@ export function numberShown(control: ControlProps["control"], scale?: number): S
   return roundedShown(shownInUnit(control.desc.unit, control.value), 4)
 }
 
+export function storedFromTyped(control: ControlProps["control"], value: number): number | null {
+  const { desc, numberScale = 1 } = control
+  if (desc.kind !== "number") return null
+  const points = value * numberScale
+  const floor = shownInUnit(desc.unit, desc.min)
+  const ceiling = shownInUnit(desc.unit, desc.max)
+  return storedOf(desc, Math.min(ceiling, Math.max(floor, points)))
+}
+
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
   if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return 0
   return (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1) * unit
@@ -81,7 +90,7 @@ export function NumberField({
   const scrub = useRef<Scrub | null>(null)
 
   function readNumber(value: number) {
-    if (control.numberScale !== undefined) return storedOf(control.desc, value * control.numberScale)
+    if (control.numberScale !== undefined) return storedFromTyped(control, value)
     return scale === undefined || control.desc.kind !== "number"
       ? storedOf(control.desc, value)
       : storedOf({ ...control.desc, unit: "count" }, Math.round(value * scale))

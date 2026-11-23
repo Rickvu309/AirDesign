@@ -40,6 +40,12 @@ export type Text = {
   readonly padding?: Sides
 }
 
+export const textLimits = {
+  size: { min: 1, max: 2_000 },
+  tracking: { min: -100, max: 100 },
+  lineHeight: { min: 0.5, max: 5 },
+} as const
+
 const readSpan = object(
   { end: integer(1, limits.valueBytes) },
   {
@@ -47,10 +53,10 @@ const readSpan = object(
     italic: boolean,
     underline: boolean,
     strike: boolean,
-    size: px(1, 2_000),
+    size: px(textLimits.size.min, textLimits.size.max),
     font: words(100, 1),
     color: readColor,
-    tracking: px(-100, 100),
+    tracking: px(textLimits.tracking.min, textLimits.tracking.max),
     case: literal(["upper", "lower", "title"]),
     link: readLink,
   },
@@ -62,7 +68,7 @@ const readPara = object(
     align: literal(paragraphAligns),
     list: literal(["bullet", "number"]),
     level: integer(0, 8),
-    lineHeight: finite(0.5, 5),
+    lineHeight: finite(textLimits.lineHeight.min, textLimits.lineHeight.max),
     spaceBefore: size,
     spaceAfter: size,
   },

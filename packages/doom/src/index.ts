@@ -42,7 +42,7 @@ export {
   emptyDoom,
 } from "./doom.js"
 export type { Para, Span, Text, TextStyleName } from "./text.js"
-export { paragraphAligns } from "./text.js"
+export { paragraphAligns, textLimits } from "./text.js"
 export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 export type { TextStyle, Theme } from "./theme.js"
