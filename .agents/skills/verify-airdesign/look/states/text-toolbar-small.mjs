@@ -1,7 +1,7 @@
-import { textToolbarAt } from "../element-window.mjs"
+import { textBarAt } from "../doom-text-window.mjs"
 
 async function drive(kit) {
-  await textToolbarAt(kit, { width: 1280, height: 720 })
+  await textBarAt(kit, { width: 1280, height: 720 })
 }
 
 export default { name: "text-toolbar-small", design: null, drive }

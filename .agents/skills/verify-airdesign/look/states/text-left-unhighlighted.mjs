@@ -1,13 +1,10 @@
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { leaveText, titleEdited } from "../doom-text.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit)
-  await kit.page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#2"]').click()
-  await kit.page.keyboard.press("Enter")
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]:focus').waitFor()
+  await titleEdited(kit)
   await kit.page.keyboard.press("ControlOrMeta+a")
-  await kit.page.keyboard.press("Escape")
+  await leaveText(kit.page)
 }
 
 export default { name: "text-left-unhighlighted", design: editor, drive }

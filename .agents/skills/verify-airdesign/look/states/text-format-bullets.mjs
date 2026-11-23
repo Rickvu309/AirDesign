@@ -1,13 +1,16 @@
-import { formatCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { spot } from "../doom-deck.mjs"
+import { editText, textBar, textLayer } from "../doom-text.mjs"
+import { openDoomDeck } from "../doom-deck.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit)
-  const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
-  await text.click()
-  await text.press("ControlOrMeta+a")
-  const bullets = kit.page.getByRole("button", { name: formatCopy.bullets })
+  const { page } = kit
+  await openDoomDeck(kit, [
+    textLayer("t:1", "Costs fall 12%\nTwo shifts cover the peak\nHiring pauses in Q3", spot(160, 760, 1200, 220)),
+  ])
+  await editText(page, "t:1")
+  await page.keyboard.press("ControlOrMeta+a")
+  const bullets = textBar(page).getByRole("button", { name: "Bulleted list", exact: true })
   await bullets.click()
   await expect(bullets).toHaveAttribute("aria-pressed", "true")
 }

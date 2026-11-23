@@ -1,8 +1,7 @@
-import { designElementAt } from "../element-window.mjs"
+import { textBarAt } from "../doom-text-window.mjs"
 
 async function drive(kit) {
-  await designElementAt(kit, { width: 1470, height: 923 })
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
+  await textBarAt(kit, { width: 1470, height: 923 }, { design: true })
 }
 
 export default { name: "text-toolbar-design", design: null, drive }
