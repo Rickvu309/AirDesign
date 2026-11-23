@@ -15,7 +15,7 @@ export const slideListCopy = {
   selected: (count: number) => `${slidesOf(count)} selected`,
   newSlide: "New slide",
   addSlide: "Add slide",
-  lastSlide: "The last slide cannot be deleted.",
+  lastSlide: "A deck keeps at least one slide.",
   slideLimit,
   added: (number: number) => `Added slide ${String(number)}`,
   duplicated: (number: number) => `Duplicated slide ${String(number)}. The copy is slide ${String(number + 1)}`,

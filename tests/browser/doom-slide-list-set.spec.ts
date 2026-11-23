@@ -44,6 +44,17 @@ test("several slides picked in the list move, duplicate and delete together, eac
   expect(await picked(page)).toEqual(["2", "3"])
 
   await entry(page, 2).click({ button: "right" })
+  const gaps = await page.getByRole("menuitem").evaluateAll((rows) =>
+    rows.flatMap((row) => {
+      const [label, shortcut] = Array.from(row.querySelectorAll("span"))
+      if (label === undefined || shortcut === undefined) return []
+      const text = document.createRange()
+      text.selectNodeContents(label)
+      return [shortcut.getBoundingClientRect().left - text.getBoundingClientRect().right]
+    }),
+  )
+  expect(gaps.length).toBeGreaterThan(0)
+  for (const gap of gaps) expect(gap).toBeGreaterThanOrEqual(20)
   await page.getByRole("menuitem", { name: slideListCopy.setActions(2).down }).click()
   await expect.poll(saved).toEqual([three, four, one, two])
   await page.keyboard.press("ControlOrMeta+z")
