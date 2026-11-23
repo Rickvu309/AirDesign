@@ -5,15 +5,13 @@ import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
 import { limits, readFold, textFromMarkdown } from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { sessionRefusal, storeFailure, toolLimit } from "./mcp-expected.js"
 
 import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "../index.js"
 import { openSql } from "../doom/doom-deck.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
-const sessionRefusal = { ok: false, refusal: "session" }
-const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
-const storeFailure = { ok: false, refusal: "store" }
 
 type Answer = Record<string, any>
 
