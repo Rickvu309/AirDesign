@@ -5,6 +5,7 @@ import type { AiraChat, AiraExchange, AiraStep } from "@/aira/aira-loop"
 import type { AiraStart } from "@/aira/aira-panel"
 import { sampleDeck } from "@/core/core-doom"
 import { DoomEditor, type EditorStart } from "./doom-editor"
+import type { Saving } from "./use-save-shown"
 
 const deck = "sample-deck"
 const asked = "Make a strategy review for the board from my notes. Lead with the numbers, then the three levers."
@@ -62,6 +63,13 @@ export const airaSamples = {
 } satisfies Record<string, AiraStart>
 
 export const sampleText = sampleDeck.ids["subtitle"]
+
+export const saveSamples = {
+  offline: { status: { kind: "offline" }, online: false },
+  unreached: { status: { kind: "offline" }, online: true },
+  setAside: { status: { kind: "set-aside", edits: 2, tooLarge: false }, online: true },
+  setAsideTooLarge: { status: { kind: "set-aside", edits: 1, tooLarge: true }, online: true },
+} satisfies Record<string, Saving>
 
 function opened() {
   const remote = memoryDoomRemote(sampleDeck.edit)

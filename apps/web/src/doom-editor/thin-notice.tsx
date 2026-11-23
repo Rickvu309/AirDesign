@@ -23,6 +23,7 @@ export type ThinNotice =
   | "undo-changed"
   | "redo-changed"
   | "set-aside"
+  | "set-aside-one"
   | "set-aside-too-large"
   | "storage-failed"
   | "too-large"
@@ -120,6 +121,7 @@ function NoticeContent({
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
   if (notice === "unreached") return <StatusNotice text={productCopy.editorUnreached} />
   if (notice === "set-aside") return <StatusNotice kind="error" text={productCopy.editsSetAside} />
+  if (notice === "set-aside-one") return <StatusNotice kind="error" text={productCopy.editSetAside} />
   if (notice === "set-aside-too-large") return <StatusNotice kind="error" text={productCopy.editSetAsideTooLarge} />
   if (notice === "storage-failed")
     return (

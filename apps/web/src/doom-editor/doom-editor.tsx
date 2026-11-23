@@ -32,6 +32,7 @@ import { useSlideStepKeys } from "./use-slide-step-keys"
 import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
 import { useDoomDeck, useDoomView, type EditorClient, type OpenOptions } from "./use-doom-deck"
+import { useSaveShown, type Saving } from "./use-save-shown"
 
 function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
@@ -44,6 +45,7 @@ export type EditorStart = {
   readonly editing?: doom.NodeId
   readonly shapes?: ShapesShown
   readonly aira?: AiraStart
+  readonly save?: Saving
 }
 
 function Editing({
@@ -56,6 +58,7 @@ function Editing({
   readonly start: EditorStart
 }) {
   const view = useDoomView(client)
+  const saved = useSaveShown(client, start.save)
   const slides = slidesOf(view)
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
@@ -100,7 +103,12 @@ function Editing({
   return (
     <div className="window-frame flex" data-doom-editor={id} inert={present.show !== null}>
       <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
-        <SlideSidebar title={title} strip={strip} onRename={(name) => client.push(renameWrites(view, name))} />
+        <SlideSidebar
+          title={title}
+          strip={strip}
+          save={saved.save}
+          onRename={(name) => client.push(renameWrites(view, name))}
+        />
       </div>
       <div ref={canvas.onCanvas} className="relative min-w-0 flex-1" data-editor-canvas>
         {slide === undefined ? null : (
@@ -126,6 +134,7 @@ function Editing({
               commands.current = next ?? { zoomTo: setZoom, zoomSelection: null }
             }}
             toolbarHost={toolbarHost}
+            notice={saved.notice}
             {...(start.editing === undefined ? {} : { editing: start.editing })}
             {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />
